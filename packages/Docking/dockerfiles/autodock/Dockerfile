@@ -58,6 +58,15 @@ RUN mamba install -n base -c conda-forge awscli -y && \
     mamba remove -n base awscli -y && \
     mamba clean -afy
 
+# VEX: the runtime autodock env is Python 2.7 — its flask/werkzeug/jinja2/numpy/
+# certifi/pip/setuptools/wheel have no py2.7 upgrades and are tracked in VEX. Clear
+# the py2.7 (and base) ensurepip bootstrap wheels (pip 9.0.3 / setuptools 39.0.1 are
+# bundled artifacts, not the active packages) and raise the floors of the build-only
+# base (py3.13) env, where the leftover awscli deps live.
+RUN rm -f /usr/local/miniforge/envs/autodock/lib/python2.7/ensurepip/_bundled/*.whl \
+          /usr/local/miniforge/lib/python3.*/ensurepip/_bundled/*.whl && \
+    /usr/local/miniforge/bin/pip install --no-cache-dir --upgrade 'urllib3>=2.7' 'msgpack>=1.2.1'
+
 COPY autodock.py /app/autodock.py
 
 EXPOSE 8000

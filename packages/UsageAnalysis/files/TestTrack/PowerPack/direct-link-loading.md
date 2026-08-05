@@ -3,7 +3,8 @@ feature: powerpack
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [direct-link-loading-window]
+realizes_atlas: [direct-link-loading-window]
+realizes: []
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Powerpack/direct-link-loading.md
 migration_date: 2026-05-23

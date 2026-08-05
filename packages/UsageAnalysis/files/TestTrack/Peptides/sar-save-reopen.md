@@ -3,7 +3,8 @@ feature: peptides
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [sar-project-save-and-reopen]
+realizes_atlas: [sar-project-save-and-reopen]
+realizes: [bio.menu.analyze.sar, peptides.viewer.sequence-variability-map, peptides.viewer.most-potent-residues, peptides.viewer.logo-summary-table]
 produced_from: atlas-driven
 related_bugs:
   - GROK-14461

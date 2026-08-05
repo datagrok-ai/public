@@ -5,9 +5,9 @@
 #sample: chem/smiles_coordinates.csv
 #meta.domain: chem
 #top-menu: Chem | Analyze | Butina Cluster...
-#input: dataframe data [Input data table]
-#input: column molecules {semType: Molecule} [Molecules, in SMILES and MolBlock format]
-#input: double distanceCutoff = 0.4 [Tanimoto distance cutoff for clustering (0-1)]
+#input: dataframe data {nullable: false} [Input data table]
+#input: column molecules {semType: Molecule; nullable: false} [Molecules, in SMILES and MolBlock format]
+#input: double distanceCutoff = 0.4 {min: 0; max: 1} [Tanimoto distance cutoff for clustering (0-1)]
 #output: dataframe clusters {action:join(data)} [Clusters]
 
 import numpy as np

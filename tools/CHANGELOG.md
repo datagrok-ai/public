@@ -1,5 +1,34 @@
 # Datagrok-tools changelog
 
+## 6.5.3 (2026-08-04)
+
+* GROK-18695: Security — bumped `adm-zip` to 0.6.0 (CVE-2026-39244). Below 0.6.0 it sized a buffer from the ZIP header's declared uncompressed size before validating it, so a ~120-byte crafted archive forced a multi-GB allocation; `grok report` opens archives fetched from a server. The APIs it uses are unchanged. Also refreshed the lockfile to clear five more high-severity audit findings (`brace-expansion`, `fast-uri`, `ip-address`, `js-yaml`, `postcss`), all within existing ranges.
+
+## 6.5.2 (2026-07-27)
+
+* `grok publish` — a failed `docker push` is no longer reported as a successful one. `image.json` claimed the tag regardless, so the server recorded a container image that was never published and the spawner failed validation forever ("Image ... not found in any registry") with no recovery short of another publish. The push failure now falls back to an image that is actually in the registry, and says so.
+
+## 6.5.1 (2026-07-22)
+
+* `grok test` — the Node-pass report now merges into the browser report by column name. The line-wise merge assumed identical column order, so node rows landed misaligned (string values in the integer `ms` column) and the CI test-report upload failed with `invalid input syntax for type integer`.
+
+## 6.5.0 (WIP)
+
+* `grok test` — added a Node (browserless) pass: tests annotated `{node: true}` run headless under the js-api Node runtime before the browser launches; the browser pass excludes them and is skipped entirely when nothing browser-only matches. New flags: `--skip-node`, `--node-only`. Packages opt in by exporting `testNode()` from `package-test.ts`; others keep the previous behavior.
+
+## 6.4.8 (2026-07-22)
+
+* GROK-20452: `grok publish` — always `docker build` the tools-generated worker dirs (`dockerfiles/queue`, `dockerfiles/celery`, `dockerfiles/<app>-celery`) instead of reusing a cached local tag. The "found local image" shortcut froze the worker at whatever stock base the daemon had when the tag was first built (CI ran day-old worker code with a fresh base available); the layer cache keeps an unchanged rebuild near-instant.
+* `grok test` — `--no-retry` is now honored for Playwright runs. minimist parsed `--no-retry` as `{retry:false}`, so the flag was silently dropped and failed specs were still retried once; normalized so `--retries=0` reaches Playwright.
+
+## 6.4.7 (2026-07-22)
+
+* GROK-20452: `grok publish` — generate `dockerfiles/celery` / `dockerfiles/queue` **before** gathering files for the zip. They were generated after, so the generated Dockerfile never reached the server: `meta.queue` functions fell back to a server-side container named `<pkg>-queue-celery` while the client had built `<pkg>-queue` — image validation 404'd and the worker container never started ("Container is not started" on every call).
+
+## 6.4.6 (2026-07-22)
+
+* `grok test` — the whole-run Puppeteer cap (60 min) is now overridable via `GROK_TEST_INVOCATION_TIMEOUT_MS`. When the cap fires mid-pass all collected results are discarded (empty `test-report.csv`, "Passed tests: 0"), which CI reports as "no results produced"; loaded CI agents can now raise the cap instead.
+
 ## 6.4.5 (2026-06-23)
 
 * `grok test` — screen recording (`--record`) is now optional: if `page.screencast()` can't start (e.g. `ffmpeg` is missing on the runner, `spawnSync ffmpeg ENOENT`), the run warns and continues instead of failing the whole Puppeteer pass with 0 tests executed.

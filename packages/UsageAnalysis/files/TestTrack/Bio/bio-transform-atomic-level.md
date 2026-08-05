@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [bio.cp.to-atomic-level]
+realizes_atlas: [bio.cp.to-atomic-level]
+realizes: [bio.menu.transform.to-atomic-level, bio.menu.transform.molecules-to-helm, bio.action.to-atomic-level]
 produced_from: atlas-driven
 related_bugs:
   - GROK-15176

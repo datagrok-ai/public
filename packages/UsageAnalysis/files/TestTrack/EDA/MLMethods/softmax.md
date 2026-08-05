@@ -3,7 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: [eda.cp.train-predictive-model]
+realizes: [eda.model.softmax, ml.menu.models.train-model]
 realized_as:
   - softmax-spec.ts
 related_bugs: []

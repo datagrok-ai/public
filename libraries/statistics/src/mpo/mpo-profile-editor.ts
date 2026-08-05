@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {Subject, Subscription} from 'rxjs';
 import {
   DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
-  DesirabilityProfile, PropertyDesirability, WeightedAggregation,
+  DesirabilityMode, DesirabilityProfile, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isMpoNumericColumn, isNumerical, migrateDesirability,
 } from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
@@ -81,7 +81,7 @@ export class MpoProfileEditor {
       for (const key of Object.keys(profile.properties)) {
         const prop = migrateDesirability(profile.properties[key]);
         if (isNumerical(prop))
-          prop.mode ??= 'freeform';
+          prop.mode ??= DesirabilityMode.Freeform;
         profile.properties[key] = prop;
       }
     }

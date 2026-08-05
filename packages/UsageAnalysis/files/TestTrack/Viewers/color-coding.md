@@ -3,7 +3,8 @@ feature: color-coding
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes: []
+realizes_atlas: []
+realizes: [viewers.grid]
 realized_as:
   - color-coding-spec.ts
 related_bugs: []

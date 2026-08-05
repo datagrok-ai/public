@@ -1,5 +1,13 @@
 ---
 title: "Architecture"
+description: High-level overview of Datagrok's design goals and the data engine, viewers, server, client, and compute engine.
+keywords:
+  - design philosophy
+  - in-memory data engine
+  - dart client and server
+  - compute engine
+  - platform goals
+  - system design
 ---
 
 <!--Incorrect links

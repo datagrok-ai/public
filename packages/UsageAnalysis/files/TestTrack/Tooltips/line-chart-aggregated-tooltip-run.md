@@ -8,7 +8,7 @@
 
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
-| 1 | Open SPGI Dataset | 12s | PASS | PASSED | `grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv')`; 3624 rows, 88 columns; 7 Molecule semType columns triggered Bio/Chem wait. |
+| 1 | Open SPGI Dataset | 12s | PASS | PASSED | `grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv')`; 3624 rows, 88 columns; 7 Molecule semType columns triggered Bio/Chem wait. |
 | 2 | Add Line Chart, X=Chemist 521, Y=CAST Idea ID | 35s | PASS | PASSED | Toolbox `[name="icon-line-chart"]` clicked. Scenario typo: column is **Chemist 521** (with space), not "Chemist521". UI column-picker popup didn't open via DOM events; fell back to `lc.props.xColumnName / yColumnNames`. |
 | 3 | Configure Aggregated Tooltip (unique Stereo Category, min Average Mass) | 110s | PASS | PASSED | Right-click → Tooltip → Edit... opens dialog with title "Edit Aggregated Tooltip". Initially set wrong property `rowGroupTooltip` (just stores text), correct one is `aggTooltipColumns` (per `AggregationTooltipMixin`). Format: `aggType(columnName)\n…`. Dialog re-open verified both rows parsed correctly. |
 | 4 | Split by Stereo Category | 20s | PASS | PASSED | Context-menu submenu Data → Split Columns → Stereo Category didn't expand via DOM `mousemove`/`mouseenter` dispatch; fell back to `lc.props.splitColumnNames = ['Stereo Category']`. Chart split into 5 lines (R_ONE, S_ABS, S_ACHIR, S_PART, S_UNKN). |
@@ -37,7 +37,7 @@ The aggregated tooltip on a Line Chart with both an applied split (Stereo Catego
 ## Retrospective
 
 ### What worked well
-- `grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv')` plus the standard semType / Bio-Chem wait sequence opened the dataset cleanly in ~9s.
+- `grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv')` plus the standard semType / Bio-Chem wait sequence opened the dataset cleanly in ~9s.
 - Right-click → Tooltip → Edit… opens the canonical "Edit Aggregated Tooltip" dialog, and dialog re-open is a reliable way to verify a programmatic value parsed into the right rows.
 - Playwright `page.mouse.move()` with `{steps: 10}` produces the real cursor motion the Dart chart's tooltip-display logic listens for — synthetic `MouseEvent` / `PointerEvent` dispatch and MCP `hover` populate tooltip text but leave `display:none`.
 - The shared `spec-login.ts` (`loginToDatagrok`, `softStep`, `stepErrors`, `specTestOptions`) plug-and-played with no edits — the spec only had to import them.
@@ -58,7 +58,7 @@ The aggregated tooltip on a Line Chart with both an applied split (Stereo Catego
 - Document the `aggTooltipColumns` property name and `aggType(columnName)\n…` format in the line-chart reference (`grok-browser/references/viewers/line_chart.md`) — today `rowTooltip` and `rowGroupTooltip` are listed but the dialog uses neither.
 
 ### Suggestions for the scenario
-- Fix the column name typo: "Chemist521" → "Chemist 521" (with space). The current text doesn't match `System:DemoFiles/SPGI.csv`.
+- Fix the column name typo: "Chemist521" → "Chemist 521" (with space). The current text doesn't match `System:DemoFiles/chem/SPGI.csv`.
 - State the expected aggregated tooltip text explicitly (e.g. "tooltip line shows `unique(Stereo Category)` and `min(Average Mass)` with their per-bin values"), so it can be asserted programmatically rather than visually.
 - Add a precondition that "splitting first, then configuring the tooltip" and "configuring first, then splitting" should both yield the same tooltip behaviour — issue #2571 specifically calls out the split path; documenting the order makes it a clean regression test.
 - Note that the aggregated tooltip only surfaces on direct marker hover (not on hover over the line segment between markers); steering testers (and Playwright probes) toward marker positions avoids the "I hovered, nothing appeared" false negative I hit during step 5.

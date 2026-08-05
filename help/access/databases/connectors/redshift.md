@@ -1,5 +1,14 @@
 ---
 title: "Redshift"
+description: Connect Datagrok to an Amazon Redshift database using SQL queries via a JDBC driver.
+keywords:
+  - amazon redshift
+  - redshift cluster
+  - jdbc driver
+  - connect to a database
+  - schema browsing
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to [Amazon Redshift](https://aws.amazon.com/en/redshift/)

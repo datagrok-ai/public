@@ -98,6 +98,7 @@ export interface IDartApi {
   grok_View_AddViewer(v: any, vi: any): any;
   grok_View_SetRibbonPanels(v: any, panels: any, clear: Bool): any;
   grok_View_GetRibbonPanels(v: any): any;
+  grok_View_Get_JsView(v: any): any;
   grok_View_Get_ToolboxPage(v: any): any;
   grok_View_Detach(v: any): any;
   grok_View_DetachViewers(v: any): any;
@@ -459,6 +460,8 @@ export interface IDartApi {
   grok_Widget_Get_Parent(widget: any): any;
   grok_Widget_Get_Children(widget: any): any;
   grok_Widget_GetFunctions(widget: any): any;
+  grok_Widget_Get_AIDescription(widget: any): any;
+  grok_Widget_Set_AIDescription(widget: any, x: String): any;
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_Column_GetColors(column: any): any;
@@ -973,6 +976,14 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
+  grok_Shell_Undo(): any;
+  grok_Shell_Redo(): any;
+  grok_Shell_Get_CanUndo(): any;
+  grok_Shell_Get_CanRedo(): any;
+  grok_UndoService_Get_UndoName(): any;
+  grok_UndoService_Get_RedoName(): any;
+  grok_UndoService_Clear(): any;
+  grok_UndoService_Push(name: String, undo: any, redo: any, context: any): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
   grok_Shell_OpenLocalFile(file: any): Promise<any>;
@@ -1514,6 +1525,8 @@ export interface IDartApi {
   grok_Property_Set_Description(p: any, x: String): any;
   grok_Property_Get_Nullable(p: any): any;
   grok_Property_Set_Nullable(p: any, x: Bool): any;
+  grok_Property_Get_IsOptional(p: any): any;
+  grok_Property_Set_IsOptional(p: any, x: Bool): any;
   grok_Property_Get_InitialValue(p: any): any;
   grok_Property_Set_InitialValue(p: any, x: any): any;
   grok_Property_Get_DefaultValue(p: any): any;
@@ -1773,6 +1786,8 @@ export interface IDartApi {
   grok_Func_Set_Description(func: any, x: String): any;
   grok_Func_Get_InputParams(func: any): any;
   grok_Func_Get_OutputParams(func: any): any;
+  grok_Func_Get_Tags(func: any): any;
+  grok_Func_Set_Tags(func: any, tags: any): any;
   grok_Func_Prepare(func: any, parameters: any): any;
   grok_Func_PrepareAsync(func: any, parameters: any): Promise<any>;
   grok_Func_Find(packageName: String, functionName: String, tags: any, meta: any, resultType: String, resultSemType: String): any;

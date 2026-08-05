@@ -3,6 +3,16 @@ title: "Complex data types"
 sidebar_position: 3
 mdx:
   format: mdx
+description: Work with dataframes, column selectors, files, blobs, and graphical outputs as script input/output parameters.
+keywords:
+  - dataframe input
+  - column selector
+  - column_list
+  - file io
+  - blob input
+  - graphics output
+  - matplotlib figure
+  - case-insensitive column names
 ---
 
 :::tip Looking for the type table?
@@ -194,6 +204,7 @@ new_table.col('model').init((i) => `${id_column.get(i)}_${i}`);
 
 
 ##  File I/O
+
 You can use files as input or output parameters
 using `file` and `blob` annotations.
 

@@ -1,20 +1,19 @@
-/** Regression tests for the function catalog: the Flow-specific exclusion list
- *  and the "what it does" classification. Designed from the live catalog — see
- *  docs/func-catalog-snapshot.md (and the retired func-inventory-diag) for the
- *  data these assertions encode. */
+/** Regression tests for the function catalog: the allowlist-based inclusion
+ *  rule and the "what it does" classification. Designed from the live catalog —
+ *  see docs/func-catalog-snapshot.md for the data these assertions encode. */
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {
-  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES, isWorkflowFunc,
+  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc, shouldIncludeFunc,
+  loadQueryFuncs,
 } from '../rete/node-factory';
-import {EXCLUDED_FUNC_NQNAMES} from '../rete/excluded-funcs';
+import {INCLUDED_FUNC_NQNAMES} from '../rete/included-funcs';
 import {
   categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery,
   queryConnectionName, FunctionBrowser, funcOutputsWidget, orderDomainSection,
 } from '../panel/function-browser';
 import type {FuncInfo} from '../rete/node-factory';
-import {getTags} from '../utils/dart-proxy-utils';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
 
@@ -24,40 +23,46 @@ category('Flow: function browser', () => {
     registerAllFunctions();
   });
 
-  test('exclusion list keeps the catalog clean', async () => {
+  test('the catalog is allowlist-based: only explicitly included funcs survive', async () => {
     const funcs = getRegisteredFuncs();
     expect(funcs.length > 100, true, 'catalog is non-trivially populated');
 
-    // No dev/test/internal packages.
-    const fromExcludedPkg = funcs.filter((f) => EXCLUDED_PACKAGES.includes(f.packageName));
-    expect(fromExcludedPkg.length, 0, `excluded packages leaked: ${fromExcludedPkg.map((f) => f.packageName).join(',')}`);
+    // Known allowlisted core funcs are present. Keep this list to functions the
+    // allowlist is not expected to churn — which entries are in or out is a
+    // curation decision (`Aggregate`, for one, is commented out pending the
+    // colfiltercall/tablerowfiltercall work), so pinning them here would just
+    // make the test lie about intent.
+    const names = new Set(funcs.map((f) => f.func.name));
+    for (const known of ['JoinTables', 'OpenFile', 'AddNewColumn'])
+      expect(names.has(known), true, `allowlisted ${known} present`);
 
-    // No test scaffolding by name.
-    const testNamed = funcs.filter((f) => (f.func.name ?? '').toLowerCase().startsWith('test'));
-    expect(testNamed.length, 0, `test* funcs leaked: ${testNamed.map((f) => f.func.name).slice(0, 5).join(',')}`);
-
-    // No command/dialog wrappers (funccall inputs).
-    const funccallWrappers = funcs.filter((f) => {
-      try {return f.func.inputs.some((p) => String(p.propertyType) === 'funccall');} catch {return false;}
-    });
-    expect(funccallWrappers.length, 0, 'funccall-wrapper funcs leaked');
-
-    // No view-producing functions (a whole TableView can't be composed/previewed).
-    const viewOutputs = funcs.filter((f) => {
-      try {return f.func.outputs.some((p) => String(p.propertyType) === 'view');} catch {return false;}
-    });
-    expect(viewOutputs.length, 0, `view-output funcs leaked: ${viewOutputs.map((f) => f.func.name).slice(0, 5).join(',')}`);
+    // Formerly-denied machinery is NOT on the allowlist and stays out: dev/test
+    // packages, denylist-era helpers, panels/sketchers — none of them listed.
+    for (const gone of ['Chem:getRdKitModule', 'core:BatchCall', 'core:Project'])
+      expect(INCLUDED_FUNC_NQNAMES.has(gone), false, `${gone} not on the include list`);
+    const devPkgs = new Set(['Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis']);
+    const fromDevPkg = funcs.filter((f) => devPkgs.has(f.packageName));
+    expect(fromDevPkg.length, 0, `dev/test packages leaked: ${fromDevPkg.map((f) => f.packageName).join(',')}`);
   });
 
-  test('denylisted nqNames never survive into the catalog', async () => {
-    const survivingNq = new Set(getRegisteredFuncs().map((f) => {
-      try {return f.func.nqName;} catch {return f.func.name;}
-    }));
-    // Every entry that exists on this stand must be filtered out.
-    const leaked: string[] = [];
-    for (const nq of EXCLUDED_FUNC_NQNAMES)
-      if (survivingNq.has(nq)) leaked.push(nq);
-    expect(leaked.length, 0, `denylisted funcs leaked: ${leaked.slice(0, 8).join(', ')}`);
+  test('shouldIncludeFunc: allowlist, opt-in, opt-out precedence', async () => {
+    const fake = (nqName: string, options: Record<string, unknown> = {}): DG.Func =>
+      ({nqName, name: nqName.split(':').pop(), options} as unknown as DG.Func);
+    expect(shouldIncludeFunc(fake('core:JoinTables')), true, 'allowlisted → in');
+    expect(shouldIncludeFunc(fake('SomePkg:notListedAnywhere')), false, 'unlisted → out');
+    expect(shouldIncludeFunc(fake('SomePkg:optedIn', {includeInFlow: 'true'})), true, 'meta opt-in (string) → in');
+    expect(shouldIncludeFunc(fake('SomePkg:optedIn2', {includeInFlow: true})), true, 'meta opt-in (bool) → in');
+    expect(shouldIncludeFunc(fake('core:JoinTables', {includeInFlow: 'false'})), false,
+      'meta opt-out beats the allowlist');
+    // A saved flow (Script with language `flow`) is always included, listed or not.
+    const flowScript = DG.Script.create('//name: MyFlow\n//language: flow\n');
+    expect(shouldIncludeFunc(flowScript), true, 'workflow → always in');
+    // A query (DG.DataQuery) is always included by kind — never needs listing.
+    const query = getRegisteredFuncs().map((f) => f.func).find((f) => f instanceof DG.DataQuery);
+    if (query) {
+      expect(shouldIncludeFunc(query), true, 'query → always in');
+      expect(INCLUDED_FUNC_NQNAMES.has(query.nqName), false, 'queries are not on the static list');
+    }
   });
 
   test('meta.includeInFlow: false opts a function out of the catalog', async () => {
@@ -79,45 +84,22 @@ category('Flow: function browser', () => {
     expect(inCatalog, false, 'openCreationScriptFlowDialog is opted out via meta.includeInFlow');
   });
 
-  test('machinery tags and right-click actions are excluded (but widgets are kept)', async () => {
-    const funcs = getRegisteredFuncs();
-    // No surviving func carries a UI-machinery tag — checking tags (not just the
-    // role field) is the biggest declutter lever. NOTE: panel/widget/widgets/
-    // tooltip are deliberately NOT banned — widget-producing functions are usable
-    // in Flow (Widgets pane + preview).
-    const banned = new Set(['internal', 'moleculesketcher', 'folderviewer',
-      'cellrenderer', 'viewers', 'filehandler', 'semtypedetector', 'apptreebrowser', '@editors']);
-    const withBannedTag = funcs.filter((f) => {
-      const tokens = getTags(f.func).map((t) => t.trim().toLowerCase());
-      return tokens.some((t) => banned.has(t));
-    });
-    expect(withBannedTag.length, 0,
-      `machinery leaked: ${withBannedTag.map((f) => f.func.name).slice(0, 6).join(', ')}`);
-
-    // No semantic_value (right-click) inputs, no filter-DSL-call outputs.
-    const semValue = funcs.filter((f) => {
-      try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
-    });
-    expect(semValue.length, 0, 'semantic_value right-click actions leaked');
-    const filterCalls = funcs.filter((f) => {
-      try {
-        return f.func.outputs.some((p) =>
-          ['tablerowfiltercall', 'colfiltercall'].includes(String(p.propertyType)));
-      } catch {return false;}
-    });
-    expect(filterCalls.length, 0, 'filter-DSL builder funcs leaked');
-  });
-
-  test('widget-producing functions are kept (Widgets pane populated)', async () => {
-    // Widgets are supported (preview) — a function that outputs a widget must not
-    // be excluded just for being a widget/panel. There should be widget nodes.
+  test('widget-producing functions are routed to the Widgets pane, never the categories', async () => {
+    // Widgets are supported (they preview), so an allowlisted widget-producing
+    // function goes to the Widgets pane rather than a task category. How MANY
+    // are allowlisted is a curation decision and may legitimately be zero — the
+    // invariant is the routing, plus the fact that right-click
+    // (`semantic_value`) widgets are never catalog entries: they act on a cell,
+    // not on a pipeline value, so nothing on a canvas could feed one.
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
-    expect(widgets.length > 0, true, 'at least one widget-producing function survives');
-    // And a right-click widget (semantic_value input) is still excluded.
     const ctxWidgets = widgets.filter((f) => {
       try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
     });
-    expect(ctxWidgets.length, 0, 'context (semantic_value) widgets are still excluded');
+    expect(ctxWidgets.length, 0, 'context (semantic_value) widgets stay out');
+    for (const w of widgets) {
+      expect(FUNC_CATEGORIES.includes(categorizeFunc(w.func, w.role, w.packageName)), true,
+        `${w.name} still categorizes cleanly`);
+    }
   });
 
   test('categorizeFunc places funcs by what they do', async () => {
@@ -207,31 +189,40 @@ category('Flow: function browser', () => {
     expect(cat !== 'Cheminformatics', true, `${chemSource.func.name} is a source, not a chem operation (got ${cat})`);
   });
 
-  test('the toolbox floats Cheminformatics/Bioinformatics to the top, after Queries', async () => {
+  test('the toolbox floats Cheminformatics/Bioinformatics to the top of the categories', async () => {
     if (!getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
       expect(true, true, 'no Chem funcs on this stand — skipped');
       return;
     }
     const browser = new FunctionBrowser({
-      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
     });
     document.body.appendChild(browser.root);
     try {
       browser.render();
       const chem = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
       expect(!!chem, true, 'Cheminformatics section header present');
-      // It sits AFTER the Queries pane but BEFORE the Viewers pane and the
-      // built-in sections (Inputs) and the general categories (Data Sources).
-      const queries = browser.root.querySelector('[data-testid="ff-browser-queries"]');
+      // Order (Files/Queries/Workflows live in the top tabs now): domain
+      // sections → task categories (Data Sources…) → Viewers → built-ins
+      // (Inputs…) → Other → Debug last.
       const viewers = browser.root.querySelector('[data-testid="ff-browser-viewers"]');
-      const inputs = browser.root.querySelector('[data-testid="ff-browser-section-Inputs"]');
-      const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-Data Sources"]');
+      const inputs = browser.root.querySelector('[data-testid="ff-browser-section-inputs"]');
+      const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-data-sources"]');
+      const other = browser.root.querySelector('[data-testid="ff-browser-section-other"]');
+      const debug = browser.root.querySelector('[data-testid="ff-browser-section-debug"]');
       const before = (a: Element | null, b: Element | null): boolean =>
         !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-      if (queries) expect(before(queries, chem), true, 'Cheminformatics comes after Queries');
-      if (viewers) expect(before(chem, viewers), true, 'Cheminformatics comes before Viewers');
-      if (inputs) expect(before(chem, inputs), true, 'Cheminformatics comes before the Inputs built-ins');
       if (dataSources) expect(before(chem, dataSources), true, 'Cheminformatics comes before Data Sources');
+      if (viewers && dataSources) expect(before(dataSources, viewers), true, 'task categories come before Viewers');
+      if (viewers && inputs) expect(before(viewers, inputs), true, 'Viewers comes before the Inputs built-ins');
+      // Debug is a static built-in (Breakpoint) — it exists on every stand.
+      expect(!!debug, true, 'Debug section present');
+      if (other) expect(before(inputs, other), true, 'Other comes after the built-ins');
+      if (other) expect(before(other, debug), true, 'Debug comes last, after Other');
+      // The accordion holds no Files/Queries/Workflows panes anymore.
+      expect(browser.accordion!.panes.some((p) => ['Files', 'Queries', 'Workflows'].includes(p.name)),
+        false, 'collection panes moved out of the accordion');
     } finally {
       browser.root.remove();
     }
@@ -262,40 +253,86 @@ category('Flow: function browser', () => {
   });
 
   test('queries are grouped by connection and kept out of the categories', async () => {
-    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+    // The Queries pane loads the authoritative server list (dapi), not the
+    // registry's DG.Func.find scan — which misses queries.
+    const queries = await loadQueryFuncs();
     if (queries.length === 0) {
       expect(true, true, 'no queries on this stand — skipped');
       return;
     }
-    // Every query reports a non-empty connection name (the grouping key).
+    // Every loaded query reports a non-empty connection name (the grouping
+    // key) — connection-less queries are skipped at load time.
     for (const q of queries.slice(0, 20))
       expect(queryConnectionName(q).length > 0, true, `query ${q.func.name} has a connection name`);
 
     const browser = new FunctionBrowser({
-      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
     });
     document.body.appendChild(browser.root);
     try {
       browser.render();
+      // The tab renders async off the (already-resolved) catalog promise —
+      // yield until the per-connection accordion materializes.
+      await loadQueryFuncs();
+      await new Promise((r) => setTimeout(r, 50));
 
-      // The Files pane (open by default) and the Queries pane both exist.
-      expect(!!browser.root.querySelector('[data-testid="ff-browser-files"]'), true, 'Files pane present');
+      // Queries live in the top Queries TAB now — activate it so its content
+      // attaches, then expand every per-connection sub-pane so items
+      // materialize in the DOM.
+      browser.showTab('Queries');
       const queriesPane = browser.root.querySelector('[data-testid="ff-browser-queries"]') as HTMLElement | null;
-      expect(!!queriesPane, true, 'Queries pane present');
-
-      // At least one per-connection sub-section, each tagged with its connection.
+      expect(!!queriesPane, true, 'Queries tab content present');
       const connSections = browser.root.querySelectorAll('[data-testid^="ff-browser-query-conn"]');
       expect(connSections.length > 0, true, 'queries split into per-connection sub-sections');
       expect((connSections[0] as HTMLElement).dataset.queryConn != null, true, 'sub-section carries data-query-conn');
+      for (const p of browser.queriesAccordion!.panes) p.expanded = true;
 
-      // A known query lives INSIDE the Queries pane and NOT in any category section.
+      // A known query lives INSIDE the Queries tab and NOT in any category section.
       const sample = queries[0];
       const items = Array.from(browser.root.querySelectorAll(`[data-func="${sample.func.name}"]`)) as HTMLElement[];
       expect(items.length > 0, true, `query ${sample.func.name} appears in the toolbox`);
       for (const it of items)
-        expect(queriesPane!.contains(it), true, `query item ${sample.func.name} is under the Queries pane`);
+        expect(queriesPane!.contains(it), true, `query item ${sample.func.name} is under the Queries tab`);
     } finally {
       browser.root.remove();
+    }
+  });
+
+  test('toolbox sections are platform accordion panes with self-persisted state', async () => {
+    const browser = new FunctionBrowser({
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
+    });
+    document.body.appendChild(browser.root);
+    const lsKey = 'Accordion:funcflow.toolbox';
+    const saved = localStorage.getItem(lsKey);
+    try {
+      browser.render();
+      // The sections ARE a DG.Accordion — no custom collapsible divs left.
+      expect(!!browser.root.querySelector('.d4-accordion'), true, 'platform accordion present');
+      expect(browser.root.querySelector('.funcflow-section-header') == null, true, 'no custom section headers');
+      // Guide/test hooks survive on the pane headers.
+      const inputsHeader = browser.root.querySelector(
+        '[data-testid="ff-browser-section-inputs"]') as HTMLElement | null;
+      expect(!!inputsHeader, true, 'Inputs pane header carries its test id');
+      expect(inputsHeader!.dataset.section, 'Inputs', 'header keeps data-section for the guide');
+
+      // Clicking a header persists the pane state under the accordion key
+      // (the platform writes localStorage["Accordion:<key>"] itself)...
+      expect(browser.accordion!.getPane('Inputs').expanded, false, 'Inputs starts collapsed');
+      inputsHeader!.click();
+      expect(browser.accordion!.getPane('Inputs').expanded, true, 'click expands the pane');
+      const stored = JSON.parse(localStorage.getItem(lsKey) ?? '{}') as Record<string, boolean>;
+      expect(stored['Inputs'], true, 'expanded state persisted by the platform');
+
+      // ...and a fresh render restores it.
+      browser.render();
+      expect(browser.accordion!.getPane('Inputs').expanded, true, 'state restored on re-render');
+    } finally {
+      browser.root.remove();
+      if (saved == null) localStorage.removeItem(lsKey);
+      else localStorage.setItem(lsKey, saved);
     }
   });
 

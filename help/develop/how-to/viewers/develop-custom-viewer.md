@@ -1,5 +1,15 @@
 ---
 title: "Develop custom viewers"
+description: Build a JavaScript-based or scripting-based custom viewer with properties, rendering, events, and registration.
+keywords:
+  - DG.JsViewer
+  - viewer role
+  - scripting viewer
+  - viewer properties
+  - onTableAttached
+  - registerViewer
+  - grok.decorators.viewer
+  - custom bar chart viewer
 ---
 
 Developers can extend Datagrok with special visual components bound to data, which are called

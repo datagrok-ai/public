@@ -13,5 +13,6 @@
 
 ---
 {
-"order": 3
+"order": 3,
+"realizes": ["scripting.r", "views.scripts", "view.menu.console"]
 }

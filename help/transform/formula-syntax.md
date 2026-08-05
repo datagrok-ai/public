@@ -2,6 +2,14 @@
 mdx:
   format: mdx
 title: Formula syntax
+description: Reference for the unified formula syntax used in calculated columns, filters, and other expressions.
+keywords:
+  - formula syntax
+  - expression language reference
+  - operators and constants
+  - column reference syntax
+  - custom function formulas
+  - calculated column formula
 ---
 
 ```mdx-code-block

@@ -2,6 +2,15 @@
 mdx:
   format: mdx
 title: Info panes for chemical data
+description: Reference table of context-panel info panes available for molecules and mixtures, such as descriptors, retrosynthesis, and ADMET.
+keywords:
+  - context panel info panes
+  - molecule properties panel
+  - retrosynthesis panel
+  - admetica panel
+  - structural alerts panel
+  - identifiers panel
+  - mixture composition panel
 ---
 
 The [info panes](../../../../navigation/panels/info-panels.md) are displayed

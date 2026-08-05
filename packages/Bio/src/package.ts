@@ -27,7 +27,7 @@ import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimen
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
@@ -42,7 +42,7 @@ import {getEncodedSeqSpaceCol} from './analysis/sequence-space';
 import {createLinesGrid, createPropPanelElement, createTooltipElement, SeqActivityCliffsParams} from './analysis/sequence-activity-cliffs';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import {invalidateMols, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
+import {invalidateMols, linearSubstructureSearch, MONOMERIC_COL_TAGS, SubstructureSearchDialog} from './substructure-search/substructure-search';
 import {convert} from './utils/convert';
 import {compareSequencesUI} from './utils/compare-sequences';
 import {getMacromoleculeColumnPropertyPanel} from './widgets/representations';
@@ -85,7 +85,7 @@ import {BilnNotationProvider} from './utils/biln';
 import {showMonomerCollectionsView} from './utils/monomer-lib/monomer-collections-view';
 import {ISequenceColumnInput} from '@datagrok-libraries/bio/src/utils/sequence-column-input';
 import {SequenceColumnInput} from './utils/sequence-column-input';
-import {showNumberingSchemeDialog} from './utils/annotations/numbering-ui';
+import {applyNumberingResults, showNumberingSchemeDialog} from './utils/annotations/numbering-ui';
 import {showLiabilityScannerDialog} from './utils/annotations/liability-scanner-ui';
 import {showAnnotationManagerDialog} from './utils/annotations/annotation-manager-ui';
 import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
@@ -99,6 +99,20 @@ export * from './package.g';
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
 let initBioPromise: Promise<void> | null = null;
+
+/** Sequence → molblock conversion, shared by the `To Atomic Level...` menu entry
+ *  (which discards the result) and its column-returning twin. */
+async function toAtomicLevelDo(
+  table: DG.DataFrame, seqCol: DG.Column<string>, nonlinear: boolean, highlight: boolean
+): Promise<ToAtomicLevelRes> {
+  await initBioPromise;
+  const sh = _package.seqHelper.getSeqHandler(seqCol);
+  await sh.refinerPromise;
+  const monomerLib = seqCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
+  return sequenceToMolfile(
+    table, seqCol, nonlinear, highlight, monomerLib, _package.seqHelper, _package.rdKitModule);
+}
+
 /** Temporary polyfill */
 
 function getDecoratorFunc() {
@@ -862,13 +876,7 @@ export class PackageFunctions {
   ): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
     try {
-      await initBioPromise;
-      const sh = _package.seqHelper.getSeqHandler(seqCol);
-      await sh.refinerPromise;
-      const monomerLib = seqCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
-      const seqHelper = _package.seqHelper;
-      const rdKitModule = _package.rdKitModule;
-      await sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, seqHelper, rdKitModule);
+      await toAtomicLevelDo(table, seqCol, nonlinear, highlight);
     } finally {
       pi.close();
     }
@@ -1226,6 +1234,188 @@ export class PackageFunctions {
     sequence: DG.Column
   ): Promise<DG.DataFrame> {
     return await splitToMonomersUI(table, sequence);
+  }
+
+  /* ---------- Flow-friendly twins ----------
+   * The `Bio | Transform` entries above mutate the input frame and return void
+   * (or hand the same frame back), which reads as "nothing happened" on a
+   * pipeline canvas — the node shows a bare pass-through arrow rather than a
+   * named result. Each twin below does exactly the same work through the same
+   * helper, and returns the column(s) it produced, so downstream nodes can bind
+   * to them.
+   *
+   * NB none of them declare a `semType` on the column OUTPUT, even though the
+   * columns they return are properly tagged. A `column` output carrying a
+   * semType but no `{action: join(...)}` makes the platform's output handler
+   * iterate a null frame (`for (var column in df?.columns)` —
+   * xamgle/lib/src/features/functions/functions.dart, where `df` is only built
+   * for a column when an action is set), throwing on every call. */
+
+  @grok.decorators.func({
+    name: 'Extract Sequence Region',
+    description: 'Extracts a sub-region of each sequence between the given positions into a new column.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {role: 'transform'},
+    editor: 'Bio:GetRegionEditor'
+  })
+  static async extractRegion(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
+    // NB no `;` or `{` in a description — `;` separates options, so anything
+    // after one is parsed as a (bogus) option of its own.
+    @grok.decorators.param({type: 'string', options: {caption: 'Start', nullable: true, description: 'Start position name, inclusive. Empty means the sequence start', initialValue: '1'}}) start?: string,
+    @grok.decorators.param({type: 'string', options: {caption: 'End', nullable: true, description: 'End position name, inclusive. Empty means the sequence end', initialValue: '10'}}) end?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Region column name'}}) name?: string | undefined
+  ): Promise<DG.Column<string>> {
+    const regCol = getRegionDo(sequence, start || null, end || null, name ?? null);
+    regCol.name = table.columns.getUnusedName(regCol.name);
+    table.columns.add(regCol);
+    regCol.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
+    await grok.data.detectSemanticTypes(table);
+    return regCol;
+  }
+
+  @grok.decorators.func({
+    name: 'Convert To Atomic Level',
+    description: 'Converts sequences to molblocks, returning the molecule column.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {role: 'transform'},
+  })
+  static async toAtomicLevelColumn(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false,
+  ): Promise<DG.Column<string>> {
+    const res = await toAtomicLevelDo(table, sequence, nonlinear, highlight);
+    if (!res.molCol) {
+      const why = res.warnings.length > 0 ? `: ${res.warnings.join('; ')}` : '';
+      throw new Error(`To Atomic Level: no molecules were produced from "${sequence.name}"${why}`);
+    }
+    return res.molCol;
+  }
+
+  @grok.decorators.func({
+    name: 'Molecules to HELM Column',
+    description: 'Converts peptide molecules to HELM notation, returning the sequence column.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {role: 'transform'},
+  })
+  static async moleculesToHelmColumn(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column<string>,
+  ): Promise<DG.Column<string>> {
+    // The converter appends its result under a name it picks itself, so diff the
+    // column list rather than matching a name that may already be taken by an
+    // earlier run of the same node.
+    const before = new Set(table.columns.names());
+    await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
+    const added = table.columns.names().filter((n) => !before.has(n));
+    const name = added.find((n) => n.toLowerCase().includes('regenerated sequence')) ?? added[0];
+    if (!name)
+      throw new Error('Molecules to HELM: the converter returned no sequence column');
+    return table.getCol(name);
+  }
+
+  @grok.decorators.func({
+    name: 'Split to Monomers Columns',
+    description: 'Splits a sequence column into per-position monomer columns, returning them as a table.',
+    outputs: [{name: 'result', type: 'dataframe'}],
+    meta: {role: 'transform'},
+  })
+  static async splitToMonomersColumns(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
+  ): Promise<DG.DataFrame> {
+    // `splitToMonomersUI` hands back the mutated INPUT frame, which on a canvas
+    // is indistinguishable from the pass-through. The per-position columns it
+    // appended are the actual result, so gather them into a frame of their own.
+    // (A `column_list` output would be the literal answer, but the platform's
+    // result handler expects a DG.ColumnList, which has no detached form.)
+    const before = new Set(table.columns.names());
+    await splitToMonomersUI(table, sequence);
+    const added = table.columns.toList().filter((c) => !before.has(c.name));
+    const res = DG.DataFrame.fromColumns(added.map((c) => c.clone()));
+    res.name = `${sequence.name} monomers`;
+    return res;
+  }
+
+  @grok.decorators.func({
+    name: 'Convert Sequence Notation',
+    description: 'Converts a macromolecule column to another notation, returning the converted column.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {role: 'transform'},
+  })
+  static async convertNotation(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
+    // Literal strings, not `NOTATION.*` — the func generator only reads literal
+    // arrays, and emits a useless `["dynamic","dynamic"]` for enum references.
+    @grok.decorators.param({type: 'string', options: {caption: 'Target notation', nullable: false, choices: ['fasta', 'separator', 'helm'], initialValue: 'helm'}}) targetNotation: string = NOTATION.HELM,
+    @grok.decorators.param({type: 'string', options: {caption: 'Separator', nullable: true, description: 'Monomer separator for the separator notation, "." when left blank'}}) separator?: string,
+  ): Promise<DG.Column<string>> {
+    const sh = _package.seqHelper.getSeqHandler(sequence);
+    await sh.refinerPromise;
+    const tgt = targetNotation as NOTATION;
+    const converted = sh.convert(tgt, tgt === NOTATION.SEPARATOR ? (separator || '.') : undefined);
+    converted.name = table.columns.getUnusedName(`${sequence.name} (${targetNotation})`);
+    table.columns.add(converted);
+    return converted;
+  }
+
+  @grok.decorators.func({
+    name: 'Tag as Macromolecule',
+    description: 'Runs sequence detection on a string column so semType-dependent bio functions recognise it.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {role: 'transform'},
+  })
+  static async tagAsMacromolecule(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    // Deliberately unconstrained: this is the one function whose whole point is
+    // to take a column that is NOT yet tagged.
+    @grok.decorators.param({type: 'column', options: {caption: 'Sequence', nullable: false, type: 'string'}}) sequence: DG.Column<string>,
+  ): Promise<DG.Column<string>> {
+    if (sequence.semType !== DG.SEMTYPE.MACROMOLECULE) {
+      sequence.semType = ''; // detection skips columns that already have one
+      await grok.data.detectSemanticTypes(table);
+    }
+    if (sequence.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`Tag as Macromolecule: "${sequence.name}" was not recognised as a sequence column`);
+    return sequence;
+  }
+
+  @grok.decorators.func({
+    name: 'Motif Search',
+    description: 'Returns the rows whose sequence matches the motif.',
+    outputs: [{name: 'result', type: 'dataframe'}],
+    meta: {role: 'transform'},
+  })
+  static motifSearch(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {caption: 'Motif', nullable: false, description: 'A monomer run, or a regular expression over the sequence'}}) motif: string,
+  ): DG.DataFrame {
+    const sh = _package.seqHelper.getSeqHandler(sequence);
+    const separator = sh.notation === NOTATION.SEPARATOR ? sh.separator : undefined;
+    return table.clone(linearSubstructureSearch(motif, sequence, separator));
+  }
+
+  @grok.decorators.func({
+    name: 'Apply Antibody Numbering',
+    description: 'Assigns IMGT or Kabat antibody numbering, adding the region annotations and an aligned column to the table.',
+    meta: {role: 'transform'},
+    outputs: [],
+  })
+  static async applyAntibodyNumbering(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {caption: 'Scheme', nullable: false, choices: ['imgt', 'kabat'], initialValue: 'imgt'}}) scheme: string = 'imgt',
+  ): Promise<void> {
+    // `immunumAntibodyNumbering` is the ENGINE — its DataFrame of position maps
+    // and annotation JSON is dialog plumbing, not a pipeline result. This is the
+    // canonical entry point: pick a scheme, get an annotated table.
+    const result = await numberAntibodyColumn(sequence, scheme);
+    applyNumberingResults(table, sequence, result, scheme, true, 'Immunum');
   }
 
   @grok.decorators.func({

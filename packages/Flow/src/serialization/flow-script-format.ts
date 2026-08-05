@@ -1,6 +1,6 @@
 /** The `.flow` script-entity body format: a standard Datagrok annotation
  *  header (`//name:` / `//language: flow` / `//input:` …) followed by the
- *  lossless .ffjson document.
+ *  lossless .flow document.
  *
  *  The header lets core parse the entity's name and params even when the Flow
  *  package is not installed; the JSON is the single source of truth for the
@@ -22,10 +22,18 @@ export interface ParsedFlowBody {
   doc: FuncFlowDocument;
 }
 
-/** Serialize the live graph into the `.flow` entity body. */
-export function flowScriptText(flow: FlowEditor, settings: FlowSettings): string {
+/** Serialize the live graph into the `.flow` entity body. `extras` merges
+ *  additional document fields (e.g. `outputViews` layouts) that live outside
+ *  the graph itself. */
+export function flowScriptText(flow: FlowEditor, settings: FlowSettings,
+  extras?: Partial<FuncFlowDocument>): string {
   const tags = settings.tags.includes(FLOW_TAG) ? settings.tags : [...settings.tags, FLOW_TAG];
   const doc = serializeFlow(flow, {...settings, tags});
+  if (extras) {
+    for (const [k, v] of Object.entries(extras)) {
+      if (v !== undefined) (doc as unknown as Record<string, unknown>)[k] = v;
+    }
+  }
   const header = emitHeaderLines(flow, {
     name: settings.scriptName,
     description: settings.scriptDescription,
@@ -34,7 +42,7 @@ export function flowScriptText(flow: FlowEditor, settings: FlowSettings): string
   return header.join('\n') + '\n' + JSON.stringify(doc, null, 2) + '\n';
 }
 
-/** Split a `.flow` entity body back into its header and ffjson document.
+/** Split a `.flow` entity body back into its header and flow JSON document.
  *  Tolerant of blank lines between the two; throws on a missing or
  *  wrong-version JSON payload. */
 export function parseFlowBody(text: string): ParsedFlowBody {

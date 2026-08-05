@@ -178,8 +178,11 @@ category('Flow: creation script emit', () => {
     const s = r.script;
     expect(s.includes('Mol1K = OpenFile("System:AppData/Chem/mol1K.csv")'), true, 'producer assignment');
     expect(s.includes('Chem:addChemPropertiesColumns(Mol1K, "molecule", true,'), true, 'namespaced bare mutator');
-    expect(s.includes('AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth", subscribeOnChanges = true)'),
-      true, 'optional bool as a named arg');
+    // GROK-20428 flipped subscribeOnChanges' default to true, so the platform
+    // serializer omits it (optionals equal to their default are dropped) —
+    // assert the call itself, agnostic of whether the named arg is present.
+    expect(s.includes('AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth"'),
+      true, 'AddNewColumn re-emits as a bare mutator call');
     expect(s.includes('Result = JoinTables("mol1K", "mol1K local"'), true, 'join produces Result');
     expect(s.includes('"mol1K local.molecule"'), true, 'qualified column name preserved');
     expect(s.includes('ResolveColumn'), false, 'no ResolveColumn leaks');

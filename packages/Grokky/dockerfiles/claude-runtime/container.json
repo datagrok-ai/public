@@ -1,19 +1,5 @@
 {
   "cpu": 1,
   "memory": 2048,
-  "on_demand": true,
-  "env": {
-    "provider": "#{cred.provider}",
-    "apiKey": "#{cred.apiKey}",
-    "region": "#{cred.region}",
-    "awsAccessKeyId": "#{cred.awsAccessKeyId}",
-    "awsSecretAccessKey": "#{cred.awsSecretAccessKey}",
-    "awsSessionToken": "#{cred.awsSessionToken}",
-    "awsBearerToken": "#{cred.awsBearerToken}",
-    "foundryResource": "#{cred.foundryResource}",
-    "foundryApiKey": "#{cred.foundryApiKey}",
-    "opusModel": "#{cred.opusModel}",
-    "sonnetModel": "#{cred.sonnetModel}",
-    "haikuModel": "#{cred.haikuModel}"
-  }
+  "on_demand": true
 }

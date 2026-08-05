@@ -9,14 +9,14 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.45.0",
+    "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/tutorials": "^1.7.5",
     "@datagrok-libraries/utils": "^4.7.0",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.27.0",
     "dayjs": "^1.11.13",
     "randexp": "^0.5.3",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.1.0"
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
     "@types/wu": "^2.1.44",
@@ -56,6 +56,7 @@
   },
   "category": "Cheminformatics",
   "overrides": {
-    "datagrok-api": "$datagrok-api"
+    "datagrok-api": "$datagrok-api",
+    "uuid": "^11.1.1"
   }
 }

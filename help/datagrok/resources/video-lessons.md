@@ -1,6 +1,16 @@
 ---
 title: "Video lessons"
 sidebar position: 6
+description: Embeds short Datagrok video lessons covering visualization, cheminformatics, database exploration, calculated columns, and table operations.
+keywords:
+  - video lessons
+  - scripting viewers
+  - molecular similarity and diversity
+  - database exploration
+  - calculated columns tutorial
+  - joining tables
+  - comparing tables
+  - debugging a package
 ---
 
 Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg) for more videos.

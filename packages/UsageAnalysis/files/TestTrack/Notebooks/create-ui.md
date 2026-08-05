@@ -6,6 +6,7 @@ companion_to: create.md
 companion_steps: [5, 6, 7, 8]
 related_bugs:
   - GROK-13999
+realizes: [notebooks.view.notebook]
 split_rationale: |
   Scenarios 3 (Download notebook formats) and 4 (Import .ipynb via drag and
   drop) from create.md are split into this manual-only companion. Both are

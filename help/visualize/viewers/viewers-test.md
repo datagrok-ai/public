@@ -1,7 +1,12 @@
-<!-- TITLE: Tests: Viewers -->
-<!-- SUBTITLE: -->
-
-# Tests: Viewers
+---
+title: "Tests: Viewers"
+description: Common testing scenarios and categories applicable across all Datagrok viewers, illustrated with scatter plot.
+keywords:
+  - viewer testing
+  - test scenarios
+  - qa checklist
+  - scatter plot test
+---
 
 A [viewer](../viewers/viewers.md) is a visual component associated with a table.
 
@@ -48,7 +53,8 @@ scenarios common to all viewers were identified:
     * Open\Close property window
     * Display of help window
     * The work of the controls located in the viewer area (e.g. popup menu "Size" on Scatter Plot)
-    * Return viewer after closing by **Edit | Undo** (```CTRL + Z```)
+    * Return viewer after closing by **Edit | Undo** (```CTRL + Z```) — the viewer comes back with
+      the same settings; its dock position is not restored yet
 
 4. Property window
 

@@ -22,8 +22,8 @@ export namespace scripts {
   /**
   Create the model peptides/DNA sequences with peptides data
   */
-  export async function sequenceGenerator(clusters: number , num_sequences: number , alphabet_key: string , motif_length: number , max_variants_position: number , random_length: number , dispersion: number , activity_range: number , cliff_probability: number , cliff_strength: number , cliff_strength_dispersion: number , assay_noise_levels: string , assay_scales: string , disable_negatives: boolean , fasta_separator: string | null, helm_library_file: DG.FileInfo | null, helm_connection_mode: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Bio:SequenceGenerator', { clusters, num_sequences, alphabet_key, motif_length, max_variants_position, random_length, dispersion, activity_range, cliff_probability, cliff_strength, cliff_strength_dispersion, assay_noise_levels, assay_scales, disable_negatives, fasta_separator, helm_library_file, helm_connection_mode });
+  export async function generateSequences(clusters: number , num_sequences: number , alphabet_key: string , motif_length: number , max_variants_position: number , random_length: number , dispersion: number , activity_range: number , cliff_probability: number , cliff_strength: number , cliff_strength_dispersion: number , assay_noise_levels: string , assay_scales: string , disable_negatives: boolean , fasta_separator: string | null, helm_library_file: DG.FileInfo | null, helm_connection_mode: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:GenerateSequences', { clusters, num_sequences, alphabet_key, motif_length, max_variants_position, random_length, dispersion, activity_range, cliff_probability, cliff_strength, cliff_strength_dispersion, assay_noise_levels, assay_scales, disable_negatives, fasta_separator, helm_library_file, helm_connection_mode });
   }
 }
 
@@ -336,6 +336,62 @@ export namespace funcs {
   */
   export async function splitToMonomersTopMenu(table: DG.DataFrame , sequence: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Bio:SplitToMonomersTopMenu', { table, sequence });
+  }
+
+  /**
+  Extracts a sub-region of each sequence between the given positions into a new column.
+  */
+  export async function extractRegion(table: DG.DataFrame , sequence: DG.Column , start: string | null, end: string | null): Promise<DG.Column> {
+    return await grok.functions.call('Bio:ExtractRegion', { table, sequence, start, end });
+  }
+
+  /**
+  Converts sequences to molblocks, returning the molecule column.
+  */
+  export async function toAtomicLevelColumn(table: DG.DataFrame , sequence: DG.Column , nonlinear: boolean , highlight: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:ToAtomicLevelColumn', { table, sequence, nonlinear, highlight });
+  }
+
+  /**
+  Converts peptide molecules to HELM notation, returning the sequence column.
+  */
+  export async function moleculesToHelmColumn(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:MoleculesToHelmColumn', { table, molecules });
+  }
+
+  /**
+  Splits a sequence column into per-position monomer columns, returning them as a table.
+  */
+  export async function splitToMonomersColumns(table: DG.DataFrame , sequence: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:SplitToMonomersColumns', { table, sequence });
+  }
+
+  /**
+  Converts a macromolecule column to another notation, returning the converted column.
+  */
+  export async function convertNotation(table: DG.DataFrame , sequence: DG.Column , targetNotation: string , separator: string | null): Promise<DG.Column> {
+    return await grok.functions.call('Bio:ConvertNotation', { table, sequence, targetNotation, separator });
+  }
+
+  /**
+  Runs sequence detection on a string column so semType-dependent bio functions recognise it.
+  */
+  export async function tagAsMacromolecule(table: DG.DataFrame , sequence: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Bio:TagAsMacromolecule', { table, sequence });
+  }
+
+  /**
+  Returns the rows whose sequence matches the motif.
+  */
+  export async function motifSearch(table: DG.DataFrame , sequence: DG.Column , motif: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:MotifSearch', { table, sequence, motif });
+  }
+
+  /**
+  Assigns IMGT or Kabat antibody numbering, adding the region annotations and an aligned column to the table.
+  */
+  export async function applyAntibodyNumbering(table: DG.DataFrame , sequence: DG.Column , scheme: string ): Promise<void> {
+    return await grok.functions.call('Bio:ApplyAntibodyNumbering', { table, sequence, scheme });
   }
 
   export async function getHelmMonomers(sequence: DG.Column ): Promise<any> {

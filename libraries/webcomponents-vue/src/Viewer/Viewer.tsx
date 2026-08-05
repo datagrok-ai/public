@@ -44,10 +44,12 @@ export const Viewer = Vue.defineComponent({
     });
 
     return () => (
+      /* props are patched in this order: options referencing columns of a new
+         dataFrame must not reach the viewer while it still holds the old one */
       <dg-viewer
         type={type.value}
-        options={options.value}
         dataFrame={currentDf.value}
+        options={options.value}
         onViewerChanged={viewerChangedCb}
         onViewerDataFrameChanged={viewerDataFrameChangedCb}
         style={{display: 'block', flexGrow: '1'}}

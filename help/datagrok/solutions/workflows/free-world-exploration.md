@@ -2,6 +2,15 @@
 mdx:
   format: mdx
 title: Free-world data exploration
+description: How Datagrok surfaces relevant tools and data automatically using semantic types and function annotations.
+keywords:
+  - semantic type detection
+  - function annotations
+  - data augmentation
+  - custom metadata
+  - sticky meta
+  - search-integrated functions
+  - identifier patterns
 ---
 
 ```mdx-code-block

@@ -3,7 +3,8 @@ feature: spaces
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.space, sharing.share-dialog]
 realized_as:
   - spaces-general-v2.test.ts
 related_bugs: []

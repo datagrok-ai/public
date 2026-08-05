@@ -1,5 +1,12 @@
 ---
 title: "Change type"
+description: Convert a column to a different data type, choosing a format and handling non-convertible values.
+keywords:
+  - change column type
+  - convert column data type
+  - cast column
+  - column format conversion
+  - retype column
 ---
 
 Use this dialog to change the data type of a column.

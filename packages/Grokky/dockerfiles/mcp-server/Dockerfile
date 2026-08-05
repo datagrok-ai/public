@@ -1,10 +1,18 @@
-FROM node:20-slim
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
-RUN npx tsc && rm -rf src tsconfig.json && npm prune --production
+RUN npx tsc && npm prune --production
+
+# node 20 is EOL since 2026-04
+FROM node:22-alpine
+RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
+WORKDIR /app
+COPY --from=build /app/package.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 3003
 HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=3 \

@@ -3,7 +3,8 @@ feature: browse
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.apps]
 realized_as:
   - apps_matrix.test.ts
 related_bugs: [GROK-20254]

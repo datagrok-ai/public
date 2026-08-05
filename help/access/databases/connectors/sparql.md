@@ -1,5 +1,12 @@
 ---
 title: "SPARQL"
+description: Connect Datagrok to a SPARQL endpoint to query semantic databases and RDF triple stores.
+keywords:
+  - sparql query language
+  - semantic query
+  - rdf triple store
+  - sparql endpoint
+  - connect to a database
 ---
 
 A semantic query language for databases.

@@ -3,7 +3,8 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [GROK-17967]
+realizes_atlas: [GROK-17967]
+realizes: [biostructureviewer.viewer.biostructure, biostructureviewer.viewer.ngl]
 produced_from: atlas-driven
 related_bugs:
   - GROK-17967

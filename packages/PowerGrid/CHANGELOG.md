@@ -2,6 +2,17 @@
 
 ## v.next
 
+* [#3765](https://github.com/datagrok-ai/public/issues/3765): Forms viewer: Added the ability to pin rows via the context menu; pinned forms stay in place when scrolling
+* Vlaaivis manager: Fixed the `mpo-line-editor` import path, which broke the build after the editor moved into `mpo/editors/`
+* Vlaaivis: Fixed the build against the MPO desirability union — `Subsector` is an intersection now (an interface cannot extend a union), and `VlaaivisColumnMetadata` is typed on the numerical member it has always been
+
+## 1.8.3 (2026-07-09)
+
+* [#3781](https://github.com/datagrok-ai/public/issues/3781): Forms viewer: Added font size control
+* GROK-20367: Forms viewer: Number formatting does not match grid in some cases
+
+## 1.8.2 (2026-05-07)
+
 * Introduced SVG cell renderer with content-based LRU caching for canvas rendering
 * Added SVG semantic type auto-detector
 * Tags cell renderer: Fixed missing return in `getColor` that left first render of a new tag with an undefined color

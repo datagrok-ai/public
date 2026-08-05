@@ -1,11 +1,15 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType, getRegisteredFuncs} from '../rete/node-factory';
 import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
+import {emitCreationScript} from '../compiler/creation-script-emitter';
 import {validateGraph} from '../compiler/validator';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {ExecutionController} from '../execution/execution-controller';
+import {NodeExecStatus} from '../execution/execution-state';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 const SETTINGS = {name: 'TestFlow', description: 'test', tags: ['funcflow']};
 
@@ -168,6 +172,71 @@ category('Flow: script emitter', () => {
     }
   });
 
+  test('OpenFile: sheetName stays out of the call unless the path is xlsx', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.sdf';
+      let script = emitScript(e.flow, SETTINGS);
+      // The regression: `sheetName: ""` in the call — OpenFile forwards any
+      // non-null sheetName as a second importer argument, and the sdf importer
+      // takes one ("importSdf 1 input parameters, 2 passed").
+      expect(/grok\.functions\.call\('OpenFile', \{fullPath: "[^"]+"\}\)/.test(script), true,
+        `sdf call carries only the path (script: ${script})`);
+      expect(script.includes('sheetName'), false, 'no sheetName for a non-xlsx path');
+
+      node.inputValues['sheetName'] = 'Sheet1';
+      script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName'), false, 'a typed sheet name is still dropped for sdf');
+
+      node.inputValues['fullPath'] = 'System:AppData/Demo/book.xlsx';
+      script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName: "Sheet1"'), true, `xlsx keeps the sheet name (script: ${script})`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an untouched optional scalar is omitted so the function default applies', async () => {
+    // Generic form of the sheetName rule: a blank optional string seeded by
+    // the node must not reach the call as '' when the declared default is null.
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'a.csv';
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName'), false, 'blank optional omitted');
+      expect(script.includes('fullPath: "a.csv"'), true, 'filled value kept');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an Open File node pointed at an sdf runs end-to-end', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.sdf';
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runAutorun(new Set(), SETTINGS), 'started', 'run starts');
+      const done = (): boolean => {
+        const s = ctrl.state.getNodeState(node.id)?.status;
+        return s === NodeExecStatus.completed || s === NodeExecStatus.errored;
+      };
+      expect(await until(done, 30000), true, 'run finished');
+      const st = ctrl.state.getNodeState(node.id);
+      expect(st?.status, NodeExecStatus.completed, `sdf opened via the emitted call (${st?.error ?? ''})`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('side-effect-only utilities (Log) emit no output summary when instrumented', async () => {
     // Log/Info/Warning declare no variable — the instrumented wrapper used to
     // emit `__ff_summarize(log)` anyway, so any flow with a Log node failed
@@ -280,6 +349,41 @@ category('Flow: script emitter', () => {
       const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
       expect(inst.includes(`'t1 (modified)': __ff_summarize(`), true, 'first input table captured');
       expect(inst.includes(`'t2 (modified)': __ff_summarize(`), true, 'second input table captured');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('dataframe pass-throughs get dims-only summaries; utility summaries are slot-keyed', async () => {
+    // A func that threads a table through (real output is an int): its
+    // `t__pt` pass-through must appear in the node-complete outputs as a cheap
+    // __ff_dims entry, so the outgoing pass-through wire gets its "N × K" label.
+    const script = DG.Script.create([
+      '//name: TableThreader',
+      '//language: javascript',
+      '//input: dataframe t',
+      '//output: int result',
+      'result = t.rowCount;',
+    ].join('\n'));
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const fn = await addNode(e.flow, typeName, 320, 0);
+      await e.flow.addConnectionByKeys(src.id, 'table', fn.id, 't');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes('function __ff_dims'), true, 'dims helper in the preamble');
+      expect(inst.includes('"t__pt": __ff_dims('), true, 'pass-through summarized (dims-only)');
+
+      // A utility step's summary is keyed by its output SLOT key (what the
+      // edge-count and port-preview lookups use), not by its variable name.
+      const sel = await addNode(e.flow, 'Utilities/Select Table', 0, 200);
+      sel.properties['tableName'] = 'demog';
+      const inst2 = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r2'});
+      const selOutKey = Object.keys(sel.outputs).find((k) => !k.startsWith('__'))!;
+      expect(inst2.includes(`{outputs:{${JSON.stringify(selOutKey)}: __ff_summarize(`), true,
+        `utility summary keyed by slot key "${selOutKey}"`);
     } finally {
       destroyEditor(e);
     }
@@ -423,6 +527,85 @@ category('Flow: validator', () => {
       sv.inputValues['variableName'] = 'stored';
       expect(validateGraph(e.flow).some((r) => r.message.startsWith('Duplicate')), false,
         'distinct names across outputs and SetVars pass');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: func wrappers', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  const appendType = (): string | null =>
+    getRegisteredFuncs().find((f) => f.func.name === 'AppendTables')?.nodeTypeName ?? null;
+
+  test('a wrapped func node exposes the wrapper inputs, not the raw signature', async () => {
+    const typeName = appendType();
+    if (!typeName) return; // AppendTables not on this stand — skip
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      expect(!!node.funcWrapper, true, 'wrapper read onto the node');
+      expect('table1' in node.inputs, true, 'exposed table socket');
+      expect('table2' in node.inputs, true, 'exposed table socket');
+      expect('tables' in node.inputs, false, 'raw dataframe_list slot not exposed');
+      expect('table1__pt' in node.outputs, true, 'pass-throughs mirror the exposed inputs');
+      expect(node.passthroughCount, 2, 'pass-through count follows the wrapper');
+      expect(node.requiredInputs.join(','), 'table1,table2', 'exposed tables gate the run');
+      expect('result' in node.outputs, true, 'real output untouched');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('compile folds the exposed inputs into the real call arguments', async () => {
+    const typeName = appendType();
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      a.properties['paramName'] = 'tA';
+      const b = await addNode(e.flow, 'Inputs/Table Input', 0, 200);
+      b.properties['paramName'] = 'tB';
+      const ap = await addNode(e.flow, typeName, 300, 100);
+      await e.flow.addConnectionByKeys(a.id, 'table', ap.id, 'table1');
+      await e.flow.addConnectionByKeys(b.id, 'table', ap.id, 'table2');
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(/grok\.functions\.call\('AppendTables', \{tables: \[\w+, \w+\]\}\)/.test(script), true,
+        `real list argument emitted (script: ${script})`);
+      expect(script.includes('table1:'), false, 'exposed names never leak into the call');
+
+      const instrumented = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'w1'});
+      expect(instrumented.includes('{tables: ['), true, 'instrumented call reshaped too');
+      expect(instrumented.includes('"table1__pt":'), true,
+        'pass-through stash still keyed by the exposed input');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('the reshaped call shape is what the platform accepts', async () => {
+    if (!appendType()) return;
+    const dfA = DG.DataFrame.fromCsv('x\n1\n2');
+    const dfB = DG.DataFrame.fromCsv('x\n3');
+    const res = await grok.functions.call('AppendTables', {tables: [dfA, dfB]}) as DG.DataFrame;
+    expect(res.rowCount, 3, 'a JS array of DataFrames marshals to the dataframe_list param');
+  });
+
+  test('a wrapped node has no creation-script equivalent — warns instead of emitting garbage', async () => {
+    const typeName = appendType();
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, typeName);
+      const r = emitCreationScript(e.flow);
+      expect(r.warnings.some((w) => w.includes('AppendTables')), true,
+        `warning names the wrapped func (got: ${r.warnings.join(' ; ')})`);
+      expect(r.script.includes('AppendTables'), false, 'no bogus call emitted');
     } finally {
       destroyEditor(e);
     }

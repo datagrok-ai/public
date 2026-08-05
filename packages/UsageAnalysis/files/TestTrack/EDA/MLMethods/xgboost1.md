@@ -3,7 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: [eda.cp.train-predictive-model]
+realizes: [eda.model.xg-boost, ml.menu.models.train-model]
 realized_as:
   - xgboost1-spec.ts
 related_bugs: []

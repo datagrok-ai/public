@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [oligonucleotide_column]
+realizes_atlas: [oligonucleotide_column]
+realizes: [sequencetranslator.action.copy-as-helm, sequencetranslator.action.edit-helm, bio.menu.polytool.enumerate-helm, sequencetranslator.oligo-renderer.combine-sense-antisense, sequencetranslator.oligo-renderer.convert-helm-to-oligo, sequencetranslator.cell.oligo-nucleotide]
 realized_as:
   - st-lifecycle-oligonucleotide-column-spec.ts
 related_bugs: []

@@ -1,5 +1,15 @@
 ---
 title: "Function annotations"
+description: Reference for annotating function parameters in Datagrok scripts and queries to auto-generate validated UI.
+keywords:
+  - function header
+  - parameter annotation
+  - input output annotation
+  - choices and validators
+  - autocomplete suggestions
+  - lookup tables
+  - complex calculated columns
+  - custom function editor
 ---
 
 # Function annotations
@@ -1137,7 +1147,7 @@ The `meta` object can contain both dataframe-level and column-level tags:
 ```
   This sets a dataframe-level tag:
 
-  - `.data-connection = "System:Datagrok"`
+- `.data-connection = "System:Datagrok"`
 
 - **Column-level tags**  
   If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
@@ -1148,9 +1158,9 @@ The `meta` object can contain both dataframe-level and column-level tags:
 ```
   This applies the following tags to the `mol` column:
 
-  - `DbTable = "structures"`
-  - `DbSchema = "public"`
-  - `DbColumn = "mol"`
+- `DbTable = "structures"`
+- `DbSchema = "public"`
+- `DbColumn = "mol"`
 
 Dataframe-level and column-level metadata can be combined within a single `meta` block:
 ```javascript 

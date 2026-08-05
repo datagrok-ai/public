@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## v.next
+
+* Fixed context help not showing for functions annotated with `readme` instead of `help`
+
 ## 1.5.8 (2026-07-07)
 
 - Model Hub: add the `roleOnlyModelFilter` package setting to use the faster role-only model filter (off by default; the legacy tag-or-role filter is unchanged)

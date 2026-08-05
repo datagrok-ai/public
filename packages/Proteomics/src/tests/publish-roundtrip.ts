@@ -5,7 +5,7 @@ import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/tes
 import {SEMTYPE} from '../utils/proteomics-types';
 import {
   META_COLUMNS, PUBLISHED_TAGS, PublishOptions, PublishedMetadata,
-  isPublished, slugifyTarget,
+  isPublished, slugifyProject,
 } from '../publishing/publish-state';
 import {publishAnalysis} from '../publishing/publish-project';
 import {
@@ -13,7 +13,7 @@ import {
 } from '../publishing/assert-published-shape';
 import {recoverPublishedProject} from '../publishing/post-open-recovery';
 
-const DEFAULT_TARGET_PREFIX = 'pub-roundtrip-';
+const DEFAULT_PROJECT_PREFIX = 'pub-roundtrip-';
 const DEFAULT_FC = 1.0;
 const DEFAULT_P = 0.05;
 
@@ -150,15 +150,15 @@ async function cleanupProject(project: DG.Project | null): Promise<void> {
 }
 
 /**
- * publishAnalysis creates a per-target child Space `Proteomics-Review-<slug>`
+ * publishAnalysis creates a per-project child Space `Proteomics-Review-<slug>`
  * under the `Proteomics-Reviews` umbrella (publish-project.ts step 5) but
  * returns only the leaf project. cleanupProject removes the leaf; this removes
  * the otherwise-orphaned child Space. Best-effort and idempotent — runs in
  * each test's finally after the leaf is deleted.
  */
-async function cleanupChildSpace(target: string): Promise<void> {
+async function cleanupChildSpace(projectName: string): Promise<void> {
   const dapiAny = grok.dapi as any;
-  const childName = `Proteomics-Review-${slugifyTarget(target)}`;
+  const childName = `Proteomics-Review-${slugifyProject(projectName)}`;
   try {
     const all: any[] = await dapiAny.spaces.list();
     const umbrella = (all ?? []).find((p) =>
@@ -196,7 +196,7 @@ function expectedAllowlistFromTrimmedView(): string[] {
 function expectedMetaForTest(
   project: DG.Project,
   sourceDf: DG.DataFrame,
-  target: string,
+  projectName: string,
   includesEnrichment: boolean,
 ): PublishedMetadata {
   // Build the expected contract from what was ACTUALLY published, not from
@@ -209,7 +209,7 @@ function expectedMetaForTest(
   const publishId = ((project as any).options?.[PUBLISHED_TAGS.PUBLISHED_ID] as string | undefined) ?? '';
   const deMethod = sourceDf.getTag('proteomics.de_method') ?? 't-test';
   return {
-    target,
+    project: projectName,
     publishedAt: new Date(),                                    // not asserted
     publishedBy: (grok.shell.user as any)?.friendlyName ?? '',
     publishedByEmail: (grok.shell.user as any)?.email ?? null,  // not asserted
@@ -233,21 +233,21 @@ category('Publishing', () => {
       try { (tv as any).scatterPlot?.({x: 'log2FC', y: 'adj.p-value'}); } catch { /* swallow */ }
       await delay(100);
 
-      const target = `${DEFAULT_TARGET_PREFIX}t1-${Date.now()}`;
+      const projectName = `${DEFAULT_PROJECT_PREFIX}t1-${Date.now()}`;
       const group = await pickAnyGroup();
-      const opts: PublishOptions = {target, reviewerGroup: group, note: 'Phase 15 roundtrip Test 1', priorVersion: null};
+      const opts: PublishOptions = {project: projectName, reviewerGroup: group, note: 'Phase 15 roundtrip Test 1', priorVersion: null};
 
       let project: DG.Project | null = null;
       try {
         project = await publishAnalysis(df, opts);
         expect(!!project, true);
 
-        const projectName = (project as any).name as string;
-        const meta = expectedMetaForTest(project!, df, target, false);
+        const publishedName = (project as any).name as string;
+        const meta = expectedMetaForTest(project!, df, projectName, false);
         const allowlist = expectedAllowlistFromTrimmedView();
         const contract = buildExpectedContract(
           `${df.name}_published_${new Date().toISOString().slice(0, 10)}`,
-          projectName,
+          publishedName,
           allowlist,
           meta,
           false,
@@ -282,7 +282,7 @@ category('Publishing', () => {
         expect(hasPLine, true);
       } finally {
         await cleanupProject(project);
-        await cleanupChildSpace(target);
+        await cleanupChildSpace(projectName);
       }
     });
 
@@ -297,21 +297,21 @@ category('Publishing', () => {
       try { (proteinTv as any).scatterPlot?.({x: 'log2FC', y: 'adj.p-value'}); } catch { /* swallow */ }
       await delay(100);
 
-      const target = `${DEFAULT_TARGET_PREFIX}t2-${Date.now()}`;
+      const projectName = `${DEFAULT_PROJECT_PREFIX}t2-${Date.now()}`;
       const group = await pickAnyGroup();
-      const opts: PublishOptions = {target, reviewerGroup: group, note: 'Phase 15 roundtrip Test 2', priorVersion: null};
+      const opts: PublishOptions = {project: projectName, reviewerGroup: group, note: 'Phase 15 roundtrip Test 2', priorVersion: null};
 
       let project: DG.Project | null = null;
       try {
         project = await publishAnalysis(protein, opts);
         expect(!!project, true);
 
-        const projectName = (project as any).name as string;
-        const meta = expectedMetaForTest(project!, protein, target, true);
+        const publishedName = (project as any).name as string;
+        const meta = expectedMetaForTest(project!, protein, projectName, true);
         const allowlist = expectedAllowlistFromTrimmedView();
         const contract = buildExpectedContract(
           `${protein.name}_published_${new Date().toISOString().slice(0, 10)}`,
-          projectName,
+          publishedName,
           allowlist,
           meta,
           true,
@@ -350,7 +350,7 @@ category('Publishing', () => {
         expect(afterCount > beforeCount, true);
       } finally {
         await cleanupProject(project);
-        await cleanupChildSpace(target);
+        await cleanupChildSpace(projectName);
       }
     });
 
@@ -369,12 +369,12 @@ category('Publishing', () => {
       try { grok.shell.v = proteinTv; } catch { /* swallow */ }
       await delay(50);
 
-      const target = `${DEFAULT_TARGET_PREFIX}restore-${Date.now()}`;
+      const projectName = `${DEFAULT_PROJECT_PREFIX}restore-${Date.now()}`;
       const group = await pickAnyGroup();
       // verify:false keeps the test fast — Step 10 restore runs regardless of the
       // round-trip verification toggle, and this test is specifically about restore.
       const opts: PublishOptions = {
-        target, reviewerGroup: group, note: 'restore test', priorVersion: null, verify: false,
+        project: projectName, reviewerGroup: group, note: 'restore test', priorVersion: null, verify: false,
       } as PublishOptions;
 
       let project: DG.Project | null = null;
@@ -401,7 +401,7 @@ category('Publishing', () => {
         expect((grok.shell.tv?.dataFrame as any)?.dart, proteinDart);
       } finally {
         await cleanupProject(project);
-        await cleanupChildSpace(target);
+        await cleanupChildSpace(projectName);
       }
     });
 
@@ -409,13 +409,13 @@ category('Publishing', () => {
     async () => {
       const df = createSyntheticDeFixture();
       const baselineL2FC = df.col('log2FC')!.get(0);
-      const baselineTarget = `${DEFAULT_TARGET_PREFIX}t3-${Date.now()}`;
+      const baselineProject = `${DEFAULT_PROJECT_PREFIX}t3-${Date.now()}`;
 
       grok.shell.addTableView(df);
       await delay(100);
 
       const group = await pickAnyGroup();
-      const opts: PublishOptions = {target: baselineTarget, reviewerGroup: group, note: '', priorVersion: null};
+      const opts: PublishOptions = {project: baselineProject, reviewerGroup: group, note: '', priorVersion: null};
 
       let project: DG.Project | null = null;
       try {
@@ -436,7 +436,7 @@ category('Publishing', () => {
         // Mutate the SOURCE DF (the one we still hold in memory)
         df.col('log2FC')!.set(0, 999.999);
         try { df.columns.remove('Gene Name'); } catch { /* may have been allowlist-only */ }
-        df.setTag(PUBLISHED_TAGS.PUBLISHED_TARGET, 'CHANGED-TARGET');
+        df.setTag(PUBLISHED_TAGS.PUBLISHED_PROJECT, 'CHANGED-PROJECT');
 
         // Reopen the project AGAIN — clone must be unchanged
         grok.shell.closeAll();
@@ -449,25 +449,25 @@ category('Publishing', () => {
         const reL2FC = reDf.col('log2FC')!.get(0);
         expect(reL2FC, baselineL2FC);
         expect(!!reDf.col('Gene Name'), true);
-        const reTarget = reDf.getTag(PUBLISHED_TAGS.PUBLISHED_TARGET);
-        expect(reTarget === 'CHANGED-TARGET', false);
-        expect(reTarget === baselineTarget, true);
+        const reProject = reDf.getTag(PUBLISHED_TAGS.PUBLISHED_PROJECT);
+        expect(reProject === 'CHANGED-PROJECT', false);
+        expect(reProject === baselineProject, true);
       } finally {
         await cleanupProject(project);
-        await cleanupChildSpace(baselineTarget);
+        await cleanupChildSpace(baselineProject);
       }
     });
 
   test('republish creates v2 with bidirectional superseded_by + supersedes pointers (W-8 dual-write)',
     async () => {
       const df = createSyntheticDeFixture();
-      const target = `${DEFAULT_TARGET_PREFIX}t4-${Date.now()}`;
+      const projectName = `${DEFAULT_PROJECT_PREFIX}t4-${Date.now()}`;
 
       grok.shell.addTableView(df);
       await delay(100);
 
       const group = await pickAnyGroup();
-      const optsV1: PublishOptions = {target, reviewerGroup: group, note: 'v1', priorVersion: null};
+      const optsV1: PublishOptions = {project: projectName, reviewerGroup: group, note: 'v1', priorVersion: null};
 
       let projectV1: DG.Project | null = null;
       let projectV2: DG.Project | null = null;
@@ -481,7 +481,7 @@ category('Publishing', () => {
         // Re-discover the source DF view (publishAnalysis opened the trimmed view)
         await delay(200);
 
-        const optsV2: PublishOptions = {target, reviewerGroup: group, note: 'v2', priorVersion: projectV1};
+        const optsV2: PublishOptions = {project: projectName, reviewerGroup: group, note: 'v2', priorVersion: projectV1};
         projectV2 = await publishAnalysis(df, optsV2);
         expect(!!projectV2, true);
         const v2Id = (projectV2 as any).id;
@@ -525,8 +525,8 @@ category('Publishing', () => {
       } finally {
         await cleanupProject(projectV2);
         await cleanupProject(projectV1);
-        // Both versions share one target → one child Space to remove.
-        await cleanupChildSpace(target);
+        // Both versions share one project → one child Space to remove.
+        await cleanupChildSpace(projectName);
       }
     });
 
@@ -546,9 +546,9 @@ category('Publishing', () => {
         grok.shell.addTableView(df);
         await delay(100);
 
-        const target = `${DEFAULT_TARGET_PREFIX}t5-${Date.now()}`;
+        const projectName = `${DEFAULT_PROJECT_PREFIX}t5-${Date.now()}`;
         const opts: PublishOptions = {
-          target,
+          project: projectName,
           reviewerGroup: userGroup,
           note: 'negative test',
           priorVersion: null,
@@ -566,13 +566,13 @@ category('Publishing', () => {
         const hitsD03 = caughtMessage.includes('Reviewer group already has elevated access via Space inheritance');
         expect(hitsD03, true);
 
-        // Verify NO Project was left behind under the target slug
+        // Verify NO Project was left behind under the project slug
         try {
           const slugSearch = `Proteomics-Review-%`;
           const lingering: any[] = await dapiAny.projects.filter(`name like "${slugSearch}"`).list();
-          const matchesThisTarget = (lingering ?? []).filter((p: any) =>
-            typeof p?.name === 'string' && p.name.includes(target));
-          expect(matchesThisTarget.length, 0);
+          const matchesThisProject = (lingering ?? []).filter((p: any) =>
+            typeof p?.name === 'string' && p.name.includes(projectName));
+          expect(matchesThisProject.length, 0);
         } catch { /* swallow — best-effort search */ }
 
         // If somehow a project was returned (gate failed to throw), clean up so we don't leak.

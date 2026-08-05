@@ -18,15 +18,17 @@ const PASSWORD = process.env.DATAGROK_PASSWORD!;
 test('Sticky Meta: persistence across copy / clone / reload, and delete', async ({ page }) => {
   test.setTimeout(300_000);
 
+  // Prefix is this file's own — see apiDeleteAllTestSchemas.
+  const PREFIX = 'PW_SM3_';
   const suffix = H.uniqueSuffix();
-  const schemaName = `PW_SM_Schema_${suffix}`;
+  const schemaName = `${PREFIX}Schema_${suffix}`;
   const tag = `pwsm_${suffix}`;
   let projId: string | null = null;
 
   try {
     await H.gotoHome(page);
     await H.setupEnv(page);
-    await H.apiDeleteAllTestSchemas(page);
+    await H.apiDeleteAllTestSchemas(page, PREFIX);
 
     // Setup: schema (tag-matched), open SPGI, seed rating/notes on the first three rows.
     const setup = await page.evaluate(async ({ schemaName, tag }) => {
@@ -37,7 +39,7 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
         [{ name: schemaName + '_t', matchBy: 'source=' + tag }],
         [{ name: 'rating', type: 'int' }, { name: 'notes', type: 'string' }],
       );
-      const df = await g.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const df = await g.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       g.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
       df.col('Id').setTag('source', tag);
@@ -93,7 +95,7 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
     // ---- 3.2 Save as project and reopen ----
     await page.evaluate(() => {
       const g = (window as any).grok; const DG = (window as any).DG; const st = (window as any)._sm;
-      const projName = 'PW_SM_Proj_' + st.tag;
+      const projName = 'PW_SM3_Proj_' + st.tag;
       (window as any)._projName = projName;
       (window as any)._saveStatus = 'starting';
       (async () => {

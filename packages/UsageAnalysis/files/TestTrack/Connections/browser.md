@@ -3,7 +3,8 @@ feature: connections
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.connections, sharing.share-dialog]
 realized_as:
   - 04-browser.test.ts
 related_bugs: []

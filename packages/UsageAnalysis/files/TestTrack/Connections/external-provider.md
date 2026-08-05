@@ -3,7 +3,8 @@ feature: connections
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.connections, connect.db.postgres, views.queries]
 realized_as:
   - 09-external-provider.test.ts
 related_bugs: []

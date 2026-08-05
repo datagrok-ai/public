@@ -103,6 +103,8 @@ export interface SettingsInterface {
 
   showHelp: boolean;
 
+  showAI: boolean;
+
   enableBetaViewers: boolean;
 
   //@Prop(editor: 'Beta') bool enableViewerFunctions = false;

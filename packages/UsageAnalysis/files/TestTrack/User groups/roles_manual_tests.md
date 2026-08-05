@@ -3,7 +3,8 @@ feature: roles
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.roles]
 realized_as:
   - roles.test.ts
 related_bugs: []

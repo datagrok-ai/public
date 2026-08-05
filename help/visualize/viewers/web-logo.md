@@ -1,5 +1,12 @@
 ---
 title: "WebLogo"
+description: Visualize multiple sequence alignment of amino acids or nucleotides as stacked, conservation-weighted symbols.
+keywords:
+  - sequence logo
+  - multiple sequence alignment
+  - conservation plot
+  - amino acid stack
+  - nucleotide alignment
 ---
 
 Web Logo is used to visualize a graphical representation of multiple sequence alignment (amino acids or

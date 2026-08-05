@@ -1,5 +1,11 @@
 ---
 title: "Tree viewer"
+description: Display hierarchical categorical data as an expandable tree of nodes, grouped by successive column levels.
+keywords:
+  - hierarchy tree
+  - node-link diagram
+  - orthogonal radial layout
+  - category drill-down
 ---
 
 Tree viewer shows the hierarchical structure of categorical data. It groups

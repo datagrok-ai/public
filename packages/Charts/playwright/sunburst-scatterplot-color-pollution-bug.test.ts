@@ -6,7 +6,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-
 
 test.use(specTestOptions);
 
-const spgiPath = 'System:DemoFiles/SPGI.csv';
+const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', async ({page}) => {
   test.setTimeout(120_000);

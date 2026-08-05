@@ -1,5 +1,13 @@
 ---
 title: "Smart bar"
+description: Use the smart bar to search for commands, help pages, and in-table data with keyboard shortcuts.
+keywords:
+  - search bar
+  - command palette
+  - command search
+  - search commands
+  - search in data
+  - alt+q
 ---
 
 Search for available commands and help pages. Start typing, and suggestions will appear. Search in data by preceding a

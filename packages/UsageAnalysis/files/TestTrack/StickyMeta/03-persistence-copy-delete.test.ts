@@ -37,7 +37,7 @@ test('Sticky Meta: persistence across copy / clone / reload, and delete', async 
         [{ name: schemaName + '_t', matchBy: 'source=' + tag }],
         [{ name: 'rating', type: 'int' }, { name: 'notes', type: 'string' }],
       );
-      const df = await g.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const df = await g.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       g.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
       df.col('Id').setTag('source', tag);

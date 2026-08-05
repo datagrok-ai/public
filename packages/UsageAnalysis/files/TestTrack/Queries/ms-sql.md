@@ -3,7 +3,8 @@ feature: queries
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.queries, connect.db.ms-sql]
 realized_as:
   - mssql-query-lifecycle.test.ts
 related_bugs: []

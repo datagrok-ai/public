@@ -1,6 +1,14 @@
 ---
 title: "Markup"
 sidebar_position: 4
+description: Reference for Datagrok Markup expressions used to embed dynamic data, charts, and functions in a view.
+keywords:
+  - "#{expression}"
+  - markup viewer syntax
+  - aggregation expressions
+  - formula embedding
+  - chart markup
+  - flex view scripting
 ---
 
 Datagrok Markup is a lightweight scripting language used in both the Flex

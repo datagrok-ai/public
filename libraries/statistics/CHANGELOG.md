@@ -1,5 +1,14 @@
 # statistics changelog
 
+## v.next
+
+* MPO: Re-exported `desirabilityScore` for callers that score a single value (it was inlined into the column-at-a-time path and dropped from the public surface, breaking the PowerGrid build)
+
+## 1.12.9 (2026-07-16)
+
+* Compute functions dialog: Optional per-function "re-run on open" checkbox (`rerunOnOpenOption`), with the flag surfaced in the dialog result and template compute types.
+* Compute functions: `joinQueryResults` now overwrites an existing result column in place (matched by molecule) instead of appending a duplicate `<name> (2)` column.
+
 ## 1.12.8 (2026-07-03)
 
 * MPO: Format score columns adaptively

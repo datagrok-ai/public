@@ -1,5 +1,6 @@
 ---
 feature: projects
+realizes: [views.projects]
 companion_to: complex.md
 companion_spec: (none — complex.md has no single -spec.ts; sibling specs are complex-derived-tables-spec.ts / complex-rename-spec.ts / complex-share-second-user-spec.ts)
 ui_only: true

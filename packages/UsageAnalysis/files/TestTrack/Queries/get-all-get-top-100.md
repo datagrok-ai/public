@@ -3,7 +3,8 @@ feature: queries
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.databases]
 realized_as:
   - get-all-get-top-100.test.ts
 related_bugs: []

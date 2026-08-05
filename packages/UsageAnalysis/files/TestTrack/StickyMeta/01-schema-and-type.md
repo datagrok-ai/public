@@ -3,7 +3,8 @@ feature: stickymeta
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: [create-schema-and-entity-type, admin-manages-schemas-in-browse]
+realizes: [views.entity-type, views.entity-property-schemas]
 realized_as:
   - 01-schema-and-type.test.ts
 related_bugs: []

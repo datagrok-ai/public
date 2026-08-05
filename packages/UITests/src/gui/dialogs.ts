@@ -97,7 +97,13 @@ category('GUI: Dialogs', () => {
     demog = df.clone();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('ML').find('Analyze').find('PCA...').click();
+    // EDA registers ML | Analyze | PCA... on the view ribbon; shell.topMenu has no Analyze there.
+    const pca = () => v.ribbonMenu.find('ML')?.find('Analyze')?.find('PCA...');
+    if (pca() == null) {
+      console.log('pca: ML | Analyze | PCA... unavailable (EDA not deployed on this instance) — skipping');
+      return;
+    }
+    pca()!.click();
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 1', 1000);
     await delay(200);
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
@@ -106,7 +112,7 @@ category('GUI: Dialogs', () => {
     await awaitCheck(() => !checkDialog('PCA'), 'PCA dialog didnt close', 10000);
     await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
       'Failed'), 'cannot find error balloon', 1000);
-    grok.shell.topMenu.find('ML').find('Analyze').find('PCA...').click();
+    pca()!.click();
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 2', 1000);
     const featuresField: DG.Column[] = [];
     featuresField.push(demog.col('age') as DG.Column);

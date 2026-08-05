@@ -3,7 +3,8 @@ feature: connections
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.connections]
 realized_as:
   - 06-import-swagger.test.ts
 related_bugs: []

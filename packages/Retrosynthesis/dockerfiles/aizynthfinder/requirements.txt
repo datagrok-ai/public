@@ -3,3 +3,8 @@ datagrok-celery-task
 celery
 datagrok-api>=0.0.9
 filelock
+# Security floors for transitive deps (aizynthfinder[all]==4.3.2 pulls older ones).
+# protobuf capped at 4.x LTS: onnxruntime<1.17 ships pb2 gencode incompatible with protobuf 5.
+protobuf>=4.25.8
+wheel>=0.46.2
+jaraco.context>=6.1

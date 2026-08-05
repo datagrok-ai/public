@@ -135,6 +135,8 @@ For more information on configuring connections, refer to the [Connections](http
   | report         | Sends a report on test results                                                                                                        |
   | skip-build     | Skips package build step                                                                                                              |
   | skip-publish   | Skips package publish step                                                                                                            |
+  | skip-node      | Skips the Node (browserless) pass; runs all tests in the browser                                                                      |
+  | node-only      | Runs only tests annotated `{node: true}` headless under Node, without a browser                                                       |
   | verbose        | Prints detailed information about passed and skipped tests in the console                                                             |
   | platform       | Runs only platform tests (applicable for ApiTests package only)                                                                       |
   | core           | Runs package & core tests & autotests                                                                                                 |

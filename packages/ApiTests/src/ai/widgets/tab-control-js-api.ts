@@ -4,6 +4,12 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {expectFiresWithin, subscribeAll, expectNoThrow} from '../helpers';
 
 category('AI: Widgets: TabControl JS API', () => {
+  const withPanes = (tc: DG.TabControl): DG.TabControl => {
+    tc.addPane('alpha', () => ui.divText('a'));
+    tc.addPane('beta', () => ui.divText('b'));
+    return tc;
+  };
+
   test('create + addPane + currentPane getter reflects first activated pane', async () => {
     const tc = DG.TabControl.create();
     expect(tc instanceof DG.TabControl, true);
@@ -58,11 +64,51 @@ category('AI: Widgets: TabControl JS API', () => {
     const empty = DG.TabControl.create();
     expect(empty.panes.length, 0);
     expectNoThrow(() => {const cur = empty.currentPane; expect(cur == null, true);});
-    const vertical = DG.TabControl.create(true);
+    const vertical = DG.TabControl.create({vertical: true});
     expect(vertical instanceof DG.TabControl, true);
     const pane = vertical.addPane('v', () => ui.divText('v-body'));
     expect(pane != null, true);
     expect(vertical.currentPane != null, true);
     expect(vertical.currentPane.name, 'v');
+  });
+  test('options object: vertical and key', async () => {
+    expect(DG.TabControl.create({vertical: true}).root.classList.contains('d4-tab-vertical'), true);
+    expect(DG.TabControl.create({}).root.classList.contains('d4-tab-vertical'), false);
+    expect(DG.TabControl.create(true).root.classList.contains('d4-tab-vertical'), true);
+    expectNoThrow(() => {(DG.TabControl.create as any)(null);});
+
+    const key = `apitests-tabcontrol-${Date.now()}`;
+    try {
+      window.localStorage[`TabControl:${key}`] = 'beta';
+      expect(withPanes(DG.TabControl.create({key: key})).currentPane.name, 'beta');
+      expect(withPanes(DG.TabControl.create({}, key)).currentPane.name, 'beta');
+      expect(withPanes(DG.TabControl.create({})).currentPane.name, 'alpha');
+    }
+    finally {
+      window.localStorage.removeItem(`TabControl:${key}`);
+    }
+  });
+
+  test('ui.tabControl: options object and deprecated positional args', async () => {
+    const tabs = ui.tabControl({'first': ui.divText('1'), 'second': ui.divText('2')}, {vertical: true});
+    expect(tabs.panes.length, 2);
+    expect(tabs.root.classList.contains('d4-tab-vertical'), true);
+
+    expect(ui.tabControl(null, true).root.classList.contains('d4-tab-vertical'), true);
+    expect(ui.tabControl(null, false).root.classList.contains('d4-tab-vertical'), false);
+
+    // untyped JS callers pass an explicit null to skip `vertical` and reach `key`
+    expectNoThrow(() => {(ui.tabControl as any)(null, null);});
+
+    const key = `apitests-tabcontrol-legacy-${Date.now()}`;
+    try {
+      window.localStorage[`TabControl:${key}`] = 'beta';
+      const legacy = ui.tabControl({'alpha': ui.divText('a'), 'beta': ui.divText('b')}, true, key);
+      expect(legacy.currentPane.name, 'beta');
+      expect(ui.tabControl({'alpha': ui.divText('a'), 'beta': ui.divText('b')}, true).currentPane.name, 'alpha');
+    }
+    finally {
+      window.localStorage.removeItem(`TabControl:${key}`);
+    }
   });
 }, {owner: 'agolovko@datagrok.ai'});

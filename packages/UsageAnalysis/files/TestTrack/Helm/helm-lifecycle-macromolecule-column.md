@@ -3,7 +3,8 @@ feature: helm
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [macromolecule_helm_column]
+realizes_atlas: [macromolecule_helm_column]
+realizes: [helm.cell.helm, helm.cell-editor.molecule, helm.panel.properties]
 realized_as:
   - helm-lifecycle-macromolecule-column-spec.ts
 related_bugs: []

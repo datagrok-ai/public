@@ -3,6 +3,7 @@ feature: stickymeta
 target_layer: playwright
 coverage_type: regression
 priority: p1
+realizes_atlas: [database-entity-meta]
 realizes: []
 realized_as:
   - 04-database-meta.test.ts

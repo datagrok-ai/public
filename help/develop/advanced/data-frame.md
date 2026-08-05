@@ -1,5 +1,15 @@
 ---
 title: "Dataframe"
+description: Deep dive into the DG.DataFrame and DG.Column JavaScript API, covering construction, access, and data types.
+keywords:
+  - DG.DataFrame
+  - DG.Column
+  - columnar storage
+  - getRawData
+  - null values
+  - qualified numbers
+  - virtual columns
+  - column statistics
 ---
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class

@@ -3,7 +3,8 @@ feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: [open-app-edit-run, load-library-ivp-run]
+realizes: [diffstudio.app.diff-studio, diffstudio.model.bioreactor]
 realized_as:
   - open-model.test.ts
 related_bugs: []

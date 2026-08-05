@@ -2,6 +2,14 @@
 mdx:
   format: mdx
 title: "Domains"
+description: Overview of Datagrok's domain-specific support for cheminformatics, bioinformatics, and NLP.
+keywords:
+  - semantic types
+  - domain-specific data types
+  - cheminformatics support
+  - bioinformatics support
+  - custom applications
+  - data rendering
 ---
 
 ```mdx-code-block

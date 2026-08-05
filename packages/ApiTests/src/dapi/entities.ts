@@ -32,7 +32,7 @@ category('Dapi: entities', () => {
     }
   });
 
-}, { owner: 'ppolovyi@datagrok.ai'});
+}, { owner: 'ppolovyi@datagrok.ai', node: true});
 
 category('Dapi: entities: smart search', () => {
   test('users', async () => {
@@ -52,7 +52,7 @@ category('Dapi: entities: smart search', () => {
     expect((await grok.dapi.packages.filter('name="Api Tests"').list()).length > 0, true);
     expect((await grok.dapi.packages.filter(`name="Api Tests" and version = "${_package.version}"`).list()).length > 0, true);
   }, {stressTest: true});
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 async function createTestGroup(): Promise<_DG.Group> {
   let group = DG.Group.create(DG.Utils.randomString(6));

@@ -1,5 +1,14 @@
 ---
 title: "Chemically-aware viewers"
+description: Overview of Datagrok viewers that recognize and render molecular structures, including grid, scatter plot, and trellis plot.
+keywords:
+  - molecule rendering in viewers
+  - chemical structure visualization
+  - grid molecule rendering
+  - scatterplot molecules
+  - trellis plot r-groups
+  - tile viewer molecules
+  - network diagram molecules
 ---
 
 Many of the viewers on the Datagrok platform are capable of recognizing and rendering chemical structures.

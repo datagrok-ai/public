@@ -14,6 +14,7 @@ import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
 import {FlowNode, isExecKey, nodeMissingRequirements} from '../rete/scheme';
+import {resolveInputValue, inputBlockReason} from '../utils/input-values';
 
 /** Grow a dirty node set upstream until every connection crossing into it
  *  comes from a node whose output value is already captured (`hasLive`) — the
@@ -38,12 +39,16 @@ export function expandToLiveBoundary(
   return slice;
 }
 
-/** Short count label for a wire from a source output's summary — "1,204 rows"
- *  for a table, "1,204" for a column. Null when there's nothing countable. */
-function connectionCountLabel(summary?: ValueSummary): string | null {
+/** Short count label for a wire from a source output's summary — "1,204 × 8"
+ *  (rows × columns) for a table, "1,204" for a column. Null when there's
+ *  nothing countable. Exported for tests. */
+export function connectionCountLabel(summary?: ValueSummary | null): string | null {
   if (!summary) return null;
   const n = (v: number): string => v.toLocaleString('en-US');
-  if (summary.type === 'dataframe' && typeof summary.rows === 'number') return `${n(summary.rows)} rows`;
+  if (summary.type === 'dataframe' && typeof summary.rows === 'number') {
+    return typeof summary.cols === 'number' ?
+      `${n(summary.rows)} × ${n(summary.cols)}` : `${n(summary.rows)} rows`;
+  }
   if (summary.type === 'column' && typeof summary.length === 'number') return n(summary.length);
   return null;
 }
@@ -69,6 +74,8 @@ export class ExecutionController {
   private visualizer: ExecutionVisualizer;
   private flow: FlowEditor;
   private subscription: {unsubscribe(): void} | null = null;
+  /** The in-flight run's call — kept so Stop / a superseding run can cancel it. */
+  private currentCall: DG.FuncCall | null = null;
   /** The output panel's node when an invalidation closed it — the next autorun
    *  re-opens it (without stealing selection) so the preview stays live. */
   private autorunPreviewNodeId: string | null = null;
@@ -94,6 +101,15 @@ export class ExecutionController {
     this.state = new ExecutionState();
     this.visualizer = new ExecutionVisualizer(flow);
     this.outputPreview = outputPreview ?? new OutputPreviewPanel();
+    // Unpinning via the header icon jumps to the node the user selected while
+    // pinned — re-clicking an already-selected node fires no selection event,
+    // so without this the preview would stay on the stale pinned content.
+    this.outputPreview.onUnpinned = (): void => {
+      const ids = this.flow.getSelectedNodeIds();
+      if (ids.length !== 1) return;
+      const node = this.flow.getNodeById(ids[0]);
+      if (node && node.id !== this.outputPreview.currentNodeId) this.showOutputsForNode(node);
+    };
   }
 
   runInstrumented(settings: ScriptSettings): void {
@@ -113,12 +129,16 @@ export class ExecutionController {
     if (errors.some((e) => e.severity === 'error')) {
       const msgs = errors.filter((e) => e.severity === 'error').map((e) => e.message).join('\n');
       grok.shell.error('Validation errors:\n' + msgs);
+      // A run that never starts must still report an end — the save dialog's
+      // "Run the flow" disables OK until onRunEnd fires.
+      this.onRunEnd?.(false);
       return;
     }
     const {roots, cone} = this.invalidNodes();
     const runSet = this.flow.getNodes().map((n) => n.id).filter((id) => !cone.has(id));
     if (runSet.length === 0) {
       grok.shell.error('Nothing to run — every node is missing a required input (for a plot, connect a table).');
+      this.onRunEnd?.(false);
       return;
     }
     if (roots.length > 0)
@@ -226,16 +246,25 @@ export class ExecutionController {
     if (!node) return false;
     // Inputs/outputs have nothing to recompute on their own.
     if (node.dgNodeType !== 'func' && node.dgNodeType !== 'utility') return false;
+    const anyConnected = Object.keys(node.inputs)
+      .some((k) => !isExecKey(k) && !!this.flow.getInputSource(nodeId, k));
+    return anyConnected && this.readyForLiveRun(nodeId);
+  }
+
+  /** Inputs satisfied for a run that must not touch upstream: no missing
+   *  requirements, and every connected input is fed by a captured live value.
+   *  Unlike {@link canRerunNode}, a node with no connected inputs qualifies —
+   *  an Open File runs from its parameters alone. */
+  private readyForLiveRun(nodeId: string): boolean {
+    const node = this.flow.getNodeById(nodeId);
+    if (!node) return false;
     if (nodeMissingRequirements(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
-    let anyConnected = false;
     for (const key of Object.keys(node.inputs)) {
       if (isExecKey(key)) continue;
       const src = this.flow.getInputSource(nodeId, key);
-      if (!src) continue;
-      anyConnected = true;
-      if (!this.hasLiveValue(src.node.id, src.outputKey)) return false;
+      if (src && !this.hasLiveValue(src.node.id, src.outputKey)) return false;
     }
-    return anyConnected;
+    return true;
   }
 
   /** Re-run just this node using upstream values captured from a prior run — its
@@ -269,6 +298,44 @@ export class ExecutionController {
    *  silent — no validation toasts, no run dialog, no selection stealing —
    *  because it fires after every edit. The outcome tells the scheduler
    *  whether to retry ('busy') or wait for the next edit ('skipped'). */
+  /** Debounced live-node entry — the global autorun toggle is OFF and an edit
+   *  touched live-by-default nodes (Open File, viewers, …). Runs ONLY the given
+   *  nodes, and only those whose inputs are satisfied (see
+   *  {@link readyForLiveRun}); everything else on the canvas — including the
+   *  live nodes' own downstream — is left alone. Unready live nodes are
+   *  silently dropped; if none remain, nothing runs. */
+  runLiveNodes(liveIds: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
+    if (this.state.isRunning) return 'busy';
+    // A mid-edit graph is often momentarily invalid; just wait for more edits.
+    if (validateGraph(this.flow).some((e) => e.severity === 'error')) return 'skipped';
+
+    const runSet = new Set<string>();
+    for (const id of liveIds) {
+      const node = this.flow.getNodeById(id);
+      // An input node would emit `//input:` headers → a dialog; never live-run.
+      if (!node || node.dgNodeType === 'input') continue;
+      if (this.readyForLiveRun(id)) runSet.add(id);
+    }
+    if (runSet.size === 0) return 'skipped';
+
+    const restorePreviewId = this.autorunPreviewNodeId;
+    this.autorunPreviewNodeId = null;
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: runSet,
+      liveExternalInputs: true,
+      preserveState: true,
+      skipValidation: true,
+      onComplete: () => {
+        if (!restorePreviewId) return;
+        const node = this.flow.getNodeById(restorePreviewId);
+        const state = this.state.getNodeState(restorePreviewId);
+        if (node && state?.status === NodeExecStatus.completed)
+          this.outputPreview.showForNode(node, state);
+      },
+    });
+    return 'started';
+  }
+
   runAutorun(dirty: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
     if (this.state.isRunning) return 'busy';
     // A mid-edit graph is often momentarily invalid; just wait for more edits.
@@ -292,11 +359,14 @@ export class ExecutionController {
     // nodes from a would-be full run; otherwise a plain full run (no filter).
     const useSlice = slice !== null || excluded.size > 0 ? runSet : null;
 
-    // A run touching an input node would emit `//input:` headers → a dialog on
-    // every keystroke. Skip; the user runs parameterized flows explicitly.
-    // (A slice whose boundary covers the input nodes still autoruns fine.)
+    // A run touching an input node emits `//input:` headers → a dialog on
+    // every keystroke — UNLESS the node carries a resolvable configured value,
+    // which `executeInstrumented` feeds to the prepared call silently. Skip
+    // only for unconfigured/unresolvable ones; the bolt's blocked badge says
+    // why. (A slice whose boundary covers the input nodes still autoruns.)
     const runsNode = (id: string): boolean => useSlice === null || useSlice.has(id);
-    if (this.flow.getNodes().some((n) => n.dgNodeType === 'input' && runsNode(n.id))) return 'skipped';
+    if (this.flow.getNodes().some((n) =>
+      n.dgNodeType === 'input' && runsNode(n.id) && inputBlockReason(n) != null)) return 'skipped';
 
     const restorePreviewId = this.autorunPreviewNodeId;
     this.autorunPreviewNodeId = null;
@@ -319,6 +389,44 @@ export class ExecutionController {
       },
     });
     return 'started';
+  }
+
+  /** Resolve each of the emitted script's parameters from the input node that
+   *  declared it (matched by `paramName`). `values` feeds `func.prepare`;
+   *  `missing` lists params with no resolvable configured value — non-empty
+   *  means an explicit run still needs the parameter dialog. */
+  private configuredInputValues(func: DG.Func): {values: Record<string, unknown>; missing: string[]} {
+    const byParam = new Map<string, FlowNode>();
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType === 'input')
+        byParam.set(String(n.properties['paramName'] ?? ''), n);
+    }
+    const values: Record<string, unknown> = {};
+    const missing: string[] = [];
+    for (const p of func.inputs) {
+      const node = byParam.get(p.name);
+      const r = node ? resolveInputValue(node) : {ok: false as const};
+      if (r.ok && 'value' in r) values[p.name] = r.value;
+      else missing.push(p.name);
+    }
+    return {values, missing};
+  }
+
+  /** Why autorun cannot currently run what's pending — validation errors plus
+   *  input nodes without a resolvable configured value. Empty when nothing is
+   *  pending (autorun has nothing to do, so nothing blocks it). Drives the
+   *  ribbon bolt's blocked badge and tooltip. */
+  autorunBlockers(): string[] {
+    const pending = this.pendingNodes();
+    if (pending.size === 0) return [];
+    const reasons = validateGraph(this.flow)
+      .filter((e) => e.severity === 'error').map((e) => e.message);
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType !== 'input' || !pending.has(n.id)) continue;
+      const r = inputBlockReason(n);
+      if (r) reasons.push(r);
+    }
+    return reasons;
   }
 
   private executeInstrumented(
@@ -348,7 +456,10 @@ export class ExecutionController {
     } else {
       // A new full/slice run invalidates anything we were showing — and the
       // captured live values (they're recomputed by this run's `__ff_stash`).
-      this.outputPreview.clear();
+      // A pinned preview keeps its stale content in place instead of blinking:
+      // node-start overlays the spinner, node-complete renders fresh.
+      if (this.outputPreview.pinnedNodeId == null || this.outputPreview.currentNodeId == null)
+        this.outputPreview.clear();
       this.state.startRun(runId);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
@@ -374,29 +485,62 @@ export class ExecutionController {
     try {
       const script = emitScript(this.flow, settings, options);
       const func = DG.Script.create(script);
-      const fc = func.prepare();
+      // Values configured on the input nodes feed the prepared call directly —
+      // the parameter dialog only appears for params still missing one, and
+      // then comes prefilled with everything that was configured.
+      const {values, missing} = this.configuredInputValues(func);
+      const fc = func.prepare(values);
+      this.currentCall = fc;
+      // The run's own error already surfaced through the node-error/run-complete
+      // events — the rejection here is the same failure resurfacing.
+      const startCall = (): void => {void fc.call(undefined, undefined, {processed: true}).catch(() => {})};
       // No auto-dock at completion — the user opens the panel by clicking a
       // completed node (see `showOutputsForNode`).
-      if (func.inputs.length === 0)
-        void fc.call(undefined, undefined, {processed: true});
+      if (func.inputs.length === 0 || missing.length === 0)
+        startCall();
       else {
         fc.getEditor(false).then((e: HTMLElement) => {
-          ui.dialog({title: settings.name}).add(e).show().onOK(async () => {
-            await fc.call(undefined, undefined, {processed: true});
+          // Canceling the dialog must release the run state the same way a
+          // failed start does: `isRunning` would otherwise stay true forever —
+          // autorun spins in its busy-retry loop and the save dialog waits for
+          // an onRunEnd that never comes.
+          let started = false;
+          const dlg = ui.dialog({title: settings.name}).add(e);
+          dlg.onOK(() => {
+            started = true;
+            startCall();
           });
+          dlg.onClose.subscribe(() => {
+            if (!started) this.abortPendingRun();
+          });
+          dlg.show();
+        }).catch((err: unknown) => {
+          grok.shell.error(`Could not build the run dialog: ${err instanceof Error ? err.message : err}`);
+          this.abortPendingRun();
         });
       }
     } catch (e: any) {
       grok.shell.error(`Script generation failed: ${e.message}`);
-      this.stopRun();
-      // A headless slice run (column picker) is awaiting completion — release it
-      // so the caller's promise resolves (with null, since nothing was captured).
-      if (this.pendingOnComplete) {
-        const cb = this.pendingOnComplete;
-        this.pendingOnComplete = null;
-        cb();
-      }
+      this.abortPendingRun();
     }
+  }
+
+  /** A run that was set up but never got going (script generation failed, the
+   *  parameter dialog was canceled, …): release the run state and settle every
+   *  waiter — a headless slice run (column picker) is awaiting completion, and
+   *  the view is waiting for onRunEnd to re-enable its Run/Save controls. */
+  private abortPendingRun(): void {
+    this.stopRun();
+    this.pendingPreviewNodeId = null;
+    // Mirror the run-complete dispatch: a headless waiter gets its callback
+    // (resolving with whatever was captured — nothing), everyone else onRunEnd.
+    if (this.pendingOnComplete) {
+      const cb = this.pendingOnComplete;
+      this.pendingOnComplete = null;
+      cb();
+    }
+    else
+      this.onRunEnd?.(false);
   }
 
   /** Lazily open or update the docked output panel with this node's runtime
@@ -414,6 +558,8 @@ export class ExecutionController {
     case 'node-start':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.running, {startTime: event.timestamp});
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.running);
+      // The pinned node is recomputing — spinner over the kept stale content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.markUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'node-complete':
@@ -423,12 +569,30 @@ export class ExecutionController {
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);
+      // A pinned preview tracks its node live: the moment a fresh result lands,
+      // re-render it (selection can't bring it back — other nodes are gated).
+      if (this.outputPreview.pinnedNodeId === event.nodeId) {
+        const pinned = this.flow.getNodeById(event.nodeId);
+        if (pinned) this.showOutputsForNode(pinned);
+      } else if (this.outputPreview.pinnedNodeId == null) {
+        // A fresh result for the node the user is looking at (the sole
+        // selection) opens/updates its preview, exactly as clicking it would —
+        // an autorun of an already-selected node must not require an
+        // unselect/select round-trip to see its output.
+        const sel = this.flow.getSelectedNodeIds();
+        if (sel.length === 1 && sel[0] === event.nodeId) {
+          const node = this.flow.getNodeById(event.nodeId);
+          if (node) this.showOutputsForNode(node);
+        }
+      }
       break;
     case 'node-error':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.errored, {
         endTime: event.timestamp, error: event.error, stack: event.stack,
       });
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.errored);
+      // A failed pinned recompute: drop the spinner, keep the last good content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.clearUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'breakpoint-hit':
@@ -438,6 +602,17 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
+      this.currentCall = null;
+      // The run's event channel is done — drop the subscription now rather
+      // than at the start of the *next* run (a view that never runs again
+      // would otherwise keep it, and everything it captures, alive).
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+        this.subscription = null;
+      }
+      // Safety: if the pinned node never completed this run (skipped/halted),
+      // don't leave the spinner spinning over the kept content.
+      this.outputPreview.clearUpdating();
       if (this.pendingOnComplete) {
         const cb = this.pendingOnComplete;
         this.pendingOnComplete = null;
@@ -467,6 +642,31 @@ export class ExecutionController {
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
+    }
+    // Mark the abandoned run so its still-executing script stops writing to
+    // the live registry (`__ff_stash` checks this set) — late stashes would
+    // otherwise overwrite the next run's values. Bounded: prune oldest.
+    if (this.state.isRunning && this.state.runId) {
+      const g = globalThis as {__ffAbortedRuns?: Set<string>};
+      const aborted = g.__ffAbortedRuns ?? (g.__ffAbortedRuns = new Set());
+      aborted.add(this.state.runId);
+      if (aborted.size > 100)
+        aborted.delete(aborted.values().next().value!);
+    }
+    // A script paused at a breakpoint awaits a continue event that would
+    // otherwise never fire once this run is abandoned (startRun overwrites
+    // runId) — release it so the emitted promise settles and its closure
+    // (captured tables, the continue subscription) is freed.
+    this.continueBreakpoint();
+    if (this.currentCall) {
+      // Best effort — a client-side script between statements can't be
+      // preempted, but a queued/server call honors it. `cancel()` returns the
+      // raw interop result (can be undefined) and may throw — never let that
+      // break the state release below.
+      try {
+        void Promise.resolve(this.currentCall.cancel()).catch(() => {});
+      } catch {/* cancellation unsupported here — the run just finishes headless */}
+      this.currentCall = null;
     }
     this.state.endRun();
   }
@@ -530,9 +730,13 @@ export class ExecutionController {
     if (reg)
       for (const id of affected) delete reg[id];
     // Stale values aren't worth previewing; close (and remember the node so an
-    // autorun can bring the preview back once fresh values exist).
+    // autorun can bring the preview back once fresh values exist). A PINNED
+    // preview keeps its stale content instead — hiding and re-docking on every
+    // upstream edit reads as jumping; node-start overlays the recalculating
+    // spinner and node-complete swaps in the fresh render in place.
     const previewId = this.outputPreview.currentNodeId;
-    if (previewId !== null && affected.has(previewId)) {
+    if (previewId !== null && affected.has(previewId) &&
+        this.outputPreview.pinnedNodeId !== previewId) {
       this.outputPreview.clear();
       this.autorunPreviewNodeId = previewId;
     }
@@ -548,6 +752,7 @@ export class ExecutionController {
     const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
     if (reg) delete reg[nodeId];
     if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.clear();
+    if (this.outputPreview.pinnedNodeId === nodeId) this.outputPreview.unpin();
     if (this.autorunPreviewNodeId === nodeId) this.autorunPreviewNodeId = null;
   }
 
@@ -556,11 +761,15 @@ export class ExecutionController {
     this.flow.clearConnectionLabels();
     this.state.reset();
     this.outputPreview.clear();
+    this.outputPreview.unpin();
     this.clearLiveRegistry();
   }
 
   dispose(): void {
     this.stopRun();
     this.visualizer.resetAllNodes();
+    // The view is going away — its captured live values (DataFrame clones on
+    // the page-global registry) must go with it, per the per-flow-cleanup rule.
+    this.clearLiveRegistry();
   }
 }

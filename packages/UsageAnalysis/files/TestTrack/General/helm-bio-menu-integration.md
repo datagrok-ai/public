@@ -1,3 +1,7 @@
+---
+realizes: [helm.cell.helm, bio.menu.analyze.composition, bio.viewer.web-logo, bio.menu.analyze.sequence-space, bio.menu.analyze.activity-cliffs, bio.menu.analyze.msa, bio.menu.analyze.hierarchical-clustering, bio.menu.transform.convert-sequence-notation, bio.menu.transform.split-to-monomers, bio.menu.calculate.extract-region, bio.menu.annotate.apply-numbering-scheme, bio.menu.annotate.scan-liabilities, bio.menu.annotate.manage-annotations, bio.menu.search.similarity-search, bio.viewer.sequence-similarity-search, bio.menu.search.diversity-search, bio.viewer.sequence-diversity-search, bio.menu.search.subsequence-search, bio.filter.bio-substructure-filter, bio.menu.polytool.convert, bio.menu.polytool.enumerate-helm]
+---
+
 # Helm — Bio menu cross-feature integration on a HELM column
 
 > Cross-feature smoke test: walks the **Bio** top menu on a Macromolecule

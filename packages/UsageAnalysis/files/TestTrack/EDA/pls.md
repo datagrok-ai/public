@@ -3,7 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: [eda.cp.multivariate-analysis]
+realizes: [ml.menu.analyze.pls]
 realized_as:
   - pls-spec.ts
 related_bugs: []

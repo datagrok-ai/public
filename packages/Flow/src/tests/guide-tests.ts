@@ -2,6 +2,7 @@
  *  section-expanded) and content integrity of the tutorials/questions. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   poll, waitForClick, isAborted, untilSectionExpanded, computePlacement,
@@ -25,7 +26,7 @@ function rect(x: number, y: number, w: number, h: number) {
 
 function fakeHost(): GuideHost {
   const el = document.createElement('div');
-  return {getFlow: () => undefined, showFunctionBrowser: () => {}, anchorEl: el};
+  return {getFlow: () => undefined, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: el};
 }
 
 category('Flow: guide', () => {
@@ -109,15 +110,14 @@ category('Flow: guide', () => {
     // No dialog → falls back to the resolver's element.
     expect(openDialogEl(), null, 'no dialog initially');
     expect(preferDialog(resolver)(ctx), fallback, 'falls back without a dialog');
-    // Simulate an open Datagrok dialog.
-    const dlg = document.createElement('div');
-    dlg.className = 'd4-dialog';
-    document.body.appendChild(dlg);
+    // A REAL Datagrok dialog — openDialogEl resolves through
+    // DG.Dialog.getOpenDialogs(), so a bare .d4-dialog div no longer counts.
+    const dlg = ui.dialog('Guide test').show();
     try {
-      expect(openDialogEl(), dlg, 'finds the open dialog');
-      expect(preferDialog(resolver)(ctx), dlg, 'prefers the dialog over the fallback');
+      expect(openDialogEl(), dlg.root, 'finds the open dialog');
+      expect(preferDialog(resolver)(ctx), dlg.root, 'prefers the dialog over the fallback');
     } finally {
-      dlg.remove();
+      dlg.close();
     }
   });
 
@@ -190,18 +190,19 @@ category('Flow: guide', () => {
     }
   });
 
-  test('untilSectionExpanded reacts to the header collapsed class', async () => {
+  test('untilSectionExpanded reacts to the accordion expanded class', async () => {
     const ac = new AbortController();
     const ctx: GuideContext = {host: fakeHost(), signal: ac.signal};
+    // Sections are DG.Accordion panes; an expanded pane's header gets 'expanded'.
     const header = document.createElement('div');
-    header.className = 'funcflow-section-header collapsed';
+    header.className = 'd4-accordion-pane-header';
     header.dataset.section = 'Inputs';
     document.body.appendChild(header);
     try {
       const p = untilSectionExpanded('Inputs')(ctx);
-      setTimeout(() => header.classList.remove('collapsed'), 30);
+      setTimeout(() => header.classList.add('expanded'), 30);
       await p;
-      expect(header.classList.contains('collapsed'), false);
+      expect(header.classList.contains('expanded'), true);
     } finally {
       header.remove();
     }
@@ -242,8 +243,8 @@ category('Flow: guide', () => {
     }
   });
 
-  test('content: 5 tutorials, 10+ questions, unique ids, every step has text', async () => {
-    expect(TUTORIALS.length, 5);
+  test('content: 6 tutorials, 10+ questions, unique ids, every step has text', async () => {
+    expect(TUTORIALS.length, 6);
     expect(QUESTIONS.length >= 10, true, `expected 10+ questions, got ${QUESTIONS.length}`);
 
     const all = [...TUTORIALS, ...QUESTIONS];
@@ -263,14 +264,19 @@ category('Flow: guide', () => {
 
     // Feature coverage added after the initial guide set — autorun, precise
     // invalidation, the function-editor dialog, platform save + Workflows
-    // reuse, single-node rerun. Each must keep a how-to answer.
-    for (const id of ['how-autorun', 'how-out-of-date', 'how-func-editor', 'how-reuse-flow', 'how-rerun-node'])
+    // reuse, single-node rerun, output view tabs, layout persistence, and
+    // dashboard publishing. Each must keep a how-to answer.
+    for (const id of ['how-autorun', 'how-out-of-date', 'how-func-editor', 'how-reuse-flow', 'how-rerun-node',
+      'how-open-result', 'how-table-layouts', 'how-publish-dashboard', 'how-update-dashboard'])
       expect(QUESTIONS.some((g) => g.id === id), true, `question ${id} exists`);
-    // The interface tour walks the ribbon — it must include the autorun toggle
-    // and the output panel among its stops.
+    // Dashboard publishing has a dedicated end-to-end tutorial.
+    expect(TUTORIALS.some((t) => t.id === 'publish-dashboard'), true, 'dashboard tutorial exists');
+    // The interface tour walks the ribbon — it must include the autorun toggle,
+    // the output panel, and the result tabs among its stops.
     const tour = TUTORIALS.find((t) => t.id === 'interface-tour')!;
     expect(tour.steps.some((s) => s.title === 'Autorun'), true, 'tour covers the autorun toggle');
     expect(tour.steps.some((s) => s.title === 'The output panel'), true, 'tour covers the output panel');
+    expect(tour.steps.some((s) => s.title === 'Result tabs'), true, 'tour covers the result tabs');
   });
 });
 
@@ -290,7 +296,8 @@ category('Flow: guide playthrough', () => {
     }
     const e = makeEditor();
     const ac = new AbortController();
-    const host: GuideHost = {getFlow: () => e.flow, showFunctionBrowser: () => {}, anchorEl: e.container};
+    const host: GuideHost = {
+      getFlow: () => e.flow, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: e.container};
     const ctx: GuideContext = {host, signal: ac.signal};
     try {
       const node = createNode(reg.nodeTypeName)!;
@@ -336,7 +343,8 @@ category('Flow: guide playthrough', () => {
     document.body.appendChild(tree.root);
     const e = makeEditor();
     const ac = new AbortController();
-    const host: GuideHost = {getFlow: () => e.flow, showFunctionBrowser: () => {}, anchorEl: e.container};
+    const host: GuideHost = {
+      getFlow: () => e.flow, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: e.container};
     const ctx: GuideContext = {host, signal: ac.signal};
     try {
       // The Demo connection row is resolvable by the guide helper.

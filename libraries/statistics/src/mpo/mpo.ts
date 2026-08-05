@@ -3,12 +3,27 @@
 import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
-  DESIRABILITY_PROFILE_TYPE, DesirabilityProfile, HoistedColumn, MpoResult,
+  DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
   MpoScale, NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
 } from './mpo-types';
 
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
 export * from './mpo-types';
+
+/// Desirability of a single value against a piecewise-linear line; 0 outside the line's range.
+/// `mapColumnDesirability` inlines this for the column-at-a-time hot path — this stays for
+/// callers scoring one value, such as the PowerGrid pie-chart sparkline.
+export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine): number {
+  if (desirabilityLine.length === 0 || x < desirabilityLine[0][0] || x > desirabilityLine[desirabilityLine.length - 1][0])
+    return 0;
+  for (let i = 0; i < desirabilityLine.length - 1; i++) {
+    const [x1, y1] = desirabilityLine[i];
+    const [x2, y2] = desirabilityLine[i + 1];
+    if (x >= x1 && x <= x2)
+      return x1 === x2 ? y1 : y1 + (y2 - y1) / (x2 - x1) * (x - x1);
+  }
+  return 0;
+}
 
 export function isNumerical(p: PropertyDesirability): p is NumericalDesirability {
   return p.functionType === 'numerical';
@@ -31,8 +46,23 @@ export function domainMinX(d: NumericalDesirability): number {
   return min;
 }
 
+/// On a log-scale toggle, converts widths (sigma/k) so the curve keeps its shape: a width is a span (data units
+/// under linear, decades under log), so it converts as sigma_dec = sigma/(anchor·ln10), k_dec = k·anchor·ln10
+/// (exact inverse); anchors (mean/x0) are locations and keep their data value. A width needs its anchor to convert,
+/// else it re-seeds. Both widths convert regardless of the active mode, so one authored under another mode never
+/// strands in the wrong scale. Call BEFORE flipping d.scale.
+export function convertScaleParams(d: NumericalDesirability, toLog: boolean): void {
+  const isLog = d.scale === MpoScale.Log;
+  if (isLog === toLog) return;
+  const perDecade = (anchor: number): number => Math.max(domainMinX({...d, scale: MpoScale.Log}), anchor) * Math.LN10;
+  if (d.sigma != null && d.mean != null)
+    d.sigma = toLog ? d.sigma / perDecade(d.mean) : d.sigma * perDecade(d.mean);
+  if (d.k != null && d.x0 != null)
+    d.k = toLog ? d.k * perDecade(d.x0) : d.k / perDecade(d.x0);
+}
+
 export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
-  return {functionType: 'numerical', weight, mode: 'freeform', min, max, line: []};
+  return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max, line: []};
 }
 
 export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);

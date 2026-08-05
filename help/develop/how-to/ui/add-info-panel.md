@@ -1,5 +1,13 @@
 ---
 title: "Add an info panel"
+description: Create panel scripts or functions with visibility conditions to add custom context-panel content for semantic types.
+keywords:
+  - panel role
+  - condition header parameter
+  - context panel widget
+  - semantic type panel
+  - grok script condition
+  - semantic_value input
 ---
 
 [Info panels](../../../datagrok/navigation/panels/info-panels.md) are a powerful tool for bringing

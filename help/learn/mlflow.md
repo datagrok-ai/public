@@ -1,5 +1,12 @@
 ---
 title: "Using MLFlow models"
+description: Connect Datagrok to an MLflow Model Registry to fetch, tag, and run inference on registered models.
+keywords:
+  - mlflow model registry
+  - mlflow connection
+  - model tags
+  - tracking uri
+  - docker inference
 ---
 
 

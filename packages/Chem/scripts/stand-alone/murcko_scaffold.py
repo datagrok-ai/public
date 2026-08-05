@@ -4,8 +4,8 @@
 #language: python
 #sample: chem/smiles.csv
 #meta.domain: chem
-#input: dataframe data [Input data table]
-#input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+#input: dataframe data {nullable: false} [Input data table]
+#input: column smiles {type:categorical; semType: Molecule; nullable: false} [Molecules, in SMILES format]
 #output: dataframe scaffolds {action:join(data); semType: Molecule} [Murcko scaffolds, in SMILES format]
 
 import numpy as np

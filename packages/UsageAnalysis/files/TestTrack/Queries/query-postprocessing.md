@@ -3,7 +3,8 @@ feature: queries
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: []
+realizes_atlas: []
+realizes: [views.queries]
 realized_as:
   - query-postprocessing.test.ts
 related_bugs: []

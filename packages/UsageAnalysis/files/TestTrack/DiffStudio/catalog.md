@@ -2,8 +2,9 @@
 feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
-priority: p0
-realizes: []
+priority: p1
+realizes_atlas: [model-hub-run, load-library-ivp-run]
+realizes: [diffstudio.app.diff-studio, diffstudio.model.pk-pd, compute2.app.model-hub]
 realized_as:
   - catalog.test.ts
 related_bugs: []

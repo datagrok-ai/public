@@ -3,7 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: edge
 priority: p2
-realizes: []
+realizes_atlas: [eda.cp.pareto-front, eda.int.pareto-front-view]
+realizes: [eda.viewer.pareto-front]
 realized_as:
   - pareto-front-viewer-spec.ts
 related_bugs: []

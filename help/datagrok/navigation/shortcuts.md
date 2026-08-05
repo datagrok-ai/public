@@ -15,10 +15,10 @@ different actions. For details, see the documentation for such tool or viewer.
 
 * <kbd>Esc</kbd>:
 
-    * **Viewers** | Clear selection _or_ toggle filters without resetting them. <br/> If
+  * **Viewers** | Clear selection _or_ toggle filters without resetting them. <br/> If
     you have both selected and filtered rows, pressing **Esc** first clears the
     selection, then toggles the filters.
-     * **Full Screen mode** | Exit 
+  * **Full Screen mode** | Exit 
 
 
 * <kbd>F1</kbd>: <b>Context Help</b> | Toggle
@@ -53,21 +53,13 @@ different actions. For details, see the documentation for such tool or viewer.
 * <kbd>Ctrl + O</kbd>: <b>Browse</b> | Open the <b>Open File</b> dialog
 * <kbd>Ctrl + S</kbd>: <b>Table View | Layouts</b> | Save to Gallery (requires an open Table View)
 * <kbd>Ctrl + V</kbd>: <b>Viewers | Grid</b> | Paste into cell
-* <kbd>Ctrl + Z</kbd>: <b>Viewers | Grid</b> | Undo. You can reverse only one action. Supported actions:
-
-   * Manually changing a cell value via a double-click
-   * Clearing the [layout](../../visualize/view-layout.md)
-   * Deleting rows
-   * Closing a viewer by clicking on the **x** icon
- 
-<!--
-* <kbd>Ctrl + J</kbd>: Viewers | Grid | Undo. You can reverse only one action.
--->
+* <kbd>Ctrl + Z</kbd>: <b>Edit</b> | [Undo](undo.md). Reverses the last operation on the table or view
+  you are looking at. Multiple operations can be undone in turn.
 
 * <kbd>Ctrl + Shift + A</kbd>: <b>Viewers</b> | Deselect all
 * <kbd>Ctrl + Shift + R</kbd>: <b>Table View | Layouts</b> | Clear everything from a **Table View** except the grid
 * <kbd>Ctrl + Shift + V</kbd>: <b>Table View</b> | Open a new view that is attached to the same table
-* <kbd>Ctrl + Shift + Z</kbd>: <b>Viewers | Grid</b> | Redo. You can use the <b>Redo</b> (Ctrl+Shift+Z) command only after the <b>Undo</b> (Ctrl+Z) command
+* <kbd>Ctrl + Shift + Z</kbd>: <b>Edit</b> | [Redo](undo.md) (<kbd>Ctrl + Y</kbd> does the same)
 
 <br/>
 
@@ -89,23 +81,23 @@ TBD: Add Alt+ I +R/C to add new row or column
 
 * <kbd>Click</kbd>:
 
-   * **Browse** | Make an object current (e.g., file or query)
-   * **Viewers** | Make a row or cell object current 
+  * **Browse** | Make an object current (e.g., file or query)
+  * **Viewers** | Make a row or cell object current 
 
 * <kbd>Double click</kbd>: 
 
-   * **Browse** | Open an object (e.g., file or query)
-   * **Viewers | Grid** 
-     * Cell | Edit a cell
-     * Column header | Sort a column (Also works for grid-based viewers like a [heatmap](../../visualize/viewers/heat-map.md) or [correlation plot](../../visualize//viewers/correlation-plot.md))
-   * **Viewers | Empty area** | Reset view in these viewers: 
+  * **Browse** | Open an object (e.g., file or query)
+  * **Viewers | Grid** 
+    * Cell | Edit a cell
+    * Column header | Sort a column (Also works for grid-based viewers like a [heatmap](../../visualize/viewers/heat-map.md) or [correlation plot](../../visualize//viewers/correlation-plot.md))
+  * **Viewers | Empty area** | Reset view in these viewers: 
    
-     * Scatterplot
-     * 3D Scatterplot
-     * Histogram
-     * Bar chart
-     * Pie chart
-     * Network diagram
+    * Scatterplot
+    * 3D Scatterplot
+    * Histogram
+    * Bar chart
+    * Pie chart
+    * Network diagram
 
 * <kbd>Right-click</kbd>: Show context menu
 * <kbd>Ctrl + Click</kbd>: <b>Viewers</b> | Toggle selected state, one at a time. For columns, Ctrl+click the column's header
@@ -142,11 +134,11 @@ TBD: Add Alt+ I +R/C to add new row or column
   * <b>Views, Grid</b> | Scroll
   * <b>Viewers</b> | Zoom in/out for these viewers:
     
-     * Scatterplot
-     * 3D scatterplot
-     * Line chart
-     * Network diagram
-     * Map
+    * Scatterplot
+    * 3D scatterplot
+    * Line chart
+    * Network diagram
+    * Map
 
 
 * <kbd>Up (↑), Down (↓)</kbd>: <b>Browse, Grid</b> | Navigate up/down

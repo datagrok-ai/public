@@ -3,7 +3,8 @@ feature: browse
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.apps, views.files, views.databases, views.space, views.plugins, views.functions, views.queries, views.scripts, views.users, views.groups, views.roles, views.notebooks, views.mcp-servers, views.repositories, views.serverkeys, views.layouts]
 realized_as:
   - apps.test.ts
   - apps_matrix.test.ts

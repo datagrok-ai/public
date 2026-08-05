@@ -3,7 +3,8 @@ feature: queries
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.queries, views.projects, viewers.trellis-plot]
 realized_as:
   - chembl-parameterized-and-project.test.ts
 related_bugs: []

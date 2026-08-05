@@ -567,7 +567,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
 
     // Open SPGI (with Bio/Chem wait)
     await page.evaluate(async () => {
-      const spgi = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const spgi = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       grok.shell.addTableView(spgi);
       await new Promise(resolve => {
         const sub = spgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -655,7 +655,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
 
   // ── Filter expression and collaborative filtering (SPGI) ─────────────
   await softStep('Filter expression and collaborative filtering (SPGI)', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/SPGI.csv');
+    await openDatasetWithLineChart(page, 'System:DemoFiles/chem/SPGI.csv');
 
     await lcSetProps(page, {filter: '${CAST Idea ID} <636500'});
     const filterVal = (await lcProps(page, 'filter')).filter;
@@ -815,7 +815,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
 
   // ── GROK-17835 regression ──────────────────────────────────────────────
   await softStep('GROK-17835 regression (SPGI)', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/SPGI.csv');
+    await openDatasetWithLineChart(page, 'System:DemoFiles/chem/SPGI.csv');
 
     // Multi Axis
     await lcSetProps(page, {multiAxis: true});

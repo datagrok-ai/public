@@ -3,7 +3,8 @@ feature: powerpack
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [powerpack.cp.xlsx-file-open]
+realizes_atlas: [powerpack.cp.xlsx-file-open, xlsx-open-all-entry-paths]
+realizes: [powerpack.import.xlsx]
 produced_from: atlas-driven
 original_path: D:\work\datagrok\reddata\public\packages\UsageAnalysis\files\TestTrack\Powerpack\xlsx-open.md
 migration_date: 2026-05-23
@@ -62,11 +63,12 @@ of the 5 entry paths, no data was shown, and no error was surfaced.
    as the `@fileHandler` for the `xlsx` extension via
    `grok.functions.register(...)`).
 2. Ensure an XLSX test fixture is available in two locations:
-   - **Platform fixture (`System:DemoFiles/`).** Verify
-     `System:DemoFiles/SPGI-linked.xlsx` (or any pre-existing
-     `.xlsx` under `System:DemoFiles/`) exists and is readable.
-     If no XLSX exists under `System:DemoFiles/`, upload one via
-     `My Files` first (Step 2 below).
+   - **Platform fixture (S3).** The spec creates (or reuses) an
+     anonymous S3 connection `PowerPackXlsxFixtures` to the public
+     test-data bucket `s3://datagrok-data/tests/excel`
+     (data.datagrok.ai) and opens `excel-1mb.xlsx` /
+     `excel-rich-text-test.xlsx` from it. Requires outbound S3
+     access from the server.
    - **User fixture (`Home/`).** Upload `Home/xlsx-open-test.xlsx`
      into the current user's `My Files` (Home directory). The
      fixture should be a small (< 1 MB) multi-sheet workbook —

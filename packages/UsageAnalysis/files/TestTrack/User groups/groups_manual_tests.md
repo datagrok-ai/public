@@ -3,7 +3,8 @@ feature: groups
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: []
+realizes: [views.groups]
 realized_as:
   - groups.test.ts
 related_bugs: []

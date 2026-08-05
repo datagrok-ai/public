@@ -2,28 +2,31 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 
 category('Packages: Docker', () => {
-  const containerName: string = 'Apitests-apitests-docker-test1';
+  // dockerfiles/apitests-docker-test1 folder becomes this entity name. Filter by
+  // exact name: a bare-text filter is a fuzzy search that can match (and pick
+  // first) another package's container, e.g. an errored cvm-tests one.
+  const containerName: string = 'api-tests-apitests-docker-test1';
 
   test('Get response', async () => {
-    const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+    const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();
     if (container.status !== 'started' && container.status !== 'checking')
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     await testResponse(container.id);
-  }, {timeout: 5000});
+  }, {timeout: 300000 /* may cold-start the container: image pull on a fresh CI agent takes minutes */});
 
   test('Get build logs', async () => {
-    const image = await grok.dapi.docker.dockerImages.filter(containerName).first();
+    const image = await grok.dapi.docker.dockerImages.filter(`name = "${containerName}"`).first();
     expect(image.status === 'ready');
     expect(!image.logs || image.logs.length === 0, false);
   });
 
   test('Get container logs', async () => {
-    const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+    const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();
     if (container.status !== 'started' && container.status !== 'checking')
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
     expect(!logs || logs.length === 0, false);
-  });
+  }, {timeout: 300000 /* may cold-start the container */});
 }, { owner: 'ppolovyi@datagrok.ai', timeout: 5000});
 
 async function testResponse(containerId: string): Promise<void> {

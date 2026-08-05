@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [bio.cp.sequence-space, bio.cp.activity-cliffs, bio.cp.composition-analysis]
+realizes_atlas: [bio.cp.sequence-space, bio.cp.activity-cliffs, bio.cp.composition-analysis]
+realizes: [bio.menu.analyze.sequence-space, bio.menu.analyze.activity-cliffs, bio.menu.analyze.composition, bio.viewer.sequence-space, bio.viewer.web-logo]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/analyze.md
 migration_date: 2026-05-31

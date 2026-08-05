@@ -1,5 +1,12 @@
 ---
 title: "Histogram"
+description: Show the distribution of numerical data as binned bars, with optional split-by-category overlays.
+keywords:
+  - distribution chart
+  - binned values
+  - frequency chart
+  - split by category
+  - distribution lines
 ---
 
 A histogram is a graphical representation of the distribution of numerical data.
@@ -58,6 +65,7 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Show Bin Selector | boolean | Show bin selector in the left top panel when the mouse is over the histogram |
 | Show Values | boolean | Show bin values on top of the bars |
 | Bins | number | Number of bins on the histogram |
+| X Axis Type | string | Spreads the bins evenly on the logarithmic scale. |
 | Value Min | number |  |
 | Value Max | number |  |
 | **Category** | | |
@@ -68,6 +76,10 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Show Markers | boolean | Whether markers should be drown when multiple histograms are shown. Requires *Split Column Name* to be set. |
 | **Misc** | | |
 | Show Y Axis | boolean |  |
+| Y Axis Type | string | Scale of the vertical (bin count) axis. On the logarithmic scale, bins with 0 and 1 rows are drawn at the baseline. |
+| Y Min | number | Lower bound of the vertical axis. Empty means zero. Set *Y Min* and *Y Max* to put different histograms on the same scale. |
+| Y Max | number | Upper bound of the vertical axis. Empty means the biggest bin count. Bins that do not fit are clipped. |
+| Show Clipped Bin Indicators | boolean | When enabled, shows wavy breaks and arrows on the bins that are clipped by the vertical axis range. |
 | Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
 | **General** | | |
 | Zoom To Range | boolean | Whether the horizontal axis should be zoomed to the range of the visible bins. |

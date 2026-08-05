@@ -1,6 +1,14 @@
 ---
 title: "Install Datagrok with Helm"
 sidebar_position: 5
+description: Install and upgrade Datagrok on any Kubernetes cluster using the OCI-published Helm chart.
+keywords:
+  - helm chart install
+  - kubernetes cluster
+  - oci registry
+  - values overlay
+  - helm upgrade
+  - existing pvc migration
 ---
 
 The Datagrok Helm chart is published as an OCI artifact on Docker Hub. It supports

@@ -2,7 +2,14 @@
 
 ## v.next
 
-
+* Flow: Added table-aware twins of the `Bio | Transform` entries, which mutate the input frame and return void (or hand the same frame back) — unusable on a pipeline canvas, where the node shows a bare pass-through arrow instead of a named result: Extract Sequence Region, To Atomic Level Column, Molecules to HELM Column, and Split to Monomers Columns (which returns the per-position monomer columns as a table of their own). All share the original implementation
+* Flow: Added Convert Sequence Notation `(table, sequence, targetNotation{fasta,separator,helm}, separator?) -> column`, wrapping `ISeqHandler.convert()`. Notation conversion previously existed only behind a dialog
+* Flow: Added Tag as Macromolecule `(table, sequence) -> column`, which runs sequence detection on a plain string column. Nothing could tag a column built inside a flow, so every semType-dependent bio function silently no-opped on derived data
+* Flow: Added Motif Search `(table, sequence, motif) -> dataframe`, returning the matching rows; reuses `linearSubstructureSearch`
+* Flow: Added Apply Antibody Numbering `(table, sequence, scheme{imgt,kabat})`, the canonical non-interactive entry point — it applies the annotations and the aligned column to the table. `immunumAntibodyNumbering` is the ENGINE, and its DataFrame of position maps and annotation JSON is dialog plumbing, not a pipeline result
+* Scripts: Renamed the sequence generator function to `Generate Sequences`. Its previous name camelized to `SequenceGenerator`, colliding with the sibling `sequence_generator.md` (a script with no `#name:` falls back to its filename), so the real generator was pushed to a server-assigned `SequenceGenerator_1` while the parameterless doc entity held the name callers reach for — including the generated `package-api.ts`
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages (also inherits the patched `datagrok/python` base)
+* GROK-18695: PepSeA Docker: raised security floors for the web stack (fastapi/starlette/h11/uvicorn/gunicorn/ujson/certifi/urllib3/requests/idna/pydantic/numpy) over the pinned PepSeA requirements (VEX)
 * Moved the Bio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * GROK-19794: MSA dialog: Fixed misaligned Alignment Parameters gap inputs (now share the dialog form's label alignment and width)
 

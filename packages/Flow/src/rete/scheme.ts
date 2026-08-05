@@ -2,6 +2,7 @@
 import {ClassicPreset, GetSchemes} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {TypedSocket} from './sockets';
+import type {FuncWrapper} from '../utils/func-input-overrides';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 
@@ -13,6 +14,9 @@ export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 export interface FlowEditorBridge {
   toggleCollapsed(id: string): void;
   isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+  /** Report a parameter edit made through an on-node control (the input-node
+   *  value editor) — same contract as the property panel's `paramsChanged`. */
+  notifyParamsChanged(nodeId: string): void;
 }
 
 /** Base class for every node we put on the canvas.
@@ -73,6 +77,30 @@ export class FlowNode extends ClassicPreset.Node<
    *  `ExecutionVisualizer`; empty when idle. */
   statusText = '';
 
+  /** Input keys hidden from the NODE BODY (no socket row) but still
+   *  data-carrying: the slot, its seeded `inputValues` entry, compilation, and
+   *  creation-script import/emit are all untouched, so scripts round-trip
+   *  faithfully. Populated by `FuncNode` from `nodeHiddenInputsOf` —
+   *  `HIDDEN_FUNC_INPUTS` (also hidden in the panel) plus
+   *  `PANEL_ONLY_FUNC_INPUTS` (still edited in the panel). A connected hidden
+   *  socket still renders (old flows keep their wire endpoints). */
+  hiddenInputs: ReadonlySet<string> = new Set();
+
+  /** Real output keys hidden the same way — for outputs that are bookkeeping
+   *  rather than a result (see `HIDDEN_FUNC_OUTPUTS`). A connected one still
+   *  renders, so old flows keep their wire endpoints. */
+  hiddenOutputs: ReadonlySet<string> = new Set();
+
+  /** Extra readiness check for this function (`FUNC_NODE_VALIDATORS`), stamped
+   *  by `FuncNode`. Returns the labels of what is still missing; must be
+   *  synchronous (it runs on every render and in the run gate). */
+  extraValidator?: (node: FlowNode) => string[];
+
+  /** When set (`FUNC_WRAPPERS`), the node's input slots are the wrapper's
+   *  exposed inputs, not the function's own; the compiler folds their resolved
+   *  expressions into the real call arguments via `mapInputs`. */
+  funcWrapper?: FuncWrapper;
+
   /** Input keys that must be satisfied (connected, or filled in the panel) for
    *  the node to do anything — the structural inputs (a table, a column).
    *  Populated by `FuncNode`/output nodes; drives the "Needs input" hint. */
@@ -100,8 +128,15 @@ export class FlowNode extends ClassicPreset.Node<
 
   /** Back-reference to the owning editor's callback surface, stamped by
    *  `FlowEditor` when the node enters its data layer. Runtime-only — the
-   *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
+   *  serializer picks fields explicitly, so this never reaches `.flow`. */
   editorBridge?: FlowEditorBridge;
+
+  /** Runtime-only companion to `properties['defaultValue']` for values a
+   *  string can't rebuild — the DataFrame a Table Input picked (possibly
+   *  opened from a local file, existing nowhere else), a File Input's
+   *  FileInfo. Never serialized; after a reload the serialized name is
+   *  re-resolved from the workspace instead (see `resolveInputValue`). */
+  transientValue?: unknown;
 
   /** Human-friendly title — `label` from the Rete superclass is what we
    *  render, so this is just an alias for symmetry with the LiteGraph world. */
@@ -189,5 +224,13 @@ export function missingRequiredProps(node: FlowNode): string[] {
  *  requirement (a plot with no table, a Select Column with no column) is not
  *  run, and neither is anything downstream of it. */
 export function nodeMissingRequirements(node: FlowNode, isConnected: (key: string) => boolean): string[] {
-  return [...missingRequiredInputs(node, isConnected), ...missingRequiredProps(node)];
+  return [
+    ...missingRequiredInputs(node, isConnected),
+    ...missingRequiredProps(node),
+    // Function-specific readiness the generic checks can't express (e.g. an
+    // MPO mapping must cover every property of the chosen profile). Stamped on
+    // the node by `FuncNode` so this stays a plain call — the node model must
+    // not depend on the panel's editors.
+    ...(node.extraValidator?.(node) ?? []),
+  ];
 }

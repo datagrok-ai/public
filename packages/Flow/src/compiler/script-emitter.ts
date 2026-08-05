@@ -5,9 +5,10 @@
  *   - instrumented: each step wrapped in try/catch firing `funcflow.exec.<runId>`
  *     events for live execution visualization. */
 
-import {FlowEditor} from '../rete/flow-editor';
+import {FlowEditor, outputOrderRank} from '../rete/flow-editor';
 import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
+import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
 
 export interface ScriptSettings {
   name: string;
@@ -52,6 +53,9 @@ export function emitScript(
   lines.push('');
 
   if (inst) lines.push(...emitPreamble(options!.runId!));
+  // Everything from here down is the run body — wrapped in try/finally for
+  // instrumented emission (see the end of this function).
+  const bodyStart = lines.length;
 
   // -------- body --------
   // Stash a step's live output values into the registry (instrumented only), so
@@ -64,7 +68,12 @@ export function emitScript(
 
   for (const step of steps) {
     if (step.nodeType === 'input') {
-      stash(step); // param values are in body scope (declared by //input headers)
+      // Param values are in body scope (declared by //input headers). With a
+      // configured value the node genuinely runs (no dialog) — report a
+      // node-complete with the value summary so the node shows Done, its wire
+      // clears, and clicking it previews the parameter like any other output.
+      if (inst) lines.push(emitInputStepComplete(step, flow));
+      stash(step);
       continue;
     }
 
@@ -141,7 +150,22 @@ export function emitScript(
     stash(step);
   }
 
-  if (inst) lines.push(`__ff_emit('run-complete', '', {success: true});`);
+  if (inst) {
+    lines.push(`__ff_emit('run-complete', '', {success: true});`);
+    // Statements between instrumented blocks (SetVar registration, semantic
+    // type detection, output assignments) run outside any per-step try/catch —
+    // if one throws, the controller would never see the run end and stay
+    // `isRunning` forever. The trailing emit is a no-op when the run already
+    // reported (see __ff_done); errors still propagate.
+    return [
+      ...lines.slice(0, bodyStart),
+      'try {',
+      ...lines.slice(bodyStart),
+      '} finally {',
+      `  __ff_emit('run-complete', '', {success: false});`,
+      '}',
+    ].join('\n');
+  }
 
   return lines.join('\n');
 }
@@ -173,7 +197,11 @@ function buildHeaderLines(
   }
 
   const emittedOutputs = new Set<string>();
-  for (const step of steps.filter((s) => s.nodeType === 'output')) {
+  // Strip order, not topological order — the user can drag the output chips
+  // to say which output comes first, and the script signature follows.
+  const outputSteps = steps.filter((s) => s.nodeType === 'output')
+    .sort((a, b) => outputOrderRank(a) - outputOrderRank(b));
+  for (const step of outputSteps) {
     const node = flow.getNodeById(step.nodeId);
     if (!node) continue;
     lines.push(buildOutputLine(step, node));
@@ -192,7 +220,7 @@ function buildHeaderLines(
 }
 
 /** Header-only emission for a live editor — used by the `.flow` entity body,
- *  where the payload after the header is the ffjson document, not JS. */
+ *  where the payload after the header is the flow JSON document, not JS. */
 export function emitHeaderLines(flow: FlowEditor, settings: ScriptSettings, language: string): string[] {
   return buildHeaderLines(compileGraph(flow), flow, settings, language);
 }
@@ -225,8 +253,13 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   let line = `//input: ${outputType} ${paramName}`;
   const qualifiers: string[] = [];
 
+  // A configured table name / file path / JSON blob is not a valid script
+  // default literal — those values feed the prepared call at run time instead
+  // (`ExecutionController.configuredInputValues`); scalars keep the classic
+  // `= <value>` emission.
   const defaultVal = step.properties['defaultValue'];
-  if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null)
+  if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null &&
+      !NON_HEADER_DEFAULT_TYPES.has(outputType))
     line = `//input: ${outputType} ${paramName} = ${formatHeaderDefault(defaultVal, outputType)}`;
 
   if (step.properties['typeFilter']) qualifiers.push(`type: ${step.properties['typeFilter']}`);
@@ -256,11 +289,16 @@ function buildOutputLine(step: CompiledStep, node: FlowNode): string {
   return `//output: ${outputType} ${paramName}`;
 }
 
-function emitFuncStep(step: CompiledStep): string {
+/** The named-argument literal for the `grok.functions.call` — a wrapper's
+ *  reshaped arguments (`callInputs`) when present, else the node's inputs. */
+function funcCallParamsStr(step: CompiledStep): string {
   const params: string[] = [];
-  for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
-  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
-  return `let ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`;
+  for (const [name, expr] of step.callInputs ?? step.inputs) params.push(`${name}: ${expr}`);
+  return params.length > 0 ? `{${params.join(', ')}}` : '{}';
+}
+
+function emitFuncStep(step: CompiledStep): string {
+  return `let ${step.variableName} = await grok.functions.call('${step.funcName}', ${funcCallParamsStr(step)});`;
 }
 
 // eslint-disable-next-line complexity
@@ -268,13 +306,13 @@ function emitUtilityStep(step: CompiledStep): string | null {
   switch (step.funcName) {
   case 'Select Column': {
     const t = step.inputs.get('table') ?? 'undefined';
-    const n = step.properties['columnName'] ?? '';
-    return `let ${step.variableName} = ${t}.col('${n}');`;
+    const n = String(step.properties['columnName'] ?? '');
+    return `let ${step.variableName} = ${t}.col(${JSON.stringify(n)});`;
   }
   case 'Select Columns': {
     const t = step.inputs.get('table') ?? 'undefined';
     const names = String(step.properties['columnNames'] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-    const exprs = names.map((n) => `${t}.col('${n}')`).join(', ');
+    const exprs = names.map((n) => `${t}.col(${JSON.stringify(n)})`).join(', ');
     return `let ${step.variableName} = [${exprs}];`;
   }
   case 'Select Table': {
@@ -302,8 +340,8 @@ function emitUtilityStep(step: CompiledStep): string | null {
   }
   case 'Log': {
     const v = step.inputs.get('value') ?? 'undefined';
-    const label = step.properties['label'] ?? '';
-    return label ? `console.log('${label}:', ${v});` : `console.log(${v});`;
+    const label = String(step.properties['label'] ?? '');
+    return label ? `console.log(${JSON.stringify(label + ':')}, ${v});` : `console.log(${v});`;
   }
   case 'Info': {
     const m = step.inputs.get('message') ?? '\'\'';
@@ -441,7 +479,10 @@ function emitViewerStep(step: CompiledStep, inst: boolean, options?: EmitOptions
   const lines = [`__ff_emit('node-start', '${step.nodeId}');`, `let ${v};`, 'try {'];
   lines.push(`  ${v} = ${create};`);
   if (setOpts) lines.push(`  ${setOpts}`);
-  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs:{${v}: __ff_summarize(${v}, 'viewer')}});`);
+  // Slot-keyed like every other summary (see wrapInstrumented).
+  const outKey = Array.from(step.outputs.entries()).find(([, varName]) => varName === v)?.[0] ?? v;
+  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', ` +
+    `{outputs:{${JSON.stringify(outKey)}: __ff_summarize(${v}, 'viewer')}});`);
   lines.push('} catch (__ff_err) {');
   lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
   if (options?.haltOnError !== false) {
@@ -508,8 +549,21 @@ function emitPreamble(runId: string): string[] {
     '  }',
     '  return base;',
     '}',
+    // run-complete is emitted at most once — the body's finally emits a
+    // failure one as a safety net, a no-op when the run already reported.
+    'var __ff_done = false;',
     'function __ff_emit(type, nodeId, data) {',
+    '  if (type === \'run-complete\') {',
+    '    if (__ff_done) return;',
+    '    __ff_done = true;',
+    '  }',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
+    '}',
+    // Dims-only table summary for pass-through wires: enough for the on-edge
+    // "N × K" count label, without the full clone __ff_summarize would take.
+    'function __ff_dims(v) {',
+    '  return (v != null && v.rowCount !== undefined && v.columns !== undefined) ?',
+    '    {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length} : null;',
     '}',
     // Snapshot a dataframe crossing into a step (anything else passes through).
     // Same duck-type check as __ff_summarize; a func step works on its own copy
@@ -520,7 +574,11 @@ function emitPreamble(runId: string): string[] {
     '}',
     // Live-value registry (on the tab global): each node stashes its outputs so a
     // later single-node re-run can read them without re-running upstream.
+    // An abandoned run (Stop, a superseding run, view closed) must not keep
+    // writing: its late stashes would overwrite the current run's values for
+    // node ids whose visible state reflects the new run.
     '  function __ff_stash(nodeId, map) {',
+    '    if (globalThis.__ffAbortedRuns && globalThis.__ffAbortedRuns.has(__ff_runId)) return;',
     '    (globalThis.__ffFlowLive = globalThis.__ffFlowLive || {})[nodeId] = map;',
     '  }',
     '  function _ffLive(nodeId, key) {',
@@ -552,8 +610,13 @@ function wrapInstrumented(
   lines.push(`  ${bodyLine}`);
   if (extra?.outputExpr) {
     const typeArg = extra.declaredType ? `, '${extra.declaredType}'` : '';
+    // Key the summary by the output SLOT key, not the variable name — that's
+    // what `labelOutgoingConnections` (edge counts) and the port-preview
+    // lookup use (`state.outputs[outputKey]`).
+    const slotKey = Array.from(step.outputs.entries())
+      .find(([, varName]) => varName === extra.outputExpr)?.[0] ?? extra.outputExpr;
     lines.push(`  __ff_emit('node-complete', '${step.nodeId}', ` +
-      `{outputs:{${extra.outputExpr}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
+      `{outputs:{${JSON.stringify(slotKey)}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
   } else lines.push(`  __ff_emit('node-complete', '${step.nodeId}');`);
   lines.push('} catch (__ff_err) {');
   lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
@@ -581,9 +644,7 @@ function singleDataframeInputExpr(step: CompiledStep, node: FlowNode | undefined
 }
 
 function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow: FlowEditor): string[] {
-  const params: string[] = [];
-  for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
-  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
+  const paramsStr = funcCallParamsStr(step);
 
   const lines: string[] = [];
   lines.push(`__ff_emit('node-start', '${step.nodeId}');`);
@@ -615,6 +676,21 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
       outputEntries.push(`${JSON.stringify(key)}: __ff_col_summary(${outExpr}, ${singleDfInput}${typeArg})`);
     else
       outputEntries.push(`${JSON.stringify(key)}: __ff_summarize(${outExpr}${typeArg})`);
+  }
+
+  // Dataframe pass-throughs: dims-only summaries (rows × cols, no clone —
+  // cheap) keyed by the pass-through slot key, so wires leaving a `<in> →`
+  // port get their "N × K" count label just like wires from real outputs.
+  // The panels skip `__pt` keys (value-inspector.ts).
+  if (node) {
+    for (const key of Object.keys(node.outputs)) {
+      if (isExecKey(key) || !key.endsWith(PASSTHROUGH_SUFFIX)) continue;
+      const slotType = (node.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
+      if (slotType !== 'dataframe') continue;
+      const inExpr = step.inputs.get(key.slice(0, -PASSTHROUGH_SUFFIX.length));
+      if (inExpr && inExpr !== 'undefined')
+        outputEntries.push(`${JSON.stringify(key)}: __ff_dims(${inExpr})`);
+    }
   }
 
   // Capture the (possibly in-place-modified) table(s) threaded through a
@@ -722,6 +798,20 @@ function emitDetectSemanticTypes(step: CompiledStep, flow: FlowEditor): string[]
   return lines;
 }
 
+/** Input steps have no body statement (the `//input:` header declares the
+ *  param in scope) — this reports their completion with a slot-keyed value
+ *  summary, matching `wrapInstrumented`'s shape. */
+function emitInputStepComplete(step: CompiledStep, flow: FlowEditor): string {
+  const node = flow.getNodeById(step.nodeId);
+  const entries: string[] = [];
+  for (const [key, expr] of step.outputs) {
+    if (isExecKey(key)) continue;
+    const typeArg = node?.dgOutputType ? `, ${JSON.stringify(node.dgOutputType)}` : '';
+    entries.push(`${JSON.stringify(key)}: __ff_summarize(${expr}${typeArg})`);
+  }
+  return `__ff_emit('node-complete', '${step.nodeId}', {outputs: {${entries.join(', ')}}});`;
+}
+
 function emitBreakpointCode(step: CompiledStep): string[] {
   return [
     `__ff_emit('breakpoint-hit', '${step.nodeId}');`,
@@ -738,7 +828,9 @@ function emitBreakpointCode(step: CompiledStep): string[] {
 function formatHeaderDefault(value: unknown, type: string): string {
   switch (type) {
   case 'string':
-    return `"${String(value)}"`;
+    // JSON escaping — a default containing a quote must not break the
+    // `//input:` annotation line (the platform parses these headers).
+    return JSON.stringify(String(value));
   case 'bool':
     return value ? 'true' : 'false';
   case 'int':

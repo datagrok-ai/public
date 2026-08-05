@@ -15,7 +15,8 @@ realized_as:
   - browser-spec.ts
 coverage_type: regression
 priority: p0
-realizes: [browse-and-open-html]
+realizes_atlas: [browse-and-open-html]
+realizes: [views.notebooks, ml.menu.notebooks.browse-notebooks, ml.menu.notebooks.new-notebook, notebooks.view.notebook]
 produced_from: migrated
 related_bugs:
   - GROK-11693

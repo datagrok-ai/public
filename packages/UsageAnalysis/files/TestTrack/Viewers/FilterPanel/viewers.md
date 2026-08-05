@@ -3,7 +3,8 @@ feature: filters
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: []
+realizes_atlas: []
+realizes: [viewers.filters.categorical, viewers.filters.histogram, chem.filter.substructure-filter, chem.filter.scaffold-tree-filter, viewers.scatter-plot, viewers.bar-chart, viewers.histogram, viewers.pc-plot, viewers.trellis-plot, viewers.pie-chart]
 realized_as:
   - viewers-spec.ts
 related_bugs: []
@@ -77,5 +78,5 @@ related_bugs: []
 ---
 {
 "order": 4,
-"datasets": ["System:DemoFiles/SPGI.csv"]
+"datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

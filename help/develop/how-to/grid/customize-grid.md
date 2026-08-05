@@ -1,5 +1,15 @@
 ---
 title: "Customize a grid"
+description: Programmatically control grid formatting, row/column ordering, visibility, sizing, and color-coding.
+keywords:
+  - grid formatting
+  - column ordering
+  - row order
+  - column visibility
+  - column width
+  - color coding
+  - value comparer
+  - format tag
 ---
 
 Whenever users open a spreadsheet on the platform, they see it presented in a [grid](../../../visualize/viewers/grid.md).

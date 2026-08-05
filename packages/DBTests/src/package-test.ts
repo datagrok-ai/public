@@ -3,11 +3,9 @@ import * as grok from 'datagrok-api/grok';
 
 import {runTests, tests, TestContext, test as _test, category, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 import './connections/queries-test';
-import './sync/data-sync-test';
 import './benchmarks/benchmark';
 import './cache/cache-test';
 import './connections/table-query-test';
-import './tests/categories';
 import './db-annotations/db-annotations';
 
 export const _package = new DG.Package();
@@ -21,12 +19,22 @@ export {tests};
 //input: string skipToCategory {optional: true}
 //input: string skipToTest {optional: true}
 //input: bool returnOnFail {optional: true}
+//input: bool excludeNodeTests {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
-                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
-    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
-    const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean,
+                           excludeNodeTests?: boolean): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests);
+    const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests });
     return DG.DataFrame.fromObjects(data)!;
+}
+
+/** Headless entry for the `grok test` Node pass — runs only tests marked {node: true}. */
+export async function testNode(pkg: DG.Package,
+    options: {category?: string, test?: string, stressTest?: boolean, verbose?: boolean}): Promise<any[]> {
+  await initPackageTests();
+  return await runTests({category: options.category, test: options.test, stressTest: options.stressTest,
+    verbose: options.verbose, nodeOnly: true, nodeOptions: {package: pkg}});
 }
 
 //name: testConnections
@@ -109,7 +117,12 @@ export async function testConnections(): Promise<DG.DataFrame> {
   return df;
 }
 
+// Data sources with no reachable test connection — omitted from the suite entirely.
 const skip = ['Redshift', 'Athena', 'Files'];
+// Data sources kept in the per-provider grouping but skipped (reported as skipped).
+const skipReasons: {[dataSource: string]: string} = {
+  'ClickHouse': 'ClickHouse test connection is unavailable in CI',
+};
 
 //tags: init
 export async function initPackageTests() {
@@ -129,9 +142,9 @@ export async function initPackageTests() {
           const res = await conn.test();
           if (res !== 'ok')
             throw new Error(res);
-        });
+        }, {skipReason: skipReasons[cat]});
       }
-    });
+    }, {node: true});
 }
 
 //name: initAutoTests

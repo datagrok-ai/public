@@ -1,5 +1,9 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* `Viewer`: patch `dataFrame` before `options` so options referencing new columns don't hit the old frame
+
 ## 0.3.1 (2026-06-03)
 
 * Default float format for funccall `InputForm` doubles; exposed default float mask

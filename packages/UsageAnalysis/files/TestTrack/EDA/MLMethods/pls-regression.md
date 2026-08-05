@@ -3,7 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: []
+realizes_atlas: [eda.cp.train-predictive-model, eda.int.train-then-visualize-pls-regression]
+realizes: [eda.model.pls-regression, ml.menu.models.train-model]
 realized_as:
   - pls-regression-spec.ts
 related_bugs: []

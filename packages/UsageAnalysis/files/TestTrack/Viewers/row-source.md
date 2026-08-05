@@ -3,7 +3,8 @@ feature: row-source
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes: []
+realizes_atlas: []
+realizes: [viewers.scatter-plot, viewers.line-chart, viewers.histogram, viewers.bar-chart, viewers.pie-chart, viewers.box-plot, viewers.pc-plot, viewers.filters]
 realized_as:
   - row-source-spec.ts
 related_bugs: []

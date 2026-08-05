@@ -30,6 +30,23 @@ export async function askHelpLLMProvider(prompt: string, sessionId?: string) : P
   return await PackageFunctions.askHelpLLMProvider(prompt, sessionId);
 }
 
+//description: Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
+//input: string label { description: Config label for this run, e.g. baseline / medium-effort }
+//input: int reps { optional: true; description: Repetitions per prompt (default 3) }
+//input: string model { optional: true; choices: ["haiku","sonnet","opus"]; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
+//input: string only { optional: true; description: Run only part of the suite: comma-separated categories, difficulties, or prompt substrings. }
+//output: string result
+export async function runBenchmark(label: string, reps?: number, model?: string, only?: string) : Promise<string> {
+  return await PackageFunctions.runBenchmark(label, reps, model, only);
+}
+
+//description: Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
+//input: string labels { description: Comma-separated run labels, the first being the reference arm }
+//output: string result
+export async function compareBenchmarks(labels: string) : Promise<string> {
+  return await PackageFunctions.compareBenchmarks(labels);
+}
+
 //name: Execute
 //description: Plans and executes function steps to achieve needed results
 //input: string prompt 
@@ -67,6 +84,61 @@ export async function findMatchingPatternQuery(prompt: string) : Promise<string>
 //output: bool result
 export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: any, setAndRunFunc: any) : Promise<boolean> {
   return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
+}
+
+//description: List the catalogs available on this connection
+//input: view view 
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbCatalogs(view: any) : Promise<string> {
+  return await PackageFunctions.listDbCatalogs(view);
+}
+
+//description: List schemas of a catalog (defaults to the connection default catalog)
+//input: view view 
+//input: string catalogName { optional: true }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbSchemas(view: any, catalogName?: string) : Promise<string> {
+  return await PackageFunctions.listDbSchemas(view, catalogName);
+}
+
+//description: List tables of a schema with row counts
+//input: view view 
+//input: string schemaName 
+//input: string catalogName { optional: true }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbTables(view: any, schemaName: string, catalogName?: string) : Promise<string> {
+  return await PackageFunctions.listDbTables(view, schemaName, catalogName);
+}
+
+//description: Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table
+//input: view view 
+//input: string tables { description: Comma-separated table references to describe }
+//output: string result
+//meta.viewType: DataQueryView
+export async function getDbTableDetails(view: any, tables: string) : Promise<string> {
+  return await PackageFunctions.getDbTableDetails(view, tables);
+}
+
+//description: Foreign-key relationships involving the given tables — use to build correct JOINs
+//input: view view 
+//input: string tables { description: Comma-separated table references }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbJoins(view: any, tables: string) : Promise<string> {
+  return await PackageFunctions.listDbJoins(view, tables);
+}
+
+//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun
+//input: view view 
+//input: string sql { description: The SQL to test }
+//input: string description { description: One line describing what the query does }
+//output: string result
+//meta.viewType: DataQueryView
+export async function getSqlTestResult(view: any, sql: string, description: string) : Promise<string> {
+  return await PackageFunctions.getSqlTestResult(view, sql, description);
 }
 
 //input: string dbName { choices: ["biologics","chembl"] }

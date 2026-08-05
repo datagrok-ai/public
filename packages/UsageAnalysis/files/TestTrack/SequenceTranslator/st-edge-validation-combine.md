@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes: []
+realizes_atlas: [st-cp-translator-smoke, st-cp-combine-sense-antisense-flow]
+realizes: [sequencetranslator.app.oligo-toolkit, sequencetranslator.oligo-renderer.combine-sense-antisense]
 realized_as:
   - st-edge-validation-combine-spec.ts
 related_bugs: []

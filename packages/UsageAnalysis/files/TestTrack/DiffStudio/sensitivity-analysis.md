@@ -2,8 +2,9 @@
 feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
-priority: p0
-realizes: []
+priority: p1
+realizes_atlas: [load-library-ivp-run]
+realizes: [diffstudio.app.diff-studio, diffstudio.model.bioreactor]
 realized_as:
   - sensitivity-analysis.test.ts
 related_bugs: []
