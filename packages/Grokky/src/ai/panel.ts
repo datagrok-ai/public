@@ -1020,7 +1020,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return ui.divV([header, ui.divH(cards)]);
     });
 
-    const root = ui.panel([ui.h2('What can I help you with?'), ...blocks], 'grokky-empty-state');
+    const root = ui.panel([ui.h2('I\'m Grokky, your AI assistant. What can I help you with?'), ...blocks], 'grokky-empty-state');
     this.outputArea.appendChild(root);
     this.setWandVisible(false);
   }
