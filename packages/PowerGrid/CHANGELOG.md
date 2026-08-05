@@ -3,6 +3,7 @@
 ## v.next
 
 * [#3765](https://github.com/datagrok-ai/public/issues/3765): Forms viewer: Added the ability to pin rows via the context menu; pinned forms stay in place when scrolling
+* Vlaaivis manager: Fixed the `mpo-line-editor` import path, which broke the build after the editor moved into `mpo/editors/`
 
 ## 1.8.3 (2026-07-09)
 

@@ -291,7 +291,7 @@ class VlaaiVisManager {
   }
 
   private async createLineEditor(nodeText: string, container: HTMLElement): Promise<void> {
-    const {MpoDesirabilityLineEditor} = await import('@datagrok-libraries/statistics/src/mpo/mpo-line-editor');
+    const {MpoDesirabilityLineEditor} = await import('@datagrok-libraries/statistics/src/mpo/editors/mpo-line-editor');
     const {line = [], min, max, weight} = this.metadataMap.get(nodeText) ?? {};
     const column = this.columns.find((c) => c.name === nodeText)!;
 
