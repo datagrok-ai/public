@@ -148,6 +148,24 @@ category('panel and renderer', () => {
     expect(stat.version, version, 'a cosmetic option change recalculated the statistic column');
   });
 
+  test('a column-level change overrides a value set at cell level first', async () => {
+    // reported from real use with connectDots: detectSettings records "no cell overrides this
+    // property" once, the cell-level write never updated that flag, so the column-level change
+    // skipped the rewrite that clears the override and appeared to do nothing
+    const df = curveTable('panelCellThenColumn', true);
+    const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+    const prop = (value: any) => ({property: {name: 'connectDots'}, value}) as unknown as DG.InputBase;
+
+    changeCurvesOptions(gridCell, prop(true), 'seriesOptions', 'Cell');
+    expect(JSON.parse(df.col('curve')!.get(0)).series[0].connectDots, true, 'cell-level write failed');
+
+    changeCurvesOptions(gridCell, prop(false), 'seriesOptions', 'Column');
+    expect('connectDots' in JSON.parse(df.col('curve')!.get(0)).series[0], false,
+      'the cell-level override survived a column-level change');
+    expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].connectDots, false,
+      'the column-level value did not reach the cell');
+  });
+
   test('property panel renders for a saved legacy statistic', async () => {
     // no test covered this panel before, and it is the surface this ticket changed most
     const df = curveTable('panelBinding', true, ['interceptX']);

@@ -246,6 +246,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
     g.restore();
 
+    // statistics of every series share one column, so each continues below the previous
+    let statisticsLine = 0;
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
       if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
@@ -280,8 +282,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
           xValue: fitSpaceSeries.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       }
-      renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
-        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
+      statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
+        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});

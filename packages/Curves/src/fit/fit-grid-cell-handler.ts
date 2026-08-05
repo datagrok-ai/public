@@ -170,6 +170,9 @@ export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBa
     const chartData: IFitChartData = JSON.parse(value ?? '{}') ?? {};
     changePlotOptions(chartData, inputBase, options);
     gridCell.cell.value = JSON.stringify(chartData);
+    // the cell now carries an override for this property. Without recording that, a later
+    // Column or Dataframe level change skips the rewrite that clears it and appears to do nothing
+    gridCell.cell.column.temp[`${options}-custom-${propertyName}`] = true;
   } else {
     let columns: DG.Column[];
     if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
