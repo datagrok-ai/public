@@ -1,8 +1,7 @@
 import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as path from 'path';
 import {
-  SCRIPT_NAME,
-  R_SCRIPT_CONTENT,
+  rScriptContent,
   openScriptsBrowser,
   setScriptContent,
   apiDeleteScript,
@@ -10,6 +9,10 @@ import {
 
 const BASE = process.env.DATAGROK_URL!;
 const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
+
+// This suite's own script — see the note on SCRIPT_NAME in helpers.ts.
+const SCRIPT_NAME = 'PW_CreateTest';
+const R_SCRIPT_CONTENT = rScriptContent(SCRIPT_NAME);
 
 // Languages from the NEW dropdown with their expected editor annotations
 // Other languages (R Script is fully covered by test 1)
