@@ -2,7 +2,6 @@
 
 ## v.next
 
-* 23216: Guard _demoMMPA against a null MMPA viewer and early-return instead of dereferencing it for helpUrl
 * Added `Filter by Substructure`, `Similarity To` and `Diverse Subset` — table-aware twins of `searchSubstructure`, `getSimilarities` and `getDiversities`, which take a bare column. They declare `(table, column {semType: Molecule}, …)` and return rows or a column added to the table, so a caller has something to carry on with instead of a detached frame or a boxed BitSet
 * Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
 * Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
@@ -24,6 +23,7 @@
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
 * GROK-20505: Chem: Some descriptors return string values instead of numeric
 * InChI / InChI Keys: Moved the conversion to the parallel RDKit service (web workers) instead of the single-threaded module — `To InchI`, `To InchI Keys`, `getInchis` and `getInchiKeys` are now async
+* GROK-20486: Fixed a crash in _demoMMPA when the viewer didn't load in time
 
 ## 1.17.13 (2026-06-08)
 
