@@ -238,6 +238,22 @@ category('calculated columns', () => {
     expectFloat(Math.log10(stats.interceptX!), -6, 0.1);
   });
 
+  test('mergeSeries does not change a statistic', async () => {
+    // it merges the series for the plot only, on a copy - so it is not a reason to recalculate an
+    // extracted statistic column
+    const plain = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
+    const merged = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
+    merged.chartOptions!.mergeSeries = true;
+    const logX = {logX: true, logY: false};
+
+    for (const i of [0, 1]) {
+      const a = getStatistic(calculateSeriesFit(plain.series![i], i, logX, undefined, false), 'ic50');
+      const b = getStatistic(calculateSeriesFit(merged.series![i], i, logX, undefined, false), 'ic50');
+      expect(a, b, `series ${i} changed when mergeSeries was set`);
+    }
+    expect(getChartDataAggrStats(merged, 'med').ic50, getChartDataAggrStats(plain, 'med').ic50);
+  });
+
   test('outlier toggle refreshes statistic columns named by the new API', async () => {
     const df = curveTable('calcColOutlierToggle', [-6.5]);
     const stat = DG.Column.float('ic50 col', df.rowCount);

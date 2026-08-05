@@ -27,8 +27,10 @@ import {ColorType, SeriesColorType, getSeriesColor} from './render-utils';
 import {calculateSeriesFit, getChartDataAggrStats, aggregatedStatisticsProperties} from './fit-statistics';
 import {fitFunctions, fitSeriesProperties, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
-// options a statistic can depend on; everything else (title, axis names, colours) only repaints
-const STATISTIC_AFFECTING_OPTIONS = ['logX', 'logY', 'allowXZeroes', 'fitFunction', 'errorModel', 'mergeSeries'];
+// Options a statistic can depend on; everything else only repaints. errorModel is here because it
+// weights the objective function and so changes the fitted parameters. mergeSeries is not: the
+// renderer merges on a copy, and the statistics always read the original series.
+const STATISTIC_AFFECTING_OPTIONS = ['logX', 'logY', 'allowXZeroes', 'fitFunction', 'errorModel'];
 
 const CHART_OPTIONS = 'chartOptions';
 const SERIES_OPTIONS = 'seriesOptions';
