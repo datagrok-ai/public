@@ -135,12 +135,16 @@ Examples include:
 Viewers with a categorical axis ([scatterplot](viewers/scatter-plot.md), [box plot](viewers/box-plot.md),
 [line chart](viewers/line-chart.md)) let you reorder its categories from the axis context menu, under **Order**:
 
-* **Sort by a column** — numerical columns compare categories by the chosen **Aggregation**, categorical
-  ones by their values.
-* **Property** — a number computed for the values themselves. The choices are discovered from the
-  installed packages: with the [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  package a column of molecules can be ordered by MW, LogP, PSA and the other molecular properties.
-  Packages add their own by registering a function with the `categoryOrderer` role.
+* **Sort by a column** — pick the column to compare the categories by. Hovering a column in the list
+  opens its own options next to it, and picking one of them sorts by that column:
+  * a numerical column offers the **aggregation** that reduces the values of one category to the
+    number it is compared by (min, max, avg, med, ...);
+  * a column of a semantic type offers the **properties** computed for its values. They are
+    discovered from the installed packages: with the
+    [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) package a column of
+    molecules can be ordered by MW, LogP, PSA and the other molecular properties. Packages add their
+    own by registering a function with the `categoryOrderer` role that returns a column of numbers.
+  * a categorical column with nothing registered for it compares the categories by its own values.
 * **Edit Manually** — arrange the categories by hand.
 * **Apply To All Viewers** — makes the current order the column's order everywhere, including the grid.
 

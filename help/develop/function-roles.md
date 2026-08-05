@@ -130,8 +130,10 @@ A function with the `categoryOrderer` role (the historical name — the concept 
 from ordering categories to computing any comparable per-value number) computes one comparable number per value of a semantic type,
 letting the platform sort, order and bin values it knows nothing about — see
 [category order](../visualize/table-view-1.md#category-order). It takes a column of that semantic type and
-returns a column of the same length; a second parameter with `choices` turns one function into one property
-per choice. The platform only ever passes the distinct values, so the calculation stays cheap on large tables.
+returns a column of numbers of the same length; a second parameter with `choices` turns one function into
+one property per choice. A function that returns anything else — a column of another semantic type, or a
+scalar — is not offered as a property. The platform only ever passes the distinct values, so the
+calculation stays cheap on large tables.
 
 ```ts
 //name: Molecular Property
