@@ -165,10 +165,10 @@ test.describe.serial('Connections / Identifiers', () => {
     await applyAutomationSetup(page);
 
     // Open the customers table via the schema tree:
-    // Postgres → test_postgres → Schemas → public → customers → Get All.
-    // The Schemas wrapper's `name=` uses the *server-side* stored name
-    // (`TestPostgres`), not the friendly name (`test_postgres`); the schema
-    // tree nodes themselves use the dash-version of the friendly name.
+    // Postgres → connection → Schemas → public → customers → Get All.
+    // The Schemas wrapper's `name=` uses the server-side stored name (PascalCase of the
+    // friendly name, see CONN_SERVER_NAME); the schema tree nodes themselves use the
+    // dash-version of the friendly name.
     await expandDbProvider(page, PROVIDER);
     await expandDbConnection(page, PROVIDER, CONNECTION);
     await expandDbGroupWrapper(page, PROVIDER, CONN_SERVER_NAME, 'Schemas');
@@ -180,18 +180,19 @@ test.describe.serial('Connections / Identifiers', () => {
     await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 60_000 });
     await showContextPanel(page);
 
-    // Verify semType on the column server-side. This is the runtime answer to
-    // "is the identifier active?" — UI then renders blue text from this value.
+    // Verify semType on the column. This is the runtime answer to "is the identifier
+    // active?" — UI then renders blue text from this value.
     // SCOPE NOTE: visual blue-highlight verification belongs in identifiers-ui.md;
     // grid cells are canvas-rendered, so we cannot read pixel colours from the DOM.
-    const semType = await page.evaluate((col) => {
+    // Poll: semantic types are detected asynchronously, so the grid canvas exists before
+    // the column carries one — reading once here returned null on a slower stand.
+    await expect.poll(async () => page.evaluate((col) => {
       const g = (window as unknown as { grok: any }).grok;
       const tv = g.shell.tv;
       if (!tv) return null;
       const c = tv.dataFrame.col(col);
       return c ? c.semType : null;
-    }, COLUMN);
-    expect(semType).toBe(SEM_TYPE);
+    }, COLUMN), { timeout: 30_000, intervals: [500] }).toBe(SEM_TYPE);
   });
 
   test('3. Remove identifiers config and verify the column no longer carries the type', async ({ page }) => {
