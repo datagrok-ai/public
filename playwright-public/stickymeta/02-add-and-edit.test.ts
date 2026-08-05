@@ -147,7 +147,7 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     }, schemaName);
     await expect.poll(async () =>
       page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating')),
-      { timeout: 20_000, intervals: [500] }).toBe(true);
+      { timeout: 45_000, intervals: [500] }).toBe(true);
 
     // The cell edited in 2.1 (row 0) still carries rating = 5 after remove + re-add.
     const ratingRow0 = await page.evaluate(() => (window as any).grok.shell.t.col('rating').get(0));

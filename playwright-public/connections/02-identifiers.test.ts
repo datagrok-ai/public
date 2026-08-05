@@ -40,7 +40,9 @@ const PROVIDER = 'Postgres';
 const CONNECTION = 'identifiers_test_postgres';
 // Server-side stored name (PascalCase'd from the friendly name) — used by the
 // platform when naming the inline Schemas/Catalogs wrapper under the connection.
-const CONN_SERVER_NAME = 'TestPostgres';
+// The Schemas/Catalogs wrapper is named after the connection in PascalCase, so derive it
+// rather than restate it - a renamed connection otherwise leaves this pointing at nothing.
+const CONN_SERVER_NAME = CONNECTION.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
 const CONNECTION_DASH = CONNECTION.replace(/_/g, '-');
 const SCHEMA = 'public';
 const TABLE = 'customers';

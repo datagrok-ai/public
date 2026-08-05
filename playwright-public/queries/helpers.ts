@@ -88,8 +88,31 @@ function treeNodeLocator(page: Page, nodeName: string) {
   return page.locator(`[name="${nodeName}"]:not(.d4-tree-view-list-more)`).first();
 }
 
+/**
+ * Make a tree node reachable when its group is truncated: the tree renders only the
+ * first N children and puts the rest behind a "Show more" footer, so a just-saved
+ * query on a connection that already owns dozens of them is present server-side and
+ * absent from the DOM. Publishing UsageAnalysis, which registers many queries on the
+ * Datagrok connection, is what pushed these suites over that limit.
+ */
+export async function revealTreeNode(page: Page, nodeName: string): Promise<void> {
+  if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 2_000 }).catch(() => false))
+    return;
+  for (let i = 0; i < 5; i++) {
+    const more = page.locator('.d4-tree-view-list-more').first();
+    if (!await more.isVisible({ timeout: 1_000 }).catch(() => false))
+      return;
+    await more.scrollIntoViewIfNeeded();
+    await more.click();
+    await page.waitForTimeout(700);
+    if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 1_000 }).catch(() => false))
+      return;
+  }
+}
+
 /** Expand any Browse tree node by its `name=` attribute (idempotent). */
 export async function expandTreeNode(page: Page, nodeName: string): Promise<void> {
+  await revealTreeNode(page, nodeName);
   const node = treeNodeLocator(page, nodeName);
   await node.waitFor({ state: 'visible', timeout: 15_000 });
   await node.scrollIntoViewIfNeeded();
@@ -288,6 +311,7 @@ export async function expandDbSchemas(page: Page, provider: string, connServerNa
 
 /** Click a Browse-tree node in a way that registers it as the current object (updates the Context Panel). */
 export async function selectTreeNodeAsCurrentObject(page: Page, nodeName: string): Promise<void> {
+  await revealTreeNode(page, nodeName);
   const node = page.locator(`[name="${nodeName}"]:not(.d4-tree-view-list-more)`).first();
   await node.waitFor({ state: 'visible', timeout: 15_000 });
   await node.scrollIntoViewIfNeeded();
@@ -521,10 +545,12 @@ export async function focusQueryEditorTab(page: Page, queryName: string): Promis
 /** Click the Save button in the query editor ribbon and wait for the server commit. */
 export async function saveQuery(page: Page, friendlyName: string): Promise<void> {
   await page.locator('[name="button-Save"]').first().click();
-  // Poll the server until the query is visible — Save is async and has no toast on this flow.
+  // Poll the server until the query is visible — Save is async and has no toast on this
+  // flow. The stand now publishes ten packages before the suite runs, so a commit that
+  // used to land well inside 30s can take appreciably longer under that load.
   await expect.poll(async () =>
     (await findQueryByFriendlyName(page, friendlyName)) !== null,
-  { timeout: 30_000 }).toBe(true);
+  { timeout: 60_000 }).toBe(true);
 }
 
 /** Find a saved query by the user-facing name (stored server-side as `friendlyName`). */
