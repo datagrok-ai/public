@@ -1,5 +1,9 @@
 # Dev Tools changelog
 
+## v.next
+
+* GROK-20621: Signature Editor: Error on adding a tag
+
 ## 1.6.4 (2025-10-16)
 
 * Core: Projects: Fixed data-sync projects from scripts fail

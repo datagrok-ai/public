@@ -23,10 +23,10 @@ import {
   OPTIONAL_TAG_NAME,
   OPTIONAL_TAG_NAMES,
   optionTags,
-  tooltipMessage
+  tooltipMessage,
 } from './const';
 import '../../css/styles.css';
-import {applyCodeMirror} from "../utils/code-mirror-check";
+import {applyCodeMirror} from '../utils/code-mirror-check';
 
 const FSE_ICON_SELECTOR = 'i.fa-magic[aria-label="Open Signature Editor"]';
 
@@ -41,7 +41,7 @@ const getCode = (codeMirror: any) => codeMirror.getDoc().getValue();
 function addFseRibbonQuery(v: DG.View) {
   applyCodeMirror(v, (codeMirror) => {
     const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
-    (v.ribbonMenu.root.previousSibling as HTMLElement)?.append(ui.div(iconFse,'d4-ribbon-item'));
+    (v.ribbonMenu.root.previousSibling as HTMLElement)?.append(ui.div(iconFse, 'd4-ribbon-item'));
   });
 }
 
@@ -80,9 +80,9 @@ async function getDataQuery(sql: string): Promise<DG.DataQuery> {
 }
 
 async function getInputCode(v: DG.View, functionCode: string) {
-  return v.type === DATA_QUERY_VIEW
-      ? await getDataQuery(functionCode)
-      : DG.Script.create(functionCode);
+  return v.type === DATA_QUERY_VIEW ?
+    await getDataQuery(functionCode) :
+    DG.Script.create(functionCode);
 }
 
 async function openFse(v: DG.View, functionCode: string) {
@@ -108,29 +108,32 @@ async function openFse(v: DG.View, functionCode: string) {
   const generateParamLine = (param: DG.Property, direction: string) => {
     const optionTagsPreview = optionTags(param)
       .map((tag) => {
-        return { tag: tag, val: param.options[tag] };
+        return {tag: tag, val: param.options[tag]};
       })
       .filter((value) => !!value.val)
-      .map(({ tag, val }) => `${tag}: ${val}`)
+      .map(({tag, val}) => `${tag}: ${val}`)
       .concat(...(param.category && param.category !== DEFAULT_CATEGORY) ? [`category: ${param.category}`] : [])
       .join('; ');
     return `${headerSign[language]}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
 
   const nameToProp = (name, options?: {[key: string]: any}) => {
-    const prop = DG.Property.create(name, DG.TYPE.STRING,
-    (x: any) => x.options[name],
-    (x: any, v) => updateValue(x, name, v), '');
+    const isTags = name === FUNC_PROPS_FIELD.TAGS;
+    const prop = DG.Property.create(name, isTags ? DG.TYPE.STRING_LIST : DG.TYPE.STRING,
+      (x: any) => x.options[name],
+      (x: any, v) => updateValue(x, name, v), isTags ? [] : '');
     if (options) prop.fromOptions(options);
     return prop;
   };
 
   const functionProps: DG.Property[] = FUNC_PROPS_FIELDS.map((name) => nameToProp(name, getChoicesByName[name]));
 
+  const hasValue = (v: any) => Array.isArray(v) ? v.length > 0 : !!v;
+
   const getNewProps = () => {
     const newProps = [];
     for (const prop of Object.values(functionProps)) {
-      if (!prop.get(inputScriptCopy) && !(inputScriptCopy as any)[prop.name])
+      if (!hasValue(prop.get(inputScriptCopy)) && !hasValue((inputScriptCopy as any)[prop.name]))
         newProps.push(prop);
     }
     return newProps;
@@ -139,22 +142,20 @@ async function openFse(v: DG.View, functionCode: string) {
   let addButton = ui.div();
   let inputs: HTMLElement = ui.div();
 
+  const getPropValue = (prop: DG.Property) => prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name];
+
   const functionPropsInput = (prop: DG.Property) => {
+    const label = functionPropsLabels[prop.name as FUNC_PROPS_FIELD];
     switch (prop.name) {
-      case FUNC_PROPS_FIELD.LANGUAGE:
-        return ui.input.choice(
-          functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
-          {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-          items: prop.choices});
-      // case FUNC_PROPS_FIELDS.TAGS:
-      //   return ui.input.multiChoice(
-      //     functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-      //     {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-      //     items: prop.choices}
-      //   );
-      default:
-        return ui.input.string(functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
-          {value: prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]});
+    case FUNC_PROPS_FIELD.LANGUAGE:
+      return ui.input.choice(label, {value: getPropValue(prop), items: prop.choices});
+    case FUNC_PROPS_FIELD.TAGS: {
+      const listInput = ui.input.list(label, {value: getPropValue(prop)});
+      listInput.root.querySelector('.fa-expand')?.remove();
+      return listInput;
+    }
+    default:
+      return ui.input.string(label, {value: getPropValue(prop)});
     }
   };
 
@@ -162,10 +163,10 @@ async function openFse(v: DG.View, functionCode: string) {
     if (!getNewProps().length) return ui.div();
 
     const onItemClick = async (item: DG.Property) => {
-      inputScriptCopy[item.name] = ' ';
+      inputScriptCopy[item.name] = item.name === FUNC_PROPS_FIELD.TAGS ? [''] : ' ';
       const newInputs = ui.inputs(
         Object.values(functionProps)
-          .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
+          .filter((prop) => hasValue(prop.get(inputScriptCopy)) || hasValue((inputScriptCopy as any)[prop.name]))
           .map((prop) => addFullWidthInput(
             functionPropsInput(prop),
             prop,
@@ -193,9 +194,9 @@ async function openFse(v: DG.View, functionCode: string) {
   };
 
   const addFullWidthInput = (input: DG.InputBase, prop: DG.Property) => {
-    (input.root.lastChild as HTMLElement).style.cssText += 'width: 400px; max-width: inherit;';
+    input.input.style.cssText += 'width: 400px; max-width: inherit;';
     input.onInput.subscribe(() => {
-      inputScriptCopy[prop.name] = input.stringValue;
+      inputScriptCopy[prop.name] = prop.name === FUNC_PROPS_FIELD.TAGS ? input.value : input.stringValue;
       refreshPreview();
     });
     (input.root as HTMLInputElement).placeholder = 'Enter your value...';
@@ -220,7 +221,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     inputs = ui.inputs(
       Object.values(functionProps)
-        .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
+        .filter((prop) => hasValue(prop.get(inputScriptCopy)) || hasValue((inputScriptCopy as any)[prop.name]))
         .map((prop) => addFullWidthInput(
           functionPropsInput(prop),
           prop,
@@ -235,7 +236,7 @@ async function openFse(v: DG.View, functionCode: string) {
     ]);
   };
 
-  let functionParamsCopy = [
+  const functionParamsCopy = [
     ...inputScriptCopy.inputs.map((prop) => {
       prop.options.direction = DIRECTION.INPUT; return prop;
     }),
@@ -254,7 +255,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     const optionalTagsInputBase = getInputBaseArray(
       optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      param
+      param,
     );
 
     const result = ui.form([
@@ -268,7 +269,7 @@ async function openFse(v: DG.View, functionCode: string) {
     const helpIcon = ui.iconFA('question', () => {
       window.open(
         'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation',
-        '_blank'
+        '_blank',
       );
     }, 'Function parameters help');
     helpIcon.classList.add('dt-help-icon');
@@ -277,9 +278,9 @@ async function openFse(v: DG.View, functionCode: string) {
       ui.divH(
         [
           ui.h1(`Param: ${paramName}`),
-          helpIcon
+          helpIcon,
         ],
-      ), ui.block75([result])
+      ), ui.block75([result]),
     ]);
   };
 
@@ -297,7 +298,7 @@ async function openFse(v: DG.View, functionCode: string) {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING,
         (x: any) => x.options?.[FUNC_PARAM_FIELDS.DIRECTION],
         (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DIRECTION, v), '');
-      temp.fromOptions({ choices: [DIRECTION.INPUT, DIRECTION.OUTPUT] });
+      temp.fromOptions({choices: [DIRECTION.INPUT, DIRECTION.OUTPUT]});
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME],
@@ -305,7 +306,7 @@ async function openFse(v: DG.View, functionCode: string) {
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.TYPE, v), '');
-      temp.fromOptions({ choices: funcParamTypes });
+      temp.fromOptions({choices: funcParamTypes});
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.STRING,
@@ -313,7 +314,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
-      temp.fromOptions({ editor: 'textarea' });
+      temp.fromOptions({editor: 'textarea'});
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
@@ -362,14 +363,14 @@ async function openFse(v: DG.View, functionCode: string) {
       ui.icons.delete(() => {
         functionParamsCopy.splice(rowIdx, 1);
         functionParamsState.next(functionParamsCopy);
-      }, 'Remove the param'), { style: { textAlign: 'center', 'margin': '6px' } },
+      }, 'Remove the param'), {style: {textAlign: 'center', 'margin': '6px'}},
     );
 
 
     if (gc.isTableCell) {
       gc.style.element = ui.divH([
         deleteBtn(gc.gridRow),
-        addParamBtn(gc.cell.rowIndex)
+        addParamBtn(gc.cell.rowIndex),
       ], {style: {'width': '100px'}});
       gc.style.element.style.display = 'flex';
       gc.style.element.style.justifyContent = 'center';
@@ -390,7 +391,7 @@ async function openFse(v: DG.View, functionCode: string) {
     import('codemirror/mode/julia/julia'),
     import('codemirror/mode/sql/sql.js'),
   ]);
-  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang[language] });
+  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), {mode: highlightModeByLang[language]});
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
@@ -417,14 +418,14 @@ async function openFse(v: DG.View, functionCode: string) {
       if (match || param.name === defaultParamName)
         num++;
     }
-    return num === 0 ? defaultParamName : `${defaultParamName}_${num}`
-  }
+    return num === 0 ? defaultParamName : `${defaultParamName}_${num}`;
+  };
 
   const addParamBtn = (rowIdx: number) => {
     const btn = ui.button(
       [
         ui.div(ui.icons.add(() => {
-        }, 'Add the param'), { style: { textAlign: 'center', 'margin': '6px'} }),
+        }, 'Add the param'), {style: {textAlign: 'center', 'margin': '6px'}}),
       ],
       () => {
         const newParam = {
@@ -478,7 +479,7 @@ async function openFse(v: DG.View, functionCode: string) {
       result += `${headerSign[language]}${functionPropsCode[FUNC_PROPS_FIELD.CONNECTION]}: ${conn}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
-      if (!!propValue && !!propValue.length) {
+      if (hasValue(propValue)) {
         const propName = functionPropsCode[propField.name];
         result += `${headerSign[language]}${functionPropsCode[propName]}: ${propValue}\n`;
       }
@@ -524,16 +525,16 @@ async function openFse(v: DG.View, functionCode: string) {
     if (functionParamsCopy.length > paramsDF.rowCount) {
       const newProps = functionParamsCopy.map((el: DG.Property) => el.caption);
       const oldProps = paramsDF.columns.byName(FUNC_PARAM_FIELDS.NAME).toList();
-      let rowIdx = newProps.map((element, index) => [element, index])
-      .filter(([element, index]) => element !== oldProps[index])
-      .map(([_, index]) => index);
+      const rowIdx = newProps.map((element, index) => [element, index])
+        .filter(([element, index]) => element !== oldProps[index])
+        .map(([_, index]) => index);
       const newParam = functionParamsCopy[rowIdx[0]];
       paramsDF.rows.insertAt(rowIdx[0] as number, 1);
       paramsDF.rows.setValues(rowIdx[0] as number, [
         newParam.options.direction, newParam.name,
         newParam.propertyType, newParam.defaultValue,
         newParam.description, newParam.category,
-      ],)
+      ]);
     }
 
     if (functionParamsCopy.length < paramsDF.rowCount) {
@@ -556,9 +557,9 @@ async function openFse(v: DG.View, functionCode: string) {
     const rowIndex = functionParamsCopy.findIndex((param) => param.name === (editedCell.tableRow as any)['Name']);
     if (rowIndex) {
       (functionParamsCopy[rowIndex] as any)
-      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
+        [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsCopy[rowIndex].options
-      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
+        [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsState.next(functionParamsCopy);
     }
     onFunctionParamClick((editedCell.tableRow as any)['Name']);
