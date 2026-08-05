@@ -1,5 +1,9 @@
 # statistics changelog
 
+## v.next
+
+* MPO: Re-exported `desirabilityScore` for callers that score a single value (it was inlined into the column-at-a-time path and dropped from the public surface, breaking the PowerGrid build)
+
 ## 1.12.9 (2026-07-16)
 
 * Compute functions dialog: Optional per-function "re-run on open" checkbox (`rerunOnOpenOption`), with the flag surfaced in the dialog result and template compute types.

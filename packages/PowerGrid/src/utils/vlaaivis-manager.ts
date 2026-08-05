@@ -15,7 +15,7 @@ import {
   VlaaivisColumnMetadata
 } from './constants';
 
-import {PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {NumericalDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 class VlaaiVisManager {
   private settings: PieChartSettings;
@@ -66,7 +66,7 @@ class VlaaiVisManager {
     const sectors: Sector[] = Array.from(groupMap, ([groupName, metas]) => ({
       name: groupName,
       sectorColor: metas[0].sectorColor ?? defaultGroupProps[CONSTANTS.SECTOR_COLOR_PROPERTY],
-      subsectors: metas.map(({name, weight, line, min, max}) => ({name, weight, line, min, max}))
+      subsectors: metas.map((meta) => ({...meta}))
     }));
 
     return {
@@ -249,12 +249,13 @@ class VlaaiVisManager {
 
   private createSubsector(column?: DG.Column): Subsector {
     const name = column?.name ?? '';
-    const meta = name ? this.metadataMap.get(name) : {} as VlaaivisColumnMetadata;
+    const meta = name ? this.metadataMap.get(name) : undefined;
     const metadataWeight = meta?.weight ?? undefined;
     const weight = typeof metadataWeight === 'number' ? metadataWeight : +this.generateRandomNumber().toFixed(1);
 
     return {
       name,
+      functionType: 'numerical',
       weight,
       line: meta?.line ?? []
     };
@@ -292,10 +293,11 @@ class VlaaiVisManager {
 
   private async createLineEditor(nodeText: string, container: HTMLElement): Promise<void> {
     const {MpoDesirabilityLineEditor} = await import('@datagrok-libraries/statistics/src/mpo/editors/mpo-line-editor');
-    const {line = [], min, max, weight} = this.metadataMap.get(nodeText) ?? {};
+    const {line = [], min, max, weight} = this.metadataMap.get(nodeText) ?? {} as Partial<VlaaivisColumnMetadata>;
     const column = this.columns.find((c) => c.name === nodeText)!;
 
-    const lineProp: PropertyDesirability = {
+    const lineProp: NumericalDesirability = {
+      functionType: 'numerical',
       line,
       min: min ?? +column.min.toFixed(1),
       max: max ?? +column.max.toFixed(1),
