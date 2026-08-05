@@ -40,22 +40,22 @@ export abstract class UaQueryViewer extends UaViewer {
       this.loader.classList.add('ua-wait');
       const filter = {...this.filter, ...staticFilter};
       // console.log(this.queryName);
-      if (this.queryName === undefined) {
-        this.getDataFrame!().then(this.postQuery.bind(this)).then(resolve.bind(this));
-        return;
-      }
-      grok.functions.call('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
-        if (dataFrame.columns.byName('count') != null)
-          dataFrame.columns.byName('count').meta.format = '#';
-        const userColumn = dataFrame.columns.byName('user');
-        if (userColumn != null) {
-          const users: {[key: string]: string} = {};
-          userColumn.categories.forEach((u: string) => {users[u] = colorHash.hex(u);});
-          userColumn.meta.colors.setCategorical(users);
-        }
-        this.postQuery(dataFrame);
-        return dataFrame;
-      }).then(resolve.bind(this));
+      const load = this.queryName === undefined ? this.getDataFrame!() :
+        grok.functions.call('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
+          if (dataFrame.columns.byName('count') != null)
+            dataFrame.columns.byName('count').meta.format = '#';
+          const userColumn = dataFrame.columns.byName('user');
+          if (userColumn != null) {
+            const users: {[key: string]: string} = {};
+            userColumn.categories.forEach((u: string) => {users[u] = colorHash.hex(u);});
+            userColumn.meta.colors.setCategorical(users);
+          }
+          return dataFrame;
+        });
+      load.then(this.postQuery.bind(this)).then(resolve.bind(this)).catch((e: any) => {
+        this.loader.classList.remove('ua-wait');
+        grok.shell.error(`${this.name}: ${e?.message ?? e}`);
+      });
     });
   }
 
