@@ -88,12 +88,31 @@ function treeNodeLocator(page: Page, nodeName: string) {
   return page.locator(`[name="${nodeName}"]:not(.d4-tree-view-list-more)`).first();
 }
 
+/** Collapse and re-expand a tree group so it re-reads its children from the server. */
+async function refetchTreeGroup(page: Page, groupName: string): Promise<void> {
+  const toggled = await page.evaluate((sel) => {
+    const node = document.querySelector(`[name="${sel}"]:not(.d4-tree-view-list-more)`);
+    const tri = node?.querySelector(':scope > .d4-tree-view-tri') as HTMLElement | null;
+    if (!tri || !tri.classList.contains('d4-tree-view-tri-expanded')) return false;
+    tri.click();
+    return true;
+  }, groupName);
+  if (!toggled) return;
+  await page.waitForTimeout(600);
+  await page.evaluate((sel) => {
+    const node = document.querySelector(`[name="${sel}"]:not(.d4-tree-view-list-more)`);
+    const tri = node?.querySelector(':scope > .d4-tree-view-tri') as HTMLElement | null;
+    if (tri && !tri.classList.contains('d4-tree-view-tri-expanded')) tri.click();
+  }, groupName);
+  await page.waitForTimeout(1500);
+}
+
 /**
- * Make a tree node reachable when its group is truncated: the tree renders only the
- * first N children and puts the rest behind a "Show more" footer, so a just-saved
- * query on a connection that already owns dozens of them is present server-side and
- * absent from the DOM. Publishing UsageAnalysis, which registers many queries on the
- * Datagrok connection, is what pushed these suites over that limit.
+ * Make a just-saved node reachable. Two things hide one: the group renders only its first
+ * N children behind a "Show more" footer, and the group's child list is whatever was
+ * fetched when it was expanded — a query saved afterwards is on the server and not in the
+ * DOM, with no footer to click. Open the footer if there is one, otherwise collapse and
+ * re-expand the group to force a refetch.
  */
 export async function revealTreeNode(page: Page, nodeName: string): Promise<void> {
   if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 2_000 }).catch(() => false))
@@ -101,6 +120,9 @@ export async function revealTreeNode(page: Page, nodeName: string): Promise<void
   // Scope to the node's own group — an unscoped search clicks whichever footer happens to
   // be first on the page, which expands a sibling group and leaves this one truncated.
   const parent = nodeName.replace(/---[^-]+(-[^-]+)*$/, '');
+  await refetchTreeGroup(page, parent);
+  if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 2_000 }).catch(() => false))
+    return;
   for (let i = 0; i < 6; i++) {
     // The footer is a `.d4-tree-view-list-more` row in some templates and a plain element
     // reading "..." / "Show more" in others; the connections suite hit both.
