@@ -292,6 +292,12 @@ export class PackageFunctions {
   static async CompareRuns() {
     const view = new DG.ViewBase();
     view.name = 'Run Comparison';
+    view.helpUrl = '/help/compute/run-comparison.md';
+    view.setRibbonPanels([[
+      ui.iconFA('question',
+        () => window.open('https://datagrok.ai/help/compute/run-comparison', '_blank'),
+        'Open the Run Comparison documentation'),
+    ]]);
     view.root.classList.remove('ui-panel');
     const app = Vue.createApp(RunComparisonAppInstance, {roleOnlyFilter: modelCatalogOptions.roleOnlyFilter});
     setVueAppOptions(app);

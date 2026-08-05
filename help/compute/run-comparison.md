@@ -12,9 +12,9 @@ keywords:
 The run comparison tool compares outputs of model runs side by side: pick a model, add
 historical runs (or raw workspace tables) to the comparison set, choose what to compare, and
 get a chart preview. The tool is a preliminary data selection with a quick preview — complex
-analysis belongs in the Datagrok workspace, where any comparison can be exported as a snapshot
-(**Results > Open in workspace**: the long-format data table plus the chart with its current
-options).
+analysis belongs in the Datagrok workspace, where any comparison can be
+[exported](#exporting) as a snapshot: the data table plus the chart with its current
+options.
 
 ## Matching
 
@@ -139,13 +139,35 @@ are present. Raw workspace tables have no annotations.
 
 ## Multiple values
 
-When the selected column target has compatible siblings (values sharing at least one run
-from the same tables, with a line-chartable index), the **Multiple values** toggle (or
-Shift+click on a compare row) enables selecting several values at once. Each value becomes
-a stacked line-chart panel with runs (and split categories) as lines inside. In the
-[independent points mode](#independent-points), the values share one scatterplot instead,
-colored by value name.
+When the selected value has compatible siblings, the **Multiple values** toggle (or
+Shift+click on a compare row) enables selecting several values at once. Every scalar is
+compatible with every other scalar. Column values are compatible when they share at least
+one run from the same tables and their index is numeric or datetime everywhere. Scalars
+and columns never mix in one selection.
+
+Several columns chart as stacked line-chart panels with runs (and split categories) as
+lines inside. In the [independent points mode](#independent-points), the values share one
+scatterplot instead, colored by value name. A comparison of several values needs a numeric
+or datetime index — if an index moves to a string column, the chart is replaced with a
+hint until the index is changed back or a single value is selected.
+
+Several scalars chart on a radar chart: one axis per value, one polygon per run. A switch
+above the chart flips it to a parallel-coordinates plot. With two values the tool always
+uses the parallel-coordinates plot, because a two-axis radar degenerates to a line. The
+radar viewer comes with the Charts package — without it, the parallel-coordinates plot is
+used for any number of values.
 
 Editing matches never exits the mode: a run that is missing or re-sourced from another
 table in one of the selected values shows as a gap in that panel, and the value's row is
 marked **partial**. Reverting the edit restores the chart exactly.
+
+## Exporting
+
+**Results > Export...** asks for a snapshot name and offers two ways out:
+
+* **Open in workspace** adds the comparison to the workspace: the data table plus the
+  chart with its current options. Tweak the chart before exporting — the tweaks carry
+  over.
+* **Save & share** opens the platform project dialog on the same snapshot, so the
+  comparison can be saved as a project and shared without leaving the tool. On platforms
+  without the project dialog, only **Open in workspace** is offered.
