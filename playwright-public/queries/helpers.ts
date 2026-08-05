@@ -372,9 +372,13 @@ export async function setQueryName(page: Page, name: string): Promise<void> {
   await input.waitFor({ timeout: 10_000 });
   // Triple-click selects the entire current value — works reliably against the Dart-managed
   // widget, whereas `fill()` and `pressSequentially` with delays lose keystrokes.
-  await input.click({ clickCount: 3 });
-  await page.keyboard.type(name);
-  await expect(input).toHaveValue(name);
+  // The editor keeps initializing after the input attaches and rewrites the field back to
+  // its default, so a name typed too early is silently discarded — retype until it holds.
+  await expect(async () => {
+    await input.click({ clickCount: 3 });
+    await page.keyboard.type(name);
+    await expect(input).toHaveValue(name, { timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
 }
 
 /**
