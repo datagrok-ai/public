@@ -29,8 +29,7 @@ export interface TableNodeInfo {
   friendlyPath?: string;
   // nqName of the producing function; used to merge same-function tables in index selection
   nqName?: string;
-  // from the {comparison: {...}} output annotation (or its legacy
-  // {comparisonIndex: ...} / {comparisonSplit: ...} aliases)
+  // from the {comparison: {...}} output annotation
   defaultIndexColumn?: string;
   defaultSplitColumn?: string;
   defaultAxisMode?: AxisMode;

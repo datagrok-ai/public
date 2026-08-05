@@ -25,8 +25,7 @@ export interface ComparisonDefaults {
   units?: TimeUnit;
 }
 
-/** Index defaults of a dataframe IO: the {comparison: {...}} JSON annotation,
- * with {comparisonIndex}/{comparisonSplit} as legacy aliases it overrides. */
+/** Index defaults of a dataframe IO: the {comparison: {...}} JSON annotation. */
 export function parseComparisonDefaults(options?: Record<string, any>): ComparisonDefaults {
   const raw = options?.['comparison'];
   let parsed: any = {};
@@ -39,8 +38,8 @@ export function parseComparisonDefaults(options?: Record<string, any>): Comparis
     }
   }
   return {
-    index: typeof parsed.index === 'string' ? parsed.index : (options?.['comparisonIndex'] || undefined),
-    split: typeof parsed.split === 'string' ? parsed.split : (options?.['comparisonSplit'] || undefined),
+    index: typeof parsed.index === 'string' ? parsed.index : undefined,
+    split: typeof parsed.split === 'string' ? parsed.split : undefined,
     ...AXIS_MODES.has(parsed.mode) ? {mode: parsed.mode as AxisMode} : {},
     ...TIME_UNITS.includes(parsed.units) ? {units: parsed.units as TimeUnit} : {},
   };

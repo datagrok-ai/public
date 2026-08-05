@@ -19,33 +19,16 @@ category('RunComparison: annotation defaults', () => {
     expect(defaults.units == null, true);
   });
 
-  test('falls back to legacy aliases', async () => {
-    const defaults = parseComparisonDefaults({comparisonIndex: 'time', comparisonSplit: 'species'});
-    expect(defaults.index, 'time');
-    expect(defaults.split, 'species');
-    expect(defaults.mode == null, true);
-  });
-
-  test('comparison JSON overrides legacy aliases', async () => {
-    const defaults = parseComparisonDefaults({
-      comparison: '{"index": "t", "split": "kind"}',
-      comparisonIndex: 'time',
-      comparisonSplit: 'species',
-    });
-    expect(defaults.index, 't');
-    expect(defaults.split, 'kind');
-  });
-
-  test('malformed JSON degrades to legacy aliases', async () => {
-    const defaults = parseComparisonDefaults({comparison: '{index: time', comparisonIndex: 'time'});
-    expect(defaults.index, 'time');
+  test('malformed JSON produces no defaults', async () => {
+    const defaults = parseComparisonDefaults({comparison: '{index: time'});
+    expect(defaults.index == null, true);
     expect(defaults.split == null, true);
   });
 
-  test('null annotation degrades to legacy aliases', async () => {
+  test('null annotation produces no defaults', async () => {
     // JSON.parse('null') succeeds with null — must not crash on property access
-    const defaults = parseComparisonDefaults({comparison: 'null', comparisonIndex: 'time'});
-    expect(defaults.index, 'time');
+    const defaults = parseComparisonDefaults({comparison: 'null'});
+    expect(defaults.index == null, true);
     expect(defaults.mode == null, true);
   });
 

@@ -133,9 +133,7 @@ All keys are optional. When a run is added to the comparison:
 * merged rows work naturally: all merged tables come from the same function, so they carry
   the same annotation and agree on the default.
 
-The legacy `{comparisonIndex: time; comparisonSplit: species}` options are still
-recognized as aliases for `index` and `split`. The `comparison` object wins when both
-are present. Raw workspace tables have no annotations.
+Raw workspace tables have no annotations.
 
 ## Multiple values
 
