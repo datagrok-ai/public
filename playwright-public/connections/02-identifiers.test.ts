@@ -35,7 +35,9 @@ test.skip(!PG_PASSWORD, 'DG_PG_PASSWORD not set — scenario requires reachable 
 // 8. Reload, verify column no longer carries the semantic type
 
 const PROVIDER = 'Postgres';
-const CONNECTION = 'test_postgres';
+// Own subject, not 01's test_postgres: 03 renames that one away mid-run, and with files
+// spread across workers this suite has no say in when that happens.
+const CONNECTION = 'identifiers_test_postgres';
 // Server-side stored name (PascalCase'd from the friendly name) — used by the
 // platform when naming the inline Schemas/Catalogs wrapper under the connection.
 const CONN_SERVER_NAME = 'TestPostgres';

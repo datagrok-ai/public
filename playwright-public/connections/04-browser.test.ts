@@ -26,12 +26,13 @@ import {
 // 6. Click the context dropdown arrow near the connection name — check menu
 
 const PROVIDER = 'Postgres';
-const CONNECTION = 'new_test_postgres';
+// Own subject — 05 deletes the shared new_test_postgres, and 03 renames into it.
+const CONNECTION = 'browser_new_test_postgres';
 const SEARCH_TERM = 'new_test';
 const SHARE_TARGET = 'Admin';
 const CHAT_MESSAGE = `pw-test ${Date.now()}`;
 
-test.describe.serial('Connections / Browser (Postgres / new_test_postgres)', () => {
+test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgres)', () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();

@@ -12,14 +12,16 @@ import {
 
 // Manual scenario `delete.md` (order 5).
 //
-// 1. Find new_test_postgres in Browse > Platform > Connections (we use the same
+// 1. Find the first connection in Browse > Platform > Connections (we use the same
 //    Browse > Databases > Postgres path — both surface the same connection node).
 // 2. Right-click → Delete..., confirm DELETE; verify it disappears.
-// 3. Same for test_postgres_2.
+// 3. Same for the second.
 
 const PROVIDER = 'Postgres';
-const NAME_1 = 'new_test_postgres';
-const NAME_2 = 'test_postgres_2';
+// Delete what this file created, never what 03 and 04 are still reading. Deleting the
+// shared new_test_postgres is what broke "3. Restore correct creds" and the Activity pane.
+const NAME_1 = 'delete_test_postgres_1';
+const NAME_2 = 'delete_test_postgres_2';
 
 test.describe.serial('Connections / Delete', () => {
   test.beforeAll(async ({ browser }) => {
