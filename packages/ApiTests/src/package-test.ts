@@ -34,6 +34,7 @@ import './dapi/domain-parity';
 import './dapi/domain-handlers';
 import './dapi/domain-frame-editor';
 import './dapi/domain-app-framework';
+import './dapi/domain-widgets';
 import './dapi/domain-visual-queries';
 import './dapi/connector-writes';
 import './dapi/connector-ddl';

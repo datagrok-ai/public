@@ -209,6 +209,37 @@ export interface IRectBounds {
 }
 
 /**
+ * Live state of ONE named input of a widget, as reported by
+ * {@link IWidgetStatus.inputs} — the machine-readable counterpart of what the user
+ * sees in a form. Values and validation are read on demand, never cached: a widget
+ * reports whatever it holds at the moment {@link Widget.getWidgetStatus} is called.
+ *
+ * {@link name} is the name the widget's properties address the input by, so
+ * `widget.props[status.name] = value` writes exactly what typing into it would.
+ */
+export interface IInputStatus {
+  /** Name of the input — also its property name in {@link Widget.props}. */
+  name: string;
+  /** Human-facing label. */
+  caption?: string;
+  /** Value type: a {@link TYPE} name ('string', 'int', 'datetime'...), or 'ref' when
+   * the value addresses another object (see {@link ref}). */
+  type: string;
+  semType?: string;
+  value: any;
+  /** Allowed values, when the input is a closed vocabulary. */
+  choices?: any[];
+  /** Whether an empty value is a validation error. */
+  required: boolean;
+  valid: boolean;
+  /** Validation message; absent while {@link valid}. */
+  error?: string;
+  description?: string;
+  /** What a `'ref'` value points at (a domain table address, 'User', 'Group'...). */
+  ref?: string;
+}
+
+/**
  * Runtime snapshot of a widget's structure, used by the automated testing system.
  * Returned by {@link Widget.getWidgetStatus}.
  */
@@ -225,6 +256,9 @@ export interface IWidgetStatus {
   description: string | null;
   /** Validation error message; null means the widget is in a valid state. */
   error: string | null;
+  /** Live state of the widget's named inputs — present on widgets that edit named
+   * values (forms), absent on the ones that do not. */
+  inputs?: IInputStatus[];
 }
 
 /** Base class for controls that have a visual root and a set of properties. */

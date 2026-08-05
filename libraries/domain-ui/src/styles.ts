@@ -80,6 +80,34 @@ div.ui-div.domain-ui-entity-page > div.ui-box.d4-tab-host {
   min-height: 0;
 }
 
+/* The property form: the inputs take the space the banner leaves. */
+.domain-ui-form {
+  min-height: 0;
+}
+
+.domain-ui-form-inputs {
+  flex-grow: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Form-level problems (a cross-field rejection, a duplicate, a load failure) —
+   the platform's own hint-block palette. */
+.domain-ui-form-banner {
+  margin: 4px 8px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--red-3);
+  background-color: var(--grey-1);
+  color: var(--text-color);
+  white-space: pre-line;
+}
+
+/* A page composed of widgets: each child takes what it needs, the page scrolls. */
+.domain-ui-page {
+  height: 100%;
+  min-height: 0;
+}
+
 /* The app's status-bar slot: the pending-change count and its actions, on the
    one line the platform gives a view at the bottom of the window. */
 .domain-ui-status-bar {

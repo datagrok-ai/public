@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20298: Additive machine-surface API: `IWidgetStatus` gained an OPTIONAL `inputs?: IInputStatus[]` field (`src/widgets/base.ts`), and the new `IInputStatus` interface (`{name, caption?, type, semType?, value, choices?, required, valid, error?, description?, ref?}`) describes ONE named input's live state — the name is the input's property name, so `widget.props[status.name] = value` writes exactly what typing into it would. Nothing existing changes: the field is optional, the base `Widget.getWidgetStatus()` implementation is untouched, and widgets that do not edit named values omit it.
+
 * GROK-20298: Added `DomainObjectHandler.rowFrom(values)` — wraps one row of a `query()` result as a `DG.DomainRow` locally, without a round trip: the acquisition path a list, a card or a context panel uses to render, address and act on rows it already fetched (`getById` remains the one that asks the server). `newRow()` is `rowFrom(null)`. Anything but a plain values map (or null) is rejected by name — read key by key, a string or an array used to produce a row of nonsense values that only surfaced later, as a card with no identity.
 
 * GROK-20298: `DomainObjectHandler.deepLink`/`openRow`/`copyLink` now reject a foreign object by name like the rest of the row members (they used to silently resolve null / do nothing); an unsaved row of the handler's own table still yields `null` / a no-op. The "not a `<table>` row" message renders the rejected value readably (its class name or JSON) instead of `[object Object]`.

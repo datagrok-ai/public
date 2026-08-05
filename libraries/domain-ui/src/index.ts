@@ -6,6 +6,20 @@
  * validation and permissions from the runtime domain registry, so they work on
  * ANY registered table without codegen.
  *
+ * The way in is the {@link domains} facade: `domains.table(...)` is the ONE await
+ * (it prefetches the client, the registry metadata and the caller's capabilities),
+ * and every widget factory on the handle is synchronous.
+ *
+ * ```ts
+ * import {domains} from '@datagrok-libraries/domain-ui';
+ *
+ * const issues = await domains.table('grit.issue');
+ * const saved = await issues.formDialog({values: {project_id: project.id}});
+ * grok.shell.preview = domains.formView(issues.form());
+ * ```
+ *
+ * The classes underneath stay public as the extension layer:
+ *
  * ```ts
  * import {DomainGrid} from '@datagrok-libraries/domain-ui';
  * const grid = await DomainGrid.create(grok.dapi.domains.table('grit.issue'));
@@ -27,6 +41,9 @@ export * from './frame-editor';
 export * from './domain-grid';
 export * from './entity-list';
 export * from './app-view';
+export * from './form';
+export * from './actions';
+export * from './facade';
 export * from './handler';
 export * from './unsaved';
 export * from './styles';

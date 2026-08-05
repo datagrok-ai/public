@@ -161,6 +161,42 @@ export function isReferenceProperty(p: DG.Property): boolean {
   return semType === 'User' || semType === 'Group' || /^[^.]+\.[^.]+$/.test(semType);
 }
 
+/**
+ * A widget or page that answers for a set of {@link DomainFrameEditor}s.
+ *
+ * The dirty rollup is domain-specific — it does not belong on `DG.Widget`, and it
+ * cannot be derived from `Widget.children` (which is a DOM view, so it is order-
+ * and reparenting-fragile). This is the one structural remainder of the widget
+ * model: anything that owns pending changes says so by exposing them here, and a
+ * container ({@link AppView}, `domains.view`) rolls its children's up.
+ */
+export interface IEditorHost {
+  /** Every editor whose pending changes this object answers for. Read on demand:
+   * an editor that appears after the widget was constructed must show up here. */
+  readonly editors: DomainFrameEditor[];
+}
+
+/** The editors [widget] answers for, or none — the duck-typed read of
+ * {@link IEditorHost} a container uses on children of any class. */
+export function editorsOf(widget: any): DomainFrameEditor[] {
+  const editors = widget?.editors;
+  return Array.isArray(editors) ? editors : [];
+}
+
+/** The frame column type that holds [p]'s values — what {@link DomainFrameEditor.forRows}
+ * builds a local frame from (a `queryDf` result carries the server's own types). */
+function columnTypeOf(p: DG.Property): DG.ColumnType {
+  switch (p.propertyType) {
+    case DG.TYPE.INT: return DG.COLUMN_TYPE.INT;
+    case DG.TYPE.BIG_INT: return DG.COLUMN_TYPE.BIG_INT;
+    case DG.TYPE.FLOAT:
+    case DG.TYPE.NUM: return DG.COLUMN_TYPE.FLOAT;
+    case DG.TYPE.BOOL: return DG.COLUMN_TYPE.BOOL;
+    case DG.TYPE.DATE_TIME: return DG.COLUMN_TYPE.DATE_TIME;
+    default: return DG.COLUMN_TYPE.STRING;
+  }
+}
+
 /** One pending write of {@link DomainFrameEditor.buildOps}, with the frame row it
  * came from (how a failing `opIndex` finds its row). */
 export interface DomainPendingOp {
@@ -275,6 +311,31 @@ export class DomainFrameEditor {
     options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
     const df = await client.queryDf(options?.query ?? {});
     return DomainFrameEditor.attach(df, client, options);
+  }
+
+  /**
+   * Builds an editor over rows that do NOT come from the server: a frame is built
+   * locally from the table's declared columns and every entry of [values] is added
+   * as a `'new'` row — the INSERT path of a form
+   * (`domains.table(...).form({values})`), with no query round trip.
+   *
+   * Everything else is identical to {@link create}: the same single-writer model,
+   * the same service columns and export tags, the same validation, and a
+   * {@link save} that writes the batch as one transaction. {@link refresh} has
+   * nothing to re-run unless `options.query` says otherwise — and re-running it
+   * would replace these rows, which is why a form never refreshes.
+   */
+  static async forRows(client: DG.DomainTableClient, values: {[column: string]: any}[],
+    options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
+    const properties = await grok.dapi.domains.registry.rowProperties(
+      `${client.schema}.${client.table}`);
+    const df = DG.DataFrame.create(0);
+    for (const p of properties)
+      df.columns.add(DG.Column.fromType(columnTypeOf(p), p.name, 0));
+    const editor = await DomainFrameEditor.attach(df, client, options);
+    for (const row of values ?? [])
+      editor.addRow(row);
+    return editor;
   }
 
   /** The frame being edited. It is REPLACED by {@link refresh} — re-read it (or
@@ -774,10 +835,18 @@ export class DomainFrameEditor {
     return this._droppedValue(row, column) ?? this._invalidValue(row, column);
   }
 
-  /** The cell against its registry {@link DG.Property} alone. */
+  /** The cell against its registry {@link DG.Property} alone. An EMPTY cell is
+   * empty whatever its column type spells that as — a string column's `''`, an int
+   * column's null sentinel — so nullability, and not the sentinel, decides
+   * (otherwise an untouched optional choice column reports `""` is not one of ...`,
+   * and an untouched optional int reports itself below its minimum). */
   private _invalidValue(row: number, column: string): string | null {
     const property = this._propByName.get(column);
-    return property == null ? null : validateCellValue(property, this._df.get(column, row));
+    if (property == null)
+      return null;
+    const col = this._df.columns.byName(column);
+    return validateCellValue(property,
+      col == null || col.isNone(row) ? null : this._df.get(column, row));
   }
 
   /**

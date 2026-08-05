@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added the `domains` facade samples — dapi/domains-facade-form-dialog.js (an insert/edit form in a dialog, 2 lines), dapi/domains-facade-form-view.js (a routed form page through `grok.shell.preview`, 2 lines), dapi/domains-facade-customization.js (replace one input, add one validator) and dapi/domains-facade-machine-surface.js (what an AI agent sees: `DG.Widget.getAll()` → `getWidgetStatus()` → `props` → `getFunctions()`)
 * GROK-20298: Added dapi/domains-app-view.js — the domain app framework in two views: a one-expression DomainAppView list page and the DomainEntityAppView page of one row (rowFrom wrapping a row the query already returned)
 * GROK-20298: Added dapi/domains-query-state.js — DomainQuery as the one serializable view state: deep-link URL parameters (one key per filter element) round-tripped back, the silent REST spec, the recorded run, and the query behind a live Domain View
 * GROK-20298: Added dapi/domains-embedded-view.js and dapi/domains-row-editor.js — DG.DomainView created programmatically and embedded with a permanent filter, and the platform row dialogs as one-line openers (create/edit/picker/conflict/audit/grants); dapi/domains-async-form.js now opens the REAL lookup picker instead of routing to /domains
