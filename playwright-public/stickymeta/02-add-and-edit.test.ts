@@ -9,13 +9,15 @@ test.describe.configure({ mode: 'serial' });
 test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ page }) => {
   test.setTimeout(300_000);
 
+  // Prefix is this file's own — see apiDeleteAllTestSchemas.
+  const PREFIX = 'PW_SM2_';
   const suffix = H.uniqueSuffix();
-  const schemaName = `PW_SM_Schema_${suffix}`;
+  const schemaName = `${PREFIX}Schema_${suffix}`;
 
   try {
     await H.gotoHome(page);
     await H.setupEnv(page);
-    await H.apiDeleteAllTestSchemas(page); // defensive: no leftover molecule schema from a crashed run
+    await H.apiDeleteAllTestSchemas(page, PREFIX); // defensive: no leftover schema from a crashed run
     await H.apiCreateSchema(page, schemaName, [
       { name: 'rating', type: 'int' },
       { name: 'notes', type: 'string' },
