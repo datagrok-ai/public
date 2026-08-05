@@ -119,7 +119,8 @@ type IndexAxis =
   | {kind: 'elapsed', unit: TimeUnit | 'auto'};
 
 // time-series mode requires every participating table to be configured (require-all) and
-// every index column to actually be numeric or datetime; otherwise the legacy rules apply
+// every index column to actually be numeric or datetime; otherwise the axis follows
+// the index column types
 function getIndexAxis(participating: ParticipatingRun[], axisModes?: AxisConfigMap): IndexAxis {
   const indexTypes = participating.map(({entry, binding}) =>
     entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
