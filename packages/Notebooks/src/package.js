@@ -24,6 +24,17 @@ import {editNotebook, setupEnvironment, getAuthToken} from './utils';
 
 export const _package = new DG.Package();
 
+function suppressIframePointerEventsDuringDrag(view, iframe) {
+  view._dragObserver?.disconnect();
+  const updatePointerEvents = () => {
+    iframe.style.pointerEvents = document.body.classList.contains('disable-selection') ? 'none' : '';
+  };
+  const observer = new MutationObserver(updatePointerEvents);
+  observer.observe(document.body, {attributes: true, attributeFilter: ['class']});
+  view._dragObserver = observer;
+  updatePointerEvents();
+}
+
 class NotebookView extends DG.ViewBase {
   constructor(params, path) {
     super(params, path);
@@ -155,6 +166,7 @@ class NotebookView extends DG.ViewBase {
     this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
     this.editIcon.parentNode.parentNode.style.flexShrink = '0';
     this.root.appendChild(view);
+    suppressIframePointerEventsDuringDrag(this, iframe);
   }
 
   async getEnvironmentsInput() {
@@ -290,6 +302,7 @@ class NotebookView extends DG.ViewBase {
     iframe.addEventListener('load', mountNotebook);
     this.root.appendChild(iframe);
     mountNotebook();
+    suppressIframePointerEventsDuringDrag(this, iframe);
 
     handler.editor = editor;
     nbWidget.content.activeCellChanged.connect((sender, cell) => {
