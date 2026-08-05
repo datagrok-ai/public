@@ -47,3 +47,8 @@
 - Step 6 should specify which dataset to use (one with both molecular AND categorical columns, e.g., SPGI.csv)
 - "Clone view" step should clarify the exact menu path — `cloneView()` API doesn't exist; the actual method is save+load layout on a new TableView
 - "Check the question mark" step is ambiguous — the filter panel has a filter indicator badge (number), not a question mark icon. Clarify which UI element to check.
+
+---
+{
+"realizes": ["viewers.filters", "view.menu.reset-filter", "view.menu.layout.clone-view", "viewers.scatter-plot", "viewers.bar-chart", "viewers.pie-chart", "viewers.pivot-viewer"]
+}

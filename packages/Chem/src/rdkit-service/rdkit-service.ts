@@ -488,6 +488,22 @@ export class RdKitService {
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
+  /** Returns InChI identifiers for the provided molecules. Malformed molecules result in an empty string. */
+  async getInchis(molecules: string[]): Promise<string[]> {
+    return this._getInchis(molecules, false);
+  }
+
+  /** Returns InChI keys for the provided molecules. Malformed molecules result in an empty string. */
+  async getInchiKeys(molecules: string[]): Promise<string[]> {
+    return this._getInchis(molecules, true);
+  }
+
+  private async _getInchis(molecules: string[], keys: boolean): Promise<string[]> {
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].getInchis(segment, keys),
+    (data: string[][]) => ([] as string[]).concat(...data)));
+  }
+
   async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]):
     Promise<[RuleId, boolean[]][]> {
     const fooGather = (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {

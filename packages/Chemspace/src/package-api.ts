@@ -13,23 +13,36 @@ export namespace funcs {
   }
 
   /**
-  Chemspace Samples
+  Finds similar and substructure matches for a molecule in the Chemspace catalog.
   */
   export async function samplesPanel(smiles: string ): Promise<any> {
     return await grok.functions.call('EnamineChemSpace:SamplesPanel', { smiles });
   }
 
   /**
-  Chemspace Prices
+  Shows vendor prices and pack sizes for a Chemspace compound.
   */
   export async function pricesPanel(id: string ): Promise<any> {
     return await grok.functions.call('EnamineChemSpace:PricesPanel', { id });
   }
 
+  /**
+  Countries Chemspace can ship to, for the shipToCountry parameter
+  */
+  export async function getShipToCountries(): Promise<any> {
+    return await grok.functions.call('EnamineChemSpace:GetShipToCountries', {});
+  }
+
+  /**
+  Adds a column of Chemspace compound ids matched by exact structure for each molecule.
+  */
   export async function getChemspaceIds(molColumn: DG.Column , shipToCountry: string ): Promise<DG.Column> {
     return await grok.functions.call('EnamineChemSpace:GetChemspaceIds', { molColumn, shipToCountry });
   }
 
+  /**
+  Looks up vendor, pack size and price for each Chemspace id and joins the result back into the table.
+  */
   export async function getChemspacePrices(data: DG.DataFrame , idsColumn: DG.Column , shipToCountry: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('EnamineChemSpace:GetChemspacePrices', { data, idsColumn, shipToCountry });
   }

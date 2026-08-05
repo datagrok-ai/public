@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [chem.cp.chemical-space]
-realizes: [chem.analyze.chemical-space]
+realizes: [chem.menu.analyze.chemical-space, chem.viewer.chem-space]
 realized_as:
   - chemical-space-spec.ts
 produced_from: migrated

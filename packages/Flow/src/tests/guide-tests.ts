@@ -2,6 +2,7 @@
  *  section-expanded) and content integrity of the tutorials/questions. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   poll, waitForClick, isAborted, untilSectionExpanded, computePlacement,
@@ -109,15 +110,14 @@ category('Flow: guide', () => {
     // No dialog → falls back to the resolver's element.
     expect(openDialogEl(), null, 'no dialog initially');
     expect(preferDialog(resolver)(ctx), fallback, 'falls back without a dialog');
-    // Simulate an open Datagrok dialog.
-    const dlg = document.createElement('div');
-    dlg.className = 'd4-dialog';
-    document.body.appendChild(dlg);
+    // A REAL Datagrok dialog — openDialogEl resolves through
+    // DG.Dialog.getOpenDialogs(), so a bare .d4-dialog div no longer counts.
+    const dlg = ui.dialog('Guide test').show();
     try {
-      expect(openDialogEl(), dlg, 'finds the open dialog');
-      expect(preferDialog(resolver)(ctx), dlg, 'prefers the dialog over the fallback');
+      expect(openDialogEl(), dlg.root, 'finds the open dialog');
+      expect(preferDialog(resolver)(ctx), dlg.root, 'prefers the dialog over the fallback');
     } finally {
-      dlg.remove();
+      dlg.close();
     }
   });
 

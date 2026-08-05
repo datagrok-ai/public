@@ -111,8 +111,8 @@ The assistant reaches a view's operations through the platform's `getFunctions()
 
 1. **Dart `View.getFunctions()`** (core) — the base returns registered functions declaring
    `meta.viewType: <viewType>`; subclasses add view-specific `CustomFunc`s on top
-   (`DataQueryView`: `get_query_info` / `set_query_and_run`; `ScriptView`: `get_script_code` /
-   `set_script_code`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
+   (`DataQueryView`: `getQueryInfo` / `setQueryAndRun`; `ScriptView`: `getScriptCode` /
+   `setScriptCode`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
 2. **JS `ViewBase.getFunctions()`** (js-api) — a JS-defined view overrides it to return its
    registered package functions; e.g. Flow's `FuncFlowView` returns the `flowViewFunction`-tagged
    Flow functions (`listFlowNodes`, `findFlowNodeTypes`, `addFlowNode`, `connectFlowNodes`,
@@ -121,16 +121,56 @@ The assistant reaches a view's operations through the platform's `getFunctions()
 3. **`meta.viewType` package functions** — any package can register a function with
    `meta: {viewType: '<viewType>'}` taking the view; Grokky registers the DataQueryView SQL set
    (`listDbCatalogs/Schemas/Tables`, `getDbTableDetails`, `listDbJoins`, `getSqlTestResult` — in
-   `db-view-functions.ts`, discovering the connection through the view's native `get_query_info`).
+   `db-view-functions.ts`, discovering the connection through the view's native `getQueryInfo`).
 
 Because a view can have hundreds of functions (TableView commands), Grokky never declares them all
-to Claude. Instead `viewFunctionTools()` declares three STATIC meta-tools every full-mode turn
-(stable defs — prompt-cache friendly): `list_view_functions(query)` (search, ≤10 results),
-`get_view_function_result(name, parameters)` (read-only invoke), and `call_view_function` (
-state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
+to Claude. Instead `viewFunctionTools()` declares four STATIC meta-tools every full-mode turn
+(stable defs — prompt-cache friendly): `list_view_functions(query, widget?)` (search, ≤10 results),
+`list_view_widgets()` (the view's widget tree: per-widget ref/type/aiDescription/function count),
+`get_view_function_result(name, parameters, widget?)` (read-only invoke), and `call_view_function`
+(state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
 `grok.shell.v` at call time, inject the `view` argument, run `func.apply()`, and serialize the
-result. Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
+result. The optional `widget` argument (a ref like `"0.2"` from `list_view_widgets`, an index path
+through `Widget.children`) retargets listing/invocation at a sub-widget's own `getFunctions()`.
+Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
 `datagrok-view` MCP server whose calls round-trip to the browser as `input_request`.
+
+`aiDescription` and `getFunctions()` are WIDGET-level concepts (Dart `Widget` in d4, js-api
+`Widget`/`DartWidget`/`Viewer`/`ViewBase`) — views inherit them; the interop surface is
+`grok_Widget_Get/Set_AIDescription` (the old `grok_View_*` pair is removed). `buildWorkspaceContext()`
+prepends the current view's briefing ("About this view") plus the briefings of sub-widgets that
+carry one ("Widgets here"). Entity gallery views (Dart `DataSourceCardView` subclasses:
+users, groups, roles, projects, connections, queries, dockers, packages, files, ...) all inherit
+`listItems` / `searchItems` / `selectItem` / `listItemCommands` / `runItemCommand` /
+`refreshItems` from the base class, plus per-view extras.
+
+Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
+always briefed with their title) expose `getDialogInfo` (incl. the dialog body text) / `setInput` /
+`clickButton` plus the legacy per-button funcs, and complex dialogs add their own functions via
+`Modal.aiFunctions` — the **Save Project dialog** ships `getProjectSaveInfo` / `setProjectName` /
+`setProjectDescription` / `setSaveMode` / `setPresentationMode` with its entity-list child widget
+(`ProjectEntityMoveWidget`) exposing `listEntities` / `setEntityAction` / `setDataSync`, and the
+**Share dialog** ships `getShareInfo` / `addShareGrantee` / `setShareAccess` / `setShareMessage`
+(the `datagrok-projects` skill drives both), **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
+`expandPane`, **column selectors** (`ColumnComboBox`) `setColumn`, **range sliders** `getRange` /
+`setRange`, **viewer legends** `listCategories` / `selectCategory`, **property grids** (`PropGrid`)
+`getProperties` / `setProperty`, **per-column filters** (`GridFilterBase`) `resetFilter`,
+**membership editors** `listMembers` / `addMember` / `removeMember`, and xamgle surfaces —
+**Browse panel** `listNodes` / `expandNode` / `selectNode` (projecting its non-Widget tree),
+**chemical sketcher** `getMolecule` / `setMolecule` / `clearMolecule`, **console**, **favorites**,
+**functions widget** `searchFunctions`. Controls that are NOT `Widget` subclasses (inputs, tree
+nodes, tag editors, popups) are invisible to the widget tree and must be projected through their
+host's `getFunctions()` — see d4 `CLAUDE.md` "AI Integration" for the full conventions. **Dart viewers** ship quick commands via the `TextInterpreter` mixin (d4
+`text_interpreter.dart`): no-param `reg()` commands matched by name/synonyms (`zoomIn`, `zoomOut`,
+`resetView`) and parameterized funcs with anchored `searchPattern` regexes (`xBy`/`yBy`/`colorBy`/
+`sizeBy`/`splitBy`/`stackBy`/`valueBy`/`categoryBy`(columnName), `aggregationType`, `chartType`,
+`bins`) across scatter plot, line chart, bar chart, histogram, pie chart, box plot, density plot,
+PC plot, tree map, and 3D scatter plot. The same funcs serve the sync interpreter
+(`Prompt.process` matches `searchPattern` before the generic property interpreter) and the
+assistant (system prompt prefers a targeted widget's quick functions — soft rule, see
+`prompts.ts` "View functions"). Open dialogs live outside the view's DOM subtree, so `collectWidgets()` adds them as
+extra roots with `dlg<N>` refs — this is how the assistant fills and confirms a dialog that an
+entity command opened.
 
 #### AI window visibility (sync with core)
 

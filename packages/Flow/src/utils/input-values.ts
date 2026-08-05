@@ -129,6 +129,11 @@ export function inputValueProperty(node: FlowNode): DG.Property | null {
   if (!isNaN(min)) options['min'] = min;
   if (!isNaN(max)) options['max'] = max;
   if (node.properties['nullable'] === true) options['nullable'] = true;
+  // A semantic type routes the editor to whatever `valueEditor` is registered
+  // for (type, semType) — Chem's molecule sketcher, Helm's sequence input — so
+  // a String Input tagged `Molecule` is sketched, not typed.
+  const semType = String(node.properties['semType'] ?? '').trim();
+  if (semType) options['semType'] = semType;
   return DG.Property.fromOptions(options as never);
 }
 

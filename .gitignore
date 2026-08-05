@@ -114,3 +114,5 @@ playwright-public/migration-report.html
 playwright-public/CORE-TESTS-SUMMARY.md
 playwright-public/PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md
 .claude/.tmp
+
+__pycache__

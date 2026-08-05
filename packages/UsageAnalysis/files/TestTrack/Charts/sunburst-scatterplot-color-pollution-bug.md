@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [sunburst-scatterplot-shared-color-isolation]
-realizes: [charts.sunburst]
+realizes: [charts.viewer.sunburst, viewers.scatter-plot]
 realized_as:
   - sunburst-scatterplot-color-pollution-bug-spec.ts
 pyramid_layer: bug-focused

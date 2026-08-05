@@ -1,3 +1,4 @@
+import { Page } from '@playwright/test';
 import { test, expect } from './fixtures';
 import {
   WELCOME_VIEW,
@@ -38,8 +39,22 @@ import { ensureBrowsePanelOpen } from '../browse/helpers';
 // run in parallel against the same account — run them one at a time.
 test.describe.configure({ mode: 'serial' });
 
-// Widgets expected on dev for the admin test user (`opavlenko+playwright`).
-const EXPECTED_WIDGETS = ['Spotlight', 'Community', 'Usage', 'Reports'];
+// Widgets expected for the admin test user (`opavlenko+playwright`). PowerPack owns Spotlight
+// and Community and is published on every stand; Usage and Reports come from UsageAnalysis,
+// which the CI stand deliberately does not publish (it hides newly saved queries in the
+// Databases tree — see infra/jenkins/test-playwright.groovy). Expect them only where the
+// platform actually registers them, so the same specs hold on dev and on the stand.
+const CORE_WIDGETS = ['Spotlight', 'Community'];
+const USAGE_ANALYSIS_WIDGETS = ['Usage', 'Reports'];
+
+let expectedWidgets = CORE_WIDGETS;
+
+/** Dashboard widgets the platform registers — the query the home page itself runs. */
+async function registeredWidgets(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as any).DG.Func
+    .find({ meta: { role: 'dashboard' }, returnType: 'widget' })
+    .map((f: any) => f.friendlyName));
+}
 const SPOTLIGHT_TABS = ['Workspace', 'Spotlight', 'Favorites', 'Notifications', 'My Activity', 'Learn'];
 
 // Test order matters: the read-only tests (including the reload-based Nav-01) run first while
@@ -53,6 +68,8 @@ test.describe('Home page Widgets (Widgets-*)', () => {
     await resetHome(page);
     // Cheap in-memory self-heal: a prior test/run may have left Community hidden.
     await restoreWidgetVisible(page, 'Community');
+    const registered = await registeredWidgets(page);
+    expectedWidgets = CORE_WIDGETS.concat(USAGE_ANALYSIS_WIDGETS.filter((w) => registered.includes(w)));
   });
 
   test.afterAll(async ({ _app }) => {
@@ -71,7 +88,7 @@ test.describe('Home page Widgets (Widgets-*)', () => {
     expect(await search.getAttribute('placeholder')).toMatch(/^Search everywhere/);
 
     // All expected widgets are present.
-    for (const title of EXPECTED_WIDGETS)
+    for (const title of expectedWidgets)
       await expect(widgetByTitle(page, title), `widget "${title}" should render`).toBeVisible({ timeout: 15_000 });
 
     // Order: Spotlight (order -1) precedes Community (order 6).
@@ -84,7 +101,7 @@ test.describe('Home page Widgets (Widgets-*)', () => {
 
     // Each widget renders its content. Widgets load asynchronously (e.g. Community fetches
     // its feed), so poll textContent — it does not depend on layout/visibility like innerText.
-    for (const title of EXPECTED_WIDGETS) {
+    for (const title of expectedWidgets) {
       await expect
         .poll(async () => widgetContent(page, title).evaluate((el) => el.textContent?.trim().length ?? 0),
           { timeout: 15_000, message: `widget "${title}" content should become non-empty` })
@@ -224,6 +241,7 @@ test.describe('Home page Widgets (Widgets-*)', () => {
   });
 
   test('Widgets-Usage-01 — Usage renders and Open Usage Analysis navigates', async ({ homePage: page }) => {
+    test.skip(!expectedWidgets.includes('Usage'), 'UsageAnalysis not deployed on this stack');
     const sink = watchErrors(page);
 
     const usage = widgetByTitle(page, 'Usage');
@@ -245,6 +263,7 @@ test.describe('Home page Widgets (Widgets-*)', () => {
   });
 
   test('Widgets-Reports-01 — Reports renders and Open Reports navigates', async ({ homePage: page }) => {
+    test.skip(!expectedWidgets.includes('Reports'), 'UsageAnalysis not deployed on this stack');
     const sink = watchErrors(page);
 
     const reports = widgetByTitle(page, 'Reports');
@@ -263,9 +282,11 @@ test.describe('Home page Widgets (Widgets-*)', () => {
   });
 
   test('Widgets-Perm-02 — admin sees Usage and Reports', async ({ homePage: page }) => {
+    // Without UsageAnalysis there is no canView-gated widget left to assert on.
+    test.skip(!expectedWidgets.includes('Usage'), 'UsageAnalysis not deployed on this stack');
     const sink = watchErrors(page);
 
-    for (const title of EXPECTED_WIDGETS)
+    for (const title of expectedWidgets)
       await expect(widgetByTitle(page, title), `admin should see "${title}"`).toBeVisible({ timeout: 15_000 });
 
     await expectNoErrors(page, sink);
@@ -313,7 +334,7 @@ test.describe('Home page Widgets (Widgets-*)', () => {
     await openCustomizeForm(page);
 
     // The form lists a toggle per registered widget.
-    for (const title of EXPECTED_WIDGETS)
+    for (const title of expectedWidgets)
       await expect(customizeToggle(page, title), `toggle "${title}" should exist`).toBeVisible();
 
     // Uncheck Community -> widget disappears.

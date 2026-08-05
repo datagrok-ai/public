@@ -8,9 +8,9 @@ export * from './package.g';
 import {FuncFlowView} from './funcflow-view';
 import {FlowEntityHandler} from './entity/flow-entity-handler';
 import {parseFlowBody, FLOW_LANGUAGE} from './serialization/flow-script-format';
-import { getFilesBrowser } from './utils/files-browser-tree';
 import {readUploadedFileBytes, parseFileToDataFrame, syncFlowFilePermissions} from './utils/uploaded-files';
 import * as aiTools from './ai-tools';
+import * as dataOps from './ops/data-ops';
 
 export const _package = new DG.Package();
 
@@ -51,6 +51,7 @@ export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> 
 //input: string fileName
 //output: dataframe result
 //meta.includeInFlow: true
+//meta.autorun: true
 export async function readUploadedFile(fileId: string, fileName: string): Promise<DG.DataFrame> {
   const bytes = await readUploadedFileBytes(fileId, fileName);
   return parseFileToDataFrame(fileName, bytes);
@@ -87,10 +88,13 @@ export class PackageFunctions {
     return new FuncFlowView();
   }
 
-  @grok.decorators.fileViewer({fileViewer: 'ffjson'})
+  @grok.decorators.fileViewer({fileViewer: 'flow'})
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
-    file.readAsString().then((json) => view.loadFromJson(json));
+    // A .flow file is either the annotated script body (header + JSON) or the
+    // bare JSON document — loadFromJson handles both.
+    file.readAsString().then((json) => view.loadFromJson(json))
+      .catch((e) => grok.shell.error(`Cannot open ${file.name}: ${e instanceof Error ? e.message : e}`));
     return view;
   }
 
@@ -130,23 +134,26 @@ export class PackageFunctions {
       grok.shell.error(`Failed to load flow from creation script`);
       console.error(e);
     }
+    let promoted = false;
     const d = ui.dialog({title: 'Creation Script Flow'})
       .add(view.root)
       .addButton('Open In Editor', () => {
         view.setMinimapCollapsed(false);
         view.enableOutputPanel();
+        promoted = true;
         grok.shell.addView(view);
         setTimeout(() => view.fitToScreen(), 100);
         d.close();
       });
+    // A dialog-hosted view is never detached by the shell — release its
+    // editor (window listeners, run state) when the dialog goes away, unless
+    // it was promoted into a real shell view.
+    d.onClose.subscribe(() => {
+      if (!promoted) view.detach();
+    });
     if (show)
       d.show({resizable: true, width: 800, height: 600});
     return d;
-  }
-
-  @grok.decorators.func()
-  static testDialog() {
-    ui.dialog().add(getFilesBrowser((n) => {console.log(n.name)}, (n) => {console.log('dblclick', n.name)}, 'test-dialog-files').root).show();
   }
 
   // ---------- first-class Flow entity (Script with language 'flow') ----------
@@ -265,6 +272,169 @@ export class PackageFunctions {
     description: 'Validate and execute the whole flow. Returns validation problems instead of running if the graph is invalid; otherwise waits for the run and reports per-node failures'})
   static async runFlow(@grok.decorators.param({type: 'view'}) view: any): Promise<any> {
     return aiTools.runFlow(view);
+  }
+
+  // ---------- Flow-native data operations ----------
+  // Row/column/aggregation verbs whose platform originals take `FuncCall`-typed
+  // predicates (`TableRowFilterCall` / `ColFilterCall`) or bare string lists —
+  // types a canvas cannot wire or edit, which is why the whole family sits
+  // commented out in `included-funcs.ts`. Declared here because the server only
+  // scans a fixed file list for annotations (`src/package.ts`, `detectors.ts`,
+  // `package-test.ts`, `package.g.ts` — packages_service.dart), so a separate
+  // module would register nothing; every body lives in `ops/data-ops.ts`.
+  // `includeInFlow: true` puts them in the catalog without touching the
+  // allowlist, and their signatures route them to the right browser category on
+  // their own (table in / table out → Transform Tables, column out → Column
+  // Operations). No `friendlyName` — that annotation does not survive package
+  // publishing (verified against a live stand); the node title is the humanized
+  // method name, which is why these read as verbs (`filterRows` → `Filter Rows`).
+
+  @grok.decorators.func({
+    name: 'filterRows',
+    description: 'Keeps the rows matching a condition, as a new table',
+    meta: {includeInFlow: 'true'},
+  })
+  static filterRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
+  ): Promise<DG.DataFrame> {
+    return dataOps.filterRows(table, condition);
+  }
+
+  @grok.decorators.func({
+    name: 'deleteRows',
+    description: 'Removes the rows matching a condition, as a new table',
+    meta: {includeInFlow: 'true'},
+  })
+  static deleteRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression selecting the rows to drop'}}) condition: string,
+  ): Promise<DG.DataFrame> {
+    return dataOps.deleteRows(table, condition);
+  }
+
+  @grok.decorators.func({
+    name: 'extractRows',
+    description: 'Rows matching a condition, keeping only the chosen columns',
+    meta: {includeInFlow: 'true'},
+  })
+  static extractRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to keep. Leave empty to keep all of them'}}) columns?: DG.Column[],
+  ): Promise<DG.DataFrame> {
+    return dataOps.extractRows(table, condition, columns);
+  }
+
+  @grok.decorators.func({
+    name: 'selectRows',
+    description: 'Selects the rows matching a condition and passes the table on',
+    meta: {includeInFlow: 'true'},
+  })
+  static selectRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Drop the previous selection instead of adding to it'}}) clearSelection: boolean,
+  ): Promise<DG.DataFrame> {
+    return dataOps.selectRows(table, condition, clearSelection);
+  }
+
+  @grok.decorators.func({
+    name: 'filterRandomRows',
+    description: 'A reproducible random sample of rows, as a new table',
+    meta: {includeInFlow: 'true'},
+  })
+  static filterRandomRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'int', options: {nullable: false, min: '1', description: 'How many rows to keep'}}) count: number,
+    @grok.decorators.param({type: 'int', options: {initialValue: '42', description: 'Random seed. The same seed always draws the same rows'}}) seed: number,
+  ): DG.DataFrame {
+    return dataOps.filterRandomRows(table, count, seed);
+  }
+
+  @grok.decorators.func({
+    name: 'selectRandomRows',
+    description: 'Selects a reproducible random sample of rows and passes the table on',
+    meta: {includeInFlow: 'true'},
+  })
+  static selectRandomRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'int', options: {nullable: false, min: '1', description: 'How many rows to select'}}) count: number,
+    @grok.decorators.param({type: 'int', options: {initialValue: '42', description: 'Random seed. The same seed always draws the same rows'}}) seed: number,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Drop the previous selection instead of adding to it'}}) clearSelection: boolean,
+  ): DG.DataFrame {
+    return dataOps.selectRandomRows(table, count, seed, clearSelection);
+  }
+
+  @grok.decorators.func({
+    name: 'deleteColumns',
+    description: 'A copy of the table without the chosen columns. Removes selected columns',
+    meta: {includeInFlow: 'true'},
+  })
+  static deleteColumns(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to remove'}}) columns: DG.Column[],
+  ): DG.DataFrame {
+    return dataOps.deleteColumns(table, columns);
+  }
+
+  @grok.decorators.func({
+    name: 'tagColumns',
+    description: 'Sets a tag on the chosen columns and passes the table on',
+    meta: {includeInFlow: 'true'},
+  })
+  static tagColumns(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to tag'}}) columns: DG.Column[],
+    @grok.decorators.param({options: {nullable: false, description: 'Tag name, for example units or .formula'}}) tag: string,
+    @grok.decorators.param({options: {nullable: true, description: 'Tag value'}}) value: string,
+  ): DG.DataFrame {
+    return dataOps.tagColumns(table, columns, tag, value);
+  }
+
+  @grok.decorators.func({
+    name: 'expressionToColumn',
+    description: 'Computes an expression into a new column of the table',
+    meta: {includeInFlow: 'true'},
+  })
+  static expressionToColumn(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Formula over the table columns'}}) expression: string,
+    @grok.decorators.param({options: {nullable: false, description: 'Name of the resulting column'}}) name: string,
+    @grok.decorators.param({options: {choices: ['auto', 'string', 'int', 'double', 'bool', 'datetime', 'qnum'], initialValue: 'auto', description: 'Column type. auto infers it from the expression'}}) type: string,
+  ): Promise<DG.Column> {
+    return dataOps.expressionToColumn(table, expression, name, type);
+  }
+
+  @grok.decorators.func({
+    name: 'aggregate',
+    // "pivot" in the description is what makes the node findable by that word —
+    // adding a pivot column is exactly what turns this into a pivot table.
+    description: 'Groups rows and aggregates columns. Add a pivot column to build a pivot table',
+    meta: {includeInFlow: 'true'},
+  })
+  static aggregate(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to group by. Leave empty to aggregate the whole table into one row'}}) groupByColumns: DG.Column[],
+    @grok.decorators.param({options: {nullable: false, description: 'Aggregations to compute, as a list of column and function pairs'}}) aggregations: string,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns whose values become result columns'}}) pivotColumns?: DG.Column[],
+  ): DG.DataFrame {
+    return dataOps.aggregate(table, groupByColumns, aggregations, pivotColumns);
+  }
+
+  @grok.decorators.func({
+    name: 'unpivot',
+    description: 'Wide to long. Each merged column becomes a category and value row pair',
+    meta: {includeInFlow: 'true'},
+  })
+  static unpivot(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns repeated alongside every produced row'}}) copyColumns: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns folded into the category and value pair'}}) mergeColumns: DG.Column[],
+    @grok.decorators.param({options: {initialValue: 'Category', description: 'Name of the column holding the source column names'}}) categoryColumnName: string,
+    @grok.decorators.param({options: {initialValue: 'Value', description: 'Name of the column holding the values'}}) valueColumnName: string,
+  ): Promise<DG.DataFrame> {
+    return dataOps.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
   }
 
   /** `.flow` exports sitting in file shares open in the editor too. */

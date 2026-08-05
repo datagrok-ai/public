@@ -182,14 +182,6 @@ export class ViewBase extends Widget {
    * own `getFunctions()` here, so callers holding `grok.shell.v` see these functions. */
   getFunctions(): Func[] { return []; }
 
-  private _aiDescription: string | null = null;
-
-  /** A short AI-facing briefing: what this view is, what its functions do, and how the
-   * assistant should approach it (e.g. which {@link getFunctions} entries to call first).
-   * Shown to the AI assistant as part of the workspace context. */
-  get aiDescription(): string | null { return this._aiDescription; }
-  set aiDescription(x: string | null) { this._aiDescription = x; }
-
   /** Handles URL path. Override in subclasses. */
   handlePath(_urlPath: string): void { }
 
@@ -240,15 +232,15 @@ export class View extends ViewBase {
     this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
   }
 
-  /** AI briefing of the underlying view. For a JS-defined view the Dart host forwards
-   * to the original {@link ViewBase} instance. */
+  /** AI briefing of the underlying view (widget-level on the Dart side). For a JS-defined
+   * view the Dart host forwards to the original {@link ViewBase} instance. */
   get aiDescription(): string | null {
-    const f = (api as any).grok_View_Get_AIDescription;
+    const f = (api as any).grok_Widget_Get_AIDescription;
     return f ? (f(this.dart) ?? null) : null;
   }
 
   set aiDescription(x: string | null) {
-    const f = (api as any).grok_View_Set_AIDescription;
+    const f = (api as any).grok_Widget_Set_AIDescription;
     if (f)
       f(this.dart, x);
   }

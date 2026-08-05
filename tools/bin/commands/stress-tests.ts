@@ -45,6 +45,9 @@ async function run(config: { url: string, key: string }, args: StressTestArgs): 
     processArgs.push('src/package-test-node.ts');
     processArgs.push(`--apiUrl=${config.url}`);
     processArgs.push(`--devKey=${config.key}`);
+    // Explicit even though it's the runner default: the stress baseline must only run
+    // stressTest-marked tests regardless of how the runner's default evolves.
+    processArgs.push('--mode=stress');
     if (args["concurrent-runs"])
         processArgs.push(`--concurrentRuns=${args["concurrent-runs"]}`);
     if (args['loop'])

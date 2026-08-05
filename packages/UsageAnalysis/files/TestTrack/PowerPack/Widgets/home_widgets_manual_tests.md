@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [powerpack.cp.welcome-view-renders, powerpack.cp.spotlight-widget-renders, welcome-view-power-search]
-realizes: []
+realizes: [powerpack.dashboard.spotlight, powerpack.dashboard.community, powerpack.view.welcome, powerpack.search.power-pack, usageanalysis.dashboard.usage, usageanalysis.dashboard.reports]
 realized_as:
   - home-widgets.test.ts
 related_bugs: []

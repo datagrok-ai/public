@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p2
 realizes_atlas: [apply-notebook-to-open-table, delete-notebook, convert-notebook-to-script]
-realizes: [views.notebooks]
+realizes: [views.notebooks, ml.menu.notebooks.browse-notebooks]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

@@ -42,7 +42,7 @@ export interface OutputTab {
   /** Latest value snapshot (the run's `ValueSummary.clone`). */
   df: DG.DataFrame | null;
   stale: boolean;
-  /** viewState from the loaded .ffjson, applied once after the tv exists and
+  /** viewState from the loaded .flow, applied once after the tv exists and
    *  the pane is visible (applying to a hidden view defers forever). */
   pendingLayout: string | null;
   /** `PowerPack:ConfigViewerGallery` ran for this tv (once per creation). */
@@ -120,6 +120,13 @@ export class OutputViewsManager {
     for (const [id, tab] of [...this.tabs]) {
       if (!seen.has(id)) this.destroyTab(id, tab);
     }
+    // The strip order is the infos order (the outputs strip is reorderable).
+    // Only touch the DOM when it actually differs — moving the pressed chip
+    // mid-click would swallow its click event.
+    const want = infos.map((i) => this.tabs.get(i.nodeId)?.chip).filter((c): c is HTMLElement => c != null);
+    const have = Array.from(this.tabStripHost.children).filter((c) => c !== this.canvasChip);
+    if (want.some((c, i) => c !== have[i]))
+      for (const chip of want) this.tabStripHost.appendChild(chip);
   }
 
   /** An output node completed with a table: remember the snapshot, refresh an
@@ -332,7 +339,10 @@ export class OutputViewsManager {
     } catch (e) {
       console.warn('Flow: semantic type detection failed', e);
     }
-    if (this.destroyed || tab.df !== df) return;
+    // The tab may have been destroyed while we awaited (output node deleted
+    // mid-activation): its pane is detached — mounting a TableView into it
+    // would leak the view and run `_onAdded` against a zero-size root.
+    if (this.destroyed || tab.df !== df || this.tabs.get(tab.nodeId) !== tab) return;
     if (!df.name) df.name = tab.paramName;
     const tv = DG.TableView.create(df, false); // detached — no workspace pollution
     tv.name = df.name;

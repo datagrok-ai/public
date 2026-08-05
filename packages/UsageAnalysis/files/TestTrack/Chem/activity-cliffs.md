@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: []
-realizes: []
+realizes: [chem.menu.analyze.activity-cliffs, viewers.scatter-plot]
 realized_as:
   - activity-cliffs-spec.ts
 produced_from: migrated

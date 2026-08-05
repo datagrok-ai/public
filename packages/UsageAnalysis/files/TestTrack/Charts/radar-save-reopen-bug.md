@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [radar-table-rebind-project-roundtrip]
-realizes: [charts.radar]
+realizes: [charts.viewer.radar]
 realized_as:
   - radar-save-reopen-bug-spec.ts
 pyramid_layer: bug-focused

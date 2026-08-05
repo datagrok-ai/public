@@ -231,8 +231,8 @@ export async function aiCombinedSearch(prompt: string) {
 }
 
 // Called by the core query editor to decide whether to show its AI toggle icon.
-// The query view needs no dedicated panel anymore: its functions (get_query_info,
-// set_query_and_run + the meta.viewType-registered SQL schema functions) are reached
+// The query view needs no dedicated panel anymore: its functions (getQueryInfo,
+// setQueryAndRun + the meta.viewType-registered SQL schema functions) are reached
 // by the singleton panel through the view-function meta-tools.
 export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)
@@ -304,11 +304,19 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
     },
   });
 
+  const subs: rxjs.Subscription[] = [];
+  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
+
   const openLink = ui.link('Open authorization page', () => {
+    if (openLink.getAttribute('href'))
+      return;
     const sub = client.onAuthUrl.subscribe((evt) => {
+      openLink.setAttribute('href', evt.url);
+      openLink.setAttribute('target', '_blank');
       window.open(evt.url, '_blank');
       sub.unsubscribe();
     });
+    subs.push(sub);
     client.startAuth();
   });
 
@@ -326,9 +334,6 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
   const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
 
   const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
-
-  const subs: {unsubscribe: () => void}[] = [];
-  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
 
   subs.push(
     client.onAuthDone.subscribe(() => {
@@ -413,7 +418,12 @@ async function streamOnce(
     try {
       const client = ClaudeRuntimeClient.getInstance();
       const nativeCtx = panel.flushNativeContext();
-      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
+      // A conversation restored from history exists only in the browser — the runtime session is
+      // fresh — so the first prompt after a load carries the transcript (one-shot; the SDK session
+      // remembers it from then on).
+      const restoredCtx = panel.flushRestoredContext();
+      const enrichedUserPrompt = (restoredCtx ? restoredCtx + '\n---\n\n' : '') +
+        (nativeCtx ? nativeCtx + userPrompt : userPrompt);
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       // Three static meta-tools let Claude search and invoke the current view's functions
@@ -514,6 +524,10 @@ async function streamOnce(
       forSession(client.onInputRequest, async (evt) => {
         // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
         if (evt.toolName === 'datagrok_exec') {
+          // Record the code that actually ran — this is what makes a history-restored
+          // conversation reproducible ("do that again") instead of a text-only memory.
+          chatSession.session.addEngineMessage({role: 'assistant',
+            content: [{type: 'text', text: `[executed datagrok_exec]\n${(evt.input.code ?? '').slice(0, 1500)}`}]});
           const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
           if (element) {
             panel.appendStreamedElement(element);
@@ -566,11 +580,16 @@ async function streamOnce(
         segmentStart = 0;
         toolStatus = '';
         panel.clearStreaming();
+        // The ball is in the user's court — a spinning loader would read as "still working".
+        chatSession.loader.style.display = 'none';
         const response = await panel.showInputRequest(evt.input);
         if (response) {
           client.respondToInput(sessionId, evt.requestId, response);
           const answerText = Object.values(response.answers).join(', ');
           chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+          // And back to us: show the loader immediately — the next runtime event (thinking,
+          // tool call) can be many seconds away, and dead air here reads as "nothing happened".
+          panel.showWaitingIndicator(chatSession.loader);
         }
       });
 

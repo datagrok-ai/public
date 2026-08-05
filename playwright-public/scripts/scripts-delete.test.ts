@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import {
-  SCRIPT_NAME,
   openScriptsBrowser,
   getScriptCard,
   rightClickScript,
@@ -13,6 +12,11 @@ import {
 
 const BASE = process.env.DATAGROK_URL!;
 
+// This suite's own script: the browser and create suites run in parallel workers and both
+// delete their script by name, so sharing one makes each suite delete the entity the others
+// are looking at.
+const SCRIPT_NAME = 'PW_DeleteTest';
+
 // Test track: Delete.md (order: 5)
 test.describe('Scripts: Delete', () => {
   test.beforeEach(async ({ page }) => {
@@ -20,7 +24,7 @@ test.describe('Scripts: Delete', () => {
     await page.waitForSelector('.d4-ribbon', { timeout: 20_000 });
     await resetShell(page);
     await apiDeleteScript(page, SCRIPT_NAME);
-    await apiCreateScript(page);
+    await apiCreateScript(page, SCRIPT_NAME);
   });
 
   test.afterEach(async ({ page }) => {

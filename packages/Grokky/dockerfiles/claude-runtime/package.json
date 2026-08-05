@@ -5,7 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "build": "tsc"
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "tsc && node --test test/"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": ">=0.2.0",

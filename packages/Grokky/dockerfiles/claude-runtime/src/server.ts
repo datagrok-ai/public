@@ -23,8 +23,9 @@ let authProc: ChildProcess | null = null;
 
 function handleAuthStart(ws: WsSender): void {
   if (authProc) {
-    emit(ws, {type: 'auth_error', message: 'Authentication already in progress'});
-    return;
+    authProc.removeAllListeners('exit');
+    authProc.kill();
+    authProc = null;
   }
   authProc = spawn('claude', ['auth', 'login'], {
     env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},

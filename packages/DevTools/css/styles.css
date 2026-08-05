@@ -116,3 +116,7 @@
 .dt-res-string > button{
   padding: 20px !important;
 }
+
+.dt-fse-hidden {
+  display: none;
+}

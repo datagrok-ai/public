@@ -5,22 +5,30 @@ declare let grok: typeof _grok, DG: typeof _DG;
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('Dapi', () => {
-  test('all data sources', async () => {
-    await grok.dapi.queries.first();
-    await grok.dapi.connections.first();
-    await grok.dapi.credentials.first();
-    await grok.dapi.jobs.first();
-    await grok.dapi.notebooks.first();
-    await grok.dapi.models.first();
-    await grok.dapi.packages.first();
-    await grok.dapi.layouts.first();
-    await grok.dapi.tables.first();
-    await grok.dapi.users.first();
-    await grok.dapi.groups.first();
-    await grok.dapi.scripts.first();
-    await grok.dapi.projects.first();
-    await grok.dapi.environments.first();
-  }, {owner: 'aparamonov@datagrok.ai', stressTest: true});
+  // One test per data source: the old combined test summed 14 sequential
+  // round trips, so at high concurrency it drew a single misleading 3s+ band
+  // in the stress report instead of showing which endpoint is actually slow.
+  const sources: {[name: string]: () => Promise<any>} = {
+    'queries': () => grok.dapi.queries.first(),
+    'connections': () => grok.dapi.connections.first(),
+    'credentials': () => grok.dapi.credentials.first(),
+    'jobs': () => grok.dapi.jobs.first(),
+    'notebooks': () => grok.dapi.notebooks.first(),
+    'models': () => grok.dapi.models.first(),
+    'packages': () => grok.dapi.packages.first(),
+    'layouts': () => grok.dapi.layouts.first(),
+    'tables': () => grok.dapi.tables.first(),
+    'users': () => grok.dapi.users.first(),
+    'groups': () => grok.dapi.groups.first(),
+    'scripts': () => grok.dapi.scripts.first(),
+    'projects': () => grok.dapi.projects.first(),
+    'environments': () => grok.dapi.environments.first(),
+  };
+  for (const name of Object.keys(sources)) {
+    test(`all data sources: ${name}`, async () => {
+      await sources[name]();
+    }, {owner: 'aparamonov@datagrok.ai', stressTest: true});
+  }
 
   test('logging', async () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');

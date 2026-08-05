@@ -88,8 +88,65 @@ function treeNodeLocator(page: Page, nodeName: string) {
   return page.locator(`[name="${nodeName}"]:not(.d4-tree-view-list-more)`).first();
 }
 
+/** Collapse and re-expand a tree group so it re-reads its children from the server. */
+async function refetchTreeGroup(page: Page, groupName: string): Promise<void> {
+  const toggled = await page.evaluate((sel) => {
+    const node = document.querySelector(`[name="${sel}"]:not(.d4-tree-view-list-more)`);
+    const tri = node?.querySelector(':scope > .d4-tree-view-tri') as HTMLElement | null;
+    if (!tri || !tri.classList.contains('d4-tree-view-tri-expanded')) return false;
+    tri.click();
+    return true;
+  }, groupName);
+  if (!toggled) return;
+  await page.waitForTimeout(600);
+  await page.evaluate((sel) => {
+    const node = document.querySelector(`[name="${sel}"]:not(.d4-tree-view-list-more)`);
+    const tri = node?.querySelector(':scope > .d4-tree-view-tri') as HTMLElement | null;
+    if (tri && !tri.classList.contains('d4-tree-view-tri-expanded')) tri.click();
+  }, groupName);
+  await page.waitForTimeout(1500);
+}
+
+/**
+ * Make a just-saved node reachable. Two things hide one: the group renders only its first
+ * N children behind a "Show more" footer, and the group's child list is whatever was
+ * fetched when it was expanded — a query saved afterwards is on the server and not in the
+ * DOM, with no footer to click. Open the footer if there is one, otherwise collapse and
+ * re-expand the group to force a refetch.
+ */
+export async function revealTreeNode(page: Page, nodeName: string): Promise<void> {
+  if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 2_000 }).catch(() => false))
+    return;
+  // Scope to the node's own group — an unscoped search clicks whichever footer happens to
+  // be first on the page, which expands a sibling group and leaves this one truncated.
+  const parent = nodeName.replace(/---[^-]+(-[^-]+)*$/, '');
+  await refetchTreeGroup(page, parent);
+  if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 2_000 }).catch(() => false))
+    return;
+  for (let i = 0; i < 6; i++) {
+    // The footer is a `.d4-tree-view-list-more` row in some templates and a plain element
+    // reading "..." / "Show more" in others; the connections suite hit both.
+    const clicked = await page.evaluate((sel) => {
+      const root = document.querySelector(`[name="${sel}"]`) ?? document;
+      const byClass = root.querySelector('.d4-tree-view-list-more') as HTMLElement | null;
+      const more = byClass ?? (Array.from(root.querySelectorAll('div, span, label')) as HTMLElement[])
+        .find((el) => ['...', 'Show more', 'more'].includes(el.textContent?.trim() ?? '') && el.offsetParent !== null);
+      if (!more) return false;
+      more.scrollIntoView({ block: 'center' });
+      more.click();
+      return true;
+    }, parent);
+    if (!clicked)
+      return;
+    await page.waitForTimeout(700);
+    if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 1_000 }).catch(() => false))
+      return;
+  }
+}
+
 /** Expand any Browse tree node by its `name=` attribute (idempotent). */
 export async function expandTreeNode(page: Page, nodeName: string): Promise<void> {
+  await revealTreeNode(page, nodeName);
   const node = treeNodeLocator(page, nodeName);
   await node.waitFor({ state: 'visible', timeout: 15_000 });
   await node.scrollIntoViewIfNeeded();
@@ -288,6 +345,7 @@ export async function expandDbSchemas(page: Page, provider: string, connServerNa
 
 /** Click a Browse-tree node in a way that registers it as the current object (updates the Context Panel). */
 export async function selectTreeNodeAsCurrentObject(page: Page, nodeName: string): Promise<void> {
+  await revealTreeNode(page, nodeName);
   const node = page.locator(`[name="${nodeName}"]:not(.d4-tree-view-list-more)`).first();
   await node.waitFor({ state: 'visible', timeout: 15_000 });
   await node.scrollIntoViewIfNeeded();
@@ -335,6 +393,7 @@ export function queryTreeNodeSuffix(friendlyName: string): string {
 
 /** Right-click a Browse tree node by its `name=` attribute. */
 export async function rightClickTreeNode(page: Page, nodeName: string): Promise<void> {
+  await revealTreeNode(page, nodeName);
   const node = treeNodeLocator(page, nodeName);
   await node.waitFor({ state: 'visible', timeout: 15_000 });
   await node.scrollIntoViewIfNeeded();
@@ -372,9 +431,13 @@ export async function setQueryName(page: Page, name: string): Promise<void> {
   await input.waitFor({ timeout: 10_000 });
   // Triple-click selects the entire current value — works reliably against the Dart-managed
   // widget, whereas `fill()` and `pressSequentially` with delays lose keystrokes.
-  await input.click({ clickCount: 3 });
-  await page.keyboard.type(name);
-  await expect(input).toHaveValue(name);
+  // The editor keeps initializing after the input attaches and rewrites the field back to
+  // its default, so a name typed too early is silently discarded — retype until it holds.
+  await expect(async () => {
+    await input.click({ clickCount: 3 });
+    await page.keyboard.type(name);
+    await expect(input).toHaveValue(name, { timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
 }
 
 /**
@@ -517,10 +580,12 @@ export async function focusQueryEditorTab(page: Page, queryName: string): Promis
 /** Click the Save button in the query editor ribbon and wait for the server commit. */
 export async function saveQuery(page: Page, friendlyName: string): Promise<void> {
   await page.locator('[name="button-Save"]').first().click();
-  // Poll the server until the query is visible — Save is async and has no toast on this flow.
+  // Poll the server until the query is visible — Save is async and has no toast on this
+  // flow. The stand now publishes ten packages before the suite runs, so a commit that
+  // used to land well inside 30s can take appreciably longer under that load.
   await expect.poll(async () =>
     (await findQueryByFriendlyName(page, friendlyName)) !== null,
-  { timeout: 30_000 }).toBe(true);
+  { timeout: 60_000 }).toBe(true);
 }
 
 /** Find a saved query by the user-facing name (stored server-side as `friendlyName`). */

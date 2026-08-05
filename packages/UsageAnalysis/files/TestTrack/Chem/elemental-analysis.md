@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: []
-realizes: []
+realizes: [chem.menu.analyze.elemental-analysis]
 realized_as:
   - elemental-analysis-spec.ts
 produced_from: migrated

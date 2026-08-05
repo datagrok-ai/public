@@ -72,6 +72,13 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:FormulaWidget', { col });
   }
 
+  /**
+  Formula editor bound to a table, editing an expression as a value
+  */
+  export async function expressionEditorWidget(call: any ): Promise<any> {
+    return await grok.functions.call('PowerPack:ExpressionEditorWidget', { call });
+  }
+
   export async function getFuncTableViewWidget(func: any , inputParams: any ): Promise<any> {
     return await grok.functions.call('PowerPack:GetFuncTableViewWidget', { func, inputParams });
   }

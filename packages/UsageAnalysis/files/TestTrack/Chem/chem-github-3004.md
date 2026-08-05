@@ -5,7 +5,7 @@ pyramid_layer: bug-focused
 coverage_type: edge
 priority: p1
 realizes_atlas: [github-3004]
-realizes: []
+realizes: [chem.menu.analyze.scaffold-tree, chem.viewer.scaffold-tree]
 realized_as:
   - chem-github-3004-spec.ts
 produced_from: atlas-driven

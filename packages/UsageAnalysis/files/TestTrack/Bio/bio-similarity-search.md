@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [bio.cp.similarity-search]
-realizes: [bio.search.similarity-search, bio.sequence-similarity-search]
+realizes: [bio.menu.search.similarity-search, bio.viewer.sequence-similarity-search]
 produced_from: atlas-driven
 related_bugs: []
 realized_as:

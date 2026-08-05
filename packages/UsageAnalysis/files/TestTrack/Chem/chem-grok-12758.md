@@ -5,7 +5,7 @@ pyramid_layer: bug-focused
 coverage_type: edge
 priority: p1
 realizes_atlas: [GROK-12758]
-realizes: []
+realizes: [chem.menu.analyze.scaffold-tree, chem.viewer.scaffold-tree, chem.filter.scaffold-tree-filter]
 realized_as:
   - chem-grok-12758-spec.ts
 produced_from: atlas-driven

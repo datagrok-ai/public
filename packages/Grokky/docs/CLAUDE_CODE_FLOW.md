@@ -151,8 +151,10 @@ full-prompt sessions (`bash`/`none` are not gated), via a `PostToolUse`/`Stop` h
 tool-call sequence:
 
 - **`PostToolUse`** marks the turn as needing proof after any `datagrok_exec` (including failed ones)
-  or any non-read MCP call — reads are recognized fail-closed by name (`whoami`, `list_*`, `get_*`,
-  `search_*`, `read_*`, `download_*`). A `datagrok_verify` returning `{passed: true}` clears it.
+  or any non-read MCP call. Reads are recognized fail-closed: for the domain tools the check reads
+  the `op` argument (`datagrok_spaces` is both `list` and `delete`, so the tool name says nothing),
+  falling back to the tool name for everything else. A `datagrok_verify` returning `{passed: true}`
+  clears it.
 - **`Stop`** blocks the turn from ending while proof is pending, up to `MAX_VERIFY_BLOCKS` (3) times;
   when exhausted the `final` message carries `unverified: true` and the panel shows a "Not verified"
   warning.
@@ -311,15 +313,29 @@ every prompt, giving Claude accurate context:
 claude-runtime; all actual HTTP calls are made by
 [`src/api-client.ts`](../dockerfiles/mcp-server/src/api-client.ts).
 
-Tool categories:
+**One tool per domain, dispatching on `op`.** Each of the 34 operations used to be its own MCP
+tool, so all 34 schemas sat in the model's prompt prefix on every turn — measured at 3,847
+tokens/call. Collapsing them to five tools whose descriptions carry only the operation *names*
+brought that to 1,061 tokens/call, and a call with no `op` returns the full parameter schema for
+that domain, so nothing became undiscoverable. Registry:
+[`src/ops.ts`](../dockerfiles/mcp-server/src/ops.ts).
 
-| Category | Tools |
+| Tool | Operations |
 |----------|-------|
-| Functions | `list_functions`, `get_function`, `call_function`, `list_scripts`, `list_queries`, `create_script`, `create_query` |
-| Files | `list_files`, `download_file`, `upload_file` |
-| Projects | `list_projects`, `get_project`, `create_project`, `delete_project`, … |
-| Spaces | `list_spaces`, `get_space`, `create_space`, `create_subspace`, `list_space_children`, `read_space_file`, `write_space_file`, … |
-| User | `get_current_user` |
+| `datagrok_functions` | `list`, `get`, `call`, `list_scripts`, `list_queries`, `create_script`, `create_query` |
+| `datagrok_files` | `list`, `download`, `upload` |
+| `datagrok_projects` | `list`, `get`, `create`, `delete`, `search`, `list_recent`, `attach_entity`, `share`, `list_shares` |
+| `datagrok_spaces` | `list`, `get`, `create`, `delete`, `create_subspace`, `list_children`, `add_entity`, `remove_entity`, `read_file`, `write_file`, `delete_file` |
+| `datagrok_platform` | `whoami`, `list_users`, `list_groups`, `list_connections` |
+
+Results are compact JSON, arrays are paged (50 by default, `offset`/`limit` to page), and
+everything is capped — a tool result stays in the transcript and is re-read on every later hop, so
+an unpaged list taxes the whole turn ([`src/format.ts`](../dockerfiles/mcp-server/src/format.ts)).
+
+**Op names are load-bearing**: the runtime's verify gate decides whether a call mutated anything by
+matching the *op* against read-verb prefixes (`list`/`get`/`search`/`read`/`download`/`find`/`whoami`).
+An op named outside that convention silently changes whether verification is demanded, so
+`mcp-server/test/ops.test.js` asserts every op starts with a known read or write verb.
 
 ---
 

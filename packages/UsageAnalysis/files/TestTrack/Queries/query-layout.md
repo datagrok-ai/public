@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: []
-realizes: [views.queries]
+realizes: [views.queries, views.projects, view.menu.toolbox]
 realized_as:
   - query-layout.test.ts
 related_bugs: []

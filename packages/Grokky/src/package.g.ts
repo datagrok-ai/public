@@ -33,17 +33,18 @@ export async function askHelpLLMProvider(prompt: string, sessionId?: string) : P
 //description: Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
 //input: string label { description: Config label for this run, e.g. baseline / medium-effort }
 //input: int reps { optional: true; description: Repetitions per prompt (default 3) }
+//input: string model { optional: true; choices: ["haiku","sonnet","opus"]; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
+//input: string only { optional: true; description: Run only part of the suite: comma-separated categories, difficulties, or prompt substrings. }
 //output: string result
-export async function runBenchmark(label: string, reps?: number) : Promise<string> {
-  return await PackageFunctions.runBenchmark(label, reps);
+export async function runBenchmark(label: string, reps?: number, model?: string, only?: string) : Promise<string> {
+  return await PackageFunctions.runBenchmark(label, reps, model, only);
 }
 
-//description: Diff two saved benchmark runs (by label) into a Markdown delta report and download it.
-//input: string labelA { description: Baseline run label }
-//input: string labelB { description: Comparison run label }
+//description: Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
+//input: string labels { description: Comma-separated run labels, the first being the reference arm }
 //output: string result
-export async function compareBenchmarks(labelA: string, labelB: string) : Promise<string> {
-  return await PackageFunctions.compareBenchmarks(labelA, labelB);
+export async function compareBenchmarks(labels: string) : Promise<string> {
+  return await PackageFunctions.compareBenchmarks(labels);
 }
 
 //name: Execute
@@ -130,7 +131,7 @@ export async function listDbJoins(view: any, tables: string) : Promise<string> {
   return await PackageFunctions.listDbJoins(view, tables);
 }
 
-//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
+//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun
 //input: view view 
 //input: string sql { description: The SQL to test }
 //input: string description { description: One line describing what the query does }

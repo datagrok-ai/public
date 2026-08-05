@@ -1,7 +1,7 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, Column, DataFrame} from "./dataframe.js";
-import {Property, IProperty} from "./entities";
+import {Func, Property, IProperty} from "./entities";
 import {IWidgetStatus, IRectBounds, Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs, RangeSlider} from "./widgets";
 import {_toJson} from "./utils_convert";
 import {MapProxy} from "./proxies";
@@ -101,6 +101,23 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /** Returns the widget's runtime structure for automated testing and introspection. */
   getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
+
+  /** Functions applicable to the underlying Dart viewer. */
+  getFunctions(): Func[] { return this.dart ? toJs(api.grok_Widget_GetFunctions(this.dart)) : super.getFunctions(); }
+
+  /** AI briefing of the underlying Dart viewer. */
+  get aiDescription(): string | null {
+    const f = (api as any).grok_Widget_Get_AIDescription;
+    return this.dart && f ? (f(this.dart) ?? null) : super.aiDescription;
+  }
+
+  set aiDescription(x: string | null) {
+    const f = (api as any).grok_Widget_Set_AIDescription;
+    if (this.dart && f)
+      f(this.dart, x);
+    else
+      super.aiDescription = x;
+  }
 
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }

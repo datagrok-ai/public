@@ -61,6 +61,16 @@ export namespace funcs {
 
   /**
    * Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.
+   * @param {any} metrics - Distance metric per column used to measure similarity between rows.
+   * @param {any} weights - Relative weight of each column when combining per-column distances.
+   * @param {string} aggregationMethod - How per-column distances are aggregated into a single distance.
+   * @param {any} preprocessingFuncs - Preprocessing function applied to each column before distances are computed.
+   * @param {any} preprocessingFuncArgs - Arguments passed to the preprocessing functions.
+   * @param {number} threshold - Similarity threshold (percentile): edges below it are dropped before clustering.
+   * @param {number} maxIterations - Maximum number of expansion/inflation iterations.
+   * @param {boolean} useWebGPU - Run the computation on the GPU via WebGPU when available.
+   * @param {number} inflate - Inflation factor controlling cluster granularity: higher values yield more, smaller clusters.
+   * @param {number} minClusterSize - Clusters smaller than this are merged into noise.
    */
   export async function mclclustering(df: DG.DataFrame , cols: any , metrics: any , weights: any , aggregationMethod: string , preprocessingFuncs: any , preprocessingFuncArgs: any , threshold: number , maxIterations: number , useWebGPU: boolean , inflate: number , minClusterSize: number ): Promise<void> {
     return await grok.functions.call('EDA:MCLClustering', { df, cols, metrics, weights, aggregationMethod, preprocessingFuncs, preprocessingFuncArgs, threshold, maxIterations, useWebGPU, inflate, minClusterSize });
@@ -147,6 +157,10 @@ export namespace funcs {
     return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, rate, iterations, alpha, lambda });
   }
 
+  /**
+   * Predict the target for a table using a trained linear regression model.
+   * @param {any} model - Trained linear regression model to apply.
+   */
   export async function applyLinearRegression(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('EDA:ApplyLinearRegression', { df, model });
   }
@@ -169,6 +183,10 @@ export namespace funcs {
     return await grok.functions.call('EDA:TrainSoftmax', { df, predictColumn, rate, iterations, penalty, tolerance });
   }
 
+  /**
+   * Classify the rows of a table using a trained softmax (multinomial logistic regression) model.
+   * @param {any} model - Trained softmax classifier model to apply.
+   */
   export async function applySoftmax(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('EDA:ApplySoftmax', { df, model });
   }
@@ -188,6 +206,10 @@ export namespace funcs {
     return await grok.functions.call('EDA:TrainPLSRegression', { df, predictColumn, components });
   }
 
+  /**
+   * Predict the target for a table using a trained partial least squares (PLS) regression model.
+   * @param {any} model - Trained PLS regression model to apply.
+   */
   export async function applyPLSRegression(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('EDA:ApplyPLSRegression', { df, model });
   }
@@ -215,6 +237,10 @@ export namespace funcs {
     return await grok.functions.call('EDA:TrainXGBooster', { df, predictColumn, iterations, eta, maxDepth, lambda, alpha });
   }
 
+  /**
+   * Predict the target for a table using a trained XGBoost gradient-boosting model.
+   * @param {any} model - Trained XGBoost model to apply.
+   */
   export async function applyXGBooster(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('EDA:ApplyXGBooster', { df, model });
   }
@@ -253,7 +279,8 @@ export namespace funcs {
   }
 
   /**
-   * Generates syntethetic dataset oriented on the pMPO modeling
+   * Generate a synthetic dataset oriented on probabilistic multi-parameter optimization (pMPO) modeling.
+   * @param {number} samples - Number of rows (samples) to generate.
    */
   export async function generatePmpoDataset(samples: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('EDA:GeneratePmpoDataset', { samples });

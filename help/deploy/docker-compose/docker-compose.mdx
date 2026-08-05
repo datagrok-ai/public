@@ -21,6 +21,11 @@ canonical compose file (`docker/localhost.docker-compose.yaml`), pulls the
 project — including in-cluster PostgreSQL, RabbitMQ, `grok_pipe`, `grok_spawner`, `grok_connect`,
 and the Jupyter Kernel Gateway.
 
+The script installs the latest stable release. It reads which release that image was built
+from and takes the compose file from the same branch, because the compose file and the images
+it starts are versioned together — see
+[configuration is versioned with the image](../images.md#release-binding).
+
 :::info Hardware requirements
 
 Minimal hardware requirements: 40 GB of free disk space, 2 CPUs, 4 GB RAM.
@@ -51,7 +56,7 @@ Gateway, we recommend 60 GB of free disk space, 4 CPUs, 8 GB RAM.
    <TabItem value="silicon" label="MacOS - Apple Silicon">
 
    Right-click
-   on [this link](https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/docker/datagrok-install-local-macos-silicon.sh) and
+   on [this link](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local-macos-silicon.sh) and
    select "Save Link As..."
 
    </TabItem>
@@ -95,6 +100,50 @@ Gateway, we recommend 60 GB of free disk space, 4 CPUs, 8 GB RAM.
 
    </TabItem>
    </Tabs>
+
+## Install a specific version
+
+`DATAGROK_VERSION` accepts any tag of
+[`datagrok/datagrok`](https://hub.docker.com/r/datagrok/datagrok). It defaults to `latest`.
+
+| Value | Installs |
+|---|---|
+| `latest` | Newest stable release. Follows each release automatically. |
+| `1.27.7` | That exact release. |
+| `1.28.0-rc` | That release candidate. |
+| `bleeding-edge` | Newest build from `master`. Unreleased, for evaluation only. |
+
+<Tabs groupId="os" queryString>
+<TabItem value="win" label="Windows" default>
+
+```cmd
+set DATAGROK_VERSION=1.27.6
+datagrok-install-local.cmd
+```
+
+</TabItem>
+<TabItem value="bash" label="MacOS/Linux">
+
+```shell
+DATAGROK_VERSION=1.27.6 bash datagrok-install-local.sh
+```
+
+</TabItem>
+</Tabs>
+
+Whichever tag you pick, the script asks the image which branch it was built from and takes
+the compose file from there, so the configuration always matches the images — including for
+moving tags like `latest`, where the tag name alone doesn't say which release it is. Run
+`version` to see what a tag currently resolves to:
+
+```shell
+DATAGROK_VERSION=latest bash datagrok-install-local.sh version
+# latest -> 1.27.7 (release/1.27.7)
+```
+
+If the compose file already on disk belongs to a different release, the script refuses to
+start and tells you to delete it. That check is what prevents a newer compose file from
+being run against older images, which makes the server fail on startup.
 
 ## Log in to Datagrok
 

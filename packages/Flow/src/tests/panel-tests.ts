@@ -7,6 +7,7 @@ import {getParamDisplayName, getParamDefault, unquoteDefault, getFuncDisplayName
 import {propertyNameToFriendly} from '../utils/naming';
 import {missingRequiredInputs, EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
 import {CUSTOM_FUNC_INPUT_EDITORS, CustomInputEditor, customEditorFor} from '../utils/func-input-overrides';
+import {EDITOR_SHORTCUT_INPUTS} from '../utils/func-editor-utils';
 import {tid} from '../utils/test-ids';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
@@ -336,6 +337,83 @@ category('Flow: property panel', () => {
     }
   });
 
+  test('editor-shortcut inputs render a pencil that opens the function editor', async () => {
+    // An input that practically requires the function's own editor carries an
+    // inline pencil doing exactly what the pane's "Open editor" header button
+    // does (same handler, same gating). Driven here on AddNewColumn's `name`
+    // via a temporary registration — its `expression` is the one input of this
+    // function that now has a custom editor, and a custom editor short-circuits
+    // the DG-input path the pencil hangs off (asserted below).
+    const typeName = funcTypeName('AddNewColumn');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    const shortcut = 'core:addnewcolumn:name';
+    EDITOR_SHORTCUT_INPUTS.add(shortcut);
+    try {
+      const node = await addNode(e.flow, typeName);
+
+      // Without the view wiring onEditFuncParams there is no pencil.
+      panel.showNode(node);
+      const pencilSel = `[data-testid="${tid('prop-input-editor-name')}"]`;
+      expect(panel.root.querySelector(pencilSel) == null, true,
+        'no pencil when the editor launcher is not wired');
+
+      let openedFor: string | null = null;
+      panel.onEditFuncParams = (n): void => {openedFor = n.id;};
+      panel.showNode(node);
+      const pencil = panel.root.querySelector(pencilSel) as HTMLElement | null;
+      expect(!!pencil, true, 'the listed input carries the pencil');
+      expect(!!pencil!.closest('[data-param="name"]'), true, 'pencil sits inside its own row');
+      pencil!.click();
+      expect(openedFor, node.id, 'the pencil opens the editor for the shown node');
+
+      // Off-list inputs of the same function stay pencil-less.
+      expect(panel.root.querySelector(`[data-testid="${tid('prop-input-editor-type')}"]`) == null, true,
+        'off-list inputs get no pencil');
+    } finally {
+      EDITOR_SHORTCUT_INPUTS.delete(shortcut);
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('AddNewColumn edits its expression with the inline formula editor', async () => {
+    // The platform's own formula node gets the platform's own formula editor,
+    // in the panel rather than behind a dialog — and the pencil that used to
+    // stand in for it is gone, since a custom editor replaces the whole row.
+    const typeName = funcTypeName('AddNewColumn');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+      expect(customEditorFor(node.dgFunc!, 'expression') !== null, true,
+        'the expression parameter has a custom editor registered');
+
+      panel.onEditFuncParams = (): void => {};
+      node.inputValues['expression'] = '${age} + 1';
+      panel.showNode(node);
+
+      const row = panel.root.querySelector('[data-param="expression"]') as HTMLElement | null;
+      expect(!!row, true, 'the expression row renders');
+      const host = row!.querySelector('.ff-expression-editor') as HTMLElement | null;
+      expect(!!host, true, 'and hosts the formula editor');
+      // No table is captured in a detached editor, so it must be the still-
+      // editable string fallback rather than an empty box.
+      expect(host!.getAttribute('data-mode'), 'plain', 'with no table it degrades to a usable input');
+      expect((host!.querySelector('input') as HTMLInputElement).value, '${age} + 1',
+        'seeded from the stored expression');
+      expect(panel.root.querySelector(`[data-testid="${tid('prop-input-editor-expression')}"]`) == null, true,
+        'the editor supersedes the pencil');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
   test('OpenFile fullPath renders the file picker; a path round-trips through it', async () => {
     const typeName = funcTypeName('OpenFile');
     if (!typeName) return;
@@ -354,7 +432,8 @@ category('Flow: property panel', () => {
       const factory = customEditorFor(node.dgFunc!, 'fullPath');
       expect(!!factory, true, 'custom editor registered for core:OpenFile fullPath');
       const param = node.dgFunc!.inputs.find((p) => p.name === 'fullPath')!;
-      const ed = factory!(param);
+      // This editor uses none of the node context, so an inert one is enough.
+      const ed = factory!(param, {inputValue: () => undefined, columns: () => null, watch: () => {}});
       let reported: unknown = null;
       ed.onChanged = (v): void => {reported = v;};
       const path = 'System:AppData/Chem/mol1K.csv';
@@ -362,6 +441,42 @@ category('Flow: property panel', () => {
       await until(() => reported !== null, 15000);
       expect(String(reported), path, 'onChanged reports the full-path string');
       expect(String(ed.getValue()), path, 'getValue returns the resolved full path');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('OpenFile: fullPath and sheetName stay off the node body but editable in the panel', async () => {
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+      // Data layer untouched — the slots exist and the required check still
+      // gates the run on a blank fullPath.
+      expect('fullPath' in node.inputs, true, 'fullPath slot still exists');
+      expect('sheetName' in node.inputs, true, 'sheetName slot still exists');
+      expect(node.hiddenInputs.has('fullPath') && node.hiddenInputs.has('sheetName'), true,
+        'both are node-hidden (PANEL_ONLY_FUNC_INPUTS read onto the node)');
+      expect(node.requiredInputs.includes('fullPath'), true, 'fullPath still required');
+
+      // Wait for the node card (its real output row), then assert the hidden
+      // input rows and their pass-throughs are absent.
+      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-output', 'result')}"]`));
+      for (const key of ['fullPath', 'sheetName']) {
+        expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', key)}"]`), false,
+          `no node row for ${key}`);
+        expect(!!e.container.querySelector(`[data-testid="${tid('socket-output', `${key}__pt`)}"]`), false,
+          `no pass-through row for ${key}`);
+      }
+
+      // Unlike HIDDEN_FUNC_INPUTS, the panel still edits both.
+      panel.showNode(node);
+      expect(!!panel.root.querySelector('[data-param="fullPath"] input'), true, 'panel edits fullPath');
+      expect(!!panel.root.querySelector('[data-param="sheetName"] input'), true, 'panel edits sheetName');
     } finally {
       panel.root.remove();
       destroyEditor(e);

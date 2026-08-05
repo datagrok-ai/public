@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [dendrogram.cp.assign-clusters-column-creation]
-realizes: [dendrogram]
+realizes: [dendrogram.clustering.assign-clusters-dialog, chem.menu.analyze.hierarchical-clustering, dendrogram.viewer.dendrogram]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/assign-clusters.md
 migration_date: 2026-06-02

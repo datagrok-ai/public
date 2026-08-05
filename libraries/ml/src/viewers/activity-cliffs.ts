@@ -111,7 +111,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       [similarityMetric], [encodedColWithOptions.options??{}],
       seqSpaceOptions?.maxIterations ?? 5, seqSpaceOptions.useWebGPU ?? false).promise;
     df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
-    embeddingsMatrix = [mclRes.embedX, mclRes.embedY];
+    // Vector adds nothing to Float32Array, but reaches this compile via utils' emitted .d.ts
+    // and the two Float32Array declarations do not unify.
+    embeddingsMatrix = [mclRes.embedX, mclRes.embedY] as Matrix;
   } else {
     embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
       [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});
@@ -355,7 +357,9 @@ export async function getActivityCliffsEmbeddings(df: DG.DataFrame, seqCol: DG.C
       [similarityMetric], [encodedColWithOptions.options??{}],
       seqSpaceOptions?.maxIterations ?? 5, seqSpaceOptions.useWebGPU ?? false).promise;
     df.columns.addNewInt(df.columns.getUnusedName('MCL Cluster')).init((i) => mclRes.clusters[i]);
-    embeddingsMatrix = [mclRes.embedX, mclRes.embedY];
+    // Vector adds nothing to Float32Array, but reaches this compile via utils' emitted .d.ts
+    // and the two Float32Array declarations do not unify.
+    embeddingsMatrix = [mclRes.embedX, mclRes.embedY] as Matrix;
   } else {
     embeddingsMatrix = await getNormalizedEmbeddings([encodedColWithOptions.entries], methodName,
       [similarityMetric], [1], 'MANHATTAN', {...seqSpaceOptions, distanceFnArgs: [encodedColWithOptions.options??{}]});

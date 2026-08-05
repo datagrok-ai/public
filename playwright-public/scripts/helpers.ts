@@ -2,10 +2,14 @@ import { Page, expect } from '@playwright/test';
 
 const BASE = process.env.DATAGROK_URL!;
 
+// Owned by scripts-browser.test.ts. Files run in parallel (4 workers), so a name shared
+// between two of them is one suite deleting the entity another is searching for — the whole
+// Delete suite went red on every build from #290, the first after workers went to 4. One
+// script name per file; the run/layout/edit suites already carry their own.
 export const SCRIPT_NAME = 'testRscript';
 
-// Full R script content used across create/edit/run tests
-export const R_SCRIPT_CONTENT = `#name: ${SCRIPT_NAME}
+export function rScriptContent(name: string): string {
+  return `#name: ${name}
 #language: r
 #sample: cars.csv
 #input: dataframe table [Data table]
@@ -14,6 +18,9 @@ export const R_SCRIPT_CONTENT = `#name: ${SCRIPT_NAME}
 
 count <- nrow(table) * ncol(table)
 newParam <- "test"`;
+}
+
+export const R_SCRIPT_CONTENT = rScriptContent(SCRIPT_NAME);
 
 // Navigate to Scripts via Browse > Platform > Functions > Scripts
 export async function openScriptsBrowser(page: Page) {
@@ -121,11 +128,16 @@ export async function resetShell(page: Page) {
 export async function searchScript(page: Page, name: string) {
   const searchInput = page.locator('input[placeholder="Search scripts by name or by #tags"]');
   await expect(searchInput).toBeVisible();
-  await searchInput.fill('');
-  await searchInput.fill(name);
-  await searchInput.press('Enter');
   const card = getScriptCard(page, name);
-  await expect(card).toBeVisible({ timeout: 20_000 });
+  // The gallery answers from a list fetched when it opened, so a script re-created by
+  // beforeEach after the delete test is absent from it however long we wait. Re-issue
+  // the search instead of watching a stale result set.
+  await expect(async () => {
+    await searchInput.fill('');
+    await searchInput.fill(name);
+    await searchInput.press('Enter');
+    await expect(card).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 30_000 });
   return card;
 }
 
@@ -180,17 +192,17 @@ export async function apiDeleteScript(page: Page, name: string) {
   }, name);
 }
 
-// Create the testRscript via API (prerequisite for edit/run/browse/delete tests).
+// Create a script via API (prerequisite for edit/run/browse/delete tests).
 // Uses DG.Script.create() which parses annotation headers from the code string.
 // Returns null explicitly to prevent Playwright serialization errors with complex Dart objects.
-export async function apiCreateScript(page: Page) {
-  const created = await page.evaluate(async ([name, content]) => {
+export async function apiCreateScript(page: Page, name: string = SCRIPT_NAME) {
+  await page.evaluate(async (content) => {
     const DG = (window as any).DG;
     const grok = (window as any).grok;
     const script = DG.Script.create(content as string);
-    const saved = await grok.dapi.scripts.save(script);
-    return saved?.name || saved?.friendlyName || 'unknown';
-  }, [SCRIPT_NAME, R_SCRIPT_CONTENT] as [string, string]);
+    await grok.dapi.scripts.save(script);
+    return null;
+  }, rScriptContent(name));
   await page.waitForTimeout(1000);
 }
 

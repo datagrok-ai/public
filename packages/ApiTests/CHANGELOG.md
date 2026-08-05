@@ -2,6 +2,10 @@
 
 ## 1.10.3 (WIP)
 
+* Tests: added the `Undo` category covering the new `grok.shell.undo/redo/canUndo/canRedo/onUndo/onRedo` and `DG.UndoService` surface — push/undo/redo round trip, multi-level LIFO, event firing, release of records on table close, and one-way records
+* Tests: fixed `Undo: multi-level LIFO` / `onUndo fires` — `UndoService.contextCheck` only applies records whose context is the current table, so the tests now take the view before undoing (the Dart-side suite gets the same isolation by nulling `contextCheck`, which JS callers cannot do)
+* Tests: split `Dapi: all data sources` into 14 per-source tests (`all data sources: queries` … `environments`) — the combined test summed 14 sequential round trips and drew one misleading 3s+ band in the stress report at high concurrency instead of showing per-endpoint latency
+* GROK-20443: Node runner: default `--mode` flipped to `stress` — `grok stresstest` passes no mode flag, so the `functional` default silently tripled the nightly Stress-Tests workload (29 → 105 tests) and fired false regression alerts; functional runs opt in via `--mode=functional` (`npm run start-node` updated)
 * Tests: fixed flaky `shell.route returns a View` — `shell.route` returns the current view, which is null when earlier tests close all views; the test now opens its own view and routes to it
 * Tests: annotated UI-independent categories (dapi, dataframe, functions, bitset, valuematcher, property, stats, shell) with `node: true` — `grok test` now runs them headless in Node before the browser pass; view/dialog/grid tests keep `node: false`
 * Tests: adopted DBTests' browser-bound tests as `DB: Data sync` / `DB: Client cache` / `DB: Benchmarks` (streaming into a table view, IndexedDB client cache, cached benchmarks) so DBTests runs fully headless

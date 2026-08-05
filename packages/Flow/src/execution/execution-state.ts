@@ -59,7 +59,16 @@ export class ExecutionState {
 
   setNodeStatus(nodeId: string, status: NodeExecStatus, data?: Partial<NodeExecState>): void {
     const existing = this.nodeStates.get(nodeId) ?? {status: NodeExecStatus.idle};
-    this.nodeStates.set(nodeId, {...existing, status, ...data});
+    const next: NodeExecState = {...existing, status, ...data};
+    // A new attempt supersedes the previous verdict. Merging kept the failed
+    // run's `error`/`stack` alive, so a node that went on to succeed still
+    // showed the old red block under a green "Completed" in the panel.
+    // `stale` keeps it — that IS the last thing that happened to the node.
+    if (status !== NodeExecStatus.errored && status !== NodeExecStatus.stale && data?.error === undefined) {
+      delete next.error;
+      delete next.stack;
+    }
+    this.nodeStates.set(nodeId, next);
   }
 
   getNodeState(nodeId: string): NodeExecState | undefined {
