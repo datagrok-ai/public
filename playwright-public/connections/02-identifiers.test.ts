@@ -8,8 +8,8 @@ import {
   expandDbGroupWrapper,
   expandDbProvider,
   expandTreeNode,
+  ensureConnection,
   fillConnectionField,
-  findConnectionByFriendlyName,
   goHome,
   readMenuItems,
   rightClickTreeNode,
@@ -56,9 +56,7 @@ test.describe.serial('Connections / Identifiers', () => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
-    const conn = await findConnectionByFriendlyName(page, CONNECTION);
-    if (!conn)
-      throw new Error(`prerequisite: connection "${CONNECTION}" must exist (run adding.test.ts first)`);
+    await ensureConnection(page, CONNECTION);
     // Probe the right-click menu for "Configure Identifiers..." — that
     // entry is provided by a plugin / feature not active on the
     // ephemeral CI Datlas, where the menu shows only Browse / New

@@ -8,8 +8,8 @@ import {
   clickContextPanelSection,
   clickMenuItemExact,
   connectionNodeName,
+  ensureConnection,
   expandDbProvider,
-  findConnectionByFriendlyName,
   goHome,
   openDbConnectionView,
   rightClickTreeNode,
@@ -36,9 +36,7 @@ test.describe.serial('Connections / Browser (Postgres / new_test_postgres)', () 
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
-    const c = await findConnectionByFriendlyName(page, CONNECTION);
-    if (!c)
-      throw new Error(`prerequisite: connection "${CONNECTION}" must exist (run edit.test.ts first)`);
+    await ensureConnection(page, CONNECTION);
     await ctx.close();
   });
 

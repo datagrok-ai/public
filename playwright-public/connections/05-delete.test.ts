@@ -4,6 +4,7 @@ import {
   applyAutomationSetup,
   connectionNodeName,
   deleteTreeNodeViaContext,
+  ensureConnection,
   expandDbProvider,
   findConnectionByFriendlyName,
   goHome,
@@ -25,10 +26,8 @@ test.describe.serial('Connections / Delete', () => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
-    const c1 = await findConnectionByFriendlyName(page, NAME_1);
-    const c2 = await findConnectionByFriendlyName(page, NAME_2);
-    if (!c1 || !c2)
-      throw new Error(`prerequisite: both "${NAME_1}" and "${NAME_2}" must exist (run earlier suites first)`);
+    await ensureConnection(page, NAME_1);
+    await ensureConnection(page, NAME_2);
     await ctx.close();
   });
 
