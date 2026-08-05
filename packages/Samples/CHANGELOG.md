@@ -2,9 +2,9 @@
 
 ## v.next
 
-* GROK-8022: Image Classification: Fixed panel failing with a 404 by loading EfficientNet-B0 weights from Keras' maintained storage instead of the dead qubvel/Callidior release URL
 * GROK-14287: Dashboards: Fixed errors when opening the "Chemical Space Using tSNE" project
 * GROK-14286: Demo Notebooks: Open both the wells table and the notebook view by default
+* GROK-8022: Image Classification: Fix weights download 404 by switching to Keras' bundled EfficientNet-B0
 
 ## 1.4.2 (2025-09-22)
 

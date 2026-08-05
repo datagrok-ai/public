@@ -10,20 +10,12 @@
 import numpy as np
 from skimage.io import imread
 from skimage.transform import resize
-try:
-    from tensorflow.keras.applications.efficientnet import EfficientNetB0, preprocess_input, decode_predictions
-except ImportError:
-    from keras.applications.efficientnet import EfficientNetB0, preprocess_input, decode_predictions
+from keras.applications.efficientnet import EfficientNetB0, preprocess_input, decode_predictions
 
 image = imread(file)
-if image.ndim == 2:
-    image = np.stack([image, image, image], axis=-1)
-elif image.shape[-1] > 3:
-    image = image[..., :3]
-
 model = EfficientNetB0(weights='imagenet')
 image_size = model.input_shape[1]
-_image = resize(image, (image_size, image_size), preserve_range=True).astype(np.float32)
+_image = resize(image, (image_size, image_size), preserve_range=True, anti_aliasing=True)
 _image = preprocess_input(_image)
 _image = np.expand_dims(_image, 0)
 predicted = model.predict(_image)
