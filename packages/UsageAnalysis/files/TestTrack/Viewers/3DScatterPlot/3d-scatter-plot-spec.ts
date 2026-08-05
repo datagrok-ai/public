@@ -1,247 +1,252 @@
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {test, expect, Page} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
-test('3D Scatter Plot — Test Track scenarios', async ({page}) => {
+const VIEWER_NAME = '3d-scatter-plot';
+const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
+const VIEWER_TYPE = '3d scatter plot';
+const datasetPath = 'System:DemoFiles/demog.csv';
+
+const signature = (page: Page) => v.viewerSignature(page, VIEWER_NAME);
+const repaints = (page: Page, before: string) => v.waitForViewerRepaint(page, VIEWER_NAME, before);
+const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop);
+const category = (page: Page, cat: string, probe: string) =>
+  v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
+
+/** Caption + current column of an on-viewer selector, e.g. "X:\nAGE". */
+async function selectorText(page: Page, role: string): Promise<string> {
+  return (await page.locator(`${VIEWER} [name="div-column-combobox-${role}"]`).first().innerText())
+    .replace(/\s+/g, ' ').trim();
+}
+
+/** Centre of the plot area — the point every mouse gesture starts from. */
+async function plotCentre(page: Page): Promise<{x: number; y: number; box: any}> {
+  const box = (await page.locator(VIEWER).boundingBox())!;
+  return {x: box.x + box.width / 2, y: box.y + box.height / 2, box};
+}
+
+test('3D scatter plot', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
+  // #### Add the viewer and check the axes it picked
+  await softStep('Add 3D scatter plot from the Viewers toolbox', async () => {
+    await page.locator('[name="icon-3d-scatter-plot"]').first().click();
+    await page.locator(VIEWER).first().waitFor({timeout: 30_000});
 
-  await page.evaluate(() => {
-    const icon = document.querySelector('[name="icon-3d-scatter-plot"]') as HTMLElement;
-    icon.click();
-  });
-  await page.locator('[name="viewer-3d-scatter-plot"]').first().waitFor({timeout: 30000});
-  await page.waitForTimeout(500);
-
-  const sp = () => page.evaluate(() => {
-    const g: any = (window as any).grok;
-    return !!g.shell.tv.viewers.find((v: any) => v.type === '3d scatter plot');
-  });
-  expect(await sp()).toBe(true);
-
-  const setProps = async (patch: Record<string, any>) => {
-    await page.evaluate((p) => {
-      const g: any = (window as any).grok;
-      const v: any = g.shell.tv.viewers.find((x: any) => x.type === '3d scatter plot');
-      for (const k of Object.keys(p)) v.props[k] = p[k];
-    }, patch);
-    await page.waitForTimeout(100);
-  };
-  const getProps = async (keys: string[]) => {
-    return await page.evaluate((ks) => {
-      const g: any = (window as any).grok;
-      const v: any = g.shell.tv.viewers.find((x: any) => x.type === '3d scatter plot');
-      const o: any = {};
-      for (const k of ks) o[k] = v.props[k];
-      return o;
-    }, keys);
-  };
-
-  await softStep('Axis column assignment', async () => {
-    await setProps({xColumnName: 'AGE', yColumnName: 'HEIGHT', zColumnName: 'WEIGHT'});
-    let s = await getProps(['xColumnName', 'yColumnName', 'zColumnName']);
-    expect(s).toEqual({xColumnName: 'AGE', yColumnName: 'HEIGHT', zColumnName: 'WEIGHT'});
-
-    await setProps({xColumnName: 'WEIGHT', yColumnName: 'AGE', zColumnName: 'HEIGHT'});
-    s = await getProps(['xColumnName', 'yColumnName', 'zColumnName']);
-    expect(s).toEqual({xColumnName: 'WEIGHT', yColumnName: 'AGE', zColumnName: 'HEIGHT'});
-
-    await setProps({xColumnName: 'AGE', yColumnName: 'HEIGHT', zColumnName: 'WEIGHT'});
-    s = await getProps(['xColumnName', 'yColumnName', 'zColumnName']);
-    expect(s).toEqual({xColumnName: 'AGE', yColumnName: 'HEIGHT', zColumnName: 'WEIGHT'});
+    // The on-viewer selectors are what the user reads to know which columns are plotted.
+    await expect.poll(() => selectorText(page, 'x'), {timeout: 30_000}).toBe('X: AGE');
+    expect(await selectorText(page, 'y')).toBe('Y: HEIGHT');
+    expect(await selectorText(page, 'z')).toBe('Z: WEIGHT');
   });
 
-  await softStep('Axis types', async () => {
-    await setProps({xAxisType: 'logarithmic'});
-    expect((await getProps(['xAxisType'])).xAxisType).toBe('logarithmic');
-    await setProps({yAxisType: 'logarithmic'});
-    expect((await getProps(['yAxisType'])).yAxisType).toBe('logarithmic');
-    await setProps({zAxisType: 'logarithmic'});
-    expect((await getProps(['zAxisType'])).zAxisType).toBe('logarithmic');
-    await setProps({xAxisType: 'linear', yAxisType: 'linear', zAxisType: 'linear'});
-    const s = await getProps(['xAxisType', 'yAxisType', 'zAxisType']);
-    expect(s).toEqual({xAxisType: 'linear', yAxisType: 'linear', zAxisType: 'linear'});
+  // #### Axis assignment through the on-viewer selectors
+  await softStep('Reassign X and Z with the on-viewer selectors', async () => {
+    const before = await signature(page);
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'x', columnName: 'WEIGHT', viewerType: VIEWER_TYPE, propName: 'xColumnName',
+    });
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'z', columnName: 'AGE', viewerType: VIEWER_TYPE, propName: 'zColumnName',
+    });
+    expect(await selectorText(page, 'x')).toBe('X: WEIGHT');
+    expect(await selectorText(page, 'z')).toBe('Z: AGE');
+    await repaints(page, before);
+
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'x', columnName: 'AGE', viewerType: VIEWER_TYPE, propName: 'xColumnName',
+    });
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'z', columnName: 'WEIGHT', viewerType: VIEWER_TYPE, propName: 'zColumnName',
+    });
   });
 
-  await softStep('Color coding - categorical', async () => {
-    await setProps({colorColumnName: 'SEX'});
-    expect((await getProps(['colorColumnName'])).colorColumnName).toBe('SEX');
-    await setProps({colorColumnName: 'RACE'});
-    expect((await getProps(['colorColumnName'])).colorColumnName).toBe('RACE');
-    await setProps({colorColumnName: ''});
-    expect((await getProps(['colorColumnName'])).colorColumnName).toBeFalsy();
+  // #### Categorical color coding brings up a legend
+  await softStep('Color by SEX shows a categorical legend', async () => {
+    const before = await signature(page);
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'color', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'colorColumnName',
+    });
+
+    await expect.poll(async () => (await v.readLegend(page, VIEWER_TYPE)).labels.sort(),
+      {timeout: 10_000}).toEqual(['F', 'M']);
+    expect((await v.readLegend(page, VIEWER_TYPE)).legendRendered).toBe(true);
+    await repaints(page, before);
   });
 
-  await softStep('Color coding - numerical', async () => {
-    await setProps({colorColumnName: 'AGE'});
-    expect((await getProps(['colorColumnName'])).colorColumnName).toBe('AGE');
-    await setProps({colorColumnName: ''});
-    expect((await getProps(['colorColumnName'])).colorColumnName).toBeFalsy();
+  // #### Numerical color coding replaces it with a gradient
+  await softStep('Color by AGE switches the legend to a gradient', async () => {
+    const before = await signature(page);
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'color', columnName: 'AGE', viewerType: VIEWER_TYPE, propName: 'colorColumnName',
+    });
+
+    await expect.poll(async () => (await v.readLegend(page, VIEWER_TYPE)).labels,
+      {timeout: 10_000}).not.toEqual(['F', 'M']);
+    await repaints(page, before);
   });
 
-  await softStep('Size coding', async () => {
-    await setProps({sizeColumnName: 'WEIGHT'});
-    expect((await getProps(['sizeColumnName'])).sizeColumnName).toBe('WEIGHT');
-    await setProps({sizeColumnName: 'AGE'});
-    expect((await getProps(['sizeColumnName'])).sizeColumnName).toBe('AGE');
-    await setProps({sizeColumnName: ''});
-    expect((await getProps(['sizeColumnName'])).sizeColumnName).toBeFalsy();
-  });
+  // #### Marker type and opacity through the Context Panel
+  await softStep('Marker type redraws the markers', async () => {
+    await v.openViewerProperties(page, VIEWER_NAME);
+    await category(page, 'marker', 'marker-type');
 
-  await softStep('Labels', async () => {
-    await setProps({labelColumnName: 'SEX'});
-    expect((await getProps(['labelColumnName'])).labelColumnName).toBe('SEX');
-    await setProps({labelColumnName: ''});
-    expect((await getProps(['labelColumnName'])).labelColumnName).toBeFalsy();
-  });
-
-  await softStep('Marker type', async () => {
-    for (const m of ['sphere', 'box', 'cylinder', 'tetrahedron', 'dodecahedron', 'octahedron']) {
-      await setProps({markerType: m});
-      expect((await getProps(['markerType'])).markerType).toBe(m);
+    const shapes: Record<string, string> = {};
+    for (const shape of ['box', 'sphere', 'cylinder']) {
+      await v.selectPropertyGridChoice(page, 'marker-type', shape);
+      expect(await shownValue(page, 'marker-type')).toBe(shape);
+      shapes[shape] = await signature(page);
     }
+    expect(shapes['box']).not.toBe(shapes['sphere']);
+    expect(shapes['cylinder']).not.toBe(shapes['sphere']);
   });
 
-  await softStep('Marker opacity and rotation', async () => {
-    for (const v of [20, 100, 69]) {
-      await setProps({markerOpacity: v});
-      expect((await getProps(['markerOpacity'])).markerOpacity).toBe(v);
+  await softStep('Marker opacity redraws the markers', async () => {
+    await category(page, 'marker', 'marker-opacity');
+    const before = await signature(page);
+    await v.setPropertyGridValue(page, 'marker-opacity', '25');
+    expect(await shownValue(page, 'marker-opacity')).toBe('25');
+    await repaints(page, before);
+    await v.setPropertyGridValue(page, 'marker-opacity', '100');
+  });
+
+  // #### Axes and grid lines
+  await softStep('Show Axes hides and restores the axes', async () => {
+    await category(page, 'axes', 'show-axes');
+    const before = await signature(page);
+    expect(await v.togglePropertyGridCheckbox(page, 'show-axes')).toBe(false);
+    const withoutAxes = await repaints(page, before);
+
+    expect(await v.togglePropertyGridCheckbox(page, 'show-axes')).toBe(true);
+    await repaints(page, withoutAxes);
+  });
+
+  await softStep('X axis type switches to logarithmic', async () => {
+    await category(page, 'axes', 'x-axis-type');
+    const before = await signature(page);
+    await v.selectPropertyGridChoice(page, 'x-axis-type', 'logarithmic');
+    expect(await shownValue(page, 'x-axis-type')).toBe('logarithmic');
+    await repaints(page, before);
+    await v.selectPropertyGridChoice(page, 'x-axis-type', 'linear');
+    expect(await shownValue(page, 'x-axis-type')).toBe('linear');
+  });
+
+  // #### Camera: drag to rotate, wheel to zoom, Reset View to recover
+  await softStep('Drag rotates the scene and Reset View restores it', async () => {
+    const {x, y, box} = await plotCentre(page);
+    const before = await signature(page);
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.3, {steps: 20});
+    await page.mouse.up();
+    const rotated = await repaints(page, before);
+
+    await page.mouse.click(x, y, {button: 'right'});
+    await page.locator('.d4-menu-popup').first().waitFor({timeout: 5000});
+    await page.locator('.d4-menu-item')
+      .filter({has: page.locator('.d4-menu-item-label', {hasText: /^Reset View$/})}).first().click();
+    await expect(page.locator('.d4-menu-popup')).toHaveCount(0);
+    await repaints(page, rotated);
+  });
+
+  await softStep('Mouse wheel zooms the scene', async () => {
+    const {x, y} = await plotCentre(page);
+    await page.mouse.move(x, y);
+    const before = await signature(page);
+
+    await page.mouse.wheel(0, -600);
+    const zoomedIn = await repaints(page, before);
+
+    await page.mouse.wheel(0, 600);
+    await repaints(page, zoomedIn);
+  });
+
+  // #### Clicking and shift-clicking points
+  await softStep('Click makes a row current, Shift+click selects it', async () => {
+    const {x, y, box} = await plotCentre(page);
+    const startRow = await page.evaluate(() => (window as any).grok.shell.t.currentRowIdx);
+
+    const currentRow = () =>
+      page.evaluate(() => (window as any).grok.shell.t.currentRowIdx as number);
+    let current = startRow;
+    for (const [dx, dy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6]]) {
+      await page.mouse.click(box.x + box.width * dx, box.y + box.height * dy);
+      await page.waitForTimeout(400);
+      current = await currentRow();
+      if (current !== startRow && current >= 0) break;
     }
-    await setProps({markerRandomRotation: true});
-    expect((await getProps(['markerRandomRotation'])).markerRandomRotation).toBe(true);
-    await setProps({markerRandomRotation: false});
-    expect((await getProps(['markerRandomRotation'])).markerRandomRotation).toBe(false);
+    expect(current).toBeGreaterThanOrEqual(0);
+    expect(current).not.toBe(startRow);
+
+    const selected = () =>
+      page.evaluate(() => (window as any).grok.shell.t.selection.trueCount as number);
+    const selectedBefore = await selected();
+    await page.keyboard.down('Shift');
+    await page.mouse.click(x, y);
+    await page.keyboard.up('Shift');
+    await expect.poll(selected, {timeout: 8000}).toBeGreaterThan(selectedBefore);
+
+    await page.evaluate(() => (window as any).grok.shell.t.selection.setAll(false));
   });
 
-  await softStep('Filtered out points', async () => {
-    await page.evaluate(async () => {
-      const g: any = (window as any).grok;
-      g.shell.tv.getFiltersGroup().updateOrAdd({type: 'histogram', column: 'AGE', min: 20, max: 40});
-      await new Promise(r => setTimeout(r, 300));
-    });
-    await setProps({showFilteredOutPoints: true});
-    expect((await getProps(['showFilteredOutPoints'])).showFilteredOutPoints).toBe(true);
-    await setProps({showFilteredOutPoints: false});
-    expect((await getProps(['showFilteredOutPoints'])).showFilteredOutPoints).toBe(false);
-    const res = await page.evaluate(async () => {
-      const g: any = (window as any).grok;
-      const col = g.shell.tv.dataFrame.col('AGE');
-      const s = col.stats;
-      g.shell.tv.getFiltersGroup().updateOrAdd({type: 'histogram', column: 'AGE', min: s.min, max: s.max});
-      await new Promise(r => setTimeout(r, 300));
-      const df = g.shell.tv.dataFrame;
-      return {f: df.filter.trueCount, t: df.rowCount};
-    });
-    expect(res.f).toBe(res.t);
+  // #### Filtered-out points
+  await softStep('Show Filtered Out Points repaints the filtered-away rows', async () => {
+    const {filteredCount} = await v.applyCategoricalFilter(page, 'SEX', ['F']);
+    const total = await page.evaluate(() => (window as any).grok.shell.t.rowCount);
+    expect(filteredCount).toBeLessThan(total);
+
+    await category(page, 'misc', 'show-filtered-out-points');
+    const filteredOnly = await signature(page);
+    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-points')).toBe(true);
+    await repaints(page, filteredOnly);
+
+    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-points')).toBe(false);
+    await v.resetFilters(page);
   });
 
-  await softStep('Axes visibility and grid lines', async () => {
-    await setProps({showAxes: false});
-    expect((await getProps(['showAxes'])).showAxes).toBe(false);
-    await setProps({showAxes: true});
-    expect((await getProps(['showAxes'])).showAxes).toBe(true);
-    await setProps({showVerticalGridLines: false});
-    expect((await getProps(['showVerticalGridLines'])).showVerticalGridLines).toBe(false);
-    await setProps({showHorizontalGridLines: false});
-    expect((await getProps(['showHorizontalGridLines'])).showHorizontalGridLines).toBe(false);
-    await setProps({showVerticalGridLines: true, showHorizontalGridLines: true});
-    const s = await getProps(['showVerticalGridLines', 'showHorizontalGridLines']);
-    expect(s).toEqual({showVerticalGridLines: true, showHorizontalGridLines: true});
+  // #### Highlighting driven by another viewer
+  await softStep('Hovering a bar chart bin highlights the matching 3D points', async () => {
+    await page.locator('[name="icon-bar-chart"]').first().click();
+    await page.locator('[name="viewer-Bar-chart"]').first().waitFor({timeout: 30_000});
+    await expect.poll(async () =>
+      (await v.countCanvasPixels(page, 'Bar chart')).total, {timeout: 30_000}).toBeGreaterThan(1000);
+
+    const bar = (await page.locator('[name="viewer-Bar-chart"]').boundingBox())!;
+    const idle = await signature(page);
+    await page.mouse.move(bar.x + bar.width * 0.3, bar.y + bar.height * 0.6);
+    await repaints(page, idle);
+
+    // The off-state is asserted on the setting itself, not on the pixels: a
+    // screenshot that stayed equal would not prove the group highlight is gone
+    // (the single mouse-over row and the bar chart's own tooltip repaint too).
+    await page.mouse.move(bar.x + bar.width * 0.9, bar.y + bar.height * 0.05);
+    await category(page, 'misc', 'show-mouse-over-row-group');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-mouse-over-row-group')).toBe(false);
+    expect(await shownValue(page, 'show-mouse-over-row-group')).toBe('false');
+
+    await category(page, 'misc', 'show-mouse-over-row-group');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-mouse-over-row-group')).toBe(true);
+    await v.clickViewerTitlebarIcon(page, 'Bar-chart', 'Close');
+    await expect(page.locator('[name="viewer-Bar-chart"]')).toHaveCount(0);
   });
 
-  await softStep('Background and colors (JS API)', async () => {
-    const origAxis = (await getProps(['axisLineColor'])).axisLineColor;
-    await setProps({backColor: 0xFF000000});
-    expect((await getProps(['backColor'])).backColor).toBe(0xFF000000);
-    await setProps({axisLineColor: 0xFFFFFFFF});
-    expect((await getProps(['axisLineColor'])).axisLineColor).toBe(0xFFFFFFFF);
-    await setProps({backColor: 0xFFFFFFFF, axisLineColor: origAxis});
-    const s = await getProps(['backColor', 'axisLineColor']);
-    expect(s.backColor).toBe(0xFFFFFFFF);
-    expect(s.axisLineColor).toBe(origAxis);
+  // #### Legend placement
+  await softStep('Legend position moves the legend', async () => {
+    await category(page, 'legend', 'legend-position');
+    await v.selectPropertyGridChoice(page, 'legend-visibility', 'Always');
+    const before = await signature(page);
+    await v.selectPropertyGridChoice(page, 'legend-position', 'Left');
+    expect(await shownValue(page, 'legend-position')).toBe('Left');
+    await repaints(page, before);
+    await v.selectPropertyGridChoice(page, 'legend-position', 'Auto');
   });
 
-  await softStep('Dynamic camera movement', async () => {
-    await setProps({dynamicCameraMovement: true});
-    expect((await getProps(['dynamicCameraMovement'])).dynamicCameraMovement).toBe(true);
-    await setProps({dynamicCameraMovement: false});
-    expect((await getProps(['dynamicCameraMovement'])).dynamicCameraMovement).toBe(false);
-  });
-
-  await softStep('Zoom and navigation', async () => {
-    await page.evaluate(async () => {
-      const viewer = document.querySelector('[name="viewer-3d-scatter-plot"]') as HTMLElement;
-      const canvas = viewer.querySelector('canvas') as HTMLCanvasElement;
-      const rect = canvas.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      for (let i = 0; i < 5; i++) {
-        canvas.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, clientX: cx, clientY: cy, deltaY: -120, deltaMode: 0}));
-        await new Promise(r => setTimeout(r, 50));
-      }
-      for (let i = 0; i < 5; i++) {
-        canvas.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, clientX: cx, clientY: cy, deltaY: 120, deltaMode: 0}));
-        await new Promise(r => setTimeout(r, 50));
-      }
-      canvas.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, button: 2, clientX: cx, clientY: cy}));
-      await new Promise(r => setTimeout(r, 300));
-      const label = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
-        .find(e => (e as HTMLElement).textContent?.trim() === 'Reset View') as HTMLElement;
-      if (label) (label.closest('.d4-menu-item') as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 300));
-    });
-    const menuOpen = await page.evaluate(() => !!document.querySelector('.d4-menu-popup'));
-    expect(menuOpen).toBe(false);
-  });
-
-  await softStep('Mouse-over row group highlight', async () => {
-    await page.evaluate(async () => {
-      const icon = document.querySelector('[name="icon-bar-chart"]') as HTMLElement;
-      icon.click();
-      for (let i = 0; i < 30; i++) {
-        if (document.querySelector('[name="viewer-Bar-chart"]')) break;
-        await new Promise(r => setTimeout(r, 100));
-      }
-    });
-    expect(await page.evaluate(() => !!document.querySelector('[name="viewer-Bar-chart"]'))).toBe(true);
-    expect((await getProps(['showMouseOverRowGroup'])).showMouseOverRowGroup).toBe(true);
-
-    await page.evaluate(async () => {
-      const bc = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
-      const canvas = bc.querySelector('canvas') as HTMLCanvasElement;
-      const rect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.left + rect.width * 0.3, clientY: rect.top + rect.height * 0.6}));
-      await new Promise(r => setTimeout(r, 200));
-    });
-
-    await setProps({showMouseOverRowGroup: false});
-    expect((await getProps(['showMouseOverRowGroup'])).showMouseOverRowGroup).toBe(false);
-
-    await page.evaluate(async () => {
-      const bc = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
-      const canvas = bc.querySelector('canvas') as HTMLCanvasElement;
-      const rect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.left + rect.width * 0.5, clientY: rect.top + rect.height * 0.6}));
-      await new Promise(r => setTimeout(r, 200));
-    });
-
-    await setProps({showMouseOverRowGroup: true});
-    expect((await getProps(['showMouseOverRowGroup'])).showMouseOverRowGroup).toBe(true);
-
-    await page.evaluate(async () => {
-      const bc = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
-      const pb = bc.closest('.panel-base') as HTMLElement;
-      const closeBtn = pb?.querySelector('.panel-titlebar-button-close') as HTMLElement;
-      closeBtn?.click();
-      await new Promise(r => setTimeout(r, 300));
-    });
-    expect(await page.evaluate(() => !!document.querySelector('[name="viewer-Bar-chart"]'))).toBe(false);
-  });
+  await v.cleanupShell(page);
 
   v.finishSpec();
 });

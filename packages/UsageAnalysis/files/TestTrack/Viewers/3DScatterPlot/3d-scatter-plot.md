@@ -12,19 +12,97 @@ related_bugs: []
 
 # 3D Scatter Plot tests — Playwright
 
-All scenarios should start with the following sequence of events:
+All scenarios start with:
+
 1. Close all
-2. Open demog
-3. Add 3D Scatter Plot
+2. Open **System:DemoFiles/demog.csv**
+3. Add **3D Scatter Plot** from **Toolbox > Viewers**
+
+Everything below is driven through the UI: the Viewers toolbox, the on-viewer column selectors, the Context Panel property grid, the viewer context menu, and real mouse and keyboard input on the plot. The JS API is used only to read back what the UI does not show as text (current row, selected-row count, filtered-row
+count).
+
+## Add the viewer
+
+1. Click the **3D Scatter Plot** icon in **Toolbox > Viewers**
+2. The on-viewer selectors read **X: AGE**, **Y: HEIGHT**, **Z: WEIGHT** — lfthe axes are assigned automatically
 
 ## Axis column assignment
 
-1. Open properties
-2. Set X to AGE, Y to HEIGHT, Z to WEIGHT
-3. Set X to WEIGHT, Y to AGE, Z to HEIGHT
-4. Set X back to AGE, Y to HEIGHT, Z to WEIGHT
+1. Set **X** to *WEIGHT* and **Z** to *AGE* using the on-viewer selectors
+2. The selectors show the new columns and the scene repaints
+3. Set them back to *AGE* and *WEIGHT*
 
-## Axis types
+## Color coding — categorical
+
+1. Set **Color** to *SEX* with the on-viewer selector
+2. A legend appears listing exactly *F* and *M*, and the scene repaints
+
+## Color coding — numerical
+
+1. Set **Color** to *AGE*
+2. The legend switches away from the categorical items and the scene repaints
+
+## Marker type
+
+1. Go to **Context Panel > Marker**
+2. Set **Marker Type** to *box*, then *sphere*, then *cylinder*
+3. Each shape paints a visibly different scene
+
+## Marker opacity
+
+1. Set **Marker Opacity** to *25* — the scene repaints
+2. Set it back to *100*
+
+## Axes
+
+1. Go to **Context Panel > Axes**
+2. Uncheck **Show Axes** — the scene repaints without axes
+3. Check it again
+4. Set **X Axis Type** to *logarithmic*, then back to *linear* — the scene
+   repaints each time
+
+## Camera
+
+1. Drag across the plot — the scene rotates
+2. Right-click the plot and choose **Reset View** — the menu closes and the
+   camera returns
+3. Scroll the wheel up over the plot — the scene zooms in
+4. Scroll the wheel down — the scene zooms back out
+
+## Clicking points
+
+1. Click a point — the corresponding row becomes current in the table
+2. **Shift+click** a point — it is added to the selection
+
+## Filtered out points
+
+1. Filter the table to `SEX = F`
+2. Go to **Context Panel > Misc** and enable **Show Filtered Out Points** —
+   the filtered-away rows come back as ghost markers and the scene repaints
+3. Disable it and reset the filter
+
+## Mouse-over row group highlight
+
+1. Add a **Bar Chart** to the view
+2. Hover a bar — the matching points highlight in the 3D plot (the scene repaints)
+3. Uncheck **Show Mouse Over Row Group** in **Context Panel > Misc** and confirm
+   the setting is off
+4. Re-check it and close the Bar Chart
+
+## Legend
+
+1. Go to **Context Panel > Legend**, set **Legend Visibility** to *Always*
+2. Set **Legend Position** to *Left* — the legend moves and the viewer repaints
+3. Set it back to *Auto*
+
+## Manual scenarios (not automated)
+
+Everything below was in the original checklist and is **not** covered by
+`3d-scatter-plot-spec.ts`. Kept verbatim so no scenario is lost.
+
+### Axis types
+
+> Manual
 
 1. Open properties, set X Axis Type to logarithmic
 2. Set Y Axis Type to logarithmic
@@ -33,38 +111,24 @@ All scenarios should start with the following sequence of events:
 5. Set Y Axis Type back to linear
 6. Set Z Axis Type back to linear
 
-## Color coding — categorical
+### Size coding
 
-1. Open properties, set Color to SEX
-2. Set Color to RACE
-3. Clear Color
-
-## Color coding — numerical
-
-1. Open properties, set Color to AGE
-2. Clear Color
-
-## Size coding
+> Manual
 
 1. Open properties, set Size to WEIGHT
 2. Set Size to AGE
 3. Clear Size
 
-## Labels
+### Labels
+
+> Manual
 
 1. Open properties, set Label to SEX
 2. Clear Label
 
-## Marker type
+### Marker opacity and rotation
 
-1. Open properties, set Marker Type to sphere
-2. Set Marker Type to box
-3. Set Marker Type to cylinder
-4. Set Marker Type to tetrahedron
-5. Set Marker Type to dodecahedron
-6. Set Marker Type back to octahedron
-
-## Marker opacity and rotation
+> Manual
 
 1. Open properties, set Marker Opacity to 20
 2. Set Marker Opacity to 100
@@ -72,15 +136,9 @@ All scenarios should start with the following sequence of events:
 4. Enable Marker Random Rotation
 5. Disable Marker Random Rotation
 
-## Filtered out points
+### Axes visibility and grid lines
 
-1. Open the filter panel
-2. Filter AGE to range 20–40
-3. Open properties, enable Show Filtered Out Points
-4. Disable Show Filtered Out Points
-5. Clear the AGE filter
-
-## Axes visibility and grid lines
+> Manual
 
 1. Open properties, disable Show Axes
 2. Enable Show Axes
@@ -89,33 +147,21 @@ All scenarios should start with the following sequence of events:
 5. Enable Show Vertical Grid Lines
 6. Enable Show Horizontal Grid Lines
 
-## Background and colors
+### Background and colors
+
+> Manual
 
 Note: color properties set via JS API (UI color picker is not automatable).
 1. Set Back Color to black
 2. Set Axis Line Color to white
 3. Restore Back Color to white and Axis Line Color to default
 
-## Dynamic camera movement
+### Dynamic camera movement
+
+> Manual
 
 1. Open properties, enable Dynamic Camera Movement
 2. Disable Dynamic Camera Movement
-
-## Zoom and navigation
-
-1. Scroll mouse wheel up over the plot five times
-2. Scroll mouse wheel down five times
-3. Right-click on the plot, click Reset View
-
-## Mouse-over row group highlight
-
-1. Add a Bar Chart to the view
-2. Open 3D Scatter Plot properties, confirm Show Mouse Over Row Group is checked
-3. Move mouse over a bar in the Bar Chart
-4. Open 3D Scatter Plot properties, uncheck Show Mouse Over Row Group
-5. Move mouse over a bar in the Bar Chart
-6. Recheck Show Mouse Over Row Group
-7. Close the Bar Chart
 
 ---
 {

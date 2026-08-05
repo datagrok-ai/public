@@ -10,49 +10,79 @@ realized_as:
 related_bugs: []
 ---
 
-# Tree Map tests
+# Tree Map (Playwright)
 
-All scenarios should start with the following sequence of events:
+All scenarios start with:
+
 1. Close all
-2. Open demog
-3. Add Tree Map
+2. Open **System:DemoFiles/demog.csv**
+3. Add **Tree Map** from **Toolbox > Viewers**
 
-## Split Column — Single Level
+Everything below is driven through the UI: the Viewers toolbox, the on-viewer split
+selectors, the Context Panel property grid, and real mouse input on the canvas. The
+leaf tooltips are what the assertions read — they name the group and its row count,
+so the numbers can be checked against the data.
 
-1. Verify the viewer opens with a split column auto-selected (one selector is pre-filled)
-2. Open the first split `<select>` and change it to `SEX`
-3. Open the first split `<select>` and change it back to `RACE`
+## Add the viewer
 
-## Split Column — Multiple Levels
+1. Click the **Tree Map** icon in **Toolbox > Viewers**
+2. The map is drawn, the first split selector is pre-filled, and the trailing
+   selector is the empty placeholder for the next level
+
+## Split column — single level
 
 1. Set the first split selector to `RACE`
-2. Pick `SEX` in the trailing empty selector to add a second split level — a new empty placeholder selector appears
-3. Set the second selector back to the empty option — the `SEX` level is removed and its selector disappears
+2. The map is redrawn, and hovering a rectangle shows that race and its exact
+   row count
 
-## Color Column and Aggregation
+## Split column — two levels
 
-1. Click the **Color** combo box and choose `AGE` — rectangles are recolored on a gray→red scale
-2. Change the color aggregation `<select>` from `avg` to `max` — recolor triggered immediately
-3. Change the color aggregation to `sum`
-4. Click the **Color** combo box and select the empty option to clear the color column — rectangles return to category colors
+1. Pick `SEX` in the trailing empty selector
+2. A new empty placeholder appears after it and the map is redrawn into
+   RACE × SEX groups — a leaf now covers fewer rows than the largest race
+3. Set the second selector back to the empty option — the level is removed
 
-## Size Column and Aggregation
+## Colour column and aggregation
 
-1. Click the gear icon on the Tree Map title bar to open Settings
-2. Expand the **General** section if collapsed
-3. Set **Size Column Name** to `HEIGHT`
-4. Set **Size Aggr Type** to `avg`
-5. Set **Size Aggr Type** back to `sum`
-6. Clear **Size Column Name**
+1. On **Context Panel > Data**, set **Color** to `AGE` — the rectangles are recoloured
+2. Change **Color Aggr Type** to `max` — the colours change again
 
-## Show/Hide Column Selection Panel
+## Size column and aggregation
 
-1. Click the gear icon on the Tree Map title bar to open Settings
-2. Expand the **General** section if collapsed
-3. Uncheck **Show Column Selection Panel** — the split row and Color combo box above the canvas disappear
-4. Check **Show Column Selection Panel** again — selectors reappear
+1. Set **Size** to `WEIGHT` — the rectangles are rescaled
+2. Change **Size Aggr Type** to `max` — the layout changes again
 
-## Row Source
+   Note: `sum` is already the default for a size column, so switching to it
+   changes nothing.
+
+## Selection
+
+1. Click a rectangle — exactly the rows of that group are selected
+
+## Filtering
+
+1. Filter the table to `SEX = M`
+2. The map is redrawn and the leaf tooltips report only the rows that pass the filter
+3. Reset the filter
+
+## Column selection panel
+
+1. Uncheck **Show Column Selection Panel** in **Context Panel > Misc** — the split
+   selectors are hidden (they stay in the DOM)
+2. Check it again — they come back
+
+## Closing the viewer
+
+1. Click **Close** on the viewer title bar — the viewer is gone
+
+## Manual scenarios (not automated)
+
+Everything below was in the original checklist and is **not** covered by
+`tree-map-viewer-spec.ts`. Kept verbatim so no scenario is lost.
+
+### Row Source
+
+> Manual
 
 1. Click the gear icon on the Tree Map title bar to open Settings
 2. Expand the **General** section if collapsed
@@ -60,14 +90,18 @@ All scenarios should start with the following sequence of events:
 4. Set **Row Source** to `Selected`
 5. Set **Row Source** to `Filtered`
 
-## Filter Formula
+### Filter Formula
+
+> Manual
 
 1. Click the gear icon on the Tree Map title bar to open Settings
 2. Expand the **General** section if collapsed
 3. Set **Filter** to `${AGE} > 40` — viewer updates to show only matching rows
 4. Clear the **Filter** field — all rows are shown again
 
-## Outer Margins
+### Outer Margins
+
+> Manual
 
 1. Click the gear icon on the Tree Map title bar to open Settings
 2. Expand the **General** section if collapsed
@@ -77,14 +111,18 @@ All scenarios should start with the following sequence of events:
 6. Set **Outer Margin Bottom** to `30` — canvas area visibly inset on all sides
 7. Reset all four outer margins back to `0`
 
-## Row Selection
+### Row Selection
+
+> Manual
 
 1. Set the first split selector to `RACE`
 2. Click the center of the Tree Map canvas — at least one rectangle becomes selected
 3. Shift-click a different point on the canvas — selection expands to include additional rows
 4. Ctrl-click the same first point — those rows are toggled off the selection
 
-## Layout Persistence
+### Layout Persistence
+
+> Manual
 
 1. Set the first split selector to `RACE`
 2. Pick `SEX` in the trailing empty selector to add a second split level
@@ -96,6 +134,6 @@ All scenarios should start with the following sequence of events:
 
 ---
 {
-  "order": 19,
+  "order": 100,
   "datasets": ["System:DemoFiles/demog.csv"]
 }

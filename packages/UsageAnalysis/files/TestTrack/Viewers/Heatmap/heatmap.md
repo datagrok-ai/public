@@ -7,59 +7,78 @@ realizes_atlas: []
 realizes: []
 realized_as:
   - heatmap-spec.ts
-related_bugs: []
+related_bugs:
+  - id: GROK-20619
+    status: open
+  - id: GROK-11515
+    status: fixed
 ---
 
-# Heat map tests
+# Heat map (Playwright)
 
-All scenarios should start with the following sequence of events:
+All scenarios start with:
+
 1. Close all
-2. Open demog
-3. Add Heat map
+2. Open **System:DemoFiles/demog.csv**
+3. Add **Heat map** from **Toolbox > Viewers**
 
-## Heatmap colors and global color scaling
+## Add the viewer
 
-1. Open properties, verify Heatmap Colors is checked
-2. Uncheck Heatmap Colors
-3. Check Heatmap Colors
-4. Check Global Color Scaling
-5. Uncheck Global Color Scaling
+1. Click the **Heat map** icon in **Toolbox > Viewers**
+2. The map is drawn and **Is Heatmap** is on
 
-## Column label orientation
+## Heatmap colours
 
-1. Open properties, verify Col Labels Orientation is set to Auto
-2. Set Col Labels Orientation to Vert
-3. Set Col Labels Orientation to Horz
-4. Set Col Labels Orientation back to Auto
+1. Uncheck **Heatmap Colors** in **Context Panel > Misc** — the cells should stop
+   being colour-filled. They do not change today (GROK-20619, guarded by
+   `knownOpenBug`). Check it again.
+2. Flip **Global Color Scaling** — the cells are recoloured, then restored
 
-## Max heatmap columns
+## Column labels
 
-1. Open properties, verify Max Heatmap Columns is 100
-2. Set Max Heatmap Columns to 3
-3. Set Max Heatmap Columns to 1000
-4. Set Max Heatmap Columns back to 100
+1. Set **Col Labels Orientation** (Context Panel > Style) to *Vert*, then *Horz*,
+   then back to *Auto*
 
-## Show heatmap scrollbars
+## Columns and scrollbars
 
-1. Open properties, verify Show Heatmap Scrollbars is checked
-2. Uncheck Show Heatmap Scrollbars
-3. Check Show Heatmap Scrollbars
+1. Set **Max Heatmap Columns** to *3* — fewer columns are drawn; restore *100*
+2. Uncheck **Show Heatmap Scrollbars** — the range sliders disappear; check it again
 
-## Is Heatmap toggle
+## Grid mode
 
-1. Open properties, verify Is Grid is unchecked (viewer is in heatmap mode)
-2. Check Is Grid — viewer switches to grid mode with row numbers and gridlines
-3. Uncheck Is Grid — viewer returns to heatmap mode
+1. Uncheck **Is Heatmap** — the viewer redraws as a plain grid
+2. Check it again — the heat map comes back
 
-## Filtering interaction
+## Row height
 
-1. Open the filter panel
-2. Set the AGE filter to range 20–40
-3. Verify the heat map updates to show only filtered rows
-4. Reset the AGE filter
-5. Verify the heat map shows all rows again
+1. **Row Height** should not be offered here at all: it is a grid-only option
+   (its tooltip says so) and the drawing does not follow it in heatmap mode. The
+   property is still shown today (GROK-20619, guarded by `knownOpenBug`); once it
+   is hidden, this check goes loud and the step can be dropped.
 
-## Table switching
+## Interaction
+
+1. Click a cell — its row becomes current
+2. **Alt+drag** over an area — the view zooms in and the vertical slider's window
+   shrinks
+3. Double-click the vertical slider — the view resets to the full extent
+
+## Filtering
+
+1. Filter the table to `SEX = M` — the heat map redraws; reset the filter
+
+## Closing the viewer
+
+1. Click **Close** on the viewer title bar — the viewer is gone
+
+## Manual scenarios (not automated)
+
+Everything below was in the original checklist and is **not** covered by
+`heatmap-spec.ts`. Kept verbatim so no scenario is lost.
+
+### Table switching
+
+> Manual
 
 > Note: requires spgi-100 dataset (open twice to get two tables for switching).
 > Setup: Close all, open spgi-100.csv twice, go to the first table view, add Heat map, open Context Panel.
@@ -67,7 +86,9 @@ All scenarios should start with the following sequence of events:
 1. Set the Table property to the second spgi-100 table — heat map re-renders against it
 2. Set the Table property back to the first spgi-100 table
 
-## Range slider navigation
+### Range slider navigation
+
+> Manual
 
 1. Drag the horizontal range slider to the left — content scrolls left
 2. Drag the horizontal range slider to the right — content scrolls right
@@ -76,33 +97,43 @@ All scenarios should start with the following sequence of events:
 5. Drag the vertical range slider down — content scrolls down
 6. Double-click the vertical range slider — resets to full range
 
-## Column sorting
+### Column sorting
+
+> Manual
 
 1. Double-click the AGE column header — rows sort ascending by AGE
 2. Double-click the AGE column header again — rows sort descending
 3. Double-click the AGE column header once more — sorting resets
 
-## Selection interaction
+### Selection interaction
+
+> Manual
 
 1. Click a row in the heat map — it becomes the current row
 2. Shift+drag to select a block of cells — selected rows are highlighted
 3. Press Esc — selection clears
 
-## Color scheme customization
+### Color scheme customization
+
+> Manual
 
 1. Open properties, locate Linear Color Scheme
 2. Change the linear color scheme to a different option
 3. Open properties, locate Categorical Color Scheme
 4. Change the categorical color scheme to a different option
 
-## Draw every row
+### Draw every row
+
+> Manual
 
 1. Open properties, verify Draw Every Row is unchecked
 2. Check Draw Every Row
 3. Scroll through the heat map
 4. Uncheck Draw Every Row
 
-## Layout save and restore
+### Layout save and restore
+
+> Manual
 
 1. Set Col Labels Orientation to Vert
 2. Check Global Color Scaling
@@ -111,7 +142,9 @@ All scenarios should start with the following sequence of events:
 5. Apply the saved layout — orientation and scaling restore
 6. Delete the saved layout
 
-## Layout saving with Is Heatmap toggle
+### Layout saving with Is Heatmap toggle
+
+> Manual
 
 > Note: uses spgi-100 dataset.
 > Setup: open spgi-100.csv, add Heat map.
@@ -123,6 +156,13 @@ All scenarios should start with the following sequence of events:
 5. Apply the saved layout
 6. Check Is Heatmap — re-enable heatmap mode
 7. Delete the saved layout
+
+### Right-click content panning
+
+> Manual — see `heatmap-ui.md`
+
+1. Zoom in using Alt+drag, then right-click and drag on the content area — content pans
+2. Release right-click — panning stops, content stays at new position
 
 ---
 {

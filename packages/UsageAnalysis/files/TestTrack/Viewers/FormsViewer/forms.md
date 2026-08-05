@@ -10,14 +10,48 @@ realized_as:
 related_bugs: []
 ---
 
-# Forms tests
+# Forms viewer (Playwright)
 
-All scenarios should start with the following sequence of events:
+All scenarios start with:
+
 1. Close all
-2. Open demog
-3. Add Forms
+2. Open **System:DemoFiles/demog.csv**
+3. Add **Forms** from **Toolbox > Viewers**
 
-## Fields selection
+## Add the viewer
+
+1. Click the **Forms** icon in **Toolbox > Viewers**
+2. A field appears for every column, and a single form is shown
+
+## Current row
+
+1. The form's values match the current row
+2. Make another row current — the form follows it
+
+## Selected rows
+
+1. Make sure **Show Selected Rows** is on in **Context Panel > Misc**
+   (it ships enabled)
+2. Select three rows — a form appears for each of them
+3. Clear the selection — one form is left
+
+## Current-row form
+
+1. Uncheck **Show Current Row** — no forms are left on screen
+2. Check it again — the single form comes back
+
+## Closing the viewer
+
+1. Click **Close** on the viewer title bar — the viewer is gone
+
+## Manual scenarios (not automated)
+
+Everything below was in the original checklist and is **not** covered by
+`forms-spec.ts`. Kept verbatim so no scenario is lost.
+
+### Fields selection
+
+> Manual
 
 1. Open Context Panel and find the Forms viewer properties
 2. Click on **Fields** property — a column selection dialog should open
@@ -26,14 +60,9 @@ All scenarios should start with the following sequence of events:
 5. Drag-and-drop RACE above AGE in the column selection dialog — RACE should appear first in each form card
 6. Remove a column by clicking the X icon next to its name in the column headers — that column should disappear from all form cards
 
-## Current row tracking
+### Mouse-over row tracking
 
-1. Click on different rows in the grid — a form card with a green stripe on top should update to reflect the current row
-2. Verify the current row form is always shown first (topmost position)
-3. Set **Show Current Row** to false in the properties — the green-striped card should disappear
-4. Set **Show Current Row** back to true — the current row card reappears
-
-## Mouse-over row tracking
+> Manual
 
 1. Hover over different rows in the grid — a form card with a grey stripe should appear showing the hovered row
 2. Verify the mouse-over form is positioned right after the current row form
@@ -41,62 +70,70 @@ All scenarios should start with the following sequence of events:
 4. Set **Show Mouse Over Row** to false — the grey-striped card should disappear
 5. Set **Show Mouse Over Row** back to true — the card reappears on hover
 
-## Selected rows display
+### Form card click interactions
 
-1. In the grid, select 3 rows (Ctrl+click) — 3 form cards should appear below the current/mouse-over cards
-2. Select additional rows — new form cards should appear
-3. Deselect a row (Ctrl+click) — its form card should disappear
-4. Set **Show Selected Rows** to false — all selected-row cards should disappear, only current/mouse-over remain
-5. Set **Show Selected Rows** back to true — selected-row cards reappear
-
-## Form card click interactions
+> Manual
 
 1. Click on a form card (not the current row one) — that row should become the current row in the grid
 2. Ctrl+click a form card — that row's selection should toggle
 3. Ctrl+click the same card again — selection should toggle back
 4. Click on a specific field value inside a card — that cell should become the current cell in the grid
 
-## Color coding
+### Color coding
+
+> Manual
 
 1. In the grid, apply color coding to the AGE column (e.g., Linear color coding)
 2. Verify AGE values in the form cards reflect the color coding (colored backgrounds or text)
 3. Set **Color Code** to false in the Forms properties — color coding should disappear from all cards
 4. Set **Color Code** back to true — colors reappear
 
-## Grid sort synchronization
+### Grid sort synchronization
+
+> Manual
 
 1. In the grid, sort by HEIGHT column
 2. Verify the selected-row forms follow the grid sort order
 3. Set **Use Grid Sort** to false in properties — forms should revert to natural row order
 4. Set **Use Grid Sort** back to true — forms should follow grid sort again
 
-## Sort By property
+### Sort By property
+
+> Manual
 
 1. Set the **Sort By** property to WEIGHT — selected-row cards should reorder by WEIGHT
 2. Change **Sort By** to AGE — cards reorder by AGE
 3. Clear the **Sort By** property — sorting falls back to grid sort or natural order
 
-## Renderer size
+### Renderer size
+
+> Manual
 
 1. Set **Renderer Size** to "small" — form cards and field values should be compact
 2. Set **Renderer Size** to "normal" — cards should be slightly larger
 3. Set **Renderer Size** to "large" — cards and rendered content should be noticeably larger
 4. Verify column name labels remain readable at each size
 
-## Filtering interaction
+### Filtering interaction
+
+> Manual
 
 1. Open the filter panel and filter SEX to show only "M"
 2. Verify the Forms viewer only shows form cards for filtered rows
 3. Select rows in the grid — only filtered and selected rows should appear as form cards
 4. Remove the filter — previously hidden selected rows should now appear as form cards
 
-## Column removal reaction
+### Column removal reaction
+
+> Manual
 
 1. In the grid, delete a column that is displayed in the Forms viewer
 2. Verify the Forms viewer removes that column from all form cards without error
 3. The column should also disappear from the column headers on the left
 
-## Layout persistence
+### Layout persistence
+
+> Manual
 
 1. Configure the Forms viewer: select specific columns, set Sort By to AGE, set Renderer Size to large
 2. Save the layout (**View | Layout | Save as**)
@@ -104,7 +141,9 @@ All scenarios should start with the following sequence of events:
 4. Apply the saved layout
 5. Verify the Forms viewer restores with the same columns, sort, and renderer size
 
-## Molecule rendering (spgi-100)
+### Molecule rendering (spgi-100)
+
+> Manual
 
 Setup: Close all, open System:AppData/Chem/tests/spgi-100.csv, add Forms
 
@@ -116,7 +155,9 @@ Setup: Close all, open System:AppData/Chem/tests/spgi-100.csv, add Forms
 6. Set **Renderer Size** to "small" — molecules should still be recognizable at a smaller size
 7. Hover over different rows — the mouse-over card should show the correct molecule for the hovered row
 
-## Multiple molecule columns (spgi-100)
+### Multiple molecule columns (spgi-100)
+
+> Manual
 
 Setup: Close all, open System:AppData/Chem/tests/spgi-100.csv, add Forms
 
@@ -125,7 +166,9 @@ Setup: Close all, open System:AppData/Chem/tests/spgi-100.csv, add Forms
 3. Both molecules should appear on the left side of the card, stacked vertically
 4. Each molecule should have its column name label displayed above it
 
-## Curves rendering (curves.csv)
+### Curves rendering (curves.csv)
+
+> Manual
 
 Setup: Close all, open System:DemoFiles/curves.csv, add Forms
 

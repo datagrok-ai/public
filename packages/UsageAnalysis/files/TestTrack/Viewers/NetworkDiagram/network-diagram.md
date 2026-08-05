@@ -1,5 +1,5 @@
 ---
-feature: networkdiagram
+feature: network-diagram
 target_layer: playwright
 coverage_type: regression
 priority: p2
@@ -7,47 +7,100 @@ realizes_atlas: []
 realizes: []
 realized_as:
   - network-diagram-spec.ts
-related_bugs: []
+related_bugs:
+  - id: GROK-20617
+    status: open
+  - id: GROK-20618
+    status: open
+  - id: GROK-17125
+    status: open
 ---
 
-### Network diagram
+# Network diagram (Playwright)
 
-1. Open the **demog** dataset.
-2. On the **Viewers** tab of the Toolbox, click **Network diagram**. The viewer opens with
-   two column combo boxes in the top-left corner (**Node 1**, **Node 2**) auto-picked by the
-   viewer (first two categorical columns with the fewest categories, e.g. `sex` and `race`).
-   * Expected: Nodes and edges are drawn on the canvas; no errors in the console.
-3. In the **Node 1** combo box, switch the column to `RACE`; in **Node 2**, switch to `DEMOG`.
-   * Expected: The graph rebuilds with new endpoints.
-4. Click a node.
-   * Expected: Rows backing every incident edge are selected (check the status bar /
-     `grok.shell.tv.dataFrame.selection.trueCount`).
+All scenarios start with:
+
+1. Close all
+2. Open **System:DemoFiles/demog.csv**
+3. Add **Network diagram** from **Toolbox > Viewers**
+
+Everything below is driven through the UI: the Viewers toolbox, the on-viewer node
+selectors, the Context Panel property grid, and real mouse input on the canvas.
+The JS API is used only to read back the selected- and filtered-row counts.
+
+## Add the viewer
+
+1. Click the **Network diagram** icon in **Toolbox > Viewers**
+2. The on-viewer selectors read **SEX** and **CONTROL** — the node columns are
+   picked automatically
+3. The diagram is drawn (the canvas carries content)
+
+## Suspend simulation
+
+1. Go to **Context Panel > Misc** and check **Suspend Simulation**
+2. The layout freezes — the canvas stops repainting on its own
+
+## Node columns
+
+1. Set **Node 1** to *RACE* with the on-viewer selector
+2. The selector shows *RACE* and the diagram is redrawn
+
+## Colour and size coding
+
+1. On **Context Panel > Data**, set **Node1 Color** to *SEX* and **Node1 Size** to *AGE*
+2. The property grid shows both columns and the diagram repaints
+3. Set **Edge Color** to *AGE* — the edges are recoloured
+
+## Clicking
+
+1. Click a node — the rows behind it are selected and the diagram repaints
+2. Uncheck **Select Rows On Click** *and* **Select Edges On Click** in **Misc**
+3. Clicking the same places selects nothing
+4. Re-check both
+
+## Column selectors
+
+1. Uncheck **Show Column Selectors** in **Misc** — the on-viewer selectors disappear
+2. Check it again — they come back
+
+## Arrows
+
+1. Set **Show Arrows** to *to* in **Misc** — the arrow heads should be drawn
+   straight away. They are not: the diagram only picks the setting up on the next
+   rebuild (GROK-20617, guarded by `knownOpenBug`).
+2. Change **Node 1** to force the graph to be rebuilt — the arrow heads are drawn
+   and the setting survives the rebuild.
+
+## Filtered out nodes
+
+1. Filter the table to `SEX = F`
+2. Check **Show Filtered Out Nodes** in **Misc** — the filtered-away nodes should
+   come back. They do not, and nothing is repainted (GROK-20618, guarded by
+   `knownOpenBug`).
+3. Uncheck it and reset the filter
+
+## Closing the viewer
+
+1. Click **Close** on the viewer title bar — the viewer is gone
+
+## Manual scenarios (not automated)
+
+Everything below was in the original checklist and is **not** covered by
+`network-diagram-spec.ts`. Kept verbatim so no scenario is lost.
+
+### Selection gestures on nodes and edges
+
+> Manual
+
 5. Shift+click another node, then Ctrl+click the first node.
    * Expected: Shift+click adds to selection; Ctrl+click toggles it.
 6. Click an edge.
    * Expected: Only the rows backing that edge are selected.
 7. Double-click empty canvas.
    * Expected: Selection clears on the first click; the view zooms to fit on the second.
-8. Click the **Gear** icon on the viewer title bar. The **Property Pane** opens.
-9. In the **Data** section, set:
-   * **Edge Color Column Name** = `age`, **Edge Color Aggr Type** = `avg`.
-   * **Edge Width Column Name** = `weight`, **Edge Width Aggr Type** = `avg`.
-   * **Node 1 Size Column Name** = `age`, **Node 1 Color Column Name** = `sex`.
-   * Expected: Edge colors follow a gradient, edge widths vary, Node 1 nodes resize and
-     recolor accordingly.
-10. In the **Style** section, toggle:
-    * **Show Column Selectors** off → the two top-left combo boxes disappear; on → they
-      reappear.
-    * **Show Arrows** = `to` → directional arrows appear on edges.
-    * **Suspend Simulation** = true → node positions freeze; false → physics resumes.
-11. Filter the dataframe (e.g. `age > 40` in the filter panel).
-    * Expected: Filtered-out nodes disappear. Toggle **Show Filtered Out Nodes** = true →
-      they reappear in the filtered-out color.
-12. Close the viewer via the **×** icon on its title bar.
-    * Expected: The viewer is removed without errors.
 
 ---
 {
-  "order": 23,
+  "order": 11,
   "datasets": ["System:DemoFiles/demog.csv"]
 }

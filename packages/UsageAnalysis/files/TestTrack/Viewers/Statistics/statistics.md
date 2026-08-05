@@ -10,31 +10,70 @@ realized_as:
 related_bugs: []
 ---
 
-# Statistics viewer tests
+# Statistics viewer (Playwright)
 
-All scenarios should start with the following sequence of events:
+All scenarios start with:
+
 1. Close all
-2. Open demog
-3. Add Statistics
+2. Open **System:DemoFiles/demog.csv**
+3. Add **Statistics** from **Toolbox > Viewers**
 
-## Add viewer
+## Add, close and re-add
 
-1. Click the Statistics icon in the Toolbox Viewers section — Statistics viewer opens
-2. Close the Statistics viewer
-3. Click the Statistics icon in the Toolbox Viewers section again — Statistics viewer opens
+1. Click the **Statistics** icon in **Toolbox > Viewers** — the viewer opens with
+   statistics drawn
+2. Close it from the title bar — the viewer is gone
+3. Click the icon again — it opens and draws again
 
-## Default statistics display
+## Adding a statistic
+
+1. Right-click the viewer and open the **Statistics** submenu
+2. `sum` is unticked
+3. Click `sum` — the viewer redraws with the extra column
+
+   Note: the submenu opens only once per page. Reopening it (to remove `sum`
+   again, or to reach **Histograms**) does not work under automation — those
+   steps are manual, below.
+
+## Row source
+
+1. On **Context Panel > Data**, set **Row Source** to *Filtered*
+2. Filter the table to `SEX = M` — the statistics are recomputed and redraw
+3. Reset the filter, set **Row Source** to *Selected*
+4. Select every second row — the statistics redraw
+5. Set **Row Source** back to *All*
+
+## Columns
+
+1. **Context Panel > Data > Columns** reports as many columns as the table has
+
+## Closing the viewer
+
+1. Click **Close** on the viewer title bar — the viewer is gone
+
+## Manual scenarios (not automated)
+
+Everything below was in the original checklist and is **not** covered by
+`statistics-spec.ts`. Kept verbatim so no scenario is lost.
+
+### Default statistics display
+
+> Manual
 
 1. Verify the viewer shows stat columns: values, nulls, unique, min, max, avg, med, stdev
 2. Verify numerical columns AGE, HEIGHT, WEIGHT have non-empty values in all stat columns
 3. Verify the name column lists the demog dataset columns
 
-## Statistics for categorical columns
+### Statistics for categorical columns
+
+> Manual
 
 1. Verify numerical stat columns (avg, min, max, stdev) are empty for categorical column rows (SEX, RACE, DIS_POP)
 2. Verify count-type stat columns (values, nulls, unique) are populated for categorical column rows
 
-## Add and remove statistics columns
+### Add and remove statistics columns
+
+> Manual
 
 1. Right-click the Statistics viewer
 2. Hover over Statistics in the context menu — submenu opens listing available stat types
@@ -42,7 +81,9 @@ All scenarios should start with the following sequence of events:
 4. Right-click the viewer and hover over Statistics in the context menu
 5. Click sum again — the sum column disappears
 
-## Histogram columns
+### Histogram columns
+
+> Manual
 
 1. Right-click the Statistics viewer
 2. Hover over Histograms in the context menu — submenu lists categorical columns with fewer than 10 categories (SEX, RACE, DIS_POP)
@@ -50,27 +91,16 @@ All scenarios should start with the following sequence of events:
 4. Right-click the viewer and hover over Histograms in the context menu
 5. Click SEX again — the histogram column disappears
 
-## Row source: filtered rows
+### Open as table
 
-1. Open the filter panel
-2. Add an AGE range filter and set the range to 20–40
-3. Verify the values count in the Statistics viewer decreases compared to the full dataset
-4. Remove the AGE filter — statistics revert to full dataset values
-
-## Row source: selected rows
-
-1. Select several rows in the grid
-2. Open the Properties panel for the Statistics viewer
-3. Set Rows to Selected — statistics update to reflect only the selected rows
-4. Verify the values count matches the number of selected rows
-5. Set Rows back to All — statistics revert to full dataset
-
-## Open as table
+> Manual
 
 1. Right-click the Statistics viewer
 2. Click Open as table — a new table tab opens with stat types as column headers and data columns as rows
 
-## Full-screen shortcut
+### Full-screen shortcut
+
+> Manual
 
 1. Click the expand icon on the Statistics viewer panel — viewer expands to full screen
 2. Press Alt+F — viewer returns to normal size

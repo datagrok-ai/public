@@ -1,159 +1,258 @@
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {test, expect, Page} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+import {knownOpenBug} from '../../helpers/known-open-bug';
 
 test.use(specTestOptions);
 
+const VIEWER_NAME = 'Network-diagram';
+const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
+const VIEWER_TYPE = 'Network diagram';
+const datasetPath = 'System:DemoFiles/demog.csv';
+
+const shownValue = (page: Page, prop: string, cat?: string) => v.propertyGridValue(page, prop, cat);
+const category = (page: Page, cat: string, probe: string) =>
+  v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
+
+const selectionCount = (page: Page) =>
+  page.evaluate(() => (window as any).grok.shell.t.selection.trueCount as number);
+
+const clearSelection = async (page: Page) => {
+  await page.evaluate(() => (window as any).grok.shell.t.selection.setAll(false));
+  await expect.poll(() => selectionCount(page), {timeout: 5000}).toBe(0);
+};
+
+/** Selected-row count once it stops moving — clicks land asynchronously. */
+async function selectionSettles(page: Page): Promise<number> {
+  let last = -1;
+  for (let i = 0; i < 8; i++) {
+    await page.waitForTimeout(150);
+    const now = await selectionCount(page);
+    if (now === last && now > 0) return now;
+    last = now;
+  }
+  return last;
+}
+
+/** Caption + current column of an on-viewer node selector. */
+async function selectorText(page: Page, role: string): Promise<string> {
+  return (await page.locator(`${VIEWER} [name="div-column-combobox-${role}"]`).first().innerText())
+    .replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Screen positions of the drawn nodes. The diagram is canvas-rendered and the
+ * underlying vis.js network is not reachable from the viewer object, so nodes
+ * are located by their pixels: saturated (non-grey, non-white) blobs, bucketed
+ * into 40px cells and returned centre-first by size.
+ */
+async function nodePositions(page: Page): Promise<{x: number; y: number; n: number}[]> {
+  return page.evaluate((sel) => {
+    const root = document.querySelector(sel) as HTMLElement;
+    const cv = root.querySelector('canvas') as HTMLCanvasElement;
+    const r = cv.getBoundingClientRect();
+    const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+    const sx = cv.width / r.width;
+    const sy = cv.height / r.height;
+    const buckets = new Map<string, {n: number; x: number; y: number}>();
+    for (let y = 0; y < cv.height; y += 3) {
+      for (let x = 0; x < cv.width; x += 3) {
+        const i = (y * cv.width + x) * 4;
+        const rr = img[i], gg = img[i + 1], bb = img[i + 2];
+        if (img[i + 3] === 0) continue;
+        const mx = Math.max(rr, gg, bb), mn = Math.min(rr, gg, bb);
+        if ((mx > 245 && mn > 245) || mx - mn < 25) continue;
+        const key = `${Math.floor(x / 40)}:${Math.floor(y / 40)}`;
+        const b = buckets.get(key) ?? {n: 0, x: 0, y: 0};
+        b.n++; b.x += x; b.y += y;
+        buckets.set(key, b);
+      }
+    }
+    return [...buckets.values()].filter((b) => b.n > 20)
+      .sort((a, b) => b.n - a.n).slice(0, 8)
+      .map((b) => ({n: b.n, x: r.x + (b.x / b.n) / sx, y: r.y + (b.y / b.n) / sy}));
+  }, VIEWER);
+}
+
 test('Network diagram', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
 
   await loginToDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  await page.evaluate(async () => {
-    const w = window as any;
-    document.body.classList.add('selenium');
-    w.grok.shell.settings.showFiltersIconsConstantly = true;
-    w.grok.shell.windows.simpleMode = true;
-    w.grok.shell.closeAll();
-    const df = await w.grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    const tv = w.grok.shell.addTableView(df);
-    await new Promise((resolve: any) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-    tv.getFiltersGroup();
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  // #### Add the viewer
+  await softStep('Add Network diagram from the Viewers toolbox', async () => {
+    await page.locator('[name="icon-network-diagram"]').first().click();
+    await page.locator(VIEWER).first().waitFor({timeout: 30_000});
 
-  await softStep('Step 2: Add Network diagram via Toolbox icon', async () => {
-    await page.locator('[name="icon-network-diagram"]').click();
-    await page.locator('[name="viewer-Network-diagram"]').waitFor({timeout: 15000});
-    await page.waitForTimeout(1500);
-    const info = await page.evaluate(() => {
-      const w = window as any;
-      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
-      return {added: !!nd, node1: nd?.props.node1ColumnName, node2: nd?.props.node2ColumnName};
-    });
-    expect(info.added).toBe(true);
-    expect(info.node1).toBeTruthy();
-    expect(info.node2).toBeTruthy();
+    expect(await selectorText(page, 'node1')).toBe('SEX');
+    expect(await selectorText(page, 'node2')).toBe('CONTROL');
+
+    // The graph is laid out asynchronously — wait for it to be drawn.
+    await expect.poll(async () => (await v.countCanvasPixels(page, VIEWER_TYPE)).total,
+      {timeout: 30_000}).toBeGreaterThan(1000);
   });
 
-  await softStep('Step 3: Switch Node 1 to RACE, Node 2 to DEMOG', async () => {
-    const info = await page.evaluate(async () => {
-      const w = window as any;
-      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
-      nd.props.node1ColumnName = 'RACE';
-      nd.props.node2ColumnName = 'DEMOG';
-      await new Promise((r: any) => setTimeout(r, 800));
-      return {node1: nd.props.node1ColumnName, node2: nd.props.node2ColumnName};
-    });
-    expect(info.node1).toBe('RACE');
-    expect(info.node2).toBe('DEMOG');
+  // #### Freeze the layout so later repaint checks mean something
+  await softStep('Suspend simulation freezes the layout', async () => {
+    await v.openViewerProperties(page, VIEWER_NAME);
+    await category(page, 'misc', 'suspend-simulation');
+    expect(await v.togglePropertyGridCheckbox(page, 'suspend-simulation', 'misc')).toBe(true);
+
+    // A frozen diagram must not keep repainting on its own — otherwise every
+    // "the canvas changed" assertion below would pass for free.
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
   });
 
-  // Steps 4-7: canvas click/shift+click/ctrl+click/dblclick on vis.js-rendered nodes — omitted
-  // because the viewer renders into canvas (no DOM handles for nodes/edges).
-
-  await softStep('Step 8: Open Property Pane via Gear icon', async () => {
-    await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Network-diagram"]')!;
-      const panel = root.closest('.panel-base')!;
-      (panel.querySelector('[name="icon-font-icon-settings"]') as HTMLElement).click();
+  // #### Node columns through the on-viewer selectors
+  await softStep('Switch Node 1 to RACE', async () => {
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'node1', columnName: 'RACE', viewerType: VIEWER_TYPE, propName: 'node1ColumnName',
     });
-    await page.waitForTimeout(800);
-    const hasData = await page.evaluate(() => {
-      return !!Array.from(document.querySelectorAll('.property-grid-category'))
-        .find(e => e.textContent?.trim() === 'Data');
-    });
-    expect(hasData).toBe(true);
+    expect(await selectorText(page, 'node1')).toBe('RACE');
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
   });
 
-  await softStep('Step 9: Set edge/node color/size/width columns', async () => {
-    const after = await page.evaluate(async () => {
-      const w = window as any;
-      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
-      nd.props.edgeColorColumnName = 'AGE';
-      nd.props.edgeColorAggrType = 'avg';
-      nd.props.edgeWidthColumnName = 'WEIGHT';
-      nd.props.edgeWidthAggrType = 'avg';
-      nd.props.node1SizeColumnName = 'AGE';
-      nd.props.node1ColorColumnName = 'SEX';
-      await new Promise((r: any) => setTimeout(r, 1000));
-      return {
-        edgeColor: nd.props.edgeColorColumnName,
-        edgeWidth: nd.props.edgeWidthColumnName,
-        node1Size: nd.props.node1SizeColumnName,
-        node1Color: nd.props.node1ColorColumnName,
-      };
+  // #### Colour and width coding
+  await softStep('Colour nodes by SEX and size them by AGE', async () => {
+    await category(page, 'data', 'node1-color');
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'node1--color', columnName: 'SEX', viewerType: VIEWER_TYPE,
+      propName: 'node1ColorColumnName', scopeSelector: '.property-grid',
     });
-    expect(after.edgeColor).toBe('AGE');
-    expect(after.edgeWidth).toBe('WEIGHT');
-    expect(after.node1Size).toBe('AGE');
-    expect(after.node1Color).toBe('SEX');
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'node1--size', columnName: 'AGE', viewerType: VIEWER_TYPE,
+      propName: 'node1SizeColumnName', scopeSelector: '.property-grid',
+    });
+
+    expect(await shownValue(page, 'node1-color')).toBe('SEX');
+    expect(await shownValue(page, 'node1-size')).toBe('AGE');
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
   });
 
-  await softStep('Step 10: Style toggles (selectors, arrows, simulation)', async () => {
-    const res = await page.evaluate(async () => {
-      const w = window as any;
-      const nd = w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
-      nd.props.showColumnSelectors = false;
-      await new Promise((r: any) => setTimeout(r, 400));
-      const hiddenCount = Array.from(document.querySelectorAll('[name="viewer-Network-diagram"] [name^="div-column-combobox"]'))
-        .filter(e => !!(e as HTMLElement).offsetParent).length;
-      nd.props.showColumnSelectors = true;
-      await new Promise((r: any) => setTimeout(r, 400));
-      const shownCount = Array.from(document.querySelectorAll('[name="viewer-Network-diagram"] [name^="div-column-combobox"]'))
-        .filter(e => !!(e as HTMLElement).offsetParent).length;
-      nd.props.showArrows = 'to';
-      await new Promise((r: any) => setTimeout(r, 400));
-      nd.props.suspendSimulation = true;
-      await new Promise((r: any) => setTimeout(r, 400));
-      const suspT = nd.props.suspendSimulation;
-      nd.props.suspendSimulation = false;
-      return {hiddenCount, shownCount, arrows: nd.props.showArrows, suspT, suspF: nd.props.suspendSimulation};
+  await softStep('Colour edges by AGE', async () => {
+    await category(page, 'data', 'edge-color');
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'edge--color', columnName: 'AGE', viewerType: VIEWER_TYPE,
+      propName: 'edgeColorColumnName', scopeSelector: '.property-grid',
     });
-    expect(res.hiddenCount).toBe(0);
-    expect(res.shownCount).toBe(2);
-    expect(res.arrows).toBe('to');
-    expect(res.suspT).toBe(true);
-    expect(res.suspF).toBe(false);
+    expect(await shownValue(page, 'edge-color')).toBe('AGE');
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 300});
   });
 
-  await softStep('Step 11: Filter AGE > 40 and toggle Show Filtered Out Nodes', async () => {
-    const res = await page.evaluate(async () => {
-      const w = window as any;
-      const tv = w.grok.shell.tv;
-      const df = tv.dataFrame;
-      const bs = df.filter;
-      const age = df.col('AGE');
-      for (let i = 0; i < df.rowCount; i++) bs.set(i, age.get(i) > 40, false);
-      bs.fireChanged();
-      await new Promise((r: any) => setTimeout(r, 800));
-      const filteredCount = bs.trueCount;
-      const nd = tv.viewers.find((v: any) => v.type === 'Network diagram');
-      nd.props.showFilteredOutNodes = true;
-      await new Promise((r: any) => setTimeout(r, 500));
-      return {filteredCount, total: df.rowCount, showFilteredOut: nd.props.showFilteredOutNodes};
-    });
-    expect(res.filteredCount).toBeGreaterThan(0);
-    expect(res.filteredCount).toBeLessThan(res.total);
-    expect(res.showFilteredOut).toBe(true);
+  // #### Clicking a node selects its rows
+  await softStep('Clicking a node selects the rows behind it', async () => {
+    await clearSelection(page);
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+
+    const nodes = await nodePositions(page);
+    expect(nodes.length).toBeGreaterThan(0);
+
+    let selected = 0;
+    for (const node of nodes.slice(0, 6)) {
+      await page.mouse.click(node.x, node.y);
+      selected = await selectionSettles(page);
+      if (selected > 0) break;
+    }
+    expect(selected).toBeGreaterThan(0);
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 100});
   });
 
-  await softStep('Step 12: Close viewer via × icon', async () => {
-    await page.evaluate(() => {
-      const root = document.querySelector('[name="viewer-Network-diagram"]')!;
-      const panel = root.closest('.panel-base')!;
-      (panel.querySelector('[name="Close"]') as HTMLElement).click();
-    });
-    await page.waitForTimeout(800);
-    const gone = await page.evaluate(() => {
-      const w = window as any;
-      return !w.grok.shell.tv.viewers.find((v: any) => v.type === 'Network diagram');
-    });
-    expect(gone).toBe(true);
+  // #### The same clicks must do nothing once click-selection is switched off
+  //
+  // Both switches have to go: nodes and edges are selectable independently, and
+  // a blob that looks like a node can be an edge crossing — with only Select
+  // Rows On Click off, such a click still selects that edge's handful of rows.
+  await softStep('Click-selection switches off stop the clicks from selecting', async () => {
+    await category(page, 'misc', 'select-rows-on-click');
+    expect(await v.togglePropertyGridCheckbox(page, 'select-rows-on-click', 'misc')).toBe(false);
+    expect(await v.togglePropertyGridCheckbox(page, 'select-edges-on-click', 'misc')).toBe(false);
+    await clearSelection(page);
+
+    const nodes = await nodePositions(page);
+    for (const node of nodes.slice(0, 4)) {
+      await page.mouse.click(node.x, node.y);
+      await selectionSettles(page);
+    }
+    expect(await selectionCount(page)).toBe(0);
+
+    await category(page, 'misc', 'select-rows-on-click');
+    expect(await v.togglePropertyGridCheckbox(page, 'select-rows-on-click', 'misc')).toBe(true);
+    expect(await v.togglePropertyGridCheckbox(page, 'select-edges-on-click', 'misc')).toBe(true);
   });
+
+  // #### On-viewer selectors can be hidden
+  await softStep('Show Column Selectors hides the on-viewer selectors', async () => {
+    await category(page, 'misc', 'show-column-selectors');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-column-selectors', 'misc')).toBe(false);
+    await expect(page.locator(`${VIEWER} [name="div-column-combobox-node1"]`)).toBeHidden();
+
+    await category(page, 'misc', 'show-column-selectors');
+    expect(await v.togglePropertyGridCheckbox(page, 'show-column-selectors', 'misc')).toBe(true);
+    await expect(page.locator(`${VIEWER} [name="div-column-combobox-node1"]`).first()).toBeVisible();
+  });
+
+  // #### Arrows
+  await softStep('Show Arrows draws directions on the edges', async () => {
+    await category(page, 'misc', 'show-arrows');
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+    await v.selectPropertyGridChoice(page, 'show-arrows', 'to', 'misc');
+    await v.waitForPropertyValue(page, 'show-arrows', 'to', 'misc');
+
+    // GROK-20617: setting the property should draw the arrow heads straight away.
+    // It does not — the canvas delta is 0 until the graph is rebuilt. The desired
+    // assertion is kept, so this goes loud the moment the bug is fixed.
+    await knownOpenBug('GROK-20617', async () => {
+      await v.waitForCanvasChange(page, VIEWER_TYPE, {timeoutMs: 4000});
+    });
+
+    // What a user gets today: the arrows appear on the next rebuild, and the
+    // setting survives it.
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'node1', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'node1ColumnName',
+    });
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500, timeoutMs: 20_000});
+    expect(await shownValue(page, 'show-arrows', 'misc')).toBe('to');
+  });
+
+  // #### Filtered-out nodes
+  await softStep('Show Filtered Out Nodes brings the filtered-away nodes back', async () => {
+    const {filteredCount} = await v.applyCategoricalFilter(page, 'SEX', ['F']);
+    const total = await page.evaluate(() => (window as any).grok.shell.t.rowCount);
+    expect(filteredCount).toBeGreaterThan(0);
+    expect(filteredCount).toBeLessThan(total);
+
+    await category(page, 'misc', 'show-filtered-out-nodes');
+    // Let the filter's own repaint finish, or the next check would credit it to
+    // the checkbox below.
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
+    await v.snapshotCanvasColors(page, VIEWER_TYPE);
+    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-nodes')).toBe(true);
+    expect(await shownValue(page, 'show-filtered-out-nodes', 'misc')).toBe('true');
+
+    // GROK-20618: switching this on should bring the filtered-away nodes back.
+    // It repaints nothing today (pixel count stays at 2483 either way).
+    await knownOpenBug('GROK-20618', async () => {
+      await v.waitForCanvasChange(page, VIEWER_TYPE, {timeoutMs: 4000});
+    });
+
+    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-nodes')).toBe(false);
+    await v.resetFilters(page);
+  });
+
+  // #### Closing the viewer
+  await softStep('Close the viewer from its title bar', async () => {
+    await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
+    await expect(page.locator(VIEWER)).toHaveCount(0);
+  });
+
+  await v.cleanupShell(page);
 
   v.finishSpec();
 });

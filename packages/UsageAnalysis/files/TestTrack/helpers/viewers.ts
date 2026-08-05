@@ -12,6 +12,7 @@
  */
 
 import {Page, expect} from '@playwright/test';
+import {createHash} from 'crypto';
 import {stepErrors, StepError} from '../spec-login';
 
 // ---------------------------------------------------------------------------
@@ -371,6 +372,13 @@ export interface TrustedPickColumnOptions {
   viewerType?: string;
   /** Property read back after the commit. Defaults to `<role>ColumnName`. */
   propName?: string;
+  /**
+   * Where the column selector lives, when it is NOT hosted inside the viewer
+   * root. Package viewers (e.g. GIS Map) render their selectors into the
+   * Context Panel property grid — pass `'.property-grid'` for those. The
+   * viewer root is still used for the pointer move and the property read-back.
+   */
+  scopeSelector?: string;
   /** How long to wait for the popup after the click. Defaults to 6000 ms. */
   backdropTimeoutMs?: number;
   /** Settle after the commit before the property is read back. Defaults to 900 ms. */
@@ -429,8 +437,10 @@ export async function pickColumnViaSelectorTrusted(
   await page.mouse.move(canvas.x, canvas.y);
   await page.waitForTimeout(400);
 
-  const point = await page.evaluate(({rn, r, t}: {rn: string; r: string; t: string}) => {
-    const root = [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
+  const point = await page.evaluate(({rn, r, t, sc}: {rn: string; r: string; t: string; sc: string | null}) => {
+    const root = sc
+      ? document.querySelector(sc)
+      : [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
     const sel = root?.querySelector(`[name="div-column-combobox-${r}"]`) as HTMLElement | null;
     if (!sel) return null;
     const candidates: Element[] = [];
@@ -447,14 +457,21 @@ export async function pickColumnViaSelectorTrusted(
       if (b.width > 0 && b.height > 0) return {x: b.x + b.width / 2, y: b.y + b.height / 2};
     }
     return null;
-  }, {rn: rootName, r: opts.role, t: target});
+  }, {rn: rootName, r: opts.role, t: target, sc: opts.scopeSelector ?? null});
   if (!point)
     throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} selector exposes no clickable text`);
 
-  await page.mouse.click(point.x, point.y);
-  const popupOpened = await page.waitForFunction(
-    () => !!document.querySelector('.d4-column-selector-backdrop'),
-    null, {timeout: opts.backdropTimeoutMs ?? 6000}).then(() => true).catch(() => false);
+  // A click that lands while the viewer is still building its Context Panel is
+  // swallowed, so the click is retried once before giving up. Retrying beats
+  // sleeping before the click: the common case costs nothing.
+  let popupOpened = false;
+  for (let attempt = 0; attempt < 2 && !popupOpened; attempt++) {
+    if (attempt > 0) await page.waitForTimeout(500);
+    await page.mouse.click(point.x, point.y);
+    popupOpened = await page.waitForFunction(
+      () => !!document.querySelector('.d4-column-selector-backdrop'),
+      null, {timeout: opts.backdropTimeoutMs ?? 6000}).then(() => true).catch(() => false);
+  }
   if (!popupOpened) {
     if (opts.requirePopup === false) return {popupOpened: false};
     throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} column popup did not open`);
@@ -508,6 +525,217 @@ export async function openViewerGear(page: Page, viewerType: string): Promise<vo
     gear?.click();
   }, viewerType);
   await page.waitForTimeout(1000);
+}
+
+// ---------------------------------------------------------------------------
+// 2c. Context Panel property grid — the UI path to every viewer property.
+//
+// Both d4 viewers and package viewers (GIS Map) render their properties as a
+// `.property-grid` table in the Context Panel. Every row carries a stable
+// `name` attribute derived from the property caption: "Marker Min Size" →
+// `prop-marker-min-size`, its category header → `prop-category-markers`, and
+// the element showing the current value → `prop-view-marker-min-size`.
+//
+// These helpers drive that grid instead of assigning `viewer.props.x`, so a
+// broken editor, a collapsed category or a value that does not commit fails the
+// test rather than passing silently.
+// ---------------------------------------------------------------------------
+
+/**
+ * Real click on a viewer title-bar icon. The title bar lives on the viewer's
+ * `.panel-base` ancestor, not inside the viewer root, and multiple viewers
+ * expose identically-named icons — hence the scoped lookup.
+ *
+ * `viewerName` is the DOM-attribute form ('3d-scatter-plot', 'Map').
+ * Known icons: `icon-font-icon-settings` (gear), `icon-font-icon-menu`,
+ * `icon-font-icon-help`, `icon-expand-arrows`, and `Close`.
+ */
+export async function clickViewerTitlebarIcon(
+  page: Page, viewerName: string, iconName: string,
+): Promise<void> {
+  const point = await page.evaluate(({vn, icon}) => {
+    const el = document.querySelector(`[name="viewer-${vn}"]`) as HTMLElement | null;
+    const panel = el?.closest('.panel-base') as HTMLElement | null;
+    const target = panel?.querySelector(`.panel-titlebar [name="${icon}"]`) as HTMLElement | null;
+    if (!target) return null;
+    const r = target.getBoundingClientRect();
+    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+  }, {vn: viewerName, icon: iconName});
+  if (!point) throw new Error(`no ${iconName} icon on the ${viewerName} title bar`);
+  await page.mouse.click(point.x, point.y);
+}
+
+/**
+ * Open a viewer's properties in the Context Panel through its gear icon.
+ *
+ * `probeSelector` is what proves the right properties are on screen. The
+ * default only checks that some property grid is there — pass a viewer-specific
+ * row (e.g. `[name="prop-category-misc"]`) when another entity may have taken
+ * the Context Panel over, which filtering and selecting both do.
+ */
+export async function openViewerProperties(
+  page: Page, viewerName: string, probeSelector = '.property-grid',
+): Promise<void> {
+  if (await page.locator(probeSelector).count() > 0) return;
+  await clickViewerTitlebarIcon(page, viewerName, 'icon-font-icon-settings');
+  await page.locator(probeSelector).first().waitFor({timeout: 10_000});
+  await page.waitForTimeout(500);
+}
+
+/**
+ * Make a property-grid category's rows reachable. The category header is a
+ * toggle, and acting on the table (filtering, selecting) can replace the
+ * Context Panel content entirely — so this reopens the panel when needed and
+ * retries rather than clicking blindly once.
+ */
+export async function ensurePropertyCategory(
+  page: Page, viewerName: string, category: string, probeProp: string, timeoutMs = 20_000,
+): Promise<void> {
+  const headerSelector = `[name="prop-category-${category}"]`;
+  const header = page.locator(headerSelector);
+  // Deadline rather than a fixed number of attempts: a viewer that is still
+  // building its Context Panel just needs another go round, and the happy path
+  // still returns on the first check.
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    // Probe the row that belongs to THIS category — a same-named row in another
+    // category can be visible while this one is still collapsed.
+    const index = await propertyRowIndex(page, probeProp, category);
+    if (index >= 0 &&
+        await page.locator(`.property-grid tr[name="prop-${probeProp}"]`).nth(index).isVisible())
+      return;
+    if (await header.count() === 0) {
+      await clickViewerTitlebarIcon(page, viewerName, 'icon-font-icon-settings').catch(() => {});
+      await page.locator(headerSelector).first().waitFor({timeout: 3000}).catch(() => {});
+    } else
+      await header.first().click().catch(() => {});
+    await page.waitForTimeout(400);
+  }
+  throw new Error(`property-grid category "${category}" never exposed prop-${probeProp}`);
+}
+
+/**
+ * Index of a property row among the rows sharing its name, restricted to one
+ * category. A caption can repeat across categories — Network diagram has an
+ * "Edge Width" column selector under Data and an "Edge Width" number under Misc,
+ * both rendered as `tr[name="prop-edge-width"]` — so an unqualified locator
+ * silently drives whichever comes first. Returns 0 when `category` is omitted,
+ * and -1 when the category holds no such row.
+ */
+async function propertyRowIndex(page: Page, prop: string, category?: string): Promise<number> {
+  if (!category) return 0;
+  return page.evaluate(({p, c}) => {
+    const rows = Array.from(document.querySelectorAll('.property-grid tr'));
+    const start = rows.findIndex((r) => r.getAttribute('name') === `prop-category-${c}`);
+    if (start < 0) return -1;
+    let seen = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const name = rows[i].getAttribute('name');
+      if (name !== `prop-${p}`) continue;
+      if (i > start && !rows.slice(start + 1, i).some((r) => r.className.includes('property-grid-category')))
+        return seen;
+      seen++;
+    }
+    return -1;
+  }, {p: prop, c: category});
+}
+
+/** Locator for a property row, disambiguated by category when one is given. */
+async function propertyRow(page: Page, prop: string, category?: string) {
+  const index = await propertyRowIndex(page, prop, category);
+  if (index < 0) throw new Error(`no prop-${prop} row inside category "${category}"`);
+  return page.locator(`.property-grid tr[name="prop-${prop}"]`).nth(index);
+}
+
+/**
+ * Value the property grid displays for a property — what the user reads back.
+ * Label-rendered properties expose it as text, slider-backed ones (sizes,
+ * opacity, radius) render an input, and booleans render a checkbox reported as
+ * `'true'` / `'false'`. Returns `''` when the property has no row on screen —
+ * check for that rather than asserting `''` means anything.
+ */
+export async function propertyGridValue(page: Page, prop: string, category?: string): Promise<string> {
+  const index = await propertyRowIndex(page, prop, category);
+  if (index < 0) return '';
+  return page.evaluate(({p, i}) => {
+    const row = document.querySelectorAll(`.property-grid tr[name="prop-${p}"]`)[i];
+    if (!row) return '';
+    const check = row.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+    if (check) return String(check.checked);
+    const view = row.querySelector(`[name="prop-view-${p}"]`) as HTMLElement | null;
+    const input = row.querySelector('input:not([type="checkbox"])') as HTMLInputElement | null;
+    const text = view?.innerText?.trim() ?? '';
+    return text.length > 0 ? text : (input?.value ?? '');
+  }, {p: prop, i: index});
+}
+
+/** Commit a value into a property-grid text or slider editor. */
+export async function setPropertyGridValue(
+  page: Page, prop: string, value: string, category?: string,
+): Promise<void> {
+  const row = await propertyRow(page, prop, category);
+  await row.locator('td').last().click();
+  await page.waitForTimeout(400);
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type(value);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(700);
+}
+
+/** Pick a value in a property-grid choice editor (a `select` opened by the cell click). */
+export async function selectPropertyGridChoice(
+  page: Page, prop: string, value: string, category?: string,
+): Promise<void> {
+  const row = await propertyRow(page, prop, category);
+  await row.locator('td').last().click();
+  await row.locator('select').selectOption(value);
+  await page.waitForTimeout(900);
+}
+
+/**
+ * Put a property-grid boolean into a known state. Prefer this over
+ * `togglePropertyGridCheckbox` whenever the step needs the setting ON (or OFF)
+ * rather than flipped — several viewer settings ship enabled, so a blind toggle
+ * turns them off and the step then tests the opposite of what it says.
+ */
+export async function setPropertyGridCheckbox(
+  page: Page, prop: string, desired: boolean, category?: string,
+): Promise<void> {
+  const row = await propertyRow(page, prop, category);
+  const box = row.locator('input[type="checkbox"]').first();
+  if (await box.isChecked() === desired) return;
+  await box.click();
+  await page.waitForTimeout(700);
+  expect(await box.isChecked()).toBe(desired);
+}
+
+/** Flip a property-grid boolean and report the state it ended up in. */
+export async function togglePropertyGridCheckbox(
+  page: Page, prop: string, category?: string,
+): Promise<boolean> {
+  const row = await propertyRow(page, prop, category);
+  const box = row.locator('input[type="checkbox"]').first();
+  await box.click();
+  await page.waitForTimeout(700);
+  return box.isChecked();
+}
+
+// ---------------------------------------------------------------------------
+// 2d. viewerSignature — proof that a viewer actually repainted.
+// ---------------------------------------------------------------------------
+
+/**
+ * Hash of a screenshot of the viewer region. Use it to assert that an action
+ * changed what the user sees when `countCanvasPixels` cannot: WebGL-backed
+ * viewers (3D scatter plot, GIS Map markers) expose no readable 2d context, and
+ * a screenshot is the only read that covers every layer on screen.
+ *
+ * Only meaningful for asserting CHANGE. Equality is not proof of "nothing
+ * happened" — an unrelated repaint elsewhere in the viewer changes the hash too.
+ */
+export async function viewerSignature(page: Page, viewerName: string): Promise<string> {
+  const shot = await page.locator(`[name="viewer-${viewerName}"]`).first().screenshot();
+  return createHash('md5').update(shot).digest('hex');
 }
 
 // ---------------------------------------------------------------------------
@@ -578,14 +806,14 @@ export interface CanvasPixelCounts {
  * rgbRange-based `matched` counts stay theme-independent.
  */
 export async function countCanvasPixels(
-  page: Page, viewerType: string, opts?: {rgbRange?: RgbRange},
+  page: Page, viewerType: string, opts?: {rgbRange?: RgbRange; canvasSelector?: string},
 ): Promise<CanvasPixelCounts> {
-  return await page.evaluate(({vt, range}) => {
+  return await page.evaluate(({vt, range, cs}) => {
     try {
       const tv = (window as any).grok?.shell?.tv;
       const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
       const v = tv ? Array.from(tv.viewers).find((x: any) => norm(x.type) === norm(vt)) as any : null;
-      const cv = v?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+      const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
       const ctx = cv?.getContext('2d');
       if (!cv || !ctx) return {total: -1, matched: -1};
       const data = ctx.getImageData(0, 0, cv.width, cv.height).data;
@@ -602,7 +830,7 @@ export async function countCanvasPixels(
     } catch (_) {
       return {total: -1, matched: -1};
     }
-  }, {vt: viewerType, range: opts?.rgbRange ?? null});
+  }, {vt: viewerType, range: opts?.rgbRange ?? null, cs: opts?.canvasSelector ?? 'canvas'});
 }
 
 /**
@@ -643,13 +871,15 @@ export async function countSelectionHuePixels(page: Page, viewerType: string): P
  * step that forgets its own snapshotCanvasColors will silently diff against a
  * stale frame — always snapshot at the step's own baseline.
  */
-export async function snapshotCanvasColors(page: Page, viewerType: string): Promise<boolean> {
-  return await page.evaluate((vt) => {
+export async function snapshotCanvasColors(
+  page: Page, viewerType: string, canvasSelector = 'canvas',
+): Promise<boolean> {
+  return await page.evaluate(({vt, cs}) => {
     const w = window as any;
     const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
     const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
       .find((x: any) => norm(x.type) === norm(vt)) as any;
-    const cv = v?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
     if (!cv) return false;
     try {
       const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
@@ -664,17 +894,19 @@ export async function snapshotCanvasColors(page: Page, viewerType: string): Prom
     } catch {
       return false;
     }
-  }, viewerType);
+  }, {vt: viewerType, cs: canvasSelector});
 }
 
-export async function diffCanvasColors(page: Page, viewerType: string): Promise<{deltaPx: number}> {
-  return await page.evaluate((vt) => {
+export async function diffCanvasColors(
+  page: Page, viewerType: string, canvasSelector = 'canvas',
+): Promise<{deltaPx: number}> {
+  return await page.evaluate(({vt, cs}) => {
     const w = window as any;
     const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
     const prev = w.__canvasColorSnap?.[norm(vt)] as Map<number, number> | undefined;
     const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
       .find((x: any) => norm(x.type) === norm(vt)) as any;
-    const cv = v?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
     if (!cv || !prev) return {deltaPx: -1};
     try {
       const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
@@ -691,7 +923,125 @@ export async function diffCanvasColors(page: Page, viewerType: string): Promise<
     } catch {
       return {deltaPx: -1};
     }
-  }, viewerType);
+  }, {vt: viewerType, cs: canvasSelector});
+}
+
+// ---------------------------------------------------------------------------
+// 3c. Waiting for the UI instead of sleeping through it.
+//
+// A fixed `waitForTimeout` is both the slowest and the least reliable way to
+// wait: too short and the step is flaky, too long and every run pays for the
+// worst case. These helpers block on the condition the step actually cares
+// about, so a repaint that lands in 200ms costs 200ms and a repaint that never
+// lands fails with a message naming what was expected.
+// ---------------------------------------------------------------------------
+
+export interface CanvasChangeOptions {
+  /** Minimum pixel delta that counts as "it repainted". Defaults to 1. */
+  minDelta?: number;
+  /** Canvas inside the viewer to read. Defaults to the first one. */
+  canvasSelector?: string;
+  /** How long to wait for the repaint. Defaults to 15s. */
+  timeoutMs?: number;
+}
+
+/**
+ * Wait until the viewer's canvas differs from the last `snapshotCanvasColors`
+ * by at least `minDelta` pixels, then re-snapshot and return the delta.
+ *
+ * Replaces the `snapshot → waitForTimeout → diff → expect` ladder: the wait ends
+ * as soon as the repaint lands, and a repaint that never happens fails here
+ * rather than in a bare numeric assertion further down.
+ */
+export async function waitForCanvasChange(
+  page: Page, viewerType: string, opts: CanvasChangeOptions = {},
+): Promise<number> {
+  const minDelta = opts.minDelta ?? 1;
+  const canvasSelector = opts.canvasSelector ?? 'canvas';
+  await page.waitForFunction(({vt, cs, min}) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const prev = w.__canvasColorSnap?.[norm(vt)] as Map<number, number> | undefined;
+    if (!prev) return false;
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!cv) return false;
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      const colors = new Map<number, number>();
+      for (let i = 0; i < img.length; i += 4) {
+        const key = (img[i] << 16) | (img[i + 1] << 8) | img[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+      let delta = 0;
+      for (const [c, n] of colors) delta += Math.abs(n - (prev.get(c) ?? 0));
+      for (const [c, n] of prev) if (!colors.has(c)) delta += n;
+      return delta >= min;
+    } catch {
+      return false;
+    }
+  }, {vt: viewerType, cs: canvasSelector, min: minDelta},
+  {timeout: opts.timeoutMs ?? 15_000, polling: 250});
+  return (await diffCanvasColors(page, viewerType, canvasSelector)).deltaPx;
+}
+
+/**
+ * Wait until the viewer's canvas stops changing on its own.
+ *
+ * Call this before taking the snapshot that a later `waitForCanvasChange` will
+ * diff against. Without it, a repaint still in flight from the previous action
+ * (a filter, a layout pass) lands after the snapshot and is credited to the next
+ * one — which is how a step can "prove" a change that its own action never made.
+ */
+export async function waitForCanvasQuiet(
+  page: Page, viewerType: string,
+  opts: {canvasSelector?: string; stableReads?: number; timeoutMs?: number} = {},
+): Promise<void> {
+  await page.evaluate(() => { (window as any).__canvasQuiet = null; });
+  await page.waitForFunction(({vt, cs, need}) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!cv) return false;
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      let sig = 0;
+      for (let i = 0; i < img.length; i += 4)
+        sig = (sig * 31 + ((img[i] << 16) | (img[i + 1] << 8) | img[i + 2])) % 2147483647;
+      const state = w.__canvasQuiet ?? {sig: null, count: 0};
+      if (state.sig === sig) state.count++;
+      else { state.sig = sig; state.count = 1; }
+      w.__canvasQuiet = state;
+      return state.count >= need;
+    } catch {
+      return false;
+    }
+  }, {vt: viewerType, cs: opts.canvasSelector ?? 'canvas', need: opts.stableReads ?? 2},
+  {timeout: opts.timeoutMs ?? 20_000, polling: 300});
+}
+
+/**
+ * Wait until a screenshot of the viewer stops matching `baseline`, and return
+ * the new signature. For WebGL-backed viewers, where `waitForCanvasChange`
+ * cannot read the pixels — see `viewerSignature`.
+ */
+export async function waitForViewerRepaint(
+  page: Page, viewerName: string, baseline: string, timeoutMs = 15_000,
+): Promise<string> {
+  await expect.poll(() => viewerSignature(page, viewerName),
+    {timeout: timeoutMs, intervals: [200, 300, 500, 700, 1000]}).not.toBe(baseline);
+  return viewerSignature(page, viewerName);
+}
+
+/** Wait until the property grid shows `expected` for a property. */
+export async function waitForPropertyValue(
+  page: Page, prop: string, expected: string, category?: string, timeoutMs = 10_000,
+): Promise<void> {
+  await expect.poll(() => propertyGridValue(page, prop, category),
+    {timeout: timeoutMs, intervals: [100, 200, 300, 500]}).toBe(expected);
 }
 
 // ---------------------------------------------------------------------------
