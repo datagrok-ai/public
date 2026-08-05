@@ -189,7 +189,10 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
       // Skip cell-level value mutation for non-native format columns
       if (!isNativeFormat(columns[i])) continue;
 
-      columns[i].init((j) => {
+      // Rewritten without notifying: clearing the cell-level overrides is how a column-level option
+      // takes effect, but on its own it looks like a data change and recalculates every dependent
+      // statistic column - even for a colour or a title. The notification below is the deliberate one.
+      const clearOverride = (j: number): string => {
         const value = columns[i].get(j);
         if (value === '') return value;
         const chartData = (JSON.parse(columns[i].get(j) ?? '{}') ?? {}) as IFitChartData;
@@ -212,7 +215,12 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
           if (!isSeriesChanged) return value;
         }
         return JSON.stringify(chartData);
-      });
+      };
+      for (let j = 0; j < columns[i].length; j++) {
+        const updated = clearOverride(j);
+        if (updated !== columns[i].get(j))
+          columns[i].set(j, updated, false);
+      }
       columns[i].temp[`${options}-custom-${propertyName}`] = false;
     }
 

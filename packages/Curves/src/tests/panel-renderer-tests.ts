@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {category, test, expect, expectArray, expectFloat, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectFloat, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
@@ -92,6 +92,32 @@ category('panel and renderer', () => {
     col.fireValuesChanged();
     await awaitCheck(() => df.col('curve 1 ic50')!.get(0) !== before,
       'statistic column did not recalculate after the column-level option changed', 5000);
+  });
+
+  test('clearing a cell-level override does not recalculate on its own', async () => {
+    // changing a column-level option rewrites every cell to drop its override. That rewrite is how the
+    // option takes effect, but on its own it looks like a data change - it used to recalculate every
+    // dependent statistic column even for a colour or a title. Observed through the dependent column's
+    // version, which a recalculation bumps.
+    const cell = JSON.stringify({
+      chartOptions: {logX: true},
+      series: [{fitFunction: 'sigmoid', name: 'series', pointColor: '#ff0000', points: points(-6.5)}],
+    });
+    const col = DG.Column.fromStrings('curve', [cell, cell]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'panelNoRecalcOnCosmetic';
+    await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
+
+    const stat = df.col('curve 1 ic50')!;
+    const before = stat.version;
+    for (let j = 0; j < col.length; j++) {
+      const data = JSON.parse(col.get(j));
+      delete data.series[0].pointColor;
+      col.set(j, JSON.stringify(data), false);
+    }
+    await delay(500);
+    expect(stat.version, before, 'a cosmetic rewrite recalculated the statistic column');
   });
 
   test('property panel renders for a saved legacy statistic', async () => {
