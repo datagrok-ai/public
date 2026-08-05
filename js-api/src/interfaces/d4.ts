@@ -1911,6 +1911,9 @@ export interface IHistogramSettings {
   /// Number of bins on the histogram
   bins: number;
 
+  /// Spreads the bins evenly on the logarithmic scale.
+  xAxisType: keyof typeof AxisType;
+
   valueMin: number;
 
   valueMax: number;
@@ -1932,6 +1935,10 @@ export interface IHistogramSettings {
   splineTension: number;
 
   showYAxis: boolean;
+
+  /// Scale of the vertical (bin count) axis. On the logarithmic scale,
+  /// bins with 0 and 1 rows are drawn at the baseline.
+  yAxisType: keyof typeof AxisType;
 
   /// Lower bound of the vertical axis. Empty means zero.
   /// Set *Y Min* and *Y Max* to put different histograms on the same scale.
