@@ -22,7 +22,7 @@ import {
   getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
 import {
-  hiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties, funcValidatorOf,
+  nodeHiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties, funcValidatorOf,
 } from '../../utils/func-input-overrides';
 import {isLiteralChoiceList} from '../../utils/choice-refs';
 
@@ -100,10 +100,11 @@ export class FuncNode extends FlowNode {
     (this as unknown as {color: string; bgcolor: string}).color = colors.color;
     (this as unknown as {color: string; bgcolor: string}).bgcolor = colors.bgcolor;
 
-    // Hidden inputs (HIDDEN_FUNC_INPUTS) stay fully data-carrying — socket,
-    // seeded value, pass-through, compile, script import/emit — but the node
-    // component and the property panel don't render them.
-    this.hiddenInputs = hiddenInputsOf(func);
+    // Hidden inputs (HIDDEN_FUNC_INPUTS + PANEL_ONLY_FUNC_INPUTS) stay fully
+    // data-carrying — socket, seeded value, pass-through, compile, script
+    // import/emit — but the node component doesn't render them; the panel
+    // still edits the panel-only ones.
+    this.hiddenInputs = nodeHiddenInputsOf(func);
     this.hiddenOutputs = hiddenOutputsOf(func);
     this.extraValidator = funcValidatorOf(func);
     this.funcWrapper = wrapper ?? undefined;

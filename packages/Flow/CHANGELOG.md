@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Improved: The Open File node no longer shows the Full Path and Sheet Name slots on its card — both are edited from the context panel (the slots stay data-carrying, so old flows with wired paths keep working and render their wires)
+* Fixed: Running an Open File node on a non-Excel file crashed the import ("importSdf 1 input parameters, 2 passed") — the emitted call always carried the seeded blank `sheetName`, which OpenFile forwards to the importer as a second argument; untouched optional scalars are now omitted from emitted calls so the function's own default applies, and `sheetName` is passed only for `.xlsx` paths
+* Fixed: Local (dropped/uploaded) files other than csv/tsv/txt/d42 failed with "No importer is registered" — file importers are now discovered the way the platform matches them (`file-handler` as tag or role), so sdf, xlsx, mol2, etc. parse through their registered handlers; covered by tests incl. the server-file `OpenFile(path)` contract for sdf
 * Fixed: Undo/redo keys are now bound by the editor's own disposable handler instead of rete's `HistoryExtensions.keyboard`, which installed a document listener that was never removed (it kept eating Ctrl+Z after the Flow view was closed) and routed Ctrl+Shift+Z to undo instead of redo. The canvas also claims the platform undo scope, so Ctrl+Z inside Flow no longer reaches the table stack
 * Improved: The drag-out suggestion menu (dragging a socket to empty canvas) now searches the same fields as the toolbox — descriptions, tags, and package, not just the name — so "remove column" finds Delete Columns; and it leads with the same context-ranked picks the toolbox Suggestions pane shows for the drag-source node, each with its reason inline and its prefill (matched column names, etc.) applied on selection
 

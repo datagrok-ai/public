@@ -7,7 +7,9 @@ import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
 import {emitCreationScript} from '../compiler/creation-script-emitter';
 import {validateGraph} from '../compiler/validator';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {ExecutionController} from '../execution/execution-controller';
+import {NodeExecStatus} from '../execution/execution-state';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 const SETTINGS = {name: 'TestFlow', description: 'test', tags: ['funcflow']};
 
@@ -165,6 +167,71 @@ category('Flow: script emitter', () => {
       const script = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-123'});
       expect(script.includes('run-123'), true, 'run id embedded');
       expect(script.includes('run-complete'), true, 'completion event emitted');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('OpenFile: sheetName stays out of the call unless the path is xlsx', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.sdf';
+      let script = emitScript(e.flow, SETTINGS);
+      // The regression: `sheetName: ""` in the call — OpenFile forwards any
+      // non-null sheetName as a second importer argument, and the sdf importer
+      // takes one ("importSdf 1 input parameters, 2 passed").
+      expect(/grok\.functions\.call\('OpenFile', \{fullPath: "[^"]+"\}\)/.test(script), true,
+        `sdf call carries only the path (script: ${script})`);
+      expect(script.includes('sheetName'), false, 'no sheetName for a non-xlsx path');
+
+      node.inputValues['sheetName'] = 'Sheet1';
+      script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName'), false, 'a typed sheet name is still dropped for sdf');
+
+      node.inputValues['fullPath'] = 'System:AppData/Demo/book.xlsx';
+      script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName: "Sheet1"'), true, `xlsx keeps the sheet name (script: ${script})`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an untouched optional scalar is omitted so the function default applies', async () => {
+    // Generic form of the sheetName rule: a blank optional string seeded by
+    // the node must not reach the call as '' when the declared default is null.
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'a.csv';
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName'), false, 'blank optional omitted');
+      expect(script.includes('fullPath: "a.csv"'), true, 'filled value kept');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an Open File node pointed at an sdf runs end-to-end', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.sdf';
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runAutorun(new Set(), SETTINGS), 'started', 'run starts');
+      const done = (): boolean => {
+        const s = ctrl.state.getNodeState(node.id)?.status;
+        return s === NodeExecStatus.completed || s === NodeExecStatus.errored;
+      };
+      expect(await until(done, 30000), true, 'run finished');
+      const st = ctrl.state.getNodeState(node.id);
+      expect(st?.status, NodeExecStatus.completed, `sdf opened via the emitted call (${st?.error ?? ''})`);
     } finally {
       destroyEditor(e);
     }

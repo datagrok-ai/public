@@ -55,6 +55,32 @@ category('Flow: uploaded files', () => {
     expect(df.name, 'demo data', 'name derived from the file name');
   });
 
+  test('parseFileToDataFrame parses sdf through the registered file handler', async () => {
+    const bytes = await grok.dapi.files.readAsBytes('System:AppData/Chem/mol1K.sdf');
+    const df = await parseFileToDataFrame('mol1K.sdf', bytes);
+    expect(df.rowCount > 0, true, 'rows parsed from the sdf');
+    expect(df.columns.length > 0, true, 'columns parsed from the sdf');
+    expect(df.name, 'mol1K', 'name derived from the file name');
+  });
+
+  test('an uploaded sdf runs through the Uploaded File node function', async () => {
+    const bytes = await grok.dapi.files.readAsBytes('System:AppData/Chem/mol1K.sdf');
+    const id = addPendingFile('mol1K.sdf', bytes);
+    try {
+      const df = await readUploadedFile(id, 'mol1K.sdf');
+      expect(df.rowCount > 0, true, 'rows parsed from the pending sdf');
+    } finally {
+      removePendingFile(id);
+    }
+  });
+
+  test('OpenFile opens a server sdf by path (the Open File node contract)', async () => {
+    const df: DG.DataFrame = await grok.functions.call('OpenFile',
+      {fullPath: 'System:AppData/Chem/mol1K.sdf'});
+    expect(df != null, true, 'OpenFile returned a table');
+    expect(df.rowCount > 0, true, 'rows parsed from the sdf');
+  });
+
   test('readUploadedFile serves pending bytes with no server round-trip', async () => {
     const id = addPendingFile('pending.csv', csvBytes());
     try {

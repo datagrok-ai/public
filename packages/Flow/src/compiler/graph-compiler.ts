@@ -13,6 +13,8 @@ import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {FuncNode, defaultTableParam} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
 import {stringListToArrayLiteral} from '../types/type-map';
+import {effectiveFuncInputs} from '../utils/func-input-overrides';
+import {isInputOptional} from '../utils/dart-proxy-utils';
 
 export type StepKind = 'input' | 'output' | 'utility' | 'func';
 
@@ -205,6 +207,8 @@ export function compileGraph(
     // Column / column-list values are deferred to a second pass: they compile to
     // `table.col(...)` against an associated dataframe input, which must be
     // resolved first.
+    const optionalInputs = new Set(node.dgFunc ?
+      effectiveFuncInputs(node.dgFunc).filter((p) => isInputOptional(p)).map((p) => p.name) : []);
     const inputMap = new Map<string, string>();
     for (const key of inputKeys) {
       const conn = incoming.get(nodeId)?.get(key);
@@ -216,6 +220,17 @@ export function compileGraph(
       const slotType = slotTypeOf(node, key);
       if (slotType === 'column' || slotType === 'column_list') continue; // pass 2
       const val = node.inputValues[key];
+      // An untouched optional scalar (seeded ''/null) stays OUT of the call so
+      // the function's own default applies — passing '' where the default is
+      // null changes behavior (OpenFile forwards any non-null sheetName to a
+      // one-arg importer: "importSdf 1 input parameters, 2 passed"). Same rule
+      // the creation-script emitter applies via `isEmptyLiteral`.
+      if (optionalInputs.has(key) && (val == null || String(val).trim() === '')) continue;
+      // OpenFile's Dart side appends any non-null sheetName as a second
+      // importer argument — only the Excel importer takes one, so a sheet name
+      // on a non-xlsx path would crash the import.
+      if (key === 'sheetName' && funcName.split(':').pop()!.toLowerCase() === 'openfile' &&
+          !/\.xlsx$/i.test(String(node.inputValues['fullPath'] ?? ''))) continue;
       if (slotType === 'string_list') {
         // Comma-separated → JS array of trimmed, non-empty strings. Empty → omit
         // so the function falls back to its own default (don't force `[]`).

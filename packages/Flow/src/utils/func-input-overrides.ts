@@ -8,6 +8,10 @@
  *    untouched (data-sync scripts legitimately carry e.g.
  *    `subscribeOnChanges = true` and must round-trip). Only hide inputs with a
  *    declared default.
+ *  - {@link PANEL_ONLY_FUNC_INPUTS} — inputs kept off the node body (no socket
+ *    row, no pass-through row — unless wired) but still edited on the context
+ *    panel. For configuration-like parameters (a file path, a sheet name) that
+ *    would otherwise bloat the node card.
  *  - {@link HIDDEN_FUNC_OUTPUTS} — the mirror image: declared outputs that are
  *    bookkeeping rather than a result (e.g. the *names* of the columns a
  *    function appended in place). No socket, no strip binding — the real result
@@ -46,6 +50,17 @@ export const HIDDEN_FUNC_INPUTS: Record<string, Record<string, boolean>> = {
   'Chem:recalculateCoords': {join: true},
 };
 
+/** `{[func.nqName]: {[inputName]: true}}` — inputs with no socket row on the
+ *  node body but a regular editor on the context panel. Same visual-only
+ *  contract as {@link HIDDEN_FUNC_INPUTS} (slot, seeded value, compilation,
+ *  and script round-trips untouched; a wired slot renders its row), except the
+ *  panel keeps the input editable. */
+export const PANEL_ONLY_FUNC_INPUTS: Record<string, Record<string, boolean>> = {
+  // A path and a sheet name are configuration, not data flow — editing them in
+  // the panel keeps the node a compact "this file" card.
+  'core:OpenFile': {fullPath: true, sheetName: true},
+};
+
 /** `{[func.nqName]: {[outputName]: true}}` — declared outputs the node should
  *  not expose. Same contract as {@link HIDDEN_FUNC_INPUTS}: visual only, so
  *  compilation and script round-trips are untouched. */
@@ -56,9 +71,19 @@ export const HIDDEN_FUNC_OUTPUTS: Record<string, Record<string, boolean>> = {
 };
 
 /** The hidden-input names for a function, `∅` when none are registered
- *  (or the Dart proxy throws on `nqName`). */
+ *  (or the Dart proxy throws on `nqName`). Hidden EVERYWHERE — the panel
+ *  filters by this set; the node body additionally hides
+ *  {@link nodeHiddenInputsOf}. */
 export function hiddenInputsOf(func: DG.Func): ReadonlySet<string> {
   return hiddenNamesOf(HIDDEN_FUNC_INPUTS, func);
+}
+
+/** The input names the NODE BODY hides: fully hidden ones plus panel-only
+ *  ones. Feeds `FlowNode.hiddenInputs` (consumed by the node component). */
+export function nodeHiddenInputsOf(func: DG.Func): ReadonlySet<string> {
+  const s = new Set(hiddenNamesOf(HIDDEN_FUNC_INPUTS, func));
+  for (const n of hiddenNamesOf(PANEL_ONLY_FUNC_INPUTS, func)) s.add(n);
+  return s;
 }
 
 /** The hidden-output names for a function, `∅` when none are registered. */

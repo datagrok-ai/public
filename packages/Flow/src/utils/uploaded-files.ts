@@ -146,11 +146,20 @@ const TEXT_TABLE_EXTS = new Set(['csv', 'tsv', 'txt']);
  *  are registered (xlsx, sdf, …). Drives the upload picker's `accept` filter. */
 export function supportedUploadExtensions(): string[] {
   const exts = new Set([...TEXT_TABLE_EXTS, 'd42']);
-  for (const f of DG.Func.find({tags: ['file-handler']})) {
+  for (const f of fileHandlerFuncs()) {
     for (const e of String(f.options['ext'] ?? '').split(','))
       if (e.trim()) exts.add(e.trim().toLowerCase());
   }
   return [...exts].sort();
+}
+
+/** Registered file-importer functions, matched the way the platform itself
+ *  matches them (core `JsBasedHandlers`): `file-handler` as a tag OR role.
+ *  `meta.role` matching normalizes the kebab-case name against the camelCased
+ *  `fileHandler` role packages actually register with — a plain
+ *  `find({tags: ['file-handler']})` finds none of them. */
+function fileHandlerFuncs(): DG.Func[] {
+  return DG.Func.find({meta: {role: 'file-handler'}});
 }
 
 /** Parses raw file bytes into a DataFrame: CSV-family natively, `.d42`
@@ -181,7 +190,7 @@ export async function parseFileToDataFrame(fileName: string, bytes: Uint8Array):
 }
 
 function findFileHandler(ext: string): DG.Func | null {
-  for (const f of DG.Func.find({tags: ['file-handler']})) {
+  for (const f of fileHandlerFuncs()) {
     const exts = String(f.options['ext'] ?? '').split(',').map((s) => s.trim().toLowerCase());
     if (exts.includes(ext))
       return f;

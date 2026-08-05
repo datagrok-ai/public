@@ -77,12 +77,13 @@ export class FlowNode extends ClassicPreset.Node<
    *  `ExecutionVisualizer`; empty when idle. */
   statusText = '';
 
-  /** Input keys hidden from the user (no socket row on the node, no editor in
-   *  the panel) but still data-carrying: the slot, its seeded `inputValues`
-   *  entry, compilation, and creation-script import/emit are all untouched, so
-   *  scripts round-trip faithfully. Populated by `FuncNode` from
-   *  `HIDDEN_FUNC_INPUTS`. A connected hidden socket still renders (old flows
-   *  keep their wire endpoints). */
+  /** Input keys hidden from the NODE BODY (no socket row) but still
+   *  data-carrying: the slot, its seeded `inputValues` entry, compilation, and
+   *  creation-script import/emit are all untouched, so scripts round-trip
+   *  faithfully. Populated by `FuncNode` from `nodeHiddenInputsOf` —
+   *  `HIDDEN_FUNC_INPUTS` (also hidden in the panel) plus
+   *  `PANEL_ONLY_FUNC_INPUTS` (still edited in the panel). A connected hidden
+   *  socket still renders (old flows keep their wire endpoints). */
   hiddenInputs: ReadonlySet<string> = new Set();
 
   /** Real output keys hidden the same way — for outputs that are bookkeeping

@@ -446,4 +446,40 @@ category('Flow: property panel', () => {
       destroyEditor(e);
     }
   });
+
+  test('OpenFile: fullPath and sheetName stay off the node body but editable in the panel', async () => {
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+      // Data layer untouched — the slots exist and the required check still
+      // gates the run on a blank fullPath.
+      expect('fullPath' in node.inputs, true, 'fullPath slot still exists');
+      expect('sheetName' in node.inputs, true, 'sheetName slot still exists');
+      expect(node.hiddenInputs.has('fullPath') && node.hiddenInputs.has('sheetName'), true,
+        'both are node-hidden (PANEL_ONLY_FUNC_INPUTS read onto the node)');
+      expect(node.requiredInputs.includes('fullPath'), true, 'fullPath still required');
+
+      // Wait for the node card (its real output row), then assert the hidden
+      // input rows and their pass-throughs are absent.
+      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-output', 'result')}"]`));
+      for (const key of ['fullPath', 'sheetName']) {
+        expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', key)}"]`), false,
+          `no node row for ${key}`);
+        expect(!!e.container.querySelector(`[data-testid="${tid('socket-output', `${key}__pt`)}"]`), false,
+          `no pass-through row for ${key}`);
+      }
+
+      // Unlike HIDDEN_FUNC_INPUTS, the panel still edits both.
+      panel.showNode(node);
+      expect(!!panel.root.querySelector('[data-param="fullPath"] input'), true, 'panel edits fullPath');
+      expect(!!panel.root.querySelector('[data-param="sheetName"] input'), true, 'panel edits sheetName');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
 });
