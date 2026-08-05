@@ -577,15 +577,19 @@ export async function focusQueryEditorTab(page: Page, queryName: string): Promis
   await page.waitForTimeout(400);
 }
 
-/** Click the Save button in the query editor ribbon and wait for the server commit. */
+/** Click Save in the query editor ribbon and wait for the server commit. */
 export async function saveQuery(page: Page, friendlyName: string): Promise<void> {
-  await page.locator('[name="button-Save"]').first().click();
-  // Poll the server until the query is visible — Save is async and has no toast on this
-  // flow. The stand now publishes ten packages before the suite runs, so a commit that
-  // used to land well inside 30s can take appreciably longer under that load.
-  await expect.poll(async () =>
-    (await findQueryByFriendlyName(page, friendlyName)) !== null,
-  { timeout: 60_000 }).toBe(true);
+  // Clicking once and then polling for the result blames the server for a click that never
+  // landed — a lingering dialog or the preloader swallows it, and the spec then waits out
+  // the whole timeout with nothing saved. Re-click until the query is actually on the
+  // server. Save is idempotent on an existing query, so a repeat is an update, not a copy.
+  await expect(async () => {
+    if (await findQueryByFriendlyName(page, friendlyName)) return;
+    await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
+    await expect.poll(async () =>
+      (await findQueryByFriendlyName(page, friendlyName)) !== null,
+    { timeout: 20_000 }).toBe(true);
+  }).toPass({ timeout: 90_000 });
 }
 
 /** Find a saved query by the user-facing name (stored server-side as `friendlyName`). */

@@ -129,15 +129,23 @@ export async function searchScript(page: Page, name: string) {
   const searchInput = page.locator('input[placeholder="Search scripts by name or by #tags"]');
   await expect(searchInput).toBeVisible();
   const card = getScriptCard(page, name);
-  // The gallery answers from a list fetched when it opened, so a script re-created by
-  // beforeEach after the delete test is absent from it however long we wait. Re-issue
-  // the search instead of watching a stale result set.
+  // The gallery answers from a list fetched when the view opened, so a script re-created by
+  // beforeEach after the delete test is absent from it however long we wait — and re-typing
+  // the search only re-filters that same stale list. Re-issue the search first (cheap), and
+  // if the card still is not there, reopen the gallery so it re-reads from the server.
+  let reopen = false;
   await expect(async () => {
+    if (reopen) {
+      reopen = false;
+      await openScriptsBrowser(page);
+    }
     await searchInput.fill('');
     await searchInput.fill(name);
     await searchInput.press('Enter');
-    await expect(card).toBeVisible({ timeout: 5_000 });
-  }).toPass({ timeout: 30_000 });
+    if (await card.isVisible({ timeout: 4_000 }).catch(() => false)) return;
+    reopen = true;
+    throw new Error(`script card "${name}" is not in the gallery`);
+  }).toPass({ timeout: 40_000 });
   return card;
 }
 

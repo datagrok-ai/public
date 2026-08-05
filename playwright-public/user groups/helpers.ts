@@ -102,11 +102,18 @@ export async function searchAndWaitCard(
       await page.waitForTimeout(800); // let the server search settle, then confirm it stayed
       if (await card.isVisible().catch(() => false)) return;
     }
-    // Not there (or flickered out) — clear, refresh the list, and retry.
+    // Not there (or flickered out) — clear, refresh the list, and retry. When the sync icon
+    // is absent every retry just re-filters the list the view loaded with, so an entity
+    // created after that load can never appear; reopen the view to make it re-read.
     await clearGallerySearch(page, kind);
     const refresh = page.locator('.d4-search-bar [name="icon-sync"]').first();
-    if (await refresh.isVisible().catch(() => false)) await refresh.click();
-    await page.waitForTimeout(1500);
+    if (await refresh.isVisible().catch(() => false)) {
+      await refresh.click();
+      await page.waitForTimeout(1500);
+    }
+    else {
+      await openPlatformView(page, (kind.charAt(0).toUpperCase() + kind.slice(1)) as PlatformView);
+    }
   }
   throw new Error(`Entity "${matchName}" not found in the ${kind} gallery after refresh retries`);
 }
