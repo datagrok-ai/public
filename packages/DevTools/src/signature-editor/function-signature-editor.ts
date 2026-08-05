@@ -89,15 +89,19 @@ async function openFse(v: DG.View, functionCode: string) {
   const inputScriptCopy = await getInputCode(v, functionCode);
   const language = (inputScriptCopy as DG.Script).language || LANGUAGE.SQL;
 
-  const editorView = DG.View.create();
-  editorView.name = v.name;
+  const fseRoot = ui.divV([], 'ui-box');
+  fseRoot.addEventListener('keydown', (e) => e.stopPropagation());
+  const originalContent = Array.from(v.root.children) as HTMLElement[];
+  const originalRibbonPanels = v.getRibbonPanels();
 
   const openScript = () => {
-    editorView.close();
-    grok.shell.addView(v);
+    fseRoot.remove();
+    originalContent.forEach((el) => el.classList.remove('dt-fse-hidden'));
+    v.setRibbonPanels(originalRibbonPanels);
     const editor = (v.root.querySelector('.CodeMirror') as any).CodeMirror;
     const doc = editor.getDoc();
     doc.setValue(myCM.getDoc().getValue());
+    editor.refresh();
   };
 
   const updateFuncPropValue = (propName: string, v: any) => {
@@ -457,21 +461,12 @@ async function openFse(v: DG.View, functionCode: string) {
   editorTabs.root.style.width = '100%';
   editorTabs.root.style.flexGrow = '3';
 
-  editorView.append(
+  fseRoot.append(
     ui.divV([
       editorTabs,
       previewTabs,
     ]),
   );
-  editorView.box = true;
-  editorView.setRibbonPanels([
-    [
-      ui.iconFA('eye', () => {
-        previewTabs.hidden ? previewTabs.hidden = false : previewTabs.hidden = true;
-      }, 'Toggle preview'),
-      ui.iconFA('code', () => openScript(), 'Open function editor'),
-    ],
-  ]);
 
   const refreshPreview = async () => {
     let result = '';
@@ -504,8 +499,16 @@ async function openFse(v: DG.View, functionCode: string) {
     uiArea.append(newUiArea);
   };
 
-  v.close();
-  grok.shell.addView(editorView);
+  originalContent.forEach((el) => el.classList.add('dt-fse-hidden'));
+  v.setRibbonPanels([
+    [
+      ui.iconFA('eye', () => {
+        previewTabs.hidden ? previewTabs.hidden = false : previewTabs.hidden = true;
+      }, 'Toggle preview'),
+      ui.iconFA('code', () => openScript(), 'Open function editor'),
+    ],
+  ]);
+  v.append(fseRoot);
   refreshPreview();
 
   const functionParamsState = new BehaviorSubject(functionParamsCopy);

@@ -2,7 +2,8 @@
 
 ## v.next
 
-* GROK-20621: Signature Editor: Error on adding a tag
+* GROK-20621: Scripts: Error on adding a tag in the Signature Editor
+* GROK-20620: Scripts: SAVE stays permanently disabled after editing a script via the Signature Editor
 
 ## 1.6.4 (2025-10-16)
 
