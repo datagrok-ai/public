@@ -5,18 +5,17 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard} from '../utils';
 import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, ChoiceOption} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
 type AIPanelInputs = {
     prompt: string,
 }
-
 
 
 export interface AskUserOption {
@@ -1006,23 +1005,32 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     removeExisting();
 
-    const blocks = scopes.map((s) => {
-      const icon = ui.iconFA(s.icon ?? 'circle');
-      icon.classList.add('grokky-scope-icon');
-      if (s.key)
-        icon.classList.add(`grokky-scope-${s.key}`);
-      const header = ui.h3(ui.span([icon, s.label]));
-      const cards = s.suggestions.slice(0, 2).map((sg) => {
-        const card = ui.card(ui.divText(sg.label ?? sg.prompt ?? ''));
-        card.onclick = () => this.runSuggestion(sg);
-        return card;
-      });
-      return ui.divV([header, ui.divH(cards)]);
-    });
+    const accordion = ui.accordion();
+    const defaultOpenCategories = 1;
+    scopes.forEach((s, i) => this.addSuggestionCategory(accordion, s, i < defaultOpenCategories));
 
-    const root = ui.panel([ui.h2('I\'m Grokky, your AI assistant. What can I help you with?'), ...blocks], 'grokky-empty-state');
+    const root = ui.panel([ui.h2('I\'m Grokky, your AI assistant. What can I help you with?'), accordion.root], 'grokky-empty-state');
     this.outputArea.appendChild(root);
     this.setWandVisible(false);
+  }
+
+  private addSuggestionCategory(accordion: DG.Accordion, s: Block, expanded: boolean): void {
+    const pane = accordion.addPane(s.label, () => {
+      const rows = s.suggestions.map((sg) => {
+        const row = ui.divText(sg.label ?? sg.prompt ?? '', 'grokky-suggestion-item');
+        row.onclick = () => this.runSuggestion(sg);
+        if (!sg.immediateResponse && sg.prompt && sg.label && sg.label !== sg.prompt)
+          ui.tooltip.bind(row, () => sg.prompt ?? '');
+        return row;
+      });
+      return ui.divV(rows);
+    }, expanded);
+
+    const icon = ui.iconFA(s.icon ?? 'circle');
+    icon.classList.add('grokky-scope-icon');
+    if (s.color)
+      icon.style.color = s.color;
+    pane.root.querySelector('.d4-accordion-pane-header')?.prepend(icon);
   }
 
   private async showHistory() {
