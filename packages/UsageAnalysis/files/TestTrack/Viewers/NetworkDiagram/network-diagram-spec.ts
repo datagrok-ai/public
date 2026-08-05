@@ -1,7 +1,6 @@
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {knownOpenBug} from '../../helpers/known-open-bug';
 
 test.use(specTestOptions);
 
@@ -204,15 +203,11 @@ test('Network diagram', async ({page}) => {
     await v.selectPropertyGridChoice(page, 'show-arrows', 'to', 'misc');
     await v.waitForPropertyValue(page, 'show-arrows', 'to', 'misc');
 
-    // GROK-20617: setting the property should draw the arrow heads straight away.
-    // It does not — the canvas delta is 0 until the graph is rebuilt. The desired
-    // assertion is kept, so this goes loud the moment the bug is fixed.
-    await knownOpenBug('GROK-20617', async () => {
-      await v.waitForCanvasChange(page, VIEWER_TYPE, {timeoutMs: 4000});
-    });
+    // The arrow heads are drawn straight away, without waiting for a rebuild
+    // (GROK-20617, fixed in 1.28.0).
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {timeoutMs: 10_000});
 
-    // What a user gets today: the arrows appear on the next rebuild, and the
-    // setting survives it.
+    // The setting also survives a rebuild of the graph.
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.pickColumnViaSelectorTrusted(page, {
       role: 'node1', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'node1ColumnName',
@@ -223,6 +218,13 @@ test('Network diagram', async ({page}) => {
 
   // #### Filtered-out nodes
   await softStep('Show Filtered Out Nodes brings the filtered-away nodes back', async () => {
+    // The nodes must be built from the column the filter acts on — otherwise
+    // nothing is ever filtered away and there is nothing to bring back.
+    if (await selectorText(page, 'node1') !== 'SEX')
+      await v.pickColumnViaSelectorTrusted(page, {
+        role: 'node1', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'node1ColumnName',
+      });
+
     const {filteredCount} = await v.applyCategoricalFilter(page, 'SEX', ['F']);
     const total = await page.evaluate(() => (window as any).grok.shell.t.rowCount);
     expect(filteredCount).toBeGreaterThan(0);
@@ -232,17 +234,19 @@ test('Network diagram', async ({page}) => {
     // Let the filter's own repaint finish, or the next check would credit it to
     // the checkbox below.
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
+    const hidden = (await v.countCanvasPixels(page, VIEWER_TYPE)).total;
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
-    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-nodes')).toBe(true);
+
+    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-nodes', 'misc')).toBe(true);
     expect(await shownValue(page, 'show-filtered-out-nodes', 'misc')).toBe('true');
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {timeoutMs: 10_000});
 
-    // GROK-20618: switching this on should bring the filtered-away nodes back.
-    // It repaints nothing today (pixel count stays at 2483 either way).
-    await knownOpenBug('GROK-20618', async () => {
-      await v.waitForCanvasChange(page, VIEWER_TYPE, {timeoutMs: 4000});
-    });
+    // The nodes the filter took away are drawn again, so the diagram now covers
+    // more of the canvas than it did with the option off (GROK-20618, fixed in 1.28.0).
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
+    expect((await v.countCanvasPixels(page, VIEWER_TYPE)).total).toBeGreaterThan(hidden);
 
-    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-nodes')).toBe(false);
+    expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-nodes', 'misc')).toBe(false);
     await v.resetFilters(page);
   });
 

@@ -9,9 +9,11 @@ realized_as:
   - network-diagram-spec.ts
 related_bugs:
   - id: GROK-20617
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
   - id: GROK-20618
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
   - id: GROK-17125
     status: open
 ---
@@ -65,19 +67,20 @@ The JS API is used only to read back the selected- and filtered-row counts.
 
 ## Arrows
 
-1. Set **Show Arrows** to *to* in **Misc** — the arrow heads should be drawn
-   straight away. They are not: the diagram only picks the setting up on the next
-   rebuild (GROK-20617, guarded by `knownOpenBug`).
-2. Change **Node 1** to force the graph to be rebuilt — the arrow heads are drawn
-   and the setting survives the rebuild.
+1. Set **Show Arrows** to *to* in **Misc** — the arrow heads are drawn straight
+   away (GROK-20617, fixed in 1.28.0)
+2. Change **Node 1** to force the graph to be rebuilt — the setting survives the
+   rebuild
 
 ## Filtered out nodes
 
-1. Filter the table to `SEX = F`
-2. Check **Show Filtered Out Nodes** in **Misc** — the filtered-away nodes should
-   come back. They do not, and nothing is repainted (GROK-20618, guarded by
-   `knownOpenBug`).
-3. Uncheck it and reset the filter
+1. Make sure **Node 1** is the column the filter acts on (*SEX*) — otherwise no
+   node is filtered away and there is nothing to bring back
+2. Filter the table to `SEX = F`
+3. Check **Show Filtered Out Nodes** in **Misc** — the filtered-away nodes are
+   drawn again and the diagram covers more of the canvas than with the option off
+   (GROK-20618, fixed in 1.28.0)
+4. Uncheck it and reset the filter
 
 ## Closing the viewer
 

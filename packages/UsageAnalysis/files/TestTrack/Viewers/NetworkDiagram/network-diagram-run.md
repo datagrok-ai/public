@@ -1,7 +1,7 @@
 # Network diagram (Playwright) — Run Results
 
-**Date**: 2026-08-04
-**URL**: https://dev.datagrok.ai
+**Date**: 2026-08-05
+**URL**: https://dev.datagrok.ai (1.28.0)
 **Status**: PASS
 
 ## Steps
@@ -16,15 +16,15 @@
 | 6 | Clicking a node selects the rows behind it | PASS | 3243 rows selected by a real click |
 | 7 | Click-selection switches off stop the clicks from selecting | PASS | Both **Select Rows On Click** and **Select Edges On Click** off → 0 selected |
 | 8 | Show Column Selectors hides the on-viewer selectors | PASS | DOM visibility round-trip |
-| 9 | Show Arrows draws directions on the edges | PASS | `KNOWN_BUG_REPRODUCED:GROK-20617`; arrows drawn after the graph is rebuilt |
-| 10 | Show Filtered Out Nodes | PASS | `KNOWN_BUG_REPRODUCED:GROK-20618` |
+| 9 | Show Arrows draws directions on the edges | PASS | Arrow heads repaint immediately; setting survives a rebuild |
+| 10 | Show Filtered Out Nodes | PASS | Pixel count grows when the option goes on — the filtered-away nodes are drawn again |
 | 11 | Close the viewer from its title bar | PASS | Viewer removed |
 
 ## Timing
 
 | Phase | Duration |
 |-------|----------|
-| Spec run (full) | 47s |
+| Spec run (full) | 39–41s (two consecutive runs) |
 
 ## Notes
 
@@ -48,30 +48,23 @@ takes and a missing repaint fails with a message naming what was expected.
 
 ## Filed bugs
 
-Three Misc properties commit their value but leave the diagram untouched until the
-graph is rebuilt (e.g. by changing a node column):
-
-| Property | Observed | Ticket |
+| Property | Ticket | State on dev 1.28.0 (2026-08-05) |
 |---|---|---|
-| **Show Arrows** | `none` → `to` gives a canvas delta of 0; the arrow heads appear only after a rebuild | GROK-20617 |
-| **Show Filtered Out Nodes** | with `SEX = F` applied, canvas pixel count is 2483 both off and on | GROK-20618 |
-| **Edge Width** | `4` → `14` gives a canvas delta of 0, and the value is reset back to `4` by the next rebuild | GROK-17125 (already open, covers Shapes and Edge Width) |
+| **Show Arrows** | GROK-20617 | **Fixed** — `none` → `to` repaints straight away |
+| **Show Filtered Out Nodes** | GROK-20618 | **Fixed** — with `SEX = F` applied the pixel count goes 1786 → 2662 when the option is switched on |
+| **Edge Width** | GROK-17125 | Still open (covers Shapes and Edge Width) |
 
-Measured on dev 2026-08-04, with and without the simulation suspended, and with a
-forced repaint (pointer move over the canvas) in between. Data-category properties
-on the same viewer repaint immediately, so this is specific to these settings.
+Both fixes were caught by the `knownOpenBug()` wrapper: on 2026-08-05 the run
+threw `[KNOWN_BUG_FIXED:GROK-20617]`, and the wrappers were replaced with plain
+hard assertions. In Jira, GROK-20618 was in *Ready for QA* and GROK-20617 was
+still *Open* at that point — the run is what proved both.
 
-Both steps keep the **real** assertion — that the canvas repaints as soon as the
-property is set — wrapped in `knownOpenBug()` from `helpers/known-open-bug.ts`:
-
-* while the bug reproduces the run stays green and logs
-  `[KNOWN_BUG_REPRODUCED:GROK-2061x]`;
-* the moment the fix lands the assertion starts passing and the wrapper throws
-  `[KNOWN_BUG_FIXED:GROK-2061x]`, so the spec tells us to set
-  `related_bugs[].status: fixed` and replace the wrapper with a plain `expect`.
-
-The Show Arrows step additionally keeps a hard assertion on what a user gets
-today: after a rebuild the arrows are drawn and the setting survives.
+The Show Filtered Out Nodes step also had to be repaired, and the reason is worth
+keeping: it filtered `SEX = F` while the graph was built on **RACE**, so no node
+was ever filtered away and the canvas legitimately did not change. The step
+"reproduced" a bug that its own state guaranteed, and it hid the fix. It now
+forces **Node 1** to the filtered column first, and asserts that the pixel count
+GROWS with the option on instead of merely asserting "something repainted".
 
 ## Not automated
 
