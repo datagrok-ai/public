@@ -300,7 +300,7 @@ export const RunComparison = Vue.defineComponent({
         return cache.get(key);
       };
       return new Set(targets.value
-        .filter((target) => isTargetEqualAcrossRuns(target, cached))
+        .filter((target) => isTargetEqualAcrossRuns(target, cached, indexColumnType))
         .map((target) => target.key));
     });
 
