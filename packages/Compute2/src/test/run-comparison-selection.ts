@@ -83,7 +83,7 @@ category('RunComparison: filters and compatibility', () => {
     ({entryId, tablePath, tableName: tablePath, columnName: 'v', indexColumnName: 'time'});
   const columnTarget = (key: string, bindings: ColumnBinding[]): ColumnTarget => ({
     kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
-    coverage: bindings.length, defaultCoverage: bindings.length, total: 3,
+    coverage: bindings.length, total: 3,
     candidates: [], bindings,
   });
 
@@ -339,7 +339,7 @@ category('RunComparison: equal values', () => {
   });
   const columnTarget = (bindings: ColumnBinding[]): ColumnTarget => ({
     kind: 'column', key: 'k', displayName: 'height', confidence: 'exact', unitsWarning: false,
-    coverage: bindings.length, defaultCoverage: bindings.length, total: bindings.length,
+    coverage: bindings.length, total: bindings.length,
     candidates: [], bindings,
   });
   const getter = (data: Record<string, Record<string, unknown[]>>) =>
@@ -439,7 +439,7 @@ category('RunComparison: axis mode selection', () => {
     ({entryId, tablePath, tableName: tablePath, columnName: 'height', indexColumnName: 'time'});
   const target = (bindings: ColumnBinding[]): ColumnTarget => ({
     kind: 'column', key: 'k', displayName: 'height', confidence: 'exact', unitsWarning: false,
-    coverage: bindings.length, defaultCoverage: bindings.length, total: bindings.length,
+    coverage: bindings.length, total: bindings.length,
     candidates: [], bindings,
   });
   const config = (

@@ -44,7 +44,6 @@ category('RunComparison: comparison dataframes', () => {
       confidence: 'exact',
       unitsWarning: false,
       coverage: 2,
-      defaultCoverage: 2,
       total: 2,
       bindings: [
         {entryId: 'a', path: 'x', name: 'x', value: 10},
@@ -301,7 +300,7 @@ category('RunComparison: multi and split dataframes', () => {
       ({entryId, tablePath, tableName: tablePath, columnName, indexColumnName: 'time'});
     const targetFor = (key: string, bindings: ReturnType<typeof bindingFor>[]): ColumnTarget => ({
       kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
-      coverage: 2, defaultCoverage: 2, total: 2, candidates: [], bindings,
+      coverage: 2, total: 2, candidates: [], bindings,
     });
     const anchor = targetFor('a', [bindingFor(r1.id, r1Table, 'a'), bindingFor('r2', 'p1', 'a')]);
     const co = targetFor('b', [bindingFor(r1.id, r1Table, 'b'), bindingFor('r2', 'p2', 'b')]);

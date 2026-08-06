@@ -198,7 +198,6 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
       unitsWarning: cluster.unitsWarning,
       bindings: cluster.items.map((item) => item.payload),
       coverage: cluster.entryIds.size,
-      defaultCoverage: cluster.entryIds.size,
       total: entries.length,
     })));
 }
@@ -292,8 +291,6 @@ export function matchColumnTargets(
       candidates,
       bindings: [] as ColumnBinding[],
       coverage: 0,
-      defaultCoverage:
-        new Set(candidates.filter((c) => c.enabled).map((c) => c.binding.entryId)).size,
       total: entries.length,
     })));
 

@@ -366,7 +366,6 @@ category('RunComparison: candidates', () => {
     expect(target.key, base.key);
     expect(target.bindings.length, 0);
     expect(target.coverage, 0);
-    expect(target.defaultCoverage, 2);
   });
 });
 

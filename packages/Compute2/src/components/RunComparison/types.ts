@@ -84,9 +84,6 @@ export interface TargetBase {
   confidence: MatchConfidence;
   unitsWarning: boolean;
   coverage: number;
-  // coverage under default enablement — a toggle-independent sort key, so rows
-  // don't jump while the user (un)checks candidates
-  defaultCoverage: number;
   total: number;
 }
 
