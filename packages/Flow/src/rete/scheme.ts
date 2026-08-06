@@ -2,6 +2,7 @@
 import {ClassicPreset, GetSchemes} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {TypedSocket} from './sockets';
+import {isPrimitiveSlotType} from '../types/type-map';
 import type {FuncWrapper} from '../utils/func-input-overrides';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
@@ -151,6 +152,37 @@ export class FlowNode extends ClassicPreset.Node<
   hasInputValue(name: string): boolean {
     return Object.prototype.hasOwnProperty.call(this.inputValues, name);
   }
+
+  /** Type-based default for {@link inputSlotShown}: primitive-typed inputs
+   *  (string/int/double/bool/…) start hidden — they're edited in the panel. */
+  inputSlotShownByDefault(name: string): boolean {
+    const slot = (this.inputs as Record<string, {socket?: TypedSocket} | undefined>)[name];
+    return !isPrimitiveSlotType(slot?.socket?.dgType ?? '');
+  }
+
+  /** Whether an input's socket row (and its pass-through) renders on the card.
+   *  The node context menu's "Shown inputs" checkboxes store per-node
+   *  deviations from the type default in `properties['shownSlots']`
+   *  (`{name: boolean}`) — living in `properties` so save/load, duplicate, and
+   *  copy-paste all carry it for free. A wired row renders regardless (see
+   *  {@link hiddenSocketRow}). */
+  inputSlotShown(name: string): boolean {
+    const overrides = this.properties['shownSlots'] as Record<string, boolean> | undefined;
+    return overrides?.[name] ?? this.inputSlotShownByDefault(name);
+  }
+}
+
+/** Whether a socket row is absent from the rendered card: force-hidden keys
+ *  (`hiddenInputs`/`hiddenOutputs`), default-hidden primitive inputs, and the
+ *  pass-throughs mirroring either — unless the slot is connected, in which
+ *  case it always renders so the wire keeps its endpoint. Real (non-pass-
+ *  through) outputs are only ever hidden via `hiddenOutputs`. */
+export function hiddenSocketRow(node: FlowNode, side: 'input' | 'output', key: string,
+  isConnected: (side: 'input' | 'output', key: string) => boolean): boolean {
+  if (isConnected(side, key)) return false;
+  const base = side === 'input' ? key : key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : null;
+  if (base === null) return node.hiddenOutputs.has(key);
+  return node.hiddenInputs.has(base) || !node.inputSlotShown(base);
 }
 
 /** Connection type. Generic params left at `ClassicPreset.Node` (rather than

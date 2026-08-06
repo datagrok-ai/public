@@ -23,7 +23,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
-  EXEC_IN_KEY, EXEC_OUT_KEY,
+  EXEC_IN_KEY, EXEC_OUT_KEY, hiddenSocketRow,
 } from './scheme';
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
@@ -415,16 +415,22 @@ export class FlowEditor {
     }
   }
 
-  /** Collapsed nodes render socket DOM only for *connected* sockets (see
-   *  node-component.tsx). A connection created or removed while an endpoint is
-   *  collapsed changes which sockets must exist, so re-render those nodes.
-   *  Without this, a connection added to an already-collapsed node (creation-
-   *  script import, .flow load) has no socket element to attach to and stays
-   *  invisible until the node is expanded and collapsed again. */
+  /** Collapsed nodes and hidden rows (force-hidden keys, default-hidden
+   *  primitive inputs) render socket DOM only for *connected* sockets (see
+   *  node-component.tsx). A connection created or removed changes which
+   *  sockets must exist on such an endpoint, so re-render it. Without this, a
+   *  wire added to a collapsed or hidden slot (creation-script import, .flow
+   *  load, drop-on-node auto-connect) has no socket element to attach to. */
   private refreshCollapsedEndpoints(conn: FlowScheme['Connection']): void {
-    for (const id of [conn.source, conn.target]) {
+    const ends: Array<['output' | 'input', string, string]> = [
+      ['output', conn.source, String(conn.sourceOutput)],
+      ['input', conn.target, String(conn.targetInput)],
+    ];
+    for (const [side, id, key] of ends) {
       const node = this.editor.getNode(id);
-      if (node?.collapsed) void this.area.update('node', id);
+      if (!node) continue;
+      if (node.collapsed || hiddenSocketRow(node, side, key, () => false))
+        void this.area.update('node', id);
     }
   }
 
@@ -2984,6 +2990,19 @@ export class FlowEditor {
       menu.item('Group selected', () => void this.createGroupFromSelection());
     if (this.groupOf(node.id))
       menu.item('Remove from group', () => this.removeFromGroup(node.id));
+    // Checkbox per input row: primitive-typed inputs start hidden (panel-only)
+    // and can be re-shown here; showing an input also shows its pass-through.
+    // Real outputs are always visible and are not listed.
+    const toggleable = Object.keys(node.inputs).filter((k) => !isExecKey(k) && !node.hiddenInputs.has(k));
+    if (toggleable.length > 0) {
+      menu.group('Shown inputs')
+        .items(toggleable, (k) => void this.setInputShown(node.id, k, !node.inputSlotShown(k)), {
+          toString: (k) => String((node.inputs[k] as {label?: string} | undefined)?.label ?? k),
+          isChecked: (k) => node.inputSlotShown(k) || this.isSocketConnected(node.id, 'input', k),
+          isValid: (k) => this.isSocketConnected(node.id, 'input', k) ? 'Connected inputs are always shown' : null,
+        })
+        .endGroup();
+    }
     menu
       .separator()
       .item('Delete', () => void this.removeNode(node.id))
@@ -3277,6 +3296,24 @@ export class FlowEditor {
     const node = this.editor.getNode(nodeId);
     if (!node) return;
     node.collapsed = !node.collapsed;
+    await this.area.update('node', nodeId);
+  }
+
+  /** Show or hide an input's socket row (and its pass-through) on the card —
+   *  the "Shown inputs" context-menu checkboxes. Stores only deviations from
+   *  the type default (see `FlowNode.inputSlotShown`) so saves stay tidy. */
+  async setInputShown(nodeId: string, key: string, shown: boolean): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    const overrides = {...(node.properties['shownSlots'] as Record<string, boolean> | undefined)};
+    if (shown === node.inputSlotShownByDefault(key))
+      delete overrides[key];
+    else
+      overrides[key] = shown;
+    if (Object.keys(overrides).length === 0)
+      delete node.properties['shownSlots'];
+    else
+      node.properties['shownSlots'] = overrides;
     await this.area.update('node', nodeId);
   }
 

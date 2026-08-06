@@ -17,7 +17,7 @@
  *
  *  Pure and DOM-free: it only reads node metadata and mutates `node.pos`. */
 
-import {FlowNode} from './scheme';
+import {FlowNode, isExecKey, hiddenSocketRow} from './scheme';
 
 /** A directed layout edge between two nodes (source → target). */
 export interface LayoutEdge {
@@ -227,7 +227,15 @@ export function orderedComponents(nodes: FlowNode[], edges: LayoutEdge[]): FlowN
  *  the two. */
 export function estimateNodeHeight(node: FlowNode): number {
   if (node.collapsed) return 30;
-  const rows = Math.max(Object.keys(node.inputs).length, Object.keys(node.outputs).length, 1);
+  // Count only the rows the card renders — hidden primitive inputs and their
+  // pass-throughs take no vertical space. Wiring state is read through the
+  // editor bridge when present (import-time layout runs pre-bridge: unwired).
+  const conn = (side: 'input' | 'output', key: string): boolean =>
+    node.editorBridge?.isSocketConnected(node.id, side, key) ?? false;
+  const visible = (side: 'input' | 'output', keys: string[]): number =>
+    keys.filter((k) => !isExecKey(k) && !hiddenSocketRow(node, side, k, conn)).length;
+  const rows = Math.max(visible('input', Object.keys(node.inputs)),
+    visible('output', Object.keys(node.outputs)), 1);
   // title bar + the always-present one-line info row + body padding + rows.
   return 28 + 19 + 12 + rows * 20;
 }

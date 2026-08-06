@@ -103,27 +103,27 @@ export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, pr
 //name: Add Curve Statistic
 //description: Extracts a fit statistic from one series of a curve column into a new column.
 //input: dataframe table { caption: Table; nullable: false }
-//input: column curves { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
+//input: column curvesCol { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
 //input: string statistic = 'interceptX' { caption: Statistic; nullable: false; choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: interceptX is IC50, top and bottom are max/min Y }
 //input: int seriesNumber = 0 { caption: Series; nullable: false; description: Zero-based index of the curve series }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform
-export function addCurveStatistic(table: DG.DataFrame, curves: DG.Column, statistic: string, seriesNumber: number) : any {
-  return PackageFunctions.addCurveStatistic(table, curves, statistic, seriesNumber);
+export function addCurveStatistic(table: DG.DataFrame, curvesCol: DG.Column, statistic: string, seriesNumber: number) : any {
+  return PackageFunctions.addCurveStatistic(table, curvesCol, statistic, seriesNumber);
 }
 
 //name: Add Aggregated Curve Statistic
 //description: Aggregates a fit statistic across all series of a curve column into a new column.
 //input: dataframe table { caption: Table; nullable: false }
-//input: column curves { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
+//input: column curvesCol { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
 //input: string statistic = 'interceptX' { caption: Statistic; nullable: false; choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: interceptX is IC50, top and bottom are max/min Y }
 //input: string aggregation = 'med' { caption: Aggregation; nullable: false; choices: ["med","avg","min","max","sum","stdev","variance","q1","q2","q3"]; description: Applied across the series of each curve }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform
-export function addAggrCurveStatistic(table: DG.DataFrame, curves: DG.Column, statistic: string, aggregation: string) : any {
-  return PackageFunctions.addAggrCurveStatistic(table, curves, statistic, aggregation);
+export function addAggrCurveStatistic(table: DG.DataFrame, curvesCol: DG.Column, statistic: string, aggregation: string) : any {
+  return PackageFunctions.addAggrCurveStatistic(table, curvesCol, statistic, aggregation);
 }
 
 //description: Returns XML 3DX curve converter function

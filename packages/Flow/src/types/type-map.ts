@@ -248,6 +248,15 @@ export function dgTypeToSlotType(dgType: string): string {
   return mapped ? mapped.slotType : dgType;
 }
 
+/** Scalar types whose input rows (and pass-throughs) are hidden on the node
+ *  card by default — they're edited in the context panel, and the node context
+ *  menu's "Shown inputs" checkboxes re-show them per node. */
+const PRIMITIVE_SLOT_TYPES = new Set(['string', 'int', 'double', 'num', 'bool', 'datetime', 'bigint', 'qnum']);
+
+export function isPrimitiveSlotType(dgType: string): boolean {
+  return PRIMITIVE_SLOT_TYPES.has(dgTypeToSlotType(dgType));
+}
+
 /** A comma-separated string-list input — editable inline like a column-list
  *  (the value is a comma-separated string; the compiler turns it into a JS
  *  array of trimmed, non-empty strings). `list<string>` is the same as

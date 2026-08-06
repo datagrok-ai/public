@@ -263,6 +263,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs, leading (table, column) pair forced required despite nullable annotations, suggestion-menu labels (friendly name + `funcCategory`, no "Uncategorized"), suggestion ranking (domain-in-play tier, exact-over-wildcard, used-func float), reverse suggestions (`findNodeTypesProducingOutput`: matching Input node leads, real-output-over-passthrough, domain boost) |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator / func wrappers | order, cycles, emitted headers + body, instrumented mode, validation rules, Select Table fail-fast guard, Output ⇄ SetVar same-contract emission, untouched optional scalars omitted from calls (OpenFile: no `sheetName` unless the path is xlsx; a live sdf Open File run completes end-to-end); FUNC_WRAPPERS: node exposes wrapper inputs, compile folds them into the real call args (plain + instrumented), the reshaped call runs on the platform, creation-emit warns and skips |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
+| `slot-visibility-tests.ts` | Flow: slot visibility | `isPrimitiveSlotType` classification, primitive input rows + pass-throughs default-hidden on the card (data layer untouched), `setInputShown` reveals/hides row + pass-through and keeps `properties['shownSlots']` tidy (back-to-default removes the key), wired primitives render regardless, save/load + duplicate carry overrides, the node context menu offers the "Shown inputs" checkbox submenu |
 | `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse, hidden on empty canvas / shown once a node exists, click-to-pan centers the exact clicked graph point (no `+min` double-count) |
 | `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
@@ -532,9 +533,26 @@ Every func node automatically gets **pass-through output slots** mirroring each 
 
 - **Problem**: `addNewColumn(table)` and `doSomething(table)` both consume the same table — topological sort can't determine order without an edge between them.
 - **Solution**: Connect `addNewColumn`'s pass-through output to `doSomething`'s input. Compiler treats the pass-through edge as an ordering edge only.
-- **Encoding**: Pass-through output keys are `<inputName>__pt`. The visible label is the input's display caption plus an arrow (`Table →`) — an anonymous `→` made users hunt for where the table exits. All pass-through rows render (a hide-unwired-scalars experiment was rejected — the owner wants every pass-through visible). `FuncNode.passthroughInputName(key)` extracts the original input name. `node.passthroughCount` records how many pass-through slots are at the start of the outputs map.
+- **Encoding**: Pass-through output keys are `<inputName>__pt`. The visible label is the input's display caption plus an arrow (`Table →`) — an anonymous `→` made users hunt for where the table exits. A pass-through row renders exactly when its input row does (see "Slot visibility" below) — a hide-by-wiring experiment was rejected in favor of the type-based default + per-node checkboxes. `FuncNode.passthroughInputName(key)` extracts the original input name. `node.passthroughCount` records how many pass-through slots are at the start of the outputs map.
 - **Compile**: `graph-compiler.ts` resolves a pass-through output to the same expression as the corresponding input — no new variable is generated.
 - **Visual**: dashed border on the socket, faded italic label.
+
+#### Slot Visibility (default-hidden primitive inputs)
+
+Primitive-typed input rows (`isPrimitiveSlotType` in [types/type-map.ts](src/types/type-map.ts):
+string/int/double/num/bool/datetime/bigint/qnum) and their pass-throughs are **hidden on the card by
+default** — they're edited in the context panel. Structural inputs (dataframe, column, column_list,
+file, lists, …) and every real output always render. The single predicate is `hiddenSocketRow`
+([scheme.ts](src/rete/scheme.ts)), shared by the node component, `estimateNodeHeight`, and the
+connection-endpoint refresh — a **wired** slot always renders so the connection keeps its endpoint
+(same rule as `HIDDEN_FUNC_INPUTS`/`PANEL_ONLY_FUNC_INPUTS`, which stay force-hidden and are NOT
+listed in the menu). Per-node overrides: the node context menu's **"Shown inputs"** checkbox submenu
+calls `FlowEditor.setInputShown`, which stores only deviations from the type default in
+`node.properties['shownSlots']` (`{name: boolean}`) — living in `properties` so save/load, duplicate,
+and copy-paste carry it for free; the creation script (code, not layout) does not. Checking an input
+shows its row **and** its pass-through; the data layer (slot, seeded value, compile, import/emit,
+`requiredInputs`, suggestions/auto-connect) is never affected by visibility — a drop-on-node
+auto-connect can legally land on a hidden input, which then renders because it's wired.
 
 ## Execution-Ordering ("order") Edges
 

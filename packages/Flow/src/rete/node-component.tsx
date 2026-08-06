@@ -15,7 +15,8 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements,
+  hiddenSocketRow} from './scheme';
 import {InputValueControl} from './nodes/input-value-control';
 import {TypedSocket} from './sockets';
 import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
@@ -46,16 +47,12 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   if (node.dgNodeType === 'output') return OutputRowComponent(props);
   const collapsed = node.collapsed === true;
   // Exec (execution-ordering) ports render separately at the top corners — keep
-  // them out of the regular data-socket rows. Hidden inputs (and their
-  // pass-throughs) and hidden real outputs render only when connected — their
-  // slots stay data-carrying, the user just never sees an unwired one.
-  const hiddenRow = (key: string, side: 'input' | 'output'): boolean => {
-    if (isConnected(node, side, key)) return false;
-    if (side === 'input') return node.hiddenInputs.has(key);
-    return key.endsWith('__pt') ?
-      node.hiddenInputs.has(key.slice(0, -'__pt'.length)) :
-      node.hiddenOutputs.has(key);
-  };
+  // them out of the regular data-socket rows. Hidden rows (force-hidden keys,
+  // default-hidden primitive inputs, and their pass-throughs) render only when
+  // connected — their slots stay data-carrying, the user just never sees an
+  // unwired one. See `hiddenSocketRow` for the full rule.
+  const hiddenRow = (key: string, side: 'input' | 'output'): boolean =>
+    hiddenSocketRow(node, side, key, (s, k) => isConnected(node, s, k));
   const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
     .filter(([key]) => !isExecKey(key) && !hiddenRow(key, 'input'));
   const outputs = (Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>)

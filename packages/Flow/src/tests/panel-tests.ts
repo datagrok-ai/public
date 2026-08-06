@@ -169,12 +169,21 @@ category('Flow: property panel', () => {
       expect(paneHeaders(panel.root).includes('Function'), false, 'no separate Function pane anymore');
       const chips = panel.root.querySelector('[data-testid="ff-prop-func-chips"]') as HTMLElement | null;
       expect(!!chips, true, 'chips row rendered for a func node');
+      const kind = chips!.querySelector('[data-testid="ff-property-type-badge"]') as HTMLElement | null;
+      expect(kind?.textContent, 'Function', 'the kind chip leads with a user-facing word');
       const fullName = chips!.querySelector('[data-testid="ff-prop-func-fullname"]') as HTMLElement | null;
-      expect(fullName?.textContent, node.dgFuncName, 'full-name chip carries the qualified name');
-      if (node.dgPackageName) {
+      // The package is never named twice: a namespace-qualified name drops its
+      // prefix when the package gets its own chip.
+      const pkgName = node.dgPackageName ?? '';
+      const expectedName = pkgName && node.dgFuncName?.toLowerCase().startsWith(`${pkgName.toLowerCase()}:`) ?
+        node.dgFuncName!.slice(pkgName.length + 1) : node.dgFuncName;
+      expect(fullName?.textContent, expectedName, 'name chip carries the (deduped) function name');
+      if (pkgName) {
         const pkg = chips!.querySelector('[data-testid="ff-prop-func-package"]') as HTMLElement | null;
-        expect(pkg?.textContent, node.dgPackageName, 'package chip present');
+        expect(pkg?.textContent, pkgName, 'package chip present');
       }
+      expect(chips!.querySelectorAll('.funcflow-chip-sep').length >= 1, true,
+        'items separated by vertical rules on one line');
     } finally {
       panel.root.remove();
       destroyEditor(e);
@@ -274,8 +283,10 @@ category('Flow: property panel', () => {
       expect(typeof node.inputValues['subscribeOnChanges'], 'boolean', 'default still seeded');
       expect(node.passthroughCount, node.dgFunc!.inputs.length, 'pass-through count unchanged');
 
-      // Rendered node: rows for hidden inputs (and their pass-throughs) are gone.
-      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-input', 'expression')}"]`));
+      // Rendered node: rows for hidden inputs (and their pass-throughs) are
+      // gone. Anchor on the dataframe input — primitive rows (`expression`,
+      // `name`) are default-hidden now (see slot-visibility tests).
+      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-input', 'table')}"]`));
       expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', 'subscribeOnChanges')}"]`), false,
         'no node row for a hidden input');
       expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', 'errorBehavior')}"]`), false,
@@ -473,10 +484,19 @@ category('Flow: property panel', () => {
           `no pass-through row for ${key}`);
       }
 
-      // Unlike HIDDEN_FUNC_INPUTS, the panel still edits both.
+      // Unlike HIDDEN_FUNC_INPUTS, the panel still edits both — Sheet Name
+      // only for an Excel path (CONDITIONAL_FUNC_INPUTS; noise otherwise, and
+      // the compiler drops the value for any other extension anyway).
+      node.inputValues['fullPath'] = 'System:AppData/Demo/book.xlsx';
       panel.showNode(node);
       expect(!!panel.root.querySelector('[data-param="fullPath"] input'), true, 'panel edits fullPath');
-      expect(!!panel.root.querySelector('[data-param="sheetName"] input'), true, 'panel edits sheetName');
+      expect(!!panel.root.querySelector('[data-param="sheetName"] input'), true,
+        'panel edits sheetName for an xlsx path');
+
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      panel.showNode(node);
+      expect(panel.root.querySelector('[data-param="sheetName"]') == null, true,
+        'no Sheet Name row for a non-Excel path');
     } finally {
       panel.root.remove();
       destroyEditor(e);
