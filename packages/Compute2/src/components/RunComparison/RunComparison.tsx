@@ -926,10 +926,16 @@ export const RunComparison = Vue.defineComponent({
             250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
       const effectiveChartHeight = Math.max(chartMinHeight, chartHeight.value);
       const chartStyle = {width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'};
+      // the key names every column the chart options reference: swapping the dataframe
+      // and the options on a live viewer passes through an invalid look/frame pair (the
+      // old look can reference columns missing in the new frame — crashes the Dart look
+      // refresh, e.g. on split deselect), so a changed column set remounts the viewer
+      // instead, creating it with the frame and the look applied together
       let chart;
       if (currentComparison.kind === 'multi-scalar') {
         chart = effectiveScalarChartType.value === 'radar' ?
           <Viewer
+            key={JSON.stringify(['radar', currentComparison.valueColumnNames])}
             type='Radar'
             dataFrame={currentComparison.chartDf}
             style={chartStyle}
@@ -941,6 +947,7 @@ export const RunComparison = Vue.defineComponent({
             }}
           /> :
           <Viewer
+            key={JSON.stringify(['pc', currentComparison.valueColumnNames])}
             type={DG.VIEWER.PC_PLOT}
             dataFrame={currentComparison.chartDf}
             style={chartStyle}
@@ -952,6 +959,7 @@ export const RunComparison = Vue.defineComponent({
           />;
       } else if (currentComparison.kind === 'scalar') {
         chart = <Viewer
+          key={JSON.stringify(['scalar', currentComparison.valueColumnName])}
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
@@ -964,6 +972,7 @@ export const RunComparison = Vue.defineComponent({
         />;
       } else if (currentComparison.isKeyIndex) {
         chart = <Viewer
+          key={JSON.stringify(['keybar', currentComparison.valueColumnName, currentComparison.indexColumnName])}
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
@@ -981,6 +990,8 @@ export const RunComparison = Vue.defineComponent({
         const melted = currentComparison.melted;
         const splitColumnName = currentComparison.splitColumnName;
         chart = <Viewer
+          key={JSON.stringify(['scatter', currentComparison.indexColumnName, splitColumnName,
+            melted ? [melted.valueColumnName, melted.seriesColumnName] : currentComparison.valueColumnName])}
           type={DG.VIEWER.SCATTER_PLOT}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
@@ -1001,6 +1012,8 @@ export const RunComparison = Vue.defineComponent({
         const yColumnNames = 'valueColumnNames' in currentComparison ?
           currentComparison.valueColumnNames as string[] : [currentComparison.valueColumnName];
         chart = <Viewer
+          key={JSON.stringify(['line', currentComparison.indexColumnName, yColumnNames,
+            currentComparison.splitColumnName])}
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
