@@ -47,6 +47,7 @@ export namespace chem {
   export const FILTER_KEY = 'chem-filter';
   export const CHEM_FILTER_ALIGN = 'align';
   export const CHEM_FILTER_HIGHLIGHT = 'highlight';
+  export const CHEM_FILTER_ON_CHANGE = 'filterOnChange';
 
   export enum Notation {
     Smiles = 'smiles',
@@ -175,6 +176,7 @@ export namespace chem {
     errorDiv = ui.divText('Malformed molecule');
     alighInput: InputBase;
     highlightInput: InputBase;
+    filterOnChangeInput: InputBase;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -224,6 +226,8 @@ export namespace chem {
     set align(value: boolean) {this.alighInput!.value = value;}
     get highlight(): boolean {return this.highlightInput!.value!;}
     set highlight(value: boolean) {this.highlightInput!.value = value;}
+    get filterOnChange(): boolean {return this.filterOnChangeInput!.value!;}
+    set filterOnChange(value: boolean) {this.filterOnChangeInput!.value = value;}
     get filterOptions(): HTMLElement {return this.filterOptionsDiv;}
 
     getSmiles(): string {
@@ -362,6 +366,12 @@ export namespace chem {
         grok.userSettings.add(FILTER_KEY, CHEM_FILTER_HIGHLIGHT, this.highlightInput!.value ? 'true' : 'false');
         this.onHighlightChanged.next(this.highlightInput!.value);
       });
+      this.filterOnChangeInput = this.createAlignHighlightInputs(CHEM_FILTER_ON_CHANGE, 'Filter as you draw', () => {
+        grok.userSettings.add(FILTER_KEY, CHEM_FILTER_ON_CHANGE, this.filterOnChangeInput!.value ? 'true' : 'false');
+        if (this.filterOnChangeInput!.value)
+          this.onChanged.next(null);
+      });
+      ui.tooltip.bind(this.filterOnChangeInput.root, 'Uncheck to apply the filter only when you click OK');
       setTimeout(() => this.createSketcher(), 100);
     }
 
@@ -508,12 +518,17 @@ export namespace chem {
               this.updateExtSketcherContent(); //in case explicit mol has been set and hasn't been changed - add it to recent
               Sketcher.addToCollection(Sketcher.RECENT_KEY, this.sketcher?.explicitMol?.value ?? this.getMolFile());
               closeDlg();
+              if (this._isSubstructureFilter && !this.filterOnChange)
+                this.onChanged.next(null);
             })
             .onCancel(() => {
-              this.setMolFile(savedMolFile!);
               closeDlg();
+              this.setMolFile(savedMolFile!);
             })
             .show({ resizable: true });
+          // deferred apply relies on the OK button, so the checkbox is only shown in the dialog
+          if (this._isSubstructureFilter)
+            this.filterOptionsDiv.append(this.filterOnChangeInput.root);
           hostDlg.root.append(this.filterOptionsDiv);
           sizeChangedSub = ui.onSizeChanged(hostDlg.root).subscribe((_) => {
             if (this.sketcherDialogOpened)
