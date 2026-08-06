@@ -1,5 +1,9 @@
 # Lib Tests changelog
 
+## v.next
+
+* Added a virtual-time test suite for the webcomponents ViewerHost
+
 ## 1.9.2 (2026-06-04)
 
 - Tests for funcCall file-input save/load and named `pipelineValidator` outputs

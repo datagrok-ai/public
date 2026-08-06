@@ -44,6 +44,7 @@ import './tests/compute-utils/fitting/formula-resolver';
 import './tests/compute-utils/history-file-inputs';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
+import './tests/webcomponents/viewer-host';
 
 export const _package = new DG.Package();
 export {tests};
