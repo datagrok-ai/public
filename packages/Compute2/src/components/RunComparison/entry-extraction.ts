@@ -62,11 +62,20 @@ function extractCallNodes(
   const io = [
     ...[...call.inputParams.values()].map((p) => ({param: p, value: call.inputs[p.property.name]})),
     ...[...call.outputParams.values()].map((p) => ({param: p, value: call.outputs[p.property.name]})),
-  ];
+  ].filter(({param, value}) => SCALAR_PROPERTY_TYPES.has(param.property.propertyType) ||
+    (param.property.propertyType === DG.TYPE.DATA_FRAME && value != null));
+  // captions are free text, so one call's input and output can share a display name;
+  // property names are unique per call and disambiguate everything downstream
+  const nameCounts = new Map<string, number>();
+  for (const {param} of io) {
+    const caption = param.property.caption ?? param.property.name;
+    nameCounts.set(caption, (nameCounts.get(caption) ?? 0) + 1);
+  }
   for (const {param, value} of io) {
     const prop = param.property;
     const path = pathPrefix ? `${pathPrefix}/${prop.name}` : prop.name;
-    const name = prop.caption ?? prop.name;
+    const caption = prop.caption ?? prop.name;
+    const name = nameCounts.get(caption)! > 1 ? `${caption} (${prop.name})` : caption;
     const friendlyPath = friendlyPrefix ? `${friendlyPrefix} · ${name}` : name;
     if (SCALAR_PROPERTY_TYPES.has(prop.propertyType)) {
       scalars.push({
