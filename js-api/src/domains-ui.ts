@@ -62,6 +62,11 @@ export interface DomainAction {
   name: string;
   /** FontAwesome icon name, matching the platform ribbon ('pencil', 'trash-alt'...). */
   icon?: string;
+  /** Whether running the action may have changed the row — what a list or a page
+   * reloads on. The platform's own actions ({@link
+   * DomainObjectHandler.getRibbonActions}) all declare it; a custom action that
+   * omits it is up to its consumer to classify. */
+  changesRow?: boolean;
   run(): Promise<any> | any;
 }
 
@@ -119,7 +124,9 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * it belongs to this table, null otherwise. Use it in overrides instead of
    * casting — handler members receive both shapes. */
   protected rowOf(x: any): DomainRow | null {
-    const row = x instanceof SemanticValue ? x.value : x;
+    // SemanticValue.value is a sync interop getter: what it returns for an entity
+    // is the Dart handle, so it takes a toJs() to become the row again.
+    const row = x instanceof SemanticValue ? toJs(x.value) : x;
     return row instanceof DomainRow && row.typeName === this.table ? row : null;
   }
 
@@ -133,8 +140,12 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   }
 
   /** A rejected argument, readably: a plain object stringifies to
-   * '[object Object]', which names neither the value nor its type. */
+   * '[object Object]', which names neither the value nor its type. A
+   * {@link SemanticValue} is described by what it wraps — 'SemanticValue' names
+   * the platform's envelope, not the row the caller passed. */
   private static _describe(x: any): string {
+    if (x instanceof SemanticValue)
+      return DomainObjectHandler._describe(toJs(x.value));
     if (x == null || typeof x !== 'object')
       return `${x}`;
     if (x instanceof DomainRow)
@@ -334,35 +345,41 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    *
    * The dialog-backed runs delegate to {@link editRow} / {@link cloneRow} /
    * {@link deleteRow} / {@link shareRow} / {@link showHistory} — override one of
-   * those to replace a flow, the action list stays the platform's. */
+   * those to replace a flow, the action list stays the platform's.
+   *
+   * Every action declares {@link DomainAction.changesRow}: the platform knows
+   * which of its own actions write, so a consumer reloads on it instead of
+   * guessing from the caption (which changes with the state: 'Watch' ⇄
+   * 'Unwatch') or from the icon. */
   async getRibbonActions(x: T): Promise<DomainAction[]> {
     const row = this.rowOf(x);
     if (row?.id == null)
       return [];
     const info = await new DomainRegistryClient().tableInfo(this.table);
     const perms = await row.permissions();
-    const res: DomainAction[] = [{name: 'Open', icon: 'folder-open', run: () => this.openRow(x)}];
+    const res: DomainAction[] = [
+      {name: 'Open', icon: 'folder-open', changesRow: false, run: () => this.openRow(x)}];
     if (perms.edit) {
-      res.push({name: 'Edit...', icon: 'pencil', run: () => this.editRow(x)});
-      res.push({name: 'Clone', icon: 'clone', run: () => this.cloneRow(x)});
+      res.push({name: 'Edit...', icon: 'pencil', changesRow: true, run: () => this.editRow(x)});
+      res.push({name: 'Clone', icon: 'clone', changesRow: true, run: () => this.cloneRow(x)});
     }
     if (perms.delete)
-      res.push({name: 'Delete', icon: 'trash-alt', run: () => this.deleteRow(x)});
+      res.push({name: 'Delete', icon: 'trash-alt', changesRow: true, run: () => this.deleteRow(x)});
     // Row-mode tables are the ones that CAN share a row; Share on the row itself
     // is what makes it offerable (the Dart ribbon shows it and explains the
     // denial on click — JS consumers render the list as-is, so gate it here).
     if (info.securityMode === 'row' && perms.share)
-      res.push({name: 'Share...', icon: 'share-alt', run: () => this.shareRow(x)});
+      res.push({name: 'Share...', icon: 'share-alt', changesRow: true, run: () => this.shareRow(x)});
     // Row-level watch needs the audit trail as its change source. NB the state
     // is a server round trip per build (the Dart ribbon reads its warmed cache);
     // callers rebuilding the list often should cache it themselves.
     if (info.audit) {
       const watching = await this.client.isWatching(row.id);
-      res.push({name: watching ? 'Unwatch' : 'Watch', icon: 'bell',
+      res.push({name: watching ? 'Unwatch' : 'Watch', icon: 'bell', changesRow: false,
         run: () => this.setWatch(x, !watching)});
     }
-    res.push({name: 'History', icon: 'history', run: () => this.showHistory(x)});
-    res.push({name: 'Copy link', icon: 'link', run: () => this.copyLink(x)});
+    res.push({name: 'History', icon: 'history', changesRow: false, run: () => this.showHistory(x)});
+    res.push({name: 'Copy link', icon: 'link', changesRow: false, run: () => this.copyLink(x)});
     return res;
   }
 
