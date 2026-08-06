@@ -372,6 +372,7 @@ export class FlowEditor {
     toggleCollapsed: (id) => void this.toggleCollapsed(id),
     isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
     notifyParamsChanged: (nodeId) => this.notifyNodeParamsChanged(nodeId),
+    showShownInputsMenu: (nodeId, event) => this.showShownInputsMenu(nodeId, event),
   };
 
   /** Configure ClassicFlow to reject incompatible socket connections at pick
@@ -2990,19 +2991,8 @@ export class FlowEditor {
       menu.item('Group selected', () => void this.createGroupFromSelection());
     if (this.groupOf(node.id))
       menu.item('Remove from group', () => this.removeFromGroup(node.id));
-    // Checkbox per input row: primitive-typed inputs start hidden (panel-only)
-    // and can be re-shown here; showing an input also shows its pass-through.
-    // Real outputs are always visible and are not listed.
-    const toggleable = Object.keys(node.inputs).filter((k) => !isExecKey(k) && !node.hiddenInputs.has(k));
-    if (toggleable.length > 0) {
-      menu.group('Shown inputs')
-        .items(toggleable, (k) => void this.setInputShown(node.id, k, !node.inputSlotShown(k)), {
-          toString: (k) => String((node.inputs[k] as {label?: string} | undefined)?.label ?? k),
-          isChecked: (k) => node.inputSlotShown(k) || this.isSocketConnected(node.id, 'input', k),
-          isValid: (k) => this.isSocketConnected(node.id, 'input', k) ? 'Connected inputs are always shown' : null,
-        })
-        .endGroup();
-    }
+    if (this.toggleableInputs(node).length > 0)
+      this.addShownInputsItems(menu.group('Shown inputs'), node).endGroup();
     menu
       .separator()
       .item('Delete', () => void this.removeNode(node.id))
@@ -3297,6 +3287,34 @@ export class FlowEditor {
     if (!node) return;
     node.collapsed = !node.collapsed;
     await this.area.update('node', nodeId);
+  }
+
+  /** The inputs the "Shown inputs" checkboxes can toggle — everything except
+   *  exec ports and force-hidden keys (HIDDEN/PANEL_ONLY, which have no
+   *  legitimate on-card form). */
+  private toggleableInputs(node: FlowNode): string[] {
+    return Object.keys(node.inputs).filter((k) => !isExecKey(k) && !node.hiddenInputs.has(k));
+  }
+
+  /** Checkbox per input row: primitive-typed inputs start hidden (panel-only)
+   *  and can be re-shown here; showing an input also shows its pass-through.
+   *  Real outputs are always visible and are not listed. Shared between the
+   *  node context menu's "Shown inputs" group and the ⋯ indicator's popup. */
+  private addShownInputsItems(menu: DG.Menu, node: FlowNode): DG.Menu {
+    return menu.items(this.toggleableInputs(node),
+      (k) => void this.setInputShown(node.id, k, !node.inputSlotShown(k)), {
+        toString: (k) => String((node.inputs[k] as {label?: string} | undefined)?.label ?? k),
+        isChecked: (k) => node.inputSlotShown(k) || this.isSocketConnected(node.id, 'input', k),
+        isValid: (k) => this.isSocketConnected(node.id, 'input', k) ? 'Connected inputs are always shown' : null,
+      });
+  }
+
+  /** Pop the "Shown inputs" checkboxes directly (the node card's ⋯ hidden-
+   *  inputs indicator — same items as the context-menu group). */
+  showShownInputsMenu(nodeId: string, event: MouseEvent): void {
+    const node = this.editor.getNode(nodeId);
+    if (!node || this.toggleableInputs(node).length === 0) return;
+    this.addShownInputsItems(DG.Menu.popup(), node).show({causedBy: event});
   }
 
   /** Show or hide an input's socket row (and its pass-through) on the card —

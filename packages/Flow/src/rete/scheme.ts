@@ -18,6 +18,8 @@ export interface FlowEditorBridge {
   /** Report a parameter edit made through an on-node control (the input-node
    *  value editor) — same contract as the property panel's `paramsChanged`. */
   notifyParamsChanged(nodeId: string): void;
+  /** Pop the "Shown inputs" checkbox menu (the ⋯ hidden-inputs indicator). */
+  showShownInputsMenu(nodeId: string, event: MouseEvent): void;
 }
 
 /** Base class for every node we put on the canvas.

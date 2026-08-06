@@ -139,6 +139,51 @@ category('Flow: slot visibility', () => {
     }
   });
 
+  test('the ⋯ indicator marks hidden toggleable inputs and pops the checkboxes', async () => {
+    const typeName = funcTypeName('AddNewColumn');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      const dots = (): HTMLElement | null =>
+        e.container.querySelector(`[data-testid="${tid('node-more-inputs')}"]`);
+      expect(await until(() => dots() != null), true, 'indicator renders while primitives are hidden');
+
+      dots()!.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+      const checkbox = (): HTMLElement | null =>
+        Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+          .find((el) => el.textContent?.trim() === (node.inputs['expression']?.label ?? 'expression')) ?? null;
+      expect(await until(() => checkbox() != null), true, 'clicking pops the Shown inputs checkboxes');
+      checkbox()!.click();
+      expect(await until(() => node.inputSlotShown('expression')), true, 'the checkbox toggles the row');
+
+      // Show every remaining toggleable input — the indicator goes away.
+      for (const k of Object.keys(node.inputs)) {
+        if (!k.startsWith('__exec') && !node.hiddenInputs.has(k) && !node.inputSlotShown(k))
+          await e.flow.setInputShown(node.id, k, true);
+      }
+      expect(await until(() => dots() == null), true, 'nothing hidden — no indicator');
+    } finally {
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('the ⋯ indicator ignores force-hidden inputs (OpenFile stays clean)', async () => {
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, typeName);
+      await until(() => !!e.container.querySelector('.ff-node'));
+      expect(!!e.container.querySelector(`[data-testid="${tid('node-more-inputs')}"]`), false,
+        'panel-only inputs are not "hidden inputs" to the user');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('node context menu offers Shown inputs checkboxes', async () => {
     const typeName = funcTypeName('AddNewColumn');
     if (!typeName) return;

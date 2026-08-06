@@ -1822,6 +1822,22 @@
   justify-content: flex-end;
 }
 
+/* ⋯ hidden-inputs indicator: sits below the input rows, aligned with the
+   socket column (same 2px shift as .ff-socket-row-input). */
+.ff-node-more-inputs {
+  margin-left: 2px;
+  padding: 0 8px 0 2px;
+  font-size: 11px;
+  line-height: 10px;
+  color: var(--grey-4);
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.ff-node-more-inputs:hover {
+  color: var(--blue-1);
+}
+
 /* Socket chip: a Column Manager-style single type letter (colored by type via
    the --socket-color var set inline by FlowSocketComponent) on a white chip
    with a matching ring. Order/exec squares override this below. */

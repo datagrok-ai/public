@@ -263,7 +263,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs, leading (table, column) pair forced required despite nullable annotations, suggestion-menu labels (friendly name + `funcCategory`, no "Uncategorized"), suggestion ranking (domain-in-play tier, exact-over-wildcard, used-func float), reverse suggestions (`findNodeTypesProducingOutput`: matching Input node leads, real-output-over-passthrough, domain boost) |
 | `compiler-tests.ts` | Flow: topological sort / script emitter / validator / func wrappers | order, cycles, emitted headers + body, instrumented mode, validation rules, Select Table fail-fast guard, Output ⇄ SetVar same-contract emission, untouched optional scalars omitted from calls (OpenFile: no `sheetName` unless the path is xlsx; a live sdf Open File run completes end-to-end); FUNC_WRAPPERS: node exposes wrapper inputs, compile folds them into the real call args (plain + instrumented), the reshaped call runs on the platform, creation-emit warns and skips |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
-| `slot-visibility-tests.ts` | Flow: slot visibility | `isPrimitiveSlotType` classification, primitive input rows + pass-throughs default-hidden on the card (data layer untouched), `setInputShown` reveals/hides row + pass-through and keeps `properties['shownSlots']` tidy (back-to-default removes the key), wired primitives render regardless, save/load + duplicate carry overrides, the node context menu offers the "Shown inputs" checkbox submenu |
+| `slot-visibility-tests.ts` | Flow: slot visibility | `isPrimitiveSlotType` classification, primitive input rows + pass-throughs default-hidden on the card (data layer untouched), `setInputShown` reveals/hides row + pass-through and keeps `properties['shownSlots']` tidy (back-to-default removes the key), wired primitives render regardless, save/load + duplicate carry overrides, the node context menu offers the "Shown inputs" checkbox submenu, the ⋯ indicator renders only for hidden *toggleable* inputs (OpenFile's panel-only ones don't count), pops the checkboxes on click, and disappears once everything is shown |
 | `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse, hidden on empty canvas / shown once a node exists, click-to-pan centers the exact clicked graph point (no `+min` double-count) |
 | `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
@@ -552,7 +552,10 @@ calls `FlowEditor.setInputShown`, which stores only deviations from the type def
 and copy-paste carry it for free; the creation script (code, not layout) does not. Checking an input
 shows its row **and** its pass-through; the data layer (slot, seeded value, compile, import/emit,
 `requiredInputs`, suggestions/auto-connect) is never affected by visibility — a drop-on-node
-auto-connect can legally land on a hidden input, which then renders because it's wired.
+auto-connect can legally land on a hidden input, which then renders because it's wired. An expanded
+card with hidden *toggleable* inputs (force-hidden keys don't count) shows a **⋯ indicator** below
+the input rows (`tid('node-more-inputs')`, tooltip via `ui.tooltip.bind`) that pops the same
+checkboxes (`FlowEditor.showShownInputsMenu`, reached through the editor bridge).
 
 ## Execution-Ordering ("order") Edges
 

@@ -9,6 +9,7 @@
  * `css/funcflow.css`. Don't change classnames without updating the CSS. */
 
 import * as React from 'react';
+import * as ui from 'datagrok-api/ui';
 import {ClassicPreset} from 'rete';
 import {Presets} from 'rete-react-plugin';
 import type {RenderEmit} from 'rete-react-plugin';
@@ -212,6 +213,29 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
                   <span className="ff-socket-label">{input.label ?? key}</span>
                 </div>
               ))}
+              {/* ⋯ hidden-inputs indicator: some toggleable input rows are
+                  folded away — click pops the same "Shown inputs" checkboxes
+                  as the node context menu. Force-hidden keys don't count (they
+                  have no on-card form to offer). */}
+              {(() => {
+                const hiddenCount = Object.keys(node.inputs).filter((k) =>
+                  !isExecKey(k) && !node.hiddenInputs.has(k) && hiddenRow(k, 'input')).length;
+                return hiddenCount > 0 && (
+                  <div
+                    className="ff-node-more-inputs"
+                    data-testid={tid('node-more-inputs')}
+                    ref={(el) => {
+                      if (el) ui.tooltip.bind(el, `${hiddenCount} input${hiddenCount > 1 ? 's are' : ' is'} ` +
+                        'hidden — click to choose which are shown');
+                    }}
+                    onPointerDown={stopPointer}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      node.editorBridge?.showShownInputsMenu(node.id, e.nativeEvent);
+                    }}
+                  >⋯</div>
+                );
+              })()}
             </div>
 
             <div className="ff-node-outputs">
