@@ -12,8 +12,9 @@ Next steps:
   npm run build && grok publish   publish the package and open the app from the browse tree
 
 The app is the domain-ui defaults alone — list, search, entity page, editing,
-permissions and deep links. Customize by extending DomainAppView, or register a
-DG.DomainObjectHandler for the table to change how its rows render.
+permissions and deep links. Customize through the options of the handle's factories
+(domains.table(...).app({actions: ...})), or register a DG.DomainObjectHandler for
+the table to change how its rows render.
 Read more at https://datagrok.ai/help/develop/how-to/build-an-app`;
 
 const connection = (connectionName: string) => `

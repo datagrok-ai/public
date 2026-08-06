@@ -4,8 +4,8 @@
 //meta.role: app
 //input: string path {meta.url: true; optional: true}
 //output: view result
-export function #{NAME}(_path?: string): DG.ViewBase {
-  // The declared `path` input is what makes the app URL-addressable; the view
-  // reads the deep link itself, so the parameter is unused.
-  return new DomainAppView(grok.dapi.domains.table('#{DOMAIN_TABLE}'));
+export async function #{NAME}(): Promise<DG.ViewBase> {
+  // The declared `path` input is what makes the app URL-addressable; the page
+  // reads the deep link itself (restoreFromUrl), so the function takes no parameter.
+  return (await domains.table('#{DOMAIN_TABLE}')).app();
 }

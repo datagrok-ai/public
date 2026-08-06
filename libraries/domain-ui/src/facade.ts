@@ -23,6 +23,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {discardFunc, saveFunc} from './actions';
 import {AppView, AppViewOptions, DomainAppView, DomainAppViewOptions, DomainEntityAppView,
   DomainEntityAppViewOptions} from './app-view';
 import {DomainGrid, DomainGridOptions} from './domain-grid';
@@ -59,10 +60,12 @@ export interface DomainDialogOptions {
  * grant change — or a `grok.dapi.domains.invalidateUiCaches()` — reaches only
  * widgets built from a NEWLY acquired handle. Re-acquire to re-gate.
  */
-export class DomainTable<TRow = any> implements IDomainTableContext {
+export class DomainTable<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
+  TColumn extends string = string,
+  TExpand extends {[key: string]: {}} = {[key: string]: {}}> implements IDomainTableContext {
   private constructor(
     /** The typed data client — every read/write member of `grok.dapi.domains.table()`. */
-    public readonly client: DG.DomainTableClient<TRow>,
+    public readonly client: DG.DomainTableClient<TRow, TInsert, TColumn, TExpand>,
     /** Registry {@link DG.Property} metadata of the declared columns. */
     public readonly properties: DG.Property[],
     /** Display identity, security mode, audit flag, FK-inverted child tables. */
@@ -71,12 +74,16 @@ export class DomainTable<TRow = any> implements IDomainTableContext {
     public readonly capabilities: DG.DomainTableCapabilities) {}
 
   /** See {@link domains.table}. */
-  static async acquire<TRow = any>(
-    nameOrClient: string | DG.DomainTableClient<TRow>): Promise<DomainTable<TRow>> {
+  static async acquire<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
+    TColumn extends string = string,
+    TExpand extends {[key: string]: {}} = {[key: string]: {}}>(
+    nameOrClient: string | DG.DomainTableClient<TRow, TInsert, TColumn, TExpand>):
+      Promise<DomainTable<TRow, TInsert, TColumn, TExpand>> {
     const client = typeof nameOrClient === 'string'
-      ? grok.dapi.domains.table<TRow>(nameOrClient) : nameOrClient;
+      ? grok.dapi.domains.table<TRow, TInsert, TColumn, TExpand>(nameOrClient) : nameOrClient;
     const context = await acquireDomainContext(client);
-    return new DomainTable<TRow>(client, context.properties, context.info, context.capabilities);
+    return new DomainTable<TRow, TInsert, TColumn, TExpand>(
+      client, context.properties, context.info, context.capabilities);
   }
 
   /** `'<schema>.<table>'` — the row entity type and semType. */
@@ -142,14 +149,14 @@ export class DomainTable<TRow = any> implements IDomainTableContext {
   // ─────────────────────── data-plane passthroughs ─────────────────────────
 
   /** {@link DG.DomainTableClient.query} — the fluent builder, or a spec. */
-  query(): DG.DomainQueryBuilder<TRow>;
-  query(spec: DG.DomainQuerySpec): Promise<TRow[]>;
-  query(spec?: DG.DomainQuerySpec): any {
+  query(): DG.DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DG.DataFrame>;
+  query(spec: DG.DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
+  query(spec?: DG.DomainQuerySpec<TColumn, keyof TExpand & string>): any {
     return spec === undefined ? this.client.query() : this.client.query(spec);
   }
 
   /** {@link DG.DomainTableClient.queryDf} — the same query as a typed DataFrame. */
-  queryDf(spec?: DG.DomainQuerySpec): Promise<DG.DataFrame> {
+  queryDf(spec?: DG.DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<DG.DataFrame> {
     return this.client.queryDf(spec ?? {});
   }
 
@@ -157,9 +164,14 @@ export class DomainTable<TRow = any> implements IDomainTableContext {
   get(id: string): Promise<TRow> { return this.client.get(id); }
 
   /** How many rows match [filter]. */
-  count(filter?: DG.DomainFilter): Promise<number> { return this.client.count(filter); }
+  count(filter?: DG.DomainFilter<TColumn>): Promise<number> { return this.client.count(filter); }
 }
 
+
+/** The actions a composed page performs as a WHOLE (they drive every editor on it),
+ * so its ribbon shows them once instead of once per child — see
+ * {@link DomainWidgetView.buildRibbon}. */
+const PAGE_ACTIONS = ['Save', 'Discard'];
 
 /**
  * A page hosting any `DG.Widget`s — the container of {@link domains.view}.
@@ -209,14 +221,38 @@ export class DomainWidgetView extends AppView {
     super.detach();
   }
 
-  /** The children's actions on the ribbon, each bound to the child that offers it
-   * (§F.1.3 — the form's Save/Reset show up on the page's ribbon for free). */
+  /**
+   * The children's actions on the ribbon (§F.1.3 — the form's Save/Reset show up
+   * on the page for free), deduplicated: ONE page-level Save and Discard, which
+   * drive every editor of the page ({@link AppView.save} / {@link AppView.discard})
+   * exactly as the status bar's buttons do, plus each child's EXTRA actions —
+   * Reset, AddRow, Refresh, a custom action — bound to the child that offers them
+   * and named by it when more than one child offers the same.
+   *
+   * A composed page would otherwise repeat the whole vocabulary per child
+   * (`Save, Discard, Reset, Save, Discard, AddRow, ...`). This is presentation
+   * only: {@link AppView.getFunctions} and every child's `getFunctions()` keep
+   * reporting the full set, which is what the machine surface reads.
+   */
   protected buildRibbon(): void {
+    const offered = (name: string) =>
+      this.widgets.some((c) => c.getFunctions().some((f) => f.name === name));
     const items: HTMLElement[] = [];
+    if (offered('Save'))
+      items.push(_actionButton(saveFunc(), this));
+    if (offered('Discard'))
+      items.push(_actionButton(discardFunc(), this));
+
+    const extras: {func: DG.Func, child: DG.Widget}[] = [];
     for (const child of this.widgets)
       for (const func of child.getFunctions())
-        items.push(ui.button(func.friendlyName ?? func.name,
-          () => func.apply({widget: child}), `${func.description ?? ''}`));
+        if (!PAGE_ACTIONS.includes(func.name))
+          extras.push({func: func, child: child});
+    for (const extra of extras) {
+      const ambiguous = extras.some((e) => e !== extra && e.func.name === extra.func.name);
+      items.push(_actionButton(extra.func, extra.child,
+        ambiguous ? `${extra.func.friendlyName ?? extra.func.name} (${_childLabel(extra.child)})` : undefined));
+    }
     this.setRibbonPanels(items.length === 0 ? [] : [items]);
   }
 
@@ -244,9 +280,12 @@ export namespace domains {
    * `'<schema>.<table>'` address, or a client you already hold), and hands back the
    * handle every widget factory is synchronous on.
    */
-  export function table<TRow = any>(
-    nameOrClient: string | DG.DomainTableClient<TRow>): Promise<DomainTable<TRow>> {
-    return DomainTable.acquire<TRow>(nameOrClient);
+  export function table<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
+    TColumn extends string = string,
+    TExpand extends {[key: string]: {}} = {[key: string]: {}}>(
+    nameOrClient: string | DG.DomainTableClient<TRow, TInsert, TColumn, TExpand>):
+      Promise<DomainTable<TRow, TInsert, TColumn, TExpand>> {
+    return DomainTable.acquire<TRow, TInsert, TColumn, TExpand>(nameOrClient);
   }
 
   /**
@@ -348,6 +387,20 @@ export namespace domains {
   export function deepLink(row: DG.DomainRow | null): string | null {
     return DG.DomainObjectHandler.deepLink(row);
   }
+}
+
+/** A ribbon button running [func] on [widget], captioned by the function unless the
+ * page needs to say WHICH widget it acts on. */
+function _actionButton(func: DG.Func, widget: DG.Widget, caption?: string): HTMLElement {
+  return ui.button(caption ?? func.friendlyName ?? func.name,
+    () => func.apply({widget: widget}), `${func.description ?? ''}`);
+}
+
+/** How a ribbon button names the child it acts on when several offer the same
+ * action: the table the child edits, or its widget type. */
+function _childLabel(child: DG.Widget): string {
+  const table = (child as any).table ?? editorsOf(child)[0]?.table;
+  return typeof table === 'string' ? table.split('.').pop()! : child.type;
 }
 
 /** Saves everything [widget] answers for: its own `save()` when it has one, its

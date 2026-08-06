@@ -1,17 +1,33 @@
 // Positive tsc fixture: well-typed usage of the generated typed UI wrappers must compile.
 import * as DG from 'datagrok-api/dg';
-import {DomainAppView, DomainGrid, EntityListWidget} from '@datagrok-libraries/domain-ui';
+import {DomainAppView, DomainForm, DomainGrid, DomainTable,
+  EntityListWidget} from '@datagrok-libraries/domain-ui';
 import {sampleUi, sampleEventUi, SampleQuerySpec} from './src/generated/db-ui';
+import type {SampleColumn, SampleExpand, SampleInsert, SampleRow} from './src/generated/db';
 
 export async function goodUi(): Promise<void> {
-  // a whole browse/CRUD page, one expression — with a compile-checked query
-  const view: DomainAppView = sampleUi.appView({query: {filter: 'count > 1', columns: ['name', 'status']}});
-  const entity = sampleUi.entityView('some-id');
-  void view; void entity;
+  // UI-FACADE §1.7: the typed handle is the ONE await, and every factory on it is
+  // synchronous — the way a page that builds several widgets pays for one prefetch
+  const samples: DomainTable<SampleRow, SampleInsert, SampleColumn, SampleExpand> =
+    await sampleUi.table();
+  const onHandle: DomainForm = samples.form({values: {name: 'a'}});
+  const appOnHandle: DomainAppView = samples.app();
+  const handleRows: SampleRow[] = await samples.query({columns: ['name', 'status']});
+  void onHandle; void appOnHandle; void handleRows;
 
-  // grids and lists: columns, expand keys and insert defaults are this table's
+  // the shortcuts acquire a handle of their own — with this table's insert payload,
+  // columns and expand keys compile-checked
+  const form: DomainForm = await sampleUi.form({values: {name: 'a', status: 'new', count: 2}});
+  const saved: boolean = await sampleUi.formDialog({values: {name: 'a'}, title: 'New sample'});
+  void form; void saved;
+
+  const view: DomainAppView = await sampleUi.app({query: {filter: 'count > 1', columns: ['name', 'status']}});
+  const listPage: DomainAppView = await sampleUi.listView({query: {columns: ['name']}});
+  const entity = await sampleUi.entityView('some-id');
+  void view; void listPage; void entity;
+
   const grid: DomainGrid = await sampleUi.grid({query: {columns: ['name', 'measured_on']}, editable: false});
-  const list: EntityListWidget | null = await sampleUi.list({mode: 'grid',
+  const list: EntityListWidget = await sampleUi.list({mode: 'grid',
     query: {expand: ['details:sample_event'], limit: 10}});
   void grid; void list;
   // a detail grid prefilling its parent FK — the column is checked against the child's insert
@@ -34,6 +50,6 @@ export async function goodUi(): Promise<void> {
 
   // a serializable query with the schema and table implied
   const query: DG.DomainQuery = sampleUi.query({filters: ['status = "new"'], columns: ['name'], limit: 10});
-  const table: string = sampleUi.table;
-  void query; void table;
+  const address: string = sampleUi.address;
+  void query; void address;
 }

@@ -183,6 +183,11 @@ export function editorsOf(widget: any): DomainFrameEditor[] {
   return Array.isArray(editors) ? editors : [];
 }
 
+/** A domain client with its row/insert/column/expand generics erased — what the
+ * REFLECTIVE widgets take. A TYPED client fits it, so a generated `<Table>Ui` (or
+ * a `DomainTable` handle) keeps its own generics and is still usable here. */
+export type AnyDomainTableClient = DG.DomainTableClient<any, any, any, any>;
+
 /**
  * The prefetched table context a SYNCHRONOUS widget factory needs: the typed
  * client plus the registry metadata and capabilities, resolved once by
@@ -194,7 +199,7 @@ export function editorsOf(widget: any): DomainFrameEditor[] {
  * from this context; re-acquire the handle to re-gate.
  */
 export interface IDomainTableContext {
-  readonly client: DG.DomainTableClient;
+  readonly client: AnyDomainTableClient;
   /** Registry {@link DG.Property} metadata of the table's declared columns. */
   readonly properties: DG.Property[];
   readonly info: DG.DomainTableInfo;
@@ -209,7 +214,7 @@ export interface IDomainTableContext {
  * behind (`domains.table()`, `DomainGrid.create()`, `EntityListWidget.create()`).
  */
 export async function acquireDomainContext(
-  client: DG.DomainTableClient): Promise<IDomainTableContext> {
+  client: AnyDomainTableClient): Promise<IDomainTableContext> {
   const address = `${client.schema}.${client.table}`;
   const [properties, info, capabilities] = await Promise.all([
     grok.dapi.domains.registry.rowProperties(address),

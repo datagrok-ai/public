@@ -99,13 +99,13 @@ export function add(args: { _: string[], domain?: string | boolean }) {
     return [manifest.name, Object.keys(manifest.tables)];
   }
 
-  /** Adds `import {DomainAppView} from '@datagrok-libraries/domain-ui';` to the package
+  /** Adds `import {domains} from '@datagrok-libraries/domain-ui';` to the package
    * entry file, after its existing imports (which webpack's externals depend on). */
   function addDomainUiImport() {
     const contents = fs.readFileSync(packageEntry, 'utf8');
     if (contents.includes('@datagrok-libraries/domain-ui')) return;
     const eol = contents.includes('\r\n') ? '\r\n' : '\n';
-    const line = `import {DomainAppView} from '@datagrok-libraries/domain-ui';`;
+    const line = `import {domains} from '@datagrok-libraries/domain-ui';`;
     const lines = contents.split(/\r?\n/);
     let last = -1;
     for (let i = 0; i < lines.length; i++)

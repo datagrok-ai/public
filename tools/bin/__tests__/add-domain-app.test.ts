@@ -49,13 +49,13 @@ describe('grok add app --domain', () => {
     expect(addApp('apitests.item').result).toBe(true);
 
     const code = entry(dir);
-    expect(code).toContain(`import {DomainAppView} from '@datagrok-libraries/domain-ui';`);
+    expect(code).toContain(`import {domains} from '@datagrok-libraries/domain-ui';`);
     expect(code).toContain('//name: Item');
     expect(code).toContain('//meta.role: app');
     expect(code).toContain('//input: string path {meta.url: true; optional: true}');
     expect(code).toContain('//output: view result');
-    expect(code).toContain('export function Item(_path?: string): DG.ViewBase {');
-    expect(code).toContain(`  return new DomainAppView(grok.dapi.domains.table('apitests.item'));`);
+    expect(code).toContain('export async function Item(): Promise<DG.ViewBase> {');
+    expect(code).toContain(`  return (await domains.table('apitests.item')).app();`);
     // the import goes with the template's own imports (webpack externals depend on them),
     // after the last of them and before anything else
     expect(code.indexOf(`export * from './package.g';`))
@@ -72,14 +72,14 @@ describe('grok add app --domain', () => {
   it('names the app when told to', () => {
     const dir = makePackage();
     expect(addApp('apitests.item', 'Tracker').result).toBe(true);
-    expect(entry(dir)).toContain('export function Tracker(_path?: string): DG.ViewBase {');
+    expect(entry(dir)).toContain('export async function Tracker(): Promise<DG.ViewBase> {');
     expect(entry(dir)).toContain('//name: Tracker');
   });
 
   it('a JavaScript package gets the untyped template', () => {
     const dir = makePackage({ts: false});
     expect(addApp('apitests.item').result).toBe(true);
-    expect(entry(dir, false)).toContain('export function Item(_path) {');
+    expect(entry(dir, false)).toContain('export async function Item() {');
   });
 
   it('a whole schema the package declares: one app per table, plus db.ts and db-ui.ts', () => {
@@ -87,10 +87,10 @@ describe('grok add app --domain', () => {
     expect(addApp('testdb').result).toBe(true);
 
     const code = entry(dir);
-    expect(code).toContain(`new DomainAppView(grok.dapi.domains.table('testdb.sample'))`);
-    expect(code).toContain(`new DomainAppView(grok.dapi.domains.table('testdb.sample_event'))`);
-    expect(code).toContain('export function Sample(');
-    expect(code).toContain('export function SampleEvent(');
+    expect(code).toContain(`return (await domains.table('testdb.sample')).app();`);
+    expect(code).toContain(`return (await domains.table('testdb.sample_event')).app();`);
+    expect(code).toContain('export async function Sample(');
+    expect(code).toContain('export async function SampleEvent(');
     // the typed clients AND the typed UI wrappers the app code can switch to
     expect(fs.existsSync(path.join(dir, 'src', 'generated', 'db.ts'))).toBe(true);
     expect(fs.readFileSync(path.join(dir, 'src', 'generated', 'db-ui.ts'), 'utf8'))
@@ -102,7 +102,7 @@ describe('grok add app --domain', () => {
     expect(addApp(manifestPath).result).toBe(true);
     expect(JSON.parse(fs.readFileSync(path.join(dir, 'databases', 'testdb', 'schema.json'), 'utf8')).name)
       .toBe('testdb');
-    expect(entry(dir)).toContain(`grok.dapi.domains.table('testdb.sample')`);
+    expect(entry(dir)).toContain(`domains.table('testdb.sample')`);
     expect(fs.existsSync(path.join(dir, 'src', 'generated', 'db-ui.ts'))).toBe(true);
   });
 
@@ -110,7 +110,7 @@ describe('grok add app --domain', () => {
     const dir = makePackage();
     expect(addApp('apitests.item').result).toBe(true);
     expect(addApp('apitests.item').result).toBe(true);
-    expect(entry(dir).match(/export function Item\(/g)).toHaveLength(1);
+    expect(entry(dir).match(/export async function Item\(/g)).toHaveLength(1);
     expect(entry(dir).match(/@datagrok-libraries\/domain-ui/g)).toHaveLength(1);
   });
 

@@ -393,16 +393,31 @@ describe('generateDomainClients --ui', () => {
     expect(code).toContain('  defaults?: Partial<SampleInsert>;');
     expect(code).toContain(`export interface SampleListOptions extends Omit<EntityListOptions, 'query'> {`);
     expect(code).toContain(`export interface SampleAppViewOptions extends Omit<DomainAppViewOptions, 'query'> {`);
+    expect(code).toContain(`export interface SampleFormOptions extends Omit<DomainFormOptions, 'values'> {`);
+    expect(code).toContain('  values?: Partial<SampleInsert>;');
 
-    // the wrapper itself: typed client + the reflective components, one per table
+    // the wrapper itself: typed client + the typed handle every factory delegates to
     expect(code).toContain('export class SampleUi {');
-    expect(code).toContain(`  readonly table: string = 'testdb.sample';`);
+    expect(code).toContain(`  readonly address: string = 'testdb.sample';`);
     expect(code).toContain(
       '  get client(): DG.DomainTableClient<SampleRow, SampleInsert, SampleColumn, SampleExpand> {');
     expect(code).toContain('    return testdbDb.sample;');
-    expect(code).toContain('  appView(options?: SampleAppViewOptions): DomainAppView {');
-    expect(code).toContain('  grid(options?: SampleGridOptions): Promise<DomainGrid> {');
-    expect(code).toContain('  list(options?: SampleListOptions): Promise<EntityListWidget | null> {');
+    expect(code).toContain(
+      '  table(): Promise<DomainTable<SampleRow, SampleInsert, SampleColumn, SampleExpand>> {');
+    expect(code).toContain(
+      '    return domains.table<SampleRow, SampleInsert, SampleColumn, SampleExpand>(this.client);');
+    // every widget member goes through that handle — no class constructor is named here
+    expect(code).toContain('  async form(options?: SampleFormOptions): Promise<DomainForm> {');
+    expect(code).toContain('    return (await this.table()).form(options);');
+    expect(code).toContain(
+      '  async formDialog(options?: SampleFormOptions & DomainDialogOptions): Promise<boolean> {');
+    expect(code).toContain('  async listView(options?: SampleAppViewOptions): Promise<DomainAppView> {');
+    expect(code).toContain('  app(options?: SampleAppViewOptions): Promise<DomainAppView> {');
+    expect(code).toContain('  async grid(options?: SampleGridOptions): Promise<DomainGrid> {');
+    // WO-9R reverted EntityListWidget.create's null return — the nit is gone
+    expect(code).toContain('  async list(options?: SampleListOptions): Promise<EntityListWidget> {');
+    expect(code).not.toContain('EntityListWidget | null');
+    expect(code).not.toMatch(/new Domain(AppView|EntityAppView)\(/);
     expect(code).toContain('  row(values: Partial<SampleRow> | null): DG.DomainRow {');
     expect(code).toContain(
       `    return new DG.DomainQuery({...params, schema: 'testdb', table: 'sample'});`);
@@ -443,7 +458,7 @@ describe('generateDomainClients --ui', () => {
       const res = runTsc(dir, 'usage-ui-bad.ts');
       expect(res.status).not.toBe(0);
       // exactly one error per intended negative — no accidental extra breakage
-      expect(res.output.match(/error TS/g)).toHaveLength(10);
+      expect(res.output.match(/error TS/g)).toHaveLength(12);
       // a wrong column name in a query spec, an expand key, and a condition
       expect(res.output).toMatch(/usage-ui-bad\.ts\(5,.*'"nope"' is not assignable to type 'SampleColumn'/);
       expect(res.output).toMatch(/usage-ui-bad\.ts\(8,.*'"details:nope"' is not assignable/);
@@ -459,5 +474,8 @@ describe('generateDomainClients --ui', () => {
       expect(res.output).toMatch(/usage-ui-bad\.ts\(14,.*'"nope"' is not assignable to type 'SampleColumn'/);
       // choices stay the generated literal union
       expect(res.output).toMatch(/usage-ui-bad\.ts\(16,.*'"bogus"' is not assignable to type 'SampleStatus/);
+      // §1.7: the form's seed values are this table's insert payload
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(18,.*'nmae' does not exist in type 'Partial<SampleInsert>'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(19,/);
     });
 });

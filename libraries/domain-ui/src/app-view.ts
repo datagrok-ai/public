@@ -31,8 +31,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {acquireDomainContext, DomainFrameEditor, editorsOf, IDomainTableContext,
-  IEditorHost} from './frame-editor';
+import {acquireDomainContext, AnyDomainTableClient, DomainFrameEditor, editorsOf,
+  IDomainTableContext, IEditorHost} from './frame-editor';
 import {DomainGrid} from './domain-grid';
 import {EntityListWidget, EntityListMode, EntityListOptions,
   ENTITY_LIST_ROW_CAP} from './entity-list';
@@ -384,7 +384,7 @@ export interface DomainAppViewOptions extends AppViewOptions, Omit<EntityListOpt
  * parameter opens straight into it. Nothing UI-only ever enters the DomainQuery.
  */
 export class DomainAppView extends AppView {
-  readonly client: DG.DomainTableClient;
+  readonly client: AnyDomainTableClient;
   readonly handler: DG.DomainObjectHandler;
   /** The list — null until the page has loaded (and while it reloads). */
   list: EntityListWidget | null = null;
@@ -404,7 +404,7 @@ export class DomainAppView extends AppView {
   /** [context] is the prefetched handle a `domains.table(...).listView()` passes
    * in; without one the page resolves the table's metadata itself while it
    * loads. */
-  constructor(client: DG.DomainTableClient, options?: DomainAppViewOptions,
+  constructor(client: AnyDomainTableClient, options?: DomainAppViewOptions,
     context?: IDomainTableContext) {
     super(options);
     this.client = client;
@@ -724,7 +724,7 @@ export interface DomainEntityAppViewOptions extends AppViewOptions {
  * the child tables' own capabilities.
  */
 export class DomainEntityAppView extends AppView {
-  readonly client: DG.DomainTableClient;
+  readonly client: AnyDomainTableClient;
   readonly handler: DG.DomainObjectHandler;
   /** The row — null until it has loaded. */
   row: DG.DomainRow | null = null;
@@ -739,7 +739,7 @@ export class DomainEntityAppView extends AppView {
    * one-row editor). Null until the page has loaded. */
   private _form: DomainForm | null = null;
 
-  constructor(client: DG.DomainTableClient, id: string, options?: DomainEntityAppViewOptions,
+  constructor(client: AnyDomainTableClient, id: string, options?: DomainEntityAppViewOptions,
     context?: IDomainTableContext) {
     super(options);
     this.client = client;
@@ -757,7 +757,7 @@ export class DomainEntityAppView extends AppView {
   /** The page of a row already in hand: named from it right away, so the tab
    * caption is right before the page has re-read the row from the server (which
    * it does, for its current version and the columns a list did not fetch). */
-  static forRow(client: DG.DomainTableClient, row: DG.DomainRow,
+  static forRow(client: AnyDomainTableClient, row: DG.DomainRow,
     options?: DomainEntityAppViewOptions, context?: IDomainTableContext): DomainEntityAppView {
     const view = new DomainEntityAppView(client, row.id, options, context);
     view.name = options?.name ?? row.displayName;
