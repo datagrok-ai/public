@@ -1,27 +1,14 @@
-/** Node groups — collapsible KNIME-style "metanodes lite". A group is an
- *  editor-level construct like annotations: a titled frame around a set of
- *  member nodes, owned by `FlowEditor` (not by Rete). The GRAPH never changes
- *  — members stay real nodes with real connections, so the compiler,
- *  execution, invalidation, and script emission are untouched by grouping.
- *
- *  Two visual modes, one element:
- *   - **Expanded**: a background frame (z-order under the nodes, like
- *     annotations) auto-fitted to the member bounding box, dragged by its
- *     body/title bar — the editor translates the members along.
- *   - **Minimized**: a collapsed-node-like card (title + description +
- *     aggregate status dot). The editor hides the member views and internal
- *     wires, and re-anchors boundary wires to the card's edge dots. */
+/** Collapsible KNIME-style node groups — editor-level like annotations: the graph never
+ *  changes, members stay real nodes with real connections. */
 
 import {setTid} from '../utils/test-ids';
 
-/** Title-bar height of the expanded frame (canvas px) — the frame's content
- *  box starts below it. Kept in sync with `.ff-group-titlebar` CSS. */
+/** Title-bar height of the expanded frame (canvas px); kept in sync with `.ff-group-titlebar` CSS. */
 export const GROUP_TITLE_H = 26;
 /** Padding between the member bounding box and the frame border. */
 export const GROUP_PAD = 14;
-/** Vertical center of the first boundary dot on the minimized card, and the
- *  step between dots. The editor's wire-anchor math and the card's dot
- *  rendering both derive from these. */
+/** First boundary-dot center and step on the minimized card — the editor's wire-anchor
+ *  math and the card's dot rendering both derive from these. */
 export const GROUP_DOT_TOP = 15;
 export const GROUP_DOT_STEP = 14;
 
@@ -31,8 +18,7 @@ export interface GroupDoc {
   description: string;
   memberIds: string[];
   minimized: boolean;
-  /** Card anchor (canvas coords). While expanded it tracks the frame's
-   *  top-left, so minimizing collapses the frame in place. */
+  /** Card anchor (canvas coords); while expanded tracks the frame's top-left. */
   pos: {x: number; y: number};
 }
 
@@ -71,7 +57,6 @@ export class FlowGroup {
     this.titleBar = document.createElement('div');
     this.titleBar.className = 'ff-group-titlebar';
 
-    // Same order as a node's title bar: status dot left, caret right.
     this.statusEl = document.createElement('span');
     this.statusEl.className = 'ff-group-status';
     setTid(this.statusEl, 'group-status');
@@ -81,8 +66,7 @@ export class FlowGroup {
     this.titleEl.className = 'ff-group-title';
     setTid(this.titleEl, 'group-title');
     this.titleEl.textContent = this.title;
-    // Unlike annotations, the title bar is the group's drag handle — renaming
-    // is a double-click (Figma/KNIME style), not an always-armed editable.
+    // The title bar is the drag handle — renaming is a double-click, not an always-armed editable.
     this.titleEl.contentEditable = 'false';
     this.titleEl.spellcheck = false;
     this.titleEl.addEventListener('input', () => {
@@ -131,7 +115,6 @@ export class FlowGroup {
     this.applyMode();
   }
 
-  /** Sync DOM to the current mode: card (minimized) or frame (expanded). */
   applyMode(): void {
     this.element.dataset.minimized = this.minimized ? 'true' : 'false';
     this.caretEl.textContent = this.minimized ? '▸' : '▾';
@@ -144,8 +127,7 @@ export class FlowGroup {
     } else {
       this.applyFrame();
     }
-    // Description: the card shows it (it IS the summary); the frame hides an
-    // empty one (edit via the context menu, which reveals + focuses it).
+    // The card always shows the description; the frame hides an empty one until edited.
     this.descEl.style.display =
       this.description === '' && !this.descEl.dataset.editing ? 'none' : '';
   }
@@ -168,14 +150,12 @@ export class FlowGroup {
     this.statusEl.dataset.status = status;
   }
 
-  /** Arm the title for renaming (double-press / dblclick). */
   startTitleEdit(): void {
     this.titleEl.contentEditable = 'true';
     this.titleEl.focus();
     document.getSelection()?.selectAllChildren(this.titleEl);
   }
 
-  /** Reveal + arm the description for editing (dblclick / context menu). */
   startDescEdit(): void {
     this.descEl.dataset.editing = 'true';
     this.descEl.style.display = '';
@@ -183,9 +163,7 @@ export class FlowGroup {
     this.descEl.focus();
   }
 
-  /** Rebuild the boundary dots on the minimized card. Dot centers sit at
-   *  `GROUP_DOT_TOP + i * GROUP_DOT_STEP` — the same math the editor uses for
-   *  the wire anchors, so wires visually plug into the dots. */
+  /** Dot centers sit at `GROUP_DOT_TOP + i * GROUP_DOT_STEP` — the same math as the editor's wire anchors. */
   renderDots(inCount: number, outCount: number): void {
     const fill = (host: HTMLElement, count: number): void => {
       host.textContent = '';

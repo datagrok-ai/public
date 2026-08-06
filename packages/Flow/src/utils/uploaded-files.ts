@@ -1,12 +1,5 @@
-/** Local-file upload support for Flow.
- *
- * Bytes dropped onto the canvas are held in an in-memory registry under a
- * temporary `pending:` id until the flow is saved. Saving persists each file
- * to the server's GUID-addressed blob store (a connectionless `DG.FileInfo` —
- * bytes go to `files/data/{id}`, the same mechanism Compute uses for
- * replayable file inputs of historical runs) and rewrites the node's `fileId`
- * to the real entity id. `readUploadedFile` checks the registry first, so an
- * unsaved flow replays from memory with no server round-trip. */
+/** Local-file uploads: bytes live in an in-memory `pending:` registry until save, then persist to
+ *  the server's GUID-addressed blob store; `readUploadedFile` checks the registry first. */
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -22,8 +15,7 @@ export function isPendingFileId(fileId: string): boolean {
   return fileId.startsWith(PENDING_PREFIX);
 }
 
-/** Registers dropped bytes; returns the temporary id to store in the node.
- *  Throws when the file exceeds {@link MAX_UPLOAD_SIZE}. */
+/** Registers dropped bytes; returns the temporary id. Throws over {@link MAX_UPLOAD_SIZE}. */
 export function addPendingFile(name: string, bytes: Uint8Array): string {
   if (bytes.length > MAX_UPLOAD_SIZE) {
     throw new Error(`"${name}" is ${formatSize(bytes.length)} — ` +
@@ -42,9 +34,8 @@ export function removePendingFile(fileId: string): void {
   pending.delete(fileId);
 }
 
-/** Uploads a pending file to the server blob store and saves its FileInfo
- *  entity (which makes it addressable and shareable); returns the saved
- *  FileInfo whose `id` replaces the pending id in the node. */
+/** Uploads a pending file to the blob store and saves its FileInfo entity;
+ *  the returned id replaces the pending id in the node. */
 export async function persistPendingFile(fileId: string): Promise<DG.FileInfo> {
   const p = pending.get(fileId);
   if (!p)
@@ -59,10 +50,8 @@ export async function persistPendingFile(fileId: string): Promise<DG.FileInfo> {
   try {
     saved = await fi.save();
   } catch (e) {
-    // Servers without the connection-less FileInfo fix (files_service.dart
-    // dereferenced f.connection unconditionally) reject the entity
-    // registration. The blob itself is stored and readable by GUID, so
-    // degrade: replay and sharing-by-id work, permission sync is skipped.
+    // Servers without the connection-less FileInfo fix reject the entity registration;
+    // the blob is stored and readable by GUID, so degrade — replay works, permission sync is skipped.
     console.warn(`FuncFlow: could not register "${p.name}" as a FileInfo entity — ` +
       `uploaded-file permissions cannot be synced on this server. ${errMsg(e)}`);
     pending.delete(fileId);
@@ -87,10 +76,7 @@ export function uploadedFileIdsFromFlowBody(body: string): string[] {
   }
 }
 
-/** Grants read on every uploaded-file blob referenced by the flow script to
- *  the groups the script is visible to — a shared flow must be able to read
- *  its files. Driven by the package's autostart share listener (so it works
- *  with no Flow view open) and called after every save from the editor. */
+/** Grants read on every referenced uploaded-file blob to the groups the script is visible to. */
 export async function syncFlowFilePermissions(script: DG.Script): Promise<void> {
   const fileIds = uploadedFileIdsFromFlowBody(script.script ?? '');
   if (fileIds.length === 0) return;
@@ -100,8 +86,7 @@ export async function syncFlowFilePermissions(script: DG.Script): Promise<void> 
     const groups = [...(perms.view ?? []), ...(perms.edit ?? [])];
     if (groups.length === 0) return;
     for (const id of fileIds) {
-      // The sharer may lack rights on a file uploaded by someone else —
-      // skip that file, keep granting the rest.
+      // The sharer may lack rights on someone else's file — skip it, keep granting the rest.
       const fi = await grok.dapi.entities.find(id).catch(() => null);
       if (fi == null) continue;
       for (const g of groups) {
@@ -121,8 +106,7 @@ function errMsg(e: any): string {
   return String(e?.message ?? e?.innerMessage ?? e);
 }
 
-/** The bytes behind a node's fileId: pending registry first, then the server
- *  blob store. Errors are rephrased into something the flow user can act on. */
+/** Bytes behind a node's fileId: pending registry first, then the server blob store. */
 export async function readUploadedFileBytes(fileId: string, fileName: string): Promise<Uint8Array> {
   const p = pending.get(fileId);
   if (p)
@@ -141,9 +125,7 @@ export async function readUploadedFileBytes(fileId: string, fileName: string): P
 
 const TEXT_TABLE_EXTS = new Set(['csv', 'tsv', 'txt']);
 
-/** Every file extension {@link parseFileToDataFrame} can turn into a table:
- *  the CSV family and `.d42` natively, plus whatever `file-handler` functions
- *  are registered (xlsx, sdf, …). Drives the upload picker's `accept` filter. */
+/** Every extension {@link parseFileToDataFrame} can turn into a table; drives the upload picker's accept filter. */
 export function supportedUploadExtensions(): string[] {
   const exts = new Set([...TEXT_TABLE_EXTS, 'd42']);
   for (const f of fileHandlerFuncs()) {
@@ -153,18 +135,13 @@ export function supportedUploadExtensions(): string[] {
   return [...exts].sort();
 }
 
-/** Registered file-importer functions, matched the way the platform itself
- *  matches them (core `JsBasedHandlers`): `file-handler` as a tag OR role.
- *  `meta.role` matching normalizes the kebab-case name against the camelCased
- *  `fileHandler` role packages actually register with — a plain
- *  `find({tags: ['file-handler']})` finds none of them. */
+/** Importers matched the way the platform matches them: `file-handler` as tag OR role —
+ *  a plain `find({tags: ['file-handler']})` finds none of them. */
 function fileHandlerFuncs(): DG.Func[] {
   return DG.Func.find({meta: {role: 'file-handler'}});
 }
 
-/** Parses raw file bytes into a DataFrame: CSV-family natively, `.d42`
- *  directly, anything else through the platform's registered `file-handler`
- *  functions (xlsx, sdf, ...). Multi-table files yield their first table. */
+/** Parses raw file bytes into a DataFrame; multi-table files yield their first table. */
 export async function parseFileToDataFrame(fileName: string, bytes: Uint8Array): Promise<DG.DataFrame> {
   const ext = (fileName.split('.').pop() ?? '').toLowerCase();
   let df: DG.DataFrame;

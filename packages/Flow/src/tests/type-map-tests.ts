@@ -66,8 +66,8 @@ category('Flow: type-map', () => {
 
   test('dgTypeToSlotType maps known and unknown types', async () => {
     expect(dgTypeToSlotType('dataframe'), 'dataframe');
-    expect(dgTypeToSlotType('blob'), 'byte_array'); // blob slot type is byte_array
-    expect(dgTypeToSlotType('totally_unknown'), 'totally_unknown'); // passthrough
+    expect(dgTypeToSlotType('blob'), 'byte_array');
+    expect(dgTypeToSlotType('totally_unknown'), 'totally_unknown');
   });
 
   test('every mapped type has a non-empty color', async () => {
@@ -83,14 +83,12 @@ category('Flow: type-map', () => {
     expect(pastelize('#d62728'), '#efa9a9', 'output red');
     expect(pastelize('#000000'), '#999999', 'black → 60% gray');
     expect(pastelize('#ffffff'), '#ffffff', 'white is a fixed point');
-    // Every channel moves up (never down) — the pastel is strictly lighter.
     for (const c of ['#EC407A', '#7E57C2', '#4DB6AC', '#FF8A65']) {
       const orig = parseInt(c.slice(1), 16);
       const pale = parseInt(pastelize(c).slice(1), 16);
       for (const shift of [16, 8, 0])
         expect(((pale >> shift) & 0xff) >= ((orig >> shift) & 0xff), true, `${c} channel ${shift}`);
     }
-    // Non-#rrggbb inputs pass through untouched.
     expect(pastelize('red'), 'red');
     expect(pastelize(''), '');
   });
@@ -114,8 +112,7 @@ category('Flow: type-map', () => {
   });
 
   test('column-data socket colors mirror core Color.typeColors (palette 0-6)', async () => {
-    // color.dart:336 — categorical palette indexed by
-    // [bool, string, int, bigint, qnum, datetime, float].
+    // color.dart:336 — categorical palette indexed by [bool, string, int, bigint, qnum, datetime, float].
     expect(DG_TYPE_MAP['bool'].color, categoricalColor(CAT.blue));
     expect(DG_TYPE_MAP['string'].color, categoricalColor(CAT.orange));
     expect(DG_TYPE_MAP['int'].color, categoricalColor(CAT.green));
@@ -126,8 +123,6 @@ category('Flow: type-map', () => {
   });
 
   test('node identity colors come from the platform categorical palette', async () => {
-    // Users must see the palette they know from every categorical coloring
-    // across Datagrok (DG.Color.categoricalPalette) — no bespoke hues.
     const palette = new Set(DG.Color.categoricalPalette.map((c) => DG.Color.toHtml(c).toLowerCase()));
     expect(palette.size > 0, true, 'platform palette is available');
     const all: Array<[string, string]> = [
@@ -149,7 +144,6 @@ category('Flow: type-map', () => {
     expect(domainSection('Bio'), 'Bioinformatics');
     expect(domainSection('SequenceTranslator'), 'Bioinformatics');
     expect(domainSection('BiostructureViewer'), 'Bioinformatics');
-    // General packages and core get no domain (they keep their task category).
     expect(domainSection('PowerPack'), null);
     expect(domainSection('Eda'), null);
     expect(domainSection(''), null);
@@ -173,13 +167,10 @@ category('Flow: type-map', () => {
   });
 
   test('domainCategory routes only chem/bio operations, not sources', async () => {
-    // Operates on a table/column → domain section.
     expect(domainCategory('Chem', ['dataframe', 'column']), 'Cheminformatics');
     expect(domainCategory('Bio', ['column']), 'Bioinformatics');
-    // A chem/bio source (scalars → table, no data input) is NOT a domain op.
     expect(domainCategory('Chem', ['string', 'int']), null, 'a molecule generator is a source');
     expect(domainCategory('Chembl', ['int']), null, 'a DB fetch is a source');
-    // Non-domain packages are never routed.
     expect(domainCategory('PowerPack', ['dataframe']), null);
     expect(domainCategory('', ['dataframe']), null);
   });

@@ -1,7 +1,5 @@
-/** Local-file uploads: the pending-bytes registry (drop → node without a
- *  server round-trip), the `readUploadedFile` node function, persistence to
- *  the server's GUID-addressed file store on save, and the creation-script
- *  round-trip. The server tests need a live stand. */
+/** Local-file uploads: the pending-bytes registry, the `readUploadedFile` node function,
+ *  server persistence, and the creation-script round-trip. Server tests need a live stand. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
@@ -116,9 +114,7 @@ category('Flow: uploaded files', () => {
     try {
       expect(isPendingFileId(fi.id), false, 'persisted id is a real server id');
       expect(getPendingFile(id) == null, true, 'pending entry consumed');
-      // The author must see the entity they just created (files_service.dart
-      // adds connection-less files to the author's project) — permission sync
-      // depends on this.
+      // files_service.dart adds connection-less files to the author's project — permission sync depends on this.
       expect(entity != null, true, 'FileInfo entity visible to its author');
 
       const bytes = await grok.dapi.files.readAsBytes(fi.id);
@@ -137,7 +133,6 @@ category('Flow: uploaded files', () => {
     const fi = await persistPendingFile(pid);
     let script: DG.Script | null = null;
     try {
-      // A minimal flow whose only node reads the uploaded file.
       const e = makeEditor();
       let body: string;
       try {
@@ -153,8 +148,7 @@ category('Flow: uploaded files', () => {
       }
       expect(uploadedFileIdsFromFlowBody(body).join(','), fi.id, 'body parser finds the file id');
 
-      // Save the flow entity, share it with All users, run the sync the
-      // flowShareSync autostart performs on d4-entity-shared.
+      // Run the sync the flowShareSync autostart performs on d4-entity-shared.
       script = await grok.dapi.scripts.save(DG.Script.create(body));
       const allUsers = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
       await grok.dapi.permissions.grant(script, allUsers, false);

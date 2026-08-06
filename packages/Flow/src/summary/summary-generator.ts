@@ -1,17 +1,10 @@
-/** Heuristic plain-language summaries for nodes and whole flows (U12). A node's
- *  caption comes from, in order: a built-in type summary, a curated function
- *  summary, the function's description, its friendly name (verbatim when
- *  deliberately set), or a humanized identifier. The flow summary groups the
- *  graph into its disjoint pipelines (connected components) and describes each
- *  left-to-right. No platform calls — pure and testable. */
+/** Heuristic plain-language summaries for nodes and whole flows. No platform calls — pure and testable. */
 
 import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {topologicalSortNodes} from '../compiler/topological-sort';
 import {CURATED_FUNC_SUMMARIES, BUILTIN_SUMMARIES, str, prop} from './summary-defs';
 
-/** Turn an identifier (camelCase / Pascal / snake / kebab / path) into a phrase:
- *  'addChemPropertiesColumns' → 'Add chem properties columns'; 'FilterRows' →
- *  'Filter rows'. */
+/** 'addChemPropertiesColumns' → 'Add chem properties columns'. */
 export function humanize(name: string): string {
   const words = str(name)
     .replace(/[_\-./]+/g, ' ')
@@ -26,7 +19,6 @@ export function humanize(name: string): string {
 
 const clean = (s: string): string => str(s).replace(/\s{2,}/g, ' ');
 
-/** The bare DG function name a node runs (strips any `Package:` prefix). */
 function bareFuncName(node: FlowNode): string {
   return str(node.dgFunc?.name ?? node.dgFuncName).replace(/^.*:/, '');
 }
@@ -35,8 +27,7 @@ function bareFuncName(node: FlowNode): string {
 export function summarizeNode(node: FlowNode): string {
   const t = str(node.dgTypeName);
 
-  // A viewer node's job is display, not computation — "Runs a function" (the
-  // generic func fallback) is wrong for it.
+  // A viewer node's job is display — the generic func fallback is wrong for it.
   const viewerType = prop(node, 'viewerType');
   if (viewerType) return clean(`Displays a ${humanize(viewerType).toLowerCase()}`);
 
@@ -57,11 +48,7 @@ export function summarizeNode(node: FlowNode): string {
   const curated = CURATED_FUNC_SUMMARIES[fname.toLowerCase()];
   if (curated) return clean(curated(node));
 
-  // Fallbacks, best first: the function's own description (the same text the
-  // context panel's Function pane shows); a friendly name — **verbatim**
-  // whenever it was deliberately set (differs from the raw name) or is already
-  // a phrase (has spaces) — never humanized, so acronyms like "InChI" survive;
-  // finally a humanized identifier.
+  // Friendly names are used verbatim, never humanized, so acronyms like "InChI" survive.
   const desc = str(node.dgFunc?.description);
   if (desc) return clean(desc);
   const friendly = str(node.dgFunc?.friendlyName);
@@ -69,18 +56,16 @@ export function summarizeNode(node: FlowNode): string {
   return clean(humanize(fname) || 'Runs a function');
 }
 
-/** Where one of a step's inputs comes from — another step in the same pipeline. */
 export interface StepInput {
-  /** The input port name (e.g. 'table', 'table1') — '' when unnamed. */
+  /** The input port name — '' when unnamed. */
   key: string;
-  /** 1-based index of the producing step within the pipeline. */
+  /** 1-based index of the producing step. */
   from: number;
 }
 export interface FlowStep {
   /** 1-based position in the pipeline (dependency order). */
   index: number;
   caption: string;
-  /** Upstream steps feeding this one — "what goes into where". */
   inputs: StepInput[];
 }
 export interface Pipeline {
@@ -89,31 +74,25 @@ export interface Pipeline {
 export interface FlowSummary {
   /** One entry per disjoint pipeline (connected component). */
   pipelines: Pipeline[];
-  /** A multi-line plain-text rendering (full, untruncated, dependency-ordered). */
   text: string;
   nodeCount: number;
   pipelineCount: number;
 }
 
-/** Summarize an entire flow. Steps are numbered in the **exact order the script
- *  executes** — the same `topologicalSortNodes` the compiler/emitter uses — and
- *  grouped into disjoint pipelines (which execution keeps contiguous, so each
- *  pipeline is a contiguous run of step numbers). Every step is annotated with
- *  which earlier step feeds each input ("what goes into where"). Captions are
- *  full — never truncated. */
+/** Steps are numbered in the exact execution order (the same sort the emitter uses),
+ *  so each pipeline is a contiguous run of step numbers. */
 export function summarizeFlow(nodes: FlowNode[], connections: FlowConnection[]): FlowSummary {
   if (nodes.length === 0)
     return {pipelines: [], text: 'Empty flow — nothing here yet.', nodeCount: 0, pipelineCount: 0};
 
-  // The canonical execution order. On a cycle the sort returns a prefix, so
-  // append any leftover nodes (original order) to keep every node numbered.
+  // On a cycle the sort returns a prefix — append leftovers so every node is numbered.
   const order = topologicalSortNodes(nodes, connections);
   const placed = new Set(order);
   const execOrder = [...order, ...nodes.filter((n) => !placed.has(n.id)).map((n) => n.id)];
-  const stepNo = new Map(execOrder.map((id, i) => [id, i + 1])); // 1-based script line
+  const stepNo = new Map(execOrder.map((id, i) => [id, i + 1])); // 1-based
   const byId = new Map(nodes.map((n) => [n.id, n]));
 
-  // Disjoint pipelines (weakly connected components) via union-find.
+  // Weakly connected components via union-find.
   const parent = new Map<string, string>();
   for (const n of nodes) parent.set(n.id, n.id);
   const find = (x: string): string => {
@@ -149,7 +128,6 @@ export function summarizeFlow(nodes: FlowNode[], connections: FlowConnection[]):
     .filter((inp) => inp.from > 0 && inp.from !== stepNo.get(id))
     .sort((a, b) => a.from - b.from);
 
-  // Pipelines ordered by their first executed step; steps within keep exec order.
   const pipelines: Pipeline[] = [...groups.values()]
     .map((ids) => ids.slice().sort((a, b) => stepNo.get(a)! - stepNo.get(b)!))
     .sort((a, b) => stepNo.get(a[0])! - stepNo.get(b[0])!)

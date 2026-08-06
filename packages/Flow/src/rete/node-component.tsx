@@ -1,12 +1,5 @@
-/** Custom React node component used by `rete-react-plugin`'s classic preset.
- *
- * Despite being React, the output is just plain DOM — no React state outside
- * this file, no React in the rest of the package. The component is mounted
- * by ReactPlugin into the empty `<div>` AreaPlugin creates per node, exactly
- * the same way `KetcherSketcher` mounts the Ketcher editor.
- *
- * Visual contract: the DOM structure here matches the `ff-*` selectors in
- * `css/funcflow.css`. Don't change classnames without updating the CSS. */
+/** React node components for rete-react-plugin. The DOM structure matches the
+ *  `ff-*` selectors in `css/funcflow.css`. */
 
 import * as React from 'react';
 import * as ui from 'datagrok-api/ui';
@@ -29,11 +22,7 @@ interface NodeProps {
   emit: RenderEmit<FlowScheme>;
 }
 
-/** The host `FlowEditor` exposes a narrow callback surface on every node it
- *  owns (`FlowNode.editorBridge`, stamped when the node enters the editor's
- *  data layer). Resolving it from the node — never from a global — keeps each
- *  component bound to its own editor: several editors coexist on a page (file
- *  previews, the creation-script dialog, detached compile editors). */
+// Resolve the bridge from the node, never a global — several editors coexist on a page.
 function toggleCollapsed(node: FlowNode): void {
   node.editorBridge?.toggleCollapsed(node.id);
 }
@@ -43,15 +32,8 @@ function isConnected(node: FlowNode, side: 'input' | 'output', key: string): boo
 
 export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const node = props.data;
-  // Output nodes live docked in the Outputs strip (FlowEditor pins their
-  // position) and render as compact rows, not full node cards.
   if (node.dgNodeType === 'output') return OutputRowComponent(props);
   const collapsed = node.collapsed === true;
-  // Exec (execution-ordering) ports render separately at the top corners — keep
-  // them out of the regular data-socket rows. Hidden rows (force-hidden keys,
-  // default-hidden primitive inputs, and their pass-throughs) render only when
-  // connected — their slots stay data-carrying, the user just never sees an
-  // unwired one. See `hiddenSocketRow` for the full rule.
   const hiddenRow = (key: string, side: 'input' | 'output'): boolean =>
     hiddenSocketRow(node, side, key, (s, k) => isConnected(node, s, k));
   const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
@@ -63,35 +45,24 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const controls = Object.entries(node.controls) as Array<[string, ClassicPreset.Control | undefined]>;
   const ptCount = node.passthroughCount ?? 0;
 
-  // Title bars get the pastel of the node's identity color — vivid hues are
-  // kept for small surfaces (minimap, sockets) where saturation aids legibility.
   const titleColor = (node as unknown as {color?: string}).color;
   const titleStyle: React.CSSProperties = titleColor ? {background: pastelize(titleColor)} : {};
 
   const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
   const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
 
-  // Pre-run hint: structural inputs the user still has to provide. Shown only
-  // when the node hasn't successfully run (idle/stale), so a "Done"/"Error"
-  // status from a real run always takes precedence.
   const needs = nodeMissingRequirements(node, (key) => isConnected(node, 'input', key));
   const idle = !dgStatus || dgStatus === 'idle' || dgStatus === 'stale';
   const attention = idle && needs.length > 0;
 
-  // Auto-summary caption (U12), shown when the user hasn't written their own
-  // description. Computed once so the visible (CSS-ellipsized) text and the
-  // hover tooltip stay in sync — the tooltip reveals it in full when truncated.
   const autoSummary = !node.description && !collapsed ? summarizeNode(node) : '';
 
-  // Collapse is the caret's job now — the status dot is display-only, so
-  // clicking the run indicator never hides the node out from under you.
   const onCaretClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     toggleCollapsed(node);
   };
   const stopPointer = (e: React.PointerEvent): void => {
-    // Keep the AreaPlugin's node-drag handler from grabbing a click on a
-    // title-bar affordance (caret).
+    // keep AreaPlugin's node-drag handler off title-bar affordances
     e.stopPropagation();
   };
 
@@ -108,12 +79,8 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       data-status={dgStatus}
       data-attention={attention ? 'true' : 'false'}
     >
-      {/* Execution-ordering ports — top corners (KNIME flow-variable style).
-          exec-in (left) accepts "run after" predecessors; exec-out (right)
-          drives successors. Always rendered so edges stay attached even when
-          the node is collapsed — but only *visible* when one of them is wired,
-          the node is hovered, or an order drag is in progress (CSS keys off
-          data-wired / .ff-node:hover / .ff-connecting-order). */}
+      {/* Exec ports always render so edges keep their endpoints; CSS shows them
+          only when wired, hovered, or during an order drag. */}
       <div
         className="ff-node-exec-row"
         data-wired={(isConnected(node, 'input', EXEC_IN_KEY) || isConnected(node, 'output', EXEC_OUT_KEY)) ?
@@ -170,12 +137,8 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         >{collapsed ? '▸' : '▾'}</span>
       </div>
 
-      {/* ONE always-rendered info line below the title — the card's height
-          never changes across idle → running → done → error. Content by
-          precedence: "Needs input" hint > run status > user description >
-          auto-summary; whatever loses the slot stays reachable in the tooltip
-          and the context panel. Collapsed nodes render no line at all (title
-          bar only — the status dot carries the state). */}
+      {/* One always-rendered info line (hint > status > description > summary) —
+          the card's height never changes across run states. */}
       {!collapsed && (() => {
         const line = attention ?
           {kind: 'hint', text: `Requires: ${needs.join(', ')}`, tip: `Connect or set: ${needs.join(', ')}`,
@@ -213,10 +176,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
                   <span className="ff-socket-label">{input.label ?? key}</span>
                 </div>
               ))}
-              {/* ⋯ hidden-inputs indicator: some toggleable input rows are
-                  folded away — click pops the same "Shown inputs" checkboxes
-                  as the node context menu. Force-hidden keys don't count (they
-                  have no on-card form to offer). */}
+              {/* ⋯ indicator: hidden toggleable inputs — click pops the "Shown inputs" checkboxes. */}
               {(() => {
                 const hiddenCount = Object.keys(node.inputs).filter((k) =>
                   !isExecKey(k) && !node.hiddenInputs.has(k) && hiddenRow(k, 'input')).length;
@@ -273,11 +233,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         </div>
       )}
 
-      {/* Collapsed nodes only render sockets that have at least one connection.
-          Disconnected sockets are useless without the body (you can't drag a
-          new wire from a tiny dot you can barely see), so showing them is just
-          clutter. Connected ones still need DOM so existing wires keep their
-          endpoints. */}
+      {/* Collapsed nodes render socket DOM only for connected sockets, so wires keep endpoints. */}
       {collapsed && (
         <div className="ff-node-collapsed-sockets">
           <div className="ff-collapsed-inputs">
@@ -312,12 +268,8 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   );
 }
 
-/** Hosts a real Datagrok input inside a node body (the input-node value
- *  editor). The DG element is built once and cached on the control
- *  (`InputValueControl.element()`); every (re)mount just re-attaches the SAME
- *  element, so React re-renders during runs/invalidation never rebuild the
- *  editor or drop its focus. Pointer/keyboard events stay inside — a click in
- *  the editor must not start a node drag, a dblclick must not zoom-to-fit. */
+/** Hosts a DG input in a node body. The element is built once and re-attached
+ *  on every (re)mount, so React re-renders never rebuild it or drop focus. */
 export function DgControlComponent(props: {data: InputValueControl}): React.JSX.Element {
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -336,11 +288,8 @@ export function DgControlComponent(props: {data: InputValueControl}): React.JSX.
   );
 }
 
-/** Output nodes have no canvas presence at all — their visible form is a
- *  screen-space chip inside the Outputs strip (built by `FlowEditor`), and
- *  their wire endpoints come from the analytic chip-aware socket-position
- *  watcher, not from DOM. Render an empty hidden placeholder so the rete node
- *  view exists but never paints, scales, or intercepts pointer events. */
+/** Output nodes render only as Outputs-strip chips — the rete node view is an
+ *  empty hidden placeholder that never paints or intercepts pointer events. */
 function OutputRowComponent(props: NodeProps): React.JSX.Element {
   return <div style={{display: 'none'}} data-node-id={props.data.id} />;
 }
@@ -349,14 +298,8 @@ interface SocketProps {
   data: TypedSocket;
 }
 
-/** Socket chip: a single type letter colored like the Column Manager's type
- *  column (`t` table, `s` string, `i` int, `d` double, …; see `getSlotLetter`).
- *  The type color travels as the `--socket-color` CSS var — `.ff-socket` paints
- *  the letter and ring with it, and `.ff-socket-row-passthrough .ff-socket`
- *  reads it for the dashed ring. An `order` socket stays a bare gray square
- *  (no letter) and gets NO title of its own — a nested title would shadow the
- *  exec-port wrapper's plain-language "Run order: drag…" explanation with a
- *  bare "order". */
+/** Type-letter socket chip; the color travels as the `--socket-color` CSS var.
+ *  Order sockets get no title so the exec-port wrapper's tooltip isn't shadowed. */
 export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   const color = getSlotColor(props.data.dgType);
   const isOrder = props.data.dgType === ORDER_SOCKET_TYPE;
@@ -371,11 +314,8 @@ export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   );
 }
 
-/** Custom Connection component that paints the path in the source slot's
- *  color. Replaces the default `Connection` that hardcodes `stroke: steelblue`
- *  via `styled-components` (whose CSS otherwise wins over a plain
- *  `setAttribute('stroke', ...)`). The color is stuffed into the connection
- *  payload by `FlowEditor` at construction time as `_color`. */
+/** Connection painted in the source slot's color (`_color` in the payload) —
+ *  the default preset hardcodes `stroke: steelblue` via styled-components. */
 interface ConnectionProps {
   data: FlowScheme['Connection'] & {_color?: string; _count?: string};
 }
@@ -386,9 +326,6 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
   const color = props.data._color ?? '#8892a0';
   const count = props.data._count;
 
-  // Compute the actual path: if waypoints are present, chain
-  // classicConnectionPath segments through start → waypoints → end. Without
-  // waypoints, fall back to the preset's path (computed by useConnection).
   const waypoints = (props.data as {waypoints?: Array<{x: number; y: number}>}).waypoints;
   let drawPath = path;
   if (waypoints && waypoints.length > 0 && start && end) {
@@ -398,12 +335,8 @@ export function FlowConnectionComponent(props: ConnectionProps): React.JSX.Eleme
       drawPath += classicConnectionPath([points[i], points[i + 1]], 0.3);
   }
 
-  // Two paths: a wide invisible "hit" path (transparent stroke, 14px) so
-  // right-click and pointer events land reliably even though the visible
-  // line is only 2.5px, and the visible path itself with pointerEvents:none
-  // (the hit path handles all interaction). pointerEvents: 'stroke' on the
-  // hit path means events fire only within the stroke area, not in the
-  // unbounded SVG canvas.
+  // A wide transparent "hit" path takes the pointer events; the visible 2.5px
+  // path has pointerEvents:none.
   return (
     <svg
       data-testid={tid('connection')}

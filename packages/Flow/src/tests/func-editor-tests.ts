@@ -1,8 +1,5 @@
-/** Tests for the custom function-editor integration: routing
- *  (`shouldUseFunctionEditor`), the FuncCall→panel value conversion, the
- *  write-back rules (connected inputs win, columns come back as names), and
- *  the Input Parameters header icon. The dialog round-trip itself
- *  (`createFuncCallEditor`) is interactive and exercised manually. */
+/** Custom function-editor integration: routing, value conversion, write-back
+ *  rules, and the launcher's dialog round-trip. */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
@@ -20,7 +17,6 @@ import {FlowNode} from '../rete/scheme';
 import {safeGet} from '../utils/dart-proxy-utils';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
-/** A registered func by exact name, or null. */
 function registeredByName(name: string): {func: DG.Func; nodeTypeName: string} | null {
   const info = getRegisteredFuncs().find((f) => f.func.name === name);
   return info ? {func: info.func, nodeTypeName: info.nodeTypeName} : null;
@@ -33,16 +29,13 @@ category('Flow: func editor', () => {
   });
 
   test('shouldUseFunctionEditor: allowlist, editor meta, and the plain majority', async () => {
-    // AddNewColumn is explicitly allowlisted (core:AddNewColumn).
     const anc = DG.Func.find({name: 'AddNewColumn'})[0];
     if (anc) expect(shouldUseFunctionEditor(anc), true, 'AddNewColumn is allowlisted');
 
-    // Any function declaring `editor:` meta qualifies.
     const withEditor = DG.Func.find({package: 'Chem'}).find((f) => !!safeGet(f.options, 'editor'));
     if (withEditor)
       expect(shouldUseFunctionEditor(withEditor), true, `${withEditor.name} declares an editor`);
 
-    // A function without editor meta and off the allowlist does not.
     const plain = getRegisteredFuncs().find((f) => {
       try {
         return !safeGet(f.func.options, 'editor') && f.func.nqName !== 'core:AddNewColumn';
@@ -57,18 +50,12 @@ category('Flow: func editor', () => {
       DG.Column.fromList(DG.TYPE.INT, 'a', [1, 2]),
       DG.Column.fromList(DG.TYPE.INT, 'b', [3, 4]),
     ]);
-    // A live column → its name (the panel edits name strings).
     expect(editorValueToPanelValue(df.col('a'), 'column'), 'a');
-    // A column list → comma-separated names.
     expect(editorValueToPanelValue([df.col('a'), df.col('b')], 'column_list'), 'a, b');
-    // string_list → comma-separated (the panel's comma-separated field).
     expect(editorValueToPanelValue(['x', 'y'], 'string_list'), 'x, y');
-    // A plain `list` stays an array (DG's List input holds a JS array).
     const arr = editorValueToPanelValue(['x', 'y'], 'list');
     expect(Array.isArray(arr), true, 'list stays an array');
-    // A dataframe can't live in the panel.
     expect(editorValueToPanelValue(df, 'dataframe') === undefined, true);
-    // Primitives pass through.
     expect(editorValueToPanelValue(42, 'int'), 42);
     expect(editorValueToPanelValue('text', 'string'), 'text');
     expect(editorValueToPanelValue(false, 'bool'), false);
@@ -77,15 +64,10 @@ category('Flow: func editor', () => {
   test('tableParamForColumn: explicit association → suffix pairing → first table', async () => {
     const fakeNode = (columnTables?: Record<string, string>): FlowNode =>
       ({properties: columnTables ? {columnTables} : {}} as unknown as FlowNode);
-    // Explicit association wins.
     expect(tableParamForColumn(fakeNode({keys2: 'table1'}), 'keys2', ['table1', 'table2']), 'table1');
-    // No association → shared numeric suffix.
     expect(tableParamForColumn(fakeNode(), 'keys2', ['table1', 'table2']), 'table2');
-    // No suffix match → the first dataframe input.
     expect(tableParamForColumn(fakeNode(), 'column', ['table1', 'table2']), 'table1');
-    // A stale association pointing at a non-existent table falls through.
     expect(tableParamForColumn(fakeNode({keys2: 'gone'}), 'keys2', ['table1', 'table2']), 'table2');
-    // No dataframe inputs at all → undefined.
     expect(tableParamForColumn(fakeNode(), 'column', []) === undefined, true);
   });
 
@@ -93,7 +75,6 @@ category('Flow: func editor', () => {
     const anc = DG.Func.find({name: 'AddNewColumn'})[0];
     if (!anc) return; // not on this stand — skip
     const node = new FuncNode(anc);
-    // Pick two primitive editable params to exercise (name/expression on ANC).
     const prims = anc.inputs.filter((p) =>
       ['string', 'int', 'double', 'bool'].includes(String(p.propertyType)) && p.name in node.inputValues);
     if (prims.length < 2) return;
@@ -103,13 +84,11 @@ category('Flow: func editor', () => {
     fc.setParamValue(p1, 'fromEditor1');
     fc.setParamValue(p2, 'fromEditor2');
 
-    // Nothing connected → both written back.
     const applied = applyEditorResult(node, anc, fc, () => false);
     expect(applied.includes(p1) && applied.includes(p2), true, 'both params applied');
     expect(String(node.inputValues[p1]), 'fromEditor1');
     expect(String(node.inputValues[p2]), 'fromEditor2');
 
-    // p1 connected → the wire wins, only p2 is updated.
     fc.setParamValue(p1, 'shouldNotLand');
     fc.setParamValue(p2, 'secondPass');
     const applied2 = applyEditorResult(node, anc, fc, (n) => n === p1);
@@ -119,7 +98,6 @@ category('Flow: func editor', () => {
   });
 
   test('applyEditorResult converts a column value back to a name string', async () => {
-    // Any registered func with an editable `column` input.
     const info = getRegisteredFuncs().find((f) =>
       f.func.inputs.some((p) => String(p.propertyType) === 'column'));
     if (!info) return; // none on this stand — skip
@@ -136,27 +114,19 @@ category('Flow: func editor', () => {
   });
 
   test('detectSemanticTypes stamps semtypes on the seeded tables (and never throws)', async () => {
-    // A molecule column: after detection its semType is 'Molecule', so the
-    // editor / picker dialogs can filter columns by semantic type.
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('smiles', ['CCO', 'c1ccccc1', 'CC(=O)O']),
       DG.Column.fromList(DG.TYPE.INT, 'n', [1, 2, 3]),
     ]);
     await detectSemanticTypes([df]);
-    // Guarded: only assert when a Molecule detector is installed on this stand.
     if (DG.Func.find({tags: ['semTypeDetector'], package: 'Chem'}).length > 0)
       expect(df.col('smiles')!.semType, 'Molecule', 'smiles column detected as Molecule');
 
-    // Plain tables and empty input are harmless no-ops.
     await detectSemanticTypes([]);
     await detectSemanticTypes([DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'x', [1])])]);
   });
 
   test('launcher: gate refuses without a table; a captured table opens the editor', async () => {
-    // End-to-end against the live platform: unconnected → refused (balloon);
-    // connected with a captured upstream table → the function's OWN dialog
-    // ("Add New Column", not a generic form) opens seeded with it; closing it
-    // resolves the round-trip and writes the values back into the node.
     const anc = registeredByName('AddNewColumn');
     if (!anc) return;
     const e = makeEditor();
@@ -165,11 +135,9 @@ category('Flow: func editor', () => {
       const launcher = new FuncEditorLauncher(e.flow, ctrl, () => ({name: 'T', description: '', tags: []}));
       const node = await addNode(e.flow, anc.nodeTypeName);
 
-      // 1. Table not connected → gate refuses without opening any dialog.
       expect(await launcher.open(node), false, 'unconnected table input → refused');
 
-      // 2. Connect a table input and pre-populate its captured result, so the
-      //    launcher reuses it (no confirm / no slice run — the stash path).
+      // pre-populate the captured result so the launcher reuses it — no confirm, no slice run
       const src = await addNode(e.flow, 'Inputs/Table Input', 0, 200);
       await e.flow.addConnectionByKeys(src.id, 'table', node.id, 'table');
       const df = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'a', [1, 2, 3])]);
@@ -177,15 +145,11 @@ category('Flow: func editor', () => {
         {outputs: {table: {type: 'dataframe', clone: df}}});
       node.inputValues['name'] = 'myNewCol';
 
-      // 3. Launch; the function's own editor dialog opens; close it → the
-      //    round-trip resolves and the seeded value survives the write-back.
       const openPromise = launcher.open(node);
       const dlg = await pollDialogCreation(10_000);
       expect(!!dlg, true, 'the editor dialog opened');
       expect(dlg!.title, 'Add New Column', 'the function’s own editor, not a generic form');
-      // Give the launcher's own dialog poll (100 ms ticks) a beat to see the
-      // dialog and subscribe to its onClose — closing within the same tick
-      // would resolve nothing (a user can't close a dialog that fast).
+      // give the launcher's own dialog poll a beat to see the dialog and subscribe to onClose
       await new Promise((r) => setTimeout(r, 400));
       dlg!.close();
       expect(await openPromise, true, 'the round-trip resolved');
@@ -196,13 +160,8 @@ category('Flow: func editor', () => {
   });
 
   test('a concurrent run cannot hijack the editor dialog round-trip', async () => {
-    // The race (autorun + editor): `d4-before-run-action` fires for EVERY
-    // client funccall, and the dialog interception matches by func — so an
-    // autorun executing the same function mid-dialog used to be mistaken for
-    // the dialog's own run action: that call got canceled and the round-trip
-    // resolved early with the wrong funccall (the user's OK then wrote
-    // nothing). `ignoreEvent` (wired to `state.isRunning` by the launcher)
-    // must let such events pass through untouched.
+    // `d4-before-run-action` fires for every client funccall and the dialog interception
+    // matches by func — `ignoreEvent` must let a concurrent Flow run pass through
     const ancFunc = DG.Func.find({name: 'AddNewColumn'})[0];
     if (!ancFunc) return;
     const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -220,7 +179,6 @@ category('Flow: func editor', () => {
     expect(!!dlg, true, 'the editor dialog opened');
     await sleep(300); // let the util's own dialog poll attach its subscriptions
 
-    // The "autorun": a funccall of the SAME function while the dialog is open.
     const other = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'b', [1, 2])]);
     await grok.functions.call('AddNewColumn', {table: other, name: 'extra', expression: '1'});
     expect(other.columns.names().includes('extra'), true,
@@ -228,7 +186,6 @@ category('Flow: func editor', () => {
     await sleep(200);
     expect(resolved, false, 'the round-trip did not resolve early with the wrong funccall');
 
-    // The user closes the dialog → the round-trip resolves with the dialog fc.
     running = false;
     dlg!.close();
     const out = await roundTrip;
@@ -244,12 +201,10 @@ category('Flow: func editor', () => {
     try {
       const node = await addNode(e.flow, anc.nodeTypeName);
 
-      // Callback not wired → no icon.
       panel.showNode(node);
       expect(!!panel.root.querySelector('[data-testid="ff-prop-func-editor"]'), false,
         'no icon without onEditFuncParams');
 
-      // Callback wired + editor-capable func → icon in the pane header.
       let clicked: FlowNode | null = null;
       panel.onEditFuncParams = (n): void => {clicked = n;};
       panel.showNode(node);
@@ -258,7 +213,6 @@ category('Flow: func editor', () => {
       icon!.click();
       expect(clicked === node, true, 'clicking the icon passes the node to the callback');
 
-      // A function without a custom editor → no icon even with the callback.
       const plain = getRegisteredFuncs().find((f) => {
         try {
           return !shouldUseFunctionEditor(f.func) && f.func.inputs.length > 0;

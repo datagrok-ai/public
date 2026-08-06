@@ -1,6 +1,4 @@
-/** Default-hidden primitive input rows and the per-node "Shown inputs"
- *  overrides. The data layer (slots, seeds, pass-throughs, compile) is never
- *  touched by visibility — only which rows the card renders. */
+/** Default-hidden primitive input rows and the per-node "Shown inputs" overrides — visibility only, the data layer is never touched. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
@@ -46,7 +44,6 @@ category('Flow: slot visibility', () => {
       expect(node.inputSlotShownByDefault('table'), true, 'dataframe input shown by default');
       expect(node.inputSlotShownByDefault('name'), false, 'string input hidden by default');
       expect(node.inputSlotShownByDefault('expression'), false, 'string input hidden by default');
-      // Data layer untouched — slots, seeds, and pass-throughs all still exist.
       expect('name' in node.inputs && 'name__pt' in node.outputs, true, 'hidden slot stays data-carrying');
 
       await until(() => inputRow(e.container, 'table'));
@@ -79,7 +76,6 @@ category('Flow: slot visibility', () => {
       await until(() => !inputRow(e.container, 'expression'));
       expect(outputRow(e.container, 'expression__pt'), false, 'pass-through hidden again');
 
-      // Non-primitives can be hidden too — the checkbox works both ways.
       await e.flow.setInputShown(node.id, 'table', false);
       await until(() => !inputRow(e.container, 'table'));
       expect(outputRow(e.container, 'table__pt'), false, 'its pass-through goes with it');
@@ -157,7 +153,6 @@ category('Flow: slot visibility', () => {
       checkbox()!.click();
       expect(await until(() => node.inputSlotShown('expression')), true, 'the checkbox toggles the row');
 
-      // Show every remaining toggleable input — the indicator goes away.
       for (const k of Object.keys(node.inputs)) {
         if (!k.startsWith('__exec') && !node.hiddenInputs.has(k) && !node.inputSlotShown(k))
           await e.flow.setInputShown(node.id, k, true);
