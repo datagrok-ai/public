@@ -23,7 +23,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {discardFunc, saveFunc} from './actions';
 import {AppView, AppViewOptions, DomainAppView, DomainAppViewOptions, DomainEntityAppView,
   DomainEntityAppViewOptions} from './app-view';
 import {DomainGrid, DomainGridOptions} from './domain-grid';
@@ -235,13 +234,15 @@ export class DomainWidgetView extends AppView {
    * reporting the full set, which is what the machine surface reads.
    */
   protected buildRibbon(): void {
-    const offered = (name: string) =>
-      this.widgets.some((c) => c.getFunctions().some((f) => f.name === name));
+    // What the PAGE can do is its own machine surface — the children's actions
+    // merged, plus Save/Discard for editors no child answers for.
+    const pageFuncs = this.getFunctions();
     const items: HTMLElement[] = [];
-    if (offered('Save'))
-      items.push(_actionButton(saveFunc(), this));
-    if (offered('Discard'))
-      items.push(_actionButton(discardFunc(), this));
+    for (const name of PAGE_ACTIONS) {
+      const func = pageFuncs.find((f) => f.name === name);
+      if (func != null)
+        items.push(_actionButton(func, this));
+    }
 
     const extras: {func: DG.Func, child: DG.Widget}[] = [];
     for (const child of this.widgets)
