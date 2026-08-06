@@ -363,6 +363,11 @@ export class Widget<TSettings = any> {
   detach(): void {
     this.subs.forEach((s) => s.unsubscribe());
     this.isDetached = true;
+    // A detached widget must stop showing up in Widget.getAll(): drop the Dart
+    // wrapper {@link toDart} registered. Dart-owned widgets ({@link DartWidget})
+    // keep their registration - it belongs to the Dart lifecycle.
+    if (this.dart != null)
+      api.grok_Widget_Unregister(this.dart);
   }
 
   /** Registers an property with the specified type, name, and defaultValue.

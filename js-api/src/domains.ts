@@ -194,6 +194,8 @@ export interface DomainTableInfo {
   pluralName: string;
   securityMode: 'table' | 'master' | 'row';
   audit: boolean;
+  /** What the table holds, as declared in schema.json; null when undeclared. */
+  description: string | null;
   childTables: DomainChildTableRef[];
 }
 

@@ -454,6 +454,7 @@ export interface IDartApi {
   grok_Widget_Get_Temp(widget: any): any;
   grok_Widget_Wrap(jsWidget: any): any;
   grok_Widget_Kill(element: any): any;
+  grok_Widget_Unregister(widget: any): any;
   grok_Widget_FromRoot(element: any): any;
   grok_Widget_GetAll(): any;
   grok_Widget_Get_Parent(widget: any): any;

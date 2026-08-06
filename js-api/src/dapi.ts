@@ -1174,8 +1174,9 @@ export class DomainRegistryClient {
   }
 
   /** Registry metadata of one table: display identity (nameColumn, businessKey,
-   * singular/plural names), security mode, audit flag, and the FK-inverted
-   * {@link DomainChildTableRef} list that drives detail-table links. */
+   * singular/plural names), the schema.json description, security mode, audit flag,
+   * and the FK-inverted {@link DomainChildTableRef} list that drives detail-table
+   * links. */
   tableInfo(table: string): Promise<DomainTableInfo> {
     const [schema, t] = splitDomainTable(table);
     return domainCall(api.grok_DomainRegistry_TableInfo(schema, t));
