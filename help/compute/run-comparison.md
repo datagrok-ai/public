@@ -28,14 +28,19 @@ matching stays per column — the tables don't need to share their full column s
 
 Matched values whose data is the same in every run (equal scalar values, or equal
 value, index, and split column contents) are hidden from the compare list by default.
-Numbers count as equal when they differ by less than 0.1%. Turn off
-**Hide equal values** to show them.
+Numbers count as equal when they differ by less than 0.1%, and datetime index
+values only when they match exactly. Turn off **Hide equal values** to show them.
 
 ## Fine-tuning matches
 
-Each compare row maps the same value across runs: one item per run. To chart several
-series within one run, use a [split column](#index-and-split-columns) instead — that is
-the native pattern for model results.
+Each compare row maps the same value across runs. Several items of one run can match
+the row, but only one of them is active at a time: the active item is the run's charted
+series. To chart several series within one run, use a
+[split column](#index-and-split-columns) instead — that is the native pattern for
+model results.
+
+When an input and an output of the same step share a caption, the parameter name is
+shown after it, for example `Data (result)`, so the two rows stay distinguishable.
 
 Automatic matching picks the best candidate per run, which is not always the desired one —
 for example, when a run has several similar tables. Expand a compare row (the chevron on

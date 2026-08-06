@@ -56,7 +56,7 @@
 
 .c2-confidence-exact { background-color: var(--green-2); }
 .c2-confidence-normalized { background-color: var(--orange-2); }
-.c2-confidence-fuzzy { background-color: var(--red-3); }
+.c2-confidence-fuzzy { background-color: var(--orange-3); }
 
 /* per-run status chips under Results: excluded runs (error) and
    partially-configured axis modes (warning) */

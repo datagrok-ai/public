@@ -31,7 +31,7 @@ FuncCall runs / open tables
 
 `collectWorkflowSteps` is a typed walk built on RTD primitives: `buildTraverseD` (the same DFS traversal RTD's `StateTreeFactory` uses) over `PipelineSerializedState`, with `isFuncCallSerializedState` as the leaf guard — so the serialized format pinned by the LibTests persistence tests is enforced at compile time here. Each leaf gets a stable slash `path` from the `configId` chain (root included) and a ` · `-joined `friendlyPath` from friendly names (root name elided, since it's shared by every step). The walk is wrapped in a try/catch: a legacy or malformed serialized config degrades to an entry with no steps instead of breaking the dialog.
 
-**`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). It also reads the `{comparison: {...}}` function-annotation option off DataFrame outputs (index/split/mode/units) — these become default picker values later.
+**`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). Display names come from the caption, which is free text — when one call's extracted IOs share a caption (e.g. an input and an output both captioned `Data`), the property name is appended (`Data (result)`), so targets, index rows, and candidates stay distinguishable downstream. It also reads the `{comparison: {...}}` function-annotation option off DataFrame outputs (index/split/mode/units) — these become default picker values later.
 
 **`entryFromDataFrame(df)`** wraps an open workspace table as a "raw" entry with one table and no scalars, so ad-hoc data can join the comparison. Entry ids come from a `WeakMap` keyed by the table's Dart handle — the same table dedupes on re-add, while distinct tables sharing a name never collide.
 
@@ -52,7 +52,7 @@ The central problem: different runs (possibly of different models) name the same
 
 Two design rules keep the model simple:
 
-1. **A target maps the same quantity across runs — at most one item per run.** Matching is a cross-source mapping with a preview, nothing more.
+1. **A target maps the same quantity across runs.** A target *multimatches*: its candidate list may hold several compatible items from the same comparison-set item (run or raw table), but at most one of them is *active* per item — the active one is the run's charted series, the rest stay listed as switchable candidates. Matching is a cross-source mapping with a preview, nothing more.
 2. **Several series within one run are the split column's job**, the native pattern for model results — never several mapped columns of one run. (Suffix-style wide data, e.g. `temp_A`/`temp_B`, should be reshaped into a split column, not multi-mapped.)
 
 - **`nameSimilarity`** — Sørensen–Dice bigram similarity on normalized names (lowercased, separators collapsed). **`nameMatchConfidence`** grades a pair as `exact` / `normalized` / `fuzzy` (≥ 0.7 similarity, `FUZZY_NAME_THRESHOLD`) / no match.
@@ -67,7 +67,7 @@ Two design rules keep the model simple:
 - **`multiValueOverlap(anchor, other)`** / **`compatibleTargetsFor(anchor, targets, getColumnType)`** — multi-value mode is split into a *suggestion* predicate and builder-enforced validity. Per anchor run, the other target's pick is `aligned` (same table — rows can be shared), `missing` (no pick), or `conflicting` (picked from another table); scalar bindings carry no table, so scalars are aligned or missing, never conflicting. `compatibleTargetsFor` never mixes kinds: for a scalar anchor every scalar target is compatible (all scalars are numeric by construction); for a column anchor it *suggests* column targets with no conflicts and ≥ 1 aligned run, provided the anchor's index is line-chartable (numeric/datetime) everywhere. It never decides validity of an already selected combination: the builder pads missing/conflicting runs with nulls, so editing picks can never eject a selected target. Index/split agreement is automatic for aligned picks — the pickers are per (run, table). Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV; the overlap check only asks whether two *targets* can read their columns from the same physical rows.
 - **`getEntryStatuses`** — per-run participation status for the selected target, so the UI can flag excluded runs with a reason (`'no similar data'`, `'index not set'`, or `'disabled'` — the run has candidates but the user toggled them all off). With an `AxisConfigMap` passed, matched runs on a *partially* configured target additionally get `warning: 'relative timeseries not set'` or `'independent points not set'` (amber chip — the run still charts, just as a plain series).
 - **Axis mode helpers** — `parseTimeUnit` (units-metadata prefill; bare `m` deliberately unrecognized), `resolveAxisModes` (stored picks → non-`series`-only `AxisConfigMap`, gated on a numeric/datetime index; units for `timeseries` on a numeric index only), `targetAxisMode` (require-all gate per mode: `full`/`partial`/`none` over a target's bindings), `resolveDisplayUnit` (first numeric `timeseries` binding's units, datetime-only → `'auto'`), `pickAutoUnit` (largest of days/h/min/s spanning ≥ 2 units, else ms).
-- **`isTargetEqualAcrossRuns(target, getColumnValues)`** — backs the "Hide equal values" toggle: a target with ≥ 2 bound runs is equal when all scalar values match, or when every run's value, index, and split column contents are element-wise the same (NaN-safe). Numbers compare via the PEP 485 `isclose` formula with `EQUALITY_REL_TOL = 1e-3` (0.1% relative, zero absolute tolerance — near-zero is never conflated with zero). Unfetchable column data counts as differing, so nothing is hidden on missing data.
+- **`isTargetEqualAcrossRuns(target, getColumnValues)`** — backs the "Hide equal values" toggle: a target with ≥ 2 bound runs is equal when all scalar values match, or when every run's value, index, and split column contents are element-wise the same (NaN-safe). Numbers compare via the PEP 485 `isclose` formula with `EQUALITY_REL_TOL = 1e-3` (0.1% relative, zero absolute tolerance — near-zero is never conflated with zero); datetime *index* columns compare exactly instead — they arrive as epoch ms, where 0.1% relative is weeks, so a day-shifted series would wrongly hide (value columns are never datetime by construction). Unfetchable column data counts as differing, so nothing is hidden on missing data.
 - Small helpers: `matchesFilter` (substring + fuzzy-token filter for the list search boxes), `isSplitCandidate` (string column ≠ index), `selectionToMap` (validated `Record` → `Map` conversion).
 
 ## `RunComparison.tsx` — Vue state and reactivity
@@ -125,22 +125,6 @@ Everything re-derives from `entries` + the selections:
 
   Column multi-value mode scales the minimum chart height by the number of value columns (`250px` per value); multi-scalar uses a flat minimum (one chart, not stacked series).
 - **Export** (`exportComparison`): `snapshotView` clones `chartDf` into a table view and re-adds a viewer using `chartViewer.getOptions()`, so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (adds the snapshot view to the workspace) and SAVE & SHARE (`saveAndShare` — a detached snapshot view handed to the platform project-save dialog, which handles upload, layout linking, and sharing). `Project.showSaveDialog` is newer than the last released js-api, so it is reached via a cast and feature-detected at runtime, with `window.grok_Project_OpenSaveDialog` as the fallback binding; when neither exists, the dialog degrades to OPEN IN WORKSPACE only.
-
-### UI color coding
-
-All chip styling lives in `RunComparison.css` (`c2-comparison-badge` base plus modifiers), colored with the platform design tokens from `datagrok.css`:
-
-| Element | Value | Class / token |
-|---|---|---|
-| Source badge | `workflow` | `c2-badge-workflow` — `--steel-5` |
-| Source badge | `function` | `c2-badge-function` — `--blue-1` |
-| Source badge | `raw` | `c2-badge-raw` — `--grey-4` |
-| Confidence chip | `exact` | `c2-confidence-exact` — `--green-2` |
-| Confidence chip | `normalized` | `c2-confidence-normalized` — `--orange-2` |
-| Confidence chip | `fuzzy` | `c2-confidence-fuzzy` — `--red-3` |
-| Exclusion chip | error | `c2-status-error` — `--red-1` bg / `--red-4` text |
-| Axis-mode warning chip | `relative timeseries not set` / `independent points not set` | `c2-status-warning` — `--orange-1` bg / `--orange-3` text |
-| Selected row / expansion | | `color-mix` over `--blue-1` |
 
 ## Entry points and tests
 
