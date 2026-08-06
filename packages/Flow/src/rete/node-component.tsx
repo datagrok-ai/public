@@ -162,7 +162,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
           data-status={dgStatus}
           title={statusText || 'Not run yet'}
         />
-        <span className="ff-node-title-text" data-testid={tid('node-title-text')}>{node.label}</span>
+        <span className="ff-node-title-text" data-testid={tid('node-title-text')} title={node.label}>{node.label}</span>
         <span
           className="ff-node-caret"
           data-testid={tid('node-caret')}
@@ -172,26 +172,30 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         >{collapsed ? '▸' : '▾'}</span>
       </div>
 
-      {/* Pre-run "Needs input" hint takes precedence over an idle/stale status;
-          a real run's status (Done/Running/Error) wins otherwise. Shown
-          collapsed too, so a folded node still reports its state at a glance. */}
-      {attention ? (
-        <div className="ff-node-hint" data-testid={tid('node-hint')} title={`Connect or set: ${needs.join(', ')}`}>
-          Requires: {needs.join(', ')}
-        </div>
-      ) : statusText ? (
-        <div className="ff-node-statusline" data-testid={tid('node-statusline')} data-status={dgStatus}>{statusText}</div>
-      ) : null}
-
-      {node.description && !collapsed && (
-        <div className="ff-node-description" data-testid={tid('node-description')} title={node.description}>{node.description}</div>
-      )}
-
-      {/* Auto-generated plain-language caption — the flow documents itself
-          (U12). The title reveals the full text when CSS ellipsis truncates it. */}
-      {autoSummary && (
-        <div className="ff-node-summary" data-testid={tid('node-summary')} title={autoSummary}>{autoSummary}</div>
-      )}
+      {/* ONE always-rendered info line below the title — the card's height
+          never changes across idle → running → done → error. Content by
+          precedence: "Needs input" hint > run status > user description >
+          auto-summary; whatever loses the slot stays reachable in the tooltip
+          and the context panel. Collapsed nodes render no line at all (title
+          bar only — the status dot carries the state). */}
+      {!collapsed && (() => {
+        const line = attention ?
+          {kind: 'hint', text: `Requires: ${needs.join(', ')}`, tip: `Connect or set: ${needs.join(', ')}`,
+            testid: tid('node-hint')} :
+          statusText ?
+            {kind: 'status', text: statusText, tip: statusText, testid: tid('node-statusline')} :
+            node.description ?
+              {kind: 'description', text: node.description, tip: node.description, testid: tid('node-description')} :
+              autoSummary ?
+                {kind: 'summary', text: autoSummary, tip: autoSummary, testid: tid('node-summary')} :
+                {kind: 'empty', text: ' ', tip: '', testid: tid('node-infoline')};
+        return (
+          <div
+            className="ff-node-infoline" data-testid={line.testid} data-kind={line.kind}
+            data-status={dgStatus} title={line.tip}
+          >{line.text}</div>
+        );
+      })()}
 
       {!collapsed && (
         <div className="ff-node-body" data-testid={tid('node-body')}>

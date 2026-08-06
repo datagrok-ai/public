@@ -7,7 +7,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {FlowEditor, GraphEdit} from '../rete/flow-editor';
 import {ExecutionState, NodeExecStatus, ExecEvent} from './execution-state';
-import {ExecutionVisualizer} from './execution-visualizer';
+import {ExecutionVisualizer, errorSummary, normalizeErrorMessage} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
@@ -85,6 +85,10 @@ export class ExecutionController {
   /** When set, the next run is a headless slice (column picker); on completion
    *  we invoke this and skip the preview / end-of-run UI entirely. */
   private pendingOnComplete: (() => void) | null = null;
+  // Current run bookkeeping for the halt-on-error explanation (see 'run-complete').
+  private runNodeIds: Set<string> | null = null;
+  private runFailedNodeId: string | null = null;
+  private runIsBackground = false;
   outputPreview: OutputPreviewPanel;
 
   /** Called when execution stops at a breakpoint (so the view can prompt Continue). */
@@ -461,12 +465,19 @@ export class ExecutionController {
       if (this.outputPreview.pinnedNodeId == null || this.outputPreview.currentNodeId == null)
         this.outputPreview.clear();
       this.state.startRun(runId);
-      this.visualizer.resetAllNodes();
+      // Keep node visuals in place (stale, text intact) — resetting to idle
+      // here made every card flash blank and reflow at the start of each run.
+      this.visualizer.beginRun();
       this.flow.clearConnectionLabels();
       this.clearLiveRegistry();
     }
     this.pendingPreviewNodeId = opts?.focusNodeId ?? null;
     this.pendingOnComplete = opts?.onComplete ?? null;
+    // What this run intends to execute + how it ends — a halt-on-error abort
+    // must explain itself on the nodes it never reached (see 'run-complete').
+    this.runNodeIds = new Set(opts?.onlyNodeIds ?? this.flow.getNodes().map((n) => n.id));
+    this.runFailedNodeId = null;
+    this.runIsBackground = opts?.preserveState === true;
 
     const channel = `funcflow.exec.${runId}`;
     this.subscription = grok.events.onCustomEvent(channel).subscribe((event: ExecEvent) => {
@@ -586,15 +597,18 @@ export class ExecutionController {
         }
       }
       break;
-    case 'node-error':
+    case 'node-error': {
+      const msg = normalizeErrorMessage(event.error);
+      if (this.runFailedNodeId == null) this.runFailedNodeId = event.nodeId;
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.errored, {
-        endTime: event.timestamp, error: event.error, stack: event.stack,
+        endTime: event.timestamp, error: msg, stack: event.stack,
       });
-      this.visualizer.highlightNode(event.nodeId, NodeExecStatus.errored);
+      this.visualizer.highlightNode(event.nodeId, NodeExecStatus.errored, errorSummary(msg));
       // A failed pinned recompute: drop the spinner, keep the last good content.
       if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.clearUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
+    }
     case 'breakpoint-hit':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.running, {startTime: event.timestamp});
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.running);
@@ -603,6 +617,23 @@ export class ExecutionController {
     case 'run-complete':
       this.state.endRun();
       this.currentCall = null;
+      // A halted run leaves everything scheduled after the failure untouched —
+      // say so on those nodes ("Skipped — … failed") and, for an explicit run,
+      // in one balloon; a silent grey branch otherwise gives the user no path
+      // from an unrelated-looking stale node to the actual cause.
+      if (this.runFailedNodeId != null) {
+        const failed = this.flow.getNodeById(this.runFailedNodeId);
+        const failedLabel = failed?.label ?? 'a previous step';
+        const skipped = [...(this.runNodeIds ?? [])].filter((id) => {
+          const s = this.state.getNodeState(id)?.status;
+          return id !== this.runFailedNodeId &&
+            s !== NodeExecStatus.completed && s !== NodeExecStatus.errored;
+        });
+        this.visualizer.markSkipped(skipped, failedLabel);
+        if (!this.runIsBackground)
+          grok.shell.error(`Run stopped: "${failedLabel}" failed`);
+        this.runFailedNodeId = null;
+      }
       // The run's event channel is done — drop the subscription now rather
       // than at the start of the *next* run (a view that never runs again
       // would otherwise keep it, and everything it captures, alive).

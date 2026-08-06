@@ -22,7 +22,7 @@ import {
   getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
 import {
-  nodeHiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties, funcValidatorOf,
+  nodeHiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties, funcValidatorOf, inputCaptionOf,
 } from '../../utils/func-input-overrides';
 import {isLiteralChoiceList} from '../../utils/choice-refs';
 
@@ -122,7 +122,8 @@ export class FuncNode extends FlowNode {
     // one is declared (display only).
     for (const inp of funcInputs) {
       const slotType = dgTypeToSlotType(inp.propertyType);
-      this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType), getParamDisplayName(inp)));
+      this.addInput(inp.name, new ClassicPreset.Input(getSocket(slotType),
+        inputCaptionOf(func, inp.name) ?? getParamDisplayName(inp)));
       const inpDesc = getParamDescription(inp);
       if (inpDesc) this.inputDescriptions[inp.name] = inpDesc;
 
@@ -171,12 +172,15 @@ export class FuncNode extends FlowNode {
       }
     }
 
-    // 2. Pass-through outputs — one per input, in input order, label `→`.
+    // 2. Pass-through outputs — one per input, in input order. Labeled after
+    // the input they forward ("Table →") — an anonymous `→` made users hunt
+    // for which row carries the table onward past the declared outputs.
     this.passthroughCount = funcInputs.length;
     for (const inp of funcInputs) {
       const slotType = dgTypeToSlotType(inp.propertyType);
       const ptKey = `${inp.name}__pt`;
-      this.addOutput(ptKey, new ClassicPreset.Output(getSocket(slotType), '→'));
+      this.addOutput(ptKey, new ClassicPreset.Output(getSocket(slotType),
+        `${inputCaptionOf(func, inp.name) ?? getParamDisplayName(inp)} →`));
     }
 
     // 3. Real outputs after the pass-throughs.

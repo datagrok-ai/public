@@ -456,6 +456,13 @@ class CreationScriptBuilder {
       }
     }
 
+    // An Open File node titles itself with its file at import time — several
+    // "Open File" nodes with hidden path slots are indistinguishable on the
+    // canvas (and in "Skipped — … failed" messages) until they first run.
+    const path = String(node.inputValues['fullPath'] ?? '');
+    if ((node.dgFuncName ?? '').toLowerCase() === 'openfile' && path !== '')
+      node.label = `${node.label}: ${path.split('/').pop() || path}`;
+
     this.layer.set(node, maxSourceLayer + 1);
     return this.primaryOutput(node);
   }

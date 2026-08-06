@@ -35,6 +35,11 @@ function bareFuncName(node: FlowNode): string {
 export function summarizeNode(node: FlowNode): string {
   const t = str(node.dgTypeName);
 
+  // A viewer node's job is display, not computation — "Runs a function" (the
+  // generic func fallback) is wrong for it.
+  const viewerType = prop(node, 'viewerType');
+  if (viewerType) return clean(`Displays a ${humanize(viewerType).toLowerCase()}`);
+
   if (BUILTIN_SUMMARIES[t]) return clean(BUILTIN_SUMMARIES[t](node));
   if (t.startsWith('Inputs/')) {
     const p = prop(node, 'paramName') || str(node.label);

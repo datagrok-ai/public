@@ -24,10 +24,32 @@ export function statusLabel(status: NodeExecStatus, detail?: string): string {
   switch (status) {
   case NodeExecStatus.running:   return 'Running…';
   case NodeExecStatus.completed: return detail ? `Done · ${detail}` : 'Done';
-  case NodeExecStatus.errored:   return 'Error';
+  case NodeExecStatus.errored:   return detail ? `Error — ${detail}` : 'Error';
   case NodeExecStatus.stale:     return 'Out of date';
   default:                       return '';
   }
+}
+
+/** The message's first sentence, capped — what fits on a node's one-line
+ *  status; the full text stays in the tooltip and the panel's Execution pane. */
+export function errorSummary(message: string | undefined): string {
+  const first = String(message ?? '').split('\n')[0].split(/(?<=\.)\s/)[0].trim();
+  return first.length > 120 ? first.slice(0, 117) + '…' : first;
+}
+
+/** Strip the platform's exception wrapper and map server-side file paths back
+ *  to the user's `System:AppData/…` form — a flow user typed a Datagrok path,
+ *  not the datlas host's absolute one. */
+export function normalizeErrorMessage(message: string | undefined): string {
+  let m = String(message ?? '').trim();
+  const wrapper = /^Operation caused an exception\s*\(([\s\S]*)\)$/.exec(m);
+  if (wrapper) m = wrapper[1].trim();
+  // A failed file read can race into the d42 deserializer, which then throws
+  // its own parse error ("Offset is outside the bounds of the DataView") —
+  // pure implementation vocabulary with no path. Say what actually happened.
+  if (/outside the bounds of the DataView/i.test(m))
+    m = 'The server response was not a table — check the file path and that the file is a readable format';
+  return m.replace(/['"]?(?:\/[^\s'"]+)+\/packages\/data\/([^\s'"]+)['"]?/g, 'System:AppData/$1');
 }
 
 export class ExecutionVisualizer {
@@ -63,6 +85,22 @@ export class ExecutionVisualizer {
     for (const c of incoming) this.flow.setConnectionStatus(c.id, connStatus);
   }
 
+  /** A new run begins: completed nodes flip to stale but KEEP their last
+   *  status text ("Done · 1,000 × 6" under a grey dot) — never a blank/idle
+   *  flash between runs; each node's `node-start` then swaps status and text
+   *  to "Running…" atomically, so the card's content and height are stable
+   *  across the whole transition. Edges reset so the data-flow front reads
+   *  from the start. */
+  beginRun(): void {
+    for (const id of this.trackedNodes) {
+      const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
+      if (!node || node.dgStatus !== NodeExecStatus.completed) continue;
+      node.dgStatus = NodeExecStatus.stale;
+      void this.flow.updateNode(id);
+    }
+    this.flow.resetConnectionStatuses();
+  }
+
   resetAllNodes(): void {
     for (const id of this.trackedNodes) {
       const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
@@ -88,6 +126,19 @@ export class ExecutionVisualizer {
       node.statusText = statusLabel(NodeExecStatus.stale);
       void this.flow.updateNode(id);
       this.propagateToConnections(id, NodeExecStatus.stale);
+    }
+  }
+
+  /** Nodes a halted run never reached: stale visuals + a line naming the
+   *  failure, so a grey branch explains itself instead of just sitting there. */
+  markSkipped(ids: Iterable<string>, failedLabel: string): void {
+    for (const id of ids) {
+      const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
+      if (!node) continue;
+      node.dgStatus = NodeExecStatus.stale;
+      node.statusText = `Skipped — "${failedLabel}" failed`;
+      this.trackedNodes.add(id);
+      void this.flow.updateNode(id);
     }
   }
 

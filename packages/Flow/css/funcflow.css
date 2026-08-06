@@ -823,6 +823,14 @@
   content: '— ';
 }
 
+/* Right-aligned muted category (split off the label's baked "(…)"). */
+.ff-suggest-item-category {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--grey-4, #888);
+}
+
 .ff-suggest-item-builtin {
   font-weight: 500;
 }
@@ -1290,14 +1298,23 @@
   padding: 0;
 }
 
+/* An empty Description is otherwise a nearly invisible sliver — keep a
+   resting affordance so it reads as an editable field. */
+.funcflow-panel-header textarea {
+  border-bottom: 1px solid var(--grey-2, #e0e0e0);
+  min-height: 2.4em;
+}
+
 /* Rows are standalone DG inputs (not one ui.form), so give the panel a shared
    label column and one editor edge — otherwise every editor starts wherever
    its label happens to end and the pane reads ragged. The compact table
    chooser inside a column row opts out (its label is hidden). */
 .funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select)>label.ui-input-label {
-  flex: 0 0 90px;
-  width: 90px;
-  min-width: 90px;
+  /* 110px fits the common two-word captions ("Group By Columns") that the
+     platform default truncated mid-word. */
+  flex: 0 0 110px;
+  width: 110px;
+  min-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1481,42 +1498,43 @@
   padding: 0;
 }
 
-/* Compact metadata chips (full name, package, roles, tags) — replace the old
-   label+value rows of the Function pane. */
+/* The header's one-line metadata row (node kind · full name · package · roles
+   · tags) — plain text items separated by thin vertical rules; never wraps,
+   overflow ellipsizes. Replaces the old label+value rows of the Function pane. */
 .funcflow-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
   padding: 4px 0 2px;
+  overflow: hidden;
+}
+
+.funcflow-chip-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 10px;
+  background: var(--grey-2, #e0e0e0);
 }
 
 .funcflow-chip {
+  flex: 0 1 auto;
   font-size: 10px;
   color: var(--grey-5, #666);
-  background: var(--grey-1, #f2f2f5);
-  border: 1px solid var(--grey-2, #e0e0e0);
-  border-radius: 10px;
-  padding: 1px 8px;
-  max-width: 100%;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .funcflow-chip-muted {
-  background: transparent;
-  border-style: dashed;
   color: var(--grey-4, #888);
 }
 
-.funcflow-type-badge {
-  display: inline-block;
-  font-size: 10px;
-  color: #888;
-  background: #f0f0f0;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-top: 2px;
+/* The node-kind item leads the meta row — slightly emphasized. */
+.funcflow-chip-kind {
+  color: var(--grey-5, #666);
+  font-weight: 500;
+  text-transform: none;
 }
 
 /* ===== Rete v2 vanilla renderer styles ===== */
@@ -1527,6 +1545,9 @@
   position: relative;
   display: inline-block;
   min-width: 160px;
+  /* A long title/path must ellipsize, not stretch the card (inline-block
+     sizes to the nowrap title's intrinsic width without a cap). */
+  max-width: 280px;
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.10);
@@ -1693,46 +1714,50 @@
   background: rgba(0, 0, 0, 0.08);
 }
 
-/* Plain-language run status line under the title (e.g. "Done · 1,204 × 8"). */
-.ff-node-statusline {
+/* The single info line under the title — always rendered on an expanded node
+   (fixed 1-line height, so run-state changes never resize the card). Content
+   kind (hint / status / description / summary / empty) via data-kind. */
+.ff-node-infoline {
   padding: 2px 10px 3px 10px;
   font-size: 10.5px;
   font-weight: 500;
   line-height: 1.3;
+  height: 14px;
   color: #607d8b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  border-bottom: 1px solid #f3f5f7;
 }
 
-.ff-node-statusline[data-status="running"] {
+.ff-node-infoline[data-kind="hint"] {
+  font-weight: 600;
+  color: #c77700;
+}
+
+.ff-node-infoline[data-kind="description"] {
+  font-style: italic;
+  color: #555;
+}
+
+.ff-node-infoline[data-kind="summary"] {
+  color: #8a98a5;
+}
+
+.ff-node-infoline[data-kind="status"][data-status="running"] {
   color: #1976d2;
 }
 
-.ff-node-statusline[data-status="completed"] {
+.ff-node-infoline[data-kind="status"][data-status="completed"] {
   color: #2e7d32;
 }
 
-.ff-node-statusline[data-status="errored"] {
+.ff-node-infoline[data-kind="status"][data-status="errored"] {
   color: #c62828;
 }
 
-.ff-node-statusline[data-status="stale"] {
+.ff-node-infoline[data-kind="status"][data-status="stale"] {
   color: #9e9e9e;
-}
-
-/* Pre-run "Needs input" hint (amber) + matching status dot, so an incomplete
-   node reads as "needs attention" before you ever hit Run. */
-.ff-node-hint {
-  padding: 2px 10px 3px 10px;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #c77700;
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .ff-node[data-attention="true"] .ff-node-status {
@@ -1755,37 +1780,6 @@
   paint-order: stroke;
   pointer-events: none;
   user-select: none;
-}
-
-/* KNIME-style annotation under the title — italic, muted, wraps on long text. */
-.ff-node-description {
-  padding: 4px 10px 6px 10px;
-  font-size: 11px;
-  font-style: italic;
-  color: #555;
-  line-height: 1.3;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border-bottom: 1px solid #f0f0f0;
-  text-overflow: ellipsis;
-  max-width: 200px;
-  max-height: 30px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-/* Auto-generated plain-language caption (U12) — lighter than a user-written
-   description so it reads as "the system's guess", not your annotation. */
-.ff-node-summary {
-  padding: 3px 10px 5px 10px;
-  font-size: 10.5px;
-  color: #8a98a5;
-  line-height: 1.3;
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #f3f5f7;
 }
 
 .ff-node-body {
@@ -2114,6 +2108,12 @@
    without expanding the node anyway, so showing them is just clutter. */
 .ff-node-collapsed {
   min-width: 140px;
+}
+
+/* A collapsed node has no info line — the dot alone is too small to spot a
+   failure at zoom-out, so a folded errored node gets a red edge accent. */
+.ff-node-collapsed[data-status="errored"] {
+  border-left: 3px solid #e53935;
 }
 
 .ff-node-collapsed .ff-node-title {
@@ -2627,6 +2627,10 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   cursor: pointer;
   color: var(--grey-4, #9aa5b1);
   padding: 4px;
+  /* Unpinned reads as "loose" (tilted); pinning stands it upright — the
+     color change alone was too subtle at 12px. */
+  transform: rotate(45deg);
+  transition: transform 0.12s, color 0.12s;
 }
 
 .ff-output-panel-pin:hover {
@@ -2636,6 +2640,9 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 .ff-output-panel-pin[data-pinned="true"] {
   color: var(--blue-1, #2083d5);
   font-weight: 600;
+  transform: none;
+  background: var(--grey-1, #f2f2f5);
+  border-radius: 4px;
 }
 
 .ff-output-panel-caret {

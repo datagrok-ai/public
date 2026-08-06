@@ -2064,6 +2064,12 @@ export class FlowEditor {
       return !!n && n.dgNodeType !== 'output' && !this.groupOf(id);
     });
     if (ids.length === 0) return null;
+    // A fresh group names itself after its first member ("Open File +2") —
+    // a canvas of groups all called "Group" tells the reader nothing.
+    if (!opts.title && ids.length > 0) {
+      const first = String(this.editor.getNode(ids[0])?.label ?? '').split(':')[0].trim();
+      if (first) opts = {...opts, title: ids.length > 1 ? `${first} +${ids.length - 1}` : first};
+    }
     const g = new FlowGroup({...opts, memberIds: ids});
     this.groups.set(g.id, g);
     const content = this.area.area.content;
@@ -2761,8 +2767,17 @@ export class FlowEditor {
           row.className = 'ff-suggest-item' + (i === activeIdx ? ' ff-suggest-item-active' : '');
           const label = document.createElement('span');
           label.className = 'ff-suggest-item-label';
-          label.textContent = c.label;
+          // The baked "  (Category)" suffix renders as its own right-aligned
+          // muted span — repeated parentheses on every row read as noise.
+          const catMatch = /^(.*?)\s{2}\((.+)\)$/.exec(c.label);
+          label.textContent = catMatch ? catMatch[1] : c.label;
           row.appendChild(label);
+          if (catMatch && !c.reason) {
+            const cat = document.createElement('span');
+            cat.className = 'ff-suggest-item-category';
+            cat.textContent = catMatch[2];
+            row.appendChild(cat);
+          }
           // An engine-recommended item carries its reason inline, same voice
           // as the toolbox Suggestions pane ("Molecule column \"smiles\"").
           if (c.reason) {
@@ -2988,9 +3003,23 @@ export class FlowEditor {
   private showRootContextMenu(event: MouseEvent): void {
     const canvasPt = this.screenToCanvas(event.clientX, event.clientY);
     DG.Menu.popup()
-      .item('Add annotation here', () => void this.addAnnotation({
-        pos: {x: canvasPt.x - 120, y: canvasPt.y - 70},
-      }))
+      .item('Add annotation here', () => {
+        const ann = this.addAnnotation({pos: {x: canvasPt.x - 120, y: canvasPt.y - 70}});
+        // Ready to type: focus with the placeholder selected — a frame that
+        // says "Annotation" until you discover double-click is a dead end.
+        setTimeout(() => {
+          ann.titleEl.focus();
+          const sel = window.getSelection();
+          if (sel) {
+            const range = document.createRange();
+            range.selectNodeContents(ann.titleEl);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }, 0);
+      })
+      .item('Paste', () => void this.pasteClipboard())
+      .item('Tidy up layout', () => void this.autoLayout())
       .show({causedBy: event});
   }
 

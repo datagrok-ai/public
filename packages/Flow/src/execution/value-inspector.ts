@@ -82,12 +82,16 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
   const shown = Object.entries(state.outputs ?? {})
     .filter(([name, summary]) => summary != null && !name.endsWith('__pt'));
   if (shown.length > 0) {
-    const header = ui.divText('Outputs');
+    // Outputs kept from before a failure are still useful (inspect what the
+    // node last produced) but must not read as THIS run's result.
+    const fromBefore = state.status === NodeExecStatus.errored || state.status === NodeExecStatus.stale;
+    const header = ui.divText(fromBefore ? 'Last successful outputs' : 'Outputs');
     header.style.fontWeight = 'bold';
     header.style.marginBottom = '4px';
     container.appendChild(header);
-    for (const [name, summary] of shown)
-      container.appendChild(buildMetaRow(name, summary));
+    const rows = ui.div(shown.map(([name, summary]) => buildMetaRow(name, summary)));
+    if (fromBefore) rows.style.opacity = '0.6';
+    container.appendChild(rows);
   }
 
   if (state.error) {
@@ -163,7 +167,7 @@ function buildMetaRow(name: string, summary: ValueSummary): HTMLElement {
     if (summary.clone) {
       const addBtn = ui.iconFA('plus-circle', () => {
         grok.shell.addTableView(summary.clone as DG.DataFrame);
-      }, 'Add to workspace');
+      }, 'Open this result as a full table view in the workspace');
       addBtn.style.cssText = 'cursor:pointer;color:var(--blue-1, #2083d5);font-size:13px;';
       headerLine.appendChild(addBtn);
     }

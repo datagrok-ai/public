@@ -70,6 +70,47 @@ export const HIDDEN_FUNC_OUTPUTS: Record<string, Record<string, boolean>> = {
   'Chem:runElementalAnalysis': {res: true},
 };
 
+/** `{[func.nqName]: {[inputName]: caption}}` — display captions for
+ *  parameters whose declared names read as implementation ("Keys1"). Purely
+ *  cosmetic: slot keys, stored values, and compilation stay on the real
+ *  parameter names. */
+export const FUNC_INPUT_CAPTIONS: Record<string, Record<string, string>> = {
+  'core:JoinTables': {
+    table1: 'Left table', table2: 'Right table',
+    keys1: 'Left keys', keys2: 'Right keys',
+    values1: 'Columns from left', values2: 'Columns from right',
+  },
+};
+
+/** The registered display caption for a function input, or null. */
+export function inputCaptionOf(func: DG.Func, name: string): string | null {
+  try {
+    return FUNC_INPUT_CAPTIONS[func.nqName]?.[name] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** `{[func.nqName]: {[inputName]: predicate}}` — inputs whose panel row only
+ *  renders while the predicate holds against the node's current values. The
+ *  slot and stored value stay untouched (the compiler applies its own guard). */
+export const CONDITIONAL_FUNC_INPUTS: Record<string, Record<string, (node: FlowNode) => boolean>> = {
+  // A sheet name only means anything for an Excel file — for every other
+  // extension the row is noise (and the compiler drops the value anyway).
+  'core:OpenFile': {sheetName: (node) => /\.xlsx$/i.test(String(node.inputValues['fullPath'] ?? ''))},
+};
+
+/** True when a registered visibility predicate says the panel should NOT
+ *  render this input right now. Fails open (row shown) on any error. */
+export function inputHiddenByCondition(func: DG.Func, name: string, node: FlowNode): boolean {
+  try {
+    const p = CONDITIONAL_FUNC_INPUTS[func.nqName]?.[name];
+    return p ? !p(node) : false;
+  } catch {
+    return false;
+  }
+}
+
 /** The hidden-input names for a function, `∅` when none are registered
  *  (or the Dart proxy throws on `nqName`). Hidden EVERYWHERE — the panel
  *  filters by this set; the node body additionally hides
@@ -355,23 +396,33 @@ export function wrapperProperties(wrapper: FuncWrapper): DG.Property[] {
  *  paths. */
 function filePathEditor(param: DG.Property): CustomInputEditor {
   const ed: CustomInputEditor = {} as CustomInputEditor;
+  let current = '';
   const input = ui.input.file(getParamDisplayName(param), {
-    onValueChanged: (v) => ed.onChanged?.(v ? v.fullPath : ''),
+    onValueChanged: (v) => {
+      current = v ? v.fullPath : '';
+      ed.onChanged?.(current);
+    },
     // temporary thing, remove local file opening. once we figure out how to handle local files, remove this
-    onCreated: (a) => a.root.querySelector('.ui-input-options')?.querySelector('.fa-folder-open')?.remove?.()
+    onCreated: (a) => a.root.querySelector('.ui-input-options')?.querySelector('.fa-folder-open')?.remove?.(),
+  });
+  // A hand-typed path must commit on change/Enter like every other string row.
+  // DG's FileInput reports a value only once the server RESOLVES it, so a
+  // typed-but-unresolved path was silently dropped: the panel reverted on the
+  // next refresh and the following run reported success on the OLD file.
+  const text = input.root.querySelector('input[type="text"], input:not([type])') as HTMLInputElement | null;
+  text?.addEventListener('change', () => {
+    const typed = text.value.trim();
+    if (typed === current) return;
+    current = typed;
+    ed.onChanged?.(typed);
   });
   ed.element = input.root;
-  ed.getValue = (): unknown => {
-    try {
-      return input.value?.fullPath ?? '';
-    } catch {
-      return '';
-    }
-  };
+  ed.getValue = (): unknown => current;
   ed.setValue = (v): void => {
+    current = v === undefined || v === null ? '' : String(v);
     try {
-      if (v !== undefined && v !== null && String(v) !== '')
-        input.value = DG.FileInfo.fromString(String(v), '');
+      if (current !== '')
+        input.value = DG.FileInfo.fromString(current, '');
     } catch {/* leave the editor blank */}
   };
   return ed;

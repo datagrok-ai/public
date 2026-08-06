@@ -37,7 +37,9 @@ export interface ViewerSpec {
   options: ViewerOption[];
 }
 
-const TITLE: ViewerOption = {key: 'title', label: 'Title', kind: 'string'};
+// "Chart title", not "Title" — the panel header already has the NODE's Title
+// field, and two identical labels in one panel read as a duplicate.
+const TITLE: ViewerOption = {key: 'title', label: 'Chart title', kind: 'string'};
 
 /** Curated core viewers (from the `DataFrame.plot` namespace) with a few
  *  verified, high-value options exposed. Everything else is reached via the

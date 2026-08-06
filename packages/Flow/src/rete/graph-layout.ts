@@ -228,7 +228,8 @@ export function orderedComponents(nodes: FlowNode[], edges: LayoutEdge[]): FlowN
 export function estimateNodeHeight(node: FlowNode): number {
   if (node.collapsed) return 30;
   const rows = Math.max(Object.keys(node.inputs).length, Object.keys(node.outputs).length, 1);
-  return 28 + (node.description ? 22 : 0) + 12 + rows * 20;
+  // title bar + the always-present one-line info row + body padding + rows.
+  return 28 + 19 + 12 + rows * 20;
 }
 
 /** Estimated rendered width. Collapsed nodes are title-driven (CSS min-width
@@ -236,5 +237,7 @@ export function estimateNodeHeight(node: FlowNode): number {
  *  expanded nodes are dominated by their socket-label rows. */
 export function estimateNodeWidth(node: FlowNode): number {
   const labelWidth = 44 + String(node.label ?? '').length * 6.5;
-  return Math.max(node.collapsed ? 160 : 220, labelWidth);
+  // CSS caps the card at max-width 280 (long titles ellipsize) — the estimate
+  // must cap with it or long-titled nodes get phantom column width.
+  return Math.min(280, Math.max(node.collapsed ? 160 : 220, labelWidth));
 }
