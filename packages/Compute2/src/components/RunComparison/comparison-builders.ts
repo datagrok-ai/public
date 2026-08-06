@@ -8,8 +8,9 @@ import {
 } from './types';
 import {resolveDisplayUnit, pickAutoUnit} from './selection';
 
-// appends (2), (3)... while the name is taken; registers the result in the set
-const uniqueName = (base: string, taken: Set<string>) => {
+// appends (2), (3)... while the name is taken; "claim" — mutates the set,
+// registering the result so successive calls stay collision-free
+const claimUniqueName = (base: string, taken: Set<string>) => {
   let name = base;
   for (let n = 2; taken.has(name); n++)
     name = `${base} (${n})`;
@@ -30,7 +31,7 @@ export function buildScalarComparison(
 ): ScalarComparisonResult {
   const ordered = entries.filter((entry) => target.bindings.some((b) => b.entryId === entry.id));
   const bindings = ordered.map((entry) => target.bindings.find((b) => b.entryId === entry.id)!);
-  const valueColumnName = uniqueName(target.displayName, new Set([RUN_COLUMN, 'Path']));
+  const valueColumnName = claimUniqueName(target.displayName, new Set([RUN_COLUMN, 'Path']));
 
   // fromList with an explicit string type: fromStrings infers the type from values,
   // so numeric-looking run names would produce a numeric column and break chart legends
@@ -47,7 +48,7 @@ function dedupeLabels(targets: {key: string, displayName: string}[], reserved: s
   const taken = new Set(reserved);
   const labels = new Map<string, string>();
   for (const target of targets)
-    labels.set(target.key, uniqueName(target.displayName, taken));
+    labels.set(target.key, claimUniqueName(target.displayName, taken));
   return labels;
 }
 
@@ -259,7 +260,7 @@ export function buildMultiColumnComparison(
   if (axis.kind === 'elapsed') {
     const taken = new Set([RUN_COLUMN, ...splitColumnName ? [splitColumnName] : [],
       ...targets.map((target) => labels.get(target.key)!)]);
-    indexColumnName = uniqueName(`${indexColumnName} (${displayUnit})`, taken);
+    indexColumnName = claimUniqueName(`${indexColumnName} (${displayUnit})`, taken);
   }
 
   const longIndex: any[] = [];
@@ -295,7 +296,7 @@ export function buildMultiColumnComparison(
   let chartDf: DG.DataFrame;
   if (isScatter && targets.length > 1) {
     const taken = new Set([indexColumnName, RUN_COLUMN, ...splitColumnName ? [splitColumnName] : []]);
-    melted = {seriesColumnName: uniqueName('Data', taken), valueColumnName: uniqueName('Value', taken)};
+    melted = {seriesColumnName: claimUniqueName('Data', taken), valueColumnName: claimUniqueName('Value', taken)};
     const meltedIndex: any[] = [];
     const meltedSplits: string[] = [];
     const meltedRuns: string[] = [];

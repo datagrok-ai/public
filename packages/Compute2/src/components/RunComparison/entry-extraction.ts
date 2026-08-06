@@ -51,14 +51,20 @@ const columnInfos = (df: DG.DataFrame) => [...df.columns].map((col) => ({
   units: col.meta?.units || undefined,
 }));
 
+interface CallNodes {
+  scalars: ScalarNodeInfo[];
+  tables: TableNodeInfo[];
+  dataFrames: Map<string, DG.DataFrame>;
+}
+
 function extractCallNodes(
   call: DG.FuncCall,
   pathPrefix: string,
   friendlyPrefix: string,
-  scalars: ScalarNodeInfo[],
-  tables: TableNodeInfo[],
-  dataFrames: Map<string, DG.DataFrame>,
-) {
+): CallNodes {
+  const scalars: ScalarNodeInfo[] = [];
+  const tables: TableNodeInfo[] = [];
+  const dataFrames = new Map<string, DG.DataFrame>();
   const io = [
     ...[...call.inputParams.values()].map((p) => ({param: p, value: call.inputs[p.property.name]})),
     ...[...call.outputParams.values()].map((p) => ({param: p, value: call.outputs[p.property.name]})),
@@ -104,6 +110,7 @@ function extractCallNodes(
       dataFrames.set(path, df);
     }
   }
+  return {scalars, tables, dataFrames};
 }
 
 interface WorkflowStep {
@@ -146,6 +153,11 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   const scalars: ScalarNodeInfo[] = [];
   const tables: TableNodeInfo[] = [];
   const dataFrames = new Map<string, DG.DataFrame>();
+  const addNodes = (nodes: CallNodes) => {
+    scalars.push(...nodes.scalars);
+    tables.push(...nodes.tables);
+    nodes.dataFrames.forEach((df, path) => dataFrames.set(path, df));
+  };
   const serializedConfig = call.options?.[CONFIG_PATH];
   const modelName = call.func?.friendlyName ?? call.func?.name ?? '';
 
@@ -160,13 +172,13 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
     for (const step of steps) {
       try {
         const stepCall = await historyUtils.loadRun(step.funcCallId);
-        extractCallNodes(stepCall, step.path, step.friendlyPath, scalars, tables, dataFrames);
+        addNodes(extractCallNodes(stepCall, step.path, step.friendlyPath));
       } catch (e) {
         console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, e);
       }
     }
   } else {
-    extractCallNodes(call, '', '', scalars, tables, dataFrames);
+    addNodes(extractCallNodes(call, '', ''));
   }
 
   const name = getRunTitle(call);

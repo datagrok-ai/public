@@ -157,13 +157,11 @@ function clusterByName<P>(items: ClusterItem<P>[]): Cluster<P>[] {
 // and duplicate keys corrupt keyed list rendering
 function dedupeTargetKeys<T extends TargetBase>(targets: T[]): T[] {
   const seen = new Map<string, number>();
-  for (const target of targets) {
+  return targets.map((target) => {
     const count = seen.get(target.key) ?? 0;
     seen.set(target.key, count + 1);
-    if (count > 0)
-      target.key = `${target.key}:${count + 1}`;
-  }
-  return targets;
+    return count > 0 ? {...target, key: `${target.key}:${count + 1}`} : target;
+  });
 }
 
 /** Groups numeric scalars across entries into candidate targets (coverage >= 2). */
