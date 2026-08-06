@@ -96,7 +96,7 @@ All builders produce a *long/concatenated* DataFrame — there is deliberately n
 
 Everything re-derives from `entries` + the selections:
 
-1. `indexColumnsMap` / `splitColumnsMap` — validated Map form of the selections (a pick becomes invisible if its type toggle is off, unless it's the annotated default).
+1. `indexColumnsMap` / `splitColumnsMap` — validated Map form of the selections: an index pick counts only while its column exists in that table with an index-candidate type (or is the table's annotated default); a split pick additionally requires a valid split column against the current index.
 2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted scalars first, then columns, alphabetically by display name — stable, so toggling candidates never reorders the list; the row displays the live enabled `coverage`. Changing an index selection immediately re-runs matching.
 3. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets`.
 4. `comparison` — the final result object: calls the right builder based on `target.kind` and `multiMode`, wrapped in `markRaw` (DataFrames must not be made reactive).
