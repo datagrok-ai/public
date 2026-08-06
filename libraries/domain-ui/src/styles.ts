@@ -71,6 +71,21 @@ div.ui-div.domain-ui-entity-page > div.ui-box.d4-tab-host {
   height: auto;
 }
 
+/* A detail pane that carries the row-cap banner above its grid: same rule, same
+   reason — the wrapper div would otherwise hand the grid's box the default
+   400x300 of the div.ui-div > div.ui-box rule in ui.css. */
+div.ui-div.domain-ui-detail-pane {
+  height: 100%;
+  min-height: 0;
+}
+
+div.ui-div.domain-ui-detail-pane > div.ui-box {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: auto;
+  height: auto;
+}
+
 /* The list's content area: whatever the toolbar leaves. min-height:0 is what
    lets a canvas grid inside it shrink instead of overflowing the page. */
 .domain-ui-list-body {

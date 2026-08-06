@@ -2,11 +2,15 @@
 // over a domain table is ONE expression — list page, row page, deep links,
 // permission gating and the unsaved-changes prompt included.
 //
+// This is the CLASS layer, which stays public as the extension point. The way in
+// for new code is the handle — see domains-facade-app.js for the same app in one
+// line.
+//
 // In a package you write `import {DomainAppView} from '@datagrok-libraries/domain-ui'`.
 // A sample script has no bundler, so it borrows the copy ApiTests bundles and
 // re-exports; calling any of its functions loads the package.
 await grok.functions.call('ApiTests:getDT', {rows: 1});
-const {DomainAppView, DomainEntityAppView} = apitests.domainUi;
+const {DomainAppView, DomainEntityAppView, domainHandler} = apitests.domainUi;
 
 const items = grok.dapi.domains.table('apitests.item');
 
@@ -22,4 +26,4 @@ const first = (await items.query({limit: 1}))[0];
 if (first == null)
   grok.shell.info('apitests.item has no rows yet — the list page offers "New Item...".');
 else
-  grok.shell.addView(DomainEntityAppView.forRow(items, list.handler.rowFrom(first)));
+  grok.shell.addView(DomainEntityAppView.forRow(items, domainHandler('apitests.item').rowFrom(first)));

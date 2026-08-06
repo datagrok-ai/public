@@ -12,17 +12,18 @@ export const _package = new DG.Package();
 // `apitests.domainUi` — library-only surface has no other way into a console or
 // a manual probe (sample scripts run with the platform globals only).
 export * as domainUi from '@datagrok-libraries/domain-ui';
-import {DomainAppView} from '@datagrok-libraries/domain-ui';
+import {domains} from '@datagrok-libraries/domain-ui';
 
 //name: Domain Items
 //description: A complete browse/CRUD app over apitests.item, from domain-ui defaults alone
 //meta.role: app
 //input: string path {meta.url: true; optional: true}
 //output: view result
-export function domainItemsApp(_path?: string): DG.ViewBase {
-  // The declared `path` input is what makes the app URL-addressable; the view
-  // reads the deep link itself (restoreFromUrl), so the parameter is unused.
-  return new DomainAppView(grok.dapi.domains.table('apitests.item'));
+export async function domainItemsApp(): Promise<DG.ViewBase> {
+  // UI-FACADE §1.1, verbatim. The declared `path` input is what makes the app
+  // URL-addressable; the page reads the deep link itself (restoreFromUrl), so the
+  // function takes no parameter.
+  return (await domains.table('apitests.item')).app();
 }
 
 //name: getTable

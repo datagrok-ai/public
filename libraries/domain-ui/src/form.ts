@@ -24,7 +24,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 
-import {DomainFrameEditor, IEditorHost, isReferenceProperty} from './frame-editor';
+import {DomainFrameEditor, IDomainTableContext, IEditorHost,
+  isReferenceProperty} from './frame-editor';
 import {discardFunc, resetFunc, saveFunc} from './actions';
 import {applyDomainUiStyles} from './styles';
 
@@ -35,26 +36,6 @@ export const REF_SUGGESTION_LIMIT = 10;
 const PRINCIPAL_PAGE_SIZE = 1000;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * The prefetched table context a SYNCHRONOUS widget factory needs: the typed
- * client plus the registry metadata and capabilities, resolved once by
- * `domains.table(...)` (which is why `form()` and friends need no await).
- *
- * Capabilities are a SNAPSHOT taken when the context was acquired — the contract
- * the grid has always had, moved one level up: a later grant change (or a
- * `grok.dapi.domains.invalidateUiCaches()`) does not reach widgets already built
- * from this context; re-acquire the handle to re-gate.
- */
-export interface IDomainTableContext {
-  readonly client: DG.DomainTableClient;
-  /** Registry {@link DG.Property} metadata of the table's declared columns. */
-  readonly properties: DG.Property[];
-  readonly info: DG.DomainTableInfo;
-  readonly capabilities: DG.DomainTableCapabilities;
-  /** `'<schema>.<table>'`. */
-  readonly table: string;
-}
 
 /** Options of `domains.table(...).form()` / `formDialog()`. */
 export interface DomainFormOptions {
@@ -628,7 +609,8 @@ export class DomainForm extends DG.Widget implements IEditorHost {
 
   /** Puts the form back to the values it was opened with. For a one-row form this
    * IS the discard: a new row must survive it (dropping it would leave the form
-   * without anything to edit), so its values are re-seeded instead. */
+   * without anything to edit), so it is re-seeded — and pristine again, exactly
+   * as it was when the form opened. */
   reset(): void {
     this._clearBanner();
     this._customErrors.clear();
@@ -643,9 +625,11 @@ export class DomainForm extends DG.Widget implements IEditorHost {
     if (this.isEditing)
       this._editor.revertRow(this._row);
     else {
-      const values = this._options.values ?? {};
-      for (const p of this.editableProperties())
-        this._editor.setValue(this._row, p.name, values[p.name] ?? null);
+      // Dropping the row and re-adding it (rather than writing every value back)
+      // is what restores the PRISTINE state: a reset form must no more arm the
+      // unsaved-changes gate than a freshly opened one does.
+      this._editor.discard();
+      this._editor.addRow(Object.assign({}, this._options.values ?? {}), {pristine: true});
     }
     this._syncInputs();
   }
@@ -777,8 +761,12 @@ export class DomainForm extends DG.Widget implements IEditorHost {
             404, {});
       }
       else {
-        const values = Object.assign({}, this._options.values ?? {}, this._pending);
-        this._editor = await DomainFrameEditor.forRows(this._context.client, [values], options);
+        // Local, no round trip: everything `forRows` awaits is in the prefetched
+        // context. The row is PRISTINE — an untouched New form, however prefilled,
+        // is not a pending change (see `DomainFrameEditor.addRow`).
+        this._editor = DomainFrameEditor.forContext(this._context, options);
+        this._editor.addRow(Object.assign({}, this._options.values ?? {}, this._pending),
+          {pristine: Object.keys(this._pending).length === 0});
       }
       if (this.isEditing)
         for (const name of Object.keys(this._pending))

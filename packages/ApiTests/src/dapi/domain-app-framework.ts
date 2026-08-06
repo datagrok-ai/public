@@ -40,15 +40,9 @@ category('Dapi: domain app framework', () => {
   const query = (prefix: string): any =>
     ({filter: {property: 'sku', operator: 'like', value: `${prefix}%`}, sort: 'sku'});
 
-  /** A list over the fixture table. `create` resolves NULL when the first load
-   * was refused by the unsaved-changes gate — which cannot happen for a fresh
-   * list with no gate of its own, so it is a failure here, not a branch. */
-  async function listOf(options: any): Promise<EntityListWidget> {
-    const list = await EntityListWidget.create(items() as any, options);
-    if (list == null)
-      throw new Error('EntityListWidget.create was refused by the unsaved-changes gate');
-    return list;
-  }
+  // A list over the fixture table, loaded.
+  const listOf = (options: any): Promise<EntityListWidget> =>
+    EntityListWidget.create(items() as any, options);
 
   /** Buttons of a widget, by their caption. */
   const buttons = (root: HTMLElement): string[] =>
@@ -213,17 +207,21 @@ category('Dapi: domain app framework', () => {
       await awaitCheck(() => `${view!.root.textContent}`.includes('apitests.item_event'),
         `the detail tab is missing: ${view!.root.textContent}`, 15000);
 
-      // The Details pane is the platform's reflective form, bound to the row:
-      // typing into it writes through, and Save sends exactly what changed.
+      // The Details pane is a DomainForm in edit mode: typing into it writes
+      // through the page's ONE editor, and Save sends exactly what changed as a
+      // single transaction.
       const renamed = `Renamed ${stamp()}`;
       await awaitCheck(() => nameInput(view!.root) != null, 'the property form never rendered', 15000);
+      await view.form!.ready;
       const input = nameInput(view.root)!;
       input.value = renamed;
       input.dispatchEvent(new Event('input', {bubbles: true}));
       input.dispatchEvent(new Event('change', {bubbles: true}));
-      expect(view.row!.values['name'], renamed, 'the form did not write into the row');
+      expect(view.form!.getValue('name'), renamed, 'the form did not write through the editor');
+      expect(view.isDirty, true, 'the page does not answer for the form it hosts');
       expect(await view.save(), true, 'the form save failed');
       expect((await items().get(ids[0])).name, renamed, 'the save never reached the server');
+      expect(view.isDirty, false, 'the save left the form pending');
     } finally {
       view?.detach();
       await cleanup(prefix);

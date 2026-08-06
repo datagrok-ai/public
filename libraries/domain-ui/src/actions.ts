@@ -36,6 +36,9 @@ export interface IWidgetActions {
   save?(): Promise<boolean>;
   discard?(): void | Promise<void>;
   reset?(): void | Promise<void>;
+  addRow?(): number | Promise<number>;
+  deleteRow?(): boolean | Promise<boolean>;
+  refresh?(): void | Promise<any>;
 }
 
 const _funcs = new Map<string, DG.Func>();
@@ -90,6 +93,36 @@ export function resetFunc(): DG.Func {
     await widget.reset();
     return true;
   }, 'Restores the values the widget was opened with');
+}
+
+/** Appends an empty row to a grid's pending batch (prefilled with the grid's
+ * `defaults`); false when the widget cannot insert. */
+export function addRowFunc(): DG.Func {
+  return widgetActionFunc('AddRow', async (widget: any) => {
+    if (typeof widget?.addRow !== 'function')
+      return false;
+    return await widget.addRow() >= 0;
+  }, 'Appends a new row to the widget');
+}
+
+/** Marks the widget's current row for deletion (the save writes it). */
+export function deleteRowFunc(): DG.Func {
+  return widgetActionFunc('DeleteRow', async (widget: any) => {
+    if (typeof widget?.deleteRow !== 'function')
+      return false;
+    return await widget.deleteRow() === true;
+  }, 'Marks the current row of the widget for deletion');
+}
+
+/** Re-reads the widget's rows from the server (through the unsaved-changes gate
+ * of whatever owns it). */
+export function refreshFunc(): DG.Func {
+  return widgetActionFunc('Refresh', async (widget: any) => {
+    if (typeof widget?.refresh !== 'function')
+      return false;
+    await widget.refresh();
+    return true;
+  }, 'Reloads the widget from the server');
 }
 
 /** A function name for [caption]: identifier characters only, so an action called

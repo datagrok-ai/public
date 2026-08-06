@@ -183,6 +183,52 @@ export function editorsOf(widget: any): DomainFrameEditor[] {
   return Array.isArray(editors) ? editors : [];
 }
 
+/**
+ * The prefetched table context a SYNCHRONOUS widget factory needs: the typed
+ * client plus the registry metadata and capabilities, resolved once by
+ * `domains.table(...)` (which is why `form()`, `grid()` and friends need no await).
+ *
+ * Capabilities are a SNAPSHOT taken when the context was acquired — the contract
+ * the grid has always had, moved one level up: a later grant change (or a
+ * `grok.dapi.domains.invalidateUiCaches()`) does not reach widgets already built
+ * from this context; re-acquire the handle to re-gate.
+ */
+export interface IDomainTableContext {
+  readonly client: DG.DomainTableClient;
+  /** Registry {@link DG.Property} metadata of the table's declared columns. */
+  readonly properties: DG.Property[];
+  readonly info: DG.DomainTableInfo;
+  readonly capabilities: DG.DomainTableCapabilities;
+  /** `'<schema>.<table>'`. */
+  readonly table: string;
+}
+
+/**
+ * Resolves [client]'s registry metadata and the caller's capabilities in ONE
+ * round of requests — the async boundary every synchronous widget factory sits
+ * behind (`domains.table()`, `DomainGrid.create()`, `EntityListWidget.create()`).
+ */
+export async function acquireDomainContext(
+  client: DG.DomainTableClient): Promise<IDomainTableContext> {
+  const address = `${client.schema}.${client.table}`;
+  const [properties, info, capabilities] = await Promise.all([
+    grok.dapi.domains.registry.rowProperties(address),
+    grok.dapi.domains.registry.tableInfo(address),
+    client.capabilities(),
+  ]);
+  return {client: client, properties: properties, info: info,
+    capabilities: capabilities, table: address};
+}
+
+/** An empty frame of [properties]' columns — what the local (no round trip)
+ * editors of {@link DomainFrameEditor.forContext} / `forRows` start from. */
+function _emptyFrame(properties: DG.Property[]): DG.DataFrame {
+  const df = DG.DataFrame.create(0);
+  for (const p of properties)
+    df.columns.add(DG.Column.fromType(columnTypeOf(p), p.name, 0));
+  return df;
+}
+
 /** The frame column type that holds [p]'s values — what {@link DomainFrameEditor.forRows}
  * builds a local frame from (a `queryDf` result carries the server's own types). */
 function columnTypeOf(p: DG.Property): DG.ColumnType {
@@ -255,6 +301,10 @@ export class DomainFrameEditor {
   /** Running {@link changeCount}: kept per row so a keystroke costs one row
    * recount instead of a scan of the frame. */
   private _contributions = new Map<number, number>();
+  /** `'new'` rows nobody has written to yet — see {@link addRow}. Reset with the
+   * other per-row caches, which is the safe direction: a pristine row that lost
+   * its mark counts as a change, never the other way round. */
+  private _pristine = new Set<number>();
   private _changeCount = 0;
   private _suspend = false;
   private _saving = false;
@@ -314,10 +364,28 @@ export class DomainFrameEditor {
   }
 
   /**
+   * SYNCHRONOUS: an editor over an EMPTY frame of [context]'s declared columns —
+   * everything {@link attach} awaits is already in the prefetched context, so a
+   * widget factory can build its editor without a round trip and load the rows
+   * afterwards ({@link refresh}, which replaces the frame and fires
+   * {@link onRefreshed}).
+   */
+  static forContext(context: IDomainTableContext,
+    options?: DomainFrameEditorOptions): DomainFrameEditor {
+    return new DomainFrameEditor(context.client,
+      options?.capabilities ?? context.capabilities, _emptyFrame(context.properties),
+      context.properties, context.info.nameColumn, options?.query);
+  }
+
+  /**
    * Builds an editor over rows that do NOT come from the server: a frame is built
    * locally from the table's declared columns and every entry of [values] is added
    * as a `'new'` row — the INSERT path of a form
    * (`domains.table(...).form({values})`), with no query round trip.
+   *
+   * The added rows are PRISTINE: an unsaved row the user has not written to yet
+   * is not a pending change (see {@link addRow}), so an untouched New form has
+   * nothing to prompt about.
    *
    * Everything else is identical to {@link create}: the same single-writer model,
    * the same service columns and export tags, the same validation, and a
@@ -329,12 +397,9 @@ export class DomainFrameEditor {
     options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
     const properties = await grok.dapi.domains.registry.rowProperties(
       `${client.schema}.${client.table}`);
-    const df = DG.DataFrame.create(0);
-    for (const p of properties)
-      df.columns.add(DG.Column.fromType(columnTypeOf(p), p.name, 0));
-    const editor = await DomainFrameEditor.attach(df, client, options);
+    const editor = await DomainFrameEditor.attach(_emptyFrame(properties), client, options);
     for (const row of values ?? [])
-      editor.addRow(row);
+      editor.addRow(row, {pristine: true});
     return editor;
   }
 
@@ -444,9 +509,19 @@ export class DomainFrameEditor {
     this._track(row, column, original);
   }
 
-  /** Appends a new, unsaved row (state `'new'`), optionally prefilled; returns
-   * its index (-1 when refused because a {@link save} is in flight). */
-  addRow(values?: {[column: string]: any}): number {
+  /**
+   * Appends a new, unsaved row (state `'new'`), optionally prefilled; returns
+   * its index (-1 when refused because a {@link save} is in flight).
+   *
+   * `options.pristine` adds it as a row nobody has written to YET: it is part of
+   * the batch a {@link save} writes, but it contributes NOTHING to
+   * {@link changeCount} / {@link isDirty} until the first {@link setValue} or
+   * {@link commitEdit} — the "pristine until touched" contract of an insert form,
+   * whose untouched (however prefilled) row must not arm the unsaved-changes gate.
+   * A row added by a USER gesture (the grid's Add row) is pending immediately,
+   * which is the default.
+   */
+  addRow(values?: {[column: string]: any}, options?: {pristine?: boolean}): number {
     if (this._busy('adding a row'))
       return -1;
     const row = this._df.rowCount;
@@ -457,6 +532,10 @@ export class DomainFrameEditor {
           if (this._df.columns.contains(name))
             this._df.set(name, row, values[name]);
     });
+    // After the write: adding a row fires onRowsAdded, whose cache reset would
+    // otherwise drop the mark this line makes.
+    if (options?.pristine === true)
+      this._pristine.add(row);
     this._col(STATE_COLUMN).set(row, 'new', false);
     this._recount(row);
     this._validateRow(row);
@@ -529,7 +608,6 @@ export class DomainFrameEditor {
         this._clearRowState(row);
       }
     });
-    this._snapshots.clear();
     this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();
@@ -568,7 +646,13 @@ export class DomainFrameEditor {
    * their writable values, `'modified'` rows update ONLY their changed columns
    * with the row's `expectedVersion`, `'deleted'` rows delete. Exposed so a
    * caller can inspect or extend the payload (a master-detail save appends its
-   * own ops to one transaction). */
+   * own ops to one transaction).
+   *
+   * An empty cell of a NEW row is LEFT OUT of the insert rather than sent as an
+   * explicit null, so the column takes its server-side default; a column with no
+   * default and no value is rejected by the server's own nullability check
+   * (and by {@link validate} before that). Clearing a cell of a MODIFIED row does
+   * send null — that is an edit, not an omission. */
   buildOps(): DomainPendingOp[] {
     const table = this.client.table;
     const writable = this.capabilities.writableColumns;
@@ -667,7 +751,6 @@ export class DomainFrameEditor {
     const df = await this.client.queryDf(spec ?? {});
     this._query = spec;
     this._unsubscribe();
-    this._snapshots.clear();
     this._df = df;
     this._bind(df);
     this._onRefreshed.next(df);
@@ -749,20 +832,29 @@ export class DomainFrameEditor {
   }
 
   /** Drops every per-row cache and re-derives {@link changeCount} — for the
-   * paths that add or remove rows, where every index below the change shifts. */
+   * paths that add or remove rows, where every index below the change shifts.
+   *
+   * The pre-edit SNAPSHOTS are keyed by row index too: an external `removeAt`
+   * leaves a stale key behind, on which `beginEdit` early-returns and the next
+   * `commitEdit` records ANOTHER row's original value. They are dropped here,
+   * with everything else that indices invalidate. */
   private _resetCaches(): void {
     this._parsed.clear();
     this._contributions.clear();
+    this._snapshots.clear();
+    this._pristine.clear();
     this._changeCount = 0;
     for (let row = 0; row < this._df.rowCount; row++)
       this._recount(row);
   }
 
-  /** [row]'s share of {@link changeCount}: a new or deleted row counts once, an
-   * edited one counts its changed cells. */
+  /** [row]'s share of {@link changeCount}: a new or deleted row counts once (a
+   * PRISTINE new row not at all — see {@link addRow}), an edited one counts its
+   * changed cells. */
   private _recount(row: number): void {
     const state = this.stateOf(row);
-    const now = state === 'new' || state === 'deleted' ? 1 : Object.keys(this.changesOf(row)).length;
+    const now = state === 'new' ? (this._pristine.has(row) ? 0 : 1)
+      : state === 'deleted' ? 1 : Object.keys(this.changesOf(row)).length;
     this._changeCount += now - (this._contributions.get(row) ?? 0);
     if (now === 0)
       this._contributions.delete(row);
@@ -807,6 +899,8 @@ export class DomainFrameEditor {
   }
 
   private _track(row: number, column: string, original: any): void {
+    // The first write into a pristine new row is what makes it a pending change.
+    this._pristine.delete(row);
     const invalid = this._invalidValue(row, column);
     if (this.stateOf(row) !== 'new') {
       const changes = this.changesOf(row);
@@ -876,19 +970,23 @@ export class DomainFrameEditor {
     this._setJson(ERRORS_COLUMN, row, errors);
   }
 
+  /** Validates every column the FRAME carries — the declared ones against the
+   * registry, and the undeclared ones (a column the query returned that the
+   * registry does not describe) against column security alone: a prefilled value
+   * on one of those would be dropped by {@link buildOps} just as silently. */
   private _validateRow(row: number): void {
-    for (const p of this._properties) {
-      if (!this._df.columns.contains(p.name))
+    for (const column of this._df.columns.names()) {
+      if (SERVICE_COLUMNS.includes(column))
         continue;
       // The same predicate the per-cell path uses, so a prefilled value on a
       // non-writable column is marked here too (and stays marked: a re-validation
       // never clears a problem the cell still has).
-      const message = this._cellProblem(row, p.name);
-      const existing = this.errorOf(row, p.name);
+      const message = this._cellProblem(row, column);
+      const existing = this.errorOf(row, column);
       if (message != null)
-        this._setError(row, p.name, {message: message, kind: 'error'});
+        this._setError(row, column, {message: message, kind: 'error'});
       else if (existing != null && existing.kind === 'error')
-        this._setError(row, p.name, null);
+        this._setError(row, column, null);
     }
   }
 
@@ -1012,7 +1110,6 @@ export class DomainFrameEditor {
       for (const row of removed)
         this._df.rows.removeAt(row, 1, false);
     });
-    this._snapshots.clear();
     this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();

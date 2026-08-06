@@ -23,9 +23,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {AppView, AppViewOptions} from './app-view';
-import {DomainFrameEditor, editorsOf, IEditorHost} from './frame-editor';
-import {DomainForm, DomainFormOptions, IDomainTableContext} from './form';
+import {AppView, AppViewOptions, DomainAppView, DomainAppViewOptions, DomainEntityAppView,
+  DomainEntityAppViewOptions} from './app-view';
+import {DomainGrid, DomainGridOptions} from './domain-grid';
+import {EntityListOptions, EntityListWidget} from './entity-list';
+import {acquireDomainContext, editorsOf, IDomainTableContext} from './frame-editor';
+import {DomainForm, DomainFormOptions} from './form';
 import {applyDomainUiStyles} from './styles';
 
 /** Options of {@link domains.view} / {@link domains.formView}. */
@@ -72,13 +75,8 @@ export class DomainTable<TRow = any> implements IDomainTableContext {
     nameOrClient: string | DG.DomainTableClient<TRow>): Promise<DomainTable<TRow>> {
     const client = typeof nameOrClient === 'string'
       ? grok.dapi.domains.table<TRow>(nameOrClient) : nameOrClient;
-    const address = `${client.schema}.${client.table}`;
-    const [properties, info, capabilities] = await Promise.all([
-      grok.dapi.domains.registry.rowProperties(address),
-      grok.dapi.domains.registry.tableInfo(address),
-      client.capabilities(),
-    ]);
-    return new DomainTable<TRow>(client, properties, info, capabilities);
+    const context = await acquireDomainContext(client);
+    return new DomainTable<TRow>(client, context.properties, context.info, context.capabilities);
   }
 
   /** `'<schema>.<table>'` — the row entity type and semType. */
@@ -103,6 +101,42 @@ export class DomainTable<TRow = any> implements IDomainTableContext {
     const title = options?.title ?? (form.isEditing
       ? `Edit ${this.info.singularName}` : `New ${this.info.singularName}`);
     return domains.dialog(form, Object.assign({}, options, {title: title}));
+  }
+
+  /** An editable grid over the table (or over `options.query`): batch editing
+   * with markers, one-transaction save, permission gating down to per-column
+   * writability. Synchronous; the rows load inside the widget
+   * ({@link DomainGrid.ready}). */
+  grid(options?: DomainGridOptions): DomainGrid {
+    return new DomainGrid(this, options);
+  }
+
+  /** The list of the table's rows — cards / brief / grid, search, New, per-item
+   * commands — as an embeddable widget. Synchronous, loads inside
+   * ({@link EntityListWidget.ready}). */
+  list(options?: EntityListOptions): EntityListWidget {
+    return new EntityListWidget(this, options);
+  }
+
+  /** {@link list} as a PAGE: the ribbon, the `DomainQuery` ⇄ URL round trip, the
+   * row pages it opens, and the unsaved-changes gate. */
+  listView(options?: DomainAppViewOptions): DomainAppView {
+    return new DomainAppView(this.client, options, this);
+  }
+
+  /** The page of ONE row: its form, a tab per child table, history, and the
+   * actions this caller may perform. Takes the row or its id. */
+  entityView(row: string | DG.DomainRow, options?: DomainEntityAppViewOptions): DomainEntityAppView {
+    return typeof row === 'string'
+      ? new DomainEntityAppView(this.client, row, options, this)
+      : DomainEntityAppView.forRow(this.client, row, options, this);
+  }
+
+  /** THE app: the list page, the row page behind every item, deep links, the
+   * gate — `grok.shell.addView((await domains.table('grit.issue')).app())`.
+   * {@link listView} under a name that says what it is. */
+  app(options?: DomainAppViewOptions): DomainAppView {
+    return this.listView(options);
   }
 
   // ─────────────────────── data-plane passthroughs ─────────────────────────
@@ -136,15 +170,13 @@ export class DomainTable<TRow = any> implements IDomainTableContext {
  * handler. What it adds is the composition: children's roots mounted, their editors
  * rolled up into ONE dirty state, and their `getFunctions()` merged onto the ribbon.
  */
-export class DomainWidgetView extends AppView implements IEditorHost {
-  /** The widgets this page hosts, in layout order. NB not `Widget.children`, which
-   * stays the platform's own DOM-derived structural view. */
-  readonly widgets: DG.Widget[];
+export class DomainWidgetView extends AppView {
+  private readonly _children: DG.Widget[];
 
   constructor(children: DG.Widget[], options?: DomainWidgetViewOptions) {
     super(options);
     applyDomainUiStyles();
-    this.widgets = children ?? [];
+    this._children = children ?? [];
     this.box = true;
     this.root.appendChild(ui.box(ui.divV(this.widgets.map((c) => c.root), 'domain-ui-page')));
     this.name = options?.name ?? this._defaultName();
@@ -165,70 +197,11 @@ export class DomainWidgetView extends AppView implements IEditorHost {
 
   get type(): string { return 'domain-page'; }
 
-  /** Every editor on the page: the ones tracked directly plus the children's, read
-   * live (a child's editor may appear after the page was built). */
-  get editors(): DomainFrameEditor[] {
-    const all = super.editors.slice();
-    for (const child of this.widgets ?? [])
-      for (const editor of editorsOf(child))
-        if (!all.includes(editor))
-          all.push(editor);
-    return all;
-  }
-
-  /** The children's actions, merged and de-duplicated — what the ribbon offers and
-   * what a caller (or the AI) invokes with `f.apply({widget: page})`. */
-  getFunctions(): DG.Func[] {
-    const merged: DG.Func[] = [];
-    for (const child of this.widgets)
-      for (const func of child.getFunctions())
-        if (!merged.some((f) => f.name === func.name))
-          merged.push(func);
-    return merged;
-  }
-
-  /** The page's structure: every child's status, nested under its own name — so a
-   * form's inputs are addressable as `DomainForm[0].title` from the page. */
-  getWidgetStatus(): DG.IWidgetStatus {
-    const parts: {[name: string]: Element} = {page: this.root};
-    const inputs: DG.IInputStatus[] = [];
-    const descriptions: string[] = [];
-    let error: string | null = null;
-    this.widgets.forEach((child, index) => {
-      const prefix = `${child.type}[${index}]`;
-      const status = child.getWidgetStatus();
-      for (const name of Object.keys(status.parts ?? {}))
-        parts[`${prefix}.${name}`] = status.parts[name];
-      for (const input of status.inputs ?? [])
-        inputs.push(Object.assign({}, input, {name: `${prefix}.${input.name}`}));
-      if (status.description != null)
-        descriptions.push(`${prefix}: ${status.description}`);
-      if (error == null && status.error != null)
-        error = status.error;
-    });
-    const changes = this.editors.reduce((n, e) => n + e.changeCount, 0);
-    descriptions.unshift(`The "${this.name}" page hosts ${this.widgets.length} ` +
-      `widget${this.widgets.length === 1 ? '' : 's'}, with ${changes} unsaved ` +
-      `change${changes === 1 ? '' : 's'}.`);
-    return {
-      parts: parts,
-      hitAreas: {},
-      shortcuts: {},
-      events: [],
-      description: descriptions.join(' '),
-      error: error,
-      inputs: inputs.length > 0 ? inputs : undefined,
-    };
-  }
-
-  /** Saves every pending batch on the page — what the shared `Save` Func calls. */
-  save(): Promise<boolean> { return this.saveAll(); }
-
-  /** Drops every pending batch on the page. */
-  discard(): void { this.discardAll(); }
-
-  /** {@link discard} — a page has no separate "back to the opened values". */
-  reset(): void { this.discardAll(); }
+  /** The widgets this page hosts, in layout order. NB not `Widget.children`, which
+   * stays the platform's own DOM-derived structural view. The dirty rollup, the
+   * nested status and the merged functions all come from here — see
+   * {@link AppView.editors} / {@link AppView.getWidgetStatus}. */
+  get widgets(): DG.Widget[] { return this._children ?? []; }
 
   detach(): void {
     for (const child of this.widgets ?? [])

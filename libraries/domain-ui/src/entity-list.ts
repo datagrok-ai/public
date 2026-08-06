@@ -12,9 +12,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 
-import {DomainFrameEditor, isReferenceProperty} from './frame-editor';
+import {acquireDomainContext, DomainFrameEditor, IDomainTableContext, IEditorHost,
+  isReferenceProperty} from './frame-editor';
 import {DomainGrid} from './domain-grid';
-import {actionChangesRow, domainHandler} from './handler';
+import {actionChangesRow, DomainActionsProvider, DomainRowAction, domainHandler,
+  rowActions} from './handler';
+import {refreshFunc} from './actions';
 import {confirmDiscardChanges} from './unsaved';
 import {applyDomainUiStyles} from './styles';
 
@@ -59,6 +62,15 @@ export interface EntityListOptions {
    * {@link AppView} passes its own gate so the prompt covers every editor of the
    * page. Defaults to prompting for this list's own grid. */
   confirmDiscard?: () => Promise<boolean>;
+  /** Customizes the per-item commands — append to, filter or reorder the
+   * permission-gated defaults (§F.1.6b):
+   *
+   * ```ts
+   * issues.listView({actions: (row, defaults) => [...defaults,
+   *   {name: 'Escalate', icon: 'exclamation-triangle', changesRow: true,
+   *    run: () => escalate(row)}]});
+   * ``` */
+  actions?: DomainActionsProvider;
 }
 
 /**
@@ -87,9 +99,7 @@ export interface EntityListOptions {
  * Capabilities are SNAPSHOT when the list is built (see {@link DomainGrid}) —
  * rebuild it after a grant change.
  */
-export class EntityListWidget {
-  /** Mount this: toolbar + list. */
-  readonly root: HTMLElement;
+export class EntityListWidget extends DG.Widget implements IEditorHost {
   readonly client: DG.DomainTableClient;
   /** The handler every item command goes through (a plugin's, when registered). */
   readonly handler: DG.DomainObjectHandler;
@@ -109,6 +119,8 @@ export class EntityListWidget {
   private readonly _onItemOpened = new rxjs.Subject<DG.DomainRow>();
   private readonly _onRefreshed = new rxjs.Subject<EntityListWidget>();
   private readonly _options: EntityListOptions;
+  private readonly _context: IDomainTableContext;
+  private readonly _ready: Promise<EntityListWidget>;
   /** The columns the search box COULD match on — fixed, from the registry. */
   private readonly _identityColumns: string[];
   private readonly _searchInput: DG.InputBase<string> | null;
@@ -128,21 +140,28 @@ export class EntityListWidget {
    * and a detached list opens none. */
   private _menuGeneration = 0;
 
-  private constructor(client: DG.DomainTableClient, capabilities: DG.DomainTableCapabilities,
-    info: DG.DomainTableInfo, properties: DG.Property[], options: EntityListOptions) {
+  /**
+   * SYNCHRONOUS over a prefetched context: the toolbar and the empty body exist
+   * at once and the first page loads afterwards ({@link ready} resolves when it
+   * has, or when it failed).
+   */
+  constructor(context: IDomainTableContext, options?: EntityListOptions) {
+    super(ui.divV([], 'domain-ui-entity-list'));
     applyDomainUiStyles();
-    this.client = client;
-    this.capabilities = capabilities;
-    this.info = info;
+    options = options ?? {};
+    this._context = context;
+    this.client = context.client;
+    this.capabilities = context.capabilities;
+    this.info = context.info;
     this.handler = domainHandler(this.table);
     this._options = options;
     this._mode = options.mode ?? 'cards';
     this._query = options.query ?? {};
-    this._identityColumns = this._searchNames(properties);
+    this._identityColumns = this._searchNames(context.properties);
 
-    this._newButton = capabilities.canInsert
-      ? ui.button(`New ${info.singularName}...`, () => this.createRow(),
-        `Create a new ${info.singularName}`) : null;
+    this._newButton = this.capabilities.canInsert
+      ? ui.button(`New ${this.info.singularName}...`, () => this.createRow(),
+        `Create a new ${this.info.singularName}`) : null;
     for (const mode of ['cards', 'brief', 'grid'] as EntityListMode[])
       this._modeIcons[mode] = ui.iconFA(EntityListWidget._MODE_ICONS[mode],
         () => this.setMode(mode), `Switch to ${mode === 'cards' ? 'card' : mode} view`);
@@ -158,9 +177,14 @@ export class EntityListWidget {
     // real one — leave the absent affordances out instead.
     ].filter((e) => e != null), 'grok-gallery-search-bar');
     ui.setDisplay(this._toolbar, options.toolbar ?? true);
-    this.root = ui.divV([this._toolbar, this._banner, this._body], 'domain-ui-entity-list');
+    this.root.appendChild(this._toolbar);
+    this.root.appendChild(this._banner);
+    this.root.appendChild(this._body);
     this._syncModeIcons();
     this._syncSearchBox();
+    // Discoverable through `DG.Widget.getAll()` — see {@link DomainGrid}.
+    this.toDart();
+    this._ready = this._reload().then(() => this, () => this);
   }
 
   /** Icons of the mode switch — the platform's own (`DataSourceCardView`). */
@@ -168,31 +192,32 @@ export class EntityListWidget {
     {cards: 'grip-horizontal', brief: 'grip-lines', grid: 'table'};
 
   /**
-   * Builds the list: probes the table's capabilities and metadata, then loads
-   * the first page.
+   * Builds the list from a bare client: resolves the table's capabilities and
+   * registry metadata, then loads the first page.
    *
-   * Resolves to NULL when the first load was REFUSED — building a list is
-   * building an editor, so it goes through
-   * {@link EntityListOptions.confirmDiscard} like every other rebuild, and the
-   * caller (a page replacing its list) must then keep what it already has
-   * mounted instead of dropping it. Nothing is left behind: the half-built widget
-   * detaches itself.
+   * The FIRST load is not gated — a list that does not exist yet has nothing
+   * pending. Gating the SWAP is the caller's business ({@link DomainAppView.load}
+   * prompts before it builds a replacement), and every rebuild of a LIVE list
+   * (search, mode, query, refresh) goes through
+   * {@link EntityListOptions.confirmDiscard} as before.
    */
   static async create(client: DG.DomainTableClient,
-    options?: EntityListOptions): Promise<EntityListWidget | null> {
-    const address = `${client.schema}.${client.table}`;
-    const [capabilities, info, properties] = await Promise.all([
-      client.capabilities(), grok.dapi.domains.registry.tableInfo(address),
-      grok.dapi.domains.registry.rowProperties(address)]);
-    const list = new EntityListWidget(client, capabilities, info, properties, options ?? {});
-    if (await list.refresh())
-      return list;
-    list.detach();
-    return null;
+    options?: EntityListOptions): Promise<EntityListWidget> {
+    return await new EntityListWidget(await acquireDomainContext(client), options).ready;
   }
+
+  /** The platform type name — what `DG.Widget` discovery and a page's nested
+   * status key on. */
+  get type(): string { return 'EntityListWidget'; }
 
   /** `'<schema>.<table>'`. */
   get table(): string { return `${this.client.schema}.${this.client.table}`; }
+
+  /**
+   * Resolves when the first page has loaded — or when it FAILED, in which case
+   * the list shows the reason and this still resolves. Idempotent.
+   */
+  get ready(): Promise<this> { return this._ready as Promise<this>; }
 
   /** The rows currently listed (capped at {@link ENTITY_LIST_ROW_CAP}). */
   get rows(): DG.DomainRow[] { return this._rows; }
@@ -317,7 +342,56 @@ export class EntityListWidget {
     // Nothing in flight may still open a menu over a list that is gone.
     this._menuGeneration++;
     this._detachGrid();
+    super.detach();
   }
+
+  // ─────────────────────── the machine surface ─────────────────────────
+
+  /**
+   * What the list reports about itself: its parts, what it is showing, and the
+   * grid's first blocking error. Per-item values are NOT `inputs` — a list's
+   * machine surface is its status, its functions, and (in grid mode) the
+   * {@link DomainGrid.dataFrame} underneath.
+   */
+  getWidgetStatus(): DG.IWidgetStatus {
+    const parts: {[name: string]: Element} = {list: this._body, toolbar: this._toolbar};
+    if (this._searchBox != null)
+      parts['search'] = this._searchBox;
+    const grid = this._grid == null ? null : this._grid.getWidgetStatus();
+    const shown = this._mode === 'grid' ? (this._grid?.dataFrame.rowCount ?? 0) : this._rows.length;
+    const search = this._search.trim() === '' ? '' : ` matching "${this._search.trim()}"`;
+    return {
+      parts: parts,
+      hitAreas: {},
+      shortcuts: {},
+      events: [],
+      description: `A ${this._mode} list of ${this.info.pluralName} (${this.table}): ` +
+        `${shown} row${shown === 1 ? '' : 's'}${search}.` +
+        (grid?.description == null ? '' : ` ${grid.description}`),
+      error: grid?.error ?? null,
+    };
+  }
+
+  /** The actions this caller may perform, as REAL platform Funcs: the grid's own
+   * in grid mode (Save / Discard / AddRow / DeleteRow), `Refresh` otherwise —
+   * a gallery of cards edits nothing. */
+  getFunctions(): DG.Func[] {
+    return this._grid != null ? this._grid.getFunctions() : [refreshFunc()];
+  }
+
+  /** Saves the grid's pending batch (grid mode only). */
+  save(): Promise<boolean> {
+    return this._grid == null ? Promise.resolve(false) : this._grid.save();
+  }
+
+  /** Drops the grid's pending batch (grid mode only). */
+  discard(): void { this._grid?.discard(); }
+
+  /** Appends a row to the grid (grid mode only); -1 when there is no grid. */
+  addRow(): number { return this._grid == null ? -1 : this._grid.addRow(); }
+
+  /** Marks the grid's current row for deletion (grid mode only). */
+  deleteRow(): boolean { return this._grid != null && this._grid.deleteRow(); }
 
   // ─────────────────────── internals ─────────────────────────
 
@@ -427,8 +501,9 @@ export class EntityListWidget {
     if (this._grid != null)
       await this._grid.editor.refresh(spec);
     else {
-      const grid = await DomainGrid.create(this.client, {query: spec,
-        editable: this._options.editable ?? true, capabilities: this.capabilities});
+      const grid = new DomainGrid(this._context, {query: spec,
+        editable: this._options.editable ?? true});
+      await grid.ready;
       if (generation !== this._generation) {
         grid.detach();
         return;
@@ -520,7 +595,7 @@ export class EntityListWidget {
     const generation = ++this._menuGeneration;
     const pending = DG.Menu.popup().item('Loading...', () => {});
     pending.show({causedBy: e});
-    this.handler.getRibbonActions(row as any).then((actions) => {
+    rowActions(this.handler, row, this._options.actions).then((actions) => {
       pending.hide();
       if (generation !== this._menuGeneration)
         return;
@@ -536,7 +611,7 @@ export class EntityListWidget {
   }
 
   /** Runs an item command and reloads when it may have changed the list. */
-  private async _run(action: DG.DomainAction): Promise<void> {
+  private async _run(action: DomainRowAction): Promise<void> {
     const changed = await action.run();
     if (changed !== false && actionChangesRow(action))
       await this.refresh();
