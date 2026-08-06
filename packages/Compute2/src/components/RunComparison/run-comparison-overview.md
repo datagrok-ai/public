@@ -41,7 +41,7 @@ The central problem: different runs (possibly of different models) name the same
 
 Two design rules keep the model simple:
 
-1. **A target maps the same quantity across runs.** A target *multimatches*: its candidate list may hold several compatible items from the same comparison-set item (run or raw table), but at most one of them is *active* per item — the active one is the run's charted series, the rest stay listed as switchable candidates. Matching is a cross-source mapping with a preview, nothing more.
+1. **A target maps the same quantity across runs — at most one *active* item per comparison-set item (run or raw table); the active item is the run's charted series.** Column targets additionally *multimatch*: their candidate list may hold several compatible items from the same run, with the non-active ones listed as switchable candidates. Scalar targets are single-match by construction — greedy cluster members only, no candidate list. Matching is a cross-source mapping with a preview, nothing more.
 2. **Several series within one run are the split column's job**, the native pattern for model results — never several mapped columns of one run. (Suffix-style wide data, e.g. `temp_A`/`temp_B`, should be reshaped into a split column, not multi-mapped.)
 
 - **`nameSimilarity`** — Sørensen–Dice bigram similarity on normalized names (lowercased, separators collapsed). **`nameMatchConfidence`** grades a pair as `exact` / `normalized` / `fuzzy` (≥ 0.7 similarity, `FUZZY_NAME_THRESHOLD`) / no match.
