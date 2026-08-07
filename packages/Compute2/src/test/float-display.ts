@@ -127,11 +127,11 @@ category('InputForm: Float32 display cleanup', () => {
     const result = await openSimpleInputs(0.0001);
     view = result.view;
     const bInput = await getFloatInput(view);
-    // The default mask #0.### keeps 3 decimals, so 0.0001 is below display
-    // resolution and cleanly rounds to "0" — no scientific notation, no noise.
+    // The G7 default keeps 7 significant digits, so 0.0001 displays exactly —
+    // no rounding away, no scientific notation, no noise.
     await awaitCheck(
-      () => bInput.value === '0',
-      `Expected "0" (0.0001 rounds away at 3 decimals), got "${bInput.value}"`, 5000,
+      () => bInput.value === '0.0001',
+      `Expected "0.0001" under the G7 format, got "${bInput.value}"`, 5000,
     );
   });
 
