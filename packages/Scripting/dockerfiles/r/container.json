@@ -1,6 +1,8 @@
 {
-  "cpu": 1,
-  "memory": 4096,
+  "image": "datagrok/jkg_r:bleeding-edge",
+  "cpu": 2,
+  "memory": 8192,
+  "shm_size": 2048,
   "on_demand": true,
   "shutdown_timeout": 2880
 }

@@ -42,9 +42,10 @@ container start rather than from last use.
 
 ## Images
 
-The Dockerfiles here are one-line `FROM datagrok/jkg_<lang>` wrappers. The real images are
-built by CI from `deploy/jkg_<lang>/`, because they need the core source tree to compile the
-datlas worker bundle — something a package build context does not have. To roll a language
-forward, bump the tag in its `dockerfiles/<lang>/Dockerfile`.
+There are no Dockerfiles here — each `dockerfiles/<lang>/container.json` names the published
+image to run, and `grok publish` builds and pushes nothing. The images are built by CI from
+`deploy/jkg_<lang>/`, because they need the core source tree to compile the datlas worker
+bundle, which a package build context does not have. To roll a language forward, bump the
+tag in its `container.json`.
 
 Design, measurements and the vulnerability scan: `core/docs/features/jkg-language-split/`.
