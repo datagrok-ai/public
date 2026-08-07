@@ -4,7 +4,7 @@ import type * as uiType from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {DartWidget, Menu, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
+import {DartWidget, Menu, TabControl, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
 import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func, DataQuery} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options} from '../utils';
@@ -709,6 +709,10 @@ export class ScriptView extends View {
   public set code(s: string) {
     api.grok_ScriptView_Set_Code(this.dart, s);
   }
+
+  public get tabs(): TabControl {
+    return new TabControl(api.grok_ScriptView_Get_TabControl(this.dart));
+  }
 }
 
 export class DataQueryView extends View {
@@ -718,6 +722,10 @@ export class DataQueryView extends View {
 
   static create(query: DataQuery): DataQueryView {
     return new DataQueryView(api.grok_DataQueryView(query.dart));
+  }
+
+  public get tabs(): TabControl {
+    return new TabControl(api.grok_DataQueryView_Get_TabControl(this.dart));
   }
 }
 
