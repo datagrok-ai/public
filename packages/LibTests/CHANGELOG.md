@@ -1,6 +1,6 @@
 # Lib Tests changelog
 
-## v.next
+## 1.9.6 (2026-08-07)
 
 * Added a virtual-time test suite for the webcomponents ViewerHost
 
