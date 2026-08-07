@@ -6,7 +6,7 @@ import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {getChartDataAggrStats, aggregatedStatisticsProperties, calculateSeriesFit, curveStatisticAt} from '../fit/fit-statistics';
-import {setOutlier} from '../fit/fit-renderer';
+import {setOutlier} from '../fit/fit-interaction';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
 import {CONCENTRATIONS, curveJson, multiSeriesCurveJson} from './curve-data';
 import {addStatisticColumn as addStatisticColumnFromPanel} from '../fit/fit-grid-cell-handler';

@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {FitSeries, FitFunctionType} from '@datagrok-libraries/statistics/src/fit/fit-engine';
-import {inspectCurve} from './fit-renderer';
+import {inspectCurve} from './fit-interaction';
 import * as grok from 'datagrok-api/grok';
 
 export function randomizeTableId() {
