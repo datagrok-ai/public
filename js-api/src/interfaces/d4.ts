@@ -445,7 +445,7 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
-  /// Sorts the Y categories by this column: numerical - by *Y Sort By Aggr*, categorical - by its values.
+  /// Sorts the Y categories by this column; see *X Sort By*.
   ySortBy: string;
   ySortByColumnName: string;
 
@@ -813,17 +813,15 @@ export interface IScatterPlotSettings {
 
   formulaFont: string;
 
-  /// Sorts the X categories by this column: numerical - by *X Sort By Aggr*, categorical - by its values.
+  /// Sorts the X categories by this column; anything but a numerical or semantic one is ignored.
   xSortBy: string;
   xSortByColumnName: string;
 
   /// Aggregation used to compute the per-category sort key for the X axis.
   xSortByAggr: string;
 
-  /// A property computed for the X sort values to compare them by when they are not numbers;
-  /// works for any semantic type with a registered calculator - e.g. `Chem:molecularProperty(MW)`
-  /// for molecules. Pick it from *Order | Property* - the choices depend on the semantic type
-  /// and on the installed packages.
+  /// A property turning the X sort values into numbers, e.g. `Chem:molecularProperty(MW)`.
+  /// Picked from *Order* next to the column.
   xSortByProperty: string;
 
   /// Whether the X axis categories are sorted in ascending or descending order.
@@ -1147,17 +1145,15 @@ export interface IBoxPlotSettings {
   /// Display subcategories - category combinations in the x axis table.
   showMinorCategories: boolean;
 
-  /// Sorts the categories by this column: numerical - by *Category Sort By Aggr*, categorical - by its values.
+  /// Sorts the categories by this column; anything but a numerical or semantic one is ignored.
   categorySortBy: string;
   categorySortByColumnName: string;
 
   /// Aggregation used to compute the per-category sort key.
   categorySortByAggr: string;
 
-  /// A property computed for the sort values to compare them by when they are not numbers;
-  /// works for any semantic type with a registered calculator - e.g. `Chem:molecularProperty(MW)`
-  /// for molecules. Pick it from *Order | Property* - the choices depend on the semantic type
-  /// and on the installed packages.
+  /// A property turning the sort values into numbers, e.g. `Chem:molecularProperty(MW)`.
+  /// Picked from *Order* next to the column.
   categorySortByProperty: string;
 
   /// Whether the categories are sorted in ascending or descending order.
@@ -2589,17 +2585,15 @@ export interface ILineChartSettings {
 
   formulaFont: string;
 
-  /// Sorts the X categories by this column: numerical - by *X Sort By Aggr*, categorical - by its values.
+  /// Sorts the X categories by this column; anything but a numerical or semantic one is ignored.
   xSortBy: string;
   xSortByColumnName: string;
 
   /// Aggregation used to compute the per-category sort key for the X axis.
   xSortByAggr: string;
 
-  /// A property computed for the X sort values to compare them by when they are not numbers;
-  /// works for any semantic type with a registered calculator - e.g. `Chem:molecularProperty(MW)`
-  /// for molecules. Pick it from *Order | Property* - the choices depend on the semantic type
-  /// and on the installed packages.
+  /// A property turning the X sort values into numbers, e.g. `Chem:molecularProperty(MW)`.
+  /// Picked from *Order* next to the column.
   xSortByProperty: string;
 
   /// Whether the X axis categories are sorted in ascending or descending order.

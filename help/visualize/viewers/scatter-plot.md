@@ -261,7 +261,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | X Whisker Max Column Name | string | Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*. |
 | X Whisker Range Column Name | string | Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set. |
 | X Axis Label Orientation | string |  |
-| X Sort By Column Name | string | Sorts the X categories by this column: numerical - by *X Sort By Aggr*, categorical - by its values. |
+| X Sort By Column Name | string | Sorts the X categories by this column; anything but a numerical or semantic one is ignored. |
 | X Sort By Aggr | string | Aggregation used to compute the per-category sort key for the X axis. |
 | X Sort Order | string | Whether the X axis categories are sorted in ascending or descending order. |
 | **Y** | | |
@@ -274,7 +274,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Horizontal Grid Lines | boolean |  |
 | Show Y Axis | boolean |  |
 | Show Y Selector | boolean |  |
-| Y Sort By Column Name | string | Sorts the Y categories by this column: numerical - by *Y Sort By Aggr*, categorical - by its values. |
+| Y Sort By Column Name | string | Sorts the Y categories by this column; see *X Sort By*. |
 | Y Sort By Aggr | string | Aggregation used to compute the per-category sort key for the Y axis. |
 | Y Sort Order | string | Whether the Y axis categories are sorted in ascending or descending order. |
 | Y Whisker Min Column Name | string | Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
