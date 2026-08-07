@@ -30,6 +30,37 @@ import {applyCodeMirror} from '../utils/code-mirror-check';
 
 const FSE_ICON_SELECTOR = 'i.fa-magic[aria-label="Open Signature Editor"]';
 
+const PARAM_HELP_URL = 'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation';
+
+class ParamEditorInfo {
+  constructor(public paramName: string, public result: HTMLElement) {}
+}
+
+class ParamEditorHandler extends DG.ObjectHandler<ParamEditorInfo> {
+  get type(): string {
+    return 'dt-param-editor';
+  }
+
+  get helpUrl(): string {
+    return PARAM_HELP_URL;
+  }
+
+  isApplicable(x: any): boolean {
+    return x instanceof ParamEditorInfo;
+  }
+
+  renderProperties(x: ParamEditorInfo): HTMLElement {
+    return ui.divV([
+      ui.h1(`Param: ${x.paramName}`),
+      ui.block75([x.result]),
+    ]);
+  }
+}
+
+export function registerParamEditorHandler(): void {
+  DG.ObjectHandler.register(new ParamEditorHandler());
+}
+
 export function functionSignatureEditor(view: DG.View) {
   if (view.root?.parentElement?.querySelector(FSE_ICON_SELECTOR) != null)
     return;
@@ -284,22 +315,7 @@ async function openFse(v: DG.View, functionCode: string) {
     result.style.display = 'flex';
     result.style.flexDirection = 'column';
 
-    const helpIcon = ui.iconFA('question', () => {
-      window.open(
-        'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation',
-        '_blank',
-      );
-    }, 'Function parameters help');
-    helpIcon.classList.add('dt-help-icon');
-
-    grok.shell.o = ui.divV([
-      ui.divH(
-        [
-          ui.h1(`Param: ${paramName}`),
-          helpIcon,
-        ],
-      ), ui.block75([result]),
-    ]);
+    grok.shell.o = new ParamEditorInfo(paramName, result);
   };
 
   const updateValue = (param: DG.Property, propName: string, v: any) => {
