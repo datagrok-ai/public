@@ -3,27 +3,20 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   FitErrorModel,
-  getStatistics,
   getFittedCurve,
   FitStatistics,
   FitConfidenceIntervals,
-  FitCurve,
   IFitPoint,
   IFitChartData,
   IFitSeries,
   fitChartDataProperties,
-  FitParamBounds,
   IFitChartOptions,
   FitErrorModelType,
+  LogOptions,
 } from './fit-curve';
-import {fitData, FitFunction, fitSeriesProperties,
-  getCurveConfidenceIntervals, getOrCreateFitFunction} from './new-fit-API';
-
-export type LogOptions = {
-  logX: boolean | undefined,
-  logY: boolean | undefined
-};
-
+import {Fit, FitFunction, fitSeries, fitSeriesProperties, getStatistic,
+  getCurveConfidenceIntervals, getOrCreateFitFunction} from './fit-engine';
+import {getDataPoints} from './fit-points';
 
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: DG.Property[]): any {
@@ -53,50 +46,6 @@ export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[
     ys[i] = points[i].y;
   }
   return {xs: xs, ys: ys};
-}
-
-/** Returns median from within multiple points */
-function getMedian(points: {x: number[], y: number[]}): number {
-  const mid = Math.floor(points.y.length / 2);
-  const sortedPoints = points.y.sort((a, b) => a - b);
-  const median = sortedPoints.length % 2 === 0 ? (sortedPoints[mid - 1] + sortedPoints[mid]) / 2 : sortedPoints[mid];
-  return median;
-}
-
-/** Returns median points from within multiple points with the same x. */
-function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: number[]} {
-  const medianPoints: {x: number[], y: number[]} = {x: [], y: []};
-  const currentPoints: {x: number[], y: number[]} = {x: [data.x[0]], y: [data.y[0]]};
-  for (let i = 1; i < data.x.length; i++) {
-    if (data.x[i] === currentPoints.x[0]) {
-      currentPoints.x[currentPoints.x.length] = data.x[i];
-      currentPoints.y[currentPoints.y.length] = data.y[i];
-      continue;
-    }
-    const median = getMedian(currentPoints);
-    medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
-    medianPoints.y[medianPoints.y.length] = median;
-    currentPoints.x = [data.x[i]];
-    currentPoints.y = [data.y[i]];
-  }
-  const median = getMedian(currentPoints);
-  medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
-  medianPoints.y[medianPoints.y.length] = median;
-
-  return medianPoints;
-}
-
-/** Returns logarithmic IC50 parameter bounds. */
-function logIC50ParameterBounds(ic50Bounds: FitParamBounds): FitParamBounds {
-  if (ic50Bounds) {
-    if (ic50Bounds.max !== undefined)
-      ic50Bounds.max = Math.log10(ic50Bounds.max);
-    if (ic50Bounds.min !== undefined) {
-      ic50Bounds.min = ic50Bounds.min === 0 ?
-        -Number.MAX_VALUE : Math.log10(ic50Bounds.min);
-    }
-  }
-  return ic50Bounds;
 }
 
 function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect {
@@ -190,47 +139,90 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
   return getFittedCurve(fitFunc.y, params);
 }
 
-/** Returns the data points of a series with filtered outliers and logarithmic data if needed */
-export function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFlag?: boolean):
-  {x: number[], y: number[]} {
-  const pointsToMap = userParamsFlag ? series.points : series.points.filter((p) => !p.outlier);
-  return {x: pointsToMap.map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
-    y: pointsToMap.map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
-}
-
-/** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
-  logOptions?: LogOptions): FitCurve {
-  dataPoints ??= getDataPoints(series, logOptions, false);
-  if (series.parameterBounds && logOptions?.logX)
-    series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
-  return fitData(getMedianPoints(dataPoints), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
-    series.parameterBounds);
-}
-
 /** Returns series confidence interval functions */
 export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction, userParamsFlag: boolean,
   dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): FitConfidenceIntervals {
   dataPoints ??= getDataPoints(series, logOptions, userParamsFlag);
-  if (!series.parameters) {
-    const params = fitSeries(series, fitFunc, dataPoints).parameters;
-    series.parameters = [...params];
-  }
-  const params = new Float32Array(series.parameters?.length!);
-  params.set(series.parameters!);
+  const source = series.parameters ?? fitSeries(series, fitFunc, dataPoints).parameters;
+  const params = new Float32Array(source.length);
+  params.set(source);
   return getCurveConfidenceIntervals(dataPoints, params, fitFunc.y, 0.05,
     series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
-/** Returns series statistics */
+/** The typed fit of a series, fitting on the fly when parameters are not supplied. */
+export function getSeriesFit<T extends Fit>(series: IFitSeries, fitFunc: FitFunction<T>,
+  dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T {
+  dataPoints ??= getDataPoints(series, logOptions, false);
+  // never written back: they are in fit space, and the series contract is data space
+  const source = series.parameters ?? fitSeries(series, fitFunc, dataPoints).parameters;
+  const params = new Float32Array(source.length);
+  params.set(source);
+  return fitFunc.fillParams({fittedCurve: getFittedCurve(fitFunc.y, params), parameters: params},
+    series, dataPoints, logOptions);
+}
+
+/** Series statistics in the legacy {@link FitStatistics} shape. Prefer {@link getSeriesFit}. */
 export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
   logOptions?: LogOptions): FitStatistics {
-  dataPoints ??= getDataPoints(series, logOptions, false);
-  if (!series.parameters) {
-    const params = fitSeries(series, fitFunc, dataPoints).parameters;
-    series.parameters = [...params];
+  return toFitStatistics(getSeriesFit(series, fitFunc, dataPoints, logOptions));
+}
+
+export const X_SPACE_STATISTICS = ['ic50', 'ec50'];
+// The y asymptotes stay in the space they were fitted in: a stored bottom of 0 has no finite
+// logarithm, so the forward and inverse maps could never be exact inverses.
+export const Y_SPACE_STATISTICS: string[] = [];
+/** Derived by {@link toDataSpace}, so unavailable to anything that skips the conversion. */
+export const DATA_SPACE_DERIVED_STATISTICS = ['pIC50'];
+
+/** A copy of the series with its parameters in fit space, the exact inverse of {@link toDataSpace}.
+ * The copy matters: the parsed chart data is shared between the renderer and the statistics. */
+export function seriesInFitSpace(series: IFitSeries, logOptions?: LogOptions): IFitSeries {
+  if (!series.parameters || (!logOptions?.logX && !logOptions?.logY))
+    return series;
+  const fields = getSeriesFitFunction(series).statisticFields;
+  const parameters = [...series.parameters];
+  let converted = false;
+  for (let i = 0; i < parameters.length && i < fields.length; i++) {
+    const inFitSpace = (logOptions.logX && X_SPACE_STATISTICS.includes(fields[i])) ||
+      (logOptions.logY && Y_SPACE_STATISTICS.includes(fields[i]));
+    if (inFitSpace && parameters[i] > 0) {
+      parameters[i] = Math.log10(parameters[i]);
+      converted = true;
+    }
   }
-  const params = new Float32Array(series.parameters?.length!);
-  params.set(series.parameters!);
-  return getStatistics(dataPoints, params, fitFunc.y, true);
+  return converted ? {...series, parameters} : series;
+}
+
+/** Converts a fit back to data space. Everything shown to a user passes through here exactly once,
+ * and aggregation happens before it. */
+export function toDataSpace<T extends Fit>(fit: T, logOptions?: LogOptions): T {
+  const fields = fit as {[key: string]: any};
+  const unlog = (names: string[]) => {
+    for (const name of names) {
+      if (typeof fields[name] === 'number')
+        fields[name] = Math.pow(10, fields[name]);
+    }
+  };
+  if (logOptions?.logX)
+    unlog(X_SPACE_STATISTICS);
+  if (logOptions?.logY)
+    unlog(Y_SPACE_STATISTICS);
+  // pIC50 is defined off the molar concentration, so it can only be derived once ic50 is in data space
+  if (typeof fields.ic50 === 'number' && fields.ic50 > 0)
+    fields.pIC50 = -Math.log10(fields.ic50);
+  return fit;
+}
+
+/** Maps a typed fit onto the legacy {@link FitStatistics} shape. */
+export function toFitStatistics(fit: Fit): FitStatistics {
+  return {
+    rSquared: getStatistic(fit, 'rSquared'),
+    auc: getStatistic(fit, 'auc'),
+    interceptX: getStatistic(fit, 'interceptX'),
+    interceptY: getStatistic(fit, 'interceptY'),
+    slope: getStatistic(fit, 'slope'),
+    top: getStatistic(fit, 'top'),
+    bottom: getStatistic(fit, 'bottom'),
+  };
 }

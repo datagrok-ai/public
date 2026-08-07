@@ -15,6 +15,12 @@ export type FitParamBounds = {
   max?: number;
 };
 
+/** Which axes are fitted in log space. */
+export type LogOptions = {
+  logX: boolean | undefined,
+  logY: boolean | undefined
+};
+
 /** Fit function description. Applies to custom user fit functions.
  * Requires JS arrow functions for the fit functions and initial parameters. */
 export interface IFitFunctionDescription {
@@ -34,21 +40,24 @@ export type FitConfidenceIntervals = {
   confidenceBottom: (x: number) => number;
 };
 
-export type FitStatistics = {
-  rSquared?: number,
-  auc?: number,
-  interceptX?: number, // parameters[2]
-  interceptY?: number, // fittedCurve[parameters[2]]
-  slope?: number, // parameters[1]
-  top?: number, // parameters[0]
-  bottom?: number, // parameters[3]
-};
+/** Legacy statistic names. Persisted in tags and recorded transforms, so this list is append-only. */
+export const LEGACY_FIT_STATISTICS =
+  ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'] as const;
 
-export type FitInvertedFunctions = {
-  inverted: (y: number) => number,
-  invertedTop: (y: number) => number,
-  invertedBottom: (y: number) => number,
-};
+export type LegacyFitStatisticName = typeof LEGACY_FIT_STATISTICS[number];
+
+export type FitStatistics = Partial<Record<LegacyFitStatisticName, number>>;
+
+/** Names of the built-in fit functions. Custom functions are supplied as {@link IFitFunctionDescription}. */
+export type FitFunctionName = typeof FIT_FUNCTION_LINEAR | typeof FIT_FUNCTION_SIGMOID |
+  typeof FIT_FUNCTION_LOG_LINEAR | typeof FIT_FUNCTION_EXPONENTIAL |
+  typeof FIT_FUNCTION_4PL_REGRESSION | typeof FIT_FUNCTION_4PL_DOSE_RESPONSE;
+
+// '' is the existing wire value for "render no points" - the renderer treats it as falsy
+export type FitPointsDisplayMode = 'points' | 'candlesticks' | 'both' | '';
+
+/** Droplines rendered on the plot. `string & {}` keeps autocompletion while allowing IC<n> later. */
+export type DroplineName = 'IC50' | (string & {});
 
 /**
  *  Datagrok curve fitting
@@ -136,11 +145,18 @@ export interface IFitChartOptions {
   useAuxLegendNames?: boolean; // if true, uses aux legend names instead of series names
 }
 
+/** Options the user set at this level. Only these outrank the value a series declares for itself. */
+export interface IFitExplicitOptions {
+  chartOptions?: string[];
+  seriesOptions?: string[];
+}
+
 /** Data for the fit chart. */
 export interface IFitChartData {
   chartOptions?: IFitChartOptions;
   seriesOptions?: IFitSeriesOptions;  // Default series options. Individual series can override it.
   series?: IFitSeries[];
+  explicit?: IFitExplicitOptions;
 }
 
 /** Class that implements {@link IFitChartData} interface */
@@ -152,9 +168,8 @@ export class FitChartData implements IFitChartData {
 
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
-  [key: string]: any;                   // allows getting data by key
   name?: string;                        // controls the series name
-  fitFunction?: string | IFitFunctionDescription; // controls the series fit function
+  fitFunction?: FitFunctionName | IFitFunctionDescription; // controls the series fit function
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
@@ -166,13 +181,13 @@ export interface IFitSeriesOptions {
   outlierColor?: string;                // overrides the standardized series outlier color
   connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean;                // defines whether to show the fit line or not
-  showPoints?: string;                  // defines the data display mode
+  showPoints?: FitPointsDisplayMode;    // defines the data display mode
   showOutliers?: boolean;               // defines whether to show the outliers or not
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
   errorModel?: FitErrorModelType;       // defines the series error model
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
-  droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
+  droplines?: DroplineName[];           // defines the droplines that would be shown on the plot (IC50)
   columnName?: string;                  // defines the column name where the series is stored
   auxLegendName?: string;               // defines the auxiliary legend name for the series
 }
@@ -186,8 +201,8 @@ export const statisticsProperties: DG.Property[] = [
   DG.Property.js('interceptY', DG.TYPE.FLOAT, {userEditable: false}),
   DG.Property.js('interceptX', DG.TYPE.FLOAT, {userEditable: false}),
   DG.Property.js('slope', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'Max Y'}),
-  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'Min Y'}),
+  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false}),
 ];
 
 /** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
@@ -232,7 +247,7 @@ export function getFittedCurve(curveFunction: (params: Float32Array, x: number) 
   };
 }
 
-// TODO: for linear - slope - A, interceptY - B
+// Deprecated: positional parameter slots, correct only for the 4-parameter families.
 export function getStatistics(data: {x: number[], y: number[]}, paramValues: Float32Array,
   curveFunction: (params: Float32Array, x: number) => number, statistics: boolean = true): FitStatistics {
   const fittedCurve = getFittedCurve(curveFunction, paramValues);
@@ -246,48 +261,6 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: Flo
     top: paramValues[0],
     bottom: paramValues[3],
   };
-}
-
-export function getInvertedFunctions(data: {x: number[], y: number[]}, paramValues: number[],
-  confidenceLevel: number = 0.05, statistics: boolean = true): FitInvertedFunctions | null {
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
-
-  let inv: (y: number) => number = (y: number) => {
-    return 0;
-  };
-  let invTop: (y: number) => number = (y: number) => {
-    return 0;
-  };
-  let invBottom: (y: number) => number = (y: number) => {
-    return 0;
-  };
-
-  if (statistics) {
-    inv = (y: number) => {
-      //should check if more than bottom and less than top
-      return paramValues[2] / Math.pow((paramValues[0] - y) / (y - paramValues[3]), 1 / paramValues[1]);
-    };
-
-    const error = getInvError(inv, data);
-
-    invTop = (y: number) => {
-      const value = inv(y);
-      return value + studentQ * error / Math.sqrt(data.y.length);
-    };
-
-    invBottom = (y: number) => {
-      const value = inv(y);
-      return value - studentQ * error / Math.sqrt(data.y.length);
-    };
-
-    return {
-      inverted: inv,
-      invertedTop: invTop,
-      invertedBottom: invBottom,
-    };
-  }
-
-  return null;
 }
 
 export function sigmoid(params: Float32Array, x: number): number {
@@ -356,21 +329,4 @@ export function getDetCoeff(fittedCurve: (x: number) => number, data: {x: number
   return 1 - ssRes / ssTot;
 }
 
-function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: number[]}): number {
-  let sigma = 0;
-  let sigmaSq = 0;
-  const residuesSquares = new Float32Array(data.y.length);
-  for (let i = 0; i < data.y.length; i++) {
-    const obs = data.x[i];
-    const pred = targetFunc(data.y[i]);
-    residuesSquares[i] = Math.pow(obs - pred, 2);
-  }
 
-  for (let i = 0; i < residuesSquares.length; i++)
-    sigmaSq += residuesSquares[i];
-
-  sigmaSq /= residuesSquares.length;
-  sigma = Math.sqrt(sigmaSq);
-
-  return sigma;
-}

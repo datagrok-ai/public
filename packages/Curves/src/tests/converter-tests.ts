@@ -78,6 +78,29 @@ category('converters', () => {
     expect(chartData.chartOptions?.logX, true);
   });
 
+  test('xmlConverter.booleanAttributes', async () => {
+    // XML attributes are strings, so `!!getAttribute(...)` read "False" as true - real 3DX exports
+    // carry drawLine="False" on most series and would have drawn a fit line anyway
+    const off = SAMPLE_XML.replace('drawLine="True"', 'drawLine="False"').replace('logX="true"', 'logX="false"');
+    const chartData: IFitChartData = JSON.parse(convertXmlCurveToJson(off));
+    expect(chartData.series![0].showFitLine, false);
+    expect(chartData.chartOptions?.logX, false);
+
+    const on: IFitChartData = JSON.parse(convertXmlCurveToJson(SAMPLE_XML));
+    expect(on.series![0].showFitLine, true);
+    expect(on.chartOptions?.logX, true);
+  });
+
+  test('xmlConverter.logYNotInvented', async () => {
+    // an always-present key owns it, and mergeProperties only fills absent ones - so emitting
+    // logY: false would stop a Column or Dataframe level option cascading onto the cell
+    const chartData: IFitChartData = JSON.parse(convertXmlCurveToJson(SAMPLE_XML));
+    expect('logY' in chartData.chartOptions!, false, 'the cell must not own logY when the export omits it');
+
+    const declared = SAMPLE_XML.replace('logX="true"', 'logX="true" logY="true"');
+    expect(JSON.parse(convertXmlCurveToJson(declared)).chartOptions.logY, true);
+  });
+
   test('xmlConverter.parameterReordering', async () => {
     const result = convertXmlCurveToJson(SAMPLE_XML);
     const chartData: IFitChartData = JSON.parse(result);

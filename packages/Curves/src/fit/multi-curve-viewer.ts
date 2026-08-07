@@ -3,8 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {mergeChartOptions, mergeSeries} from './fit-renderer';
-import {getOrCreateParsedChartData, mergeProperties} from './fit-renderer';
+import {mergeChartOptions, mergeSeries, getOrCreateParsedChartData, mergeProperties} from './fit-chart-data';
 import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';

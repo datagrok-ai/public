@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Subscription} from 'rxjs';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
-import {FitCellOutlierToggleArgs} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitCellOutlierToggleArgs} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {IFitPoint, FitMarkerType} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Plate} from '../../plate';
 import {PlateWidget} from '../../plate-widget/plate-widget';

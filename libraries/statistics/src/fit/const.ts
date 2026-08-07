@@ -6,7 +6,10 @@ export class FitConstants {
   static TAG_CURVE_FORMAT = '.%curve-format';
   static FIT_SEM_TYPE = 'fit';
   static FIT_CELL_TYPE = 'fit';
-  static TAG_FIT = '.fit';
+  // the '.%' prefix is what makes a layout carry the tag, so column and dataframe level options
+  // survive reopening a project whose table is refetched. '.fit' is only read, never written
+  static TAG_FIT = '.%fit';
+  static TAG_FIT_LEGACY = '.fit';
 
   static CELL_DEFAULT_WIDTH = 230;
   static CELL_DEFAULT_HEIGHT = 160;

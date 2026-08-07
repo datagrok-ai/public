@@ -5,23 +5,19 @@ import * as ui from 'datagrok-api/ui';
 
 import {
   IFitChartData,
-  IFitSeries,
-  fitChartDataProperties, IFitChartOptions, IFitPoint, FitCurve,
-  FitStatistics,
+  IFitPoint, LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
 import {
-  fitSeries,
-  createDefaultChartData,
   getChartBounds,
   getSeriesFitFunction,
   getCurve,
-  LogOptions, getDataPoints,
+  seriesInFitSpace,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
-import {parseCellValue, isNativeFormat} from './curve-converter';
+import {isNativeFormat} from './curve-converter';
 import {
   renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
@@ -30,9 +26,12 @@ import {
   renderPoints, renderStatistics, renderTitle
 } from './render-utils';
 import {merge} from 'rxjs';
-import {calculateSeriesStats, getChartDataAggrStats} from './fit-grid-cell-handler';
-import {Fit, FitFunction, FitFunctionTypes, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
-
+import {calculateSeriesFit, getChartDataAggrStats} from './fit-statistics';
+import {
+  fittedCurves, parsedCurves, curvesDataPoints, getOrCreateParsedChartData, getOrCreateCachedFitCurve,
+  getOrCreateCachedCurvesDataPoints, mergeSeries, substituteZeroes
+} from './fit-chart-data';
+import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -43,170 +42,6 @@ function showIncorrectFitCell(g: CanvasRenderingContext2D, screenBounds: DG.Rect
     clamp(Math.min(screenBounds.width, screenBounds.height) * 0.8, 0, 30));
 }
 
-/** Merges properties of the two objects by iterating over the specified {@link properties}
- * and assigning properties from {@link source} to {@link target} only when
- * the property is not defined in target and is defined in source. */
-export function mergeProperties(properties: DG.Property[], source: any, target: any): void {
-  if (!source || !target)
-    return;
-
-  for (const p of properties) {
-    if (!(p.name in target) && p.name in source)
-      target[p.name] = source[p.name];
-  }
-}
-
-export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOptions {
-  if (chartOptions.length === 0)
-    return {};
-
-  let minX = Number.MAX_VALUE;
-  let minY = Number.MAX_VALUE;
-  let maxX = Number.MIN_VALUE;
-  let maxY = Number.MIN_VALUE;
-  let xAxisName: string | undefined;
-  let yAxisName: string | undefined;
-  let title: string | undefined;
-  let logX: boolean = false;
-  let logY: boolean = false;
-  let allowXZeroes: boolean = false;
-
-  for (const options of chartOptions) {
-    if (options.minX !== null && options.minX !== undefined)
-      minX = Math.min(minX, options.minX);
-    if (options.minY !== null && options.minY !== undefined)
-      minY = Math.min(minY, options.minY);
-    if (options.maxX !== null && options.maxX !== undefined)
-      maxX = Math.max(maxX, options.maxX);
-    if (options.maxY !== null && options.maxY !== undefined)
-      maxY = Math.max(maxY, options.maxY);
-    if (options.title !== null && options.title !== undefined)
-      title ??= options.title;
-    if (options.xAxisName !== null && options.xAxisName !== undefined)
-      xAxisName ??= options.xAxisName;
-    if (options.yAxisName !== null && options.yAxisName !== undefined)
-      yAxisName ??= options.yAxisName;
-    if (options.logX !== null && options.logX !== undefined && options.logX)
-      logX = true;
-    if (options.logY !== null && options.logY !== undefined && options.logY)
-      logY = true;
-    if (options.allowXZeroes !== null && options.allowXZeroes !== undefined && options.allowXZeroes)
-      allowXZeroes = true;
-  }
-
-  return {
-    minX: minX === Number.MAX_VALUE ? undefined : minX,
-    minY: minY === Number.MAX_VALUE ? undefined : minY,
-    maxX: maxX === Number.MIN_VALUE ? undefined : maxX,
-    maxY: maxY === Number.MIN_VALUE ? undefined : maxY,
-    title: title,
-    xAxisName: xAxisName,
-    yAxisName: yAxisName,
-    logX: logX,
-    logY: logY,
-    allowXZeroes: allowXZeroes,
-  };
-}
-
-export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
-  if (series.length === 0)
-    return null;
-  const mergedSeries: IFitSeries = {
-    points: [],
-    name: series[0].name,
-    fitFunction: series[0].fitFunction,
-    markerType: series[0].markerType,
-    lineStyle: series[0].lineStyle,
-    pointColor: series[0].pointColor,
-    fitLineColor: series[0].fitLineColor,
-    confidenceIntervalColor: series[0].confidenceIntervalColor,
-    outlierColor: series[0].outlierColor,
-    connectDots: series[0].connectDots,
-    showFitLine: series[0].showFitLine,
-    showPoints: series[0].showPoints,
-    showOutliers: series[0].showOutliers,
-    showCurveConfidenceInterval: series[0].showCurveConfidenceInterval,
-    errorModel: series[0].errorModel,
-    clickToToggle: series[0].clickToToggle,
-    labels: series[0].labels,
-    droplines: series[0].droplines,
-    columnName: series[0].columnName,
-  };
-  for (const s of series)
-    mergedSeries.points = [...mergedSeries.points, ...s.points];
-  return mergedSeries;
-}
-
-/** Returns either cached or constructed chart data for the specified table cell. */
-export function getOrCreateParsedChartData(tableCell: DG.Cell, useCache = true): IFitChartData {
-  const column = tableCell?.column;
-  return (useCache && column && tableCell) ?
-    FitChartCellRenderer.parsedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell?.rowIndex}`, () => {
-      return getChartData(tableCell);
-    }) : getChartData(tableCell);
-}
-
-/** Constructs {@link IFitChartData} from the table cell, taking into account
- * chart and fit settings potentially defined on the dataframe and column level. */
-function getChartData(tableCell: DG.Cell): IFitChartData {
-  // removing '|' from JSON (how did it get here?)
-  let cellValue = tableCell.value as string;
-  if (cellValue.includes('|'))
-    cellValue = cellValue.replaceAll('|', '');
-  const column = tableCell.column;
-  const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
-    parseCellValue(cellValue, column) :
-    createDefaultChartData()) : JSON.parse(cellValue ?? '{}') ?? {};
-
-  const columnChartOptions = tableCell.column ? getColumnChartOptions(tableCell.column) : {};
-  const dfChartOptions = tableCell.column ? getDataFrameChartOptions(tableCell.dataFrame) : {};
-
-  cellChartData.series ??= [];
-  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
-
-  // merge cell options with column options
-  mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
-  mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
-  for (const series of cellChartData.series) {
-    mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
-    mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
-    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
-  }
-
-  return cellChartData;
-}
-
-/** Returns existing, or fits curve for the specified grid cell and series. */
-export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction<Fit>,
-  chartLogOptions: LogOptions, tableCell?: DG.Cell, useCache = true): FitCurve {
-  const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell, useCache);
-  // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
-  const column = tableCell?.column;
-  return (useCache && column && tableCell) ?
-    FitChartCellRenderer.fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${seriesIdx}`, () => {
-      return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
-    }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
-}
-
-/** Returns existing, or maps new data points for the specified series. */
-export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: number, logOptions?: LogOptions,
-  userParamsFlag?: boolean, tableCell?: DG.Cell, useCache = true): {x: number[], y: number[]} {
-  const column = tableCell?.column;
-  return (useCache && column && tableCell) ?
-    FitChartCellRenderer.curvesDataPoints.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${idx} || userParamsFlag: ${userParamsFlag}`, () => {
-      return getDataPoints(series, logOptions, userParamsFlag);
-    }) : getDataPoints(series, logOptions, userParamsFlag);
-}
-
-/** Returns existing, or creates new dataframe default chart options. */
-export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
-  return JSON.parse(df.tags[FitConstants.TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
-}
-
-/** Returns existing, or creates new column default chart options. */
-export function getColumnChartOptions(column: DG.Column): IFitChartData {
-  return JSON.parse(column.tags[FitConstants.TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
-}
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: boolean): [DG.Rect, DG.Rect?, DG.Rect?] {
@@ -229,33 +64,6 @@ export function isColorValid(color: string | null | undefined): boolean {
   return DG.Color.fromHtml(color) !== undefined;
 }
 
-/** Performs x zeroes substitution if log x */
-export function substituteZeroes(data: IFitChartData): void {
-  for (let i = 0; i < data.series?.length!; i++) {
-    const series = data.series![i];
-    if (series.points.every((p) => p.x !== 0))
-      continue;
-    let minNonZeroX = Number.MAX_VALUE;
-    let maxNonZeroX = 0;
-    let countOfDistNonZeroX = 0;
-    const uniqueArr: number[] = [];
-    for (let j = 0; j < series.points.length; j++) {
-      if (series.points[j].x < minNonZeroX && series.points[j].x !== 0)
-        minNonZeroX = series.points[j].x;
-      if (series.points[j].x > maxNonZeroX && series.points[j].x !== 0)
-        maxNonZeroX = series.points[j].x;
-      if (!uniqueArr.includes(series.points[j].x)) {
-        uniqueArr[uniqueArr.length] = series.points[j].x;
-        countOfDistNonZeroX++;
-      }
-    }
-    const zeroSubstitute = Math.pow(10, Math.log10(minNonZeroX) - (Math.log10(maxNonZeroX) - Math.log10(minNonZeroX) / (countOfDistNonZeroX - 1)));
-    for (let j = 0; j < series.points.length; j++) {
-      if (series.points[j].x === 0)
-        series.points[j].x = zeroSubstitute;
-    }
-  }
-}
 
 export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: number, pointIdx: number, _data?: IFitChartData) {
   p.outlier = !p.outlier;
@@ -278,12 +86,16 @@ export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: numbe
     _data ??= getOrCreateParsedChartData(gridCell.cell);
     for (const column of columns) {
       const chartLogOptions: LogOptions = {logX: _data.chartOptions?.logX, logY: _data.chartOptions?.logY};
-      const stats = column.tags['.seriesAggregation'] !== null ?
-        getChartDataAggrStats(_data, column.tags['.seriesAggregation'], gridCell.cell) :
-        column.tags['.seriesNumber'] === seriesIdx.toString() ? calculateSeriesStats(_data.series![seriesIdx], seriesIdx, chartLogOptions, gridCell.cell) : null;
-      if (stats === null)
+      const statName = column.tags['.statistics'];
+      // resolved by name - the legacy seven-key shape has no ic50/pIC50/maxY slot
+      let value: number | undefined;
+      if (column.tags['.seriesAggregation'] !== null)
+        value = getChartDataAggrStats(_data, column.tags['.seriesAggregation'], gridCell.cell)[statName];
+      else if (column.tags['.seriesNumber'] === seriesIdx.toString())
+        value = getStatistic(calculateSeriesFit(_data.series![seriesIdx], seriesIdx, chartLogOptions, gridCell.cell), statName);
+      else
         continue;
-      column.set(gridCell.cell.rowIndex, stats[column.tags['.statistics'] as unknown as keyof FitStatistics]);
+      column.set(gridCell.cell.rowIndex, value ?? null);
     }
   }
 }
@@ -326,9 +138,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     return {width: FitConstants.CELL_DEFAULT_WIDTH, height: FitConstants.CELL_DEFAULT_HEIGHT};
   }
 
-  static fittedCurves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(1000);
-  static parsedCurves: DG.LruCache<string, IFitChartData> = new DG.LruCache<string, IFitChartData>(1000);
-  static curvesDataPoints: DG.LruCache<string, {x: number[], y: number[]}> = new DG.LruCache<string, {x: number[], y: number[]}>(2000);
+  // kept as aliases of the shared caches - these are public surface
+  static fittedCurves = fittedCurves;
+  static parsedCurves = parsedCurves;
+  static curvesDataPoints = curvesDataPoints;
 
   static inflateScreenBounds(rect: DG.Rect): DG.Rect {
     return rect.inflate(rect.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ? FitConstants.MIN_INFLATE_SIZE : FitConstants.INFLATE_SIZE,
@@ -407,6 +220,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clip();
 
     const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
+    // a merged series is fitted at index 0, the key real series 0 uses
+    const useFitCache = isRenderedOnGrid && !data.chartOptions?.mergeSeries;
     const tableCell = gridCell?.cell;
     if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
       data.series?.some((series) => series.points.some((p) => p.x === 0)))
@@ -430,9 +245,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
     g.restore();
 
+    // statistics of every series share one column, so each continues below the previous
+    let statisticsLine = 0;
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
-      const containsParams = series.parameters && series.parameters.length > 0;
       if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
         continue;
       series.points.sort((a, b) => a.x - b.x);
@@ -440,18 +256,16 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
       let curve: ((x: number) => number) | null = null;
-      if (!(series.connectDots && !series.showFitLine)) {
+      // everything downstream needs fit-space parameters; the cached series keeps its data-space ones
+      let fitSpaceSeries = series;
+      if (!(series.connectDots && !(series.showFitLine ?? true))) {
         if (series.parameters) {
-          if (data.chartOptions?.logX) {
-            if (series.parameters[2] > 0) // check if sigmoid, then log
-              series.parameters[2] = Math.log10(series.parameters[2]);
-          }
-          curve = getCurve(series, fitFunc);
+          fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
+          curve = getCurve(fitSpaceSeries, fitFunc);
         } else {
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, isRenderedOnGrid);
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, useFitCache);
           curve = fitResult.fittedCurve;
-          const params = [...fitResult.parameters];
-          series.parameters = params;
+          fitSpaceSeries = {...series, parameters: [...fitResult.parameters]};
           userParamsFlag = false;
         }
       }
@@ -460,17 +274,18 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
       renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
       renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
-      renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
+      renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
-        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, isRenderedOnGrid)});
-      if (series.parameters) {
-        renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
-          xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
+        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, useFitCache)});
+      // the inflection point, by name - it is slot 2 on the dose-response families and absent on the
+      // two-parameter ones, where reading a slot gave NaN
+      const inflectionSlot = fitFunc.statisticFields.findIndex((f) => f === 'ic50' || f === 'ec50');
+      if (fitSpaceSeries.parameters && inflectionSlot >= 0) {
+        renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
+          xValue: fitSpaceSeries.parameters![inflectionSlot], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       }
-      renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
-        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
-      if (!containsParams)
-        delete series.parameters;
+      statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
+        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
@@ -493,7 +308,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       return;
 
     const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
-    const data = getOrCreateParsedChartData(gridCell.cell, isRenderedOnGrid);
+    let data = getOrCreateParsedChartData(gridCell.cell, isRenderedOnGrid);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));
 
     for (const [_message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
@@ -505,8 +320,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     if (gridCell.cell.column?.name)
       data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+    // on a copy: this chart data is cached and shared with the statistics
     if (data.chartOptions?.mergeSeries)
-      data.series = [mergeSeries(data.series!)!];
+      data = {...data, series: [mergeSeries(data.series!)!]};
 
     g.clearRect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
     this.renderCurves(g, screenBounds, data, gridCell);
