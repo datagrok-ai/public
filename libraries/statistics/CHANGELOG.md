@@ -3,7 +3,7 @@
 ## v.next
 
 * GROK-17637: Fit: Added `IFitChartData.explicit`, naming the options a user set at that level. Only an explicitly set level outranks the value a series declares for itself; anything absent stays advisory, as before
-* GROK-17637: Fit: `FitConstants.TAG_FIT` moved from `.fit` to `.%fit`, the prefix the platform serializes into a layout, so column and dataframe level options survive a reopened project. The previous name is kept as `TAG_FIT_LEGACY` and is still read
+* GROK-17637: Fit: `FitConstants.TAG_FIT` moved from `.fit` to `.%fit`, the prefix the platform serializes into a layout, so column and dataframe level options survive a reopened project. The previous name is kept as `TAG_FIT_LEGACY`, read once and then removed, so only one of the two ever holds the options
 * GROK-17637: Fit: Exported the typed fit results (`SigmoidFit`, `LinearFit`, `FourPLDoseResponseFit`, etc.), which expose named parameters instead of positional indices, plus `interceptY` and the raw `parameters`
 * GROK-17637: Fit: Added `FitFunction.statisticsProperties`, describing the statistics each fit function produces
 * GROK-17637: Fit: Added precomputed data points and log options to `fillParams`, and widened its series argument to `IFitSeries`
