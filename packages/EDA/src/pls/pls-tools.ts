@@ -24,6 +24,7 @@ export type PlsOutput = {
   uScores: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
   xLoadings: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
   yLoadings: DG.Column<DG.COLUMN_TYPE.FLOAT>,
+  vip: DG.Column<DG.COLUMN_TYPE.FLOAT>,
 };
 
 /** PLS analysis input */
@@ -125,6 +126,7 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
     uScores: result[WASM_OUTPUT_IDX.U_SCORES],
     xLoadings: result[WASM_OUTPUT_IDX.X_LOADINGS],
     yLoadings: result[WASM_OUTPUT_IDX.Y_LOADINGS],
+    vip: result[WASM_OUTPUT_IDX.VIP],
   };
 }
 
@@ -235,6 +237,10 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     col.name = loadingsRegrCoefsTable.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
     loadingsRegrCoefsTable.columns.add(col);
   });
+
+  // 0.3. Add VIP
+  result.vip.name = loadingsRegrCoefsTable.columns.getUnusedName(TITLE.VIP);
+  loadingsRegrCoefsTable.columns.add(result.vip);
 
   // 1. Predicted vs Reference scatter plot
   // Debias prediction (since PLS center data)
@@ -357,11 +363,33 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     showStackSelector: false,
   }));
 
+  // 6. Variable Importance Bar Chart
+  const vipViewer = DG.Viewer.barChart(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
+    title: TITLE.VIP,
+    splitColumnName: TITLE.FEATURE,
+    valueColumnName: result.vip.name,
+    valueAggrType: DG.AGG.AVG,
+    help: LINK.MVA,
+    showValueSelector: false,
+    showStackSelector: false,
+  });
+
+  const regrCoeffsNode = view.dockManager.findNode(regrCoeffsBar.root);
+
+  if (regrCoeffsNode !== null) {
+    view.dockManager.dock(
+      vipViewer,
+      DG.DOCK_TYPE.FILL,
+      regrCoeffsNode,
+    );
+  }
+
   // emphasize viewers in the demo case
   if (analysisType === PLS_ANALYSIS.DEMO) {
     setTimeout(() => {
       describeElements(
-        [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
+        [predictVsReferScatter, scoresScatter, loadingsScatter, vipViewer, explVarsBar].map((v) => v.root),
         DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
         ['left', 'left', 'right', 'right', 'left'],
         view.root,

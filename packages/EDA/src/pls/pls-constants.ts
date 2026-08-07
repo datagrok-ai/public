@@ -35,6 +35,7 @@ export enum TITLE {
   MODEL = 'Observed vs. Predicted',
   FEATURE = 'Feature',
   REGR_COEFS = 'Regression Coefficients',
+  VIP = 'Variable Importance',
   XLOADING = 'x.loading.p',
   LOADINGS = 'Loadings',
   XSCORE = 'x.score.t',
@@ -93,6 +94,7 @@ export enum WASM_OUTPUT_IDX {
   U_SCORES = 3,
   X_LOADINGS = 4,
   Y_LOADINGS = 5,
+  VIP = 6,
 }
 
 export const INT = 'Int';
@@ -144,11 +146,11 @@ export const DEMO_RESULTS = [
   },
   {
     caption: TITLE.LOADINGS,
-    text: 'The impact of each feature on the latent factors: higher loading means stronger influence.',
+    text: 'How well the two latent factors capture each feature: the farther from the origin, the better.',
   },
   {
-    caption: TITLE.REGR_COEFS,
-    text: 'Parameters of the obtained model: features make different contribution to the prediction.',
+    caption: TITLE.VIP,
+    text: 'Feature ranking by overall contribution: bars above 1 mark the predictors that matter most.',
   },
   {
     caption: TITLE.EXPL_VAR,
