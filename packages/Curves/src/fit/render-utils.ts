@@ -155,6 +155,16 @@ export function renderPoints(g: CanvasRenderingContext2D, series: IFitSeries, op
 }
 
 /** Performs points drawing */
+/** The two segments of an error bar in screen coordinates, running from the marker's edge outwards so
+ * the bar stays readable at any marker size. Null when the deviation is smaller than the marker and
+ * would be drawn inside it. */
+export function stdevWhisker(yCenter: number, yTop: number, yBottom: number, radius: number):
+  {top: [number, number], bottom: [number, number]} | null {
+  if (yCenter - yTop <= radius)
+    return null;
+  return {top: [yTop, yCenter - radius], bottom: [yCenter + radius, yBottom]};
+}
+
 function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: FitRenderOptions): void {
   const ratio = options.ratio!;
   const defaultSize = FitConstants.POINT_PX_SIZE * ratio;
@@ -179,11 +189,25 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
 
     DG.Paint.marker(g, markerToDraw, xScreen, yScreen, color, size);
     if (p.stdev && !p.outlier) {
-      g.strokeStyle = color;
-      g.beginPath();
-      g.moveTo(xScreen, viewport.yToScreen(p.y + p.stdev));
-      g.lineTo(xScreen, viewport.yToScreen(p.y - p.stdev));
-      g.stroke();
+      const radius = size / 2;
+      const whisker = stdevWhisker(yScreen, viewport.yToScreen(p.y + p.stdev),
+        viewport.yToScreen(p.y - p.stdev), radius);
+      if (whisker) {
+        g.strokeStyle = color;
+        // set rather than inherited: the fit line and the droplines both leave a width behind
+        g.lineWidth = ratio;
+        g.beginPath();
+        g.moveTo(xScreen, whisker.top[0]);
+        g.lineTo(xScreen, whisker.top[1]);
+        g.moveTo(xScreen, whisker.bottom[0]);
+        g.lineTo(xScreen, whisker.bottom[1]);
+        // caps as wide as the marker, so the extent reads at a glance
+        g.moveTo(xScreen - radius, whisker.top[0]);
+        g.lineTo(xScreen + radius, whisker.top[0]);
+        g.moveTo(xScreen - radius, whisker.bottom[1]);
+        g.lineTo(xScreen + radius, whisker.bottom[1]);
+        g.stroke();
+      }
     }
   }
 }

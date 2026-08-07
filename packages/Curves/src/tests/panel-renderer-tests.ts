@@ -7,6 +7,7 @@ import {category, test, expect, expectArray, expectFloat, awaitCheck, delay} fro
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
+import {stdevWhisker} from '../fit/render-utils';
 import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
 import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-options';
 import {sigmoidPoints, ciCurveJson, labelledCurveJson} from './curve-data';
@@ -305,6 +306,22 @@ category('panel and renderer', () => {
 
     expect(drawn.some((t) => t.startsWith('Z prime')), false, 'a label not named in showLabels was drawn');
     expect(drawn.filter((t) => t.startsWith('compound')).length, 2);
+  });
+
+  test('an error bar starts at the marker edge and hides when the marker covers it', async () => {
+    // screen y grows downwards, so the top of the bar is the smaller number
+    const marker4 = stdevWhisker(100, 70, 130, 2)!;
+    expect(marker4 !== null, true, 'a deviation larger than the marker should be drawn');
+    expectArray(marker4.top, [70, 98]);
+    expectArray(marker4.bottom, [102, 130]);
+
+    // a point can set its own size, and a large marker used to swallow the bar whole
+    const bigMarker = stdevWhisker(100, 70, 130, 40);
+    expect(bigMarker === null, true, 'a deviation smaller than the marker must not be drawn inside it');
+
+    // the boundary: exactly at the marker edge is still nothing to show
+    expect(stdevWhisker(100, 80, 120, 20) === null, true);
+    expect(stdevWhisker(100, 79, 121, 20) !== null, true);
   });
 
   test('property panel renders for a saved legacy statistic', async () => {
