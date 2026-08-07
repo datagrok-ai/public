@@ -574,3 +574,28 @@
   padding: 3px 0 3px 12px;
   margin-top: 8px;
 }
+
+.grokky-exec-sep {
+  width: 1px;
+  height: 13px;
+  background: var(--steel-2);
+}
+
+.grokky-exec-icon.grokky-exec-ran { color: var(--green-2); }
+.grokky-exec-icon.grokky-exec-error { color: var(--red-3); }
+
+.grokky-exec-code {
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--steel-2);
+  border-radius: 6px;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.grokky-hidden {
+  display: none;
+}

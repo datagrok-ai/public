@@ -89,6 +89,7 @@
 * Added `src/polyfills.ts` (Chrome 50 / Dartium) — `crypto.randomUUID`, `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`, `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`; routed clipboard writes through a `copyToClipboard()` helper with an `execCommand` fallback
 * AI: Added a Run button to the ribbon of file views opened from `MyFiles/agents/scripts/`
 * AI: Added wand icon to open curated prompt suggestions menu (loaded from suggestions.yaml)
+* AI: Assistant messages now show a code icon and a rerun icon for executed exec code
 
 ## 1.0.4 (2026-02-01)
 
