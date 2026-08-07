@@ -22,6 +22,12 @@ Scalars and dataframe columns are matched across runs by name: exact, then norma
 (case/underscore/dash-insensitive), then fuzzy. Values with mismatching units never match;
 partially missing units produce a warning icon.
 
+When runs name the same quantity differently (for example, `pressure` and `P`), map the
+names manually: the exchange icon next to the value filter opens the **Name mappings**
+dialog with name pairs. Mapped names match as the same value across all runs, index
+columns included. The mapping is exact up to case and separators — no fuzzy matching —
+and pairs chain (mapping A to B and B to C makes all three equal).
+
 Columns additionally require their tables to be comparable: the index columns must
 name-match. Beyond that, matching stays per column — the tables don't need to share
 their full column sets. Split columns don't affect matching: each run charts with its

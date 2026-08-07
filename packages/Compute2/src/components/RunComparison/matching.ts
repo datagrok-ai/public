@@ -4,7 +4,7 @@
 
 import {
   ComparisonEntryNodes, MatchConfidence, ScalarBinding, ColumnBinding, ColumnCandidate,
-  CandidateOverrides, ScalarTarget, ColumnTarget, TargetBase, isNumericType, candidateId,
+  CandidateOverrides, NameMapping, ScalarTarget, ColumnTarget, TargetBase, isNumericType, candidateId,
 } from './types';
 
 export type UnitsCompatibility = 'match' | 'warn' | 'mismatch';
@@ -46,11 +46,47 @@ export function nameSimilarity(a: string, b: string): number {
   return (2 * intersection) / (totalA + totalB);
 }
 
-export function nameMatchConfidence(a: string, b: string): MatchConfidence | null {
+/** Normalized name -> group id for user-defined mappings; pairs merge transitively. */
+export function buildAliasGroups(mappings: NameMapping[]): Map<string, number> {
+  const groups = new Map<string, number>();
+  let nextId = 0;
+  for (const {from, to} of mappings) {
+    const a = normalizeName(from);
+    const b = normalizeName(to);
+    if (!a || !b)
+      continue;
+    const ga = groups.get(a);
+    const gb = groups.get(b);
+    if (ga == null && gb == null) {
+      groups.set(a, nextId);
+      groups.set(b, nextId);
+      nextId++;
+    } else if (ga == null) {
+      groups.set(a, gb!);
+    } else if (gb == null) {
+      groups.set(b, ga);
+    } else if (ga !== gb) {
+      for (const [name, id] of groups) {
+        if (id === gb)
+          groups.set(name, ga);
+      }
+    }
+  }
+  return groups;
+}
+
+export function nameMatchConfidence(
+  a: string, b: string, aliases?: Map<string, number>,
+): MatchConfidence | null {
   if (a === b)
     return 'exact';
   if (normalizeName(a) === normalizeName(b))
     return 'normalized';
+  if (aliases) {
+    const group = aliases.get(normalizeName(a));
+    if (group != null && group === aliases.get(normalizeName(b)))
+      return 'normalized';
+  }
   if (nameSimilarity(a, b) >= FUZZY_NAME_THRESHOLD)
     return 'fuzzy';
   return null;
@@ -92,20 +128,21 @@ interface Cluster<P> {
   entryIds: Set<string>;
 }
 
-function clusterByName<P>(items: ClusterItem<P>[]): Cluster<P>[] {
+function clusterByName<P>(items: ClusterItem<P>[], aliases?: Map<string, number>): Cluster<P>[] {
   const clusters: Cluster<P>[] = [];
   for (const item of items) {
     let best: {cluster: Cluster<P>, confidence: MatchConfidence, score: number} | null = null;
     for (const cluster of clusters) {
       if (cluster.entryIds.has(item.entryId))
         continue;
-      const confidence = nameMatchConfidence(cluster.canonicalName, item.name);
+      const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
       if (!confidence)
         continue;
       if (unitsCompatibility(cluster.items[0].units, item.units) === 'mismatch')
         continue;
       const seedIndex = cluster.items[0].indexColumnName;
-      if (seedIndex && item.indexColumnName && !nameMatchConfidence(seedIndex, item.indexColumnName))
+      if (seedIndex && item.indexColumnName &&
+        !nameMatchConfidence(seedIndex, item.indexColumnName, aliases))
         continue;
       const score = nameSimilarity(cluster.canonicalName, item.name) +
         (cluster.canonicalSecondary && item.secondaryName ?
@@ -147,7 +184,9 @@ function dedupeTargetKeys<T extends TargetBase>(targets: T[]): T[] {
 }
 
 /** Groups numeric scalars across entries into candidate targets (coverage >= 2). */
-export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarget[] {
+export function matchScalarTargets(
+  entries: ComparisonEntryNodes[], aliases?: Map<string, number>,
+): ScalarTarget[] {
   const items: ClusterItem<ScalarBinding>[] = [];
   for (const entry of entries) {
     for (const scalar of entry.scalars) {
@@ -168,7 +207,7 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
       });
     }
   }
-  return dedupeTargetKeys(clusterByName(items)
+  return dedupeTargetKeys(clusterByName(items, aliases)
     .filter((cluster) => cluster.entryIds.size >= 2)
     .map((cluster) => ({
       kind: 'scalar' as const,
@@ -198,6 +237,7 @@ export function matchColumnTargets(
   indexColumns: Map<string, Map<string, string>>,
   splitColumns?: Map<string, Map<string, string>>,
   overrides?: CandidateOverrides,
+  aliases?: Map<string, number>,
 ): ColumnTarget[] {
   const items: ClusterItem<ColumnBinding>[] = [];
   for (const entry of entries) {
@@ -231,19 +271,19 @@ export function matchColumnTargets(
     }
   }
 
-  const withCandidates = clusterByName(items).map((cluster) => {
+  const withCandidates = clusterByName(items, aliases).map((cluster) => {
     const members = new Set(cluster.items);
     const seed = cluster.items[0];
     const candidates: ColumnCandidate[] = [];
     for (const item of items) {
-      const confidence = nameMatchConfidence(cluster.canonicalName, item.name);
+      const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
       if (!confidence)
         continue;
       const units = unitsCompatibility(seed.units, item.units);
       if (units === 'mismatch')
         continue;
       if (seed.indexColumnName && item.indexColumnName &&
-        !nameMatchConfidence(seed.indexColumnName, item.indexColumnName))
+        !nameMatchConfidence(seed.indexColumnName, item.indexColumnName, aliases))
         continue;
       const auto = members.has(item);
       // raw items join every cluster whose name they share (up to normalization) — but a

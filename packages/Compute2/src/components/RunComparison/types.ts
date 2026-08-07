@@ -114,6 +114,12 @@ export const candidateId = (b: ColumnBinding) => `${b.entryId}|${b.tablePath}|${
 // targetKey -> candidateId -> enabled
 export type CandidateOverrides = Record<string, Record<string, boolean>>;
 
+// user-defined name pair treated as the same quantity during matching
+export interface NameMapping {
+  from: string;
+  to: string;
+}
+
 export type ComparisonTarget = ScalarTarget | ColumnTarget;
 
 const NUMERIC_TYPES = new Set(['int', 'double', 'float', 'number', 'bigint']);

@@ -13,10 +13,10 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 import {History} from '../History/History';
 import {
   ComparisonTarget, ScalarTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
-  ComparisonEntry, EntrySourceKind, RUN_COLUMN, candidateId,
+  ComparisonEntry, EntrySourceKind, NameMapping, RUN_COLUMN, candidateId,
   AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
-import {matchScalarTargets, matchColumnTargets} from './matching';
+import {matchScalarTargets, matchColumnTargets, buildAliasGroups} from './matching';
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
@@ -206,11 +206,15 @@ export const RunComparison = Vue.defineComponent({
         {name: columnName, type: indexColumnType(entryId, tablePath, columnName) ?? ''},
         indexColumnsMap.value.get(entryId)?.get(tablePath) ?? '')));
 
+    const nameMappings = Vue.ref<NameMapping[]>([]);
+    const aliasGroups = Vue.computed(() => buildAliasGroups(nameMappings.value));
+
     const targets = Vue.computed<ComparisonTarget[]>(() => {
       const nodes = entries.value.map((entry) => entry.nodes);
       return [
-        ...matchScalarTargets(nodes),
-        ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value),
+        ...matchScalarTargets(nodes, aliasGroups.value),
+        ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value,
+          aliasGroups.value),
       ].sort((a, b) => a.kind !== b.kind ?
         (a.kind === 'scalar' ? -1 : 1) :
         a.displayName.localeCompare(b.displayName));
@@ -399,6 +403,39 @@ export const RunComparison = Vue.defineComponent({
         dlg.show({center: true});
         dlg.getButton('OK').innerText = openLabel;
       }
+    };
+
+    const editNameMappings = () => {
+      const rows: {from: DG.InputBase<string>, to: DG.InputBase<string>}[] = [];
+      const list = ui.divV([], {style: {gap: '4px'}});
+      const addRow = (from = '', to = '') => {
+        const fromInput = ui.input.string('', {value: from});
+        const toInput = ui.input.string('', {value: to});
+        (fromInput.input as HTMLInputElement).placeholder = 'name';
+        (toInput.input as HTMLInputElement).placeholder = 'same as';
+        const row = {from: fromInput, to: toInput};
+        rows.push(row);
+        const rowDiv = ui.divH([fromInput.root, toInput.root, ui.icons.delete(() => {
+          rows.splice(rows.indexOf(row), 1);
+          rowDiv.remove();
+        }, 'Remove mapping')], {style: {alignItems: 'center', gap: '6px'}});
+        list.append(rowDiv);
+      };
+      for (const {from, to} of nameMappings.value)
+        addRow(from, to);
+      if (rows.length === 0)
+        addRow();
+      ui.dialog('Name mappings')
+        .add(ui.divText('Mapped names match as the same value, ignoring case and separators.',
+          {style: {color: 'var(--grey-4)'}}))
+        .add(list)
+        .add(ui.button('Add', () => addRow()))
+        .onOK(() => {
+          nameMappings.value = rows
+            .map((row) => ({from: row.from.value.trim(), to: row.to.value.trim()}))
+            .filter((row) => row.from && row.to);
+        })
+        .show({center: true});
     };
 
     // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
@@ -734,6 +771,11 @@ export const RunComparison = Vue.defineComponent({
               value={hideEqual.value}
               onUpdate:value={(val) => hideEqual.value = val}
             />
+            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+              <IconFA name='exchange-alt' tooltip='Edit name mappings' onClick={editNameMappings}/>
+              { nameMappings.value.length > 0 &&
+                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{nameMappings.value.length}</span> }
+            </div>
           </div>
         </div>
         { targets.value.length === 0 &&

@@ -2,7 +2,7 @@ import {category, test, expect, expectFloat, expectArray} from '@datagrok-librar
 import {isNumericType} from '../components/RunComparison/types';
 import {
   normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
-  matchScalarTargets, matchColumnTargets, FUZZY_NAME_THRESHOLD,
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
@@ -238,6 +238,68 @@ category('RunComparison: table compatibility', () => {
     const rawCandidate = targets[0].candidates.find((c) => c.binding.entryId === 'r')!;
     expect(rawCandidate.enabled, true);
     expect(rawCandidate.binding.splitColumnName, 'batch');
+  });
+});
+
+category('RunComparison: name mappings', () => {
+  test('mapped scalar names match at normalized confidence', async () => {
+    const entries = [
+      makeEntry('a', [{name: 'pressure', value: 1}]),
+      makeEntry('b', [{name: 'P', value: 2}]),
+    ];
+    expect(matchScalarTargets(entries).length, 0);
+    const targets = matchScalarTargets(entries, buildAliasGroups([{from: 'pressure', to: 'P'}]));
+    expect(targets.length, 1);
+    expect(targets[0].confidence, 'normalized');
+    expect(targets[0].coverage, 2);
+  });
+
+  test('mapping resolves through name normalization', async () => {
+    const entries = [
+      makeEntry('a', [{name: 'Init_Temp', value: 1}]),
+      makeEntry('b', [{name: 'T0', value: 2}]),
+    ];
+    const targets = matchScalarTargets(entries, buildAliasGroups([{from: 'init temp', to: 'T0'}]));
+    expect(targets.length, 1);
+  });
+
+  test('pairs merge transitively', async () => {
+    const aliases = buildAliasGroups([{from: 'AX', to: 'BX'}, {from: 'BX', to: 'CX'}]);
+    expect(nameMatchConfidence('AX', 'CX', aliases), 'normalized');
+  });
+
+  test('mappings have no fuzzy reach', async () => {
+    const aliases = buildAliasGroups([{from: 'pressure', to: 'P'}]);
+    expect(nameMatchConfidence('pressures', 'P', aliases), null);
+  });
+
+  test('mapped index columns let tables cluster', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [{name: 'step', type: 'int'}, {name: 'height'}]}]),
+    ];
+    const index = indexMap({a: {t: 'time'}, b: {t: 'step'}});
+    expect(matchColumnTargets(entries, index).length, 0);
+    const targets = matchColumnTargets(entries, index, undefined, undefined,
+      buildAliasGroups([{from: 'time', to: 'step'}]));
+    expect(targets.length, 1);
+    expect(targets[0].coverage, 2);
+  });
+
+  test('raw tables auto-enable through mappings', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'pressure'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'pressure'}]}]),
+      makeEntry('r', [], [{path: 'raw', columns: [{name: 'time', type: 'int'}, {name: 'P'}]}], 'raw'),
+    ];
+    const index = indexMap({a: {t: 'time'}, b: {t: 'time'}, r: {raw: 'time'}});
+    const targets = matchColumnTargets(entries, index, undefined, undefined,
+      buildAliasGroups([{from: 'pressure', to: 'P'}]));
+    expect(targets.length, 1);
+    expect(targets[0].coverage, 3);
+    const rawCandidate = targets[0].candidates.find((c) => c.binding.entryId === 'r')!;
+    expect(rawCandidate.enabled, true);
+    expect(rawCandidate.confidence, 'normalized');
   });
 });
 
