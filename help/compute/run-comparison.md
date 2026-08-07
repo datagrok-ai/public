@@ -23,8 +23,10 @@ Scalars and dataframe columns are matched across runs by name: exact, then norma
 partially missing units produce a warning icon.
 
 Columns additionally require their tables to be comparable: the index columns must
-name-match, and the split columns must either both be unset or name-match. Beyond that,
-matching stays per column — the tables don't need to share their full column sets.
+name-match. Beyond that, matching stays per column — the tables don't need to share
+their full column sets. Split columns don't affect matching: each run charts with its
+own split column even when the names differ, and runs without one chart as a single
+series in an unnamed split category.
 
 Matched values whose data is the same in every run (equal scalar values, or equal
 value, index, and split column contents) are hidden from the compare list by default.

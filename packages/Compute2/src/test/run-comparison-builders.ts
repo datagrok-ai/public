@@ -239,6 +239,23 @@ category('RunComparison: multi and split dataframes', () => {
     expect(result.chartDf.getCol(RUN_COLUMN).toList().every((v: string) => v === 'r1' || v === 'r2'), true);
   });
 
+  test('unsplit runs pad the split column with empty strings', async () => {
+    const e1 = entryFromDataFrame(makeDf('r1', [
+      intCol('time', [1, 1]), floatCol('v', [10, 20]), strCol('batch', ['A', 'B']),
+    ]));
+    const e2 = entryFromDataFrame(makeDf('r2', [
+      intCol('time', [1, 2]), floatCol('v', [30, 40]),
+    ]));
+    const entries = [e1, e2];
+    const splits = new Map([[e1.id, new Map([[e1.nodes.tables[0].path, 'batch']])]]);
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'), splits);
+    expect((target as ColumnTarget).coverage, 2);
+    const result = buildColumnComparison(target as ColumnTarget, entries)!;
+    expect(result.splitColumnName, 'batch');
+    expect(result.chartDf.getCol('batch').toList().join('|'), 'A|B||');
+    expect(result.chartDf.getCol('v').toList().join(','), '10,20,30,40');
+  });
+
   test('index kind: datetime, float, and mixed degrading to key', async () => {
     const dtCol = () => DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'ts', [dayjs('2026-01-01'), dayjs('2026-01-02')]);
     const dtEntries = [

@@ -1,7 +1,7 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
 import {isNumericType} from '../components/RunComparison/types';
 import {
-  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, tablesCompatible,
+  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
   matchScalarTargets, matchColumnTargets, FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -178,21 +178,6 @@ category('RunComparison: column matching', () => {
 });
 
 category('RunComparison: table compatibility', () => {
-  test('tablesCompatible index and split rules', async () => {
-    expect(tablesCompatible({indexColumnName: 'time'}, {indexColumnName: 'Time '}), true);
-    expect(tablesCompatible({indexColumnName: 'times'}, {indexColumnName: 'time'}), true);
-    expect(tablesCompatible({indexColumnName: 'time'}, {indexColumnName: 'step'}), false);
-    expect(tablesCompatible(
-      {indexColumnName: 'time', splitColumnName: 'species'},
-      {indexColumnName: 'time', splitColumnName: 'Species'}), true);
-    expect(tablesCompatible(
-      {indexColumnName: 'time', splitColumnName: 'species'},
-      {indexColumnName: 'time'}), false);
-    expect(tablesCompatible(
-      {indexColumnName: 'time', splitColumnName: 'species'},
-      {indexColumnName: 'time', splitColumnName: 'region'}), false);
-  });
-
   test('index name mismatch blocks clustering', async () => {
     const entries = [
       makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}]),
@@ -201,7 +186,7 @@ category('RunComparison: table compatibility', () => {
     expect(matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'step'}})).length, 0);
   });
 
-  test('split presence mismatch blocks clustering', async () => {
+  test('split and unsplit tables cluster together', async () => {
     const table = {path: 't', columns: [
       {name: 'time', type: 'int'}, {name: 'height'}, {name: 'species', type: 'string'},
     ]};
@@ -209,7 +194,50 @@ category('RunComparison: table compatibility', () => {
     const targets = matchColumnTargets(entries,
       indexMap({a: {t: 'time'}, b: {t: 'time'}}),
       indexMap({a: {t: 'species'}}));
-    expect(targets.length, 0);
+    expect(targets.length, 1);
+    expect(targets[0].coverage, 2);
+    const byEntry = new Map(targets[0].bindings.map((b) => [b.entryId, b.splitColumnName]));
+    expect(byEntry.get('a'), 'species');
+    expect(byEntry.get('b') == null, true);
+  });
+
+  test('differently named splits cluster together', async () => {
+    const columns = [
+      {name: 'time', type: 'int'}, {name: 'height'},
+      {name: 'species', type: 'string'}, {name: 'region', type: 'string'},
+    ];
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns}]),
+      makeEntry('b', [], [{path: 't', columns}]),
+    ];
+    const targets = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}}),
+      indexMap({a: {t: 'species'}, b: {t: 'region'}}));
+    expect(targets.length, 1);
+    expect(targets[0].coverage, 2);
+    const byEntry = new Map(targets[0].bindings.map((b) => [b.entryId, b.splitColumnName]));
+    expect(byEntry.get('a'), 'species');
+    expect(byEntry.get('b'), 'region');
+  });
+
+  test('split raw table auto-joins unsplit runs', async () => {
+    const runTable = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const rawTable = {path: 'raw', columns: [
+      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'batch', type: 'string'},
+    ]};
+    const entries = [
+      makeEntry('a', [], [runTable]),
+      makeEntry('b', [], [runTable]),
+      makeEntry('r', [], [rawTable], 'raw'),
+    ];
+    const targets = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}, r: {raw: 'time'}}),
+      indexMap({r: {raw: 'batch'}}));
+    expect(targets.length, 1);
+    expect(targets[0].coverage, 3);
+    const rawCandidate = targets[0].candidates.find((c) => c.binding.entryId === 'r')!;
+    expect(rawCandidate.enabled, true);
+    expect(rawCandidate.binding.splitColumnName, 'batch');
   });
 });
 

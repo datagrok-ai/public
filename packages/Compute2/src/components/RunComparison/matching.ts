@@ -72,31 +72,13 @@ export function unitsCompatibility(a?: string, b?: string): UnitsCompatibility {
   return 'mismatch';
 }
 
-export interface TableMatchKey {
-  indexColumnName: string;
-  splitColumnName?: string;
-}
-
-// tables are comparable when their index columns name-match and their split columns
-// are either both absent or name-match: a split table charts per-category series,
-// so pairing it with an unsplit one would be misleading
-export function tablesCompatible(a: TableMatchKey, b: TableMatchKey): boolean {
-  if (!nameMatchConfidence(a.indexColumnName, b.indexColumnName))
-    return false;
-  if (!a.splitColumnName && !b.splitColumnName)
-    return true;
-  if (!a.splitColumnName || !b.splitColumnName)
-    return false;
-  return nameMatchConfidence(a.splitColumnName, b.splitColumnName) != null;
-}
-
 interface ClusterItem<P> {
   entryId: string;
   name: string;
   units?: string;
   // used only to break ties between equally-confident candidates (e.g. table name for columns)
   secondaryName?: string;
-  tableKey?: TableMatchKey;
+  indexColumnName?: string;
   raw?: boolean;
   payload: P;
 }
@@ -122,8 +104,8 @@ function clusterByName<P>(items: ClusterItem<P>[]): Cluster<P>[] {
         continue;
       if (unitsCompatibility(cluster.items[0].units, item.units) === 'mismatch')
         continue;
-      const seedKey = cluster.items[0].tableKey;
-      if (seedKey && item.tableKey && !tablesCompatible(seedKey, item.tableKey))
+      const seedIndex = cluster.items[0].indexColumnName;
+      if (seedIndex && item.indexColumnName && !nameMatchConfidence(seedIndex, item.indexColumnName))
         continue;
       const score = nameSimilarity(cluster.canonicalName, item.name) +
         (cluster.canonicalSecondary && item.secondaryName ?
@@ -232,7 +214,7 @@ export function matchColumnTargets(
           name: column.name,
           units: column.units,
           secondaryName: table.name,
-          tableKey: {indexColumnName, splitColumnName},
+          indexColumnName,
           raw: entry.sourceKind === 'raw',
           payload: {
             entryId: entry.entryId,
@@ -260,7 +242,8 @@ export function matchColumnTargets(
       const units = unitsCompatibility(seed.units, item.units);
       if (units === 'mismatch')
         continue;
-      if (seed.tableKey && item.tableKey && !tablesCompatible(seed.tableKey, item.tableKey))
+      if (seed.indexColumnName && item.indexColumnName &&
+        !nameMatchConfidence(seed.indexColumnName, item.indexColumnName))
         continue;
       const auto = members.has(item);
       // raw items join every cluster whose name they share (up to normalization) — but a
