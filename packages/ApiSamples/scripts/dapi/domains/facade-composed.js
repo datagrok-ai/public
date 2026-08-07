@@ -16,7 +16,7 @@ const [items, events] = await Promise.all(
   [domains.table('apitests.item'), domains.table('apitests.item_event')]);
 const row = (await items.query({limit: 1}))[0];
 if (row == null) {
-  grok.shell.info('apitests.item has no rows yet — run domains-transaction.js first.');
+  grok.shell.info('apitests.item has no rows yet — run transaction.js first.');
   return;
 }
 

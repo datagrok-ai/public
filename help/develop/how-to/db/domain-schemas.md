@@ -499,15 +499,15 @@ history, `auditLog({limit})` the table-wide trail.
 ### Samples
 
 Runnable in the platform's samples gallery:
-[domains](https://public.datagrok.ai/js/samples/dapi/domains),
-[domains-typed-client](https://public.datagrok.ai/js/samples/dapi/domains-typed-client),
-[domains-aggregate](https://public.datagrok.ai/js/samples/dapi/domains-aggregate),
-[domains-batch](https://public.datagrok.ai/js/samples/dapi/domains-batch),
-[domains-transaction](https://public.datagrok.ai/js/samples/dapi/domains-transaction),
-[domains-filters](https://public.datagrok.ai/js/samples/dapi/domains-filters),
-[domains-dataframe](https://public.datagrok.ai/js/samples/dapi/domains-dataframe),
-[domains-idempotency](https://public.datagrok.ai/js/samples/dapi/domains-idempotency),
-[domains-schema](https://public.datagrok.ai/js/samples/dapi/domains-schema).
+[crud](https://public.datagrok.ai/js/samples/dapi/domains/crud),
+[typed-client](https://public.datagrok.ai/js/samples/dapi/domains/typed-client),
+[aggregate](https://public.datagrok.ai/js/samples/dapi/domains/aggregate),
+[batch](https://public.datagrok.ai/js/samples/dapi/domains/batch),
+[transaction](https://public.datagrok.ai/js/samples/dapi/domains/transaction),
+[filters](https://public.datagrok.ai/js/samples/dapi/domains/filters),
+[dataframe](https://public.datagrok.ai/js/samples/dapi/domains/dataframe),
+[idempotency](https://public.datagrok.ai/js/samples/dapi/domains/idempotency),
+[schema](https://public.datagrok.ai/js/samples/dapi/domains/schema).
 
 ## Customizing the UI
 

@@ -3,7 +3,7 @@
 // permission gating and the unsaved-changes prompt included.
 //
 // This is the CLASS layer, which stays public as the extension point. The way in
-// for new code is the handle — see domains-facade-app.js for the same app in one
+// for new code is the handle — see facade-app.js for the same app in one
 // line.
 //
 // In a package you write `import {DomainAppView} from '@datagrok-libraries/domain-ui'`.
