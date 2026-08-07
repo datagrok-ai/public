@@ -17,11 +17,19 @@ async function createTableView(tableName: string): Promise<DG.TableView> {
   return grok.shell.addTableView(df);
 }
 
-async function saveAndOpenProject(tv: DG.TableView): Promise<void> {
+async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
   const project = DG.Project.create();
   project.name = 'Curves test project';
   const tableInfo = tv.dataFrame.getTableInfo();
-  const layoutInfo = tv.getInfo();
+  if (dataSync) {
+    //@ts-ignore
+    tableInfo.tags[DG.Tags.DataSync] = 'sync';
+    //@ts-ignore
+    tableInfo.tags[DG.Tags.CreationScript] = tv.dataFrame.getTag(DG.Tags.CreationScript);
+  }
+  // saveLayout, not getInfo: only saveLayout runs saveSyncTags, which is what puts the column tags
+  // into the layout - without them a refetched table comes back with nothing but its own data
+  const layoutInfo = tv.saveLayout();
   project.addChild(tableInfo);
   project.addChild(layoutInfo);
   await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
@@ -51,12 +59,19 @@ function turnOffConfidenceIntervals(tv: DG.TableView): void {
     'seriesOptions', 'Column');
 }
 
-async function runSaveAndOpenProjectTest(): Promise<void> {
-  const tv = await createTableView(DEMO_FILE);
+async function runSaveAndOpenProjectTest(dataSync?: boolean): Promise<void> {
+  let tv: DG.TableView;
+  if (dataSync) {
+    await DG.Func.find({name: 'OpenFile'})[0].prepare({
+      fullPath: `System:AppData/Curves/${DEMO_FILE}`,
+    }).call(undefined, undefined, {processed: false});
+    tv = grok.shell.tv;
+    await grok.data.detectSemanticTypes(tv.dataFrame);
+  } else { tv = await createTableView(DEMO_FILE); }
   await delay(100);
   turnOffConfidenceIntervals(tv);
   await delay(10);
-  await saveAndOpenProject(tv);
+  await saveAndOpenProject(tv, dataSync);
   await delay(10);
   await dataFrameContainsColumn(CURVE_COLUMN);
   // the tags are restored after the table, so wait for the option rather than for the column
@@ -72,6 +87,13 @@ async function runSaveAndOpenProjectTest(): Promise<void> {
 category('projects', () => {
   test('column-level option survives a project', async () => {
     await runSaveAndOpenProjectTest();
+    await delay(100);
+  }, {timeout: 120000});
+
+  test('column-level option survives a datasync project', async () => {
+    // the table is rebuilt from its creation script, so the cells come back declaring the interval
+    // and only the tag the layout carries can turn it off
+    await runSaveAndOpenProjectTest(true);
     await delay(100);
   }, {timeout: 120000});
 });
