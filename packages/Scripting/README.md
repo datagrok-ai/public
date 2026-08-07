@@ -29,6 +29,19 @@ The wait budget is `queueSettings.containerWakeTimeout` (default 10 min), delibe
 independent of `taskPickupTimeout` (60 s): a cold `jkg_python` has to pull ~7.7 GB and boot
 conda before it can subscribe.
 
+## Setup wizard
+
+The initial setup wizard has a **Scripting** page (right after the health check). JavaScript and
+Grok are shown checked and disabled — they need no container — and the five container languages
+are offered with their download sizes, Python pre-checked. Picking any of those posts to
+`/scripts/languages/setup`, which installs this package and starts the chosen containers.
+
+That call returns as soon as the work is scheduled — a cold `jkg_python` pull outlasts any
+sensible request timeout — and reports each step back over `Events.CLIENT_PUSH` as a
+`ServerTaskProgress`. The wizard renders those pushes inline and balloons them, so the user is
+told *why* the wait is long instead of watching a spinner. Implementation:
+`ScriptingService.setupLanguages`.
+
 ## Idle shutdown
 
 `shutdown_timeout: 2880` (48 h) with `on_demand: true`. Datlas's reaper stops a container
@@ -47,5 +60,11 @@ image to run, and `grok publish` builds and pushes nothing. The images are built
 `deploy/jkg_<lang>/`, because they need the core source tree to compile the datlas worker
 bundle, which a package build context does not have. To roll a language forward, bump the
 tag in its `container.json`.
+
+The first time the spawner resolves one of these tags to Docker Hub it also copies it into the
+cluster's internal registry, in the background (`spawn/registry_mirror.py`). Every later pull —
+including the one after the 48 h idle shutdown, and the ones on other nodes — is then a
+cluster-local transfer instead of another multi-GB trip to the Hub. Sizes below are the layer
+sums, which is what actually transfers.
 
 Design, measurements and the vulnerability scan: `core/docs/features/jkg-language-split/`.

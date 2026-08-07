@@ -27,6 +27,9 @@ export class ServerMessageTypes {
   /// Package installed.
   static PACKAGE_INSTALLED = 'package-installed';
 
+  /// A step of a long-running server operation. Payload: [ServerTaskProgress].
+  static TASK_PROGRESS = 'task-progress';
+
 }
 export class DataSourceType {
   static Access = 'Access';
