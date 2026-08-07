@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.4 (2026-08-07)
+
+* func-gen-plugin — `#meta.comparison` in an `.ivp` model now lands as the `comparison` option on the generated dataframe output (run comparison reads index/split/mode/units defaults from there) instead of function-level meta.
+
 ## 6.5.3 (2026-08-04)
 
 * GROK-18695: Security — bumped `adm-zip` to 0.6.0 (CVE-2026-39244). Below 0.6.0 it sized a buffer from the ZIP header's declared uncompressed size before validating it, so a ~120-byte crafted archive forced a multi-GB allocation; `grok report` opens archives fetched from a server. The APIs it uses are unchanged. Also refreshed the lockfile to clear five more high-severity audit findings (`brace-expansion`, `fast-uri`, `ip-address`, `js-yaml`, `postcss`), all within existing ranges.

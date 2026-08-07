@@ -84,17 +84,23 @@ function preparseIvpModel(parser, text) {
   const viewer = `Grid(block: 100) | Line chart(block: 100, multiAxis: "${multiAxis}",${segments} ` +
     `multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")` +
     ` | DiffStudio Facet(block: 100${facetSegment})`;
-  const outputAnnotation = `//output: dataframe df {caption: ${ivp.name}; viewer: ${viewer}}`;
-
   const metas = {runOnOpen: 'true', runOnInput: 'true', features: '{"sens-analysis": true, "fitting": true}'};
   let isModel = false;
+  let comparison = null;
   for (const meta of ivp.metas || []) {
     const m = /^(?:\/\/)?meta\.([\w-]+):\s*(.*)$/.exec(String(meta).trim());
     if (!m) continue;
     if (m[1] === 'role') {
       if (m[2].split(',').map((s) => s.trim()).includes('model')) isModel = true;
+    } else if (m[1] === 'comparison') {
+      // run comparison reads the {comparison: ...} JSON off the dataframe output's
+      // options, not off function-level meta
+      comparison = m[2];
     } else if (m[1] !== 'solver') metas[m[1]] = m[2];
   }
+
+  const outputAnnotation = `//output: dataframe df {caption: ${ivp.name}; ` +
+    `${comparison ? `comparison: ${comparison}; ` : ''}viewer: ${viewer}}`;
   // Convert a `#meta.inputs` lookup into a real `propagateChoice: all` string input. RFV renders
   // this natively (it ignores `meta.inputs`); selecting a row fills the matching inputs by name.
   // Name / brace parsing mirrors DiffStudio's getLookupsInfo (utils.ts): the name is the text
