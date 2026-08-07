@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
-import {getSeriesFit, getSeriesFitFunction, toDataSpace, seriesInFitSpace, X_SPACE_STATISTICS, Y_SPACE_STATISTICS,
+import {getSeriesFit, getSeriesFitFunction, toDataSpace, seriesInFitSpace,
   DATA_SPACE_DERIVED_STATISTICS} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, IFitChartData, IFitSeries, FitStatistics, LEGACY_FIT_STATISTICS, LogOptions}
   from '@datagrok-libraries/statistics/src/fit/fit-curve';
@@ -37,9 +37,7 @@ export type AggregatedFitStatistics = FitStatistics & {[name: string]: number | 
 
 /** Statistics that cannot be produced at all without the conversion, as opposed to the ones that are
  * merely reported in fit space - a stdev of log10(IC50) is how IC50 variability is usually expressed. */
-function dataSpaceOnlyStatistics(): Set<string> {
-  return new Set(DATA_SPACE_DERIVED_STATISTICS);
-}
+const DATA_SPACE_ONLY_STATISTICS = new Set(DATA_SPACE_DERIVED_STATISTICS);
 
 /** Statistics every fit function in the cell produces, so an aggregation never averages a subset. */
 export function aggregatedStatisticsProperties(chartData: IFitChartData, aggrType?: string): DG.Property[] {
@@ -51,10 +49,8 @@ export function aggregatedStatisticsProperties(chartData: IFitChartData, aggrTyp
     const names = new Set(getSeriesFitFunction(seriesList[i]).statisticsProperties.map((p) => p.name));
     common = common.filter((p) => names.has(p.name));
   }
-  if (aggrType !== undefined && !DATA_SPACE_AGGREGATIONS.has(aggrType)) {
-    const excluded = dataSpaceOnlyStatistics();
-    common = common.filter((p) => !excluded.has(p.name));
-  }
+  if (aggrType !== undefined && !DATA_SPACE_AGGREGATIONS.has(aggrType))
+    common = common.filter((p) => !DATA_SPACE_ONLY_STATISTICS.has(p.name));
   return common;
 }
 
