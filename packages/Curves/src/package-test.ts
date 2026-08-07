@@ -10,6 +10,7 @@ import './tests/fit-tests';
 import './tests/pzfx-tests';
 import './tests/calculated-columns-tests';
 import './tests/panel-renderer-tests';
+import './tests/project-tests';
 
 export const _package = new DG.Package();
 export {tests};
