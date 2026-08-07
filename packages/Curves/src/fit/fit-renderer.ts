@@ -258,7 +258,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       let curve: ((x: number) => number) | null = null;
       // everything downstream needs fit-space parameters; the cached series keeps its data-space ones
       let fitSpaceSeries = series;
-      if (!(series.connectDots && !series.showFitLine)) {
+      if (!(series.connectDots && !(series.showFitLine ?? true))) {
         if (series.parameters) {
           fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
           curve = getCurve(fitSpaceSeries, fitFunc);
@@ -277,9 +277,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, useFitCache)});
-      if (fitSpaceSeries.parameters) {
+      // the inflection point, by name - it is slot 2 on the dose-response families and absent on the
+      // two-parameter ones, where reading a slot gave NaN
+      const inflectionSlot = fitFunc.statisticFields.findIndex((f) => f === 'ic50' || f === 'ec50');
+      if (fitSpaceSeries.parameters && inflectionSlot >= 0) {
         renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
-          xValue: fitSpaceSeries.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
+          xValue: fitSpaceSeries.parameters![inflectionSlot], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       }
       statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});

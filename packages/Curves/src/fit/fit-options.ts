@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 
 import {getSeriesFitFunction} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {
@@ -101,63 +102,82 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
 export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, options: OptionsSection,
   manipulationLevel: ManipulationLevel): void {
   const propertyName = inputBase.property.name as string;
-  const chartOptions = manipulationLevel === MANIPULATION_LEVEL.DATAFRAME ?
-    getDataFrameChartOptions(gridCell.cell.dataFrame) : getColumnChartOptions(gridCell.cell.column);
-  ((chartOptions[options] ??= {}) as any)[propertyName] = inputBase.value;
-  claim(chartOptions, options, propertyName);
+  const affectsStatistics = STATISTIC_AFFECTING_OPTIONS.includes(propertyName);
 
   if (manipulationLevel === MANIPULATION_LEVEL.CELL) {
     if (!isNativeFormat(gridCell.cell.column))
       return;
     const value = gridCell.cell.value;
     if (value === '') return;
-    const chartData: IFitChartData = JSON.parse(value ?? '{}') ?? {};
+    let chartData: IFitChartData;
+    try {
+      chartData = JSON.parse(value ?? '{}') ?? {};
+    } catch (e) {
+      grok.shell.error(`Curves: this cell holds malformed data, so the option was not applied: ${e}`);
+      return;
+    }
     changePlotOptions(chartData, inputBase, options);
-    gridCell.cell.value = JSON.stringify(chartData);
-  } else {
-    let columns: DG.Column[];
-    if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
-      gridCell.cell.dataFrame.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
-      columns = gridCell.cell.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
-    } else {
-      gridCell.cell.column.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
-      columns = [gridCell.cell.column];
-    }
-
-    for (const column of columns) {
-      if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
-        const columnChartOptions = getColumnChartOptions(column);
-        const section = columnChartOptions[options];
-        if (section)
-          delete (section as any)[propertyName];
-        unclaim(columnChartOptions, options, propertyName);
-        column.tags[FitConstants.TAG_FIT] = JSON.stringify(columnChartOptions);
-      }
-      if (!isNativeFormat(column))
-        continue;
-
-      // only the claim is dropped, and silently - a rewrite reads as a data change and would
-      // recalculate every dependent statistic column. The notification below is the deliberate one.
-      for (let j = 0; j < column.length; j++) {
-        const value = column.get(j);
-        if (value === '')
-          continue;
-        const chartData = (JSON.parse(value) ?? {}) as IFitChartData;
-        if (unclaim(chartData, options, propertyName))
-          column.set(j, JSON.stringify(chartData), false);
-      }
-    }
-
-    // the option lives in a tag, so nothing else marks the curve column changed
-    const affectsStatistics = STATISTIC_AFFECTING_OPTIONS.includes(propertyName);
-    if (affectsStatistics) {
-      for (const column of columns)
-        column.fireValuesChanged();
-    }
-    // nothing has marked the table modified yet: a tag write raises metadata, not data. Carrying no
-    // column keeps the calculated columns' subscription, which filters on one, from firing.
+    // notifying carries this row's index, so only its statistic recalculates - worth it when the
+    // option can change one, wasted work when it cannot
+    gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(chartData), affectsStatistics);
     if (!affectsStatistics)
       gridCell.cell.dataFrame.fireValuesChanged();
+    gridCell.grid.invalidate();
+    return;
   }
+
+  const chartOptions = manipulationLevel === MANIPULATION_LEVEL.DATAFRAME ?
+    getDataFrameChartOptions(gridCell.cell.dataFrame) : getColumnChartOptions(gridCell.cell.column);
+  ((chartOptions[options] ??= {}) as any)[propertyName] = inputBase.value;
+  claim(chartOptions, options, propertyName);
+
+  let columns: DG.Column[];
+  if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
+    gridCell.cell.dataFrame.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+    columns = gridCell.cell.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
+  } else {
+    gridCell.cell.column.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+    columns = [gridCell.cell.column];
+  }
+
+  for (const column of columns) {
+    if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
+      const columnChartOptions = getColumnChartOptions(column);
+      const section = columnChartOptions[options];
+      if (section)
+        delete (section as any)[propertyName];
+      unclaim(columnChartOptions, options, propertyName);
+      column.tags[FitConstants.TAG_FIT] = JSON.stringify(columnChartOptions);
+    }
+    if (!isNativeFormat(column))
+      continue;
+
+    // only the claim is dropped, and silently - a rewrite reads as a data change and would
+    // recalculate every dependent statistic column. The notification below is the deliberate one.
+    for (let j = 0; j < column.length; j++) {
+      const value = column.get(j);
+      if (value === '')
+        continue;
+      let chartData: IFitChartData;
+      // a malformed row keeps whatever it has rather than aborting the sweep with the tag already written
+      try {
+        chartData = (JSON.parse(value) ?? {}) as IFitChartData;
+      } catch (_) {
+        continue;
+      }
+      if (unclaim(chartData, options, propertyName))
+        column.set(j, JSON.stringify(chartData), false);
+    }
+  }
+
+  // the option lives in a tag, so nothing else marks the curve column changed
+  if (affectsStatistics) {
+    for (const column of columns)
+      column.fireValuesChanged();
+  }
+  // nothing has marked the table modified yet: a tag write raises metadata, not data. Carrying no
+  // column keeps the calculated columns' subscription, which filters on one, from firing.
+  if (!affectsStatistics)
+    gridCell.cell.dataFrame.fireValuesChanged();
   gridCell.grid.invalidate();
 }

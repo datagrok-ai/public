@@ -14,8 +14,8 @@ import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
 import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
 import {convertPzfxToJson} from './fit/converters/pzfx-converter';
-import {registerCurveConverter, initExternalConverters, parseCellValue} from './fit/curve-converter';
-import {FitStatistics, IFitChartData, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {registerCurveConverter, initExternalConverters} from './fit/curve-converter';
+import {FitStatistics, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 // import {PlateWidget} from './plate/plate-widget';

@@ -29,17 +29,16 @@ export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartL
       chartLogOptions, tableCell, useCache).parameters]};
 
   const fit = getSeriesFit(fitInput, fitFunction,
-    getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell), chartLogOptions);
+    getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell, useCache), chartLogOptions);
   return inDataSpace ? toDataSpace(fit, chartLogOptions) : fit;
 }
 
 export type AggregatedFitStatistics = FitStatistics & {[name: string]: number | undefined};
 
-/** Statistics that only carry meaning once converted back to data space. */
-function dataSpaceOnlyStatistics(chartData: IFitChartData): Set<string> {
-  return new Set([...DATA_SPACE_DERIVED_STATISTICS,
-    ...(chartData.chartOptions?.logX ? X_SPACE_STATISTICS : []),
-    ...(chartData.chartOptions?.logY ? Y_SPACE_STATISTICS : [])]);
+/** Statistics that cannot be produced at all without the conversion, as opposed to the ones that are
+ * merely reported in fit space - a stdev of log10(IC50) is how IC50 variability is usually expressed. */
+function dataSpaceOnlyStatistics(): Set<string> {
+  return new Set(DATA_SPACE_DERIVED_STATISTICS);
 }
 
 /** Statistics every fit function in the cell produces, so an aggregation never averages a subset. */
@@ -53,7 +52,7 @@ export function aggregatedStatisticsProperties(chartData: IFitChartData, aggrTyp
     common = common.filter((p) => names.has(p.name));
   }
   if (aggrType !== undefined && !DATA_SPACE_AGGREGATIONS.has(aggrType)) {
-    const excluded = dataSpaceOnlyStatistics(chartData);
+    const excluded = dataSpaceOnlyStatistics();
     common = common.filter((p) => !excluded.has(p.name));
   }
   return common;

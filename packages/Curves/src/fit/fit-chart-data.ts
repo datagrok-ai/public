@@ -221,16 +221,28 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
     }) : getDataPoints(series, logOptions, userParamsFlag);
 }
 
+/** Reads a level's options, migrating a value stored under the pre-`.%` tag name so that only one of
+ * the two ever holds the options. */
+function readChartOptions(tags: any): IFitChartData {
+  const stored = tags[FitConstants.TAG_FIT];
+  if (stored !== null && stored !== undefined)
+    return JSON.parse(stored);
+  const legacy = tags[FitConstants.TAG_FIT_LEGACY];
+  const migrated = legacy !== null && legacy !== undefined;
+  tags[FitConstants.TAG_FIT] = migrated ? legacy : JSON.stringify(createDefaultChartData());
+  if (migrated)
+    delete tags[FitConstants.TAG_FIT_LEGACY];
+  return JSON.parse(tags[FitConstants.TAG_FIT]);
+}
+
 /** Returns existing, or creates new dataframe default chart options. */
 export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
-  return JSON.parse(df.tags[FitConstants.TAG_FIT] ??=
-    df.tags[FitConstants.TAG_FIT_LEGACY] ?? JSON.stringify(createDefaultChartData()));
+  return readChartOptions(df.tags);
 }
 
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(column: DG.Column): IFitChartData {
-  return JSON.parse(column.tags[FitConstants.TAG_FIT] ??=
-    column.tags[FitConstants.TAG_FIT_LEGACY] ?? JSON.stringify(createDefaultChartData()));
+  return readChartOptions(column.tags);
 }
 
 /** Performs x zeroes substitution if log x */

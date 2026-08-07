@@ -390,30 +390,28 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
       screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? [] : renderOptions.statistics;
   if (!((series.showFitLine ?? true) && statistics && statistics.length > 0))
     return 0;
-  {
-    const dataBox = renderOptions.dataBox;
-    const dataPoints = renderOptions.dataPoints;
-    const fitFunc = renderOptions.fitFunc!;
-    const fit = toDataSpace(getSeriesFit(series, fitFunc, dataPoints, renderOptions.logOptions),
-      renderOptions.logOptions);
-    const color = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
-    let line = renderOptions.startLine ?? 0;
-    for (const statName of statistics) {
-      const value = getStatistic(fit, statName);
-      const prop = getStatisticProperty(fitFunc, statName);
-      // skip statistics this fit function does not produce instead of rendering NaN
-      if (value === undefined || !prop)
-        continue;
-      const y = dataBox.y + 20 + 20 * line;
-      if (y > dataBox.maxY)
-        break;
-      g.fillStyle = color;
-      g.textAlign = 'left';
-      g.fillText(`${prop.friendlyName}: ${formatStatistic(value)}`, dataBox.x + 5, y);
-      line++;
-    }
-    return line - (renderOptions.startLine ?? 0);
+  const dataBox = renderOptions.dataBox;
+  const dataPoints = renderOptions.dataPoints;
+  const fitFunc = renderOptions.fitFunc!;
+  const fit = toDataSpace(getSeriesFit(series, fitFunc, dataPoints, renderOptions.logOptions),
+    renderOptions.logOptions);
+  const color = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
+  let line = renderOptions.startLine ?? 0;
+  for (const statName of statistics) {
+    const value = getStatistic(fit, statName);
+    const prop = getStatisticProperty(fitFunc, statName);
+    // skip statistics this fit function does not produce instead of rendering NaN
+    if (value === undefined || !prop)
+      continue;
+    const y = dataBox.y + 20 + 20 * line;
+    if (y > dataBox.maxY)
+      break;
+    g.fillStyle = color;
+    g.textAlign = 'left';
+    g.fillText(`${prop.friendlyName}: ${formatStatistic(value)}`, dataBox.x + 5, y);
+    line++;
   }
+  return line - (renderOptions.startLine ?? 0);
 }
 
 export function renderTitle(g: CanvasRenderingContext2D, renderOptions: FitTitleRenderOptions): void {

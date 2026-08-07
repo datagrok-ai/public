@@ -186,16 +186,17 @@ category('calculated columns', () => {
   test('log-space statistics are not offered for aggregations we do not convert', async () => {
     const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
 
-    // without the conversion ic50 would be a log-space number and pIC50 null, so both are dropped
+    // pIC50 is only derived during the conversion, so it is the one that cannot be produced
     const counted = aggregatedStatisticsProperties(data, 'count').map((p) => p.name);
-    expect(counted.includes('ic50'), false, 'ic50 would be a log-space number under count');
     expect(counted.includes('pIC50'), false, 'pIC50 is only derived in data space');
     expect(counted.includes('rSquared'), true, 'space-independent statistics stay');
 
-    // they come back for an aggregation that is converted
-    const averaged = aggregatedStatisticsProperties(data, 'avg').map((p) => p.name);
-    expect(averaged.includes('ic50'), true);
-    expect(getChartDataAggrStats(data, 'count').ic50 === undefined, true);
+    // ic50 stays available and is reported in fit space, which is what a stdev of it should be, and
+    // what a saved project recorded before this refactor - it must not come back as a null column
+    expect(counted.includes('ic50'), true, 'ic50 must stay available for aggregations we do not convert');
+    expectFloat(getChartDataAggrStats(data, 'avg').ic50!, 1e-6, 1e-7);
+    expectFloat(getChartDataAggrStats(data, 'count').ic50!, 2, 0.001);
+    expectFloat(getChartDataAggrStats(data, 'count').interceptX!, 2, 0.001);
   });
 
   test('stored parameters round-trip through fit space on both axes', async () => {

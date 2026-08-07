@@ -346,9 +346,8 @@ category('fit', () => {
     expect(series.droplines![0], 'IC50');
     expect(series.auxLegendName, 'aux');
 
-    // fit is a prototype getter, so a series stays JSON-serializable (an own property would be circular)
+    // a series stays JSON-serializable - an own `fit` property used to make this circular
     const json = JSON.parse(JSON.stringify(series));
-    expect(json.fit === undefined);
     expect(json.name, 'a');
     expect(json.columnName, 'curve');
   });
