@@ -2,7 +2,7 @@
 feature: notebooks
 priority: p1
 realizes_atlas: [new-blank-notebook, browse-and-open-html]
-realizes: [views.notebooks]
+realizes: [views.notebooks, ml.menu.notebooks.new-notebook, notebooks.view.notebook]
 target_layer: playwright
 coverage_type: regression
 produced_from: atlas-driven

@@ -1,8 +1,5 @@
 /** Toolbox top tabs (Files / Spaces / Queries / Workflows / Favorites) and the
- *  star-driven favorites store: tab structure (icon-only headers), workflow
- *  listing, the lazy Spaces browser, star toggling from a catalog row,
- *  localStorage persistence, and the Favorites tab round-trip (star → listed →
- *  create node → unstar → gone). */
+ *  star-driven favorites store. */
 import {category, test, expect, before, after} from '@datagrok-libraries/utils/src/test';
 
 import {
@@ -12,7 +9,6 @@ import {FunctionBrowser, TOOLBOX_TABS, TOOLBOX_TAB_ICONS} from '../panel/functio
 import {getFavorites, isFavorite, toggleFavorite, clearFavorites, onFavoritesChanged} from '../panel/favorites';
 import {supportedUploadExtensions} from '../utils/uploaded-files';
 
-/** Polls until `probe` returns a non-null value (the async tab builds). */
 async function waitFor<T>(probe: () => T | null | undefined, timeoutMs = 15000): Promise<T> {
   const start = Date.now();
   for (;;) {
@@ -55,8 +51,6 @@ category('Flow: toolbox tabs', () => {
         const header = browser.root.querySelector(
           `[data-testid="ff-browser-tab-${name.toLowerCase()}"]`) as HTMLElement | null;
         expect(!!header, true, `${name} tab header carries its test id`);
-        // Icon-only headers: the Browse tree's glyph, no visible text; the
-        // name survives as the aria-label (and the tooltip).
         const icon = header!.querySelector(`i.funcflow-tab-icon.fa-${TOOLBOX_TAB_ICONS[name]}`);
         expect(!!icon, true, `${name} header shows the fa-${TOOLBOX_TAB_ICONS[name]} icon`);
         expect((header!.textContent ?? '').trim(), '', `${name} header carries no text`);
@@ -97,7 +91,6 @@ category('Flow: toolbox tabs', () => {
       const flows = getRegisteredFuncs().filter((f) => isWorkflowFunc(f.func));
       const items = Array.from(tab.querySelectorAll('.funcflow-func-item')) as HTMLElement[];
       expect(items.length, flows.length, 'one row per saved flow');
-      // Workflows are OUT of the accordion below.
       expect(browser.accordion!.panes.some((p) => p.name === 'Workflows'), false,
         'no Workflows accordion section');
     } finally {
@@ -114,7 +107,6 @@ category('Flow: toolbox tabs', () => {
       expect(toggleFavorite({type: 'Inputs/Table Input', label: 'Table Input'}), true, 'starred');
       expect(isFavorite('Inputs/Table Input'), true);
       expect(notified > 0, true, 'listeners notified');
-      // Round-trips through localStorage.
       const raw = localStorage.getItem('funcflow.favorites.v1');
       expect(!!raw && raw.includes('Table Input'), true, 'persisted to localStorage');
       expect(toggleFavorite({type: 'Inputs/Table Input', label: 'Table Input'}), false, 'unstarred');
@@ -133,7 +125,7 @@ category('Flow: toolbox tabs', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
-      // Materialize the Inputs section, then star Table Input via its row star.
+      // Pane content is lazy — expand before querying its items.
       browser.accordion!.getPane('Inputs').expanded = true;
       const star = browser.root.querySelector(
         '[data-testid="ff-browser-item-star-inputs-table-input"]') as HTMLElement;
@@ -142,7 +134,6 @@ category('Flow: toolbox tabs', () => {
       expect(isFavorite('Inputs/Table Input'), true, 'star click favorites the type');
       expect(star.classList.contains('funcflow-item-star-active'), true, 'star repainted as active');
 
-      // The Favorites tab lists it; double-click creates the node type.
       browser.showTab('Favorites');
       const fav = browser.root.querySelector(
         '[data-testid="ff-browser-fav-item-inputs-table-input"]') as HTMLElement;
@@ -151,7 +142,6 @@ category('Flow: toolbox tabs', () => {
       fav.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
       expect(added.join(','), 'Inputs/Table Input', 'double-click adds the starred node type');
 
-      // Unstar from the Favorites tab row → the entry disappears in place.
       const favStar = fav.querySelector('.funcflow-item-star') as HTMLElement;
       favStar.click();
       expect(isFavorite('Inputs/Table Input'), false, 'unstarred from the Favorites tab');
@@ -170,8 +160,7 @@ category('Flow: toolbox tabs', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
-      // The Queries badge counts from the server-loaded catalog — wait for
-      // the load the render kicked off to resolve.
+      // The Queries badge counts from the server-loaded catalog — wait for the load to resolve.
       await loadQueryFuncs();
       await new Promise((r) => setTimeout(r, 50));
       const input = browser.root.querySelector('[data-testid="ff-browser-search"]') as HTMLInputElement;
@@ -182,7 +171,6 @@ category('Flow: toolbox tabs', () => {
       expect(qHeader.querySelector('.funcflow-tab-badge') == null, true, '0 matches → no badge, just dim');
       expect(qHeader.classList.contains('funcflow-tab-dim'), true, '0-match tab dims');
 
-      // A query with real query matches shows a >0 count badge.
       const queries = await loadQueryFuncs();
       if (queries.length > 0) {
         input.value = queries[0].name.slice(0, 6);
@@ -237,8 +225,7 @@ category('Flow: toolbox tabs', () => {
       const hint = btn.closest('.funcflow-tab-hint');
       expect(!!hint, true, 'chip shares the hint row — no extra vertical space');
 
-      // Simulate the OS picker returning a file (input.files is read-only —
-      // a DataTransfer is the standard way to set it programmatically).
+      // input.files is read-only — a DataTransfer is the standard way to set it programmatically.
       const input = btn.querySelector('input[type="file"]') as HTMLInputElement;
       const dt = new DataTransfer();
       dt.items.add(new File(['a,b\n1,2\n'], 'picked.csv', {type: 'text/csv'}));

@@ -1,5 +1,4 @@
-/** Saves and loads FuncFlow documents (the `.flow` JSON payload, v2 —
- *  Rete-native). */
+/** Saves and loads FuncFlow documents (the `.flow` JSON payload, v2). */
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -50,16 +49,13 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
   };
 }
 
-/** Deserialize into the editor. Clears the editor first. Skips nodes whose
- *  registered type is not currently known (e.g. a DG.Func that disappeared).
- *  Connections referencing missing nodes are silently skipped. */
+/** Clears the editor first; unknown node types and connections referencing missing nodes are skipped. */
 export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): Promise<void> {
-  // DG-func node factories exist only after catalog registration; make it
-  // deterministic here so no load path can race the view's deferred timer.
+  // DG-func factories exist only after catalog registration — no load path may race the view's deferred timer.
   ensureFunctionsRegistered();
   await flow.clear();
 
-  // Map old node ids → new node ids (Rete generates a fresh id on construction).
+  // Old node id → new node id (Rete generates a fresh id on construction).
   const idMap = new Map<string, string>();
 
   for (const docNode of doc.nodes) {
@@ -71,8 +67,7 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     node.label = docNode.label;
     node.properties = {...docNode.properties};
     node.inputValues = {...docNode.inputValues};
-    // Migration: older saves carried the per-node annotation in
-    // properties.description before we promoted it to a top-level field.
+    // Migration: older saves carried the per-node annotation in properties.description.
     node.description = docNode.description ?? String(docNode.properties?.description ?? '');
     delete (node.properties as Record<string, unknown>).description;
     node.collapsed = docNode.collapsed === true;
@@ -87,9 +82,7 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     try {
       await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
     } catch (e) {
-      // A slot key that no longer exists — a DG function whose parameter was
-      // renamed/removed since the flow was saved. Skip the wire, keep the rest
-      // of the document loading (same treatment as an unknown node type).
+      // A slot key that no longer exists (renamed/removed func parameter) — skip the wire, keep loading.
       console.warn(`FuncFlow: skipped connection ${c.sourceOutput} → ${c.targetInput}: ${(e as Error).message}`);
       continue;
     }
@@ -110,8 +103,7 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
 
   if (doc.groups) {
     for (const gd of doc.groups) {
-      // Node ids remap on load — resolve members through idMap; a group whose
-      // nodes all vanished (unknown types skipped above) is dropped.
+      // Members resolve through idMap; a group whose nodes all vanished is dropped.
       const memberIds = gd.memberIds
         .map((mid) => idMap.get(mid))
         .filter((mid): mid is string => mid !== undefined);
@@ -131,9 +123,8 @@ export function downloadFlow(doc: FuncFlowDocument): void {
   DG.Utils.download(`${doc.name || 'flow'}.flow`, json, 'application/json');
 }
 
-/** Read a `.flow` file: either the bare JSON document or the annotated script
- *  body (header + JSON) — leading `//` lines are skipped. (Inlined rather than
- *  parseFlowBody: flow-script-format imports this module.) */
+/** Reads a `.flow` file: bare JSON or annotated script body. Inlined rather than
+ *  reusing parseFlowBody — flow-script-format imports this module. */
 export async function loadFlowFromFile(file: File): Promise<FuncFlowDocument> {
   const text = await file.text();
   const lines = text.split('\n');

@@ -1,10 +1,5 @@
-/** Phase 1 (cheminformatics) — the Flow-side seams it added, and the contract
- *  the new Chem nodes are expected to honour on a canvas.
- *
- *  The through-line of every test here: a node's SOCKETS and its PANEL FORM must
- *  describe the same parameters, a column parameter must have a table to resolve
- *  against, and a `choices:` reference must actually produce choices. Those three
- *  are what made the first cut of these nodes unusable. */
+/** Node contracts the Chem catalog entries must honour on a canvas: sockets match
+ *  the panel form, columns resolve against a table, choices references resolve. */
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
@@ -32,8 +27,7 @@ import type {FlowEditor} from '../rete/flow-editor';
 import {tid} from '../utils/test-ids';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
-/** Registered factory name for a function by nqName, or null when the package
- *  isn't deployed on this server (every test that needs it skips). */
+/** Null when the package isn't deployed on this server (tests that need it skip). */
 function typeNameOf(nqName: string): string | null {
   return getRegisteredFuncs().find((f) => {
     try {
@@ -48,10 +42,8 @@ function inputNames(func: DG.Func): string[] {
   return effectiveFuncInputs(func).map((p) => p.name);
 }
 
-/** `missingRequiredInputs` reports LABELS (it feeds the node's "Requires: …"
- *  hint), so a caption-carrying parameter never appears under its own name.
- *  Map back to keys — asserting on labels would silently pass for any
- *  parameter that has a caption. */
+/** `missingRequiredInputs` reports labels, not keys — asserting on labels would
+ *  silently pass for any caption-carrying parameter. */
 function missingKeys(node: FlowNode, flow: FlowEditor): string[] {
   const labels = new Set(missingRequiredInputs(node, (k) => flow.isInputConnected(node.id, k)));
   return node.requiredInputs.filter((k) =>
@@ -64,9 +56,8 @@ category('Flow: choices from a function', () => {
     registerAllFunctions();
   });
 
-  // Core mangles a one-entry `choices` string: the FIRST character and the
-  // trailing `)` are stripped before it reaches `Property.choices`. The parser
-  // has to survive exactly that, which is why the fixtures below look damaged.
+  // Core strips the first character and trailing `)` of a one-entry `choices`
+  // string — the damaged-looking fixtures below are deliberate.
   test('parseChoiceFuncRef reads a truncated function reference', async () => {
     const ref = parseChoiceFuncRef('hem:getMpoProfileNames(');
     expect(ref !== null, true, 'parsed');
@@ -117,9 +108,7 @@ category('Flow: choices from a function', () => {
       panel.showNode(node);
       const row = panel.root.querySelector('[data-param="profileName"]');
       expect(!!row, true, 'the Profile row renders');
-      // `processChoiceInput` resolves asynchronously — the profile list is read
-      // from server files, which is slow on a cold cache. The raw mangled string
-      // ("hem:getMpoProfileNames(") must never survive as a selectable option.
+      // resolves async against server files — slow on a cold cache
       const resolved = await until(() => {
         const opts = Array.from(row!.querySelectorAll('option')).map((o) => o.textContent ?? '');
         return opts.every((o) => !o.includes('getMpoProfileNames'));
@@ -141,10 +130,6 @@ category('Flow: choice defaults', () => {
     registerAllFunctions();
   });
 
-  // A non-nullable choice input has no blank option, so DG renders the first
-  // choice. Leaving `inputValues` empty made the node report the parameter as
-  // missing while the panel plainly showed a value — the "change it and change
-  // it back" bug.
   test('impliedChoiceDefault takes the first choice of a required choice input', async () => {
     const required = DG.Property.fromOptions({
       name: 'aggregation', type: 'string', nullable: false, choices: ['Average', 'Sum'],
@@ -152,8 +137,7 @@ category('Flow: choice defaults', () => {
     expect(impliedChoiceDefault(required), 'Average');
   });
 
-  // NB `expect(actual, expected = true)` — passing `undefined` as the expected
-  // value silently means `true`, so an absent default is compared explicitly.
+  // `expect`'s expected arg defaults to `true`, so an absent default is compared explicitly.
   test('impliedChoiceDefault leaves optional, choice-less and non-string inputs alone', async () => {
     const nullable = DG.Property.fromOptions({
       name: 'a', type: 'string', nullable: true, choices: ['Average', 'Sum'],
@@ -166,8 +150,6 @@ category('Flow: choice defaults', () => {
     expect(impliedChoiceDefault(notString) === undefined, true, 'only string inputs render a choice combo');
   });
 
-  // The one entry of a reference is the reference string itself — seeding it as
-  // a value would be worse than seeding nothing.
   test('impliedChoiceDefault never seeds an unresolved choices reference', async () => {
     for (const ref of ['hem:getMpoProfileNames(', 'uery("select name from t"']) {
       const prop = DG.Property.fromOptions(
@@ -179,10 +161,6 @@ category('Flow: choice defaults', () => {
     expect(isLiteralChoiceList([]), false);
   });
 
-  // The end-to-end shape of the bug: a required choice parameter must never be
-  // reported missing on a fresh node, whichever way its value got there — a
-  // declared default (which also takes it out of `requiredInputs`) or the
-  // implied first choice.
   test('no fresh node reports a choice parameter as missing', async () => {
     const withChoices = getRegisteredFuncs().filter((f) => {
       try {
@@ -219,8 +197,6 @@ category('Flow: choice defaults', () => {
       expect(String(node.inputValues['aggregation'] ?? ''), 'Average', 'seeded with what the combo shows');
       const missing = missingKeys(node, e.flow);
       expect(missing.includes('aggregation'), false, 'so it is not reported missing on a fresh node');
-      // The profile IS still missing — its choices are a reference, so there is
-      // nothing legitimate to seed.
       expect(missing.includes('profileName'), true, 'an unresolved-choices input stays genuinely unset');
     } finally {
       destroyEditor(e);
@@ -247,7 +223,6 @@ category('Flow: mpo column mapping', () => {
     expect(fresh['LogP'], 'Calculated LogP');
     expect('TPSA' in fresh, false, 'nothing matched, so it stays unmapped');
 
-    // An explicit decision — including an explicit "none" — survives a re-map.
     const decided = autoMap(props, cols, {MW: 'Activity', LogP: ''});
     expect(decided['MW'], 'Activity', 'user mapping kept');
     expect(decided['LogP'], '', 'explicit "unmapped" kept');
@@ -259,7 +234,6 @@ category('Flow: mpo column mapping', () => {
     const json = serializeMapping({MW: 'Molecular Weight', LogP: ''});
     expect(json, '{"MW":"Molecular Weight"}', 'unmapped properties are omitted');
     expect(parseMapping(json)['MW'], 'Molecular Weight');
-    // A half-typed or absent value must not throw while the panel renders.
     for (const bad of ['', '   ', '{not json', '[1,2]', null, undefined])
       expect(Object.keys(parseMapping(bad)).length, 0, `"${bad}" parses to an empty mapping`);
     expect(parseMapping('{"MW":null}')['MW'], '', 'a null mapping reads as unmapped');
@@ -271,8 +245,6 @@ category('Flow: mpo column mapping', () => {
     expect(Object.keys(pruneMapping({}, ['MW'])).length, 0);
   });
 
-  // MPO desirability curves are defined over numbers; offering a string column
-  // just defers the failure to run time.
   test('only numeric columns are offered', async () => {
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromFloat32Array('MW', new Float32Array([1, 2])),
@@ -284,8 +256,7 @@ category('Flow: mpo column mapping', () => {
     expect(mappableColumns([]).length, 0);
   });
 
-  /** A stand-in for the panel context, so the editor's states are testable
-   *  without a live node. */
+  /** Stand-in for the panel context, so the editor's states are testable without a live node. */
   function fakeCtx(profile: string, columns: DG.Column[] | null) {
     const watchers: Array<(v: unknown) => void> = [];
     const state = {profile};
@@ -295,7 +266,6 @@ category('Flow: mpo column mapping', () => {
         columns: () => columns,
         watch: (_name: string, cb: (v: unknown) => void) => {watchers.push(cb);},
       },
-      /** Simulate the user picking a different profile in the sibling combo. */
       setProfile: (p: string) => {
         state.profile = p;
         for (const cb of watchers) cb(p);
@@ -310,7 +280,6 @@ category('Flow: mpo column mapping', () => {
     const factory = CUSTOM_FUNC_INPUT_EDITORS['Chem:mpoScoreByProfile']?.columnMapping;
     expect(!!factory, true, 'registered for the columnMapping input');
 
-    // No profile chosen.
     const noProfile = fakeCtx('', [DG.Column.fromFloat32Array('MW', new Float32Array([1]))]);
     const a = factory(mappingParam(), noProfile.ctx);
     a.setValue('');
@@ -319,16 +288,13 @@ category('Flow: mpo column mapping', () => {
     expect(a.element.querySelectorAll('[data-mpo-property]').length, 0, 'and renders no empty combos');
     expect((a.element.textContent ?? '').toLowerCase().includes('profile'), true, 'the reason is on screen');
 
-    // A profile that scores nothing (here: one that doesn't exist) is its own
-    // blocked state — reported before the table is even looked at.
+    // a nonexistent profile scores nothing — its own blocked state, reported before the table
     const noSuchProfile = fakeCtx('no such profile', null);
     const b = factory(mappingParam(), noSuchProfile.ctx);
     b.setValue('');
     await until(() => b.element.getAttribute('data-blocked') === 'true');
     expect((b.element.textContent ?? '').includes('no properties'), true, 'says the profile scores nothing');
 
-    // A real profile but no computed table — the case that used to render a row
-    // of empty combos with a small hint above them.
     const names = await (async (): Promise<string[]> => {
       const f = DG.Func.find({package: 'Chem', name: 'getMpoProfileNames'})[0];
       return f ? ((await f.apply({})) as string[]) : [];
@@ -343,9 +309,6 @@ category('Flow: mpo column mapping', () => {
     expect((c.element.textContent ?? '').toLowerCase().includes('table'), true, 'says a table is needed');
   });
 
-  // A partial mapping is the dangerous case: `computeMpo` warns about the
-  // properties it can't resolve and scores over the rest, producing a
-  // plausible number computed from fewer properties than asked for.
   test('unmappedProperties reports every property left without a column', async () => {
     const props = ['MW', 'LogP', 'TPSA'];
     expect(unmappedProperties(props, '{"MW":"a","LogP":"b","TPSA":"c"}').length, 0, 'complete');
@@ -363,14 +326,9 @@ category('Flow: mpo column mapping', () => {
       const node = await addNode(e.flow, typeName);
       const isConnected = (k: string): boolean => e.flow.isInputConnected(node.id, k);
 
-      // Unknown property list → FAIL CLOSED. This is the case that let an
-      // unconfigured MPO node run: a flow that has never been opened in the
-      // panel and never run has nothing cached, and treating that as "fine"
-      // waved it straight through.
       node.inputValues['profileName'] = 'Some profile';
-      // Assert only that a mapping requirement is REPORTED, not how many: a
-      // blank `columnMapping` input can also surface under its own label, so an
-      // exact count tracks message plumbing rather than the run gate.
+      // Assert only that a mapping requirement is reported, not how many — a blank
+      // `columnMapping` can also surface under its own label.
       const unresolved = nodeMissingRequirements(node, isConnected).filter((m) => m.includes('Column mapping'));
       expect(unresolved.length > 0, true, 'an unverifiable mapping blocks the node');
 
@@ -384,14 +342,11 @@ category('Flow: mpo column mapping', () => {
       expect(nodeMissingRequirements(node, isConnected).some((m) => m.includes('Column mapping')), false,
         'a complete mapping clears it');
 
-      // A cached list belongs to the profile it was resolved for — switching
-      // profiles must not be validated against the previous one's properties.
       node.inputValues['profileName'] = 'Another profile';
       expect(nodeMissingRequirements(node, isConnected).some((m) => m.includes('Column mapping')), true,
         'a stale list for a different profile does not count as known');
 
-      // No profile at all: the profile input is already reported missing, so
-      // the mapping must not pile a second complaint on top.
+      // with no profile the profile input is already reported missing — no second complaint
       node.inputValues['profileName'] = '';
       expect(nodeMissingRequirements(node, isConnected).some((m) => m.includes('Column mapping')), false);
     } finally {
@@ -399,8 +354,6 @@ category('Flow: mpo column mapping', () => {
     }
   });
 
-  // End-to-end version of the bug: OpenFile → properties → MPO with nothing
-  // mapped used to be fully runnable.
   test('an unconfigured MPO node is excluded from the run set', async () => {
     const typeName = typeNameOf('Chem:mpoScoreByProfile');
     if (!typeName) return;
@@ -416,15 +369,11 @@ category('Flow: mpo column mapping', () => {
       node.inputValues['profileName'] = names[0];
       node.inputValues['columnMapping'] = '';
 
-      // Blocked immediately, before the lookup even lands.
       expect(nodeMissingRequirements(node, isConnected).some((m) => m.includes('Column mapping')), true,
         'blocked while the profile is still being read');
 
-      // …and still blocked once it has, now naming the properties. (A profile
-      // that scores nothing needs no mapping, so allow that outcome too.)
-      // A blank `columnMapping` also surfaces under its own plain label, so
-      // match across ALL mapping messages rather than the first one — keying on
-      // `find` would settle on the plain label and never see the resolution.
+      // Match across ALL mapping messages — a blank `columnMapping` also surfaces under
+      // its own label, and a profile that scores nothing needs no mapping.
       const mappingHints = (): string[] =>
         nodeMissingRequirements(node, isConnected).filter((m) => m.includes('Column mapping'));
       await until(() => mappingHints().some((m) => m.includes('unmapped:')), 20_000);
@@ -457,8 +406,6 @@ category('Flow: mpo column mapping', () => {
     ed.setValue('');
     await until(() => ed.element.getAttribute('data-blocked') === 'true');
 
-    // The panel does NOT re-render while focus is inside it, so this edit
-    // reaching the editor is the whole point of the watch seam.
     harness.setProfile(names[0]);
     const built = await until(() =>
       ed.element.getAttribute('data-blocked') === null ||
@@ -473,10 +420,6 @@ category('Flow: func wrapper parity', () => {
     registerAllFunctions();
   });
 
-  // The bug this pins: `FuncNode` built its sockets from the wrapper while the
-  // property panel iterated the RAW signature, so a wrapped node showed one set
-  // of captions on the canvas and a different form in the panel — and the
-  // panel's table list came out empty, killing the column picker.
   test('a wrapped node renders the same parameters on the node and in the panel', async () => {
     for (const nqName of Object.keys(FUNC_WRAPPERS)) {
       const typeName = typeNameOf(nqName);
@@ -492,20 +435,16 @@ category('Flow: func wrapper parity', () => {
           expect(name in node.inputs, true, `${nqName}: node has a socket for ${name}`);
           await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-input', name)}"]`));
         }
-        // No socket for a parameter the wrapper folds away.
         for (const raw of node.dgFunc!.inputs.map((p) => p.name)) {
           if (!exposed.includes(raw))
             expect(raw in node.inputs, false, `${nqName}: ${raw} is folded away, not a socket`);
         }
         panel.showNode(node);
-        // Editable parameters get a `data-param` row; a dataframe slot is
-        // connection-only and renders a plain label instead, so it has none.
+        // a dataframe slot is connection-only — no data-param row
         for (const name of exposed) {
           if (name in node.inputValues)
             expect(!!panel.root.querySelector(`[data-param="${name}"]`), true, `${nqName}: panel row for ${name}`);
         }
-        // The failure this pins: the panel used to iterate the RAW signature,
-        // so it offered editors for parameters the node folds away.
         for (const raw of node.dgFunc!.inputs.map((p) => p.name)) {
           if (!exposed.includes(raw))
             expect(!!panel.root.querySelector(`[data-param="${raw}"]`), false,
@@ -530,9 +469,6 @@ category('Flow: func wrapper parity', () => {
       expect(inputNames(plain.func).join(','), plain.func.inputs.map((p) => p.name).join(','), 'unwrapped: unchanged');
   });
 
-  // A wrapper must never be used to bolt a synthetic table onto a column-only
-  // function — write a real (table, column) twin instead. See the note in
-  // func-input-overrides.ts.
   test('no wrapper invents a table input the function does not declare', async () => {
     for (const [nqName, wrapper] of Object.entries(FUNC_WRAPPERS)) {
       const typeName = typeNameOf(nqName);
@@ -565,8 +501,6 @@ category('Flow: hidden outputs', () => {
       const hidden = Array.from(hiddenOutputsOf(node.dgFunc!));
       expect(hidden.length > 0, true, `${nqName} declares hidden outputs`);
       for (const key of hidden) {
-        // Data layer untouched — the compiler still resolves this output, so
-        // saved flows that wired it keep working.
         expect(key in node.outputs, true, `${key} slot still exists`);
         expect(node.hiddenOutputs.has(key), true, 'registry read onto the node');
       }
@@ -603,8 +537,6 @@ category('Flow: sketcher input', () => {
     expect(node.properties['semType'], 'Molecule');
   });
 
-  // This is the whole mechanism: `ui.input.forProperty` picks a semantic-type
-  // editor off the property, and input nodes used to drop the qualifier.
   test('inputValueProperty passes semType through to the built property', async () => {
     const sketcher = createNode('Inputs/Sketcher Input')!;
     expect(inputValueProperty(sketcher)?.semType, 'Molecule');
@@ -629,8 +561,6 @@ category('Flow: chem nodes', () => {
     registerAllFunctions();
   });
 
-  /** The (table, column) twins written for Phase 1, and what each must satisfy
-   *  to be usable: a table input, a Molecule-tagged column, and both required. */
   const TABLE_COLUMN_TWINS = [
     {nqName: 'Chem:filterBySubstructure', column: 'molecules', extra: 'substructure'},
     {nqName: 'Chem:similarityTo', column: 'molecules', extra: 'query'},
@@ -653,8 +583,6 @@ category('Flow: chem nodes', () => {
         expect(col !== undefined, true, `${spec.nqName}: declares ${spec.column}`);
         expect(String(col.propertyType), 'column');
         expect(col.semType, 'Molecule', `${spec.nqName}: ${spec.column} is semType-filtered`);
-        // A column parameter is only fillable when the node has a table to
-        // resolve it against — this association is what the picker reads.
         const tables = node.properties['columnTables'] as Record<string, string> | undefined;
         expect(tables?.[spec.column], inputs[0].name, `${spec.nqName}: ${spec.column} resolves against the table`);
         expect(node.requiredInputs.includes(inputs[0].name), true, `${spec.nqName}: table required`);
@@ -688,7 +616,6 @@ category('Flow: chem nodes', () => {
   });
 
   test('the superseded column-only chem functions are off the allowlist', async () => {
-    // Each takes a bare `column`, so a canvas has nothing to bind it to.
     for (const gone of ['Chem:getSimilarities', 'Chem:getDiversities', 'Chem:searchSubstructure',
       'Chem:getInchis', 'Chem:getInchiKeys', 'Chem:getMorganFingerprints'])
       expect(INCLUDED_FUNC_NQNAMES.has(gone), false, `${gone} superseded`);
@@ -719,9 +646,7 @@ category('Flow: chem nodes', () => {
     const col: DG.Column = await func.apply({table, molecules, query: 'c1ccccc1'});
     expect(col instanceof DG.Column, true, 'returns a column');
     expect(col.length, 3, 'one score per row');
-    // Added to the table, so the node's table pass-through carries the result.
-    // (The exact column count is not asserted — the fingerprint cache attaches
-    // a column of its own.)
+    // exact column count not asserted — the fingerprint cache attaches a column of its own
     expect(table.col(col.name) !== null, true, 'the score column is in the table under the name it reports');
     expect(col.stats.max <= 1 && col.stats.min >= 0, true, 'Tanimoto scores are in 0..1');
   });

@@ -416,6 +416,7 @@ export const History = Vue.defineComponent({
         dataFrame={historicalRunsDf.value}
         style={{flex: '1', width: '100%', minHeight: '0px'}}
         onViewerChanged={(viewer) => handleGridRendering(viewer as DG.Grid | undefined)}
+        onViewerDataFrameChanged={() => updateVisibleColumns()}
         options={{
           'showCurrentRowIndicator': true,
           'showCurrentCellOutline': false,

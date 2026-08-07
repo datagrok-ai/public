@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [powergrid.viewer.forms, curves.cell.fit, chem.cell.molecule]
 realized_as:
   - forms-spec.ts
 related_bugs: []

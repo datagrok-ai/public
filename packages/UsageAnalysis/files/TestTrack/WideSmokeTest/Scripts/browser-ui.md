@@ -10,5 +10,6 @@
 
 ---
 {
-"order": 4
+"order": 4,
+"realizes": ["views.scripts", "sharing.share-dialog"]
 }

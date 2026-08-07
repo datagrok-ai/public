@@ -16,5 +16,6 @@
 
 ---
 {
-"order": 1
+"order": 1,
+"realizes": ["scripting.r", "views.scripts"]
 }

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.scatter-plot, viewers.line-chart, viewers.density-plot, viewers.box-plot, viewers.histogram, viewers.bar-chart, powerpack.dialogs.formula-lines]
 realized_as:
   - annotation-regions-spec.ts
 related_bugs: []

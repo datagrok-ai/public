@@ -6,7 +6,7 @@ import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
 import '../css/styles.css';
 import {TestManager} from './package-testing';
-import {functionSignatureEditor} from './signature-editor/function-signature-editor';
+import {functionSignatureEditor, registerParamEditorHandler} from './signature-editor/function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, hasSupportedType, _renderDevPanel} from './dev-panel';
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
 export * from './package.g';
@@ -33,6 +33,8 @@ export class PackageFunctions {
 
   @grok.decorators.autostart({description: 'DevTools autostart function'})
   static autostartTools(): void {
+    registerParamEditorHandler();
+
     // Dev pane
     minifiedClassNameMap = getMinifiedClassNameMap();
 

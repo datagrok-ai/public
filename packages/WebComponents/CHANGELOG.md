@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.4.4 (2026-08-07)
+
+- Viewer: apply dataframe and options set in one tick as a single transition, fixing look/frame crashes (e.g. split column deselect) and removing the property-order dependency
+
 ## 1.4.3 (2026-07-02)
 
 - Fixed validation popover scrolling, scrollbar visibility, and above/below positioning

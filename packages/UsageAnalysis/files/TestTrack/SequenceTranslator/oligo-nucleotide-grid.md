@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [st-cp-convert-helm-to-oligo-pipeline]
-realizes: [sequencetranslator.oligo-toolkit]
+realizes: [sequencetranslator.oligo-renderer.convert-helm-to-oligo, sequencetranslator.cell.oligo-nucleotide, sequencetranslator.panel.oligo-nucleotide, sequencetranslator.panel.oligo-structures, sequencetranslator.action.copy-as-helm, sequencetranslator.action.copy-as-image, sequencetranslator.action.edit-helm, bio.menu.polytool.convert, bio.menu.polytool.enumerate-helm, bio.menu.polytool.combine-sequences]
 realized_as:
   - oligo-nucleotide-grid-spec.ts
 related_bugs: []

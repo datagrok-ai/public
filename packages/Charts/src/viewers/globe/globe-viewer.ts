@@ -165,13 +165,17 @@ export class GlobeViewer extends DG.JsViewer {
       return;
     }
     this.points.length = 0;
-    const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
-    const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+    const latCol = this.dataFrame.col(this.latitudeColumnName);
+    const lonCol = this.dataFrame.col(this.longitudeColumnName);
+    const colorByCol = this.dataFrame.col(this.colorByColumnName);
+    const magCol = this.dataFrame.col(this.magnitudeColumnName);
+    if (!latCol || !lonCol || !colorByCol || !magCol)
+      return;
 
-    const colorByCol = this.dataFrame.getCol(this.colorByColumnName);
-    const mag = this.dataFrame.getCol(this.magnitudeColumnName);
+    const lat = latCol.getRawData();
+    const lon = lonCol.getRawData();
 
-    const magRange = [mag.min, mag.max];
+    const magRange = [magCol.min, magCol.max];
     const color = scaleSequential().interpolator(interpolateYlOrRd);
     if (this.magnitudeColumnName === this.colorByColumnName) color.domain(magRange);
     else color.domain([colorByCol.min, colorByCol.max]);
@@ -180,7 +184,7 @@ export class GlobeViewer extends DG.JsViewer {
     if (altRange[1] < 0.1) altRange[0] = 0;
     const size = scaleSqrt(magRange, altRange);
 
-    const magData = mag.getRawData();
+    const magData = magCol.getRawData();
     const colorByColData = colorByCol.getRawData();
     for (const i of this.filter.getSelectedIndexes()) {
       this.points.push({

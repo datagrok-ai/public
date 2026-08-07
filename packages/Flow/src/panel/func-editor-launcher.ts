@@ -1,20 +1,5 @@
-/** Launches a function's own custom editor (declared via `editor:` meta, or on
- *  the explicit allowlist in func-editor-utils.ts) for a func node, seeded with
- *  its real upstream tables.
- *
- *  Mirrors the column picker's table-resolution ladder, but for *every*
- *  dataframe input of the node at once:
- *   - a table input is not connected      → balloon: connect a table first;
- *   - connected and the upstream has run  → reuse its captured output table;
- *   - connected but not yet computed      → offer to run the flow up to that
- *     point, then use the produced table.
- *
- *  With all tables in hand, a `FuncCall` is prepared from the connected values
- *  (live registry) + the panel-edited `inputValues` (column names resolved to
- *  real columns of the seeded table), handed to the platform editor dialog
- *  (`createFuncCallEditor`), and the edited values are written back into
- *  `node.inputValues` — connected inputs are never overridden, and columns come
- *  back as name strings (the panel edits names, not live columns). */
+/** Launches a function's own editor dialog for a func node, seeded with its real upstream tables,
+ *  and writes the edited values back into `node.inputValues`. */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -27,11 +12,7 @@ import {ExecutionController} from '../execution/execution-controller';
 import {ScriptSettings} from '../compiler/script-emitter';
 import {createFuncCallEditor} from '../utils/func-editor-utils';
 
-/** Run semantic-type detection on the resolved upstream tables before they
- *  seed a picker/editor dialog — semtype-filtered column inputs (Molecule, …)
- *  are empty otherwise, because a captured clone may not have been through
- *  detection yet. Guarded per table: a detection failure never blocks the
- *  dialog. Shared by the column picker and the function-editor launcher. */
+/** Best-effort semtype detection before a table seeds a picker/editor — a captured clone may not have been through detection, leaving semtype-filtered column inputs empty. */
 export async function detectSemanticTypes(tables: Iterable<DG.DataFrame>): Promise<void> {
   for (const t of tables) {
     try {
@@ -40,10 +21,7 @@ export async function detectSemanticTypes(tables: Iterable<DG.DataFrame>): Promi
   }
 }
 
-/** The dataframe input a column/column_list param resolves against: the node's
- *  explicit `columnTables` association, else the shared numeric-suffix pairing
- *  (`keys2`→`table2`), else the first dataframe input — the same ladder the
- *  compiler uses (`tableExprForColumnParam`). */
+/** The dataframe input a column param resolves against — the same ladder as the compiler: explicit `columnTables`, numeric-suffix pairing, first dataframe input. */
 export function tableParamForColumn(node: FlowNode, paramName: string, dataframeParams: string[]): string | undefined {
   if (dataframeParams.length === 0) return undefined;
   const assoc = node.properties['columnTables'] as Record<string, string> | undefined;
@@ -52,10 +30,7 @@ export function tableParamForColumn(node: FlowNode, paramName: string, dataframe
   return defaultTableParam(paramName, dataframeParams);
 }
 
-/** Convert one edited FuncCall input back into its panel representation:
- *  columns → their name, column/string lists → a comma-separated name string
- *  (the panel edits names), plain `list` values stay arrays, primitives pass
- *  through. Returns `undefined` for values the panel can't hold (dataframes). */
+/** Editor value → panel representation: columns / lists become name strings, plain `list` values stay arrays; `undefined` for values the panel can't hold. */
 export function editorValueToPanelValue(v: unknown, propertyType: string): unknown {
   if (v instanceof DG.DataFrame) return undefined;
   if (v instanceof DG.Column) return v.name;
@@ -69,10 +44,7 @@ export function editorValueToPanelValue(v: unknown, propertyType: string): unkno
   return v;
 }
 
-/** Write the editor-configured inputs back into the node's panel-editable
- *  values. Connected inputs are never overridden (the wire wins), dataframe
- *  inputs are skipped (always connection-fed), and only slots the panel edits
- *  (`name in inputValues`) are touched. Returns the updated param names. */
+/** Write editor values back into panel-editable slots; connected inputs are never overridden (the wire wins). Returns the updated param names. */
 export function applyEditorResult(
   node: FlowNode, func: DG.Func, fc: DG.FuncCall, isConnected: (name: string) => boolean,
 ): string[] {
@@ -105,15 +77,11 @@ export class FuncEditorLauncher {
     private getSettings: () => ScriptSettings,
   ) {}
 
-  /** Open the function's own editor dialog for this node; resolves `true` when
-   *  the dialog round-trip completed and values were written back. */
   async open(node: FlowNode): Promise<boolean> {
     const func = node.dgFunc;
     if (!func) return false;
     const dfParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
 
-    // Every table input must be wired — the editor needs real tables to seed
-    // its column pickers (same rule as choosing columns).
     const unconnected = dfParams.filter((p) => !this.flow.isInputConnected(node.id, p));
     if (unconnected.length > 0) {
       const list = unconnected.map((p) => `“${p}”`).join(', ');
@@ -122,9 +90,6 @@ export class FuncEditorLauncher {
       return false;
     }
 
-    // Resolve each table: a captured (completed, non-stale) upstream result is
-    // reused; anything not yet computed is produced by running its slice —
-    // after one confirm covering all of them.
     const tables = new Map<string, DG.DataFrame>();
     const missing: Array<{param: string; srcId: string; srcLabel: string}> = [];
     for (const p of dfParams) {
@@ -146,14 +111,9 @@ export class FuncEditorLauncher {
       }
     }
 
-    // The editor's column pickers filter by semantic type (Molecule, …) — make
-    // sure the seeded tables carry their semtypes before the dialog opens (a
-    // captured clone may not have been through detection yet).
     await detectSemanticTypes(tables.values());
 
-    // An in-flight run (autorun kicking in, manual run) executes funccalls that
-    // fire the same `d4-before-run-action` the dialog intercepts — let it drain
-    // first, and ignore any event that arrives while a later run executes.
+    // An in-flight run fires the same `d4-before-run-action` the dialog intercepts — let it drain first, and ignore events that arrive while a later run executes.
     await this.waitForRunIdle();
     const fc = func.prepare(this.buildParams(node, func, tables, dfParams));
     const edited = await createFuncCallEditor(fc, {ignoreEvent: () => this.exec.state.isRunning});
@@ -162,15 +122,12 @@ export class FuncEditorLauncher {
     return true;
   }
 
-  /** Wait (bounded) for any in-flight run to finish before the dialog opens —
-   *  its funccalls must not reach the dialog's before-run interception. */
   private async waitForRunIdle(timeoutMs = 15_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (this.exec.state.isRunning && Date.now() < deadline)
       await new Promise((r) => setTimeout(r, 100));
   }
 
-  /** Modal confirm before running slices to materialize the upstream tables. */
   private confirmRun(sourceLabels: string[]): Promise<boolean> {
     return new Promise((resolve) => {
       let decided = false;
@@ -190,10 +147,6 @@ export class FuncEditorLauncher {
     });
   }
 
-  /** Seed the FuncCall parameters: resolved tables for dataframe inputs, live
-   *  captured values for other connected inputs (when a prior run stashed
-   *  them), and the panel-edited `inputValues` for the rest — column names
-   *  resolved to real columns of their seeded table. */
   private buildParams(
     node: FlowNode, func: DG.Func, tables: Map<string, DG.DataFrame>, dfParams: string[],
   ): Record<string, unknown> {
@@ -230,7 +183,6 @@ export class FuncEditorLauncher {
         continue;
       }
       if (pt === 'string_list') {
-        // The panel edits a comma-separated string; the funccall wants an array.
         const items = String(v).split(',').map((s) => s.trim()).filter(Boolean);
         if (items.length > 0) params[name] = items;
         continue;

@@ -53,7 +53,8 @@ scenarios common to all viewers were identified:
     * Open\Close property window
     * Display of help window
     * The work of the controls located in the viewer area (e.g. popup menu "Size" on Scatter Plot)
-    * Return viewer after closing by **Edit | Undo** (```CTRL + Z```)
+    * Return viewer after closing by **Edit | Undo** (```CTRL + Z```) — the viewer comes back with
+      the same settings; its dock position is not restored yet
 
 4. Property window
 

@@ -24,6 +24,7 @@
 * GROK-17637: Fit: Renamed `new-fit-API.ts` to `fit-engine.ts`, so the module is named for what it holds rather than for when it was added
 * GROK-17637: Fit: A legacy statistic name a fit function does not produce now falls back to the parameter slot the pre-typed API read, so a `top` column extracted from a linear or exponential curve keeps its value instead of turning null. `getStatisticProperty` falls back the same way, so such a statistic still renders on the plot
 * GROK-17637: Fit: `getSeriesFit` and `getSeriesConfidenceInterval` no longer write the fitted parameters back onto the series - they are in fit space, and the series contract is data space, so the next caller converted them twice
+* MPO: Re-exported `desirabilityScore` for callers that score a single value (it was inlined into the column-at-a-time path and dropped from the public surface, breaking the PowerGrid build)
 
 ## 1.12.9 (2026-07-16)
 

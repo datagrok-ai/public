@@ -6,6 +6,7 @@ produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/calculate.md
 migration_date: 2026-05-11
 related_bugs: []
+realizes: [chem.menu.calculate.descriptors, chem.menu.calculate.chemical-properties, chem.menu.calculate.toxicity-risks, chem.menu.calculate.mpo-score, chem.menu.calculate.bitbirch-clustering, chem.menu.calculate.cluster-mcs, chem.menu.calculate.map-identifiers, chem.menu.calculate.to-inchi, chem.menu.calculate.to-inchi-keys, chem.menu.calculate.biochemical-properties, chem.import.sdf]
 manual_only_reason: |
   Chem | Calculate menu walk (Descriptors / Properties / Toxicity Risks /
   MPO / BitBIRCH / Cluster MCS / Map Identifiers / InChI / InChI Keys /

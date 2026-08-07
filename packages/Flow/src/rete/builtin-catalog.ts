@@ -1,8 +1,5 @@
-/** The built-in node catalog — names, type names, and descriptions of the
- *  Inputs / Outputs / Constants / Utilities / Debug building blocks. One shared
- *  definition so the toolbox sections and the drag-out suggestion menu search
- *  the same texts (a node findable by its description in the toolbox must be
- *  findable the same way in the menu). */
+/** Built-in node catalog — one shared definition so the toolbox sections and the
+ *  drag-out suggestion menu search the same texts. */
 
 export interface BuiltinNodeDef {
   name: string;

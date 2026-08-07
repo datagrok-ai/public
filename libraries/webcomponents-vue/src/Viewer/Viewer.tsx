@@ -46,8 +46,8 @@ export const Viewer = Vue.defineComponent({
     return () => (
       <dg-viewer
         type={type.value}
-        options={options.value}
         dataFrame={currentDf.value}
+        options={options.value}
         onViewerChanged={viewerChangedCb}
         onViewerDataFrameChanged={viewerDataFrameChangedCb}
         style={{display: 'block', flexGrow: '1'}}

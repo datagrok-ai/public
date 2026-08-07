@@ -37,6 +37,7 @@ unresolved_ambiguities:
 related_bugs:
   - GROK-6630
 scope_reductions: []
+realizes: [notebooks.view.notebook]
 gate_verdicts:
   d:
     verdict: PASS

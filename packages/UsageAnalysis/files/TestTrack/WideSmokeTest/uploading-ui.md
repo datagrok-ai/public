@@ -11,5 +11,6 @@
 
 ---
 {
-"order": 4
+"order": 4,
+"realizes": ["views.projects", "sharing.share-dialog", "view.menu.presentation-mode", "views.queries"]
 }

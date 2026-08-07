@@ -1,7 +1,7 @@
 ---
 feature: legend
 realizes_atlas: []
-realizes: []
+realizes: [viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
 realized_as:
   - color-consistency-spec.ts
 target_layer: playwright

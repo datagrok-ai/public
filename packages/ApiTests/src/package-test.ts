@@ -17,6 +17,7 @@ import './functions/stats-functions';
 import './functions/text-functions';
 import './functions/cache';
 import './shell/shell';
+import './shell/undo';
 import './shell/ml';
 import './shell/settings';
 import './dapi/files';

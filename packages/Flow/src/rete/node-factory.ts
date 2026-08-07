@@ -1,9 +1,4 @@
-/** Node-type registry — replaces LiteGraph's `registerNodeType` /
- *  `createNode` pair with a plain factory map.
- *
- *  Each node type has a string name like `Inputs/Table Input` (kept for
- *  parity with the old serialization keys, function-browser categories, etc.)
- *  and a zero-arg factory that returns a fresh `FlowNode` instance. */
+/** Node-type registry: maps type names like `Inputs/Table Input` to zero-arg FlowNode factories. */
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -44,28 +39,21 @@ export interface FuncInfo {
   tags: string[];
   packageName: string;
   nodeTypeName: string;
-  /** Lazily-computed "what it does" category (see {@link funcCategory}). */
+  /** Lazily computed by {@link funcCategory}. */
   category?: string;
 }
 
-/** A saved Flow — a `DG.Script` whose language is `flow`. Runnable like any
- *  function, but grouped under its own 'Workflows' section in every browser
- *  grouping (its signature would otherwise misfile it under Data Sources). */
+/** A saved Flow — a `DG.Script` whose language is `flow`. */
 export function isWorkflowFunc(func: DG.Func): boolean {
   try {
-    // `language` is typed as the core-language union, which doesn't know
-    // about `flow` — compare the raw value.
+    // `language` is typed as the core-language union, which doesn't know `flow` — compare the raw value.
     return func instanceof DG.Script && String((func as DG.Script).language) === 'flow';
   } catch {
     return false;
   }
 }
 
-/** The "what it does" category for a catalog function — workflows (saved flows)
- *  first, then domain (chem/bio) for operations on data, else the signature
- *  category; the same routing as the browser's `categorizeFunc` and the node
- *  title-bar coloring. Cached on the FuncInfo (Dart-proxy input/output reads
- *  aren't free). */
+/** The "what it does" category for a catalog function, cached on the FuncInfo (Dart-proxy reads aren't free). */
 export function funcCategory(info: FuncInfo): string {
   if (info.category) return info.category;
   let cat = 'Other';
@@ -92,25 +80,11 @@ function register(name: string, factory: Factory): void {
   FACTORIES.set(name, factory);
 }
 
-/** Dev/test packages whose *queries* would otherwise flood the Queries pane —
- *  queries are included by kind, and Dbtests alone ships ~290 test queries. */
+/** Dev/test packages whose queries would otherwise flood the Queries pane. */
 const DEV_TEST_PACKAGES = new Set<string>([
   'Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis',
 ]);
 
-/** Allowlist-based inclusion — the opposite of the old deny pipeline. A
- *  function enters the Flow catalog only when:
- *   - it declares **`meta.includeInFlow: true`** (the author opt-in — meta.*
- *     surfaces as `func.options`; the value may arrive as a string), or
- *   - it is a **saved flow** (`isWorkflowFunc`) or a **query**
- *     (`DG.DataQuery`, except from a dev/test package) — user artifacts that
- *     can't be enumerated statically (own toolbox panes: Workflows section /
- *     per-connection Queries pane), or
- *   - its `nqName` is in [`INCLUDED_FUNC_NQNAMES`](./included-funcs.ts) — the
- *     curated include list, frozen from the catalog the old filters produced.
- *  `meta.includeInFlow: false` opts out unconditionally (wins over the list).
- *  Everything else — dev/test packages, panels, sketchers, dialog wrappers,
- *  scalar helpers — is simply *not on the list*. */
 export function shouldIncludeFunc(func: DG.Func): boolean {
   try {
     const include = safeGet(func.options, 'includeInFlow');
@@ -128,8 +102,7 @@ export function shouldIncludeFunc(func: DG.Func): boolean {
   return false;
 }
 
-/** Viewer node types for the Viewers toolbox pane (core first, then discovered
- *  package viewers). Populated by `registerBuiltinNodes` + `registerAllFunctions`. */
+/** Viewer node types for the Viewers toolbox pane. */
 export interface ViewerNodeType {label: string; nodeTypeName: string; core: boolean;}
 export const VIEWER_NODE_TYPES: ViewerNodeType[] = [];
 
@@ -144,7 +117,6 @@ export function registerBuiltinNodes(): void {
   if (registered) return;
   registered = true;
 
-  // Inputs
   register('Inputs/Table Input', () => new TableInputNode());
   register('Inputs/Column Input', () => new ColumnInputNode());
   register('Inputs/Column List Input', () => new ColumnListInputNode());
@@ -161,11 +133,9 @@ export function registerBuiltinNodes(): void {
   register('Inputs/String List Input', () => new StringListInputNode());
   register('Inputs/Blob Input', () => new BlobInputNode());
 
-  // Outputs
   register('Outputs/Table Output', () => new TableOutputNode());
   register('Outputs/Value Output', () => new ValueOutputNode());
 
-  // Utilities
   register('Utilities/Select Column', () => new SelectColumnNode());
   register('Utilities/Select Columns', () => new SelectColumnsNode());
   register('Utilities/Select Table', () => new SelectTableNode());
@@ -177,14 +147,12 @@ export function registerBuiltinNodes(): void {
   register('Utilities/FromJSON', () => new FromJsonNode());
   register('Utilities/ToJSON', () => new ToJsonNode());
 
-  // Constants
   register('Constants/String', () => new ConstStringNode());
   register('Constants/Int', () => new ConstIntNode());
   register('Constants/Double', () => new ConstDoubleNode());
   register('Constants/Boolean', () => new ConstBoolNode());
   register('Constants/List', () => new ConstListNode());
 
-  // Comparisons
   register('Comparisons/Equals (==)', () => new EqualsNode());
   register('Comparisons/Not Equals (!=)', () => new NotEqualsNode());
   register('Comparisons/Greater Than (>)', () => new GreaterThanNode());
@@ -196,16 +164,12 @@ export function registerBuiltinNodes(): void {
   register('Comparisons/Ends With', () => new EndsWithNode());
   register('Comparisons/Is Null', () => new IsNullNode());
 
-  // Debug
   register('Debug/Breakpoint', () => new BreakpointNode());
 
-  // Core viewers (sync — no catalog lookup — so saved flows with viewer nodes
-  // always deserialize, even before `registerAllFunctions` runs).
+  // Registered synchronously so saved flows with viewer nodes deserialize before registerAllFunctions runs.
   for (const spec of CORE_VIEWER_SPECS) registerViewerSpec(spec, true);
 }
 
-/** Discover non-core package viewers (role=viewer) and register a generic
- *  viewer node per distinct friendly name. Idempotent; needs the live catalog. */
 function registerDiscoveredViewers(): void {
   try {
     const taken = new Set(VIEWER_NODE_TYPES.map((v) => v.label.toLowerCase()));
@@ -225,8 +189,6 @@ function registerDiscoveredViewers(): void {
 
 let funcsRegistered = false;
 
-/** Discover all DG.Func instances, register a factory per function, return
- *  the catalog used by the function-browser. */
 export function registerAllFunctions(): FuncInfo[] {
   if (funcsRegistered) return funcRegistry;
   funcsRegistered = true;
@@ -253,7 +215,6 @@ export function registerAllFunctions(): FuncInfo[] {
       if (seen.has(typeName)) continue;
       seen.add(typeName);
 
-      // Capture func by reference for the factory.
       const capturedFunc = func;
       register(typeName, () => new FuncNode(capturedFunc));
 
@@ -262,7 +223,7 @@ export function registerAllFunctions(): FuncInfo[] {
         role, tags, packageName: pkgName, nodeTypeName: typeName,
       });
     } catch {
-      // Skip funcs that fail to introspect (Dart proxy edge cases).
+      // Dart proxy introspection can throw.
     }
   }
 
@@ -271,18 +232,14 @@ export function registerAllFunctions(): FuncInfo[] {
   return funcRegistry;
 }
 
-/** SetVar / GetVar fall to the primitive-only exclusion rule, yet saved flows
- *  depend on them (every imported creation script terminates in SetVar nodes,
- *  and Flow treats SetVar as an output). Register them unconditionally —
- *  otherwise a saved .flow with SetVar/GetVar nodes deserializes only in a
- *  session where a creation-script import happened to register them first. */
+/** SetVar/GetVar are excluded by the catalog rules, yet saved flows depend on them — register unconditionally. */
 function registerVariableFuncs(): void {
   for (const name of ['SetVar', 'GetVar']) {
     try {
       const func = DG.Func.find({name})[0];
       if (func) ensureFuncNodeType(func);
     } catch {
-      // No live backend / lookup failure — nothing to register.
+      // No live backend.
     }
   }
 }
@@ -291,20 +248,13 @@ export function getRegisteredFuncs(): FuncInfo[] {
   return funcRegistry;
 }
 
-/** Deterministic one-shot registration of everything `createNode` may need:
- *  built-ins plus the DG.Func catalog. Load paths (deserializer, entity open,
- *  headless compile) call this instead of racing the view's deferred timer —
- *  both underlying calls are synchronous and idempotent. */
 export function ensureFunctionsRegistered(): void {
   registerBuiltinNodes();
   registerAllFunctions();
 }
 
-/** Node type name for a DG.Func, registering a factory on the fly when the
- *  function is not in the catalog (i.e. not on the include list). Used by the
- *  creation-script importer, where parsed funcs must always yield a node —
- *  and a `dgTypeName` the serializer can persist. Matching is by qualified
- *  name, so a freshly parsed Dart instance finds its registered twin. */
+/** Node type name for a DG.Func, registering a factory on the fly for off-catalog funcs;
+ *  matches by qualified name so a freshly parsed Dart instance finds its registered twin. */
 export function ensureFuncNodeType(func: DG.Func): string {
   registerAllFunctions();
 
@@ -334,16 +284,8 @@ export function ensureFuncNodeType(func: DG.Func): string {
 
 let queryFuncsPromise: Promise<FuncInfo[]> | null = null;
 
-/** The Queries-pane catalog. The `DG.Func.find({})` scan does not reliably
- *  return every query, so the pane loads the authoritative list from the
- *  server — `grok.dapi.queries.list()` (async and slower, but complete, with
- *  connections populated). Each query gets a node type via
- *  `ensureFuncNodeType` so double-click / drag work like any catalog row; a
- *  query without a connection object is skipped (there is nothing to group it
- *  under in the Queries pane), and dev/test-package queries stay out as
- *  before. The result is cached — one server round-trip per session (a failed
- *  load clears the cache so a later render can retry); the returned FuncInfos
- *  wrap the dapi instances, so `queryConnectionName` reads a real connection. */
+/** Queries-pane catalog: `DG.Func.find({})` misses queries, so load the authoritative
+ *  server list (cached; a failed load clears the cache so a later render retries). */
 export function loadQueryFuncs(): Promise<FuncInfo[]> {
   if (queryFuncsPromise) return queryFuncsPromise;
   queryFuncsPromise = (async () => {
@@ -360,7 +302,7 @@ export function loadQueryFuncs(): Promise<FuncInfo[]> {
           role: getRole(q), tags: getTags(q), packageName: pkgName, nodeTypeName: typeName,
         });
       } catch {
-        // Skip queries that fail to introspect (Dart proxy edge cases).
+        // Dart proxy introspection can throw.
       }
     }
     return result;
@@ -371,8 +313,7 @@ export function loadQueryFuncs(): Promise<FuncInfo[]> {
   return queryFuncsPromise;
 }
 
-/** Instantiate a registered node type by name. Returns null if unknown.
- *  Stamps `dgTypeName` on the new node so the serializer can persist it. */
+/** Instantiates a registered node type; stamps `dgTypeName` for the serializer. */
 export function createNode(typeName: string): FlowNode | null {
   const factory = FACTORIES.get(typeName);
   if (!factory) return null;
@@ -383,13 +324,8 @@ export function createNode(typeName: string): FlowNode | null {
   return node;
 }
 
-/** A slot label that still equals its raw key is a fallback, not a caption —
- *  humanize it (core's `propertyNameToFriendly`) so 'table' reads 'Table' and
- *  a caption-less func output 'maxNumOfSomething' reads 'Max Num Of Something',
- *  mirroring `ui.input.forProperty`. Runs before the exec ports are added
- *  (their labels are 'before'/'after' anyway); declared captions and the `→`
- *  pass-through markers differ from their key and stay untouched. Keys —
- *  connections, `inputValues`, compilation — are never affected. */
+/** A slot label still equal to its raw key is a fallback, not a caption — humanize it;
+ *  declared captions and the `→` pass-through markers differ from their key and stay untouched. */
 function humanizeSlotLabels(node: FlowNode): void {
   const ports = [
     ...Object.entries(node.inputs as Record<string, {label?: string} | undefined>),
@@ -401,26 +337,19 @@ function humanizeSlotLabels(node: FlowNode): void {
   }
 }
 
-/** Add the execution-ordering port pair to a node: an exec-in (accepts many
- *  predecessors) and an exec-out. Added after the node's own ports so func
- *  `passthroughCount` indexing and the data-port rows are unaffected. The
- *  factory builders are left untouched (so the suggestion-menu type probe in
- *  `getInputTypesForType` never sees an `order` slot). */
+/** Exec ports go after the node's own ports so `passthroughCount` indexing and the
+ *  factory type probes (which must never see an `order` slot) are unaffected. */
 function addExecPorts(node: FlowNode): void {
   node.addInput(EXEC_IN_KEY, new ClassicPreset.Input(getSocket(ORDER_SOCKET_TYPE), 'before', true));
   node.addOutput(EXEC_OUT_KEY, new ClassicPreset.Output(getSocket(ORDER_SOCKET_TYPE), 'after', true));
 }
 
-/** All registered type names, mostly for debugging / completeness checks. */
 export function getRegisteredTypeNames(): string[] {
   return Array.from(FACTORIES.keys());
 }
 
-// ---------- input-type cache + suggestion helper ----------
-
-/** Cache of (typeName → input slot dgTypes), populated lazily. We construct
- *  one sample of each node to read its input socket types and never again —
- *  important for the suggestion menu where we may probe hundreds of factories. */
+/** One sample node per type is constructed to read its input types, then cached —
+ *  the suggestion menu probes hundreds of factories. */
 const _sampleInputTypesCache = new Map<string, string[]>();
 
 export function getInputTypesForType(typeName: string): string[] {
@@ -439,10 +368,7 @@ export function getInputTypesForType(typeName: string): string[] {
   return cached;
 }
 
-/** Cache of (typeName → output slot dgTypes), split into real outputs vs
- *  pass-throughs (`__pt` keys) — the reverse suggestion menu ("what produces
- *  this?") ranks real producers above threaders. Same one-sample probe as
- *  `getInputTypesForType`. */
+/** Output slot dgTypes split into real vs pass-through (`__pt`) — real producers rank above threaders. */
 const _sampleOutputTypesCache = new Map<string, {real: string[]; passthrough: string[]}>();
 
 export function getOutputTypesForType(typeName: string): {real: string[]; passthrough: string[]} {
@@ -464,11 +390,8 @@ export function getOutputTypesForType(typeName: string): {real: string[]; passth
   return cached;
 }
 
-/** Whether an input node type is a semantic specialization of a plainer one —
- *  Sketcher Input is a String Input tagged `semType: Molecule`. Several such
- *  nodes can share a slot type, so a drag of the bare type must still land on
- *  the general one; the specialization is chosen deliberately, from the
- *  toolbox. */
+/** A semType-tagged input node (Sketcher = String Input + `semType: Molecule`) is a specialization —
+ *  a bare-type drag must still land on the general one. */
 const _specializedInputCache = new Map<string, boolean>();
 
 function isSpecializedInput(typeName: string): boolean {
@@ -488,24 +411,16 @@ export interface CompatibleNodeType {
   label: string;
   isBuiltin: boolean;
   description?: string;
-  /** Whether a slot matches the dragged type exactly (vs a `dynamic`/`object`
-   *  wildcard) — exact matches rank first in their tier. */
+  /** Exact type match (vs a `dynamic`/`object` wildcard) — ranks first in its tier. */
   exact?: boolean;
-  /** Reverse menu only: whether a **real** output matches (vs pass-through
-   *  only) — real producers rank above threaders in their tier. */
+  /** Reverse menu only: a real output matches (vs pass-through only). */
   realOutput?: boolean;
-  /** Lower-cased search haystack — the same texts the toolbox search matches
-   *  (names, description, tags, role, package), so "remove column" finds a
-   *  Delete Columns whose description says so. See {@link candidateMatchesQuery}. */
+  /** Lower-cased search haystack — the same texts the toolbox search matches. */
   searchText?: string;
-  /** Set when the toolbox suggestion engine also recommends this type for the
-   *  dragged socket — shown inline, and such items lead the menu. */
+  /** Set when the toolbox suggestion engine also recommends this type — such items lead the menu. */
   reason?: string;
 }
 
-/** The searchable text of a menu candidate: label + typeName + (for DG funcs)
- *  raw/friendly name, description, tags, role, package — mirroring
- *  `funcMatchesSearch` in the toolbox — or the built-in node's description. */
 function candidateSearchText(typeName: string, label: string, info?: FuncInfo): string {
   const parts = [label, typeName];
   if (info) {
@@ -520,9 +435,6 @@ function candidateSearchText(typeName: string, label: string, info?: FuncInfo): 
   return parts.filter(Boolean).join(' ').toLowerCase();
 }
 
-/** Whether a suggestion-menu candidate matches a search query — substring over
- *  the full haystack, whitespace-insensitive like the toolbox ("tableoutput"
- *  finds "Table Output" and vice versa). */
 export function candidateMatchesQuery(c: CompatibleNodeType, query: string): boolean {
   const q = query.toLowerCase().trim();
   if (!q) return true;
@@ -530,17 +442,14 @@ export function candidateMatchesQuery(c: CompatibleNodeType, query: string): boo
   return hay.includes(q) || hay.replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
 }
 
-/** One pick of the toolbox suggestion engine, projected for the drag-out menu. */
+/** One toolbox-suggestion-engine pick, projected for the drag-out menu. */
 export interface SocketSuggestion {
   typeName: string;
   reason: string;
   prefill?: Record<string, unknown>;
 }
 
-/** Reorder menu candidates so the suggestion engine's picks lead, in engine
- *  order, each carrying its reason; everything else keeps its heuristic order.
- *  A suggested type not in `candidates` is dropped (it can't consume the
- *  dragged socket). */
+/** Suggestion-engine picks lead in engine order (with reasons); a suggested type not in `candidates` is dropped. */
 export function prioritizeCandidates(
   candidates: CompatibleNodeType[], suggested: SocketSuggestion[],
 ): CompatibleNodeType[] {
@@ -560,11 +469,8 @@ export function prioritizeCandidates(
   return [...lead, ...rest];
 }
 
-/** Display label for a suggestion-menu candidate. Built-ins show their trailing
- *  typeName segment; DG functions show the same **friendly name** the toolbox
- *  uses, with the "what it does" category in parentheses for orientation —
- *  NOT the raw func name / role segment baked into the typeName (which reads
- *  as `AddNewColumn (Uncategorized)` for the role-less majority). */
+/** Built-ins show their trailing typeName segment; DG funcs the friendly name + category
+ *  (never the raw role segment, which reads `AddNewColumn (Uncategorized)` for most funcs). */
 function labelForTypeName(typeName: string, info?: FuncInfo): string {
   if (info) return `${info.name}  (${funcCategory(info)})`;
   const parts = typeName.split('/');
@@ -573,33 +479,23 @@ function labelForTypeName(typeName: string, info?: FuncInfo): string {
   return parts[parts.length - 1];
 }
 
-/** The data-pipeline steps a scientist reaches for most. Used as a usage-proxy
- *  to float common next-steps to the top of the drag-out suggestion menu (real
- *  telemetry isn't available client-side). Matched on the simple function name,
- *  lower-cased. */
+/** Usage-proxy for common next-steps (no client-side telemetry); matched on the lower-cased simple name. */
 const COMMON_NEXT_FUNCS = new Set([
   'jointables', 'linktables', 'addnewcolumn', 'addnewcolumnlist', 'aggregate',
   'filterrows', 'extractrows', 'extractcolumns', 'pivot', 'unpivot', 'splitcolumn',
   'addtableview', 'clonetable', 'renamecolumn', 'changecolumnstype',
 ]);
 
-/** Simple (trailing) function name of a typeName, lower-cased — `DG Functions/
- *  Transform/Pkg:JoinTables` → `jointables`. */
 function simpleFuncName(typeName: string): string {
   const last = typeName.split('/').pop() ?? typeName;
   return (last.split(':').pop() ?? last).toLowerCase();
 }
 
-/** Whether a node type is one of the common next pipeline steps (Join,
- *  AddNewColumn, Aggregate, …) — shared by the drag-out menu ranking and the
- *  toolbox suggestion engine. */
 export function isCommonNextFunc(typeName: string): boolean {
   return COMMON_NEXT_FUNCS.has(simpleFuncName(typeName));
 }
 
-/** Canvas context the drag-out suggestion menu ranks against — what the drag
- *  came from and what the user is already building with. All optional; without
- *  it the ranking degrades to the context-free order. */
+/** Canvas context the drag-out suggestion menus rank against; all optional. */
 export interface SuggestionContext {
   /** Package of the node the drag started from ('' / undefined for built-ins). */
   sourcePackageName?: string | null;
@@ -609,30 +505,11 @@ export interface SuggestionContext {
   graphFuncNames?: Iterable<string>;
 }
 
-/** All registered node types whose inputs include at least one slot
- *  type-compatible with `sourceType`. Used by the drag-output suggestion menu.
- *
- *  Ranked by discovery heuristics (lower tier = higher in the list):
- *  1. **Value Output** — the universal "expose this value" terminal.
- *  2. **The science you're doing** — Cheminformatics / Bioinformatics functions
- *     when the drag *source* is from that domain's package (else when the
- *     canvas already holds nodes of that domain): dragging out of Chemical
- *     Properties should offer chem next-steps first, not bury them
- *     alphabetically.
- *  3. **Common next-step funcs** (`COMMON_NEXT_FUNCS` — Join, AddNewColumn,
- *     Aggregate, Filter, …) — the usage-proxy for core table plumbing.
- *  4. Other built-ins (viewers, outputs, utilities).
- *  5. The remaining DG functions.
- *
- *  Within a tier: an **exact type match** beats a wildcard (`dynamic`/`object`)
- *  acceptor — a `column` drag offers real column consumers before catch-alls;
- *  then functions **already used on the canvas** (pipelines repeat their ops);
- *  then alphabetical. */
+/** Node types with an input compatible with `sourceType`, ranked for the drag-out suggestion menu. */
 export function findNodeTypesAcceptingInput(
   sourceType: string, context?: SuggestionContext,
 ): CompatibleNodeType[] {
   const matches: Array<CompatibleNodeType & {exact: boolean}> = [];
-  // typeName → catalog entry, for friendly names + "what it does" categories.
   const infoByTypeName = new Map(funcRegistry.map((f) => [f.nodeTypeName, f]));
   for (const typeName of FACTORIES.keys()) {
     const inputTypes = getInputTypesForType(typeName);
@@ -651,7 +528,6 @@ export function findNodeTypesAcceptingInput(
 
   const {preferredDomains, usedFuncs} = contextBoosts(context);
 
-  // Lower rank number = higher in the list.
   const rank = (t: CompatibleNodeType): number => {
     if (t.typeName === 'Outputs/Value Output') return 0;
     const info = infoByTypeName.get(t.typeName);
@@ -668,10 +544,7 @@ export function findNodeTypesAcceptingInput(
   return matches;
 }
 
-/** Shared ranking boosts derived from the canvas context: the science in play
- *  (the drag-origin node's own domain wins; a domain-less origin — OpenFile, a
- *  utility — falls back to any domain already on the canvas) and the functions
- *  the user already reached for. */
+/** Ranking boosts from the canvas context: the domain in play and the funcs already used. */
 function contextBoosts(context?: SuggestionContext): {preferredDomains: Set<string>; usedFuncs: Set<string>} {
   const preferredDomains = new Set<string>();
   const srcDomain = domainSection(context?.sourcePackageName || undefined);
@@ -687,22 +560,8 @@ function contextBoosts(context?: SuggestionContext): {preferredDomains: Set<stri
   return {preferredDomains, usedFuncs};
 }
 
-/** All registered node types with an output — or a pass-through — compatible
- *  with `targetType`. The reverse suggestion menu: dragging an *input* to empty
- *  canvas asks "what produces this?".
- *
- *  Ranked like `findNodeTypesAcceptingInput`, with the terminals swapped for
- *  the upstream direction (lower tier = higher):
- *  1. The **matching Input node** (Table Input for a table drag, …) — the
- *     universal "make this a script parameter" producer.
- *  2. **The science in play** (same domain boost as the forward menu).
- *  3. **Data Sources** functions (OpenFile, queries, generators — the natural
- *     answer to "where does a table come from?") and the common table funcs.
- *  4. Other built-ins; 5. the remaining DG functions.
- *
- *  Within a tier: a **real output** match beats a pass-through-only threader
- *  (`realOutput`), then an **exact type match** beats a wildcard, then
- *  already-used-on-canvas funcs, then alphabetical. */
+/** Node types with an output (or pass-through) compatible with `targetType` —
+ *  the reverse "what produces this?" suggestion menu. */
 export function findNodeTypesProducingOutput(
   targetType: string, context?: SuggestionContext,
 ): CompatibleNodeType[] {

@@ -1,7 +1,5 @@
-/** "Rerun this node only": a single node is re-executed using values captured
- *  from a prior run (its upstream inputs resolve to `_ffLive(...)` registry reads
- *  instead of re-running upstream). Covers the stash on a full run, the live-input
- *  emit for a single-node re-run, and the `canRerunNode` gating. */
+/** "Rerun this node only": a single node re-executes from values captured by a
+ *  prior run (upstream inputs resolve to `_ffLive(...)` registry reads). */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {emitScript} from '../compiler/script-emitter';
@@ -14,7 +12,6 @@ function funcTypeName(name: string): string | null {
   return getRegisteredFuncs().find((f) => f.func.name === name)?.nodeTypeName ?? null;
 }
 
-/** Set the tab-global live-value registry for the duration of a test. */
 function withRegistry(reg: Record<string, Record<string, unknown>>, body: () => void): void {
   const g = globalThis as {__ffFlowLive?: unknown};
   const prev = g.__ffFlowLive;
@@ -43,8 +40,6 @@ category('Flow: rerun node', () => {
 
       const full = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
       expect(full.includes('__ff_stash('), true, 'stashes live values');
-      // AddNewColumn returns a column, but threads the table through its
-      // passthrough — both are stashed (keyed by output socket key).
       expect(full.includes('"table__pt":'), true, 'passthrough table stashed');
       expect(full.includes(`__ff_stash(${JSON.stringify(src.id)}`), true, 'the table input is stashed too');
     } finally {
@@ -101,7 +96,6 @@ category('Flow: rerun node', () => {
     try {
       const ctrl = new ExecutionController(e.flow);
 
-      // Unconnected table → a required input is missing → not rerunnable.
       const lone = await addNode(e.flow, addCol);
       expect(ctrl.canRerunNode(lone.id), false, 'missing required table input');
 
@@ -109,18 +103,15 @@ category('Flow: rerun node', () => {
       const anc = await addNode(e.flow, addCol);
       await e.flow.addConnectionByKeys(src.id, 'table', anc.id, 'table');
 
-      // Connected but no captured value yet → not rerunnable.
       withRegistry({}, () => {
         expect(ctrl.canRerunNode(anc.id), false, 'no captured upstream value');
       });
-      // Captured table, but the required string params are still blank.
       withRegistry({[src.id]: {table: {}}}, () => {
         expect(ctrl.canRerunNode(anc.id), false, 'blank required params (name, expression) block the rerun');
         anc.inputValues['name'] = 'x2';
         anc.inputValues['expression'] = '${x} * 2';
         expect(ctrl.canRerunNode(anc.id), true, 'ready to re-run');
       });
-      // An input node has nothing to recompute on its own.
       withRegistry({[src.id]: {table: {}}}, () => {
         expect(ctrl.canRerunNode(src.id), false, 'input nodes are not rerunnable');
       });

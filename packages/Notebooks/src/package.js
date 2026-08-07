@@ -24,6 +24,17 @@ import {editNotebook, setupEnvironment, getAuthToken} from './utils';
 
 export const _package = new DG.Package();
 
+function suppressIframePointerEventsDuringDrag(view, iframe) {
+  view._dragObserver?.disconnect();
+  const updatePointerEvents = () => {
+    iframe.style.pointerEvents = document.body.classList.contains('disable-selection') ? 'none' : '';
+  };
+  const observer = new MutationObserver(updatePointerEvents);
+  observer.observe(document.body, {attributes: true, attributeFilter: ['class']});
+  view._dragObserver = observer;
+  updatePointerEvents();
+}
+
 class NotebookView extends DG.ViewBase {
   constructor(params, path) {
     super(params, path);
@@ -155,6 +166,7 @@ class NotebookView extends DG.ViewBase {
     this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
     this.editIcon.parentNode.parentNode.style.flexShrink = '0';
     this.root.appendChild(view);
+    suppressIframePointerEventsDuringDrag(this, iframe);
   }
 
   async getEnvironmentsInput() {
@@ -251,7 +263,10 @@ class NotebookView extends DG.ViewBase {
     // to reload it to a blank document. The notebook model lives in memory, so we rebuild the
     // iframe document and re-attach the existing widget on every load to preserve all cell data.
     const mountNotebook = () => {
-      const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+      const iframeDocument = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      // No browsing context yet (root not attached to the live DOM). The 'load' handler
+      // re-invokes mountNotebook once the iframe has a real document, so bail for now.
+      if (!iframeDocument) return;
       iframeDocument.open();
       iframeDocument.write('<html><head></head><body></body></html>');
       iframeDocument.close();
@@ -287,6 +302,7 @@ class NotebookView extends DG.ViewBase {
     iframe.addEventListener('load', mountNotebook);
     this.root.appendChild(iframe);
     mountNotebook();
+    suppressIframePointerEventsDuringDrag(this, iframe);
 
     handler.editor = editor;
     nbWidget.content.activeCellChanged.connect((sender, cell) => {

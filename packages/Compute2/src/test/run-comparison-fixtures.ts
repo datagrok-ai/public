@@ -1,4 +1,4 @@
-import {ComparisonEntryNodes} from '../components/RunComparison/types';
+import {ComparisonEntryNodes, EntrySourceKind} from '../components/RunComparison/types';
 
 export function makeEntry(
   entryId: string,
@@ -7,16 +7,18 @@ export function makeEntry(
     path: string, name?: string, nqName?: string, defaultIndexColumn?: string,
     columns: {name: string, type?: string, units?: string}[],
   }[] = [],
+  sourceKind?: EntrySourceKind,
 ): ComparisonEntryNodes {
   return {
     entryId,
     entryName: entryId,
+    sourceKind,
     scalars: scalars.map((s, i) => ({
       path: `io${i}`,
       name: s.name,
       valueType: s.valueType ?? 'double',
       units: s.units,
-      value: s.value ?? 0,
+      value: s.value === undefined ? 0 : s.value,
     })),
     tables: tables.map((t) => ({
       path: t.path,

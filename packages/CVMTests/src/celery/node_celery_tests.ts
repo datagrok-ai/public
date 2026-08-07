@@ -13,7 +13,8 @@ category('Celery: node worker', () => {
       expect(await grok.functions.call(`CVMTests:${func}`, {x: value}), value);
     const big = '9007199254740993'; // 2^53 + 1 — survives only as a string
     expect(String(await grok.functions.call('CVMTests:jsCvmBigInt', {x: big})), big);
-  }, {timeout: 120000 /* long timeout: first call starts the worker container */});
+    // First call pays the worker container cold start, bounded by containerStatusTimeout.
+  }, {timeout: 300000});
 
   test('String escaping', async () => {
     for (const s of escapingTestStrings)
@@ -89,5 +90,5 @@ category('Celery: node worker', () => {
 
   test('Custom container', async () => {
     expect(await grok.functions.call('CVMTests:jsCvmCustomContainer', {}), 'custom');
-  }, {timeout: 240000 /* separate container cold start */});
+  }, {timeout: 300000 /* separate container cold start, bounded by containerStatusTimeout */});
 });

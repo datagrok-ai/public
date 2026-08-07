@@ -4,6 +4,7 @@ sub_features_covered: [peptides.panels.peptides, peptides.viewers.logo-summary-t
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForViewers} from './helpers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 test('SAR — Launch and verify viewers (context-panel entry path)', async ({page}) => {
@@ -63,16 +64,10 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     }, {timeout: 60000});
   });
   await softStep('Scenario 1 (step 5): verify SAR viewers attach', async () => {
-    await page.waitForTimeout(8000);
-    const viewers = await page.evaluate(() => {
-      const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      return Array.from(tv.viewers).map((v) => v.type);
-    });
-    expect(viewers, 'Sequence Variability Map (MonomerPosition) must attach').toContain('Sequence Variability Map');
-    expect(viewers, 'Most Potent Residues must attach').toContain('Most Potent Residues');
-    expect(viewers, 'MCL clustering viewer must attach').toContain('MCL');
-    if (!viewers.includes('Logo Summary Table'))
-      console.log('[note] Logo Summary Table not in default Launch SAR attach set on this build (cluster-/settings-dependent).');
+    const expected = ['Sequence Variability Map', 'Most Potent Residues', 'MCL', 'Logo Summary Table'];
+    const viewers = await waitForViewers(page, expected);
+    for (const type of expected)
+      expect(viewers, `${type} must attach after Launch SAR`).toContain(type);
   });
   await softStep('Scenario 2 (steps 6-8): change Similarity threshold via the Settings dialog', async () => {
     const opened = await page.evaluate(async () => {

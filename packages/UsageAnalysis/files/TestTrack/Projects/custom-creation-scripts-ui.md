@@ -1,5 +1,6 @@
 ---
 feature: projects
+realizes: [views.projects]
 ui_only: true
 target_layer: manual
 coverage_type: regression

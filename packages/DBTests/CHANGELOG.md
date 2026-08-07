@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Fixed `Docker connection / Connection test` timing out at exactly 300s — its budget equalled datlas' own containerStatusTimeout, so a slow on-demand container start left nothing for the connection test
 * Tests: annotated API-only categories (queries, TableQueryBuilder, server cache, benchmarks, DB annotations, provider connectivity) with `node: true` — `grok test` now runs them headless in Node; the data-sync view test and the IndexedDB-backed client cache stay in the browser
 * Tests: the query `-- test:` auto tests (~200) also run headless now that the Node runtime provides the shared `OpenFile` fallback
 * Tests: moved the 5 browser-bound tests (data sync, client cache ×2, cached TestWide benchmarks ×2) to ApiTests (`DB: *` categories) — DBTests now runs fully headless, `grok test` never launches a browser for it

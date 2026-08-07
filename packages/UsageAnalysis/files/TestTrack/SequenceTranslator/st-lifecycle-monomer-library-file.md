@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [monomer_library_file]
-realizes: []
+realizes: [sequencetranslator.polytool.create-monomer-library, sequencetranslator.app.oligo-toolkit]
 realized_as:
   - st-lifecycle-monomer-library-file-spec.ts
 related_bugs: []

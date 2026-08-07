@@ -47,6 +47,10 @@ Datagrok stand will live.
 | [AWS CloudFormation (EKS)](aws/deploy-amazon-eks.mdx) | **Recommended for new AWS stands.** Provisions EKS, RDS, S3, IAM with IRSA, and installs the Helm chart automatically. |
 | [AWS CloudFormation (ECS)](aws/deploy-amazon-ecs.mdx) | Existing ECS stacks. Same RDS / S3 logical IDs as the EKS template, so an in-place stack-template swap migrates without re-creating data. Targeted for deprecation. |
 
+Whichever path you take, take the configuration from the same release as the images — a
+Compose file, Helm chart, or CloudFormation template written for one release can be invalid
+for another. See [configuration is versioned with the image](images.md#release-binding).
+
 The [AWS Marketplace](aws/deploy-marketplace.md) listing wraps the EKS template for one-click,
 infrastructure-isolated installs.
 

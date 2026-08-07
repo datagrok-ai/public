@@ -7,5 +7,6 @@
 
 ---
 {
-"order": 2
+"order": 2,
+"realizes": ["scripting.r", "views.scripts"]
 }

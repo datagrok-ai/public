@@ -2,6 +2,8 @@
 
 ## v.next
 
+* AI: Project saves now drive the platform's Save Project dialog through new dialog AI functions (`getProjectSaveInfo`, `setProjectName/Description/SaveMode/PresentationMode`, entity-list `listEntities`/`setEntityAction`/`setDataSync`; Share dialog: `getShareInfo`/`addShareGrantee`/`setShareAccess`/`setShareMessage`) — the datagrok-projects skill was rewritten around this flow, replacing hand-written `grok.dapi` saves
+
 * AI: Fixed duplicate action execution (e.g. the same viewers added twice). Root cause: verify assertions written as bare expressions evaluated to `undefined` inside the async wrapper, reading as a failed verify with no diagnostics, and the "action did NOT take effect" gate feedback then pushed the model to redo the (already applied) action. Single-expression assertions are now auto-wrapped in a `return`, an assertion returning `undefined` reports a self-explanatory error, and the verify-gate feedback plus the datagrok-exec skill now forbid redoing state-changing actions before re-reading live state
 * AI: A passing in-round-trip exec self-verify now clears the Stop gate like a standalone `datagrok_verify` pass — turns with an earlier unverified action no longer pay a pointless hidden revision after a later verify already passed
 * AI: Conversations restored from history now hand their transcript (including the code each `datagrok_exec` actually ran) to the runtime on the first prompt — "reproduce what we did" works after a page reload instead of "I don't see any prior conversation"; loading a conversation also starts a fresh runtime session so histories never mix
@@ -87,6 +89,7 @@
 * Added `src/polyfills.ts` (Chrome 50 / Dartium) — `crypto.randomUUID`, `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`, `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`; routed clipboard writes through a `copyToClipboard()` helper with an `execCommand` fallback
 * AI: Added a Run button to the ribbon of file views opened from `MyFiles/agents/scripts/`
 * AI: Added wand icon to open curated prompt suggestions menu (loaded from suggestions.yaml)
+* AI: Assistant messages now show a code icon and a rerun icon for executed exec code
 
 ## 1.0.4 (2026-02-01)
 

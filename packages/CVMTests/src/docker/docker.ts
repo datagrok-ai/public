@@ -18,15 +18,19 @@ category('Docker', () => {
   const containerSimple: string = 'cvm-tests-cvmtests-docker-test2';
   const incorrectId: string = '00000000-0000-0000-0000-000000000000';
 
+  // Queues the warm-up without awaiting anything: before() runs on the framework's fixed
+  // 100s budget, and one awaited container start over it fails the whole category with
+  // "before() failed" (build 1192). Every test starts what it needs under its own timeout.
   before(async () => {
-    await stopContainer(containerOnDemandName);
-    await startContainer(containerSimple);
+    await grok.dapi.docker.dockerContainers.run((await findContainer(containerSimple)).id);
   });
 
+  // Budget above datlas' own containerStatusTimeout (5 min) so a start that never
+  // completes surfaces its real error instead of an opaque EXECUTION TIMEOUT.
   test('Get response: On demand', async () => {
     const container = await stopContainer(containerOnDemandName);
     await testResponse(container.id);
-  }, {timeout: 240000 /*stressTest: true*/});
+  }, {timeout: 360000 /*stressTest: true*/});
 
   test('Container timeout', async () => {
     let container = await stopContainer(containerOnDemandName);
@@ -96,7 +100,8 @@ category('Docker', () => {
     } finally {
       ws?.close();
     }
-  }); // browser WebSocket global with cookie-session auth
+    // startContainer alone measured 27s on the CI stand — nothing left of the 30s default.
+  }, {timeout: 240000}); // browser WebSocket global with cookie-session auth
 });
 // Tests are browser-only by default. This category has no node-capable tests yet:
 // under the Node runtime the docker proxy returns 401 where the browser (cookie

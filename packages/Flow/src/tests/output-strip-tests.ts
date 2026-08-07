@@ -1,18 +1,14 @@
-/** Tests for the Outputs strip — the thin column OUTSIDE the canvas viewport
- *  hosting every output node as a screen-space chip (zoom-independent), with
- *  wires ending analytically at the canvas' right edge. */
+/** Outputs strip: output nodes as screen-space chips in a thin column outside the canvas viewport. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
 import {emitHeaderLines} from '../compiler/script-emitter';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
-/** The chip element for a node id. */
 function chipEl(container: HTMLElement, id: string): HTMLElement | null {
   return container.querySelector(`.ff-output-row[data-node-id="${id}"]`);
 }
 
-/** Whether the chip exists and lies fully inside the strip column. */
 function inStrip(container: HTMLElement, id: string): boolean {
   const el = chipEl(container, id);
   const strip = container.querySelector('.ff-output-strip');
@@ -29,9 +25,6 @@ category('Flow: output strip', () => {
   });
 
   test('an output node never survives losing its last connection', async () => {
-    // No output node without a connection, ever: rows are auto-created when a
-    // value is published, so losing the last wire removes the row too —
-    // whether the wire is deleted directly or the feeding node is removed.
     const e = makeEditor();
     try {
       const src = await addNode(e.flow, 'Constants/String', 0, 0);
@@ -45,7 +38,6 @@ category('Flow: output strip', () => {
         'orphaned output removed with its wire');
       expect(e.flow.getNodes().some((n) => n.id === src.id), true, 'the source node stays');
 
-      // Removing the FEEDING node (its connections go down with it) too.
       const out2 = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
       out2.properties['paramName'] = 'result2';
       await e.flow.addConnectionByKeys(src.id, 'value', out2.id, 'value');
@@ -111,7 +103,6 @@ category('Flow: output strip', () => {
       expect(el.querySelector('[data-testid="ff-output-row-letter"]')?.textContent?.length, 1, 'one-letter type');
       expect(el.querySelector('[data-testid="ff-socket-input-table"]') != null, true, 'socket dot rendered');
       expect((el.title ?? '').includes('finalResult'), true, 'tooltip names the output');
-      // The canvas node view is an empty hidden placeholder — no card anywhere.
       const canvasCard = e.flow.canvasEl.querySelector(`.ff-node[data-node-id="${out.id}"]`);
       expect(canvasCard == null, true, 'no canvas card for an output node');
     } finally {
@@ -127,8 +118,6 @@ category('Flow: output strip', () => {
       expect(await until(() => inStrip(e.container, a.id) && inStrip(e.container, b.id)), true, 'both in strip');
       const topOf = (id: string): number => chipEl(e.container, id)!.getBoundingClientRect().top;
       expect(topOf(a.id) < topOf(b.id), true, 'chips stack in insertion order');
-      // The group is vertically centered: its center of mass sits at the strip
-      // middle (each added chip re-balances the rest).
       const strip = e.container.querySelector('.ff-output-strip')!.getBoundingClientRect();
       const rA = chipEl(e.container, a.id)!.getBoundingClientRect();
       const rB = chipEl(e.container, b.id)!.getBoundingClientRect();
@@ -137,8 +126,8 @@ category('Flow: output strip', () => {
         `chip group centered in the strip (group ${groupCenter}, strip mid ${strip.top + strip.height / 2})`);
 
       const before = chipEl(e.container, a.id)!.getBoundingClientRect();
-      await e.flow.area.area.translate(-380, 240); // pan
-      await e.flow.area.area.zoom(2.2); // zoom
+      await e.flow.area.area.translate(-380, 240);
+      await e.flow.area.area.zoom(2.2);
       await new Promise((r) => setTimeout(r, 50));
       const after = chipEl(e.container, a.id)!.getBoundingClientRect();
       expect(Math.abs(after.left - before.left) < 1 && Math.abs(after.top - before.top) < 1, true,
@@ -172,7 +161,6 @@ category('Flow: output strip', () => {
       };
       expect(last != null, true, 'endpoint emitted on subscribe');
       expect(Math.abs(screenX() - e.flow.canvasEl.clientWidth) < 1, true, 'endpoint at the canvas right edge');
-      // Level with the chip: the sole chip is centered → endpoint at mid-height.
       expect(Math.abs(screenY() - e.flow.canvasEl.clientHeight / 2) < 1, true,
         'endpoint level with the centered chip');
 
@@ -191,10 +179,7 @@ category('Flow: output strip', () => {
     try {
       const out = await addNode(e.flow, 'Outputs/Value Output', 0, 0);
       expect(await until(() => chipEl(e.container, out.id) != null), true);
-      // The REAL gesture — pointerdown, pointerup, click on the same element.
-      // A strip that rebuilds its chips on pointerup kills the browser's click
-      // dispatch (the pressed element vanishes mid-gesture), so the chip must
-      // survive the whole sequence.
+      // A strip that rebuilds chips on pointerup kills the browser's click dispatch — the chip must survive the gesture.
       const chip = chipEl(e.container, out.id)!;
       chip.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0}));
       chip.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, button: 0}));
@@ -226,7 +211,6 @@ category('Flow: output strip', () => {
       const boundTitle = await until(() => (chipEl(e.container, out!.id)?.title ?? '').includes('Table Input'));
       expect(boundTitle, true, `tooltip names the source (got: ${chipEl(e.container, out!.id)?.title})`);
 
-      // A second drop from the same slot gets a unique name.
       await bind({nodeId: input.id, outputKey: 'table', dgType: 'dataframe'});
       const names = e.flow.getNodes().filter((n) => n.dgNodeType === 'output')
         .map((n) => String(n.properties['paramName'])).sort().join(',');
@@ -303,7 +287,6 @@ category('Flow: output strip', () => {
       expect(await until(() => chipEl(e.container, a.id) != null && chipEl(e.container, b.id) != null),
         true, 'both chips rendered');
 
-      // Grab the FIRST chip, pull it below the second, release.
       const chip = chipEl(e.container, a.id)!;
       const from = chip.getBoundingClientRect();
       const target = chipEl(e.container, b.id)!.getBoundingClientRect();
@@ -311,7 +294,6 @@ category('Flow: output strip', () => {
         ({bubbles: true, cancelable: true, button: 0, clientX: from.x + 10, clientY: y});
       chip.dispatchEvent(new PointerEvent('pointerdown', at(from.y + 12)));
       window.dispatchEvent(new PointerEvent('pointermove', at(from.y + 20)));
-      // Mid-drag the chip is visibly lifted and rides under the pointer.
       expect(chip.classList.contains('ff-output-row-dragging'), true, 'mid-drag: chip marked as dragging');
       expect(chip.style.transform.includes('translateY'), true, 'mid-drag: chip follows the pointer');
       window.dispatchEvent(new PointerEvent('pointermove', at(target.bottom + 4)));
@@ -327,7 +309,6 @@ category('Flow: output strip', () => {
       }), true, 'the chips re-render in the new order');
       expect(e.flow.getSelectedNodeIds().length, 0, 'a drag is not a click — nothing got selected');
 
-      // The compiled signature follows the strip.
       const outLines = emitHeaderLines(e.flow, {name: 't', description: '', tags: []}, 'flow')
         .filter((l) => l.startsWith('//output:'));
       expect(outLines.length, 2, 'both outputs emitted');
