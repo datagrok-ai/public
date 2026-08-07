@@ -476,13 +476,13 @@ async function openFse(v: DG.View, functionCode: string) {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
       if (hasValue(propValue)) {
         const propName = functionPropsCode[propField.name];
-        result += `${headerSign[language]}${functionPropsCode[propName]}: ${propValue}\n`;
+        result += `${headerSign[language]}${propName}: ${propValue}\n`;
       }
     });
     functionParamsCopy.map((param) => {
       result += generateParamLine(param, param.options.direction);
     });
-    const regex = new RegExp(`^(${headerSign[language]}.*\n)*`, 'g');
+    const regex = new RegExp(`^([ \\t]*${headerSign[language]}.*\n)*`, 'g');
     const match = (v.type === DATA_QUERY_VIEW) ? (inputScriptCopy as DG.DataQuery).query.match(regex) :
       (inputScriptCopy as DG.Script).script.match(regex);
     if (match) {
