@@ -617,7 +617,8 @@ export namespace chem {
       return this.inplaceSketcherDiv;
     }
 
-
+    // id that tracks id of changing sketcher type, so that multiple waitfordoms do not accumulate.
+    private _sketcherChangeId = 0; 
     private _setSketcherType(sketcherType: string): void {
       const getMolecule = async () => {
         //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
@@ -632,10 +633,14 @@ export namespace chem {
         ui.setUpdateIndicator(this.host, true);
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
-        const sketcher = await sketcherFunc!.apply();
+        this._sketcherChangeId++;
+        const localChangeId = this._sketcherChangeId;
         await ui.tools.waitForElementInDom(this.root);
+        if (localChangeId !== this._sketcherChangeId)
+          return;
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
           return;
+        const sketcher = await sketcherFunc!.apply();
         this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
