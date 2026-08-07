@@ -1,13 +1,14 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectFloat, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectFloat, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {getChartDataAggrStats, aggregatedStatisticsProperties, calculateSeriesFit, curveStatisticAt} from '../fit/fit-statistics';
 import {setOutlier} from '../fit/fit-renderer';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
+import {addStatisticColumn as addStatisticColumnFromPanel} from '../fit/fit-grid-cell-handler';
 
 const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
 
@@ -56,7 +57,48 @@ async function addStatisticColumn(df: DG.DataFrame, funcName: string,
     .call(false, undefined, {processed: false});
 }
 
+/** Grid column names in grid order; index 0 is the row header, which has no name. */
+function gridColumnNames(grid: DG.Grid): string[] {
+  const names: string[] = [];
+  for (let i = 0; i < grid.columns.length; i++) {
+    const name = grid.columns.byIndex(i)?.name;
+    if (name)
+      names.push(name);
+  }
+  return names;
+}
+
 category('calculated columns', () => {
+  test('the statistic column is added right after the curve column', async () => {
+    // the legacy addStatisticsColumn inserted at the curve column's index + 1, but `join(table)` lets
+    // the platform add the column and it appends, so the position has to be restored afterwards
+    const df = curveTable('calcColPosition', [-6.5]);
+    df.columns.addNewString('trailing').set(0, 'x');
+    const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+
+    await addStatisticColumnFromPanel(gridCell, 'curveStatistic', {propName: 'ic50', seriesNumber: 0});
+
+    expectArray(df.columns.names(), ['curve', 'curve 1 ic50', 'trailing']);
+    // the grid takes a column's position from the dataframe only when it first builds a GridColumn
+    // for it, so an already-added column has to be moved there separately
+    expectArray(gridColumnNames(gridCell.grid), ['curve', 'curve 1 ic50', 'trailing']);
+  });
+
+  test('placing the statistic column keeps a manually reordered grid', async () => {
+    // the grid's order is its own once a column has been dragged, so restoring the position off the
+    // dataframe's order would snap the whole arrangement back
+    const df = curveTable('calcColGridOrder', [-6.5]);
+    df.columns.addNewString('a').set(0, 'x');
+    df.columns.addNewString('b').set(0, 'y');
+    const grid = DG.Viewer.grid(df);
+    grid.columns.setOrder(['b', 'curve', 'a']);
+
+    await addStatisticColumnFromPanel(grid.cell('curve', 0), 'curveStatistic', {propName: 'ic50', seriesNumber: 0});
+
+    expectArray(gridColumnNames(grid), ['b', 'curve', 'curve 1 ic50', 'a']);
+    expectArray(df.columns.names(), ['curve', 'curve 1 ic50', 'a', 'b']);
+  });
+
   test('curveStatistic adds a calculated column', async () => {
     const df = curveTable('calcColAdd', [-6.5, -6.5]);
     await addStatisticColumn(df, 'curveStatistic', {propName: 'ic50', seriesNumber: 0});

@@ -147,10 +147,18 @@ export interface IFitChartOptions {
 }
 
 /** Data for the fit chart. */
+/** Names of the options a user set at this level, as opposed to the ones that came with the data or
+ * are defaults. Only an explicitly set option outranks the value a series declares for itself. */
+export interface IFitExplicitOptions {
+  chartOptions?: string[];
+  seriesOptions?: string[];
+}
+
 export interface IFitChartData {
   chartOptions?: IFitChartOptions;
   seriesOptions?: IFitSeriesOptions;  // Default series options. Individual series can override it.
   series?: IFitSeries[];
+  explicit?: IFitExplicitOptions;
 }
 
 /** Class that implements {@link IFitChartData} interface */

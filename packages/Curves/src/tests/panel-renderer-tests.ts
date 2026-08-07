@@ -7,7 +7,7 @@ import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {FitGridCellHandler, normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-grid-cell-handler';
-import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
+import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
 
 const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
 
@@ -148,6 +148,40 @@ category('panel and renderer', () => {
     expect(stat.version, version, 'a cosmetic option change recalculated the statistic column');
   });
 
+  test('clearing cell overrides marks the table changed without recalculating', async () => {
+    // the rewrite is deliberately silent so a cosmetic option does not refit every statistic column,
+    // but the table still has to read as modified - otherwise a project save keeps the very cell-level
+    // overrides the column-level change just cleared, and reopening brings the old value back
+    const cell = JSON.stringify({
+      chartOptions: {logX: true},
+      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: points(-6.5)}],
+    });
+    const col = DG.Column.fromStrings('curve', [cell, cell]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'panelMarksTableChanged';
+    await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
+
+    const stat = df.col('curve 1 ic50')!;
+    const version = stat.version;
+    const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+    let fired = 0;
+    const sub = df.onValuesChanged.subscribe(() => fired++);
+
+    changeCurvesOptions(gridCell,
+      {property: {name: 'showCurveConfidenceInterval'}, value: false} as unknown as DG.InputBase,
+      'seriesOptions', 'Column');
+    await delay(500);
+    sub.unsubscribe();
+
+    // the value the data declares is left alone - it just stops winning
+    expect(JSON.parse(col.get(0)).series[0].showCurveConfidenceInterval, true, 'the cell data was mutated');
+    expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].showCurveConfidenceInterval, false,
+      'the column-level value did not outrank the value declared in the cell');
+    expect(fired > 0, true, 'nothing marked the table changed, so the option would not be saved');
+    expect(stat.version, version, 'a cosmetic option change recalculated the statistic column');
+  });
+
   test('a column-level change overrides a value set at cell level first', async () => {
     // reported from real use with connectDots: detectSettings records "no cell overrides this
     // property" once, the cell-level write never updated that flag, so the column-level change
@@ -158,12 +192,55 @@ category('panel and renderer', () => {
 
     changeCurvesOptions(gridCell, prop(true), 'seriesOptions', 'Cell');
     expect(JSON.parse(df.col('curve')!.get(0)).series[0].connectDots, true, 'cell-level write failed');
+    expect(JSON.parse(df.col('curve')!.get(0)).explicit.seriesOptions.includes('connectDots'), true,
+      'a cell-level change did not claim the property');
 
     changeCurvesOptions(gridCell, prop(false), 'seriesOptions', 'Column');
-    expect('connectDots' in JSON.parse(df.col('curve')!.get(0)).series[0], false,
-      'the cell-level override survived a column-level change');
+    expect(JSON.parse(df.col('curve')!.get(0)).explicit.seriesOptions.includes('connectDots'), false,
+      'the cell-level claim survived a column-level change');
     expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].connectDots, false,
       'the column-level value did not reach the cell');
+  });
+
+  test('a column-level option outranks a value the fresh data declares', async () => {
+    // reproduces applying a layout to a fresh curves.csv, and a datasync project: the column tag comes
+    // back but the cells are the source's own, still declaring the property. Gap-filling could never
+    // win there, so the setting only ever took effect by deleting it out of every cell - which lives
+    // in the data and so did not travel
+    const cell = JSON.stringify({
+      chartOptions: {logX: true},
+      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: points(-6.5)}],
+    });
+    const col = DG.Column.fromStrings('curve', [cell, cell]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'panelFreshDataClaim';
+    // the column tag as a layout would restore it: the value plus the record that it was set here
+    col.setTag(FitConstants.TAG_FIT, JSON.stringify({
+      seriesOptions: {showCurveConfidenceInterval: false},
+      explicit: {seriesOptions: ['showCurveConfidenceInterval']},
+    }));
+
+    expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].showCurveConfidenceInterval, false,
+      'the restored column-level option lost to the value the cell declares');
+    // and without the record it stays advisory, so a series keeps whatever the data gave it
+    col.setTag(FitConstants.TAG_FIT, JSON.stringify({seriesOptions: {showCurveConfidenceInterval: false}}));
+    expect(getOrCreateParsedChartData(df.cell(1, 'curve')).series![0].showCurveConfidenceInterval, true,
+      'an option nobody set explicitly overrode the data');
+  });
+
+  test('options stored under the legacy tag are read and migrate onto the layout-carried one', async () => {
+    // only tags prefixed '.%' are serialized into a layout, so while the options lived in '.fit' a
+    // datasync project - whose table is refetched rather than restored - came back without them
+    expect(FitConstants.TAG_FIT.startsWith('.%'), true, 'the fit tag is no longer carried by layouts');
+
+    const df = curveTable('panelLegacyTag', false);
+    const col = df.col('curve')!;
+    col.setTag(FitConstants.TAG_FIT_LEGACY, JSON.stringify({chartOptions: {logX: true}}));
+
+    expect(getColumnChartOptions(col).chartOptions!.logX, true, 'options under the legacy tag were ignored');
+    expect(JSON.parse(col.getTag(FitConstants.TAG_FIT)).chartOptions.logX, true,
+      'reading did not migrate the options onto the layout-carried tag');
   });
 
   test('property panel renders for a saved legacy statistic', async () => {

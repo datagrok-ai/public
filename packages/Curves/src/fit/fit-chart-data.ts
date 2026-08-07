@@ -35,6 +35,29 @@ export function mergeProperties(properties: DG.Property[], source: any, target: 
   }
 }
 
+export const CHART_OPTIONS = 'chartOptions';
+export const SERIES_OPTIONS = 'seriesOptions';
+
+/** Assigns the options {@link names} from {@link source} over {@link target}, unlike {@link mergeProperties}
+ * which only fills the gaps. This is how a level the user set explicitly outranks the value a series
+ * declares for itself - gap filling can never win against data that already has an opinion. */
+function applyExplicit(source: any, names: string[] | undefined, target: any, claimedByCell?: string[]): void {
+  if (!source || !target || !names)
+    return;
+  for (const name of names) {
+    if (name in source && !claimedByCell?.includes(name))
+      target[name] = source[name];
+  }
+}
+
+/** Column and dataframe levels applied over a cell, in that order, skipping anything the cell claims. */
+function applySourceExplicit(cellChartData: IFitChartData, columnChartData: IFitChartData,
+  dfChartData: IFitChartData, section: 'chartOptions' | 'seriesOptions', target: any): void {
+  const claimed = cellChartData.explicit?.[section];
+  applyExplicit(dfChartData[section], dfChartData.explicit?.[section], target, claimed);
+  applyExplicit(columnChartData[section], columnChartData.explicit?.[section], target, claimed);
+}
+
 export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOptions {
   if (chartOptions.length === 0)
     return {};
@@ -138,10 +161,12 @@ export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
+  applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, CHART_OPTIONS, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
     mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
     mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
+    applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, SERIES_OPTIONS, series);
   }
   return cellChartData;
 }
@@ -170,10 +195,12 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
   // merge cell options with column options
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
+  applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, CHART_OPTIONS, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
     mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
     mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
+    applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, SERIES_OPTIONS, series);
   }
 
   return cellChartData;
@@ -203,12 +230,14 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
 
 /** Returns existing, or creates new dataframe default chart options. */
 export function getDataFrameChartOptions(df: DG.DataFrame): IFitChartData {
-  return JSON.parse(df.tags[FitConstants.TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
+  return JSON.parse(df.tags[FitConstants.TAG_FIT] ??=
+    df.tags[FitConstants.TAG_FIT_LEGACY] ?? JSON.stringify(createDefaultChartData()));
 }
 
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(column: DG.Column): IFitChartData {
-  return JSON.parse(column.tags[FitConstants.TAG_FIT] ??= JSON.stringify(createDefaultChartData()));
+  return JSON.parse(column.tags[FitConstants.TAG_FIT] ??=
+    column.tags[FitConstants.TAG_FIT_LEGACY] ?? JSON.stringify(createDefaultChartData()));
 }
 
 /** Performs x zeroes substitution if log x */
