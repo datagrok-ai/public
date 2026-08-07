@@ -49,7 +49,8 @@ export function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
     }
   }
   const labels = labelNames(chartData);
-  return fitChartDataProperties.map((p) => {
+  // an option with nothing to choose from is an empty row in the panel, so leave it out
+  return fitChartDataProperties.filter((p) => p.name !== 'showLabels' || labels.length > 0).map((p) => {
     if (p.name === 'showStatistics' && names.length > 0) {
       return DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: p.description, choices: names,
         inputType: 'MultiChoice', friendlyName: 'Statistics'});
