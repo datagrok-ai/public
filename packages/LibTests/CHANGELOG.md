@@ -1,5 +1,9 @@
 # Lib Tests changelog
 
+## 1.9.7 (2026-08-07)
+
+* Fixed worker fitting tests in CI builds: deterministic chunk ids keep the fitting-worker chunk name free of `node_modules`, which the server refuses to serve
+
 ## 1.9.6 (2026-08-07)
 
 * Added a virtual-time test suite for the webcomponents ViewerHost
