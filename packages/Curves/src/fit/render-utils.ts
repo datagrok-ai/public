@@ -62,6 +62,14 @@ interface FitDroplineRenderOptions extends FitRenderOptions {
     logOptions: LogOptions;
 }
 
+interface FitLabelsRenderOptions {
+    names?: string[];
+    startLine?: number;
+    color: string;
+    dataBox: DG.Rect;
+    screenBounds?: DG.Rect;
+}
+
 interface FitStatisticsRenderOptions {
     statistics?: string[];
     startLine?: number;
@@ -391,6 +399,32 @@ function formatStatistic(value: number): string {
 
 /** Draws one series' statistics from `startLine`, returning the lines used so the next can continue
  * below. Lines falling outside the plot are dropped. */
+/** Draws the named labels from `labels` starting at `startLine`, returning the lines used so the
+ * caller can continue below. Same line budget as the statistics - a cell has room for about five. */
+export function renderLabels(g: CanvasRenderingContext2D, labels: {[key: string]: string | number | boolean} | undefined,
+  renderOptions: FitLabelsRenderOptions): number {
+  const screenBounds = renderOptions.screenBounds!;
+  const names = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
+      screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? [] : renderOptions.names;
+  if (!labels || !names || names.length === 0)
+    return 0;
+  const dataBox = renderOptions.dataBox;
+  let line = renderOptions.startLine ?? 0;
+  for (const name of names) {
+    const value = labels[name];
+    if (value === undefined || value === null)
+      continue;
+    const y = dataBox.y + 20 + 20 * line;
+    if (y > dataBox.maxY)
+      break;
+    g.fillStyle = renderOptions.color;
+    g.textAlign = 'left';
+    g.fillText(`${name}: ${typeof value === 'number' ? formatStatistic(value) : value}`, dataBox.x + 5, y);
+    line++;
+  }
+  return line - (renderOptions.startLine ?? 0);
+}
+
 export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitStatisticsRenderOptions): number {
   const screenBounds = renderOptions.screenBounds!;
   const statistics = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||

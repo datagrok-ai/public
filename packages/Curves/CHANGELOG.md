@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#2103](https://github.com/datagrok-ai/public/issues/2103), [#2101](https://github.com/datagrok-ai/public/issues/2101): Curves: Render custom labels on the plot and choose them in the property panel. A curve can carry values the fit cannot produce - a plate's Z prime, an assay name, a compound id - and they are drawn alongside the statistics: plot-level ones once in a neutral colour, per-curve ones with their series. The Labels input offers the names the cell actually carries, and plot-level labels combine across Dataframe, Column and Cell instead of the nearest level winning outright, so an assay name and a plate statistic can come from different levels
 * Flow: Added Add Curve Statistic and Add Aggregated Curve Statistic, which take a real `column {semType: fit}` slot. The `addStatisticsColumn` / `addAggrStatisticsColumn` originals address the curve column by NAME — a free-text field with no picker and no filter — and stay as they are because the Fit pane and the Data to Curves pipeline call them by name as replayable transforms
 * Curve statistics: The free-text `propName` and `aggrType` parameters now declare `choices:` and a default, on both the originals and the new twins
 * Fit Dose-Response Curves: Constrained the column pickers by type (numerical for concentration/readout, categorical for the identifiers) and marked the seven mandatory columns `nullable: false` — a column parameter defaults to nullable, which read as optional and let a half-configured node run

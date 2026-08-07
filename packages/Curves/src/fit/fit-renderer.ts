@@ -18,7 +18,7 @@ import {
   renderConfidenceIntervals, renderConnectDots,
   renderDroplines,
   renderFitLine, renderLegend,
-  renderPoints, renderStatistics, renderTitle
+  renderPoints, renderStatistics, renderTitle, renderLabels, getSeriesColor, ColorType
 } from './render-utils';
 import {
   fittedCurves, parsedCurves, curvesDataPoints, getOrCreateParsedChartData, getOrCreateCachedFitCurve,
@@ -112,8 +112,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
     g.restore();
 
-    // statistics of every series share one column, so each continues below the previous
-    let statisticsLine = 0;
+    // statistics and labels of every series share one column, so each continues below the previous.
+    // Plot-level labels come first and once, since they describe the cell rather than any one curve
+    let statisticsLine = renderLabels(g, data.chartOptions?.labels, {names: data.chartOptions?.showLabels,
+      color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: 0});
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
       if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
@@ -153,6 +155,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
       statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
+      statisticsLine += renderLabels(g, series.labels, {names: data.chartOptions?.showLabels,
+        color: getSeriesColor(series, i, ColorType.FIT_LINE), dataBox, screenBounds, startLine: statisticsLine});
     }
 
     renderTitle(g, {showTitle: isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});

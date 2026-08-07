@@ -32,3 +32,14 @@ export function multiSeriesCurveJson(logIC50s: number[]): string {
     })),
   } as IFitChartData);
 }
+
+/** Two sigmoid series, one plot-level label and one per curve. */
+export function labelledCurveJson(): string {
+  return JSON.stringify({
+    chartOptions: {logX: true, labels: {'Z prime': 0.72}, showLabels: ['Z prime', 'compound']},
+    series: [
+      {fitFunction: 'sigmoid', name: 's0', labels: {compound: 'GRK-1'}, points: sigmoidPoints(-6.5)},
+      {fitFunction: 'sigmoid', name: 's1', labels: {compound: 'GRK-2'}, points: sigmoidPoints(-5.5)},
+    ],
+  } as IFitChartData);
+}

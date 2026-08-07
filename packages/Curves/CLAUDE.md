@@ -29,6 +29,12 @@ IFitChartData {
 ```
 Each `IFitSeries` has `points: IFitPoint[]` (x, y, outlier, color, marker, stdev) plus fit configuration (fitFunction, parameters, colors, showFitLine, clickToToggle, droplines, etc.).
 
+Labels are values the fit cannot produce - a plate's Z prime, an assay name, a compound id.
+`chartOptions.labels` describes the whole plot and renders once; `series.labels` describes one curve
+and renders with it. `chartOptions.showLabels` picks which names to draw, exactly as `showStatistics`
+does for statistics, so it inherits the cascade and the persistence below for free. Unlike every other
+option, `chartOptions.labels` merges **per key** across levels - labels are data, not a setting.
+
 Options precedence, applied at render time in `fit/fit-chart-data.ts`:
 
 **value the curve declares → dataframe explicit → column explicit → cell explicit**
@@ -311,7 +317,7 @@ detectors.js              — Semantic type detectors (all curve formats)
 | Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` |
 | Writing an option at a level, claims | `src/fit/fit-options.ts` |
 | Statistics calculation (per-series, aggregated) | `src/fit/fit-statistics.ts` |
-| Canvas drawing (points, lines, axes) | `src/fit/render-utils.ts` |
+| Canvas drawing (points, lines, axes, statistics, labels) | `src/fit/render-utils.ts` |
 | Data to Curves dialog & conversion | `src/fit/data-to-curves.ts` |
 | Multi-curve overlay viewer | `src/fit/multi-curve-viewer.ts` |
 | XML 3DX format parsing | `src/fit/fit-parser.ts` |

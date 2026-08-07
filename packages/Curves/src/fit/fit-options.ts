@@ -27,7 +27,19 @@ export enum MANIPULATION_LEVEL {
 export type ManipulationLevel = `${MANIPULATION_LEVEL}`;
 export type OptionsSection = typeof CHART_OPTIONS | typeof SERIES_OPTIONS;
 
-/** Chart properties with `showStatistics` offering what this cell's fit functions actually produce. */
+/** Label names this cell carries, plot-level ones first. */
+function labelNames(chartData: IFitChartData): string[] {
+  const names = Object.keys(chartData.chartOptions?.labels ?? {});
+  for (const series of chartData.series ?? []) {
+    for (const name of Object.keys(series.labels ?? {})) {
+      if (!names.includes(name))
+        names.push(name);
+    }
+  }
+  return names;
+}
+
+/** Chart properties with `showStatistics` and `showLabels` offering what this cell actually carries. */
 export function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
   const names: string[] = [];
   for (const series of chartData.series ?? []) {
@@ -36,11 +48,18 @@ export function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
         names.push(prop.name);
     }
   }
-  if (names.length === 0)
-    return fitChartDataProperties;
-  return fitChartDataProperties.map((p) => p.name !== 'showStatistics' ? p :
-    DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: p.description, choices: names,
-      inputType: 'MultiChoice', friendlyName: 'Statistics'}));
+  const labels = labelNames(chartData);
+  return fitChartDataProperties.map((p) => {
+    if (p.name === 'showStatistics' && names.length > 0) {
+      return DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: p.description, choices: names,
+        inputType: 'MultiChoice', friendlyName: 'Statistics'});
+    }
+    if (p.name === 'showLabels') {
+      return DG.Property.js('showLabels', DG.TYPE.STRING_LIST, {description: p.description, choices: labels,
+        inputType: 'MultiChoice', friendlyName: 'Labels'});
+    }
+    return p;
+  });
 }
 
 /** Maps stored statistic names onto the current ones, so `interceptX` still ticks the `ic50` box. */

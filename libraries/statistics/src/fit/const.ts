@@ -11,6 +11,9 @@ export class FitConstants {
   static TAG_FIT = '.%fit';
   static TAG_FIT_LEGACY = '.fit';
 
+  // plot-level labels describe the cell, not any one curve, so they take a neutral colour
+  static PLOT_LABEL_COLOR = '#4A4A4A';
+
   static CELL_DEFAULT_WIDTH = 230;
   static CELL_DEFAULT_HEIGHT = 160;
   static MIN_CELL_RENDERER_PX_WIDTH = 10;

@@ -9,7 +9,7 @@ import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
 import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-options';
-import {sigmoidPoints, ciCurveJson} from './curve-data';
+import {sigmoidPoints, ciCurveJson, labelledCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
 
 /** Curve carrying stored parameters whose inflection point is above 1, where converting in place
@@ -248,6 +248,63 @@ category('panel and renderer', () => {
     expect(getColumnChartOptions(col).chartOptions!.logX, true, 'options under the legacy tag were ignored');
     expect(JSON.parse(col.getTag(FitConstants.TAG_FIT)).chartOptions.logX, true,
       'reading did not migrate the options onto the layout-carried tag');
+  });
+
+  test('the panel offers the label names the cell carries', async () => {
+    const chartData = JSON.parse(labelledCurveJson()) as IFitChartData;
+    const choices = chartPropertiesFor(chartData).find((p) => p.name === 'showLabels')!.choices!;
+
+    // plot-level first, then whatever the curves add - a name is offered once however many carry it
+    expectArray(choices, ['Z prime', 'compound']);
+  });
+
+  test('a plot-level label is drawn once, a per-curve one per curve', async () => {
+    const col = DG.Column.fromStrings('curve', [labelledCurveJson()]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'panelLabels';
+
+    const drawn: string[] = [];
+    const canvas = ui.canvas(400, 300);
+    const g = canvas.getContext('2d')!;
+    const fillText = g.fillText.bind(g);
+    g.fillText = ((text: string, x: number, y: number) => {
+      drawn.push(text);
+      fillText(text, x, y);
+    }) as any;
+
+    new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
+      getOrCreateParsedChartData(df.cell(0, 'curve')));
+
+    // the plate statistic describes the cell, so it appears once however many curves there are
+    expect(drawn.filter((t) => t.startsWith('Z prime')).length, 1, 'the plot-level label was not drawn once');
+    expect(drawn.filter((t) => t.startsWith('compound')).length, 2, 'each curve should carry its own label');
+    expect(drawn.includes('compound: GRK-1'), true);
+    expect(drawn.includes('compound: GRK-2'), true);
+  });
+
+  test('only the labels named in showLabels are drawn', async () => {
+    const chartData = JSON.parse(labelledCurveJson()) as IFitChartData;
+    chartData.chartOptions!.showLabels = ['compound'];
+    const col = DG.Column.fromStrings('curve', [JSON.stringify(chartData)]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'panelLabelsFiltered';
+
+    const drawn: string[] = [];
+    const canvas = ui.canvas(400, 300);
+    const g = canvas.getContext('2d')!;
+    const fillText = g.fillText.bind(g);
+    g.fillText = ((text: string, x: number, y: number) => {
+      drawn.push(text);
+      fillText(text, x, y);
+    }) as any;
+
+    new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
+      getOrCreateParsedChartData(df.cell(0, 'curve')));
+
+    expect(drawn.some((t) => t.startsWith('Z prime')), false, 'a label not named in showLabels was drawn');
+    expect(drawn.filter((t) => t.startsWith('compound')).length, 2);
   });
 
   test('property panel renders for a saved legacy statistic', async () => {

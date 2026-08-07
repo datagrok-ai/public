@@ -55,6 +55,18 @@ function applySourceExplicit(cellChartData: IFitChartData, columnChartData: IFit
   applyExplicit(columnChartData[section], columnChartData.explicit?.[section], target, claimed);
 }
 
+/** Labels are data rather than a setting, so the levels combine per key instead of the nearest one
+ * winning outright - an assay name set on the column and a plate statistic set on the cell both
+ * belong on the plot. */
+function mergeLabels(target: IFitChartOptions | undefined, ...sources: (IFitChartOptions | undefined)[]): void {
+  if (!target)
+    return;
+  for (const source of sources) {
+    if (source?.labels)
+      target.labels = {...source.labels, ...target.labels};
+  }
+}
+
 export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOptions {
   if (chartOptions.length === 0)
     return {};
@@ -157,6 +169,7 @@ export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
+  mergeLabels(cellChartData.chartOptions, columnChartOptions.chartOptions, dfChartOptions.chartOptions);
   applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, CHART_OPTIONS, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
     mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
@@ -188,6 +201,7 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
 
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
+  mergeLabels(cellChartData.chartOptions, columnChartOptions.chartOptions, dfChartOptions.chartOptions);
   applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, CHART_OPTIONS, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
     mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);

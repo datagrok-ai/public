@@ -73,6 +73,24 @@ category('calculated columns', () => {
     expectArray(df.columns.names(), ['curve', 'curve 1 ic50', 'a', 'b']);
   });
 
+  test('plot-level labels combine across levels instead of the nearest one winning', async () => {
+    // labels are data rather than a setting: an assay name on the column and a plate statistic on the
+    // cell both belong on the plot, which a whole-property merge would not allow
+    const cell = JSON.stringify({
+      chartOptions: {logX: true, labels: {'Z prime': 0.72}},
+      series: [{fitFunction: 'sigmoid', name: 's', points: CONCENTRATIONS.map((x) => ({x: x, y: x}))}],
+    });
+    const col = DG.Column.fromStrings('curve', [cell]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'calcColLabels';
+    col.setTag(FitConstants.TAG_FIT, JSON.stringify({chartOptions: {labels: {'assay': 'GPCR', 'Z prime': 0.1}}}));
+
+    const labels = getOrCreateParsedChartData(df.cell(0, 'curve')).chartOptions!.labels!;
+    expect(labels['assay'], 'GPCR', 'the column-level label did not reach the plot');
+    expectFloat(labels['Z prime'] as number, 0.72, 0.001);
+  });
+
   test('curveStatistic adds a calculated column', async () => {
     const df = curveTable('calcColAdd', [-6.5, -6.5]);
     await addStatisticColumn(df, 'curveStatistic', {propName: 'ic50', seriesNumber: 0});
