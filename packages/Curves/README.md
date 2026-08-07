@@ -101,11 +101,13 @@ Each series has its own parameters, such as:
 - `fitFunction` - controls the series fit function, which could be either a sigmoid, linear, log-linear function or a
 [custom-defined function](#creating-a-custom-fit-function).
 - `parameters` - controls the series parameters, if set explicitly - the fitting process won't be executed. The parameter order of the
-sigmoid function is: `max, tan, IC50, min`.
+sigmoid function is: `max, tan, IC50, min`. Parameters are always in data space, never logarithms,
+whatever `logX` and `logY` are set to.
 - `parameterBounds` - defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`
 - `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
 - `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not
 - `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
+- `labels` - values drawn with this curve, in its colour, for facts the fit cannot produce (a compound id)
 - `points` - an array of objects with each object containing `x` and `y` coordinates and its own parameters:
   - `outlier` - if true, renders as 'x' and gets ignored for curve fitting
   - `color` - overrides the marker color defined in series `pointColor`
@@ -124,9 +126,44 @@ Each chart has its own parameters as well, such as:
 - `mergeSeries` - defines whether to merge series or not
 - `showColumnLabel` - defines whether to show the column label in the legend or not
 - `showStatistics` - defines the statistics that would be shown on the plot (such as the area under the curve
-(`auc`) or the coefficient of determination (`rSquared`))
+(`auc`) or the coefficient of determination (`rSquared`)). The available names come from each series'
+fit function, and a statistic a series does not produce is skipped rather than drawn as `NaN`
+- `labels` - values describing the whole plot, drawn once in a neutral colour (a plate's Z prime).
+Unlike other options, labels combine per key across levels
+- `showLabels` - defines which label names are drawn
 
 ![curves](./img/curves.gif)
+
+## Options
+
+Chart and series options can be set at four levels:
+
+| Level | Stored in | Applies to |
+|---|---|---|
+| Dataframe | the `.%fit` tag on the table | every curve column |
+| Column | the `.%fit` tag on the column | every cell of the column |
+| Cell | the cell's JSON | every series in the cell |
+| Series | the `series` entry in the cell's JSON | one curve |
+
+To change one, click a curve cell, set **Level** on the **Context Panel**, and edit the option.
+
+Setting an option at a level clears it on the narrower ones, so a **Column** change reaches every
+cell. Where nothing was set explicitly, the nearest declared value wins; an option you set explicitly
+outranks the value a curve declares for itself:
+
+```text
+value declared by the curve  <  dataframe  <  column  <  cell
+```
+
+That is why turning confidence intervals off on a column works even when every cell of it declares
+`showCurveConfidenceInterval: true`.
+
+Dataframe and column options live in a tag, so they travel with layouts and return when a project
+reopens - including a datasync project, whose table is refetched rather than restored. Cell and
+series options are part of the table data, so a layout cannot carry them to another table.
+
+Labels and statistics share the plot's space: a grid cell has room for about five lines and drops the
+rest. Widen the cell, or open the chart from the **Context Panel**, to see them all.
 
 ## Creating a custom fit function
 
