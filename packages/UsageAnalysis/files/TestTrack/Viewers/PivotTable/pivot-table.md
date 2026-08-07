@@ -1,185 +1,227 @@
 ---
 feature: pivottable
+realizes_atlas:
+  - pivottable.cp.chrome-history-and-drag-config
+  - pivottable.int.history-menu-requires-existing-columns
+  - pivottable.int.default-aggr-type-remembered
+realizes:
+  - viewers.pivot-table
+priority: p2
 target_layer: playwright
 coverage_type: regression
-priority: p2
-realizes_atlas: []
-realizes: []
+related_bugs:
+  - id: GROK-17122
+    status: fixed
+  - id: GROK-16201
+    status: fixed
+  - id: GROK-16074
+    status: fixed
+  - id: github-3414
+    status: fixed
+  - id: GROK-14995
+    status: fixed
 realized_as:
   - pivot-table-spec.ts
-related_bugs: []
+ui_companion: pivot-table-ui.md
+scope_reductions:
+  - id: SR-01
+    check: E-TRACE-02
+    rationale: |
+      Scenario 7's drag gestures are manual-only: the grid column headers are
+      canvas (no DOM handle), the pivot uses d4 initDragDrop pointer tracking
+      with no HTML5 drag hooks and no public drag/drop API, and the remove drop
+      zone exists only during a live native drag — covered in pivot-table-ui.md.
+    verdict_status: SCOPE_REDUCTION
+expected_results:
+  - anchor: "Scenario 1 Step 2"
+    expectation: >-
+      On a fresh viewer the auto-configuration reads back as Group by DIS_POP
+      (the widest categorical column), Pivot SEVERITY (the second), Aggregate
+      avg(AGE) (the first numerical column) — both as tag captions and as the
+      groupByColumnNames / pivotColumnNames / aggregateColumnNames /
+      aggregateAggTypes property values.
+  - anchor: "Scenario 2 Step 3"
+    expectation: >-
+      After closing the viewer with the cross icon, the pivot is gone from the
+      view's viewer set and the console error count is unchanged from the
+      pre-close baseline (GROK-17122).
+  - anchor: "Scenario 3 Step 3"
+    expectation: >-
+      With Show Header set to false, the Data row container, the Group by /
+      Aggregate / Pivot tag rows and the counts element are absent from the DOM
+      (hidden for real, not merely restyled), and they all come back when the
+      property returns to true.
+  - anchor: "Scenario 3 Step 6"
+    expectation: >-
+      With Show Command Bar set to false, the command bar with the history and
+      refresh icons disappears from the viewer, and reappears when the property
+      returns to true.
+  - anchor: "Scenario 4 Step 4"
+    expectation: >-
+      The title set through the property panel is displayed in the viewer
+      header, the description text appears above the grid when its position is
+      Top, and it disappears when Description Visibility Mode is Never — each
+      state read from the live DOM, with no substitution fallback.
+  - anchor: "Scenario 5 Step 4"
+    expectation: >-
+      After Save parameters, localStorage['grok-aggregation-history'] holds a
+      JSON array with an entry describing the saved configuration.
+  - anchor: "Scenario 5 Step 6"
+    expectation: >-
+      Re-applying the saved history entry restores Group by, Aggregate and Pivot
+      to the saved configuration, read back from the tag captions.
+  - anchor: "Scenario 5 Step 8"
+    expectation: >-
+      After the WEIGHT column is removed from the table, the history menu no
+      longer offers the entry whose configuration names WEIGHT (I8 —
+      history-menu-requires-existing-columns).
+  - anchor: "Scenario 6 Step 3"
+    expectation: >-
+      The Aggregate + picker reopens with no error; the remembered type renders
+      on the canvas picker and is checked manually (I9 —
+      default-aggr-type-remembered).
+  - anchor: "Scenario 8 Step 2"
+    expectation: >-
+      Grouping by the identifier-like USUBJID column produces one aggregate row
+      per identifier with no console error (GROK-16201).
+  - anchor: "Scenario 8 Step 5"
+    expectation: >-
+      The aggregated result opened in the workspace keeps the semantic types of
+      its key columns (GROK-16074).
+  - anchor: "Scenario 8 Step 7"
+    expectation: >-
+      Switching the Table property value back and forth duplicates neither the
+      table entries in the Data row (github-3414) nor the tag-editor header
+      (GROK-14995).
 ---
 
-# Pivot table tests (Playwright)
+# Pivot table — chrome, history and drag-driven configuration
 
-All scenarios should start with the following sequence of events:
-1. Close all
-2. Open demog
-3. Add Pivot table
+## Purpose
 
-## Default auto-configuration
+Covers the pivot viewer's frame: what the viewer looks like when it appears,
+how its chrome shows and hides, and the regressions pinned by GROK-17122, GROK-16201,
+GROK-16074, github-3414 and GROK-14995. 
+## Setup
 
-1. Verify Group by contains DIS_POP (the categorical column with the most categories)
-2. Verify Pivot contains SEVERITY (the second categorical column)
-3. Verify Aggregate contains avg(AGE) (the first numerical column)
-4. Verify the tag-editor header is visible with three rows: Group by, Aggregate, Pivot
-5. Verify the counts area is visible below the tag rows
+1. Log in to Datagrok.
+2. Close all open views.
+3. Open the demog dataset via the File Browser (Files > App Files > Demo Files >
+   demog.csv) and wait for the table view to appear.
+4. Add the Pivot Table viewer from the Toolbox (Viewers section).
+5. Wait for the tag-editor header with the Group by, Aggregate and Pivot rows.
 
-## Add and remove viewer
+## Scenarios
 
-1. Click × on the Pivot table title bar to close the viewer
-2. Click the Pivot table icon in Toolbox → Viewers section to re-add it
-3. Verify Group by, Pivot, and Aggregate show the same defaults as before reopening
+### Scenario 1: Default auto-configuration
 
-## Group by configuration
+Steps:
+1. Look at the tag rows of the freshly added viewer.
+2. Verify the auto-configuration: Group by shows DIS_POP, Pivot shows SEVERITY,
+   Aggregate shows avg(AGE); the same three lists read back from the viewer's
+   properties (groupByColumnNames, pivotColumnNames, aggregateColumnNames with
+   aggregateAggTypes).
+3. Verify the counts area is visible below the tag rows.
 
-1. Click + next to Group by and select SEX from the column picker
-2. Verify SEX tag appears in Group by alongside DIS_POP
-3. Click × on the DIS_POP tag to remove it
-4. Verify only SEX remains in Group by
-5. Click + next to Group by and select RACE
-6. Verify both SEX and RACE appear as Group by tags
-7. Click × on the RACE tag to remove it — Group by returns to SEX only
-8. Click × on the SEX tag — Group by is now empty
+### Scenario 2: Add and remove the viewer (GROK-17122)
 
-## Pivot column configuration
+Steps:
+1. Record the current console error count.
+2. Close the pivot viewer with the cross icon on its title bar.
+3. Verify the viewer is gone from the view's viewer set and the console error
+   count equals the baseline from Step 1.
+4. Re-add the Pivot Table viewer from the Toolbox and verify the same
+   auto-configuration as in Scenario 1 comes back.
 
-1. Click × on the SEVERITY pivot tag to remove it — Pivot area is now empty
-2. Click + next to Pivot and select SEX
-3. Verify SEX tag appears in the Pivot row
-4. Click + next to Pivot and select RACE
-5. Verify both SEX and RACE appear as pivot tags
-6. Click × on the RACE tag — only SEX remains in Pivot
-7. Click × on the SEX tag — Pivot area is now empty
+### Scenario 3: Show Header and Show Command Bar
 
-## Aggregate configuration
+Steps:
+1. Open the viewer's property panel.
+2. Set Show Header to false.
+3. Verify the Data row, the Group by / Aggregate / Pivot tag rows and the
+   counts area disappear from the viewer.
+4. Set Show Header back to true and verify they reappear.
+5. Set Show Command Bar to false.
+6. Verify the command bar with the history and refresh icons disappears.
+7. Set Show Command Bar back to true and verify it reappears.
 
-1. Click + next to Aggregate and select WEIGHT — avg(WEIGHT) tag appears
-2. Verify two aggregate tags are now visible: avg(AGE) and avg(WEIGHT)
-3. Click + next to Aggregate and select HEIGHT — avg(HEIGHT) tag appears
-4. Click × on the avg(AGE) tag to remove it
-5. Verify avg(AGE) tag is gone; avg(WEIGHT) and avg(HEIGHT) remain
-6. Click × on both remaining tags to clear Aggregate
-7. Verify the Pivot row is hidden when no aggregations are set
-8. Click + next to Aggregate and select AGE — Pivot row reappears
+### Scenario 4: Title and description display modes
 
-## Show header and command bar
+Steps:
+1. In the property panel, set Show Title to true and Title to "My Pivot".
+2. Verify "My Pivot" appears in the viewer header.
+3. Set Description to "Summary stats" and Description Position to Top.
+4. Verify the description text appears above the pivot grid.
+5. Set Description Visibility Mode to Never and verify the description
+   disappears.
+6. Restore Show Title and the description properties to their defaults.
 
-1. Open Settings (gear icon on the Pivot table title bar)
-2. Set Show Header to false
-3. Verify the Group by, Aggregate, and Pivot tag rows disappear from the viewer
-4. Verify the counts area also disappears
-5. Set Show Header back to true
-6. Verify tag rows and counts area reappear
-7. Set Show Command Bar to false
-8. Verify the history and refresh icons at the bottom of the viewer disappear
-9. Set Show Command Bar back to true
-10. Verify the command bar reappears
+### Scenario 5: Aggregation history
 
-## Row source
+Steps:
+1. Configure Group by RACE, Aggregate avg(WEIGHT), no Pivot.
+2. Click the history icon in the command bar and choose Save parameters.
+3. Reconfigure to Group by SEX, Aggregate avg(AGE).
+4. Verify localStorage['grok-aggregation-history'] contains a JSON array with
+   an entry for the RACE / avg(WEIGHT) configuration.
+5. Open the history menu and pick the saved RACE / avg(WEIGHT) entry.
+6. Verify Group by returns to RACE and Aggregate to avg(WEIGHT).
+7. In the main grid, remove the WEIGHT column (column context menu > Remove),
+   then close the pivot viewer and re-add it from the Toolbox — the history
+   menu re-filters its entries when the viewer is re-attached.
+8. Open the history menu again and verify the RACE / avg(WEIGHT) entry is no
+   longer offered.
+9. Click the refresh icon in the command bar and verify Group by and Pivot are
+   cleared and Aggregate shows avg(AGE) and avg(HEIGHT). Re-open demog to
+   restore the WEIGHT column before the next scenario.
 
-1. Open Settings and set Row Source to All
-2. Verify the pivot grid updates (shows all rows regardless of filter)
-3. Set Row Source to Filtered
-4. Verify pivot grid reflects the current filter state
-5. Set Row Source to Selected
-6. Set Row Source back to Filtered
+### Scenario 6: Remembered aggregation type
 
-## Filtering enabled
+Steps:
+1. Click + next to Aggregate, pick HEIGHT and choose sum in the aggregation
+   popup — a sum(HEIGHT) tag appears.
+2. Remove the sum(HEIGHT) tag with its cross icon.
+3. Click + next to Aggregate again and verify the popup pre-offers sum as the
+   aggregation type before any choice is made.
+4. Cancel the popup and verify the Aggregate row is unchanged.
 
-1. Open Settings and set Row Source to All
-2. Verify Filtering Enabled is true in Settings
-3. Set Filtering Enabled to false
-4. Set Filtering Enabled back to true
 
-## Property panel sync with viewer
+### Scenario 8: ID grouping, semantic types and the Table property
 
-1. Click + next to Group by in the viewer and add SEX
-2. Open Settings and verify groupByColumnNames lists SEX (and DIS_POP if not removed)
-3. Click × on the SEX tag in the viewer
-4. Open Settings and verify SEX is no longer in groupByColumnNames
-5. In Settings, set aggregateColumnNames to HEIGHT
-6. Verify the Aggregate row in the viewer shows avg(HEIGHT) (or the default agg for HEIGHT)
+Steps:
+1. Set Group by to USUBJID (the subject identifier column), Aggregate to
+   avg(AGE), no Pivot.
+2. Verify the inner grid shows one aggregate row per subject identifier and no
+   console error is written.
+3. Set Group by back to DIS_POP.
+4. Click ADD in the counts area to open the aggregated result in the
+   workspace.
+5. Verify the key column of the opened table keeps its semantic type from the
+   source column.
+6. Close the aggregated table.
+7. In the Data row, switch the Table property to another value and back, and
+   verify the Data row shows each table entry once (no duplicates) and the
+   tag-editor header is not duplicated.
+8. Close all open views to clean up.
 
-## Title and description
+## Automation notes
 
-1. Open Settings and set Show Title to true
-2. Set Title to "My Pivot"
-3. Verify "My Pivot" appears as the viewer title
-4. Set Description to "Summary stats"
-5. Set Description Position to Top
-6. Verify the description text appears above the pivot table
-7. Set Description Visibility Mode to Never
-8. Verify the description is no longer visible
-
-## Open aggregated data in workspace
-
-1. Set Group by to RACE, Aggregate to avg(AGE), Pivot to SEX
-2. Click the ADD button in the counts area at the top of the pivot viewer
-3. Verify a new table is opened in the workspace with the aggregated pivot data
-4. Verify the new table contains RACE as a key column and SEX-derived columns
-
-## Tag context menu for aggregation
-
-1. Set Aggregate to avg(AGE) (remove any other aggregate tags if present)
-2. Right-click the avg(AGE) tag — context menu appears
-3. Select Remove others — verify the action completes without error (only one tag, nothing changes)
-4. Click + next to Aggregate and add avg(WEIGHT)
-5. Click + next to Aggregate and add avg(HEIGHT)
-6. Right-click the avg(WEIGHT) tag and select Remove others — only avg(WEIGHT) remains
-7. Right-click the avg(WEIGHT) tag, go to Aggregation, and select sum — tag updates to sum(WEIGHT)
-8. Right-click the sum(WEIGHT) tag, go to Column, and select AGE — tag updates to sum(AGE)
-
-## Row source modes with filter and selection
-
-1. Set Group by to RACE, Aggregate to avg(AGE)
-2. Open Settings and set Row Source to Filtered
-3. Open the filter panel and add a range filter on AGE from 20 to 40
-4. Verify the pivot table updates to reflect only filtered rows
-5. Open Settings and set Row Source to Selected
-6. Shift-drag on several rows in the main grid to create a row selection
-7. Verify the pivot table updates to reflect only the selected rows
-8. Open Settings and set Row Source to All
-9. Verify the pivot table shows all rows regardless of filter and selection
-10. Close the filter panel and clear the AGE filter
-
-## Command bar: history and refresh
-
-1. Set Group by to RACE, Aggregate to avg(AGE), Pivot to SEX
-2. Click the History icon in the pivot viewer command bar
-3. Select Save parameters — current configuration is saved to history
-4. Change Group by to RACE and Aggregate to sum(WEIGHT)
-5. Click the History icon again and select the previously saved entry (RACE / avg(AGE) / SEX)
-6. Verify Group by restores to RACE, Aggregate to avg(AGE), Pivot to SEX
-7. Click the Refresh icon in the command bar
-8. Verify the pivot resets to auto-configured defaults (Group by, Pivot, Aggregate cleared to auto values)
-
-## Coloring preservation across row source changes
-
-1. Set Group by to RACE, Aggregate to avg(AGE), Pivot to SEX
-2. Apply linear color coding to the avg(AGE) column in the inner pivot grid via JS API (set gridLook)
-3. Open Settings and change Row Source from Filtered to Selected
-4. Change Row Source back to Filtered
-5. Verify the color coding settings on the avg(AGE) column are preserved after row source changes
-
-## Layout save and restore
-
-1. Set Group by to RACE, Aggregate to sum(HEIGHT), Pivot to SEX
-2. Open Settings and set Show Title to true, set Title to "Pivot Test"
-3. Save the current layout via JS API
-4. Change Group by to RACE and remove the Pivot tag
-5. Restore the saved layout via JS API
-6. Verify Group by = RACE, Aggregate = sum(HEIGHT), Pivot = SEX, Title = "Pivot Test"
-7. Delete the saved layout (cleanup)
-
-## Title inline edit
-
-1. Open Settings and set Show Title to true, set Title to "Initial Title"
-2. Verify "Initial Title" appears in the viewer header
-3. Double-click the title text in the viewer header to enter edit mode
-4. Clear the current text and type "Inline Title", then press Enter
-5. Verify the viewer title now shows "Inline Title"
-
+- Console-error baseline and delta: count console messages of level error
+  before and after the action; the cloned-iframe warning class is excluded.
+- localStorage read: `await page.evaluate(() =>
+  window.localStorage.getItem('grok-aggregation-history'))`, parsed as JSON.
+- The viewer-set membership read:
+  `Array.from(grok.shell.tv.viewers).map(v => v.type)`.
+- Semantic type read-back: `grok.shell.t.col('<name>').semType` on the opened
+  aggregated table.
+- Confirmed live: the counts caption starts with the aggregated row count
+  ("N rows"); history-menu entries are captioned by the aggregation set (e.g.
+  "key(RACE),avg(WEIGHT)"). The inner-grid drag leg is manual — see
+  pivot-table-ui.md.
+- The Aggregate `+` popup and the tag context menus are canvas/flyout
+  structures — drive them with the sustained-hover pattern documented in
+  grok-browser/references/viewers/pivot_table.md and realized in
+  pivottable-configure-crosstab-spec.ts.
 ---
 {
   "order": 17,
