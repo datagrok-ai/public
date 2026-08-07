@@ -8,13 +8,13 @@ import {
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {isColorValid, FitChartCellRenderer} from './fit-renderer';
+import {FitChartCellRenderer} from './fit-renderer';
 import {
   getOrCreateParsedChartData, getColumnChartOptions, getDataFrameChartOptions, mergeProperties,
   substituteZeroes, CHART_OPTIONS, SERIES_OPTIONS,
 } from './fit-chart-data';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
-import {ColorType, SeriesColorType, getSeriesColor} from './render-utils';
+import {ColorType, SeriesColorType, getSeriesColor, isColorValid} from './render-utils';
 import {calculateSeriesFit, getChartDataAggrStats, aggregatedStatisticsProperties} from './fit-statistics';
 import {fitChartDataProperties} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/fit-engine';

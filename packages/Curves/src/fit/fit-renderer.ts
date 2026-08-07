@@ -1,12 +1,8 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 
-import {
-  IFitChartData,
-  IFitPoint, LogOptions
-} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {IFitChartData, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
 import {
@@ -17,7 +13,6 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
-import {isNativeFormat} from './curve-converter';
 import {
   renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
@@ -25,13 +20,14 @@ import {
   renderFitLine, renderLegend,
   renderPoints, renderStatistics, renderTitle
 } from './render-utils';
-import {merge} from 'rxjs';
-import {calculateSeriesFit, getChartDataAggrStats} from './fit-statistics';
 import {
   fittedCurves, parsedCurves, curvesDataPoints, getOrCreateParsedChartData, getOrCreateCachedFitCurve,
   getOrCreateCachedCurvesDataPoints, mergeSeries, substituteZeroes
 } from './fit-chart-data';
-import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
+import {
+  areAxesLabelsShown, areAxesShown, areDroplinesShown, inflateScreenBounds, isLegendShown, isTitleShown, layoutChart,
+} from './fit-layout';
+import {handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -42,83 +38,6 @@ function showIncorrectFitCell(g: CanvasRenderingContext2D, screenBounds: DG.Rect
     clamp(Math.min(screenBounds.width, screenBounds.height) * 0.8, 0, 30));
 }
 
-
-/** Performs a chart layout, returning [viewport, xAxis, yAxis] */
-export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: boolean): [DG.Rect, DG.Rect?, DG.Rect?] {
-  if (rect.width < FitConstants.MIN_AXES_CELL_PX_WIDTH || rect.height < FitConstants.MIN_AXES_CELL_PX_HEIGHT)
-    return [rect, undefined, undefined];
-  const axesLeftPxMargin = showAxesLabels ? FitConstants.AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_LEFT_PX_MARGIN;
-  const axesBottomPxMargin = showAxesLabels ? FitConstants.AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_BOTTOM_PX_MARGIN;
-  const axesTopPxMargin = showTitle ? FitConstants.AXES_TOP_PX_MARGIN_WITH_TITLE : FitConstants.AXES_TOP_PX_MARGIN;
-  return [
-    rect.cutLeft(axesLeftPxMargin).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin).cutRight(FitConstants.AXES_RIGHT_PX_MARGIN),
-    rect.getBottom(axesBottomPxMargin).getTop(axesTopPxMargin).cutLeft(axesLeftPxMargin).cutRight(FitConstants.AXES_RIGHT_PX_MARGIN),
-    rect.getLeft(axesLeftPxMargin).getRight(FitConstants.AXES_RIGHT_PX_MARGIN).cutBottom(axesBottomPxMargin).cutTop(axesTopPxMargin)
-  ];
-}
-
-/** Checks if the color is valid */
-export function isColorValid(color: string | null | undefined): boolean {
-  if (color === undefined || color === null || color === '')
-    return false;
-  return DG.Color.fromHtml(color) !== undefined;
-}
-
-
-export function setOutlier(gridCell: DG.GridCell, p: IFitPoint, seriesIdx: number, pointIdx: number, _data?: IFitChartData) {
-  p.outlier = !p.outlier;
-  // outlier toggling works only for native JSON format (no converter)
-  if (isNativeFormat(gridCell.cell.column)) {
-    const gridCellValue = JSON.parse(gridCell.cell.value) as IFitChartData;
-    gridCellValue.series![seriesIdx].points[pointIdx].outlier = p.outlier;
-    gridCell.cell.column.set(gridCell.cell.rowIndex, JSON.stringify(gridCellValue), true);
-    grok.events.fireCustomEvent('fit-cell-outlier-toggle', {
-      gridCell: gridCell,
-      series: gridCellValue.series![seriesIdx],
-      seriesIdx: seriesIdx,
-      pointIdx: pointIdx,
-    });
-    // const g = gridCell.grid.canvas.getContext('2d')!;
-    // gridCell.render({context: g, bounds: gridCell.bounds});
-  }
-  const columns = gridCell.grid.dataFrame.columns.byTags({'.sourceColumn': gridCell.cell.column.name});
-  if (columns) {
-    _data ??= getOrCreateParsedChartData(gridCell.cell);
-    for (const column of columns) {
-      const chartLogOptions: LogOptions = {logX: _data.chartOptions?.logX, logY: _data.chartOptions?.logY};
-      const statName = column.tags['.statistics'];
-      // resolved by name - the legacy seven-key shape has no ic50/pIC50/maxY slot
-      let value: number | undefined;
-      if (column.tags['.seriesAggregation'] !== null)
-        value = getChartDataAggrStats(_data, column.tags['.seriesAggregation'], gridCell.cell)[statName];
-      else if (column.tags['.seriesNumber'] === seriesIdx.toString())
-        value = getStatistic(calculateSeriesFit(_data.series![seriesIdx], seriesIdx, chartLogOptions, gridCell.cell), statName);
-      else
-        continue;
-      column.set(gridCell.cell.rowIndex, value ?? null);
-    }
-  }
-}
-
-export function inspectCurve(gridCell: DG.GridCell, size?: Partial<DG.Size>, rerenderOnChange: boolean = false): void {
-  if (!gridCell.cell.value)
-    return;
-
-  const gridCellWidget = DG.GridCellWidget.fromGridCell(gridCell);
-  gridCellWidget.root.style.removeProperty('aspectRatio');
-  gridCellWidget.root.style.height = '100%';
-  gridCellWidget.canvas.style.removeProperty('height');
-  gridCellWidget.canvas.style.removeProperty('width');
-  gridCellWidget.canvas.style.left = '18px';
-  gridCellWidget.canvas.style.top = '18px';
-
-  const dlg = ui.dialog({title: 'Edit chart'})
-    .add(gridCellWidget.root)
-    .show({resizable: true, width: size?.width ?? 500, height: size?.height ?? 430});
-  dlg.getButton('CANCEL').textContent = 'Close';
-  if (rerenderOnChange)
-    dlg.sub(merge(gridCell.grid.dataFrame.onDataChanged, gridCell.grid.dataFrame.onMetadataChanged).subscribe(() => gridCellWidget.render()));
-}
 
 @grok.decorators.cellRenderer({
   name: 'Fit',
@@ -144,45 +63,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   static curvesDataPoints = curvesDataPoints;
 
   static inflateScreenBounds(rect: DG.Rect): DG.Rect {
-    return rect.inflate(rect.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ? FitConstants.MIN_INFLATE_SIZE : FitConstants.INFLATE_SIZE,
-      rect.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? FitConstants.MIN_INFLATE_SIZE : FitConstants.INFLATE_SIZE);
+    return inflateScreenBounds(rect);
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell.cell.value || !gridCell.cell.column)
-      return;
-
-    const data = getOrCreateParsedChartData(gridCell.cell, false);
-
-    for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
-      if (condition(data.series)) {
-        grok.shell.o = ui.divText(message, {style: {color: 'red'}});
-        return;
-      }
-    }
-
-    grok.shell.o = gridCell;
-
-    const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
-    const dataBox = layoutChart(screenBounds, this.areAxesLabelsShown(screenBounds, data),
-      this.isTitleShown(screenBounds, data))[0];
-    const dataBounds = getChartBounds(data);
-    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
-
-    for (let i = 0; i < data.series?.length!; i++) {
-      if (data.series![i].connectDots || !data.series![i].clickToToggle || data.series![i].showPoints !== 'points' ||
-        screenBounds.width < FitConstants.MIN_AXES_CELL_PX_WIDTH || screenBounds.height < FitConstants.MIN_AXES_CELL_PX_HEIGHT)
-        continue;
-      for (let j = 0; j < data.series![i].points.length!; j++) {
-        const p = data.series![i].points[j];
-        if (p.outlier && !data.series![i].showOutliers)
-          continue;
-        if (this.hitTest(e, p, viewport)) {
-          setOutlier(gridCell, p, i, j, data);
-          return;
-        }
-      }
-    }
+    handleClick(gridCell, e);
   }
 
   onDoubleClick(gridCell: DG.GridCell, _e: MouseEvent): void {
@@ -191,26 +76,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     _e.stopPropagation();
   }
 
-  areAxesShown(screenBounds: DG.Rect): boolean {
-    return screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT;
-  }
-
-  areAxesLabelsShown(screenBounds: DG.Rect, data: IFitChartData): boolean {
-    // TODO: make bigger sizes
-    return screenBounds.width >= FitConstants.MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH &&
-      screenBounds.height >= FitConstants.MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT && !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
-  }
-
-  isTitleShown(screenBounds: DG.Rect, data: IFitChartData): boolean {
-    return screenBounds.width >= FitConstants.MIN_TITLE_PX_WIDTH && screenBounds.height >= FitConstants.MIN_TITLE_PX_HEIGHT && !!data.chartOptions?.title;
-  }
-
-  isLegendShown(screenBounds: DG.Rect): boolean {
-    return screenBounds.width >= FitConstants.MIN_LEGEND_PX_WIDTH && screenBounds.height >= FitConstants.MIN_LEGEND_PX_HEIGHT;
-  }
-
-  areDroplinesShown(screenBounds: DG.Rect): boolean {
-    return screenBounds.width >= FitConstants.MIN_DROPLINES_VISIBILITY_PX_WIDTH && screenBounds.height >= FitConstants.MIN_DROPLINES_VISIBILITY_PX_HEIGHT;
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    handleMouseMove(gridCell, e, this);
   }
 
   renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell): void {
@@ -227,7 +94,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       data.series?.some((series) => series.points.some((p) => p.x === 0)))
       substituteZeroes(data);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds,
-      this.areAxesLabelsShown(screenBounds, data), this.isTitleShown(screenBounds, data));
+      areAxesLabelsShown(screenBounds, data), isTitleShown(screenBounds, data));
 
     const dataBounds = getChartBounds(data);
     if ((dataBounds.x < 0 && data.chartOptions) || (dataBounds.x === 0 && data.chartOptions && !data.chartOptions.allowXZeroes))
@@ -270,29 +137,29 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         }
       }
 
-      renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
-        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
+      renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
+        showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
       renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
       renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
-      renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
-        showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
+      renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
+        showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, useFitCache)});
       // the inflection point, by name - it is slot 2 on the dose-response families and absent on the
       // two-parameter ones, where reading a slot gave NaN
       const inflectionSlot = fitFunc.statisticFields.findIndex((f) => f === 'ic50' || f === 'ec50');
       if (fitSpaceSeries.parameters && inflectionSlot >= 0) {
-        renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
+        renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: areDroplinesShown(screenBounds),
           xValue: fitSpaceSeries.parameters![inflectionSlot], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       }
       statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
     }
 
-    renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
-    renderAxesLabels(g, {showTitle: this.isTitleShown(screenBounds, data), dataBox, screenBounds,
-      showAxesLabels: this.areAxesLabelsShown(screenBounds, data), xAxisName: data.chartOptions?.xAxisName,
+    renderTitle(g, {showTitle: isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
+    renderAxesLabels(g, {showTitle: isTitleShown(screenBounds, data), dataBox, screenBounds,
+      showAxesLabels: areAxesLabelsShown(screenBounds, data), xAxisName: data.chartOptions?.xAxisName,
       yAxisName: data.chartOptions?.yAxisName});
-    renderLegend(g, data, {showLegend: this.isLegendShown(screenBounds), dataBox, ratio});
+    renderLegend(g, data, {showLegend: isLegendShown(screenBounds), dataBox, ratio});
 
     g.restore();
   }
@@ -327,92 +194,4 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clearRect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
     this.renderCurves(g, screenBounds, data, gridCell);
   }
-
-  hitTest(e: MouseEvent, point: IFitPoint, viewport: Viewport): boolean {
-    const screenX = viewport.xToScreen(point.x);
-    const screenY = viewport.yToScreen(point.y);
-    const pxPerMarkerType = ((point.outlier ? FitConstants.OUTLIER_PX_SIZE : FitConstants.POINT_PX_SIZE) / 2) + FitConstants.OUTLIER_HITBOX_RADIUS;
-    const pointRect = new DG.Rect(screenX - pxPerMarkerType, screenY - pxPerMarkerType,
-      2 * pxPerMarkerType, 2 * pxPerMarkerType);
-    return pointRect.containsPoint(new DG.Point(e.offsetX, e.offsetY));
-  }
-
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (!gridCell?.cell?.value)
-      return;
-
-    const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
-    if (screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
-      screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
-      const canvas = ui.canvas(300, 200);
-      this.render(canvas.getContext('2d')!, 0, 0, 300, 200, gridCell, null as any);
-      const content = ui.divV([canvas]);
-      ui.tooltip.show(content, e.x, e.y);
-    }
-
-    const data = getOrCreateParsedChartData(gridCell?.cell);
-
-    if (screenBounds.width >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH &&
-      screenBounds.height >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
-      const dataBox = layoutChart(screenBounds, this.areAxesLabelsShown(screenBounds, data), this.isTitleShown(screenBounds, data))[0];
-      const dataBounds = getChartBounds(data);
-      const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
-
-      for (let i = 0; i < data.series?.length!; i++) {
-        if (data.series![i].showPoints !== 'points')
-          continue;
-        for (let j = 0; j < data.series![i].points.length!; j++) {
-          const p = data.series![i].points[j];
-          if (p.outlier && !data.series![i].showOutliers)
-            continue;
-          if (this.hitTest(e, p, viewport)) {
-            ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
-              ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);
-            if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH &&
-              screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT)
-              document.body.style.cursor = 'pointer';
-            return;
-          }
-        }
-      }
-      ui.tooltip.hide();
-    }
-    document.body.style.cursor = 'default';
-  }
 }
-
-const _sample: IFitChartData = {
-  // chartOptions could be retrieved either from the column, or from the cell
-  'chartOptions': {
-    'minX': 0, 'minY': 0, 'maxX': 5, 'maxY': 10,
-    'xAxisName': 'concentration',
-    'yAxisName': 'activity',
-    'logX': false,
-    'logY': false,
-  },
-  // These options are used as default options for the series. They could be overridden in series.
-  'seriesOptions': {
-    'fitFunction': 'sigmoid',
-    // parameters not specified -> auto-fitting by default
-    'pointColor': 'blue',
-    'fitLineColor': 'red',
-    'clickToToggle': true,
-    'showPoints': 'points',
-    'showFitLine': true,
-    'showCurveConfidenceInterval': true,
-  },
-  'series': [
-    {
-      'fitFunction': 'sigmoid',
-      // parameters specified -> use them, no autofitting
-      'parameters': [1.86011e-07, -0.900, 103.748, -0.001],
-      'points': [
-        {'x': 0, 'y': 0},
-        {'x': 1, 'y': 0.5},
-        {'x': 2, 'y': 1},
-        {'x': 3, 'y': 10, 'outlier': true},
-        {'x': 4, 'y': 0},
-      ],
-    },
-  ],
-};

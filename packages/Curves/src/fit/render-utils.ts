@@ -101,6 +101,13 @@ interface FitLegendColumnlabelSeriesRenderOptions extends FitLegendRenderOptions
 }
 
 
+/** Checks if the color is valid */
+export function isColorValid(color: string | null | undefined): boolean {
+  if (color === undefined || color === null || color === '')
+    return false;
+  return DG.Color.fromHtml(color) !== undefined;
+}
+
 export function getSeriesColor(series: IFitSeries, seriesIdx: number, colorType: SeriesColorType): string {
   const color = DG.Color.toHtml(colorType === 'outlierColor' ? DG.Color.red : DG.Color.getCategoricalColor(seriesIdx));
   return series[colorType] ? DG.Color.fromHtml(series[colorType]) ? series[colorType] : color : color;

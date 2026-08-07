@@ -344,9 +344,12 @@ export function getStatistic<T extends Fit>(fit: T,
   const value = (fit as {[key: string]: any})[field];
   if (typeof value === 'number')
     return value;
-  // legacy names this fit function lacks keep the pre-typed positional value, so old columns survive.
-  // Known gap: toDataSpace converts named fields only, so an x-space name read through a slot stays
-  // in fit space - reachable with a custom JS fit function of three or more parameters under logX
+  // interceptX is an x coordinate, so its value depends on the space the fit ran in, and toDataSpace
+  // converts named fields rather than the raw parameters - reading it off a slot would report a
+  // logarithm. A fit function with no inflection field of its own does not have one to report.
+  if (name === 'interceptX')
+    return undefined;
+  // other legacy names this fit function lacks keep the pre-typed positional value, so old columns survive
   const slot = LEGACY_POSITIONAL_SLOTS[name];
   const parameter = slot === undefined ? undefined : fit.parameters?.[slot];
   return typeof parameter === 'number' && !isNaN(parameter) ? parameter : undefined;

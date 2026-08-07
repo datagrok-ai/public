@@ -146,8 +146,11 @@ A leaf module, so the renderer and the statistics do not import each other throu
 
 Key helper functions:
 - `getOrCreateCachedFitCurve(series, ...)` — cached Nelder-Mead fit (in `fit-chart-data.ts`)
-- `setOutlier(gridCell, point, ...)` — toggles outlier, updates cell JSON, fires custom event
-- `layoutChart(rect, ...)` — computes viewport, xAxis, yAxis rectangles with margins
+- `layoutChart(rect, ...)` and the `*Shown` predicates — geometry and what a cell of a given size has
+  room for, in `fit-layout.ts`
+- `setOutlier`, `inspectCurve`, `handleClick`, `handleMouseMove` — what a user does to a curve, in
+  `fit-interaction.ts`. The renderer's `onClick`/`onMouseMove` delegate to them; `handleMouseMove`
+  takes the renderer as the base `DG.GridCellRenderer` type so the two modules do not import each other
 
 Parameters stored in a cell are **always data space**; `seriesInFitSpace()` hands the renderer a copy
 in the optimizer's coordinates for the curve, the confidence band and the droplines, and everything
@@ -259,7 +262,9 @@ src/
   fit/
     curve-converter.ts    — Converter registry, LRU cache, parseCellValue() entry point
     fit-chart-data.ts     — Options precedence, parsed-chart-data and fit caches (leaf module)
-    fit-renderer.ts       — FitChartCellRenderer, chart layout, merging
+    fit-layout.ts         — Chart geometry, and what fits in a cell of a given size
+    fit-renderer.ts       — FitChartCellRenderer: assembling a chart onto a canvas
+    fit-interaction.ts    — Outlier toggle, tooltip, click handling, the chart editor dialog
     fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stat column extraction
     fit-options.ts        — changeCurvesOptions, claims, panel property lists
     fit-statistics.ts     — Per-series and aggregated statistics calculation
@@ -299,7 +304,9 @@ detectors.js              — Semantic type detectors (all curve formats)
 | Converter infrastructure | `src/fit/curve-converter.ts` |
 | Existing converters | `src/fit/converters/` |
 | Function/demo/init registration | `src/package.ts` |
-| Cell renderer (render, click, tooltip) | `src/fit/fit-renderer.ts` |
+| Cell renderer (drawing) | `src/fit/fit-renderer.ts` |
+| Click, tooltip, outlier toggle, editor dialog | `src/fit/fit-interaction.ts` |
+| Chart geometry, size thresholds | `src/fit/fit-layout.ts` |
 | Options precedence, parse and fit caches | `src/fit/fit-chart-data.ts` |
 | Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` |
 | Writing an option at a level, claims | `src/fit/fit-options.ts` |
