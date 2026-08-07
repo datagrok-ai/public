@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import {category, test, expect, expectArray, expectFloat, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
@@ -8,7 +9,7 @@ import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
 import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-options';
-import {sigmoidPoints} from './curve-data';
+import {sigmoidPoints, ciCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
 
 /** Curve carrying stored parameters whose inflection point is above 1, where converting in place
@@ -136,11 +137,7 @@ category('panel and renderer', () => {
 
   test('clearing cell overrides marks the table changed without recalculating', async () => {
     // silent so a cosmetic option does not refit, but the table still has to read as modified
-    const cell = JSON.stringify({
-      chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: sigmoidPoints(-6.5)}],
-    });
-    const col = DG.Column.fromStrings('curve', [cell, cell]);
+    const col = DG.Column.fromStrings('curve', [ciCurveJson(), ciCurveJson()]);
     col.semType = FitConstants.FIT_SEM_TYPE;
     const df = DG.DataFrame.fromColumns([col]);
     df.name = 'panelMarksTableChanged';
@@ -186,11 +183,7 @@ category('panel and renderer', () => {
 
   test('a column-level option outranks a value the fresh data declares', async () => {
     // a layout applied to fresh data: the column tag comes back, the cells still declare the property
-    const cell = JSON.stringify({
-      chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: sigmoidPoints(-6.5)}],
-    });
-    const col = DG.Column.fromStrings('curve', [cell, cell]);
+    const col = DG.Column.fromStrings('curve', [ciCurveJson(), ciCurveJson()]);
     col.semType = FitConstants.FIT_SEM_TYPE;
     const df = DG.DataFrame.fromColumns([col]);
     df.name = 'panelFreshDataClaim';
@@ -206,6 +199,42 @@ category('panel and renderer', () => {
     col.setTag(FitConstants.TAG_FIT, JSON.stringify({seriesOptions: {showCurveConfidenceInterval: false}}));
     expect(getOrCreateParsedChartData(df.cell(1, 'curve')).series![0].showCurveConfidenceInterval, true,
       'an option nobody set explicitly overrode the data');
+  });
+
+  test('a column-level option survives a layout applied to a fresh table', async () => {
+    // the round trip this work exists for: the layout carries the column tag, the fresh table brings
+    // the source's own cells back, and the option has to win anyway
+    const cells = () => [ciCurveJson(), ciCurveJson()];
+    const table = (name: string) => {
+      const col = DG.Column.fromStrings('curve', cells());
+      col.semType = FitConstants.FIT_SEM_TYPE;
+      const df = DG.DataFrame.fromColumns([col]);
+      df.name = name;
+      return df;
+    };
+
+    const source = table('layoutSource');
+    const sourceView = grok.shell.addTableView(source);
+    const fresh = table('layoutTarget');
+    const freshView = grok.shell.addTableView(fresh);
+    try {
+      expect(getOrCreateParsedChartData(fresh.cell(0, 'curve')).series![0].showCurveConfidenceInterval, true,
+        'the fresh table should start with the value its data declares');
+
+      changeCurvesOptions(sourceView.grid.cell('curve', 0),
+        {property: {name: 'showCurveConfidenceInterval'}, value: false} as unknown as DG.InputBase,
+        'seriesOptions', 'Column');
+      const layout = sourceView.saveLayout();
+
+      freshView.loadLayout(layout);
+      await delay(500);
+
+      expect(getOrCreateParsedChartData(fresh.cell(0, 'curve')).series![0].showCurveConfidenceInterval, false,
+        'the column-level option did not survive the layout');
+    } finally {
+      sourceView.close();
+      freshView.close();
+    }
   });
 
   test('options stored under the legacy tag are read and migrate onto the layout-carried one', async () => {

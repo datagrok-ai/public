@@ -15,6 +15,14 @@ export function curveJson(logIC50: number): string {
   } as IFitChartData);
 }
 
+/** One sigmoid series that declares a confidence interval, the way the demo data does. */
+export function ciCurveJson(): string {
+  return JSON.stringify({
+    chartOptions: {logX: true},
+    series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: sigmoidPoints(-6.5)}],
+  } as IFitChartData);
+}
+
 /** One cell holding several sigmoid series, each with its own inflection point. */
 export function multiSeriesCurveJson(logIC50s: number[]): string {
   return JSON.stringify({
