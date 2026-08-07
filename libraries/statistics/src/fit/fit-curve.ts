@@ -40,8 +40,7 @@ export type FitConfidenceIntervals = {
   confidenceBottom: (x: number) => number;
 };
 
-/** Legacy statistic names. Persisted in `showStatistics`, in the `.statistics` column tag and in
- * recorded transform calls, so this list is append-only - never rename or remove an entry. */
+/** Legacy statistic names. Persisted in tags and recorded transforms, so this list is append-only. */
 export const LEGACY_FIT_STATISTICS =
   ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'] as const;
 
@@ -146,14 +145,13 @@ export interface IFitChartOptions {
   useAuxLegendNames?: boolean; // if true, uses aux legend names instead of series names
 }
 
-/** Data for the fit chart. */
-/** Names of the options a user set at this level, as opposed to the ones that came with the data or
- * are defaults. Only an explicitly set option outranks the value a series declares for itself. */
+/** Options the user set at this level. Only these outrank the value a series declares for itself. */
 export interface IFitExplicitOptions {
   chartOptions?: string[];
   seriesOptions?: string[];
 }
 
+/** Data for the fit chart. */
 export interface IFitChartData {
   chartOptions?: IFitChartOptions;
   seriesOptions?: IFitSeriesOptions;  // Default series options. Individual series can override it.
@@ -249,8 +247,7 @@ export function getFittedCurve(curveFunction: (params: Float32Array, x: number) 
   };
 }
 
-// Deprecated: maps statistics onto positional parameter slots, which is only correct for the
-// 4-parameter families. Superseded by FitFunction.fillParams + getStatistic; kept for API compatibility.
+// Deprecated: positional parameter slots, correct only for the 4-parameter families.
 export function getStatistics(data: {x: number[], y: number[]}, paramValues: Float32Array,
   curveFunction: (params: Float32Array, x: number) => number, statistics: boolean = true): FitStatistics {
   const fittedCurve = getFittedCurve(curveFunction, paramValues);

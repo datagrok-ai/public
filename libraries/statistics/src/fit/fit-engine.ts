@@ -62,8 +62,7 @@ export abstract class FitFunction<T = Fit> {
     return this._statisticsProperties;
   }
 
-  /** Descriptor for a legacy name this fit function has no statistic of its own for, labelled by the
-   * parameter it maps onto. Memoised - this sits inside a per-repaint loop.
+  /** Descriptor for a legacy name this fit function has no statistic of its own for. Memoised.
    * @param {string} name - a legacy FitStatistics name.
    * @return {DG.Property | undefined} the descriptor, or undefined when no parameter maps onto it. */
   legacyStatisticProperty(name: string): DG.Property | undefined {
@@ -158,8 +157,7 @@ export class JSFunctionFit extends Fit {
       if (!RESERVED_FIT_FIELDS.includes(parameterNames[i]))
         this[parameterNames[i]] = parameters[i];
     }
-    // the pre-typed API reported interceptY for every fit function as the curve at the third
-    // parameter; a custom function has no named field for it, so keep deriving it
+    // a custom function has no named field for interceptY, so it stays derived from the curve
     if (fittedCurve && parameters.length > 2 && this.interceptY === undefined)
       this.interceptY = fittedCurve(parameters[2]);
   }
@@ -282,9 +280,7 @@ export const commonStatisticsProperties: DG.Property[] = [
   statisticsProperty('auc', 'AUC'),
 ];
 
-// Statistics descriptors for a fit function: the goodness-of-fit pair, then one entry per fitted
-// parameter labelled with the function's own parameter name, then any derived statistics. Labels are
-// taken from parameterNames so they cannot drift from what the model calls its parameters.
+// Labels come from parameterNames so they cannot drift from what the model calls its parameters.
 function fitStatisticsProperties(fieldNames: string[], parameterNames: string[],
   derived: DG.Property[] = []): DG.Property[] {
   return [...commonStatisticsProperties,
@@ -301,8 +297,7 @@ function asymptoteStatisticsProperties(inflectionName: string): DG.Property[] {
 // -log10 of the IC50 in molar. Only meaningful for the IC50-parameterized functions.
 const pIC50StatisticsProperty = statisticsProperty('pIC50', 'pIC50');
 
-// Legacy FitStatistics names that map to a differently named field of a typed fit. Names absent here
-// resolve directly; names a fit function does not produce resolve to undefined.
+// Legacy FitStatistics names that map to a differently named field of a typed fit.
 const LEGACY_STATISTICS_ALIASES: {[fitFunctionName: string]: {[legacyName: string]: string}} = {
   [FIT_FUNCTION_SIGMOID]: {interceptX: 'ic50'},
   [FIT_FUNCTION_4PL_REGRESSION]: {interceptX: 'ec50'},
@@ -312,23 +307,20 @@ const LEGACY_STATISTICS_ALIASES: {[fitFunctionName: string]: {[legacyName: strin
 // Slots the pre-typed getStatistics() read positionally, for every fit function alike.
 const LEGACY_POSITIONAL_SLOTS: {[legacyName: string]: number} = {top: 0, slope: 1, interceptX: 2, bottom: 3};
 
-// derived rather than mapped onto a parameter, so it needs a descriptor of its own wherever a fit
-// carries it - without one the plot has a value it refuses to draw
+// derived rather than mapped onto a parameter, so it needs a descriptor of its own
 const interceptYStatisticsProperty = statisticsProperty('interceptY', 'Intercept Y');
 
-/** Resolves a statistic name (legacy names included) to the descriptor of the fit function producing it.
+/** Resolves a statistic name, legacy names included, to the descriptor of the fit function producing it.
  * @param {FitFunction} fitFunc - fit function whose statistics are being described.
  * @param {string} name - a statistic name, or a legacy FitStatistics name.
- * @return {DG.Property | undefined} the descriptor, or undefined when this fit function has no such statistic. */
+ * @return {DG.Property | undefined} the descriptor, or undefined when it produces no such statistic. */
 export function getStatisticProperty(fitFunc: FitFunction<any>, name: string): DG.Property | undefined {
   const field = LEGACY_STATISTICS_ALIASES[fitFunc.name]?.[name] ?? name;
-  // getStatistic resolves an unknown legacy name through the positional slot, so describe it the same
-  // way - otherwise a saved showStatistics entry has a value but no descriptor and renders nothing
+  // getStatistic falls back to the positional slot, so a descriptor has to exist for it too
   return fitFunc.statisticsProperties.find((p) => p.name === field) ?? fitFunc.legacyStatisticProperty(name);
 }
 
-/** Names of the numeric statistics a fit produces. Derived from the fit class, so adding a field to a
- * Fit subclass extends it automatically, and non-numeric fields (series, parameters, name) are excluded. */
+/** Names of the numeric statistics a fit produces, derived from the fit class. */
 export type FitStatisticName<T extends Fit> =
   Extract<{[K in keyof T]-?: T[K] extends number ? K : never}[keyof T], string>;
 
@@ -686,8 +678,7 @@ export const fitFunctions: {[key: string]: FitFunction<any>} = {
   '4pl-dose-response': new FourPLDoseResponseFunction(),
 };
 
-// Declaration merging picks up every IFitSeriesOptions member with its real type, so the class
-// cannot drift from the interface the way the previous hand-copied field list had.
+// Declaration merging keeps the class from drifting off IFitSeriesOptions.
 export interface FitSeries extends IFitSeriesOptions {}
 
 export class FitSeries implements IFitSeries {
@@ -776,8 +767,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   return fitFunctions[seriesFitFunc.name];
 }
 
-// Fits the series data according to the series fitting settings. Lives here rather than in fit-data
-// so that fit-data can depend on this module without a circular import.
+// Lives here rather than in fit-data so that fit-data can import this module without a cycle.
 export function fitSeries(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
   logOptions?: LogOptions): FitCurve {
   dataPoints ??= getDataPoints(series, logOptions, false);
@@ -991,14 +981,6 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
   return {confidenceTop: top, confidenceBottom: bottom};
 }
 
-
-// const series: FitSeries = new FitSeries([
-//   {'x': 0, 'y': 0},
-//   {'x': 1, 'y': 0.5},
-//   {'x': 2, 'y': 1},
-//   {'x': 3, 'y': 10, 'outlier': true},
-//   {'x': 4, 'y': 0},
-// ]);
 
 export interface FitCellOutlierToggleArgs {
   gridCell: DG.GridCell;

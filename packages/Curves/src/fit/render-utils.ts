@@ -382,9 +382,8 @@ function formatStatistic(value: number): string {
     DG.format(value, 'scientific') : StringUtils.formatNumber(value);
 }
 
-/** Draws the selected statistics for one series, starting at `startLine`, and returns how many lines
- * it used so the next series can continue below instead of writing over it. Lines that would fall
- * outside the plot are dropped - a cell has room for about five. */
+/** Draws one series' statistics from `startLine`, returning the lines used so the next can continue
+ * below. Lines falling outside the plot are dropped. */
 export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitStatisticsRenderOptions): number {
   const screenBounds = renderOptions.screenBounds!;
   const statistics = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
@@ -447,9 +446,8 @@ export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, r
     const dataBox = renderOptions.dataBox;
     const ratio = renderOptions.ratio;
     g.font = '11px Roboto, "Roboto Local"';
-    // the legend positions its text by measured width, so it has to own its alignment - the axes
-    // labels rendered just before leave textAlign centred, which shifts every label half its width
-    // left, over the marker
+    // the legend positions text by measured width, so it must own its alignment - the axes labels
+    // rendered just before leave textAlign centred
     g.textAlign = 'left';
     const columnNames = [...new Set(data.series?.map((series) => series.columnName))]
       .filter((colName) => colName !== null && colName !== undefined);

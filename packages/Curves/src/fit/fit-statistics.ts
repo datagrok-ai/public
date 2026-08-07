@@ -42,9 +42,7 @@ function dataSpaceOnlyStatistics(chartData: IFitChartData): Set<string> {
     ...(chartData.chartOptions?.logY ? Y_SPACE_STATISTICS : [])]);
 }
 
-/** Statistics viable for every fit function in the cell - aggregating one only some series produce
- * would average over a subset while still labelling it "across series". With an aggregation we do not
- * convert back, the space-dependent ones are dropped rather than reported in log space. */
+/** Statistics every fit function in the cell produces, so an aggregation never averages a subset. */
 export function aggregatedStatisticsProperties(chartData: IFitChartData, aggrType?: string): DG.Property[] {
   const seriesList = chartData.series ?? [];
   if (!seriesList.length)
@@ -83,16 +81,11 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
         values.set(prop.name, []);
       values.get(prop.name)!.push(getStatistic(fit, prop.name));
     }
-    // legacy names a fit function has no statistic of its own for still resolve per series through the
-    // positional fallback, so aggregate them the same way - otherwise `top` on a linear fit reads as a
-    // number in the Fit pane and as null in the aggregated one. Pushing undefined for a series that
-    // cannot produce it makes the check below drop the statistic rather than average a subset.
+    // legacy names resolve per series through the positional fallback, so aggregate them the same way
     for (const legacyName of LEGACY_FIT_STATISTICS) {
       if (common.has(legacyName))
         continue;
-      // only names that resolve to themselves. One that aliases onto a canonical field (interceptX
-      // onto ic50) is filled in after the conversion - collecting it here would leave it in fit space
-      // while ic50 is a concentration, and the back-fill would then skip it as already defined
+      // an alias (interceptX onto ic50) is filled in after the conversion, or it stays in fit space
       const prop = getStatisticProperty(getSeriesFitFunction(series), legacyName);
       if (prop && prop.name !== legacyName)
         continue;
@@ -125,16 +118,14 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
   return aggregated;
 }
 
-/** Parsed chart data for one cell of a curve column, with x zeroes substituted when needed.
- * Recalculation hands us a detached column holding only the changed rows, so there is no dataframe
- * cell to key the caches on - fall back to parsing the value directly in that case. */
+/** Parsed chart data for one cell, with x zeroes substituted. A detached column has no dataframe cell
+ * to key the caches on, so its value is parsed directly. */
 function chartDataAt(curveColumn: DG.Column, rowIdx: number, table?: DG.DataFrame): {data: IFitChartData, cell?: DG.Cell} | null {
   const value = curveColumn.get(rowIdx);
   if (value === null || value === undefined || value === '')
     return null;
   const cell = curveColumn.dataFrame ? curveColumn.dataFrame.cell(rowIdx, curveColumn.name) : undefined;
-  // the detached column keeps its tags, and the dataframe comes in as an argument, so both levels of
-  // the cascade still apply on the recalculation path
+  // the detached column keeps its tags and the dataframe is an argument, so the cascade still applies
   const data = cell ? getOrCreateParsedChartData(cell, true) :
     mergeSourceChartOptions(parseCellValue(sanitizeCellValue(value), curveColumn), curveColumn, table);
   if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&

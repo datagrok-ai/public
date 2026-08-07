@@ -36,8 +36,7 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
     xAxisName: settings.getAttribute('xLabel')!,
     yAxisName: settings.getAttribute('yLabel')!,
     logX: xmlBool(settings, 'logX'),
-    // only when declared: an always-present key owns it, and a Column or Dataframe level option
-    // can no longer cascade onto the cell
+    // only when declared, or the key owns it and no Column or Dataframe option can cascade onto it
     ...(settings.getAttribute('logY') !== null ? {logY: xmlBool(settings, 'logY')} : {}),
   };
 }
@@ -49,8 +48,7 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
 function getSeriesOptions(series: Element): IFitSeriesOptions {
   const params = (series.getElementsByTagName('params')[0]?.childNodes[0].nodeValue)?.split(',')!.map(Number)!;
   const declaredType = series.getElementsByTagName('function')[0]?.getAttribute('type');
-  // 'sigif' is this format's name for a sigmoid; anything we cannot fit is better rendered as one
-  // than passed through as a name no fit function is registered under
+  // 'sigif' is this format's name for a sigmoid; an unregistered name would render nothing
   const funcType = !declaredType || declaredType === 'sigif' || !(declaredType in fitFunctions) ?
     FIT_FUNCTION_SIGMOID : declaredType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;

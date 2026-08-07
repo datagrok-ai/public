@@ -15,16 +15,14 @@ import {getDataPoints} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue} from './curve-converter';
 
-/** Chart data assembly and the fit caches. A leaf on purpose: the renderer and the statistics both
- * need this layer, and routing it through either of them makes the two import each other. */
+/** Chart data assembly and the fit caches. A leaf, so the renderer and the statistics do not import
+ * each other through it. */
 
 export const fittedCurves: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(1000);
 export const parsedCurves: DG.LruCache<string, IFitChartData> = new DG.LruCache<string, IFitChartData>(1000);
 export const curvesDataPoints: DG.LruCache<string, {x: number[], y: number[]}> = new DG.LruCache<string, {x: number[], y: number[]}>(2000);
 
-/** Merges properties of the two objects by iterating over the specified {@link properties}
- * and assigning properties from {@link source} to {@link target} only when
- * the property is not defined in target and is defined in source. */
+/** Copies the {@link properties} that {@link target} does not define yet from {@link source}. */
 export function mergeProperties(properties: DG.Property[], source: any, target: any): void {
   if (!source || !target)
     return;
@@ -38,9 +36,8 @@ export function mergeProperties(properties: DG.Property[], source: any, target: 
 export const CHART_OPTIONS = 'chartOptions';
 export const SERIES_OPTIONS = 'seriesOptions';
 
-/** Assigns the options {@link names} from {@link source} over {@link target}, unlike {@link mergeProperties}
- * which only fills the gaps. This is how a level the user set explicitly outranks the value a series
- * declares for itself - gap filling can never win against data that already has an opinion. */
+/** Assigns over {@link target}, unlike {@link mergeProperties} - this is how an explicitly set level
+ * outranks the value a series declares for itself. */
 function applyExplicit(source: any, names: string[] | undefined, target: any, claimedByCell?: string[]): void {
   if (!source || !target || !names)
     return;
@@ -151,8 +148,7 @@ export function getOrCreateParsedChartData(tableCell: DG.Cell, useCache = true):
     getChartData(tableCell);
 }
 
-/** Column and dataframe levels of the options cascade, applied on their own when there is no cell to
- * reach them through - the recalculation path hands us a detached column. */
+/** The cascade applied without a cell, for the detached column the recalculation path hands us. */
 export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG.Column,
   df?: DG.DataFrame): IFitChartData {
   const columnChartOptions = getColumnChartOptions(column);
@@ -171,14 +167,12 @@ export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG
   return cellChartData;
 }
 
-/** Strips the stray '|' some cell values carry. Both parse paths must agree, or a row reads one way
- * when the column is added and another when it recalculates. */
+/** Strips the stray '|' some cell values carry. Both parse paths must agree. */
 export function sanitizeCellValue(value: string): string {
   return value.includes('|') ? value.replaceAll('|', '') : value;
 }
 
-/** Constructs {@link IFitChartData} from the table cell, taking into account
- * chart and fit settings potentially defined on the dataframe and column level. */
+/** Constructs {@link IFitChartData} for a cell, applying the column and dataframe levels. */
 function getChartData(tableCell: DG.Cell): IFitChartData {
   const cellValue = sanitizeCellValue(tableCell.value as string);
   const column = tableCell.column;
@@ -192,7 +186,6 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
 
-  // merge cell options with column options
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
   applySourceExplicit(cellChartData, columnChartOptions, dfChartOptions, CHART_OPTIONS, cellChartData.chartOptions);

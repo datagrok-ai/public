@@ -8,31 +8,8 @@ import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {getChartDataAggrStats, aggregatedStatisticsProperties, calculateSeriesFit, curveStatisticAt} from '../fit/fit-statistics';
 import {setOutlier} from '../fit/fit-renderer';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
+import {CONCENTRATIONS, curveJson, multiSeriesCurveJson} from './curve-data';
 import {addStatisticColumn as addStatisticColumnFromPanel} from '../fit/fit-grid-cell-handler';
-
-const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
-
-/** Sigmoid dose-response curve JSON with its inflection point at 10^-`logIC50`. */
-function curveJson(logIC50: number): string {
-  return JSON.stringify({
-    chartOptions: {logX: true},
-    series: [{fitFunction: 'sigmoid', name: 'series', points: CONCENTRATIONS.map((x) => ({
-      x: x, y: 5 + 95 / (1 + Math.pow(10, Math.log10(x) - logIC50)),
-    }))}],
-  });
-}
-
-/** One cell holding several sigmoid series, each with its own inflection point. */
-function multiSeriesCurveJson(logIC50s: number[]): string {
-  return JSON.stringify({
-    chartOptions: {logX: true},
-    series: logIC50s.map((logIC50, i) => ({
-      fitFunction: 'sigmoid', name: `series ${i}`, points: CONCENTRATIONS.map((x) => ({
-        x: x, y: 5 + 95 / (1 + Math.pow(10, Math.log10(x) - logIC50)),
-      })),
-    })),
-  });
-}
 
 /** Same curve, but with logX left to the column level rather than baked into the cell. */
 function curveJsonNoChartOptions(logIC50: number): string {
@@ -70,8 +47,7 @@ function gridColumnNames(grid: DG.Grid): string[] {
 
 category('calculated columns', () => {
   test('the statistic column is added right after the curve column', async () => {
-    // the legacy addStatisticsColumn inserted at the curve column's index + 1, but `join(table)` lets
-    // the platform add the column and it appends, so the position has to be restored afterwards
+    // `join(table)` appends, so the position the legacy addStatisticsColumn inserted at is restored
     const df = curveTable('calcColPosition', [-6.5]);
     df.columns.addNewString('trailing').set(0, 'x');
     const gridCell = DG.Viewer.grid(df).cell('curve', 0);
@@ -79,14 +55,12 @@ category('calculated columns', () => {
     await addStatisticColumnFromPanel(gridCell, 'curveStatistic', {propName: 'ic50', seriesNumber: 0});
 
     expectArray(df.columns.names(), ['curve', 'curve 1 ic50', 'trailing']);
-    // the grid takes a column's position from the dataframe only when it first builds a GridColumn
-    // for it, so an already-added column has to be moved there separately
+    // the grid only takes a position from the dataframe when it first builds a GridColumn
     expectArray(gridColumnNames(gridCell.grid), ['curve', 'curve 1 ic50', 'trailing']);
   });
 
   test('placing the statistic column keeps a manually reordered grid', async () => {
-    // the grid's order is its own once a column has been dragged, so restoring the position off the
-    // dataframe's order would snap the whole arrangement back
+    // a dragged grid is no longer in dataframe order, and must not be snapped back to it
     const df = curveTable('calcColGridOrder', [-6.5]);
     df.columns.addNewString('a').set(0, 'x');
     df.columns.addNewString('b').set(0, 'y');
@@ -120,8 +94,7 @@ category('calculated columns', () => {
     await addStatisticColumn(df, 'curveStatistic', {propName: 'ic50', seriesNumber: 0});
     const before = df.col('curve 1 ic50')!.get(1);
 
-    // regression guard: an unstable result column name, or reading the value through
-    // column.dataFrame, both leave this silently stale instead of failing
+    // an unstable result name, or reading through column.dataFrame, leaves this silently stale
     df.col('curve')!.set(1, curveJson(-5.0), true);
     await awaitCheck(() => df.col('curve 1 ic50')!.get(1) !== before,
       'statistic column did not recalculate after the source curve changed', 5000);
@@ -170,8 +143,7 @@ category('calculated columns', () => {
   });
 
   test('repeated calculation does not re-log stored parameters', async () => {
-    // an IC50 above 1 (nM/uM-scale data) stays positive after one log, so an in-place conversion
-    // logs it again on the next call: 100 -> 2 -> 0.301
+    // an IC50 above 1 stays positive after one log, so an in-place conversion drifts: 100 -> 2 -> 0.301
     const series = JSON.parse(curveJson(-6.5)).series[0];
     series.parameters = [100, 1, 100, 5];
     const logX = {logX: true, logY: false};
@@ -183,8 +155,7 @@ category('calculated columns', () => {
   });
 
   test('fitting a series does not write fit-space parameters back onto it', async () => {
-    // no stored parameters, so the first call fits. If the fitted (log-space) parameters are written
-    // back, the second call reads them as a concentration and logs them again
+    // the first call fits; writing the log-space parameters back would make the second log them again
     const data = JSON.parse(multiSeriesCurveJson([2])) as IFitChartData;
     const series = data.series![0];
     const logX = {logX: true, logY: false};
@@ -215,9 +186,7 @@ category('calculated columns', () => {
   test('log-space statistics are not offered for aggregations we do not convert', async () => {
     const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
 
-    // ic50 lives in log space under logX, and pIC50 is only derived during the conversion. Under an
-    // aggregation we do not convert they would be a log-space number and a null, so both are dropped -
-    // this also guards the regression where unlogging every aggregation turned a count of 2 into 100
+    // without the conversion ic50 would be a log-space number and pIC50 null, so both are dropped
     const counted = aggregatedStatisticsProperties(data, 'count').map((p) => p.name);
     expect(counted.includes('ic50'), false, 'ic50 would be a log-space number under count');
     expect(counted.includes('pIC50'), false, 'pIC50 is only derived in data space');
@@ -230,8 +199,7 @@ category('calculated columns', () => {
   });
 
   test('stored parameters round-trip through fit space on both axes', async () => {
-    // seriesInFitSpace and toDataSpace have to be inverses. Converting only x left a stored `top`
-    // unlogged on the way in and unlogged again on the way out - a top of 100 reported as 1e100
+    // seriesInFitSpace and toDataSpace must be inverses, or a top of 100 comes back as 1e100
     for (const logOptions of [{logX: false, logY: false}, {logX: true, logY: false},
       {logX: false, logY: true}, {logX: true, logY: true}]) {
       const series = JSON.parse(curveJson(-6.5)).series[0];
@@ -245,8 +213,7 @@ category('calculated columns', () => {
   });
 
   test('a detached column strips the stray pipe like the initial parse does', async () => {
-    // a column with no dataframe is what recalculation hands the function. getChartData sanitizes the
-    // value; this path skipped it, so a '|'-bearing row worked when added and blanked when edited
+    // recalculation hands the function a detached column, whose parse must sanitize the value too
     const col = DG.Column.fromStrings('curve', [curveJson(-6.5).replace('{', '{|')]);
     col.semType = FitConstants.FIT_SEM_TYPE;
     expect(col.dataFrame === null || col.dataFrame === undefined, true, 'the column must be detached');
@@ -257,8 +224,7 @@ category('calculated columns', () => {
   });
 
   test('a legacy statistic reads the same per series and aggregated', async () => {
-    // top on a linear fit resolves through the positional fallback per series; the aggregated path
-    // only remapped onto canonical names, so the Fit pane showed a number and the aggregated pane null
+    // `top` on a linear fit resolves through the positional fallback, per series and aggregated alike
     const data = JSON.parse(multiSeriesCurveJson([-6.5])) as IFitChartData;
     data.series![0].fitFunction = 'linear';
     const logX = {logX: true, logY: false};
@@ -270,9 +236,7 @@ category('calculated columns', () => {
   });
 
   test('a legacy name and its canonical field agree after aggregation', async () => {
-    // interceptX aliases onto ic50 and is the default statistic of both aggregation transforms.
-    // Collecting it before the conversion left it in fit space while ic50 was a concentration, so a
-    // saved project replayed -6 into a column of 1e-6 values
+    // interceptX aliases onto ic50, so collecting it before the conversion leaves it in fit space
     const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
     const stats = getChartDataAggrStats(data, 'avg');
 
@@ -281,8 +245,7 @@ category('calculated columns', () => {
   });
 
   test('mergeSeries does not change a statistic', async () => {
-    // it merges the series for the plot only, on a copy - so it is not a reason to recalculate an
-    // extracted statistic column
+    // it merges on a copy for the plot only, so it cannot change an extracted statistic
     const plain = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
     const merged = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
     merged.chartOptions!.mergeSeries = true;

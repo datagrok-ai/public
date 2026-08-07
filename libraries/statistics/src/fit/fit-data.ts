@@ -150,13 +150,11 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
     series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
-/** Returns the typed fit result of a series, fitting on the fly when parameters are not supplied.
- * This is the single source of truth for fit statistics - {@link getSeriesStatistics} derives from it. */
+/** The typed fit of a series, fitting on the fly when parameters are not supplied. */
 export function getSeriesFit<T extends Fit>(series: IFitSeries, fitFunc: FitFunction<T>,
   dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T {
   dataPoints ??= getDataPoints(series, logOptions, false);
-  // never write the fitted parameters back - they are in fit space, and the series contract is data
-  // space, so the next caller would convert them a second time
+  // never written back: they are in fit space, and the series contract is data space
   const source = series.parameters ?? fitSeries(series, fitFunc, dataPoints).parameters;
   const params = new Float32Array(source.length);
   params.set(source);
@@ -164,27 +162,21 @@ export function getSeriesFit<T extends Fit>(series: IFitSeries, fitFunc: FitFunc
     series, dataPoints, logOptions);
 }
 
-/** Returns series statistics in the legacy {@link FitStatistics} shape. Statistics that the series fit
- * function does not produce come back undefined. Prefer {@link getSeriesFit}. */
+/** Series statistics in the legacy {@link FitStatistics} shape. Prefer {@link getSeriesFit}. */
 export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
   logOptions?: LogOptions): FitStatistics {
   return toFitStatistics(getSeriesFit(series, fitFunc, dataPoints, logOptions));
 }
 
 export const X_SPACE_STATISTICS = ['ic50', 'ec50'];
-// The y asymptotes are deliberately not converted. Stored parameters can hold a bottom of 0, which
-// has no finite logarithm, so the forward and inverse maps could never be exact inverses - and an
-// unguarded inverse reported that bottom as 1. Reporting them in the space they were fitted in is
-// what the previous implementation did.
+// The y asymptotes stay in the space they were fitted in: a stored bottom of 0 has no finite
+// logarithm, so the forward and inverse maps could never be exact inverses.
 export const Y_SPACE_STATISTICS: string[] = [];
 /** Derived by {@link toDataSpace}, so unavailable to anything that skips the conversion. */
 export const DATA_SPACE_DERIVED_STATISTICS = ['pIC50'];
 
-/** A view of the series with its parameters in fit space. Stored parameters are in data space, while
- * the optimizer works on log10 axes, so every parameter mapping onto a space-dependent statistic has
- * to be converted. Exact inverse of {@link toDataSpace} over the same fields - converting only one
- * axis leaves the other reported as 10^value. Returns a copy: the parsed chart data is cached and
- * shared between the renderer and the statistics. */
+/** A copy of the series with its parameters in fit space, the exact inverse of {@link toDataSpace}.
+ * The copy matters: the parsed chart data is shared between the renderer and the statistics. */
 export function seriesInFitSpace(series: IFitSeries, logOptions?: LogOptions): IFitSeries {
   if (!series.parameters || (!logOptions?.logX && !logOptions?.logY))
     return series;
@@ -202,9 +194,8 @@ export function seriesInFitSpace(series: IFitSeries, logOptions?: LogOptions): I
   return converted ? {...series, parameters} : series;
 }
 
-/** Converts a fit from fit space back to data space. The optimizer runs on log10-transformed axes when
- * logX/logY are set, so the raw parameters are logarithms. Everything shown to a user - plot, property
- * panel, extracted columns - must pass through here exactly once, and aggregation must happen before it. */
+/** Converts a fit back to data space. Everything shown to a user passes through here exactly once,
+ * and aggregation happens before it. */
 export function toDataSpace<T extends Fit>(fit: T, logOptions?: LogOptions): T {
   const fields = fit as {[key: string]: any};
   const unlog = (names: string[]) => {

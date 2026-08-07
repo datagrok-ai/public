@@ -220,8 +220,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clip();
 
     const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
-    // a merged series is fitted at index 0, which is the key real series 0 uses - caching it would
-    // hand the statistics the merged fit for series 0
+    // a merged series is fitted at index 0, the key real series 0 uses
     const useFitCache = isRenderedOnGrid && !data.chartOptions?.mergeSeries;
     const tableCell = gridCell?.cell;
     if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
@@ -318,8 +317,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     if (gridCell.cell.column?.name)
       data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
-    // on a copy - this chart data is cached and shared with the statistics, which would otherwise
-    // see a different number of series depending on whether the row had been painted
+    // on a copy: this chart data is cached and shared with the statistics
     if (data.chartOptions?.mergeSeries)
       data = {...data, series: [mergeSeries(data.series!)!]};
 

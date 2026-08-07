@@ -6,28 +6,24 @@ import {category, test, expect, expectArray, expectFloat, awaitCheck, delay} fro
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
-import {FitGridCellHandler, normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-grid-cell-handler';
+import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
+import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-options';
+import {sigmoidPoints} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
-
-const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
-
-function points(logIC50: number): {x: number, y: number}[] {
-  return CONCENTRATIONS.map((x) => ({x: x, y: 5 + 95 / (1 + Math.pow(10, Math.log10(x) - logIC50))}));
-}
 
 /** Curve carrying stored parameters whose inflection point is above 1, where converting in place
  * would log it again on the next pass. */
 function curveWithParameters(): IFitChartData {
   return {
     chartOptions: {logX: true},
-    series: [{fitFunction: 'sigmoid', name: 'series', parameters: [100, 1, 100, 5], points: points(-6.5)}],
+    series: [{fitFunction: 'sigmoid', name: 'series', parameters: [100, 1, 100, 5], points: sigmoidPoints(-6.5)}],
   } as IFitChartData;
 }
 
 function curveTable(name: string, chartOptions: boolean, showStatistics?: string[]): DG.DataFrame {
   const cell = JSON.stringify({
     ...(chartOptions ? {chartOptions: {logX: true, ...(showStatistics ? {showStatistics} : {})}} : {}),
-    series: [{fitFunction: 'sigmoid', name: 'series', points: points(-6.5)}],
+    series: [{fitFunction: 'sigmoid', name: 'series', points: sigmoidPoints(-6.5)}],
   });
   const col = DG.Column.fromStrings('curve', [cell, cell]);
   col.semType = FitConstants.FIT_SEM_TYPE;
@@ -44,9 +40,7 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
 
 category('panel and renderer', () => {
   test('every registered aggregation input offers only convertible aggregations', async () => {
-    // enumerated from the registry rather than from a list of the functions we happened to fix - a
-    // third one existed and a hand-written list missed it. Anything outside the convertible set
-    // returns a log-space number or a null column when a saved transform replays.
+    // enumerated from the registry: a hand-written list of the ones we fixed missed a third
     const CONVERTIBLE = ['min', 'max', 'avg', 'med', 'q1', 'q2', 'q3'];
     const checked: string[] = [];
     for (const func of DG.Func.find({package: 'Curves'})) {
@@ -69,8 +63,7 @@ category('panel and renderer', () => {
     const g = canvas.getContext('2d')!;
     const renderer = new FitChartCellRenderer();
     const bounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(0, 0, 200, 120));
-    // the parsed chart data is cached and shared with the statistics, so a repaint must leave the
-    // stored parameters in data space - converting in place drifts them 100 -> 2 -> 0.301
+    // the cached chart data is shared with the statistics, so a repaint must not convert in place
     renderer.renderCurves(g, bounds, chartData);
     renderer.renderCurves(g, bounds, chartData);
 
@@ -87,22 +80,17 @@ category('panel and renderer', () => {
     expectFloat(Math.log10(before), -6.5, 0.3);
 
     col.setTag(FitConstants.TAG_FIT, JSON.stringify({chartOptions: {logX: false}}));
-    // this is the mechanism the panel relies on after a column/dataframe option change: the option is
-    // a tag rather than data, so nothing marks the column changed on its own. It pins the platform
-    // contract, not the call site in changeCurvesOptions
+    // pins the platform contract the panel relies on, not the call site in changeCurvesOptions
     col.fireValuesChanged();
     await awaitCheck(() => df.col('curve 1 ic50')!.get(0) !== before,
       'statistic column did not recalculate after the column-level option changed', 5000);
   });
 
   test('clearing a cell-level override does not recalculate on its own', async () => {
-    // changing a column-level option rewrites every cell to drop its override. That rewrite is how the
-    // option takes effect, but on its own it looks like a data change - it used to recalculate every
-    // dependent statistic column even for a colour or a title. Observed through the dependent column's
-    // version, which a recalculation bumps.
+    // the rewrite that drops cell claims must not read as a data change; a recalculation bumps version
     const cell = JSON.stringify({
       chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 'series', pointColor: '#ff0000', points: points(-6.5)}],
+      series: [{fitFunction: 'sigmoid', name: 'series', pointColor: '#ff0000', points: sigmoidPoints(-6.5)}],
     });
     const col = DG.Column.fromStrings('curve', [cell, cell]);
     col.semType = FitConstants.FIT_SEM_TYPE;
@@ -122,12 +110,10 @@ category('panel and renderer', () => {
   });
 
   test('a column-level option overrides a cell-level one, without recalculating', async () => {
-    // drives the real handler: clearing the per-cell override is how a column-level option takes
-    // effect, but the rewrite must not read as a data change. Both halves in one test because fixing
-    // either one alone breaks the other - notifying recalculates, not notifying left the cache stale.
+    // both halves in one test: notifying recalculates, not notifying used to leave the cache stale
     const cell = JSON.stringify({
       chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 'series', pointColor: '#ff0000', points: points(-6.5)}],
+      series: [{fitFunction: 'sigmoid', name: 'series', pointColor: '#ff0000', points: sigmoidPoints(-6.5)}],
     });
     const col = DG.Column.fromStrings('curve', [cell, cell]);
     col.semType = FitConstants.FIT_SEM_TYPE;
@@ -149,12 +135,10 @@ category('panel and renderer', () => {
   });
 
   test('clearing cell overrides marks the table changed without recalculating', async () => {
-    // the rewrite is deliberately silent so a cosmetic option does not refit every statistic column,
-    // but the table still has to read as modified - otherwise a project save keeps the very cell-level
-    // overrides the column-level change just cleared, and reopening brings the old value back
+    // silent so a cosmetic option does not refit, but the table still has to read as modified
     const cell = JSON.stringify({
       chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: points(-6.5)}],
+      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: sigmoidPoints(-6.5)}],
     });
     const col = DG.Column.fromStrings('curve', [cell, cell]);
     col.semType = FitConstants.FIT_SEM_TYPE;
@@ -183,9 +167,7 @@ category('panel and renderer', () => {
   });
 
   test('a column-level change overrides a value set at cell level first', async () => {
-    // reported from real use with connectDots: detectSettings records "no cell overrides this
-    // property" once, the cell-level write never updated that flag, so the column-level change
-    // skipped the rewrite that clears the override and appeared to do nothing
+    // detectSettings recorded "no cell claims this" once, so a later cell write was invisible to it
     const df = curveTable('panelCellThenColumn', true);
     const gridCell = DG.Viewer.grid(df).cell('curve', 0);
     const prop = (value: any) => ({property: {name: 'connectDots'}, value}) as unknown as DG.InputBase;
@@ -203,13 +185,10 @@ category('panel and renderer', () => {
   });
 
   test('a column-level option outranks a value the fresh data declares', async () => {
-    // reproduces applying a layout to a fresh curves.csv, and a datasync project: the column tag comes
-    // back but the cells are the source's own, still declaring the property. Gap-filling could never
-    // win there, so the setting only ever took effect by deleting it out of every cell - which lives
-    // in the data and so did not travel
+    // a layout applied to fresh data: the column tag comes back, the cells still declare the property
     const cell = JSON.stringify({
       chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: points(-6.5)}],
+      series: [{fitFunction: 'sigmoid', name: 'series', showCurveConfidenceInterval: true, points: sigmoidPoints(-6.5)}],
     });
     const col = DG.Column.fromStrings('curve', [cell, cell]);
     col.semType = FitConstants.FIT_SEM_TYPE;
@@ -230,8 +209,7 @@ category('panel and renderer', () => {
   });
 
   test('options stored under the legacy tag are read and migrate onto the layout-carried one', async () => {
-    // only tags prefixed '.%' are serialized into a layout, so while the options lived in '.fit' a
-    // datasync project - whose table is refetched rather than restored - came back without them
+    // only '.%' tags reach a layout, so options in '.fit' never travelled to a fresh table
     expect(FitConstants.TAG_FIT.startsWith('.%'), true, 'the fit tag is no longer carried by layouts');
 
     const df = curveTable('panelLegacyTag', false);
@@ -257,7 +235,7 @@ category('panel and renderer', () => {
   test('statistic names stored under a legacy name map onto the current ones', async () => {
     const chartData = JSON.parse(JSON.stringify({
       chartOptions: {logX: true},
-      series: [{fitFunction: 'sigmoid', name: 's', points: points(-6.5)}],
+      series: [{fitFunction: 'sigmoid', name: 's', points: sigmoidPoints(-6.5)}],
     })) as IFitChartData;
 
     // a saved project ticks its checkbox only if the stored name resolves to the current one
