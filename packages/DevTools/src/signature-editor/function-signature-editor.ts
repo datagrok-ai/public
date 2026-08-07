@@ -33,26 +33,40 @@ const FSE_ICON_SELECTOR = 'i.fa-magic[aria-label="Open Signature Editor"]';
 export function functionSignatureEditor(view: DG.View) {
   if (view.root?.parentElement?.querySelector(FSE_ICON_SELECTOR) != null)
     return;
-  view.type === DATA_QUERY_VIEW ? addFseRibbonQuery(view) : addFseRibbonScript(view);
+  view.type === DATA_QUERY_VIEW ?
+    addFseRibbonQuery(view as DG.DataQueryView) :
+    addFseRibbonScript(view as DG.ScriptView);
 }
 
 const getCode = (codeMirror: any) => codeMirror.getDoc().getValue();
 
-function addFseRibbonQuery(v: DG.View) {
+function addFseRibbonQuery(v: DG.DataQueryView) {
   applyCodeMirror(v, (codeMirror) => {
     const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
-    (v.ribbonMenu.root.previousSibling as HTMLElement)?.append(ui.div(iconFse, 'd4-ribbon-item'));
+
+    const addIcon = () => {
+      const ribbonPanelsRoot = v.ribbonMenu.root.previousSibling as HTMLElement;
+      if (ribbonPanelsRoot != null && ribbonPanelsRoot.querySelector(FSE_ICON_SELECTOR) == null)
+        ribbonPanelsRoot.append(ui.div(iconFse, 'd4-ribbon-item'));
+    };
+    addIcon();
+    v.subs.push(v.tabs.onTabChanged.subscribe(addIcon));
   });
 }
 
-function addFseRibbonScript(v: DG.View) {
+function addFseRibbonScript(v: DG.ScriptView) {
   applyCodeMirror(v, (codeMirror) => {
-    const panels = v.getRibbonPanels();
     const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
-    if (!panels.some((panel) => panel.some((icon) => {
-      return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
-    })))
-      v.setRibbonPanels([...panels, [iconFse]]);
+
+    const addIcon = () => {
+      const panels = v.getRibbonPanels();
+      if (!panels.some((panel) => panel.some((icon) => {
+        return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
+      })))
+        v.setRibbonPanels([...panels, [iconFse]]);
+    };
+    addIcon();
+    v.subs.push(v.tabs.onTabChanged.subscribe(addIcon));
   });
 }
 

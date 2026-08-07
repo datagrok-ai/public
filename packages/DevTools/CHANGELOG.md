@@ -5,6 +5,7 @@
 * GROK-20621: Scripts: Error on adding a tag in the Signature Editor
 * GROK-20620: Scripts: SAVE stays permanently disabled after editing a script via the Signature Editor
 * GROK-20061: Scripts: Opening the Signature Editor duplicates the header of the script and throws errors
+* GROK-20649: Scripts: Ribbon panel disappears when switching between tabs (Layout, Debug)
 
 ## 1.6.4 (2025-10-16)
 
