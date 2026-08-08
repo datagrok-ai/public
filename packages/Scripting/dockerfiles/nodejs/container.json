@@ -1,0 +1,8 @@
+{
+  "image": "datagrok/jkg_nodejs:bleeding-edge",
+  "cpu": 2,
+  "memory": 8192,
+  "shm_size": 2048,
+  "on_demand": true,
+  "shutdown_timeout": 2880
+}
