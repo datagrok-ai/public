@@ -70,6 +70,7 @@ category('Docker', () => {
     let ws: WebSocket | undefined;
     try {
       const container = await startContainer(containerSimple);
+      await waitUntilAnswering(container.id);
       ws = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
       const testMessage = 'Hello World!';
       await new Promise<void>((res, rej) => {
@@ -147,6 +148,22 @@ async function startContainer(containerName: string): Promise<DG.DockerContainer
     throw describeFailure('start', container, containerName, e);
   }
   return container;
+}
+
+/// `run(id, true)` returns once the platform marks the container started, which is earlier
+/// than the app inside binding its port — opening the WebSocket proxy right then fails with
+/// `Connection refused, errno = 111`. Poll a cheap HTTP path until it answers.
+async function waitUntilAnswering(containerId: string, attempts: number = 45): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/square?number=4');
+      if (response.status === 200)
+        return;
+    }
+    catch (_) {}
+    await delay(2000);
+  }
+  throw new Error(`Container ${containerId} did not answer within ${attempts * 2}s of being reported started`);
 }
 
 async function testResponse(containerId: string): Promise<void> {
