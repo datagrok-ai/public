@@ -7,11 +7,11 @@
 
 const schema = grok.dapi.domains.schema('apitests');
 
-// The registry entity carries the opt-in flag and the extension counter;
-// schema.manifest() shows the same flags in manifest vocabulary.
-const info = (await grok.dapi.domains.schemas.list()).find((s) => s.name === 'apitests');
+// The manifest reports both opt-ins: "extensible": {"tables": true} at the root
+// (users may add tables) and "extensible": true per table (users may add columns).
+const manifest = await schema.manifest();
 
-if (!info?.extensibleTables) {
+if (manifest.extensible?.tables !== true) {
   grok.shell.warning("The 'apitests' schema does not accept user extensions " +
     '(add "extensible": {"tables": true} to its schema.json)');
 } else {
@@ -23,27 +23,28 @@ if (!info?.extensibleTables) {
 
   // 2. Add a table of your own, and a column of your own to a plugin table, in one apply.
   //    'extend' is full state for YOUR columns of that table: omitting one you added
-  //    proposes its drop. Plugin objects are immutable here. ifVersion tracks ext_version
-  //    (NOT the plugin's version) — pass it to lose cleanly against a parallel editor.
-  const plan = await schema.apply({
+  //    proposes its drop. Plugin objects are immutable here.
+  //    Columns you add to a PLUGIN table stay nullable, non-unique, never the
+  //    display-name column, and never cascade deletes (restrict/setnull only);
+  //    your own TABLES keep the full manifest vocabulary.
+  const body = {
     tables: {
       customers: {columns: {name: {type: 'string', isName: true}}},
     },
     extend: {
       item: {columns: {customer_id: {type: 'ref', ref: 'customers', onDelete: 'setnull'}}},
     },
-    ifVersion: `${info.extVersion ?? 0}`,
-  }, {dryRun: true});
+  };
+
+  // Preview first: the plan carries live row counts for anything dropped, and echoes
+  // extVersion — the schema's EXTENSION counter, which is what ifVersion tracks here
+  // (the plugin's own version never moves). Applying with the version you previewed
+  // is how you lose cleanly to a parallel editor instead of overwriting them.
+  const plan = await schema.apply(body, {dryRun: true});
   grok.shell.info(`plan: creates ${plan.creates.tables.join(', ') || '—'}, ` +
     `columns ${JSON.stringify(plan.creates.columns)}, extVersion ${plan.extVersion}`);
 
-  // Columns you add to a PLUGIN table stay nullable, non-unique, never the display-name
-  // column, and never cascade deletes — restrict/setnull only. Your own TABLES keep the
-  // full manifest vocabulary.
-  await schema.apply({
-    tables: {customers: {columns: {name: {type: 'string', isName: true}}}},
-    extend: {item: {columns: {customer_id: {type: 'ref', ref: 'customers', onDelete: 'setnull'}}}},
-  });
+  await schema.apply({...body, ifVersion: `${plan.extVersion}`});
 
   // 3. Use the new objects like any other. The extension column is physically prefixed
   //    server-side, but every API surface — insert, query, filter, patch, batch, d42 —
