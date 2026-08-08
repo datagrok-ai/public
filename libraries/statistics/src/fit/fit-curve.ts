@@ -59,6 +59,9 @@ export type FitPointsDisplayMode = 'points' | 'candlesticks' | 'both' | '';
 /** Droplines rendered on the plot. `string & {}` keeps autocompletion while allowing IC<n> later. */
 export type DroplineName = 'IC50' | (string & {});
 
+/** How `showStatistics` is drawn in a cell holding more than one curve. */
+export type FitStatisticsMode = 'series' | 'aggregated' | 'both';
+
 /**
  *  Datagrok curve fitting
  *
@@ -136,6 +139,8 @@ export interface IFitChartOptions {
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labels?: {[key: string]: string | number | boolean}; // plot-level label values, rendered once above the series
   showLabels?: string[];     // defines the labels that would be shown on the plot
+  statisticsMode?: FitStatisticsMode; // whether the statistics are drawn per series, summarised across them, or both
+  aggrType?: string;         // the aggregation used when summarising, 'med' by default
   useAuxLegendNames?: boolean; // if true, uses aux legend names instead of series names
 }
 
@@ -224,6 +229,15 @@ export const fitChartDataProperties: DG.Property[] = [
     choices: [], inputType: 'MultiChoice',
     //@ts-ignore
     friendlyName: 'Labels'}),
+  DG.Property.js('statisticsMode', DG.TYPE.STRING,
+    {description: 'Whether the statistics are drawn for each series, summarised across them, or both',
+      defaultValue: 'series', choices: ['series', 'aggregated', 'both'], nullable: false,
+      //@ts-ignore
+      friendlyName: 'Statistics mode'}),
+  DG.Property.js('aggrType', DG.TYPE.STRING, {description: 'The aggregation used when summarising the statistics',
+    defaultValue: 'med', choices: Object.values(DG.STATS), nullable: false,
+    //@ts-ignore
+    friendlyName: 'Aggregation'}),
 ];
 
 export const FIT_FUNCTION_SIGMOID = 'sigmoid';

@@ -11,6 +11,7 @@ import {stdevWhisker} from '../fit/render-utils';
 import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
 import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-options';
 import {sigmoidPoints, ciCurveJson, labelledCurveJson} from './curve-data';
+import {multiSeriesCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
 
 /** Curve carrying stored parameters whose inflection point is above 1, where converting in place
@@ -38,6 +39,26 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
   await DG.Func.find({package: 'Curves', name: 'curveStatistic'})[0]
     .prepare({table: df, curveColumn: df.col('curve')!, ...params})
     .call(false, undefined, {processed: false});
+}
+
+/** Renders a cell onto a canvas and returns every string the chart drew. */
+function renderedTexts(json: string, name: string): string[] {
+  const col = DG.Column.fromStrings('curve', [json]);
+  col.semType = FitConstants.FIT_SEM_TYPE;
+  const df = DG.DataFrame.fromColumns([col]);
+  df.name = name;
+
+  const drawn: string[] = [];
+  const g = ui.canvas(400, 300).getContext('2d')!;
+  const fillText = g.fillText.bind(g);
+  g.fillText = ((text: string, x: number, y: number) => {
+    drawn.push(text);
+    fillText(text, x, y);
+  }) as any;
+
+  new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
+    getOrCreateParsedChartData(df.cell(0, 'curve')));
+  return drawn;
 }
 
 category('panel and renderer', () => {
@@ -225,6 +246,9 @@ category('panel and renderer', () => {
       changeCurvesOptions(sourceView.grid.cell('curve', 0),
         {property: {name: 'showCurveConfidenceInterval'}, value: false} as unknown as DG.InputBase,
         'seriesOptions', 'Column');
+      changeCurvesOptions(sourceView.grid.cell('curve', 0),
+        {property: {name: 'statisticsMode'}, value: 'both'} as unknown as DG.InputBase,
+        'chartOptions', 'Column');
       const layout = sourceView.saveLayout();
 
       freshView.loadLayout(layout);
@@ -232,6 +256,8 @@ category('panel and renderer', () => {
 
       expect(getOrCreateParsedChartData(fresh.cell(0, 'curve')).series![0].showCurveConfidenceInterval, false,
         'the column-level option did not survive the layout');
+      expect(getOrCreateParsedChartData(fresh.cell(0, 'curve')).chartOptions?.statisticsMode, 'both',
+        'a chart option did not survive the layout');
     } finally {
       sourceView.close();
       freshView.close();
@@ -260,22 +286,7 @@ category('panel and renderer', () => {
   });
 
   test('a plot-level label is drawn once, a per-curve one per curve', async () => {
-    const col = DG.Column.fromStrings('curve', [labelledCurveJson()]);
-    col.semType = FitConstants.FIT_SEM_TYPE;
-    const df = DG.DataFrame.fromColumns([col]);
-    df.name = 'panelLabels';
-
-    const drawn: string[] = [];
-    const canvas = ui.canvas(400, 300);
-    const g = canvas.getContext('2d')!;
-    const fillText = g.fillText.bind(g);
-    g.fillText = ((text: string, x: number, y: number) => {
-      drawn.push(text);
-      fillText(text, x, y);
-    }) as any;
-
-    new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
-      getOrCreateParsedChartData(df.cell(0, 'curve')));
+    const drawn = renderedTexts(labelledCurveJson(), 'panelLabels');
 
     // the plate statistic describes the cell, so it appears once however many curves there are
     expect(drawn.filter((t) => t.startsWith('Z prime')).length, 1, 'the plot-level label was not drawn once');
@@ -287,22 +298,7 @@ category('panel and renderer', () => {
   test('only the labels named in showLabels are drawn', async () => {
     const chartData = JSON.parse(labelledCurveJson()) as IFitChartData;
     chartData.chartOptions!.showLabels = ['compound'];
-    const col = DG.Column.fromStrings('curve', [JSON.stringify(chartData)]);
-    col.semType = FitConstants.FIT_SEM_TYPE;
-    const df = DG.DataFrame.fromColumns([col]);
-    df.name = 'panelLabelsFiltered';
-
-    const drawn: string[] = [];
-    const canvas = ui.canvas(400, 300);
-    const g = canvas.getContext('2d')!;
-    const fillText = g.fillText.bind(g);
-    g.fillText = ((text: string, x: number, y: number) => {
-      drawn.push(text);
-      fillText(text, x, y);
-    }) as any;
-
-    new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
-      getOrCreateParsedChartData(df.cell(0, 'curve')));
+    const drawn = renderedTexts(JSON.stringify(chartData), 'panelLabelsFiltered');
 
     expect(drawn.some((t) => t.startsWith('Z prime')), false, 'a label not named in showLabels was drawn');
     expect(drawn.filter((t) => t.startsWith('compound')).length, 2);
@@ -322,6 +318,44 @@ category('panel and renderer', () => {
     // the boundary: exactly at the marker edge is still nothing to show
     expect(stdevWhisker(100, 80, 120, 20) === null, true);
     expect(stdevWhisker(100, 79, 121, 20) !== null, true);
+  });
+
+  test('one list of statistics, and the mode decides where it is drawn', async () => {
+    const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
+    data.chartOptions!.showStatistics = ['ic50'];
+    data.chartOptions!.statisticsMode = 'both';
+    data.chartOptions!.aggrType = 'med';
+    const both = renderedTexts(JSON.stringify(data), 'panelAggrBoth');
+
+    // named the way the extracted column is, so the plot and the column agree
+    const line = both.find((t) => t.startsWith('med ic50'));
+    expect(line !== undefined, true, 'the aggregated statistic was not drawn');
+    expect(both.filter((t) => t.startsWith('med ic50')).length, 1, 'it describes the cell, so it is drawn once');
+    expect(both.filter((t) => t.startsWith('IC50')).length, 2, 'each curve should still show its own');
+    // aggregated in fit space, so two decades apart give the middle one, not the arithmetic mean
+    expect(line!.includes('1.0') || line!.includes('1e-6') || line!.includes('9.9'), true, `unexpected value: ${line}`);
+
+    data.chartOptions!.statisticsMode = 'aggregated';
+    const aggregated = renderedTexts(JSON.stringify(data), 'panelAggrOnly');
+    expect(aggregated.filter((t) => t.startsWith('med ic50')).length, 1);
+    expect(aggregated.some((t) => t.startsWith('IC50')), false, 'the per-series values should give way to the summary');
+
+    data.chartOptions!.statisticsMode = 'series';
+    const series = renderedTexts(JSON.stringify(data), 'panelAggrSeries');
+    expect(series.some((t) => t.startsWith('med ')), false, 'nothing should be summarised in series mode');
+    expect(series.filter((t) => t.startsWith('IC50')).length, 2);
+  });
+
+  test('a single-series cell has nothing to aggregate', async () => {
+    const data = JSON.parse(multiSeriesCurveJson([-6.5])) as IFitChartData;
+    data.chartOptions!.showStatistics = ['ic50'];
+    data.chartOptions!.statisticsMode = 'aggregated';
+    const drawn = renderedTexts(JSON.stringify(data), 'panelAggrSingle');
+
+    expect(drawn.some((t) => t.startsWith('med ')), false,
+      'with one curve the aggregate is that curve, so it should not be drawn');
+    // and the mode falls back to per series rather than drawing nothing at all
+    expect(drawn.some((t) => t.startsWith('IC50')), true, 'the single curve should still show its own');
   });
 
   test('property panel renders for a saved legacy statistic', async () => {

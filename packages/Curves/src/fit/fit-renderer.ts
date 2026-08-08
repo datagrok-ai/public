@@ -20,6 +20,7 @@ import {
   renderFitLine, renderLegend,
   renderPoints, renderStatistics, renderTitle, renderLabels, getSeriesColor, ColorType
 } from './render-utils';
+import {getChartDataAggrStats} from './fit-statistics';
 import {
   fittedCurves, parsedCurves, curvesDataPoints, getOrCreateParsedChartData, getOrCreateCachedFitCurve,
   getOrCreateCachedCurvesDataPoints, mergeSeries, substituteZeroes
@@ -116,6 +117,18 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     // Plot-level labels come first and once, since they describe the cell rather than any one curve
     let statisticsLine = renderLabels(g, data.chartOptions?.labels, {names: data.chartOptions?.showLabels,
       color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: 0});
+
+    // with a single series the aggregate is just that series' own value, so the mode only applies to
+    // a cell holding several curves
+    const mode = (data.series?.length ?? 0) > 1 ? data.chartOptions?.statisticsMode ?? 'series' : 'series';
+    const statistics = data.chartOptions?.showStatistics;
+    if (statistics?.length && mode !== 'series') {
+      const aggrType = data.chartOptions?.aggrType ?? 'med';
+      const stats = getChartDataAggrStats(data, aggrType, tableCell);
+      const summarised = Object.fromEntries(statistics.map((name) => [`${aggrType} ${name}`, stats[name]]));
+      statisticsLine += renderLabels(g, summarised as {[key: string]: number}, {names: Object.keys(summarised),
+        color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: statisticsLine});
+    }
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
       if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
@@ -153,7 +166,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: areDroplinesShown(screenBounds),
           xValue: fitSpaceSeries.parameters![inflectionSlot], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       }
-      statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
+      statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: mode === 'aggregated' ? [] : statistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
       statisticsLine += renderLabels(g, series.labels, {names: data.chartOptions?.showLabels,
         color: getSeriesColor(series, i, ColorType.FIT_LINE), dataBox, screenBounds, startLine: statisticsLine});

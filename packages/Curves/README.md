@@ -131,6 +131,9 @@ fit function, and a statistic a series does not produce is skipped rather than d
 - `labels` - values describing the whole plot, drawn once in a neutral colour (a plate's Z prime).
 Unlike other options, labels combine per key across levels
 - `showLabels` - defines which label names are drawn
+- `statisticsMode` - whether `showStatistics` is drawn for each `series`, `aggregated` into one line
+above them, or `both`. Only applies to a cell holding several curves
+- `aggrType` - the aggregation used when summarising, `med` by default
 
 ![curves](./img/curves.gif)
 

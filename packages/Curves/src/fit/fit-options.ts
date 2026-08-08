@@ -49,8 +49,11 @@ export function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
     }
   }
   const labels = labelNames(chartData);
-  // an option with nothing to choose from is an empty row in the panel, so leave it out
-  return fitChartDataProperties.filter((p) => p.name !== 'showLabels' || labels.length > 0).map((p) => {
+  // an option with nothing to choose from is an empty row in the panel, and a single curve has
+  // nothing to summarise
+  const several = (chartData.series?.length ?? 0) > 1;
+  return fitChartDataProperties.filter((p) => (p.name !== 'showLabels' || labels.length > 0) &&
+    ((p.name !== 'statisticsMode' && p.name !== 'aggrType') || several)).map((p) => {
     if (p.name === 'showStatistics' && names.length > 0) {
       return DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: p.description, choices: names,
         inputType: 'MultiChoice', friendlyName: 'Statistics'});
