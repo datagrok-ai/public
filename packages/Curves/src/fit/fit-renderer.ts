@@ -17,17 +17,18 @@ import {
   renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
   renderDroplines,
-  renderFitLine, renderLegend,
-  renderPoints, renderStatistics, renderTitle, renderLabels, getSeriesColor, ColorType
+  renderFitLine,
+  renderPoints, renderStatistics, renderTitle, renderLabels, getSeriesColor, ColorType, CURVE_SAMPLE_PX_STEP
 } from './render-utils';
+import {isLegendVisible, renderLegend} from './fit-legend';
 import {getChartDataAggrStats} from './fit-statistics';
 import {
   fittedCurves, parsedCurves, curvesDataPoints, getOrCreateParsedChartData, getOrCreateCachedFitCurve,
   getOrCreateCachedCurvesDataPoints, mergeSeries, substituteZeroes
 } from './fit-chart-data';
 import {
-  areAxesLabelsShown, areAxesShown, areDroplineLabelsShown, areDroplinesShown, inflateScreenBounds, isLegendShown,
-  isTitleShown, layoutChart,
+  areAxesLabelsShown, areAxesShown, areDroplineLabelsShown, areDroplinesShown, inflateScreenBounds, isTitleShown,
+  layoutChart,
 } from './fit-layout';
 import {handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
 
@@ -108,6 +109,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     // TODO: make thinner
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
     const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+    // where the curves and points land, so the legend can take a corner they leave free
+    const drawnAt = isLegendVisible(data, screenBounds) ? [] as DG.Point[] : undefined;
 
     g.save();
     g.font = '11px Roboto, "Roboto Local"';
@@ -117,7 +120,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     // statistics and labels of every series share one column, so each continues below the previous.
     // Plot-level labels come first and once, since they describe the cell rather than any one curve
     let statisticsLine = renderLabels(g, data.chartOptions?.labels, {names: data.chartOptions?.showLabels,
-      color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: 0});
+      color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: 0, drawnAt});
 
     // with a single series the aggregate is just that series' own value, so the mode only applies to
     // a cell holding several curves
@@ -128,7 +131,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       const stats = getChartDataAggrStats(data, aggrType, tableCell);
       const summarised = Object.fromEntries(statistics.map((name) => [`${aggrType} ${name}`, stats[name]]));
       statisticsLine += renderLabels(g, summarised as {[key: string]: number}, {names: Object.keys(summarised),
-        color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: statisticsLine});
+        color: FitConstants.PLOT_LABEL_COLOR, dataBox, screenBounds, startLine: statisticsLine, drawnAt});
     }
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
@@ -154,26 +157,46 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       }
 
       renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
-        showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
+        showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i, drawnAt});
       renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
       renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
+      // the points and the path they trace, however they are drawn - markers, candlesticks or
+      // connected dots. Sampled like a fit line, so a series is not mistaken for a free corner
+      if (drawnAt) {
+        let previous: DG.Point | null = null;
+        for (const point of series.points) {
+          if (point.outlier && !(series.showOutliers ?? true))
+            continue;
+          const at = new DG.Point(viewport.xToScreen(point.x), viewport.yToScreen(point.y));
+          drawnAt.push(at);
+          if (previous) {
+            const steps = Math.floor(Math.abs(at.x - previous.x) / CURVE_SAMPLE_PX_STEP);
+            for (let step = 1; step < steps; step++) {
+              drawnAt.push(new DG.Point(previous.x + (at.x - previous.x) * step / steps,
+                previous.y + (at.y - previous.y) * step / steps));
+            }
+          }
+          previous = at;
+        }
+      }
       renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
-        showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
+        showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag, drawnAt,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, useFitCache)});
       renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: areDroplinesShown(screenBounds),
         showDroplineLabels: areDroplineLabelsShown(screenBounds), fitFunc, dataBounds, curveFunc: curve!,
-        logOptions: chartLogOptions});
+        logOptions: chartLogOptions, drawnAt});
       statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: mode === 'aggregated' ? [] : statistics, fitFunc,
-        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
+        logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine, drawnAt});
       statisticsLine += renderLabels(g, series.labels, {names: data.chartOptions?.showLabels,
-        color: getSeriesColor(series, i, ColorType.FIT_LINE), dataBox, screenBounds, startLine: statisticsLine});
+        color: getSeriesColor(series, i, ColorType.FIT_LINE), dataBox, screenBounds, startLine: statisticsLine, drawnAt});
     }
 
     renderTitle(g, {showTitle: isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});
     renderAxesLabels(g, {showTitle: isTitleShown(screenBounds, data), dataBox, screenBounds,
       showAxesLabels: areAxesLabelsShown(screenBounds, data), xAxisName: data.chartOptions?.xAxisName,
       yAxisName: data.chartOptions?.yAxisName});
-    renderLegend(g, data, {showLegend: isLegendShown(screenBounds), dataBox, ratio});
+    if (drawnAt)
+      renderLegend(g, data, dataBox, ratio, drawnAt);
 
     g.restore();
   }

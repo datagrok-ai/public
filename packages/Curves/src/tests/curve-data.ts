@@ -1,4 +1,40 @@
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {FitChartCellRenderer} from '../fit/fit-renderer';
+import {areAxesLabelsShown, isTitleShown, layoutChart} from '../fit/fit-layout';
+import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
+
+/** Renders a cell onto a canvas and returns every string the chart drew, with where it put it and
+ * the plot it was laid out in - which is what the legend hover is asked about. */
+export function renderedRows(json: string, name: string, width: number = 400, height: number = 300):
+  {rows: {text: string, x: number, y: number}[], data: IFitChartData, dataBox: DG.Rect} {
+  const col = DG.Column.fromStrings('curve', [json]);
+  col.semType = FitConstants.FIT_SEM_TYPE;
+  const df = DG.DataFrame.fromColumns([col]);
+  df.name = name;
+
+  const rows: {text: string, x: number, y: number}[] = [];
+  const g = ui.canvas(width, height).getContext('2d')!;
+  const fillText = g.fillText.bind(g);
+  g.fillText = ((text: string, x: number, y: number) => {
+    rows.push({text: text, x: x, y: y});
+    fillText(text, x, y);
+  }) as any;
+
+  const rect = new DG.Rect(0, 0, width, height);
+  const data = getOrCreateParsedChartData(df.cell(0, 'curve'));
+  new FitChartCellRenderer().renderCurves(g, rect, data);
+  const dataBox = layoutChart(rect, areAxesLabelsShown(rect, data), isTitleShown(rect, data))[0];
+  return {rows: rows, data: data, dataBox: dataBox};
+}
+
+/** Every string the chart drew. */
+export function renderedTexts(json: string, name: string, width: number = 400, height: number = 300): string[] {
+  return renderedRows(json, name, width, height).rows.map((row) => row.text);
+}
 
 export const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
 

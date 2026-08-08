@@ -14,6 +14,7 @@ import {isNativeFormat} from './curve-converter';
 import {getOrCreateParsedChartData} from './fit-chart-data';
 import {calculateSeriesFit, getChartDataAggrStats} from './fit-statistics';
 import {areAxesLabelsShown, inflateScreenBounds, isTitleShown, layoutChart} from './fit-layout';
+import {isLegendVisible, legendTooltip, legendTooltipElement} from './fit-legend';
 
 /** What a user does to a curve in the grid: toggling an outlier, hovering a point, opening the editor. */
 
@@ -137,6 +138,14 @@ export function handleMouseMove(gridCell: DG.GridCell, e: MouseEvent, renderer: 
   if (screenBounds.width >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH &&
     screenBounds.height >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
     const viewport = pointViewport(screenBounds, data);
+
+    // what the legend had no room to say: the whole of a shortened name, or everything it left out
+    const legendRows = isLegendVisible(data, screenBounds) ?
+      legendTooltip(data, viewport.screen, e.offsetX, e.offsetY) : null;
+    if (legendRows !== null) {
+      ui.tooltip.show(legendTooltipElement(legendRows), e.x + 16, e.y + 16);
+      return;
+    }
 
     for (let i = 0; i < data.series?.length!; i++) {
       if (data.series![i].showPoints !== 'points')

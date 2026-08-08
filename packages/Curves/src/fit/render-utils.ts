@@ -2,7 +2,6 @@
 import * as DG from 'datagrok-api/dg';
 import {
   FitConfidenceIntervals,
-  IFitChartData,
   IFitSeries,
   LogOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
@@ -18,6 +17,19 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {FitFunction, getStatistic, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 
+/** How often what is drawn reports where it went, which is enough to tell a busy corner from a free one. */
+export const CURVE_SAMPLE_PX_STEP = 8;
+
+/** Where a piece of text ends up, so the legend does not take a corner the plot already writes in. */
+function reportText(drawnAt: DG.Point[] | undefined, g: CanvasRenderingContext2D, text: string,
+  x: number, y: number): void {
+  if (!drawnAt)
+    return;
+  const width = g.measureText(text).width;
+  for (let at = x; at <= x + width; at += CURVE_SAMPLE_PX_STEP)
+    drawnAt.push(new DG.Point(at, y));
+}
+
 export enum ColorType {
   POINT = 'pointColor',
   OUTLIER = 'outlierColor',
@@ -30,6 +42,8 @@ interface FitRenderOptions {
     screenBounds?: DG.Rect;
     ratio?: number;
     seriesIdx?: number;
+    /** Collects where the chart put ink, which is how the legend finds a free corner. */
+    drawnAt?: DG.Point[];
 }
 
 interface FitPointRenderOptions extends FitRenderOptions {
@@ -69,6 +83,7 @@ interface FitLabelsRenderOptions {
     color: string;
     dataBox: DG.Rect;
     screenBounds?: DG.Rect;
+    drawnAt?: DG.Point[];
 }
 
 interface FitStatisticsRenderOptions {
@@ -80,6 +95,7 @@ interface FitStatisticsRenderOptions {
     screenBounds?: DG.Rect;
     dataPoints?: {x: number[], y: number[]};
     seriesIdx?: number;
+    drawnAt?: DG.Point[];
 }
 
 interface FitTitleRenderOptions {
@@ -94,21 +110,6 @@ interface FitAxesLabelsRenderOptions extends FitTitleRenderOptions {
     xAxisName?: string;
     yAxisName?: string;
 }
-
-interface FitLegendRenderOptions {
-    showLegend?: boolean;
-    dataBox: DG.Rect;
-    ratio?: number;
-}
-
-interface FitLegendColumnlabelSeriesRenderOptions extends FitLegendRenderOptions {
-    columnIdx: number;
-    drawnCurvesInLegend: number;
-    showColumnLabel?: boolean;
-    seriesIdx?: number;
-    useAuxLegendNames?: boolean;
-}
-
 
 /** Checks if the color is valid */
 export function isColorValid(color: string | null | undefined): boolean {
@@ -194,6 +195,7 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
       const whisker = stdevWhisker(yScreen, viewport.yToScreen(p.y + p.stdev),
         viewport.yToScreen(p.y - p.stdev), radius);
       if (whisker) {
+        options.drawnAt?.push(new DG.Point(xScreen, whisker.top[0]), new DG.Point(xScreen, whisker.bottom[1]));
         g.strokeStyle = color;
         // set rather than inherited: the fit line and the droplines both leave a width behind
         g.lineWidth = ratio;
@@ -274,13 +276,11 @@ function drawCandlestickBorder(g: CanvasRenderingContext2D, x: number, adjacentV
 function getRenderingVariables(renderOptions: FitConfidenceIntervalRenderOptions | FitLineRenderOptions) {
   const logX = renderOptions.logOptions.logX;
   const logY = renderOptions.logOptions.logY;
-  const screenBounds = renderOptions.screenBounds;
-  const axesLeftPxMargin = renderOptions.showAxes ? renderOptions.showAxesLabels ?
-    FitConstants.AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_LEFT_PX_MARGIN : 0;
-  const axesRightPxMargin = renderOptions.showAxes ? FitConstants.AXES_RIGHT_PX_MARGIN : 0;
-  const xMin = screenBounds.x + axesLeftPxMargin;
-  const xMax = screenBounds.x + screenBounds.width - axesRightPxMargin;
   const viewport = renderOptions.viewport;
+  // the box the viewport maps onto, so a curve stops where the axes do instead of running under
+  // whatever the layout keeps to the side of it
+  const xMin = viewport.screen.left;
+  const xMax = viewport.screen.maxX;
   return {logX, logY, xMin, xMax, viewport};
 }
 
@@ -298,6 +298,9 @@ export function renderFitLine(g: CanvasRenderingContext2D, series: IFitSeries, r
     for (let i = xMin; i <= xMax; i++) {
       const xForY = logX ? Math.log10(viewport.xToWorld(i)) : viewport.xToWorld(i);
       const y = logY ? viewport.yToScreen(Math.pow(10, curveFunc(xForY))) : viewport.yToScreen(curveFunc(xForY));
+      if (renderOptions.drawnAt && i % CURVE_SAMPLE_PX_STEP === 0)
+        renderOptions.drawnAt.push(new DG.Point(i, y));
+
       if (i === xMin)
         g.moveTo(i, y);
       else
@@ -341,6 +344,8 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, renderOptions: FitC
   for (let i = xMin; i <= xMax; i++) {
     const xForY = logX ? Math.log10(viewport.xToWorld(i)) : viewport.xToWorld(i);
     const y = logY ? viewport.yToScreen(Math.pow(10, confIntervalFunc(xForY))) : viewport.yToScreen(confIntervalFunc(xForY));
+    if (renderOptions.drawnAt && i % CURVE_SAMPLE_PX_STEP === 0)
+      renderOptions.drawnAt.push(new DG.Point(i, y));
     if (i === xMin)
       g.moveTo(i, y);
     else
@@ -430,9 +435,17 @@ function drawDropline(g: CanvasRenderingContext2D, x: number, renderOptions: Fit
   const y = logY ? Math.pow(10, renderOptions.curveFunc(xForY)) : renderOptions.curveFunc(xForY);
   const screenX = viewport.xToScreen(xValue);
   const screenY = viewport.yToScreen(y);
-  g.moveTo(viewport.xToScreen(dataBounds.minX), screenY);
+  const left = viewport.xToScreen(dataBounds.minX);
+  const bottom = viewport.yToScreen(dataBounds.minY);
+  g.moveTo(left, screenY);
   g.lineTo(screenX, screenY);
-  g.lineTo(screenX, viewport.yToScreen(dataBounds.minY));
+  g.lineTo(screenX, bottom);
+  if (renderOptions.drawnAt) {
+    for (let x = left; x <= screenX; x += CURVE_SAMPLE_PX_STEP)
+      renderOptions.drawnAt.push(new DG.Point(x, screenY));
+    for (let y2 = screenY; y2 <= bottom; y2 += CURVE_SAMPLE_PX_STEP)
+      renderOptions.drawnAt.push(new DG.Point(screenX, y2));
+  }
   return screenY;
 }
 
@@ -464,7 +477,9 @@ export function renderLabels(g: CanvasRenderingContext2D, labels: {[key: string]
       break;
     g.fillStyle = renderOptions.color;
     g.textAlign = 'left';
-    g.fillText(`${name}: ${typeof value === 'number' ? formatStatistic(value) : value}`, dataBox.x + 5, y);
+    const text = `${name}: ${typeof value === 'number' ? formatStatistic(value) : value}`;
+    g.fillText(text, dataBox.x + 5, y);
+    reportText(renderOptions.drawnAt, g, text, dataBox.x + 5, y);
     line++;
   }
   return line - (renderOptions.startLine ?? 0);
@@ -494,7 +509,9 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
       break;
     g.fillStyle = color;
     g.textAlign = 'left';
-    g.fillText(`${prop.friendlyName}: ${formatStatistic(value)}`, dataBox.x + 5, y);
+    const text = `${prop.friendlyName}: ${formatStatistic(value)}`;
+    g.fillText(text, dataBox.x + 5, y);
+    reportText(renderOptions.drawnAt, g, text, dataBox.x + 5, y);
     line++;
   }
   return line - (renderOptions.startLine ?? 0);
@@ -523,78 +540,4 @@ export function renderAxesLabels(g: CanvasRenderingContext2D, renderOptions: Fit
     g.fillText(renderOptions.yAxisName!, -(dataBox.height / 2 + axesTopPxMargin + 15), 15);
     g.restore();
   }
-}
-
-export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, renderOptions: FitLegendRenderOptions): void {
-  if (renderOptions.showLegend) {
-    const dataBox = renderOptions.dataBox;
-    const ratio = renderOptions.ratio;
-    g.font = '11px Roboto, "Roboto Local"';
-    // the legend positions text by measured width, so it must own its alignment - the axes labels
-    // rendered just before leave textAlign centred
-    g.textAlign = 'left';
-    const columnNames = [...new Set(data.series?.map((series) => series.columnName))]
-      .filter((colName) => colName !== null && colName !== undefined);
-    let drawnCurvesInLegend = 0;
-    for (let i = 0; i < columnNames.length; i++) {
-      const colName = columnNames[i];
-      if (data.chartOptions?.showColumnLabel)
-        renderColumnLabel(g, colName!, {dataBox: dataBox, columnIdx: i, drawnCurvesInLegend});
-
-      const series = data.series?.filter((series) => series.columnName === colName);
-      for (let j = 0; j < series?.length!; j++) {
-        const currentSeries = series![j];
-        if (currentSeries.name === '' || currentSeries.name === null || currentSeries.name === undefined)
-          continue;
-        renderLegendSeries(g, currentSeries, {dataBox: dataBox, ratio: ratio, useAuxLegendNames: data.chartOptions?.useAuxLegendNames,
-          columnIdx: i, drawnCurvesInLegend, showColumnLabel: data.chartOptions?.showColumnLabel, seriesIdx: j});
-        drawnCurvesInLegend++;
-      }
-    }
-    g.restore();
-  }
-}
-
-function renderColumnLabel(g: CanvasRenderingContext2D, colName: string, renderOptions: FitLegendColumnlabelSeriesRenderOptions): void {
-  const dataBox = renderOptions.dataBox;
-  g.beginPath();
-  g.fillStyle = 'black';
-  const colNameWidth = g.measureText(colName!).width;
-  g.fillText(colName!, dataBox.maxX - colNameWidth, dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN +
-      (renderOptions.columnIdx * FitConstants.LEGEND_RECORD_PX_HEIGHT + FitConstants.LEGEND_RECORD_PX_HEIGHT * renderOptions.drawnCurvesInLegend));
-}
-
-function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitLegendColumnlabelSeriesRenderOptions): void {
-  const dataBox = renderOptions.dataBox;
-  const columnIdx = renderOptions.columnIdx;
-  const ratio = renderOptions.ratio!;
-  const showColumnLabel = renderOptions.showColumnLabel;
-  const drawnCurvesInLegend = renderOptions.drawnCurvesInLegend;
-  const pointColor = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.POINT);
-  const fitLineColor = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
-  g.beginPath();
-  g.strokeStyle = fitLineColor;
-  g.lineWidth = 2 * ratio;
-  const nameToRender = renderOptions.useAuxLegendNames ? series.auxLegendName ?? series.name! : series.name!;
-  const textWidth = g.measureText(nameToRender).width;
-  g.moveTo(dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
-    dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
-      (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) +
-      FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-  g.lineTo(dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
-    dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
-      (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) +
-      FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-  let pointsMarkerValue = series.points && series.points.length > 0 ? series.points[0].marker : null;
-  pointsMarkerValue = series.points && series.points.every((p) => p.marker === pointsMarkerValue && p.marker != null) ? pointsMarkerValue : null;
-  const marker = pointsMarkerValue != null ? pointsMarkerValue as DG.MARKER_TYPE : series.markerType ? series.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
-  const legendMarkerSize = Math.floor(FitConstants.POINT_PX_SIZE * ratio * 1.5);
-  DG.Paint.marker(g, marker,
-    dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH - legendMarkerSize,
-    dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN + (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend,
-    pointColor, legendMarkerSize);
-  g.fillStyle = fitLineColor;
-  g.fillText(nameToRender, dataBox.maxX - textWidth, dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN + (showColumnLabel ?
-    FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-  g.stroke();
 }

@@ -213,7 +213,22 @@ Low-level canvas drawing functions using `CanvasRenderingContext2D`:
 | `renderStatistics` | In-chart text labels for selected statistics |
 | `renderTitle` | Chart title |
 | `renderAxesLabels` | X and Y axis name labels |
-| `renderLegend` | Color-coded legend |
+
+### Legend — `src/fit/fit-legend.ts`
+
+The legend annotates the plot from a corner, over a backdrop, taking at most 40% of the width and
+half the height. `chooseLegendCorner()` picks the corner: `renderPoints` and `renderFitLine` report
+where they put ink (`drawnAt`), each corner is scored by how much of it falls within a clearance ring,
+ties go to the corner the ink keeps furthest away, and the top right one stays unless another is less
+than half as crowded - otherwise the legend would hop about as rows are hovered or the grid scrolls.
+
+A column that holds a single curve gets no row of its own; a name that two columns share is qualified
+with the column, while the same name twice in one column is left alone (the prefix would be identical);
+a name too long is ellipsized; rows past the corner collapse into `+N more`. `legendTooltip()` answers
+the hover - the whole of a shortened name, or every row when the pointer is on `+N more` - reading the
+layout the render recorded, since only the render knows which corner it chose. `isLegendVisible()` is
+the single gate (the `showLegend` chart option and the size thresholds), used by the renderer and the
+hover alike. Rows are measured on a canvas context of its own, since hit testing has none to draw on.
 
 ### Converters — `src/fit/converters/`
 
@@ -255,7 +270,9 @@ Test entry point: `src/package-test.ts` — imports all test files.
 | `panel-renderer-tests.ts` | Property panel construction, option precedence between levels, notification gating |
 | `transform-tests.ts` | Viewport coordinate transformations |
 | `pzfx-tests.ts` | PZFX file parser |
-| `curve-data.ts` | Shared sigmoid data used by the suites above (not a suite) |
+| `legend-tests.ts` | Legend rows, the reserved strip, ellipsis and overflow |
+| `multi-curve-viewer-tests.ts` | The viewer works on copies of the cached cell data |
+| `curve-data.ts` | Shared sigmoid data and `renderedTexts()` used by the suites above (not a suite) |
 
 ## Source Structure
 
@@ -269,12 +286,13 @@ src/
     curve-converter.ts    — Converter registry, LRU cache, parseCellValue() entry point
     fit-chart-data.ts     — Options precedence, parsed-chart-data and fit caches (leaf module)
     fit-layout.ts         — Chart geometry, and what fits in a cell of a given size
+    fit-legend.ts         — Legend rows, the strip they are given, and their drawing
     fit-renderer.ts       — FitChartCellRenderer: assembling a chart onto a canvas
     fit-interaction.ts    — Outlier toggle, tooltip, click handling, the chart editor dialog
     fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stat column extraction
     fit-options.ts        — changeCurvesOptions, claims, panel property lists
     fit-statistics.ts     — Per-series and aggregated statistics calculation
-    render-utils.ts       — Canvas drawing functions (points, lines, CIs, droplines, legend)
+    render-utils.ts       — Canvas drawing functions (points, lines, CIs, droplines, statistics)
     fit-parser.ts         — XML 3DX → IFitChartData parser (used by xml-converter)
     data-to-curves.ts     — Data to Curves pipeline (UI dialog + conversion logic)
     multi-curve-viewer.ts — MultiCurveViewer (overlay viewer)
@@ -313,6 +331,7 @@ detectors.js              — Semantic type detectors (all curve formats)
 | Cell renderer (drawing) | `src/fit/fit-renderer.ts` |
 | Click, tooltip, outlier toggle, editor dialog | `src/fit/fit-interaction.ts` |
 | Chart geometry, size thresholds | `src/fit/fit-layout.ts` |
+| Legend rows, width and drawing | `src/fit/fit-legend.ts` |
 | Options precedence, parse and fit caches | `src/fit/fit-chart-data.ts` |
 | Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` |
 | Writing an option at a level, claims | `src/fit/fit-options.ts` |

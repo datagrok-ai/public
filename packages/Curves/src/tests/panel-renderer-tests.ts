@@ -10,7 +10,7 @@ import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {stdevWhisker} from '../fit/render-utils';
 import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
 import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions, seriesPropertiesFor} from '../fit/fit-options';
-import {sigmoidPoints, ciCurveJson, labelledCurveJson, curveJson} from './curve-data';
+import {sigmoidPoints, ciCurveJson, labelledCurveJson, curveJson, renderedTexts} from './curve-data';
 import {multiSeriesCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
 
@@ -39,26 +39,6 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
   await DG.Func.find({package: 'Curves', name: 'curveStatistic'})[0]
     .prepare({table: df, curveColumn: df.col('curve')!, ...params})
     .call(false, undefined, {processed: false});
-}
-
-/** Renders a cell onto a canvas and returns every string the chart drew. */
-function renderedTexts(json: string, name: string, width: number = 400, height: number = 300): string[] {
-  const col = DG.Column.fromStrings('curve', [json]);
-  col.semType = FitConstants.FIT_SEM_TYPE;
-  const df = DG.DataFrame.fromColumns([col]);
-  df.name = name;
-
-  const drawn: string[] = [];
-  const g = ui.canvas(width, height).getContext('2d')!;
-  const fillText = g.fillText.bind(g);
-  g.fillText = ((text: string, x: number, y: number) => {
-    drawn.push(text);
-    fillText(text, x, y);
-  }) as any;
-
-  new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, width, height),
-    getOrCreateParsedChartData(df.cell(0, 'curve')));
-  return drawn;
 }
 
 category('panel and renderer', () => {
