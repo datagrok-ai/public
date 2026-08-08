@@ -44,6 +44,11 @@ export function isLegendShown(screenBounds: DG.Rect): boolean {
   return screenBounds.width >= FitConstants.MIN_LEGEND_PX_WIDTH && screenBounds.height >= FitConstants.MIN_LEGEND_PX_HEIGHT;
 }
 
+export function areDroplineLabelsShown(screenBounds: DG.Rect): boolean {
+  return screenBounds.width >= FitConstants.MIN_DROPLINE_LABELS_PX_WIDTH &&
+    screenBounds.height >= FitConstants.MIN_DROPLINE_LABELS_PX_HEIGHT;
+}
+
 export function areDroplinesShown(screenBounds: DG.Rect): boolean {
   return screenBounds.width >= FitConstants.MIN_DROPLINES_VISIBILITY_PX_WIDTH &&
     screenBounds.height >= FitConstants.MIN_DROPLINES_VISIBILITY_PX_HEIGHT;

@@ -209,7 +209,7 @@ Low-level canvas drawing functions using `CanvasRenderingContext2D`:
 | `renderFitLine` | Fitted curve line (solid/dotted/dashed/dashdotted) |
 | `renderConfidenceIntervals` | Shaded confidence bands |
 | `renderConnectDots` | Direct point-to-point line connections |
-| `renderDroplines` | IC50 droplines |
+| `renderDroplines` | ICxx / ECxx droplines, resolved through `FitFunction.inverse` |
 | `renderStatistics` | In-chart text labels for selected statistics |
 | `renderTitle` | Chart title |
 | `renderAxesLabels` | X and Y axis name labels |

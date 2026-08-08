@@ -16,6 +16,7 @@ import {
   getStatistic,
   getStatisticProperty,
   isFit,
+  FitTypeMap,
   FitSeries,
   SigmoidFit,
   LinearFit,
@@ -32,7 +33,8 @@ import {
   FIT_FUNCTION_4PL_REGRESSION, linear, logLinear, exponential
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
-import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
+import {droplineFraction} from '../fit/render-utils';
 
 
 const sigmoidSeries: IFitSeries = {'fitLineColor': '#1f77b4', 'pointColor': '#1f77b4', 'showCurveConfidenceInterval': false, 'points': [{'x': 0.10000000149011612, 'y': 1.7412786483764648}, {'x': 0.6000000238418579, 'y': 1.8561450242996216}, {'x': 1.100000023841858, 'y': 1.6065685749053955}, {'x': 1.600000023841858, 'y': 1.70476496219635}, {'x': 2.0999999046325684, 'y': 1.5737264156341553}, {'x': 2.5999999046325684, 'y': 1.6007002592086792}, {'x': 3.0999999046325684, 'y': 1.6796687841415405}, {'x': 3.5999999046325684, 'y': 1.656104326248169}, {'x': 4.099999904632568, 'y': 1.782997488975525}, {'x': 4.599999904632568, 'y': 1.530208945274353}, {'x': 5.099999904632568, 'y': 1.1572397947311401}, {'x': 5.599999904632568, 'y': 0.8691964745521545}, {'x': 6.099999904632568, 'y': 0.3228665590286255}, {'x': 6.599999904632568, 'y': 0.2990703880786896}, {'x': 7.099999904632568, 'y': 0.23361243307590485}], 'fitFunction': 'sigmoid', 'clickToToggle': false, 'showFitLine': true, 'showPoints': 'points', 'parameters': [1.6914372095641517, 1.1536998642628853, 5.410173358224149, 0.2089689354045083]};
@@ -409,6 +411,52 @@ category('fit', () => {
     expect(boxPlotStats.q3, 0.9558155536651611);
     expect(boxPlotStats.lowerAdjacentValue, 0.7654603719711304);
     expect(boxPlotStats.upperAdjacentValue, 0.9558155536651611);
+  });
+
+  test('ICxx is the x at that fraction of the curve', async () => {
+    // travelled fraction, measured from the low-x asymptote - so the same call means IC90 on a
+    // descending curve and EC90 on an ascending one
+    const at = (fitFunc: keyof FitTypeMap, params: number[], fraction: number,
+      lowX: number, highX: number): number => {
+      const f = getFitFunction(fitFunc)!;
+      const array = Float32Array.from(params);
+      const start = f.y(array, lowX);
+      const end = f.y(array, highX);
+      return (f.y(array, f.inverse(array, fraction)!) - start) / (end - start);
+    };
+
+    for (const fitFunc of ['sigmoid', '4pl-dose-response'] as (keyof FitTypeMap)[]) {
+      for (const slope of [1.2, -1.2]) {
+        for (const fraction of [0.1, 0.5, 0.9]) {
+          expectFloat(at(fitFunc, [100, slope, -6.5, 5], fraction, -1e6, 1e6), fraction, 0.001,
+            `${fitFunc}, slope ${slope}, IC${fraction * 100}`);
+        }
+      }
+    }
+    // the power parameterization, where x is a concentration rather than its logarithm
+    for (const slope of [1.2, -1.2]) {
+      for (const fraction of [0.1, 0.5, 0.9])
+        expectFloat(at('4pl-regression', [100, slope, 3e-7, 5], fraction, 1e-30, 1e30), fraction, 0.001);
+    }
+
+    // IC50 is the inflection point, which is what the droplines drew before there was a family
+    const sigmoidFunc = getFitFunction('sigmoid')!;
+    expect(sigmoidFunc.inverse(Float32Array.from([100, 1.2, -6.5, 5]), 0.5), -6.5);
+
+    // nothing to travel between, so nothing to name
+    for (const fitFunc of ['linear', 'log-linear', 'exponential'] as (keyof FitTypeMap)[])
+      expect(getFitFunction(fitFunc)!.inverse(Float32Array.from([1, 2]), 0.9) === undefined, true, fitFunc);
+  });
+
+  test('a dropline name asks for a fraction', async () => {
+    expect(droplineFraction('IC50'), 0.5);
+    expect(droplineFraction('IC90'), 0.9);
+    expect(droplineFraction('EC50'), 0.5);
+    expect(droplineFraction('ic55'), 0.55);
+    expect(droplineFraction('IC12.5'), 0.125);
+    // the asymptotes themselves are never reached, and these are not concentrations at all
+    for (const name of ['IC0', 'IC100', 'AUC', ''])
+      expect(droplineFraction(name) === undefined, true, name);
   });
 
   test('sigmoid', async () => {

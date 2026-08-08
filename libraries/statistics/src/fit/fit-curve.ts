@@ -57,7 +57,7 @@ export type FitFunctionName = typeof FIT_FUNCTION_LINEAR | typeof FIT_FUNCTION_S
 export type FitPointsDisplayMode = 'points' | 'candlesticks' | 'both' | '';
 
 /** Droplines rendered on the plot. `string & {}` keeps autocompletion while allowing IC<n> later. */
-export type DroplineName = 'IC50' | (string & {});
+export type DroplineName = 'IC10' | 'IC20' | 'IC50' | 'IC80' | 'IC90' | (string & {});
 
 /** How `showStatistics` is drawn in a cell holding more than one curve. */
 export type FitStatisticsMode = 'series' | 'aggregated' | 'both';
@@ -84,7 +84,7 @@ export type FitStatisticsMode = 'series' | 'aggregated' | 'both';
  * - Work with series stored in multiple formats (binary for performance, json for flexibility, etc)
 */
 
-export const DROPLINES = ['IC50'];
+export const DROPLINES = ['IC10', 'IC20', 'IC50', 'IC80', 'IC90'];
 
 export type FitMarkerType = 'asterisk' | 'circle' | 'cross border' | 'diamond' | 'square' | 'star' | 'triangle bottom' |
   'triangle left' | 'triangle right' | 'triangle top';
@@ -186,7 +186,7 @@ export interface IFitSeriesOptions {
   errorModel?: FitErrorModelType;       // defines the series error model
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // per-curve label values, rendered with the series
-  droplines?: DroplineName[];           // defines the droplines that would be shown on the plot (IC50)
+  droplines?: DroplineName[];           // defines the droplines that would be shown on the plot (ICxx / ECxx)
   columnName?: string;                  // defines the column name where the series is stored
   auxLegendName?: string;               // defines the auxiliary legend name for the series
 }

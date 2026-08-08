@@ -106,7 +106,12 @@ whatever `logX` and `logY` are set to.
 - `parameterBounds` - defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`
 - `showPoints` - defines the data display mode, which could be either `points`, `candlesticks`, `both`, or none
 - `clickToToggle` - defines whether clicking on the point toggles its outlier status and causes curve refitting or not
-- `droplines` - defines the droplines that would be shown on the plot (for instance, IC50)
+- `droplines` - names of the droplines to draw. Any `ICxx` or `ECxx` works (`IC50`, `IC90`, `EC55`):
+the dropline marks the x at which the curve has travelled that fraction from its low-x asymptote to
+its high-x one - percent inhibition on a descending curve, percent of maximal effect on an ascending
+one. Available on the fits that have asymptotes (sigmoid, 4PL dose-response, 4PL regression); one
+that lands outside the plotted range is not drawn, and names are captioned when a series asks for
+more than one
 - `labels` - values drawn with this curve, in its colour, for facts the fit cannot produce (a compound id)
 - `points` - an array of objects with each object containing `x` and `y` coordinates and its own parameters:
   - `outlier` - if true, renders as 'x' and gets ignored for curve fitting

@@ -56,7 +56,8 @@ interface FitConfidenceIntervalRenderOptions extends FitLineRenderOptions {
 
 interface FitDroplineRenderOptions extends FitRenderOptions {
     showDroplines?: boolean;
-    xValue: number;
+    showDroplineLabels?: boolean;
+    fitFunc: FitFunction;
     dataBounds: DG.Rect;
     curveFunc: (x: number) => number;
     logOptions: LogOptions;
@@ -375,36 +376,55 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, renderOptions: FitC
   g.fill();
 }
 
+/** The travelled fraction an ICxx / ECxx name asks for, or undefined when the name is not one. */
+export function droplineFraction(name: string): number | undefined {
+  const match = /^(?:IC|EC)(\d{1,2}(?:\.\d+)?)$/i.exec(name);
+  const percent = match ? parseFloat(match[1]) : NaN;
+  return percent > 0 && percent < 100 ? percent / 100 : undefined;
+}
+
 export function renderDroplines(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitDroplineRenderOptions): void {
-  if ((series.showFitLine ?? true) && series.droplines && renderOptions.showDroplines!) {
-    g.save();
-    g.strokeStyle = 'blue';
-    g.lineWidth = renderOptions.ratio!;
-    g.beginPath();
-    g.setLineDash([5, 5]);
-    const viewport = renderOptions.viewport;
-    const dataBounds = renderOptions.dataBounds;
-    const curveFunc = renderOptions.curveFunc;
-    const logOptions = renderOptions.logOptions;
-    for (let j = 0; j < series.droplines.length; j++) {
-      const droplineName = series.droplines[j];
-      if (droplineName === 'IC50') {
-        drawDropline(g, {viewport: viewport, xValue: series.parameters![2], dataBounds: dataBounds,
-          curveFunc: curveFunc, logOptions: logOptions});
-      }
-    }
-    g.stroke();
-    g.restore();
+  if (!(series.showFitLine ?? true) || !series.droplines?.length || !series.parameters || !renderOptions.showDroplines)
+    return;
+  g.save();
+  g.strokeStyle = 'blue';
+  g.lineWidth = renderOptions.ratio!;
+  g.beginPath();
+  g.setLineDash([5, 5]);
+  const drawn: {name: string, screenY: number}[] = [];
+  for (const name of series.droplines) {
+    const fraction = droplineFraction(name);
+    const x = fraction === undefined ? undefined :
+      renderOptions.fitFunc.inverse(Float32Array.from(series.parameters), fraction);
+    const screenY = x === undefined ? null : drawDropline(g, x, renderOptions);
+    if (screenY !== null)
+      drawn.push({name: name, screenY: screenY});
   }
+  g.stroke();
+  // a single line is unambiguous; several are told apart by where each one leaves the axis, which
+  // is why the caption sits there rather than under the curve
+  if (series.droplines.length > 1 && renderOptions.showDroplineLabels) {
+    g.setLineDash([]);
+    g.fillStyle = 'blue';
+    g.font = '10px Roboto, "Roboto Local"';
+    g.textAlign = 'left';
+    const left = renderOptions.viewport.xToScreen(renderOptions.dataBounds.minX) + 2;
+    for (const dropline of drawn)
+      g.fillText(dropline.name, left, dropline.screenY - 3);
+  }
+  g.restore();
 }
 
 /** Performs a dropline drawing */
-function drawDropline(g: CanvasRenderingContext2D, renderOptions: FitDroplineRenderOptions): void {
+/** Draws one dropline, returning the screen y it leaves the axis at - or null when it falls off the plot. */
+function drawDropline(g: CanvasRenderingContext2D, x: number, renderOptions: FitDroplineRenderOptions): number | null {
   const logX = renderOptions.logOptions.logX;
   const logY = renderOptions.logOptions.logY;
-  const xValue = logX ? Math.pow(10, renderOptions.xValue) : renderOptions.xValue;
+  const xValue = logX ? Math.pow(10, x) : x;
   const viewport = renderOptions.viewport;
   const dataBounds = renderOptions.dataBounds;
+  if (xValue < dataBounds.minX || xValue > dataBounds.maxX)
+    return null;
 
   const xForY = logX ? Math.log10(xValue) : xValue;
   const y = logY ? Math.pow(10, renderOptions.curveFunc(xForY)) : renderOptions.curveFunc(xForY);
@@ -413,6 +433,7 @@ function drawDropline(g: CanvasRenderingContext2D, renderOptions: FitDroplineRen
   g.moveTo(viewport.xToScreen(dataBounds.minX), screenY);
   g.lineTo(screenX, screenY);
   g.lineTo(screenX, viewport.yToScreen(dataBounds.minY));
+  return screenY;
 }
 
 // formatNumber is fixed at 2 decimals, which renders a sub-micromolar IC50 as "0.00"

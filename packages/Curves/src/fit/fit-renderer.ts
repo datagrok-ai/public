@@ -26,7 +26,8 @@ import {
   getOrCreateCachedCurvesDataPoints, mergeSeries, substituteZeroes
 } from './fit-chart-data';
 import {
-  areAxesLabelsShown, areAxesShown, areDroplinesShown, inflateScreenBounds, isLegendShown, isTitleShown, layoutChart,
+  areAxesLabelsShown, areAxesShown, areDroplineLabelsShown, areDroplinesShown, inflateScreenBounds, isLegendShown,
+  isTitleShown, layoutChart,
 } from './fit-layout';
 import {handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
 
@@ -159,13 +160,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
         showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, useFitCache)});
-      // the inflection point, by name - it is slot 2 on the dose-response families and absent on the
-      // two-parameter ones, where reading a slot gave NaN
-      const inflectionSlot = fitFunc.statisticFields.findIndex((f) => f === 'ic50' || f === 'ec50');
-      if (fitSpaceSeries.parameters && inflectionSlot >= 0) {
-        renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: areDroplinesShown(screenBounds),
-          xValue: fitSpaceSeries.parameters![inflectionSlot], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
-      }
+      renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: areDroplinesShown(screenBounds),
+        showDroplineLabels: areDroplineLabelsShown(screenBounds), fitFunc, dataBounds, curveFunc: curve!,
+        logOptions: chartLogOptions});
       statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: mode === 'aggregated' ? [] : statistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine});
       statisticsLine += renderLabels(g, series.labels, {names: data.chartOptions?.showLabels,

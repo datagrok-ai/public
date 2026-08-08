@@ -9,8 +9,8 @@ import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {stdevWhisker} from '../fit/render-utils';
 import {FitGridCellHandler} from '../fit/fit-grid-cell-handler';
-import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-options';
-import {sigmoidPoints, ciCurveJson, labelledCurveJson} from './curve-data';
+import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions, seriesPropertiesFor} from '../fit/fit-options';
+import {sigmoidPoints, ciCurveJson, labelledCurveJson, curveJson} from './curve-data';
 import {multiSeriesCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
 
@@ -42,21 +42,21 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
 }
 
 /** Renders a cell onto a canvas and returns every string the chart drew. */
-function renderedTexts(json: string, name: string): string[] {
+function renderedTexts(json: string, name: string, width: number = 400, height: number = 300): string[] {
   const col = DG.Column.fromStrings('curve', [json]);
   col.semType = FitConstants.FIT_SEM_TYPE;
   const df = DG.DataFrame.fromColumns([col]);
   df.name = name;
 
   const drawn: string[] = [];
-  const g = ui.canvas(400, 300).getContext('2d')!;
+  const g = ui.canvas(width, height).getContext('2d')!;
   const fillText = g.fillText.bind(g);
   g.fillText = ((text: string, x: number, y: number) => {
     drawn.push(text);
     fillText(text, x, y);
   }) as any;
 
-  new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
+  new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, width, height),
     getOrCreateParsedChartData(df.cell(0, 'curve')));
   return drawn;
 }
@@ -356,6 +356,46 @@ category('panel and renderer', () => {
       'with one curve the aggregate is that curve, so it should not be drawn');
     // and the mode falls back to per series rather than drawing nothing at all
     expect(drawn.some((t) => t.startsWith('IC50')), true, 'the single curve should still show its own');
+  });
+
+  test('the panel offers droplines only for a fit that has asymptotes', async () => {
+    const named = (json: string): string[] =>
+      seriesPropertiesFor(JSON.parse(json) as IFitChartData, null).map((p) => p.name);
+
+    expect(named(curveJson(-6.5)).includes('droplines'), true, 'a sigmoid levels off at both ends');
+
+    const linear = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    linear.series![0].fitFunction = 'linear';
+    expect(named(JSON.stringify(linear)).includes('droplines'), false,
+      'a line has no asymptotes, so an ICxx would never be drawn');
+    // the rest of the series options are untouched
+    expect(named(JSON.stringify(linear)).includes('markerType'), true);
+  });
+
+  test('several droplines are named, and one off the plot is not drawn', async () => {
+    // the curve levels off at 5 and 100, so IC50 sits at the inflection and IC90 a decade later
+    const data = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    data.series![0].droplines = ['IC50', 'IC90'];
+    const both = renderedTexts(JSON.stringify(data), 'droplinesBoth');
+    expect(both.filter((t) => t === 'IC50').length, 1, 'each drawn dropline should be named');
+    expect(both.filter((t) => t === 'IC90').length, 1);
+
+    // a single line has nothing to be confused with, so it stays unlabelled as before
+    data.series![0].droplines = ['IC50'];
+    expect(renderedTexts(JSON.stringify(data), 'droplinesOne').includes('IC50'), false,
+      'one dropline needs no caption');
+
+    // a grid cell has no room for captions, and crammed ones read worse than none
+    data.series![0].droplines = ['IC50', 'IC90'];
+    expect(renderedTexts(JSON.stringify(data), 'droplinesSmall', 200, 150).includes('IC50'), false,
+      'captions should give way when the plot is small');
+
+    // IC99 of a curve centred at 1e-5 lands at 1e-3, past the highest concentration tested
+    const late = JSON.parse(curveJson(-5)) as IFitChartData;
+    late.series![0].droplines = ['IC50', 'IC99'];
+    const drawn = renderedTexts(JSON.stringify(late), 'droplinesOffPlot');
+    expect(drawn.includes('IC50'), true);
+    expect(drawn.includes('IC99'), false, 'a dropline off the plot should not be drawn at all');
   });
 
   test('property panel renders for a saved legacy statistic', async () => {

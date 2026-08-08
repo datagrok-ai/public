@@ -144,7 +144,7 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
     // a custom JS fit function is stored as a description object, which a choice input cannot display
     const customFitFunction = seriesSource && typeof seriesSource.fitFunction === 'object' ?
       seriesSource.fitFunction : null;
-    const fitSeriesChildren = seriesPropertiesFor(customFitFunction).map((p) => {
+    const fitSeriesChildren = seriesPropertiesFor(chartData, customFitFunction).map((p) => {
       if (p.name !== 'fitFunction' || !customFitFunction)
         return ui.input.forProperty(p, seriesSource, seriesOptionsRefresh);
       // the input is bound to the name, so a pick has to be written back to the series

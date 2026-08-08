@@ -74,6 +74,19 @@ export abstract class FitFunction<T = Fit> {
     this._legacyProperties ??= {};
     return this._legacyProperties[name] ??= statisticsProperty(name, this.parameterNames[slot]);
   }
+  /** Whether the curve levels off at both ends, which is what makes an ICxx name meaningful. */
+  get hasAsymptotes(): boolean {
+    return false;
+  }
+
+  /** The x at which the curve has travelled `fraction` of the way from its low-x asymptote to its
+   * high-x one - what ICxx names. Undefined for functions that have no asymptotes.
+   * @param {Float32Array} _params - the fit parameters.
+   * @param {number} _fraction - the travelled fraction, between 0 and 1.
+   * @return {number | undefined} the x value, or undefined when the function has no asymptotes. */
+  inverse(_params: Float32Array, _fraction: number): number | undefined {
+    return undefined;
+  }
   abstract fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T;
   abstract y(params: Float32Array, x: number): number;
   abstract getInitialParameters(x: number[], y: number[]): Float32Array;
@@ -420,6 +433,10 @@ export class SigmoidFunction extends FitFunction<SigmoidFit> {
     return FIT_FUNCTION_SIGMOID;
   }
 
+  override get hasAsymptotes(): boolean {
+    return true;
+  }
+
   get parameterNames(): string[] {
     return ['Top', 'Slope', 'IC50', 'Bottom'];
   }
@@ -446,6 +463,15 @@ export class SigmoidFunction extends FitFunction<SigmoidFit> {
 
   y(params: Float32Array, x: number): number {
     return sigmoid(params, x);
+  }
+
+  /** @param {Float32Array} params - [top, slope, ic50, bottom].
+   * @param {number} fraction - the travelled fraction.
+   * @return {number} the x at that fraction. */
+  override inverse(params: Float32Array, fraction: number): number {
+    // the sign of the slope only swaps which asymptote is at which end, so the fraction runs along
+    // the curve either way
+    return params[2] + Math.log10(fraction / (1 - fraction)) / Math.abs(params[1]);
   }
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
@@ -544,6 +570,10 @@ export class FourPLRegressionFunction extends FitFunction<FourPLRegressionFit> {
     return FIT_FUNCTION_4PL_REGRESSION;
   }
 
+  override get hasAsymptotes(): boolean {
+    return true;
+  }
+
   get parameterNames(): string[] {
     return ['Top', 'Slope', 'EC50', 'Bottom'];
   }
@@ -576,6 +606,13 @@ export class FourPLRegressionFunction extends FitFunction<FourPLRegressionFit> {
 
   y(params: Float32Array, x: number): number {
     return fourPLRegression(params, x);
+  }
+
+  /** @param {Float32Array} params - [top, slope, ec50, bottom].
+   * @param {number} fraction - the travelled fraction.
+   * @return {number} the x at that fraction. */
+  override inverse(params: Float32Array, fraction: number): number {
+    return params[2] * Math.pow(fraction / (1 - fraction), 1 / Math.abs(params[1]));
   }
 
   getInitialParameters(x: number[], y: number[]): Float32Array {
@@ -623,6 +660,13 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
 
   override y(params: Float32Array, x: number): number {
     return fourPLDoseResponse(params, x);
+  }
+
+  /** @param {Float32Array} params - [max, hill, ic50, min].
+   * @param {number} fraction - the travelled fraction.
+   * @return {number} the x at that fraction. */
+  override inverse(params: Float32Array, fraction: number): number {
+    return params[2] + Math.log10(fraction / (1 - fraction)) / Math.abs(params[1]);
   }
 }
 

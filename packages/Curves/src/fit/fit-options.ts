@@ -85,10 +85,14 @@ export function normalizeStatisticNames(chartData: IFitChartData, names: string[
 }
 
 /** Series properties with `fitFunction` able to name a custom JS function alongside the built-ins. */
-export function seriesPropertiesFor(customFitFunction: IFitFunctionDescription | null): DG.Property[] {
+export function seriesPropertiesFor(chartData: IFitChartData,
+  customFitFunction: IFitFunctionDescription | null): DG.Property[] {
+  // an ICxx name only resolves for a curve that levels off at both ends
+  const properties = fitSeriesProperties.filter((p) => p.name !== 'droplines' ||
+    (chartData.series ?? []).some((series) => getSeriesFitFunction(series).hasAsymptotes));
   if (!customFitFunction)
-    return fitSeriesProperties;
-  return fitSeriesProperties.map((p) => p.name !== 'fitFunction' ? p :
+    return properties;
+  return properties.map((p) => p.name !== 'fitFunction' ? p :
     DG.Property.js('fitFunction', DG.TYPE.STRING, {category: 'Fitting',
       choices: [customFitFunction.name, ...Object.keys(fitFunctions)], defaultValue: customFitFunction.name}));
 }
