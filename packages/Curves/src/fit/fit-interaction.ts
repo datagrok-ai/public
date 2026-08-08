@@ -71,13 +71,13 @@ export function inspectCurve(gridCell: DG.GridCell, size?: Partial<DG.Size>, rer
     dlg.sub(merge(gridCell.grid.dataFrame.onDataChanged, gridCell.grid.dataFrame.onMetadataChanged).subscribe(() => gridCellWidget.render()));
 }
 
-export function hitTest(e: MouseEvent, point: IFitPoint, viewport: Viewport): boolean {
+export function hitTest(at: {x: number, y: number}, point: IFitPoint, viewport: Viewport): boolean {
   const screenX = viewport.xToScreen(point.x);
   const screenY = viewport.yToScreen(point.y);
   const pxPerMarkerType = ((point.outlier ? FitConstants.OUTLIER_PX_SIZE : FitConstants.POINT_PX_SIZE) / 2) + FitConstants.OUTLIER_HITBOX_RADIUS;
   const pointRect = new DG.Rect(screenX - pxPerMarkerType, screenY - pxPerMarkerType,
     2 * pxPerMarkerType, 2 * pxPerMarkerType);
-  return pointRect.containsPoint(new DG.Point(e.offsetX, e.offsetY));
+  return pointRect.containsPoint(new DG.Point(at.x, at.y));
 }
 
 function pointViewport(screenBounds: DG.Rect, data: IFitChartData): Viewport {
@@ -111,12 +111,47 @@ export function handleClick(gridCell: DG.GridCell, e: MouseEvent): void {
       const p = data.series![i].points[j];
       if (p.outlier && !data.series![i].showOutliers)
         continue;
-      if (hitTest(e, p, viewport)) {
+      if (hitTest({x: e.offsetX, y: e.offsetY}, p, viewport)) {
         setOutlier(gridCell, p, i, j, data);
         return;
       }
     }
   }
+}
+
+/** `renderer` is the base type on purpose - taking the concrete one back would make this module and
+ * the renderer import each other. */
+/** The tooltips a chart answers with, wherever it is drawn: a legend row it had to shorten, the rest
+ * of a legend that did not fit, or the point under the pointer. */
+export function chartTooltip(data: IFitChartData, screenBounds: DG.Rect, e: MouseEvent,
+  offset: {x: number, y: number}): boolean {
+  const viewport = pointViewport(screenBounds, data);
+
+  const legendRows = isLegendVisible(data, screenBounds) ?
+    legendTooltip(data, viewport.screen, offset.x, offset.y) : null;
+  if (legendRows !== null) {
+    ui.tooltip.show(legendTooltipElement(legendRows), e.x + 16, e.y + 16);
+    return true;
+  }
+
+  for (let i = 0; i < data.series?.length!; i++) {
+    if (data.series![i].showPoints !== 'points')
+      continue;
+    for (let j = 0; j < data.series![i].points.length!; j++) {
+      const p = data.series![i].points[j];
+      if (p.outlier && !data.series![i].showOutliers)
+        continue;
+      if (hitTest(offset, p, viewport)) {
+        ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
+          ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);
+        if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH &&
+          screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT)
+          document.body.style.cursor = 'pointer';
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /** `renderer` is the base type on purpose - taking the concrete one back would make this module and
@@ -137,33 +172,8 @@ export function handleMouseMove(gridCell: DG.GridCell, e: MouseEvent, renderer: 
 
   if (screenBounds.width >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH &&
     screenBounds.height >= FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT) {
-    const viewport = pointViewport(screenBounds, data);
-
-    // what the legend had no room to say: the whole of a shortened name, or everything it left out
-    const legendRows = isLegendVisible(data, screenBounds) ?
-      legendTooltip(data, viewport.screen, e.offsetX, e.offsetY) : null;
-    if (legendRows !== null) {
-      ui.tooltip.show(legendTooltipElement(legendRows), e.x + 16, e.y + 16);
+    if (chartTooltip(data, screenBounds, e, {x: e.offsetX, y: e.offsetY}))
       return;
-    }
-
-    for (let i = 0; i < data.series?.length!; i++) {
-      if (data.series![i].showPoints !== 'points')
-        continue;
-      for (let j = 0; j < data.series![i].points.length!; j++) {
-        const p = data.series![i].points[j];
-        if (p.outlier && !data.series![i].showOutliers)
-          continue;
-        if (hitTest(e, p, viewport)) {
-          ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
-            ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);
-          if (!data.series![i].connectDots && data.series![i].clickToToggle && screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH &&
-            screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT)
-            document.body.style.cursor = 'pointer';
-          return;
-        }
-      }
-    }
     ui.tooltip.hide();
   }
   document.body.style.cursor = 'default';

@@ -8,6 +8,8 @@ import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions, I
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {FitChartCellRenderer} from './fit-renderer';
+import {chartTooltip} from './fit-interaction';
 
 const ERROR_CLASS = 'd4-viewer-error';
 
@@ -60,6 +62,14 @@ export class MultiCurveViewer extends DG.JsViewer {
       this.canvas.height = h;
       this.render();
     });
+    // the grid routes these to the cell renderer; here the viewer owns the canvas and does it itself
+    this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+      if ((this.data.series?.length ?? 0) > 0 &&
+        !chartTooltip(this.data, new DG.Rect(0, 0, this.canvas.width, this.canvas.height), e,
+          {x: e.offsetX, y: e.offsetY}))
+        ui.tooltip.hide();
+    });
+    this.canvas.addEventListener('mouseleave', () => ui.tooltip.hide());
 
     this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
     this.legendColumnName = this.addProperty('legendColumnName', DG.TYPE.STRING, '', {description: 'Column to be used for curves names'});
@@ -236,6 +246,9 @@ export class MultiCurveViewer extends DG.JsViewer {
       this._showErrorMessage('No data to show.');
       return;
     }
-    this.gridCellWidget.gridCell = this.createGridCell(JSON.stringify(this.data));
+    // drawn from this very object rather than through a serialized cell, so that hovering can find
+    // the legend the render laid out
+    const bounds = new DG.Rect(0, 0, this.canvas.width, this.canvas.height);
+    new FitChartCellRenderer().renderCurves(g, bounds, this.data);
   }
 }

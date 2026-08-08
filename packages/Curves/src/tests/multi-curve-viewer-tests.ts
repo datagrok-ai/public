@@ -4,8 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import {category, test, expect, delay} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
-import {multiSeriesCurveJson} from './curve-data';
 import {MultiCurveViewer} from '../fit/multi-curve-viewer';
+import {multiSeriesCurveJson} from './curve-data';
 
 function curveTable(name: string): DG.DataFrame {
   const col = DG.Column.fromStrings('curve', [multiSeriesCurveJson([-7, -5]), multiSeriesCurveJson([-6, -4])]);
@@ -42,4 +42,43 @@ category('multi curve viewer', () => {
       tv.close();
     }
   }, {timeout: 60000});
+
+  test('the viewer answers the same hovers the grid does', async () => {
+    // more curves than a legend can list, so it ends in a +N more row that hovering opens
+    const logIC50s = Array.from({length: 40}, (_, i) => -8 + i * 0.1);
+    const col = DG.Column.fromStrings('curve', [multiSeriesCurveJson(logIC50s)]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'multiCurveHover';
+    const tv = grok.shell.addTableView(df);
+    try {
+      df.currentRowIdx = 0;
+      tv.addViewer('MultiCurveViewer', {curvesColumnNames: ['curve']});
+      await delay(2000);
+      const viewer = Array.from(tv.viewers).find((v) => v.type === 'MultiCurveViewer') as any;
+      expect(viewer.data.series.length, 40, 'the current row carries all the curves');
+
+      // the grid hands mouse moves to the cell renderer; the viewer has to do it itself, and used to
+      // answer nothing at all
+      const canvas: HTMLCanvasElement = viewer.canvas;
+      const rect = canvas.getBoundingClientRect();
+      let tooltip: string[] = [];
+      for (let x = 20; x < canvas.width - 10 && tooltip.length === 0; x += 20) {
+        for (let y = 10; y < canvas.height - 10; y += 10) {
+          canvas.dispatchEvent(new MouseEvent('mousemove',
+            {bubbles: true, clientX: rect.left + x, clientY: rect.top + y}));
+          const shown = document.querySelector('.d4-tooltip') as HTMLElement | null;
+          const lines: string[] = shown?.innerText ?
+            shown.innerText.split(String.fromCharCode(10)).filter((t: string) => t.trim().length > 0) : [];
+          if (lines.length > 3 && lines.some((line) => line.startsWith('series '))) {
+            tooltip = lines;
+            break;
+          }
+        }
+      }
+      expect(tooltip.length > 3, true, 'hovering the legend in the viewer should list the curves');
+    } finally {
+      tv.close();
+    }
+  }, {timeout: 90000});
 });
