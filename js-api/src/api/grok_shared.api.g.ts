@@ -268,6 +268,9 @@ export class Permission {
   // ===== Entity: TableInfo =====
   static TABLE_READ_DATA = 'Table.ReadData';
 
+  // ===== Entity: DomainSchema =====
+  static EXTEND = 'Extend';
+
 }
 export class ScriptLanguage {
   static Grok = 'grok';

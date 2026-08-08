@@ -120,8 +120,10 @@ export interface DomainAuditEntry {
  * and whether more matching deletable rows remain (loop while `hasMore`). */
 export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
 
-/** Grantable permission on a domain registry entity (table, schema, or column schema). */
-export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share';
+/** Grantable permission on a domain registry entity (table, schema, or column schema).
+ * 'Extend' is grantable on SCHEMA entities only — it lets the holder add their own
+ * tables and columns to a package-managed schema the plugin opted in to. */
+export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share' | 'Extend';
 
 /** One direct permission row on a domain registry entity (see `DomainTableClient.grants`). */
 export interface DomainGrant {

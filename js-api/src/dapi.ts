@@ -1210,11 +1210,27 @@ export class DomainSchemaClient {
     return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
   }
 
-  /** Applies a partial manifest to a user-managed schema; dryRun returns the change plan.
+  /** Applies a partial manifest; dryRun returns the change plan. Named tables replace
+   * their current definition wholesale — everything omitted comes from the registry.
    * Destructive plans require confirmDestructive; stale ifVersion → DomainVersionConflictError;
    * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
-   * (the plan rides in error.body.plan). */
-  apply(body: {tables?: object; propertySchemas?: object; dropTables?: string[];
+   * (the plan rides in error.body.plan).
+   *
+   * On a USER-managed schema this requires Edit and `ifVersion` tracks the schema's apply
+   * counter. On a PACKAGE-managed schema it is the user-extension path: it requires
+   * 'Extend' on the schema entity, `ifVersion` tracks `ext_version` (the plan echoes it as
+   * `extVersion`) while the plugin's own version stays frozen, and the writable surface is
+   * limited to objects you own — your own tables through `tables` (needs the schema's
+   * `extensible.tables` opt-in) and your own columns on plugin tables through `extend`
+   * (needs that table's `extensible` opt-in). `extend` is full state for YOUR columns of
+   * that table: omitting one you added proposes its drop. Plugin objects are immutable —
+   * touching them is a 400 ('plugin-table-not-editable', 'not-extensible',
+   * 'schema-not-extensible', 'invalid-extend', 'plugin-schema-not-editable'), and columns
+   * you add to a plugin table must stay nullable, non-unique, non-display, and must not
+   * cascade deletes. Physical names of extension columns are prefixed server-side; every
+   * API surface keeps using the logical name. */
+  apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
+               propertySchemas?: object; dropTables?: string[];
                ifVersion?: string; confirmDestructive?: boolean},
         options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
     return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));
@@ -1238,14 +1254,17 @@ export class DomainSchemaClient {
 
   /** Idempotently grants [permission] on this schema's registry entity to [group] (a group
    * id). Schema grants gate schema-level operations (apply requires Edit, delete requires
-   * Delete, sharing requires Share). They do NOT grant access to row data — use
-   * `table('s.t').grant()` per table for that. Requires Share. */
+   * Delete, sharing requires Share, extending a package schema requires Extend). They do
+   * NOT grant access to row data — use `table('s.t').grant()` per table for that.
+   * 'Extend' is meaningful on schema entities only: granting it on a table or column
+   * schema is a 400. Requires Share. */
   async grant(group: string, permission: DomainPermission): Promise<void> {
     await domainCall(api.grok_Dapi_Domains_SchemaGrant(this.dart, this.name, group, permission));
     api.grok_Domains_InvalidateUiCaches();
   }
 
-  /** Revokes [permission] (or all four when omitted) from [group]. Requires Share. */
+  /** Revokes [permission] (or every schema permission when omitted) from [group].
+   * Requires Share. */
   async revoke(group: string, permission?: DomainPermission): Promise<void> {
     await domainCall(api.grok_Dapi_Domains_SchemaRevoke(this.dart, this.name, group, permission ?? null));
     api.grok_Domains_InvalidateUiCaches();
