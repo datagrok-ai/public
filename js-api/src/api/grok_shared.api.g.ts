@@ -27,6 +27,9 @@ export class ServerMessageTypes {
   /// Package installed.
   static PACKAGE_INSTALLED = 'package-installed';
 
+  /// A step of a long-running server operation. Payload: [ServerTaskProgress].
+  static TASK_PROGRESS = 'task-progress';
+
 }
 export class DataSourceType {
   static Access = 'Access';
@@ -303,6 +306,9 @@ export class DockerImage extends Entity {
   set updatedBy(x: string) {api.grok_DockerImage_Set_updatedBy(this.dart, toDart(x)); }
   get logs(): string { return api.grok_DockerImage_Get_logs(this.dart); };
   set logs(x: string) {api.grok_DockerImage_Set_logs(this.dart, toDart(x)); }
+  /// Published image this entity points at, for packages that reference one instead of building it.
+  get imageRef(): string { return api.grok_DockerImage_Get_imageRef(this.dart); };
+  set imageRef(x: string) {api.grok_DockerImage_Set_imageRef(this.dart, toDart(x)); }
   get completed(): boolean { return api.grok_DockerImage_Get_completed(this.dart); };
 
   get iconStatus(): string { return api.grok_DockerImage_Get_iconStatus(this.dart); };

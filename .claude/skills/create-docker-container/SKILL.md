@@ -67,6 +67,23 @@ Configuration properties and defaults:
 | storage            | Integer | 21      | Disk storage in gigabytes                                |
 | shm_size           | Integer | 64      | Shared memory in megabytes                               |
 | env                | Object  |         | Environment variables passed to the container            |
+| image              | String  |         | Published image to run instead of building one           |
+| port               | Integer |         | Port the container listens on (EXPOSE when built here)   |
+
+Set `image` when the image is already published — built by a CI pipeline, kept in another
+repository, or a stock third-party image. The folder then needs no Dockerfile at all, and
+`grok publish` builds and pushes nothing:
+
+```json
+{
+  "image": "datagrok/jkg_python:bleeding-edge",
+  "port": 8888,
+  "on_demand": true
+}
+```
+
+Set `port` alongside it — with no Dockerfile there is no `EXPOSE` to read. A folder holding
+both a Dockerfile and an `image` is built from the Dockerfile.
 
 For env values, use `#{x.Package:Entity}` to pass a JSON-serialized entity from a package namespace. Credentials are only passed for connections within the same package.
 
