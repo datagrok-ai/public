@@ -845,6 +845,7 @@ export interface IDartApi {
   grok_DomainRowEditor_OpenEdit(row: any): Promise<any>;
   grok_DomainRowEditor_OpenClone(row: any): Promise<any>;
   grok_DomainRowPicker_Pick(schemaName: String, tableName: String): Promise<any>;
+  grok_DomainRowPicker_PickPopup(schemaName: String, tableName: String, anchor: any): Promise<any>;
   grok_DomainConflictDialog_Show(subject: String): Promise<any>;
   grok_DomainMeta_ConfirmDelete(row: any): Promise<any>;
   grok_DomainMeta_ShareRow(row: any): Promise<any>;

@@ -56,8 +56,9 @@ interface RefSource {
   suggest(query: string): Promise<{label: string; value: string}[]>;
   /** Display text of a known id; null when it does not resolve. */
   display(id: string): Promise<string | null>;
-  /** The full picker, for targets that have one. */
-  pick?(): Promise<{id: string; label: string} | null>;
+  /** The full picker, for targets that have one; [anchor] asks for the drop-down
+   * flavour, anchored below it. */
+  pick?(anchor?: HTMLElement): Promise<{id: string; label: string} | null>;
 }
 
 /** Suggestions from the target table's own rows, display names from the registry's
@@ -89,8 +90,8 @@ class DomainRefSource implements RefSource {
     return (await grok.dapi.domains.registry.resolveNames(this.table, [id]))[id] ?? null;
   }
 
-  async pick(): Promise<{id: string; label: string} | null> {
-    const row = await DG.DomainObjectHandler.pickRow(this.table);
+  async pick(anchor?: HTMLElement): Promise<{id: string; label: string} | null> {
+    const row = await DG.DomainObjectHandler.pickRow(this.table, {anchor: anchor});
     return row == null ? null : {id: row.id, label: row.displayName};
   }
 }
@@ -214,11 +215,12 @@ export class RefInput {
     this._apply(id, display, notify);
   }
 
-  /** Opens the platform's full lookup picker for the target table. */
+  /** Opens the platform's lookup picker for the target table as a drop-down below
+   * this input (right-aligned with its editor box). */
   async pick(): Promise<void> {
     if (this._source.pick == null)
       return;
-    const picked = await this._source.pick();
+    const picked = await this._source.pick(this.input.input);
     if (picked != null)
       this._apply(picked.id, picked.label, true);
   }

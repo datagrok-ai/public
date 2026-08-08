@@ -348,9 +348,10 @@ export namespace domains {
   }
 
   /** The platform's lookup picker for [table] — the target's Domain View in a
-   * dialog; resolves to the picked row, or null. */
-  export function pick(table: string): Promise<DG.DomainRow | null> {
-    return DG.DomainObjectHandler.pickRow(table);
+   * dialog, or a drop-down below [options.anchor] when one is given; resolves to
+   * the picked row, or null. */
+  export function pick(table: string, options?: DG.DomainPickerOptions): Promise<DG.DomainRow | null> {
+    return DG.DomainObjectHandler.pickRow(table, options);
   }
 
   /** The platform's create dialog for [table]; resolves to whether a row was saved. */

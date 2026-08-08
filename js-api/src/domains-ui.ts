@@ -54,6 +54,13 @@ export interface DomainDetailTab {
   open(): void;
 }
 
+/** Options of {@link DomainObjectHandler.pickRow}. */
+export interface DomainPickerOptions {
+  /** Anchor the picker to this element as a drop-down (below it, right-aligned);
+   * without it, the picker opens as the modal dialog. */
+  anchor?: HTMLElement;
+}
+
 /** A declarative action offered for a domain row (see
  * {@link DomainObjectHandler.getRibbonActions}) — the JS mirror of the Entity
  * View ribbon icons. Only actions the current user may perform are returned, so
@@ -425,8 +432,11 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   auditPane(x: T): HTMLElement { return DomainObjectHandler.auditPane(this.rowOrThrow(x)); }
 
   /** Opens the platform's row picker for this table; resolves to the picked row
-   * or null. */
-  pickRow(): Promise<DomainRow | null> { return DomainObjectHandler.pickRow(this.table); }
+   * or null. With [options.anchor] it is the drop-down flavour (see
+   * {@link DomainObjectHandler.pickRow}). */
+  pickRow(options?: DomainPickerOptions): Promise<DomainRow | null> {
+    return DomainObjectHandler.pickRow(this.table, options);
+  }
 
   // ─────────────────────── openers (platform dialogs and panes) ─────────────────────────
   // Canonical as STATICS: each one enters the SAME Dart flow the built-in
@@ -474,12 +484,20 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
     return domainCall(api.grok_DomainMeta_ShareRow(toDart(row)));
   }
 
-  /** Opens the platform's lookup picker for [table] (`'<schema>.<table>'`) — the
-   * target table's Domain View in a dialog, with search and single select;
-   * resolves to the picked row, or null on cancel. */
-  static pickRow(table: string): Promise<DomainRow | null> {
+  /**
+   * Opens the platform's lookup picker for [table] (`'<schema>.<table>'`) — the
+   * target table's Domain View with search and single select; resolves to the
+   * picked row, or null on cancel.
+   *
+   * With [options.anchor] the picker is a headless DROP-DOWN: no caption or
+   * buttons, opening below the anchor element and right-aligned with it, closing
+   * on the item click that picks, on an outside click, and on ESC. Without it,
+   * the picker is the modal dialog (the flavour to keep for richer interactions).
+   */
+  static pickRow(table: string, options?: DomainPickerOptions): Promise<DomainRow | null> {
     const [schema, name] = splitDomainTable(table);
-    return domainCall(api.grok_DomainRowPicker_Pick(schema, name));
+    return domainCall(options?.anchor == null ? api.grok_DomainRowPicker_Pick(schema, name)
+      : api.grok_DomainRowPicker_PickPopup(schema, name, options.anchor));
   }
 
   /** The standard optimistic-concurrency dialog for a 409, naming [subject] (the
