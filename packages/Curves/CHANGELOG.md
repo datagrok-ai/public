@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-19028: Curves: Multi curve viewer: Merge Cell Series no longer rewrites the cells it reads. The viewer merged into the parsed chart data cached for the grid, so unchecking the box left the curves merged and the grid cell itself started rendering the merged series
 * [#2101](https://github.com/datagrok-ai/public/issues/2101): Curves: Droplines accept the whole `ICxx` / `ECxx` family instead of `IC50` alone - a dropline marks the x at which the curve has travelled that fraction between its asymptotes. **IC10**, **IC20**, **IC50**, **IC80** and **IC90** are offered in the property panel, any other percentage works from the cell JSON. One that falls outside the plotted range is skipped, and several on one series are captioned
 * [#2101](https://github.com/datagrok-ai/public/issues/2101): Curves: The statistics of a cell holding several curves can be summarised into one line, named as the extracted column is (`med ic50`). **Statistics mode** chooses between drawing them for each series, summarised, or both, and **Aggregation** picks the function. Both inputs are hidden for a single curve, which has nothing to summarise
 * [#2101](https://github.com/datagrok-ai/public/issues/2101): Curves: Error bars now run from the marker's edge outwards with end caps, and are left out when the deviation is smaller than the marker rather than drawn inside it. Their line width is set explicitly instead of inheriting whatever the fit line or the droplines left behind

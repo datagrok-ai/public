@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {mergeChartOptions, mergeSeries, getOrCreateParsedChartData, mergeProperties} from './fit-chart-data';
-import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
@@ -136,28 +136,29 @@ export class MultiCurveViewer extends DG.JsViewer {
         const cellCurves = getOrCreateParsedChartData(tableCell);
         if (!cellCurves.series || cellCurves.series.length === 0)
           continue;
-        cellCurves.series.forEach((series) => series.columnName = tableCell.column.name);
+        // the parsed data is cached and shared with the grid, so the viewer works on its own copies -
+        // merging into it used to rewrite the cell itself
+        let cellSeries: IFitSeries[] = cellCurves.series.map((series) => ({...series, columnName: tableCell.column.name}));
         const legendCol = !this.legendColumnName || !this.dataFrame.col(this.legendColumnName) ? null : this.dataFrame.col(this.legendColumnName);
-        for (let j = 0; j < cellCurves.series.length; j++) {
-          const series = cellCurves.series[j];
-          if (legendCol)
-            series.auxLegendName = cellCurves.series.length > 1 ? `${legendCol.get(i)} ${series.name}` : `${legendCol.get(i)}`;
+        if (legendCol) {
+          for (const series of cellSeries)
+            series.auxLegendName = cellSeries.length > 1 ? `${legendCol.get(i)} ${series.name}` : `${legendCol.get(i)}`;
         }
         const currentChartOptions = cellCurves.chartOptions;
         if (currentChartOptions != null)
           chartOptions[chartOptions.length] = currentChartOptions;
         if (mergeCellSeries) {
-          const mergedSeries = mergeSeries(cellCurves.series!)!;
+          const mergedSeries = mergeSeries(cellSeries)!;
           if (currentChartOptions?.title !== undefined && currentChartOptions?.title !== '')
             mergedSeries.name = currentChartOptions?.title;
-          cellCurves.series = [mergedSeries];
+          cellSeries = [mergedSeries];
         }
-        series.push(...cellCurves.series!);
+        series.push(...cellSeries);
       }
-      if (this.mergeColumnSeries)
-        this.data.series?.push(mergeSeries(series)!);
-      else
-        this.data.series?.push(...JSON.parse(JSON.stringify(series)));
+      if (series.length === 0)
+        continue;
+      // a deep copy: the points are still the cell's own objects, and rendering mutates them
+      this.data.series?.push(...JSON.parse(JSON.stringify(this.mergeColumnSeries ? [mergeSeries(series)!] : series)));
     }
     this.data.chartOptions = mergeChartOptions(chartOptions);
     this.data.chartOptions.useAuxLegendNames = true;
