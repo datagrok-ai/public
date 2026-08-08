@@ -95,6 +95,7 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 | `audit`                | `true`    | In-transaction audit trail with before/after diffs; also enables row history and row-level watch |
 | `softDelete`           | `true`    | Deletes mark `is_deleted` instead of removing rows                                               |
 | `idempotency`          | `false`   | Adds the `idempotency_key` column for replay-safe creates                                        |
+| `extensible`           | `false`   | Lets users add [their own columns](#extending-a-plugin-schema) to this table                     |
 | `schemas`              | —         | [Property schemas](#property-schemas-and-column-security) contributing dynamic columns          |
 | `filters`              | —         | [Default filters](#default-filters) shown on the table's filter panel                            |
 | `friendlyName`, `description` | — | Display metadata                                                                                |
@@ -217,6 +218,74 @@ subsequent publish:
   explicit statements under the manifest's `migrations` key to apply them deliberately.
 * **Uninstalling** the package keeps the data (the schema is orphaned); reinstalling re-adopts
   it. A full purge is available to administrators.
+
+## Extending a plugin schema
+
+Every deployment is different, and users routinely need one more field. A schema can invite
+that instead of forcing a fork: opt in from the manifest, and users you trust add their own
+tables and columns to your database at runtime.
+
+```json
+{
+  "name": "grit", "version": "1.2.0",
+  "extensible": {"tables": true},
+  "tables": {
+    "issue": {"extensible": true, "columns": {"title": {"type": "string"}}}
+  }
+}
+```
+
+* `"extensible": {"tables": true}` at the root lets users add **their own tables**.
+* `"extensible": true` on a table lets them add **their own columns** to it.
+
+Both are off by default, and both are yours to revoke: turning a flag off blocks new
+extensions while everything already added keeps working.
+
+Users also need the **Extend** permission on the schema entity — grant it from the schema's
+`Share...` dialog, or with
+`grok.dapi.domains.schema('grit').grant(groupId, 'Extend')`. Extend is a schema-level
+permission; it does not by itself grant access to any row data.
+
+What users may do is deliberately narrow:
+
+* Their own **tables** get the full manifest vocabulary, and they manage what they created.
+* Their own **columns on your tables** stay optional and non-unique, never join the business
+  key, never become the display-name column, and may only `restrict` or `setnull` on delete —
+  your existing rows can never be invalidated or deleted by someone else's column.
+* Everything **you** declared is immutable to them: your columns, your table metadata, your
+  property schemas.
+
+Republishing your package is safe. The deploy diff sees only your objects: user tables and
+columns are retained untouched, and a plugin column or table that would collide with one of
+theirs is refused with a named error rather than silently adopting their data. Uninstalling
+orphans the schema and keeps their work; reinstalling re-adopts it.
+
+Two things to know about how extension columns are stored:
+
+* They live under an `x_` **physical prefix** in PostgreSQL (`x_customer_id`) so they can
+  never collide with a column you add later. Every API surface — insert, query, filter, patch,
+  batch, d42, the audit trail — uses the declared name (`customer_id`). Because of this,
+  **no column you declare may start with `x_`**; the manifest validator rejects it.
+* They exist only in the server registry, so `grok api` **never generates them** into your
+  typed clients — your generated code keeps describing exactly what your manifest declares.
+  Users reach their columns through the generic client,
+  `grok.dapi.domains.table('grit.issue')`.
+
+Extension applies use the same endpoint as any other schema change
+([`schema.apply`](#schema-lifecycle-grants-and-watching)) with an `extend` section, and the
+same dry-run/confirm flow for anything destructive:
+
+```ts
+await grok.dapi.domains.schema('grit').apply({
+  tables: {customers: {columns: {name: {type: 'string', isName: true}}}},
+  extend: {issue: {columns: {customer_id: {type: 'ref', ref: 'customers', onDelete: 'setnull'}}}},
+});
+```
+
+The `extend` section is full state for the user's own columns of that table: omitting one they
+previously added proposes its drop. Optimistic concurrency runs on the schema's extension
+counter (`ifVersion` ↔ `extVersion`, echoed in the dry-run plan) — your package's own version
+is never touched by an extension. See `dapi/domains/extend-schema.js` in ApiSamples.
 
 ## Working with data from JS
 
