@@ -149,9 +149,11 @@ for (const lang of languages) {
           {'string_input': escapingTestStrings[i]});
         expect(escapingTestStrings[i], result);
       }
-      // One server round-trip per string, run one after another, against the 30s default —
-      // each is ~1s idle, so the budget only ever held while nothing else used the stand.
-    }, {timeout: 180000});
+      // One server round-trip per string, fourteen of them one after another, against the 30s
+      // default. Python and R come in around 25-35s; Octave takes ~14s per call on a warm
+      // reused kernel and needs ~200s for the set, which is a real slowdown of its own rather
+      // than anything this test does — the budget is sized so it stops masquerading as a flake.
+    }, {timeout: 420000});
 
     if (lang !== 'Grok') {
       test('String list input', async () => {
