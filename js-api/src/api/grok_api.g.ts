@@ -823,6 +823,8 @@ export interface IDartApi {
   grok_Meta_RenderProperties(meta: any, x: any): any;
   grok_Meta_RenderView(meta: any, x: any): any;
   grok_Meta_RenderGrid(meta: any, grid: any, items: any): any;
+  grok_Meta_RenderListItem(meta: any, x: any): any;
+  grok_Meta_RenderInput(meta: any, x: any): any;
   grok_Meta_GetById(meta: any, id: String): Promise<any>;
   grok_Meta_DartForType(type: String): any;
   grok_DomainRowMeta_RegisterPerTableMetas(): Promise<any>;

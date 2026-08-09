@@ -13,6 +13,7 @@
 
 import * as ui from '../ui';
 import {EntityMetaDartProxy, ObjectHandler} from '../ui';
+import {InputBase} from './widgets/inputs-base';
 import {DomainRegistryClient, DomainTableClient} from './dapi';
 import {domainCall, DomainConditionTree, DomainQueryParams, DomainTableCapabilities,
   splitDomainTable} from './domains';
@@ -273,6 +274,18 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
 
   renderCard(x: T, context: any = null): HTMLElement {
     return this._delegate(x, (m, r) => m.renderCard(r, context), () => super.renderCard(x, context));
+  }
+
+  renderListItem(x: T, context: any = null): HTMLDivElement {
+    const m = this.dartMeta;
+    const row = this.rowOf(x);
+    return m == null || row == null ? super.renderListItem(x, context) : m.renderListItem(row, context);
+  }
+
+  renderInput(x: T, context: any = null): InputBase | null {
+    const m = this.dartMeta;
+    const row = this.rowOf(x);
+    return m == null || row == null ? super.renderInput(x, context) : m.renderInput(row, context);
   }
 
   renderProperties(x: T, context: any = null): HTMLElement {

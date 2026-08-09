@@ -1759,6 +1759,19 @@ export class ObjectHandler<T = any> {
     return divText(this.getCaption(x));
   }
 
+  /** Renders the item as a list item — used when displaying objects in lists
+   * (such as wide html grids, or popups in type-ahead boxes).
+   * By default, renders the item's name. */
+  renderListItem(x: T, context: any = null): HTMLDivElement {
+    return divText(this.getCaption(x));
+  }
+
+  /** Renders an input for the item (e.g. to be used in forms);
+   * null when the handler does not define one. */
+  renderInput(x: T, context: any = null): InputBase | null {
+    return null;
+  }
+
   /** Renders properties list for the item. */
   renderProperties(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
@@ -1901,6 +1914,8 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }
   renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x)); }
   renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
+  renderListItem(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderListItem(this.dart, toDart(x)); }
+  renderInput(x: any, context: any = null): InputBase | null { return toJs(api.grok_Meta_RenderInput(this.dart, toDart(x))); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }
   renderGrid(grid: Grid, options?: {items?: DataFrame}): void {

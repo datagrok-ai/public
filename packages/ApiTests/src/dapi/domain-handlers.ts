@@ -73,6 +73,29 @@ category('JS: domain handlers', () => {
     expect(base.isPlatformDefault, true, 'base renderGrid is not marked isPlatformDefault');
   });
 
+  test('renderListItem: base default renders the caption in a div', async () => {
+    class Plain extends DG.ObjectHandler {
+      get type() { return 'apitests.plain'; }
+      isApplicable(_x: any) { return false; }
+      getCaption(x: any) { return `plain ${x}`; }
+    }
+    const el = new Plain().renderListItem(42);
+    expect(el instanceof HTMLDivElement, true, 'renderListItem must return a div');
+    expect(el.textContent, 'plain 42');
+  });
+
+  test('renderInput: base default is null, UserMeta provides a user selector', async () => {
+    class Plain extends DG.ObjectHandler {
+      get type() { return 'apitests.plain'; }
+      isApplicable(_x: any) { return false; }
+    }
+    expect(new Plain().renderInput(42), null, 'renderInput must default to null');
+    const user = await grok.dapi.users.current();
+    const input = DG.ObjectHandler.forEntity(user)!.renderInput(user);
+    expect(input instanceof DG.InputBase, true, 'UserMeta.renderInput must resolve an InputBase');
+    expect(input!.root.classList.contains('ui-input-user'), true, 'expected the user selector input');
+  });
+
   test('renderGrid: registered JS handler wins dispatch, decorates a queryDf frame', async () => {
     const seen: (_DG.DataFrame | null)[] = [];
     class ItemHandler extends DG.ObjectHandler {
@@ -187,7 +210,7 @@ category('JS: domain handlers', () => {
       const dart = dartMetaFor('apitests.item');
       expect(dart != null, true, 'per-table Dart meta for apitests.item not registered');
       expect(handler.getCaption(row), dart.getCaption(row), 'caption differs from the platform default');
-      for (const member of ['renderCard', 'renderMarkup', 'renderTooltip'])
+      for (const member of ['renderCard', 'renderMarkup', 'renderTooltip', 'renderListItem'])
         expect((handler as any)[member](row).outerHTML, dart[member](row).outerHTML,
           `${member} differs from the platform default`);
       expect(handler.isApplicable(row), true, 'own row not claimed');

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20298: Added ui/handlers/render-input.js — `ObjectHandler.renderInput`: the meta-provided user selector for a User
+* GROK-20298: ui/handlers/handlers.js — added `renderListItem` to the manual-rendering table
 * GROK-20298: Added dapi/domains/facade-form.js — the domain form plain: `issues.form({values})` mounted in a view with a Save button, everything else from the registry
 * GROK-20298: Moved the domain samples into their own `dapi/domains/` folder and dropped the `domains-` prefix (dapi/domains-typed-client.js → dapi/domains/typed-client.js, dapi/domains.js → dapi/domains/crud.js, and so on)
 * GROK-20298: Added the rest of the `domains` facade catalog — dapi/domains/facade-app.js (the whole CRUD app in one body line), dapi/domains/facade-list-view.js (a query-scoped list page + the reference picker), dapi/domains/facade-grid.js (an editable grid over a filtered subset, plus a grid's machine surface) and dapi/domains/facade-composed.js (a master-detail page with one dirty state and one gate, then a domain grid live next to a bar chart)
