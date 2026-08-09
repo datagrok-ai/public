@@ -1228,7 +1228,9 @@ export class DomainSchemaClient {
    * 'schema-not-extensible', 'invalid-extend', 'plugin-schema-not-editable'), and columns
    * you add to a plugin table must stay nullable, non-unique, non-display, and must not
    * cascade deletes. Physical names of extension columns are prefixed server-side; every
-   * API surface keeps using the logical name. */
+   * API surface — reads, writes, filters, and the audit trail — keeps using the logical name,
+   * with the exception of raw PostgreSQL error text that quotes an identifier verbatim
+   * (a constraint violation naming `fk_<table>_x_<column>`, say). */
   apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
                propertySchemas?: object; dropTables?: string[];
                ifVersion?: string; confirmDestructive?: boolean},

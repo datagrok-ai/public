@@ -264,8 +264,10 @@ Two things to know about how extension columns are stored:
 
 * They live under an `x_` **physical prefix** in PostgreSQL (`x_customer_id`) so they can
   never collide with a column you add later. Every API surface — insert, query, filter, patch,
-  batch, d42, the audit trail — uses the declared name (`customer_id`). Because of this,
-  **no column you declare may start with `x_`**; the manifest validator rejects it.
+  batch, d42, the audit trail — uses the declared name (`customer_id`). The prefix does surface
+  in raw PostgreSQL messages that quote an identifier verbatim, such as a constraint-violation
+  error naming `fk_issue_x_customer_id`. Because of the prefix, **no column you declare may
+  start with `x_`**; the manifest validator rejects it.
 * They exist only in the server registry, so `grok api` **never generates them** into your
   typed clients — your generated code keeps describing exactly what your manifest declares.
   Users reach their columns through the generic client,
