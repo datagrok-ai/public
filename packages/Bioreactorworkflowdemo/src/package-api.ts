@@ -22,6 +22,13 @@ export namespace funcs {
     return await grok.functions.call('BioreactorWorkflowDemo:BioreactorConfiguration', { initialVolume, initialBiomass, initialSubstrate, muMax, monodKs, biomassYield, decayRate, maxVolume });
   }
 
+  /**
+  Apply daily feeding and simulate bacterial growth for one cultivation day
+  */
+  export async function dayCalculation(solutionAdded: number , substrateAdded: number , incomingVolume: number , incomingBiomass: number , incomingSubstrate: number , maximumGrowthRate: number , halfSaturationConstant: number , yieldCoefficient: number , decayConstant: number , dayDuration: number ): Promise<{finalVolume: number, finalBiomass: number, finalSubstrate: number, finalBiomassMass: number, finalSubstrateMass: number, biomassMassChange: number, substrateConsumed: number, dailyProfile: DG.DataFrame}> {
+    return await grok.functions.call('BioreactorWorkflowDemo:DayCalculation', { solutionAdded, substrateAdded, incomingVolume, incomingBiomass, incomingSubstrate, maximumGrowthRate, halfSaturationConstant, yieldCoefficient, decayConstant, dayDuration });
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('BioreactorWorkflowDemo:Info', {});
   }

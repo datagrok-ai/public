@@ -143,10 +143,11 @@ The equations are solved on `0 <= t <= 24 h` from the post-addition state
 `mu = 0`, `S` remains zero, and biomass changes only through decay. Numerical
 roundoff must never be allowed to produce negative biomass or substrate.
 
-This coupled Monod system generally requires numerical integration; treating
-the start-of-day growth rate as constant for the whole day would overestimate
-growth when substrate becomes depleted. The numerical method and tolerance
-will be fixed and verified when the calculation step is implemented.
+This coupled Monod system is integrated with adaptive RK4 step-doubling using
+a relative and absolute tolerance of `1e-8`; treating the start-of-day growth
+rate as constant for the whole day would overestimate growth when substrate
+becomes depleted. The daily profile contains hourly samples and an additional
+point at substrate depletion when depletion occurs between samples.
 
 ### Per-day outputs
 
