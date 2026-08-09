@@ -130,6 +130,30 @@ export function refSourceFor(target: string): RefSource {
     ? new PrincipalRefSource(target) : new DomainRefSource(target);
 }
 
+/** A `User` / `Group` column's visible editor: the platform's own picker — the one
+ * the Dart row editor uses (`DomainRowEditor._coreRefInput`) — and which principal
+ * its selection points at. */
+interface PrincipalInput {
+  input: DG.InputBase;
+  isUser: boolean;
+}
+
+/** The id a principal picker's selection writes: a user column stores the USER's id
+ * (the picker hands out the personal GROUP wrapping it — what the Dart editor's
+ * `items.first.user?.id` reads), a group column the group's own. */
+function principalId(selected: any[], isUser: boolean): string | null {
+  if (selected.length === 0)
+    return null;
+  let id: any = null;
+  try {
+    const item = isUser ? selected[0]?.user ?? selected[0] : selected[0];
+    id = item?.id;
+  } catch (_) {
+    id = null;      // a group with nothing behind its `user` handle
+  }
+  return typeof id === 'string' && id !== '' ? id : null;
+}
+
 /** What a display text resolved to: an id, or the reason it did not. */
 export interface RefResolution {
   id: string | null;
@@ -447,6 +471,11 @@ export class DomainForm extends DG.Widget implements IEditorHost {
   private readonly _host = ui.div([], 'domain-ui-form-inputs');
   private readonly _inputs = new Map<string, DG.InputBase>();
   private readonly _refs = new Map<string, RefInput>();
+  /** The `User` / `Group` columns among {@link _refs} — the ones whose VISIBLE input
+   * is the platform picker rather than the {@link RefInput}'s type-ahead. */
+  private readonly _principals = new Map<string, PrincipalInput>();
+  /** Guards a picker's seeding against a newer write ({@link _seedPrincipal}). */
+  private readonly _seedGeneration = new Map<string, number>();
   private readonly _factories = new Map<string, (p: DG.Property) => DG.InputBase>();
   private readonly _validators = new Map<string, DomainFieldValidator[]>();
   private readonly _validatorGeneration = new Map<string, number>();
@@ -793,6 +822,7 @@ export class DomainForm extends DG.Widget implements IEditorHost {
     this._inputSubs = [];
     this._inputs.clear();
     this._refs.clear();
+    this._principals.clear();
     this._host.innerHTML = '';
     const inputs: DG.InputBase[] = [];
     for (const p of this.editableProperties()) {
@@ -815,19 +845,27 @@ export class DomainForm extends DG.Widget implements IEditorHost {
     if (factory != null)
       input = factory(p);
     else if (isReferenceProperty(p)) {
-      const ref = new RefInput({target: `${p.semType}`, nullable: p.nullable === true,
+      const target = `${p.semType}`;
+      const ref = new RefInput({target: target, nullable: p.nullable === true,
         caption: p.friendlyName ?? name});
       this._refs.set(name, ref);
-      this._inputSubs.push(ref.onResolved.subscribe((resolved) => {
-        if (this._syncing)
-          return;
-        this._refErrors.set(name, resolved.error);
-        if (resolved.error == null)
-          this._write(name, resolved.id);
-        else
-          this._refreshErrors();
-      }));
-      input = ref.input;
+      // A user / group column is edited with the platform's own picker, exactly as the
+      // Dart row editor does; the RefInput stays behind it as the display-text → id
+      // resolver every machine write goes through (its own input is never mounted).
+      if (target === 'User' || target === 'Group')
+        input = this._principalInput(name, target === 'User', p);
+      else {
+        this._inputSubs.push(ref.onResolved.subscribe((resolved) => {
+          if (this._syncing)
+            return;
+          this._refErrors.set(name, resolved.error);
+          if (resolved.error == null)
+            this._write(name, resolved.id);
+          else
+            this._refreshErrors();
+        }));
+        input = ref.input;
+      }
     }
     else
       input = DG.InputBase.forProperty(p);
@@ -838,6 +876,74 @@ export class DomainForm extends DG.Widget implements IEditorHost {
           this._write(name, input.value);
       }));
     return input;
+  }
+
+  /** The platform's user / group picker, single-select (`UserGroupSelector` on the
+   * Dart side): the server-side lookup, the avatar tags and the clear affordance come
+   * with it, and a selection writes the principal's id through the editor. */
+  private _principalInput(name: string, isUser: boolean, p: DG.Property): DG.InputBase {
+    const caption = p.friendlyName ?? name;
+    const input: DG.InputBase = isUser ? ui.input.user(caption, {multiValue: false})
+      : ui.input.userGroups(caption, {multiValue: false});
+    this._principals.set(name, {input: input, isUser: isUser});
+    this._inputSubs.push(input.onChanged.subscribe(() => {
+      if (this._syncing)
+        return;
+      const selected: any[] = input.value ?? [];
+      const id = principalId(selected, isUser);
+      // A selection whose principal cannot be read is REPORTED, not written as empty —
+      // the Dart editor refuses the save with the same message.
+      this._refErrors.set(name, selected.length > 0 && id == null
+        ? `Cannot resolve the selected ${isUser ? 'user' : 'group'}` : null);
+      this._setResolverId(name, id);
+      this._write(name, id);
+    }));
+    return input;
+  }
+
+  /** Points the picker at the id the row holds — the Dart editor's `_coreRefInput`
+   * seeding. Generation-guarded, so a write made while a resolution is in flight wins;
+   * a failure warns and leaves the picker empty instead of throwing. */
+  private _seedPrincipal(name: string, id: string | null): void {
+    const principal = this._principals.get(name)!;
+    const generation = (this._seedGeneration.get(name) ?? 0) + 1;
+    this._seedGeneration.set(name, generation);
+    this._setResolverId(name, id);
+    if (id == null) {
+      this._setPrincipal(principal, []);
+      return;
+    }
+    this._trackWork((principal.isUser ? grok.dapi.users.find(id) : grok.dapi.groups.find(id))
+      .then((found: any) => {
+        if (this._seedGeneration.get(name) !== generation)
+          return;
+        // The picker's items are personal GROUPs: a user resolves through its own.
+        const item = found == null ? null : principal.isUser ? found.group ?? found : found;
+        this._setPrincipal(principal, item == null ? [] : [item]);
+      }, (e: any) => {
+        grok.log.warning(`${this.table}.${name}: cannot resolve "${id}" — ${e?.message ?? e}`);
+        if (this._seedGeneration.get(name) === generation)
+          this._setPrincipal(principal, []);
+      }));
+  }
+
+  private _setPrincipal(principal: PrincipalInput, items: any[]): void {
+    // Restored rather than cleared: the seed of one field runs inside the sync of all
+    // of them ({@link _syncInputs}), which must stay syncing for the fields after it.
+    const syncing = this._syncing;
+    this._syncing = true;
+    try {
+      principal.input.value = items;
+    } finally {
+      this._syncing = syncing;
+    }
+    principal.input.validate();
+  }
+
+  /** Keeps the resolver behind a picker pointing at the same id, so `getRefInput(name).id`
+   * stays truthful; there is no display text to keep — its input is not mounted. */
+  private _setResolverId(name: string, id: string | null): void {
+    this._refs.get(name)?.setId(id, '', false);
   }
 
   private _write(name: string, value: any): void {
@@ -866,11 +972,15 @@ export class DomainForm extends DG.Widget implements IEditorHost {
       if (this._validatorGeneration.get(name) !== generation)
         return;
       this._refErrors.set(name, resolved.error);
-      this._syncing = true;
-      try {
-        ref.setId(resolved.id, undefined, false);
-      } finally {
-        this._syncing = false;
+      if (this._principals.has(name))
+        this._seedPrincipal(name, resolved.id);
+      else {
+        this._syncing = true;
+        try {
+          ref.setId(resolved.id, undefined, false);
+        } finally {
+          this._syncing = false;
+        }
       }
       this._write(name, resolved.id);
       ref.input.validate();
@@ -954,7 +1064,9 @@ export class DomainForm extends DG.Widget implements IEditorHost {
       for (const [name, input] of this._inputs) {
         const value = this.getValue(name);
         const ref = this._refs.get(name);
-        if (ref != null)
+        if (this._principals.has(name))
+          this._seedPrincipal(name, value == null ? null : `${value}`);
+        else if (ref != null)
           ref.setId(value == null ? null : `${value}`, undefined, false);
         else
           input.value = value;

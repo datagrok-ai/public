@@ -161,6 +161,15 @@ export function isReferenceProperty(p: DG.Property): boolean {
   return semType === 'User' || semType === 'Group' || /^[^.]+\.[^.]+$/.test(semType);
 }
 
+/** Whether [p] addresses another DOMAIN row — a `ref` column (semType
+ * `'<schema>.<table>'`) alone. User / group columns hold uuids too, but the
+ * platform's own anchored picker edits them in a grid, so they are not excluded
+ * there; every other path ({@link isReferenceProperty}) still treats all three
+ * alike. */
+export function isDomainRefProperty(p: DG.Property): boolean {
+  return /^[^.]+\.[^.]+$/.test(`${p.semType ?? ''}`);
+}
+
 /**
  * A widget or page that answers for a set of {@link DomainFrameEditor}s.
  *
