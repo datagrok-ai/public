@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains/extend-schema.js — extending a plugin's domain schema: the Extend grant, the extend apply, and using the new column by its logical name
 * GROK-20298: Added ui/handlers/render-input.js — `ObjectHandler.renderInput`: the meta-provided user selector for a User
 * GROK-20298: ui/handlers/handlers.js — added `renderListItem` to the manual-rendering table
 * GROK-20298: Added dapi/domains/facade-form.js — the domain form plain: `issues.form({values})` mounted in a view with a Save button, everything else from the registry
