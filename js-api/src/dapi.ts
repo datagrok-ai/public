@@ -38,6 +38,7 @@ import {
   DomainAuditEntry,
   DomainBatchOptions,
   DomainBatchReport,
+  DomainDatetimeColumns,
   DomainDeleteReport,
   DomainError,
   DomainFacetKind,
@@ -1283,41 +1284,84 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     TColumn extends string = string,
     TExpand extends {[key: string]: {}} = {[key: string]: {}}> {
   dart: any;
-  private readonly _datetimeColumns?: string[];
-  private readonly _detailDatetimeColumns?: {[detailField: string]: string[]};
+  private readonly _datetimeOverride: DomainDatetimeColumns | null;
+
+  /** Registry-resolved datetime columns per `'<schema>.<table>'`, shared across client
+   * instances (the generated client map creates a fresh client per property access).
+   * Holds promises so concurrent resolutions coalesce; failures are not cached. */
+  private static _datetimeCache = new Map<string, Promise<DomainDatetimeColumns>>();
 
   constructor(dart: any, public readonly schema: string, public readonly table: string,
               options?: DomainTableClientOptions) {
     this.dart = dart;
-    this._datetimeColumns = options?.datetimeColumns;
-    this._detailDatetimeColumns = options?.detailDatetimeColumns;
+    this._datetimeOverride = options?.datetimeColumns != null || options?.detailDatetimeColumns != null
+      ? {own: options.datetimeColumns ?? [], details: options.detailDatetimeColumns ?? {}} : null;
   }
 
-  /** Materializes the declared datetime columns as dayjs on JSON reads
-   * ({@link DomainTableClientOptions.datetimeColumns} — generated clients opt in;
-   * untyped clients keep ISO strings), recursing into `'details:'` child arrays
-   * per {@link DomainTableClientOptions.detailDatetimeColumns}. */
-  private _fromWire(row: any): any {
+  /**
+   * Datetime columns of this table and of its `'details:'` child tables — what JSON
+   * reads materialize as dayjs. Resolved from the domain registry (the same column
+   * metadata that types them in the first place) and cached per table for the session;
+   * explicit {@link DomainTableClientOptions} act as an override and skip the registry.
+   * A failed resolution (unregistered table, no session) leaves that read unconverted
+   * and is retried on the next one.
+   */
+  private _datetimes(): Promise<DomainDatetimeColumns> {
+    if (this._datetimeOverride != null)
+      return Promise.resolve(this._datetimeOverride);
+    const address = `${this.schema}.${this.table}`;
+    let cached = DomainTableClient._datetimeCache.get(address);
+    if (cached == null) {
+      cached = (async () => {
+        const registry = new DomainRegistryClient();
+        // The registry describes DECLARED columns only; the system datetimes exist
+        // on every domain table and are prepended by hand.
+        const system = ['created_on', 'updated_on'];
+        const datetimeNames = (props: Property[]) =>
+          props.filter((p) => p.propertyType === 'datetime').map((p) => p.name);
+        const props = await registry.rowProperties(address);
+        const own = [...system, ...datetimeNames(props)];
+        // Master-expand fields ('<fk_column>.<column>') of declared datetime columns:
+        // a ref column's semType is its target's '<schema>.<table>' address.
+        for (const p of props)
+          if (/^\w+\.\w+$/.test(p.semType ?? '')) {
+            try {
+              for (const c of datetimeNames(await registry.rowProperties(p.semType)))
+                own.push(`${p.name}.${c}`);
+            } catch (_) { /* an unreadable target leaves its fields unconverted */ }
+          }
+        const details: {[detailField: string]: string[]} = {};
+        for (const child of (await registry.tableInfo(address)).childTables ?? []) {
+          try {
+            details[child.table] =
+              [...system, ...datetimeNames(await registry.rowProperties(`${this.schema}.${child.table}`))];
+          } catch (_) { /* an unreadable child leaves its rows unconverted */ }
+        }
+        return {own, details};
+      })();
+      DomainTableClient._datetimeCache.set(address, cached);
+      cached.catch(() => DomainTableClient._datetimeCache.delete(address));
+    }
+    return cached.catch(() => ({own: [], details: {}}));
+  }
+
+  /** Materializes [datetimes] as dayjs on one JSON row, recursing into the
+   * `'details:'` child arrays. */
+  private _fromWire(row: any, datetimes: DomainDatetimeColumns): any {
     if (row == null)
       return row;
-    if (this._datetimeColumns != null)
-      for (const c of this._datetimeColumns)
-        if (typeof row[c] === 'string')
-          row[c] = dayjs(row[c]);
-    if (this._detailDatetimeColumns != null)
-      for (const field of Object.keys(this._detailDatetimeColumns)) {
-        const children = row[field];
-        if (Array.isArray(children))
-          for (const child of children)
-            for (const c of this._detailDatetimeColumns[field])
-              if (child != null && typeof child[c] === 'string')
-                child[c] = dayjs(child[c]);
-      }
+    for (const c of datetimes.own)
+      if (typeof row[c] === 'string')
+        row[c] = dayjs(row[c]);
+    for (const field of Object.keys(datetimes.details)) {
+      const children = row[field];
+      if (Array.isArray(children))
+        for (const child of children)
+          for (const c of datetimes.details[field])
+            if (child != null && typeof child[c] === 'string')
+              child[c] = dayjs(child[c]);
+    }
     return row;
-  }
-
-  private get _converts(): boolean {
-    return this._datetimeColumns != null || this._detailDatetimeColumns != null;
   }
 
   /** Bare `query()` returns an awaitable {@link DomainQueryBuilder} (it used to resolve
@@ -1332,8 +1376,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
     if (spec === undefined)
       return new DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>(this);
+    const datetimes = this._datetimes();
     return domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec))
-      .then((rows: any) => this._converts ? rows.map((r: any) => this._fromWire(r)) : rows);
+      .then(async (rows: any) => {
+        const dt = await datetimes;
+        return rows.map((r: any) => this._fromWire(r, dt));
+      });
   }
 
   /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
@@ -1355,7 +1403,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   /** Fetches one row by id; resolves to null if the row does not exist or is not visible
    * (typed `TRow` for backward compatibility — guard against null, or use `first`). */
   async get(id: string): Promise<TRow> {
-    return this._fromWire(await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id)));
+    const datetimes = this._datetimes();
+    const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id));
+    return this._fromWire(row, await datetimes);
   }
 
   /** Inserts a single row or a small array of rows; resolves to per-row reports
@@ -1448,7 +1498,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Business-key (or any equality-set) lookup; ambiguous or absent → null. */
   async getByKey(keyValues: Partial<TRow>): Promise<TRow | null> {
-    return this._fromWire(await domainCall(api.grok_Dapi_Domains_GetByKey(this.dart, this.schema, this.table, keyValues)));
+    const datetimes = this._datetimes();
+    const row = await domainCall(api.grok_Dapi_Domains_GetByKey(this.dart, this.schema, this.table, keyValues));
+    return this._fromWire(row, await datetimes);
   }
 
   /** Rows for [ids] as a typed DataFrame: the 'id' column plus [fields] (default: all

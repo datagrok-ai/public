@@ -6,7 +6,8 @@
  * Two rules hold everywhere: condition VALUES are bound server-side — never interpolated
  * into filter strings, so any string value is expressible (apostrophes included, which the
  * smart-filter string grammar cannot quote); and datetime columns materialize as dayjs on
- * generated clients (`datetimeColumns`) while untyped clients keep ISO strings.
+ * JSON reads — every client, typed or not, resolves them from the domain registry
+ * (`DomainTableClientOptions` overrides exist for callers that must avoid it).
  *
  * @remarks BREAKING (codegen v2, GROK-20602): `grok api`-generated clients type datetime
  * columns as `Dayjs` and thread `<Table>Column`/`<Table>Expand` generics; regenerating
@@ -478,15 +479,23 @@ export interface DomainSavedFilterInfo {
   author?: any;
 }
 
-/** Options of `DomainsDataSource.table` (generated clients pass these). */
+/** Options of `DomainsDataSource.table`. Datetime columns resolve from the domain
+ * registry by default — these overrides exist for legacy generated clients and for
+ * callers that must avoid the registry. */
 export interface DomainTableClientOptions {
-  /** Datetime columns to materialize as dayjs on JSON reads (generated clients pass this;
-   * untyped clients keep ISO strings). Dotted `'<fk>.<col>'` entries cover master-expand
-   * fields. */
+  /** OVERRIDE: datetime columns to materialize as dayjs on JSON reads, instead of the
+   * registry-resolved set. Dotted `'<fk>.<col>'` entries cover master-expand fields. */
   datetimeColumns?: string[];
-  /** Datetime columns of `'details:'` child rows, keyed by the result field (the child-table
-   * name): materialized as dayjs recursively when the expand is requested. */
+  /** OVERRIDE: datetime columns of `'details:'` child rows, keyed by the result field
+   * (the child-table name), instead of the registry-resolved set. */
   detailDatetimeColumns?: {[detailField: string]: string[]};
+}
+
+/** Resolved datetime columns of a table: its own plus those of its `'details:'`
+ * child tables, keyed by the result field (see `DomainTableClient`). */
+export interface DomainDatetimeColumns {
+  own: string[];
+  details: {[detailField: string]: string[]};
 }
 
 /** Typed transaction-op values: each column also accepts a `'$<ref>'` back-reference. */
