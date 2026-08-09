@@ -173,28 +173,20 @@ export type GritTransactionOp =
 
 /** Typed clients for the `grit` domain schema tables (lazy — no import-time side effects). */
 export const gritDb = {
-  get project() {
-    return grok.dapi.domains.table<ProjectRow, ProjectInsert, ProjectColumn, ProjectExpand>(
-      'grit.project', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'issue': ['created_on', 'updated_on']}});
+  get projects() {
+    return grok.dapi.domains.table<ProjectRow, ProjectInsert, ProjectColumn, ProjectExpand>('grit.project');
   },
-  get issue() {
-    return grok.dapi.domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand>(
-      'grit.issue', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'comment': ['created_on', 'updated_on'], 'issue_label': ['created_on', 'updated_on']}});
+  get issues() {
+    return grok.dapi.domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand>('grit.issue');
   },
-  get comment() {
-    return grok.dapi.domains.table<CommentRow, CommentInsert, CommentColumn, CommentExpand>(
-      'grit.comment', {datetimeColumns: ['created_on', 'updated_on']});
+  get comments() {
+    return grok.dapi.domains.table<CommentRow, CommentInsert, CommentColumn, CommentExpand>('grit.comment');
   },
-  get label() {
-    return grok.dapi.domains.table<LabelRow, LabelInsert, LabelColumn, LabelExpand>(
-      'grit.label', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'issue_label': ['created_on', 'updated_on']}});
+  get labels() {
+    return grok.dapi.domains.table<LabelRow, LabelInsert, LabelColumn, LabelExpand>('grit.label');
   },
-  get issueLabel() {
-    return grok.dapi.domains.table<IssueLabelRow, IssueLabelInsert, IssueLabelColumn, IssueLabelExpand>(
-      'grit.issue_label', {datetimeColumns: ['created_on', 'updated_on']});
+  get issueLabels() {
+    return grok.dapi.domains.table<IssueLabelRow, IssueLabelInsert, IssueLabelColumn, IssueLabelExpand>('grit.issue_label');
   },
   transaction<T extends GritTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

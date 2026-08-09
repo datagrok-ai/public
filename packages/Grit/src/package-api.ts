@@ -17,16 +17,20 @@ export namespace funcs {
   }
 
   /**
-  Custom rendering for grit.issue domain rows (status/priority badges, timeline)
+  Custom rendering for grit.issue domain rows (status/priority badges)
   */
   export async function gritIssueHandler(): Promise<any> {
     return await grok.functions.call('Grit:GritIssueHandler', {});
   }
 
   /**
-  GRok Issue Tracker — projects, issues, comments over entity-mapped domain schemas
+  Issue tracker over entity-mapped domain schemas — the platform's Domain View with the filter panel
   */
-  export async function gritApp(): Promise<DG.View> {
-    return await grok.functions.call('Grit:GritApp', {});
+  export async function issuesApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Grit:IssuesApp', { path });
+  }
+
+  export async function issuesTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Grit:IssuesTreeBrowser', { treeNode });
   }
 }

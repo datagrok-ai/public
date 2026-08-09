@@ -8,6 +8,7 @@
   },
   "description": "Grit (GRok Issue Tracker) — reference app for entity-mapped domain schemas: projects, issues, comments, labels",
   "dependencies": {
+    "@datagrok-libraries/domain-ui": "../../libraries/domain-ui",
     "@datagrok-libraries/test": "^1.1.0",
     "@datagrok-libraries/utils": "latest",
     "cash-dom": "^8.1.5",
@@ -15,10 +16,10 @@
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "@types/node": "^26.1.0",
+    "@types/node": "^25.5.0",
     "datagrok-tools": "^5.1.5",
     "ts-loader": "latest",
-    "typescript": "latest",
+    "typescript": "^5.9.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },
