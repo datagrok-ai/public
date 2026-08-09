@@ -1,5 +1,5 @@
 // Negative tsc fixture: every wrong-typed usage below must FAIL compilation.
-import {sampleUi, sampleEventUi} from './src/generated/db-ui';
+import {sampleUi, sampleEventUi, testdbUiDb} from './src/generated/db-ui';
 
 export async function badUi(): Promise<void> {
   await sampleUi.grid({query: {columns: ['nope']}});
@@ -17,4 +17,8 @@ export async function badUi(): Promise<void> {
   // §1.7: a misspelled column in the form's seed values fails compile
   await sampleUi.form({values: {nmae: 'a'}});
   await sampleUi.formDialog({values: {count: 'not-a-number'}});
+  // the schema handle's per-table properties are typed the same way
+  const db = await testdbUiDb();
+  db.samples.form({values: {nmae: 'a'}});
+  db.sampleEvents.grid({defaults: {sample_id: 42}});
 }

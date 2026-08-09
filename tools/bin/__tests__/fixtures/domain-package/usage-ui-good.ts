@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import {DomainAppView, DomainForm, DomainGrid, DomainTable,
   EntityListWidget} from '@datagrok-libraries/domain-ui';
-import {sampleUi, sampleEventUi, SampleQuerySpec} from './src/generated/db-ui';
+import {sampleUi, sampleEventUi, testdbUiDb, TestdbUiDb, SampleQuerySpec} from './src/generated/db-ui';
 import type {SampleColumn, SampleExpand, SampleInsert, SampleRow} from './src/generated/db';
 
 export async function goodUi(): Promise<void> {
@@ -52,4 +52,13 @@ export async function goodUi(): Promise<void> {
   const query: DG.DomainQuery = sampleUi.query({filters: ['status = "new"'], columns: ['name'], limit: 10});
   const address: string = sampleUi.address;
   void query; void address;
+
+  // the schema-level handle: EVERY table prefetched under one await, each typed
+  const db: TestdbUiDb = await testdbUiDb();
+  const dbForm: DomainForm = db.samples.form({values: {name: 'a', status: 'new'}});
+  const dbGrid: DomainGrid = db.sampleEvents.grid({defaults: {sample_id: 'parent-id', kind: 'created'}});
+  const dbApp: DomainAppView = db.samples.app({query: {columns: ['name', 'status']}});
+  const dbRows: SampleRow[] = await db.samples.query({columns: ['name']});
+  const byName: DomainTable = db.table('sample_event');
+  void dbForm; void dbGrid; void dbApp; void dbRows; void byName;
 }

@@ -167,17 +167,15 @@ describe('generateDomainClients', () => {
       `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>} |`);
     expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
 
-    // per-schema typed clients: LAZY getters (no import-time side effects), four generics,
-    // datetimeColumns (system + declared + master-expand paths)
+    // per-schema typed clients: LAZY getters (no import-time side effects), four
+    // generics, PLURAL property names, no datetime config (the client resolves
+    // datetime columns from the registry)
     expect(code).toContain('export const testdbDb = {');
-    expect(code).toContain('  get sample() {');
+    expect(code).toContain('  get samples() {');
+    expect(code).toContain('  get sampleEvents() {');
     expect(code).toContain(
-      `    return grok.dapi.domains.table<SampleRow, SampleInsert, SampleColumn, SampleExpand>(`);
-    expect(code).toContain(
-      `      'testdb.sample', {datetimeColumns: ['created_on', 'updated_on', 'measured_on'],\r\n` +
-      `        detailDatetimeColumns: {'sample_event': ['created_on', 'updated_on']}});`);
-    expect(code).toContain(
-      `      'testdb.sample_event', {datetimeColumns: ['created_on', 'updated_on', 'sample_id.measured_on']});`);
+      `    return grok.dapi.domains.table<SampleRow, SampleInsert, SampleColumn, SampleExpand>('testdb.sample');`);
+    expect(code).not.toContain('datetimeColumns');
     expect(code).not.toMatch(/ as\r?\n?\s*DG\.DomainTableClient/);
     // mapped-tuple transaction: per-op result types for tuple ops literals
     expect(code).toContain(`  transaction<T extends TestdbTransactionOp[]>(ops: [...T]):`);
@@ -243,7 +241,7 @@ describe('generateDomainClients', () => {
     const requireFrom = createRequire(jsPath);
     const mod = requireFrom(jsPath);
     expect(Object.keys(mod)).toContain('testdbDb');
-    expect(() => mod.testdbDb.sample).toThrow();
+    expect(() => mod.testdbDb.samples).toThrow();
   });
 
   it('is idempotent: rerunning produces byte-identical output', () => {
@@ -401,7 +399,7 @@ describe('generateDomainClients --ui', () => {
     expect(code).toContain(`  readonly address: string = 'testdb.sample';`);
     expect(code).toContain(
       '  get client(): DG.DomainTableClient<SampleRow, SampleInsert, SampleColumn, SampleExpand> {');
-    expect(code).toContain('    return testdbDb.sample;');
+    expect(code).toContain('    return testdbDb.samples;');
     expect(code).toContain(
       '  table(): Promise<DomainTable<SampleRow, SampleInsert, SampleColumn, SampleExpand>> {');
     expect(code).toContain(
@@ -423,7 +421,7 @@ describe('generateDomainClients --ui', () => {
       `    return new DG.DomainQuery({...params, schema: 'testdb', table: 'sample'});`);
     expect(code).toContain('export const sampleUi = new SampleUi();');
     // the snake_case table gets the camelCase client getter and its own wrapper
-    expect(code).toContain('    return testdbDb.sampleEvent;');
+    expect(code).toContain('    return testdbDb.sampleEvents;');
     expect(code).toContain('export const sampleEventUi = new SampleEventUi();');
 
     expect(code).not.toMatch(/[^\r]\n/);   // CRLF, per the repo code style
@@ -440,6 +438,7 @@ describe('generateDomainClients --ui', () => {
     mutateManifest(dir, (m) => m.tables.sample.columns.extra_note = {type: 'string'});
     expect(generateDomainClients(dir)).toBe(true);
     expect(fs.readFileSync(dbUiPath(dir), 'utf8')).toContain('SampleUi');
+    expect(fs.readFileSync(dbUiPath(dir), 'utf8')).toContain('export function testdbUiDb(): Promise<TestdbUiDb>');
     expect(fs.readFileSync(dbPath(dir), 'utf8')).toContain('extra_note?: string;');
   });
 
@@ -458,7 +457,7 @@ describe('generateDomainClients --ui', () => {
       const res = runTsc(dir, 'usage-ui-bad.ts');
       expect(res.status).not.toBe(0);
       // exactly one error per intended negative — no accidental extra breakage
-      expect(res.output.match(/error TS/g)).toHaveLength(12);
+      expect(res.output.match(/error TS/g)).toHaveLength(14);
       // a wrong column name in a query spec, an expand key, and a condition
       expect(res.output).toMatch(/usage-ui-bad\.ts\(5,.*'"nope"' is not assignable to type 'SampleColumn'/);
       expect(res.output).toMatch(/usage-ui-bad\.ts\(8,.*'"details:nope"' is not assignable/);
@@ -474,8 +473,11 @@ describe('generateDomainClients --ui', () => {
       expect(res.output).toMatch(/usage-ui-bad\.ts\(14,.*'"nope"' is not assignable to type 'SampleColumn'/);
       // choices stay the generated literal union
       expect(res.output).toMatch(/usage-ui-bad\.ts\(16,.*'"bogus"' is not assignable to type 'SampleStatus/);
-      // §1.7: the form's seed values are this table's insert payload
+      // Â§1.7: the form's seed values are this table's insert payload
       expect(res.output).toMatch(/usage-ui-bad\.ts\(18,.*'nmae' does not exist in type 'Partial<SampleInsert>'/);
       expect(res.output).toMatch(/usage-ui-bad\.ts\(19,/);
+      // the schema handle's per-table properties carry the same typing
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(22,.*'nmae' does not exist in type 'Partial<SampleInsert>'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(23,/);
     });
 });

@@ -17,9 +17,29 @@ const dbFile = 'db.ts';
 const dbUiFile = 'db-ui.ts';
 /** What `db-ui.ts` imports from `@datagrok-libraries/domain-ui`. */
 const domainUiImports = ['domainHandler', 'domains', 'DomainAppView', 'DomainAppViewOptions',
-  'DomainDialogOptions', 'DomainEntityAppView', 'DomainEntityAppViewOptions', 'DomainForm',
+  'DomainDb', 'DomainDialogOptions', 'DomainEntityAppView', 'DomainEntityAppViewOptions', 'DomainForm',
   'DomainFormOptions', 'DomainGrid', 'DomainGridOptions', 'DomainTable', 'EntityListOptions',
   'EntityListWidget'];
+/** {@link DomainDb} members a table's camelCase property name must not shadow. */
+const domainDbReservedProps = ['name', 'tables', 'table', 'acquire'];
+
+/** Naive English plural of a (snake_case) table name — `issue` → `issues`, `box` →
+ * `boxes`, `category` → `categories`. MUST match domain-ui's `pluralizeTableName`:
+ * the runtime `DomainDb` assigns its per-table properties with the same rule, so the
+ * generated typed interfaces bind to it. */
+function pluralizeTableName(name: string): string {
+  if (/(s|x|z|ch|sh)$/.test(name))
+    return name + 'es';
+  if (/[^aeiou_]y$/.test(name))
+    return name.slice(0, -1) + 'ies';
+  return name + 's';
+}
+
+/** The camelCase plural property name a table gets on the schema client and the
+ * schema UI handle (`issue_label` → `issueLabels`). */
+function tableProp(tableName: string): string {
+  return utils.snakeToCamelCase(pluralizeTableName(tableName), false);
+}
 const domainSchemaPath = path.join(path.dirname(path.dirname(__dirname)), 'domain-schema.schema.json');
 
 const domainSystemColumns: [string, string][] = [
@@ -414,37 +434,12 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
         `values: DG.DomainTxValues<Partial<${typeName}Row>>; expectedVersion?: number} |`,
       `  {op: 'delete'; table: '${tableName}'; id: string} |`);
 
-    // Datetime materialization list: system first, then declared datetimes, then the
-    // master-expand paths ('<fk>.<col>') so expanded datetime fields are dayjs too —
-    // absent keys are a no-op for _fromWire.
-    const datetimeColumns = ['created_on', 'updated_on',
-      ...columns.filter((c) => c.rawType === 'datetime').map((c) => c.name)];
-    for (const c of columns)
-      if (c.ref != null)
-        for (const tc of tableColumns[c.ref])
-          if (tc.rawType === 'datetime')
-            datetimeColumns.push(`${c.name}.${tc.name}`);
-
-    // Details-expand children need their own datetime lists so _fromWire can
-    // materialize dayjs recursively (keyed by the result field = child table).
-    const detailEntries: string[] = [];
-    for (const childName of tableNames) {
-      if (!tableColumns[childName].some((c) => c.ref === tableName))
-        continue;
-      const cols = ['created_on', 'updated_on',
-        ...tableColumns[childName].filter((c) => c.rawType === 'datetime').map((c) => c.name)];
-      detailEntries.push(`'${childName}': [${cols.map((c) => `'${c}'`).join(', ')}]`);
-    }
-    const dtOption = `{datetimeColumns: [${datetimeColumns.map((c) => `'${c}'`).join(', ')}]` +
-      (detailEntries.length === 0 ? '}' : ',');
+    // No datetime config: the client resolves datetime columns from the domain
+    // registry itself (the Dayjs typing in <Table>Row stays true for every client).
     clients.push(
-      `  get ${utils.snakeToCamelCase(tableName, false)}() {`,
+      `  get ${tableProp(tableName)}() {`,
       `    return grok.dapi.domains.table<${typeName}Row, ${typeName}Insert, ` +
-        `${typeName}Column, ${typeName}Expand>(`,
-      ...(detailEntries.length === 0
-        ? [`      '${manifest.name}.${tableName}', ${dtOption});`]
-        : [`      '${manifest.name}.${tableName}', ${dtOption}`,
-           `        detailDatetimeColumns: {${detailEntries.join(', ')}}});`]),
+        `${typeName}Column, ${typeName}Expand>('${manifest.name}.${tableName}');`,
       '  },');
   }
 
@@ -509,9 +504,9 @@ function generateDomainUiCode(manifest: any, dbImports: string[]): string {
         `  /** The table address, \`'<schema>.<table>'\`. */`,
         `  readonly address: string = '${address}';`,
         '',
-        `  /** The typed client — the same one \`${schemaClient}.${utils.snakeToCamelCase(tableName, false)}\` returns. */`,
+        `  /** The typed client — the same one \`${schemaClient}.${tableProp(tableName)}\` returns. */`,
         `  get client(): DG.DomainTableClient<${generics}> {`,
-        `    return ${schemaClient}.${utils.snakeToCamelCase(tableName, false)};`,
+        `    return ${schemaClient}.${tableProp(tableName)};`,
         '  }',
         '',
         `  /** The prefetched handle on \`${address}\` — THE async boundary, typed. Every`,
@@ -586,6 +581,30 @@ function generateDomainUiCode(manifest: any, dbImports: string[]): string {
       [`/** Typed UI over \`${address}\` (see {@link ${type}Ui}). */`,
         `export const ${utils.snakeToCamelCase(tableName, false)}Ui = new ${type}Ui();`].join(sep));
   }
+
+  // The schema-level handle: every table's DomainTable under ONE await, typed
+  // (`const db = await <schema>UiDb(); db.<plural>.form(...)`).
+  const schemaType = utils.snakeToCamelCase(manifest.name);
+  const tableProps = Object.keys(manifest.tables)
+    .filter((t) => !domainDbReservedProps.includes(tableProp(t)));
+  decls.push(
+    ['/**',
+      ` * The typed schema handle over \`${manifest.name}\`: one prefetched {@link DomainTable}`,
+      ' * per table, resolved together by {@link ' + utils.snakeToCamelCase(manifest.name, false) + 'UiDb} —',
+      ' * the schema-level async boundary (see `domains.db`).',
+      ' */',
+      `export interface ${schemaType}UiDb extends DomainDb {`,
+      ...tableProps.map((t) => {
+        const type = utils.snakeToCamelCase(t);
+        return `  readonly ${tableProp(t)}: ` +
+          `DomainTable<${type}Row, ${type}Insert, ${type}Column, ${type}Expand>;`;
+      }),
+      '}'].join(sep),
+    [`/** Acquires the {@link ${schemaType}UiDb} handle — every table of`,
+      ` * \`${manifest.name}\`, prefetched together (see \`domains.db\`). */`,
+      `export function ${utils.snakeToCamelCase(manifest.name, false)}UiDb(): Promise<${schemaType}UiDb> {`,
+      `  return domains.db('${manifest.name}') as Promise<${schemaType}UiDb>;`,
+      '}'].join(sep));
   return decls.join(sep.repeat(2)) + sep;
 }
 
