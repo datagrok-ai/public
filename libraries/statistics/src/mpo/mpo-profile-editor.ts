@@ -25,6 +25,10 @@ interface RowCtx {
   editorHost: HTMLElement;
   prop: PropertyDesirability;
   sub: Subscription;
+  propertyCell?: HTMLElement;
+  nameInput?: DG.InputBase<string>;
+  nameInputSub?: Subscription;
+  name: string;
   modeGear?: HTMLElement;
   controls?: HTMLElement;
 }
@@ -77,6 +81,11 @@ export class MpoProfileEditor {
   }
 
   setProfile(profile?: DesirabilityProfile): void {
+    if (profile !== this.profile) {
+      this.columnMapping = {};
+      this.rowIds = {};
+    }
+
     if (profile) {
       for (const key of Object.keys(profile.properties)) {
         const prop = migrateDesirability(profile.properties[key]);
@@ -90,20 +99,23 @@ export class MpoProfileEditor {
 
     this.profile = profile;
     this.aggregationInput.value = profile?.aggregation ?? DEFAULT_AGGREGATION;
-    this.columnMapping = {};
-    this.rowIds = {};
     this.propertyOrder = profile ? Object.keys(profile.properties) : [];
 
     for (const name of this.propertyOrder)
-      this.rowIds[name] = this.newRowId();
+      this.rowIds[name] ??= this.newRowId();
 
     this.render();
     this.runAllComputeFunctions();
   }
 
+  private disposeRowCtx(ctx: RowCtx): void {
+    ctx.sub.unsubscribe();
+    ctx.nameInputSub?.unsubscribe();
+  }
+
   private resetRows(): void {
     for (const ctx of this.rowCtx.values())
-      ctx.sub.unsubscribe();
+      this.disposeRowCtx(ctx);
     this.rowCtx.clear();
   }
 
@@ -131,8 +143,10 @@ export class MpoProfileEditor {
     for (const name of this.propertyOrder) {
       const rowId = this.rowIds[name];
       this.rowCtx.get(rowId)?.editor.setDesignMode?.(on);
+      this.updatePropertyCell(rowId);
       this.updateDesignControls(rowId);
     }
+    this.revalidateNameInputs();
   }
 
   private render(): void {
@@ -157,6 +171,8 @@ export class MpoProfileEditor {
     if (!this.preview)
       this.root.append(this.buildHeader());
     this.root.append(ui.divV(rows));
+
+    this.revalidateNameInputs();
   }
 
   private renderEmpty(text: string): void {
@@ -216,20 +232,20 @@ export class MpoProfileEditor {
     const editor = DesirabilityEditorFactory.create(prop, 300, 80, this.design);
     editor.root.classList.add('statistics-mpo-editor-fill');
     const sub = editor.onChanged.subscribe(() => this.emitChange());
-
-    const propertyCell = this.buildPropertyCell(name);
-    const weightCell = this.buildWeightCell(rowId, prop);
-    const columnCell = this.buildColumnSelector(rowId, name, editor);
-
     const editorHost = ui.divH([editor.root]);
 
+    const ctx: RowCtx = {row, editor, editorHost, prop, sub, name};
+    ctx.propertyCell = this.buildPropertyCell(ctx);
+    const weightCell = this.buildWeightCell(prop);
+    const columnCell = this.buildColumnSelector(rowId, ctx, editor);
+    this.rowCtx.set(rowId, ctx);
+
     row.append(
-      ui.divV([propertyCell, columnCell].filter(Boolean), 'statistics-mpo-property-cell'),
+      ui.divV([ctx.propertyCell, columnCell].filter(Boolean), 'statistics-mpo-property-cell'),
       weightCell,
       editorHost,
     );
 
-    this.rowCtx.set(rowId, {row, editor, editorHost, prop, sub});
     this.updateDesignControls(rowId);
 
     return row;
@@ -259,42 +275,89 @@ export class MpoProfileEditor {
   }
 
   private removeRow(rowId: string): void {
-    this.rowCtx.get(rowId)?.sub.unsubscribe();
+    const ctx = this.rowCtx.get(rowId);
+    if (ctx)
+      this.disposeRowCtx(ctx);
     this.rowCtx.delete(rowId);
   }
 
-  private buildPropertyCell(name: string): HTMLElement | null {
-    if (this.dataFrame) {
-      const el = ui.divText(name);
-      ui.tooltip.bind(el, () => name);
-      return el;
+  private buildPropertyCell(ctx: RowCtx): HTMLElement {
+    ctx.nameInputSub?.unsubscribe();
+    ctx.nameInputSub = undefined;
+
+    if (!this.design) {
+      ctx.nameInput = undefined;
+      return this.buildPropertyNameText(ctx);
     }
-
-    let currentName = name;
-
-    const propNameInp = ui.input.string('', {value: name, onValueChanged: (v) => {
-      if (!v || v === currentName)
-        return;
-      this.renameProperty(currentName, v);
-      currentName = v;
-    }});
-
-    ui.tooltip.bind(propNameInp.input, () => currentName);
-    return propNameInp.root;
+    ctx.nameInput = this.buildPropertyNameInput(ctx);
+    return ctx.nameInput.root;
   }
 
-  private buildWeightCell(
-    rowId: string,
-    prop: PropertyDesirability,
-  ): HTMLElement {
-    const name = this.getPropertyNameByRowId(rowId);
+  private buildPropertyNameText(ctx: RowCtx): HTMLElement {
+    const el = ui.divText(ctx.name);
+    ui.tooltip.bind(el, () => ctx.name);
+    return el;
+  }
+
+  private buildPropertyNameInput(ctx: RowCtx): DG.InputBase<string> {
+    const propNameInp = ui.input.string('', {value: ctx.name, nullable: false,
+      onValueChanged: (v) => {
+        const oldName = ctx.name;
+        const trimmed = v.trim();
+        if (trimmed === oldName || this.validatePropertyName(ctx, trimmed))
+          return;
+        if (this.renameProperty(oldName, trimmed))
+          this.emitChange();
+      },
+    });
+    propNameInp.addValidator((v) => this.validatePropertyName(ctx, v));
+    ctx.nameInputSub = propNameInp.onInput.subscribe(() => this.revalidateNameInputs());
+
+    return propNameInp;
+  }
+
+  private isPropertyNameTaken(ctx: RowCtx | null, name: string): boolean {
+    for (const other of this.rowCtx.values()) {
+      if (other === ctx)
+        continue;
+      const {nameInput, name: otherName} = other;
+      if ((nameInput ? nameInput.value.trim() : otherName) === name)
+        return true;
+    }
+    return false;
+  }
+
+  private validatePropertyName(ctx: RowCtx, v: string | null | undefined): string | null {
+    const newName = v?.trim();
+    if (!newName)
+      return 'Property name cannot be empty';
+    return this.isPropertyNameTaken(ctx, newName) ? 'A property with this name already exists' : null;
+  }
+
+  private revalidateNameInputs(): void {
+    for (const ctx of this.rowCtx.values())
+      ctx.nameInput?.validate();
+  }
+
+  private updatePropertyCell(rowId: string): void {
+    const ctx = this.rowCtx.get(rowId);
+    if (!ctx)
+      return;
+
+    const newCell = this.buildPropertyCell(ctx);
+    ctx.propertyCell?.replaceWith(newCell);
+    ctx.propertyCell = newCell;
+  }
+
+  private buildWeightCell(prop: PropertyDesirability): HTMLElement {
     const children: HTMLElement[] = [];
+    const update = (fn: (p: PropertyDesirability) => void): void => {
+      fn(prop);
+      this.emitChange();
+    };
 
     const weightInput = ui.input.float('', {value: prop.weight, min: 0, max: 1, format: '#0.000',
-      onValueChanged: (v) => {
-        if (name)
-          this.mutateProperty(name, (p) => p.weight = Math.max(0, Math.min(1, v ?? 0)));
-      },
+      onValueChanged: (v) => update((p) => p.weight = Math.max(0, Math.min(1, v ?? 0))),
     });
     weightInput.root.classList.add('statistics-mpo-weight-input');
     children.push(weightInput.root);
@@ -304,10 +367,7 @@ export class MpoProfileEditor {
       let isColumn = !!prop.weightColumn && numCols.includes(prop.weightColumn);
 
       const colInput = ui.input.choice('', {items: numCols, nullable: true, value: prop.weightColumn ?? '',
-        onValueChanged: (v) => {
-          if (name)
-            this.mutateProperty(name, (p) => p.weightColumn = v || undefined);
-        },
+        onValueChanged: (v) => update((p) => p.weightColumn = v || undefined),
       });
 
       const syncToggle = () => {
@@ -319,10 +379,10 @@ export class MpoProfileEditor {
       const toggle = ui.iconFA('exchange-alt', () => {
         isColumn = !isColumn;
         syncToggle();
-        if (!isColumn && name)
-          this.mutateProperty(name, (p) => delete p.weightColumn);
-        else if (isColumn && name && colInput.value)
-          this.mutateProperty(name, (p) => p.weightColumn = colInput.value || undefined);
+        if (!isColumn)
+          update((p) => delete p.weightColumn);
+        else if (colInput.value)
+          update((p) => p.weightColumn = colInput.value || undefined);
       }, 'Toggle');
       toggle.classList.add('statistics-mpo-weight-toggle');
       ui.tooltip.bind(toggle, () => isColumn ? 'Switch to manual weight' : 'Use weight from column');
@@ -336,21 +396,21 @@ export class MpoProfileEditor {
 
   private buildColumnSelector(
     rowId: string,
-    name: string,
+    ctx: RowCtx,
     editor: DesirabilityEditor,
   ): HTMLElement | null {
     if (!this.dataFrame)
       return null;
 
-    const matchedName = this.columnMapping[name] ?? null;
+    const matchedName = this.columnMapping[ctx.name] ?? null;
     const matchedCol = matchedName ? this.dataFrame.col(matchedName) : null;
 
     if (matchedCol)
       editor.setColumn?.(matchedCol);
 
     const commit = (v: DG.Column | null): void => {
-      this.columnMapping[name] = v?.name ?? null;
-      if (v && this.switchPropertyType(name, rowId, v))
+      this.columnMapping[ctx.name] = v?.name ?? null;
+      if (v && this.switchPropertyType(ctx.name, rowId, v))
         return;
       editor.setColumn?.(v);
       this.emitChange();
@@ -473,6 +533,7 @@ export class MpoProfileEditor {
     if (oldRow?.parentNode)
       oldRow.replaceWith(newRow);
 
+    this.revalidateNameInputs();
     this.emitChange();
   }
 
@@ -482,7 +543,7 @@ export class MpoProfileEditor {
     editor: DesirabilityEditor,
   ): HTMLElement {
     return ui.icons.settings(() => {
-      const name = this.getPropertyNameByRowId(rowId);
+      const name = this.rowCtx.get(rowId)?.name;
       if (!name)
         return;
       const colName = this.columnMapping[name];
@@ -524,16 +585,14 @@ export class MpoProfileEditor {
     ).show();
   }
 
-  private getPropertyNameByRowId(rowId: string): string | undefined {
-    return Object.entries(this.rowIds)
-      .find(([, id]) => id === rowId)?.[0];
-  }
-
-  private renameProperty(oldName: string, newName: string): void {
-    if (!this.profile || this.profile.properties[newName])
-      return;
+  private renameProperty(oldName: string, newName: string): boolean {
+    if (!this.profile || oldName === newName)
+      return false;
 
     const rowId = this.rowIds[oldName];
+    if (this.isPropertyNameTaken(this.rowCtx.get(rowId) ?? null, newName))
+      return false;
+
     this.profile.properties[newName] = this.profile.properties[oldName];
     delete this.profile.properties[oldName];
 
@@ -547,11 +606,16 @@ export class MpoProfileEditor {
     delete this.rowIds[oldName];
     this.rowIds[newName] = rowId;
 
+    const ctx = this.rowCtx.get(rowId);
+    if (ctx)
+      ctx.name = newName;
+
     this.emitChange();
+    return true;
   }
 
   private deleteRow(rowId: string): void {
-    const name = this.getPropertyNameByRowId(rowId);
+    const name = this.rowCtx.get(rowId)?.name;
     if (!name || !this.profile)
       return;
 
@@ -570,6 +634,7 @@ export class MpoProfileEditor {
     else
       rowEl?.remove();
 
+    this.revalidateNameInputs();
     this.emitChange();
   }
 
@@ -577,7 +642,7 @@ export class MpoProfileEditor {
     if (!this.profile)
       return;
 
-    const afterName = this.getPropertyNameByRowId(rowId);
+    const afterName = this.rowCtx.get(rowId)?.name;
     if (!afterName)
       return;
 
@@ -593,18 +658,6 @@ export class MpoProfileEditor {
 
     const newRow = this.buildRow(newName, newRowId, this.profile.properties[newName]);
     this.rowCtx.get(rowId)?.row.after(newRow);
-    this.emitChange();
-  }
-
-  private mutateProperty(
-    name: string,
-    updater: (p: PropertyDesirability) => void,
-  ): void {
-    const prop = this.profile?.properties[name];
-    if (!prop)
-      return;
-
-    updater(prop);
     this.emitChange();
   }
 
