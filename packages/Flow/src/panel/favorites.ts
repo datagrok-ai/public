@@ -1,9 +1,5 @@
-/** Toolbox favorites — node types the user starred, persisted in localStorage.
- *  A favorite is `{type, label}` so the Favorites tab can render entries even
- *  when the underlying function is temporarily absent (package not loaded);
- *  `type` is the registered node type name (e.g. `DG Functions/…/Join Tables`,
- *  `Inputs/Table Input`, `Viewers/Scatter Plot`) — the same string every
- *  toolbox gesture (double-click, drag) already uses to create nodes. */
+/** Toolbox favorites — starred node types persisted in localStorage as `{type, label}`, so entries
+ *  render even when the underlying function is temporarily absent. */
 
 export interface FavoriteEntry {
   type: string;
@@ -63,7 +59,6 @@ export function onFavoritesChanged(cb: () => void): () => void {
   return () => listeners.delete(cb);
 }
 
-/** Test helper — wipes the store (and storage) and notifies subscribers. */
 export function clearFavorites(): void {
   save([]);
 }

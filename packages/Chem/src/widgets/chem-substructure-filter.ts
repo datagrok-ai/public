@@ -363,7 +363,9 @@ export class SubstructureFilter extends DG.Filter {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
       if (this.syncEvent === true)
         this.syncEvent = false;
-      else
+      // when 'Filter as you draw' is off, sketching in the dialog defers filtering until OK
+      // (the sketcher re-fires onChanged after the dialog closes)
+      else if (!this.sketcher.sketcherDialogOpened || this.sketcher.filterOnChange)
         await this._onSketchChanged();
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onAlignedChanged.subscribe(async (_: any) => {
@@ -492,7 +494,12 @@ export class SubstructureFilter extends DG.Filter {
     // no `columnName`. Base Filter.applyState() only reads `state.columnName`, so without this the
     // second call would silently overwrite a correctly-resolved column back to undefined, leaving a
     // sketched substructure query filtering nothing with no error shown.
-    state.columnName ??= state.column;
+    if (!state.columnName && state.column) {
+      if (typeof state.column === 'string')
+        state.columnName ??= state.column;
+      else if (state.column instanceof DG.Column)
+        state.columnName = state.column.name;
+    }
     super.applyState(state);
     _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
 

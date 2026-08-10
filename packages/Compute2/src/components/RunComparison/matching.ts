@@ -3,8 +3,8 @@
 // User documentation lives in help/compute/run-comparison.md
 
 import {
-  ComparisonEntryNodes, MatchConfidence, ScalarBinding, ColumnBinding,
-  ScalarTarget, ColumnTarget, TargetBase, isNumericType,
+  ComparisonEntryNodes, MatchConfidence, ScalarBinding, ColumnBinding, ColumnCandidate,
+  CandidateOverrides, NameMapping, ScalarTarget, ColumnTarget, TargetBase, isNumericType, candidateId,
 } from './types';
 
 export type UnitsCompatibility = 'match' | 'warn' | 'mismatch';
@@ -46,11 +46,47 @@ export function nameSimilarity(a: string, b: string): number {
   return (2 * intersection) / (totalA + totalB);
 }
 
-export function nameMatchConfidence(a: string, b: string): MatchConfidence | null {
+/** Normalized name -> group id for user-defined mappings; pairs merge transitively. */
+export function buildAliasGroups(mappings: NameMapping[]): Map<string, number> {
+  const groups = new Map<string, number>();
+  let nextId = 0;
+  for (const {from, to} of mappings) {
+    const a = normalizeName(from);
+    const b = normalizeName(to);
+    if (!a || !b)
+      continue;
+    const ga = groups.get(a);
+    const gb = groups.get(b);
+    if (ga == null && gb == null) {
+      groups.set(a, nextId);
+      groups.set(b, nextId);
+      nextId++;
+    } else if (ga == null) {
+      groups.set(a, gb!);
+    } else if (gb == null) {
+      groups.set(b, ga);
+    } else if (ga !== gb) {
+      for (const [name, id] of groups) {
+        if (id === gb)
+          groups.set(name, ga);
+      }
+    }
+  }
+  return groups;
+}
+
+export function nameMatchConfidence(
+  a: string, b: string, aliases?: Map<string, number>,
+): MatchConfidence | null {
   if (a === b)
     return 'exact';
   if (normalizeName(a) === normalizeName(b))
     return 'normalized';
+  if (aliases) {
+    const group = aliases.get(normalizeName(a));
+    if (group != null && group === aliases.get(normalizeName(b)))
+      return 'normalized';
+  }
   if (nameSimilarity(a, b) >= FUZZY_NAME_THRESHOLD)
     return 'fuzzy';
   return null;
@@ -78,6 +114,8 @@ interface ClusterItem<P> {
   units?: string;
   // used only to break ties between equally-confident candidates (e.g. table name for columns)
   secondaryName?: string;
+  indexColumnName?: string;
+  raw?: boolean;
   payload: P;
 }
 
@@ -90,17 +128,21 @@ interface Cluster<P> {
   entryIds: Set<string>;
 }
 
-function clusterByName<P>(items: ClusterItem<P>[]): Cluster<P>[] {
+function clusterByName<P>(items: ClusterItem<P>[], aliases?: Map<string, number>): Cluster<P>[] {
   const clusters: Cluster<P>[] = [];
   for (const item of items) {
     let best: {cluster: Cluster<P>, confidence: MatchConfidence, score: number} | null = null;
     for (const cluster of clusters) {
       if (cluster.entryIds.has(item.entryId))
         continue;
-      const confidence = nameMatchConfidence(cluster.canonicalName, item.name);
+      const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
       if (!confidence)
         continue;
       if (unitsCompatibility(cluster.items[0].units, item.units) === 'mismatch')
+        continue;
+      const seedIndex = cluster.items[0].indexColumnName;
+      if (seedIndex && item.indexColumnName &&
+        !nameMatchConfidence(seedIndex, item.indexColumnName, aliases))
         continue;
       const score = nameSimilarity(cluster.canonicalName, item.name) +
         (cluster.canonicalSecondary && item.secondaryName ?
@@ -134,17 +176,17 @@ function clusterByName<P>(items: ClusterItem<P>[]): Cluster<P>[] {
 // and duplicate keys corrupt keyed list rendering
 function dedupeTargetKeys<T extends TargetBase>(targets: T[]): T[] {
   const seen = new Map<string, number>();
-  for (const target of targets) {
+  return targets.map((target) => {
     const count = seen.get(target.key) ?? 0;
     seen.set(target.key, count + 1);
-    if (count > 0)
-      target.key = `${target.key}:${count + 1}`;
-  }
-  return targets;
+    return count > 0 ? {...target, key: `${target.key}:${count + 1}`} : target;
+  });
 }
 
 /** Groups numeric scalars across entries into candidate targets (coverage >= 2). */
-export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarget[] {
+export function matchScalarTargets(
+  entries: ComparisonEntryNodes[], aliases?: Map<string, number>,
+): ScalarTarget[] {
   const items: ClusterItem<ScalarBinding>[] = [];
   for (const entry of entries) {
     for (const scalar of entry.scalars) {
@@ -165,7 +207,7 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
       });
     }
   }
-  return dedupeTargetKeys(clusterByName(items)
+  return dedupeTargetKeys(clusterByName(items, aliases)
     .filter((cluster) => cluster.entryIds.size >= 2)
     .map((cluster) => ({
       kind: 'scalar' as const,
@@ -183,11 +225,19 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
  * Groups numeric columns across entries into candidate targets.
  * Only tables with a user-defined index participate; the index and split columns
  * themselves are not candidates. Both maps: entryId -> (tablePath -> column name).
+ *
+ * Each target carries the full list of compatible candidates: greedy-clustered items are
+ * enabled (auto), other compatible items are attached disabled, and raw (standalone) items
+ * are enabled in every cluster they fit. Overrides (by target key and candidate id) flip
+ * individual candidates; derived fields (bindings, coverage, confidence, unitsWarning)
+ * reflect the enabled subset only.
  */
 export function matchColumnTargets(
   entries: ComparisonEntryNodes[],
   indexColumns: Map<string, Map<string, string>>,
   splitColumns?: Map<string, Map<string, string>>,
+  overrides?: CandidateOverrides,
+  aliases?: Map<string, number>,
 ): ColumnTarget[] {
   const items: ClusterItem<ColumnBinding>[] = [];
   for (const entry of entries) {
@@ -204,6 +254,8 @@ export function matchColumnTargets(
           name: column.name,
           units: column.units,
           secondaryName: table.name,
+          indexColumnName,
+          raw: entry.sourceKind === 'raw',
           payload: {
             entryId: entry.entryId,
             tablePath: table.path,
@@ -218,16 +270,82 @@ export function matchColumnTargets(
       }
     }
   }
-  return dedupeTargetKeys(clusterByName(items)
-    .filter((cluster) => cluster.entryIds.size >= 2)
-    .map((cluster) => ({
+
+  const withCandidates = clusterByName(items, aliases).map((cluster) => {
+    const members = new Set(cluster.items);
+    const seed = cluster.items[0];
+    const candidates: ColumnCandidate[] = [];
+    for (const item of items) {
+      const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
+      if (!confidence)
+        continue;
+      const units = unitsCompatibility(seed.units, item.units);
+      if (units === 'mismatch')
+        continue;
+      if (seed.indexColumnName && item.indexColumnName &&
+        !nameMatchConfidence(seed.indexColumnName, item.indexColumnName, aliases))
+        continue;
+      const auto = members.has(item);
+      // raw items join every cluster whose name they share (up to normalization) — but a
+      // fuzzy guess is not confident enough to become the run's pick by default
+      candidates.push({
+        binding: item.payload,
+        confidence,
+        unitsWarn: units === 'warn',
+        auto,
+        enabled: item.raw ? confidence !== 'fuzzy' : auto,
+      });
+    }
+    return {cluster, candidates};
+  });
+
+  // survival counts default enablement, so user toggles can never remove a target
+  const targets = dedupeTargetKeys(withCandidates
+    .filter(({candidates}) =>
+      new Set(candidates.filter((c) => c.enabled).map((c) => c.binding.entryId)).size >= 2)
+    .map(({cluster, candidates}) => ({
       kind: 'column' as const,
       key: `column:${normalizeName(cluster.canonicalName)}:${normalizeName(cluster.canonicalSecondary ?? '')}`,
       displayName: cluster.canonicalName,
       confidence: cluster.confidence,
       unitsWarning: cluster.unitsWarning,
-      bindings: cluster.items.map((item) => item.payload),
-      coverage: cluster.entryIds.size,
+      candidates,
+      bindings: [] as ColumnBinding[],
+      coverage: 0,
       total: entries.length,
     })));
+
+  // overrides are keyed by the final (deduped) target key, so they resolve only here.
+  // radio semantics: at most one enabled candidate per run — an explicit user pick
+  // beats a default one, ties resolve to the first in candidate order
+  for (const target of targets) {
+    const targetOverrides = overrides?.[target.key];
+    const chosen = new Map<string, number>();
+    target.candidates.forEach((candidate, index) => {
+      const override = targetOverrides?.[candidateId(candidate.binding)];
+      if (!(override ?? candidate.enabled))
+        return;
+      const entryId = candidate.binding.entryId;
+      const current = chosen.get(entryId);
+      if (current == null) {
+        chosen.set(entryId, index);
+        return;
+      }
+      const currentExplicit =
+        targetOverrides?.[candidateId(target.candidates[current].binding)] === true;
+      if (override === true && !currentExplicit)
+        chosen.set(entryId, index);
+    });
+    target.candidates = target.candidates.map((candidate, index) => ({
+      ...candidate,
+      enabled: chosen.get(candidate.binding.entryId) === index,
+    }));
+    const enabled = target.candidates.filter((candidate) => candidate.enabled);
+    target.bindings = enabled.map((candidate) => candidate.binding);
+    target.coverage = new Set(target.bindings.map((b) => b.entryId)).size;
+    target.confidence = enabled.reduce<MatchConfidence>(
+      (acc, candidate) => weakerConfidence(acc, candidate.confidence), 'exact');
+    target.unitsWarning = enabled.some((candidate) => candidate.unitsWarn);
+  }
+  return targets;
 }

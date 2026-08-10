@@ -18,7 +18,6 @@ function chemAvailable(): boolean {
   }
 }
 
-/** Import a creation script into a live editor and re-emit it. */
 async function roundTrip(script: string): Promise<CreationScriptResult> {
   const e = makeEditor();
   try {
@@ -30,7 +29,6 @@ async function roundTrip(script: string): Promise<CreationScriptResult> {
   }
 }
 
-/** Import a creation script, then split it back into one script per table. */
 async function splitPerTable(script: string, varNames: string[]): Promise<PerTableResult> {
   const e = makeEditor();
   try {
@@ -45,9 +43,7 @@ async function splitPerTable(script: string, varNames: string[]): Promise<PerTab
 const lines = (s: string): string[] => s.split('\n').filter((l) => l.trim() !== '');
 
 const TIMESTAMP_RE = /\s*\/\/\{"timestamp":\s*(\d+)\}\s*$/;
-/** Lines with the trailing `//{"timestamp": …}` comment stripped. */
 const stripTs = (s: string): string[] => lines(s).map((l) => l.replace(TIMESTAMP_RE, ''));
-/** Parsed timestamps, one per non-empty line. */
 const timestamps = (s: string): number[] =>
   lines(s).map((l) => Number(TIMESTAMP_RE.exec(l)?.[1] ?? NaN));
 
@@ -60,7 +56,6 @@ category('Flow: creation script emit', () => {
   test('producer → assignment, no leaked optional args', async () => {
     const r = await roundTrip('T = OpenFile("System:AppData/x.csv")');
     expect(r.warnings.length, 0, r.warnings.join(' ; '));
-    // Optional sheetName seeded by the importer must NOT leak.
     expect(r.script, 'T = OpenFile("System:AppData/x.csv")');
   });
 
@@ -178,9 +173,8 @@ category('Flow: creation script emit', () => {
     const s = r.script;
     expect(s.includes('Mol1K = OpenFile("System:AppData/Chem/mol1K.csv")'), true, 'producer assignment');
     expect(s.includes('Chem:addChemPropertiesColumns(Mol1K, "molecule", true,'), true, 'namespaced bare mutator');
-    // GROK-20428 flipped subscribeOnChanges' default to true, so the platform
-    // serializer omits it (optionals equal to their default are dropped) —
-    // assert the call itself, agnostic of whether the named arg is present.
+    // subscribeOnChanges now defaults to true, so the serializer omits it — assert
+    // agnostic of whether the named arg is present
     expect(s.includes('AddNewColumn(Mol1K, "${LogP} + ${MW} + ${HBD}", "smth"'),
       true, 'AddNewColumn re-emits as a bare mutator call');
     expect(s.includes('Result = JoinTables("mol1K", "mol1K local"'), true, 'join produces Result');
@@ -188,8 +182,6 @@ category('Flow: creation script emit', () => {
     expect(s.includes('ResolveColumn'), false, 'no ResolveColumn leaks');
     expect(s.includes('.col('), false, 'columns are names, not JS table.col(...)');
   });
-
-  // ---------- per-table split (Save Creation Scripts) ----------
 
   const TWO_TABLES = [
     'A = OpenFile("a.csv")',
@@ -240,7 +232,6 @@ category('Flow: creation script emit', () => {
     expect(r.tables.length, 1);
     expect(r.tables[0].variableName, 'A');
     expect(stripTs(r.tables[0].script).length, 2, 'A still fully built');
-    // B's producer + mutator belong to no requested table.
     expect(r.unassigned.length, 2, `expected B's 2 lines unassigned, got: ${r.unassigned.join(' ; ')}`);
     expect(r.unassigned.some((l) => l.includes('B = OpenFile("b.csv")')), true);
   });

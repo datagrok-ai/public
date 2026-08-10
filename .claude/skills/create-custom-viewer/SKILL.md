@@ -117,6 +117,18 @@ Property grouping in the UI is determined by naming:
 - `Margins` tab: properties containing `margin`
 - `Misc` tab: everything else
 
+A viewer registered with `//meta.trellisable: true` can also name the properties that belong on the
+trellis plot's control panel — the strip beside the inner-viewer selector, where a scatter plot
+offers X, Y, Color and Size:
+
+```typescript
+get trellisProperties(): string[] { return ['mergeColumnSeries', 'logX', 'logY']; }
+```
+
+The first four are shown, in the order given, and unknown names are skipped. A viewer that declares
+none gets no strip; its properties are still editable in the context panel, under a tab named after
+the viewer.
+
 ### 5. Data preparation with filter support
 
 Always respect the dataframe filter when preparing data:

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p1
 realizes_atlas: [load-library-ivp-run]
-realizes: [diffstudio]
+realizes: [diffstudio.app.diff-studio, diffstudio.model.bioreactor]
 realized_as:
   - fitting.test.ts
 related_bugs: []

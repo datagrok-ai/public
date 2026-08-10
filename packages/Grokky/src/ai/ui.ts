@@ -397,6 +397,8 @@ async function streamOnce(
     let segmentStart = 0;
     let toolStatus = '';
     let nextBlockIndex = 0;
+    const execCodes: string[] = [];
+    let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
 
@@ -466,6 +468,7 @@ async function streamOnce(
           toolStatus = '\n\n---\n*Revising…*';
           panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
         }, 1200);
+        preRevisionExecCodes = [...execCodes];
       });
 
 
@@ -492,7 +495,8 @@ async function streamOnce(
         }
         const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-        await panel.finalizeStreaming(segmentContent, fullContent, view);
+        const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
+        await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
         if (evt.unverified) {
           const warn = 'Not verified — the assistant could not confirm this action took effect.';
           panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
@@ -529,6 +533,8 @@ async function streamOnce(
           chatSession.session.addEngineMessage({role: 'assistant',
             content: [{type: 'text', text: `[executed datagrok_exec]\n${(evt.input.code ?? '').slice(0, 1500)}`}]});
           const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
+          if (evt.input.code && !error)
+            execCodes.push(evt.input.code);
           if (element) {
             panel.appendStreamedElement(element);
             segmentStart = accumulated.length;

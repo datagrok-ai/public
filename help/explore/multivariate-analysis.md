@@ -10,16 +10,13 @@ keywords:
   - scores plot
   - loadings plot
   - regression coefficients
+  - variable importance
   - explained variance
 ---
 
-Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
-and analysis of more than one statistical outcome variable at a time.
+Multivariate analysis (MVA) models a response variable from many predictors at once, including predictors that correlate with each other.
 
-Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) is a particular type of MVA. PLS provides quantitative multivariate modelling methods, with inferential possibilities similar to multiple regression, t-tests, and ANOVA. It constructs a linear model using **latent factors** that
-
-* maximally summarize the variation of the predictors
-* maximize correlation with the response variable.
+Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) is a particular type of MVA. It constructs a linear model using **latent factors**: combinations of the predictors that maximize the covariance with the response variable. This balances two goals — summarizing the variation of the predictors and correlating with the response — which makes PLS work where the predictors are numerous or collinear and multiple regression breaks down.
 
 ## Regress and analyze
 
@@ -28,74 +25,86 @@ Partial least squares regression ([PLS regression](https://en.wikipedia.org/wiki
 3. In the dialog, specify
    * the column with response variable (in the `Predict` field)
    * the columns with the predictors (in the `Using` field)
-   * the number of `Components`, i.e. latent factors
-   * whether to include squared terms as additional predictors (in the `Quadratic` field)
+   * the number of `Components`, i.e. latent factors (too many fit the noise)
+   * whether to extend the predictors with their squares and pairwise products (in the `Quadratic` field)
    * `Names` of data samples
+
+   The dialog lists only numeric columns without missing values.
+
 4. Press `Run` to execute. You get
    * the [Observed vs. Predicted](#observed-vs-predicted) scatterplot comparing the response to its prediction
    * the [Scores](#scores) scatterplot reflecting data samples similarities and dissimilarities
-   * the [Loadings](#loadings) scatterplot indicating the impact of each feature on the latent factors
+   * the [Loadings](#loadings) scatterplot showing how strongly the latent factors describe each feature
    * the [Regression Coefficients](#regression-coefficients) bar chart presenting parameters of the obtained linear model
+   * the [Variable Importance](#variable-importance) bar chart ranking the features by their contribution
    * the [Explained Variance](#explained-variance) bar chart measuring how well the latent factors fit source data
 
-![add-to-workspace](multivariate-analysis/pls-run.gif)
+![Running multivariate analysis](multivariate-analysis/pls-run.gif)
 
 ### Observed vs. Predicted
 
-The **Observed vs. Predicted** scatterplot compares the response variable to its prediction. The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates the goodness of fit:
+The **Observed vs. Predicted** scatterplot compares the response variable to its prediction. The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates the goodness of fit on the training data:
 
-![add-to-workspace](multivariate-analysis/pls-predicted-vs-reference.png)
+![Observed vs. Predicted scatterplot](multivariate-analysis/pls-predicted-vs-reference.png)
 
 Combine it with the [Scores](#scores) scatterplot to explore data samples:
 
-![add-to-workspace](multivariate-analysis/pls-model-n-scores.gif)
+![Observed vs. Predicted combined with Scores](multivariate-analysis/pls-model-n-scores.gif)
 
 ### Scores
 
-The **Scores** scatterplot shows the values of the latent factors for each observation in the dataset:
+The **Scores** scatterplot shows the values of the latent factors for each observation:
 
-* the predictors (T-scores)
-* the response variable (U-scores).
+* T-scores, computed from the predictors
+* U-scores, computed from the response variable.
 
-It indicates correlations between observations (how observations relate to each other, occurrence groups, or trends).
+Plot two T-scores against each other to explore the observations: nearby points are similar samples, and clusters, trends, or outliers show up as patterns. Plot a T-score against the matching U-score to check the model: points along a straight line mean the linear model fits, a curved pattern points to a nonlinear relationship.
 
-![add-to-workspace](multivariate-analysis/pls-scores.png)
+![Scores scatterplot](multivariate-analysis/pls-scores.png)
 
 Combine it with the [Observed vs. Predicted](#observed-vs-predicted) scatterplot to explore data samples:
 
-![add-to-workspace](multivariate-analysis/pls-scores-n-model.gif)
+![Scores combined with Observed vs. Predicted](multivariate-analysis/pls-scores-n-model.gif)
 
 ### Loadings
 
-The **Loadings** scatterplot visually represents the influence of each feature on the latent factors: high loadings indicate a strong influence.
+The **Loadings** scatterplot shows how strongly each latent factor describes each feature. Features far from the origin are described well by the factors on the axes, features grouped together correlate with each other.
 
-![add-to-workspace](multivariate-analysis/pls-loadings.png)
-
-Use it in combination with the [Regression Coefficients](#regression-coefficients) bar chart to explore features:
-
-![add-to-workspace](multivariate-analysis/pls-loadings-n-regr-coeffs.gif)
+![Loadings scatterplot](multivariate-analysis/pls-loadings.png)
 
 ### Regression coefficients
 
-The **Regression Coefficients** bar chart presents parameters of the obtained linear model (used with the original data scale):
+The **Regression Coefficients** bar chart presents parameters of the obtained linear model and the bias term.
 
-![add-to-workspace](multivariate-analysis/pls-regr-coeffs.png)
-
-Combine it with the [Loadings](#loadings) scatterplot to explore features:
-
-![add-to-workspace](multivariate-analysis/pls-regr-coeffs-n-loadings.gif)
+![Regression Coefficients bar chart](multivariate-analysis/pls-regr-coeffs.png)
 
 Tooltip for the prediction column header shows the model formula:
 
-![add-to-workspace](multivariate-analysis/pls-formula.gif)
+![Model formula in the column header tooltip](multivariate-analysis/pls-formula.gif)
+
+Coefficients depend on the units of their features. To compare features, use the [Variable Importance](#variable-importance) bar chart.
+
+### Variable importance
+
+The **Variable Importance** bar chart shows the variable importance in projection (VIP): how much each feature helps the model explain the response. VIP is computed on standardized data, so you can compare features measured in different units.
+
+![Variable importance bar chart](multivariate-analysis/pls-vip.png)
+
+Read the scores as follows:
+
+| VIP score | Interpretation                             |
+|-----------|--------------------------------------------|
+| > 1       | Contributes more than an average predictor |
+| 0.8-1     | Borderline                                 |
+| < 0.8     | Weak, a candidate for removal              |
 
 ### Explained variance
 
-The **Explained Variance** bar chart shows the explained variance of variables by PLS-components, cumulative sum by each of components.
+The **Explained Variance** bar chart shows the share of variance the latent factors explain, added up over the components.
 
-![add-to-workspace](multivariate-analysis/pls-expl-vars.png)
+![Explained Variance bar chart](multivariate-analysis/pls-expl-vars.png)
 
-Use it to explore how well the latent components fit source data: closer to one means better fit.
+Values run from zero to one, and closer to one means a better fit.
 
 ## PLS components
 
@@ -106,12 +115,12 @@ Compute the predictors representation by the latent factors:
 3. In the dialog, specify
    * the column with response variable (in the `Predict` field)
    * the columns with the predictors (in the `Using` field)
-   * the number of `Components`, i.e. latent factors
-   * whether to include squared terms as additional predictors (in the `Quadratic` field)
+   * the number of `Components`, i.e. latent factors (too many fit the noise)
+   * whether to extend the predictors with their squares and pairwise products (in the `Quadratic` field)
 
-PLS components contain more predictive information than ones provided by principal component analysis ([PCA](https://datagrok.ai/help/explore/dim-reduction#pca)). The [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` indicates this:
+PLS builds its components using the response variable, while [PCA](dim-reduction.md#pca) ignores it. With the same number of components, PLS therefore captures more of the response, as the [coefficient of determination](https://en.wikipedia.org/wiki/Coefficient_of_determination) `r2` shows:
 
-![add-to-workspace](multivariate-analysis/pls_vs_pca.png)
+![PLS components compared with PCA components](multivariate-analysis/pls_vs_pca.png)
 
 ## See also
 

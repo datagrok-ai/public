@@ -8,6 +8,7 @@
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the conda env
 * GROK-14287: Dashboards: Fixed errors when opening the "Chemical Space Using tSNE" project
 * GROK-14286: Demo Notebooks: Open both the wells table and the notebook view by default
+* GROK-8022: Image Classification: Fix weights download 404 by switching to Keras' bundled EfficientNet-B0
 
 ## 1.4.2 (2025-09-22)
 

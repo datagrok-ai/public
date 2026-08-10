@@ -63,6 +63,7 @@ keywords:
 |Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
 |[Pyodide](https://github.com/datagrok-ai/public/tree/master/packages/Pyodide)| Scripting |Optional|Enables running Python scripts in the browser|Stable|
+|[Scripting](https://github.com/datagrok-ai/public/tree/master/packages/Scripting)| Scripting |Required|Enables running Python, R, Octave, Julia, and Node.js scripts in on-demand Docker containers|Stable|
 
 ## Learn
 

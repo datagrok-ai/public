@@ -3,7 +3,7 @@ feature: connections
 target_layer: playwright
 coverage_type: edge
 priority: p2
-realizes: []
+realizes: [views.connections]
 realized_as: []
 related_bugs: []
 ---

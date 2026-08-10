@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import styles from './styles.module.css';
 
 import Fonts from '/static/docusaurus_css/fonts.css';
@@ -11,7 +11,17 @@ import MainMenu from '@site/src/components/new/navbar.jsx';
 import Banner from '@site/src/components/default/banner';
 import Footer from '@site/src/components/new/footer';
 
+const hrEmail = 'hr@datagrok.ai';
+
 export default function VacancyPage({meta, children}) {
+    const [copied, setCopied] = useState(false);
+
+    const copyEmail = () => {
+        navigator.clipboard.writeText(hrEmail);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     return (
         <div className='bg-light'>
             <div className='new'><MainMenu name='Careers'/></div>
@@ -29,11 +39,33 @@ export default function VacancyPage({meta, children}) {
                                 {children}
                             </div>
                             <br/>
-                            <a className='btn btn-primary px-4' href={'mailto:hr@datagrok.ai?subject=' + meta.name}>Apply</a>
+                            <a className='btn btn-primary px-4' href={'mailto:' + hrEmail + '?subject=' + encodeURIComponent(meta.name)}
+                               data-toggle='modal' data-target='#applyDialog'>Apply</a>
                         </div>
                     </div>
                 </div>
             </section>
+            <div className='modal fade' tabIndex='-1' id='applyDialog' aria-hidden='true'>
+                <div className='modal-dialog modal-dialog-centered'>
+                    <div className='modal-content'>
+                        <div className={'modal-body p-4 ' + styles.dialogBody}>
+                            <button type='button' className='close' data-dismiss='modal' aria-label='Close'>
+                                <span aria-hidden='true'>&times;</span>
+                            </button>
+                            <h4 className='mt-2'>We'd love to hear from you</h4>
+                            <p className='mb-0'>
+                                To apply for the <b>{meta.name}</b> position, drop us a line at{' '}
+                                <span className='text-nowrap'>
+                                    <a href={'mailto:' + hrEmail + '?subject=' + encodeURIComponent(meta.name)}>{hrEmail}</a>
+                                    <i className={copied ? 'fas fa-check ' + styles.copyIconDone : 'far fa-copy ' + styles.copyIcon}
+                                       title='Copy email to clipboard' onClick={copyEmail}/>
+                                </span>
+                                {' '}— tell us a bit about yourself and attach your CV.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <Banner/>
             <div className='new'><Footer/></div>
         </div>

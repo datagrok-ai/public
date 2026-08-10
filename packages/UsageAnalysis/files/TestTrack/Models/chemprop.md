@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [chemprop-train-apply, train_and_save_model, apply_model_on_table, share_model, delete_model]
-realizes: [views.models]
+realizes: [views.models, chem.model.chemprop, ml.menu.models.train-model, ml.menu.models.apply-model]
 realized_as:
   - chemprop-spec.ts
 related_bugs: [GROK-18612, GROK-2381, GROK-19177, GROK-846]

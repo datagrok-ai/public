@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [launch-sar-top-menu-happy-path, sar-end-to-end-from-top-menu]
-realizes: [bio.analyze.sar, peptides.sequence-variability-map, peptides.most-potent-residues, peptides.logo-summary-table, peptides.sequence-mutation-cliffs]
+realizes: [bio.menu.analyze.sar, peptides.viewer.sequence-variability-map, peptides.viewer.most-potent-residues, peptides.viewer.logo-summary-table, peptides.viewer.active-peptide-selection]
 produced_from: atlas-driven
 related_bugs: []
 realized_as:

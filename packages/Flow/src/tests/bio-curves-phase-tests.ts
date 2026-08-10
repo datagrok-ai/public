@@ -1,11 +1,4 @@
-/** Phases 2 (bio / sequence) and 3 (assay & screening) — the node contracts the
- *  new Bio and Curves entries are expected to honour on a canvas.
- *
- *  Same through-line as the Phase 1 suite: a node must lead with a table, every
- *  column parameter must have that table to resolve against, and whatever the
- *  function actually PRODUCES must come out of a named socket rather than being
- *  buried in a mutated input frame. The functions replaced here all failed the
- *  last of those — they returned void, or handed the input frame straight back. */
+/** Node contracts the Bio and Curves catalog entries must honour on a canvas. */
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
@@ -39,8 +32,6 @@ function fastaColumn(name: string, seqs: string[]): DG.Column<string> {
   return col;
 }
 
-/** Asserts the shape every Flow-friendly twin shares: table first, the named
- *  column semType-filtered and associated with that table, both required. */
 async function expectTableAndColumn(
   nqName: string, columnName: string, semType: string, extra?: string,
 ): Promise<void> {
@@ -74,15 +65,11 @@ category('Flow: bio nodes', () => {
   });
 
   test('the void / same-frame bio entries are replaced by column-returning twins', async () => {
-    // Each of these either returns void or hands the input frame back, so the
-    // node showed a bare pass-through arrow and nothing to wire onward.
     const replaced: Record<string, string> = {
       'Bio:getRegionTopMenu': 'Bio:extractRegion',
       'Bio:toAtomicLevel': 'Bio:toAtomicLevelColumn',
       'Bio:moleculesToHelmTopMenu': 'Bio:moleculesToHelmColumn',
       'Bio:splitToMonomersTopMenu': 'Bio:splitToMonomersColumns',
-      // The engine returns position maps and annotation JSON for the dialog to
-      // consume — not a pipeline result.
       'Bio:immunumAntibodyNumbering': 'Bio:applyAntibodyNumbering',
     };
     for (const [gone, replacement] of Object.entries(replaced)) {
@@ -95,8 +82,6 @@ category('Flow: bio nodes', () => {
     for (const added of ['Bio:convertNotation', 'Bio:tagAsMacromolecule', 'Bio:motifSearch',
       'Bio:GenerateSequences', 'Bio:toAtomicLevelSingleSeq'])
       expect(INCLUDED_FUNC_NQNAMES.has(added), true, `${added} listed`);
-    // `seq2atomic` is `toAtomicLevelSingleSeq` under a second name — one entry
-    // is enough, two would be the same node twice in the toolbox.
     expect(INCLUDED_FUNC_NQNAMES.has('Bio:seq2atomic'), false, 'the duplicate name stays out');
   });
 
@@ -110,8 +95,6 @@ category('Flow: bio nodes', () => {
     await expectTableAndColumn('Bio:moleculesToHelmColumn', 'molecules', 'Molecule');
   });
 
-  // The one function whose entire purpose is to accept an UNTAGGED column: a
-  // semType filter here would hide exactly the columns it exists to fix.
   test('Tag as Macromolecule does not filter its input by semType', async () => {
     const typeName = typeNameOf('Bio:tagAsMacromolecule');
     if (!typeName) return;
@@ -180,10 +163,6 @@ category('Flow: helm input', () => {
     expect('sequence' in node.outputs, true, 'one named output socket');
   });
 
-  // The semType qualifier is the whole mechanism: `ui.input.forProperty` matches
-  // it against the registered `valueEditor` funcs, and Helm registers one for
-  // (string, Macromolecule). Dropping it on the way to the property would give a
-  // plain text box.
   test('the built property carries the semType through to the value editor', async () => {
     const node = createNode('Inputs/Helm Input')!;
     const prop = inputValueProperty(node);
@@ -192,8 +171,6 @@ category('Flow: helm input', () => {
     expect(String(prop!.propertyType), 'string');
   });
 
-  // Sketcher Input and Helm Input are both String Inputs with a semType. A drag
-  // of a bare `string` slot must still land on the plain String Input.
   test('a bare string slot still leads with String Input', async () => {
     const matches = findNodeTypesProducingOutput('string');
     const inputs = matches.filter((m) => m.typeName.startsWith('Inputs/'));
@@ -267,9 +244,7 @@ category('Flow: curves nodes', () => {
   test('the curve statistic twins are listed, the name-addressed originals are not', async () => {
     for (const added of ['Curves:addCurveStatistic', 'Curves:addAggrCurveStatistic', 'Curves:dataToCurves'])
       expect(INCLUDED_FUNC_NQNAMES.has(added), true, `${added} listed`);
-    // Both take `colName: string` — a free-text field with no picker and no
-    // `fit` filter. They stay registered (the Fit pane and Data to Curves call
-    // them by name) but must not be the node a user reaches for.
+    // Still registered (the Fit pane and Data to Curves call them by name), just not offered as nodes.
     for (const gone of ['Curves:addStatisticsColumn', 'Curves:addAggrStatisticsColumn'])
       expect(INCLUDED_FUNC_NQNAMES.has(gone), false, `${gone} superseded by its column-slot twin`);
   });
@@ -304,8 +279,6 @@ category('Flow: curves nodes', () => {
       const node = await addNode(e.flow, typeName);
       const inputs = effectiveFuncInputs(node.dgFunc!);
       const tables = node.properties['columnTables'] as Record<string, string> | undefined;
-      // Every mandatory column slot resolves against the leading table — with 19
-      // parameters it is easy for one to end up unbound and unfillable.
       for (const name of ['concentrationCol', 'readoutCol', 'batchIDCol', 'assayCol',
         'runIDCol', 'compoundIDCol', 'targetEntityCol']) {
         const p = inputs.find((i) => i.name === name);
@@ -323,10 +296,8 @@ category('Flow: curves nodes', () => {
   test('Add Curve Statistic extracts a statistic (needs Curves deployed)', async () => {
     const func = DG.Func.find({package: 'Curves', name: 'addCurveStatistic'})[0];
     if (!func) return;
-    // A stand can register a package's metadata from one build while still
-    // serving an older bundle; that shows up as "… is not a function" and says
-    // nothing about this function. Probe the long-standing sibling first so the
-    // two causes are distinguishable from the failure message alone.
+    // Probe the sibling first: a stand can serve a bundle older than the registered metadata,
+    // and the sibling run distinguishes that from this function being broken.
     const sibling = DG.Func.find({package: 'Curves', name: 'addStatisticsColumn'})[0];
     const curve = JSON.stringify({
       series: [{fitFunction: 'linear', points: [{x: 1, y: 2}, {x: 2, y: 4}, {x: 3, y: 6}, {x: 4, y: 8}]}],
@@ -347,10 +318,8 @@ category('Flow: curves nodes', () => {
     try {
       col = await func.apply({table, curves, statistic: 'rSquared', seriesNumber: 0});
     } catch (e) {
-      // Narrow escape hatch: the catalog knows the function (we found it above)
-      // and the package executes (the sibling just ran), but the bundle being
-      // served has no such export. That is a stand serving a pinned older
-      // Curves build, and asserting further would be testing the stand.
+      // Skip only when the package executes but the served bundle lacks this export
+      // (a stand pinned to an older Curves build) — asserting further would test the stand.
       const stale = siblingRuns && String((e as Error)?.message ?? e).includes('is not a function');
       if (stale) {
         console.warn('Flow: skipping Add Curve Statistic — this stand serves a Curves bundle ' +
@@ -362,7 +331,6 @@ category('Flow: curves nodes', () => {
     expect(col instanceof DG.Column, true, 'returns a column');
     expect(col.length, 2, 'one value per row');
     expect(table.col(col.name) !== null, true, 'and it is in the table');
-    // A perfect straight line through four points fits exactly.
     expect(col.get(0) > 0.99, true, 'rSquared of an exact linear fit is ~1');
   });
 });

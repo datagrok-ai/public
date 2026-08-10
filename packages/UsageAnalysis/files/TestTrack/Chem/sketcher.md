@@ -36,6 +36,7 @@ scope_reductions:
     check: A-STRUCT-02
     rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage) — applies to sketcher.md only"
 related_bugs: []
+realizes: [chem.cell-editor.molecule, chem.sketcher.open-chem-lib, chem.action.copy-as-smiles, chem.action.copy-as-molfile-v2000]
 ---
 
 # Chem | Sketcher cell editor — Favorites / Recent / Copy / Paste round-trip

@@ -1,18 +1,5 @@
-/** Configured values for Input nodes — "set the value right on the node".
- *
- * An input node still compiles to an `//input:` script header (the flow stays
- * a parameterized script), but when a value is configured the run supplies it
- * to the prepared call directly — no parameter dialog, and autorun is not
- * blocked. The value lives in `properties['defaultValue']` (serialized with
- * the flow; for scalar types it doubles as the header default). Values that
- * cannot be expressed as a string — a picked DataFrame, a FileInfo — keep a
- * runtime-only reference in `FlowNode.transientValue` next to the serialized
- * name, so an uploaded table works now and degrades to a by-name lookup after
- * a reload.
- *
- * One editor builder serves both surfaces (the node body control and the
- * context panel), so they can never drift apart; `sync()` re-reads the store,
- * guarded so programmatic updates never count as user edits. */
+/** Configured Input-node values — the run supplies them to the prepared call directly (no parameter
+ *  dialog). One editor builder serves the node body and the panel, so the two can never drift. */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -20,9 +7,8 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {FlowNode} from '../rete/scheme';
 
-/** Types whose configured value must NOT leak into the `//input:` header
- *  default — a table name / file path / JSON blob is not a valid script
- *  default literal. Scalar types keep the classic `= <value>` emission. */
+/** Types whose configured value must NOT leak into the `//input:` header default —
+ *  a table name / file path / JSON blob is not a valid script default literal. */
 export const NON_HEADER_DEFAULT_TYPES = new Set(['dataframe', 'file', 'map', 'blob']);
 
 export interface ResolvedInputValue {
@@ -36,10 +22,8 @@ function empty(v: unknown): boolean {
   return v === undefined || v === null || String(v) === '';
 }
 
-/** Resolve the node's configured value into what the prepared script call
- *  expects for its parameter — a live DataFrame for `dataframe`, dayjs for
- *  `datetime`, name strings for columns, a string array for lists. `ok: false`
- *  means the value is missing or unresolvable; `reason` says why. */
+/** Resolve the configured value into what the prepared call expects for the parameter;
+ *  `ok: false` + `reason` when missing or unresolvable. */
 // eslint-disable-next-line complexity
 export function resolveInputValue(node: FlowNode): ResolvedInputValue {
   const type = node.dgOutputType ?? 'dynamic';
@@ -93,20 +77,16 @@ export function resolveInputValue(node: FlowNode): ResolvedInputValue {
   }
 }
 
-/** Why this node blocks a silent (dialog-less) run, or null when it doesn't.
- *  Non-input nodes never block. */
+/** Why this node blocks a silent (dialog-less) run, or null; non-input nodes never block. */
 export function inputBlockReason(node: FlowNode): string | null {
   if (node.dgNodeType !== 'input') return null;
   const r = resolveInputValue(node);
   return r.ok ? null : `${node.label} "${String(node.properties['paramName'] ?? '')}": ${r.reason}`;
 }
 
-// ---- value editor (shared by the node body and the context panel) ----------
-
 export interface InputValueEditor {
   root: HTMLElement;
-  /** Re-read the stored value into the DG input (programmatic — never reported
-   *  as a user edit). Called when the other surface edited the same node. */
+  /** Re-read the stored value into the DG input — programmatic, never reported as a user edit. */
   sync: () => void;
 }
 
@@ -115,9 +95,8 @@ const SCALAR_PROP_TYPES: Record<string, string> = {
   bool: DG.TYPE.BOOL, datetime: DG.TYPE.DATE_TIME, file: DG.TYPE.FILE,
 };
 
-/** The `DG.Property` the value editor is built from — carries the node's
- *  qualifiers (choices, min/max, nullable) so `ui.input.forProperty` renders
- *  the right editor. Null for types edited as plain text or unsupported. */
+/** The `DG.Property` the value editor is built from — carries the node's qualifiers;
+ *  null for types edited as plain text or unsupported. */
 export function inputValueProperty(node: FlowNode): DG.Property | null {
   const type = SCALAR_PROP_TYPES[node.dgOutputType ?? ''];
   if (!type) return null;
@@ -129,18 +108,14 @@ export function inputValueProperty(node: FlowNode): DG.Property | null {
   if (!isNaN(min)) options['min'] = min;
   if (!isNaN(max)) options['max'] = max;
   if (node.properties['nullable'] === true) options['nullable'] = true;
-  // A semantic type routes the editor to whatever `valueEditor` is registered
-  // for (type, semType) — Chem's molecule sketcher, Helm's sequence input — so
-  // a String Input tagged `Molecule` is sketched, not typed.
+  // A semType routes the editor to the registered (type, semType) valueEditor — a Molecule string is sketched.
   const semType = String(node.properties['semType'] ?? '').trim();
   if (semType) options['semType'] = semType;
   return DG.Property.fromOptions(options as never);
 }
 
-/** Build the DG value editor for an input node, or null when the type has no
- *  inline value (blob). `onUserChange` fires only on a REAL user edit — never
- *  on initialization or on `sync()` — mirroring the property panel's
- *  change-reporter guard, so merely rendering a node is not an edit. */
+/** Build the DG value editor for an input node (null when the type has no inline value).
+ *  `onUserChange` fires only on a REAL user edit — never on initialization or `sync()`. */
 // eslint-disable-next-line complexity
 export function buildInputValueEditor(node: FlowNode, onUserChange: () => void): InputValueEditor | null {
   const type = node.dgOutputType ?? 'dynamic';
@@ -164,11 +139,8 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void):
   let syncValue: () => void;
 
   if (type === 'dataframe') {
-    // `ui.input.table` lists the open tables, tracks add/close live, and has a
-    // built-in folder icon that opens a LOCAL file into the list — exactly the
-    // workspace-or-upload choice this node needs. An uploaded table exists
-    // only here, so keep the live reference; the name alone is what survives
-    // a save/reload (resolved back from the workspace by `resolveInputValue`).
+    // An uploaded table exists only inside `ui.input.table`, so keep the live reference;
+    // only the name survives save/reload (resolved back by `resolveInputValue`).
     const tableInput = ui.input.table('Value', {
       onValueChanged: (v: DG.DataFrame | null) => guard(() => {
         node.transientValue = v ?? undefined;
@@ -227,9 +199,7 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void):
     };
   }
   else {
-    // column / column_list / string_list / map / dynamic — a plain string
-    // (comma-separated names, JSON for map). No live table exists to drive a
-    // real column picker here; the names resolve when the flow runs.
+    // column / column_list / string_list / map / dynamic edit as plain strings; the names resolve at run time.
     const tips: Record<string, string> = {
       column: 'Column name', column_list: 'Column names, comma-separated',
       string_list: 'Values, comma-separated', map: 'JSON, e.g. {"key": "value"}',
@@ -252,9 +222,7 @@ export function buildInputValueEditor(node: FlowNode, onUserChange: () => void):
     };
   }
 
-  // "Act here" affordances: placeholder text where the editor supports it, and
-  // an amber underline while the value is missing/unresolvable — the same
-  // amber as the ribbon bolt's blocked badge, so the two cues read as one.
+  // Amber underline while the value is missing — the same amber as the ribbon bolt's blocked badge.
   const placeholders: Record<string, string> = {
     dataframe: 'Choose a table…', string: 'Type a value…', column: 'Column name…',
     column_list: 'Column names, comma-separated…', string_list: 'Values, comma-separated…',

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p0
 realizes_atlas: [chem.cp.mmp-analysis]
-realizes: [chem.analyze.matched-molecular-pairs]
+realizes: [chem.menu.analyze.matched-molecular-pairs]
 realized_as:
   - mmp-spec.ts
 produced_from: migrated

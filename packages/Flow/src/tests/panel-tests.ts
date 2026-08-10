@@ -11,7 +11,6 @@ import {EDITOR_SHORTCUT_INPUTS} from '../utils/func-editor-utils';
 import {tid} from '../utils/test-ids';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
-/** Registered factory name for a function by name, or null if absent. */
 function funcTypeName(name: string): string | null {
   return getRegisteredFuncs().find((f) => f.func.name === name)?.nodeTypeName ?? null;
 }
@@ -44,14 +43,10 @@ category('Flow: property panel', () => {
   test('stringChoiceOptions: a current value outside the choices is preserved', async () => {
     const opts = stringChoiceOptions(['inner', 'outer'], false, 'custom');
     expect(opts!.join(','), 'custom,inner,outer');
-    // Empty current is not added as a bogus option.
     expect(stringChoiceOptions(['inner'], false, '')!.join(','), 'inner');
   });
 
   test('getParamDisplayName falls back to the humanized property name when no caption', async () => {
-    // No / empty caption → core's propertyNameToFriendly form (the
-    // caption-present case is validated end-to-end against live registered
-    // funcs in node-factory-tests).
     expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', type: 'int'})), 'Min Pts',
       'no caption → the humanized name');
     expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', caption: '', type: 'int'})), 'Min Pts',
@@ -82,8 +77,7 @@ category('Flow: property panel', () => {
   });
 
   test('a declared default seeds the node and initializes the panel editor', async () => {
-    // Find a registered func with a primitive input that declares a default
-    // (defaultValue ?? initialValue) — prefer strings (no numeric coercion).
+    // Prefer string inputs — no numeric coercion.
     let found: {typeName: string; param: string; def: unknown} | null = null;
     for (const pass of [['string'], ['int', 'double', 'num']]) {
       for (const info of getRegisteredFuncs()) {
@@ -121,8 +115,6 @@ category('Flow: property panel', () => {
   });
 
   test('propertyChoices reads declared choices from a live function input', async () => {
-    // Find any registered function input that declares choices (e.g. JoinTables
-    // joinType). Validates the Dart-proxy `choices` read end to end.
     let found: {func: string; param: string; choices: string[]} | null = null;
     for (const info of getRegisteredFuncs()) {
       for (const inp of info.func.inputs) {
@@ -138,7 +130,6 @@ category('Flow: property panel', () => {
   });
 
   test('header block combines title, chips, and description; func description seeds the input', async () => {
-    // Any registered func with its own description exercises the combine.
     const info = getRegisteredFuncs().find((f) => {
       try {
         return !!f.func.description;
@@ -169,12 +160,19 @@ category('Flow: property panel', () => {
       expect(paneHeaders(panel.root).includes('Function'), false, 'no separate Function pane anymore');
       const chips = panel.root.querySelector('[data-testid="ff-prop-func-chips"]') as HTMLElement | null;
       expect(!!chips, true, 'chips row rendered for a func node');
+      const kind = chips!.querySelector('[data-testid="ff-property-type-badge"]') as HTMLElement | null;
+      expect(kind?.textContent, 'Function', 'the kind chip leads with a user-facing word');
       const fullName = chips!.querySelector('[data-testid="ff-prop-func-fullname"]') as HTMLElement | null;
-      expect(fullName?.textContent, node.dgFuncName, 'full-name chip carries the qualified name');
-      if (node.dgPackageName) {
+      const pkgName = node.dgPackageName ?? '';
+      const expectedName = pkgName && node.dgFuncName?.toLowerCase().startsWith(`${pkgName.toLowerCase()}:`) ?
+        node.dgFuncName!.slice(pkgName.length + 1) : node.dgFuncName;
+      expect(fullName?.textContent, expectedName, 'name chip carries the (deduped) function name');
+      if (pkgName) {
         const pkg = chips!.querySelector('[data-testid="ff-prop-func-package"]') as HTMLElement | null;
-        expect(pkg?.textContent, node.dgPackageName, 'package chip present');
+        expect(pkg?.textContent, pkgName, 'package chip present');
       }
+      expect(chips!.querySelectorAll('.funcflow-chip-sep').length >= 1, true,
+        'items separated by vertical rules on one line');
     } finally {
       panel.root.remove();
       destroyEditor(e);
@@ -194,7 +192,6 @@ category('Flow: property panel', () => {
       expect(paneHeaders(panel.root).includes(expected), true,
         `pane titled "${expected}" (got: ${paneHeaders(panel.root).join(' | ')})`);
       expect(paneHeaders(panel.root).includes('Input Parameters'), false, 'old pane title gone');
-      // Expanded by default → its content (input rows) is already in the DOM.
       expect(!!panel.root.querySelector('[data-param="keys1"]'), true,
         'pane content rendered without a click');
     } finally {
@@ -221,15 +218,12 @@ category('Flow: property panel', () => {
         `input row names its source end, humanized (got: "${inRow!.textContent}")`);
       expect(!!panel.root.querySelector('[data-conn="table2"]'), false, 'unwired input not listed');
 
-      // The Missing group mirrors the shared helper (labels of required inputs
-      // neither connected nor filled) — and its presence auto-expands the pane.
       const expectedMissing = missingRequiredInputs(join, (k) => e.flow.isInputConnected(join.id, k));
       expect(expectedMissing.length > 0, true, 'JoinTables with one table wired still misses required inputs');
       const rendered = Array.from(panel.root.querySelectorAll('[data-missing]'))
         .map((el) => (el as HTMLElement).dataset.missing);
       expect(rendered.join(','), expectedMissing.join(','), 'missing rows match the helper output in order');
 
-      // An order edge renders as a plain run-order fact, not a raw __exec row.
       await e.flow.addConnectionByKeys(tableIn.id, EXEC_OUT_KEY, join.id, EXEC_IN_KEY);
       panel.showNode(join);
       const orderRow = panel.root.querySelector(`[data-conn="${EXEC_IN_KEY}"]`) as HTMLElement | null;
@@ -237,8 +231,7 @@ category('Flow: property panel', () => {
       expect(orderRow!.textContent!.includes(`runs after ${tableIn.label}`), true,
         `order row names the predecessor (got: "${orderRow!.textContent}")`);
 
-      // The wired source node: nothing missing → the pane stays collapsed
-      // (content lazily built); expanding it lists the wired output only.
+      // Nothing missing → the pane stays collapsed (lazy content), so expand before querying.
       panel.showNode(tableIn);
       expect(panel.root.querySelectorAll('[data-missing]').length, 0, 'no missing rows on a satisfied node');
       const connHeader = Array.from(panel.root.querySelectorAll('.d4-accordion-pane-header'))
@@ -263,19 +256,16 @@ category('Flow: property panel', () => {
     document.body.appendChild(panel.root);
     try {
       const node = await addNode(e.flow, typeName);
-      // Data layer untouched — slots, seeds, and pass-throughs still exist, so
-      // compile and creation-script import/emit round-trip these params.
       expect(node.hiddenInputs.has('subscribeOnChanges'), true, 'registry read onto the node');
       expect(node.hiddenInputs.has('errorBehavior'), true, 'registry read onto the node');
       expect('subscribeOnChanges' in node.inputs, true, 'slot still exists');
       expect('subscribeOnChanges__pt' in node.outputs, true, 'pass-through still exists');
-      // GROK-20428 flipped the declared default to true — assert the seed
-      // exists and follows the declaration, without pinning its value.
+      // The declared default may change — assert the seed follows the declaration without pinning its value.
       expect(typeof node.inputValues['subscribeOnChanges'], 'boolean', 'default still seeded');
       expect(node.passthroughCount, node.dgFunc!.inputs.length, 'pass-through count unchanged');
 
-      // Rendered node: rows for hidden inputs (and their pass-throughs) are gone.
-      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-input', 'expression')}"]`));
+      // Anchor on the dataframe input — primitive rows are default-hidden.
+      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-input', 'table')}"]`));
       expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', 'subscribeOnChanges')}"]`), false,
         'no node row for a hidden input');
       expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', 'errorBehavior')}"]`), false,
@@ -338,12 +328,7 @@ category('Flow: property panel', () => {
   });
 
   test('editor-shortcut inputs render a pencil that opens the function editor', async () => {
-    // An input that practically requires the function's own editor carries an
-    // inline pencil doing exactly what the pane's "Open editor" header button
-    // does (same handler, same gating). Driven here on AddNewColumn's `name`
-    // via a temporary registration — its `expression` is the one input of this
-    // function that now has a custom editor, and a custom editor short-circuits
-    // the DG-input path the pencil hangs off (asserted below).
+    // Driven on `name` via a temporary registration — `expression` has a custom editor, which short-circuits the DG-input path the pencil hangs off.
     const typeName = funcTypeName('AddNewColumn');
     if (!typeName) return;
     const e = makeEditor();
@@ -354,7 +339,6 @@ category('Flow: property panel', () => {
     try {
       const node = await addNode(e.flow, typeName);
 
-      // Without the view wiring onEditFuncParams there is no pencil.
       panel.showNode(node);
       const pencilSel = `[data-testid="${tid('prop-input-editor-name')}"]`;
       expect(panel.root.querySelector(pencilSel) == null, true,
@@ -369,7 +353,6 @@ category('Flow: property panel', () => {
       pencil!.click();
       expect(openedFor, node.id, 'the pencil opens the editor for the shown node');
 
-      // Off-list inputs of the same function stay pencil-less.
       expect(panel.root.querySelector(`[data-testid="${tid('prop-input-editor-type')}"]`) == null, true,
         'off-list inputs get no pencil');
     } finally {
@@ -380,9 +363,6 @@ category('Flow: property panel', () => {
   });
 
   test('AddNewColumn edits its expression with the inline formula editor', async () => {
-    // The platform's own formula node gets the platform's own formula editor,
-    // in the panel rather than behind a dialog — and the pencil that used to
-    // stand in for it is gone, since a custom editor replaces the whole row.
     const typeName = funcTypeName('AddNewColumn');
     if (!typeName) return;
     const e = makeEditor();
@@ -401,8 +381,6 @@ category('Flow: property panel', () => {
       expect(!!row, true, 'the expression row renders');
       const host = row!.querySelector('.ff-expression-editor') as HTMLElement | null;
       expect(!!host, true, 'and hosts the formula editor');
-      // No table is captured in a detached editor, so it must be the still-
-      // editable string fallback rather than an empty box.
       expect(host!.getAttribute('data-mode'), 'plain', 'with no table it degrades to a usable input');
       expect((host!.querySelector('input') as HTMLInputElement).value, '${age} + 1',
         'seeded from the stored expression');
@@ -427,8 +405,6 @@ category('Flow: property panel', () => {
       expect(!!row, true, 'fullPath row rendered');
       expect(!!row!.querySelector('input'), true, 'file editor input inside the row');
 
-      // The registered editor against the live server: setValue resolves the
-      // path (existence-checked), onChanged reports the plain full-path string.
       const factory = customEditorFor(node.dgFunc!, 'fullPath');
       expect(!!factory, true, 'custom editor registered for core:OpenFile fullPath');
       const param = node.dgFunc!.inputs.find((p) => p.name === 'fullPath')!;
@@ -441,6 +417,45 @@ category('Flow: property panel', () => {
       await until(() => reported !== null, 15000);
       expect(String(reported), path, 'onChanged reports the full-path string');
       expect(String(ed.getValue()), path, 'getValue returns the resolved full path');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('OpenFile: fullPath and sheetName stay off the node body but editable in the panel', async () => {
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+      expect('fullPath' in node.inputs, true, 'fullPath slot still exists');
+      expect('sheetName' in node.inputs, true, 'sheetName slot still exists');
+      expect(node.hiddenInputs.has('fullPath') && node.hiddenInputs.has('sheetName'), true,
+        'both are node-hidden (PANEL_ONLY_FUNC_INPUTS read onto the node)');
+      expect(node.requiredInputs.includes('fullPath'), true, 'fullPath still required');
+
+      // Wait for the node card (its real output row) before asserting absence.
+      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-output', 'result')}"]`));
+      for (const key of ['fullPath', 'sheetName']) {
+        expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', key)}"]`), false,
+          `no node row for ${key}`);
+        expect(!!e.container.querySelector(`[data-testid="${tid('socket-output', `${key}__pt`)}"]`), false,
+          `no pass-through row for ${key}`);
+      }
+
+      node.inputValues['fullPath'] = 'System:AppData/Demo/book.xlsx';
+      panel.showNode(node);
+      expect(!!panel.root.querySelector('[data-param="fullPath"] input'), true, 'panel edits fullPath');
+      expect(!!panel.root.querySelector('[data-param="sheetName"] input'), true,
+        'panel edits sheetName for an xlsx path');
+
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      panel.showNode(node);
+      expect(panel.root.querySelector('[data-param="sheetName"]') == null, true,
+        'no Sheet Name row for a non-Excel path');
     } finally {
       panel.root.remove();
       destroyEditor(e);

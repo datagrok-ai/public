@@ -1344,7 +1344,7 @@ export async function _mpo() : Promise<void> {
 //description: Computes a multi-parameter optimization (MPO) desirability score from the selected property columns.
 //input: dataframe df 
 //input: column_list columns 
-//input: string profileName { caption: Score column; description: Name of the resulting score column. The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name }
+//input: string profileName { caption: Score column; description: Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name }
 //input: string aggregation = 'Average' { choices: ["Average","Sum","Product","Geomean","Min","Max"] }
 //input: bool createDesirabilityColumns 
 //output: dataframe result { action: join(df) }

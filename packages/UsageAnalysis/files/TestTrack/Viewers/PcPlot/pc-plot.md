@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.pc-plot]
 realized_as:
   - pc-plot-spec.ts
 related_bugs: []

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.grid, grid.sort, grid.column-resizing, grid.column-reordering, grid.row-selection, grid.column-selection, grid.editors, grid.copy-paste, grid.popup-menu, grid.column-tools, grid.keyboard-navigation, grid.special-rows, powergrid.action.sparklines, powergrid.cell.sparklines, viewers.scatter-plot]
 realized_as:
   - grid-spec.ts
 related_bugs: []

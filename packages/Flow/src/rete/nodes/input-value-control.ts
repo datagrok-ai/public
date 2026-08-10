@@ -1,10 +1,5 @@
-/** The inline value editor on an input node's body — a Rete control whose
- *  React side (`DgControlComponent` in node-component.tsx) mounts a real
- *  Datagrok input built by `buildInputValueEditor`.
- *
- *  The editor is built lazily on first render and cached for the node's
- *  lifetime: React re-renders (status changes, invalidation) re-attach the
- *  same element, so focus and caret survive re-renders mid-typing. */
+/** The inline value editor on an input node's body — built lazily and cached for the node's
+ *  lifetime so React re-renders re-attach the same element and focus survives mid-typing. */
 
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
@@ -26,8 +21,7 @@ export class InputValueControl extends ClassicPreset.Control {
     return this.editor?.root ?? null;
   }
 
-  /** Reflect a store change made elsewhere (the context panel) into the DG
-   *  input — programmatic, never reported as an edit. */
+  /** Reflect a store change made elsewhere into the DG input — programmatic, never reported as an edit. */
   sync(): void {
     this.editor?.sync();
   }

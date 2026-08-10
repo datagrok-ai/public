@@ -3,12 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {mergeChartOptions, mergeSeries} from './fit-renderer';
-import {getOrCreateParsedChartData, mergeProperties} from './fit-renderer';
-import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {mergeChartOptions, mergeSeries, getOrCreateParsedChartData, mergeProperties} from './fit-chart-data';
+import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {FitChartCellRenderer} from './fit-renderer';
+import {chartTooltip} from './fit-interaction';
 
 const ERROR_CLASS = 'd4-viewer-error';
 
@@ -38,6 +39,9 @@ export class MultiCurveViewer extends DG.JsViewer {
   showColumnLabel?: boolean;
 
 
+  /** What a trellis plot puts on its control panel. */
+  get trellisProperties(): string[] { return ['mergeColumnSeries', 'logX', 'logY']; }
+
   private isInTrellis(): boolean {
     let curRoot = this.root;
     let i = 0;
@@ -61,6 +65,14 @@ export class MultiCurveViewer extends DG.JsViewer {
       this.canvas.height = h;
       this.render();
     });
+    // the grid routes these to the cell renderer; here the viewer owns the canvas and does it itself
+    this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
+      if ((this.data.series?.length ?? 0) > 0 &&
+        !chartTooltip(this.data, new DG.Rect(0, 0, this.canvas.width, this.canvas.height), e,
+          {x: e.offsetX, y: e.offsetY}))
+        ui.tooltip.hide();
+    });
+    this.canvas.addEventListener('mouseleave', () => ui.tooltip.hide());
 
     this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
     this.legendColumnName = this.addProperty('legendColumnName', DG.TYPE.STRING, '', {description: 'Column to be used for curves names'});
@@ -137,28 +149,29 @@ export class MultiCurveViewer extends DG.JsViewer {
         const cellCurves = getOrCreateParsedChartData(tableCell);
         if (!cellCurves.series || cellCurves.series.length === 0)
           continue;
-        cellCurves.series.forEach((series) => series.columnName = tableCell.column.name);
+        // the parsed data is cached and shared with the grid, so the viewer works on its own copies -
+        // merging into it used to rewrite the cell itself
+        let cellSeries: IFitSeries[] = cellCurves.series.map((series) => ({...series, columnName: tableCell.column.name}));
         const legendCol = !this.legendColumnName || !this.dataFrame.col(this.legendColumnName) ? null : this.dataFrame.col(this.legendColumnName);
-        for (let j = 0; j < cellCurves.series.length; j++) {
-          const series = cellCurves.series[j];
-          if (legendCol)
-            series.auxLegendName = cellCurves.series.length > 1 ? `${legendCol.get(i)} ${series.name}` : `${legendCol.get(i)}`;
+        if (legendCol) {
+          for (const series of cellSeries)
+            series.auxLegendName = cellSeries.length > 1 ? `${legendCol.get(i)} ${series.name}` : `${legendCol.get(i)}`;
         }
         const currentChartOptions = cellCurves.chartOptions;
         if (currentChartOptions != null)
           chartOptions[chartOptions.length] = currentChartOptions;
         if (mergeCellSeries) {
-          const mergedSeries = mergeSeries(cellCurves.series!)!;
+          const mergedSeries = mergeSeries(cellSeries)!;
           if (currentChartOptions?.title !== undefined && currentChartOptions?.title !== '')
             mergedSeries.name = currentChartOptions?.title;
-          cellCurves.series = [mergedSeries];
+          cellSeries = [mergedSeries];
         }
-        series.push(...cellCurves.series!);
+        series.push(...cellSeries);
       }
-      if (this.mergeColumnSeries)
-        this.data.series?.push(mergeSeries(series)!);
-      else
-        this.data.series?.push(...JSON.parse(JSON.stringify(series)));
+      if (series.length === 0)
+        continue;
+      // a deep copy: the points are still the cell's own objects, and rendering mutates them
+      this.data.series?.push(...JSON.parse(JSON.stringify(this.mergeColumnSeries ? [mergeSeries(series)!] : series)));
     }
     this.data.chartOptions = mergeChartOptions(chartOptions);
     this.data.chartOptions.useAuxLegendNames = true;
@@ -236,6 +249,9 @@ export class MultiCurveViewer extends DG.JsViewer {
       this._showErrorMessage('No data to show.');
       return;
     }
-    this.gridCellWidget.gridCell = this.createGridCell(JSON.stringify(this.data));
+    // drawn from this very object rather than through a serialized cell, so that hovering can find
+    // the legend the render laid out
+    const bounds = new DG.Rect(0, 0, this.canvas.width, this.canvas.height);
+    new FitChartCellRenderer().renderCurves(g, bounds, this.data);
   }
 }

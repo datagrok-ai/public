@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: []
-realizes: [viewers.filters]
+realizes: [viewers.filters, viewers.filters.categorical, data.menu.link-tables]
 realized_as:
   - collaborative-filtering-for-linked-tables-spec.ts
 related_bugs: []

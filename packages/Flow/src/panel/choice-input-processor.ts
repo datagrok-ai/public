@@ -6,9 +6,7 @@ import {ChoiceFuncRef, parseChoiceFuncRef, isChoiceQueryRef} from '../utils/choi
 export {parseChoiceFuncRef, isChoiceQueryRef};
 export type {ChoiceFuncRef};
 
-/** Resolve a parsed reference to a single function. Matches on the function
- *  name; when several packages expose that name, the truncated package prefix
- *  breaks the tie (a real package name ends with it — `Chem`.endsWith(`hem`)). */
+/** Resolve by function name; ties broken by the truncated package prefix (`Chem`.endsWith(`hem`)). */
 export function resolveChoiceFunc(ref: ChoiceFuncRef): DG.Func | null {
   const candidates = DG.Func.find({name: ref.funcName});
   if (candidates.length === 0) return null;
@@ -24,8 +22,6 @@ export function resolveChoiceFunc(ref: ChoiceFuncRef): DG.Func | null {
   return byPackage[0] ?? candidates[0];
 }
 
-/** Coerce whatever a choices function returned into a string list: a plain
- *  list, or the first column of a dataframe. */
 export function choiceValuesFrom(result: unknown): string[] {
   if (Array.isArray(result))
     return result.map((x) => String(x)).filter((x) => x.length > 0);
@@ -45,9 +41,7 @@ export async function processChoiceInput(input: DG.ChoiceInput<any>, func: DG.Fu
 
     const prevInputValue = input.value;
     const raw = String(inputProperty.choices[0]).replaceAll('\\"', '"');
-    // Always replaces the item list, empty included: the single "choice" the
-    // input starts with IS the mangled reference string, so bailing out on an
-    // empty result would leave `hem:getMpoProfileNames(` selectable.
+    // Always replace the item list, empty included — the single "choice" the input starts with IS the mangled reference string.
     const applyItems = (items: string[]): void => {
       input.items = items;
       if (prevInputValue && items.includes(prevInputValue) && input.value !== prevInputValue)
@@ -69,7 +63,6 @@ export async function processChoiceInput(input: DG.ChoiceInput<any>, func: DG.Fu
       }
     }
 
-    // `choices: Pkg:funcName(…)` — resolve the function and use what it returns.
     const ref = parseChoiceFuncRef(raw);
     if (ref) {
       const choicesFunc = resolveChoiceFunc(ref);

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [train-regression-end-to-end, train_and_save_model, apply_model_on_table, delete_model]
-realizes: [views.models]
+realizes: [views.models, ml.menu.models.train-model, ml.menu.models.apply-model, ml.menu.models.browse-models]
 realized_as:
   - predictive-models-spec.ts
 related_bugs: []

@@ -1,11 +1,5 @@
-/** Flow's own data operations — the row/column/aggregation verbs written to
- *  replace the platform originals whose predicates are `FuncCall`-typed.
- *
- *  Three things are worth locking down, and they map onto the three categories
- *  below: the functions compute what they claim (against a real backend — the
- *  condition engine IS `core:AddNewColumn`), the nodes they produce cannot be
- *  run half-configured, and the editors that make those parameters fillable
- *  degrade to something usable when the upstream table isn't there yet. */
+/** Flow's own data operations: the functions, the nodes they produce,
+ *  and the editors that make their parameters fillable. */
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
@@ -36,7 +30,6 @@ function typeNameOf(nqName: string): string | null {
   })?.nodeTypeName ?? null;
 }
 
-/** A small, deterministic table: three groups, a numeric and a string column. */
 function sampleTable(): DG.DataFrame {
   return DG.DataFrame.fromColumns([
     DG.Column.fromStrings('team', ['a', 'a', 'b', 'b', 'c', 'c']),
@@ -44,8 +37,6 @@ function sampleTable(): DG.DataFrame {
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'weight', [10, 20, 30, 40, 50, 60]),
   ]);
 }
-
-// ---------- the functions ----------
 
 category('Flow: data ops', () => {
   before(async () => {
@@ -58,8 +49,6 @@ category('Flow: data ops', () => {
     const result = await filterRows(table, '${score} > 3');
     expect(result.rowCount, 3, 'rows over 3');
     expect(result.col('score')!.toList().join(','), '5,8,9');
-    // The source is never touched — a pipeline step that mutated its input
-    // would make an upstream preview show downstream data.
     expect(table.rowCount, 6, 'the input table is untouched');
   });
 
@@ -75,8 +64,6 @@ category('Flow: data ops', () => {
     const result = await extractRows(table, '${team} == "b"', [table.col('team')!, table.col('score')!]);
     expect(result.rowCount, 2);
     expect(result.columns.names().join(','), 'team,score', 'only the chosen columns');
-    // No columns chosen means every column — a blank list must not produce an
-    // empty table.
     const all = await extractRows(table, '${team} == "b"', null);
     expect(all.columns.length, 3, 'a blank column list keeps them all');
   });
@@ -86,7 +73,6 @@ category('Flow: data ops', () => {
     const result = await selectRows(table, '${score} > 3', true);
     expect(result === table, true, 'the same table flows on — selection is table state');
     expect(table.selection.trueCount, 3);
-    // Selecting again with `clearSelection` must replace, not accumulate.
     await selectRows(table, '${team} == "a"', true);
     expect(table.selection.trueCount, 2, 'the previous selection was dropped');
     await selectRows(table, '${score} > 8', false);
@@ -100,8 +86,6 @@ category('Flow: data ops', () => {
     } catch (e) {
       message = String((e as Error)?.message ?? e);
     }
-    // The point of the check: a numeric expression silently matching nothing
-    // (or everything) is far worse than a refusal that says what to write.
     expect(message.length > 0, true, 'it throws rather than filtering by a number');
     expect(message.includes('true/false'), true, `names the problem: ${message}`);
   });
@@ -117,15 +101,12 @@ category('Flow: data ops', () => {
   });
 
   test('random sampling is reproducible and drawn without replacement', async () => {
-    // A pipeline that returns different rows on every re-run breaks
-    // invalidation: a node re-runs and its downstream no longer agrees with it.
     const a = randomIndices(100, 10, 42);
     const b = randomIndices(100, 10, 42);
     expect(a.join(','), b.join(','), 'the same seed draws the same rows');
     expect(new Set(a).size, 10, 'no duplicates');
     expect(a.every((i) => i >= 0 && i < 100), true, 'all in range');
     expect(randomIndices(100, 10, 7).join(',') !== a.join(','), true, 'a different seed differs');
-    // Asking for more rows than exist yields the whole table, not a crash.
     expect(randomIndices(5, 50, 1).length, 5);
 
     const table = sampleTable();
@@ -180,8 +161,6 @@ category('Flow: data ops', () => {
 
   test('Aggregate pivots when given a pivot column', async () => {
     const table = sampleTable();
-    // A pivot column turns the group-by into a pivot table — the whole reason
-    // this node also answers to "pivot".
     const result = aggregate(table, [], JSON.stringify([{column: 'score', type: 'sum'}]),
       [table.col('team')!]);
     expect(result.rowCount, 1, 'no group-by folds everything into one row');
@@ -202,8 +181,7 @@ category('Flow: data ops', () => {
   });
 
   test('every offered aggregation actually runs', async () => {
-    // The list is hand-written and includes `concat unique`, a STR_AGG rather
-    // than an AGG — this is what proves the Dart side takes it.
+    // incl. `concat unique`, a STR_AGG the TS signature does not admit
     const table = sampleTable();
     for (const type of AGGREGATION_TYPES) {
       const column = type === 'count' ? '' : (type === 'concat unique' ? 'team' : 'score');
@@ -231,16 +209,13 @@ category('Flow: data ops', () => {
   });
 });
 
-// ---------- the nodes ----------
-
 category('Flow: data op nodes', () => {
   before(async () => {
     registerBuiltinNodes();
     registerAllFunctions();
   });
 
-  /** Every one of these must be in the catalog without an allowlist entry —
-   *  they declare `meta.includeInFlow: true` on themselves. */
+  // each declares meta.includeInFlow: true — no allowlist entry needed
   const OPS = ['filterRows', 'deleteRows', 'extractRows', 'selectRows', 'filterRandomRows',
     'selectRandomRows', 'deleteColumns', 'tagColumns', 'expressionToColumn', 'aggregate', 'unpivot'];
 
@@ -250,9 +225,6 @@ category('Flow: data op nodes', () => {
   });
 
   test('the FuncCall-typed originals they replace stay out of the catalog', async () => {
-    // These are the entries whose `TableRowFilterCall` / `ColFilterCall`
-    // parameters have no editor and no socket — the reason the whole family was
-    // commented out in included-funcs.ts.
     for (const gone of ['core:FilterRows', 'core:DeleteRows', 'core:SelectRows', 'core:ExtractRows',
       'core:DeleteColumns', 'core:TagColumns', 'core:Subset', 'core:Aggregate'])
       expect(typeNameOf(gone), null, `${gone} is not a node`);
@@ -271,7 +243,6 @@ category('Flow: data op nodes', () => {
         expect(String(condition?.propertyType), 'string', `${name}: condition is a plain string`);
         expect(node.requiredInputs.includes('table'), true, `${name}: table required`);
         expect(node.requiredInputs.includes('condition'), true, `${name}: condition required`);
-        // Blank on a fresh node — the whole point of the requirement.
         expect(nodeMissingRequirements(node, () => false).length > 0, true,
           `${name}: a fresh node is not runnable`);
       } finally {
@@ -281,8 +252,6 @@ category('Flow: data op nodes', () => {
   });
 
   test('column parameters are real column_list slots bound to the table', async () => {
-    // `column_list` is what gives them Flow's column picker for free — the
-    // originals took `ColFilterCall` and `core:Unpivot` takes bare string lists.
     const cases: Array<[string, string[]]> = [
       ['deleteColumns', ['columns']],
       ['tagColumns', ['columns']],
@@ -333,8 +302,6 @@ category('Flow: data op nodes', () => {
   });
 
   test('they land in the toolbox categories their signatures imply', async () => {
-    // No category is declared anywhere: `categorizeFunc` routes by signature, so
-    // this is the check that the signatures themselves are shaped right.
     const expected: Record<string, string> = {
       filterRows: 'Transform Tables',
       deleteRows: 'Transform Tables',
@@ -345,7 +312,6 @@ category('Flow: data op nodes', () => {
       tagColumns: 'Transform Tables',
       aggregate: 'Transform Tables',
       unpivot: 'Transform Tables',
-      // The one that produces a column rather than a table.
       expressionToColumn: 'Column Operations',
     };
     for (const [name, category] of Object.entries(expected)) {
@@ -363,8 +329,7 @@ category('Flow: data op nodes', () => {
   });
 
   test('nodes are titled in words, not in camelCase', async () => {
-    // A `//friendlyName:` annotation does not survive publishing (checked on a
-    // live stand), so the header has to humanize the raw name itself.
+    // `//friendlyName:` does not survive publishing, so the header humanizes the raw name
     const expected: Record<string, string> = {
       filterRows: 'Filter Rows',
       filterRandomRows: 'Filter Random Rows',
@@ -409,8 +374,7 @@ category('Flow: data op nodes', () => {
       const validator = funcValidatorOf(node.dgFunc!);
       expect(validator !== undefined, true, 'aggregate has a readiness check');
 
-      // A blank value is already caught by the generic required-input check;
-      // what needs the validator is a list that is non-blank but says nothing.
+      // blank is caught by the generic check — the validator exists for a non-blank list that says nothing
       node.inputValues['aggregations'] = JSON.stringify([{column: '', type: 'avg'}]);
       expect(validator!(node).length > 0, true, 'an aggregation over no column blocks the node');
       expect(validator!(node)[0].includes('column'), true, 'and names what is missing');
@@ -418,7 +382,6 @@ category('Flow: data op nodes', () => {
       node.inputValues['aggregations'] = JSON.stringify([{column: 'score', type: 'avg'}]);
       expect(validator!(node).length, 0, 'a complete list is ready');
 
-      // `count` counts rows, so it legitimately has no column.
       node.inputValues['aggregations'] = JSON.stringify([{column: '', type: 'count'}]);
       expect(validator!(node).length, 0, 'count needs no column');
     } finally {
@@ -444,9 +407,7 @@ category('Flow: data op nodes', () => {
           inputValue: () => undefined, columns: () => null, table: () => null,
           isConnected: () => true, watch: () => {}, node,
         } as never);
-      // The verdict channel: deciding whether a formula is true/false means
-      // evaluating it, so the hosted editor announces each check on the element
-      // it is mounted in and the node reads the answer back synchronously.
+      // validity is decided by evaluation — the hosted editor announces verdicts as DOM events
       const validate = (expression: string, error: string): void => {
         ed.element.dispatchEvent(new CustomEvent('expression-validated', {detail: {expression, error}}));
       };
@@ -457,8 +418,6 @@ category('Flow: data op nodes', () => {
       expect(problems.length, 1, 'and the node refuses to run');
       expect(problems[0].includes('true/false'), true, 'saying why');
 
-      // A verdict is about ONE piece of text; editing past it makes the state
-      // unknown again rather than leaving a stale block in place.
       node.inputValues['condition'] = '${score} > 1';
       expect(validator!(node).length, 0, 'a verdict for other text does not apply');
 
@@ -489,11 +448,8 @@ category('Flow: data op nodes', () => {
   });
 });
 
-// ---------- the editors ----------
-
 category('Flow: data op editors', () => {
-  /** Stand-in for the panel context, so an editor's states are testable without
-   *  a live node — same shape the MPO mapper's tests use. */
+  /** Stand-in for the panel context, so editor states are testable without a live node. */
   function fakeCtx(columns: DG.Column[] | null, connected: boolean) {
     const watchers: Array<(v: unknown) => void> = [];
     return {
@@ -528,7 +484,6 @@ category('Flow: data op editors', () => {
     expect(aggregationProblems([{column: '', type: 'avg'}]).length, 1);
     expect(aggregationProblems([{column: '', type: 'count'}]).length, 0, 'count needs no column');
     expect(aggregationProblems([{column: 'x', type: 'avg'}]).length, 0);
-    // Two broken entries of the same kind read as one problem, not two.
     expect(aggregationProblems([{column: '', type: 'avg'}, {column: '', type: 'avg'}]).length, 1);
   });
 
@@ -550,8 +505,6 @@ category('Flow: data op editors', () => {
     expect(kept.length, 3, 'the aggregation over a missing column is dropped');
     expect(kept.some((a) => a.column === 'ghost'), false, 'and it is the stale one');
     expect(kept.some((a) => a.type === 'count'), true, 'column-less ones always survive');
-    // A blank column is a row just added, not a stale reference — dropping it
-    // would make the Add button look broken.
     expect(kept.filter((a) => a.column === '' && a.type === 'avg').length, 1,
       'an unfinished row survives');
   });
@@ -574,13 +527,10 @@ category('Flow: data op editors', () => {
     expect(ed.element.querySelectorAll('select').length, 0, 'and zero combos');
     expect(ed.element.textContent!.includes('Connect a table'), true, 'saying which of the two states it is');
 
-    // Connected but uncomputed is a different instruction from unconnected.
     const uncomputed = aggregationEditor(stringParam('aggregations'), fakeCtx(null, true).ctx as never);
     uncomputed.setValue('');
     expect(uncomputed.element.textContent!.includes('not been computed'), true);
 
-    // Whatever is stored stays readable — a flow loaded from disk must not look
-    // empty just because it has not been run.
     const stored = aggregationEditor(stringParam('aggregations'), fakeCtx(null, false).ctx as never);
     stored.setValue(JSON.stringify([{column: 'score', type: 'avg'}]));
     expect(stored.element.textContent!.includes('avg(score)'), true, 'the stored list is shown');
@@ -632,8 +582,6 @@ category('Flow: data op editors', () => {
     expect(input.value, '${age} > 30', 'showing the stored condition');
     expect(ed.element.textContent!.includes('Connect a table'), true, 'with the reason spelled out');
 
-    // Editable is the point: a flow loaded from disk must be fixable without
-    // running anything first.
     input.value = '${age} > 40';
     input.dispatchEvent(new Event('input'));
     input.dispatchEvent(new Event('change'));
@@ -646,14 +594,10 @@ category('Flow: data op editors', () => {
     ed.setValue('');
     expect(ed.element.textContent!.includes('not been computed'), true,
       'a wired-but-uncomputed table gets a different instruction');
-    // …and an action to fix it, rather than a dead end.
     expect(ed.element.querySelector('.ff-expression-editor-load') !== null, true);
   });
 
   test('with a table the expression editor mounts the real formula editor', async () => {
-    // The whole point of the parameter shape: with a table in hand the
-    // condition is edited in PowerPack's formula editor — column autocomplete,
-    // function list, inline validation — not a text box.
     const table = sampleTable();
     const ed = rowConditionEditor(stringParam('condition'), {
       inputValue: () => undefined,
@@ -667,9 +611,7 @@ category('Flow: data op editors', () => {
     ed.setValue('${score} > 3');
 
     const mounted = await until(() => ed.element.getAttribute('data-mode') === 'formula', 20_000);
-    // Narrow skip: ONLY when the editor function is absent from this stand's
-    // catalog. If it IS there the mount has to happen — a silent fallback would
-    // otherwise hide a broken hand-off behind a passing test.
+    // skip ONLY when PowerPack's editor function is absent — if present, the mount must happen
     if (!mounted && DG.Func.find({package: 'PowerPack', name: 'expressionEditorWidget'}).length === 0) {
       expect(ed.element.getAttribute('data-mode'), 'plain',
         'no PowerPack editor function — it must still fall back to a usable input');
@@ -678,9 +620,7 @@ category('Flow: data op editors', () => {
       return;
     }
     expect(mounted, true, 'the formula editor mounted');
-    // CodeMirror is what the widget mounts; its presence is the proof that the
-    // real editor came up rather than an empty host. It arrives a beat after
-    // the host flips to `formula` — the widget builds it asynchronously.
+    // CodeMirror arrives a beat after the host flips to `formula` — the widget builds it asynchronously
     const cmReady = await until(() => ed.element.querySelector('.cm-editor') !== null, 20_000);
     expect(cmReady, true, 'CodeMirror is mounted');
     expect(ed.getValue(), '${score} > 3', 'seeded with the stored condition');

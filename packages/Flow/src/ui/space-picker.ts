@@ -1,14 +1,4 @@
-/** Hierarchical space browser used in two modes:
- *  - **Chooser** (default — the Save dialog): browse root spaces, drill into
- *    subspaces of any depth (loaded lazily on expand), create a subspace under
- *    the selected space (or a new root space), and select the target.
- *    Selection is optional by design — the host dialog decides what "no space"
- *    means (Save As treats it as "save as a plain script in my namespace").
- *  - **Content browser** (`showContent: true` — the toolbox Spaces tab): also
- *    lists each space's CONTENT — entities (flows, scripts, queries, …) and
- *    files stored in the space — as activatable/draggable rows. The
- *    "New subspace…" button is hidden (it's a browsing surface, not a
- *    save-target chooser). */
+/** Hierarchical space browser: save-target chooser (default) or content browser (`showContent`). */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -16,11 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import {setTid} from '../utils/test-ids';
 
 export interface SpacePickerOptions {
-  /** List each space's content (entities + stored files) alongside its
-   *  subspaces, and hide the "New subspace…" button. Default: spaces only. */
+  /** Also list each space's content (entities + stored files) and hide the "New subspace…" button. */
   showContent?: boolean;
-  /** Content mode: fired when a content row is double-clicked (or activated
-   *  with Enter). Never fires for spaces — expanding is their interaction. */
+  /** Content mode: fired when a content row is activated (double-click / Enter); never for spaces. */
   onEntityActivated?: (entity: DG.Entity) => void;
 }
 
@@ -34,15 +22,11 @@ export class SpacePicker {
   readonly root: HTMLElement;
   /** Exposed for tests (expanding a group triggers the lazy child load). */
   readonly tree = DG.TreeViewGroup.tree();
-  /** Space ids whose children are already in the tree (lazy-load guard). */
   private readonly loaded = new Set<string>();
   private selection: DG.Project | null = null;
   private readonly options: SpacePickerOptions;
-  /** Chooser-mode footer link; its label tracks the selection ("New space…"
-   *  with nothing selected creates a root space — the label must say so). */
   private newSpaceLink: HTMLElement | null = null;
 
-  /** Fires whenever the selected space changes (null = nothing selected). */
   onChanged: ((space: DG.Project | null) => void) | null = null;
 
   private constructor(options: SpacePickerOptions) {
@@ -63,7 +47,6 @@ export class SpacePicker {
       this.select(v instanceof DG.Project && v.isSpace ? v : null);
     });
     if (options.showContent) {
-      // Double-click / Enter on a content row → hand the entity to the host.
       this.tree.onNodeEnter.subscribe((node) => {
         const v = node?.value;
         if (v instanceof DG.Project || !(v instanceof DG.Entity)) return;
@@ -96,8 +79,6 @@ export class SpacePicker {
 
   get selected(): DG.Project | null { return this.selection; }
 
-  /** Deselects the tree so the host's "clear" control and the picker stay in
-   *  sync (footer label back to "New space…", no highlighted row). */
   clearSelection(): void {
     for (const el of Array.from(this.tree.root.querySelectorAll('.d4-current, .d4-tree-view-node-selected')))
       el.classList.remove('d4-current', 'd4-tree-view-node-selected');
@@ -113,8 +94,6 @@ export class SpacePicker {
 
   private addSpaceNode(parent: DG.TreeViewGroup, space: DG.Project): DG.TreeViewGroup {
     const name = space.friendlyName || space.name;
-    // Space rows carry the Browse tree's space glyph — every other row type has
-    // an icon, and it teaches what the toolbox tab's brackets-curly means.
     const icon = document.createElement('i');
     icon.className = 'grok-icon fal fa-brackets-curly funcflow-space-icon';
     const label = ui.divH([icon, ui.divText(name)], {style: {alignItems: 'center', gap: '4px'}});
@@ -126,9 +105,6 @@ export class SpacePicker {
     return node;
   }
 
-  /** One activatable/draggable row for a space's content entity (content mode).
-   *  Files and functions drag onto the canvas exactly like toolbox rows — the
-   *  canvas droppable already accepts DG.FileInfo and DG.Func drag objects. */
   private addContentNode(parent: DG.TreeViewGroup, entity: DG.Entity): void {
     const name = spaceEntityName(entity);
     const oh = DG.ObjectHandler.forEntity(entity);
@@ -151,8 +127,7 @@ export class SpacePicker {
     this.loaded.add(space.id);
     try {
       const client = grok.dapi.spaces.id(space.id).children;
-      // Empty types = every entity kind + the space's stored files; linked
-      // entities included so a flow shared into the space shows up too.
+      // Empty types = every entity kind + the space's stored files; `true` includes linked entities.
       const children = this.options.showContent ?
         await client.filter('', true).list() :
         await client.filter('Project', false).list();
@@ -169,11 +144,7 @@ export class SpacePicker {
       for (const sub of spaces)
         this.addSpaceNode(node, sub);
       if (this.options.showContent) {
-        // Subspaces first, then entities, files last — mirrors the Files tree's
-        // dirs-before-files reading order. Connections are skipped: every space
-        // carries its own "<name> Files" storage connection (pure plumbing —
-        // the stored files list as rows of their own), and a connection row
-        // isn't actionable on the canvas anyway (its queries are entities).
+        // Connections are skipped: every space carries its own "<name> Files" storage connection (plumbing).
         const rest = unique.filter((c) =>
           !(c instanceof DG.Project && c.isSpace) && !(c instanceof DG.DataConnection));
         const entities = rest.filter((c) => !(c instanceof DG.FileInfo)).sort(byName);
@@ -188,8 +159,7 @@ export class SpacePicker {
   }
 
   private async createSpaceDialog(): Promise<void> {
-    // The SELECTION decides the parent, not the tree's current item — after
-    // clearSelection() the tree may still remember the last clicked node.
+    // The selection decides the parent — after clearSelection() the tree may still remember the last clicked node.
     const cur = this.tree.currentItem instanceof DG.TreeViewGroup ? this.tree.currentItem : null;
     const parentNode = this.selection != null &&
       (cur?.value as DG.Project | null)?.id === this.selection.id ? cur : null;
@@ -224,8 +194,7 @@ export class SpacePicker {
             created = await grok.dapi.spaces.createRootSpace(name);
           }
           if (parentNode != null && parentSpace != null) {
-            // Only add manually when the parent's children are already loaded —
-            // otherwise the lazy load would bring the new subspace in twice.
+            // Adding when the children aren't loaded yet would duplicate the node on the lazy load.
             if (this.loaded.has(parentSpace.id))
               this.tree.currentItem = this.addSpaceNode(parentNode, created);
             parentNode.expanded = true;
@@ -234,12 +203,10 @@ export class SpacePicker {
           this.select(created);
           grok.shell.info(`Space "${name}" created`);
         } catch (e: any) {
-          // Server-side checks: CreateSpace privilege, name uniqueness, EDIT permission.
           grok.shell.error(`Could not create space: ${e?.message ?? e}`);
         }
       });
     dlg.show();
-    // "OK" understates an action that creates a server entity.
     const ok = dlg.getButton('OK') as HTMLButtonElement | null;
     if (ok) ok.textContent = 'Create';
   }

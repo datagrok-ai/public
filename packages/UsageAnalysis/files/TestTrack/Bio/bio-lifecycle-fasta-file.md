@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [import_fasta_file, export_as_fasta]
-realizes: []
+realizes: [bio.import.fasta, bio.export.fasta]
 produced_from: atlas-driven
 related_bugs:
   - GROK-18616

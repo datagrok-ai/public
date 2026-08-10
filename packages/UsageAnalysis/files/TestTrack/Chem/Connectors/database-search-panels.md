@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [chemblapi.panel.databases.chembl.similarity-search-api, chemblapi.panel.databases.chembl.substructure-search-api, chemspace.panel.databases.chemspace, pubchemapi.panel.databases.pubchem.similarity-search, pubchemapi.panel.databases.pubchem.substructure-search, pubchemapi.panel.databases.pubchem.identity-search, pubchemapi.panel.databases.pubchem.info, drugbank.panel.databases.drugbank.similarity-search, drugbank.panel.databases.drugbank.substructure-search]
 realized_as:
   - database-search-panels-spec.ts
 related_bugs: []

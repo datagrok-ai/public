@@ -1,12 +1,5 @@
-/** Output-view tabs (Spotfire-style internal pages): the status-bar strip
- *  renders Canvas + one tab per table output (Table Output, dataframe-typed
- *  Value Output, table-carrying SetVar terminal); an empty tab shows the
- *  "run the flow" message; a value materializes a detached DG.TableView
- *  lazily on activation (`_onAdded` against a live, laid-out pane); a re-run
- *  refreshes the SAME TableView in place; ribbon/toolbox swap to the active
- *  tab's (MultiView pattern) and restore on Canvas; layouts persist in the
- *  `.flow` keyed by paramName and survive node-id remapping across a
- *  save → load round-trip. */
+/** Output-view tabs: the status-bar strip (Canvas + one tab per table output),
+ *  lazy detached TableView hosting, ribbon/toolbox swap, layout persistence. */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -26,8 +19,7 @@ interface ViewHarness {
   flow: FlowEditor;
 }
 
-/** A FuncFlowView mounted offscreen but laid out with a real size — the tab
- *  panes must be non-zero-sized when a TableView `_onAdded`s into them. */
+/** Mounted offscreen but with a real size — tab panes must be non-zero-sized when a TableView `_onAdded`s. */
 async function makeView(): Promise<ViewHarness> {
   const view = new FuncFlowView();
   const host = ui.div([view.root], {style: {
@@ -154,7 +146,6 @@ category('Flow: output views', () => {
       h.flow.notifyNodeParamsChanged(setVar.id);
       expect(!!chipByParam(h, 'MyResult'), true, 'SetVar acts exactly as an output (Q2)');
 
-      // A scalar-fed SetVar stays out.
       const constNode = await addNode(h.flow, 'Constants/Int', 0, 200);
       const setVar2 = await addNode(h.flow, ensureFuncNodeType(setVarFunc), 240, 200);
       setVar2.inputValues['variableName'] = 'MyNumber';
@@ -207,8 +198,7 @@ category('Flow: output views', () => {
       const out = await addNode(h.flow, 'Outputs/Table Output', 100, 0);
       h.view.outputViews.setValue(out.id, numericDf('swap', 4));
 
-      // The Dart toolbox getter may wrap the set element — assert by
-      // containment of the function browser's root, not reference identity.
+      // The Dart toolbox getter may wrap the set element — assert by containment, not reference identity.
       const browserRoot = (h.view as unknown as {functionBrowser: {root: HTMLElement}}).functionBrowser.root;
       const toolboxHasBrowser = (): boolean => {
         const tb = h.view.toolbox;
@@ -235,7 +225,6 @@ category('Flow: output views', () => {
       expect(inRibbon(saveButton), true, 'Flow\'s Save pill stays on the table tab (saves the layout)');
       const swapped = h.view.getRibbonPanels().flat().length;
       expect(swapped > 1, true, `the TableView's items landed on the host ribbon (got ${swapped})`);
-      // The TableView's own (core-hidden) Save button must not be copied.
       const hiddenCopied = h.view.getRibbonPanels().flat().some((p) => {
         const inner = p.firstElementChild as HTMLElement | null;
         return (p as HTMLElement).style.display === 'none' || inner?.style?.display === 'none';
@@ -247,8 +236,7 @@ category('Flow: output views', () => {
       expect(inRibbon(saveButton), true, 'Flow\'s Save is back home');
       expect(ribbonHasTid('ff-ribbon-run'), true, 'Flow\'s ribbon panels are restored (same references)');
 
-      // Regression: setRibbonPanels MOVES elements — a second activation must
-      // re-use the captured inner elements, not re-read empty tv wrappers.
+      // setRibbonPanels MOVES elements — the second activation must reuse the captured items.
       h.view.outputViews.activate(out.id);
       expect(await until(() => !ribbonHasTid('ff-ribbon-run'), 5000), true,
         'second switch swaps again');
@@ -266,10 +254,6 @@ category('Flow: output views', () => {
   }, {timeout: 90000});
 
   test('the core Save-project dialog opens seeded with a flow table and cancels to null', async () => {
-    // End-to-end probe of the publish path: the Dart-side interop
-    // (grok_Project_OpenSaveDialog → ProjectMeta.publishTables) must be
-    // registered, the dialog must show the passed table (workspace NOT
-    // scanned), and closing without saving must resolve null.
     const showSaveDialog = (DG.Project as unknown as {
       showSaveDialog?: (o: object) => Promise<unknown>;
     }).showSaveDialog;
@@ -284,8 +268,7 @@ category('Flow: output views', () => {
       dartError = e;
       return 'ERROR';
     });
-    // The project name sits in an input VALUE (not textContent) — identify the
-    // dialog by the offered table row instead.
+    // The project name sits in an input VALUE (not textContent) — identify the dialog by the offered table row.
     const dialogEl = (): HTMLElement | null => {
       for (const d of Array.from(document.querySelectorAll('.d4-dialog')) as HTMLElement[]) {
         if ((d.textContent ?? '').includes('ff pub probe')) return d;
@@ -300,7 +283,6 @@ category('Flow: output views', () => {
       .find((i) => (i as HTMLInputElement).value === 'FlowPublishProbe');
     expect(!!nameBox, true, 'the project name is prefilled');
 
-    // Cancel: press Escape (Modal closes on ESC), fall back to the close icon.
     document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', keyCode: 27, bubbles: true} as
       KeyboardEventInit));
     if (dialogEl() != null)
@@ -335,7 +317,6 @@ category('Flow: output views', () => {
       ]) as DG.Project | null;
     };
 
-    // A real layout state string, captured from a scratch view.
     const tmp = grok.shell.addTableView(numericDf('ff bind layout src', 3));
     const layoutState = tmp.saveLayout().viewState;
     tmp.close();
@@ -351,7 +332,6 @@ category('Flow: output views', () => {
         'the layout shipped as a ViewInfo without a live view');
       expect(children.some((c) => c instanceof DG.TableInfo), true, 'the table is a child');
 
-      // Re-publish with the binding: the SAME project is updated, not a new one.
       const df2 = numericDf('ff pub bind', 5);
       const again = await openAndOk(
         {tables: [df2], name: 'FlowBindProbe', project: project!.id}, 'ff pub bind');
@@ -372,14 +352,12 @@ category('Flow: output views', () => {
       if (!typeName) throw new Error('OpenFile is not registered as a node');
       const node = await addNode(h.flow, typeName, 0, 0);
       node.label = 'Open File: demog.csv'; // what the toolbox drop stamped
-      node.inputValues['fullPath'] = 'System:DemoFiles/cars.csv'; // panel edit
+      node.inputValues['fullPath'] = 'System:DemoFiles/cars.csv';
       const view = h.view as unknown as {
         executionController: {state: {setNodeStatus(id: string, s: NodeExecStatus): void}};
         refreshOpenFileTitle(id: string): void;
       };
 
-      // Merely typing a new path must not retitle — the captured value is
-      // still the old file.
       view.executionController.state.setNodeStatus(node.id, NodeExecStatus.running);
       view.refreshOpenFileTitle(node.id);
       expect(node.label, 'Open File: demog.csv', 'no restamp before completion');
@@ -404,7 +382,6 @@ category('Flow: output views', () => {
       sync();
       expect(outputChips(h).map((c) => c.dataset.param).join(','), 'alpha,beta', 'insertion order first');
 
-      // The reorder-drag writes ranks; the next sync must reorder the chips.
       a.properties['outputOrder'] = 1;
       b.properties['outputOrder'] = 0;
       sync();
@@ -434,13 +411,10 @@ category('Flow: output views', () => {
       expect(typeof layouts['result'] === 'string' && layouts['result'].length > 0, true,
         'the layout captured under the paramName');
 
-      // The saved entity body carries the layouts; the graph snapshot used for
-      // dirty tracking (`serializeFlow`) does not.
       const body = (h.view as unknown as {entityBodyText(): string}).entityBodyText();
       const doc: FuncFlowDocument = parseFlowBody(body).doc;
       expect(!!doc.outputViews?.['result']?.layout, true, 'the .flow carries outputViews');
 
-      // Fresh view + load: node ids remap, the layout still finds its tab.
       h2 = await makeView();
       await h2.view.loadFromDoc(doc);
       const out2 = h2.flow.getNodes().find((n) => n.dgTypeName === 'Outputs/Table Output')!;

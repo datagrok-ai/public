@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p1
 realizes_atlas: [dendrogram.cp.hier-clustering-bio-sequence-path]
-realizes: [bio.analyze.hierarchical-clustering, dendrogram]
+realizes: [bio.menu.analyze.hierarchical-clustering]
 pyramid_layer: integration
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-bio-api.md

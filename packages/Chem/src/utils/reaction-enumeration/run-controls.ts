@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, EnumerationProgress, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
-import {buildInputs, buildResultDataFrame} from './enumerator-app';
+import {buildInputs, buildResultDataFrame} from './shared';
 
 export interface RunControlsDeps {
   getConfig: () => EnumeratorConfig;
@@ -15,14 +15,12 @@ export interface RunControlsDeps {
   validate: () => string | null;
   syncQuickInputsToConfig: () => void;
   buildPerRoundOverrides: (cfg: EnumeratorConfig) => PerRoundOverride[] | undefined;
-  // Called once a run finishes (success, error, or cancel) — restores both buttons' disabled state
-  // + tooltip via the orchestrator's own mediator, which also refreshes chips/cards/validationDiv.
+  /** Called once a run finishes (success, error, or cancel) — restores both buttons' state. */
   refreshValidation: () => void;
 }
 
-/** Ribbon Enumerate/Cancel/progress chrome, mirrored by a second Enumerate button at the end of the
- * Preview pane's nav chain. Both buttons drive the same run, guarded by runWithUi (see below) —
- * `cancelled` is checked by enumerate()'s own isCancelled callback. */
+/** Ribbon Enumerate/Cancel/progress chrome, mirrored by a second Enumerate button at the end of
+ * the Preview pane's nav chain. Both drive the same run, guarded by `running`. */
 export class RunControls {
   readonly runBtn: HTMLButtonElement;
   readonly cancelBtn: HTMLButtonElement;
@@ -34,8 +32,8 @@ export class RunControls {
   private running = false;
   private runBtnRibbonItem: HTMLElement | null = null;
   private lastValidationMsg: string | null = null;
-  // WeakSet survives the platform replacing the ribbon-item node mid-session (e.g. after
-  // "Subset by selection") — re-attaches on a new node, no-ops on an unchanged one.
+  // A WeakSet survives the platform replacing the ribbon-item node mid-session: re-attaches on a
+  // new node, no-ops on an unchanged one.
   private readonly ancestorsWithClickListener = new WeakSet<HTMLElement>();
 
   private static readonly RUN_TOOLTIP_DEFAULT =
@@ -45,13 +43,10 @@ export class RunControls {
   constructor(private readonly deps: RunControlsDeps) {
     this.progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
     this.runBtn = ui.bigButton('Enumerate', () => this.runWithUi(() => this.runEnumeration()));
-    // Mirrors the ribbon's Enumerate button — Preview is the end of the Next-button chain, so it
-    // gets its own run action too.
     this.previewEnumerateBtn = ui.button('Enumerate', () => this.runWithUi(() => this.runEnumeration()));
     this.previewEnumerateBtn.classList.add('ui-btn-ok');
-    // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind tooltips to a
-    // live ancestor instead. runBtn has the ribbon's own '.d4-ribbon-item'; previewEnumerateBtn gets
-    // its own wrapper div for the same purpose.
+    // Disabled buttons get pointer-events:none, so hover never reaches them — bind the tooltip to a
+    // live ancestor instead (the ribbon item for runBtn, a dedicated wrapper here).
     this.previewEnumerateBtnWrap = ui.div([this.previewEnumerateBtn]);
     this.armDisabledTooltip(this.previewEnumerateBtn, this.previewEnumerateBtnWrap);
 
@@ -60,10 +55,8 @@ export class RunControls {
   }
 
   setValidation(err: string | null): void {
-    // A run's own disabled state + "already running" tooltip is runWithUi's to own — ordinary
-    // validation churn (e.g. editing Number of rounds, a Subset-by-selection click elsewhere) fires
-    // refreshValidation() mid-run too, and would otherwise flip the buttons back to looking clickable
-    // while a run is still active underneath.
+    // Ordinary validation churn fires mid-run too, and would otherwise flip the buttons back to
+    // looking clickable while a run is still active. runWithUi owns their state until it finishes.
     if (this.running) return;
     this.runBtn.disabled = err != null;
     this.previewEnumerateBtn.disabled = err != null;
@@ -90,8 +83,6 @@ export class RunControls {
     ui.tooltip.bind(this.previewEnumerateBtnWrap, msg ?? RunControls.RUN_TOOLTIP_DEFAULT);
   }
 
-  // Shared run chrome: validate, disable both Run buttons, show Cancel + progress, restore on finish.
-  // `running` blocks a second concurrent run in addition to the disabled state applied below.
   private async runWithUi(fn: () => Promise<void>): Promise<void> {
     if (this.running || this.deps.validate() != null) return;
     this.deps.syncQuickInputsToConfig();
@@ -111,17 +102,15 @@ export class RunControls {
       this.running = false;
       this.cancelBtn.style.display = 'none';
       this.progressLabel.textContent = '';
-      this.deps.refreshValidation(); // restores both buttons' disabled state + tooltip
+      this.deps.refreshValidation();
     }
   }
 
   private async runEnumeration(): Promise<void> {
     this.progressLabel.textContent = 'Loading RDKit…';
     const rdkit = await getRdKitModule();
-    // Snapshot the config for this run alone — getConfig() returns the same live object the quick-
-    // config inputs keep mutating, and enumerate() reads it for the whole (possibly long) run, not
-    // just at the start. Without cloning, editing "Number of rounds"/"Depth first"/a product filter
-    // while a run is in progress would change the in-flight run's behavior mid-execution.
+    // Snapshot for this run alone: getConfig() returns the live object the quick inputs keep
+    // mutating, and enumerate() reads it for the whole run, not just at the start.
     const config = cloneConfig(this.deps.getConfig());
     const tDf = this.deps.templatesInput.value!;
     const bDf = this.deps.bbsInput.value!;
@@ -157,8 +146,7 @@ export class RunControls {
 
     if (warnings.length > 0) {
       console.warn('Enumeration warnings:', warnings);
-      // Surface the actual warning TEXT, not just a count — e.g. a per-step override silently not
-      // applying is only visible this way, not as a bare count.
+      // Surface the text, not just a count — an override silently not applying is only visible here.
       const preview = warnings.slice(0, 3).join(' | ');
       const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
       grok.shell.warning(`${preview}${more}`);

@@ -2,19 +2,39 @@
 import {
   getSeriesFitFunction,
   getCurve,
-  fitSeries,
   getSeriesConfidenceInterval,
   getSeriesStatistics,
   getPointsArrays,
+  getSeriesFit,
+  toDataSpace,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {getDataPoints} from '@datagrok-libraries/statistics/src/fit/fit-points';
+import {
+  fitSeries,
+  fitFunctions,
+  getFitFunction,
+  getStatistic,
+  getStatisticProperty,
+  isFit,
+  FitTypeMap,
+  FitSeries,
+  SigmoidFit,
+  LinearFit,
+  LogLinearFit,
+  ExponentialFit,
+  FourPLDoseResponseFit,
+  JSFunctionFit,
+} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {
   sigmoid,
   FIT_FUNCTION_SIGMOID,
   IFitSeries,
-  FIT_FUNCTION_LINEAR, FIT_FUNCTION_LOG_LINEAR, FIT_FUNCTION_EXPONENTIAL, linear, logLinear, exponential
+  FIT_FUNCTION_LINEAR, FIT_FUNCTION_LOG_LINEAR, FIT_FUNCTION_EXPONENTIAL, FIT_FUNCTION_4PL_DOSE_RESPONSE,
+  FIT_FUNCTION_4PL_REGRESSION, linear, logLinear, exponential
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
-import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
+import {droplineFraction} from '../fit/render-utils';
 
 
 const sigmoidSeries: IFitSeries = {'fitLineColor': '#1f77b4', 'pointColor': '#1f77b4', 'showCurveConfidenceInterval': false, 'points': [{'x': 0.10000000149011612, 'y': 1.7412786483764648}, {'x': 0.6000000238418579, 'y': 1.8561450242996216}, {'x': 1.100000023841858, 'y': 1.6065685749053955}, {'x': 1.600000023841858, 'y': 1.70476496219635}, {'x': 2.0999999046325684, 'y': 1.5737264156341553}, {'x': 2.5999999046325684, 'y': 1.6007002592086792}, {'x': 3.0999999046325684, 'y': 1.6796687841415405}, {'x': 3.5999999046325684, 'y': 1.656104326248169}, {'x': 4.099999904632568, 'y': 1.782997488975525}, {'x': 4.599999904632568, 'y': 1.530208945274353}, {'x': 5.099999904632568, 'y': 1.1572397947311401}, {'x': 5.599999904632568, 'y': 0.8691964745521545}, {'x': 6.099999904632568, 'y': 0.3228665590286255}, {'x': 6.599999904632568, 'y': 0.2990703880786896}, {'x': 7.099999904632568, 'y': 0.23361243307590485}], 'fitFunction': 'sigmoid', 'clickToToggle': false, 'showFitLine': true, 'showPoints': 'points', 'parameters': [1.6914372095641517, 1.1536998642628853, 5.410173358224149, 0.2089689354045083]};
@@ -167,6 +187,221 @@ category('fit', () => {
     expect(polynomialSeriesStatistics.rSquared, 0.846055768956569);
   });
 
+  test('fillParams', async () => {
+    const sigmoidCurve = fitSeries(sigmoidSeries, sigmoidFitFunc);
+    const sigmoidFit = sigmoidFitFunc.fillParams(sigmoidCurve, sigmoidSeries) as SigmoidFit;
+    expect(sigmoidFit.name, FIT_FUNCTION_SIGMOID);
+    expect(sigmoidFit.top, sigmoidCurve.parameters[0]);
+    expect(sigmoidFit.slope, sigmoidCurve.parameters[1]);
+    expect(sigmoidFit.ic50, sigmoidCurve.parameters[2]);
+    expect(sigmoidFit.bottom, sigmoidCurve.parameters[3]);
+    expect(sigmoidFit.interceptY, sigmoidCurve.fittedCurve(sigmoidCurve.parameters[2]));
+
+    const linearCurve = fitSeries(linearSeries, linearFitFunc);
+    const linearFit = linearFitFunc.fillParams(linearCurve, linearSeries) as LinearFit;
+    expect(linearFit.slope, linearCurve.parameters[0]);
+    expect(linearFit.intercept, linearCurve.parameters[1]);
+
+    const logLinearCurve = fitSeries(logLinearSeries, logLinearFitFunc);
+    const logLinearFit = logLinearFitFunc.fillParams(logLinearCurve, logLinearSeries) as LogLinearFit;
+    expect(logLinearFit.name, FIT_FUNCTION_LOG_LINEAR);
+    expect(logLinearFit.slope, logLinearCurve.parameters[0]);
+    expect(logLinearFit.intercept, logLinearCurve.parameters[1]);
+
+    const exponentialCurve = fitSeries(exponentialSeries, exponentialFitFunc);
+    const exponentialFit = exponentialFitFunc.fillParams(exponentialCurve, exponentialSeries) as ExponentialFit;
+    expect(exponentialFit.mantissa, exponentialCurve.parameters[0]);
+    expect(exponentialFit.power, exponentialCurve.parameters[1]);
+  });
+
+  test('fillParams dose-response', async () => {
+    const fitFunc = fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE];
+    const curve = fitSeries(sigmoidSeries, fitFunc);
+    const fit = fitFunc.fillParams(curve, sigmoidSeries) as FourPLDoseResponseFit;
+
+    expect(fit.name, FIT_FUNCTION_4PL_DOSE_RESPONSE);
+    expect(fit.ic50, curve.parameters[2]);
+    expect(fit.ec50, curve.parameters[2]);
+    expect(fit.top, curve.parameters[0]);
+    expect(fit.bottom, curve.parameters[3]);
+  });
+
+  test('fillParams custom function', async () => {
+    const curve = fitSeries(polynomialSeries, polynomialFitFunc);
+    const fit = polynomialFitFunc.fillParams(curve, polynomialSeries) as JSFunctionFit;
+
+    expectArray(fit.parameters, curve.parameters);
+    for (let i = 0; i < polynomialFitFunc.parameterNames.length; i++)
+      expect(fit[polynomialFitFunc.parameterNames[i]], curve.parameters[i]);
+  });
+
+  test('fillParams data points', async () => {
+    const curve = fitSeries(sigmoidSeries, sigmoidFitFunc);
+    const defaultFit = sigmoidFitFunc.fillParams(curve, sigmoidSeries);
+    const explicitFit = sigmoidFitFunc.fillParams(curve, sigmoidSeries,
+      getDataPoints(sigmoidSeries, undefined, false));
+    const logFit = sigmoidFitFunc.fillParams(curve, sigmoidSeries, undefined, {logX: true, logY: false});
+
+    expect(explicitFit.rSquared, defaultFit.rSquared);
+    expect(explicitFit.auc, defaultFit.auc);
+    expect(logFit.rSquared === defaultFit.rSquared, false);
+  });
+
+  test('statisticsProperties', async () => {
+    expectArray(sigmoidFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'top', 'slope', 'ic50', 'bottom', 'interceptY', 'maxY', 'minY', 'pIC50']);
+    expectArray(linearFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'slope', 'intercept']);
+    expectArray(logLinearFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'slope', 'intercept']);
+    expectArray(exponentialFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'mantissa', 'power']);
+    expectArray(fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE].statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'top', 'slope', 'ic50', 'bottom', 'interceptY', 'maxY', 'minY', 'pIC50']);
+    expectArray(polynomialFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'Slope', 'Intercept', 'Parameter3', 'Parameter4']);
+  });
+
+  test('statisticsProperties friendly names', async () => {
+    // parameter labels come from the fit function's own parameterNames, so the two cannot drift
+    expectArray(sigmoidFitFunc.statisticsProperties.map((p) => p.friendlyName),
+      ['R²', 'AUC', 'Top', 'Slope', 'IC50', 'Bottom', 'Y at IC50', 'Max Y', 'Min Y', 'pIC50']);
+    expectArray(fitFunctions[FIT_FUNCTION_4PL_REGRESSION].statisticsProperties.map((p) => p.friendlyName),
+      ['R²', 'AUC', 'Top', 'Slope', 'EC50', 'Bottom', 'Y at EC50', 'Max Y', 'Min Y']);
+    expectArray(fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE].statisticsProperties.map((p) => p.friendlyName),
+      ['R²', 'AUC', 'Max', 'Hill', 'IC50', 'Min', 'Y at IC50', 'Max Y', 'Min Y', 'pIC50']);
+    expectArray(linearFitFunc.statisticsProperties.map((p) => p.friendlyName),
+      ['R²', 'AUC', 'Slope', 'Intercept']);
+  });
+
+  test('getStatistic legacy names', async () => {
+    // getFitFunction is typed, so these need no casts - the fit type is known at compile time
+    const sigmoidFit = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'));
+    expect(getStatistic(sigmoidFit, 'interceptX'), sigmoidFit.ic50);
+    // the property panel's "+" button passes the current names, extracted columns from saved projects
+    // pass the legacy ones - both have to resolve off the same fit
+    expect(getStatistic(sigmoidFit, 'ic50'), sigmoidFit.ic50);
+    expect(getStatistic(sigmoidFit, 'maxY'), sigmoidFit.maxY);
+    expect(getStatistic(sigmoidFit, 'minY'), sigmoidFit.minY);
+    expect(getStatistic(sigmoidFit, 'top'), sigmoidFit.top);
+    expect(getStatistic(sigmoidFit, 'bottom'), sigmoidFit.bottom);
+    expect(getStatistic(sigmoidFit, 'slope'), sigmoidFit.slope);
+
+    const regressionFit = getSeriesFit({...sigmoidSeries, parameters: undefined}, getFitFunction('4pl-regression'));
+    expect(getStatistic(regressionFit, 'interceptX'), regressionFit.ec50);
+
+    const doseResponseFit = getSeriesFit({...sigmoidSeries, parameters: undefined},
+      getFitFunction('4pl-dose-response'));
+    expect(getStatistic(doseResponseFit, 'interceptX'), doseResponseFit.ic50);
+
+    // legacy names a 2-parameter fit lacks fall back to the slot the pre-typed API read positionally,
+    // and the descriptor has to agree - a value with no descriptor renders nothing on the plot
+    const linearFit = getSeriesFit(linearSeries, getFitFunction('linear'));
+    expect(getStatistic(linearFit, 'top'), linearFit.parameters[0]);
+    expect(getStatisticProperty(getFitFunction('linear'), 'top') !== undefined, true);
+    expect(getStatisticProperty(getFitFunction('linear'), 'interceptX') === undefined, true);
+    expect(getStatistic(linearFit, 'interceptX') === undefined);
+    expect(getStatistic(linearFit, 'interceptY') === undefined);
+    expect(getStatistic(linearFit, 'bottom') === undefined);
+    expect(getStatistic(linearFit, 'slope'), linearFit.slope);
+
+    // the pre-typed API reported interceptY for every fit function, custom ones included
+    const jsFit = getSeriesFit(polynomialSeries, getSeriesFitFunction(polynomialSeries));
+    expect(typeof getStatistic(jsFit, 'interceptY'), 'number');
+    // and a value with no descriptor is skipped by the plot, so both have to resolve
+    expect(getStatisticProperty(getSeriesFitFunction(polynomialSeries), 'interceptY') !== undefined, true);
+
+    // never resolves to a non-numeric field of the fit
+    expect(getStatistic(sigmoidFit, 'series') === undefined);
+    expect(getStatistic(sigmoidFit, 'parameters') === undefined);
+    expect(getStatistic(sigmoidFit, 'name') === undefined);
+  });
+
+  test('FitSeries options', async () => {
+    // this only compiles if FitSeries still exposes every IFitSeriesOptions member
+    const series = new FitSeries([{x: 1, y: 2}]);
+    series.name = 'a';
+    series.fitFunction = FIT_FUNCTION_SIGMOID;
+    series.parameters = [1, 2, 3, 4];
+    series.parameterBounds = [{min: 0, max: 1}];
+    series.markerType = 'circle';
+    series.outlierMarkerType = 'outlier';
+    series.lineStyle = 'dashed';
+    series.pointColor = '#111111';
+    series.fitLineColor = '#222222';
+    series.confidenceIntervalColor = '#333333';
+    series.outlierColor = '#444444';
+    series.connectDots = false;
+    series.showFitLine = true;
+    series.showPoints = 'points';
+    series.showOutliers = true;
+    series.showCurveConfidenceInterval = false;
+    series.errorModel = 'constant';
+    series.clickToToggle = true;
+    series.labels = {batch: 'A1'};
+    series.droplines = ['IC50'];
+    series.columnName = 'curve';
+    series.auxLegendName = 'aux';
+
+    expect(series.name, 'a');
+    expect(series.showPoints, 'points');
+    expect(series.droplines![0], 'IC50');
+    expect(series.auxLegendName, 'aux');
+
+    // a series stays JSON-serializable - an own `fit` property used to make this circular
+    const json = JSON.parse(JSON.stringify(series));
+    expect(json.name, 'a');
+    expect(json.columnName, 'curve');
+  });
+
+  test('maxY and minY', async () => {
+    const sigmoidFit = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'));
+    expect(sigmoidFit.maxY, Math.max(sigmoidFit.top, sigmoidFit.bottom));
+    expect(sigmoidFit.minY, Math.min(sigmoidFit.top, sigmoidFit.bottom));
+    expect(sigmoidFit.maxY >= sigmoidFit.minY, true);
+  });
+
+  test('toDataSpace', async () => {
+    const logX = {logX: true, logY: false};
+    const fitSpace = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'), undefined, logX);
+    const rawIc50 = fitSpace.ic50;
+    // toDataSpace mutates in place, so capture before converting
+    const untouchedTop = fitSpace.top;
+    const dataSpace = toDataSpace(fitSpace, logX);
+
+    // the inflection point is fitted in log space and must be reported as a concentration
+    expect(dataSpace.ic50, Math.pow(10, rawIc50));
+    // pIC50 is derived from the concentration, so only after the conversion
+    expect(dataSpace.pIC50, -Math.log10(Math.pow(10, rawIc50)));
+    expect(dataSpace.top, untouchedTop);
+
+    // the y asymptotes are reported in the space they were fitted in. A stored bottom of 0 has no
+    // finite logarithm, so the forward map has to skip it while the inverse would still return 1 -
+    // the two could never be exact inverses, so neither converts
+    const logY = {logX: false, logY: true};
+    const yFit = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'), undefined, logY);
+    const rawTop = yFit.top;
+    const rawIc50Y = yFit.ic50;
+    toDataSpace(yFit, logY);
+    expect(yFit.top, rawTop);
+    expect(yFit.ic50, rawIc50Y); // x untouched when logX is off
+
+    // no log axes means no conversion at all
+    const plain = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'));
+    const plainIc50 = plain.ic50;
+    toDataSpace(plain, {logX: false, logY: false});
+    expect(plain.ic50, plainIc50);
+  });
+
+  test('isFit narrowing', async () => {
+    // a runtime-dispatched fit function yields a plain Fit; isFit narrows it to the concrete type
+    const fit = getSeriesFit(sigmoidSeries, getSeriesFitFunction(sigmoidSeries));
+    expect(isFit(fit, 'sigmoid'));
+    expect(isFit(fit, 'linear') === false);
+    if (isFit(fit, 'sigmoid'))
+      expect(fit.ic50, getStatistic(fit, 'interceptX'));
+  });
+
   test('calculateBoxPlotStatistics', async () => {
     const values = [0.7654603719711304, 0.8199243545532227, 0.8257747292518616, 0.9558155536651611, 0.9596694707870483];
     const boxPlotStats = calculateBoxPlotStatistics(values);
@@ -176,6 +411,52 @@ category('fit', () => {
     expect(boxPlotStats.q3, 0.9558155536651611);
     expect(boxPlotStats.lowerAdjacentValue, 0.7654603719711304);
     expect(boxPlotStats.upperAdjacentValue, 0.9558155536651611);
+  });
+
+  test('ICxx is the x at that fraction of the curve', async () => {
+    // travelled fraction, measured from the low-x asymptote - so the same call means IC90 on a
+    // descending curve and EC90 on an ascending one
+    const at = (fitFunc: keyof FitTypeMap, params: number[], fraction: number,
+      lowX: number, highX: number): number => {
+      const f = getFitFunction(fitFunc)!;
+      const array = Float32Array.from(params);
+      const start = f.y(array, lowX);
+      const end = f.y(array, highX);
+      return (f.y(array, f.inverse(array, fraction)!) - start) / (end - start);
+    };
+
+    for (const fitFunc of ['sigmoid', '4pl-dose-response'] as (keyof FitTypeMap)[]) {
+      for (const slope of [1.2, -1.2]) {
+        for (const fraction of [0.1, 0.5, 0.9]) {
+          expectFloat(at(fitFunc, [100, slope, -6.5, 5], fraction, -1e6, 1e6), fraction, 0.001,
+            `${fitFunc}, slope ${slope}, IC${fraction * 100}`);
+        }
+      }
+    }
+    // the power parameterization, where x is a concentration rather than its logarithm
+    for (const slope of [1.2, -1.2]) {
+      for (const fraction of [0.1, 0.5, 0.9])
+        expectFloat(at('4pl-regression', [100, slope, 3e-7, 5], fraction, 1e-30, 1e30), fraction, 0.001);
+    }
+
+    // IC50 is the inflection point, which is what the droplines drew before there was a family
+    const sigmoidFunc = getFitFunction('sigmoid')!;
+    expect(sigmoidFunc.inverse(Float32Array.from([100, 1.2, -6.5, 5]), 0.5), -6.5);
+
+    // nothing to travel between, so nothing to name
+    for (const fitFunc of ['linear', 'log-linear', 'exponential'] as (keyof FitTypeMap)[])
+      expect(getFitFunction(fitFunc)!.inverse(Float32Array.from([1, 2]), 0.9) === undefined, true, fitFunc);
+  });
+
+  test('a dropline name asks for a fraction', async () => {
+    expect(droplineFraction('IC50'), 0.5);
+    expect(droplineFraction('IC90'), 0.9);
+    expect(droplineFraction('EC50'), 0.5);
+    expect(droplineFraction('ic55'), 0.55);
+    expect(droplineFraction('IC12.5'), 0.125);
+    // the asymptotes themselves are never reached, and these are not concentrations at all
+    for (const name of ['IC0', 'IC100', 'AUC', ''])
+      expect(droplineFraction(name) === undefined, true, name);
   });
 
   test('sigmoid', async () => {

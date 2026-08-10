@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p0
 realizes_atlas: [chem.cp.r-groups-analysis]
-realizes: [chem.analyze.r-groups-analysis]
+realizes: [chem.menu.analyze.r-groups-analysis, viewers.trellis-plot]
 realized_as:
   - r-group-analysis-spec.ts
 produced_from: migrated

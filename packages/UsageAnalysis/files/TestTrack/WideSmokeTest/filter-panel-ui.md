@@ -15,5 +15,6 @@ Expected result: both layout and filtering of the dataframe should be applied to
 - No hidden columns should be visible in filter panel
 ---
 {
-"order": 1
+"order": 1,
+"realizes": ["viewers.filters", "view.menu.reset-filter", "view.menu.layout.clone-view", "viewers.scatter-plot", "viewers.bar-chart", "viewers.pie-chart", "viewers.pivot-viewer", "chem.filter.scaffold-tree-filter", "chem.viewer.scaffold-tree"]
 }

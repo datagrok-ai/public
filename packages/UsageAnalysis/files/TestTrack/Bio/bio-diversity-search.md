@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [bio.cp.diversity-search]
-realizes: [bio.search.diversity-search, bio.sequence-diversity-search]
+realizes: [bio.menu.search.diversity-search, bio.viewer.sequence-diversity-search, bio.viewer.diversity-search]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

@@ -5,9 +5,9 @@ import {EnumeratorConfig} from './config';
 
 const DISABLED_HINT = 'Leave blank to disable this filter.';
 
-// The platform's +/- steppers can't increment from blank and have no floor on decrement.
-// Override both: blank "+" -> 1, "floor -" -> blank, otherwise a normal ±1. `floor` (default 0) is
-// the last numeric stop before the stepper goes blank — pass 1 for fields where 0 is not a valid cap.
+/** The platform's +/- stepper can't increment from blank and has no floor on decrement. This makes
+ * blank "+" yield 1 and "floor -" yield blank. `floor` is the last numeric stop before blank —
+ * pass 1 for fields where 0 isn't a valid cap. */
 export function fixNullableIntStepper(input: DG.InputBase<number | null>, floor = 0): void {
   const apply = (next: number | null): void => {
     input.value = next;
@@ -28,9 +28,7 @@ export function fixNullableIntStepper(input: DG.InputBase<number | null>, floor 
   override('.ui-input-minus', -1);
 }
 
-// -1 is each field's "no cap" sentinel — shown as blank rather than a literal -1. `floor` forwards
-// to fixNullableIntStepper as-is; callers pass 1 where 0 would zero every result before any work
-// runs (e.g. max_num_routes_per_compound).
+// -1 is each field's "no cap" sentinel, shown as blank rather than a literal -1.
 function intInput(
   label: string, value: number, tooltip?: string, floor = 0,
 ): {input: DG.InputBase<number | null>; get: () => number} {
@@ -55,8 +53,7 @@ function csvInput(label: string, items: string[], tooltip?: string) {
   };
 }
 
-// `syncToConfig` writes the current field values into the given config object. Doesn't build a
-// ui.form() itself — the caller does that lazily (see enumerator-nav.ts's lazyFilterForm).
+// Returns inputs, not a ui.form() — the caller builds that lazily (enumerator-nav's lazyFilterForm).
 export function buildCombinationLimitFields(initial: EnumeratorConfig): {
   inputs: DG.InputBase<unknown>[];
   syncToConfig: (target: EnumeratorConfig) => void;

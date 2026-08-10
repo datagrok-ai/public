@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: []
-realizes: [views.scripts]
+realizes: [views.scripts, scripting.r, scripting.python, scripting.octave, scripting.node, scripting.js, scripting.grok, pyodide.script-handler.language]
 realized_as:
   - scripts-create-debugged.test.ts
 related_bugs: []

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [upload-save-reopen-golden, derive-then-save-inside-project]
-realizes: [views.projects]
+realizes: [views.projects, data.menu.link-tables, data.menu.aggregate-rows, file.menu.save.tables-as-project, viewers.pivot-viewer]
 realized_as:
   - uploading-spec.ts
 pyramid_layer: source-matrix

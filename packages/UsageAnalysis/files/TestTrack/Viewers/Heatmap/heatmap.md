@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.heat-map, viewers.filters.histogram]
 realized_as:
   - heatmap-spec.ts
 related_bugs: []

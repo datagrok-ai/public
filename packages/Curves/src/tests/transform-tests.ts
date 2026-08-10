@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
-import {FitChartCellRenderer, layoutChart} from '../fit/fit-renderer';
+import {FitChartCellRenderer} from '../fit/fit-renderer';
+import {layoutChart} from '../fit/fit-layout';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';

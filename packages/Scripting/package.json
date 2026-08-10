@@ -1,0 +1,32 @@
+{
+  "name": "@datagrok/scripting",
+  "friendlyName": "Scripting",
+  "version": "1.0.0",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamonov@datagrok.ai"
+  },
+  "servicePackage": true,
+  "description": "Per-language script execution containers (Python, R, Octave, Julia, NodeJS). Ships no client code — it exists to give the platform on-demand Docker containers for the kernel gateways.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Scripting"
+  },
+  "dependencies": {
+    "datagrok-api": "^1.27.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "debug-scripting": "grok publish",
+    "release-scripting": "grok publish --release",
+    "build": "echo \"no client code\"",
+    "build-scripting": "echo \"no client code\""
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "category": "Scripting"
+}

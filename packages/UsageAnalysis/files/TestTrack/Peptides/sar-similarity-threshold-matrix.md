@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [GROK-19145]
-realizes: []
+realizes: [bio.menu.analyze.sar, peptides.viewer.sequence-variability-map]
 produced_from: atlas-driven
 related_bugs:
   - GROK-19145

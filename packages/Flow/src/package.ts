@@ -19,12 +19,8 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-/* The 'flow' script-language handler: core wraps this into a
- * PackageScriptHandler at func sync, so flow scripts run like any script
- * (grok.functions.call, Run pane, funccall dialog). Registered via plain
- * annotations (not decorators) because the templateScript meta value —
- * which itself contains '//' header lines — does not survive the decorator
- * code generator. */
+/* Plain annotations, not decorators: the templateScript meta value contains
+ * '//' header lines that don't survive the decorator code generator. */
 //name: flowScriptHandler
 //input: funccall scriptCall
 //meta.role: scriptHandler
@@ -40,10 +36,6 @@ export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> 
   await FlowEntityHandler.instance.run(scriptCall);
 }
 
-/* The node behind local-file uploads: dropping a file onto the canvas stores
- * its bytes (in memory until the flow is saved, then in the server's
- * GUID-addressed file store) and adds this function as a node, so the flow
- * replays and shares like any other. See utils/uploaded-files.ts. */
 //name: readUploadedFile
 //friendlyName: Uploaded File
 //description: Reads a file uploaded into a flow and parses it into a table
@@ -57,9 +49,6 @@ export async function readUploadedFile(fileId: string, fileName: string): Promis
   return parseFileToDataFrame(fileName, bytes);
 }
 
-/* Runs at platform startup (not just when a Flow view is open): sharing a flow
- * script from anywhere — Browse, a link, the context panel — must extend read
- * access to the uploaded-file blobs its nodes reference. */
 //name: flowShareSync
 //tags: autostart
 //description: Keeps uploaded-file permissions in sync when a flow script is shared
@@ -91,16 +80,11 @@ export class PackageFunctions {
   @grok.decorators.fileViewer({fileViewer: 'flow'})
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
-    // A .flow file is either the annotated script body (header + JSON) or the
-    // bare JSON document — loadFromJson handles both.
     file.readAsString().then((json) => view.loadFromJson(json))
       .catch((e) => grok.shell.error(`Cannot open ${file.name}: ${e instanceof Error ? e.message : e}`));
     return view;
   }
 
-  /** Builds a flow from a table-creation script (the function-call cascade
-   *  Datagrok records for reproducibly-created tables, used by data sync)
-   *  and opens it in the Flow editor. */
   @grok.decorators.func({
     name: 'flowFromCreationScript',
     description: 'Builds a flow diagram from a table creation script and opens it in the Flow editor',
@@ -113,20 +97,13 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'openCreationScriptFlowDialog',
-    // includeInFlow: Flow-internal dialog opener — hide it from Flow's own toolbox.
     meta: {role: 'creationScriptEditor', includeInFlow: 'false'},
   })
   static async openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean = true): Promise<DG.Dialog> {
-    // Load the tables being edited so the view can split the flow back into a
-    // creation script per table and save each via TableInfo.saveCreationScript.
     const loaded = await Promise.all((tableIds ?? []).map((id) => grok.dapi.tables.find(id)));
     const tableInfos = loaded.filter((t): t is DG.TableInfo => t != null);
-    // No output panel inside the dialog — run results belong to the real
-    // editor view only; it is re-enabled below when promoted via Open In Editor.
     const view = new FuncFlowView(tableInfos, {outputPanel: false});
     view.name = `Creation Script`;
-    // Inside the cramped dialog the overview adds clutter — start it minimized;
-    // expand it once the flow is opened in the full editor.
     view.setMinimapCollapsed(true);
     try {
       await view.loadFromCreationScript(script);
@@ -145,9 +122,7 @@ export class PackageFunctions {
         setTimeout(() => view.fitToScreen(), 100);
         d.close();
       });
-    // A dialog-hosted view is never detached by the shell — release its
-    // editor (window listeners, run state) when the dialog goes away, unless
-    // it was promoted into a real shell view.
+    // A dialog-hosted view is never detached by the shell — release it on close.
     d.onClose.subscribe(() => {
       if (!promoted) view.detach();
     });
@@ -156,12 +131,7 @@ export class PackageFunctions {
     return d;
   }
 
-  // ---------- first-class Flow entity (Script with language 'flow') ----------
-  // (the scriptHandler function itself is annotation-registered above,
-  //  next to `info` — see the note there)
-
-  /** The visual editor for a flow script entity — consumed by core through the
-   *  `scriptHandler.editorFunction` seam (double-click, Edit, /script/<id>). */
+  /** Consumed by core through the `scriptHandler.editorFunction` seam. */
   @grok.decorators.func({
     name: 'flowScriptEditor',
     description: 'Opens the visual Flow editor for a flow script entity',
@@ -172,7 +142,6 @@ export class PackageFunctions {
     return FlowEntityHandler.instance.editorView(script);
   }
 
-  /** Browse-preview view for a flow script entity (FlowScriptMeta.renderPreview). */
   @grok.decorators.func({
     name: 'flowScriptPreview',
     meta: {includeInFlow: 'false'},
@@ -182,7 +151,6 @@ export class PackageFunctions {
     return FlowEntityHandler.instance.previewView(script);
   }
 
-  /** Context-panel pane content for a flow script entity (FlowScriptMeta). */
   @grok.decorators.func({
     name: 'flowScriptWidget',
     meta: {includeInFlow: 'false'},
@@ -192,11 +160,7 @@ export class PackageFunctions {
     return FlowEntityHandler.instance.widget(script);
   }
 
-  // ---------- Flow view functions (AI) ----------
-  // Returned by FuncFlowView.getFunctions() (found by the 'flowViewFunction' tag) so the
-  // AI assistant can act on the open editor. Each takes the generic current view and
-  // reaches the FuncFlowView instance through `view.jsView`; `includeInFlow: false`
-  // keeps them out of Flow's own node catalog.
+  // 'flowViewFunction'-tagged: the AI assistant acts on the open editor through these.
 
   @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
     description: 'List the current flow graph: all nodes (id, label, type, status, set input values) and connections. Call this first to understand what is on the canvas'})
@@ -274,20 +238,10 @@ export class PackageFunctions {
     return aiTools.runFlow(view);
   }
 
-  // ---------- Flow-native data operations ----------
-  // Row/column/aggregation verbs whose platform originals take `FuncCall`-typed
-  // predicates (`TableRowFilterCall` / `ColFilterCall`) or bare string lists —
-  // types a canvas cannot wire or edit, which is why the whole family sits
-  // commented out in `included-funcs.ts`. Declared here because the server only
-  // scans a fixed file list for annotations (`src/package.ts`, `detectors.ts`,
-  // `package-test.ts`, `package.g.ts` — packages_service.dart), so a separate
-  // module would register nothing; every body lives in `ops/data-ops.ts`.
-  // `includeInFlow: true` puts them in the catalog without touching the
-  // allowlist, and their signatures route them to the right browser category on
-  // their own (table in / table out → Transform Tables, column out → Column
-  // Operations). No `friendlyName` — that annotation does not survive package
-  // publishing (verified against a live stand); the node title is the humanized
-  // method name, which is why these read as verbs (`filterRows` → `Filter Rows`).
+  // Flow-native data operations (bodies in ops/data-ops.ts). Declared HERE because the
+  // server scans only a fixed file list for annotations — a separate module registers
+  // nothing. No friendlyName: it doesn't survive publishing, so names are verbs the
+  // humanizer titles well (`filterRows` → `Filter Rows`).
 
   @grok.decorators.func({
     name: 'filterRows',
@@ -408,8 +362,6 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'aggregate',
-    // "pivot" in the description is what makes the node findable by that word —
-    // adding a pivot column is exactly what turns this into a pivot table.
     description: 'Groups rows and aggregates columns. Add a pivot column to build a pivot table',
     meta: {includeInFlow: 'true'},
   })
@@ -437,7 +389,6 @@ export class PackageFunctions {
     return dataOps.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
   }
 
-  /** `.flow` exports sitting in file shares open in the editor too. */
   @grok.decorators.fileViewer({fileViewer: 'flow'})
   static viewFlowFile(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
