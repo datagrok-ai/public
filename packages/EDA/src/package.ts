@@ -31,6 +31,7 @@ import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 import {getLinearRegressionParams, getPredictionByLinearRegression,
   isLinearRegressionApplicable, isLinearRegressionInteractive,
+  packLinearRegressionModel, unpackLinearRegressionModel,
   TOLERANCE} from './regression';
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
@@ -424,7 +425,7 @@ export class PackageFunctions {
     const features = df.columns;
     const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, TOLERANCE);
 
-    return new Uint8Array(params.buffer);
+    return packLinearRegressionModel(params, features.names());
   }
 
 
@@ -440,8 +441,8 @@ export class PackageFunctions {
     df: DG.DataFrame,
     @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): DG.DataFrame {
     const features = df.columns;
-    const params = new Float32Array((model as Uint8Array).buffer);
-    return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
+    const {params, names} = unpackLinearRegressionModel(model as Uint8Array);
+    return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params, names)]);
   }
 
 

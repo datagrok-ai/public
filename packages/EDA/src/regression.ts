@@ -156,6 +156,47 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
   return params;
 } // computeLinRegressionCoefs
 
+/** Structure of the serialized linear regression model */
+enum LIN_REG_MODEL {
+  FEATURES = 'features',
+  VALUES = 'values',
+  BIAS = 'bias',
+}
+
+/** Pack the model: a two-column dataframe whose last row carries the bias */
+export function packLinearRegressionModel(params: Float32Array, featureNames: string[]): Uint8Array {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(LIN_REG_MODEL.FEATURES, featureNames.concat(LIN_REG_MODEL.BIAS)),
+    DG.Column.fromFloat32Array(LIN_REG_MODEL.VALUES, params),
+  ]).toByteArray();
+}
+
+/** Unpack the model. Feature names come back without the trailing bias item,
+ * and are absent for models saved before the names were stored. */
+export function unpackLinearRegressionModel(model: Uint8Array): {params: Float32Array, names?: string[]} {
+  try {
+    const df = DG.DataFrame.fromByteArray(model);
+    const featuresCol = df.col(LIN_REG_MODEL.FEATURES);
+    const valuesCol = df.col(LIN_REG_MODEL.VALUES);
+
+    if ((featuresCol === null) || (valuesCol === null))
+      throw new Error('unexpected columns');
+
+    return {
+      params: new Float32Array(valuesCol.getRawData().subarray(0, df.rowCount)),
+      names: (featuresCol.toList() as string[]).slice(0, -1),
+    };
+  } catch (_) {
+    // Legacy model: a bare Float32Array buffer of coefficients plus the bias.
+    // slice() copies into a fresh 4-aligned buffer — the incoming view may sit
+    // at an offset Float32Array cannot address.
+    if (model.byteLength % 4 !== 0)
+      throw new Error('Failed to load model: unexpected format');
+
+    return {params: new Float32Array(model.slice().buffer)};
+  }
+}
+
 /** Return the model's features in the training order. */
 function orderedFeatures(features: DG.ColumnList, params: Float32Array, names?: string[]): DG.Column[] {
   const expected = params.length - 1;
