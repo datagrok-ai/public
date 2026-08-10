@@ -46,30 +46,31 @@ General:
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **Style** | | |
-| Auto Layout | boolean |  |
-| Axis Font | string |  |
-| Show Color Scale | boolean |  |
-| Invert Color Scheme | boolean |  |
-| Color Transform Type | string |  |
-| Linear Color Scheme | list |  |
-| Controls Font | string | Viewer controls elements font. |
-| Annotation Font | string |  |
-| Formula Font | string |  |
-| **X** | | |
+| **X Axis** | | |
 | Show X Axis | boolean |  |
 | X Axis Type | string |  |
 | Invert X Axis | boolean |  |
 | Show X Selector | boolean |  |
 | X Min | number |  |
 | X Max | number |  |
-| **Y** | | |
+| **Y Axis** | | |
 | Show Y Axis | boolean |  |
 | Y Axis Type | string |  |
 | Invert Y Axis | boolean |  |
 | Show Y Selector | boolean |  |
 | Y Min | number |  |
 | Y Max | number |  |
+| **Color** | | |
+| Show Color Scale | boolean |  |
+| Invert Color Scheme | boolean |  |
+| Color Transform Type | string |  |
+| Linear Color Scheme | list |  |
+| **Style** | | |
+| Auto Layout | boolean |  |
+| Axis Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Misc** | | |
 | Bins | number |  |
 | **Data** | | |

@@ -64,8 +64,6 @@ Controls:
 | Margin Top | number |  |
 | Margin Right | number |  |
 | Margin Bottom | number |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
@@ -87,6 +85,9 @@ Controls:
 | Controls Font | string | Viewer controls elements font. |
 | **Selection** | | |
 | Show Selected Rows | boolean | Highlight selected rows |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Description** | | |
 | Show Title | boolean |  |
 
