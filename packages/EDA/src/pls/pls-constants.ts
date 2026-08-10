@@ -121,19 +121,21 @@ export enum COLOR {
 
 /** Intro markdown for demo app */
 export const DEMO_INTRO_MD = `# Data
-Cars have many correlated features, which makes pattern extraction difficult.
+30 cars described by 15 predictors that correlate with each other: size, weight, engine, mileage.
+Multiple regression breaks down on data like this.
 
 # Model
-Predict a car's price from its other features.
+Predict a car's price from its other characteristics.
 
 # Approach
-[**Partial Least Squares (PLS)**](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
-regression projects features onto latent factors that best explain the response.
+[**Partial least squares (PLS)**](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+regression builds a linear model on **latent factors**: combinations of the predictors that
+maximize covariance with the response variable.
 
 # Essence
-PLS finds latent factors that simultaneously:
-* capture maximum variance in the features
-* maximize correlation with the response`;
+Maximizing covariance balances two goals:
+* summarize the variation of the predictors
+* correlate with the response`;
 
 /** Description of demo results: wizard components */
 export const DEMO_RESULTS = [
@@ -143,11 +145,13 @@ export const DEMO_RESULTS = [
   },
   {
     caption: TITLE.SCORES,
-    text: 'The latent factor values for each sample reflect the similarities and dissimilarities among observations.',
+    text: 'Every car placed by its first two latent factors. Nearby cars are similar; clusters, trends, ' +
+      'and outliers show up as patterns.',
   },
   {
     caption: TITLE.LOADINGS,
-    text: 'How well the two latent factors capture each feature: the farther from the origin, the better.',
+    text: 'How strongly the two latent factors describe each feature: the ones far from the origin are described ' +
+      'well, and the ones grouped together correlate with each other.',
   },
   {
     caption: TITLE.VIP,
@@ -155,7 +159,8 @@ export const DEMO_RESULTS = [
   },
   {
     caption: TITLE.EXPL_VAR,
-    text: 'How well the latent components fit source data: closer to one means better fit.',
+    text: 'The share of variance the latent factors explain, added up over the components: closer to one means ' +
+      'a better fit.',
   },
 ];
 
