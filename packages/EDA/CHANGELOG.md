@@ -6,7 +6,9 @@ Improved ML features:
 
 * Added variables importance in projection the PLS regression and multivariate analysis
 * Updated the multivariate analysis demo application
-* Fixed serialization of PLS and OLS models 
+* Fixes:
+  * Serialization of PLS and OLS models;
+  * The loss of the analysis results in saved projects.
 
 ## 1.7.0 (2026-07-17)
 

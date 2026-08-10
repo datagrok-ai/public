@@ -9,7 +9,7 @@ import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName} from './eda-ui';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
-import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
+import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput, addMvaResults, initMvaModelViewer} from './pls/pls-tools';
 import {runOneWayAnova} from './anova/anova-ui';
 import {runTwoSampleTTest} from './ttest/ttest-ui';
 import {runControlComparisons} from './control-comparisons/control-comparisons-ui';
@@ -342,6 +342,49 @@ export class PackageFunctions {
   })
   static async MVA(): Promise<void> {
     await runMVA(PLS_ANALYSIS.PERFORM_MVA);
+  }
+
+
+  @grok.decorators.func({
+    'description': 'Add the PLS-based multivariate analysis results to the table.',
+    'meta': {'role': 'transform'},
+  })
+  static async multivariateAnalysisTransform(
+    table: DG.DataFrame,
+    // names, not a column list: the platform passes column_list values of a replayed creation script as strings
+    featureNames: string[],
+    @grok.decorators.param({'type': 'column', 'options': {'type': 'numerical'}}) predict: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'description': 'Number of latent factors the model extracts from the predictors.'}}) components: number,
+    @grok.decorators.param({'options': {'description': 'Include squared terms as additional predictors.'}}) isQuadratic: boolean,
+    @grok.decorators.param({'options': {'description': 'Add just the PLS components.'}}) componentsOnly: boolean,
+    xScoreNames: string[],
+    yScoreNames: string[],
+    predictionName: string,
+    analysisTableName: string,
+    explVarTableName: string): Promise<void> {
+    await addMvaResults({
+      table: table,
+      features: DG.DataFrame.fromColumns(featureNames.map((name) => table.col(name)!)).columns,
+      predict: predict,
+      components: components,
+      isQuadratic: isQuadratic,
+      names: undefined,
+    }, {
+      xScores: xScoreNames,
+      yScores: yScoreNames,
+      prediction: predictionName,
+      analysisTable: analysisTableName,
+      explVarTable: explVarTableName,
+    }, componentsOnly);
+  }
+
+
+  @grok.decorators.func({
+    'description': 'Restore the multivariate analysis model viewer.',
+  })
+  static mvaModelInitFunction(
+    @grok.decorators.param({'type': 'viewer'}) viewer: DG.Viewer): void {
+    initMvaModelViewer(viewer);
   }
 
 

@@ -98,6 +98,16 @@ export enum WASM_OUTPUT_IDX {
   VIP = 6,
 }
 
+/** Tag of the source table that stores the fitted PLS model */
+export const MVA_MODEL_TAG = 'mvaModel';
+
+/** Function that adds the analysis results: called via FuncCall, so that the table
+ * creation script replays it when a data-synced project is opened */
+export const MVA_TRANSFORM_FUNC = 'multivariateAnalysisTransform';
+
+/** Function that restores the viewer state when a project or layout is opened */
+export const MVA_INIT_FUNC = 'mvaModelInitFunction';
+
 export const INT = 'Int';
 export const TIMEOUT = 6;
 export const RADIUS = [0.49, 0.79, 0.99];

@@ -106,6 +106,23 @@ export namespace funcs {
   }
 
   /**
+   * Add the PLS-based multivariate analysis results to the table.
+   * @param {number} components - Number of latent factors the model extracts from the predictors.
+   * @param {boolean} isQuadratic - Include squared terms as additional predictors.
+   * @param {boolean} componentsOnly - Add just the PLS components.
+   */
+  export async function multivariateAnalysisTransform(table: DG.DataFrame , featureNames: any , predict: DG.Column , components: number , isQuadratic: boolean , componentsOnly: boolean , xScoreNames: any , yScoreNames: any , predictionName: string , analysisTableName: string , explVarTableName: string ): Promise<void> {
+    return await grok.functions.call('EDA:MultivariateAnalysisTransform', { table, featureNames, predict, components, isQuadratic, componentsOnly, xScoreNames, yScoreNames, predictionName, analysisTableName, explVarTableName });
+  }
+
+  /**
+   * Restore the multivariate analysis model viewer.
+   */
+  export async function mvaModelInitFunction(viewer: any ): Promise<void> {
+    return await grok.functions.call('EDA:MvaModelInitFunction', { viewer });
+  }
+
+  /**
    * Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
    */
   export async function demoMultivariateAnalysis(): Promise<void> {
