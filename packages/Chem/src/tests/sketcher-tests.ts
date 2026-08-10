@@ -229,9 +229,13 @@ category('sketcher exclusions', () => {
     if (funcs.length < 2) return;
     const toExclude = funcs[funcs.length - 1].friendlyName;
     DG.chem.excludedSketchers = [toExclude];
-    const visibleFuncs = funcs.filter((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
-    expect(visibleFuncs.length, funcs.length - 1);
-    expect(visibleFuncs.every((f) => f.friendlyName !== toExclude), true);
+    const s = new Sketcher();
+    const d = ui.dialog().add(s).show();
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    const menuItems = s.sketcherFunctions.filter((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
+    expect(menuItems.length, funcs.length - 1);
+    expect(menuItems.every((f) => f.friendlyName !== toExclude), true);
+    d.close();
   });
 
   test('sketcherFunctions retains excluded entries', async () => {
@@ -254,7 +258,16 @@ category('sketcher exclusions', () => {
     const expected = funcs[1].friendlyName;
     DG.chem.excludedSketchers = [toExclude];
     DG.chem.currentSketcherType = toExclude;
-    const available = funcs.find((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
-    expect(available !== undefined, true);
+    // Mirror the initChemInt fallback: excluded current type → switch to first available
+    const fallback = funcs.find((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
+    if (fallback && DG.chem.excludedSketchers.includes(DG.chem.currentSketcherType))
+      DG.chem.currentSketcherType = fallback.friendlyName;
+    expect(DG.chem.currentSketcherType, expected);
+    expect(DG.chem.excludedSketchers.includes(DG.chem.currentSketcherType), false);
+    const s = new Sketcher();
+    const d = ui.dialog().add(s).show();
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    expect(s.sketcherFunctions.filter((f) => !DG.chem.excludedSketchers.includes(f.friendlyName)).length, funcs.length - 1);
+    d.close();
   });
 });

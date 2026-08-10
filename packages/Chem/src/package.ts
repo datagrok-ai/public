@@ -200,23 +200,15 @@ async function initChemInt(): Promise<void> {
 
   const sketcherFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
   const sketcherFunc = sketcherFunctions.find((e) => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
-  if (sketcherFunc)
+  if (sketcherFunc && !DG.chem.excludedSketchers.includes(sketcherFunc.friendlyName)) {
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
-  else {
-    if (!!storedSketcherType) {
+  } else {
+    if (!sketcherFunc && !!storedSketcherType) {
       grok.shell.warning(
         `Package with ${storedSketcherType} function is not installed.Switching to ${DG.DEFAULT_SKETCHER}.`);
     }
-
-    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
-  }
-
-  if (DG.chem.excludedSketchers.includes(DG.chem.currentSketcherType)) {
-    const fallback = sketcherFunctions.find(
-      (f) => !DG.chem.excludedSketchers.includes(f.friendlyName)
-    );
-    if (fallback)
-      DG.chem.currentSketcherType = fallback.friendlyName;
+    const fallback = sketcherFunctions.find((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
+    DG.chem.currentSketcherType = fallback?.friendlyName ?? DG.DEFAULT_SKETCHER;
   }
 }
 
