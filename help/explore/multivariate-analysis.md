@@ -68,7 +68,7 @@ Combine it with the [Observed vs. Predicted](#observed-vs-predicted) scatterplot
 
 ### Loadings
 
-The **Loadings** scatterplot shows how strongly each latent factor describes each feature. Features far from the origin are described well, features grouped together correlate with each other.
+The **Loadings** scatterplot shows how strongly each latent factor describes each feature. Features far from the origin are described well by the factors on the axes, features grouped together correlate with each other.
 
 ![Loadings scatterplot](multivariate-analysis/pls-loadings.png)
 
