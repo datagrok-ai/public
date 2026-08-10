@@ -70,6 +70,7 @@ export enum LINK {
   LOADINGS = '/help/explore/multivariate-analysis#loadings',
   EXPL_VARS = '/help/explore/multivariate-analysis#explained-variance',
   SCORES = '/help/explore/multivariate-analysis#scores',
+  VIPS = '/help/explore/multivariate-analysis#variable-importance',
 }
 
 /** Components consts */

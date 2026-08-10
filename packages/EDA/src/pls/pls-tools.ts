@@ -370,7 +370,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     splitColumnName: TITLE.FEATURE,
     valueColumnName: result.vip.name,
     valueAggrType: DG.AGG.AVG,
-    help: LINK.MVA,
+    help: LINK.VIPS,
     showValueSelector: false,
     showStackSelector: false,
   });

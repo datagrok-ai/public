@@ -1,5 +1,12 @@
 # EDA changelog
 
+## 1.8.0 (2026-08-14)
+
+Improved ML features:
+
+* Add variables importance in projection the PLS regression and multivariate analysis
+* Fixed serialization of PLS and OLS models 
+
 ## 1.7.0 (2026-07-17)
 
 Upgrade XGBoost

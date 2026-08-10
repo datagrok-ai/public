@@ -330,7 +330,7 @@ export class PlsModel {
         splitColumnName: TITLE.FEATURES,
         valueColumnName: TITLE.VIP,
         valueAggrType: DG.AGG.AVG,
-        help: LINK.MVA,
+        help: LINK.VIPS,
         showValueSelector: false,
         showStackSelector: false,
       }));
