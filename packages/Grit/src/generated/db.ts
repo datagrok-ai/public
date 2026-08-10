@@ -7,10 +7,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type {Dayjs} from 'dayjs';
 
-export type IssueStatus = 'open' | 'in progress' | 'resolved' | 'closed';
-
-export type IssuePriority = 'low' | 'medium' | 'high' | 'critical';
-
 /** Row of `grit.project`. */
 export interface ProjectRow {
   id: string;
@@ -38,6 +34,81 @@ export type ProjectExpand = {
   'details:issue': {issue?: IssueRow[]};
 };
 
+/** Row of `grit.status`. */
+export interface StatusRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  name: string;
+  description?: string;
+}
+
+/** Insert payload for `grit.status`. */
+export interface StatusInsert {
+  name: string;
+  description?: string;
+}
+
+export type StatusColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description';
+
+/** Expand keys of `grit.status` → fields each adds to the row (consumed by query()/builder). */
+export type StatusExpand = {
+  'details:issue': {issue?: IssueRow[]};
+};
+
+/** Row of `grit.priority`. */
+export interface PriorityRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  name: string;
+  description?: string;
+  priority?: number;
+}
+
+/** Insert payload for `grit.priority`. */
+export interface PriorityInsert {
+  name: string;
+  description?: string;
+  priority?: number;
+}
+
+export type PriorityColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description' |
+  'priority';
+
+/** Expand keys of `grit.priority` → fields each adds to the row (consumed by query()/builder). */
+export type PriorityExpand = {
+  'details:issue': {issue?: IssueRow[]};
+};
+
+/** Row of `grit.issue_type`. */
+export interface IssueTypeRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  name: string;
+  description?: string;
+}
+
+/** Insert payload for `grit.issue_type`. */
+export interface IssueTypeInsert {
+  name: string;
+  description?: string;
+}
+
+export type IssueTypeColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description';
+
+/** Expand keys of `grit.issue_type` → fields each adds to the row (consumed by query()/builder). */
+export type IssueTypeExpand = {
+  'details:issue': {issue?: IssueRow[]};
+};
+
 /** Row of `grit.issue`. */
 export interface IssueRow {
   id: string;
@@ -49,8 +120,9 @@ export interface IssueRow {
   number: number;
   title: string;
   description?: string;
-  status?: IssueStatus;
-  priority?: IssuePriority;
+  status_id?: string;
+  priority_id?: string;
+  type_id?: string;
   reporter?: string;
   assignee?: string;
 }
@@ -61,18 +133,22 @@ export interface IssueInsert {
   number: number;
   title: string;
   description?: string;
-  status?: IssueStatus;
-  priority?: IssuePriority;
+  status_id?: string;
+  priority_id?: string;
+  type_id?: string;
   reporter?: string;
   assignee?: string;
 }
 
 export type IssueColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'project_id' | 'number' |
-  'title' | 'description' | 'status' | 'priority' | 'reporter' | 'assignee';
+  'title' | 'description' | 'status_id' | 'priority_id' | 'type_id' | 'reporter' | 'assignee';
 
 /** Expand keys of `grit.issue` → fields each adds to the row (consumed by query()/builder). */
 export type IssueExpand = {
   'project_id': {'project_id.key'?: string; 'project_id.name'?: string; 'project_id.description'?: string};
+  'status_id': {'status_id.name'?: string; 'status_id.description'?: string};
+  'priority_id': {'priority_id.name'?: string; 'priority_id.description'?: string; 'priority_id.priority'?: number};
+  'type_id': {'type_id.name'?: string; 'type_id.description'?: string};
   'details:comment': {comment?: CommentRow[]};
   'details:issue_label': {issue_label?: IssueLabelRow[]};
 };
@@ -99,8 +175,8 @@ export type CommentColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'au
 /** Expand keys of `grit.comment` → fields each adds to the row (consumed by query()/builder). */
 export type CommentExpand = {
   'issue_id': {'issue_id.project_id'?: string; 'issue_id.number'?: number; 'issue_id.title'?: string;
-    'issue_id.description'?: string; 'issue_id.status'?: IssueStatus; 'issue_id.priority'?: IssuePriority;
-    'issue_id.reporter'?: string; 'issue_id.assignee'?: string};
+    'issue_id.description'?: string; 'issue_id.status_id'?: string; 'issue_id.priority_id'?: string;
+    'issue_id.type_id'?: string; 'issue_id.reporter'?: string; 'issue_id.assignee'?: string};
 };
 
 /** Row of `grit.label`. */
@@ -149,8 +225,8 @@ export type IssueLabelColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 
 /** Expand keys of `grit.issue_label` → fields each adds to the row (consumed by query()/builder). */
 export type IssueLabelExpand = {
   'issue_id': {'issue_id.project_id'?: string; 'issue_id.number'?: number; 'issue_id.title'?: string;
-    'issue_id.description'?: string; 'issue_id.status'?: IssueStatus; 'issue_id.priority'?: IssuePriority;
-    'issue_id.reporter'?: string; 'issue_id.assignee'?: string};
+    'issue_id.description'?: string; 'issue_id.status_id'?: string; 'issue_id.priority_id'?: string;
+    'issue_id.type_id'?: string; 'issue_id.reporter'?: string; 'issue_id.assignee'?: string};
   'label_id': {'label_id.name'?: string; 'label_id.color'?: string};
 };
 
@@ -158,6 +234,15 @@ export type GritTransactionOp =
   {op: 'insert'; table: 'project'; ref?: string; values: DG.DomainTxValues<ProjectInsert>} |
   {op: 'update'; table: 'project'; id: string; values: DG.DomainTxValues<Partial<ProjectRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'project'; id: string} |
+  {op: 'insert'; table: 'status'; ref?: string; values: DG.DomainTxValues<StatusInsert>} |
+  {op: 'update'; table: 'status'; id: string; values: DG.DomainTxValues<Partial<StatusRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'status'; id: string} |
+  {op: 'insert'; table: 'priority'; ref?: string; values: DG.DomainTxValues<PriorityInsert>} |
+  {op: 'update'; table: 'priority'; id: string; values: DG.DomainTxValues<Partial<PriorityRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'priority'; id: string} |
+  {op: 'insert'; table: 'issue_type'; ref?: string; values: DG.DomainTxValues<IssueTypeInsert>} |
+  {op: 'update'; table: 'issue_type'; id: string; values: DG.DomainTxValues<Partial<IssueTypeRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'issue_type'; id: string} |
   {op: 'insert'; table: 'issue'; ref?: string; values: DG.DomainTxValues<IssueInsert>} |
   {op: 'update'; table: 'issue'; id: string; values: DG.DomainTxValues<Partial<IssueRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'issue'; id: string} |
@@ -175,6 +260,15 @@ export type GritTransactionOp =
 export const gritDb = {
   get projects() {
     return grok.dapi.domains.table<ProjectRow, ProjectInsert, ProjectColumn, ProjectExpand>('grit.project');
+  },
+  get statuses() {
+    return grok.dapi.domains.table<StatusRow, StatusInsert, StatusColumn, StatusExpand>('grit.status');
+  },
+  get priorities() {
+    return grok.dapi.domains.table<PriorityRow, PriorityInsert, PriorityColumn, PriorityExpand>('grit.priority');
+  },
+  get issueTypes() {
+    return grok.dapi.domains.table<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand>('grit.issue_type');
   },
   get issues() {
     return grok.dapi.domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand>('grit.issue');

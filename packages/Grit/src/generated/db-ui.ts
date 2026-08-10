@@ -8,9 +8,11 @@ import * as DG from 'datagrok-api/dg';
 import {domainHandler, domains, DomainAppView, DomainAppViewOptions, DomainDb, DomainDialogOptions,
   DomainEntityAppView, DomainEntityAppViewOptions, DomainForm, DomainFormOptions, DomainGrid, DomainGridOptions,
   DomainTable, EntityListOptions, EntityListWidget} from '@datagrok-libraries/domain-ui';
-import {gritDb, ProjectColumn, ProjectExpand, ProjectInsert, ProjectRow, IssueColumn, IssueExpand, IssueInsert,
-  IssueRow, CommentColumn, CommentExpand, CommentInsert, CommentRow, LabelColumn, LabelExpand, LabelInsert, LabelRow,
-  IssueLabelColumn, IssueLabelExpand, IssueLabelInsert, IssueLabelRow} from './db';
+import {gritDb, ProjectColumn, ProjectExpand, ProjectInsert, ProjectRow, StatusColumn, StatusExpand, StatusInsert,
+  StatusRow, PriorityColumn, PriorityExpand, PriorityInsert, PriorityRow, IssueTypeColumn, IssueTypeExpand,
+  IssueTypeInsert, IssueTypeRow, IssueColumn, IssueExpand, IssueInsert, IssueRow, CommentColumn, CommentExpand,
+  CommentInsert, CommentRow, LabelColumn, LabelExpand, LabelInsert, LabelRow, IssueLabelColumn, IssueLabelExpand,
+  IssueLabelInsert, IssueLabelRow} from './db';
 
 /** Query spec of `grit.project` — columns and expand keys are compile-checked. */
 export type ProjectQuerySpec = DG.DomainQuerySpec<ProjectColumn, keyof ProjectExpand & string>;
@@ -128,6 +130,357 @@ export class ProjectUi {
 
 /** Typed UI over `grit.project` (see {@link ProjectUi}). */
 export const projectUi = new ProjectUi();
+
+/** Query spec of `grit.status` — columns and expand keys are compile-checked. */
+export type StatusQuerySpec = DG.DomainQuerySpec<StatusColumn, keyof StatusExpand & string>;
+
+/** {@link DG.DomainQuery} parameters of `grit.status` (schema and table are implied). */
+export interface StatusQueryParams extends
+    Omit<DG.DomainQueryParams, 'schema' | 'table' | 'columns'> {
+  columns?: StatusColumn[];
+}
+
+/** Options of {@link StatusUi.form} / {@link StatusUi.formDialog}. */
+export interface StatusFormOptions extends Omit<DomainFormOptions, 'values'> {
+  values?: Partial<StatusInsert>;
+}
+
+/** Options of {@link StatusUi.grid}. */
+export interface StatusGridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {
+  query?: StatusQuerySpec;
+  defaults?: Partial<StatusInsert>;
+}
+
+/** Options of {@link StatusUi.list}. */
+export interface StatusListOptions extends Omit<EntityListOptions, 'query'> {
+  query?: StatusQuerySpec;
+}
+
+/** Options of {@link StatusUi.listView} / {@link StatusUi.app}. */
+export interface StatusAppViewOptions extends Omit<DomainAppViewOptions, 'query'> {
+  query?: StatusQuerySpec;
+}
+
+/**
+ * Typed UI over `grit.status`: the reflective components of
+ * `@datagrok-libraries/domain-ui`, with this table's columns and row type checked at
+ * compile time. Reach it through {@link statusUi}.
+ */
+export class StatusUi {
+  /** The table address, `'<schema>.<table>'`. */
+  readonly address: string = 'grit.status';
+
+  /** The typed client — the same one `gritDb.statuses` returns. */
+  get client(): DG.DomainTableClient<StatusRow, StatusInsert, StatusColumn, StatusExpand> {
+    return gritDb.statuses;
+  }
+
+  /** The prefetched handle on `grit.status` — THE async boundary, typed. Every
+   * widget factory on it is synchronous, so acquire it ONCE when a page builds
+   * more than one widget; the shortcuts below acquire one of their own. */
+  table(): Promise<DomainTable<StatusRow, StatusInsert, StatusColumn, StatusExpand>> {
+    return domains.table<StatusRow, StatusInsert, StatusColumn, StatusExpand>(this.client);
+  }
+
+  /** The handler registered for the table (the reflective default when none is). */
+  handler(): DG.DomainObjectHandler {
+    return domainHandler(this.address);
+  }
+
+  /** The property form of ONE row — a new one by default, an existing one with
+   * `{row}` or `{id}`; the values are this table's. */
+  async form(options?: StatusFormOptions): Promise<DomainForm> {
+    return (await this.table()).form(options);
+  }
+
+  /** {@link form} in a dialog; resolves to whether a row was saved. */
+  async formDialog(options?: StatusFormOptions & DomainDialogOptions): Promise<boolean> {
+    return (await this.table()).formDialog(options);
+  }
+
+  /** The browse/CRUD page: list, search, New, and a deep-linkable query. */
+  async listView(options?: StatusAppViewOptions): Promise<DomainAppView> {
+    return (await this.table()).listView(options);
+  }
+
+  /** THE app — {@link listView} under the name that says what it is. */
+  app(options?: StatusAppViewOptions): Promise<DomainAppView> {
+    return this.listView(options);
+  }
+
+  /** The row page: form, detail tabs, history. Takes the row or its id. */
+  async entityView(row: string | DG.DomainRow,
+    options?: DomainEntityAppViewOptions): Promise<DomainEntityAppView> {
+    return (await this.table()).entityView(row, options);
+  }
+
+  /** An editable grid: batch editing, one-transaction save. */
+  async grid(options?: StatusGridOptions): Promise<DomainGrid> {
+    return (await this.table()).grid(options);
+  }
+
+  /** A list of rows (cards / brief / grid). */
+  async list(options?: StatusListOptions): Promise<EntityListWidget> {
+    return (await this.table()).list(options);
+  }
+
+  /** Opens the platform's create dialog, or the edit dialog for [row]. */
+  edit(row?: DG.DomainRow): Promise<boolean> {
+    return this.handler().editRow(row);
+  }
+
+  /** Opens the platform's row picker. */
+  pick(): Promise<DG.DomainRow | null> {
+    return this.handler().pickRow();
+  }
+
+  /** Wraps one `query()` row as a {@link DG.DomainRow} — locally, no round trip. */
+  row(values: Partial<StatusRow> | null): DG.DomainRow {
+    return this.handler().rowFrom(values);
+  }
+
+  /** A serializable query over the table: deep links, saved filters, Open in Table View. */
+  query(params?: StatusQueryParams): DG.DomainQuery {
+    return new DG.DomainQuery({...params, schema: 'grit', table: 'status'});
+  }
+}
+
+/** Typed UI over `grit.status` (see {@link StatusUi}). */
+export const statusUi = new StatusUi();
+
+/** Query spec of `grit.priority` — columns and expand keys are compile-checked. */
+export type PriorityQuerySpec = DG.DomainQuerySpec<PriorityColumn, keyof PriorityExpand & string>;
+
+/** {@link DG.DomainQuery} parameters of `grit.priority` (schema and table are implied). */
+export interface PriorityQueryParams extends
+    Omit<DG.DomainQueryParams, 'schema' | 'table' | 'columns'> {
+  columns?: PriorityColumn[];
+}
+
+/** Options of {@link PriorityUi.form} / {@link PriorityUi.formDialog}. */
+export interface PriorityFormOptions extends Omit<DomainFormOptions, 'values'> {
+  values?: Partial<PriorityInsert>;
+}
+
+/** Options of {@link PriorityUi.grid}. */
+export interface PriorityGridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {
+  query?: PriorityQuerySpec;
+  defaults?: Partial<PriorityInsert>;
+}
+
+/** Options of {@link PriorityUi.list}. */
+export interface PriorityListOptions extends Omit<EntityListOptions, 'query'> {
+  query?: PriorityQuerySpec;
+}
+
+/** Options of {@link PriorityUi.listView} / {@link PriorityUi.app}. */
+export interface PriorityAppViewOptions extends Omit<DomainAppViewOptions, 'query'> {
+  query?: PriorityQuerySpec;
+}
+
+/**
+ * Typed UI over `grit.priority`: the reflective components of
+ * `@datagrok-libraries/domain-ui`, with this table's columns and row type checked at
+ * compile time. Reach it through {@link priorityUi}.
+ */
+export class PriorityUi {
+  /** The table address, `'<schema>.<table>'`. */
+  readonly address: string = 'grit.priority';
+
+  /** The typed client — the same one `gritDb.priorities` returns. */
+  get client(): DG.DomainTableClient<PriorityRow, PriorityInsert, PriorityColumn, PriorityExpand> {
+    return gritDb.priorities;
+  }
+
+  /** The prefetched handle on `grit.priority` — THE async boundary, typed. Every
+   * widget factory on it is synchronous, so acquire it ONCE when a page builds
+   * more than one widget; the shortcuts below acquire one of their own. */
+  table(): Promise<DomainTable<PriorityRow, PriorityInsert, PriorityColumn, PriorityExpand>> {
+    return domains.table<PriorityRow, PriorityInsert, PriorityColumn, PriorityExpand>(this.client);
+  }
+
+  /** The handler registered for the table (the reflective default when none is). */
+  handler(): DG.DomainObjectHandler {
+    return domainHandler(this.address);
+  }
+
+  /** The property form of ONE row — a new one by default, an existing one with
+   * `{row}` or `{id}`; the values are this table's. */
+  async form(options?: PriorityFormOptions): Promise<DomainForm> {
+    return (await this.table()).form(options);
+  }
+
+  /** {@link form} in a dialog; resolves to whether a row was saved. */
+  async formDialog(options?: PriorityFormOptions & DomainDialogOptions): Promise<boolean> {
+    return (await this.table()).formDialog(options);
+  }
+
+  /** The browse/CRUD page: list, search, New, and a deep-linkable query. */
+  async listView(options?: PriorityAppViewOptions): Promise<DomainAppView> {
+    return (await this.table()).listView(options);
+  }
+
+  /** THE app — {@link listView} under the name that says what it is. */
+  app(options?: PriorityAppViewOptions): Promise<DomainAppView> {
+    return this.listView(options);
+  }
+
+  /** The row page: form, detail tabs, history. Takes the row or its id. */
+  async entityView(row: string | DG.DomainRow,
+    options?: DomainEntityAppViewOptions): Promise<DomainEntityAppView> {
+    return (await this.table()).entityView(row, options);
+  }
+
+  /** An editable grid: batch editing, one-transaction save. */
+  async grid(options?: PriorityGridOptions): Promise<DomainGrid> {
+    return (await this.table()).grid(options);
+  }
+
+  /** A list of rows (cards / brief / grid). */
+  async list(options?: PriorityListOptions): Promise<EntityListWidget> {
+    return (await this.table()).list(options);
+  }
+
+  /** Opens the platform's create dialog, or the edit dialog for [row]. */
+  edit(row?: DG.DomainRow): Promise<boolean> {
+    return this.handler().editRow(row);
+  }
+
+  /** Opens the platform's row picker. */
+  pick(): Promise<DG.DomainRow | null> {
+    return this.handler().pickRow();
+  }
+
+  /** Wraps one `query()` row as a {@link DG.DomainRow} — locally, no round trip. */
+  row(values: Partial<PriorityRow> | null): DG.DomainRow {
+    return this.handler().rowFrom(values);
+  }
+
+  /** A serializable query over the table: deep links, saved filters, Open in Table View. */
+  query(params?: PriorityQueryParams): DG.DomainQuery {
+    return new DG.DomainQuery({...params, schema: 'grit', table: 'priority'});
+  }
+}
+
+/** Typed UI over `grit.priority` (see {@link PriorityUi}). */
+export const priorityUi = new PriorityUi();
+
+/** Query spec of `grit.issue_type` — columns and expand keys are compile-checked. */
+export type IssueTypeQuerySpec = DG.DomainQuerySpec<IssueTypeColumn, keyof IssueTypeExpand & string>;
+
+/** {@link DG.DomainQuery} parameters of `grit.issue_type` (schema and table are implied). */
+export interface IssueTypeQueryParams extends
+    Omit<DG.DomainQueryParams, 'schema' | 'table' | 'columns'> {
+  columns?: IssueTypeColumn[];
+}
+
+/** Options of {@link IssueTypeUi.form} / {@link IssueTypeUi.formDialog}. */
+export interface IssueTypeFormOptions extends Omit<DomainFormOptions, 'values'> {
+  values?: Partial<IssueTypeInsert>;
+}
+
+/** Options of {@link IssueTypeUi.grid}. */
+export interface IssueTypeGridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {
+  query?: IssueTypeQuerySpec;
+  defaults?: Partial<IssueTypeInsert>;
+}
+
+/** Options of {@link IssueTypeUi.list}. */
+export interface IssueTypeListOptions extends Omit<EntityListOptions, 'query'> {
+  query?: IssueTypeQuerySpec;
+}
+
+/** Options of {@link IssueTypeUi.listView} / {@link IssueTypeUi.app}. */
+export interface IssueTypeAppViewOptions extends Omit<DomainAppViewOptions, 'query'> {
+  query?: IssueTypeQuerySpec;
+}
+
+/**
+ * Typed UI over `grit.issue_type`: the reflective components of
+ * `@datagrok-libraries/domain-ui`, with this table's columns and row type checked at
+ * compile time. Reach it through {@link issueTypeUi}.
+ */
+export class IssueTypeUi {
+  /** The table address, `'<schema>.<table>'`. */
+  readonly address: string = 'grit.issue_type';
+
+  /** The typed client — the same one `gritDb.issueTypes` returns. */
+  get client(): DG.DomainTableClient<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand> {
+    return gritDb.issueTypes;
+  }
+
+  /** The prefetched handle on `grit.issue_type` — THE async boundary, typed. Every
+   * widget factory on it is synchronous, so acquire it ONCE when a page builds
+   * more than one widget; the shortcuts below acquire one of their own. */
+  table(): Promise<DomainTable<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand>> {
+    return domains.table<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand>(this.client);
+  }
+
+  /** The handler registered for the table (the reflective default when none is). */
+  handler(): DG.DomainObjectHandler {
+    return domainHandler(this.address);
+  }
+
+  /** The property form of ONE row — a new one by default, an existing one with
+   * `{row}` or `{id}`; the values are this table's. */
+  async form(options?: IssueTypeFormOptions): Promise<DomainForm> {
+    return (await this.table()).form(options);
+  }
+
+  /** {@link form} in a dialog; resolves to whether a row was saved. */
+  async formDialog(options?: IssueTypeFormOptions & DomainDialogOptions): Promise<boolean> {
+    return (await this.table()).formDialog(options);
+  }
+
+  /** The browse/CRUD page: list, search, New, and a deep-linkable query. */
+  async listView(options?: IssueTypeAppViewOptions): Promise<DomainAppView> {
+    return (await this.table()).listView(options);
+  }
+
+  /** THE app — {@link listView} under the name that says what it is. */
+  app(options?: IssueTypeAppViewOptions): Promise<DomainAppView> {
+    return this.listView(options);
+  }
+
+  /** The row page: form, detail tabs, history. Takes the row or its id. */
+  async entityView(row: string | DG.DomainRow,
+    options?: DomainEntityAppViewOptions): Promise<DomainEntityAppView> {
+    return (await this.table()).entityView(row, options);
+  }
+
+  /** An editable grid: batch editing, one-transaction save. */
+  async grid(options?: IssueTypeGridOptions): Promise<DomainGrid> {
+    return (await this.table()).grid(options);
+  }
+
+  /** A list of rows (cards / brief / grid). */
+  async list(options?: IssueTypeListOptions): Promise<EntityListWidget> {
+    return (await this.table()).list(options);
+  }
+
+  /** Opens the platform's create dialog, or the edit dialog for [row]. */
+  edit(row?: DG.DomainRow): Promise<boolean> {
+    return this.handler().editRow(row);
+  }
+
+  /** Opens the platform's row picker. */
+  pick(): Promise<DG.DomainRow | null> {
+    return this.handler().pickRow();
+  }
+
+  /** Wraps one `query()` row as a {@link DG.DomainRow} — locally, no round trip. */
+  row(values: Partial<IssueTypeRow> | null): DG.DomainRow {
+    return this.handler().rowFrom(values);
+  }
+
+  /** A serializable query over the table: deep links, saved filters, Open in Table View. */
+  query(params?: IssueTypeQueryParams): DG.DomainQuery {
+    return new DG.DomainQuery({...params, schema: 'grit', table: 'issue_type'});
+  }
+}
+
+/** Typed UI over `grit.issue_type` (see {@link IssueTypeUi}). */
+export const issueTypeUi = new IssueTypeUi();
 
 /** Query spec of `grit.issue` — columns and expand keys are compile-checked. */
 export type IssueQuerySpec = DG.DomainQuerySpec<IssueColumn, keyof IssueExpand & string>;
@@ -604,6 +957,9 @@ export const issueLabelUi = new IssueLabelUi();
  */
 export interface GritUiDb extends DomainDb {
   readonly projects: DomainTable<ProjectRow, ProjectInsert, ProjectColumn, ProjectExpand>;
+  readonly statuses: DomainTable<StatusRow, StatusInsert, StatusColumn, StatusExpand>;
+  readonly priorities: DomainTable<PriorityRow, PriorityInsert, PriorityColumn, PriorityExpand>;
+  readonly issueTypes: DomainTable<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand>;
   readonly issues: DomainTable<IssueRow, IssueInsert, IssueColumn, IssueExpand>;
   readonly comments: DomainTable<CommentRow, CommentInsert, CommentColumn, CommentExpand>;
   readonly labels: DomainTable<LabelRow, LabelInsert, LabelColumn, LabelExpand>;

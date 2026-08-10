@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "grit",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "extensible": {"tables": true},
   "tables": {
     "project": {
@@ -11,6 +11,34 @@
       "columns": {
         "key": {"type": "string", "required": true, "unique": true, "description": "Short prefix for issue numbers, e.g. GRIT"},
         "name": {"type": "string", "required": true},
+        "description": {"type": "string"}
+      }
+    },
+    "status": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Statuses",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "description": {"type": "string"}
+      }
+    },
+    "priority": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Priorities",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "description": {"type": "string"},
+        "priority": {"type": "int", "description": "Urgency rank; higher is more urgent"}
+      }
+    },
+    "issue_type": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Issue Types",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
         "description": {"type": "string"}
       }
     },
@@ -25,15 +53,17 @@
         "number": {"type": "int", "required": true, "min": 1, "description": "Per-project issue number; assigned by the app"},
         "title": {"type": "string", "required": true, "isName": true},
         "description": {"type": "string"},
-        "status": {"type": "string", "choices": ["open", "in progress", "resolved", "closed"], "default": "open"},
-        "priority": {"type": "string", "choices": ["low", "medium", "high", "critical"], "default": "medium"},
+        "status_id": {"type": "ref", "ref": "status", "onDelete": "restrict", "friendlyName": "Status"},
+        "priority_id": {"type": "ref", "ref": "priority", "onDelete": "restrict", "friendlyName": "Priority"},
+        "type_id": {"type": "ref", "ref": "issue_type", "onDelete": "setnull", "friendlyName": "Type"},
         "reporter": {"type": "user"},
         "assignee": {"type": "user", "onDelete": "setnull"}
       },
       "filters": [
-        {"column": "status"},
+        {"column": "status_id.name", "label": "Status"},
+        {"column": "priority_id.name", "label": "Priority"},
+        {"column": "type_id.name", "label": "Type"},
         {"column": "assignee"},
-        {"column": "priority"},
         {"column": "project_id.name", "label": "Project"}
       ]
     },

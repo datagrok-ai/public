@@ -17,15 +17,15 @@ export namespace funcs {
   }
 
   /**
-  Custom rendering for grit.issue domain rows (status/priority badges)
-  */
+   * Custom rendering for grit.issue domain rows (status/priority badges)
+   */
   export async function gritIssueHandler(): Promise<any> {
     return await grok.functions.call('Grit:GritIssueHandler', {});
   }
 
   /**
-  Issue tracker over entity-mapped domain schemas — the platform's Domain View with the filter panel
-  */
+   * Issue tracker over entity-mapped domain schemas — the platform's Domain View with the filter panel
+   */
   export async function issuesApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('Grit:IssuesApp', { path });
   }

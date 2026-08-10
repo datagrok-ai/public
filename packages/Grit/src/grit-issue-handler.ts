@@ -15,6 +15,23 @@ const statusColors: {[key: string]: string} = {
 const priorityColors: {[key: string]: string} = {
   'low': '#8b95a1', 'medium': '#1f8fff', 'high': '#e8912d', 'critical': '#d9463f',
 };
+const typeColor = '#6c5fc7';
+
+/** id → name maps of the small lookup tables (status/priority/issue_type). Render
+ * methods are synchronous, so {@link warmLookups} is kicked off at package init and
+ * badges appear once the maps are in (rows arrive over the network anyway). */
+let lookupNames: Map<string, string> | null = null;
+let lookupsLoading: Promise<Map<string, string>> | null = null;
+
+export function warmLookups(): Promise<Map<string, string>> {
+  return lookupsLoading ??= Promise
+    .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({})])
+    .then((tables) => lookupNames = new Map(tables.flat().map((r) => [r.id, r.name])));
+}
+
+function lookupName(id?: string): string | null {
+  return id == null ? null : lookupNames?.get(id) ?? null;
+}
 
 /** Injects the static badge presentation once; the per-badge color stays inline. */
 function ensureBadgeStyles(): void {
@@ -23,7 +40,8 @@ function ensureBadgeStyles(): void {
   const style = document.createElement('style');
   style.id = 'grit-badge-styles';
   style.textContent =
-    '.grit-badge{color:#fff;border-radius:4px;padding:1px 6px;margin-left:4px;font-size:11px;}';
+    '.grit-badge{color:#fff;border-radius:4px;padding:1px 6px;margin-left:4px;font-size:11px;' +
+    'align-self:flex-start;white-space:nowrap;}';
   document.head.appendChild(style);
 }
 
@@ -40,7 +58,10 @@ function badge(text: string, color: string): HTMLElement {
  * delegation. Also claims `<KEY>-<number>` issue handles typed into global search
  * and resolves them through the typed `gritDb` business-key lookups. */
 export class GritIssueHandler extends DG.DomainObjectHandler {
-  constructor() { super(ISSUE_TYPE); }
+  constructor() {
+    super(ISSUE_TYPE);
+    warmLookups().catch(() => {});
+  }
 
   get name(): string { return 'Grit issue handler'; }
 
@@ -86,14 +107,14 @@ export class GritIssueHandler extends DG.DomainObjectHandler {
    * same handler). */
   private renderHandleCard(handle: string): HTMLElement {
     const card = ui.divV([ui.divText(handle, {style: {fontWeight: 'bold'}})], 'd4-gallery-item');
-    this.resolveHandle(handle).then((row) => {
+    Promise.all([this.resolveHandle(handle), warmLookups()]).then(([row]) => {
       ui.empty(card);
       if (row == null) {
         card.appendChild(ui.divText(`${handle} — not found`));
         return;
       }
       card.appendChild(ui.divH([ui.divText(handle, {style: {fontWeight: 'bold'}}),
-        ...this.badgeEls(row.status, row.priority)]));
+        ...this.badgeEls(row.status_id, row.priority_id, row.type_id)]));
       card.appendChild(ui.divText(row.title ?? ''));
       card.style.cursor = 'pointer';
       card.onclick = () => grok.shell.route(`/domains/grit/issue/${row.id}`);
@@ -101,17 +122,24 @@ export class GritIssueHandler extends DG.DomainObjectHandler {
     return card;
   }
 
-  private badgeEls(status?: string, priority?: string): HTMLElement[] {
+  /** Badges from the ref column ids, resolved to names through the lookup cache
+   * (nothing is rendered for an id the cache does not know yet). */
+  private badgeEls(statusId?: string, priorityId?: string, typeId?: string): HTMLElement[] {
     const res: HTMLElement[] = [];
+    const status = lookupName(statusId);
     if (status != null)
       res.push(badge(status, statusColors[status] ?? '#8b95a1'));
+    const priority = lookupName(priorityId);
     if (priority != null)
       res.push(badge(priority, priorityColors[priority] ?? '#8b95a1'));
+    const type = lookupName(typeId);
+    if (type != null)
+      res.push(badge(type, typeColor));
     return res;
   }
 
   private badges(row: DG.DomainRow): HTMLElement[] {
-    return this.badgeEls(row.values.status, row.values.priority);
+    return this.badgeEls(row.values.status_id, row.values.priority_id, row.values.type_id);
   }
 
   renderIcon(x: any): HTMLElement { return ui.iconFA('bug'); }
