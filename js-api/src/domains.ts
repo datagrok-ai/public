@@ -43,7 +43,11 @@ export type DomainFilterValue =
 
 /** One condition node. `value` may be a list (= ANY / != ALL), null (IS NULL / IS NOT NULL
  * under '='/'is'), or '@current' for the current user on user columns. Values are ALWAYS
- * bound server-side — never interpolate values into filter strings. */
+ * bound server-side — never interpolate values into filter strings.
+ *
+ * The `= ANY` / `!= ALL` reading holds for columns and FK paths; on a `'<relation>.id'`
+ * leaf the same shapes ask about the link SET (`!=` excludes owners linked to any of the
+ * ids) — see {@link DomainRelationLink}. */
 export interface DomainCondition<TColumn extends string = string> {
   property: DomainColumnRef<TColumn>;
   operator: DomainConditionOperator;
@@ -322,7 +326,8 @@ export interface DomainQuerySpec<TColumn extends string = string, TExpandKey ext
   /** Expansions (same-schema, depth 1): `'<fk_column>'` returns the master row's declared
    * columns prefixed `'<fk_column>.<name>'`; `'details:<table>[.<fk_column>]'` returns capped
    * child-row arrays under the child-table name (JSON queries only — not supported by
-   * `queryDf`). */
+   * `queryDf`); `'<relation>'` (a declared many-to-many) returns the link array — see
+   * {@link DomainRelationLink}. */
   expand?: TExpandKey[];
   limit?: number;
   offset?: number;
@@ -364,7 +369,11 @@ export interface DomainFacetSpec<TColumn extends string = string,
   id: TId;
   kind: TKind;
   /** Column name; `'categories'` also accepts a dotted FK path (e.g. `'category_id.name'`, up to
-   * 3 hops — the counts respect the referenced table's row predicate). Not used by `'count'`/`'plan'`. */
+   * 3 hops — the counts respect the referenced table's row predicate) and a declared
+   * many-to-many path (`'labels.name'`, or `'labels.id'` for the id + display-name form a
+   * checkbox list wants): those count DISTINCT OWNERS, so an owner with two labels counts once
+   * under each, and only owners with no VISIBLE link fall in the null bucket.
+   * Not used by `'count'`/`'plan'`. */
   column?: DomainColumnRef<TColumn>;
   /** `'plan'` only: columns to profile (capped distinct count plus numeric/datetime min/max). */
   columns?: TColumn[];
@@ -466,6 +475,41 @@ export interface DomainBatchReport {
 /** Insert payload for domain table `insert`: row values plus an optional
  * idempotency key (for tables that declare `"idempotency": true`). */
 export type DomainRowInsert<TRow> = Partial<TRow> & {idempotencyKey?: string};
+
+/**
+ * One link of an expanded many-to-many relation: the target row's id and its display
+ * name (name column → dash-joined business key → id, exactly as the row renders
+ * everywhere else). A relation expand (`expand: ['labels']`) returns these arrays under
+ * the relation's own name, capped at 100 and ordered by display name; the array is `[]`,
+ * never null, for an owner with no visible links.
+ *
+ * `queryDf` flattens the same array into TWO flat string columns instead — `labels`, the
+ * display names joined by `', '` and tagged so the grid draws chips, and its companion
+ * `'~labels.id'`, the ids in the same order. **The ids column is the source of truth**
+ * (a display name containing the separator is sanitized in the flat column, never in the
+ * JSON shape); an owner with no links has no value in both — which in a string column of
+ * a DataFrame IS the empty string (`col.isNone(i)` is true and `col.get(i)` is `''`;
+ * there is no separate null slot), so test emptiness, not `null`.
+ *
+ * Filtering goes through the same name: `'labels.name'`, `'labels.id'` (a list compiles
+ * to ANY-of), and chains that continue from the target (`'labels.group_id.name'`) — one
+ * hop each, per-hop EXISTS semantics, so `labels.name != 'bug'` means "has a label that
+ * is not bug", not "has no bug label". The exceptions are both on the `'<relation>.id'`
+ * leaf, which asks about the link SET rather than about one link — it is what the relation
+ * facet's checkboxes emit: `= null` selects owners with NO visible link and `!= null`
+ * those with any (the "(no value)" bucket), and `!= [id, ...]` EXCLUDES the owners linked
+ * to any of them (the uncheck gesture), rather than "has some other link".
+ * Values are bound server-side as everywhere.
+ * The smart-filter string form takes the same paths (`'labels.name = "bug"'`); only a list
+ * of ids needs the condition tree.
+ *
+ * Writing is the inverse: `insert` and `update` take the relation as a list of target
+ * ids ({@link DomainTableClient.insert}).
+ */
+export interface DomainRelationLink {
+  id: string;
+  name: string;
+}
 
 /** A saved filter preset of a domain table — a small shareable entity carrying the filter
  * panel's state maps verbatim (see `DomainSavedFiltersClient`). */

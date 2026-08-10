@@ -138,9 +138,15 @@
           "items": {"$ref": "#/definitions/identifier"},
           "description": "Property schemas contributing jsonb keys to this table."
         },
+        "relations": {
+          "type": "object",
+          "description": "Many-to-many relations of this table keyed by relation name: each links the table to a target table through a junction table. The name shares one namespace with the columns (it is what expand and filter paths address), so it may not collide with a column of this table. Declaration order is preserved and is the order every UI surface lays the relations out in.",
+          "propertyNames": {"$ref": "#/definitions/columnName"},
+          "additionalProperties": {"$ref": "#/definitions/relation"}
+        },
         "filters": {
           "type": "array",
-          "description": "Default filter panel for this table (entity filters): declared columns pre-open in order. Absent = heuristics by column type.",
+          "description": "Default filter panel for this table (entity filters): declared columns pre-open in order. Absent = heuristics by column type, INCLUDING one facet per travelable many-to-many relation. Declaring this section replaces the whole heuristic set, relation facets included — to keep one, list it explicitly as {\"column\": \"<relation>.id\"}.",
           "items": {
             "type": "object",
             "required": ["column"],
@@ -168,6 +174,34 @@
               }
             }
           }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "required": ["via", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "$ref": "#/definitions/identifier",
+          "description": "Junction table declared in this manifest; differs from the owner and the target table. Its businessKey must contain both FK columns — that is what keeps re-linking the same pair idempotent."
+        },
+        "target": {
+          "$ref": "#/definitions/identifier",
+          "description": "Related table declared in this manifest."
+        },
+        "viaSelf": {
+          "$ref": "#/definitions/identifier",
+          "description": "Junction ref column pointing back at the owner table; may be omitted when the junction has exactly one such column. Self-referential relations must declare it."
+        },
+        "viaTarget": {
+          "$ref": "#/definitions/identifier",
+          "description": "Junction ref column pointing at the target table; may be omitted when the junction has exactly one such column. Self-referential relations must declare it."
+        },
+        "allowCreate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the UI may create a target row on the fly while linking (still subject to create permission on the target table)."
         }
       }
     },

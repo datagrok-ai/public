@@ -60,7 +60,11 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     return settings ?
       settings.columnNames.filter((colName) =>
         gridCell.tableRow?.table.col(colName) != null && gridCell.tableRow?.get(colName)) :
-      (gridCell.cell.valueString?.split(customSeparator ?? ',').map((s) => s.trim()) ?? []);
+      // Empty tokens are dropped: an empty cell splits into [''] and used to
+      // paint a zero-width chip that reads as data where there is none (and a
+      // trailing separator would add one more).
+      (gridCell.cell.valueString?.split(customSeparator ?? ',')
+        .map((s) => s.trim()).filter((s) => s.length > 0) ?? []);
   }
 
   /**

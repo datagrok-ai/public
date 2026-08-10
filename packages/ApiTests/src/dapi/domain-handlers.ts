@@ -257,6 +257,50 @@ category('JS: domain handlers', () => {
     }
   });
 
+  test('renderMarkup: the platform passes its render context to a registered handler', async () => {
+    // Many-to-many chips render their target rows through the winning handler
+    // with {relation, table, input} (ARCHITECTURE §5.8) so one handler can tell
+    // a chip from a grid cell. Driven through the DART dispatch (forEntity ->
+    // renderMarkupFor) rather than by calling the handler directly: it is the
+    // threading that this covers, not the signature. No public DG entry point
+    // reaches it — `DG.ObjectHandler.forEntity()` hands back the JS handler
+    // itself, so calling `renderMarkup` on that would bypass the very hop under
+    // test — hence the raw interop calls.
+    class CtxHandler extends DG.ObjectHandler {
+      retired = false;
+      seen: any = undefined;
+      get type(): string { return this.retired ? 'apitests.item-ctx-retired' : 'apitests.item'; }
+      isApplicable(x: any): boolean {
+        return !this.retired && x instanceof DG.DomainRow && x.typeName === 'apitests.item';
+      }
+      renderMarkup(x: any, context: any = null): HTMLElement {
+        this.seen = context;
+        const d = document.createElement('div');
+        d.textContent = this.getCaption(x);
+        return d;
+      }
+    }
+    const handler = new CtxHandler();
+    const sku = `SKU-CTX-${stamp()}`;
+    const [ins] = await items().insert({sku, name: 'Context probe'});
+    DG.ObjectHandler.register(handler);
+    try {
+      const row = await new DG.DomainObjectHandler('apitests.item').getById(ins.id) as _DG.DomainRow;
+      const dart = (window as any).grok_Meta_ForEntity((row as any).dart);
+      expect(dart != null, true, 'the Dart dispatch resolved no meta for the row');
+      (window as any).grok_Meta_RenderMarkup(dart, (row as any).dart,
+        {relation: 'labels', table: 'apitests.order', input: 'tags'});
+      expect(handler.seen != null, true, 'renderMarkup received no context from the platform');
+      expect(handler.seen.relation, 'labels', 'the relation name did not reach the handler');
+      expect(handler.seen.table, 'apitests.order', 'the owner table did not reach the handler');
+      expect(handler.seen.input, 'tags', 'the widget kind did not reach the handler');
+    } finally {
+      // No unregister API — retire the type and applicability (see the note above).
+      handler.retired = true;
+      await items().delete(ins.id);
+    }
+  });
+
   test('DomainObjectHandler: reflective properties, detail tabs, and editor', async () => {
     const handler = new DG.DomainObjectHandler('apitests.item');
     const props = await handler.getProperties();

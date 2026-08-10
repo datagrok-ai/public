@@ -138,7 +138,14 @@ export interface IssueInsert {
   type_id?: string;
   reporter?: string;
   assignee?: string;
+  /** Link set: `label` row ids. */
+  labels?: string[];
 }
+
+/** Update payload for `grit.issue`: declared columns plus relation link sets (each REPLACES the links you can see). */
+export type IssueUpdate = Partial<IssueRow> & {
+  labels?: string[];
+};
 
 export type IssueColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'project_id' | 'number' |
   'title' | 'description' | 'status_id' | 'priority_id' | 'type_id' | 'reporter' | 'assignee';
@@ -149,6 +156,7 @@ export type IssueExpand = {
   'status_id': {'status_id.name'?: string; 'status_id.description'?: string};
   'priority_id': {'priority_id.name'?: string; 'priority_id.description'?: string; 'priority_id.priority'?: number};
   'type_id': {'type_id.name'?: string; 'type_id.description'?: string};
+  'labels': {labels?: {id: string; name: string}[]};
   'details:comment': {comment?: CommentRow[]};
   'details:issue_label': {issue_label?: IssueLabelRow[]};
 };
@@ -244,7 +252,7 @@ export type GritTransactionOp =
   {op: 'update'; table: 'issue_type'; id: string; values: DG.DomainTxValues<Partial<IssueTypeRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'issue_type'; id: string} |
   {op: 'insert'; table: 'issue'; ref?: string; values: DG.DomainTxValues<IssueInsert>} |
-  {op: 'update'; table: 'issue'; id: string; values: DG.DomainTxValues<Partial<IssueRow>>; expectedVersion?: number} |
+  {op: 'update'; table: 'issue'; id: string; values: DG.DomainTxValues<IssueUpdate>; expectedVersion?: number} |
   {op: 'delete'; table: 'issue'; id: string} |
   {op: 'insert'; table: 'comment'; ref?: string; values: DG.DomainTxValues<CommentInsert>} |
   {op: 'update'; table: 'comment'; id: string; values: DG.DomainTxValues<Partial<CommentRow>>; expectedVersion?: number} |
@@ -271,7 +279,7 @@ export const gritDb = {
     return grok.dapi.domains.table<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand>('grit.issue_type');
   },
   get issues() {
-    return grok.dapi.domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand>('grit.issue');
+    return grok.dapi.domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand, IssueUpdate>('grit.issue');
   },
   get comments() {
     return grok.dapi.domains.table<CommentRow, CommentInsert, CommentColumn, CommentExpand>('grit.comment');

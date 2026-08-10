@@ -1744,7 +1744,12 @@ export class ObjectHandler<T = any> {
     return divText(this.getCaption(x));
   }
 
-  /** Renders markup for the item. */
+  /** Renders markup for the item. [context] says what the item is being rendered FOR,
+   * so one handler can serve several surfaces. The platform's many-to-many chips pass
+   * `{relation, table, input: 'tags'}` — the relation's name, the OWNER's
+   * `'<schema>.<table>'`, and the widget kind. A chip's `DG.DomainRow` is a
+   * `{id, displayName}` stub with no column values, so read its name through
+   * `getCaption(x)` / `x.displayName` — `x.values[nameColumn]` is undefined there. */
   renderMarkup(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
@@ -1911,10 +1916,10 @@ export class EntityMetaDartProxy extends ObjectHandler {
   async getById(id: string): Promise<any> { return await api.grok_Meta_GetById(this.dart, id); }
 
   renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, toDart(x)); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x)); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
-  renderListItem(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderListItem(this.dart, toDart(x)); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x), toDart(context)); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x), toDart(context)); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x), toDart(context)); }
+  renderListItem(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderListItem(this.dart, toDart(x), toDart(context)); }
   renderInput(x: any, context: any = null): InputBase | null { return toJs(api.grok_Meta_RenderInput(this.dart, toDart(x))); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }

@@ -67,6 +67,8 @@ import {
   retryOnVersionConflict,
   splitDomainTable,
 } from './domains';
+// Referenced from TSDoc only ({@link} on the relation expand/write docs below).
+import type {DomainRelationLink} from './domains';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -1109,13 +1111,14 @@ export class DomainsDataSource {
   /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`.
    * Pass a row interface for a typed client: `grok.dapi.domains.table<PlateRow>('plates.plate')`;
    * pass an insert interface as the second generic to also gate {@link DomainTableClient.insert},
-   * a column-name union as the third to compile-check filters/columns/sorts, and an expand map
-   * as the fourth to compile-check expand keys (`grok api`-generated clients pass all four). */
+   * a column-name union as the third to compile-check filters/columns/sorts, an expand map
+   * as the fourth to compile-check expand keys, and an update payload as the fifth when the
+   * table declares relations (`grok api`-generated clients pass them all). */
   table<TRow = any, TInsert = DomainRowInsert<TRow>, TColumn extends string = string,
-      TExpand extends {[key: string]: {}} = {[key: string]: {}}>(
-    name: string, options?: DomainTableClientOptions): DomainTableClient<TRow, TInsert, TColumn, TExpand> {
+      TExpand extends {[key: string]: {}} = {[key: string]: {}}, TUpdate = Partial<TRow>>(
+    name: string, options?: DomainTableClientOptions): DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate> {
     const [schema, table] = splitDomainTable(name);
-    return new DomainTableClient<TRow, TInsert, TColumn, TExpand>(this.dart, schema, table, options);
+    return new DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate>(this.dart, schema, table, options);
   }
 
   /** Executes ordered [ops] (≤1000) atomically within domain schema [schema]; any failure rolls the
@@ -1282,7 +1285,8 @@ export class DomainSchemaClient {
  * clients pass both; see {@link DomainsDataSource.table}). */
 export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     TColumn extends string = string,
-    TExpand extends {[key: string]: {}} = {[key: string]: {}}> {
+    TExpand extends {[key: string]: {}} = {[key: string]: {}},
+    TUpdate = Partial<TRow>> {
   dart: any;
   private readonly _datetimeOverride: DomainDatetimeColumns | null;
 
@@ -1371,7 +1375,10 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * template-built filter strings — condition values are bound server-side, so any string
    * value is safe (apostrophes included). */
   query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
-  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap). */
+  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap).
+   * A declared many-to-many relation expands under its own name into a
+   * {@link DomainRelationLink}`[]` (`expand: ['labels']` → `row.labels = [{id, name}, ...]`,
+   * capped at 100, ordered by display name, `[]` when there are no visible links). */
   query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
   query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
     if (spec === undefined)
@@ -1387,7 +1394,11 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
    * 10M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
    * `.choices`, and semantic types; system columns are untagged. `'details:'` expand is
-   * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns. */
+   * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns.
+   * A relation expand yields TWO columns: `'<relation>'` with the display names joined by
+   * `', '` (tagged so the grid draws chips) and the hidden companion `'~<relation>.id'` with
+   * the ids in the same order — the ids are the source of truth (see
+   * {@link DomainRelationLink}). */
   queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
     return domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
   }
@@ -1413,7 +1424,16 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * pass `options.errorOnDuplicate` to reject duplicates with a
    * {@link DomainValidationError} instead, its `isDuplicate` set).
    * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
-   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`. */
+   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`.
+   *
+   * A payload may carry declared many-to-many relations as lists of target row ids
+   * (`{title: 'Crash', labels: [id1, id2]}`); the junction rows are written in the same
+   * transaction as the row, so a target that is missing or invisible fails the WHOLE row
+   * with `code: 'not-visible-or-missing'`. A row that dedups to an existing one
+   * (`status: 'duplicate'` / `'idempotent-replay'`) IGNORES its relation values — a replay
+   * never mutates the existing row's links. Creating the target and linking it in one shot
+   * is a {@link DomainsDataSource.transaction} with `'$ref'` placeholders inside the list.
+   * `batch` does NOT accept relation keys — use insert/update. */
   insert(rows: TInsert | TInsert[], options?: {errorOnDuplicate?: boolean}): Promise<DomainInsertResult[]> {
     return domainCall(api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows,
       options?.errorOnDuplicate ?? false));
@@ -1421,8 +1441,18 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Partially updates a row; pass `options.version` (the version the client last read) for
    * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
-   * row has changed since. Resolves to `{id, version}` (version increments on every update). */
-  update(id: string, values: Partial<TRow>, options?: {version?: number}): Promise<DomainUpdateResult> {
+   * row has changed since. Resolves to `{id, version}` (version increments on every update).
+   *
+   * `values` may also carry declared many-to-many relations as lists of target row ids, with
+   * **SET-REPLACE semantics over the links you can SEE**: the list becomes the visible link
+   * set, `[]` clears it, and an ABSENT relation key leaves the relation untouched. Links whose
+   * junction row or target row the caller cannot view are never diffed and therefore never
+   * removed — a replace can only destroy links its author knows about, so "the replace didn't
+   * remove that label" is the design, not a bug. A relations-only update still bumps the row
+   * version, so `options.version` covers the links too. `grok api`-generated clients name the
+   * relations in their `<Table>Update` type and pass it as the client's fifth generic;
+   * untyped callers keep `Partial<TRow>`. */
+  update(id: string, values: TUpdate, options?: {version?: number}): Promise<DomainUpdateResult> {
     return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
   }
 
@@ -1430,7 +1460,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * bytes (`options.format`: `'d42'` default, `'parquet'` converted via the Arrow package).
    * `options.mode: 'upsert'` merges by the table's business key. Resolves to the batch report;
    * a failure that carries the per-row report (e.g. an allOrNothing abort) resolves with
-   * `error` set, report-less failures reject. */
+   * `error` set, report-less failures reject. Declared many-to-many relations are REJECTED
+   * here (the set diff is per row and would defeat the set-based load) — link with
+   * {@link insert} / {@link update}. */
   batch(data: DataFrame | string | object[] | Uint8Array, options: DomainBatchOptions = {}): Promise<DomainBatchReport> {
     const format = data instanceof DataFrame ? 'df' : typeof data === 'string' ? 'csv' :
       data instanceof Uint8Array ? (options.format ?? 'd42') : 'json';
@@ -1650,7 +1682,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * degrades to an unversioned (last-write-wins) update. For multi-op flows
    * (e.g. a guarded transaction), use `DG.retryOnVersionConflict` directly with the fresh
    * read inside the action. */
-  updateWithRetry(id: string, mutate: (fresh: TRow) => Partial<TRow> | null,
+  updateWithRetry(id: string, mutate: (fresh: TRow) => TUpdate | null,
       options?: {maxRetries?: number}): Promise<DomainUpdateResult | null> {
     return retryOnVersionConflict(async () => {
       const fresh = await this.get(id);

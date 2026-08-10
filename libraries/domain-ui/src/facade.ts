@@ -83,10 +83,11 @@ export interface DomainDialogOptions {
  */
 export class DomainTable<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
   TColumn extends string = string,
-  TExpand extends {[key: string]: {}} = {[key: string]: {}}> implements IDomainTableContext {
+  TExpand extends {[key: string]: {}} = {[key: string]: {}},
+  TUpdate = Partial<TRow>> implements IDomainTableContext {
   private constructor(
     /** The typed data client — every read/write member of `grok.dapi.domains.table()`. */
-    public readonly client: DG.DomainTableClient<TRow, TInsert, TColumn, TExpand>,
+    public readonly client: DG.DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate>,
     /** Registry {@link DG.Property} metadata of the declared columns. */
     public readonly properties: DG.Property[],
     /** Display identity, security mode, audit flag, FK-inverted child tables. */
@@ -97,13 +98,14 @@ export class DomainTable<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
   /** See {@link domains.table}. */
   static async acquire<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
     TColumn extends string = string,
-    TExpand extends {[key: string]: {}} = {[key: string]: {}}>(
-    nameOrClient: string | DG.DomainTableClient<TRow, TInsert, TColumn, TExpand>):
-      Promise<DomainTable<TRow, TInsert, TColumn, TExpand>> {
+    TExpand extends {[key: string]: {}} = {[key: string]: {}},
+    TUpdate = Partial<TRow>>(
+    nameOrClient: string | DG.DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate>):
+      Promise<DomainTable<TRow, TInsert, TColumn, TExpand, TUpdate>> {
     const client = typeof nameOrClient === 'string'
-      ? grok.dapi.domains.table<TRow, TInsert, TColumn, TExpand>(nameOrClient) : nameOrClient;
+      ? grok.dapi.domains.table<TRow, TInsert, TColumn, TExpand, TUpdate>(nameOrClient) : nameOrClient;
     const context = await acquireDomainContext(client);
-    return new DomainTable<TRow, TInsert, TColumn, TExpand>(
+    return new DomainTable<TRow, TInsert, TColumn, TExpand, TUpdate>(
       client, context.properties, context.info, context.capabilities);
   }
 
@@ -386,10 +388,11 @@ export namespace domains {
    */
   export function table<TRow = any, TInsert = DG.DomainRowInsert<TRow>,
     TColumn extends string = string,
-    TExpand extends {[key: string]: {}} = {[key: string]: {}}>(
-    nameOrClient: string | DG.DomainTableClient<TRow, TInsert, TColumn, TExpand>):
-      Promise<DomainTable<TRow, TInsert, TColumn, TExpand>> {
-    return DomainTable.acquire<TRow, TInsert, TColumn, TExpand>(nameOrClient);
+    TExpand extends {[key: string]: {}} = {[key: string]: {}},
+    TUpdate = Partial<TRow>>(
+    nameOrClient: string | DG.DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate>):
+      Promise<DomainTable<TRow, TInsert, TColumn, TExpand, TUpdate>> {
+    return DomainTable.acquire<TRow, TInsert, TColumn, TExpand, TUpdate>(nameOrClient);
   }
 
   /**

@@ -292,6 +292,13 @@ interface DomainGenColumn {
   ref?: string;         // in-manifest target table for 'ref' columns
 }
 
+/** A resolved many-to-many relation of one table: the expand key and the target
+ * table whose row ids its write-side link set carries. */
+interface DomainGenRelation {
+  name: string;
+  target: string;
+}
+
 /** Emits choices aliases, row/insert interfaces, column-name unions, expand maps, the
  * `<Schema>TransactionOp` union, and the lazy `<schema>Db` clients for one manifest.
  * Returns null on a semantic error (reported to the console). */
@@ -372,6 +379,84 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     tableColumns[tableName] = columns;
   }
 
+  // Pass 1.5: resolve declared many-to-many relations. Same rules the server's
+  // manifest parser applies (manifest.dart 'relations'), so a manifest that
+  // generates here is one that deploys: via/target declared in this manifest,
+  // via distinct from owner and target, self-referential relations explicit,
+  // FK sides unique-or-explicit, and a junction business key covering both —
+  // that key is what keeps re-linking the same pair idempotent.
+  const tableRelations: {[table: string]: DomainGenRelation[]} = {};
+  for (const tableName of tableNames) {
+    const relations: DomainGenRelation[] = [];
+    tableRelations[tableName] = relations;
+    const declared = manifest.tables[tableName].relations;
+    if (declared == null)
+      continue;
+    const ownColumns = new Set(tableColumns[tableName].map((c) => c.name));
+    for (const name of Object.keys(declared)) {
+      const r = declared[name];
+      const where = `${manifestPath}: relation '${tableName}.${name}'`;
+      if (ownColumns.has(name) || systemColumnNames.has(name)) {
+        color.error(`${where} collides with a column of '${tableName}' — relations and columns ` +
+          `share one expand/filter namespace`);
+        return null;
+      }
+      if (manifest.tables[r.via] == null) {
+        color.error(`${where}: junction table '${r.via}' is not declared in this manifest`);
+        return null;
+      }
+      if (manifest.tables[r.target] == null) {
+        color.error(`${where}: target table '${r.target}' is not declared in this manifest`);
+        return null;
+      }
+      if (r.via === tableName || r.via === r.target) {
+        color.error(`${where}: junction table '${r.via}' must differ from the owner and the target table`);
+        return null;
+      }
+      if (r.target === tableName && (r.viaSelf == null || r.viaTarget == null)) {
+        color.error(`${where}: a self-referential relation must name both 'viaSelf' and 'viaTarget'`);
+        return null;
+      }
+      // One side of the junction: the declared column when explicit, otherwise
+      // the single ref column of `via` pointing at `to`.
+      const resolveSide = (key: string, explicit: string | undefined, to: string): string | null => {
+        const candidates = tableColumns[r.via].filter((c) => c.ref === to).map((c) => c.name);
+        if (explicit != null) {
+          if (candidates.includes(explicit))
+            return explicit;
+          color.error(`${where}: '${explicit}' is not a ref column of junction table '${r.via}' ` +
+            `targeting '${to}'`);
+          return null;
+        }
+        if (candidates.length === 0) {
+          color.error(`${where}: junction table '${r.via}' has no ref column targeting '${to}'`);
+          return null;
+        }
+        if (candidates.length > 1) {
+          color.error(`${where}: junction table '${r.via}' has more than one ref column targeting ` +
+            `'${to}' (${candidates.join(', ')}) — declare '${key}' explicitly`);
+          return null;
+        }
+        return candidates[0];
+      };
+      const viaSelf = resolveSide('viaSelf', r.viaSelf, tableName);
+      const viaTarget = resolveSide('viaTarget', r.viaTarget, r.target);
+      if (viaSelf == null || viaTarget == null)
+        return null;
+      if (viaSelf === viaTarget) {
+        color.error(`${where}: 'viaSelf' and 'viaTarget' must be different columns of '${r.via}'`);
+        return null;
+      }
+      const businessKey: string[] = manifest.tables[r.via].businessKey ?? [];
+      if (!businessKey.includes(viaSelf) || !businessKey.includes(viaTarget)) {
+        color.error(`${where}: junction table '${r.via}' must declare a 'businessKey' containing ` +
+          `both '${viaSelf}' and '${viaTarget}', so linking the same pair twice stays idempotent`);
+        return null;
+      }
+      relations.push({name: name, target: r.target});
+    }
+  }
+
   // Pass 2: emit per-table declarations.
   const clients: string[] = [];
   const txArms: string[] = [];
@@ -379,6 +464,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const table = manifest.tables[tableName];
     const typeName = utils.snakeToCamelCase(tableName);
     const columns = tableColumns[tableName];
+    const relations = tableRelations[tableName];
 
     const rowLines = [`/** Row of \`${manifest.name}.${tableName}\`. */`, `export interface ${typeName}Row {`];
     for (const [name, tsType] of domainSystemColumns)
@@ -392,10 +478,25 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       `export interface ${typeName}Insert {`];
     for (const c of columns)
       insertLines.push(`  ${c.name}${c.required ? '' : '?'}: ${c.insertType};`);
+    for (const r of relations)
+      insertLines.push(`  /** Link set: \`${r.target}\` row ids. */`, `  ${r.name}?: string[];`);
     if (table.idempotency === true)
       insertLines.push('  idempotencyKey?: string;');
     insertLines.push('}');
     decls.push(insertLines.join(sep));
+
+    // Relations are write-side values, not columns: a patch takes them alongside
+    // the declared ones (set-replace over the links the caller can see), while
+    // reads surface them through the expand map below.
+    if (relations.length > 0) {
+      const updateLines = [`/** Update payload for \`${manifest.name}.${tableName}\`: declared ` +
+        `columns plus relation link sets (each REPLACES the links you can see). */`,
+      `export type ${typeName}Update = Partial<${typeName}Row> & {`];
+      for (const r of relations)
+        updateLines.push(`  ${r.name}?: string[];`);
+      updateLines.push('};');
+      decls.push(updateLines.join(sep));
+    }
 
     decls.push(formatColumnUnion(`${typeName}Column`,
       [...domainSystemColumns.map(([name]) => name), ...columns.map((c) => c.name)]));
@@ -411,6 +512,13 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
         `'${c.name}.${tc.name}'?: ${tc.tsType}`);
       expandEntries.push(wrapTokens(`  '${c.name}': {`, fields, '; ', '};', '    '));
     }
+    // A relation expands to the capped, display-name-ordered link array; the d42
+    // form (queryDf) flattens it into a chips column plus its '~<name>.id' companion.
+    // The link shape stays INLINE (structurally DG.DomainRelationLink): generated
+    // files must compile against the datagrok-api the package depends on, which may
+    // predate that interface.
+    for (const r of relations)
+      expandEntries.push(`  '${r.name}': {${r.name}?: {id: string; name: string}[]};`);
     for (const childName of tableNames) {
       const fks = tableColumns[childName].filter((c) => c.ref === tableName);
       if (fks.length === 0)
@@ -431,15 +539,19 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     txArms.push(
       `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>} |`,
       `  {op: 'update'; table: '${tableName}'; id: string; ` +
-        `values: DG.DomainTxValues<Partial<${typeName}Row>>; expectedVersion?: number} |`,
+        `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
+        `expectedVersion?: number} |`,
       `  {op: 'delete'; table: '${tableName}'; id: string} |`);
 
     // No datetime config: the client resolves datetime columns from the domain
     // registry itself (the Dayjs typing in <Table>Row stays true for every client).
+    // The fifth generic is the update payload — only a relation-bearing table has
+    // one of its own; without relations the client's `Partial<Row>` default is it.
     clients.push(
       `  get ${tableProp(tableName)}() {`,
       `    return grok.dapi.domains.table<${typeName}Row, ${typeName}Insert, ` +
-        `${typeName}Column, ${typeName}Expand>('${manifest.name}.${tableName}');`,
+        `${typeName}Column, ${typeName}Expand` +
+        `${relations.length > 0 ? `, ${typeName}Update` : ''}>('${manifest.name}.${tableName}');`,
       '  },');
   }
 
@@ -472,10 +584,18 @@ function generateDomainUiCode(manifest: any, dbImports: string[]): string {
   for (const tableName of Object.keys(manifest.tables)) {
     const type = utils.snakeToCamelCase(tableName);
     const address = `${manifest.name}.${tableName}`;
-    // The four generics of the client and the handle, in DomainTableClient's order.
-    const generics = `${type}Row, ${type}Insert, ${type}Column, ${type}Expand`;
+    // The generics of the client and the handle, in DomainTableClient's order. The
+    // fifth — the update payload — exists only for a relation-bearing table, whose
+    // update() also takes the link sets; without relations the `Partial<Row>`
+    // default is it. Emitting four there would make `update(id, {labels: [...]})`
+    // an excess-property error against a payload that has no `labels`.
+    const hasRelations = Object.keys(manifest.tables[tableName].relations ?? {}).length > 0;
+    const generics = `${type}Row, ${type}Insert, ${type}Column, ${type}Expand` +
+      (hasRelations ? `, ${type}Update` : '');
     const handle = `DomainTable<${generics}>`;
     dbImports.push(`${type}Column`, `${type}Expand`, `${type}Insert`, `${type}Row`);
+    if (hasRelations)
+      dbImports.push(`${type}Update`);
     decls.push(
       [`/** Query spec of \`${address}\` — columns and expand keys are compile-checked. */`,
         `export type ${type}QuerySpec = DG.DomainQuerySpec<${type}Column, keyof ${type}Expand & string>;`].join(sep),
@@ -596,8 +716,10 @@ function generateDomainUiCode(manifest: any, dbImports: string[]): string {
       `export interface ${schemaType}UiDb extends DomainDb {`,
       ...tableProps.map((t) => {
         const type = utils.snakeToCamelCase(t);
+        const update = Object.keys(manifest.tables[t].relations ?? {}).length > 0
+          ? `, ${type}Update` : '';
         return `  readonly ${tableProp(t)}: ` +
-          `DomainTable<${type}Row, ${type}Insert, ${type}Column, ${type}Expand>;`;
+          `DomainTable<${type}Row, ${type}Insert, ${type}Column, ${type}Expand${update}>;`;
       }),
       '}'].join(sep),
     [`/** Acquires the {@link ${schemaType}UiDb} handle — every table of`,

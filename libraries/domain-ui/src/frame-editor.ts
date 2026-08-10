@@ -183,10 +183,12 @@ export function editorsOf(widget: any): DomainFrameEditor[] {
   return Array.isArray(editors) ? editors : [];
 }
 
-/** A domain client with its row/insert/column/expand generics erased — what the
- * REFLECTIVE widgets take. A TYPED client fits it, so a generated `<Table>Ui` (or
- * a `DomainTable` handle) keeps its own generics and is still usable here. */
-export type AnyDomainTableClient = DG.DomainTableClient<any, any, any, any>;
+/** A domain client with its row/insert/column/expand/update generics erased — what
+ * the REFLECTIVE widgets take. A TYPED client fits it, so a generated `<Table>Ui`
+ * (or a `DomainTable` handle) keeps its own generics and is still usable here.
+ * The update generic must be erased explicitly: its `Partial<TRow>` default is a
+ * real object type, and `update()` would then reject a typed client's payload. */
+export type AnyDomainTableClient = DG.DomainTableClient<any, any, any, any, any>;
 
 /**
  * The prefetched table context a SYNCHRONOUS widget factory needs: the typed

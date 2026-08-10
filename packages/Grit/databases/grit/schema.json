@@ -59,10 +59,14 @@
         "reporter": {"type": "user"},
         "assignee": {"type": "user", "onDelete": "setnull"}
       },
+      "relations": {
+        "labels": {"via": "issue_label", "target": "label"}
+      },
       "filters": [
         {"column": "status_id.name", "label": "Status"},
         {"column": "priority_id.name", "label": "Priority"},
         {"column": "type_id.name", "label": "Type"},
+        {"column": "labels.id", "label": "Labels"},
         {"column": "assignee"},
         {"column": "project_id.name", "label": "Project"}
       ]

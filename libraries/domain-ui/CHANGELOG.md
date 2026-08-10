@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: `DomainTable` and `domains.table()` take a fifth generic, the update payload (`DomainTable<TRow, TInsert, TColumn, TExpand, TUpdate = Partial<TRow>>`), so a handle over a table with many-to-many relations keeps `update()`'s link sets typed; `AnyDomainTableClient` erases it like the rest
 * GROK-20298: `DomainGrid` leaves `ref` cells EDITABLE too: the platform's grid opens the domain lookup picker anchored on the cell, so column security (`writableColumns`) is now the only in-grid editing gate. Clearing a reference cell (DELETE / BACKSPACE) reaches the wire as an explicit `null`, and a required reference then blocks the save with "Value can't be empty"
 * GROK-20298: `domains.db(schema)` — the schema-level async boundary: resolves a `DomainTable` handle for EVERY table of the schema in one go (`const db = await domains.db('grit'); db.issues.app()`), each table a direct camelCase PLURAL property (`db.issues`, `db.issueLabels` — `pluralizeTableName`, mirrored by the `grok api --ui` codegen so typed `<Schema>UiDb` interfaces bind to the runtime handle); declared table names stay singular in `db.tables` / `db.table(name)`
 * GROK-20298: The `DomainTable` handle's widget factories are typed over its generics: `form`/`formDialog` seed values check against the insert payload, `grid` checks `query` and `defaults`, `list`/`listView`/`app` check `query` — a misspelled column on a typed handle (codegen `<Table>Ui.table()` or a `domains.db` property) now fails compile; untyped handles are unaffected

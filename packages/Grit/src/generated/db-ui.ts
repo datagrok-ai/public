@@ -10,9 +10,9 @@ import {domainHandler, domains, DomainAppView, DomainAppViewOptions, DomainDb, D
   DomainTable, EntityListOptions, EntityListWidget} from '@datagrok-libraries/domain-ui';
 import {gritDb, ProjectColumn, ProjectExpand, ProjectInsert, ProjectRow, StatusColumn, StatusExpand, StatusInsert,
   StatusRow, PriorityColumn, PriorityExpand, PriorityInsert, PriorityRow, IssueTypeColumn, IssueTypeExpand,
-  IssueTypeInsert, IssueTypeRow, IssueColumn, IssueExpand, IssueInsert, IssueRow, CommentColumn, CommentExpand,
-  CommentInsert, CommentRow, LabelColumn, LabelExpand, LabelInsert, LabelRow, IssueLabelColumn, IssueLabelExpand,
-  IssueLabelInsert, IssueLabelRow} from './db';
+  IssueTypeInsert, IssueTypeRow, IssueColumn, IssueExpand, IssueInsert, IssueRow, IssueUpdate, CommentColumn,
+  CommentExpand, CommentInsert, CommentRow, LabelColumn, LabelExpand, LabelInsert, LabelRow, IssueLabelColumn,
+  IssueLabelExpand, IssueLabelInsert, IssueLabelRow} from './db';
 
 /** Query spec of `grit.project` — columns and expand keys are compile-checked. */
 export type ProjectQuerySpec = DG.DomainQuerySpec<ProjectColumn, keyof ProjectExpand & string>;
@@ -522,15 +522,15 @@ export class IssueUi {
   readonly address: string = 'grit.issue';
 
   /** The typed client — the same one `gritDb.issues` returns. */
-  get client(): DG.DomainTableClient<IssueRow, IssueInsert, IssueColumn, IssueExpand> {
+  get client(): DG.DomainTableClient<IssueRow, IssueInsert, IssueColumn, IssueExpand, IssueUpdate> {
     return gritDb.issues;
   }
 
   /** The prefetched handle on `grit.issue` — THE async boundary, typed. Every
    * widget factory on it is synchronous, so acquire it ONCE when a page builds
    * more than one widget; the shortcuts below acquire one of their own. */
-  table(): Promise<DomainTable<IssueRow, IssueInsert, IssueColumn, IssueExpand>> {
-    return domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand>(this.client);
+  table(): Promise<DomainTable<IssueRow, IssueInsert, IssueColumn, IssueExpand, IssueUpdate>> {
+    return domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand, IssueUpdate>(this.client);
   }
 
   /** The handler registered for the table (the reflective default when none is). */
@@ -960,7 +960,7 @@ export interface GritUiDb extends DomainDb {
   readonly statuses: DomainTable<StatusRow, StatusInsert, StatusColumn, StatusExpand>;
   readonly priorities: DomainTable<PriorityRow, PriorityInsert, PriorityColumn, PriorityExpand>;
   readonly issueTypes: DomainTable<IssueTypeRow, IssueTypeInsert, IssueTypeColumn, IssueTypeExpand>;
-  readonly issues: DomainTable<IssueRow, IssueInsert, IssueColumn, IssueExpand>;
+  readonly issues: DomainTable<IssueRow, IssueInsert, IssueColumn, IssueExpand, IssueUpdate>;
   readonly comments: DomainTable<CommentRow, CommentInsert, CommentColumn, CommentExpand>;
   readonly labels: DomainTable<LabelRow, LabelInsert, LabelColumn, LabelExpand>;
   readonly issueLabels: DomainTable<IssueLabelRow, IssueLabelInsert, IssueLabelColumn, IssueLabelExpand>;

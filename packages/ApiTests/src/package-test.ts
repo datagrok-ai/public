@@ -29,6 +29,7 @@ import './dapi/domains';
 import './dapi/domains-batch';
 import './dapi/domain-errors';
 import './dapi/domain-filters';
+import './dapi/domain-relations';
 import './dapi/domain-lifecycle';
 import './dapi/domain-parity';
 import './dapi/domain-handlers';
