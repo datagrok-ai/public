@@ -83,7 +83,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     handleMouseMove(gridCell, e, this);
   }
 
-  renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell): void {
+  /** [fitIdentities] key the fits for a caller with no grid cell; only here are the log options final. */
+  renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell,
+    fitIdentities?: (string | undefined)[]): void {
     g.save();
     g.beginPath();
     g.rect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
@@ -149,7 +151,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
           curve = getCurve(fitSpaceSeries, fitFunc);
         } else {
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, useFitCache);
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, useFitCache,
+            fitIdentities?.[i]);
           curve = fitResult.fittedCurve;
           fitSpaceSeries = {...series, parameters: [...fitResult.parameters]};
           userParamsFlag = false;

@@ -135,7 +135,15 @@ Central module for the converter system:
 ### Chart Data & Caches — `src/fit/fit-chart-data.ts`
 
 A leaf module, so the renderer and the statistics do not import each other through it:
-- **Caching**: three `DG.LruCache` instances: `parsedCurves` (parsed IFitChartData), `fittedCurves` (fitted curve results), `curvesDataPoints` (extracted data points)
+- **Caching**: four `DG.LruCache` instances: `parsedCurves` (parsed IFitChartData), `fittedCurves` (fitted
+  curve results), `curvesDataPoints` (extracted data points), and `viewerFits`. Nothing ever invalidates
+  them - correctness is entirely in the key, which is why the axes belong there alongside the cell: the
+  same curve fits differently on a log axis, and a grid, a property panel and a trellis can be showing
+  it in different spaces at once. `viewerFits` is separate on purpose: a viewer's curves are not the
+  grid's (it merges a cell's series and applies its own log options), so the two must never answer for
+  each other. It is keyed on `chartDataId()` - a short stand-in for the parsed cell's object identity,
+  so re-parsing a cell retires the fits made from it without any invalidation code
+
 - `getOrCreateParsedChartData(cell)` — cached parse with the precedence above applied
 - `getColumnChartOptions` / `getDataFrameChartOptions` — read a level's options, migrating `.fit` onto `.%fit`
 - `mergeProperties` (gap filling) and the explicit overrides that outrank a series' own value

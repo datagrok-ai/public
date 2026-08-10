@@ -494,4 +494,15 @@ category('fit', () => {
     expect(exponential(params, 0.5), 0.2957925783034655);
     expect(exponential(params, 0.98746), 0.0010630898492656174);
   });
+
+  test('the combined error model fits to fixed values', async () => {
+    // noisy on purpose: a perfect fit leaves no residuals for the error model to weigh
+    const series = {fitFunction: 'sigmoid', errorModel: 'combined',
+      points: [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4]
+        .map((x, i) => ({x: x, y: (5 + 95 / (1 + Math.pow(10, Math.log10(x) + 6.5))) * (1 + 0.08 * Math.sin(i * 2.4))}))};
+    const logOptions = {logX: true, logY: false};
+    const fit = fitSeries(series as any, getSeriesFitFunction(series as any), undefined, logOptions);
+    expectArray(Array.from(fit.parameters).map((p) => Number(p.toFixed(6))),
+      [100.771515, 0.984725, -6.517356, 5.065719]);
+  });
 });

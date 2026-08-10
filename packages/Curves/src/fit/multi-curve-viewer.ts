@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {mergeChartOptions, mergeSeries, getOrCreateParsedChartData, mergeProperties} from './fit-chart-data';
+import {mergeChartOptions, mergeSeries, getOrCreateParsedChartData, mergeProperties, chartDataId} from './fit-chart-data';
 import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
@@ -32,6 +32,7 @@ export class MultiCurveViewer extends DG.JsViewer {
   showOutliers?: boolean = true;
   rows: number[] = [];
   data: IFitChartData = new FitChartData();
+  fitIdentities: (string | undefined)[] = [];
   logX?: boolean;
   logY?: boolean;
   allowXZeroes?: boolean;
@@ -140,8 +141,10 @@ export class MultiCurveViewer extends DG.JsViewer {
     //const _grid = this.isInTrellis() ? grok.shell.tableView(this.dataFrame.name).grid : this.tableView?.grid!;
     const mergeCellSeries = this.props.get('mergeCellSeries') as unknown as boolean;
     const chartOptions: IFitChartOptions[] = [];
+    this.fitIdentities = [];
     for (const colName of this.curvesColumnNames!) {
       const series = [];
+      const identities: (string | undefined)[] = [];
       for (const i of new Set(this.rows)) {
         const tableCell = this.dataFrame.cell(i, colName);
         if (!tableCell || !tableCell.value)
@@ -166,12 +169,17 @@ export class MultiCurveViewer extends DG.JsViewer {
             mergedSeries.name = currentChartOptions?.title;
           cellSeries = [mergedSeries];
         }
+        // the cell these came from, so the render can reuse the fit instead of redoing it every time
+        const cellId = chartDataId(cellCurves);
+        identities.push(...cellSeries.map((_, j) => `${cellId} || idx: ${mergeCellSeries ? 'merged' : j}`));
         series.push(...cellSeries);
       }
       if (series.length === 0)
         continue;
       // a deep copy: the points are still the cell's own objects, and rendering mutates them
       this.data.series?.push(...JSON.parse(JSON.stringify(this.mergeColumnSeries ? [mergeSeries(series)!] : series)));
+      // a column merge draws from many cells at once, so no one cell identifies its fit
+      this.fitIdentities.push(...(this.mergeColumnSeries ? [undefined] : identities));
     }
     this.data.chartOptions = mergeChartOptions(chartOptions);
     this.data.chartOptions.useAuxLegendNames = true;
@@ -252,6 +260,6 @@ export class MultiCurveViewer extends DG.JsViewer {
     // drawn from this very object rather than through a serialized cell, so that hovering can find
     // the legend the render laid out
     const bounds = new DG.Rect(0, 0, this.canvas.width, this.canvas.height);
-    new FitChartCellRenderer().renderCurves(g, bounds, this.data);
+    new FitChartCellRenderer().renderCurves(g, bounds, this.data, undefined, this.fitIdentities);
   }
 }
