@@ -33,6 +33,7 @@ export type NumericalDesirability = BasePropertyDesirability & {
   inverted?: boolean; /// when true, desirability = 1 - d(x): lower-is-better / avoid-target
   min?: number; /// min value of the property (optional; used for editing the line)
   max?: number; /// max value of the property (optional; used for editing the line)
+  rangeUserSet?: boolean;
 
   scale?: MpoScale;
 
@@ -62,7 +63,7 @@ export type WeightedAggregation = typeof WEIGHTED_AGGREGATIONS[number];
 export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 
 export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
-export const CURRENT_MPO_VERSION = 1;
+export const CURRENT_MPO_VERSION = 2;
 
 /// Prefixed so MPO columns are easy to spot in a wide dataset.
 export function getMpoScoreColumnName(name: string): string {

@@ -7,6 +7,7 @@ import {
   DEFAULT_AGGREGATION, WEIGHTED_AGGREGATIONS_LIST,
   DesirabilityMode, DesirabilityProfile, PropertyDesirability, WeightedAggregation,
   createDefaultCategorical, createDefaultNumerical, isMpoNumericColumn, isNumerical, migrateDesirability,
+  rangeNumericalToColumn,
 } from './mpo';
 import {DesirabilityEditor, DesirabilityEditorFactory} from './editors/desirability-editor-factory';
 import {DesirabilityModeDialog} from './dialogs/desirability-mode-dialog';
@@ -504,6 +505,12 @@ export class MpoProfileEditor {
 
     if (!isNumerical(prop) && col.isNumerical)
       return createDefaultNumerical(prop.weight, col.min, col.max);
+
+    if (isNumerical(prop) && col.isNumerical && !prop.rangeUserSet && (prop.min !== col.min || prop.max !== col.max)) {
+      const updated = {...prop};
+      rangeNumericalToColumn(updated, col);
+      return updated;
+    }
 
     return null;
   }

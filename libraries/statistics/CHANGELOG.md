@@ -27,6 +27,7 @@
 * GROK-17637: Fit: `getSeriesFit` and `getSeriesConfidenceInterval` no longer write the fitted parameters back onto the series - they are in fit space, and the series contract is data space, so the next caller converted them twice
 * MPO: Re-exported `desirabilityScore` for callers that score a single value (it was inlined into the column-at-a-time path and dropped from the public surface, breaking the PowerGrid build)
 * MPO: Add ability to rename the property in the design mode
+* MPO: A numerical property's min/max now default to its bound column's actual range instead of 0-1, locking once the user sets it by hand or saves the profile
 
 ## 1.12.9 (2026-07-16)
 
