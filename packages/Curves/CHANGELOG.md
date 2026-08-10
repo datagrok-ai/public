@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-18166: Curves: Multi curve viewer: Declared the properties a trellis plot puts on its control panel - **Merge Column Series**, **Log X** and **Log Y**, the way a scatter plot offers X, Y, Color and Size. Editing them, or anything in the MultiCurveViewer tab of the property panel, now reaches every trellis cell and is kept in saved layouts
 * GROK-20112: Curves: The legend picks the corner the curves leave freest, counting where points and fit lines actually landed and staying in the top right unless another corner is clearly emptier. Hovering a shortened name gives the whole of it, and hovering the `+N more` row gives every curve the legend could not fit, each in its own colour
 * GROK-20112: Curves: The legend no longer buries the curves it names. A column holding a single curve gets no row of its own (the siRNA demo goes from eight rows to four), rows sit over a backdrop so they stay readable, a name too long for the corner is ellipsized and says the rest when hovered, and rows past the corner collapse into `+N more`. A name that two columns share is qualified with the column; two curves named alike in one column are left as the data has them. Legend code moved to `fit/fit-legend.ts`
 * Curves: Added the **Show Legend** chart option - the curves can be left unnamed on any level, the way every other chart option cascades

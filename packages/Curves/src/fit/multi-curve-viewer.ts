@@ -39,6 +39,9 @@ export class MultiCurveViewer extends DG.JsViewer {
   showColumnLabel?: boolean;
 
 
+  /** What a trellis plot puts on its control panel. */
+  get trellisProperties(): string[] { return ['mergeColumnSeries', 'logX', 'logY']; }
+
   private isInTrellis(): boolean {
     let curRoot = this.root;
     let i = 0;
