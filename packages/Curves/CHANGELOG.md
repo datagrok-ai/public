@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20660: Curves: The axis names sit on the plot they name. The x name was drawn 5px left of centre and the y name 15px below it, both from constants added to the offset rather than to the margin. The same function also called `restore()` without a matching `save()`, so every cell that showed axis names leaked one canvas state - the cell clip was released before the legend was drawn, and the grid lost the state it had saved for the cell
 * GROK-18886: Curves: A pipe inside a title survives. Every `|` was stripped from a cell before parsing, to rescue values a stray one breaks - which also ran identifiers together, so `compound_id 10||Collapse Assay||run_id 4` was drawn as `compound_id 10Collapse Assayrun_id 4`. The rescue now applies only to a value that yields nothing as it stands
 * GROK-18886: Curves: Data to Curves names a group the way it reads - `compound_id 0 | Neuronal Health Assay | target_9` rather than `compound_id 0||Neuronal Health Assay||target_9||null`. Empty parts are dropped from the group column and the curve title; the key that identifies a group is untouched, so parent data still matches. The Assay Curves demo was regenerated to match
 * GROK-18886: Curves: An outlier marker no longer swamps a small plot. At three times the point size it took an eighth of a trellis cell's height, so it is now capped against the plot it sits in
