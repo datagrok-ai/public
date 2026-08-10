@@ -6,6 +6,7 @@ import {Subscription} from 'rxjs';
 
 import {
   DesirabilityProfile,
+  getMpoScoreColumnName,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -189,10 +190,10 @@ export class MpoProfileCreateView {
       }
 
       if (this.df) {
-        const oldCol = this.df.col(oldName);
-        const newColExists = this.df.col(newName);
+        const oldCol = this.df.col(getMpoScoreColumnName(oldName));
+        const newColExists = this.df.col(getMpoScoreColumnName(newName));
         if (oldCol && !newColExists)
-          oldCol.name = newName;
+          oldCol.name = getMpoScoreColumnName(newName);
       }
 
       this.profile.name = newName;

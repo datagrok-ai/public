@@ -64,6 +64,11 @@ export const DEFAULT_AGGREGATION: WeightedAggregation = 'Average';
 export const DESIRABILITY_PROFILE_TYPE = 'MPO Desirability Profile';
 export const CURRENT_MPO_VERSION = 1;
 
+/// Prefixed so MPO columns are easy to spot in a wide dataset.
+export function getMpoScoreColumnName(name: string): string {
+  return name ? `MPO ${name}` : 'MPO';
+}
+
 /// A map of desirability lines with their weights
 export type DesirabilityProfile = {
   type: typeof DESIRABILITY_PROFILE_TYPE;
