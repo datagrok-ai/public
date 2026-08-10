@@ -93,6 +93,22 @@ category('fit cache', () => {
     expect(refitted, false, 'a second render of the same curve should not fit it again');
   });
 
+  test('a pipe in a title survives, and one that breaks the value is still stripped', async () => {
+    const titled = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    titled.chartOptions!.title = 'compound 10 | Collapse Assay | run 4';
+    // the second value is valid only once the stray pipe is gone
+    const col = DG.Column.fromStrings('curve', [JSON.stringify(titled), '{"series":|[{"points":[]}]}']);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'pipeTitles';
+
+    expect(getOrCreateParsedChartData(df.cell(0, 'curve')).chartOptions!.title,
+      'compound 10 | Collapse Assay | run 4', 'a pipe inside a title is not part of the value');
+    // the rescue still applies to a value the pipes actually break
+    expect(getOrCreateParsedChartData(df.cell(1, 'curve')).series!.length, 1,
+      'stripping should still rescue a value that does not parse as it stands');
+  });
+
   test('editing a cell retires the fits made from it', async () => {
     const cell = curveCell('fitCacheEdit', -7);
     const before = getOrCreateParsedChartData(cell);

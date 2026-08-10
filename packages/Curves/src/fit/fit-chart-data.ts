@@ -187,11 +187,13 @@ export function sanitizeCellValue(value: string): string {
 
 /** Constructs {@link IFitChartData} for a cell, applying the column and dataframe levels. */
 function getChartData(tableCell: DG.Cell): IFitChartData {
-  const cellValue = sanitizeCellValue(tableCell.value as string);
+  const cellValue = tableCell.value as string;
   const column = tableCell.column;
-  const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
+  let cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
     parseCellValue(cellValue, column) :
-    createDefaultChartData()) : JSON.parse(cellValue ?? '{}') ?? {};
+    createDefaultChartData()) : JSON.parse(sanitizeCellValue(cellValue) ?? '{}') ?? {};
+  if (column?.type === DG.TYPE.STRING && !cellChartData.series?.length)
+    cellChartData = parseCellValue(sanitizeCellValue(cellValue), column);
 
   const columnChartOptions = tableCell.column ? getColumnChartOptions(tableCell.column) : {};
   const dfChartOptions = tableCell.column ? getDataFrameChartOptions(tableCell.dataFrame) : {};

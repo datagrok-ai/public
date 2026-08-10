@@ -186,7 +186,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
         (p.color ? DG.Color.fromHtml(p.color) ? p.color : pointColor : pointColor);
     const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
     const outlierMarker = p.outlierMarker ? p.outlierMarker as DG.MARKER_TYPE : series.outlierMarkerType as DG.MARKER_TYPE;
-    const size = !connectDots ? p.outlier ? FitConstants.OUTLIER_PX_SIZE * ratio : p.size ? p.size : defaultSize : defaultSize;
+    const outlierSize = Math.min(FitConstants.OUTLIER_PX_SIZE * ratio, viewport.screen.height / 10);
+    const size = !connectDots ? p.outlier ? outlierSize : p.size ? p.size : defaultSize : defaultSize;
     const markerToDraw = !connectDots ? p.outlier ? outlierMarker : marker : marker;
 
     DG.Paint.marker(g, markerToDraw, xScreen, yScreen, color, size);
