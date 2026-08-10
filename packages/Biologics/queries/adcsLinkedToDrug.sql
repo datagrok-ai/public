@@ -1,5 +1,5 @@
 --name: ADCs Linked to Drug
---friendlyName: ADCs Linked to Drug
+--friendlyName: Lookups | ADCs Linked to Drug
 --connection: Biologics:biologics
 --input: string drugID {choices: query("SELECT distinct identifier FROM biologics.drugs"); semType: DG_BIOLOGICS_DRUG_ID} [Drug identifier]
 --description: "Find ADCs in biologics database linked to a specified drug identifier."
