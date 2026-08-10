@@ -1,4 +1,4 @@
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -18,6 +18,7 @@ export abstract class UaQueryViewer extends UaViewer {
   filter: Object = {};
   viewer: DG.Viewer | undefined;
   activated = false;
+  errorDiv: HTMLElement | null = null;
 
   protected constructor(name: string, options: {queryName?: string, createViewer: (t: DG.DataFrame) => DG.Viewer,
     setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null,
@@ -36,25 +37,30 @@ export abstract class UaQueryViewer extends UaViewer {
 
   reloadViewer(staticFilter?: object) {
     // console.log('reloading');
-    this.dataFrame = new Promise<DG.DataFrame>((resolve, reject) => {
+    this.dataFrame = new Promise<DG.DataFrame>((resolve) => {
+      this.errorDiv?.remove();
+      this.errorDiv = null;
+      this.root.appendChild(this.loader);
       this.loader.classList.add('ua-wait');
       const filter = {...this.filter, ...staticFilter};
-      // console.log(this.queryName);
       const load = this.queryName === undefined ? this.getDataFrame!() :
         grok.functions.call('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
-          if (dataFrame.columns.byName('count') != null)
-            dataFrame.columns.byName('count').meta.format = '#';
+          const countColumn = dataFrame.columns.byName('count');
+          if (countColumn != null)
+            countColumn.meta.format = '#';
           const userColumn = dataFrame.columns.byName('user');
           if (userColumn != null) {
             const users: {[key: string]: string} = {};
-            userColumn.categories.forEach((u: string) => {users[u] = colorHash.hex(u);});
+            for (const u of userColumn.categories)
+              users[u] = colorHash.hex(u);
             userColumn.meta.colors.setCategorical(users);
           }
           return dataFrame;
         });
-      load.then(this.postQuery.bind(this)).then(resolve.bind(this)).catch((e: any) => {
-        this.loader.classList.remove('ua-wait');
-        grok.shell.error(`${this.name}: ${e?.message ?? e}`);
+      load.then(this.postQuery.bind(this)).then(resolve).catch((e: any) => {
+        this.loader.remove();
+        this.errorDiv = ui.divText(`${this.name}: ${e?.message ?? e}`, 'd4-viewer-error');
+        this.root.appendChild(this.errorDiv);
       });
     });
   }
