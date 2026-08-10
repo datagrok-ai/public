@@ -181,7 +181,7 @@ export class MultiCurveViewer extends DG.JsViewer {
       // a column merge draws from many cells at once, so no one cell identifies its fit
       this.fitIdentities.push(...(this.mergeColumnSeries ? [undefined] : identities));
     }
-    this.data.chartOptions = mergeChartOptions(chartOptions);
+    this.data.chartOptions = mergeChartOptions(chartOptions, this.data.series);
     this.data.chartOptions.useAuxLegendNames = true;
     this.mergeViewerChartOptions();
     this.data.series?.forEach((series, i) => {

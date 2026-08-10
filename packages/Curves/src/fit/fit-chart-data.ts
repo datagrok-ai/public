@@ -67,7 +67,7 @@ function mergeLabels(target: IFitChartOptions | undefined, ...sources: (IFitChar
   }
 }
 
-export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOptions {
+export function mergeChartOptions(chartOptions: IFitChartOptions[], series: IFitSeries[] = []): IFitChartOptions {
   if (chartOptions.length === 0)
     return {};
 
@@ -104,6 +104,16 @@ export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOp
     if (options.allowXZeroes !== null && options.allowXZeroes !== undefined && options.allowXZeroes)
       allowXZeroes = true;
   }
+
+  // a range a cell declares for its own chart is not one for an overlay of many: it would cut off
+  // the curves a wider column contributes, and adding a column could no longer widen the axis
+  for (const s of series)
+    for (const p of s.points) {
+      if (p.x < minX) minX = Number.MAX_VALUE;
+      if (p.x > maxX) maxX = Number.MIN_VALUE;
+      if (p.y < minY) minY = Number.MAX_VALUE;
+      if (p.y > maxY) maxY = Number.MIN_VALUE;
+    }
 
   return {
     minX: minX === Number.MAX_VALUE ? undefined : minX,
