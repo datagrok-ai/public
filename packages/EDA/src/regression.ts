@@ -16,19 +16,14 @@ const PLS_COMPONENTS_COUNT = 10;
 /** Default OLS epochs (OLS_EPOCHS in eda-api); worst case, loss tol may early-stop sooner. */
 const GD_EPOCHS = 1000;
 
-/** Applicability and interactivity thresholds for linear regression.
- * OLS now fits via full-batch gradient descent on the Rust+WASM backend (no closed-form
- * normal equations), so the cost model is GD: time ≈ epochs·N·M, memory ≈ N·M Float64
- * (no M×M term). The fit runs synchronously on the UI thread, so the time budget is a
- * UI-freeze duration — sized off a conservative ~5e8 units/s (≈2× margin over the raw
- * ~1e9 units/s measured on 100K×100×1000). */
+/** Applicability and interactivity thresholds for linear regression. */
 enum LIN_REG_LIMITS {
   // isApplicable: hard bounds — fit must complete without exhausting browser memory
   MAX_FEATURES = 1000,
-  MAX_FEATURES_X_SAMPLES = 1e7,      // ≈80 MB Float64 flatX (~160 MB peak); ~10 s synchronous at 1000 GD epochs
+  MAX_FEATURES_X_SAMPLES = 1e7, // ≈80 MB Float64 flatX (~160 MB peak); ~10 s synchronous at 1000 GD epochs
   // isInteractive: responsive (~0.5 s) full-batch GD budgets
   INTERACTIVE_MEMORY_BUDGET = 2.5e6, // Float64 flatX elements (≈20 MB TS-side, ~40 MB peak)
-  INTERACTIVE_TIME_BUDGET = 2.5e8,   // N·M·epochs work units (≈0.5 s at conservative 5e8 units/s)
+  INTERACTIVE_TIME_BUDGET = 2.5e8, // N·M·epochs work units (≈0.5 s at conservative 5e8 units/s)
 }
 
 /** Check whether linear regression can be applied to the given data */
@@ -70,10 +65,7 @@ export function isLinearRegressionInteractive(features: DG.ColumnList, target: D
   return true;
 }
 
-/** Compute coefficients of linear regression.
- * `l1`/`l2` add Elastic Net regularisation; both `0` (default) give plain OLS.
- * `lr`/`epochs`/`tol` are the gradient-descent controls; omit them to use the
- * OLS preset (left `undefined` -> the eda-api defaults apply). */
+/** Compute coefficients of linear regression.*/
 export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column,
   l1: number = 0, l2: number = 0,
   lr?: number, epochs?: number, tol?: number): Promise<Float32Array> {
@@ -164,17 +156,43 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
   return params;
 } // computeLinRegressionCoefs
 
-/** Return prediction of linear regression model */
-export function getPredictionByLinearRegression(features: DG.ColumnList, params: Float32Array): DG.Column {
-  const featuresCount = features.length;
-  if (featuresCount !== params.length - 1)
+/** Return the model's features in the training order. */
+function orderedFeatures(features: DG.ColumnList, params: Float32Array, names?: string[]): DG.Column[] {
+  const expected = params.length - 1;
+
+  if (names === undefined) {
+    if (features.length !== expected)
+      throw new Error('Incorrect parameters count');
+
+    return features.toList();
+  }
+
+  if (names.length !== expected)
     throw new Error('Incorrect parameters count');
 
-  const col = features.byIndex(0);
-  const samplesCount = col.length;
+  const byName = new Map<string, DG.Column>();
+  features.toList().forEach((col) => byName.set(col.name, col));
+
+  return names.map((name) => {
+    const col = byName.get(name);
+
+    if (col === undefined)
+      throw new Error(`Model feature is missing in the table: "${name}"`);
+
+    return col;
+  });
+}
+
+/** Return prediction of linear regression model */
+export function getPredictionByLinearRegression(features: DG.ColumnList, params: Float32Array,
+  featureNames?: string[]): DG.Column {
+  const cols = orderedFeatures(features, params, featureNames);
+  const featuresCount = cols.length;
+
+  const samplesCount = cols[0].length;
   const prediction = new Float32Array(samplesCount);
 
-  let rawData = col.getRawData();
+  let rawData = cols[0].getRawData();
   const bias = params[featuresCount];
   let weight = params[0];
 
@@ -182,7 +200,7 @@ export function getPredictionByLinearRegression(features: DG.ColumnList, params:
     prediction[i] = bias + weight * rawData[i];
 
   for (let j = 1; j < featuresCount; ++j) {
-    rawData = features.byIndex(j).getRawData();
+    rawData = cols[j].getRawData();
     weight = params[j];
 
     for (let i = 0; i < samplesCount; ++i)

@@ -37,6 +37,7 @@ type PlsModelSpecification = {
   dim: number,
   components: number,
   scores: DG.DataFrame,
+  vip?: Float32Array,
 }
 
 /** PLS regression modeling tool */
@@ -96,8 +97,17 @@ export class PlsModel {
         const params = new Float32Array(rowCount);
         params.set(columns.byName(TITLE.REGR_COEFS).getRawData());
 
+        // Extract VIP: absent in models saved before it was added
+        const vipCol = modelDf.col(TITLE.VIP);
+        let vip: Float32Array | undefined;
+
+        if (vipCol !== null) {
+          vip = new Float32Array(rowCount);
+          vip.set(vipCol.getRawData().subarray(0, rowCount));
+        }
+
         // Extract loadings
-        const components = colsCount - SHIFT;
+        const components = colsCount - SHIFT - (vipCol !== null ? 1 : 0);
         const loadings = new Array<Float32Array>(components);
 
         for (let i = 0; i < components; ++i) {
@@ -110,8 +120,9 @@ export class PlsModel {
           loadings: loadings,
           names: featureNames,
           dim: rowCount - EXTRA_ROWS,
-          components: colsCount - SHIFT,
+          components: components,
           scores: scores,
+          vip: vip,
         };
       } catch (error) {
         throw new Error(`Failed to load model: ${(error instanceof Error ? error.message : 'the platform issue')}`);
@@ -140,17 +151,23 @@ export class PlsModel {
     // 3. Loadings
     const loadings = this.getLoadings(components, analysis.xLoadings);
 
-    // 4. Model specification
+    // 4. Variable importance
+    const dim = features.length;
+    const vip = new Float32Array(dim + EXTRA_ROWS);
+    vip.set(analysis.vip.getRawData().subarray(0, dim));
+
+    // 5. Model specification
     this.specn = {
       names: featureNames,
       params: params,
       loadings: loadings,
       components: components,
-      dim: features.length,
+      dim: dim,
       scores: this.getScoresDf(analysis),
+      vip: vip,
     };
 
-    // 4. Compute explained variances
+    // 6. Compute explained variances
     this.computeExplVars(target.length, components, analysis.yLoadings);
   } // fit
 
@@ -221,6 +238,10 @@ export class PlsModel {
       array,
     )));
 
+    // Appended after the loadings: the loader counts components by column index
+    if (this.specn.vip !== undefined)
+      modelDf.columns.add(DG.Column.fromFloat32Array(TITLE.VIP, this.specn.vip));
+
     // 2. Pack model dataframe
     const modelDfBytes = modelDf.toByteArray();
     const modelDfBytesCount = modelDfBytes.length;
@@ -251,7 +272,8 @@ export class PlsModel {
     if (this.specn === null)
       throw new Error('Predicting failed: model is not trained');
 
-    return getPredictionByLinearRegression(features, this.specn.params);
+    // names carries a trailing service item matching the bias row of params
+    return getPredictionByLinearRegression(features, this.specn.params, this.specn.names.slice(0, -1));
   }
 
   /** Return loadings and regression coefficients viewers */
@@ -298,6 +320,21 @@ export class PlsModel {
       showValueSelector: false,
       showStackSelector: false,
     }));
+
+    // Variable importance barchart
+    if (this.specn.vip !== undefined) {
+      loadingsDf.columns.add(DG.Column.fromFloat32Array(TITLE.VIP, this.specn.vip, dim));
+
+      viewers.push(DG.Viewer.barChart(loadingsDf, {
+        title: TITLE.VIP,
+        splitColumnName: TITLE.FEATURES,
+        valueColumnName: TITLE.VIP,
+        valueAggrType: DG.AGG.AVG,
+        help: LINK.MVA,
+        showValueSelector: false,
+        showStackSelector: false,
+      }));
+    }
 
     return viewers;
   } // getLoadingsParamsViewers
