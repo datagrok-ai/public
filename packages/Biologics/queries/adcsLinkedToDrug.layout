@@ -1,0 +1,263 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 776,
+      "height": 927
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 448,
+          "height": 927,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 448,
+              "height": 927,
+              "element": {
+                "id": "4e390a30-6fc0-11f1-e446-8581051c10c0",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "colHeaderHeight": 156,
+                  "rowHeight": 200,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 20,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "adc_identifier",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 84,
+                      "columnName": "adc_name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "glyph",
+                      "cellType": "rawPng",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 140,
+                      "columnName": "sequence_identifier",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 114,
+                      "columnName": "antibody_name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "antibody_heavy_chain",
+                      "cellType": "sequence",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "antibody_light_chain",
+                      "cellType": "sequence",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 145,
+                      "columnName": "linker_identifier",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 89,
+                      "columnName": "linker_type",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "linker_molecule_smiles",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 120,
+                      "columnName": "linker_sequence",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 129,
+                      "columnName": "drug_identifier",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 90,
+                      "columnName": "drug_name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "drug_smiles",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "ADCs Linked to Drug",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 327,
+          "height": 927,
+          "element": {
+            "id": "4e393140-6fc0-11f1-8206-293789127548",
+            "type": "Pie chart",
+            "look": {
+              "#type": "PieChartLook",
+              "categoryColumnName": "linker_type",
+              "legendPosition": "Auto"
+            },
+            "title": "Pie chart"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "37eb0c60-6fc0-11f1-9790-319d580d18f8",
+    "tableName": "ADCs Linked to Drug"
+  },
+  "userData": {
+    ".columnTags": {
+      "adc_identifier": {
+        "quality": "DG_BIOLOGICS_ADC_ID"
+      },
+      "glyph": {
+        "quality": "rawPng",
+        "cell.renderer": "rawPng"
+      },
+      "sequence_identifier": {
+        "quality": "DG_BIOLOGICS_SEQUENCE_ID"
+      },
+      "antibody_heavy_chain": {
+        "units": "fasta",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule"
+      },
+      "antibody_light_chain": {
+        "units": "fasta",
+        "cell.renderer": "sequence",
+        "quality": "Macromolecule"
+      },
+      "linker_identifier": {
+        "quality": "DG_BIOLOGICS_LINKER_ID"
+      },
+      "linker_molecule_smiles": {
+        "units": "smiles",
+        "quality": "Molecule",
+        "cell.renderer": "Molecule"
+      },
+      "drug_identifier": {
+        "quality": "DG_BIOLOGICS_DRUG_ID"
+      },
+      "drug_smiles": {
+        "units": "smiles",
+        "quality": "Molecule",
+        "cell.renderer": "Molecule"
+      }
+    }
+  },
+  "columns": [
+    {
+      "name": "linker_type",
+      "type": "string",
+      "id": "4e39a670-6fc0-11f1-d5a5-2f9ea599556a",
+      "friendlyName": "Linker_type",
+      "entityTags": [
+        {
+          "tag": "DbTable",
+          "id": "4e39a670-6fc0-11f1-aab9-0919e87d8273"
+        },
+        {
+          "tag": "DbColumn",
+          "id": "4e39a670-6fc0-11f1-c2d4-a970ecfe5d6d"
+        },
+        {
+          "tag": "DbPath",
+          "id": "4e39a670-6fc0-11f1-afa6-81abe4e8811e"
+        },
+        {
+          "tag": "DbSchema",
+          "id": "4e39a670-6fc0-11f1-fe09-b1f51cd0392b"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4e39a670-6fc0-11f1-870c-43e265b4929a"
+        }
+      ],
+      "metaParams": {
+        "DbTable": "linkers",
+        "DbColumn": "linker_type",
+        "DbPath": "datagrok.biologics.linkers.linker_type",
+        "DbSchema": "biologics",
+        ".semantic-detection-duration": "1"
+      }
+    }
+  ],
+  "name": "ADCsLinkedToDrug",
+  "friendlyName": "ADCs Linked to Drug",
+  "author": {
+    "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
+  },
+  "createdOn": "2026-08-07T17:34:56.078Z"
+}

@@ -52,7 +52,6 @@ category('Flow: serializer', () => {
       const reOutput = nodes.find((n) => n.dgTypeName === 'Outputs/Table Output');
       expect(reInput?.properties['paramName'], 'src');
       expect(reOutput?.properties['paramName'], 'finalResult');
-      // The single connection still runs input → output.
       const conn = e.flow.getConnections()[0];
       expect(conn.source, reInput!.id);
       expect(conn.target, reOutput!.id);
@@ -70,7 +69,7 @@ category('Flow: serializer', () => {
         description: '', pos: {x: 0, y: 0}, properties: {}, inputValues: {},
       });
       await deserializeFlow(doc, e.flow);
-      expect(e.flow.getNodeCount(), 0); // ghost skipped, nothing else added
+      expect(e.flow.getNodeCount(), 0);
     } finally {
       destroyEditor(e);
     }

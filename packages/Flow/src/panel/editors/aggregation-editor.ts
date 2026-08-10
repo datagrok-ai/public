@@ -1,21 +1,5 @@
-/** Aggregation-list editor for `Flow:aggregate`.
- *
- *  "Which columns, aggregated how" is a list, and a list is the one shape a
- *  function signature cannot express with primitives — which is exactly why
- *  `core:Aggregate` takes `List<GroupAggregation>` and ends up unusable on a
- *  canvas. Here it is a JSON string edited as rows of two combos: a column and
- *  an aggregation, both picked, never typed.
- *
- *  The column choices are the upstream table's, filtered by what the chosen
- *  aggregation can actually consume (an average of a string column is a runtime
- *  error waiting to happen), and `count` drops the column combo entirely
- *  because it counts rows.
- *
- *  With no table available the editor does NOT render a row of empty combos —
- *  it says what is missing and, when the upstream is merely uncomputed, offers
- *  to run the slice; the stored aggregations stay visible as text so a flow
- *  loaded from disk is still readable. Same contract as the MPO column mapper,
- *  for the same reason. */
+/** Aggregation-list editor for `Flow:aggregate` — a JSON string edited as rows of two combos
+ *  (aggregation + column), with the MPO mapper's blocked-state contract when no table is available. */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -24,16 +8,12 @@ import type {CustomEditorContext, CustomInputEditor} from '../../utils/func-inpu
 import {getParamDisplayName} from '../../utils/dart-proxy-utils';
 import {AGGREGATION_TYPES, AggregationSpec, parseAggregations} from '../../ops/data-ops';
 
-/** Aggregations defined only over numbers — offering a string column for them
- *  produces nulls at best. */
 const NUMERIC_AGGREGATIONS = new Set([
   'min', 'max', 'sum', 'avg', 'med', 'stdev', 'variance', 'q1', 'q2', 'q3', 'skew', 'kurt',
 ]);
 
-/** Aggregations that take no column at all. */
 const COLUMNLESS_AGGREGATIONS = new Set(['count']);
 
-/** The columns a given aggregation can consume. Pure — unit-tested. */
 export function columnsForAggregation(
   type: string, columns: readonly DG.Column[] | null,
 ): string[] {
@@ -49,13 +29,7 @@ export function columnsForAggregation(
   }).map((c) => c.name);
 }
 
-/** Drop entries whose column is no longer in the table, so switching the
- *  upstream table doesn't leave an aggregation over a column that is gone.
- *
- *  A BLANK column survives: that is a row the user has just added and not
- *  finished, not a stale reference — pruning it would make the Add button
- *  appear to do nothing. The readiness check is what refuses to run on one.
- *  Column-less aggregations always survive. Pure. */
+/** Drop entries whose column left the table. A BLANK column survives — an unfinished row, not a stale reference; pruning it made Add look broken. */
 export function pruneAggregations(
   specs: readonly AggregationSpec[], columnNames: readonly string[],
 ): AggregationSpec[] {
@@ -64,8 +38,7 @@ export function pruneAggregations(
     COLUMNLESS_AGGREGATIONS.has(a.type) || a.column === '' || known.has(a.column));
 }
 
-/** The stored form. Blank when there is nothing to store, so an untouched
- *  parameter reads as empty rather than as `[]`. Pure. */
+/** Blank when there is nothing to store, so an untouched parameter reads as empty rather than `[]`. */
 export function serializeAggregations(specs: readonly AggregationSpec[]): string {
   const cleaned = specs
     .filter((a) => a.type !== '')
@@ -77,7 +50,6 @@ export function serializeAggregations(specs: readonly AggregationSpec[]): string
   return cleaned.length === 0 ? '' : JSON.stringify(cleaned);
 }
 
-/** One-line human form of an aggregation, for the read-only fallback. */
 export function describeAggregation(spec: AggregationSpec): string {
   const base = COLUMNLESS_AGGREGATIONS.has(spec.type) ? spec.type : `${spec.type}(${spec.column})`;
   return spec.name && spec.name.trim() !== '' ? `${base} → ${spec.name.trim()}` : base;
@@ -86,9 +58,7 @@ export function describeAggregation(spec: AggregationSpec): string {
 export function aggregationEditor(param: DG.Property, ctx: CustomEditorContext): CustomInputEditor {
   const ed: CustomInputEditor = {} as CustomInputEditor;
   const host = ui.div([], 'ff-aggregation-editor');
-  // The editor replaces the parameter's whole row, so it has to carry the
-  // parameter's own name — without it the combos sit under the previous row's
-  // label and read as part of it.
+  // The editor replaces the whole row, so it must carry the parameter's own label itself.
   const label = getParamDisplayName(param);
   let specs: AggregationSpec[] = [];
 
@@ -142,7 +112,6 @@ export function aggregationEditor(param: DG.Property, ctx: CustomEditorContext):
         tooltipText: 'How to aggregate',
         onValueChanged: (v) => {
           spec.type = String(v ?? '');
-          // The new aggregation may not accept the column that was picked.
           const allowed = columnsForAggregation(spec.type, columns);
           if (spec.column !== '' && !allowed.includes(spec.column)) spec.column = '';
           commit();
@@ -180,8 +149,6 @@ export function aggregationEditor(param: DG.Property, ctx: CustomEditorContext):
     });
 
     const add = ui.link('Add aggregation', () => {
-      // Seed with the first aggregation that has something to aggregate, so a
-      // fresh row is immediately meaningful rather than half-blank.
       specs.push({column: '', type: 'avg'});
       commit();
       render();
@@ -191,8 +158,7 @@ export function aggregationEditor(param: DG.Property, ctx: CustomEditorContext):
     host.appendChild(ui.divV([ui.divText(label, 'ff-aggregation-editor-label'), list, add]));
   };
 
-  // The group-by columns don't change what can be aggregated, but the table
-  // input does — and the panel doesn't re-render while focus is inside it.
+  // The panel doesn't re-render while focus is inside a sibling input — react to the edit directly.
   ctx.watch('groupByColumns', () => render());
 
   ed.element = host;

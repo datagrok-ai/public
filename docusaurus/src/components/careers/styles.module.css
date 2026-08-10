@@ -22,3 +22,15 @@
   padding: 0.4em 0.7em;
   font-weight: 600;
 }
+.copyIcon{
+  cursor: pointer;
+  margin-left: 0.4em;
+  color: var(--grey-4);
+}
+.copyIcon:hover{
+  color: var(--blue-1);
+}
+.copyIconDone{
+  margin-left: 0.4em;
+  color: var(--green-2);
+}

@@ -1,15 +1,11 @@
-/** Annotation carry: dragging an annotation moves whatever sits inside it —
- *  nodes whose center is within the frame, annotations fully contained in it,
- *  and the waypoints of connections between carried nodes. The cargo is
- *  captured at drag START (stateless): a node dragged out of the frame simply
- *  isn't inside at the next grab. Strip-pinned output rows are never carried. */
+/** Annotation carry: dragging an annotation moves the nodes, contained annotations,
+ *  and waypoints inside it; the cargo is captured at drag start. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
-/** Simulate a body drag on an annotation element (down → move → up). The drag
- *  handler only reads client deltas, so absolute coords are arbitrary. */
+/** The drag handler only reads client deltas, so absolute coords are arbitrary. */
 function drag(el: HTMLElement, dx: number, dy: number): void {
   const at = (x: number, y: number): PointerEventInit =>
     ({bubbles: true, cancelable: true, button: 0, clientX: 500 + x, clientY: 500 + y});
@@ -51,7 +47,7 @@ category('Flow: annotations', () => {
       drag(ann.element, 40, 0);
       expect(await until(() => node.pos.x === 60), true, 'carried while inside');
 
-      await e.flow.translate(node.id, 2000, 2000); // user drags the node out
+      await e.flow.translate(node.id, 2000, 2000);
       drag(ann.element, 40, 0);
       await new Promise((r) => setTimeout(r, 100));
       expect(node.pos.x, 2000, 'a node outside the frame is no longer carried');
@@ -104,7 +100,6 @@ category('Flow: annotations', () => {
       ann.element.dispatchEvent(new PointerEvent('pointerup', down));
       expect(ann.element.classList.contains('ff-annotation-active'), true, 'clicked → armed and marked');
 
-      // Clicking empty canvas disarms — Delete must NOT remove it then.
       e.container.querySelector('.ff-canvas')!.dispatchEvent(new PointerEvent('pointerdown', down));
       window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
       await new Promise((r) => setTimeout(r, 50));

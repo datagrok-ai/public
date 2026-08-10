@@ -12,9 +12,9 @@ keywords:
 The run comparison tool compares outputs of model runs side by side: pick a model, add
 historical runs (or raw workspace tables) to the comparison set, choose what to compare, and
 get a chart preview. The tool is a preliminary data selection with a quick preview — complex
-analysis belongs in the Datagrok workspace, where any comparison can be exported as a snapshot
-(**Results > Open in workspace**: the long-format data table plus the chart with its current
-options).
+analysis belongs in the Datagrok workspace, where any comparison can be
+[exported](#exporting) as a snapshot: the data table plus the chart with its current
+options.
 
 ## Matching
 
@@ -22,20 +22,33 @@ Scalars and dataframe columns are matched across runs by name: exact, then norma
 (case/underscore/dash-insensitive), then fuzzy. Values with mismatching units never match;
 partially missing units produce a warning icon.
 
+When runs name the same quantity differently (for example, `pressure` and `P`), map the
+names manually: the exchange icon next to the value filter opens the **Name mappings**
+dialog with name pairs. Mapped names match as the same value across all runs, index
+columns included. The mapping is exact up to case and separators — no fuzzy matching —
+and pairs chain (mapping A to B and B to C makes all three equal).
+
 Columns additionally require their tables to be comparable: the index columns must
-name-match, and the split columns must either both be unset or name-match. Beyond that,
-matching stays per column — the tables don't need to share their full column sets.
+name-match. Beyond that, matching stays per column — the tables don't need to share
+their full column sets. Split columns don't affect matching: each run charts with its
+own split column even when the names differ, and runs without one chart as a single
+series in an unnamed split category.
 
 Matched values whose data is the same in every run (equal scalar values, or equal
 value, index, and split column contents) are hidden from the compare list by default.
-Numbers count as equal when they differ by less than 0.1%. Turn off
-**Hide equal values** to show them.
+Numbers count as equal when they differ by less than 0.1%, and datetime index
+values only when they match exactly. Turn off **Hide equal values** to show them.
 
 ## Fine-tuning matches
 
-Each compare row maps the same value across runs: one item per run. To chart several
-series within one run, use a [split column](#index-and-split-columns) instead — that is
-the native pattern for model results.
+Each compare row maps the same value across runs. Several items of one run can match
+the row, but only one of them is active at a time: the active item is the run's charted
+series. To chart several series within one run, use a
+[split column](#index-and-split-columns) instead — that is the native pattern for
+model results.
+
+When an input and an output of the same step share a caption, the parameter name is
+shown after it, for example `Data (result)`, so the two rows stay distinguishable.
 
 Automatic matching picks the best candidate per run, which is not always the desired one —
 for example, when a run has several similar tables. Expand a compare row (the chevron on
@@ -104,6 +117,31 @@ against another across runs.
   sharing the y axis, colored by value name with runs as marker shapes. Whether the
   values are comparable on one scale (units, magnitude) is up to you.
 
+## Multiple values
+
+When the selected value has compatible siblings, the **Multiple values** toggle (or
+Shift+click on a compare row) enables selecting several values at once. Unchecking the
+last selected value turns the mode off, keeping that value as the regular selection. Every scalar is
+compatible with every other scalar. Column values are compatible when they share at least
+one run from the same tables and their index is numeric or datetime everywhere. Scalars
+and columns never mix in one selection.
+
+Several columns chart as stacked line-chart panels with runs (and split categories) as
+lines inside. In the [independent points mode](#independent-points), the values share one
+scatterplot instead, colored by value name. A comparison of several values needs a numeric
+or datetime index — if an index moves to a string column, the chart is replaced with a
+hint until the index is changed back or a single value is selected.
+
+Several scalars chart on a radar chart: one axis per value, one polygon per run. A switch
+above the chart flips it to a parallel-coordinates plot. With two values the tool always
+uses the parallel-coordinates plot, because a two-axis radar degenerates to a line. The
+radar viewer comes with the Charts package — without it, the parallel-coordinates plot is
+used for any number of values.
+
+Editing matches never exits the mode: a run that is missing or re-sourced from another
+table in one of the selected values shows as a gap in that panel, and the value's row is
+marked **partial**. Reverting the edit restores the chart exactly.
+
 ## Default index annotations
 
 A model can declare how its dataframe output should be indexed in a comparison with the
@@ -133,19 +171,15 @@ All keys are optional. When a run is added to the comparison:
 * merged rows work naturally: all merged tables come from the same function, so they carry
   the same annotation and agree on the default.
 
-The legacy `{comparisonIndex: time; comparisonSplit: species}` options are still
-recognized as aliases for `index` and `split`. The `comparison` object wins when both
-are present. Raw workspace tables have no annotations.
+Raw workspace tables have no annotations.
 
-## Multiple values
+## Exporting
 
-When the selected column target has compatible siblings (values sharing at least one run
-from the same tables, with a line-chartable index), the **Multiple values** toggle (or
-Shift+click on a compare row) enables selecting several values at once. Each value becomes
-a stacked line-chart panel with runs (and split categories) as lines inside. In the
-[independent points mode](#independent-points), the values share one scatterplot instead,
-colored by value name.
+**Results > Export...** asks for a snapshot name and offers two ways out:
 
-Editing matches never exits the mode: a run that is missing or re-sourced from another
-table in one of the selected values shows as a gap in that panel, and the value's row is
-marked **partial**. Reverting the edit restores the chart exactly.
+* **Open in workspace** adds the comparison to the workspace: the data table plus the
+  chart with its current options. Tweak the chart before exporting — the tweaks carry
+  over.
+* **Save & share** opens the platform project dialog on the same snapshot, so the
+  comparison can be saved as a project and shared without leaving the tool. On platforms
+  without the project dialog, only **Open in workspace** is offered.

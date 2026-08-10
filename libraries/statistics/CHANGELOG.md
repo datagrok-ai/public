@@ -2,7 +2,32 @@
 
 ## v.next
 
+* [#2103](https://github.com/datagrok-ai/public/issues/2103): Fit: Added `IFitChartOptions.labels` for values that describe the whole plot and `showLabels` for the names to render. `IFitSeriesOptions.labels` keeps carrying per-curve values. Removed `labelOptions` and `IFitChartLabelOptions`, which nothing ever read - its `visible` is now `showLabels` and a label takes the colour of the series it belongs to. Stored JSON carrying the key is unaffected, since it never had an effect
+* GROK-17637: Fit: Added `IFitChartData.explicit`, naming the options a user set at that level. Only an explicitly set level outranks the value a series declares for itself; anything absent stays advisory, as before
+* GROK-17637: Fit: `FitConstants.TAG_FIT` moved from `.fit` to `.%fit`, the prefix the platform serializes into a layout, so column and dataframe level options survive a reopened project. The previous name is kept as `TAG_FIT_LEGACY`, read once and then removed, so only one of the two ever holds the options
+* GROK-17637: Fit: Exported the typed fit results (`SigmoidFit`, `LinearFit`, `FourPLDoseResponseFit`, etc.), which expose named parameters instead of positional indices, plus `interceptY` and the raw `parameters`
+* GROK-17637: Fit: Added `FitFunction.statisticsProperties`, describing the statistics each fit function produces
+* GROK-17637: Fit: Added precomputed data points and log options to `fillParams`, and widened its series argument to `IFitSeries`
+* GROK-17637: Fit: Fixed custom JS fit functions losing their fitted parameters, and `4pl-dose-response` reporting `ec50` instead of `ic50`
+* GROK-17637: Fit: A custom JS fit function reports `interceptY` again, derived from the fitted curve as the pre-typed API did
+* GROK-17637: Fit: Added `getSeriesFit`, `getStatistic` and `getStatisticProperty` - statistics are now derived from the typed fit, with legacy `FitStatistics` names resolved through an alias table
+* GROK-17637: Fit: Added `toDataSpace`, converting log-fitted statistics back to data space in one place for both axes; `pIC50` is derived there, assuming a molar concentration
+* GROK-17637: Fit: Added typed `getFitFunction` and `isFit`, and derived the statistic-name unions from the fit classes
+* GROK-17637: Fit: Statistic labels now come from each fit function's `parameterNames`, and `maxY`/`minY` are derived from the asymptotes instead of mislabelling parameter slots
+* GROK-17637: Fit: Tightened `IFitSeriesOptions` - removed the catch-all index signature and typed `fitFunction`, `showPoints` and `droplines`
+* GROK-17637: Fit: Fixed `FitSeries.fit` being a circular own property that made `JSON.stringify` of a series throw
+* GROK-17637: Fit: Broke the `fit-data` / `fit-engine` circular import by adding the `fit-points` leaf module and moving `fitSeries` next to the optimizer
+* GROK-17637: Fit: Moved `LogOptions` to `fit-curve` alongside the other shared types. `getDataPoints`, `getMedian`, `getMedianPoints`, `logIC50ParameterBounds` and `fitSeries` moved out of `fit-data` into the modules that own them, so deep imports of those names from `fit-data` have to be updated
+* GROK-17637: Fit: Removed the unused `getInvertedFunctions`, `FitInvertedFunctions` and `getInvError`, which inverted the sigmoid only via positional parameter indices
+* GROK-17637: Fit: Removed the unused `FitFunctions` lookup class and the `FitSeries.fit` getter, both superseded by `getFitFunction` and `getSeriesFit`
+* GROK-17637: Fit: `FitFunction` now builds `statisticsProperties` once in the base class from `statisticFields`, instead of each fit function repeating the memo
+* GROK-17637: Fit: `statisticsProperties` no longer labels `top`/`bottom` as "Max Y"/"Min Y", which now name the derived asymptote statistics
+* GROK-17637: Fit: Renamed `new-fit-API.ts` to `fit-engine.ts`, so the module is named for what it holds rather than for when it was added
+* GROK-17637: Fit: A legacy statistic name a fit function does not produce now falls back to the parameter slot the pre-typed API read, so a `top` column extracted from a linear or exponential curve keeps its value instead of turning null. `getStatisticProperty` falls back the same way, so such a statistic still renders on the plot
+* GROK-17637: Fit: `getSeriesFit` and `getSeriesConfidenceInterval` no longer write the fitted parameters back onto the series - they are in fit space, and the series contract is data space, so the next caller converted them twice
 * MPO: Re-exported `desirabilityScore` for callers that score a single value (it was inlined into the column-at-a-time path and dropped from the public surface, breaking the PowerGrid build)
+* MPO: Add ability to rename the property in the design mode
+* MPO: A numerical property's min/max now default to its bound column's actual range instead of 0-1, locking once the user sets it by hand or saves the profile
 
 ## 1.12.9 (2026-07-16)
 

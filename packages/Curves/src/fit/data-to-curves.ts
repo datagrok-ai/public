@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as api from '../package-api';
 import wu from 'wu';
-import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 const groupColumnName = 'Compound|Assay|Target';
 
@@ -588,7 +588,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
     const color = getColor(colorKey);
     const fitFunctionName = parentObj?.[curveKey]?.fitFunction ? parentObj[curveKey].fitFunction : FIT_FUNCTION_4PL_DOSE_RESPONSE;
     const s: IFitSeries = {
-      fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
+      fitFunction: fitFunctionName as FitFunctionType, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
       points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 5})).sort((a, b) => a.x - b.x), parameters: params, fitLineColor: color, pointColor: DG.Color.toHtml(DG.Color.gray)
     };
     const fitData: Omit<FitChartData, 'seriesOptions'> = {

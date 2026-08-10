@@ -1,15 +1,8 @@
-/** Workflow annotations — KNIME-style colored regions sitting *behind* the
- *  graph. Purely visual — they're not part of the Rete editor (no nodes, no
- *  ports), they don't affect compilation, and they live in their own
- *  `Map<id, FlowAnnotation>` on the FlowEditor.
- *
- *  Each annotation owns a `<div>` rendered inside `area.content.holder`, the
- *  transformed canvas content layer, so panning and zooming move them with
- *  the rest of the graph. Stacking is handled in CSS — `z-index: 0` keeps
- *  them under the nodes (which the order extension drives up). */
+/** KNIME-style colored regions behind the graph — purely visual, owned by FlowEditor,
+ *  rendered inside `area.content.holder` so pan/zoom move them with the graph. */
 
-const ANN_DEFAULT_COLOR = '#BBDEFB';   // pale blue body
-const ANN_DEFAULT_BORDER = '#1976D2';  // blue border
+const ANN_DEFAULT_COLOR = '#BBDEFB';
+const ANN_DEFAULT_BORDER = '#1976D2';
 
 export interface AnnotationDoc {
   id: string;

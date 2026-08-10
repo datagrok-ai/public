@@ -1,12 +1,5 @@
-/** Regression tests for the per-node editor bridge (`FlowNode.editorBridge`).
- *
- *  The bridge used to be a page-level global (`window.__ff_editor`) that every
- *  `FlowEditor` construction rebound to itself and every `destroy()` deleted.
- *  With a second editor on the page (a file preview, the creation-script
- *  dialog, a detached compile editor) the first editor's collapse carets went
- *  dead and its collapsed nodes dropped their socket DOM on re-render, leaving
- *  connections dangling at stale positions. The bridge now lives on each node,
- *  stamped by the owning editor, so any number of editors coexist. */
+/** Per-node editor bridge (`FlowNode.editorBridge`): each editor stamps its own,
+ *  so any number of editors coexist on one page. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
@@ -42,7 +35,7 @@ category('Flow: editor bridge', () => {
 
   test('two live editors keep independent bridges', async () => {
     const a = makeEditor();
-    const b = makeEditor(); // second construction must not hijack a's bridge
+    const b = makeEditor();
     try {
       const nodeA = await addNode(a.flow, 'Utilities/Info');
       const nodeB = await addNode(b.flow, 'Utilities/Info');
@@ -69,8 +62,6 @@ category('Flow: editor bridge', () => {
       const info = await addNode(a.flow, 'Utilities/Info');
       await a.flow.addConnectionByKeys(input.id, 'value', info.id, 'message');
 
-      // The old global bridge was deleted by ANY editor's destroy() — the
-      // detached compile editor did exactly this in normal use.
       const detached = makeEditor();
       destroyEditor(detached);
 

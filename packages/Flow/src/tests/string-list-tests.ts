@@ -1,7 +1,5 @@
-/** Inline editing of `string_list` (and its `list<string>` alias) inputs: the
- *  func node seeds the slot editable, the property panel renders a text field,
- *  and the compiler turns the comma-separated value into a JS array of trimmed,
- *  non-empty strings (empty → omitted, so the function's default applies). */
+/** Inline editing of `string_list` (and `list<string>`) inputs: seeded editable,
+ *  text-field panel row, comma-separated value → trimmed JS array (empty → omitted). */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {emitScript} from '../compiler/script-emitter';
@@ -10,8 +8,6 @@ import {makeEditor, destroyEditor, addNode} from './test-utils';
 
 const SETTINGS = {name: 'T', description: '', tags: []};
 
-/** A registered func with a string_list input, plus that input's name. Aggregate
- *  (fields) is the canonical one; fall back to any func with such an input. */
 function stringListFunc(): {typeName: string; param: string} | null {
   const funcs = getRegisteredFuncs();
   const preferred = funcs.find((f) => f.func.name === 'Aggregate' &&
@@ -50,7 +46,6 @@ category('Flow: string-list inputs', () => {
     try {
       const node = await addNode(e.flow, f.typeName);
       panel.showNode(node);
-      // Native DG string input (an <input>), matching the primitive editors.
       const field = panel.root.querySelector(`[data-param="${f.param}"] input`);
       expect(!!field, true, 'comma-separated text field present');
     } finally {
@@ -88,8 +83,7 @@ category('Flow: string-list inputs', () => {
   });
 });
 
-/** A registered func with a plain `list` input (this is also how `list<string>`
- *  params surface at runtime — propertyType 'list', propertySubType 'string'). */
+/** `list<string>` params surface at runtime as propertyType 'list', propertySubType 'string'. */
 function plainListFunc(): {typeName: string; param: string} | null {
   const pick = getRegisteredFuncs().find((f) =>
     f.func.inputs.some((i) => String(i.propertyType) === 'list'));

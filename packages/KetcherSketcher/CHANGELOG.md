@@ -1,5 +1,9 @@
 # Ketcher Sketcher changelog
 
+## 2.4.8
+
+* Fixed multiple sketchers on one page breaking each other (upstream ketcher-core singletons): opening a new sketcher now suspends the others behind a "Reload" placeholder that remounts the editor with its molecule preserved
+
 ## 2.4.6 (2026-05-19)
 
 * Fixed "couldnt find ketcher instance N" error when clicking OK on the cell editor dialog: the `change` handler now bails out if the sketcher is detached while a `getMolfile()` call is still in flight

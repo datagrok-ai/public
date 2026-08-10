@@ -1,13 +1,6 @@
-/** Human-readable fallback names for raw property identifiers — a TS mirror
- *  of core's `propertyNameToFriendly`
- *  (`capitalizeWords(camelCaseToWords(n.replaceAll('.', ' ')))`, helpers in
- *  `core/shared/prop_gen/lib/prop_gen_annotation.dart`), so a caption-less
- *  param reads the same on Flow nodes / panel rows as it does in the
- *  platform's own forms (`ui.input.forProperty`).
- *
- *  One DELIBERATE deviation: core's `capitalizeWords` lowercases a word's
- *  tail, mangling acronyms ('MW' → 'Mw', 'HBA' → 'Hba'); ours keeps an
- *  ALL-CAPS word as-is ('MW' → 'MW', 'maxMW' → 'Max MW'). */
+/** TS mirror of core's `propertyNameToFriendly` (prop_gen), so caption-less params read the same as
+ *  in `ui.input.forProperty`. One DELIBERATE deviation: an ALL-CAPS word is kept as-is
+ *  ('MW' → 'MW', 'maxMW' → 'Max MW') where core folds to 'Mw'. */
 
 const CONJUNCTIONS = new Set(['and', 'or', 'than', 'if', 'but', 'so', 'as', 'that']);
 const DELIMITERS = new Set([' ', ',', '.', '-', '!', '"', '\'', ';']);
@@ -17,8 +10,7 @@ function isUpperAt(s: string, i: number): boolean {
   return c >= 65 && c <= 90;
 }
 
-/** prop_gen `splitCamelCase`: boundaries at lower→upper and before the last
- *  upper of an acronym run followed by lowercase ('RDKitMol' → RD, Kit, Mol). */
+/** prop_gen `splitCamelCase`: 'RDKitMol' → RD, Kit, Mol. */
 export function splitCamelCase(s: string): string[] {
   const parts: string[] = [];
   for (let start = 0, i = 1; i <= s.length; i++) {
@@ -31,8 +23,7 @@ export function splitCamelCase(s: string): string[] {
   return parts;
 }
 
-/** prop_gen `camelCaseToWords` with its default options (capitalizeFirst,
- *  no capitalizeNext / capitalizeConjunctions, ' ' separator). */
+/** prop_gen `camelCaseToWords` with its default options. */
 export function camelCaseToWords(s: string): string {
   if (s.toUpperCase() === s) return s;
   if (s.includes(' ')) return s; // already a friendly name
@@ -51,9 +42,7 @@ export function camelCaseToWords(s: string): string {
   return out;
 }
 
-/** prop_gen `capitalizeWords` (first char of every delimiter-separated word
- *  uppercased, the rest lowercased) — EXCEPT an all-caps word (an acronym:
- *  MW, HBA) is kept exactly as-is instead of being folded to 'Mw'/'Hba'. */
+/** prop_gen `capitalizeWords`, except an all-caps acronym word is kept exactly as-is. */
 export function capitalizeWords(s: string): string {
   let out = '';
   let word = '';
@@ -74,8 +63,7 @@ export function capitalizeWords(s: string): string {
   return out;
 }
 
-/** core `propertyNameToFriendly`: 'maxNumOfSomething' → 'Max Num Of Something',
- *  'ratio.split' → 'Ratio Split'. */
+/** core `propertyNameToFriendly`: 'maxNumOfSomething' → 'Max Num Of Something'. */
 export function propertyNameToFriendly(n: string): string {
   return capitalizeWords(camelCaseToWords(String(n ?? '').replace(/\./g, ' ')));
 }

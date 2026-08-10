@@ -1,6 +1,4 @@
-/** Regression tests for the function catalog: the allowlist-based inclusion
- *  rule and the "what it does" classification. Designed from the live catalog —
- *  see docs/func-catalog-snapshot.md for the data these assertions encode. */
+/** Function catalog: allowlist-based inclusion and the "what it does" classification. */
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
@@ -27,17 +25,11 @@ category('Flow: function browser', () => {
     const funcs = getRegisteredFuncs();
     expect(funcs.length > 100, true, 'catalog is non-trivially populated');
 
-    // Known allowlisted core funcs are present. Keep this list to functions the
-    // allowlist is not expected to churn — which entries are in or out is a
-    // curation decision (`Aggregate`, for one, is commented out pending the
-    // colfiltercall/tablerowfiltercall work), so pinning them here would just
-    // make the test lie about intent.
+    // keep this list to funcs the allowlist won't churn — in/out is a curation decision
     const names = new Set(funcs.map((f) => f.func.name));
     for (const known of ['JoinTables', 'OpenFile', 'AddNewColumn'])
       expect(names.has(known), true, `allowlisted ${known} present`);
 
-    // Formerly-denied machinery is NOT on the allowlist and stays out: dev/test
-    // packages, denylist-era helpers, panels/sketchers — none of them listed.
     for (const gone of ['Chem:getRdKitModule', 'core:BatchCall', 'core:Project'])
       expect(INCLUDED_FUNC_NQNAMES.has(gone), false, `${gone} not on the include list`);
     const devPkgs = new Set(['Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis']);
@@ -54,10 +46,8 @@ category('Flow: function browser', () => {
     expect(shouldIncludeFunc(fake('SomePkg:optedIn2', {includeInFlow: true})), true, 'meta opt-in (bool) → in');
     expect(shouldIncludeFunc(fake('core:JoinTables', {includeInFlow: 'false'})), false,
       'meta opt-out beats the allowlist');
-    // A saved flow (Script with language `flow`) is always included, listed or not.
     const flowScript = DG.Script.create('//name: MyFlow\n//language: flow\n');
     expect(shouldIncludeFunc(flowScript), true, 'workflow → always in');
-    // A query (DG.DataQuery) is always included by kind — never needs listing.
     const query = getRegisteredFuncs().map((f) => f.func).find((f) => f instanceof DG.DataQuery);
     if (query) {
       expect(shouldIncludeFunc(query), true, 'query → always in');
@@ -66,8 +56,6 @@ category('Flow: function browser', () => {
   });
 
   test('meta.includeInFlow: false opts a function out of the catalog', async () => {
-    // No surviving function declares the opt-out (meta.* surfaces as
-    // func.options; the value may arrive as boolean false or the string 'false').
     const leaked = getRegisteredFuncs().filter((f) => {
       try {
         const v = (f.func.options as Record<string, unknown>)?.['includeInFlow'];
@@ -76,8 +64,6 @@ category('Flow: function browser', () => {
     });
     expect(leaked.length, 0, `includeInFlow:false funcs leaked: ${leaked.map((f) => f.func.name).join(', ')}`);
 
-    // End-to-end: Flow's own dialog opener declares the opt-out in its decorator
-    // meta — it must exist on the stand yet be absent from the catalog.
     const exists = DG.Func.find({name: 'openCreationScriptFlowDialog'}).length > 0;
     if (!exists) return; // older Flow build on this stand — skip the e2e half
     const inCatalog = getRegisteredFuncs().some((f) => f.func.name === 'openCreationScriptFlowDialog');
@@ -85,12 +71,7 @@ category('Flow: function browser', () => {
   });
 
   test('widget-producing functions are routed to the Widgets pane, never the categories', async () => {
-    // Widgets are supported (they preview), so an allowlisted widget-producing
-    // function goes to the Widgets pane rather than a task category. How MANY
-    // are allowlisted is a curation decision and may legitimately be zero — the
-    // invariant is the routing, plus the fact that right-click
-    // (`semantic_value`) widgets are never catalog entries: they act on a cell,
-    // not on a pipeline value, so nothing on a canvas could feed one.
+    // semantic_value widgets act on a cell, not a pipeline value — nothing on a canvas could feed one
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
     const ctxWidgets = widgets.filter((f) => {
       try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
@@ -103,8 +84,6 @@ category('Flow: function browser', () => {
   });
 
   test('categorizeFunc places funcs by what they do', async () => {
-    // (functionName -> expected category). Guarded: only assert when the func
-    // exists on this stand, so the test is portable across deployments.
     const cases: Array<[string, string]> = [
       ['JoinTables', 'Combine Tables'],   // 2 table inputs -> NOT a data source
       ['LinkTables', 'Combine Tables'],
@@ -125,8 +104,6 @@ category('Flow: function browser', () => {
   });
 
   test('saved flows classify as Workflows in every grouping', async () => {
-    // A flow entity is a DG.Script with language `flow`; its signature would
-    // otherwise read as a data source — it gets its own section instead.
     const flowScript = DG.Script.create('//name: MyFlow\n//language: flow\n');
     expect(isWorkflowFunc(flowScript), true, 'a flow script is a workflow');
     expect(categorizeFunc(flowScript, null, 'Flow'), 'Workflows', 'category routing');
@@ -141,7 +118,6 @@ category('Flow: function browser', () => {
 
   test('Data Sources leads the category order', async () => {
     expect(FUNC_CATEGORIES[0], 'Data Sources');
-    // Every classified func lands in a known category.
     for (const info of getRegisteredFuncs().slice(0, 200)) {
       const cat = categorizeFunc(info.func, info.role, info.packageName);
       expect((FUNC_CATEGORIES as readonly string[]).includes(cat), true, `unknown category ${cat}`);
@@ -153,26 +129,19 @@ category('Flow: function browser', () => {
       try {return f.func.inputs.some((p) => ['dataframe', 'column', 'column_list'].includes(String(p.propertyType)));}
       catch {return false;}
     };
-    // A Chem/Bio function that OPERATES on data (dataframe/column input) lands in
-    // Cheminformatics/Bioinformatics — the domain wins over the task category.
     const chem = getRegisteredFuncs().find((f) => f.packageName === 'Chem' && hasDataInput(f));
     if (chem) expect(categorizeFunc(chem.func, chem.role, 'Chem'), 'Cheminformatics');
     const bio = getRegisteredFuncs().find((f) => f.packageName === 'Bio' && hasDataInput(f));
     if (bio) expect(categorizeFunc(bio.func, bio.role, 'Bio'), 'Bioinformatics');
-    // A core/general func is unaffected by the domain routing.
     const join = DG.Func.find({name: 'JoinTables'})[0];
     if (join) expect(categorizeFunc(join, null, ''), 'Combine Tables');
 
-    // The two domain sections are in the ordered category list, after Visualize.
     expect((FUNC_CATEGORIES as readonly string[]).includes('Cheminformatics'), true);
     expect((FUNC_CATEGORIES as readonly string[]).includes('Bioinformatics'), true);
     expect(FUNC_CATEGORIES.indexOf('Cheminformatics') > FUNC_CATEGORIES.indexOf('Visualize'), true);
   });
 
   test('chem/bio *sources* (no data input) stay out of the domain sections', async () => {
-    // A pure source/query/generator (produces a table from scalars, no dataframe/
-    // column input) is NOT an operation — it falls back to its task category, so
-    // the domain sections hold only functions that do something to your data.
     const chemSource = getRegisteredFuncs().find((f) => {
       if (f.packageName !== 'Chem' && f.packageName !== 'Chembl' && f.packageName !== 'ChemblApi') return false;
       try {
@@ -203,9 +172,6 @@ category('Flow: function browser', () => {
       browser.render();
       const chem = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
       expect(!!chem, true, 'Cheminformatics section header present');
-      // Order (Files/Queries/Workflows live in the top tabs now): domain
-      // sections → task categories (Data Sources…) → Viewers → built-ins
-      // (Inputs…) → Other → Debug last.
       const viewers = browser.root.querySelector('[data-testid="ff-browser-viewers"]');
       const inputs = browser.root.querySelector('[data-testid="ff-browser-section-inputs"]');
       const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-data-sources"]');
@@ -220,7 +186,6 @@ category('Flow: function browser', () => {
       expect(!!debug, true, 'Debug section present');
       if (other) expect(before(inputs, other), true, 'Other comes after the built-ins');
       if (other) expect(before(other, debug), true, 'Debug comes last, after Other');
-      // The accordion holds no Files/Queries/Workflows panes anymore.
       expect(browser.accordion!.panes.some((p) => ['Files', 'Queries', 'Workflows'].includes(p.name)),
         false, 'collection panes moved out of the accordion');
     } finally {
@@ -229,7 +194,6 @@ category('Flow: function browser', () => {
   });
 
   test('search matches the raw func name even when the toolbox shows friendlyName', async () => {
-    // The bug: "OpenFile" returned nothing because the list shows "Open File".
     const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
     if (!info) {
       expect(true, true, 'OpenFile not on this stand — skipped');
@@ -243,8 +207,6 @@ category('Flow: function browser', () => {
   });
 
   test('nameMatchesQuery is case- and whitespace-insensitive', async () => {
-    // Built-in items (e.g. "Table Output") are matched by display name, so the
-    // matcher must accept both spaced and unspaced queries.
     expect(nameMatchesQuery('Table Output', 'tableoutput'), true, 'unspaced query');
     expect(nameMatchesQuery('Table Output', 'table output'), true, 'spaced query');
     expect(nameMatchesQuery('Open File', 'openfile'), true, 'unspaced');
@@ -253,15 +215,12 @@ category('Flow: function browser', () => {
   });
 
   test('queries are grouped by connection and kept out of the categories', async () => {
-    // The Queries pane loads the authoritative server list (dapi), not the
-    // registry's DG.Func.find scan — which misses queries.
+    // the dapi list is authoritative — the DG.Func.find registry scan misses queries
     const queries = await loadQueryFuncs();
     if (queries.length === 0) {
       expect(true, true, 'no queries on this stand — skipped');
       return;
     }
-    // Every loaded query reports a non-empty connection name (the grouping
-    // key) — connection-less queries are skipped at load time.
     for (const q of queries.slice(0, 20))
       expect(queryConnectionName(q).length > 0, true, `query ${q.func.name} has a connection name`);
 
@@ -272,14 +231,11 @@ category('Flow: function browser', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
-      // The tab renders async off the (already-resolved) catalog promise —
-      // yield until the per-connection accordion materializes.
+      // the tab renders async off the (already-resolved) catalog promise
       await loadQueryFuncs();
       await new Promise((r) => setTimeout(r, 50));
 
-      // Queries live in the top Queries TAB now — activate it so its content
-      // attaches, then expand every per-connection sub-pane so items
-      // materialize in the DOM.
+      // activate the tab and expand the panes so lazy content materializes in the DOM
       browser.showTab('Queries');
       const queriesPane = browser.root.querySelector('[data-testid="ff-browser-queries"]') as HTMLElement | null;
       expect(!!queriesPane, true, 'Queries tab content present');
@@ -288,7 +244,6 @@ category('Flow: function browser', () => {
       expect((connSections[0] as HTMLElement).dataset.queryConn != null, true, 'sub-section carries data-query-conn');
       for (const p of browser.queriesAccordion!.panes) p.expanded = true;
 
-      // A known query lives INSIDE the Queries tab and NOT in any category section.
       const sample = queries[0];
       const items = Array.from(browser.root.querySelectorAll(`[data-func="${sample.func.name}"]`)) as HTMLElement[];
       expect(items.length > 0, true, `query ${sample.func.name} appears in the toolbox`);
@@ -309,24 +264,19 @@ category('Flow: function browser', () => {
     const saved = localStorage.getItem(lsKey);
     try {
       browser.render();
-      // The sections ARE a DG.Accordion — no custom collapsible divs left.
       expect(!!browser.root.querySelector('.d4-accordion'), true, 'platform accordion present');
       expect(browser.root.querySelector('.funcflow-section-header') == null, true, 'no custom section headers');
-      // Guide/test hooks survive on the pane headers.
       const inputsHeader = browser.root.querySelector(
         '[data-testid="ff-browser-section-inputs"]') as HTMLElement | null;
       expect(!!inputsHeader, true, 'Inputs pane header carries its test id');
       expect(inputsHeader!.dataset.section, 'Inputs', 'header keeps data-section for the guide');
 
-      // Clicking a header persists the pane state under the accordion key
-      // (the platform writes localStorage["Accordion:<key>"] itself)...
       expect(browser.accordion!.getPane('Inputs').expanded, false, 'Inputs starts collapsed');
       inputsHeader!.click();
       expect(browser.accordion!.getPane('Inputs').expanded, true, 'click expands the pane');
       const stored = JSON.parse(localStorage.getItem(lsKey) ?? '{}') as Record<string, boolean>;
       expect(stored['Inputs'], true, 'expanded state persisted by the platform');
 
-      // ...and a fresh render restores it.
       browser.render();
       expect(browser.accordion!.getPane('Inputs').expanded, true, 'state restored on re-render');
     } finally {
@@ -337,13 +287,11 @@ category('Flow: function browser', () => {
   });
 
   test('orderDomainSection floats the flagship package + most-used ops to the top', async () => {
-    // Only name / func.name / packageName drive the sort.
+    // only name / func.name / packageName drive the sort
     const mk = (name: string, pkg: string): FuncInfo => ({
       func: {name} as DG.Func, name, role: null, tags: [], packageName: pkg,
       nodeTypeName: `DG Functions/Cheminformatics/${name}`,
     });
-    // Deliberately shuffled: a non-Chem pkg, a plain Chem func, and Chem's
-    // descriptors/properties which must lead.
     const items = [
       mk('Chemspace Search', 'Chemspace'),
       mk('Add Chem Risks', 'Chem'),
@@ -353,19 +301,16 @@ category('Flow: function browser', () => {
       mk('Get Descriptors', 'Chem'),
     ];
     const ordered = orderDomainSection(items, 'Cheminformatics').map((i) => i.packageName);
-    // Every Chem item precedes every non-Chem item.
     const lastChem = ordered.lastIndexOf('Chem');
     const firstOther = ordered.findIndex((p) => p !== 'Chem');
     expect(lastChem < firstOther, true, 'all Chem funcs come before other cheminformatics pkgs');
 
-    // Within Chem, descriptors/properties/fingerprints lead the plain "Add Chem Risks".
     const names = orderDomainSection(items, 'Cheminformatics').map((i) => i.name);
     const idx = (n: string): number => names.indexOf(n);
     expect(idx('Get Descriptors') < idx('Add Chem Risks'), true, 'descriptors before a generic risks func');
     expect(idx('addChemPropertiesColumns') < idx('Add Chem Risks'), true, 'properties before generic');
     expect(idx('getMorganFingerprints') < idx('Add Chem Risks'), true, 'fingerprints before generic');
 
-    // Bio flagship routing works too.
     const bioItems = [mk('Helm Convert', 'Helm'), mk('Sequence Descriptors', 'Bio')];
     const bioOrdered = orderDomainSection(bioItems, 'Bioinformatics').map((i) => i.packageName);
     expect(bioOrdered[0], 'Bio', 'Bio leads the Bioinformatics section');

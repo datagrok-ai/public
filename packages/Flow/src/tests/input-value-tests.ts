@@ -188,8 +188,6 @@ category('Flow: input values', () => {
         e.container.querySelector('[data-testid="ff-node-value-input"] .ui-input-root') != null, 4000);
       expect(rendered, true, 'the node body hosts a DG input');
 
-      // A store edit made elsewhere (the context panel path goes through
-      // notifyNodeParamsChanged) must show up in the on-node editor.
       int.properties['defaultValue'] = 123;
       e.flow.notifyNodeParamsChanged(int.id);
       const ctl = int.controls['value'] as InputValueControl;
@@ -220,11 +218,9 @@ category('Flow: input values', () => {
       expect(before, 0, 'rendering the editor is not an edit');
 
       const ctl = int.controls['value'] as InputValueControl;
-      // A programmatic sync (same value) must not report either.
       ctl.sync();
       expect(edits.filter((x) => x.kind === 'params-changed').length, 0, 'sync is not an edit');
 
-      // A real user edit through the DG input reports once.
       const editor = container.querySelector('[data-testid="ff-node-value-input"] input') as HTMLInputElement;
       editor.value = '55';
       editor.dispatchEvent(new Event('input', {bubbles: true}));

@@ -30,29 +30,74 @@ import {applyCodeMirror} from '../utils/code-mirror-check';
 
 const FSE_ICON_SELECTOR = 'i.fa-magic[aria-label="Open Signature Editor"]';
 
+const PARAM_HELP_URL = 'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation';
+
+class ParamEditorInfo {
+  constructor(public paramName: string, public result: HTMLElement) {}
+}
+
+class ParamEditorHandler extends DG.ObjectHandler<ParamEditorInfo> {
+  get type(): string {
+    return 'dt-param-editor';
+  }
+
+  get helpUrl(): string {
+    return PARAM_HELP_URL;
+  }
+
+  isApplicable(x: any): boolean {
+    return x instanceof ParamEditorInfo;
+  }
+
+  renderProperties(x: ParamEditorInfo): HTMLElement {
+    return ui.divV([
+      ui.h1(`Param: ${x.paramName}`),
+      ui.block75([x.result]),
+    ]);
+  }
+}
+
+export function registerParamEditorHandler(): void {
+  DG.ObjectHandler.register(new ParamEditorHandler());
+}
+
 export function functionSignatureEditor(view: DG.View) {
   if (view.root?.parentElement?.querySelector(FSE_ICON_SELECTOR) != null)
     return;
-  view.type === DATA_QUERY_VIEW ? addFseRibbonQuery(view) : addFseRibbonScript(view);
+  view.type === DATA_QUERY_VIEW ?
+    addFseRibbonQuery(view as DG.DataQueryView) :
+    addFseRibbonScript(view as DG.ScriptView);
 }
 
 const getCode = (codeMirror: any) => codeMirror.getDoc().getValue();
 
-function addFseRibbonQuery(v: DG.View) {
+function addFseRibbonQuery(v: DG.DataQueryView) {
   applyCodeMirror(v, (codeMirror) => {
     const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
-    (v.ribbonMenu.root.previousSibling as HTMLElement)?.append(ui.div(iconFse, 'd4-ribbon-item'));
+
+    const addIcon = () => {
+      const ribbonPanelsRoot = v.ribbonMenu.root.previousSibling as HTMLElement;
+      if (ribbonPanelsRoot != null && ribbonPanelsRoot.querySelector(FSE_ICON_SELECTOR) == null)
+        ribbonPanelsRoot.append(ui.div(iconFse, 'd4-ribbon-item'));
+    };
+    addIcon();
+    v.subs.push(v.tabs.onTabChanged.subscribe(addIcon));
   });
 }
 
-function addFseRibbonScript(v: DG.View) {
+function addFseRibbonScript(v: DG.ScriptView) {
   applyCodeMirror(v, (codeMirror) => {
-    const panels = v.getRibbonPanels();
     const iconFse = ui.iconFA('magic', () => openFse(v, getCode(codeMirror)), 'Open Signature Editor');
-    if (!panels.some((panel) => panel.some((icon) => {
-      return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
-    })))
-      v.setRibbonPanels([...panels, [iconFse]]);
+
+    const addIcon = () => {
+      const panels = v.getRibbonPanels();
+      if (!panels.some((panel) => panel.some((icon) => {
+        return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
+      })))
+        v.setRibbonPanels([...panels, [iconFse]]);
+    };
+    addIcon();
+    v.subs.push(v.tabs.onTabChanged.subscribe(addIcon));
   });
 }
 
@@ -270,22 +315,7 @@ async function openFse(v: DG.View, functionCode: string) {
     result.style.display = 'flex';
     result.style.flexDirection = 'column';
 
-    const helpIcon = ui.iconFA('question', () => {
-      window.open(
-        'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation',
-        '_blank',
-      );
-    }, 'Function parameters help');
-    helpIcon.classList.add('dt-help-icon');
-
-    grok.shell.o = ui.divV([
-      ui.divH(
-        [
-          ui.h1(`Param: ${paramName}`),
-          helpIcon,
-        ],
-      ), ui.block75([result]),
-    ]);
+    grok.shell.o = new ParamEditorInfo(paramName, result);
   };
 
   const updateValue = (param: DG.Property, propName: string, v: any) => {
@@ -476,13 +506,13 @@ async function openFse(v: DG.View, functionCode: string) {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
       if (hasValue(propValue)) {
         const propName = functionPropsCode[propField.name];
-        result += `${headerSign[language]}${functionPropsCode[propName]}: ${propValue}\n`;
+        result += `${headerSign[language]}${propName}: ${propValue}\n`;
       }
     });
     functionParamsCopy.map((param) => {
       result += generateParamLine(param, param.options.direction);
     });
-    const regex = new RegExp(`^(${headerSign[language]}.*\n)*`, 'g');
+    const regex = new RegExp(`^([ \\t]*${headerSign[language]}.*\n)*`, 'g');
     const match = (v.type === DATA_QUERY_VIEW) ? (inputScriptCopy as DG.DataQuery).query.match(regex) :
       (inputScriptCopy as DG.Script).script.match(regex);
     if (match) {

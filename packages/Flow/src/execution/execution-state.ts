@@ -1,7 +1,4 @@
-/** Execution state tracking for instrumented Flow runs.
- *
- * Node IDs are strings (Rete uses UUID-style strings, not LiteGraph's integer
- * IDs). The instrumented script emits events keyed by these strings. */
+/** Execution state tracking for instrumented Flow runs. */
 
 export enum NodeExecStatus {
   idle = 'idle',
@@ -60,10 +57,7 @@ export class ExecutionState {
   setNodeStatus(nodeId: string, status: NodeExecStatus, data?: Partial<NodeExecState>): void {
     const existing = this.nodeStates.get(nodeId) ?? {status: NodeExecStatus.idle};
     const next: NodeExecState = {...existing, status, ...data};
-    // A new attempt supersedes the previous verdict. Merging kept the failed
-    // run's `error`/`stack` alive, so a node that went on to succeed still
-    // showed the old red block under a green "Completed" in the panel.
-    // `stale` keeps it — that IS the last thing that happened to the node.
+    // A new attempt supersedes the previous error/stack; `stale` keeps them.
     if (status !== NodeExecStatus.errored && status !== NodeExecStatus.stale && data?.error === undefined) {
       delete next.error;
       delete next.stack;
@@ -75,8 +69,6 @@ export class ExecutionState {
     return this.nodeStates.get(nodeId);
   }
 
-  /** Mark the given completed/errored nodes stale (a graph edit invalidated
-   *  them); nodes outside the set — and idle/running ones — are untouched. */
   markStale(ids: Iterable<string>): void {
     for (const id of ids) {
       const state = this.nodeStates.get(id);
@@ -85,7 +77,6 @@ export class ExecutionState {
     }
   }
 
-  /** Drop a removed node's state entirely (the node no longer exists). */
   forgetNode(id: string): void {
     this.nodeStates.delete(id);
   }

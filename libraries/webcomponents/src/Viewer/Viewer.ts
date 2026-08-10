@@ -2,82 +2,58 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject, from, merge, of, combineLatest, Observable, identity, EMPTY} from 'rxjs';
-import {
-  distinctUntilChanged, filter, switchMap, takeUntil, withLatestFrom, map,
-} from 'rxjs/operators';
+import {Subject, from, merge, of, combineLatest, Observable, identity} from 'rxjs';
+import {distinctUntilChanged, filter, switchMap, takeUntil, map} from 'rxjs/operators';
+import {ViewerHost} from './ViewerHost';
 
 export class Viewer<T = any> extends HTMLElement {
-  private dfSetted$ = new BehaviorSubject<DG.DataFrame | undefined>(undefined);
-  private typeSetted$ = new BehaviorSubject<string | undefined>(undefined);
-  private _options: Record<string, string | boolean> = {};
-
-  private viewer$ = new BehaviorSubject<DG.Viewer<T> | undefined>(undefined);
+  private host = new ViewerHost<DG.Viewer<T>>(
+    (type, df) => from((df as DG.DataFrame).plot.fromType(type) as Promise<DG.Viewer<T>>));
 
   private destroyed$ = new Subject<boolean>();
 
   constructor() {
     super();
 
-    const latestViewer$ = this.viewer$.pipe(distinctUntilChanged());
+    const latestViewer$ = this.host.viewer$.pipe(distinctUntilChanged());
 
     const latestType$ = merge(
       latestViewer$.pipe(map((viewer) => viewer?.type)),
-      this.typeSetted$,
+      this.host.typeSetted$,
     ).pipe(distinctUntilChanged());
 
     const latestDf$ = merge(
       latestViewer$.pipe(map((viewer) => viewer?.dataFrame)),
       this.getViewerEventObservable('d4-data-frame-changed').pipe(map((ev) => ev.data.args.newValue as DG.DataFrame)),
-      this.dfSetted$,
+      this.host.dfSetted$,
     ).pipe(distinctUntilChanged());
 
-    const latestParams$ = combineLatest([
-      latestType$,
-      latestDf$,
-    ] as const);
-
-    latestParams$.pipe(
+    combineLatest([latestType$, latestDf$]).pipe(
       takeUntil(this.destroyed$),
     ).subscribe(([type, df]) => {
-      if (type !== this.typeSetted$.value)
+      if (type !== this.host.typeSetted$.value)
         this.dispatchEvent(new CustomEvent('viewer-type-changed', {detail: type}));
-      if (df !== this.dfSetted$.value)
+      if (df !== this.host.dfSetted$.value)
         this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: df}));
     });
 
-    const settedParams$ = combineLatest([
-      this.typeSetted$,
-      this.dfSetted$,
-    ] as const);
-
-    settedParams$.pipe(
-      switchMap(([type, df]) => {
-        if (type && df) {
-          if (this.viewer?.type !== type || !this.viewer)
-            return from(this.createViewer(type, df));
-          else
-            return EMPTY;
-        } else
-          return of(undefined);
-      }),
+    this.host.viewer$.pipe(
       takeUntil(this.destroyed$),
     ).subscribe((viewer) => {
-      this.changeAttachedViewer(viewer as DG.Viewer<T>);
+      ui.empty(this);
+      if (viewer)
+        this.appendChild(viewer.root);
     });
 
-    this.dfSetted$.pipe(
-      withLatestFrom(this.viewer$),
+    // frame application is asynchronous (batched per tick), so an applied in-place swap
+    // is announced — consumers doing imperative post-swap work listen to this event
+    this.host.frameApplied$.pipe(
       takeUntil(this.destroyed$),
-    ).subscribe(([df, viewer]) => {
-      if (viewer && df && viewer.dataFrame !== df) {
-        viewer.dataFrame = df;
-        viewer.setOptions(this._options);
-      }
+    ).subscribe((viewer) => {
+      this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: viewer.dataFrame}));
     });
 
-    this.viewer$.pipe(
-      distinctUntilChanged(),
+    latestViewer$.pipe(
       takeUntil(this.destroyed$),
     ).subscribe((viewer) => {
       this.dispatchEvent(new CustomEvent('viewer-changed', {detail: viewer}));
@@ -85,6 +61,7 @@ export class Viewer<T = any> extends HTMLElement {
   }
 
   public destroy() {
+    this.host.destroy();
     this.destroyed$.next(true);
     ui.empty(this);
   }
@@ -96,50 +73,36 @@ export class Viewer<T = any> extends HTMLElement {
   }
 
   get viewer() {
-    return this.viewer$.value;
+    return this.host.viewer$.value;
   }
 
   get dataFrame() {
-    return this.viewer$.value?.dataFrame ?? this.dfSetted$.value;
+    return this.host.viewer$.value?.dataFrame ?? this.host.dfSetted$.value;
   }
 
   set dataFrame(df: DG.DataFrame | undefined) {
-    this.dfSetted$.next(df);
+    this.host.dfSetted$.next(df);
   }
 
   get type() {
-    return this.viewer$.value?.type ?? this.typeSetted$.value;
+    return this.host.viewer$.value?.type ?? this.host.typeSetted$.value;
   }
 
   set type(type: string | undefined) {
-    this.typeSetted$.next(type);
+    this.host.typeSetted$.next(type);
   }
 
   set options(options: Record<string, string | boolean>) {
-    this._options = options;
-    this.viewer?.setOptions(options);
+    this.host.optionsSetted$.next(options);
   }
 
   public getViewerEventObservable<P = any>(eventType?: string): Observable<P> {
-    return this.viewer$.pipe(
+    return this.host.viewer$.pipe(
       switchMap((viewer) => viewer ? viewer.onEvent().pipe(
         eventType ? filter((ev) => ev.type === eventType) : identity,
       ) : of()),
       filter((x) => x),
     );
-  }
-
-  private async createViewer(type: string, df: DG.DataFrame) {
-    const viewer = await df.plot.fromType(type) as DG.Viewer<T>;
-    viewer.setOptions(this._options);
-    return viewer;
-  }
-
-  private changeAttachedViewer(viewer?: DG.Viewer<T>) {
-    ui.empty(this);
-    this.viewer$.next(viewer);
-    if (viewer)
-      this.appendChild(viewer.root);
   }
 }
 

@@ -363,7 +363,9 @@ export class SubstructureFilter extends DG.Filter {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
       if (this.syncEvent === true)
         this.syncEvent = false;
-      else
+      // when 'Filter as you draw' is off, sketching in the dialog defers filtering until OK
+      // (the sketcher re-fires onChanged after the dialog closes)
+      else if (!this.sketcher.sketcherDialogOpened || this.sketcher.filterOnChange)
         await this._onSketchChanged();
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onAlignedChanged.subscribe(async (_: any) => {

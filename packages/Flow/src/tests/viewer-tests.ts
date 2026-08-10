@@ -1,7 +1,5 @@
 /** Manual viewer nodes: a `Viewers/<type>` node creates a DG viewer from a
- *  wired table via `table.plot.fromType(type, {})` + `setOptions(look)`. Covers
- *  node construction, the curated option specs, and the emitted code (clean +
- *  instrumented). */
+ *  wired table via `table.plot.fromType(type, {})` + `setOptions(look)`. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import {registerBuiltinNodes, createNode, VIEWER_NODE_TYPES} from '../rete/node-factory';
 import {emitScript} from '../compiler/script-emitter';
@@ -31,7 +29,6 @@ category('Flow: viewers', () => {
     const specs = node.properties['viewerOptionSpecs'] as Array<{key: string}>;
     expect(specs.some((s) => s.key === 'xColumnName'), true, 'exposes X');
     expect(node.requiredInputs.includes('table'), true, 'table is required');
-    // Column options are connectable input sockets, not panel-only.
     for (const key of ['xColumnName', 'yColumnName', 'colorColumnName', 'sizeColumnName'])
       expect(key in node.inputs, true, `${key} is a connectable input`);
   });

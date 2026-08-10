@@ -29,8 +29,7 @@ export interface TableNodeInfo {
   friendlyPath?: string;
   // nqName of the producing function; used to merge same-function tables in index selection
   nqName?: string;
-  // from the {comparison: {...}} output annotation (or its legacy
-  // {comparisonIndex: ...} / {comparisonSplit: ...} aliases)
+  // from the {comparison: {...}} output annotation
   defaultIndexColumn?: string;
   defaultSplitColumn?: string;
   defaultAxisMode?: AxisMode;
@@ -85,9 +84,6 @@ export interface TargetBase {
   confidence: MatchConfidence;
   unitsWarning: boolean;
   coverage: number;
-  // coverage under default enablement — a toggle-independent sort key, so rows
-  // don't jump while the user (un)checks candidates
-  defaultCoverage: number;
   total: number;
 }
 
@@ -117,6 +113,12 @@ export const candidateId = (b: ColumnBinding) => `${b.entryId}|${b.tablePath}|${
 
 // targetKey -> candidateId -> enabled
 export type CandidateOverrides = Record<string, Record<string, boolean>>;
+
+// user-defined name pair treated as the same quantity during matching
+export interface NameMapping {
+  from: string;
+  to: string;
+}
 
 export type ComparisonTarget = ScalarTarget | ColumnTarget;
 

@@ -106,7 +106,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
-import {isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {getMpoScoreColumnName, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -2923,7 +2923,7 @@ export class PackageFunctions {
   static mpoCalculate(
     df: DG.DataFrame,
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
-    @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column. The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
+    @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
   ): DG.DataFrame | null {
@@ -3340,7 +3340,7 @@ export class PackageFunctions {
       const scoreResult = mpo(
         dataFrame,
         columns,
-        selected.name,
+        getMpoScoreColumnName(selected.name),
         aggregationInput.value as WeightedAggregation,
       );
 
@@ -3356,7 +3356,7 @@ export class PackageFunctions {
           const result = mpo(
             dataFrame,
             columns,
-            selected.name,
+            getMpoScoreColumnName(selected.name),
             aggregationInput.value as WeightedAggregation,
           );
           if (!dataFrame.col(result.scoreColumn.name))

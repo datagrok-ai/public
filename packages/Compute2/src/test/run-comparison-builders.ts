@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {
   ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN, TimeUnit,
 } from '../components/RunComparison/types';
@@ -44,7 +44,6 @@ category('RunComparison: comparison dataframes', () => {
       confidence: 'exact',
       unitsWarning: false,
       coverage: 2,
-      defaultCoverage: 2,
       total: 2,
       bindings: [
         {entryId: 'a', path: 'x', name: 'x', value: 10},
@@ -90,6 +89,40 @@ category('RunComparison: comparison dataframes', () => {
     const single: ColumnTarget = {...(target as ColumnTarget), bindings: [target.bindings[0]]};
     expect(buildColumnComparison(single, entries), null);
     expect(buildMultiColumnComparison([single], entries), null);
+  });
+
+  test('scalar target named Run does not collide with the run column', async () => {
+    const entries = [scalarsEntry('a', 'run one', [{name: 'Run', value: 10}]),
+      scalarsEntry('b', 'run two', [{name: 'Run', value: 20}])];
+    const [target] = matchScalarTargets(entries.map((e) => e.nodes)) as ScalarTarget[];
+    const {chartDf, valueColumnName} = buildScalarComparison(target, entries);
+    expect(chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
+    expectArray(chartDf.getCol(RUN_COLUMN).toList(), ['run one', 'run two']);
+    // the column the chart reads its values from must be the numeric one
+    expect(valueColumnName === RUN_COLUMN, false);
+    expect(chartDf.getCol(valueColumnName).type, DG.COLUMN_TYPE.FLOAT);
+    expectArray(chartDf.getCol(valueColumnName).toList(), [10, 20]);
+  });
+
+  test('column target named Run does not collide with the run column', async () => {
+    const makeDf = (name: string) => {
+      const df = DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.INT, 'time', [1, 2]),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Run', [10, 20]),
+      ]);
+      df.name = name;
+      return df;
+    };
+    const entries = [entryFromDataFrame(makeDf('r1')), entryFromDataFrame(makeDf('r2'))];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'time']])]));
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const result = buildColumnComparison(target, entries)!;
+    expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
+    expectArray(result.chartDf.getCol(RUN_COLUMN).toList(), ['r1', 'r1', 'r2', 'r2']);
+    // the column the chart reads its values from must be the numeric one
+    expect(result.valueColumnName === RUN_COLUMN, false);
+    expect(result.chartDf.getCol(result.valueColumnName).type, DG.COLUMN_TYPE.FLOAT);
+    expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [10, 20, 10, 20]);
   });
 });
 
@@ -206,6 +239,23 @@ category('RunComparison: multi and split dataframes', () => {
     expect(result.chartDf.getCol(RUN_COLUMN).toList().every((v: string) => v === 'r1' || v === 'r2'), true);
   });
 
+  test('unsplit runs pad the split column with empty strings', async () => {
+    const e1 = entryFromDataFrame(makeDf('r1', [
+      intCol('time', [1, 1]), floatCol('v', [10, 20]), strCol('batch', ['A', 'B']),
+    ]));
+    const e2 = entryFromDataFrame(makeDf('r2', [
+      intCol('time', [1, 2]), floatCol('v', [30, 40]),
+    ]));
+    const entries = [e1, e2];
+    const splits = new Map([[e1.id, new Map([[e1.nodes.tables[0].path, 'batch']])]]);
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'), splits);
+    expect((target as ColumnTarget).coverage, 2);
+    const result = buildColumnComparison(target as ColumnTarget, entries)!;
+    expect(result.splitColumnName, 'batch');
+    expect(result.chartDf.getCol('batch').toList().join('|'), 'A|B||');
+    expect(result.chartDf.getCol('v').toList().join(','), '10,20,30,40');
+  });
+
   test('index kind: datetime, float, and mixed degrading to key', async () => {
     const dtCol = () => DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'ts', [dayjs('2026-01-01'), dayjs('2026-01-02')]);
     const dtEntries = [
@@ -267,7 +317,7 @@ category('RunComparison: multi and split dataframes', () => {
       ({entryId, tablePath, tableName: tablePath, columnName, indexColumnName: 'time'});
     const targetFor = (key: string, bindings: ReturnType<typeof bindingFor>[]): ColumnTarget => ({
       kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
-      coverage: 2, defaultCoverage: 2, total: 2, candidates: [], bindings,
+      coverage: 2, total: 2, candidates: [], bindings,
     });
     const anchor = targetFor('a', [bindingFor(r1.id, r1Table, 'a'), bindingFor('r2', 'p1', 'a')]);
     const co = targetFor('b', [bindingFor(r1.id, r1Table, 'b'), bindingFor('r2', 'p2', 'b')]);

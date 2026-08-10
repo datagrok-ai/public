@@ -13,6 +13,7 @@ import {
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  getMpoScoreColumnName,
   isMpoNumericColumn,
   migrateProfile,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
@@ -104,7 +105,7 @@ export async function computeMpo(
     mappedProperties[columnName] = prop;
   }
 
-  const profileName = profile.name || 'MPO';
+  const profileName = getMpoScoreColumnName(profile.name);
   if (!processed) {
     const existingCol = df.col(profileName);
     if (existingCol)

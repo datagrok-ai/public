@@ -1,5 +1,10 @@
 # compute-utils changelog
 
+## 1.46.9 (2026-08-07)
+
+* Exported `CONFIG_PATH` (workflow config FuncCall option key) from funccall-utils
+* Added `getRunTitle` helper: user-given run title, or function name with start time
+
 ## 1.46.8 (2026-07-13)
 
 * Viewers: Re-set the options on them when remounted. Fixes the bug with incorrectly configured viewers.

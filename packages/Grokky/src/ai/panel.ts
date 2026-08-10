@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard} from '../utils';
-import {buildWorkspaceContext} from '../claude/exec-blocks';
+import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
@@ -66,7 +66,17 @@ export interface UIMessage {
   text: string;
   title?: string;
   messageOptions?: UIMessageOptions;
+  execCode?: string[];
 }
+
+type ExecInfo = {codes: string[], ranThisSession: boolean, view?: DG.ViewBase};
+const ExecState = {idle: 'idle', ran: 'ran', error: 'error'} as const;
+type ExecState = typeof ExecState[keyof typeof ExecState];
+const EXEC_TOOLTIPS: Record<ExecState, string> = {
+  idle: 'Show code — not run this session',
+  ran: 'Show code — already executed',
+  error: 'Show code — last re-run failed',
+};
 
 export type PanelMessageRet = {
   confirmPromise: Promise<boolean>,
@@ -95,7 +105,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
-  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void>;
+  finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void>;
   appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
   clearStreaming(): void;
@@ -408,7 +418,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._lastUserPromptContainer.insertBefore(this.createHandledNativelyIcon(), this._lastUserPromptContainer.firstChild);
   }
 
-  protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void): void {
+  protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void, exec?: ExecInfo): void {
     const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
     const thumbsUp = ui.iconFA('thumbs-up', () => {
       grok.shell.info('Thanks for your feedback!');
@@ -428,16 +438,53 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
       onFeedback?.(helpful);
     }
-    feedbackDiv.appendChild(copyMsg);
-    feedbackDiv.appendChild(thumbsUp);
-    feedbackDiv.appendChild(thumbsDown);
+    const execIcons = exec?.codes.length ? this.buildExecIcons(markDown, exec) : [];
+    feedbackDiv.append(copyMsg, thumbsUp, thumbsDown, ...execIcons);
     dartLike(feedbackDiv.style).set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
     markDown.appendChild(feedbackDiv);
   }
 
+  private buildExecIcons(markDown: HTMLElement, {codes, ranThisSession, view = this.view}: ExecInfo): HTMLElement[] {
+    const codeBlock = ui.divText(codes.map((c) => c.trim()).join('\n\n'), 'grokky-exec-code grokky-hidden');
+    markDown.appendChild(codeBlock);
+
+    let state: ExecState = ranThisSession ? ExecState.ran : ExecState.idle;
+    const setState = (next: ExecState) => {
+      state = next;
+      codeToggle.classList.remove('grokky-exec-ran', 'grokky-exec-error');
+      if (next !== ExecState.idle)
+        codeToggle.classList.add(`grokky-exec-${next}`);
+    };
+    const codeToggle = ui.iconFA('code', () => codeBlock.classList.toggle('grokky-hidden'), null);
+    codeToggle.classList.add('grokky-exec-icon');
+    ui.tooltip.bind(codeToggle, () => EXEC_TOOLTIPS[state]);
+    setState(state);
+
+    let rerunning = false;
+    const rerunIcon = ui.iconFA('redo', async () => {
+      if (rerunning) return;
+      rerunning = true;
+      rerunIcon.classList.add('fa-spin');
+      let rerunFailed = false;
+      for (const code of codes) {
+        const {error} = await executeSingleBlock(code, grok.shell.v ?? view, 0);
+        if (error) {
+          rerunFailed = true;
+          break;
+        }
+      }
+      setState(rerunFailed ? ExecState.error : ExecState.ran);
+      rerunIcon.classList.remove('fa-spin');
+      rerunning = false;
+    }, 'Re-run this code');
+    for (const el of [codeToggle, rerunIcon])
+      dartLike(el.style).set('padding', '2px').set('borderRadius', '6px');
+    return [ui.div([], 'grokky-exec-sep'), codeToggle, rerunIcon];
+  }
+
   protected appendMessage(
     aiMessage: T, uiMessage: {
-      title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions
+      title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions, execCode?: string[]
     }, loader?: HTMLElement
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
@@ -452,7 +499,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     if (uiMessage.onlyAddToMessages)
       return;
     // from this point we know that message is also in the ui.
-    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions});
+    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions, execCode: uiMessage.execCode});
     if (uiMessage.fromUser) {
       const promptText = ui.divText(uiMessage.content, 'd4-ai-user-prompt-divtext');
       const userDiv = ui.div(
@@ -486,7 +533,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
             this.contextId,
             helpful
           );
-        });
+        }, uiMessage.execCode?.length ? {codes: uiMessage.execCode, ranThisSession: false} : undefined);
       }
 
       if (uiMessage?.messageOptions?.confirm && !uiMessage.fromUser) {
@@ -728,15 +775,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }
   }
 
-  async finalizeStreaming(displayContent: string, _execContent: string, _view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void> {
     this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-      this._uiMessages.push({fromUser: false, text: displayContent, messageOptions: {finalResult: displayContent}});
+      this._uiMessages.push({fromUser: false, text: displayContent, execCode: execCodes.length ? execCodes : undefined, messageOptions: {finalResult: displayContent}});
       return;
     }
-    this.renderFinalContent(displayContent);
+    this.renderFinalContent(displayContent, execCodes, view);
   }
 
   public appendStreamedElement(el: HTMLElement): void {
@@ -750,21 +797,22 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.appendMessage('' as any, {title: '', fromUser: false, uiOnly: true, content, messageOptions: {system: true}});
   }
 
-  protected renderFinalContent(content: string): void {
+  protected renderFinalContent(content: string, execCodes: string[], view: DG.ViewBase): void {
     this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
-    this.appendFeedbackButtons(markDown);
+    this.appendFeedbackButtons(markDown, undefined,
+      execCodes.length ? {codes: execCodes, ranThisSession: true, view} : undefined);
 
     if (this._streamingMarkdownEl) {
       this._streamingMarkdownEl.replaceWith(markDown);
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-    } else if (content) {
+    } else if (content || execCodes.length) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
     }
 
-    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+    this._uiMessages.push({fromUser: false, text: content, execCode: execCodes.length ? execCodes : undefined, messageOptions: {finalResult: content}});
   }
 
   clearStreaming(): void {
@@ -1093,7 +1141,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._promptHistoryIndex = null;
       this._lastUserPromptContainer = null;
       conv.uiMessages.forEach((msg) => {
-        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
+        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions, execCode: msg.execCode}); // no loader
       });
       // The runtime never saw this conversation (page reloads drop its session; a live session
       // holds a DIFFERENT conversation). Start a fresh session and hand the transcript to the

@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, lockProfileRanges,
+  migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
@@ -136,6 +137,7 @@ class MpoProfileManagerImpl {
 
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {
     try {
+      lockProfileRanges(profile);
       await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(profile));
       await this.load();
       this.fireChanged();

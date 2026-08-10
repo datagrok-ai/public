@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-import {FitSeries, FitFunctionType} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
-import {inspectCurve} from './fit-renderer';
+import {FitSeries, FitFunctionType} from '@datagrok-libraries/statistics/src/fit/fit-engine';
+import {inspectCurve} from './fit-interaction';
 import * as grok from 'datagrok-api/grok';
 
 export function randomizeTableId() {
@@ -24,7 +24,7 @@ export function inspectSeries(series: FitSeries, fitFunctionName: FitFunctionTyp
       logX: true,
       title: seriesName,
     },
-    series: [{...series, fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: seriesName}],
+    series: [{...series, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: seriesName}],
   }), false);
   const df = DG.DataFrame.fromColumns([curveCol]);
   df.name = seriesName;

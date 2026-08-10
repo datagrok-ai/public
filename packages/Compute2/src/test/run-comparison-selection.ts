@@ -83,7 +83,7 @@ category('RunComparison: filters and compatibility', () => {
     ({entryId, tablePath, tableName: tablePath, columnName: 'v', indexColumnName: 'time'});
   const columnTarget = (key: string, bindings: ColumnBinding[]): ColumnTarget => ({
     kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
-    coverage: bindings.length, defaultCoverage: bindings.length, total: 3,
+    coverage: bindings.length, total: 3,
     candidates: [], bindings,
   });
 
@@ -339,7 +339,7 @@ category('RunComparison: equal values', () => {
   });
   const columnTarget = (bindings: ColumnBinding[]): ColumnTarget => ({
     kind: 'column', key: 'k', displayName: 'height', confidence: 'exact', unitsWarning: false,
-    coverage: bindings.length, defaultCoverage: bindings.length, total: bindings.length,
+    coverage: bindings.length, total: bindings.length,
     candidates: [], bindings,
   });
   const getter = (data: Record<string, Record<string, unknown[]>>) =>
@@ -398,6 +398,25 @@ category('RunComparison: equal values', () => {
     expect(isTargetEqualAcrossRuns(target, getter({a: {height: [1], time: [0]}})), false);
   });
 
+  test('datetime indexes compare exactly, not relatively', async () => {
+    const target = columnTarget([binding('a'), binding('b')]);
+    const day = 86400000;
+    const t0 = Date.UTC(2026, 7, 1);
+    const shifted = {
+      a: {height: [1, 2], time: [t0, t0 + 60000]},
+      b: {height: [1, 2], time: [t0 + day, t0 + day + 60000]},
+    };
+    const typed = (_entryId: string, _tablePath: string, columnName: string) =>
+      columnName === 'time' ? 'datetime' : 'double';
+    // a one-day shift is within 0.1% of an epoch-ms timestamp — exact compare must catch it
+    expect(isTargetEqualAcrossRuns(target, getter(shifted), typed), false);
+    expect(isTargetEqualAcrossRuns(target, getter({a: shifted.a, b: shifted.a}), typed), true);
+    // numeric indexes keep the relative tolerance
+    expect(isTargetEqualAcrossRuns(target, getter({
+      a: {height: [1, 2], time: [1e6, 1e6 + 1]}, b: {height: [1, 2], time: [1e6 + 100, 1e6 + 101]},
+    }), () => 'double'), true);
+  });
+
   test('split columns must match on both sides', async () => {
     const withSplit = columnTarget([binding('a', 'height', 'species'), binding('b', 'height', 'species')]);
     const same = {height: [1, 2], time: [0, 1], species: ['s1', 's2']};
@@ -420,7 +439,7 @@ category('RunComparison: axis mode selection', () => {
     ({entryId, tablePath, tableName: tablePath, columnName: 'height', indexColumnName: 'time'});
   const target = (bindings: ColumnBinding[]): ColumnTarget => ({
     kind: 'column', key: 'k', displayName: 'height', confidence: 'exact', unitsWarning: false,
-    coverage: bindings.length, defaultCoverage: bindings.length, total: bindings.length,
+    coverage: bindings.length, total: bindings.length,
     candidates: [], bindings,
   });
   const config = (

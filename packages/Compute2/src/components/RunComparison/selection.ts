@@ -98,21 +98,34 @@ const sameValue = (x: unknown, y: unknown) => {
   return typeof x === 'number' && typeof y === 'number' && isClose(x, y);
 };
 
+const exactValue = (x: unknown, y: unknown) => x === y || (x !== x && y !== y);
+
 /**
  * True when every bound run carries the same data for the target: scalar values or
  * element-wise value/index/split columns, with numbers compared to within
- * EQUALITY_REL_TOL relative tolerance. Unfetchable column data counts as differing.
+ * EQUALITY_REL_TOL relative tolerance. Datetime index columns compare exactly:
+ * their values are epoch ms, where relative tolerance would swallow real shifts
+ * (0.1% of a present-day timestamp is weeks). Unfetchable column data counts as differing.
  */
-export function isTargetEqualAcrossRuns(target: ComparisonTarget, getColumnValues: ColumnValuesGetter): boolean {
+export function isTargetEqualAcrossRuns(
+  target: ComparisonTarget,
+  getColumnValues: ColumnValuesGetter,
+  getColumnType?: (entryId: string, tablePath: string, columnName: string) => string | undefined,
+): boolean {
   if (target.bindings.length < 2)
     return false;
   if (target.kind === 'scalar')
     return target.bindings.every((b) => sameValue(b.value, target.bindings[0].value));
-  const sameValues = (a: ArrayLike<unknown> | null | undefined, b: ArrayLike<unknown> | null | undefined) => {
+  const indexCompare = getColumnType != null && target.bindings.every((b) =>
+    getColumnType(b.entryId, b.tablePath, b.indexColumnName) === 'datetime') ? exactValue : sameValue;
+  const sameValues = (
+    a: ArrayLike<unknown> | null | undefined, b: ArrayLike<unknown> | null | undefined,
+    compare = sameValue,
+  ) => {
     if (a == null || b == null || a.length !== b.length)
       return false;
     for (let i = 0; i < a.length; i++) {
-      if (!sameValue(a[i], b[i]))
+      if (!compare(a[i], b[i]))
         return false;
     }
     return true;
@@ -125,7 +138,8 @@ export function isTargetEqualAcrossRuns(target: ComparisonTarget, getColumnValue
   const [first, ...rest] = series;
   if (!first.value || !first.index || first.split === undefined)
     return false;
-  return rest.every((s) => sameValues(s.value, first.value) && sameValues(s.index, first.index) &&
+  return rest.every((s) => sameValues(s.value, first.value) &&
+    sameValues(s.index, first.index, indexCompare) &&
     (s.split === first.split || sameValues(s.split, first.split)));
 }
 

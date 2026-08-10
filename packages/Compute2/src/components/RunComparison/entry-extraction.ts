@@ -25,21 +25,21 @@ export interface ComparisonDefaults {
   units?: TimeUnit;
 }
 
-/** Index defaults of a dataframe IO: the {comparison: {...}} JSON annotation,
- * with {comparisonIndex}/{comparisonSplit} as legacy aliases it overrides. */
+/** Index defaults of a dataframe IO: the {comparison: {...}} JSON annotation. */
 export function parseComparisonDefaults(options?: Record<string, any>): ComparisonDefaults {
   const raw = options?.['comparison'];
   let parsed: any = {};
   if (raw) {
     try {
-      parsed = JSON.parse(raw);
+      // 'null' parses to null — property access below must survive it
+      parsed = JSON.parse(raw) ?? {};
     } catch (e) {
       console.warn(`Run comparison: malformed comparison annotation: ${raw}`, e);
     }
   }
   return {
-    index: typeof parsed.index === 'string' ? parsed.index : (options?.['comparisonIndex'] || undefined),
-    split: typeof parsed.split === 'string' ? parsed.split : (options?.['comparisonSplit'] || undefined),
+    index: typeof parsed.index === 'string' ? parsed.index : undefined,
+    split: typeof parsed.split === 'string' ? parsed.split : undefined,
     ...AXIS_MODES.has(parsed.mode) ? {mode: parsed.mode as AxisMode} : {},
     ...TIME_UNITS.includes(parsed.units) ? {units: parsed.units as TimeUnit} : {},
   };
@@ -51,22 +51,37 @@ const columnInfos = (df: DG.DataFrame) => [...df.columns].map((col) => ({
   units: col.meta?.units || undefined,
 }));
 
+interface CallNodes {
+  scalars: ScalarNodeInfo[];
+  tables: TableNodeInfo[];
+  dataFrames: Map<string, DG.DataFrame>;
+}
+
 function extractCallNodes(
   call: DG.FuncCall,
   pathPrefix: string,
   friendlyPrefix: string,
-  scalars: ScalarNodeInfo[],
-  tables: TableNodeInfo[],
-  dataFrames: Map<string, DG.DataFrame>,
-) {
+): CallNodes {
+  const scalars: ScalarNodeInfo[] = [];
+  const tables: TableNodeInfo[] = [];
+  const dataFrames = new Map<string, DG.DataFrame>();
   const io = [
     ...[...call.inputParams.values()].map((p) => ({param: p, value: call.inputs[p.property.name]})),
     ...[...call.outputParams.values()].map((p) => ({param: p, value: call.outputs[p.property.name]})),
-  ];
+  ].filter(({param, value}) => SCALAR_PROPERTY_TYPES.has(param.property.propertyType) ||
+    (param.property.propertyType === DG.TYPE.DATA_FRAME && value != null));
+  // captions are free text, so one call's input and output can share a display name;
+  // property names are unique per call and disambiguate everything downstream
+  const nameCounts = new Map<string, number>();
+  for (const {param} of io) {
+    const caption = param.property.caption ?? param.property.name;
+    nameCounts.set(caption, (nameCounts.get(caption) ?? 0) + 1);
+  }
   for (const {param, value} of io) {
     const prop = param.property;
     const path = pathPrefix ? `${pathPrefix}/${prop.name}` : prop.name;
-    const name = prop.caption ?? prop.name;
+    const caption = prop.caption ?? prop.name;
+    const name = nameCounts.get(caption)! > 1 ? `${caption} (${prop.name})` : caption;
     const friendlyPath = friendlyPrefix ? `${friendlyPrefix} · ${name}` : name;
     if (SCALAR_PROPERTY_TYPES.has(prop.propertyType)) {
       scalars.push({
@@ -95,6 +110,7 @@ function extractCallNodes(
       dataFrames.set(path, df);
     }
   }
+  return {scalars, tables, dataFrames};
 }
 
 interface WorkflowStep {
@@ -137,6 +153,11 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   const scalars: ScalarNodeInfo[] = [];
   const tables: TableNodeInfo[] = [];
   const dataFrames = new Map<string, DG.DataFrame>();
+  const addNodes = (nodes: CallNodes) => {
+    scalars.push(...nodes.scalars);
+    tables.push(...nodes.tables);
+    nodes.dataFrames.forEach((df, path) => dataFrames.set(path, df));
+  };
   const serializedConfig = call.options?.[CONFIG_PATH];
   const modelName = call.func?.friendlyName ?? call.func?.name ?? '';
 
@@ -151,13 +172,13 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
     for (const step of steps) {
       try {
         const stepCall = await historyUtils.loadRun(step.funcCallId);
-        extractCallNodes(stepCall, step.path, step.friendlyPath, scalars, tables, dataFrames);
+        addNodes(extractCallNodes(stepCall, step.path, step.friendlyPath));
       } catch (e) {
         console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, e);
       }
     }
   } else {
-    extractCallNodes(call, '', '', scalars, tables, dataFrames);
+    addNodes(extractCallNodes(call, '', ''));
   }
 
   const name = getRunTitle(call);
@@ -172,9 +193,18 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   };
 }
 
+// same underlying table -> same entry id (so re-adding dedupes); keyed by the Dart
+// handle because names and row counts alone can collide across distinct tables
+const rawEntryIds = new WeakMap<object, string>();
+let rawEntryCounter = 0;
+
 /** Builds a raw-data comparison entry from an open workspace table. */
 export function entryFromDataFrame(df: DG.DataFrame): ComparisonEntry {
-  const id = `table:${df.name}:${df.rowCount}`;
+  let id = rawEntryIds.get(df.dart);
+  if (!id) {
+    id = `table:${df.name}:${++rawEntryCounter}`;
+    rawEntryIds.set(df.dart, id);
+  }
   const table: TableNodeInfo = {
     path: df.name,
     name: df.name,

@@ -13,10 +13,10 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 import {History} from '../History/History';
 import {
   ComparisonTarget, ScalarTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
-  ComparisonEntry, EntrySourceKind, RUN_COLUMN, candidateId,
+  ComparisonEntry, EntrySourceKind, NameMapping, RUN_COLUMN, candidateId,
   AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
-import {matchScalarTargets, matchColumnTargets} from './matching';
+import {matchScalarTargets, matchColumnTargets, buildAliasGroups} from './matching';
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
@@ -27,17 +27,12 @@ import {
 } from './comparison-builders';
 import './RunComparison.css';
 
-const SOURCE_BADGES: Record<EntrySourceKind, {label: string, color: string}> = {
-  workflow: {label: 'workflow', color: '#7b6fb3'},
-  function: {label: 'function', color: '#4a90d9'},
-  raw: {label: 'raw', color: '#8a8a8a'},
-};
+// chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
+const sourceBadge = (kind: EntrySourceKind) =>
+  <span class={`c2-comparison-badge c2-badge-${kind}`}>{kind}</span>;
 
-const CONFIDENCE_COLORS: Record<MatchConfidence, string> = {
-  exact: '#3cb173',
-  normalized: '#d9a544',
-  fuzzy: '#d97b44',
-};
+const confidenceBadge = (confidence: MatchConfidence) =>
+  <span class={`c2-comparison-badge c2-confidence-${confidence}`}>{confidence}</span>;
 
 export const RunComparison = Vue.defineComponent({
   name: 'RunComparison',
@@ -211,11 +206,15 @@ export const RunComparison = Vue.defineComponent({
         {name: columnName, type: indexColumnType(entryId, tablePath, columnName) ?? ''},
         indexColumnsMap.value.get(entryId)?.get(tablePath) ?? '')));
 
+    const nameMappings = Vue.ref<NameMapping[]>([]);
+    const aliasGroups = Vue.computed(() => buildAliasGroups(nameMappings.value));
+
     const targets = Vue.computed<ComparisonTarget[]>(() => {
       const nodes = entries.value.map((entry) => entry.nodes);
       return [
-        ...matchScalarTargets(nodes),
-        ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value),
+        ...matchScalarTargets(nodes, aliasGroups.value),
+        ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value,
+          aliasGroups.value),
       ].sort((a, b) => a.kind !== b.kind ?
         (a.kind === 'scalar' ? -1 : 1) :
         a.displayName.localeCompare(b.displayName));
@@ -305,7 +304,7 @@ export const RunComparison = Vue.defineComponent({
         return cache.get(key);
       };
       return new Set(targets.value
-        .filter((target) => isTargetEqualAcrossRuns(target, cached))
+        .filter((target) => isTargetEqualAcrossRuns(target, cached, indexColumnType))
         .map((target) => target.key));
     });
 
@@ -348,20 +347,93 @@ export const RunComparison = Vue.defineComponent({
     };
 
     // snapshot export: clone of the chart data plus the chart with its current options
-    const openInWorkspace = () => {
+    const snapshotView = (name: string, addToWorkspace: boolean) => {
+      const df = comparison.value!.chartDf.clone();
+      df.name = name;
+      const view = addToWorkspace ? grok.shell.addTableView(df) : DG.TableView.create(df, false);
+      const options = chartViewer.value?.getOptions();
+      if (options)
+        view.addViewer(options.type, options.look);
+      return view;
+    };
+
+    // the platform Save-project dialog handles upload, layout linking, and sharing.
+    // Project.showSaveDialog is newer than the last released js-api (added 2026-07-16,
+    // after datagrok-api 1.27.7), so it is reached via a cast and feature-detected at
+    // runtime; older platforms may have the Dart binding but not the wrapper
+    const jsApiShowSaveDialog = (DG.Project as any).showSaveDialog;
+    const canSaveProject = typeof jsApiShowSaveDialog === 'function' ||
+      typeof (window as any).grok_Project_OpenSaveDialog === 'function';
+
+    const showProjectSaveDialog = (view: DG.TableView, name: string): Promise<DG.Project | null> => {
+      if (typeof jsApiShowSaveDialog === 'function')
+        return jsApiShowSaveDialog.call(DG.Project, {tables: [view.dataFrame], views: [view], name});
+      return (window as any).grok_Project_OpenSaveDialog(
+        [view.dataFrame.dart], [view.dart], [], name, '', '');
+    };
+
+    const saveAndShare = async (name: string) => {
+      const view = snapshotView(name, false);
+      try {
+        await showProjectSaveDialog(view, name);
+      } catch (e: any) {
+        grok.shell.error(e);
+      } finally {
+        view.detach();
+      }
+    };
+
+    const exportComparison = () => {
       const currentComparison = comparison.value;
       if (!currentComparison || currentComparison.chartDf.rowCount === 0)
         return;
       const nameInput = ui.input.string('Name', {value: currentComparison.chartDf.name || 'Comparison'});
-      ui.dialog('Open in workspace')
-        .add(nameInput.root)
+      const dlg = ui.dialog('Export comparison').add(nameInput.root);
+      const openLabel = 'OPEN IN WORKSPACE';
+      if (canSaveProject) {
+        dlg.addButton(openLabel, () => {
+          dlg.close();
+          snapshotView(nameInput.value || 'Comparison', true);
+        });
+        dlg.onOK(() => saveAndShare(nameInput.value || 'Comparison'));
+        dlg.show({center: true});
+        dlg.getButton('OK').innerText = 'SAVE & SHARE';
+      } else {
+        dlg.onOK(() => snapshotView(nameInput.value || 'Comparison', true));
+        dlg.show({center: true});
+        dlg.getButton('OK').innerText = openLabel;
+      }
+    };
+
+    const editNameMappings = () => {
+      const rows: {from: DG.InputBase<string>, to: DG.InputBase<string>}[] = [];
+      const list = ui.divV([], {style: {gap: '4px'}});
+      const addRow = (from = '', to = '') => {
+        const fromInput = ui.input.string('', {value: from});
+        const toInput = ui.input.string('', {value: to});
+        (fromInput.input as HTMLInputElement).placeholder = 'name';
+        (toInput.input as HTMLInputElement).placeholder = 'same as';
+        const row = {from: fromInput, to: toInput};
+        rows.push(row);
+        const rowDiv = ui.divH([fromInput.root, toInput.root, ui.icons.delete(() => {
+          rows.splice(rows.indexOf(row), 1);
+          rowDiv.remove();
+        }, 'Remove mapping')], {style: {alignItems: 'center', gap: '6px'}});
+        list.append(rowDiv);
+      };
+      for (const {from, to} of nameMappings.value)
+        addRow(from, to);
+      if (rows.length === 0)
+        addRow();
+      ui.dialog('Name mappings')
+        .add(ui.divText('Mapped names match as the same value, ignoring case and separators.',
+          {style: {color: 'var(--grey-4)'}}))
+        .add(list)
+        .add(ui.button('Add', () => addRow()))
         .onOK(() => {
-          const df = currentComparison.chartDf.clone();
-          df.name = nameInput.value || 'Comparison';
-          const view = grok.shell.addTableView(df);
-          const options = chartViewer.value?.getOptions();
-          if (options)
-            view.addViewer(options.type, options.look);
+          nameMappings.value = rows
+            .map((row) => ({from: row.from.value.trim(), to: row.to.value.trim()}))
+            .filter((row) => row.from && row.to);
         })
         .show({center: true});
     };
@@ -509,7 +581,7 @@ export const RunComparison = Vue.defineComponent({
         { modelDropdownOpen.value &&
           <div style={{
             position: 'absolute', top: '100%', left: '0', right: '0', zIndex: '100',
-            background: 'var(--white, #fff)', border: '1px solid var(--grey-2)',
+            background: 'var(--white)', border: '1px solid var(--grey-2)',
             borderRadius: '3px', maxHeight: '300px', overflow: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}>
             <input
@@ -540,21 +612,17 @@ export const RunComparison = Vue.defineComponent({
         { entries.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>Select runs in the history and add them here</div> }
         <div class='c2-comparison-rows'>
-          { entries.value.map((entry) => {
-            const badge = SOURCE_BADGES[entry.sourceKind];
-            return <div key={entry.id} class='c2-comparison-row'
+          { entries.value.map((entry) =>
+            <div key={entry.id} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
-            <span style={{
-              fontSize: '10px', color: 'white', background: badge.color,
-              borderRadius: '3px', padding: '0px 4px', flexShrink: '0',
-            }}>{badge.label}</span>
-            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
-              title={entry.modelName ? `${entry.modelName}: ${entry.name}` : entry.name}>
-              {entry.name}
-            </span>
-            <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
-          </div>;
-          })}
+              { sourceBadge(entry.sourceKind) }
+              <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
+                title={entry.modelName ? `${entry.modelName}: ${entry.name}` : entry.name}>
+                {entry.name}
+              </span>
+              <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
+            </div>,
+          )}
         </div>
       </div>
     );
@@ -648,10 +716,7 @@ export const RunComparison = Vue.defineComponent({
           {candidate.binding.tableFriendlyPath ?? candidate.binding.tableName}
         </span>
         <span style={{color: 'var(--grey-5)', flexShrink: '0'}}>{candidate.binding.columnName}</span>
-        <span style={{
-          fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
-          background: CONFIDENCE_COLORS[candidate.confidence], flexShrink: '0',
-        }}>{candidate.confidence}</span>
+        { confidenceBadge(candidate.confidence) }
         { candidate.unitsWarn &&
           <IconFA name='exclamation-triangle' tooltip='Units are missing on some items'/> }
         { candidate.auto &&
@@ -679,23 +744,19 @@ export const RunComparison = Vue.defineComponent({
       >
         { candidateOverrides.value[target.key] &&
           <span
-            style={{fontSize: '11px', color: 'var(--blue-1, #2083d5)', cursor: 'pointer'}}
+            style={{fontSize: '11px', color: 'var(--blue-1)', cursor: 'pointer'}}
             onClick={() => resetTargetOverrides(target.key)}
           >Reset to auto</span> }
-        { groups.map(({entry, candidates}) => {
-          const badge = SOURCE_BADGES[entry.sourceKind];
-          return <div key={entry.id}>
+        { groups.map(({entry, candidates}) =>
+          <div key={entry.id}>
             <div style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0px'}}>
-              <span style={{
-                fontSize: '10px', color: 'white', background: badge.color,
-                borderRadius: '3px', padding: '0px 4px', flexShrink: '0',
-              }}>{badge.label}</span>
+              { sourceBadge(entry.sourceKind) }
               <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
                 title={entry.name}>{entry.name}</span>
             </div>
             { candidates.map((candidate) => renderCandidateRow(target, candidate)) }
-          </div>;
-        })}
+          </div>,
+        )}
       </div>;
     };
 
@@ -710,6 +771,11 @@ export const RunComparison = Vue.defineComponent({
               value={hideEqual.value}
               onUpdate:value={(val) => hideEqual.value = val}
             />
+            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+              <IconFA name='exchange-alt' tooltip='Edit name mappings' onClick={editNameMappings}/>
+              { nameMappings.value.length > 0 &&
+                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{nameMappings.value.length}</span> }
+            </div>
           </div>
         </div>
         { targets.value.length === 0 &&
@@ -751,8 +817,16 @@ export const RunComparison = Vue.defineComponent({
                 selectedTargetKey.value = target.key;
                 return;
               }
-              multiKeys.value = multiKeys.value.includes(target.key) ?
+              const next = multiKeys.value.includes(target.key) ?
                 multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
+              multiKeys.value = next;
+              // unchecking the last value exits the mode (matching the initial
+              // no-selection state, where the toggle is not even shown) and keeps
+              // that value selected, so the chart stays put
+              if (next.length === 0) {
+                selectedTargetKey.value = target.key;
+                multiMode.value = false;
+              }
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
             const anchor = selectedTarget.value;
@@ -766,7 +840,7 @@ export const RunComparison = Vue.defineComponent({
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
               style={{
                 padding: '3px 6px', cursor: 'pointer',
-                borderLeft: `3px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
+                borderLeft: `3px solid ${isSelected ? 'var(--blue-1)' : 'transparent'}`,
               }}
               onClick={onRowClick}
               onMousedown={(e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); }}
@@ -786,22 +860,16 @@ export const RunComparison = Vue.defineComponent({
             { target.unitsWarning ?
               <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
               <span></span> }
-            <span style={{
-              fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
-              background: CONFIDENCE_COLORS[target.confidence], flexShrink: '0',
-            }}>{target.confidence}</span>
+            { confidenceBadge(target.confidence) }
             <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>
               {target.coverage}/{target.total}
             </span>
             { gapRuns.length > 0 ?
               <span
+                class='c2-comparison-badge c2-badge-partial'
                 title={anchor!.kind === 'scalar' ?
                   `Missing value on: ${gapRuns.join(', ')}` :
                   `Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
-                style={{
-                  fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
-                  background: '#8a8a8a', flexShrink: '0', justifySelf: 'start',
-                }}
               >partial</span> :
               <span></span> }
           </div>;
@@ -826,15 +894,15 @@ export const RunComparison = Vue.defineComponent({
             <span
               style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
-                cursor: 'pointer', color: 'var(--blue-1, #2083d5)',
+                cursor: 'pointer', color: 'var(--blue-1)',
               }}
-              onClick={openInWorkspace}
+              onClick={exportComparison}
             >
               <IconFA
                 name='external-link'
-                tooltip='Open a snapshot of the data and chart in the workspace'
+                tooltip='Open a snapshot of the data and chart in the workspace, or save and share it as a project'
               />
-              <span>Open in workspace</span>
+              <span>Export...</span>
             </span>
           }
         </div>
@@ -865,15 +933,11 @@ export const RunComparison = Vue.defineComponent({
         { chips.map(({entry, text, warning}) =>
           <span
             key={entry.id}
+            class={`c2-comparison-status ${warning ? 'c2-status-warning' : 'c2-status-error'}`}
             title={warning ?
               `The value charts as a plain series until every participating table has the ` +
               `${text === 'independent points not set' ? 'independent points' : 'relative timeseries'} mode set` :
-              entry.name}
-            style={{
-              fontSize: '11px', borderRadius: '3px', padding: '1px 6px',
-              background: warning ? '#fdf3e3' : '#fbeaea',
-              color: warning ? '#8a6d3b' : '#a94442',
-            }}>
+              entry.name}>
             {entry.name}: {text}
           </span>,
         )}
@@ -887,6 +951,15 @@ export const RunComparison = Vue.defineComponent({
       if (!currentComparison || currentComparison.chartDf.rowCount === 0) {
         return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
           Nothing to show: no data points across the selected runs
+        </div>;
+      }
+      // multi-value needs a line-chartable index (suggestions are gated on it), but an index
+      // switched to a string column after selection would land the frame on a line chart
+      if (currentComparison.kind === 'column' && currentComparison.isKeyIndex &&
+        'valueColumnNames' in currentComparison) {
+        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
+          Multiple values cannot chart over a categorical index — pick a numeric or datetime
+          index, or select a single value
         </div>;
       }
       const chartMinHeight = currentComparison.kind === 'multi-scalar' ? 300 :
@@ -926,19 +999,19 @@ export const RunComparison = Vue.defineComponent({
           style={chartStyle}
           onViewerChanged={onChartViewerChanged}
           options={{
-            valueColumnName: currentComparison.target.displayName,
+            valueColumnName: currentComparison.valueColumnName,
             valueAggrType: 'avg',
             splitColumnName: RUN_COLUMN,
           }}
         />;
-      } else if (currentComparison.isKeyIndex && !('valueColumnNames' in currentComparison)) {
+      } else if (currentComparison.isKeyIndex) {
         chart = <Viewer
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
           onViewerChanged={onChartViewerChanged}
           options={{
-            valueColumnName: currentComparison.target.displayName,
+            valueColumnName: currentComparison.valueColumnName,
             valueAggrType: 'avg',
             splitColumnName: currentComparison.indexColumnName,
             stackColumnName: RUN_COLUMN,
@@ -961,14 +1034,14 @@ export const RunComparison = Vue.defineComponent({
             markersColumnName: RUN_COLUMN,
           } : {
             xColumnName: currentComparison.indexColumnName,
-            yColumnName: currentComparison.target.displayName,
+            yColumnName: currentComparison.valueColumnName,
             colorColumnName: splitColumnName ?? RUN_COLUMN,
             ...splitColumnName ? {markersColumnName: RUN_COLUMN} : {},
           }}
         />;
       } else {
         const yColumnNames = 'valueColumnNames' in currentComparison ?
-          currentComparison.valueColumnNames as string[] : [currentComparison.target.displayName];
+          currentComparison.valueColumnNames as string[] : [currentComparison.valueColumnName];
         chart = <Viewer
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
@@ -1001,8 +1074,8 @@ export const RunComparison = Vue.defineComponent({
                   cursor: 'pointer', fontSize: '11px', borderRadius: '3px', padding: '1px 8px',
                   border: '1px solid var(--grey-2)',
                   background: effectiveScalarChartType.value === value ?
-                    'var(--blue-1, #2083d5)' : 'transparent',
-                  color: effectiveScalarChartType.value === value ? 'white' : 'var(--grey-5)',
+                    'var(--blue-1)' : 'transparent',
+                  color: effectiveScalarChartType.value === value ? 'var(--white)' : 'var(--grey-5)',
                 }}
               >{label}</span>,
             )}

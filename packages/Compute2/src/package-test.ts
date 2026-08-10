@@ -11,6 +11,7 @@ import './test/run-comparison-extraction';
 import './test/run-comparison-matching';
 import './test/run-comparison-selection';
 import './test/run-comparison-builders';
+import './test/viewer-look-swap-probe';
 
 export const _package = new DG.Package();
 export {tests};

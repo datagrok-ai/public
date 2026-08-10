@@ -1,8 +1,10 @@
 # webcomponents-vue changelog
 
-## v.next
+## 0.3.4 (2026-08-07)
 
 * `Viewer`: patch `dataFrame` before `options` so options referencing new columns don't hit the old frame
+* Added `ResizeHandle` component (deferred mode, non-live by default)
+* Added `wheelGuard` directive
 
 ## 0.3.1 (2026-06-03)
 

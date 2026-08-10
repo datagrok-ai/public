@@ -1,14 +1,5 @@
-/** Maps execution state to node DOM via the `dgStatus` field on FlowNode and
- *  to connection styling via `FlowEditor.setConnectionStatus`.
- *
- *  Node side: the React node component reads `dgStatus` and writes it as a
- *  `data-status` attribute on the rendered `<div class="ff-node">`. CSS handles
- *  the visuals (status circle, pulse animation, body tint).
- *
- *  Connection side: incoming edges of a running node go to `active` (animated
- *  marching dashes); when the node completes the same edges flip to
- *  `completed` (steady, source-colored); on error they go `errored` (red).
- *  This lets a viewer see the data-flow front advance through the graph. */
+/** Maps execution state to node visuals (`dgStatus` → `data-status` → CSS)
+ *  and connection styling via `FlowEditor.setConnectionStatus`. */
 
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode} from '../rete/scheme';
@@ -18,16 +9,33 @@ interface FlowNodeWithStatus extends FlowNode {
   dgStatus?: NodeExecStatus;
 }
 
-/** Plain-language label shown under the node title. `detail` is an optional
- *  short data summary for a completed node (e.g. "1,204 × 8"). */
+/** Plain-language label shown under the node title. */
 export function statusLabel(status: NodeExecStatus, detail?: string): string {
   switch (status) {
   case NodeExecStatus.running:   return 'Running…';
   case NodeExecStatus.completed: return detail ? `Done · ${detail}` : 'Done';
-  case NodeExecStatus.errored:   return 'Error';
+  case NodeExecStatus.errored:   return detail ? `Error — ${detail}` : 'Error';
   case NodeExecStatus.stale:     return 'Out of date';
   default:                       return '';
   }
+}
+
+/** The message's first sentence, capped to fit a node's one-line status. */
+export function errorSummary(message: string | undefined): string {
+  const first = String(message ?? '').split('\n')[0].split(/(?<=\.)\s/)[0].trim();
+  return first.length > 120 ? first.slice(0, 117) + '…' : first;
+}
+
+/** Strip the platform's exception wrapper and map server-side file paths back
+ *  to the user's `System:AppData/…` form. */
+export function normalizeErrorMessage(message: string | undefined): string {
+  let m = String(message ?? '').trim();
+  const wrapper = /^Operation caused an exception\s*\(([\s\S]*)\)$/.exec(m);
+  if (wrapper) m = wrapper[1].trim();
+  // A failed file read races into the d42 deserializer, whose parse error carries no path.
+  if (/outside the bounds of the DataView/i.test(m))
+    m = 'The server response was not a table — check the file path and that the file is a readable format';
+  return m.replace(/['"]?(?:\/[^\s'"]+)+\/packages\/data\/([^\s'"]+)['"]?/g, 'System:AppData/$1');
 }
 
 export class ExecutionVisualizer {
@@ -48,8 +56,6 @@ export class ExecutionVisualizer {
     this.propagateToConnections(nodeId, status);
   }
 
-  /** Mirror a node's status onto its incoming connections (the edges that
-   *  delivered data into this step). */
   private propagateToConnections(nodeId: string, status: NodeExecStatus): void {
     const incoming = this.flow.getConnections().filter((c) => c.target === nodeId);
     let connStatus: 'idle' | 'active' | 'completed' | 'errored' | 'stale';
@@ -61,6 +67,18 @@ export class ExecutionVisualizer {
     default:                       connStatus = 'idle';
     }
     for (const c of incoming) this.flow.setConnectionStatus(c.id, connStatus);
+  }
+
+  /** Completed nodes flip to stale but KEEP their status text — resetting to
+   *  idle here made every card flash blank between runs. */
+  beginRun(): void {
+    for (const id of this.trackedNodes) {
+      const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
+      if (!node || node.dgStatus !== NodeExecStatus.completed) continue;
+      node.dgStatus = NodeExecStatus.stale;
+      void this.flow.updateNode(id);
+    }
+    this.flow.resetConnectionStatuses();
   }
 
   resetAllNodes(): void {
@@ -76,9 +94,6 @@ export class ExecutionVisualizer {
     this.flow.resetConnectionStatuses();
   }
 
-  /** Flip only the given nodes to "Out of date" (and their incoming edges to
-   *  stale). Nodes outside the set keep their completed/errored visuals — a
-   *  graph edit invalidates its downstream cone, not the whole canvas. */
   markStale(ids: Iterable<string>): void {
     for (const id of ids) {
       if (!this.trackedNodes.has(id)) continue;
@@ -91,7 +106,18 @@ export class ExecutionVisualizer {
     }
   }
 
-  /** Stop tracking a removed node (its element is gone; nothing to repaint). */
+  /** Nodes a halted run never reached: stale visuals + a line naming the failure. */
+  markSkipped(ids: Iterable<string>, failedLabel: string): void {
+    for (const id of ids) {
+      const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
+      if (!node) continue;
+      node.dgStatus = NodeExecStatus.stale;
+      node.statusText = `Skipped — "${failedLabel}" failed`;
+      this.trackedNodes.add(id);
+      void this.flow.updateNode(id);
+    }
+  }
+
   forgetNode(id: string): void {
     this.trackedNodes.delete(id);
   }

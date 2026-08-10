@@ -44,8 +44,6 @@ export const Viewer = Vue.defineComponent({
     });
 
     return () => (
-      /* props are patched in this order: options referencing columns of a new
-         dataFrame must not reach the viewer while it still holds the old one */
       <dg-viewer
         type={type.value}
         dataFrame={currentDf.value}

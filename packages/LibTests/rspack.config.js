@@ -89,6 +89,9 @@ module.exports = (env = {}) => {
     // importScripts() it, which needs a publicPath the worker can't auto-detect
     // (no document) — the worker then fails to load. Webpack bundled dayjs into
     // the worker; this preserves that.
-    optimization: {concatenateModules: false, splitChunks: false, runtimeChunk: false},
+    // chunkIds deterministic: dev-default named ids embed the module path, so built
+    // from npm deps the worker chunk becomes node_modules_...js — a name the server
+    // refuses to serve from published packages, 404ing the worker at runtime.
+    optimization: {concatenateModules: false, splitChunks: false, runtimeChunk: false, chunkIds: 'deterministic'},
   };
 };

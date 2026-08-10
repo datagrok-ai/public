@@ -1,13 +1,5 @@
-/** Input nodes — emit `//input:` annotation lines in the generated script.
- *
- * Each input node has exactly one output socket carrying the declared DG type.
- * Per-type qualifiers (nullable, min/max, semType, choices, …) live in
- * `node.properties` and are rendered into the annotation line by the emitter.
- *
- * Every input node carries an inline value editor on its body (the `value`
- * control → `InputValueControl`), mirrored in the side panel: a configured
- * value is fed straight into the prepared run, so neither Run nor autorun
- * needs the parameter dialog (see `utils/input-values.ts`). */
+/** Input nodes — emit `//input:` lines. Qualifiers live in `node.properties`; each node
+ *  carries an inline value editor mirrored in the side panel (see `utils/input-values.ts`). */
 
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
@@ -25,8 +17,7 @@ abstract class InputBase extends FlowNode {
     this.properties = {paramName, defaultValue: '', ...extraProps};
     (this as unknown as {color: string}).color = COLOR_INPUT;
     this.addOutput(slotName, new ClassicPreset.Output(getSocket(dgType), slotName));
-    // Inline value editor — built lazily on first render (reads the FINAL
-    // dgOutputType, so subclass overrides like Blob's apply).
+    // Built lazily on first render so subclass dgOutputType overrides (Blob) apply.
     this.addControl('value', new InputValueControl(this));
   }
 }
@@ -54,11 +45,8 @@ export class StringInputNode extends InputBase {
   }
 }
 
-/** A String Input pre-tagged `semType: Molecule`, which is all it takes for the
- *  value editor to become Chem's sketcher (`inputValueProperty` passes semType
- *  to `ui.input.forProperty`, which matches a registered `valueEditor`). It
- *  emits an ordinary `//input: string … {semType: Molecule}` line — a sketched
- *  molecule IS a string, so everything downstream is unchanged. */
+/** A String Input pre-tagged `semType: Molecule` — enough for the value editor to become
+ *  Chem's sketcher; emits an ordinary string input line. */
 export class MoleculeInputNode extends InputBase {
   constructor() {
     super('Sketcher Input', 'molecule', 'string', 'molecule',
@@ -66,11 +54,8 @@ export class MoleculeInputNode extends InputBase {
   }
 }
 
-/** The macromolecule counterpart of {@link MoleculeInputNode}: a String Input
- *  tagged `semType: Macromolecule`, which is what routes the value editor to
- *  Helm's registered `valueEditor` (the HELM web editor, `ui.input.helmAsync`).
- *  A HELM sequence IS a string, so the emitted `//input:` line and everything
- *  downstream are unchanged. */
+/** The macromolecule counterpart of {@link MoleculeInputNode} — `semType: Macromolecule`
+ *  routes the value editor to Helm's. */
 export class HelmInputNode extends InputBase {
   constructor() {
     super('Helm Input', 'sequence', 'string', 'sequence',

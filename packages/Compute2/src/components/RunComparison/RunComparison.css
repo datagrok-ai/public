@@ -4,7 +4,7 @@
 }
 
 .c2-comparison-rows .c2-comparison-row {
-    border-bottom: 1pt solid var(--grey-12);
+    border-bottom: 1pt solid var(--grey-2);
 }
 
 .c2-comparison-rows .c2-comparison-row:nth-child(odd) {
@@ -12,7 +12,7 @@
 }
 
 .c2-comparison-rows .c2-comparison-row.c2-comparison-row-selected {
-    background-color: rgba(32, 131, 213, 0.12);
+    background-color: color-mix(in srgb, var(--blue-1) 12%, transparent);
 }
 
 /* table-like lists: columns are sized by content and shared across rows via subgrid,
@@ -35,7 +35,36 @@
 
 /* inline candidate checklist under an expanded target row */
 .c2-comparison-rows .c2-comparison-expansion {
-    border-bottom: 1pt solid var(--grey-12);
-    background-color: rgba(32, 131, 213, 0.04);
+    border-bottom: 1pt solid var(--grey-2);
+    background-color: color-mix(in srgb, var(--blue-1) 4%, transparent);
     cursor: default;
 }
+
+/* small solid chips: run source, match confidence, partial coverage */
+.c2-comparison-badge {
+    font-size: 10px;
+    color: var(--white);
+    border-radius: 3px;
+    padding: 0px 4px;
+    flex-shrink: 0;
+}
+
+.c2-badge-workflow { background-color: var(--steel-5); }
+.c2-badge-function { background-color: var(--blue-1); }
+.c2-badge-raw { background-color: var(--grey-4); }
+.c2-badge-partial { background-color: var(--grey-4); justify-self: start; }
+
+.c2-confidence-exact { background-color: var(--green-2); }
+.c2-confidence-normalized { background-color: var(--orange-2); }
+.c2-confidence-fuzzy { background-color: var(--orange-3); }
+
+/* per-run status chips under Results: excluded runs (error) and
+   partially-configured axis modes (warning) */
+.c2-comparison-status {
+    font-size: 11px;
+    border-radius: 3px;
+    padding: 1px 6px;
+}
+
+.c2-status-error { background-color: var(--red-1); color: var(--red-4); }
+.c2-status-warning { background-color: var(--orange-1); color: var(--orange-3); }
