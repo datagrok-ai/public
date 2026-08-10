@@ -161,13 +161,17 @@ const tabToProperties = (fc: DG.FuncCall) => {
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
-    const dfViewers = Utils.getPropViewers(dfProp).config;
+    let dfViewers = Utils.getPropViewers(dfProp).config;
+    // Outputs without a viewer annotation (e.g. queries) get a plain grid by default
+    const isDefaultGrid = dfViewers.length === 0 && isOutput;
+    if (isDefaultGrid)
+      dfViewers = [{type: DG.VIEWER.GRID}];
     if (dfViewers.length === 0) return;
     if (hideEmpty && isOutput && isEmptyDataFrame(fc.outputs[dfProp.name])) return;
 
     dfViewers.forEach((dfViewer) => {
       const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
-      const dfNameWithViewer = `${dfBlockTitle} / ${dfViewer['type']}`;
+      const dfNameWithViewer = isDefaultGrid ? `${dfBlockTitle}` : `${dfBlockTitle} / ${dfViewer['type']}`;
 
       const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;

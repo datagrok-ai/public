@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## v.next
+
+* RFV: Added a default Grid viewer for dataframe outputs without a viewer annotation (e.g. query results)
+
 ## 1.5.10 (2026-08-07)
 
 * Fixed context help not showing for functions annotated with `readme` instead of `help`
