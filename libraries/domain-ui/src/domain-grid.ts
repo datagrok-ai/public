@@ -11,7 +11,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {acquireDomainContext, DomainFrameEditor, DomainFrameEditorOptions, IDomainTableContext,
-  IEditorHost, isDomainRefProperty, SERVICE_COLUMNS} from './frame-editor';
+  IEditorHost, SERVICE_COLUMNS} from './frame-editor';
 import {addRowFunc, deleteRowFunc, discardFunc, refreshFunc, saveFunc} from './actions';
 import {applyDomainUiStyles} from './styles';
 
@@ -332,10 +332,9 @@ export class DomainGrid extends DG.Widget implements IEditorHost {
 
   /** Read-only degradation and column security, in the platform's own shape:
    * the whole grid when the table is not editable (or while a save is in
-   * flight), and per column otherwise — non-writable columns and `ref` columns
-   * (uuids, whose editing path is the lookup picker) stay read-only. User /
-   * group columns edit in place: the platform's grid opens its own picker
-   * anchored on the cell. */
+   * flight), and per column otherwise — non-writable columns stay read-only.
+   * Columns holding uuids (`ref`, user, group) edit in place: the platform's
+   * grid opens their own picker anchored on the cell. */
   private _applyEditability(): void {
     const editable = this._editable && !this.editor.isSaving;
     this.grid.props.allowEdit = editable;
@@ -350,7 +349,7 @@ export class DomainGrid extends DG.Widget implements IEditorHost {
     for (const p of this.editor.properties) {
       const gc = this.grid.col(p.name);
       if (gc != null)
-        gc.editable = writable.includes(p.name) && !isDomainRefProperty(p);
+        gc.editable = writable.includes(p.name);
     }
   }
 

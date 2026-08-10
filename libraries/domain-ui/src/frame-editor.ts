@@ -161,15 +161,6 @@ export function isReferenceProperty(p: DG.Property): boolean {
   return semType === 'User' || semType === 'Group' || /^[^.]+\.[^.]+$/.test(semType);
 }
 
-/** Whether [p] addresses another DOMAIN row — a `ref` column (semType
- * `'<schema>.<table>'`) alone. User / group columns hold uuids too, but the
- * platform's own anchored picker edits them in a grid, so they are not excluded
- * there; every other path ({@link isReferenceProperty}) still treats all three
- * alike. */
-export function isDomainRefProperty(p: DG.Property): boolean {
-  return /^[^.]+\.[^.]+$/.test(`${p.semType ?? ''}`);
-}
-
 /**
  * A widget or page that answers for a set of {@link DomainFrameEditor}s.
  *
@@ -905,11 +896,24 @@ export class DomainFrameEditor {
     }
   }
 
+  /** The cell as the wire sees it. The grid's DELETE / BACKSPACE path clears a
+   * cell by writing `''` — in a column that holds a uuid ({@link
+   * isReferenceProperty}) that means "no value", so it goes out as an explicit
+   * null and a required reference fails validation as the empty value it is.
+   *
+   * A DG string column already reports `''` as none, so the coercion below only
+   * fires for a reference column backed by something else; it is the DART side
+   * (`Cell.value` returns the `''`) that clears refs through this rule today.
+   * Kept because the rule is the state contract's, not this column type's. */
   private _wire(row: number, column: string): any {
     const col = this._df.columns.byName(column);
     if (col == null || col.isNone(row))
       return null;
-    return toWire(col.get(row));
+    const value = col.get(row);
+    const p = this._propByName.get(column);
+    if (value === '' && p != null && isReferenceProperty(p))
+      return null;
+    return toWire(value);
   }
 
   private _track(row: number, column: string, original: any): void {

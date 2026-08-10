@@ -585,7 +585,8 @@ category('Dapi: domain frame editor', () => {
       // Platform decoration ran: system columns hidden (the renderGrid contract).
       expect(grid.grid.col('id')?.visible, false, 'renderGrid did not hide the system columns');
 
-      // Column security: only writable, non-reference columns take in-grid edits.
+      // Column security is the only in-grid editing gate (reference columns
+      // included — they open their own anchored picker).
       if (caps.canEdit) {
         expect(grid.grid.props.allowEdit, true, 'an editable table produced a read-only grid');
         for (const p of grid.editor.properties) {
@@ -600,6 +601,58 @@ category('Dapi: domain frame editor', () => {
       grid.editor.setValue(0, 'name', 'Through the editor');
       expect(grid.editor.isChanged(0, 'name'), true, 'the edit was not tracked');
       expect(grid.dataFrame === grid.editor.dataFrame, true, 'the grid and editor drifted apart');
+    } finally {
+      grid?.detach();
+      await cleanup(prefix);
+    }
+  });
+
+  test('ref columns: editable in the grid, cleared to an explicit null', async () => {
+    const prefix = `fe-ref-${stamp()}`;
+    const [itemId, otherItemId] = await seed(prefix, 2);
+    const events = () => grok.dapi.domains.table('apitests.item_event');
+    let grid: DomainGrid | null = null;
+    try {
+      await events().insert([{item_id: itemId, kind: `${prefix}-in`, amount: 1}]);
+      grid = await DomainGrid.create(events() as any, {
+        query: {filter: {property: 'kind', operator: 'like', value: `${prefix}%`} as any, sort: 'kind'},
+      });
+      const editor = grid.editor;
+      const caps = editor.capabilities;
+      if (!caps.canEdit || !caps.writableColumns.includes('item_id'))
+        throw new Error('the fixture is not editable: the ref gate cannot be exercised');
+
+      // The gate lift: a writable ref column takes in-grid edits, so the
+      // platform's own anchored picker can open on it.
+      expect(grid.grid.col('item_id')?.editable, true,
+        'a writable ref column stayed read-only — the in-place picker cannot open');
+
+      // DELETE / BACKSPACE clears a ref cell by writing '': it must reach the
+      // wire as an explicit null, never as an empty string.
+      editor.setValue(0, 'item_id', '');
+      const ops = editor.buildOps();
+      expect(ops.length, 1, 'the cleared ref did not produce one op');
+      const values = (ops[0].op as any).values;
+      expect('item_id' in values, true, 'the cleared ref is missing from the update op');
+      expect(values.item_id, null, 'a cleared ref must go out as null');
+
+      // item_id is a REQUIRED ref, so the same clear is a blocking error.
+      expect(editor.errorOf(0, 'item_id')?.message, 'Value can\'t be empty',
+        'clearing a required ref was accepted');
+      expect(await editor.save(), false, 'the save was not refused by the required ref');
+
+      // A pick writes the TARGET's id, and it is that id the update op carries.
+      editor.setValue(0, 'item_id', otherItemId);
+      expect(editor.errorOf(0, 'item_id'), null, 'a picked ref stayed invalid');
+      expect(editor.isChanged(0, 'item_id'), true, 'the pick was not tracked as a change');
+      const picked = editor.buildOps();
+      expect(picked.length, 1, 'the pick did not produce one op');
+      expect((picked[0].op as any).values.item_id, otherItemId,
+        'the update op does not carry the picked row id');
+
+      // Picking the original back is a revert, not a change.
+      editor.setValue(0, 'item_id', itemId);
+      expect(editor.isChanged(0, 'item_id'), false, 'the pick back to the original stayed pending');
     } finally {
       grid?.detach();
       await cleanup(prefix);

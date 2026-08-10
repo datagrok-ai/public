@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: `Dapi: domain frame editor` covers the ref-column gate lift — a writable `ref` column is editable in `DomainGrid` (the in-place picker's precondition), a cleared ref reaches the update op as an explicit `null`, a required ref clear blocks the save, and a pick back to the original drops the pending change.
+
 GROK-20298: `JS: domain handlers` covers the new `ObjectHandler.renderListItem` — the base default (the caption in a div) and the delegating round trip through the platform meta — and `ObjectHandler.renderInput` — the null base default and the `UserMeta` user selector reached through `forEntity`.
 
 GROK-20298: Widened the domain UI suites for the WO-9F fix batch — `Dapi: domain app framework` now proves that `options.query` seeds a page whose URL it publishes, that a CANCELLED prompt leaves the very same list, editor and pending batch in place (the browser-Back path), that two racing gestures share ONE prompt, and that the entity page's Back is gated on everything the page tracks; `Dapi: domain frame editor` adds column security refusing a save whose payload would silently drop the value (a modified cell AND a new row's prefilled FK), an out-of-band row removal not desyncing the per-row state, a running-counter-vs-recount assertion at every state transition, and the collapse branch of `DomainGrid.decorate` (a foreign-typed handler that overrides nothing must fall through to the platform). The decorate test registers its handler and seeds inside the try, the pause seam releases in a `finally`, and the editable-fixture check is an assertion instead of a self-skip. `DG.DomainObjectHandler.rowFrom` garbage rejection is covered in `JS: domain handlers`.
