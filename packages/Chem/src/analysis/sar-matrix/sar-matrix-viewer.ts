@@ -199,14 +199,12 @@ function alignToTemplate(molStr: string, templateMolblock: string): string {
   return result;
 }
 
-/** Render a molecule onto a fresh canvas with the given ARGB background baked directly into the
+/** Draw a molecule onto an existing canvas with the given ARGB background baked directly into the
  *  RDKit draw call: bond edges are anti-aliased against whatever background the draw is handed, so a
  *  colour applied afterwards would leave a pale fringe around every bond. Straightens the depiction
  *  for a tidy standalone layout (used for substituents). */
-function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {
-  const canvas = ui.canvas(w, h);
-  if (!smiles)
-    return canvas;
+function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, w: number, h: number,
+  argb: number): void {
   try {
     drawMoleculeToCanvas(0, 0, w, h, canvas, smiles, null,
       {normalizeDepiction: true, straightenDepiction: true}, null,
@@ -214,6 +212,13 @@ function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: numbe
   } catch (e) {
     // leave the canvas blank on a malformed structure
   }
+}
+
+/** {@link paintMoleculeOnColor} onto a fresh canvas, eagerly. */
+function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {
+  const canvas = ui.canvas(w, h);
+  if (smiles)
+    paintMoleculeOnColor(canvas as HTMLCanvasElement, smiles, w, h, argb);
   return canvas;
 }
 
@@ -494,6 +499,18 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** Matrices whose folded-in children are hidden, by matrix id. Kept on the viewer rather than
    *  rebuilt per render so re-ranking or resizing does not reopen everything the user closed. */
   private readonly collapsed = new Set<string>();
+  /** The navigator's card per matrix (index-aligned with `matrices`) and the parent chain they were
+   *  built against. Built ONCE per navigator build; selection, collapse and the threshold filter
+   *  mutate these cards in place (a class swap / display toggles) instead of rebuilding the list —
+   *  with hundreds of series, recreating every card and re-rasterizing every structure on each
+   *  click is what made the navigator feel slow. */
+  private navCards: HTMLElement[] = [];
+  private navParents: number[] = [];
+  /** Rasterizes a card's core structure only when the card first becomes visible (initial viewport,
+   *  scroll, expand, or filter reveal). Recreated with each navigator build; `navPendingCores`
+   *  holds each canvas's deferred draw until it fires. */
+  private navCoreObserver: IntersectionObserver | null = null;
+  private readonly navPendingCores: Map<Element, () => void> = new Map();
   /** Which per-matrix number the navigator filter compares — the same one the card shows. */
   private filterMetric = FILTER_BEST;
   /** Threshold for that number, or null when the list is unfiltered. */
@@ -623,6 +640,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.releaseMatrixGrid();
     // The transfer tab's DOM goes with the root, but its Dart-backed grid has to be released by hand.
     this.releaseSlot(this.transferSlot);
+    this.navCoreObserver?.disconnect();
+    this.navCoreObserver = null;
+    this.navPendingCores.clear();
     super.detach();
   }
 
@@ -778,8 +798,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     // rebuild — re-fragmenting to reorder cards or flip the color direction costs seconds of RDKit
     // worker time for a result the already-assembled matrices can produce directly.
     if (property !== null && RENDER_ONLY_PROPS.includes(property.name)) {
-      if (this.matrices.length)
-        this.render();
+      // Captions and the id column show up in the pane's cells only, so the navigator stays as-is.
+      this.renderMatrixPane();
       return;
     }
     if (property !== null && RERANK_ONLY_PROPS.includes(property.name)) {
@@ -1141,7 +1161,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     // are on the matrix pane's own chips the moment a card is opened.
     const desc = `${matrix.rows.length} cores · ${matrix.positions.join('/')} · ${matrix.realCount} cpd` +
       (folded ? ` · ${folded} inside` : '');
-    const core = renderMoleculeOnColor(this.matrixCore(matrix), 78, 44, CORE_BG_ARGB);
+    const core = this.lazyCoreDepiction(this.matrixCore(matrix), 78, 44);
     core.classList.add('chem-sar-card-core');
     // Numbered from the matrices, not from the fragmentation passes: the first pass produces series,
     // which are the ROWS of a matrix rather than anything the navigator lists, so calling the first
@@ -1164,12 +1184,17 @@ export class SarMatrixViewer extends DG.JsViewer {
     // must not also switch the pane to it. Leaves get a spacer so every core lines up regardless.
     let twisty: HTMLElement;
     if (folded > 0 && onToggle) {
-      const open = !this.collapsed.has(matrix.id);
-      twisty = ui.iconFA(open ? 'chevron-down' : 'chevron-right', (e: MouseEvent) => {
+      twisty = ui.iconFA(!this.collapsed.has(matrix.id) ? 'chevron-down' : 'chevron-right', (e: MouseEvent) => {
         e.stopPropagation();
         onToggle();
-      }, open ? 'Hide the matrices folded into this one' : `Show ${folded} matrices folded into this one`);
+        // The card is not rebuilt on toggle (the list mutates in place), so flip the icon here.
+        const open = !this.collapsed.has(matrix.id);
+        twisty.classList.toggle('fa-chevron-down', open);
+        twisty.classList.toggle('fa-chevron-right', !open);
+      });
       twisty.classList.add('chem-sar-card-twisty');
+      ui.tooltip.bind(twisty, () => this.collapsed.has(matrix.id) ?
+        `Show ${folded} matrices folded into this one` : 'Hide the matrices folded into this one');
     } else
       twisty = ui.div([], 'chem-sar-card-twisty');
 
@@ -1181,12 +1206,35 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
     if (index === this.selIndex)
       card.classList.add('selected');
-    card.onclick = () => {
-      this.selIndex = index;
-      this.varyPosition = ''; // the Vary filter is per-matrix; don't carry it to a different one
-      this.render();
-    };
+    card.onclick = () => this.selectMatrix(index);
     return card;
+  }
+
+  /** Card click: move the highlight and rebuild only the matrix pane. The navigator list — hundreds
+   *  of cards and their depictions — is left untouched; rebuilding it per selection is exactly the
+   *  cost this viewer used to pay on every click. */
+  private selectMatrix(index: number): void {
+    if (index === this.selIndex)
+      return;
+    this.navCards[this.selIndex]?.classList.remove('selected');
+    this.selIndex = index;
+    this.navCards[index]?.classList.add('selected');
+    this.varyPosition = ''; // the Vary filter is per-matrix; don't carry it to a different one
+    this.renderMatrixPane();
+  }
+
+  /** A card-core canvas whose molecule is drawn on first visibility (via `navCoreObserver`): with
+   *  hundreds of series, rasterizing every structure up front is most of what made the navigator
+   *  expensive to build. Eager fallback when no observer is active. */
+  private lazyCoreDepiction(smiles: string, w: number, h: number): HTMLElement {
+    if (this.navCoreObserver === null)
+      return renderMoleculeOnColor(smiles, w, h, CORE_BG_ARGB);
+    const canvas = ui.canvas(w, h);
+    if (smiles) {
+      this.navPendingCores.set(canvas, () => paintMoleculeOnColor(canvas, smiles, w, h, CORE_BG_ARGB));
+      this.navCoreObserver.observe(canvas);
+    }
+    return canvas;
   }
 
   /** Core label: "Series B · Core 1" with the series prefix, or just "Core 1" without it. */
@@ -1391,10 +1439,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       `${deepest} level${deepest === 1 ? '' : 's'}`, 'chem-sar-nav-sub');
     const list = ui.div([], 'chem-sar-nav-list');
     const matchCount = ui.divText('', 'chem-sar-nav-matches');
-    // Redrawing only the list keeps the inputs themselves alive, so the caret stays where it was and
-    // the pane does not rebuild for what is purely a change of what the navigator shows.
+    // The cards are built once (fillNavList below); a filter change only shows/hides them, so
+    // dragging the threshold never recreates a card or re-rasterizes a structure.
     const refill = (): void => {
-      this.fillNavList(list, parents);
+      this.updateNavVisibility();
       const hits = this.matrices.filter((matrix) => this.passesFilter(matrix)).length;
       matchCount.innerText = this.filterMin === null ? '' : `${hits} of ${this.matrices.length} match`;
     };
@@ -1470,25 +1518,51 @@ export class SarMatrixViewer extends DG.JsViewer {
     const controls = ui.form([rankInput, metricInput, minInput]);
 
     const header = ui.divV([sub, controls, matchCount], 'chem-sar-nav-header');
-    refill();
+    this.fillNavList(list, parents);
+    refill(); // initial visibility + match count (a threshold can survive a navigator rebuild)
     return ui.divV([header, list], 'chem-sar-nav');
   }
 
-  /**
-   * Fill the navigator with one card per matrix, each parent immediately followed by the subtree it
-   * owns, and every collapsed subtree left out. Rebuilt in place rather than through `render()`, which
-   * would also rebuild the matrix grid and send it back to its first row.
-   */
-  private fillNavList(list: HTMLElement, parents: number[]): void {
-    const scroll = list.scrollTop;
-    ui.empty(list);
-    // A coarser matrix owns the finer ones folded into it, so each family is one branch of that tree.
-    // Ranked order decides the order of the families and of the siblings within each.
+  /** The navigator's child lists, recomputed from the parent chain the cards were built against.
+   *  A coarser matrix owns the finer ones folded into it, so each family is one branch of the tree;
+   *  ranked order decides the order of the families and of the siblings within each. */
+  private navChildren(parents: number[]): Map<number, number[]> {
     const children = new Map<number, number[]>();
     parents.forEach((p, i) => {
       if (p >= 0)
         children.set(p, [...(children.get(p) ?? []), i]);
     });
+    return children;
+  }
+
+  /**
+   * Build the navigator's cards, ONCE per navigator build: one card per matrix, each parent
+   * immediately followed by the subtree it owns, all of them in the DOM. What is *shown* is decided
+   * separately by {@link updateNavVisibility} — selection, collapse toggles and the threshold filter
+   * all mutate the existing cards (a class swap / display toggles) instead of coming back here.
+   * The structures themselves rasterize lazily on first visibility ({@link lazyCoreDepiction}), so
+   * building every card up front costs DOM only.
+   */
+  private fillNavList(list: HTMLElement, parents: number[]): void {
+    ui.empty(list);
+    this.navCards = [];
+    this.navParents = parents;
+    this.navCoreObserver?.disconnect();
+    this.navPendingCores.clear();
+    this.navCoreObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting)
+          continue;
+        this.navCoreObserver?.unobserve(entry.target);
+        const draw = this.navPendingCores.get(entry.target);
+        if (draw) {
+          this.navPendingCores.delete(entry.target);
+          draw();
+        }
+      }
+    }, {root: list, rootMargin: '300px'}); // pre-draw a little past the viewport so scrolling reads smooth
+
+    const children = this.navChildren(parents);
     const descendants = (i: number): number =>
       (children.get(i) ?? []).reduce((n, child) => n + 1 + descendants(child), 0);
 
@@ -1509,10 +1583,37 @@ export class SarMatrixViewer extends DG.JsViewer {
         this.selIndex = root;
       this.collapseSeeded = true;
     }
-    // A parent that fails the filter is still drawn when something under it passes, or the match would
-    // be unreachable. While a filter is on, collapse is ignored down those paths for the same reason —
-    // filtering is a search, and a hit hidden inside a closed node is not a hit the user can see.
+
+    const emit = (i: number, depth: number): void => {
+      const id = this.matrices[i].id;
+      const card = this.buildCard(this.matrices[i], i, depth, descendants(i), () => {
+        if (!this.collapsed.delete(id))
+          this.collapsed.add(id);
+        this.updateNavVisibility();
+      });
+      this.navCards[i] = card;
+      list.appendChild(card);
+      for (const child of children.get(i) ?? [])
+        emit(child, depth + 1);
+    };
+    parents.forEach((p, root) => {
+      if (p < 0)
+        emit(root, 0);
+    });
+  }
+
+  /**
+   * Show/hide the already-built cards per the collapse state and the threshold filter — pure display
+   * toggles, so neither dragging the threshold nor toggling a branch ever recreates a card.
+   *
+   * A parent that fails the filter is still shown when something under it passes, or the match would
+   * be unreachable. While a filter is on, collapse is ignored down those paths for the same reason —
+   * filtering is a search, and a hit hidden inside a closed node is not a hit the user can see.
+   */
+  private updateNavVisibility(): void {
+    const parents = this.navParents;
     const filtering = this.filterMin !== null;
+    const children = this.navChildren(parents);
     const hits = new Map<number, boolean>();
     const anyHit = (i: number): boolean => {
       const cached = hits.get(i);
@@ -1525,26 +1626,19 @@ export class SarMatrixViewer extends DG.JsViewer {
       hits.set(i, ok);
       return ok;
     };
-
-    const emit = (i: number, depth: number): void => {
-      if (filtering && !anyHit(i))
-        return;
-      const id = this.matrices[i].id;
-      list.appendChild(this.buildCard(this.matrices[i], i, depth, descendants(i), () => {
-        if (!this.collapsed.delete(id))
-          this.collapsed.add(id);
-        this.fillNavList(list, parents);
-      }));
-      if (!filtering && this.collapsed.has(id))
-        return;
-      for (const child of children.get(i) ?? [])
-        emit(child, depth + 1);
+    const hiddenByCollapse = (i: number): boolean => {
+      for (let p = parents[i]; p >= 0; p = parents[p]) {
+        if (this.collapsed.has(this.matrices[p].id))
+          return true;
+      }
+      return false;
     };
-    parents.forEach((p, root) => {
-      if (p < 0)
-        emit(root, 0);
+    this.navCards.forEach((card, i) => {
+      if (!card)
+        return;
+      const visible = filtering ? anyHit(i) : !hiddenByCollapse(i);
+      card.style.display = visible ? '' : 'none';
     });
-    list.scrollTop = scroll;
   }
 
   // ---- Matrix table (right pane) ------------------------------------------------------------
@@ -2510,7 +2604,7 @@ export class SarMatrixViewer extends DG.JsViewer {
         items: ['All', ...matrix.positions],
         onValueChanged: (value) => {
           this.varyPosition = value === 'All' ? '' : value!;
-          this.render();
+          this.renderMatrixPane(); // column choice is a pane concern — the navigator has no stake
         },
       });
       controls.push(varyInput.root);
@@ -2520,7 +2614,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       items: COLUMN_SORTS,
       onValueChanged: (value) => {
         this.columnCaption = value!;
-        this.render();
+        this.renderMatrixPane();
       },
     });
     ui.tooltip.bind(labelInput.root, () => 'Annotate each substituent column with a metric — its mean ' +
@@ -2645,12 +2739,22 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (newNav instanceof HTMLElement)
       newNav.scrollTop = navScroll;
     // The matrix tab always shows a matrix; SAR transfer has its own tab and never displaces it.
-    const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
-    this.host.appendChild(this.buildMatrixPane(matrix));
+    this.renderMatrixPane();
     // Only when it is the tab on screen: rebuilt hidden, its grid would size against a display:none
     // pane, and rebuilding a pane nobody is looking at wastes the very work the lazy tab defers.
     if (this.transferTabActive)
       this.activateTransferTab();
+  }
+
+  /** Rebuild only the matrix pane (right side), leaving the navigator DOM — and its scroll — alone.
+   *  This is the whole redraw a card click, a Vary/Caption change or an id-column switch needs. */
+  private renderMatrixPane(): void {
+    if (this.matrices.length === 0)
+      return;
+    this.releaseMatrixGrid();
+    this.host.querySelector(':scope > .chem-sar-main')?.remove();
+    const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
+    this.host.appendChild(this.buildMatrixPane(matrix));
     this.syncSelection(); // apply the host grid's current selection/row to the freshly-built cells
   }
 }
