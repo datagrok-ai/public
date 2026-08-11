@@ -412,6 +412,37 @@ category('panel and renderer', () => {
     }
   });
 
+  test('statistics are written in the plot font, not the one the caller left', async () => {
+    const data = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    data.chartOptions!.showStatistics = ['auc', 'rSquared'];
+    const col = DG.Column.fromStrings('curve', [JSON.stringify(data)]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'statisticsFont';
+
+    // the grid hands the renderer whatever font it last drew with, which is what used to change
+    // the statistics when the filter opened and change them back when the panel was scrolled
+    const fontsWhenCallerLeft = (callerFont: string): string[] => {
+      const fonts: string[] = [];
+      const g = ui.canvas(400, 300).getContext('2d')!;
+      const fillText = g.fillText.bind(g);
+      g.fillText = ((text: string, x: number, y: number) => {
+        if (text.includes(':')) fonts.push(g.font);
+        fillText(text, x, y);
+      }) as any;
+      g.font = callerFont;
+      new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
+        getOrCreateParsedChartData(df.cell(0, 'curve')));
+      return [...new Set(fonts)];
+    };
+
+    const seeded = fontsWhenCallerLeft('20px Comic Sans MS');
+    expect(seeded.length, 1, 'every statistic should be written alike');
+    expect(seeded[0].includes('Comic Sans'), false, 'and not in whatever the caller was using');
+    expect(fontsWhenCallerLeft('11px Roboto, "Roboto Local"')[0], seeded[0],
+      'the same font however the canvas reached the renderer');
+  });
+
   test('several droplines are named, and one off the plot is not drawn', async () => {
     // the curve levels off at 5 and 100, so IC50 sits at the inflection and IC90 a decade later
     const data = JSON.parse(curveJson(-6.5)) as IFitChartData;

@@ -19,6 +19,8 @@ import {FitFunction, getStatistic, getStatisticProperty} from '@datagrok-librari
 
 /** How often what is drawn reports where it went, which is enough to tell a busy corner from a free one. */
 export const CURVE_SAMPLE_PX_STEP = 8;
+const STATISTICS_FONT = '11px Roboto, "Roboto Local"';
+const STATISTICS_LINE_PX = 15;
 
 /** Where a piece of text ends up, so the legend does not take a corner the plot already writes in. */
 function reportText(drawnAt: DG.Point[] | undefined, g: CanvasRenderingContext2D, text: string,
@@ -468,12 +470,13 @@ export function renderLabels(g: CanvasRenderingContext2D, labels: {[key: string]
   if (!labels || !names || names.length === 0)
     return 0;
   const dataBox = renderOptions.dataBox;
+  g.font = STATISTICS_FONT;
   let line = renderOptions.startLine ?? 0;
   for (const name of names) {
     const value = labels[name];
     if (value === undefined || value === null)
       continue;
-    const y = dataBox.y + 20 + 20 * line;
+    const y = dataBox.y + STATISTICS_LINE_PX * (line + 1);
     if (y > dataBox.maxY)
       break;
     g.fillStyle = renderOptions.color;
@@ -498,6 +501,7 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
   const fit = toDataSpace(getSeriesFit(series, fitFunc, dataPoints, renderOptions.logOptions),
     renderOptions.logOptions);
   const color = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
+  g.font = STATISTICS_FONT;
   let line = renderOptions.startLine ?? 0;
   for (const statName of statistics) {
     const value = getStatistic(fit, statName);
@@ -505,7 +509,7 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
     // skip statistics this fit function does not produce instead of rendering NaN
     if (value === undefined || !prop)
       continue;
-    const y = dataBox.y + 20 + 20 * line;
+    const y = dataBox.y + STATISTICS_LINE_PX * (line + 1);
     if (y > dataBox.maxY)
       break;
     g.fillStyle = color;
