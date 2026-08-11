@@ -2558,7 +2558,7 @@ export class PackageFunctions {
     const view = grok.shell.tv as DG.TableView;
     view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
-      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, sarTransfer: true});
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual});
   }
 
   @grok.decorators.func({

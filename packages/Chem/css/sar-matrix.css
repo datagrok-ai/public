@@ -485,10 +485,9 @@ i.chem-sar-card-twisty:hover {
   margin-top: 6px;
 }
 
-/* ---- SAR transfer panel -------------------------------------------------------------------- */
+/* ---- SAR transfer tab ---------------------------------------------------------------------- */
 
-/* Docked under the view rather than nested in the viewer, so the matrix keeps its full width and
-   this can be resized or closed without disturbing it. */
+/* The SAR Transfer tab's pane (sibling to .chem-sar-matrix in the viewer's tab control). */
 .chem-sar-xfer-panel {
   display: flex;
   flex-direction: row;

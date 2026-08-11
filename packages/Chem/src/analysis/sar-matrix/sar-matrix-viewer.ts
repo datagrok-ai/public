@@ -80,9 +80,10 @@ const RERANK_ONLY_PROPS = ['rankScheme', 'activityDirection'];
  *  which would reorder the navigator for what is only a change of column caption. */
 const RENDER_ONLY_PROPS = ['columnCaption', 'idColumnName'];
 
-/** Properties that change which transfers exist without touching the matrices underneath them, so
- *  they rebuild the transfer list and redraw but must not re-fragment. */
-const TRANSFER_ONLY_PROPS = ['sarTransfer'];
+/** The viewer's two tabs (MMP-style). The matrix tab is the default; the transfer tab computes its
+ *  quadratic core-vs-core comparison lazily, the first time it is opened for the current matrices. */
+const TAB_MATRIX = 'SAR Matrix';
+const TAB_TRANSFER = 'SAR Transfer';
 
 /** Which end of the activity scale is "more potent". Auto derives it from scaling (only −lg is
  *  higher-is-better); the explicit options cover pre-computed pIC50/pKi/%-inhibition left on `none`. */
@@ -432,18 +433,23 @@ export class SarMatrixViewer extends DG.JsViewer {
   fragmentationLevels: number;
   threshold: number;
   predictVirtual: boolean;
-  sarTransfer: boolean;
   rankScheme: string;
 
   private matrices: SarMatrix[] = [];
-  /** SAR-transfer entries, listed as their own navigator section (the mockup's "SAR TRANSFER").
-   *  Global: every correlated core pair across all matrices, including cross-series pairs. */
+  /** SAR-transfer entries: every correlated core pair across all matrices, including cross-series
+   *  pairs. Computed lazily — empty until the SAR Transfer tab is first opened (see
+   *  {@link activateTransferTab}), and cleared whenever the matrices change under it. */
   private transfers: Transfer[] = [];
+  /** Whether `transfers` reflects the current `matrices`. False until the transfer tab runs its
+   *  lazy computation, and reset by {@link invalidateTransfers} on every rebuild or re-rank. */
+  private transfersComputed = false;
+  /** A lazy transfer computation is already scheduled — a second tab activation must not stack one. */
+  private transfersComputing = false;
   /** Index into `matrices` of the series the matrix pane is showing. */
   private selIndex = 0;
-  /** Index into `transfers` of the entry the SAR-transfer panel is showing. Deliberately separate from
-   *  `selIndex`: the two panes are on screen together, so a shared index would make picking a transfer
-   *  move the matrix out from under the user. */
+  /** Index into `transfers` of the entry the SAR-transfer tab is showing. Deliberately separate from
+   *  `selIndex`: the two tabs are navigated independently, so a shared index would make picking a
+   *  transfer move the matrix out from under the user. */
   private transferIndex = 0;
   /** "Vary" filter: show only this R-position's column group, or all when empty. */
   private varyPosition = '';
@@ -459,12 +465,10 @@ export class SarMatrixViewer extends DG.JsViewer {
    *  viewer closing can't wipe another's panels. */
   private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
   private readonly host = ui.divH([], 'chem-sar-matrix');
-  /** The SAR-transfer panel's content. Docked next to the viewer while the feature is on, so the
-   *  matrix stays on screen while a transfer is being read. */
+  /** The SAR Transfer tab's content — sibling pane to `host` in `tabs`, filled lazily on first open. */
   private readonly transferHost = ui.divH([], 'chem-sar-xfer-panel');
-  /** The dock node holding `transferHost`, null while the panel is closed. Held because a docked node
-   *  outlives the viewer that created it and has to be undocked by hand on detach. */
-  private transferNode: DG.DockNode | null = null;
+  /** MMP-style tab control holding the matrix pane (default) and the SAR-transfer pane. */
+  private readonly tabs: DG.TabControl;
   private computing = false;
   /** Set when a recompute is requested while one is already running, so it is re-queued after. */
   private dirty = false;
@@ -538,17 +542,37 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Only read under Similarity grouping; Site grouping matches exactly and has nothing to tune.
     this.threshold = this.float('threshold', 0.5);
     this.predictVirtual = this.bool('predictVirtual', true);
-    // Off by default: detecting transfers compares every core against every other one, so it costs a
-    // pass quadratic in the total row count on each rebuild AND each re-rank, which is a poor default
-    // for the majority of sessions that only ever read the matrices.
-    this.sarTransfer = this.bool('sarTransfer', false, {friendlyName: 'SAR transfer'});
-    // "SAR transfer" is a navigator section, not a ranking mode, so it is not offered as a rank scheme.
+    // "SAR transfer" is a tab, not a ranking mode, so it is not offered as a rank scheme.
     this.rankScheme = this.string('rankScheme', SarRankScheme.Potency,
       {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred]});
     // Annotates the substituent columns; changing it repaints and never re-fragments.
     this.columnCaption = this.string('columnCaption', COLSORT_POTENCY, {choices: COLUMN_SORTS});
     this.host.style.height = '100%';
-    this.root.appendChild(this.host);
+    this.transferHost.style.height = '100%';
+
+    // MMP-style layout: the matrices and the transfer view are tabs of one control rather than the
+    // transfer being docked beneath the viewer. Detecting transfers compares every core against every
+    // other one — quadratic in the total row count — so that tab computes on first open, not up front.
+    this.tabs = ui.tabControl(null, false);
+    const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
+    ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
+    const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferHost);
+    ui.tooltip.bind(transferPane.header, 'Pairs of cores whose potency trends run in parallel across ' +
+      'shared substituents — detected when the tab is first opened');
+    // Lives with the tab control itself (not this.subs): tab switching must keep working across a
+    // detach/re-attach cycle, and the subscription dies with the viewer's DOM anyway.
+    this.tabs.onTabChanged.subscribe(() => {
+      if (this.tabs.currentPane?.name === TAB_TRANSFER)
+        this.activateTransferTab();
+      else {
+        // A pane rebuilt while its tab was hidden sat in a display:none host; repaint it now that
+        // its canvas has real dimensions.
+        this.matrixSlot.state?.grid.invalidate();
+      }
+    });
+    this.tabs.root.style.width = '100%';
+    this.tabs.root.style.height = '100%';
+    this.root.appendChild(this.tabs.root);
   }
 
   onTableAttached(): void {
@@ -597,9 +621,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.cpStructureSub?.unsubscribe(); // the panel outlives the viewer; its observer must not
     this.cpStructureSub = null;
     this.releaseMatrixGrid();
-    // A docked node is owned by the view, not the viewer, so it survives the viewer closing unless it
-    // is undocked here — leaving a dead "SAR transfer" panel behind.
-    this.closeTransferPanel();
+    // The transfer tab's DOM goes with the root, but its Dart-backed grid has to be released by hand.
+    this.releaseSlot(this.transferSlot);
     super.detach();
   }
 
@@ -759,18 +782,6 @@ export class SarMatrixViewer extends DG.JsViewer {
         this.render();
       return;
     }
-    if (property !== null && TRANSFER_ONLY_PROPS.includes(property.name)) {
-      if (!this.matrices.length) {
-        this.scheduleCompute(); // nothing assembled yet — the first build will pick the flag up
-        return;
-      }
-      this.computeTransfers();
-      // Only the panel changes: the matrix pane is untouched by the flag, so its selection and scroll
-      // position survive the toggle.
-      this.transferIndex = 0;
-      this.renderTransferPanel();
-      return;
-    }
     if (property !== null && RERANK_ONLY_PROPS.includes(property.name)) {
       this.reRank();
       return;
@@ -786,9 +797,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       return;
     }
     this.matrices = rankMatrices(this.matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
-    this.computeTransfers();
+    // Transfers index into `matrices` by position, so a reorder invalidates them; the transfer tab
+    // recomputes lazily the next time it is shown (render() below refreshes it if it is up now).
+    this.invalidateTransfers();
     this.selIndex = 0;
-    this.transferIndex = 0;
     this.render();
   }
 
@@ -818,9 +830,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Emptying the host detaches the grid's DOM but does not release the Dart-backed grid or its
     // subscriptions; without this the failure path below would leave one live and repainting forever.
     this.releaseMatrixGrid();
-    // The transfers on screen index into the matrices about to be replaced, so the panel goes now
-    // rather than being left pointing at rows that no longer exist if this compute fails.
-    this.closeTransferPanel();
+    // The transfers on screen index into the matrices about to be replaced, so the transfer tab is
+    // cleared now rather than being left pointing at rows that no longer exist if this compute fails.
+    this.invalidateTransfers();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
     const progress = DG.TaskBarProgressIndicator.create('Building SAR matrices...');
@@ -842,9 +854,7 @@ export class SarMatrixViewer extends DG.JsViewer {
         return;
       this.matrices = matrices;
       this.collapseSeeded = false;
-      this.computeTransfers();
       this.selIndex = 0;
-      this.transferIndex = 0;
       this.render();
     } catch (e) {
       if (this.detached)
@@ -852,6 +862,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       const message = e instanceof Error ? e.message : String(e);
       ui.empty(this.host);
       this.host.appendChild(ui.divText(`SAR Matrix failed: ${message}`));
+      // The transfer tab may still be showing "Building SAR matrices..." from a mid-compute visit;
+      // there is no render() on this path to replace it.
+      ui.empty(this.transferHost);
+      this.transferHost.appendChild(ui.divText(`SAR Matrix failed: ${message}`, 'chem-sar-empty-note'));
       grok.shell.error(`SAR Matrix: ${message}`);
     } finally {
       progress.close();
@@ -877,14 +891,26 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** Rebuild the SAR-transfer list: every correlated core pair across all matrices — within a matrix
-   *  AND across matrices (differently-scaffolded series) — strongest first. Recomputed whenever the
-   *  matrix set or order changes.
+   *  AND across matrices (differently-scaffolded series) — strongest first. Runs only from the
+   *  transfer tab's lazy activation, so the quadratic core-vs-core pass is never paid by a session
+   *  that only ever reads the matrices.
    *
-   * Left empty while the feature is off, which is what keeps it out of the rest of the viewer: the
-   * navigator sections, the per-matrix correlation chip and the trend view all read this list, so
-   * none of them has to test the flag itself. */
+   * Left empty until then, which is what keeps it out of the rest of the viewer: the per-matrix
+   * correlation chip and the trend view all read this list, so none of them has to test whether the
+   * tab was ever opened. */
   private computeTransfers(): void {
-    this.transfers = this.sarTransfer ? computeAllTransfers(this.matrices) : [];
+    this.transfers = computeAllTransfers(this.matrices);
+    this.transfersComputed = true;
+  }
+
+  /** Drop the transfer list and the tab's content: the matrices it indexed into are gone (rebuilt or
+   *  reordered). The next visit to the transfer tab recomputes against the current matrices. */
+  private invalidateTransfers(): void {
+    this.releaseSlot(this.transferSlot);
+    ui.empty(this.transferHost);
+    this.transfers = [];
+    this.transferIndex = 0;
+    this.transfersComputed = false;
   }
 
   /** The potency tint composited over white and returned opaque, for use as a depiction's background.
@@ -1207,28 +1233,78 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** Select a specific transfer (by its identity in this.transfers) and redraw the trend view.
-   *  Only the panel is rebuilt — the matrix pane is a separate view now and must not move. */
+   *  Only the transfer tab is rebuilt — the matrix tab is untouched and must not move. */
   private selectTransfer(transfer: Transfer): void {
     this.transferIndex = Math.max(0, this.transfers.indexOf(transfer));
     this.renderTransferPanel();
   }
 
+  /** Whether the SAR Transfer tab is the one on screen. */
+  private get transferTabActive(): boolean {
+    return this.tabs.currentPane?.name === TAB_TRANSFER;
+  }
+
   /**
-   * Rebuild the SAR-transfer panel: the list of detected transfers alongside the trend view of the
-   * selected one. The panel exists only while there is something in it, so its presence on screen is
-   * itself the answer to "were any transfers found".
+   * Bring the SAR Transfer tab up to date, computing the transfer list on first open. The quadratic
+   * core-vs-core comparison is exactly what the lazy tab defers: it runs here — behind a spinner and
+   * a timeout so the tab switch paints first — and never anywhere else. Called on every switch to the
+   * tab and from `render()` while the tab is up; both are no-ops when the list is already current.
+   */
+  private activateTransferTab(): void {
+    if (this.transfersComputing)
+      return;
+    if (this.computing) {
+      // The matrices themselves are still being built; compute() ends in render(), which re-enters
+      // here once there is something to compare.
+      ui.empty(this.transferHost);
+      this.transferHost.appendChild(ui.divText('Building SAR matrices...', 'chem-sar-empty-note'));
+      return;
+    }
+    if (this.transfersComputed) {
+      // The list is current; rebuild the pane only if it is not on screen (first show after a render
+      // that happened while this tab was hidden), otherwise just repaint the live grid.
+      if (this.transferHost.childElementCount === 0)
+        this.renderTransferPanel();
+      else
+        this.transferSlot.state?.grid.invalidate();
+      return;
+    }
+    this.transfersComputing = true;
+    ui.empty(this.transferHost);
+    ui.setUpdateIndicator(this.transferHost, true, 'Detecting SAR transfers...');
+    // Timeout, MMP-style: let the tab switch and the indicator paint before the synchronous
+    // quadratic pass freezes the frame.
+    setTimeout(() => {
+      this.transfersComputing = false;
+      // A matrix rebuild that started meanwhile is about to replace `matrices`; computing now would
+      // mark stale transfers as current. Its final render() re-enters the activation instead.
+      if (this.detached || this.computing)
+        return;
+      this.computeTransfers();
+      this.transferIndex = 0;
+      ui.setUpdateIndicator(this.transferHost, false);
+      this.renderTransferPanel();
+    }, 100);
+  }
+
+  /**
+   * Rebuild the SAR-transfer tab: the list of detected transfers alongside the trend view of the
+   * selected one, or a note when the current matrices hold no transfer worth showing.
    */
   private renderTransferPanel(): void {
-    if (!this.sarTransfer || this.transfers.length === 0) {
-      this.closeTransferPanel();
+    // The tab's own grid, not the matrix's: releasing here is what keeps switching transfers from
+    // stacking up Dart-backed grids, and it cannot touch the matrix tab's slot.
+    this.releaseSlot(this.transferSlot);
+    ui.empty(this.transferHost);
+    if (this.transfers.length === 0) {
+      this.transferHost.appendChild(ui.divText(this.matrices.length === 0 ?
+        'No SAR matrices to compare — build matrices first on the SAR Matrix tab.' :
+        'No SAR transfers detected: no two cores share enough substituents with correlated ' +
+        'potency trends.', 'chem-sar-empty-note'));
       return;
     }
     if (this.transferIndex >= this.transfers.length)
       this.transferIndex = 0;
-    // The panel's own grid, not the matrix's: releasing here is what keeps switching transfers from
-    // stacking up Dart-backed grids, and it cannot touch the matrix pane's slot.
-    this.releaseSlot(this.transferSlot);
-    ui.empty(this.transferHost);
     const list = ui.div([], 'chem-sar-xfer-list');
     for (const el of this.buildTransferSection('SAME-SERIES', this.transfers.filter((t) => !t.crossMatrix)))
       list.appendChild(el);
@@ -1236,51 +1312,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       list.appendChild(el);
     this.transferHost.appendChild(list);
     this.transferHost.appendChild(this.buildTransferPane(this.transfers[this.transferIndex]));
-    this.openTransferPanel();
-  }
-
-  /** This viewer's own dock node, so the panel can be placed against the viewer rather than against
-   *  the view. The docked element is not always the viewer's root — a wrapper may hold the node — so
-   *  the search walks up until the dock manager recognises an ancestor. */
-  private ownDockNode(view: DG.TableView): DG.DockNode | null {
-    for (let el: HTMLElement | null = this.root; el !== null; el = el.parentElement) {
-      const node = view.dockManager.findNode(el);
-      if (node !== undefined)
-        return node;
-    }
-    return null;
-  }
-
-  /** Dock the panel directly beneath this viewer, once. Anchored to the viewer's node rather than the
-   *  view's so it splits only the viewer's own space — docked against the view it would run the full
-   *  width and push up the table grid, which has nothing to do with SAR transfer. */
-  private openTransferPanel(): void {
-    // A panel the user closed by hand leaves a node behind that no longer holds anything, so the
-    // element being disconnected — not the node being null — is what says it has to be re-docked.
-    if (this.transferNode !== null && this.transferHost.isConnected)
-      return;
-    this.transferNode = null;
-    const view = this.view;
-    if (!(view instanceof DG.TableView))
-      return;
-    this.transferNode = view.dockManager.dock(this.transferHost, DG.DOCK_TYPE.DOWN,
-      this.ownDockNode(view), 'SAR transfer', 0.38);
-  }
-
-  /** Undock the panel and release its grid. */
-  private closeTransferPanel(): void {
-    this.releaseSlot(this.transferSlot);
-    ui.empty(this.transferHost);
-    if (this.transferNode === null)
-      return;
-    try {
-      const view = this.view;
-      if (view instanceof DG.TableView)
-        view.dockManager.close(this.transferNode);
-    } catch (e) {
-      // Already gone — the user closed the panel, or the whole view went away first.
-    }
-    this.transferNode = null;
   }
 
   /** Every transfer sharing this one's source core — the alternatives the pane's target dropdown
@@ -2613,10 +2644,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     const newNav = this.host.querySelector('.chem-sar-nav-list');
     if (newNav instanceof HTMLElement)
       newNav.scrollTop = navScroll;
-    // The viewer always shows a matrix; SAR transfer has its own panel and never displaces it.
+    // The matrix tab always shows a matrix; SAR transfer has its own tab and never displaces it.
     const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
     this.host.appendChild(this.buildMatrixPane(matrix));
-    this.renderTransferPanel();
+    // Only when it is the tab on screen: rebuilt hidden, its grid would size against a display:none
+    // pane, and rebuilding a pane nobody is looking at wastes the very work the lazy tab defers.
+    if (this.transferTabActive)
+      this.activateTransferTab();
     this.syncSelection(); // apply the host grid's current selection/row to the freshly-built cells
   }
 }
