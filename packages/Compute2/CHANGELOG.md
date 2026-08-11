@@ -4,6 +4,7 @@
 
 * RFV: Added a default Grid viewer for dataframe outputs without a viewer annotation (e.g. query results)
 * RFV: Added a "Save as project" export (visible tables and viewers; data sync when inputs are literals)
+* RFV: URL parameters as input overrides with auto-run, and a "Copy link with inputs" export
 
 ## 1.5.10 (2026-08-07)
 

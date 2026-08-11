@@ -195,3 +195,16 @@ export async function TestCustomExportModel(a: number) : Promise<number> {
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
   return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
 }
+
+//input: int a 
+//input: double b 
+//input: bool flag 
+//input: string s 
+//input: datetime when 
+//input: dataframe df 
+//input: double opt { optional: true }
+//input: int nul { nullable: true }
+//output: double result
+export async function TestUrlInputsFixture(a: number, b: number, flag: boolean, s: string, when: any, df: DG.DataFrame, opt: number, nul: number) : Promise<number> {
+  return await PackageFunctions.TestUrlInputsFixture(a, b, flag, s, when, df, opt, nul);
+}
