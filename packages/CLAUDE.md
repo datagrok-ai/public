@@ -163,6 +163,19 @@ dockerfiles/
     requirements.in      # Python dependencies (if applicable)
 ```
 
+Instead of a `Dockerfile`, `container.json` may name an already-published `image` — the platform
+then runs that image rather than building one:
+
+```jsonc
+{"image": "datagrok/jkg_r:#{PACKAGE_VERSION}", "cpu": 2, "memory": 8192, "on_demand": true}
+{"image": "datagrok/jkg_r"}   // same thing — an untagged image gets the package version
+```
+
+Prefer either of those over naming a mutable tag. Nothing re-resolves a tag once the image has
+been pulled, so a stand keeps running whatever `:bleeding-edge` meant the day it first started
+the container — sandbox served scripts for days from an image whose digest no longer matched the
+tag. An explicit tag or `@sha256:` digest is honoured as written.
+
 Access from TypeScript via `grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/endpoint', opts)`.
 See **Chem**, **Docking**, **Boltz1**, **Reinvent4** for examples.
 

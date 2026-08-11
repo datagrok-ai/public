@@ -1,5 +1,5 @@
 {
-  "image": "datagrok/jkg_r:1.0.1",
+  "image": "datagrok/jkg_r:#{PACKAGE_VERSION}",
   "cpu": 2,
   "memory": 8192,
   "shm_size": 2048,
