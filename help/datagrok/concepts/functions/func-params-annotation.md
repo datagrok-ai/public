@@ -157,16 +157,17 @@ For all parameters:
 
 For `dataframe` type:
 
-| Option      | Value       | Description                             |
-|-------------|-------------|-----------------------------------------|
-| columns     | numerical   | Only numerical columns will be loaded   |
-| columns     | categorical | Only categorical columns will be loaded |
+| Option      | Value                  | Description                                                  |
+|-------------|------------------------|--------------------------------------------------------------|
+| columns     | numerical              | Only numerical columns will be loaded (including datetime)   |
+| columns     | numerical_no_datetime  | Same as numerical, but datetime columns are excluded         |
+| columns     | categorical            | Only categorical columns will be loaded                      |
 
 For `column` and `column_list` types
 
 | Option     | Value                           | Description                                                                 |
 |------------|---------------------------------|-----------------------------------------------------------------------------|
-| type       | numerical,categorical,dateTime  | In a dialog, only numerical columns will be shown                           |
+| type       | numerical, numerical_no_datetime, categorical, datetime, categorical_or_datetime, or a column type such as int, double, string | In a dialog, only matching columns will be shown. Datetime columns are numerical, so use `numerical_no_datetime` to exclude them |
 | format     | MM/dd/yyyy                      | Datetime format, for dateTime columns and datetime type only                |
 | allowNulls | true/false                      | Adds validation of the missing values presence                              |
 | action     | join("table parameter name")    | Joins result to the specified table, for output parameters only             |
