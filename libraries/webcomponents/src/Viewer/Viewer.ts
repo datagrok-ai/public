@@ -33,7 +33,10 @@ export class Viewer<T = any> extends HTMLElement {
     ).subscribe(([type, df]) => {
       if (type !== this.host.typeSetted$.value)
         this.dispatchEvent(new CustomEvent('viewer-type-changed', {detail: type}));
-      if (df !== this.host.dfSetted$.value)
+      // compare dart handles: Dart events deliver a fresh JS wrapper for the same frame,
+      // and a spurious dispatch here runs inside the Dart event fire, where consumers
+      // mutating the grid hit "Controller is already firing an event"
+      if (df?.dart !== this.host.dfSetted$.value?.dart)
         this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: df}));
     });
 
