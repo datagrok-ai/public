@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-8022: Load EfficientNet-B0 weights from Keras' maintained applications module instead of the dead qubvel URL
 * Scripts: Migrated nodejs sample scripts to the js-api (`grok`/`DG` globals) following the nodejs script runtime change
 
 * Docker: Raised conda env to Python 3.10 and added security floors (setuptools/wheel/urllib3/pyarrow/jaraco.context/brotli), plus removed stale ensurepip/pkgs-cache copies (VEX)

@@ -9,9 +9,10 @@
 
 import numpy as np
 from skimage.io import imread
-from efficientnet.keras import EfficientNetB0
+from keras.applications.efficientnet import EfficientNetB0, preprocess_input
 from keras.applications.imagenet_utils import decode_predictions
-from efficientnet.keras import center_crop_and_resize, preprocess_input
+# qubvel supplies only the crop helper: its weights URL is dead and its preprocessing double-normalizes Keras' input
+from efficientnet.keras import center_crop_and_resize
 
 image = imread(file)
 model = EfficientNetB0(weights='imagenet')
