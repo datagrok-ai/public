@@ -5,11 +5,13 @@
   min-height: 0;
 }
 
+/* Wide enough that a card indented two levels still shows its label and a one-line description;
+   `NAV_W` in the viewer has to match, since cell widths are fitted against what is left over. */
 .chem-sar-nav {
   display: flex;
   flex-direction: column;
-  flex: 0 0 260px;
-  min-width: 260px;
+  flex: 0 0 320px;
+  min-width: 320px;
   border-right: 1px solid var(--grey-2);
   overflow: hidden;
 }
@@ -17,15 +19,6 @@
 .chem-sar-nav-header {
   padding: 10px 12px 8px;
   border-bottom: 1px solid var(--grey-2);
-}
-
-.chem-sar-nav-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--grey-6);
 }
 
 .chem-sar-nav-badge {
@@ -38,21 +31,49 @@
   padding: 2px 5px;
 }
 
+/* Explains all three rank schemes at once, so the lines need room to read as a list. */
+.chem-sar-rank-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 380px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+/* Shown in place of the grid when the potency threshold has emptied the matrix. */
+.chem-sar-empty-note {
+  padding: 16px 12px;
+  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--grey-5);
+}
+
+/* The header form lays its own labels out; it only needs to stop overflowing a narrow panel. */
+.chem-sar-nav-header .ui-form {
+  padding: 0;
+  min-width: 0;
+}
+
+.chem-sar-nav-header .ui-input-root {
+  min-width: 0;
+}
+
 .chem-sar-nav-sub {
   margin-top: 3px;
   font-size: 11px;
   color: var(--grey-5);
 }
 
-/* Units / scaling note in the navigator header, so the card and cell numbers aren't ambiguous. */
-.chem-sar-nav-units {
-  margin-top: 4px;
+/* Empty unless a threshold is set, so it takes no space in the common case. */
+.chem-sar-nav-matches {
   font-size: 10.5px;
-  color: var(--grey-6);
-  background: var(--grey-1);
-  border: 1px solid var(--grey-2);
-  border-radius: 4px;
-  padding: 2px 7px;
+  color: var(--grey-5);
+}
+
+.chem-sar-nav-matches:empty {
+  display: none;
 }
 
 .chem-sar-nav-list {
@@ -61,18 +82,38 @@
 }
 
 .chem-sar-nav-section {
-  padding: 10px 12px 4px;
+  padding: 6px 12px 4px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--grey-5);
 }
 
+/* A view whose compounds are contained in the card above it; the rule marks the nesting that the
+   left margin alone reads as accidental whitespace. */
+.chem-sar-card-nested {
+  border-left: 2px solid var(--grey-2);
+}
+
+/* Expander for a card that has matrices folded into it. Always occupies its width, empty on a leaf,
+   so every card's core starts at the same x whatever its depth. */
+.chem-sar-card-twisty {
+  flex: 0 0 11px;
+  width: 11px;
+  font-size: 10px;
+  text-align: center;
+  color: var(--grey-4);
+}
+
+i.chem-sar-card-twisty:hover {
+  color: var(--grey-6);
+}
+
 .chem-sar-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   cursor: pointer;
   border-left: 3px solid transparent;
 }
@@ -82,38 +123,14 @@
 }
 
 .chem-sar-card.selected {
-  background: var(--blue-2);
+  background: #2083D530;
   border-left-color: var(--blue-1);
-}
-
-.chem-sar-card-visual {
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 3px;
-}
-
-.chem-sar-xfer-arrow {
-  font-size: 13px;
-  color: var(--grey-5);
-  padding: 0 1px;
 }
 
 .chem-sar-card-core {
   border: 1px solid var(--grey-2);
   border-radius: 3px;
   background: transparent;
-}
-
-.chem-sar-thumb {
-  display: grid;
-  gap: 1px;
-  flex: 0 0 auto;
-}
-
-.chem-sar-thumb > div {
-  width: 11px;
-  height: 11px;
-  border-radius: 1px;
 }
 
 .chem-sar-card-body {
@@ -130,6 +147,28 @@
   text-overflow: ellipsis;
   align-items: center;
   gap: 6px;
+}
+
+/* Only the name may be clipped — the level badge next to it has to stay readable. */
+.chem-sar-card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Which fragmentation level this matrix sits at; branches end at different depths, so the indent
+   alone does not say. */
+.chem-sar-card-level {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--grey-5);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  padding: 0 4px;
 }
 
 .chem-sar-card-desc {
@@ -212,11 +251,20 @@
   min-width: 0;
 }
 
+/* A fixed label column so the rows line up when the bar wraps; auto-width left each row starting at a
+   different x, which read as three unrelated controls rather than one group. */
 .chem-sar-control-bar .ui-input-label {
   font-size: 11px;
+  flex: 0 0 96px;
+  width: 96px;
   min-width: 0;
-  width: auto;
-  padding-right: 4px;
+  padding-right: 6px;
+}
+
+/* Widths are left to the platform: a number input is a text box plus a slider sized to match it, and
+   overriding either one alone puts the two out of proportion. */
+.chem-sar-control-bar .ui-input-editor {
+  min-width: 0;
 }
 
 .chem-sar-main-title {
@@ -320,146 +368,6 @@
   min-width: 0;
 }
 
-/* matrix table.
-   Auto layout (not table-layout:fixed) is required: fixed derives every column width from the
-   first row, which breaks the rowSpan/colSpan model and shifts the substituent header row a
-   column left of the body cells. */
-.chem-sar-table {
-  border-collapse: separate;
-  border-spacing: 3px;
-}
-
-.chem-sar-table td,
-.chem-sar-table th {
-  padding: 0;
-  vertical-align: middle;
-  text-align: center;
-}
-
-.chem-sar-corner {
-  width: 140px;
-  border: 1px solid var(--grey-2);
-  border-radius: 4px;
-  background: transparent;
-  padding: 4px;
-}
-
-.chem-sar-corner-label {
-  font-size: 11px;
-  font-style: italic;
-  color: var(--grey-5);
-  margin-bottom: 2px;
-}
-
-.chem-sar-cgroup {
-  border-bottom: 2px solid var(--blue-1);
-}
-
-.chem-sar-cgroup-title {
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--grey-6);
-}
-
-.chem-sar-cgroup-cap {
-  font-size: 10px;
-  color: var(--grey-5);
-  margin-bottom: 3px;
-}
-
-/* width is set inline: cells are fitted to the pane width at render time */
-.chem-sar-chd {
-  border: 1px solid var(--grey-2);
-  border-radius: 4px;
-  background: var(--grey-1);
-}
-
-.chem-sar-rhd {
-  width: 140px;
-  border: 1px solid var(--grey-2);
-  border-radius: 4px;
-  background: transparent;
-  padding: 3px;
-}
-
-.chem-sar-row-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--grey-6);
-  margin-top: 2px;
-}
-
-.chem-sar-cell {
-  position: relative;
-  height: 82px;
-  border: 1px solid var(--grey-2);
-  border-radius: 4px;
-  cursor: pointer;
-  overflow: hidden;
-  padding: 0;
-}
-
-/* Structure canvas sits over the tinted cell — block removes the inline baseline gap; the tint
-   (set on the td) fills any remaining space, so no white shows. */
-.chem-sar-cell canvas {
-  display: block;
-  margin: 0 auto;
-}
-
-.chem-sar-cell-empty {
-  background:
-    repeating-linear-gradient(45deg, var(--grey-1), var(--grey-1) 5px, transparent 5px, transparent 10px);
-  cursor: default;
-}
-
-.chem-sar-cell-virtual {
-  border-style: dashed;
-  border-color: var(--grey-4);
-}
-
-/* SAR transfer trend row */
-.chem-sar-chd-label {
-  font-size: 10px;
-  color: var(--grey-5);
-  margin-bottom: 2px;
-}
-
-.chem-sar-trend {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 2px 7px;
-}
-
-.chem-sar-trend-value {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--grey-6);
-  flex: 1;
-  text-align: center;
-}
-
-.chem-sar-trend-virtual {
-  font-style: italic;
-  font-weight: 400;
-  color: var(--grey-5);
-}
-
-.chem-sar-trend-best {
-  color: var(--green-2);
-}
-
-.chem-sar-trend-empty {
-  flex: 1;
-  text-align: center;
-  color: var(--grey-3);
-}
-
-.chem-sar-trend-arrow {
-  font-size: 11px;
-  color: var(--grey-4);
-}
-
 .chem-sar-transfer-note {
   max-width: 640px;
   margin-top: 10px;
@@ -470,69 +378,7 @@
   border-radius: 4px;
 }
 
-.chem-sar-cell-nostruct {
-  height: 76px;
-}
-
-.chem-sar-chip {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--grey-6);
-  background: rgba(255, 255, 255, 0.82);
-  border-radius: 3px;
-  padding: 0 3px;
-  pointer-events: none;
-}
-
-.chem-sar-cell-virtual .chem-sar-chip {
-  color: var(--grey-5);
-  font-style: italic;
-}
-
-/* A virtual prediction backed by a single observation — flagged as low-confidence. */
-.chem-sar-chip-weak {
-  opacity: 0.65;
-  border: 1px dashed var(--grey-4);
-}
-
-/* Host-grid link: a selected row's cells get a blue ring; the current row's cell a stronger ring.
-   Inset box-shadow rings the cell without covering the drawn structure. Current wins when both. */
-.chem-sar-cell-selected {
-  box-shadow: inset 0 0 0 2px var(--blue-1);
-}
-
-.chem-sar-cell-current {
-  box-shadow: inset 0 0 0 3px var(--blue-3);
-}
-
-/* Sort-key caption under a substituent header (mean potency or MW) when columns are sorted. */
-.chem-sar-chd-sort {
-  font-size: 10px;
-  color: var(--grey-5);
-  text-align: center;
-  margin-top: 2px;
-}
-
-/* An observed cell whose potency departs from the additive-model fit — a non-additive / cliff-like
-   cell. A small amber corner dot (top-right, opposite the value chip) marks it; the tooltip carries
-   the residual. Cells with no marker match the Free-Wilson fit. */
-.chem-sar-cell-deviant::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--orange-2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75);
-  pointer-events: none;
-}
-
-/* Free-Wilson fit-quality readout in the matrix pane bar. */
+/* Root of the viewer's own context-panel content. */
 .chem-sar-matrix-cp {
   padding: 8px;
   font-size: 12px;
@@ -544,15 +390,6 @@
   gap: 8px;
 }
 
-.chem-sar-cp-notsynth {
-  font-size: 10px;
-  color: var(--grey-6);
-  background: var(--grey-1);
-  border: 1px solid var(--grey-3);
-  border-radius: 9px;
-  padding: 1px 7px;
-}
-
 .chem-sar-cp-structbox {
   border: 1px solid var(--grey-2);
   border-radius: 6px;
@@ -561,6 +398,16 @@
   display: flex;
   justify-content: center;
   background: var(--white);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The structure inside is drawn at a fixed pixel size, and a redraw only follows a resize once the
+   observer reports it. Capping it to the box means a panel dragged narrower clips the old drawing in
+   the meantime, instead of it spilling out and giving the whole panel a horizontal scrollbar. */
+.chem-sar-cp-structbox > * {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .chem-sar-cp-row {
@@ -577,18 +424,10 @@
   white-space: nowrap;
 }
 
-.chem-sar-cp-rv,
-.chem-sar-cp-fit {
+.chem-sar-cp-rv {
   text-align: right;
 }
 
-.chem-sar-cp-smiles {
-  font-family: monospace;
-  font-size: 11px;
-  color: var(--blue-2);
-  word-break: break-all;
-  text-align: right;
-}
 
 .chem-sar-cp-section {
   display: flex;
@@ -611,36 +450,13 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--blue-3);
-  background: var(--blue-2);
+  background: #2083D530;
   border-radius: 4px;
   padding: 1px 6px;
 }
 
 .chem-sar-cp-value {
   font-weight: 700;
-}
-
-.chem-sar-cp-fit {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-.chem-sar-cp-matches {
-  font-size: 10px;
-  color: var(--green-2);
-  background: var(--green-1);
-  border-radius: 4px;
-  padding: 0 5px;
-}
-
-.chem-sar-cp-mismatch {
-  font-size: 10px;
-  color: var(--orange-2);
-  background: var(--orange-1);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 
 .chem-sar-cp-decomp {
@@ -664,12 +480,28 @@
   background: var(--white);
 }
 
-.chem-sar-cp-frag-label {
-  font-size: 10px;
-  color: var(--grey-5);
-}
-
 .chem-sar-cp-generate {
   width: 100%;
   margin-top: 6px;
+}
+
+/* ---- SAR transfer panel -------------------------------------------------------------------- */
+
+/* Docked under the view rather than nested in the viewer, so the matrix keeps its full width and
+   this can be resized or closed without disturbing it. */
+.chem-sar-xfer-panel {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Narrower than the series navigator: a transfer card carries two short core labels and a
+   correlation, where a series card has to fit a structure and a four-part description. */
+.chem-sar-xfer-list {
+  flex: 0 0 240px;
+  min-width: 240px;
+  border-right: 1px solid var(--grey-2);
+  overflow-y: auto;
 }

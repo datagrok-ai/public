@@ -729,6 +729,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         let running: string | null = toIso(cores[i]);
         for (let p = 0; p < fragmentColumns.length && running; p++) {
           const iso = attachIdx[p];
+          // Cores within one matrix need not carry the same attachment points — a cluster anchored on
+          // a generic MCS gives every row its own concrete core. A position this core does not have is
+          // nothing to attach to, and running the reaction anyway returns no product, which would
+          // discard the structure built so far and leave the cell with a value but no molecule.
+          if (!running.includes(`[${iso}*]`))
+            continue;
           const fragment = fragmentColumns[p][i];
           running = fragment ?
             (runRxn(`[${iso}#0:1]-[*:2].[${iso}#0:3]-[*:4]>>[*:2]-[*:4]`, [running, toIso(fragment)]) || null) :

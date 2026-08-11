@@ -1,38 +1,48 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {merge} from 'rxjs';
 
 import '../../../css/sar-matrix.css';
 import {drawMoleculeToCanvas, drawRdKitMoleculeToOffscreenCanvas, getRdKitModule, getRdKitService}
   from '../../utils/chem-common-rdkit';
 import {getMolSafe} from '../../utils/mol-creation_rdkit';
 import {renderMolecule} from '../../rendering/render-molecule';
+import * as TextUtils from '@datagrok-libraries/gridext/src/utils/TextUtils';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
-import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
+import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {computeAllTransfers, Transfer, TransferSide, transferStats} from './sar-matrix-transfer';
-import {runSarMatrix, SarMatrixParams} from './sar-matrix-run';
+import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
 import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
 
 /** Transparent (alpha 0) so a drawn core has no white box — it blends with the card/pane. */
 const CORE_BG_ARGB = 0x00000000;
 const HEADER_ARGB = 0xFFF7F7F9;
+const WHITE_ARGB = 0xFFFFFFFF;
 /** Linear scheme for potency, matching how the platform colors activity/confidence scores:
  *  red at the low end, green at the high end of the scaled activity. */
 const ACTIVITY_SCHEME = [DG.Color.red, DG.Color.green];
 const CELL_W = 104;
 const CELL_H = 76;
+/** Cell chip plate: height, inner text padding, and inset from the cell's edge. */
+const CHIP_H = 13;
+const CHIP_PAD = 3;
+const CHIP_MARGIN = 3;
 const HEADER_W = 78;
 const HEADER_H = 46;
+/** Grid column-header height: the R-position band, the substituent depiction and the metric caption. */
+const COL_HEADER_H = HEADER_H + 36;
 const CORE_W = 132;
-const CORE_H = 60;
+/** Room for the grid's own horizontal scrollbar, added when a grid is sized to its rows instead of
+ *  being stretched to fill the pane. */
+const GRID_SCROLLBAR_H = 18;
 /** Small inline thumbnail of the transfer's benefiting substituent, in the statistics block. */
 const BENEFIT_MOL_W = 62;
 const BENEFIT_MOL_H = 34;
 /** Cells grow to fill the pane, but never past this — beyond it the structures just float in space. */
 const CELL_W_MAX = 210;
-/** Navigator width + paddings + border-spacing, subtracted when fitting cells to the pane. */
-const NAV_W = 260;
+/** Navigator width + paddings + border-spacing, subtracted when fitting cells to the pane. Must track
+ *  the `.chem-sar-nav` width in the stylesheet, or the cells are fitted against the wrong pane. */
+const NAV_W = 320;
 const TABLE_CHROME = 60;
 /** Cell-tint alpha (0-255): solid for observed compounds, fainter for virtual predictions, and
  *  fainter still when a prediction rests on few observations. */
@@ -43,23 +53,35 @@ const VIRTUAL_ALPHA_MIN = 16;
 const FULL_SUPPORT = 3;
 /** Method label carried on every exported/predicted analog. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
-/** A real cell's observed value "matches" its additive-model fit when the residual is within this
- *  fraction of the matrix's activity range; beyond it the cell is flagged as non-additive. */
-const MATCH_FRACTION = 0.25;
 /** Name of the running make-list table single-analog "Generate" appends to. */
 const MAKELIST_NAME = 'SAR virtual analogs';
 
 type AnalogPanelBuilder = () => HTMLElement;
-/** Column-annotation modes offered in the matrix pane — they label the columns, never reorder them. */
-const COLSORT_FREQUENCY = 'None';
+/** Navigator filter metrics — always numbers a matrix card is currently reporting, so the threshold
+ *  and the ranking talk about the same quantity. Which are on offer follows the rank scheme. */
+const FILTER_BEST = 'Best';
+const FILTER_MEAN = 'Mean';
+const FILTER_SPREAD = 'Spread';
+const FILTER_BEST_R = 'Best R';
+
 const COLSORT_POTENCY = 'Potency';
 const COLSORT_MW = 'Molecular weight';
-const COLUMN_SORTS = [COLSORT_FREQUENCY, COLSORT_POTENCY, COLSORT_MW];
+/** No "None": sitting beside the potency threshold, a control reading "None" was read as a filter that
+ *  was switched off rather than as a column caption, so it always annotates with something. */
+const COLUMN_SORTS = [COLSORT_POTENCY, COLSORT_MW];
 
 /** Properties that only reorder/recolor the already-assembled matrices. Changing one must NOT re-run
  *  fragmentation and decomposition — those cost seconds of RDKit worker time and produce identical
  *  matrices. Every other property (columns, scaling, cutoffs, prediction) does change the assembly. */
 const RERANK_ONLY_PROPS = ['rankScheme', 'activityDirection'];
+
+/** Properties that change nothing but what is drawn — no re-fragmentation, and no re-ranking either,
+ *  which would reorder the navigator for what is only a change of column caption. */
+const RENDER_ONLY_PROPS = ['columnCaption', 'idColumnName'];
+
+/** Properties that change which transfers exist without touching the matrices underneath them, so
+ *  they rebuild the transfer list and redraw but must not re-fragment. */
+const TRANSFER_ONLY_PROPS = ['sarTransfer'];
 
 /** Which end of the activity scale is "more potent". Auto derives it from scaling (only −lg is
  *  higher-is-better); the explicit options cover pre-computed pIC50/pKi/%-inhibition left on `none`. */
@@ -176,8 +198,9 @@ function alignToTemplate(molStr: string, templateMolblock: string): string {
 }
 
 /** Render a molecule onto a fresh canvas with the given ARGB background baked directly into the
- *  RDKit draw call — avoids relying on the grid cell renderer, whose putImageData overwrites any
- *  cell background. Straightens the depiction for a tidy standalone layout (used for substituents). */
+ *  RDKit draw call: bond edges are anti-aliased against whatever background the draw is handed, so a
+ *  colour applied afterwards would leave a pale fringe around every bond. Straightens the depiction
+ *  for a tidy standalone layout (used for substituents). */
 function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {
   const canvas = ui.canvas(w, h);
   if (!smiles)
@@ -192,96 +215,99 @@ function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: numbe
   return canvas;
 }
 
-/**
- * Render a molecule aligned to `templateMolblock`, preserving the aligned coordinates. Goes through
- * `drawRdKitMoleculeToOffscreenCanvas` rather than `drawMoleculeToCanvas` because the latter always
- * re-straightens molecules that already carry coordinates, which would undo the alignment.
- */
-function renderAlignedOnColor(molStr: string, w: number, h: number, argb: number,
-  templateMolblock: string | null): HTMLElement {
-  if (!molStr || !templateMolblock)
-    return renderMoleculeOnColor(molStr, w, h, argb);
-  const canvas = ui.canvas(w, h);
-  const r = window.devicePixelRatio;
-  const nW = Math.floor(w * r);
-  const nH = Math.floor(h * r);
-  canvas.width = nW;
-  canvas.height = nH;
-  canvas.style.width = `${w}px`;
-  canvas.style.height = `${h}px`;
-  let molCtx = null;
-  try {
-    molCtx = getMolSafe(alignToTemplate(molStr, templateMolblock), {}, getRdKitModule());
-    if (!molCtx.mol)
-      return canvas;
-    const offscreen = new OffscreenCanvas(nW, nH);
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreen, null,
-      {clearBackground: true, backgroundColour: argbToRgba(argb)});
-    // Blit the offscreen across directly. getImageData/putImageData would walk every pixel through
-    // an unpremultiplied byte array on the CPU, which is both slower and lossy on anti-aliased edges.
-    canvas.getContext('2d')!.drawImage(offscreen, 0, 0);
-  } catch (e) {
-    // leave the canvas blank on a malformed structure
-  } finally {
-    molCtx?.mol?.delete();
-  }
-  return canvas;
-}
-
-/** Rendered-depiction cache for the grid path, keyed by molecule + alignment template + rounded CSS
- *  size + baked background. `onCellRender` fires per visible cell on every repaint (scroll, selection,
- *  invalidate), so a scrolled/re-highlighted matrix reuses the produced canvas instead of re-running
- *  RDKit. Bounded by BYTES, not entries: the canvases are device-pixel sized, so at devicePixelRatio 2
- *  one body cell already costs a quarter of a megabyte and an entry cap would let the cache reach
- *  hundreds of megabytes. Least-recently-used entries are evicted first (Map insertion order, refreshed
- *  on every hit). */
-const cellCanvasCache = new Map<string, HTMLCanvasElement>();
-const CELL_CANVAS_CACHE_MAX_BYTES = 64 * 1024 * 1024;
-let cellCanvasCacheBytes = 0;
-
-/** Backing-store size of a cached canvas: 4 bytes (RGBA) per device pixel. */
-function canvasBytes(canvas: HTMLCanvasElement): number {
-  return canvas.width * canvas.height * 4;
-}
-
-/** Drop every rendered depiction and the aligned-molblock layouts behind them. Called when the
- *  matrices are rebuilt: none of the cached keys can be hit again, and the canvases hold tens of
- *  megabytes of device-pixel bitmaps until they are released. */
+/** Drop the aligned-molblock layouts. Called when the matrices are rebuilt, since none of the cached
+ *  keys can be hit again. */
 export function clearDepictionCaches(): void {
-  cellCanvasCache.clear();
-  cellCanvasCacheBytes = 0;
   alignCache.clear();
 }
 
-/** Depiction canvas for a grid cell/header. A null template gives a straightened standalone depiction
- *  (substituent headers); a template aligns to the shared core (cells, cores). The returned canvas is
- *  intrinsically device-pixel sized (the render helpers multiply by devicePixelRatio), so drawing it
- *  into the grid context at CSS size stays crisp under that context's own DPR scale. */
-function cachedCellCanvas(smiles: string, template: string | null, w: number, h: number,
-  argb: number): HTMLCanvasElement {
-  const key = `${smiles}|${template ?? ''}|${Math.round(w)}x${Math.round(h)}|${argb}`;
-  const cached = cellCanvasCache.get(key);
-  if (cached !== undefined) {
-    // Re-insert so this key moves to the end of the Map's insertion order: eviction takes the front,
-    // which is then the least recently used entry.
-    cellCanvasCache.delete(key);
-    cellCanvasCache.set(key, cached);
-    return cached;
+/**
+ * Label every attachment point in a molblock as a plain "R". A matrix varies one position, so the map
+ * number distinguishes nothing and only invites reading it against the column header — and which
+ * position the decomposition happened to call R1 is arbitrary on a symmetric core. RDKit draws a bare
+ * dummy as `*` and appends any map number, so the map is dropped upstream and an atom alias supplies
+ * the letter. Returns the input unchanged when there is no attachment point to label.
+ */
+function labelAttachmentPoints(molblock: string): string {
+  const lines = molblock.split('\n');
+  const atomCount = Number.parseInt((lines[3] ?? '').trim().split(/\s+/)[0], 10);
+  const endIdx = lines.findIndex((l) => l.trim() === 'M  END');
+  if (!Number.isFinite(atomCount) || endIdx < 0)
+    return molblock;
+  const aliases: string[] = [];
+  for (let i = 0; i < atomCount; i++) {
+    // Columns 31-34 of a V2000 atom line hold the element symbol.
+    if ((lines[4 + i] ?? '').slice(31, 34).trim() === '*')
+      aliases.push(`A  ${String(i + 1).padStart(3, ' ')}`, 'R');
   }
-  const canvas = renderAlignedOnColor(smiles, w, h, argb, template) as HTMLCanvasElement;
-  cellCanvasCache.set(key, canvas);
-  cellCanvasCacheBytes += canvasBytes(canvas);
-  // Never evict the entry just inserted — the caller is about to draw it.
-  while (cellCanvasCacheBytes > CELL_CANVAS_CACHE_MAX_BYTES && cellCanvasCache.size > 1) {
-    const oldest = cellCanvasCache.keys().next();
-    if (oldest.done)
-      break;
-    const evicted = cellCanvasCache.get(oldest.value);
-    cellCanvasCache.delete(oldest.value);
-    if (evicted !== undefined)
-      cellCanvasCacheBytes -= canvasBytes(evicted);
+  return aliases.length === 0 ? molblock :
+    [...lines.slice(0, endIdx), ...aliases, ...lines.slice(endIdx)].join('\n');
+}
+
+/** Depiction as an offscreen bitmap sized in device pixels. A null template gives a standalone
+ *  depiction laid out on its own (substituent headers); a template aligns to the shared core. */
+function depictionCanvas(molStr: string, template: string | null, dw: number, dh: number,
+  argb: number): OffscreenCanvas | null {
+  if (!molStr || dw < 1 || dh < 1)
+    return null;
+  let molCtx = null;
+  let labelled = null;
+  try {
+    // Stripped before alignment, since a molblock encodes the map in a fixed atom-line column where
+    // this substitution could not reach it.
+    const plain = molStr.replace(/\[\*:\d+\]/g, '[*]');
+    molCtx = getMolSafe(template ? alignToTemplate(plain, template) : plain, {}, getRdKitModule());
+    if (!molCtx.mol)
+      return null;
+    if (plain !== molStr) {
+      const aliased = labelAttachmentPoints(molCtx.mol.get_molblock());
+      labelled = getMolSafe(aliased, {}, getRdKitModule());
+      if (labelled.mol) {
+        molCtx.mol.delete();
+        molCtx = labelled;
+        labelled = null;
+      }
+    }
+    if (!molCtx.mol)
+      return null;
+    if (!template)
+      molCtx.mol.set_new_coords(); // no core to align to, so give the fragment a tidy layout of its own
+    const offscreen = new OffscreenCanvas(dw, dh);
+    drawRdKitMoleculeToOffscreenCanvas(molCtx, dw, dh, offscreen, null,
+      {clearBackground: true, backgroundColour: argbToRgba(argb)});
+    return offscreen;
+  } catch (e) {
+    return null; // malformed structure — leave the cell to its background
+  } finally {
+    labelled?.mol?.delete(); // only set when the aliased re-parse failed and was discarded
+    molCtx?.mol?.delete();
   }
-  return canvas;
+}
+
+/**
+ * Draw a depiction onto the grid canvas in device pixels: the bitmap is rendered at the cell's device
+ * size and blitted 1:1 at a whole-pixel offset, so it is never resampled and bond lines stay crisp —
+ * drawing it through the grid's scaled transform instead lands the rect on fractional device pixels
+ * and bilinear-filters every bond.
+ *
+ * The device rect comes from the context's own transform rather than from `devicePixelRatio`, which
+ * is only the same number when the grid has installed a pure scale; any translate in the transform
+ * would displace every cell by a constant.
+ *
+ * The transform is reset for the blit but the clip region deliberately is not, which is why this
+ * cannot use `putImageData` — that ignores the clip as well, letting a cell scrolled under the pinned
+ * core column, or one running past the grid's right edge, paint outside the grid's own bounds.
+ */
+function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+  molStr: string, template: string | null, argb: number): void {
+  const m = g.getTransform();
+  const canvas = depictionCanvas(molStr, template, Math.round(m.a * w), Math.round(m.d * h), argb);
+  if (canvas === null)
+    return;
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(canvas, Math.round(m.a * x + m.e), Math.round(m.d * y + m.f));
+  g.restore();
 }
 
 /** Resolve a Datagrok CSS palette variable (e.g. `--grey-6`) to a color string for canvas painting,
@@ -303,21 +329,28 @@ function cssColor(root: HTMLElement, name: string, fallback: string): string {
   return resolved;
 }
 
+/** Context-panel structure sizing: the drawn width is clamped to this range and the height follows.
+ *  Below the minimum a structure is unreadable; above the maximum it just wastes panel height. */
+const CP_STRUCT_MIN_W = 200;
+const CP_STRUCT_MAX_W = 520;
+const CP_STRUCT_ASPECT = 0.55;
+/** Horizontal chrome between a measured element's client width and the width a structure can occupy:
+ *  the box's own padding, and for the panel additionally the panel body's padding and the box border. */
+const BOX_CHROME = 12;
+const PANEL_CHROME = 30;
+
 const GRID_FONT = 'Roboto, "Segoe UI", sans-serif';
 
-/** Canonical SMILES for display. The cell's structure is the raw molecule-column value, which for a
- *  molblock/SDF-format column is a V2000 block — this converts it so the "SMILES" row never shows raw
- *  molblock text. Returns '' when the structure can't be parsed. */
-function toDisplaySmiles(molStr: string): string {
-  let molCtx = null;
-  try {
-    molCtx = getMolSafe(molStr, {}, getRdKitModule());
-    return molCtx.mol ? molCtx.mol.get_smiles() : '';
-  } catch {
-    return '';
-  } finally {
-    molCtx?.mol?.delete();
-  }
+/** How one of a cell's corner chips is drawn. The two corners carry different kinds of fact — the
+ *  potency the matrix is colored by, and the identity of the compound it came from — so they are kept
+ *  on opposite diagonals and never collide however wide either one gets. */
+interface ChipStyle {
+  corner: 'top-left' | 'bottom-right';
+  color: string;
+  /** Set for a predicted value, to keep it visually separable from a measured one. */
+  italic?: boolean;
+  /** Dimmed, for a prediction too thin to read as a firm number. */
+  faint?: boolean;
 }
 
 /** Identity of a transfer's source core within its section (same- and cross-series kept apart). The
@@ -327,49 +360,95 @@ function transferSourceKey(t: Transfer): string {
   return `${t.crossMatrix}:${t.a.matrixIndex}:${t.a.rowIndex}`;
 }
 
-/** Leave-one-out R² as text: two decimals, or "<0" when the additive model is worse than the mean. */
-function formatR2(r2: number): string {
-  return r2 >= 0 ? r2.toFixed(2) : '<0';
+/** One displayed grid row: which matrix row it is, and which of that matrix's columns map to the
+ *  displayed columns. Each row carries its OWN matrix, because a transfer's two sides can come from
+ *  different matrices — the core, the cells, the potency range and the context panel all resolve
+ *  through this descriptor rather than through one pane-wide matrix. */
+interface PaneRow {
+  matrix: SarMatrix;
+  rowIndex: number;
+  /** One entry per displayed column, indexing into `matrix.columns` / `matrix.cells[rowIndex]`. */
+  colIdxs: number[];
+  /** Drawn under the core. */
+  label: string;
+  /** Highlight the row's most potent observed cell. Set for a transfer's two sides, where reading the
+   *  trend along each row against the other is the whole point of the view. */
+  markBest?: boolean;
 }
 
-/** The rendered matrix grid plus the per-render header state. `onCellRender` fires for every visible
- *  header cell on every repaint, so the visible-column list, the group boundaries and the column
- *  captions are computed once when the grid is built instead of per cell per repaint. */
+/** One displayed grid column. */
+interface PaneColumn {
+  substSmiles: string;
+  position: string;
+  /** The metric caption under the depiction; empty when the Label control is set to None. */
+  caption: string;
+}
+
+/** The rendered pane grid plus the per-render row/column state. `onCellRender` fires for every
+ *  visible cell on every repaint, so the displayed row/column descriptors, the group boundaries and
+ *  the column captions are computed once when the grid is built instead of per cell per repaint. */
 interface MatrixGridState {
   grid: DG.Grid;
-  colKeyToCi: Map<string, number>;
-  matrix: SarMatrix;
-  /** Visible column indices, in display order. */
-  colIdxs: number[];
-  /** Visible column indices that begin an R-position group — only those draw the position label. */
+  /** Scaffold frame backing the grid — one row per displayed row, one string column per displayed
+   *  column plus the pinned 'Core'. Held so the grid keeps a live reference for its lifetime. */
+  df: DG.DataFrame;
+  rows: PaneRow[];
+  columns: PaneColumn[];
+  /** Grid column NAME (never the grid column index, which pinning shifts) -> index into `columns`. */
+  colKeyToIdx: Map<string, number>;
+  /** Indices into `columns` that begin an R-position group — only those draw the position label. */
   firstOfGroup: Set<number>;
-  /** `columnSortCaption` per visible column index; recomputed whenever the grid is rebuilt, which is
-   *  what the Label control does, so a caption can never outlive the metric it was computed for. */
-  captions: Map<number, string>;
+  /** Structure drawn in the pinned column's header, naming the series the rows belong to. Null when
+   *  the rows span more than one matrix, where no single structure describes all of them. */
+  headerCore: string | null;
+  /** One alignment template for the whole pane, from the shared core. The header, every row key and
+   *  every cell are drawn against it, so an attachment point sits in the same place everywhere — laid
+   *  out per depiction instead, the same position appears at a different spot in each and the R labels
+   *  read as though they were swapped. Null when rows span several matrices and share no core. */
+  paneTemplate: string | null;
+  /** Per displayed row, the molblock its cells align to. Filled on first paint and kept for the life
+   *  of the grid: every repaint would otherwise re-run the alignment for every visible cell. */
+  rowTemplates: (string | null)[];
+}
+
+/** One live pane grid together with the subscriptions it owns. The matrix and the SAR-transfer panel
+ *  hold one each: both can be on screen at the same time, so a single shared slot would have each
+ *  rebuild silently unsubscribe the other's painters and drop its Dart-backed grid unreleased. */
+interface PaneGridSlot {
+  state: MatrixGridState | null;
+  subs: {unsubscribe(): void}[];
 }
 
 export class SarMatrixViewer extends DG.JsViewer {
   moleculesColumnName: string;
   activityColumnName: string;
+  /** Optional column captioning each observed cell — empty leaves cells uncaptioned. */
+  idColumnName: string;
   scaling: string;
   activityDirection: string;
   fragmentCutoff: number;
+  grouping: string;
+  fragmentationLevels: number;
   threshold: number;
   predictVirtual: boolean;
+  sarTransfer: boolean;
   rankScheme: string;
 
   private matrices: SarMatrix[] = [];
   /** SAR-transfer entries, listed as their own navigator section (the mockup's "SAR TRANSFER").
    *  Global: every correlated core pair across all matrices, including cross-series pairs. */
   private transfers: Transfer[] = [];
-  /** Current navigator selection: either a matrix or a transfer entry. */
-  private selKind: 'matrix' | 'transfer' = 'matrix';
+  /** Index into `matrices` of the series the matrix pane is showing. */
   private selIndex = 0;
+  /** Index into `transfers` of the entry the SAR-transfer panel is showing. Deliberately separate from
+   *  `selIndex`: the two panes are on screen together, so a shared index would make picking a transfer
+   *  move the matrix out from under the user. */
+  private transferIndex = 0;
   /** "Vary" filter: show only this R-position's column group, or all when empty. */
   private varyPosition = '';
-  /** Which metric annotates each substituent column (None / mean potency / molecular weight). Columns
-   *  keep their as-assembled order — this only controls the caption shown under each, never the order. */
-  private sortColumnsBy = COLSORT_FREQUENCY;
+  /** Which metric annotates each substituent column (mean potency or molecular weight). Columns keep
+   *  their as-assembled order — this only controls the caption shown under each, never the order. */
+  columnCaption: string;
   /** The virtual-analog cell under the last right-click, so the context menu can offer a per-cell
    *  make-list add. Null when the right-click wasn't on an assembled virtual cell. */
   private contextCell: {matrix: SarMatrix, ri: number, ci: number} | null = null;
@@ -378,12 +457,13 @@ export class SarMatrixViewer extends DG.JsViewer {
    *  Molecule panels. Registered on click; cleared on recompute and detach. Per-instance so one
    *  viewer closing can't wipe another's panels. */
   private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
-  /** Real cells of the currently-rendered matrix, keyed by parent-df molecule index, so host-grid
-   *  selection / current-row changes can highlight the matching cells without a full re-render. */
-  private cellByMolIdx = new Map<number, HTMLElement>();
-  /** The cell currently carrying the "current" ring (real or virtual) — only one at a time. */
-  private currentCellEl: HTMLElement | null = null;
   private readonly host = ui.divH([], 'chem-sar-matrix');
+  /** The SAR-transfer panel's content. Docked next to the viewer while the feature is on, so the
+   *  matrix stays on screen while a transfer is being read. */
+  private readonly transferHost = ui.divH([], 'chem-sar-xfer-panel');
+  /** The dock node holding `transferHost`, null while the panel is closed. Held because a docked node
+   *  outlives the viewer that created it and has to be undocked by hand on detach. */
+  private transferNode: DG.DockNode | null = null;
   private computing = false;
   /** Set when a recompute is requested while one is already running, so it is re-queued after. */
   private dirty = false;
@@ -392,51 +472,97 @@ export class SarMatrixViewer extends DG.JsViewer {
   private detached = false;
   /** Cell width for the current render, fitted to the pane by `fitCellWidth`. */
   private cellW = CELL_W;
-  /** Molblock template for the current matrix; cells and cores are aligned to it so the shared
-   *  core points the same way everywhere. Set per row by the grid painters, and per side by the
-   *  transfer pane. */
-  private alignTemplate: string | null = null;
-  /** The virtualized matrix grid currently on screen (null while a transfer pane is shown). Held so
-   *  selection / current-row changes can repaint it with a cheap `invalidate()` — the highlight is
-   *  drawn per-cell in `paintBodyCell`, so no DOM rebuild is needed. */
-  private matrixGrid: MatrixGridState | null = null;
-  /** Subscriptions owned by the current matrix grid (render/click/tooltip/overlay), unsubscribed and
-   *  rebuilt whenever a new grid is created so repeated renders don't leak into detached grids. */
-  private matrixGridSubs: {unsubscribe(): void}[] = [];
+  /** The matrix pane's virtualized grid, and the SAR-transfer panel's. Held so selection / current-row
+   *  changes can repaint with a cheap `invalidate()` — the highlight is drawn per-cell in
+   *  `paintBodyCell`, so no DOM rebuild is needed. */
+  private readonly matrixSlot: PaneGridSlot = {state: null, subs: []};
+  private readonly transferSlot: PaneGridSlot = {state: null, subs: []};
   /** Last pointer event over the matrix grid overlay, so a cell click can honor ctrl/shift for the
    *  host-grid selection extend (`onCellClick` carries no DOM event). */
   private lastGridMouseEvent: MouseEvent | null = null;
+  /** Size observer for the context panel structure currently on screen; replaced when a new cell is
+   *  opened so observers do not accumulate one per click. */
+  private cpStructureSub: {unsubscribe(): void} | null = null;
+  /** Generation of the context-panel structure awaiting layout, so a panel opened while an earlier one
+   *  is still waiting cannot have its observer overwritten when that earlier wait resolves. */
+  private cpStructureToken = 0;
+  /** Matrices whose folded-in children are hidden, by matrix id. Kept on the viewer rather than
+   *  rebuilt per render so re-ranking or resizing does not reopen everything the user closed. */
+  private readonly collapsed = new Set<string>();
+  /** Which per-matrix number the navigator filter compares — the same one the card shows. */
+  private filterMetric = FILTER_BEST;
+  /** Threshold for that number, or null when the list is unfiltered. */
+  private filterMin: number | null = null;
+  /** Potency a cell must reach to stay drawn in the matrix pane; null leaves every cell alone. Rows and
+   *  columns left with nothing drawn are dropped rather than shown as empty bands. */
+  private cellMin: number | null = null;
+  /** Fewest reference points — measured compounds in its row and column — a virtual analog must rest
+   *  on to stay drawn; 0 keeps every prediction. Only virtual cells are judged by it, since an observed
+   *  compound rests on nothing. */
+  private minSupport = 0;
+  /** Parts of the matrix pane the potency threshold updates in place, so moving it repaints rather
+   *  than rebuilds. Null while no matrix pane is on screen. */
+  private paneGridHost: HTMLElement | null = null;
+  private paneEmptyNote: HTMLElement | null = null;
+  private paneDimsChip: HTMLElement | null = null;
+  /** Cleared when a new set of matrices arrives, so the tree closes to its roots once per analysis
+   *  rather than snapping shut again every time the list is redrawn. */
+  private collapseSeeded = false;
 
   constructor() {
     super();
-    this.moleculesColumnName = this.string('moleculesColumnName', '', {userEditable: false});
-    this.activityColumnName = this.string('activityColumnName', '', {userEditable: false});
+    // Data properties rather than hidden strings, so both columns are pickable from the property panel
+    // like any other viewer's. `column()` appends "ColumnName" to the stem, so the field names and
+    // everything that sets them through `setOptions` are unchanged.
+    //
+    // No options: the helper already registers these as string-typed data properties, and passing a
+    // `type` or `semType` overwrites that descriptor and leaves the platform unable to resolve the
+    // property at all ("Property type not found" at construction, which yields a viewer with no
+    // properties whatsoever).
+    this.moleculesColumnName = this.column('molecules');
+    this.activityColumnName = this.column('activity');
+    // Optional: when set, each observed cell captions its structure with that column's value, so a
+    // compound in the matrix can be named against the source table. Empty leaves the cells as they are.
+    this.idColumnName = this.column('id');
     this.scaling = this.string('scaling', SCALING_METHODS.MINUS_LG, {choices: Object.values(SCALING_METHODS)});
     this.activityDirection = this.string('activityDirection', DIR_AUTO, {choices: ACTIVITY_DIRECTIONS});
     this.fragmentCutoff = this.float('fragmentCutoff', 0.4);
+    this.grouping = this.string('grouping', SarGrouping.Site, {choices: Object.values(SarGrouping)});
+    // Named for what the navigator shows rather than for the fragmentation passes underneath: the
+    // cards are series badged L1, L2, L3, and this is how many of those tiers get built.
+    this.fragmentationLevels = this.int('fragmentationLevels', 3,
+      {min: 1, max: MAX_SERIES_LEVELS, friendlyName: 'Series levels'});
+    // Only read under Similarity grouping; Site grouping matches exactly and has nothing to tune.
     this.threshold = this.float('threshold', 0.5);
     this.predictVirtual = this.bool('predictVirtual', true);
+    // Off by default: detecting transfers compares every core against every other one, so it costs a
+    // pass quadratic in the total row count on each rebuild AND each re-rank, which is a poor default
+    // for the majority of sessions that only ever read the matrices.
+    this.sarTransfer = this.bool('sarTransfer', false, {friendlyName: 'SAR transfer'});
     // "SAR transfer" is a navigator section, not a ranking mode, so it is not offered as a rank scheme.
     this.rankScheme = this.string('rankScheme', SarRankScheme.Potency,
       {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred]});
+    // Annotates the substituent columns; changing it repaints and never re-fragments.
+    this.columnCaption = this.string('columnCaption', COLSORT_POTENCY, {choices: COLUMN_SORTS});
     this.host.style.height = '100%';
     this.root.appendChild(this.host);
   }
 
   onTableAttached(): void {
     this.detached = false; // the flag tracks the CURRENT attachment, not whether one ever ended
-    // Cells are fitted to the pane width, so a resize needs a re-render (not a recompute).
+    // Cells are fitted to the pane width, so a resize re-fits the columns of the grid already on
+    // screen. Rebuilding the pane instead would replace that grid, and a new grid starts at the first
+    // row — so every step of a splitter drag would throw away where the user had scrolled to.
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 200).subscribe(() => {
       if (!this.computing && this.matrices.length)
-        this.render();
+        this.refitColumns();
     }));
     this.subs.push(this.onContextMenu.subscribe((menu) => this.buildContextMenu(menu)));
-    // Two-way link with the host grid: a selection or current-row change there highlights the
-    // matching matrix cells (subscribed in onTableAttached, per the chem-search-base-viewer idiom).
-    // Both streams feed one debounced subscription: as separate streams they cannot coalesce, so a
-    // single click that moves the current row AND changes the selection repaints the matrix twice.
-    this.subs.push(DG.debounce(
-      merge(this.dataFrame.selection.onChanged, this.dataFrame.onCurrentRowChanged), 50)
+    // Two-way link with the host grid: a selection change there re-rings the matching matrix cells.
+    // The current row is deliberately not watched — nothing is painted from it, and a repaint
+    // re-rasterizes every visible structure, so following it would cost a full redraw per click for
+    // no visible change.
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
       .subscribe(() => this.syncSelection()));
     // Capture-phase reset runs before a cell's own bubbling handler, so contextCell reflects only a
     // right-click that actually landed on a virtual cell (stale otherwise).
@@ -465,48 +591,55 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.detached = true;
     window.clearTimeout(this.computeTimer);
     this.analogPanels.clear();
+    this.cpStructureSub?.unsubscribe(); // the panel outlives the viewer; its observer must not
+    this.cpStructureSub = null;
     this.releaseMatrixGrid();
+    // A docked node is owned by the view, not the viewer, so it survives the viewer closing unless it
+    // is undocked here — leaving a dead "SAR transfer" panel behind.
+    this.closeTransferPanel();
     super.detach();
   }
 
-  /** Let go of the matrix grid currently on screen. Dropping the DOM is not enough: the
-   *  render/click/tooltip subscriptions keep the grid — and through it its scaffold DataFrame and the
-   *  whole SarMatrix — reachable, and a Dart-backed grid is only released when it is closed. */
-  private releaseMatrixGrid(): void {
-    this.matrixGridSubs.forEach((s) => s.unsubscribe());
-    this.matrixGridSubs = [];
+  /** The matrix pane's grid — what the cell filter, the dimensions chip and `visibleDims` act on.
+   *  Named separately from the transfer panel's so a filter can never reach across to it. */
+  private get matrixGrid(): MatrixGridState | null {
+    return this.matrixSlot.state;
+  }
+
+  /** Let go of one pane grid. Dropping the DOM is not enough: the render/click/tooltip subscriptions
+   *  keep the grid — and through it its scaffold DataFrame and the whole SarMatrix — reachable, and a
+   *  Dart-backed grid is only released when it is closed. */
+  private releaseSlot(slot: PaneGridSlot): void {
+    slot.subs.forEach((s) => s.unsubscribe());
+    slot.subs = [];
     try {
-      this.matrixGrid?.grid?.close?.();
+      slot.state?.grid?.close?.();
     } catch (e) {
       // A standalone (view-less) grid may not support close; dropping the reference is enough.
     }
-    this.matrixGrid = null;
+    slot.state = null;
   }
 
-  /** Move the single "current" ring to `td` (real or virtual), clearing it from the previous cell. */
-  private setCurrentCell(td: HTMLElement | null): void {
-    if (this.currentCellEl === td)
-      return;
-    this.currentCellEl?.classList.remove('chem-sar-cell-current');
-    this.currentCellEl = td;
-    td?.classList.add('chem-sar-cell-current');
+  /** Release the matrix pane's grid and the pane elements that point into it. */
+  private releaseMatrixGrid(): void {
+    this.releaseSlot(this.matrixSlot);
+    // The pane those pointed into is about to be replaced; holding them would let the threshold write
+    // into detached elements.
+    this.paneGridHost = null;
+    this.paneEmptyNote = null;
+    this.paneDimsChip = null;
   }
 
-  /** Reflect the host grid's selection and current row onto the rendered matrix cells. Selection is a
-   *  set (any number of real cells); the current ring is a single cell. A virtual cell has no grid
-   *  row, so a virtual-cell click parks the grid's current row at -1 and owns its ring directly —
-   *  here we only re-point the ring when the grid actually has a current row. */
+  /** Reflect the host grid's selection and current row onto the rendered cells. The pane grid draws
+   *  both rings per cell in `paintBodyCell` and reads them straight off the dataframe, so a host-grid
+   *  change only needs a repaint of the visible cells. */
   private syncSelection(): void {
     if (!this.dataFrame)
       return;
-    // The virtualized matrix grid draws the selection/current ring per cell in `paintBodyCell`, so a
-    // host-grid change only needs a repaint of the visible cells.
-    this.matrixGrid?.grid.invalidate();
-    const selection = this.dataFrame.selection;
-    this.cellByMolIdx.forEach((td, molIdx) => td.classList.toggle('chem-sar-cell-selected', selection.get(molIdx)));
-    const current = this.dataFrame.currentRowIdx;
-    if (current >= 0)
-      this.setCurrentCell(this.cellByMolIdx.get(current) ?? null);
+    // Both panes paint the host grid's selection ring, so both have to be repainted for a click in one
+    // to show up in the other.
+    this.matrixSlot.state?.grid.invalidate();
+    this.transferSlot.state?.grid.invalidate();
   }
 
   // ---- Export virtual analogs to a make-list --------------------------------------------------
@@ -520,9 +653,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       const {matrix, ri, ci} = this.contextCell;
       group.item('Add this analog to make-list', () => this.addAnalogToMakeList(matrix, ri, ci));
     }
-    const current = this.selKind === 'transfer' ?
-      this.matrices[this.transfers[this.selIndex]?.a.matrixIndex ?? 0] :
-      this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
+    const current = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
     if (current?.virtualCount)
       group.item(`Export virtual analogs (${current.label})`, () => this.exportVirtualAnalogs([current]));
     if (this.matrices.reduce((n, m) => n + m.virtualCount, 0) > (current?.virtualCount ?? 0)) {
@@ -563,7 +694,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       DG.Column.fromList('double', `Predicted activity (${this.scaling})`, cells.map((c) => cell(c).value!)),
       DG.Column.fromList('int', 'Support (n)', cells.map((c) => cell(c).support ?? 0)),
       DG.Column.fromStrings('Series', cells.map((c) => c.matrix.label)),
-      molCol('Core', cells.map((c) => c.matrix.rows[c.ri].coreSmiles)),
+      molCol('Core', cells.map((c) => c.matrix.rows[c.ri].keySmiles)),
       DG.Column.fromStrings('Position', cells.map((c) => c.matrix.columns[c.ci].position)),
       molCol('Substituent', cells.map((c) => c.matrix.columns[c.ci].substSmiles)),
       DG.Column.fromStrings('Method', cells.map(() => FREE_WILSON_METHOD)),
@@ -620,6 +751,23 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Ranking and potency direction don't change the fragmentation, so they must not trigger a full
     // rebuild — re-fragmenting to reorder cards or flip the color direction costs seconds of RDKit
     // worker time for a result the already-assembled matrices can produce directly.
+    if (property !== null && RENDER_ONLY_PROPS.includes(property.name)) {
+      if (this.matrices.length)
+        this.render();
+      return;
+    }
+    if (property !== null && TRANSFER_ONLY_PROPS.includes(property.name)) {
+      if (!this.matrices.length) {
+        this.scheduleCompute(); // nothing assembled yet — the first build will pick the flag up
+        return;
+      }
+      this.computeTransfers();
+      // Only the panel changes: the matrix pane is untouched by the flag, so its selection and scroll
+      // position survive the toggle.
+      this.transferIndex = 0;
+      this.renderTransferPanel();
+      return;
+    }
     if (property !== null && RERANK_ONLY_PROPS.includes(property.name)) {
       this.reRank();
       return;
@@ -636,8 +784,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
     this.matrices = rankMatrices(this.matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
     this.computeTransfers();
-    this.selKind = 'matrix';
     this.selIndex = 0;
+    this.transferIndex = 0;
     this.render();
   }
 
@@ -667,6 +815,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Emptying the host detaches the grid's DOM but does not release the Dart-backed grid or its
     // subscriptions; without this the failure path below would leave one live and repainting forever.
     this.releaseMatrixGrid();
+    // The transfers on screen index into the matrices about to be replaced, so the panel goes now
+    // rather than being left pointing at rows that no longer exist if this compute fails.
+    this.closeTransferPanel();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
     const progress = DG.TaskBarProgressIndicator.create('Building SAR matrices...');
@@ -675,6 +826,9 @@ export class SarMatrixViewer extends DG.JsViewer {
         scaling: this.scaling as SCALING_METHODS,
         fragmentCutoff: this.fragmentCutoff,
         predictVirtual: this.predictVirtual,
+        grouping: this.grouping as SarGrouping,
+        fragmentationLevels: this.fragmentationLevels,
+        higherIsBetter: this.higherIsBetter,
         threshold: this.threshold,
         rankScheme: this.rankScheme as SarRankScheme,
       };
@@ -684,9 +838,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (this.detached)
         return;
       this.matrices = matrices;
+      this.collapseSeeded = false;
       this.computeTransfers();
-      this.selKind = 'matrix';
       this.selIndex = 0;
+      this.transferIndex = 0;
       this.render();
     } catch (e) {
       if (this.detached)
@@ -720,9 +875,23 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   /** Rebuild the SAR-transfer list: every correlated core pair across all matrices — within a matrix
    *  AND across matrices (differently-scaffolded series) — strongest first. Recomputed whenever the
-   *  matrix set or order changes. */
+   *  matrix set or order changes.
+   *
+   * Left empty while the feature is off, which is what keeps it out of the rest of the viewer: the
+   * navigator sections, the per-matrix correlation chip and the trend view all read this list, so
+   * none of them has to test the flag itself. */
   private computeTransfers(): void {
-    this.transfers = computeAllTransfers(this.matrices);
+    this.transfers = this.sarTransfer ? computeAllTransfers(this.matrices) : [];
+  }
+
+  /** The potency tint composited over white and returned opaque, for use as a depiction's background.
+   *  RDKit anti-aliases bond edges against whatever background the draw is handed, so a translucent
+   *  tint would let every bond blend toward white and leave a pale fringe once the cell is painted. */
+  private flatTint(matrix: SarMatrix, value: number, alpha: number): number {
+    const c = this.tint(matrix, value, alpha);
+    const a = alpha / 255;
+    const overWhite = (channel: number): number => Math.round(channel * a + 255 * (1 - a));
+    return DG.Color.argb(255, overWhite(DG.Color.r(c)), overWhite(DG.Color.g(c)), overWhite(DG.Color.b(c)));
   }
 
   /** Potency tint at an explicit alpha (0-255), green = more potent. `DG.Color.scaleColor`'s own alpha
@@ -739,13 +908,6 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   // ---- Navigator (left pane) ----------------------------------------------------------------
-
-  /** Compact leave-one-out fit quality (e.g. " · R² 0.87"), the headline trust signal for the virtual
-   *  predictions; empty when there were too few observations to cross-validate. */
-  private confidenceShort(matrix: SarMatrix): string {
-    const conf = matrix.confidence;
-    return conf ? ` · R² ${formatR2(conf.r2)}` : '';
-  }
 
   /** Human-readable name of the scaling applied to the activity, for labelling the cells' axis. */
   private get scalingLabel(): string {
@@ -769,6 +931,118 @@ export class SarMatrixViewer extends DG.JsViewer {
       }
     }
     return n ? sum / n : null;
+  }
+
+  /**
+   * Slider bounds for a set of activity values: a step no finer than 0.01 rounded down to a 1/2/5
+   * decade, with the ends snapped to it. A raw range/100 step lands on values like 7.5965998802185098,
+   * which is unreadable in the field and impossible to type back.
+   */
+  private sliderBounds(values: number[]): {lo: number, hi: number, step: number} {
+    const rawLo = values.length ? Math.min(...values) : 0;
+    const rawHi = values.length ? Math.max(...values) : 1;
+    const target = (rawHi - rawLo) / 100;
+    const decade = target > 0 ? Math.pow(10, Math.floor(Math.log10(target))) : 0.1;
+    const scaled = target / decade;
+    const step = Math.max(0.01, decade * (scaled >= 5 ? 5 : scaled >= 2 ? 2 : 1));
+    const round2 = (v: number): number => Math.round(v * 100) / 100;
+    return {lo: round2(Math.floor(rawLo / step) * step), hi: round2(Math.ceil(rawHi / step) * step), step};
+  }
+
+  /** Rows and columns of a matrix that survive the current Vary and cell filters — what the pane
+   *  actually draws, as opposed to what the matrix holds. */
+  private visibleDims(matrix: SarMatrix): {rows: number, cols: number} {
+    const all = this.visibleColIdxs(matrix);
+    if (!this.cellFilterActive)
+      return {rows: matrix.rows.length, cols: all.length};
+    const cols = all.filter((ci) => matrix.cells.some((row) => this.passesCell(row[ci])));
+    const rows = matrix.rows.filter((_row, ri) =>
+      cols.some((ci) => this.passesCell(matrix.cells[ri][ci]))).length;
+    return {rows, cols: cols.length};
+  }
+
+  /** True while any matrix-pane cell filter is set, so the untouched case can skip the work entirely. */
+  private get cellFilterActive(): boolean {
+    return this.cellMin !== null || this.minSupport > 0;
+  }
+
+  /**
+   * Whether a cell survives the matrix-pane filters: potency, and how many observations back it.
+   *
+   * Support only applies to predictions — an observed compound was measured, so there is nothing to
+   * support it with, and a support cut is meant to thin out the guesses rather than the data. The
+   * potency comparison follows the activity direction, as everywhere else.
+   */
+  private passesCell(cell: SarMatrixCell): boolean {
+    if (!this.cellFilterActive)
+      return true;
+    if (cell.kind === 'empty' || cell.value === null)
+      return false;
+    // Counted over both arms, not the weaker one: the panel lists the row's and the column's measured
+    // compounds together as the prediction's reference points, so the threshold counts the same set.
+    if (cell.kind === 'virtual' && (cell.references ?? 0) < this.minSupport)
+      return false;
+    if (this.cellMin === null)
+      return true;
+    return this.higherIsBetter ? cell.value >= this.cellMin : cell.value <= this.cellMin;
+  }
+
+  /** The number the navigator filter compares for one matrix — the card's "best" or "mean" potency,
+   *  on the active scale. Null when the matrix has no observed compound to take it from. */
+  private matrixMetric(matrix: SarMatrix): number | null {
+    if (this.filterMetric === FILTER_MEAN)
+      return this.meanRealActivity(matrix);
+    if (this.filterMetric === FILTER_SPREAD)
+      return matrix.scores[SarRankScheme.Discontinuity] ?? null;
+    if (this.filterMetric === FILTER_BEST_R) {
+      const raw = matrix.scores[SarRankScheme.Preferred];
+      // The card prints the direction-adjusted value; the threshold has to compare the same number.
+      return raw === undefined ? null : (this.higherIsBetter ? raw : -raw);
+    }
+    if (!matrix.realCount)
+      return null;
+    return this.higherIsBetter ? matrix.maxActivity : matrix.minActivity;
+  }
+
+  /** Which filter metrics the current rank scheme offers — the numbers its cards actually print.
+   *  Filtering on a quantity the cards are not showing compares the threshold against something the
+   *  user cannot see, and its units need not even match. */
+  private filterMetricOptions(): string[] {
+    if (this.rankScheme === SarRankScheme.Discontinuity)
+      return [FILTER_SPREAD];
+    if (this.rankScheme === SarRankScheme.Preferred)
+      return [FILTER_BEST_R];
+    return [FILTER_BEST, FILTER_MEAN];
+  }
+
+  /**
+   * Whether a matrix clears the filter.
+   *
+   * For the potency metrics the comparison follows the activity direction, so the threshold means "at
+   * least this potent" rather than "numerically larger" — on a scale where smaller is better, asking
+   * for more potency selects the smaller numbers. Spread is not a potency: a wider spread is always
+   * more discontinuous, whichever way the activity runs, so it always compares upwards.
+   */
+  private passesFilter(matrix: SarMatrix): boolean {
+    if (this.filterMin === null)
+      return true;
+    const value = this.matrixMetric(matrix);
+    if (value === null)
+      return false;
+    const upwards = this.filterMetric === FILTER_SPREAD ? true : this.higherIsBetter;
+    return upwards ? value >= this.filterMin : value <= this.filterMin;
+  }
+
+  /** The score block on the right of a navigator card: one big value per line with its caption under
+   *  it. Shared by the series and transfer cards so a one-line score sits exactly where a two-line one
+   *  does and the two lists read as one column of scores. */
+  private cardScoreBox(lines: {value: string, label: string}[], tip: () => string): HTMLElement {
+    const box = ui.divV(lines.map((ln) => ui.divH([
+      ui.divText(ln.value, 'chem-sar-card-score'),
+      ui.divText(ln.label, 'chem-sar-card-score-cap'),
+    ], 'chem-sar-card-score-line')), 'chem-sar-card-score-box');
+    ui.tooltip.bind(box, tip);
+    return box;
   }
 
   /** The navigator card's rank score, made legible: best AND mean potency shown on the selected
@@ -796,28 +1070,89 @@ export class SarMatrixViewer extends DG.JsViewer {
         'how discontinuous the SAR is.'};
   }
 
+  /**
+   * The structure a matrix is keyed on, in a form the depiction can draw — what every one of its rows
+   * has in common and, for a coarser matrix, what its children agree on a cut deeper. Drawing the
+   * first row's core instead would show the same picture for a parent and its children, since a row
+   * of the parent is a core of a child.
+   *
+   * Each fragmentation level marks the sites it inherits with its own isotope, which would render as
+   * numbered stars; renumbering them as attachment points draws them as R labels like every other core.
+   */
+  private matrixCore(matrix: SarMatrix): string {
+    if (!matrix.siteKey)
+      return matrix.rows[0]?.coreSmiles ?? '';
+    let n = 0;
+    return matrix.siteKey.replace(/\[\d+\*\]|\[\*:\d+\]/g, () => `[*:${++n}]`);
+  }
+
+  /**
+   * Parent index per matrix, `-1` for a root, against the current (ranked) order. A matrix built at a
+   * coarser fragmentation level owns the ones folded into it; where no coarser level was asked for,
+   * compound containment stands in, so the navigator still groups related views rather than listing
+   * every matrix flat.
+   */
+  private matrixParents(): number[] {
+    const byId = new Map<string, number>();
+    this.matrices.forEach((matrix, i) => byId.set(matrix.id, i));
+    const linked = this.matrices.map((matrix) =>
+      matrix.parentId !== undefined ? byId.get(matrix.parentId) ?? -1 : -1);
+    return linked.some((p) => p >= 0) ? linked : nestByContainment(this.matrices);
+  }
+
   /** One selectable matrix card: the aligned core drawn (so the matrix is identified by its
-   *  scaffold, not just "Series A"), a descriptor line, and the rank score. */
-  private buildCard(matrix: SarMatrix, index: number): HTMLElement {
+   *  scaffold, not just "Series A"), a descriptor line, and the rank score. `depth` indents a matrix
+   *  folded into the one above it; `folded` is how many are folded into this one, which gives the card
+   *  its expander. */
+  private buildCard(matrix: SarMatrix, index: number, depth = 0, folded = 0,
+    onToggle?: () => void): HTMLElement {
+    // Held to what the list alone has to answer — how big a series is, and how much sits under it.
+    // The description column is barely 110px wide once the structure and the score are placed, so
+    // every extra fact costs a wrapped line on every card; the virtual count and the Free-Wilson R²
+    // are on the matrix pane's own chips the moment a card is opened.
     const desc = `${matrix.rows.length} cores · ${matrix.positions.join('/')} · ${matrix.realCount} cpd` +
-      (matrix.virtualCount ? ` · ${matrix.virtualCount} virtual` : '') + this.confidenceShort(matrix);
-    const core = renderMoleculeOnColor(matrix.rows[0]?.coreSmiles ?? '', 78, 44, CORE_BG_ARGB);
+      (folded ? ` · ${folded} inside` : '');
+    const core = renderMoleculeOnColor(this.matrixCore(matrix), 78, 44, CORE_BG_ARGB);
     core.classList.add('chem-sar-card-core');
+    // Numbered from the matrices, not from the fragmentation passes: the first pass produces series,
+    // which are the ROWS of a matrix rather than anything the navigator lists, so calling the first
+    // listable thing "L2" invited the question of where L1 had gone.
+    // Branches also bottom out at different depths — a key already reduced to a bare ring has nothing
+    // left to strip — so indentation alone does not say which level a card sits at. The badge does.
+    const shown = matrix.level - 1;
+    const level = ui.divText(`L${shown}`, 'chem-sar-card-level');
+    ui.tooltip.bind(level, () => shown === 1 ?
+      'Level 1 — one matrix per site. Each of its rows is a series: one core with its substituents.' :
+      `Level ${shown} — a coarser matrix, holding the compounds of the level-${shown - 1} matrices ` +
+      'whose cores agree one further cut deeper.');
     const body = ui.divV([
-      ui.divText(matrix.label, 'chem-sar-card-title'),
+      ui.divH([ui.divText(matrix.label, 'chem-sar-card-name'), level], 'chem-sar-card-title'),
       ui.divText(desc, 'chem-sar-card-desc'),
     ], 'chem-sar-card-body');
     const sc = this.cardScore(matrix);
-    const scoreBox = ui.divV(sc.lines.map((ln) => ui.divH([
-      ui.divText(ln.value, 'chem-sar-card-score'),
-      ui.divText(ln.label, 'chem-sar-card-score-cap'),
-    ], 'chem-sar-card-score-line')), 'chem-sar-card-score-box');
-    ui.tooltip.bind(scoreBox, () => sc.tip);
-    const card = ui.divH([core, body, scoreBox], 'chem-sar-card');
-    if (this.selKind === 'matrix' && index === this.selIndex)
+    const scoreBox = this.cardScoreBox(sc.lines, () => sc.tip);
+    // The expander is its own click target: the rest of the card selects the matrix, and collapsing
+    // must not also switch the pane to it. Leaves get a spacer so every core lines up regardless.
+    let twisty: HTMLElement;
+    if (folded > 0 && onToggle) {
+      const open = !this.collapsed.has(matrix.id);
+      twisty = ui.iconFA(open ? 'chevron-down' : 'chevron-right', (e: MouseEvent) => {
+        e.stopPropagation();
+        onToggle();
+      }, open ? 'Hide the matrices folded into this one' : `Show ${folded} matrices folded into this one`);
+      twisty.classList.add('chem-sar-card-twisty');
+    } else
+      twisty = ui.div([], 'chem-sar-card-twisty');
+
+    const card = ui.divH([twisty, core, body, scoreBox], 'chem-sar-card');
+    if (depth > 0) {
+      // Capped: past a couple of levels the indent would eat the card rather than show the nesting.
+      card.style.marginLeft = `${Math.min(depth, 3) * 10}px`;
+      card.classList.add('chem-sar-card-nested');
+    }
+    if (index === this.selIndex)
       card.classList.add('selected');
     card.onclick = () => {
-      this.selKind = 'matrix';
       this.selIndex = index;
       this.varyPosition = ''; // the Vary filter is per-matrix; don't carry it to a different one
       this.render();
@@ -868,12 +1203,81 @@ export class SarMatrixViewer extends DG.JsViewer {
     return [ui.divText(title, 'chem-sar-nav-section'), ...cards];
   }
 
-  /** Select a specific transfer (by its identity in this.transfers) and re-open the trend view. */
+  /** Select a specific transfer (by its identity in this.transfers) and redraw the trend view.
+   *  Only the panel is rebuilt — the matrix pane is a separate view now and must not move. */
   private selectTransfer(transfer: Transfer): void {
-    this.selKind = 'transfer';
-    this.selIndex = this.transfers.indexOf(transfer);
-    this.varyPosition = '';
-    this.render();
+    this.transferIndex = Math.max(0, this.transfers.indexOf(transfer));
+    this.renderTransferPanel();
+  }
+
+  /**
+   * Rebuild the SAR-transfer panel: the list of detected transfers alongside the trend view of the
+   * selected one. The panel exists only while there is something in it, so its presence on screen is
+   * itself the answer to "were any transfers found".
+   */
+  private renderTransferPanel(): void {
+    if (!this.sarTransfer || this.transfers.length === 0) {
+      this.closeTransferPanel();
+      return;
+    }
+    if (this.transferIndex >= this.transfers.length)
+      this.transferIndex = 0;
+    // The panel's own grid, not the matrix's: releasing here is what keeps switching transfers from
+    // stacking up Dart-backed grids, and it cannot touch the matrix pane's slot.
+    this.releaseSlot(this.transferSlot);
+    ui.empty(this.transferHost);
+    const list = ui.div([], 'chem-sar-xfer-list');
+    for (const el of this.buildTransferSection('SAME-SERIES', this.transfers.filter((t) => !t.crossMatrix)))
+      list.appendChild(el);
+    for (const el of this.buildTransferSection('CROSS-SERIES', this.transfers.filter((t) => t.crossMatrix)))
+      list.appendChild(el);
+    this.transferHost.appendChild(list);
+    this.transferHost.appendChild(this.buildTransferPane(this.transfers[this.transferIndex]));
+    this.openTransferPanel();
+  }
+
+  /** This viewer's own dock node, so the panel can be placed against the viewer rather than against
+   *  the view. The docked element is not always the viewer's root — a wrapper may hold the node — so
+   *  the search walks up until the dock manager recognises an ancestor. */
+  private ownDockNode(view: DG.TableView): DG.DockNode | null {
+    for (let el: HTMLElement | null = this.root; el !== null; el = el.parentElement) {
+      const node = view.dockManager.findNode(el);
+      if (node !== undefined)
+        return node;
+    }
+    return null;
+  }
+
+  /** Dock the panel directly beneath this viewer, once. Anchored to the viewer's node rather than the
+   *  view's so it splits only the viewer's own space — docked against the view it would run the full
+   *  width and push up the table grid, which has nothing to do with SAR transfer. */
+  private openTransferPanel(): void {
+    // A panel the user closed by hand leaves a node behind that no longer holds anything, so the
+    // element being disconnected — not the node being null — is what says it has to be re-docked.
+    if (this.transferNode !== null && this.transferHost.isConnected)
+      return;
+    this.transferNode = null;
+    const view = this.view;
+    if (!(view instanceof DG.TableView))
+      return;
+    this.transferNode = view.dockManager.dock(this.transferHost, DG.DOCK_TYPE.DOWN,
+      this.ownDockNode(view), 'SAR transfer', 0.38);
+  }
+
+  /** Undock the panel and release its grid. */
+  private closeTransferPanel(): void {
+    this.releaseSlot(this.transferSlot);
+    ui.empty(this.transferHost);
+    if (this.transferNode === null)
+      return;
+    try {
+      const view = this.view;
+      if (view instanceof DG.TableView)
+        view.dockManager.close(this.transferNode);
+    } catch (e) {
+      // Already gone — the user closed the panel, or the whole view went away first.
+    }
+    this.transferNode = null;
   }
 
   /** Every transfer sharing this one's source core — the alternatives the pane's target dropdown
@@ -887,7 +1291,7 @@ export class SarMatrixViewer extends DG.JsViewer {
    *  target named in text, a "+N" badge when the source reaches more cores (switched in the pane),
    *  and the shown transfer's correlation. */
   private buildTransferCard(group: Transfer[]): HTMLElement {
-    const selected = this.selKind === 'transfer' ? this.transfers[this.selIndex] : null;
+    const selected = this.transfers[this.transferIndex] ?? null;
     // Show the selected transfer when it belongs to this group, otherwise the strongest (first).
     const shown = (selected && group.includes(selected)) ? selected : group[0];
 
@@ -905,14 +1309,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       ui.divText(this.sideLabel(shown.a), 'chem-sar-card-title'),
       ui.divH(desc, 'chem-sar-card-desc'),
     ], 'chem-sar-card-body');
-    const scoreBox = ui.divV([ui.divH([
-      ui.divText(`r ${shown.correlation.toFixed(2)}`, 'chem-sar-card-score'),
-      ui.divText('transfer', 'chem-sar-card-score-cap'),
-    ], 'chem-sar-card-score-line')], 'chem-sar-card-score-box');
-    ui.tooltip.bind(scoreBox, () => shown.crossMatrix ?
-      'Correlation of two different chemotypes’ potency trends across shared substituents — the SAR ' +
+    const scoreBox = this.cardScoreBox([{value: `r ${shown.correlation.toFixed(2)}`, label: 'transfer'}],
+      () => shown.crossMatrix ?
+        'Correlation of two different chemotypes’ potency trends across shared substituents — the SAR ' +
       'learned on one series should carry to the other. 1.00 = perfectly parallel.' :
-      'Correlation of the two cores’ potency trends (SAR transfer): 1.00 = perfectly parallel.');
+        'Correlation of the two cores’ potency trends (SAR transfer): 1.00 = perfectly parallel.');
     const card = ui.divH([body, scoreBox], 'chem-sar-card');
     if (selected && group.includes(selected))
       card.classList.add('selected');
@@ -932,30 +1333,184 @@ export class SarMatrixViewer extends DG.JsViewer {
         this.reRank();
       },
     });
+    // The three schemes answer different questions and the names alone do not say which, so the whole
+    // set is spelled out rather than only the one in force — choosing between them is the point.
+    ui.tooltip.bind(rankInput.root, () => {
+      const unit = this.activityColumnName || 'activity';
+      const mark = (scheme: string): string => scheme === this.rankScheme ? '▸ ' : '   ';
+      return ui.divV([
+        ui.divText(`${mark(SarRankScheme.Potency)}Potent compounds — the single most potent ` +
+          `compound in the matrix (${unit}). Where the best chemistry already is.`),
+        ui.divText(`${mark(SarRankScheme.Discontinuity)}SAR discontinuity — the largest activity ` +
+          'spread within one core. Where a small substituent change flips potency, so the SAR is ' +
+          'steep and worth reading.'),
+        ui.divText(`${mark(SarRankScheme.Preferred)}Preferred substituent — the best mean potency of ` +
+          'any one substituent across the cores. A substituent that pays off on every scaffold, ' +
+          'rather than one lucky compound.'),
+      ], 'chem-sar-rank-tip');
+    });
 
-    const title = ui.divH([
-      ui.divText('Select a SAR matrix'),
-      ui.divText('MMP grouping', 'chem-sar-nav-badge'),
-    ], 'chem-sar-nav-title');
-    const sub = ui.divText(
-      `${this.matrices.length} matrices · related cores grouped by similarity`, 'chem-sar-nav-sub');
-    // The one place the scale is spelled out: every value (cards and cells) and the cell coloring use it.
-    const units = ui.divText(
-      `Activity: ${this.activityColumnName} · values on the ${this.scalingLabel} scale`,
-      'chem-sar-nav-units');
-    const header = ui.divV([title, sub, units, rankInput.root], 'chem-sar-nav-header');
-
+    const parents = this.matrixParents();
+    const roots = parents.filter((p) => p < 0).length;
+    const deepest = this.matrices.reduce((m, matrix) => Math.max(m, matrix.level), 2) - 1;
+    const sub = ui.divText(`${this.matrices.length} matrices in ${roots} famil${roots === 1 ? 'y' : 'ies'} · ` +
+      `${deepest} level${deepest === 1 ? '' : 's'}`, 'chem-sar-nav-sub');
     const list = ui.div([], 'chem-sar-nav-list');
-    list.appendChild(ui.divText(rankValue.toUpperCase(), 'chem-sar-nav-section'));
-    this.matrices.forEach((matrix, i) => list.appendChild(this.buildCard(matrix, i)));
-    const sameSeries = this.transfers.filter((t) => !t.crossMatrix);
-    const crossSeries = this.transfers.filter((t) => t.crossMatrix);
-    for (const el of this.buildTransferSection('SAME-SERIES SAR TRANSFER', sameSeries))
-      list.appendChild(el);
-    for (const el of this.buildTransferSection('CROSS-SERIES SAR TRANSFER', crossSeries))
-      list.appendChild(el);
+    const matchCount = ui.divText('', 'chem-sar-nav-matches');
+    // Redrawing only the list keeps the inputs themselves alive, so the caret stays where it was and
+    // the pane does not rebuild for what is purely a change of what the navigator shows.
+    const refill = (): void => {
+      this.fillNavList(list, parents);
+      const hits = this.matrices.filter((matrix) => this.passesFilter(matrix)).length;
+      matchCount.innerText = this.filterMin === null ? '' : `${hits} of ${this.matrices.length} match`;
+    };
 
+    // The metrics on offer follow the rank scheme, so the threshold always compares the number the
+    // cards are printing. A scheme change can leave the previous metric unavailable — and a threshold
+    // in potency units is meaningless against a spread — so both fall back together.
+    const metrics = this.filterMetricOptions();
+    if (!metrics.includes(this.filterMetric)) {
+      this.filterMetric = metrics[0];
+      this.filterMin = null;
+    }
+    const metricInput = ui.input.choice('Filter', {
+      value: this.filterMetric,
+      items: metrics,
+      onValueChanged: (value) => {
+        this.filterMetric = value!;
+        // Best and mean are different scales, so carrying the number over misleads; the bounds belong
+        // to the metric too, so the control itself has to be rebuilt.
+        this.filterMin = null;
+        this.render();
+      },
+    });
+    ui.tooltip.bind(metricInput.root, () => metrics.length === 1 ?
+      `Ranking by "${this.rankScheme}", so the threshold applies to that same number.` :
+      'Which of a matrix\'s two reported potencies the threshold applies to — its best compound, or ' +
+      'the mean over its observed compounds.');
+
+    // Bounds come from the metric actually being filtered; a potency range would put the handle
+    // nowhere near a spread of 1.9.
+    const values: number[] = [];
+    for (const matrix of this.matrices) {
+      const value = this.matrixMetric(matrix);
+      if (value !== null)
+        values.push(value);
+    }
+    const {lo, hi, step} = this.sliderBounds(values);
+    const round2 = (v: number): number => Math.round(v * 100) / 100;
+    // The end that lets everything through, which is where "no filter" sits: the bottom when the test
+    // compares upwards, the top when it compares downwards.
+    const upwards = this.filterMetric === FILTER_SPREAD ? true : this.higherIsBetter;
+    const neutral = upwards ? lo : hi;
+
+    // The label follows the comparison, which follows the metric: potency on a smaller-is-better scale
+    // keeps the SMALLER numbers, so a fixed "Min value" would name the opposite of what it does.
+    const minInput = ui.input.float(upwards ? 'Min value' : 'Max value', {
+      value: this.filterMin ?? neutral,
+      min: lo,
+      max: hi,
+      step,
+      showSlider: hi > lo,
+      onValueChanged: (value) => {
+        const raw = (value === null || value === undefined || Number.isNaN(value)) ? neutral : value;
+        // Snap to the step and to two decimals: the slider still emits float noise, and the threshold
+        // is echoed straight into the field the user reads.
+        const picked = round2(Math.round(raw / step) * step);
+        // Parked at the neutral end means "show everything" rather than a threshold that happens to
+        // admit every matrix — the difference shows up in whether the match count is worth printing.
+        this.filterMin = picked === neutral ? null : picked;
+        refill();
+      },
+    });
+    ui.tooltip.bind(minInput.root, () => {
+      const what = this.filterMetric === FILTER_SPREAD ? 'an activity spread of at least this much' :
+        upwards ? `a ${this.filterMetric.toLowerCase()} of at least this` :
+          `a ${this.filterMetric.toLowerCase()} of at most this — smaller is more potent on the ` +
+            `${this.scalingLabel} scale`;
+      return `Keep only matrices with ${what}. The number is the one on the cards. Park the handle at ` +
+        'the far end to show all; a parent is kept whenever anything inside it matches.';
+    });
+    // One form rather than loose inputs: it aligns the label column for us, which hand-placing them in
+    // a row does not, and it keeps the spacing consistent with every other panel in the platform.
+    const controls = ui.form([rankInput, metricInput, minInput]);
+
+    const header = ui.divV([sub, controls, matchCount], 'chem-sar-nav-header');
+    refill();
     return ui.divV([header, list], 'chem-sar-nav');
+  }
+
+  /**
+   * Fill the navigator with one card per matrix, each parent immediately followed by the subtree it
+   * owns, and every collapsed subtree left out. Rebuilt in place rather than through `render()`, which
+   * would also rebuild the matrix grid and send it back to its first row.
+   */
+  private fillNavList(list: HTMLElement, parents: number[]): void {
+    const scroll = list.scrollTop;
+    ui.empty(list);
+    // A coarser matrix owns the finer ones folded into it, so each family is one branch of that tree.
+    // Ranked order decides the order of the families and of the siblings within each.
+    const children = new Map<number, number[]>();
+    parents.forEach((p, i) => {
+      if (p >= 0)
+        children.set(p, [...(children.get(p) ?? []), i]);
+    });
+    const descendants = (i: number): number =>
+      (children.get(i) ?? []).reduce((n, child) => n + 1 + descendants(child), 0);
+
+    // A fresh analysis opens at its roots: with a few hundred matrices the fully expanded list is
+    // unreadable, and the coarsest matrix is the one worth reading first anyway. Seeded once, so a
+    // redraw after a toggle keeps whatever the user has opened since.
+    if (!this.collapseSeeded) {
+      this.collapsed.clear();
+      for (const parent of children.keys())
+        this.collapsed.add(this.matrices[parent].id);
+      // The selection rises to the root that holds it rather than that root being opened to reveal it,
+      // or the family containing whatever ranked first would always arrive expanded. The pane is built
+      // after the navigator, so it picks this up and opens on the broadest matrix of that family.
+      let root = Math.min(this.selIndex, this.matrices.length - 1);
+      while (root >= 0 && parents[root] >= 0)
+        root = parents[root];
+      if (root >= 0)
+        this.selIndex = root;
+      this.collapseSeeded = true;
+    }
+    // A parent that fails the filter is still drawn when something under it passes, or the match would
+    // be unreachable. While a filter is on, collapse is ignored down those paths for the same reason —
+    // filtering is a search, and a hit hidden inside a closed node is not a hit the user can see.
+    const filtering = this.filterMin !== null;
+    const hits = new Map<number, boolean>();
+    const anyHit = (i: number): boolean => {
+      const cached = hits.get(i);
+      if (cached !== undefined)
+        return cached;
+      hits.set(i, true); // guards against a malformed parent chain looping back on itself
+      let ok = this.passesFilter(this.matrices[i]);
+      for (const child of children.get(i) ?? [])
+        ok = anyHit(child) || ok;
+      hits.set(i, ok);
+      return ok;
+    };
+
+    const emit = (i: number, depth: number): void => {
+      if (filtering && !anyHit(i))
+        return;
+      const id = this.matrices[i].id;
+      list.appendChild(this.buildCard(this.matrices[i], i, depth, descendants(i), () => {
+        if (!this.collapsed.delete(id))
+          this.collapsed.add(id);
+        this.fillNavList(list, parents);
+      }));
+      if (!filtering && this.collapsed.has(id))
+        return;
+      for (const child of children.get(i) ?? [])
+        emit(child, depth + 1);
+    };
+    parents.forEach((p, root) => {
+      if (p < 0)
+        emit(root, 0);
+    });
+    list.scrollTop = scroll;
   }
 
   // ---- Matrix table (right pane) ------------------------------------------------------------
@@ -971,10 +1526,91 @@ export class SarMatrixViewer extends DG.JsViewer {
     return Math.max(CELL_W, Math.min(CELL_W_MAX, Math.floor(avail / nCols)));
   }
 
+  /**
+   * Apply the potency threshold to the grid already on screen instead of rebuilding it.
+   *
+   * Rows go through the grid's own row filter, columns through `GridColumn.visible`, and the blanking
+   * of surviving-but-failing cells is just a repaint — the painter reads `cellMin` directly. A full
+   * `render()` would rebuild the navigator, re-run the containment nesting, recreate the DataFrame and
+   * grid, and recompute every row's alignment template, none of which the threshold can change.
+   *
+   * The painter maps a grid row back through `gridRowToTable`, so a filtered row set keeps resolving
+   * to the right `PaneRow` without any index bookkeeping here.
+   */
+  private applyCellFilter(): void {
+    const state = this.matrixGrid;
+    if (state === null)
+      return;
+    const rowPasses = (i: number): boolean => {
+      const row = state.rows[i];
+      return row === undefined || !this.cellFilterActive ||
+        row.colIdxs.some((ci) => this.passesCell(row.matrix.cells[row.rowIndex][ci]));
+    };
+    state.df.filter.init(rowPasses);
+    state.colKeyToIdx.forEach((idx, key) => {
+      const column = state.grid.col(key);
+      if (column === null)
+        return;
+      column.visible = !this.cellFilterActive || state.rows.some((row, i) =>
+        rowPasses(i) && this.passesCell(row.matrix.cells[row.rowIndex][row.colIdxs[idx]]));
+    });
+    this.refitColumns();
+    state.grid.invalidate();
+
+    const matrix = state.rows.length ? state.rows[0].matrix : null;
+    if (matrix !== null && this.paneDimsChip !== null) {
+      const {rows, cols} = this.visibleDims(matrix);
+      this.paneDimsChip.innerText = `${rows}×${cols}`;
+      const full = `${matrix.rows.length} cores × ${matrix.columns.length} substituents`;
+      ui.tooltip.bind(this.paneDimsChip, () =>
+        rows === matrix.rows.length && cols === matrix.columns.length ? full :
+          `${rows} cores × ${cols} substituents shown, filtered from ${full}`);
+    }
+    const emptied = state.df.filter.trueCount === 0 || this.visibleGridCols(state) === 0;
+    if (this.paneGridHost !== null)
+      this.paneGridHost.style.display = emptied ? 'none' : '';
+    if (this.paneEmptyNote !== null)
+      this.paneEmptyNote.style.display = emptied ? '' : 'none';
+  }
+
+  /** How many of the pane's columns are currently shown — hidden ones must not claim width. */
+  private visibleGridCols(state: MatrixGridState): number {
+    let n = 0;
+    state.colKeyToIdx.forEach((_idx, key) => {
+      if (state.grid.col(key)?.visible !== false)
+        n++;
+    });
+    return n;
+  }
+
+  /**
+   * Re-fit the live grid's columns to the current pane width. Cell geometry reaches the painters as
+   * the grid's own cell bounds rather than through `cellW`, so a width change needs no rebuild — which
+   * is what lets the grid keep its scroll position across a resize. Widths are clamped to whole
+   * pixels, so a drag that does not cross a pixel boundary is skipped rather than repainting the
+   * viewport on every debounce tick.
+   */
+  private refitColumns(): void {
+    const state = this.matrixGrid;
+    if (state === null)
+      return;
+    const cellW = this.fitCellWidth(this.visibleGridCols(state));
+    if (cellW === this.cellW)
+      return;
+    this.cellW = cellW;
+    state.colKeyToIdx.forEach((_i, key) => {
+      const column = state.grid.col(key);
+      if (column !== null)
+        column.width = cellW;
+    });
+  }
+
   /** Column indices to show: all, or only the "Vary" position's group when one is chosen. Columns
    *  keep their as-assembled (frequency) order — the "Label" control annotates them, never reorders. */
   private visibleColIdxs(matrix: SarMatrix): number[] {
     const all = matrix.columns.map((_, ci) => ci);
+    // The potency threshold is NOT applied here: it hides columns through `GridColumn.visible` on the
+    // grid that is already up, so the pane can be built once and filtered without a rebuild.
     return this.varyPosition && matrix.positions.includes(this.varyPosition) ?
       all.filter((ci) => matrix.columns[ci].position === this.varyPosition) : all;
   }
@@ -996,148 +1632,80 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** Caption annotating a column with the chosen metric — its mean potency (scaled) or the
    *  substituent MW — shown under the substituent header. Empty when labelling is off. */
   private columnSortCaption(matrix: SarMatrix, colIdx: number): string {
-    if (this.sortColumnsBy === COLSORT_MW) {
+    if (this.columnCaption === COLSORT_MW) {
       const mw = substituentMW(matrix.columns[colIdx].substSmiles);
       return Number.isFinite(mw) ? `MW ${mw.toFixed(0)}` : '';
     }
-    if (this.sortColumnsBy === COLSORT_POTENCY) {
+    if (this.columnCaption === COLSORT_POTENCY) {
       const mean = this.columnMeanPotency(matrix, colIdx);
       return mean === null ? '' : `μ ${this.formatActivity(mean)}`;
     }
     return '';
   }
 
-  /** Contiguous runs of the given columns sharing an R-position, in order. */
-  private groupColumns(matrix: SarMatrix, colIdxs: number[]): {position: string, colIdxs: number[]}[] {
-    const groups: {position: string, colIdxs: number[]}[] = [];
-    for (const ci of colIdxs) {
-      const position = matrix.columns[ci].position;
-      const last = groups[groups.length - 1];
-      if (last?.position === position)
-        last.colIdxs.push(ci);
-      else
-        groups.push({position, colIdxs: [ci]});
-    }
-    return groups;
-  }
-
-  private buildMatrixCell(matrix: SarMatrix, cell: SarMatrixCell, ri: number, ci: number): HTMLElement {
-    const td = ui.element('td') as HTMLTableCellElement;
-    td.className = `chem-sar-cell chem-sar-cell-${cell.kind}`;
-    td.style.width = `${this.cellW}px`;
-    if (cell.kind === 'empty' || cell.value === null)
-      return td;
-    const value = cell.value;
-    const isVirtual = cell.kind === 'virtual';
-    const support = cell.support ?? 0;
-    // Thin predictions (few observations behind the Free-Wilson estimate) are drawn fainter, so a
-    // heavily-extrapolated cell reads as less certain than a well-supported one. Real cells are solid.
-    const alpha = isVirtual ?
-      Math.round(VIRTUAL_ALPHA_MIN + (VIRTUAL_ALPHA - VIRTUAL_ALPHA_MIN) * Math.min(1, support / FULL_SUPPORT)) :
-      REAL_ALPHA;
-    // Tint the whole cell (not just the drawn canvas) so no white gap shows around the structure;
-    // the molecule is then drawn on a TRANSPARENT canvas over it, avoiding a double-tint seam.
-    const bg = this.tint(matrix, value, alpha);
-    td.style.backgroundColor = DG.Color.toHtml(bg);
-    if (cell.smiles !== null)
-      td.appendChild(renderAlignedOnColor(cell.smiles, this.cellW, CELL_H, CORE_BG_ARGB, this.alignTemplate));
-    // '~' marks a predicted (virtual) value.
-    const chip = ui.divText(`${isVirtual ? '~' : ''}${this.formatActivity(value)}`, 'chem-sar-chip');
-    if (isVirtual && support <= 1)
-      chip.classList.add('chem-sar-chip-weak');
-    td.appendChild(chip);
-    // Compare an observed cell with the additive model's fitted value: a large residual means the
-    // Free-Wilson assumption fails at this core × substituent (a non-additive, cliff-like cell).
-    const range = matrix.maxActivity - matrix.minActivity;
-    const fitMatches = (fit: number): boolean => range === 0 || Math.abs(value - fit) <= MATCH_FRACTION * range;
-    if (!isVirtual && cell.fit !== undefined && !fitMatches(cell.fit))
-      td.classList.add('chem-sar-cell-deviant');
-    ui.tooltip.bind(td, () => {
-      if (isVirtual) {
-        return `Predicted ${this.formatActivity(value)} · local Free-Wilson · support n=${support}` +
-          (support <= 1 ? ' (low)' : '');
-      }
-      if (cell.fit === undefined)
-        return `Observed ${this.formatActivity(value)}`;
-      return `Observed ${this.formatActivity(value)} · Free-Wilson fit ${this.formatActivity(cell.fit)} · ` +
-        (fitMatches(cell.fit) ? '✓ matches' : 'non-additive');
-    });
-    td.onclick = (event) => {
-      grok.shell.windows.showContextPanel = true;
-      // The "current" ring is a single cell — move it to whatever was clicked (real or virtual), so
-      // clicking a virtual analog clears the previously-clicked cell's ring.
-      this.setCurrentCell(td);
-      // Link back to the host grid: a real compound becomes the current row (grid scrolls to it) and
-      // ctrl/shift-click extends the grid selection (modifiedSelectOnly keeps a plain click from
-      // wiping an existing selection). A virtual analog has no grid row, so park the current row at
-      // -1 — otherwise the grid (and syncSelection) would keep the previous real cell ringed.
-      if (cell.molIdx !== null) {
-        this.dataFrame.currentRowIdx = cell.molIdx;
-        this.dataFrame.selection.handleClick((i) => i === cell.molIdx, event, true);
-      } else
-        this.dataFrame.currentRowIdx = -1;
-      // Any cell with an assembled structure — real OR virtual — opens the platform's full Molecule
-      // context (properties, drug-likeness, toxicity, structural alerts, identifiers, 3D). We also
-      // register its SAR context (potency, decomposition, and — for a prediction — the make-list
-      // action) so the gated `SAR analysis` info panel shows it alongside the native panels. Only an
-      // unassembled virtual (no structure) falls back to the standalone SAR panel.
-      if (cell.smiles) {
-        this.analogPanels.set(cell.smiles, () => this.buildCellPanel(matrix, ri, ci));
-        grok.shell.o = DG.SemanticValue.fromValueType(cell.smiles, DG.SEMTYPE.MOLECULE);
-      } else
-        grok.shell.o = this.buildCellPanel(matrix, ri, ci);
-    };
-    // Track the right-clicked virtual analog so the context menu can offer a per-cell make-list add.
-    if (isVirtual && cell.smiles)
-      td.addEventListener('contextmenu', () => this.contextCell = {matrix, ri, ci});
-    if (cell.molIdx !== null)
-      this.cellByMolIdx.set(cell.molIdx, td); // for host-grid selection/current-row highlighting
-    return td;
-  }
-
   /**
-   * Virtualized matrix render: a scaffold DataFrame (one row per core, one string column per visible
-   * substituent plus a pinned 'Core' column) backs a DG.Grid whose every cell — body, core, and
-   * R-group header — is hand-painted in `onCellRender`. Only viewport cells draw, so a large matrix no
-   * longer renders every core×substituent up front, and selection/current-row changes repaint via
-   * `invalidate` instead of rebuilding the DOM.
+   * Virtualized render of a row/column spec: a scaffold DataFrame (one row per displayed row, one
+   * string column per displayed column plus a pinned 'Core' column) backs a DG.Grid whose every cell
+   * — body, core, and R-group header — is hand-painted in `onCellRender`. Only viewport cells draw,
+   * so a large matrix no longer renders every core×substituent up front, and selection/current-row
+   * changes repaint via `invalidate` instead of rebuilding the DOM. Both the matrix pane and the
+   * transfer pane build through here; each displayed row resolves against its own matrix, which is
+   * what lets a cross-series transfer show two rows drawn from two different matrices.
    */
-  private buildMatrixGrid(matrix: SarMatrix): HTMLElement {
-    const colIdxs = this.visibleColIdxs(matrix);
-    this.cellW = this.fitCellWidth(colIdxs.length);
-    // Header state is computed here, once per grid: `onCellRender` runs for every visible header cell
-    // on every repaint, and rebuilding the column list (or rescanning rows for a column's mean
-    // potency) there is quadratic in the column count for a result that cannot change until rebuild.
-    const firstOfGroup = new Set(this.groupColumns(matrix, colIdxs).map((group) => group.colIdxs[0]));
-    const captions = new Map<number, string>();
-    for (const ci of colIdxs)
-      captions.set(ci, this.columnSortCaption(matrix, ci));
+  private buildPaneGrid(rows: PaneRow[], columns: PaneColumn[], slot: PaneGridSlot): HTMLElement {
+    this.cellW = this.fitCellWidth(columns.length);
+    // The group boundaries are computed here, once per grid: `onCellRender` runs for every visible
+    // header cell on every repaint, and rescanning the columns there is quadratic in the column count
+    // for a result that cannot change until the grid is rebuilt.
+    const firstOfGroup = new Set<number>();
+    columns.forEach((column, i) => {
+      if (i === 0 || columns[i - 1].position !== column.position)
+        firstOfGroup.add(i);
+    });
 
-    const df = DG.DataFrame.create(matrix.rows.length);
+    const df = DG.DataFrame.create(rows.length);
     df.columns.addNewString('Core');
-    const colKeyToCi = new Map<string, number>();
+    const colKeyToIdx = new Map<string, number>();
     // Stable string keys (never the grid column idx, which pinning and the hidden row header shift).
-    for (const ci of colIdxs) {
-      const key = `c${ci}`;
+    columns.forEach((_column, i) => {
+      const key = `c${i}`;
       df.columns.addNewString(key);
-      colKeyToCi.set(key, ci);
-    }
+      colKeyToIdx.set(key, i);
+    });
 
     const grid = DG.Grid.create(df);
     // A fixed header height fits the position band + R-group depiction + sort caption; the built-in
     // row-number column is hidden because the cores live in the pinned 'Core' column.
-    grid.setOptions({colHeaderHeight: HEADER_H + 36, rowHeight: CELL_H, showRowHeader: false});
+    grid.setOptions({colHeaderHeight: COL_HEADER_H, rowHeight: CELL_H, showRowHeader: false,
+      currentRowColor: DG.Color.white});
     grid.col('Core')!.width = CORE_W;
-    colKeyToCi.forEach((_ci, key) => grid.col(key)!.width = this.cellW);
+    colKeyToIdx.forEach((_i, key) => grid.col(key)!.width = this.cellW);
     grid.col('Core')!.pin();
-    const state: MatrixGridState = {grid, colKeyToCi, matrix, colIdxs, firstOfGroup, captions};
+    // Resolved once per grid: `onCellRender` runs for the pinned header on every repaint, and the
+    // answer cannot change until the grid is rebuilt. A cross-series transfer draws its two rows from
+    // different matrices, so there is no one series structure to name and the header stays textual.
+    // A single template only serves rows that genuinely share a core. A cluster built on a generic MCS
+    // anchor gives each row a different concrete core, and aligning those to one another's template
+    // silently fails — `generate_aligned_coords` leaves the molecule with its own layout — so every
+    // such row would be drawn in its own orientation. Those panes align per row instead.
+    const firstCore = rows.length > 0 ? rows[0].matrix.rows[rows[0].rowIndex]?.coreSmiles ?? null : null;
+    const sharedCore = firstCore !== null &&
+      rows.every((row) => row.matrix.rows[row.rowIndex]?.coreSmiles === firstCore) ? firstCore : null;
+    // Attachment points are capped off the header. It names the scaffold every row shares, while an
+    // open position only means something on a row key, where exactly one is left open; carrying both
+    // here labels a site the rows have already filled and invites reading them as disagreeing with the
+    // column header. Capping leaves the atoms implicit, so nothing is drawn in their place.
+    const headerCore = sharedCore === null ? null : sharedCore.replace(/\[\*:\d+\]/g, '[H]');
+    const paneTemplate = headerCore !== null ? buildAlignmentTemplate(headerCore) : null;
+    const state: MatrixGridState = {grid, df, rows, columns, colKeyToIdx, firstOfGroup, headerCore, paneTemplate,
+      rowTemplates: new Array(rows.length).fill(null)};
 
     // Owned by this grid instance; unsubscribed when the next grid replaces it (or on detach) so
     // repeated renders can't leak render/click/tooltip handlers into detached grids.
-    this.matrixGridSubs.forEach((s) => s.unsubscribe());
-    this.matrixGridSubs = [];
+    slot.subs.forEach((s) => s.unsubscribe());
+    slot.subs = [];
 
-    this.matrixGridSubs.push(grid.onCellRender.subscribe((args) => {
+    slot.subs.push(grid.onCellRender.subscribe((args) => {
       const c = args.cell;
       const isColHeader = c.isColHeader;
       if (!isColHeader && !c.isTableCell)
@@ -1155,13 +1723,13 @@ export class SarMatrixViewer extends DG.JsViewer {
           this.paintHeader(g, b, name, state);
         else {
           const ri = grid.gridRowToTable(c.gridRow);
-          if (ri >= 0 && ri < matrix.rows.length) {
+          if (ri >= 0 && ri < rows.length) {
             if (name === 'Core')
-              this.paintCore(g, b, matrix, ri);
+              this.paintCore(g, b, rows[ri], ri, state);
             else {
-              const ci = colKeyToCi.get(name);
-              if (ci !== undefined)
-                this.paintBodyCell(g, b, matrix, ri, ci);
+              const idx = colKeyToIdx.get(name);
+              if (idx !== undefined)
+                this.paintBodyCell(g, b, rows[ri], ri, idx, state);
             }
           }
         }
@@ -1171,9 +1739,8 @@ export class SarMatrixViewer extends DG.JsViewer {
       args.preventDefault();
     }));
 
-    this.matrixGridSubs.push(grid.onCellClick.subscribe((c) => this.onGridCellClick(grid, matrix, colKeyToCi, c)));
-    this.matrixGridSubs.push(grid.onCellTooltip((c, x, y) =>
-      this.onGridCellTooltip(grid, matrix, colKeyToCi, c, x, y)));
+    slot.subs.push(grid.onCellClick.subscribe((c) => this.onGridCellClick(state, c)));
+    slot.subs.push(grid.onCellTooltip((c, x, y) => this.onGridCellTooltip(state, c, x, y)));
 
     // Track the pointer for ctrl/shift selection extend, and decode right-clicks to the assembled
     // virtual cell so the viewer's context menu can offer a per-cell make-list add.
@@ -1185,25 +1752,20 @@ export class SarMatrixViewer extends DG.JsViewer {
       const hit = grid.hitTest(e.clientX - rect.left, e.clientY - rect.top);
       if (!hit || !hit.isTableCell)
         return;
-      const name = hit.gridColumn.name;
-      if (name === 'Core')
+      const resolved = this.resolveGridCell(state, hit);
+      if (!resolved)
         return;
-      const ci = colKeyToCi.get(name);
-      if (ci === undefined)
-        return;
-      const ri = grid.gridRowToTable(hit.gridRow);
-      if (ri < 0 || ri >= matrix.rows.length)
-        return;
-      const cell = matrix.cells[ri][ci];
+      const {paneRow, ci} = resolved;
+      const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
       if (cell.kind === 'virtual' && cell.smiles)
-        this.contextCell = {matrix, ri, ci};
+        this.contextCell = {matrix: paneRow.matrix, ri: paneRow.rowIndex, ci};
     };
     overlay.addEventListener('mousedown', onMouseDown);
     overlay.addEventListener('contextmenu', onContextMenu);
-    this.matrixGridSubs.push({unsubscribe: () => overlay.removeEventListener('mousedown', onMouseDown)});
-    this.matrixGridSubs.push({unsubscribe: () => overlay.removeEventListener('contextmenu', onContextMenu)});
+    slot.subs.push({unsubscribe: () => overlay.removeEventListener('mousedown', onMouseDown)});
+    slot.subs.push({unsubscribe: () => overlay.removeEventListener('contextmenu', onContextMenu)});
 
-    this.matrixGrid = state;
+    slot.state = state;
 
     // The grid virtualizes off its own height, so give it a plain flex host that fills the pane (not
     // ui.box, which would pin a fixed pixel width and stop the matrix growing with the pane).
@@ -1212,23 +1774,39 @@ export class SarMatrixViewer extends DG.JsViewer {
     return ui.div([grid.root], 'chem-sar-grid-host');
   }
 
-  /** Click on a grid body cell: open the platform Molecule context, set the host grid's current row /
-   *  selection, and register the cell's SAR panel — mirrors `buildMatrixCell`'s click handler. */
-  private onGridCellClick(grid: DG.Grid, matrix: SarMatrix, colKeyToCi: Map<string, number>,
-    c: DG.GridCell): void {
-    if (!c.isTableCell)
-      return;
+  /** Resolve a grid body cell to the displayed row descriptor and the index of the matrix column
+   *  behind it. Null for the pinned 'Core' column and for anything outside the built row/column set. */
+  private resolveGridCell(state: MatrixGridState, c: DG.GridCell): {paneRow: PaneRow, ci: number} | null {
     const name = c.gridColumn.name;
     if (name === 'Core')
+      return null;
+    const idx = state.colKeyToIdx.get(name);
+    if (idx === undefined)
+      return null;
+    const ri = state.grid.gridRowToTable(c.gridRow);
+    if (ri < 0 || ri >= state.rows.length)
+      return null;
+    const paneRow = state.rows[ri];
+    return {paneRow, ci: paneRow.colIdxs[idx]};
+  }
+
+  /** Click on a grid body cell: open the platform Molecule context, set the host grid's current row /
+   *  selection, and register the cell's SAR panel. The row descriptor carries the matrix, so a
+   *  cross-series transfer opens the panel of whichever matrix the clicked side belongs to. */
+  private onGridCellClick(state: MatrixGridState, c: DG.GridCell): void {
+    if (!c.isTableCell)
       return;
-    const ci = colKeyToCi.get(name);
-    if (ci === undefined)
+    const resolved = this.resolveGridCell(state, c);
+    if (!resolved)
       return;
-    const ri = grid.gridRowToTable(c.gridRow);
-    if (ri < 0 || ri >= matrix.rows.length)
-      return;
+    const {paneRow, ci} = resolved;
+    const matrix = paneRow.matrix;
+    const ri = paneRow.rowIndex;
     const cell = matrix.cells[ri][ci];
-    if (cell.kind === 'empty' || cell.value === null)
+    // A cell the threshold has blanked is not selectable: it draws as empty, so opening the compound
+    // behind it would answer a click the user never appeared to make, and the context panel would
+    // describe a molecule that is not on screen.
+    if (cell.kind === 'empty' || cell.value === null || !this.passesCell(cell))
       return;
     grok.shell.windows.showContextPanel = true;
     // A real compound becomes the host grid's current row and (ctrl/shift) extends its selection; a
@@ -1247,58 +1825,67 @@ export class SarMatrixViewer extends DG.JsViewer {
     } else
       grok.shell.o = this.buildCellPanel(matrix, ri, ci);
     // Repaint so the freshly-set current/selection ring shows immediately.
-    grid.invalidate();
+    state.grid.invalidate();
   }
 
   /** Hover text for a grid cell: substituent/position for an R-group header, potency detail for a body
    *  cell. Returns true to suppress the default tooltip. */
-  private onGridCellTooltip(grid: DG.Grid, matrix: SarMatrix, colKeyToCi: Map<string, number>,
-    c: DG.GridCell, x: number, y: number): boolean {
-    const name = c.gridColumn.name;
+  private onGridCellTooltip(state: MatrixGridState, c: DG.GridCell, x: number, y: number): boolean {
     if (c.isColHeader) {
+      const name = c.gridColumn.name;
       if (name === 'Core')
         return true;
-      const ci = colKeyToCi.get(name);
-      if (ci === undefined)
+      const idx = state.colKeyToIdx.get(name);
+      if (idx === undefined)
         return false;
-      const col = matrix.columns[ci];
-      const otherRefs = matrix.positions.filter((p) => p !== col.position);
-      const parts = [`${col.position}: ${col.substSmiles}`];
+      const column = state.columns[idx];
+      // Which positions sit at their reference value is a property of the matrix the columns were
+      // taken from — the first displayed row's, since the columns follow that row's position.
+      const matrix = state.rows.length ? state.rows[0].matrix : null;
+      const otherRefs = matrix ? matrix.positions.filter((p) => p !== column.position) : [];
+      const parts = [`${column.position}: ${column.substSmiles}`];
       if (otherRefs.length)
         parts.push(`${otherRefs.join(', ')} at ref`);
       ui.tooltip.show(ui.divText(parts.join(' · ')), x, y);
       return true;
     }
-    if (!c.isTableCell || name === 'Core')
+    if (!c.isTableCell)
       return false;
-    const ci = colKeyToCi.get(name);
-    if (ci === undefined)
+    const resolved = this.resolveGridCell(state, c);
+    if (!resolved)
       return false;
-    const ri = grid.gridRowToTable(c.gridRow);
-    if (ri < 0 || ri >= matrix.rows.length)
+    const {paneRow, ci} = resolved;
+    const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
+    // Blanked by the threshold reads as empty, so it must hover as empty too — otherwise the value the
+    // filter just hid comes straight back under the cursor.
+    if (cell.kind === 'empty' || cell.value === null || !this.passesCell(cell))
       return false;
-    const cell = matrix.cells[ri][ci];
-    if (cell.kind === 'empty' || cell.value === null)
-      return false;
-    ui.tooltip.show(ui.divText(this.cellTooltipText(matrix, cell)), x, y);
+    ui.tooltip.show(ui.divText(this.cellTooltipText(cell)), x, y);
     return true;
   }
 
-  /** Cell hover text — mirrors the HTML matrix: predicted (+ support) for a virtual analog, observed
-   *  (+ additive-fit check) for a real one. */
-  private cellTooltipText(matrix: SarMatrix, cell: SarMatrixCell): string {
+  /**
+   * The id chip's text for an observed cell, or null when there is nothing to label it with.
+   *
+   * Virtual analogs are skipped on purpose: a prediction has no row in the source table, so there is
+   * no id to show and captioning it with anything would invent an identity for a compound nobody made.
+   */
+  private cellIdText(cell: SarMatrixCell): string | null {
+    if (!this.idColumnName || cell.kind !== 'real' || cell.molIdx === null)
+      return null;
+    const column = this.dataFrame.col(this.idColumnName);
+    if (column === null || column.isNone(cell.molIdx))
+      return null;
+    return String(column.get(cell.molIdx));
+  }
+
+  /** Cell hover text: predicted (+ support) for a virtual analog, observed for a real one. */
+  private cellTooltipText(cell: SarMatrixCell): string {
     const value = cell.value!;
     const support = cell.support ?? 0;
-    if (cell.kind === 'virtual') {
-      return `Predicted ${this.formatActivity(value)} · local Free-Wilson · support n=${support}` +
-        (support <= 1 ? ' (low)' : '');
-    }
-    if (cell.fit === undefined)
-      return `Observed ${this.formatActivity(value)}`;
-    const range = matrix.maxActivity - matrix.minActivity;
-    const matches = range === 0 || Math.abs(value - cell.fit) <= MATCH_FRACTION * range;
-    return `Observed ${this.formatActivity(value)} · Free-Wilson fit ${this.formatActivity(cell.fit)} · ` +
-      (matches ? '✓ matches' : 'non-additive');
+    if (cell.kind === 'virtual')
+      return `Predicted ${this.formatActivity(value)} · support n=${support}${support <= 1 ? ' (low)' : ''}`;
+    return `Observed ${this.formatActivity(value)}`;
   }
 
   /** Paint an R-group column header (position band + straightened substituent depiction + sort
@@ -1307,37 +1894,55 @@ export class SarMatrixViewer extends DG.JsViewer {
     const grey6 = cssColor(this.root, '--grey-6', '#4a4a4a');
     const grey5 = cssColor(this.root, '--grey-5', '#7d7d7d');
     if (name === 'Core') {
+      // Every header cell paints its own background because the grid's default paint is suppressed;
+      // without this fill the pinned header keeps whatever pixels the previous frame happened to leave
+      // there, so it changes shade as the matrix scrolls.
+      g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
+      g.fillRect(b.x, b.y, b.width, b.height);
+      // The series structure rides in the header rather than only in the navigator: the header is
+      // pinned both ways, so it names what the rows are variations of even once row 1 has scrolled off.
+      const captionH = 14;
+      if (state.headerCore !== null) {
+        // Aligned to its own template, the way each row's core is, so the header points the same way
+        // as the column beneath it.
+        drawDepiction(g, b.x, b.y, b.width, Math.max(1, b.height - captionH), state.headerCore,
+          state.paneTemplate, HEADER_ARGB);
+      }
       g.fillStyle = grey5;
       g.font = `italic 11px ${GRID_FONT}`;
       g.textAlign = 'center';
-      g.textBaseline = 'middle';
-      g.fillText('Aligned core', b.x + b.width / 2, b.y + b.height / 2, b.width - 6);
+      g.textBaseline = state.headerCore !== null ? 'top' : 'middle';
+      const captionY = state.headerCore !== null ? b.y + b.height - captionH : b.y + b.height / 2;
+      g.fillText('Aligned core', b.x + b.width / 2, captionY, b.width - 6);
       return;
     }
-    const ci = state.colKeyToCi.get(name);
-    if (ci === undefined)
+    const idx = state.colKeyToIdx.get(name);
+    if (idx === undefined)
       return;
-    const matrix = state.matrix;
+    const column = state.columns[idx];
     g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
     g.fillRect(b.x, b.y, b.width, b.height);
 
     // Draw the position label only on the first column of a group — per-cell clipping can't paint a
     // true cross-column spanner, so this reads as the group header (the "at ref" detail is on hover).
     const posBandH = 16;
-    if (state.firstOfGroup.has(ci)) {
+    if (state.firstOfGroup.has(idx)) {
       g.fillStyle = grey6;
       g.font = `600 11px ${GRID_FONT}`;
       g.textAlign = 'left';
       g.textBaseline = 'top';
-      g.fillText(matrix.columns[ci].position, b.x + 5, b.y + 2, b.width - 10);
+      // Plain "R": a matrix varies exactly one position, so the number names nothing the reader can
+      // act on, and it reads as a claim about which decomposition position this is — arbitrary on a
+      // symmetric core, where R1 and R2 are interchangeable.
+      g.fillText('R', b.x + 5, b.y + 2, b.width - 10);
     }
 
-    const caption = state.captions.get(ci) ?? '';
+    const caption = column.caption;
     const captionBandH = caption ? 14 : 0;
     const depH = Math.max(1, b.height - posBandH - captionBandH);
     const depW = Math.min(b.width, HEADER_W * 2);
-    const depCanvas = cachedCellCanvas(matrix.columns[ci].substSmiles, null, depW, depH, HEADER_ARGB);
-    g.drawImage(depCanvas, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH);
+    drawDepiction(g, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH,
+      column.substSmiles, null, HEADER_ARGB);
 
     if (caption) {
       g.fillStyle = grey5;
@@ -1348,29 +1953,58 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
   }
 
+  /**
+   * The molblock a row's cells align to: the row's own key in the orientation it is actually drawn
+   * in. The key is first aligned to the pane's shared core so rows agree with the header wherever
+   * they can, and that result becomes the row's template — deriving the cells' template from a fresh
+   * layout of the key instead lets a cell's scaffold sit differently from the core printed beside it.
+   */
+  private rowTemplate(state: MatrixGridState, rowIdx: number): string | null {
+    const cached = state.rowTemplates[rowIdx];
+    if (cached !== null)
+      return cached;
+    const paneRow = state.rows[rowIdx];
+    const key = paneRow.matrix.rows[paneRow.rowIndex].keySmiles;
+    const aligned = state.paneTemplate !== null ? alignToTemplate(key, state.paneTemplate) : '';
+    // A key whose core differs from the shared one cannot align to it, and alignToTemplate hands back
+    // the input untouched, so lay that key out on its own instead.
+    const template = aligned.includes('V2000') ? aligned : buildAlignmentTemplate(key);
+    state.rowTemplates[rowIdx] = template;
+    return template;
+  }
+
   /** Paint the pinned-left core cell: the core aligned to its own template + the row label beneath. */
-  private paintCore(g: CanvasRenderingContext2D, b: DG.Rect, matrix: SarMatrix, ri: number): void {
-    const row = matrix.rows[ri];
-    // Each core aligns to its OWN template so every cell in the row shows that core the same way.
-    this.alignTemplate = buildAlignmentTemplate(row.coreSmiles);
+  private paintCore(g: CanvasRenderingContext2D, b: DG.Rect, paneRow: PaneRow, rowIdx: number,
+    state: MatrixGridState): void {
+    const row = paneRow.matrix.rows[paneRow.rowIndex];
+    const template = this.rowTemplate(state, rowIdx);
     const labelH = 16;
     const molH = Math.max(1, b.height - labelH);
-    const canvas = cachedCellCanvas(row.coreSmiles, this.alignTemplate, b.width, molH, CORE_BG_ARGB);
-    g.drawImage(canvas, b.x, b.y, b.width, molH);
+    // The default cell paint is suppressed, so the cell fills its own background; it also has to be
+    // the colour the depiction bakes in, or the core's anti-aliased bonds carry a fringe of another.
+    g.fillStyle = DG.Color.toHtml(WHITE_ARGB);
+    g.fillRect(b.x, b.y, b.width, b.height);
+    drawDepiction(g, b.x, b.y, b.width, molH, row.keySmiles, template, WHITE_ARGB);
     g.fillStyle = cssColor(this.root, '--grey-6', '#4a4a4a');
     g.font = `600 11px ${GRID_FONT}`;
     g.textAlign = 'center';
     g.textBaseline = 'top';
-    g.fillText(row.label, b.x + b.width / 2, b.y + molH + 1, b.width);
+    g.fillText(paneRow.label, b.x + b.width / 2, b.y + molH + 1, b.width);
   }
 
   /** Paint one core×substituent cell: potency tint (over white), aligned assembled molecule, value
-   *  chip, virtual/deviant markers, and the host-grid selection/current ring — the grid analogue of
-   *  `buildMatrixCell`. */
-  private paintBodyCell(g: CanvasRenderingContext2D, b: DG.Rect, matrix: SarMatrix, ri: number,
-    ci: number): void {
-    const cell = matrix.cells[ri][ci];
-    if (cell.kind === 'empty' || cell.value === null) {
+   *  chip, virtual/deviant markers, and the host-grid selection/current ring. The tint and the
+   *  additive-fit check use the row's OWN matrix, so two transfer sides drawn from different matrices
+   *  each color against their own activity range. */
+  private paintBodyCell(g: CanvasRenderingContext2D, b: DG.Rect, paneRow: PaneRow, rowIdx: number,
+    colIndex: number, state: MatrixGridState): void {
+    const matrix = paneRow.matrix;
+    const ri = paneRow.rowIndex;
+    const cell = matrix.cells[ri][paneRow.colIdxs[colIndex]];
+    // A cell below the threshold is blanked rather than removed: its row and column are still there
+    // because something else in them survived, and leaving the slot empty keeps the grid readable as a
+    // table instead of resequencing every neighbour.
+    if (cell.kind === 'empty' || cell.value === null || !this.passesCell(cell)) {
       g.fillStyle = cssColor(this.root, '--white', '#ffffff');
       g.fillRect(b.x, b.y, b.width, b.height);
       return;
@@ -1382,31 +2016,30 @@ export class SarMatrixViewer extends DG.JsViewer {
     const alpha = isVirtual ?
       Math.round(VIRTUAL_ALPHA_MIN + (VIRTUAL_ALPHA - VIRTUAL_ALPHA_MIN) * Math.min(1, support / FULL_SUPPORT)) :
       REAL_ALPHA;
-    // White base + the semi-transparent tint reproduces the HTML cell's "tint over the pane" without
-    // depending on how the grid clears cells; the molecule then draws on a transparent canvas over it.
-    g.fillStyle = cssColor(this.root, '--white', '#ffffff');
+    // The tint is flattened to an opaque colour and handed to the depiction as its own background, so
+    // the structure's anti-aliased bonds blend into the tint rather than into a lighter fringe. The
+    // fill still runs first, for cells that have no structure to draw over it.
+    const bg = this.flatTint(matrix, value, alpha);
+    g.fillStyle = DG.Color.toHtml(bg);
     g.fillRect(b.x, b.y, b.width, b.height);
-    g.fillStyle = DG.Color.toHtml(this.tint(matrix, value, alpha));
-    g.fillRect(b.x, b.y, b.width, b.height);
-    if (cell.smiles !== null) {
-      this.alignTemplate = buildAlignmentTemplate(matrix.rows[ri].coreSmiles);
-      const canvas = cachedCellCanvas(cell.smiles, this.alignTemplate, b.width, b.height, CORE_BG_ARGB);
-      g.drawImage(canvas, b.x, b.y, b.width, b.height);
-    }
+    if (cell.smiles !== null)
+      drawDepiction(g, b.x, b.y, b.width, b.height, cell.smiles, this.rowTemplate(state, rowIdx), bg);
 
-    // '~value' chip, top-left, fainter for a single-observation prediction.
-    this.paintChip(g, b, `${isVirtual ? '~' : ''}${this.formatActivity(value)}`, isVirtual,
-      isVirtual && support <= 1);
+    // '~value' chip, top-left, fainter for a single-observation prediction and green when it is the
+    // row's most potent observation (only a prediction-free comparison is worth flagging as "best").
+    const isBest = paneRow.markBest === true && !isVirtual && value === this.bestRowValue(paneRow);
+    this.paintChip(g, b, `${isVirtual ? '~' : ''}${this.formatActivity(value)}`, {
+      corner: 'top-left',
+      italic: isVirtual,
+      faint: isVirtual && support <= 1,
+      color: isBest ? cssColor(this.root, '--green-2', '#1a8a3a') :
+        cssColor(this.root, isVirtual ? '--grey-5' : '--grey-6', isVirtual ? '#7d7d7d' : '#4a4a4a'),
+    });
 
-    // A real cell whose observed value departs from the additive fit gets an amber corner dot.
-    const range = matrix.maxActivity - matrix.minActivity;
-    const fitMatches = (fit: number): boolean => range === 0 || Math.abs(value - fit) <= MATCH_FRACTION * range;
-    if (!isVirtual && cell.fit !== undefined && !fitMatches(cell.fit)) {
-      g.fillStyle = cssColor(this.root, '--orange-2', '#e8853a');
-      g.beginPath();
-      g.arc(b.x + b.width - 8, b.y + 8, 3.5, 0, Math.PI * 2);
-      g.fill();
-    }
+    // Id chip, diagonally opposite the potency it belongs to.
+    const idText = this.cellIdText(cell);
+    if (idText !== null)
+      this.paintChip(g, b, idText, {corner: 'bottom-right', color: cssColor(this.root, '--grey-5', '#7d7d7d')});
 
     // Cell outline: dashed for a virtual analog, a light solid frame otherwise.
     g.lineWidth = 1;
@@ -1420,33 +2053,41 @@ export class SarMatrixViewer extends DG.JsViewer {
     g.strokeRect(b.x + 0.5, b.y + 0.5, b.width - 1, b.height - 1);
     g.setLineDash([]);
 
-    // Host-grid link: a selected row's cell gets a blue ring; the current row a stronger one.
+    // Host-grid link: a selected row's cell gets a blue ring.
     if (cell.molIdx !== null && this.dataFrame.selection.get(cell.molIdx)) {
       g.lineWidth = 2;
       g.strokeStyle = cssColor(this.root, '--blue-1', '#2083d5');
       g.strokeRect(b.x + 1, b.y + 1, b.width - 2, b.height - 2);
     }
-    if (cell.molIdx !== null && cell.molIdx === this.dataFrame.currentRowIdx) {
-      g.lineWidth = 3;
-      g.strokeStyle = cssColor(this.root, '--blue-3', '#0d5ba6');
-      g.strokeRect(b.x + 1.5, b.y + 1.5, b.width - 3, b.height - 3);
-    }
   }
 
-  /** Draw the potency chip (a translucent white pill + text) at the cell's top-left. */
-  private paintChip(g: CanvasRenderingContext2D, b: DG.Rect, text: string, isVirtual: boolean,
-    weak: boolean): void {
-    g.font = `${isVirtual ? 'italic ' : ''}600 10px ${GRID_FONT}`;
+  /**
+   * Draw one corner chip: a translucent white plate carrying a line of text. The potency value and the
+   * id share it so the two read as the same kind of annotation over the structure rather than as two
+   * unrelated overlays, and the plate is what keeps either legible where a bond runs underneath.
+   *
+   * The text is ellipsized to the cell instead of being handed to `fillText` as a max width, which
+   * condenses the glyphs rather than truncating them — at 10px that turns a long id into a smear.
+   */
+  private paintChip(g: CanvasRenderingContext2D, b: DG.Rect, text: string, style: ChipStyle): void {
+    g.save();
+    g.font = `${style.italic === true ? 'italic ' : ''}600 10px ${GRID_FONT}`;
     g.textAlign = 'left';
     g.textBaseline = 'top';
-    const padX = 3;
-    const chipW = g.measureText(text).width + padX * 2;
-    g.globalAlpha = weak ? 0.65 : 1;
+    const trimmed = TextUtils.trimText(text, g, b.width - (CHIP_MARGIN + CHIP_PAD) * 2);
+    const chipW = g.measureText(trimmed).width + CHIP_PAD * 2;
+    // The far corner is measured from x/y + size rather than through `right`/`bottom`: the grid hands
+    // the painter a bare rect whose only own members are x, y, width and height, so those accessors
+    // come back undefined and every coordinate derived from them silently becomes NaN.
+    const atEnd = style.corner === 'bottom-right';
+    const x = atEnd ? b.x + b.width - CHIP_MARGIN - chipW : b.x + CHIP_MARGIN;
+    const y = atEnd ? b.y + b.height - CHIP_MARGIN - CHIP_H : b.y + CHIP_MARGIN;
+    g.globalAlpha = style.faint === true ? 0.65 : 1;
     g.fillStyle = 'rgba(255, 255, 255, 0.82)';
-    g.fillRect(b.x + 3, b.y + 3, chipW, 13);
-    g.fillStyle = cssColor(this.root, isVirtual ? '--grey-5' : '--grey-6', isVirtual ? '#7d7d7d' : '#4a4a4a');
-    g.fillText(text, b.x + 3 + padX, b.y + 5, b.width - 6);
-    g.globalAlpha = 1;
+    g.fillRect(x, y, chipW, CHIP_H);
+    g.fillStyle = style.color;
+    g.fillText(trimmed, x + CHIP_PAD, y + 2);
+    g.restore();
   }
 
   /** Format an activity value: no decimals at ≥100, one decimal below. */
@@ -1455,11 +2096,13 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** A context-panel section header with a small provenance badge (mirrors the mockup). */
-  private cpSection(title: string, badge: string): HTMLElement {
-    return ui.divH([
-      ui.divText(title, 'chem-sar-cp-section-title'),
-      ui.divText(badge, 'chem-sar-cp-badge'),
-    ], 'chem-sar-cp-section');
+  private cpSection(title: string, badge?: string): HTMLElement {
+    const parts = [ui.divText(title, 'chem-sar-cp-section-title')];
+    // Omitted rather than rendered empty: the pill carries its own background and padding, so a blank
+    // one still shows as a small coloured box beside the heading.
+    if (badge)
+      parts.push(ui.divText(badge, 'chem-sar-cp-badge'));
+    return ui.divH(parts, 'chem-sar-cp-section');
   }
 
   /** A label / value row in the context panel. */
@@ -1468,12 +2111,145 @@ export class SarMatrixViewer extends DG.JsViewer {
     return ui.divH([ui.divText(label, 'chem-sar-cp-rl'), v], 'chem-sar-cp-row');
   }
 
+  /**
+   * The cell's structure, drawn to the width the panel actually has. A molecule is rasterized at a
+   * fixed pixel size, so a hardcoded box leaves the structure stranded at one size while the panel the
+   * user drags grows around it. Redrawn on resize, but only past a few pixels of change — each redraw
+   * is an RDKit render, and a drag emits a size event per frame.
+   */
+  private cpStructure(smiles: string): HTMLElement {
+    const box = ui.div([], 'chem-sar-cp-structbox');
+    let drawnAt = 0;
+    const draw = (avail: number): void => {
+      const width = Math.min(CP_STRUCT_MAX_W, Math.max(CP_STRUCT_MIN_W, avail));
+      if (Math.abs(width - drawnAt) < 8)
+        return;
+      drawnAt = width;
+      ui.empty(box);
+      box.appendChild(renderMolecule(smiles,
+        {width, height: Math.round(width * CP_STRUCT_ASPECT), popupMenu: false}));
+    };
+    // A newer panel may claim the single observer slot while this one is still waiting to be laid out.
+    const token = ++this.cpStructureToken;
+    this.cpStructureSub?.unsubscribe();
+    // Wiring up only once the box is actually in the DOM: measured before that, clientWidth is 0 and
+    // the first draw lands on the minimum, leaving a too-small structure until something resizes.
+    ui.tools.waitForElementInDom(box).then(() => {
+      if (token !== this.cpStructureToken)
+        return;
+      // The panel container is what a drag resizes, and nothing drawn inside can widen it, so it is
+      // the authority on how much room there is. The box is measured too and the smaller wins: on its
+      // own the box can report the width it was last given rather than the width now available, which
+      // is what lets a structure grow with the panel but never shrink back.
+      const panel = box.closest('.panel-content') as HTMLElement | null;
+      const fit = (): void => draw(panel === null ? Math.floor(box.clientWidth) - BOX_CHROME :
+        Math.min(Math.floor(box.clientWidth) - BOX_CHROME, Math.floor(panel.clientWidth) - PANEL_CHROME));
+      this.cpStructureSub?.unsubscribe();
+      this.cpStructureSub = DG.debounce(ui.onSizeChanged(panel ?? box), 50).subscribe(fit);
+      fit();
+    });
+    return box;
+  }
+
+  /** A measured analog that fed a prediction: its structure over its observed value. */
+
+  /**
+   * Where a predicted value came from. The additive model is `rowMean + columnMean - grandMean`, so the
+   * compounds that determined it are exactly the measured cells sharing this row and this column —
+   * listed here with their values, and with the arithmetic spelled out, so the number can be checked
+   * rather than trusted.
+   */
+  private cpPrediction(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
+    const sameCore: SarMatrixCell[] = [];
+    const sameSubstituent: SarMatrixCell[] = [];
+    let grandSum = 0;
+    let grandN = 0;
+    for (let ri = 0; ri < matrix.rows.length; ri++) {
+      for (let ci = 0; ci < matrix.columns.length; ci++) {
+        const c = matrix.cells[ri][ci];
+        if (c.kind !== 'real' || c.value === null)
+          continue;
+        grandSum += c.value;
+        grandN++;
+        if (ri === rowIdx)
+          sameCore.push(c);
+        if (ci === colIdx)
+          sameSubstituent.push(c);
+      }
+    }
+    const meanOf = (cells: SarMatrixCell[]): number =>
+      cells.length === 0 ? 0 : cells.reduce((s, c) => s + (c.value ?? 0), 0) / cells.length;
+    const rowMean = meanOf(sameCore);
+    const colMean = meanOf(sameSubstituent);
+    const grandMean = grandN === 0 ? 0 : grandSum / grandN;
+
+    // Shown as deviations from the matrix mean, which is what the model actually adds up. Read as raw
+    // means it looks wrong whenever both effects are negative — the prediction then falls below every
+    // number on screen, because the two deficits compound.
+    const coreEffect = rowMean - grandMean;
+    const substEffect = colMean - grandMean;
+    const signed = (v: number): string => `${v < 0 ? '−' : '+'}${this.formatActivity(Math.abs(v))}`;
+
+    const block = ui.divV([]);
+    block.appendChild(this.cpRow(`Matrix mean (n = ${grandN})`, this.formatActivity(grandMean)));
+    block.appendChild(this.cpRow(`Core effect (n = ${sameCore.length})`,
+      `${signed(coreEffect)}  (mean ${this.formatActivity(rowMean)})`));
+    block.appendChild(this.cpRow(`Substituent effect (n = ${sameSubstituent.length})`,
+      `${signed(substEffect)}  (mean ${this.formatActivity(colMean)})`));
+    block.appendChild(this.cpRow('Sum', `${this.formatActivity(grandMean)} ` +
+      `${signed(coreEffect)} ${signed(substEffect)} = ${this.formatActivity(grandMean + coreEffect + substEffect)}`));
+
+    block.appendChild(this.cpReferences(matrix, rowIdx, colIdx));
+    return block;
+  }
+
+  /**
+   * The observed compounds sharing this cell's core and its substituent — the ones a prediction here
+   * rests on, and for an existing compound the ones it should be read against. Shown for both kinds of
+   * cell: the row and column neighbours are the SAR context whether or not the cell itself was made.
+   *
+   * The selected cell is left out of its own lists, and the matrix-pane potency threshold applies, so a
+   * compound blanked out of the grid does not reappear here. Where the threshold hides some, the badge
+   * reads "shown of total" rather than quietly disagreeing with the counts in the arithmetic above.
+   */
+  private cpReferences(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
+    const block = ui.divV([]);
+    const self = matrix.cells[rowIdx][colIdx];
+    const collect = (pick: (ri: number, ci: number) => boolean): SarMatrixCell[] => {
+      const found: SarMatrixCell[] = [];
+      for (let ri = 0; ri < matrix.rows.length; ri++) {
+        for (let ci = 0; ci < matrix.columns.length; ci++) {
+          const c = matrix.cells[ri][ci];
+          if (c !== self && c.kind === 'real' && c.value !== null && pick(ri, ci))
+            found.push(c);
+        }
+      }
+      return found;
+    };
+    const section = (title: string, all: SarMatrixCell[]): void => {
+      const shown = all.filter((c) => this.passesCell(c));
+      if (shown.length === 0)
+        return;
+      block.appendChild(this.cpSection(title,
+        shown.length === all.length ? `${all.length}` : `${shown.length} of ${all.length}`));
+      block.appendChild(ui.divH(shown.map((c) => this.cpFragment(c.smiles, c.value ?? 0)),
+        'chem-sar-cp-decomp'));
+    };
+    section('Measured with this core', collect((ri) => ri === rowIdx));
+    section('Measured with this substituent', collect((_ri, ci) => ci === colIdx));
+    return block;
+  }
+
   /** A small framed fragment (core or substituent) with a caption. */
-  private cpFragment(smiles: string, label: string): HTMLElement {
-    return ui.divV([
-      ui.div([renderMolecule(smiles, {width: 78, height: 52, popupMenu: false})], 'chem-sar-cp-frag-box'),
-      ui.divText(label, 'chem-sar-cp-frag-label'),
-    ], 'chem-sar-cp-frag');
+  /** A framed fragment tile: the structure, and under it the compound's value when one is given. The
+   *  structure is omitted for an empty SMILES so a valueless tile is never an empty frame. */
+  private cpFragment(smiles: string | null, value?: number): HTMLElement {
+    const parts: HTMLElement[] = [];
+    if (smiles)
+      parts.push(ui.div([renderMolecule(smiles, {width: 78, height: 52, popupMenu: false})], 'chem-sar-cp-frag-box'));
+    if (value !== undefined)
+      parts.push(ui.divText(this.formatActivity(value), 'chem-sar-cp-rv'));
+    return ui.divV(parts, 'chem-sar-cp-frag');
   }
 
   /**
@@ -1495,52 +2271,40 @@ export class SarMatrixViewer extends DG.JsViewer {
     const isVirtual = cell.kind === 'virtual';
 
     const header = ui.divH([ui.h2(isVirtual ? 'Virtual analog' : 'Compound')], 'chem-sar-cp-head');
-    if (isVirtual)
-      header.appendChild(ui.divText('not synthesized', 'chem-sar-cp-notsynth'));
     panel.appendChild(header);
 
-    if (cell.smiles) {
-      panel.appendChild(ui.div([renderMolecule(cell.smiles, {width: 240, height: 130, popupMenu: false})],
-        'chem-sar-cp-structbox'));
-    }
+    if (cell.smiles)
+      panel.appendChild(this.cpStructure(cell.smiles));
 
-    const displaySmiles = cell.smiles ? toDisplaySmiles(cell.smiles) : '';
-    if (displaySmiles)
-      panel.appendChild(this.cpRow('SMILES', ui.divText(displaySmiles, 'chem-sar-cp-smiles')));
-    const substs = matrix.positions
-      .map((p) => (p === column.position ? column.substSmiles : matrix.refValues[p])).filter((v) => v);
-    panel.appendChild(this.cpRow(isVirtual ? 'Core × R' : 'Core',
-      isVirtual ? `${row.label} × ${substs.join(' / ')}` : `${row.label} · ${matrix.rows.length} cores`));
-
-    panel.appendChild(this.cpSection(isVirtual ? 'Predicted potency' : 'Potency',
-      isVirtual ? 'Free-Wilson' : 'observed'));
+    panel.appendChild(this.cpSection(isVirtual ? 'Predicted potency' : 'Potency'));
     panel.appendChild(this.cpRow(isVirtual ? 'Predicted' : 'Observed',
       ui.divText(this.formatActivity(cell.value), 'chem-sar-cp-value')));
     if (isVirtual) {
       panel.appendChild(this.cpRow('Method', FREE_WILSON_METHOD));
-      panel.appendChild(this.cpRow('Neighbours', 'row + column analogs'));
-      panel.appendChild(this.cpRow('Support', `n = ${cell.support ?? 0}${(cell.support ?? 0) <= 1 ? ' (low)' : ''}`));
-    } else if (cell.fit !== undefined) {
-      const range = matrix.maxActivity - matrix.minActivity;
-      const matches = range === 0 || Math.abs(cell.value - cell.fit) <= MATCH_FRACTION * range;
-      panel.appendChild(this.cpRow('Free-Wilson fit', ui.divH([
-        ui.divText(this.formatActivity(cell.fit)),
-        ui.divText(matches ? '✓ matches' : 'non-additive',
-          matches ? 'chem-sar-cp-matches' : 'chem-sar-cp-mismatch'),
-      ], 'chem-sar-cp-fit')));
-    }
+      // Both arms, with the split shown: a total of 5 drawn 4 + 1 is a different prediction from one
+      // drawn 2 + 3, because the thin arm is what limits it. The weaker arm is called out when it is
+      // down to a single compound, which is where the estimate is really an extrapolation.
+      const refs = cell.references ?? 0;
+      const weakest = cell.support ?? 0;
+      panel.appendChild(this.cpRow('Reference points',
+        `n = ${refs}${weakest <= 1 ? ' · one arm has a single compound' : ''}`));
+      panel.appendChild(this.cpPrediction(matrix, rowIdx, colIdx));
+    } else
+      panel.appendChild(this.cpReferences(matrix, rowIdx, colIdx));
 
     panel.appendChild(this.cpSection('Decomposition', 'R-group'));
-    const parts = [this.cpFragment(row.coreSmiles, 'core')];
+    // The fragments are drawn, so they caption themselves — the core and each R-group are read from
+    // the structures, not from text repeating what the picture already shows.
+    const parts = [this.cpFragment(row.keySmiles)];
     matrix.positions.forEach((position) => {
       const v = position === column.position ? column.substSmiles : matrix.refValues[position];
       if (v)
-        parts.push(this.cpFragment(v, `${position} = ${v}`));
+        parts.push(this.cpFragment(v));
     });
     panel.appendChild(ui.divH(parts, 'chem-sar-cp-decomp'));
 
     if (isVirtual && cell.smiles) {
-      panel.appendChild(this.cpSection('Design action', 'new'));
+      panel.appendChild(this.cpSection('Design action'));
       panel.appendChild(ui.divText(
         'This core × substituent is not in the dataset. Add it to the make-list for synthesis triage.',
         'chem-sar-cp-hint'));
@@ -1551,58 +2315,31 @@ export class SarMatrixViewer extends DG.JsViewer {
     return panel;
   }
 
-  /** One core's row in the transfer view (from its own matrix), followed by its trend row. */
-  private appendTransferSide(tbody: HTMLElement, side: TransferSide, cols: number[],
-    template?: string | null): void {
-    const matrix = this.matrices[side.matrixIndex];
-    const row = matrix.rows[side.rowIndex];
-    // Align to this side's own core; the caller may pass a template it already built for this core.
-    this.alignTemplate = template ?? buildAlignmentTemplate(row.coreSmiles) ?? this.alignTemplate;
-    const tr = ui.element('tr') as HTMLTableRowElement;
-    const rhd = ui.element('td') as HTMLTableCellElement;
-    rhd.className = 'chem-sar-rhd';
-    rhd.appendChild(renderAlignedOnColor(row.coreSmiles, CORE_W, CORE_H, CORE_BG_ARGB, this.alignTemplate));
-    rhd.appendChild(ui.divText(this.sideLabel(side), 'chem-sar-row-label'));
-    tr.appendChild(rhd);
-    for (const ci of cols)
-      tr.appendChild(this.buildMatrixCell(matrix, matrix.cells[side.rowIndex][ci], side.rowIndex, ci));
-    tbody.appendChild(tr);
+  /** One displayed row as a transfer-pane grid row: its own matrix, its columns, and its side label. */
+  private transferPaneRow(side: TransferSide, colIdxs: number[]): PaneRow {
+    return {matrix: this.matrices[side.matrixIndex], rowIndex: side.rowIndex, colIdxs,
+      label: this.sideLabel(side), markBest: true};
+  }
 
-    // Trend row: the potency progression along this core, so a parallel trend in the other core
-    // is readable at a glance.
-    const trendTr = ui.element('tr') as HTMLTableRowElement;
-    trendTr.appendChild(ui.element('td'));
-    const trendTd = ui.element('td') as HTMLTableCellElement;
-    trendTd.colSpan = cols.length;
-    const trend = ui.divH([], 'chem-sar-trend');
-    const values = cols.map((ci) => matrix.cells[side.rowIndex][ci]);
-    const observed = values.filter((c) => c.value !== null).map((c) => c.value as number);
-    const bestValue = observed.length ?
-      (this.higherIsBetter ? Math.max(...observed) : Math.min(...observed)) : null;
-    values.forEach((cell, i) => {
-      if (i > 0)
-        trend.appendChild(ui.divText('→', 'chem-sar-trend-arrow'));
-      if (cell.value === null) {
-        trend.appendChild(ui.divText('·', 'chem-sar-trend-empty'));
-        return;
-      }
-      const text = `${cell.kind === 'virtual' ? '~' : ''}${this.formatActivity(cell.value)}`;
-      const el = ui.divText(text, 'chem-sar-trend-value');
-      if (cell.kind === 'virtual')
-        el.classList.add('chem-sar-trend-virtual');
-      if (bestValue !== null && cell.value === bestValue && cell.kind === 'real')
-        el.classList.add('chem-sar-trend-best');
-      trend.appendChild(el);
-    });
-    trendTd.appendChild(trend);
-    trendTr.appendChild(trendTd);
-    tbody.appendChild(trendTr);
+  /** Most potent OBSERVED value among a row's displayed cells, or null when it has none. Predictions
+   *  are excluded: a virtual cell is an estimate, so calling it the row's best would overstate it. */
+  private bestRowValue(paneRow: PaneRow): number | null {
+    const observed: number[] = [];
+    for (const ci of paneRow.colIdxs) {
+      const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
+      if (cell.kind === 'real' && cell.value !== null)
+        observed.push(cell.value);
+    }
+    if (!observed.length)
+      return null;
+    return this.higherIsBetter ? Math.max(...observed) : Math.min(...observed);
   }
 
   /**
    * The SAR transfer view: two cores whose potency trends run in parallel across the substituents
    * they share — within one matrix, or across two matrices (a cross-series transfer between different
-   * chemotypes) — with a trend row under each so the parallel is visible directly.
+   * chemotypes) — with a trend strip under each so the parallel is visible directly. The two rows go
+   * through the same virtualized grid as the matrix pane, each resolving against its own matrix.
    */
   private buildTransferPane(transfer: Transfer): HTMLElement {
     const matrixA = this.matrices[transfer.a.matrixIndex];
@@ -1631,33 +2368,21 @@ export class SarMatrixViewer extends DG.JsViewer {
       controlBar = ui.divH([targetInput.root], 'chem-sar-control-bar');
     }
 
-    const table = ui.element('table', 'chem-sar-table') as HTMLTableElement;
-    const tbody = ui.element('tbody') as HTMLTableSectionElement;
-    table.appendChild(tbody);
-    this.cellW = this.fitCellWidth(transfer.substituents.length);
-    // Build core a's alignment template once — the corner and side a's row both align to it.
-    const aTemplate = buildAlignmentTemplate(matrixA.rows[transfer.a.rowIndex].coreSmiles);
-    this.alignTemplate = aTemplate;
-
-    const headRow = ui.element('tr') as HTMLTableRowElement;
-    const corner = ui.element('td') as HTMLTableCellElement;
-    corner.className = 'chem-sar-corner';
-    corner.appendChild(ui.divText('Aligned core', 'chem-sar-corner-label'));
-    corner.appendChild(renderAlignedOnColor(matrixA.rows[transfer.a.rowIndex].coreSmiles,
-      CORE_W, CORE_H, CORE_BG_ARGB, aTemplate));
-    headRow.appendChild(corner);
-    for (const substSmiles of transfer.substituents) {
-      const th = ui.element('th') as HTMLTableCellElement;
-      th.className = 'chem-sar-chd';
-      th.style.width = `${this.cellW}px`;
-      th.appendChild(renderMoleculeOnColor(substSmiles, Math.min(this.cellW, HEADER_W * 2), HEADER_H, HEADER_ARGB));
-      th.appendChild(ui.divText(transfer.a.position, 'chem-sar-chd-label'));
-      headRow.appendChild(th);
-    }
-    tbody.appendChild(headRow);
-
-    this.appendTransferSide(tbody, transfer.a, transfer.aCols, aTemplate);
-    this.appendTransferSide(tbody, transfer.b, transfer.bCols);
+    // Each side keeps its own matrix (a cross-series transfer's two cores live in different ones), so
+    // its cells, potency range, core alignment and context panel all resolve against that matrix.
+    const rows = [
+      this.transferPaneRow(transfer.a, transfer.aCols),
+      this.transferPaneRow(transfer.b, transfer.bCols),
+    ];
+    // Every column is the same R-position here, and the Label metric is a matrix-pane control, so the
+    // headers carry only the position band and the depiction.
+    const columns: PaneColumn[] = transfer.substituents.map((substSmiles) =>
+      ({substSmiles, position: transfer.a.position, caption: ''}));
+    const gridHost = this.buildPaneGrid(rows, columns, this.transferSlot);
+    // Two rows only: size the grid to its content instead of stretching it, so the trend strips and
+    // the statistics stay on screen rather than being pushed below a half-empty grid.
+    gridHost.style.flex = '0 0 auto';
+    gridHost.style.height = `${COL_HEADER_H + rows.length * CELL_H + GRID_SCROLLBAR_H}px`;
 
     const noteText = transfer.crossMatrix ?
       `${from} and ${to} are different chemotypes, yet their potencies track together across these ` +
@@ -1666,10 +2391,11 @@ export class SarMatrixViewer extends DG.JsViewer {
         `is expected to carry over to ${to}.`;
     const note = ui.divText(noteText, 'chem-sar-transfer-note');
 
-    // A plain div, not ui.box: ui.box pins an explicit pixel width, which stops the matrix from
+    // A plain div, not ui.box: ui.box pins an explicit pixel width, which stops the content from
     // growing with the pane.
-    const scroll = ui.div([table, this.buildTransferStats(transfer), note], 'chem-sar-main-scroll');
-    return ui.divV(controlBar ? [bar, controlBar, scroll] : [bar, scroll], 'chem-sar-main');
+    const scroll = ui.div([this.buildTransferStats(transfer), note], 'chem-sar-main-scroll');
+    const parts = controlBar ? [bar, controlBar, gridHost, scroll] : [bar, gridHost, scroll];
+    return ui.divV(parts, 'chem-sar-main');
   }
 
   /** The "Transfer statistics" block: rank correlation, fold-change match, and the benefiting cell —
@@ -1696,7 +2422,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** Compact summary chips for the current matrix — short labels, full detail on hover: compound
-   *  count, cores×substituents, potency range, virtual count, Free-Wilson fit R², and transfer r. */
+   *  count, cores×substituents, potency range, virtual count, and transfer r. */
   private buildChips(matrix: SarMatrix): HTMLElement {
     const chip = (text: string, tip: string, cls = ''): HTMLElement => {
       const el = ui.divText(text, `chem-sar-chip-badge ${cls}`.trim());
@@ -1705,8 +2431,16 @@ export class SarMatrixViewer extends DG.JsViewer {
     };
     const items = [
       chip(`${matrix.realCount} cpd`, `${matrix.realCount} observed compounds`),
-      chip(`${matrix.rows.length}×${matrix.columns.length}`,
-        `${matrix.rows.length} cores × ${matrix.columns.length} substituents`),
+      // Reports what is on screen, not what the matrix holds: with a threshold set those differ, and a
+      // chip claiming 18×6 over a grid showing 4×2 is the kind of thing nobody notices is wrong.
+      ...(() => {
+        const {rows, cols} = this.visibleDims(matrix);
+        const full = `${matrix.rows.length} cores × ${matrix.columns.length} substituents`;
+        const el = chip(`${rows}×${cols}`, rows === matrix.rows.length && cols === matrix.columns.length ?
+          full : `${rows} cores × ${cols} substituents shown, filtered from ${full}`);
+        this.paneDimsChip = el; // kept so the threshold can retitle it without rebuilding the bar
+        return [el];
+      })(),
     ];
     if (matrix.realCount) {
       items.push(chip(`${this.formatActivity(matrix.minActivity)}–${this.formatActivity(matrix.maxActivity)}`,
@@ -1714,13 +2448,6 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
     if (matrix.virtualCount)
       items.push(chip(`${matrix.virtualCount} virtual`, `${matrix.virtualCount} predicted (virtual) analog(s)`));
-    if (matrix.virtualCount) {
-      const conf = matrix.confidence;
-      items.push(chip(conf ? `R² ${formatR2(conf.r2)}` : 'R² —',
-        conf ? `Free-Wilson leave-one-out fit — R² ${conf.r2.toFixed(2)}, RMSE ${conf.rmse.toFixed(2)}; ` +
-          `${conf.n} of ${conf.total} observed cells cross-validated` :
-          'Too few observations to cross-validate the Free-Wilson fit'));
-    }
     const idx = this.matrices.indexOf(matrix);
     // this.transfers is sorted by correlation (computeAllTransfers), so the first match is the strongest.
     const involving = this.transfers.filter((t) => t.a.matrixIndex === idx || t.b.matrixIndex === idx);
@@ -1754,39 +2481,128 @@ export class SarMatrixViewer extends DG.JsViewer {
       });
       controls.push(varyInput.root);
     }
-    const labelInput = ui.input.choice('Label', {
-      value: this.sortColumnsBy,
+    const labelInput = ui.input.choice('Caption', {
+      value: this.columnCaption,
       items: COLUMN_SORTS,
       onValueChanged: (value) => {
-        this.sortColumnsBy = value!;
+        this.columnCaption = value!;
         this.render();
       },
     });
     ui.tooltip.bind(labelInput.root, () => 'Annotate each substituent column with a metric — its mean ' +
       'potency (μ) or molecular weight (MW). Columns keep their order; only the caption is added.');
     controls.push(labelInput.root);
+
+    // Bounds span every matrix, not just this one, so moving between matrices does not shift the track
+    // under the handle and a threshold means the same thing wherever it is set.
+    const activities: number[] = [];
+    for (const m of this.matrices) {
+      if (m.realCount) {
+        activities.push(m.minActivity);
+        activities.push(m.maxActivity);
+      }
+    }
+    const cellBounds = this.sliderBounds(activities);
+    const cellNeutral = this.higherIsBetter ? cellBounds.lo : cellBounds.hi;
+    const cellInput = ui.input.float(this.higherIsBetter ? 'Min value' : 'Max value', {
+      value: this.cellMin ?? cellNeutral,
+      min: cellBounds.lo,
+      max: cellBounds.hi,
+      step: cellBounds.step,
+      showSlider: cellBounds.hi > cellBounds.lo,
+      showPlusMinus: false,
+      onValueChanged: (value) => {
+        const raw = (value === null || value === undefined || Number.isNaN(value)) ? cellNeutral : value;
+        const picked = Math.round(Math.round(raw / cellBounds.step) * cellBounds.step * 100) / 100;
+        this.cellMin = picked === cellNeutral ? null : picked;
+        this.applyCellFilter(); // filter + repaint the live grid; no rebuild
+      },
+    });
+    ui.tooltip.bind(cellInput.root, () => 'Keep only compounds at least this potent — the rest are left ' +
+      'blank, and any row or column with nothing left is dropped. At the far end nothing is filtered.');
+    controls.push(cellInput.root);
+
+    // How many measured compounds a prediction rests on. Capped at the largest present, so the slider
+    // cannot be dragged into a range that would blank every prediction on every matrix.
+    let maxRefs = 0;
+    for (const m of this.matrices) {
+      for (const row of m.cells) {
+        for (const c of row) {
+          if (c.kind === 'virtual')
+            maxRefs = Math.max(maxRefs, c.references ?? 0);
+        }
+      }
+    }
+    // Only offered when predictions exist to thin out — with virtual analogs switched off it would be a
+    // control that cannot change anything on screen.
+    if (this.predictVirtual && maxRefs > 0) {
+      // Shortened to fit the label column; the tooltip carries the full meaning.
+      const refsInput = ui.input.int('Min references', {
+        value: this.minSupport,
+        min: 0,
+        max: maxRefs,
+        step: 1,
+        showSlider: true,
+        showPlusMinus: false,
+        onValueChanged: (value) => {
+          this.minSupport = (value === null || value === undefined || Number.isNaN(value)) ? 0 :
+            Math.max(0, Math.round(value));
+          this.applyCellFilter();
+        },
+      });
+      ui.tooltip.bind(refsInput.root, () => 'Hide virtual analogs resting on fewer than this many ' +
+        'measured compounds — the ones listed as "Measured with this core" and "Measured with this ' +
+        'substituent" when a cell is open. A prediction with one reference point is extrapolating from ' +
+        'a single neighbour. Observed compounds are never hidden by this.');
+      controls.push(refsInput.root);
+    } else
+      this.minSupport = 0; // no control to clear it with, so it must not stay silently applied
     const controlBar = ui.divH(controls, 'chem-sar-control-bar');
+
+    // Every row of this pane shows the same matrix and the same visible columns; the Vary filter
+    // picks the columns and the Label control supplies their captions.
+    const visible = this.visibleColIdxs(matrix);
+    // Every row is built; the threshold hides them through the grid's row filter afterwards, so moving
+    // the slider never rebuilds this pane.
+    const rows: PaneRow[] = matrix.rows.map((row, ri) =>
+      ({matrix, rowIndex: ri, colIdxs: visible, label: row.label}));
+    const columns: PaneColumn[] = visible.map((ci) => ({
+      substSmiles: matrix.columns[ci].substSmiles,
+      position: matrix.columns[ci].position,
+      caption: this.columnSortCaption(matrix, ci),
+    }));
 
     // The grid scrolls and virtualizes internally, so it goes in a flex host that fills the pane (no
     // outer .chem-sar-main-scroll, which would add a second scroll container and its own padding).
-    return ui.divV([infoBar, controlBar, this.buildMatrixGrid(matrix)], 'chem-sar-main');
+    const gridHost = this.buildPaneGrid(rows, columns, this.matrixSlot);
+    // Shown in the grid's place when the threshold empties the matrix; an empty grid reads as a broken
+    // viewer. Built with the pane and toggled by the filter, so no rebuild is needed to reach it.
+    const reach = matrix.realCount ?
+      `its compounds run ${this.formatActivity(matrix.minActivity)}–${this.formatActivity(matrix.maxActivity)}` :
+      'it has no observed compounds';
+    const emptyNote = ui.divText(`No compound in ${matrix.label} is that potent — ${reach}. ` +
+      'Lower the threshold, or pick another matrix.', 'chem-sar-empty-note');
+    emptyNote.style.display = 'none';
+    this.paneGridHost = gridHost;
+    this.paneEmptyNote = emptyNote;
+    this.applyCellFilter();
+    return ui.divV([infoBar, controlBar, gridHost, emptyNote], 'chem-sar-main');
   }
 
   private render(): void {
     // Keep the navigator scrolled where it was — selecting a card lower down must not jump it to the top.
     const prevNav = this.host.querySelector('.chem-sar-nav-list');
     const navScroll = prevNav instanceof HTMLElement ? prevNav.scrollTop : 0;
-    // Before the DOM goes: a transfer pane leaves no grid behind, and buildMatrixGrid installs a new
-    // one, so the previous grid (and everything its handlers close over) has to be let go here.
+    // Before the DOM goes: buildPaneGrid installs a new grid, so the previous one (and everything its
+    // handlers close over) has to be let go here.
     this.releaseMatrixGrid();
     ui.empty(this.host);
     // Palette values are memoized by variable name only, so a theme switch would otherwise keep
     // painting the previous theme's colors for the life of the session.
     cssColorCache.clear();
-    this.cellByMolIdx.clear(); // rebuilt as this render's cells are created
-    this.currentCellEl = null; // its DOM element is gone; syncSelection re-points it from currentRowIdx
     if (this.matrices.length === 0) {
-      this.host.appendChild(ui.divText(
+      this.host.appendChild(ui.divText(this.grouping === SarGrouping.Site ?
+        'No SAR matrices found. Try raising the fragment cutoff, or switch grouping to Similarity.' :
         'No SAR matrices found. Try lowering the clustering threshold or raising the fragment cutoff.'));
       return;
     }
@@ -1794,13 +2610,10 @@ export class SarMatrixViewer extends DG.JsViewer {
     const newNav = this.host.querySelector('.chem-sar-nav-list');
     if (newNav instanceof HTMLElement)
       newNav.scrollTop = navScroll;
-    // A transfer entry opens the dedicated trend view; a matrix entry opens the full matrix.
-    if (this.selKind === 'transfer' && this.transfers[this.selIndex])
-      this.host.appendChild(this.buildTransferPane(this.transfers[this.selIndex]));
-    else {
-      const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
-      this.host.appendChild(this.buildMatrixPane(matrix));
-    }
+    // The viewer always shows a matrix; SAR transfer has its own panel and never displaces it.
+    const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
+    this.host.appendChild(this.buildMatrixPane(matrix));
+    this.renderTransferPanel();
     this.syncSelection(); // apply the host grid's current selection/row to the freshly-built cells
   }
 }

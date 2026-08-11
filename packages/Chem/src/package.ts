@@ -2532,19 +2532,36 @@ export class PackageFunctions {
       type: 'double',
       options: {initialValue: '0.4', description: 'Maximum fragment size relative to core'},
     }) fragmentCutoff: number = 0.4,
+    // The description has to be a single string literal with no ';' in it: the metadata generator
+    // evaluates literals only, so a '+'-joined one arrives empty, and the annotation it emits is
+    // itself ';'-separated, so a semicolon inside the text would read as the start of a new option.
     @grok.decorators.param({
-      type: 'double',
-      options: {initialValue: '0.5', description: 'Core-similarity clustering threshold (lower groups more distant cores)'},
-    }) threshold: number = 0.5,
+      type: 'int',
+      options: {initialValue: '3', caption: 'Series levels', min: '1', max: '5',
+        description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
+    }) fragmentationLevels: number = 3,
     @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
+    @grok.decorators.param({
+      options: {initialValue: 'false', caption: 'SAR transfer',
+        description: 'Also find core pairs whose potency trends run in parallel (a scan quadratic in row count)'},
+    }) sarTransfer: boolean = false,
   ): Promise<void> {
+    // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
+    // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
+    // timestamp would produce silent nonsense, so reject it here — this also covers programmatic
+    // callers, which never see the dialog at all.
+    if (!activity.isNumerical || activity.type === DG.COLUMN_TYPE.DATE_TIME) {
+      grok.shell.error(`SAR Matrix: "${activity.name}" is a ${activity.type} column. ` +
+        'Pick a numeric activity column (int, float, bigint or qnum).');
+      return;
+    }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
     const viewer = view.addViewer('SAR Matrix Viewer');
     viewer.setOptions({
       moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
-      scaling, activityDirection, fragmentCutoff, threshold, predictVirtual,
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, sarTransfer,
     });
     viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
   }

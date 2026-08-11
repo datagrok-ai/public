@@ -39,8 +39,9 @@ function emptyCell(): SarMatrixCell {
 /** A bare-bones matrix wrapper around a hand-built cells grid, for testing the pure
  *  confidence/ranking functions without going through assembly. */
 function makeMatrix(cells: SarMatrixCell[][], positions: string[] = ['R1']): SarMatrix {
-  const rows: SarMatrixRow[] = cells.map((_, i) => ({coreFragId: i, coreSmiles: `Core${i}`, label: `Core ${i}`}));
-  const columns: SarMatrixColumn[] = cells[0].map((_, i) => ({position: positions[0], substSmiles: `S${i}`, count: 0}));
+  const rows: SarMatrixRow[] = cells.map((_, i) =>
+    ({coreSmiles: `Core${i}`, keySmiles: `Core${i}`, label: `Core ${i}`, foldedValues: {}}));
+  const columns: SarMatrixColumn[] = cells[0].map((_, i) => ({position: positions[0], substSmiles: `S${i}`}));
   let realCount = 0;
   for (const row of cells) {
     for (const cell of row) {
@@ -51,6 +52,8 @@ function makeMatrix(cells: SarMatrixCell[][], positions: string[] = ['R1']): Sar
   return {
     id: 'm', label: '', rows, columns, cells, minActivity: 0, maxActivity: 0, realCount, virtualCount: 0,
     scores: {}, positions, refValues: {},
+    siteKey: '',
+    level: 2,
   };
 }
 
@@ -82,13 +85,15 @@ category('SAR Matrix', () => {
   test('assembleMatrix fills an empty cell with the additive prediction', async () => {
     const cluster: CoreCluster = {
       id: 'c0',
+      siteKey: '',
+      level: 2,
       series: [
-        {coreFragId: 1, coreSmiles: 'CoreA', members: [
-          {molIdx: 0, substFragId: 3, substSmiles: 'Me'},
-          {molIdx: 1, substFragId: 4, substSmiles: 'Et'},
+        {coreSmiles: 'CoreA', members: [
+          {molIdx: 0, substSmiles: 'Me'},
+          {molIdx: 1, substSmiles: 'Et'},
         ]},
-        {coreFragId: 2, coreSmiles: 'CoreB', members: [
-          {molIdx: 2, substFragId: 3, substSmiles: 'Me'},
+        {coreSmiles: 'CoreB', members: [
+          {molIdx: 2, substSmiles: 'Me'},
         ]},
       ],
     };
@@ -114,14 +119,16 @@ category('SAR Matrix', () => {
     async () => {
       const cluster: CoreCluster = {
         id: 'c0',
+        siteKey: '',
+        level: 2,
         series: [
-          {coreFragId: 1, coreSmiles: 'CoreA', members: [
-            {molIdx: 0, substFragId: 3, substSmiles: 'Me'},
-            {molIdx: 1, substFragId: 4, substSmiles: 'Et'},
-            {molIdx: 2, substFragId: 5, substSmiles: 'Pr'},
+          {coreSmiles: 'CoreA', members: [
+            {molIdx: 0, substSmiles: 'Me'},
+            {molIdx: 1, substSmiles: 'Et'},
+            {molIdx: 2, substSmiles: 'Pr'},
           ]},
-          {coreFragId: 2, coreSmiles: 'CoreB', members: [
-            {molIdx: 3, substFragId: 3, substSmiles: 'Me'},
+          {coreSmiles: 'CoreB', members: [
+            {molIdx: 3, substSmiles: 'Me'},
           ]},
         ],
       };
@@ -146,13 +153,15 @@ category('SAR Matrix', () => {
   test('assembleSinglePositionMatrix: a NaN activity is skipped, not turned into a real cell', async () => {
     const cluster: CoreCluster = {
       id: 'c0',
+      siteKey: '',
+      level: 2,
       series: [
-        {coreFragId: 1, coreSmiles: 'CoreA', members: [
-          {molIdx: 0, substFragId: 3, substSmiles: 'Me'},
-          {molIdx: 1, substFragId: 4, substSmiles: 'Et'}, // activity missing (NaN)
+        {coreSmiles: 'CoreA', members: [
+          {molIdx: 0, substSmiles: 'Me'},
+          {molIdx: 1, substSmiles: 'Et'}, // activity missing (NaN)
         ]},
-        {coreFragId: 2, coreSmiles: 'CoreB', members: [
-          {molIdx: 2, substFragId: 3, substSmiles: 'Me'},
+        {coreSmiles: 'CoreB', members: [
+          {molIdx: 2, substSmiles: 'Me'},
         ]},
       ],
     };
@@ -243,10 +252,12 @@ category('SAR Matrix', () => {
   test('rankMatrices scores every scheme and sorts by the chosen one', async () => {
     const cluster: CoreCluster = {
       id: 'c0',
+      siteKey: '',
+      level: 2,
       series: [
-        {coreFragId: 1, coreSmiles: 'CoreA', members: [
-          {molIdx: 0, substFragId: 3, substSmiles: 'Me'},
-          {molIdx: 1, substFragId: 4, substSmiles: 'Et'},
+        {coreSmiles: 'CoreA', members: [
+          {molIdx: 0, substSmiles: 'Me'},
+          {molIdx: 1, substSmiles: 'Et'},
         ]},
       ],
     };
@@ -349,6 +360,19 @@ category('SAR Matrix', () => {
     const mol = chemCommonRdKit.checkMoleculeValid(linked[0]);
     expect(mol !== null, true, 'the assembled SMILES must parse as a valid molecule');
     expect(mol.get_num_atoms(), 7, 'toluene: 6 ring carbons + 1 methyl carbon');
+    mol.delete();
+  });
+
+  test('linkRGroupFragments: a position the core lacks is skipped, not fatal', async () => {
+    const svc = await chemCommonRdKit.getRdKitService();
+    // Rows of one matrix can have different cores, so a core need not carry every decomposed position.
+    const linked = await svc.linkRGroupFragments(
+      ['c1ccc([*:1])cc1'], [['C[*:1]'], ['Cl[*:2]']], [1, 2]);
+    expect(linked.length, 1);
+    expect(linked[0] !== '', true, 'an absent attachment point must not discard the whole structure');
+    const mol = chemCommonRdKit.checkMoleculeValid(linked[0]);
+    expect(mol !== null, true, 'the assembled SMILES must parse as a valid molecule');
+    expect(mol.get_num_atoms(), 7, 'toluene: R1 attached, R2 skipped because the core has no [*:2]');
     mol.delete();
   });
 

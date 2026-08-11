@@ -73,3 +73,54 @@ export function rankMatrices(matrices: SarMatrix[], scheme: SarRankScheme,
   }
   return [...matrices].sort((a, b) => (b.scores[scheme] ?? 0) - (a.scores[scheme] ?? 0));
 }
+
+/** The compounds a matrix actually holds — the molecule index of every observed cell. */
+function observedMolecules(matrix: SarMatrix): Set<number> {
+  const mols = new Set<number>();
+  for (const row of matrix.cells) {
+    for (const cell of row) {
+      if (cell.kind === 'real' && cell.molIdx !== null)
+        mols.add(cell.molIdx);
+    }
+  }
+  return mols;
+}
+
+/**
+ * Nest the matrices by compound containment: a matrix whose compounds are all present in a larger one
+ * becomes its child. This is the anchor-depth ladder, read off the output rather than imposed on it —
+ * a parent and a child cover the same chemistry, but split differently between core and substituent
+ * (more cores and fewer columns, or the reverse), so descending the tree is descending that dial.
+ *
+ * Both are worth keeping: neither view is a summary of the other, and the redundancy the flat list
+ * appears to contain is really structure that was never displayed. The parent chosen is the smallest
+ * strict superset, so a chain nests one level at a time instead of collapsing onto its root.
+ *
+ * Matrices with identical compound sets cannot both be children of each other; the first in the given
+ * order keeps the parent role, which makes the result depend on that order alone and not on scoring.
+ *
+ * @returns Parent index per matrix, `-1` for a root, indexed against the array passed in.
+ */
+export function nestByContainment(matrices: SarMatrix[]): number[] {
+  const mols = matrices.map(observedMolecules);
+  const parent = new Array<number>(matrices.length).fill(-1);
+  for (let i = 0; i < matrices.length; i++) {
+    for (let j = 0; j < matrices.length; j++) {
+      if (i === j || mols[j].size < mols[i].size)
+        continue;
+      // Equal sets: only the earlier index may parent the later one, so the two can't adopt each other.
+      if (mols[j].size === mols[i].size && j > i)
+        continue;
+      let contained = true;
+      for (const m of mols[i]) {
+        if (!mols[j].has(m)) {
+          contained = false;
+          break;
+        }
+      }
+      if (contained && (parent[i] < 0 || mols[parent[i]].size > mols[j].size))
+        parent[i] = j;
+    }
+  }
+  return parent;
+}

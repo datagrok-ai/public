@@ -29,8 +29,9 @@ function looPredictSlice(cells: SarMatrixCell[][], rowCount: number, colIdxs: nu
  * non-additive here and the predictions should be doubted.
  *
  * As a side effect every observed real cell gets its LOO fitted value stored on `cell.fit` (or cleared
- * when it isn't cross-validatable), so the per-cell "non-additive" flag reflects an honest out-of-sample
- * residual instead of an in-sample one that would let a cliff hide its own deviation.
+ * when it isn't cross-validatable). It is an out-of-sample figure — an in-sample fit would let a cliff
+ * pull the model toward itself and hide its own deviation. Nothing renders it today; it is kept because
+ * it is the only per-cell measure of how far a compound departs from the model.
  *
  * Returns null when too few observed cells are cross-validatable. `n` cross-validatable of `total`
  * observed cells lets the caller show how much of the matrix the R² actually covers.
@@ -51,7 +52,7 @@ export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
         const predicted = looPredictSlice(matrix.cells, rowCount, colIdxs, ri, k);
         if (predicted !== null) {
           pairs.push({observed: cell.value, predicted});
-          cell.fit = predicted; // honest out-of-sample fitted value — drives the non-additive flag
+          cell.fit = predicted; // out-of-sample fitted value for this observed cell
         } else
           cell.fit = undefined; // can't cross-validate this cell — show no fit verdict for it
       }
