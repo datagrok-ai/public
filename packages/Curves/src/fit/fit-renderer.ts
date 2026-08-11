@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {IFitChartData, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {IFitChartData, IFitChartOptions, IFitSeries, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
 import {
@@ -13,6 +13,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {FitFunction} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {
   renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
@@ -34,6 +35,55 @@ import {handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+/** How far past its data a curve may stretch the axis before it is left cut instead. */
+const CURVE_HEADROOM = 0.15;
+
+/** The plot has to hold the curves it draws, not only the points they were fitted to. */
+function withCurvesInView(bounds: DG.Rect, curves: (((x: number) => number) | null)[],
+  options: IFitChartOptions | undefined): DG.Rect {
+  const logX = options?.logX ?? false;
+  const logY = options?.logY ?? false;
+  const SAMPLES = 100;
+  let min = bounds.minY;
+  let max = bounds.maxY;
+  for (const curve of curves) {
+    if (!curve)
+      continue;
+    for (let k = 0; k <= SAMPLES; k++) {
+      const t = k / SAMPLES;
+      const x = logX ? bounds.minX * Math.pow(bounds.maxX / bounds.minX, t) : bounds.minX + bounds.width * t;
+      const raw = curve(logX ? Math.log10(x) : x);
+      const y = logY ? Math.pow(10, raw) : raw;
+      if (isFinite(y)) {
+        min = Math.min(min, y);
+        max = Math.max(max, y);
+      }
+    }
+  }
+  // a bound the user set is the area they asked for, so a curve outside it stays cut
+  if (options?.minY != null)
+    min = bounds.minY;
+  if (options?.maxY != null)
+    max = bounds.maxY;
+  if (min >= bounds.minY && max <= bounds.maxY)
+    return bounds;
+  // worth showing whole while it stays near its data; one that runs away is left cut instead
+  if (logY && bounds.minY > 0) {
+    const room = (Math.log10(bounds.maxY) - Math.log10(bounds.minY)) * CURVE_HEADROOM;
+    min = Math.max(min, Math.pow(10, Math.log10(bounds.minY) - room));
+    max = Math.min(max, Math.pow(10, Math.log10(bounds.maxY) + room));
+  } else {
+    min = Math.max(min, bounds.minY - bounds.height * CURVE_HEADROOM);
+    max = Math.min(max, bounds.maxY + bounds.height * CURVE_HEADROOM);
+  }
+  if (min >= bounds.minY && max <= bounds.maxY)
+    return bounds;
+  const span = max - min;
+  const bottom = min < bounds.minY ? (logY && min > 0 ? min / 1.05 : min - span * 0.05) : bounds.minY;
+  const top = max > bounds.maxY ? (logY ? max * 1.05 : max + span * 0.05) : bounds.maxY;
+  return new DG.Rect(bounds.x, bottom, bounds.width, top - bottom);
 }
 
 function showIncorrectFitCell(g: CanvasRenderingContext2D, screenBounds: DG.Rect): void {
@@ -102,16 +152,50 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds,
       axesNames.x, axesNames.y, isTitleShown(screenBounds, data));
 
-    const dataBounds = getChartBounds(data);
+    let dataBounds = getChartBounds(data);
     if ((dataBounds.x < 0 && data.chartOptions) || (dataBounds.x === 0 && data.chartOptions && !data.chartOptions.allowXZeroes))
       data.chartOptions.logX = false;
     if (dataBounds.y <= 0 && data.chartOptions)
       data.chartOptions.logY = false;
+    const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
+    // fitted before the plot is scaled, so that a curve sitting above every point is still in view
+    const fits: ({fitFunc: FitFunction, curve: ((x: number) => number) | null, fitSpaceSeries: IFitSeries,
+      userParamsFlag: boolean} | null)[] = [];
+    for (let i = 0; i < data.series?.length!; i++) {
+      const series = data.series![i];
+      if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1) {
+        fits.push(null);
+        continue;
+      }
+      series.points.sort((a, b) => a.x - b.x);
+      const fitFunc = getSeriesFitFunction(series);
+      let curve: ((x: number) => number) | null = null;
+      // everything downstream needs fit-space parameters; the cached series keeps its data-space ones
+      let fitSpaceSeries = series;
+      let userParamsFlag = true;
+      if (!(series.connectDots && !(series.showFitLine ?? true))) {
+        if (series.parameters) {
+          fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
+          curve = getCurve(fitSpaceSeries, fitFunc);
+        } else {
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, useFitCache,
+            fitIdentities?.[i]);
+          curve = fitResult.fittedCurve;
+          fitSpaceSeries = {...series, parameters: [...fitResult.parameters]};
+          userParamsFlag = false;
+        }
+      }
+      fits.push({fitFunc, curve, fitSpaceSeries, userParamsFlag});
+    }
+    // only a curve that levels off at both ends: an unbounded one is an exponent under a log axis,
+    // so fitting the plot around it would bury the data
+    dataBounds = withCurvesInView(dataBounds,
+      fits.map((fit) => fit?.fitFunc.hasAsymptotes ? fit.curve : null), data.chartOptions);
+
     const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
     // TODO: make thinner
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
-    const chartLogOptions: LogOptions = {logX: data.chartOptions?.logX, logY: data.chartOptions?.logY};
     // where the curves and points land, so the legend can take a corner they leave free
     const drawnAt = isLegendVisible(data, screenBounds) ? [] as DG.Point[] : undefined;
 
@@ -138,27 +222,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
-      if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
+      const fit = fits[i];
+      if (!fit)
         continue;
-      series.points.sort((a, b) => a.x - b.x);
-
-      let userParamsFlag = true;
-      const fitFunc = getSeriesFitFunction(series);
-      let curve: ((x: number) => number) | null = null;
-      // everything downstream needs fit-space parameters; the cached series keeps its data-space ones
-      let fitSpaceSeries = series;
-      if (!(series.connectDots && !(series.showFitLine ?? true))) {
-        if (series.parameters) {
-          fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
-          curve = getCurve(fitSpaceSeries, fitFunc);
-        } else {
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, useFitCache,
-            fitIdentities?.[i]);
-          curve = fitResult.fittedCurve;
-          fitSpaceSeries = {...series, parameters: [...fitResult.parameters]};
-          userParamsFlag = false;
-        }
-      }
+      const {fitFunc, curve, fitSpaceSeries, userParamsFlag} = fit;
 
       // a bound narrows the plot, and what falls outside it is out of view rather than out of bounds
       g.save();
