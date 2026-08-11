@@ -3,6 +3,7 @@
 ## v.next
 
 * RFV: Added a default Grid viewer for dataframe outputs without a viewer annotation (e.g. query results)
+* RFV: Added a "Save as project" export (visible tables and viewers; data sync when inputs are literals)
 
 ## 1.5.10 (2026-08-07)
 
