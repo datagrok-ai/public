@@ -10,6 +10,13 @@
  * multi-position (R1/R2) view is a planned follow-up.
  */
 
+/** Stage timer for the SAR Matrix pipeline: logs `SAR Matrix | <stage>: N ms` elapsed since `t0`
+ *  (a `performance.now()` stamp). Plain console output, always on, so a slow stage can be spotted
+ *  straight from the browser console without a profiler. */
+export function logSarTime(stage: string, t0: number): void {
+  console.log(`SAR Matrix | ${stage}: ${Math.round(performance.now() - t0)} ms`);
+}
+
 /** One member of a matched series: a molecule and its varying substituent. */
 export interface SeriesMember {
   /** Index of the molecule in the parent dataframe. */

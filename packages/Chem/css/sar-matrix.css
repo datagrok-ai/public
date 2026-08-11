@@ -374,7 +374,7 @@ i.chem-sar-card-twisty:hover {
   padding: 8px 10px;
   font-size: 12px;
   color: var(--grey-6);
-  background: var(--blue-2);
+  background: #2083D530;
   border-radius: 4px;
 }
 

@@ -1,5 +1,5 @@
 import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {decomposeCluster, PositionRecord} from './sar-matrix-decompose';
+import {ClusterDecomposition, PositionRecord} from './sar-matrix-decompose';
 import {CoreCluster, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn, SarMatrixRow}
   from './sar-matrix-types';
 
@@ -114,15 +114,15 @@ function topValues(records: PositionRecord[], position: string): string[] {
 }
 
 /**
- * Step 6 + 7 (multi-position) — decompose every molecule in the cluster against one shared
- * anchor scaffold so R1, R2, ... are aligned across every row, then fill unmade
- * core × substituent combinations with Free-Wilson predictions. Falls back to
- * `assembleSinglePositionMatrix` when the cluster doesn't share a usable multi-position anchor.
+ * Step 6 + 7 (multi-position) — build a matrix from the cluster's precomputed decomposition against
+ * one shared anchor scaffold (so R1, R2, ... are aligned across every row), then fill unmade
+ * core × substituent combinations with Free-Wilson predictions. The decomposition is computed for
+ * all clusters at once by `decomposeClusters` (truly parallel MCS + RGD across the workers) and
+ * passed in; a null one — no usable shared anchor, or a stuck RDKit worker killed on timeout —
+ * falls back to `assembleSinglePositionMatrix`.
  */
 export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecules: string[],
-  activities: Float32Array, predict: boolean, scaffolds: string[] = []): Promise<SarMatrix> {
-  const molIdx = [...new Set(cluster.series.flatMap((s) => s.members.map((m) => m.molIdx)))];
-  const decomp = await decomposeCluster(molIdx, molecules, scaffolds);
+  activities: Float32Array, predict: boolean, decomp: ClusterDecomposition | null): Promise<SarMatrix> {
   if (!decomp)
     return assembleSinglePositionMatrix(cluster, molecules, activities, predict);
 
