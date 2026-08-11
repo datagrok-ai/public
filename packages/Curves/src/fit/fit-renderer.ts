@@ -160,6 +160,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         }
       }
 
+      // a bound narrows the plot, and what falls outside it is out of view rather than out of bounds
+      g.save();
+      g.beginPath();
+      g.rect(dataBox.x, dataBox.y, dataBox.width, dataBox.height);
+      g.clip();
       renderFitLine(g, series, {viewport, ratio, logOptions: chartLogOptions, showAxes: areAxesShown(screenBounds),
         showAxesLabels: areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i, drawnAt});
       renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
@@ -189,6 +194,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: areDroplinesShown(screenBounds),
         showDroplineLabels: areDroplineLabelsShown(screenBounds), fitFunc, dataBounds, curveFunc: curve!,
         logOptions: chartLogOptions, drawnAt});
+      g.restore();
       statisticsLine += renderStatistics(g, fitSpaceSeries, {statistics: mode === 'aggregated' ? [] : statistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i, startLine: statisticsLine, drawnAt});
       statisticsLine += renderLabels(g, series.labels, {names: data.chartOptions?.showLabels,
