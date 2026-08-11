@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {chooseLegendCorner, legendEntries, legendTooltip, legendTooltipElement} from '../fit/fit-legend';
+import {chooseLegendCorner, legendEntries, legendTooltip, legendTooltipElement, maxTooltipRows} from '../fit/fit-legend';
 
 import {sigmoidPoints, renderedTexts, renderedRows} from './curve-data';
 
@@ -188,10 +188,45 @@ category('legend', () => {
     expect(hovered?.length, names.length + 1, 'the tooltip should carry every row the legend has');
     expect(hovered!.some((r) => r.text === 'series 39'), true, 'including the ones it could not draw');
     expect(hovered!.every((r) => r.color.length > 0), true, 'each named in the colour of its curve');
-    // the tooltip is the legend, glyphs and all
-    const element = legendTooltipElement(hovered!);
-    expect(element.querySelectorAll('canvas').length, hovered!.length, 'every row should carry its glyph');
-    expect(element.innerText.includes('series 39'), true);
+  });
+
+  test('a legend short enough to list keeps every row in the tooltip', async () => {
+    const data: IFitChartData = JSON.parse(multiColumnJson([{column: 'curve',
+      series: Array.from({length: 4}, (_, i) => `series ${i}`)}]));
+    const entries = legendEntries(data);
+    const element = legendTooltipElement(entries);
+    expect(element.querySelectorAll('canvas').length, entries.length, 'every row should carry its glyph');
+    expect(element.innerText.includes('more'), false, 'nothing is left to count when it all fits');
+  });
+
+  test('a legend too long for the window is counted rather than listed', async () => {
+    const data: IFitChartData = JSON.parse(multiColumnJson([{column: 'curve',
+      series: Array.from({length: 300}, (_, i) => `series ${i}`)}]));
+    const entries = legendEntries(data);
+    const rows = maxTooltipRows();
+    expect(entries.length > rows, true, 'the fixture should outgrow any window');
+    const element = legendTooltipElement(entries);
+    expect(element.querySelectorAll('canvas').length, rows, 'it lists what the window has room for');
+    expect(element.innerText.trim().endsWith(`+${entries.length - rows} more`), true,
+      'and counts the rest');
+  });
+
+  test('a name the plot shortened is given back whole, however long', async () => {
+    const long = 'x'.repeat(2000);
+    const data: IFitChartData = JSON.parse(multiColumnJson([{column: 'curve', series: [long]}]));
+    const entries = legendEntries(data);
+    expect(entries.length, 1, 'a column holding one curve is named once');
+    expect(legendTooltipElement(entries).innerText.includes(long), true,
+      'hovering that one row is what says the whole of a name');
+  });
+
+  test('names that long are labels once the hover lists several', async () => {
+    const long = 'x'.repeat(2000);
+    const data: IFitChartData = JSON.parse(multiColumnJson([{column: 'curve',
+      series: [`${long} a`, `${long} b`, `${long} c`]}]));
+    const element = legendTooltipElement(legendEntries(data));
+    expect(element.innerText.includes(long), false, 'a list of cells of JSON should not be spelled out');
+    expect(element.innerText.includes('…'), true, 'each row should say it was shortened');
   });
 
   test('more curves than fit are counted instead of stacked', async () => {
