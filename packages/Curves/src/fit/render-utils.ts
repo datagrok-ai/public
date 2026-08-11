@@ -538,12 +538,15 @@ export function renderAxesLabels(g: CanvasRenderingContext2D, renderOptions: Fit
     g.font = '11px Roboto, "Roboto Local"';
     g.textAlign = 'center';
     g.fillStyle = 'black';
-    g.fillText(renderOptions.xAxisName!, dataBox.midX, screenBounds.maxY - FitConstants.X_AXIS_LABEL_BOTTOM_PX_MARGIN);
-    g.save();
-    g.translate(screenBounds.x, screenBounds.y);
-    g.rotate(-Math.PI / 2);
-    const axesTopPxMargin = renderOptions.showTitle ? FitConstants.AXES_TOP_PX_MARGIN_WITH_TITLE : FitConstants.AXES_TOP_PX_MARGIN;
-    g.fillText(renderOptions.yAxisName!, -(dataBox.height / 2 + axesTopPxMargin), 15);
-    g.restore();
+    if (renderOptions.xAxisName)
+      g.fillText(renderOptions.xAxisName, dataBox.midX, screenBounds.maxY - FitConstants.X_AXIS_LABEL_BOTTOM_PX_MARGIN);
+    if (renderOptions.yAxisName) {
+      g.save();
+      g.translate(screenBounds.x, screenBounds.y);
+      g.rotate(-Math.PI / 2);
+      const axesTopPxMargin = renderOptions.showTitle ? FitConstants.AXES_TOP_PX_MARGIN_WITH_TITLE : FitConstants.AXES_TOP_PX_MARGIN;
+      g.fillText(renderOptions.yAxisName, -(dataBox.height / 2 + axesTopPxMargin), 15);
+      g.restore();
+    }
   }
 }

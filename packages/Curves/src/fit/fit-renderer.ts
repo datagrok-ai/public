@@ -28,7 +28,7 @@ import {
 } from './fit-chart-data';
 import {
   areAxesLabelsShown, areAxesShown, areDroplineLabelsShown, areDroplinesShown, inflateScreenBounds, isTitleShown,
-  layoutChart,
+  layoutChart, shownAxesNames,
 } from './fit-layout';
 import {handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
 
@@ -98,8 +98,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
       data.series?.some((series) => series.points.some((p) => p.x === 0)))
       substituteZeroes(data);
+    const axesNames = shownAxesNames(screenBounds, data);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds,
-      areAxesLabelsShown(screenBounds, data), isTitleShown(screenBounds, data));
+      axesNames.x, axesNames.y, isTitleShown(screenBounds, data));
 
     const dataBounds = getChartBounds(data);
     if ((dataBounds.x < 0 && data.chartOptions) || (dataBounds.x === 0 && data.chartOptions && !data.chartOptions.allowXZeroes))

@@ -13,7 +13,7 @@ import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {isNativeFormat} from './curve-converter';
 import {getOrCreateParsedChartData} from './fit-chart-data';
 import {calculateSeriesFit, getChartDataAggrStats} from './fit-statistics';
-import {areAxesLabelsShown, inflateScreenBounds, isTitleShown, layoutChart} from './fit-layout';
+import {inflateScreenBounds, isTitleShown, layoutChart, shownAxesNames} from './fit-layout';
 import {isLegendVisible, legendTooltip, legendTooltipElement} from './fit-legend';
 
 /** What a user does to a curve in the grid: toggling an outlier, hovering a point, opening the editor. */
@@ -81,7 +81,8 @@ export function hitTest(at: {x: number, y: number}, point: IFitPoint, viewport: 
 }
 
 function pointViewport(screenBounds: DG.Rect, data: IFitChartData): Viewport {
-  const dataBox = layoutChart(screenBounds, areAxesLabelsShown(screenBounds, data), isTitleShown(screenBounds, data))[0];
+  const axesNames = shownAxesNames(screenBounds, data);
+  const dataBox = layoutChart(screenBounds, axesNames.x, axesNames.y, isTitleShown(screenBounds, data))[0];
   return new Viewport(getChartBounds(data), dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 }
 

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
-import {areAxesLabelsShown, isTitleShown, layoutChart} from '../fit/fit-layout';
+import {isTitleShown, layoutChart, shownAxesNames} from '../fit/fit-layout';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
 
 /** Renders a cell onto a canvas and returns every string the chart drew, with where it put it and
@@ -27,7 +27,8 @@ export function renderedRows(json: string, name: string, width: number = 400, he
   const rect = new DG.Rect(0, 0, width, height);
   const data = getOrCreateParsedChartData(df.cell(0, 'curve'));
   new FitChartCellRenderer().renderCurves(g, rect, data);
-  const dataBox = layoutChart(rect, areAxesLabelsShown(rect, data), isTitleShown(rect, data))[0];
+  const axesNames = shownAxesNames(rect, data);
+  const dataBox = layoutChart(rect, axesNames.x, axesNames.y, isTitleShown(rect, data))[0];
   return {rows: rows, data: data, dataBox: dataBox};
 }
 

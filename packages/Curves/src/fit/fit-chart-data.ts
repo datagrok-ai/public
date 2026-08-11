@@ -272,11 +272,12 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
 /** Reads a level's options, migrating a value stored under the pre-`.%` tag name so that only one of
  * the two ever holds the options. */
 function readChartOptions(tags: any): IFitChartData {
+  // an empty tag parsed to an exception on every cell of the column
   const stored = tags[FitConstants.TAG_FIT];
-  if (stored !== null && stored !== undefined)
+  if (stored)
     return JSON.parse(stored);
   const legacy = tags[FitConstants.TAG_FIT_LEGACY];
-  const migrated = legacy !== null && legacy !== undefined;
+  const migrated = !!legacy;
   tags[FitConstants.TAG_FIT] = migrated ? legacy : JSON.stringify(createDefaultChartData());
   if (migrated)
     delete tags[FitConstants.TAG_FIT_LEGACY];

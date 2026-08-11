@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Curves: Multi curve viewer: The axis names and the title are shown in the property panel, not left blank while the plot draws them. Clearing one now takes it off the plot, as it already did in the grid, rather than quietly falling back to what the data named
+* Curves: Naming one axis draws that one. Both names were needed before either appeared, so clearing **X Axis Name** took the y name with it
+* Curves: A column whose `.%fit` tag is empty renders again - reading it parsed an empty string and threw on every cell
 * GROK-20664: Curves: The statistics on a plot keep their font. They were drawn in whatever font the caller had last set on the canvas, since only the other parts of the chart named one - so opening the filter changed them, and scrolling the panel changed them back. Statistics and the labels that share their column are now written in the plot's own font
 * GROK-20664: Curves: The statistics and droplines lists are shown whole in the property panel. A multi-choice is capped at 155px and always draws its scrollbar, which cut ten statistics down to six and put a second scrollbar inside a panel that already scrolls
 * GROK-20662: Curves: **Fit function** names each function once, and no longer offers none. A custom JS function was listed twice - it registers itself the first time it is used, and the panel prepended it to that same registry - while the registry read by every other column was the one captured before any custom function had registered, so it could not be picked anywhere else. The list is now read where it is shown, so a function registered once can be used on any curve. The empty entry is gone with it: a series is fitted with what it names or with the default, so none was never a value to pick. Picking a custom function for another curve stores the notation that describes it rather than its name, so the curve still fits in a session that never loaded the column the function came from

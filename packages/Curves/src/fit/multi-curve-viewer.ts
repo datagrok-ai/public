@@ -111,9 +111,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         'mergeCellSeries' : p.name) ? this[p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name] !== undefined :
         this.props.get(p.name) !== undefined && this.props.get(p.name) !== p.defaultValue;
       if (isDefaultValueChanged) {
-        if (['title', 'xAxisName', 'yAxisName'].includes(p.name) && this.props.get(p.name) as unknown as string === '')
-          continue;
-        else if (['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name))
+        if (['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name))
           this.data.chartOptions![p.name as keyof IFitChartOptions] = this[p.name];
         else
           this.data.chartOptions![p.name as keyof IFitChartOptions] = this.props.get(p.name) as unknown as any;
@@ -184,6 +182,10 @@ export class MultiCurveViewer extends DG.JsViewer {
     this.data.chartOptions = mergeChartOptions(chartOptions, this.data.series);
     this.data.chartOptions.useAuxLegendNames = true;
     this.mergeViewerChartOptions();
+    // assigned, not set: the panel shows the name the data carries, and '' stays a name of none
+    for (const name of ['title', 'xAxisName', 'yAxisName'])
+      if (this[name] === undefined && this.data.chartOptions[name as keyof IFitChartOptions] !== undefined)
+        this[name] = this.data.chartOptions[name as keyof IFitChartOptions];
     this.data.series?.forEach((series, i) => {
       if (!series.fitLineColor && !series.pointColor) {
         series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));

@@ -12,11 +12,13 @@ export function inflateScreenBounds(rect: DG.Rect): DG.Rect {
 }
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
-export function layoutChart(rect: DG.Rect, showAxesLabels: boolean, showTitle: boolean): [DG.Rect, DG.Rect?, DG.Rect?] {
+export function layoutChart(rect: DG.Rect, showXAxisName: boolean, showYAxisName: boolean, showTitle: boolean):
+  [DG.Rect, DG.Rect?, DG.Rect?] {
   if (rect.width < FitConstants.MIN_AXES_CELL_PX_WIDTH || rect.height < FitConstants.MIN_AXES_CELL_PX_HEIGHT)
     return [rect, undefined, undefined];
-  const axesLeftPxMargin = showAxesLabels ? FitConstants.AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_LEFT_PX_MARGIN;
-  const axesBottomPxMargin = showAxesLabels ? FitConstants.AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_BOTTOM_PX_MARGIN;
+  // room is made for the name that is drawn, not for both because one of them is
+  const axesLeftPxMargin = showYAxisName ? FitConstants.AXES_LEFT_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_LEFT_PX_MARGIN;
+  const axesBottomPxMargin = showXAxisName ? FitConstants.AXES_BOTTOM_PX_MARGIN_WITH_AXES_LABELS : FitConstants.AXES_BOTTOM_PX_MARGIN;
   const axesTopPxMargin = showTitle ? FitConstants.AXES_TOP_PX_MARGIN_WITH_TITLE : FitConstants.AXES_TOP_PX_MARGIN;
   const rightPxMargin = FitConstants.AXES_RIGHT_PX_MARGIN;
   return [
@@ -30,10 +32,16 @@ export function areAxesShown(screenBounds: DG.Rect): boolean {
   return screenBounds.width >= FitConstants.MIN_AXES_CELL_PX_WIDTH && screenBounds.height >= FitConstants.MIN_AXES_CELL_PX_HEIGHT;
 }
 
+/** Naming one axis is not naming the other, so each is asked about on its own. */
+export function shownAxesNames(screenBounds: DG.Rect, data: IFitChartData): {x: boolean, y: boolean} {
+  const roomy = screenBounds.width >= FitConstants.MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH &&
+    screenBounds.height >= FitConstants.MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT;
+  return {x: roomy && !!data.chartOptions?.xAxisName, y: roomy && !!data.chartOptions?.yAxisName};
+}
+
 export function areAxesLabelsShown(screenBounds: DG.Rect, data: IFitChartData): boolean {
-  return screenBounds.width >= FitConstants.MIN_X_AXIS_NAME_VISIBILITY_PX_WIDTH &&
-    screenBounds.height >= FitConstants.MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT &&
-    !!data.chartOptions?.xAxisName && !!data.chartOptions.yAxisName;
+  const shown = shownAxesNames(screenBounds, data);
+  return shown.x || shown.y;
 }
 
 export function isTitleShown(screenBounds: DG.Rect, data: IFitChartData): boolean {
