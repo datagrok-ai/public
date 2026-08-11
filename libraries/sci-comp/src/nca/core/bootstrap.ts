@@ -1,15 +1,15 @@
 /**
- * Stratified-by-timepoint bootstrap for sparse NCA (UC-04 / FR-304).
+ * Stratified-by-timepoint bootstrap for sparse NCA.
  *
  * The closed-form Holder variance ({@link sparseAuc}) is the regulatory AUC
  * interval, but the **nonlinear** parameters (Cmax, t½, CL) have no closed-form
  * sparse variance. For those, this module resamples animals **within each
  * nominal timepoint** (the analogue of the destructive design), re-aggregates,
- * recomputes the statistic, and reports a **BCa** interval (the sparse-AUC
+ * recomputes the statistic, and reports a **BCa** interval — the sparse-AUC
  * bootstrap is right-skewed and bounded at 0, so the bias-corrected accelerated
- * interval is the right one — AD-6).
+ * interval is the right one.
  *
- * ## Honest-failure gate (thesis #4 / Bonate 1998)
+ * ## Honest-failure gate
  *
  * The stratified bootstrap **degenerates combinatorially** at small n: the number
  * of distinct stratified resamples is `h = Π_i C(2n_i − 1, n_i)`. A 5-timepoint
@@ -18,12 +18,12 @@
  * distribution. {@link summarizeBootstrap} **suppresses** the interval in that
  * regime (`suppressed: true`) and the caller defers to the closed-form CI. Two
  * gates apply:
- *  - **Unconditional hard floor** (AC-U4 / R1-plan NB-2): `h ≤ 360` is suppressed
- *    *regardless* of the calibrated gate. Calibration can only make the gate
- *    stricter, never admit this degenerate case.
+ *  - **Unconditional hard floor**: `h ≤ 360` is suppressed *regardless* of the
+ *    calibrated gate. Calibration can only make the gate stricter, never admit
+ *    this degenerate case.
  *  - **Calibrated min-n** (`minNPerTimepoint`, default 3): any timepoint with
- *    fewer animals suppresses. Calibrated against the G-SP-08 fixture at build
- *    (Rule 16) — not a hardcoded scientific constant.
+ *    fewer animals suppresses. Calibrated against the fixtures at build time —
+ *    not a hardcoded scientific constant.
  *
  * Reproducibility: at a fixed `masterSeed` the resampling is deterministic
  * ({@link mulberry32}). The closed-form CI is **never** gated (Holder holds to n=2).
@@ -40,7 +40,7 @@ import type {SparseInput} from './sparse';
 
 /** Unconditional hard floor on distinct stratified resamples (Bonate eq 8). */
 export const BOOTSTRAP_DISTINCT_RESAMPLE_FLOOR = 360;
-/** Default calibrated minimum animals per timepoint (calibrate at build, Rule 16). */
+/** Default calibrated minimum animals per timepoint. */
 export const DEFAULT_MIN_N_PER_TIMEPOINT = 3;
 /** Default bootstrap iterations. */
 export const DEFAULT_BOOTSTRAP_ITERATIONS = 1000;
@@ -112,7 +112,6 @@ function binomial(n: number, k: number): number {
 
 /** Build a resampled SparseInput by drawing rows with replacement within strata. */
 function resample(input: SparseInput, strata: TimeStratum[], rand: () => number): SparseInput {
-  const total = input.nominalTime.length;
   const pick: number[] = [];
   for (const s of strata) {
     const n = s.rows.length;
@@ -133,7 +132,6 @@ function resample(input: SparseInput, strata: TimeStratum[], rand: () => number)
     if (animalId !== null) animalId[i] = (input.animalId as Int32Array)[src];
     if (!scalarLloq) (lloq as Float64Array)[i] = (input.lloq as Float64Array)[src];
   }
-  void total;
   return {nominalTime, conc, blqMask, lloq, animalId};
 }
 
@@ -152,10 +150,8 @@ function percentile(sorted: number[], p: number): number {
  * Bootstrap a statistic on a sparse design with stratified-by-timepoint
  * resampling and a BCa interval, min-n gated.
  *
- * @param input - The sparse observations.
- * @param statistic - Computes the scalar of interest from a (resampled) input.
- *   Return `NaN` for a degenerate resample; NaN replicates are dropped.
- * @param options - Iterations, seed, CI level, calibrated min-n.
+ * `statistic` computes the scalar of interest from a (resampled) input; it
+ * should return `NaN` for a degenerate resample, and NaN replicates are dropped.
  */
 export function summarizeBootstrap(
   input: SparseInput,
@@ -170,7 +166,6 @@ export function summarizeBootstrap(
   const strata = stratify(input);
   const estimate = statistic(input);
 
-  // --- Gates.
   const minObserved = strata.reduce((acc, s) => Math.min(acc, s.rows.length), Infinity);
   const h = distinctResamples(strata);
   const suppressed = ((): string | null => {
@@ -191,7 +186,6 @@ export function summarizeBootstrap(
     };
   }
 
-  // --- Resample.
   const rand = mulberry32(masterSeed);
   const reps: number[] = [];
   for (let b = 0; b < iterations; b++) {
@@ -208,7 +202,6 @@ export function summarizeBootstrap(
   reps.sort((a, b) => a - b);
   const median = percentile(reps, 0.5);
 
-  // --- BCa.
   const alpha = (1 - ciLevel) / 2;
   const bca = bcaInterval(reps, estimate, input, statistic, alpha);
   if (bca !== null) {
@@ -217,7 +210,7 @@ export function summarizeBootstrap(
       iterations: reps.length, suppressed: false, suppressReason: null,
     };
   }
-  // --- Percentile fallback (BCa undefined — e.g. zero jackknife variance).
+  // Percentile fallback (BCa undefined — e.g. zero jackknife variance).
   return {
     estimate, median,
     ci: [percentile(reps, alpha), percentile(reps, 1 - alpha)],

@@ -7,7 +7,7 @@
  *
  * Usage:
  *   import {nca} from '@datagrok-libraries/sci-comp';
- *   // nca.computeNca(inputs, rules)  ← added by Phase 1 Task 1.9
+ *   nca.computeNca(inputs, rules);
  */
 
 export * from './core';

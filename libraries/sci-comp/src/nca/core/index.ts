@@ -1,8 +1,7 @@
 /**
  * Public entry point for the NCA computation core.
  *
- * Re-exports the type contract and the implemented core functions.
- * Concrete numerical functions are added incrementally by Phase 1 tasks.
+ * Re-exports the type contract and the core functions.
  */
 
 export * from './types';

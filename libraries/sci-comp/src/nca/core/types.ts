@@ -4,13 +4,10 @@
  * Only types that are part of the pure-math contract live here. Types tied
  * to the Datagrok DataFrame layer (`ColumnContract`, `ValidationError`,
  * `ProfileIndex`, ...) live in the `packages/NCA/` package, not in this
- * library. See `docs/nca_core_interface_v2_1.md` for the architectural
- * rationale.
+ * library.
  */
 
-// ──────────────────────────────────────────────────────────────────────────
 // Units
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Concentration unit string literal. */
 export type ConcentrationUnit =
@@ -28,9 +25,7 @@ export type VolumeUnit = 'L' | 'mL' | 'L/kg' | 'mL/kg';
 /** Clearance unit string literal. */
 export type ClearanceUnit = 'L/h' | 'mL/min' | 'mL/min/kg' | 'L/h/kg';
 
-// ──────────────────────────────────────────────────────────────────────────
 // Routes
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Human-readable route label. Used in ProfileKey / metadata. */
 export type Route = 'IV-bolus' | 'IV-infusion' | 'PO' | 'SC' | 'IM' | 'other';
@@ -52,9 +47,7 @@ export const ROUTE_SC: RouteCode = 3;
 export const ROUTE_IM: RouteCode = 4;
 export const ROUTE_OTHER: RouteCode = 5;
 
-// ──────────────────────────────────────────────────────────────────────────
 // Profile inputs — what the core receives for a single subject's profile
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * One profile's data plus its dosing context. The arrays are sorted by time.
@@ -84,9 +77,7 @@ export interface ProfileInputs {
   readonly bodyWeight: number | null;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Rules — solver configuration for one profile
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Trapezoidal AUC integration scheme. */
 export type AucMethod = 'linear' | 'log-linear' | 'linear-up-log-down';
@@ -123,30 +114,19 @@ export interface LambdaZStrategy {
   /**
    * PKNCA-style tie-breaking factor for adj-R². The best-fit search picks the
    * window with the MOST points whose adj-R² is within this FLAT distance of the
-   * maximum adj-R² across all candidate windows (the PKNCA / WinNonlin best-fit
-   * rule). PKNCA default is `1e-4`. Set to `0` to disable tie-breaking and use
-   * strict max adj-R² (ties → more points).
-   *
-   * NB: this is a flat tolerance off the single global maximum, NOT an additive
-   * `adjRSquared + factor·n` score — the additive form accumulates the bonus with
-   * window length and over-selects long windows (see VAL-01-LZ-R019 in lambda-z.ts).
+   * maximum adj-R² across all candidate windows — a tolerance off the single
+   * global maximum, not an additive `adjRSquared + factor·n` score. PKNCA
+   * default is `1e-4`; `0` disables tie-breaking (strict max adj-R², ties →
+   * more points).
    */
   readonly adjRSquaredFactor?: number;
   /**
-   * Terminal-phase span ratio `(tEnd - tStart) / halfLife` below which
-   * `computeNca` emits a `LAMBDAZ_LOW_SPAN` warning. PKNCA's conventional
-   * value is 2 (`min.span.ratio`).
+   * Terminal-phase span ratio below which `computeNca` emits a
+   * `LAMBDAZ_LOW_SPAN` warning. Defaults to `undefined` — no warning — rather
+   * than to PKNCA's conventional 2.
    *
-   * DIAGNOSTIC ONLY. This never discards a candidate window, never makes
-   * {@link lambdaZBestFit} return `null`, and never changes which window is
-   * selected — matching PKNCA, where `min.span.ratio` is consumed post-hoc by
-   * `exclude_nca_*()` and is not read by `pk.nca()` at all.
-   * {@link LambdaZResult.spanRatio} is reported regardless of this field;
-   * `undefined` only means "emit no warning".
-   *
-   * Deliberately defaults to `undefined`, NOT to PKNCA's 2: at 2 the reference
-   * fixtures' own profiles would emit warnings on 4 of 18 with no consumer
-   * opt-in.
+   * Emitting the warning is all it does; it never affects the fit. See
+   * {@link LambdaZResult.spanRatio}.
    */
   readonly minSpanRatio?: number;
   /** Indices of selected points (manual-points mode). */
@@ -178,9 +158,7 @@ export interface NcaRules {
   readonly compensatedSummation: boolean;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Sub-results returned by individual core functions
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Outcome of {@link findCmax}. */
 export interface CmaxResult {
@@ -207,18 +185,18 @@ export interface LambdaZResult {
    * half-lives the fitted window actually covers. PKNCA reports this as
    * `span.ratio`; its conventional threshold flags `< 2`.
    *
-   * DIAGNOSTIC ONLY. Nothing in the fit or in window selection reads this
-   * value; see {@link LambdaZStrategy.minSpanRatio}.
+   * **Diagnostic only, never a gate.** Nothing in the fit or in window
+   * selection reads it: the selected window is identical whether or not
+   * {@link LambdaZStrategy.minSpanRatio} is set, and that identity is the
+   * contract (asserted in `lambda-z.test.ts` and `compute-nca.test.ts`). It
+   * earns its place because adjusted R² cannot discriminate at small `n` —
+   * at `n = 3` one residual degree of freedom leaves three points
+   * near-collinear almost unconditionally, so a slope resting on well under
+   * one half-life still reports adj-R² ≈ 0.99.
    *
-   * It is the one fit-quality statistic that stays informative at small `n`,
-   * where adjusted R² cannot: at `n = 3` a single residual degree of freedom
-   * leaves three points near-collinear almost unconditionally, so a slope
-   * resting on well under one half-life can still report adj-R² ≈ 0.99.
-   *
-   * `NaN` when `lambdaZ <= 0` — a non-decaying fit implies no half-life, so no
-   * span ratio exists. {@link lambdaZBestFit} never returns such a fit (it drops
-   * `lambdaZ <= 0` candidates before selection), but {@link lambdaZManual}
-   * deliberately permits them.
+   * `NaN` when `lambdaZ <= 0` — a non-decaying fit has no half-life. Only
+   * {@link lambdaZManual} can produce one; {@link lambdaZBestFit} drops such
+   * candidates before selection.
    */
   readonly spanRatio: number;
 }
@@ -231,9 +209,7 @@ export interface BlqProcessingResult {
   readonly excluded: Int32Array;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Final compute result
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Numeric NCA parameters for one profile.
@@ -286,28 +262,13 @@ export interface ParameterValues {
 }
 
 /**
- * Diagnostic warning emitted by `computeNca` when a parameter sits in a
- * dubious regime (high extrapolation, low R², high BLQ fraction, etc.).
- */
-/**
- * Warning codes emitted by `computeNca` itself.
+ * Warning codes emitted by `computeNca`.
  *
- * **This union is deliberately OPEN, and that is a contract — not an oversight.**
- * `string & {}` keeps editor autocomplete for the core codes below while still
- * accepting any other string, which is what the `| string` on the old inline
- * union did implicitly.
- *
- * Closing it was attempted and REVERTED: consumers layer their own diagnostics
- * onto the same warning stream rather than forking the type. nca-studio alone
- * mints 40+ codes on it (`ENGINE_ERROR`, `PER_KG_NO_BW`, `UNMAPPABLE_ROUTE`,
- * `SPARSE_*`, `RAC_*`, …) and documents the reliance in three separate files —
- * e.g. `adapter/route-normalize.ts`: "rides the OPEN `nca.ParameterWarning.code`
- * union — no sci-comp change". Closing the union would break every one of those
- * call sites on the next dependency bump, which no minor release may do.
- *
- * Fully closing it therefore requires a coordinated downstream migration to a
- * sanctioned extension mechanism (e.g. a namespaced `code` or a separate
- * consumer-warning type), not a one-line type edit here. Tracked as GAP-W7.
+ * **The union is deliberately OPEN, and that is a contract.** Consumers layer
+ * their own diagnostics onto the same warning stream rather than forking the
+ * type — nca-studio alone mints 40+ codes on it. Closing it is a breaking
+ * change that needs a downstream migration to a sanctioned extension
+ * mechanism, not a type edit here.
  */
 export type ParameterWarningCode =
   | 'AUC_EXTRAP_HIGH'
@@ -317,9 +278,13 @@ export type ParameterWarningCode =
   | 'LAMBDAZ_LOW_SPAN'
   | 'BLQ_HIGH_FRACTION'
   // eslint-disable-next-line @typescript-eslint/ban-types -- load-bearing: `string & {}`
-  // preserves literal autocomplete that a bare `| string` would collapse. See above.
+  // preserves literal autocomplete that a bare `| string` would collapse.
   | (string & {});
 
+/**
+ * Diagnostic warning emitted by `computeNca` when a parameter sits in a
+ * dubious regime (high extrapolation, low R², high BLQ fraction, etc.).
+ */
 export interface ParameterWarning {
   readonly code: ParameterWarningCode;
   readonly severity: 'info' | 'warning' | 'error';

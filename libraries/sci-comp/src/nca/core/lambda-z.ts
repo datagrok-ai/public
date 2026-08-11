@@ -4,43 +4,28 @@ import {halfLifeFromLambdaZ} from './derived';
 /**
  * Auto best-fit terminal slope (lambda_z).
  *
- * The WINDOW-SELECTION tie-break matches PKNCA / WinNonlin's documented best-fit rule:
- * iterate over subsets of the last `k` eligible post-Cmax points, fit a log-linear OLS
- * regression on each, and pick the subset with the MOST points whose adjusted R² is
- * within `adjRSquaredFactor` of the maximum adjusted R² across candidates (see the loop
- * below and {@link LambdaZStrategy.adjRSquaredFactor}). A point is **eligible** when it
- * is post-Cmax (or Cmax itself, if `excludeCmax` is `false`), measurable
- * (`blqMask[i] === 0`), positive, and finite.
+ * Iterates over subsets of the last `k` eligible post-Cmax points, fits a log-linear
+ * OLS regression on each, and picks the subset with the MOST points whose adjusted R²
+ * is within `adjRSquaredFactor` of the maximum adjusted R² across candidates — the
+ * PKNCA / WinNonlin best-fit tie-break. A point is **eligible** when it is post-Cmax
+ * (or Cmax itself, if `excludeCmax` is `false`), measurable (`blqMask[i] === 0`),
+ * positive, and finite.
  *
- * A subset is **valid** when:
- * - it has at least `options.minPoints` points;
- * - the fitted slope is negative (so `lambda_z = -slope > 0`);
- * - `adjRSquared >= options.minRSquared`.
- *
+ * A subset is **valid** when it has at least `options.minPoints` points, the fitted
+ * slope is negative (so `lambda_z = -slope > 0`), and `adjRSquared >= minRSquared`.
  * Returns the best valid candidate, or `null` if none qualifies.
  *
- * **Scope of the PKNCA claim (deliberate divergence, NOT full parity).** Only the
- * tie-break above matches PKNCA. Two guards are sci-comp-specific and STRICTER than
- * PKNCA, and — unlike PKNCA — they drop candidates BEFORE the maximum adjusted R² is
- * computed (peer review R1, VAL-01-LZ-R019):
- * - `minRSquared` has **no** PKNCA equivalent — `pk.calc.half.life` carries no adj-R²
- *   floor parameter; it is an intentional sci-comp guardrail.
- * - PKNCA computes its adj-R² maximum over the sign-**unfiltered** candidate set and
- *   rejects `lambda.z <= 0` only at the final selection mask, so a spurious high-R²,
- *   wrong-signed short window can raise PKNCA's ceiling enough that no window survives →
- *   PKNCA declines to auto-select (NA / manual review). sci-comp drops such windows
- *   before the max and so always auto-selects the best VALID window instead.
- * These stricter guards are by design; aligning the max-over-unfiltered ordering (and a
- * PKNCA-style degenerate-2-point-fit warning) is tracked as a follow-up, not fixed here.
+ * **Only the tie-break matches PKNCA.** Two guards are stricter, and both drop
+ * candidates BEFORE the maximum adjusted R² is taken:
+ * - `minRSquared` has no PKNCA equivalent — `pk.calc.half.life` carries no adj-R²
+ *   floor; it is a sci-comp guardrail.
+ * - PKNCA takes its maximum over the sign-unfiltered candidate set and rejects
+ *   `lambda.z <= 0` only at the final selection mask, so a spurious high-R²,
+ *   wrong-signed short window can raise its ceiling until nothing survives and PKNCA
+ *   declines to auto-select. Dropping those windows first means sci-comp always
+ *   auto-selects the best valid window instead.
  *
  * Reference: <https://billdenney.github.io/pknca/articles/Selection-of-Calculation-Intervals.html>
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param blqMask - 1 = BLQ, 0 = measurable. Same length as `time`.
- * @param cmaxIdx - Index of the observed Cmax in `time` / `conc`.
- * @param options - Strategy parameters (`minPoints`, `minRSquared`, `excludeCmax`).
- * @returns The fit result, or `null` if no eligible subset qualifies.
  */
 export function lambdaZBestFit(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
@@ -57,20 +42,9 @@ export function lambdaZBestFit(
   if (eligible.length < options.minPoints) return null;
 
   const factor = options.adjRSquaredFactor ?? 0;
-  // PKNCA / WinNonlin "best fit" window selection: fit every eligible terminal
-  // window, then pick the one with the MOST points whose adjusted R² is within
-  // `factor` of the MAXIMUM adjusted R² across all candidates. This is a FLAT
-  // tolerance measured off the single global maximum — NOT an additive per-point
-  // bonus.
-  //
-  // The previous implementation scored each window as `adjRSquared + factor·n`
-  // and took the max. That accumulates the bonus with window length, so a longer
-  // window only has to sit within `factor·Δn` of the best adj-R² to win — it
-  // diverges from PKNCA on any profile with a candidate between (max − factor)
-  // and (max − factor·Δn). Verified against PKNCA 0.12.1 on rat-IV R019
-  // (VAL-01-LZ-R019): adj-R² peaks at n=4 (0.998164); every longer window is
-  // >1e-4 below it, so PKNCA picks n=4 (λz=0.24047). The additive rule picked
-  // n=8 (adjR²=0.997855, score 0.998655 > n=4's 0.998564) → λz=0.23494, off 2.3%.
+  // `factor` is a FLAT tolerance off the single global maximum adj-R², not an
+  // additive per-point bonus: an additive `adjRSquared + factor·n` score
+  // accumulates with window length and over-selects long windows.
   const candidates: {fit: LambdaZResult; n: number}[] = [];
   let maxAdjRSquared = -Infinity;
   for (let k = options.minPoints; k <= eligible.length; k++) {
@@ -83,8 +57,7 @@ export function lambdaZBestFit(
     if (fit.adjRSquared > maxAdjRSquared) maxAdjRSquared = fit.adjRSquared;
   }
   // Among windows within `factor` of the global-max adj-R², keep the most points.
-  // `factor = 0` collapses to "pick the window with the maximum adj-R², ties →
-  // more points" — PKNCA's behaviour with tie-breaking disabled.
+  // `factor = 0` collapses to strict max adj-R², ties → more points.
   let best: LambdaZResult | null = null;
   let bestN = -1;
   for (const {fit, n} of candidates) {
@@ -100,16 +73,11 @@ export function lambdaZBestFit(
  * Manual lambda_z fit on a caller-supplied set of point indices.
  *
  * No best-fit search, no validity checks beyond `n >= 2` and
- * positivity / finiteness — the caller is presumed to know what they
- * picked. The returned slope can have any sign (caller decides whether to
- * reject `lambdaZ <= 0`).
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param pointIndices - Indices into `time` / `conc` of the chosen points.
- *                       Out-of-range or non-positive / non-finite entries
- *                       are silently dropped.
- * @returns The fit result, or `null` if fewer than 2 valid points remain.
+ * positivity / finiteness — the caller is presumed to know what they picked.
+ * Out-of-range or non-positive / non-finite `pointIndices` are silently
+ * dropped; `null` is returned if fewer than 2 valid points remain. The
+ * returned slope can have any sign (caller decides whether to reject
+ * `lambdaZ <= 0`).
  */
 export function lambdaZManual(
   time: Float64Array, conc: Float64Array, pointIndices: Int32Array,
@@ -174,18 +142,9 @@ function fitLogLinear(
   const tStart = time[indices[0]];
   const tEnd = time[indices[n - 1]];
 
-  // Terminal-phase span ratio — how many half-lives the fitted window covers.
-  // DIAGNOSTIC ONLY: nothing below or above this line reads it for selection.
-  //
-  // Computed HERE, not post-selection in `lambdaZBestFit`, because
-  // `LambdaZResult` has exactly ONE construction site and `spanRatio` is a
-  // required field — attaching it only to the best-fit winner would leave
-  // `lambdaZManual` (which returns straight from here) unable to build a result.
-  // The `lambdaZ > 0` branch is therefore load-bearing HERE even though it is
-  // dead for the best-fit path: `lambdaZBestFit` drops `lambdaZ <= 0` candidates
-  // at the filter above, so the SELECTED fit always takes the finite branch,
-  // but `lambdaZManual` documents that it permits any slope sign — and a
-  // non-decaying fit has no half-life for a window to span.
+  // Diagnostic only — see LambdaZResult.spanRatio. The NaN branch is reachable
+  // only via `lambdaZManual`, which permits a non-decaying fit; such a fit has
+  // no half-life for a window to span.
   const spanRatio = lambdaZ > 0 ? (tEnd - tStart) / halfLifeFromLambdaZ(lambdaZ) : NaN;
 
   return {
