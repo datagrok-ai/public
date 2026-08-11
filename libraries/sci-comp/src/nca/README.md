@@ -44,6 +44,7 @@ const rules: nca.NcaRules = {
     minRSquared:       0.85,
     excludeCmax:       true,
     adjRSquaredFactor: 1e-4,                
+    // minSpanRatio:   2,   // optional; DIAGNOSTIC ONLY — see below
   },
   extrapWarnPct:        20,
   extrapErrorPct:       50,
@@ -55,11 +56,35 @@ const result = nca.computeNca(inputs, rules);
 
 // result.values.{cmax, tmax, aucLast, aucInf, pctExtrap, lambdaZ, halfLife, cl, vz,
 //                aumcLast, aumcInf, mrt, vss, tlag, pctExtrapAumc}
-// result.provenance.lambdaZ      → LambdaZResult: pointsUsed, R², tStart, tEnd, intercept
+// result.provenance.lambdaZ      → LambdaZResult: pointsUsed, R², tStart, tEnd, intercept, spanRatio
 // result.provenance.blqApplied   → which points were modified by BLQ rules
-// result.provenance.warnings     → AUC_EXTRAP_HIGH / AUMC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS / BLQ_HIGH_FRACTION
+// result.provenance.warnings     → AUC_EXTRAP_HIGH / AUMC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS /
+//                                  LAMBDAZ_LOW_SPAN / BLQ_HIGH_FRACTION
 // result.status                  → 'ok' | 'partial' | 'failed'
 ```
+
+### Terminal-phase span ratio
+
+`provenance.lambdaZ.spanRatio` is `(tEnd − tStart) / halfLife` — how many half-lives
+the fitted terminal window actually covers. PKNCA reports the same quantity as
+`span.ratio`, and its convention flags values below 2.
+
+**It is a diagnostic, never a gate.** Setting `lambdaZ.minSpanRatio` makes `computeNca`
+emit a `LAMBDAZ_LOW_SPAN` warning (severity `warning`); it does **not** discard candidate
+windows, does **not** make `lambdaZBestFit` return `null`, does **not** change which window
+is selected, and does **not** affect `status`. The selected fit is byte-identical with the
+threshold set and unset — `lambda-z.test.ts` and `compute-nca.test.ts` both assert that
+identity, because it *is* the contract. This matches PKNCA, where `min.span.ratio` is not
+read by `pk.nca()` at all and is applied post-hoc by `exclude_nca_*()`.
+
+`minSpanRatio` deliberately defaults to `undefined` rather than to PKNCA's 2: at 2, four of
+the eighteen profiles in the reference corpus would emit a warning with no consumer opt-in.
+
+Why it earns a place next to adjusted R²: adj-R² cannot discriminate at small `n`. With
+three points and one residual degree of freedom, a slope resting on 0.69 half-lives still
+reports adj-R² ≈ 0.994 (`02_indometh` subject 1 — the corpus worst case, asserted in
+`reference-suite.test.ts`). Span ratio is the only statistic in the PKNCA output set that
+separates that fit from a well-characterised one.
 
 The exposed namespace also gives direct access to every kernel
 (`applyBlqStrategy`, `findCmax`, `lambdaZBestFit`, `lambdaZManual`,

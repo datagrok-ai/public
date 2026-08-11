@@ -132,6 +132,23 @@ export interface LambdaZStrategy {
    * window length and over-selects long windows (see VAL-01-LZ-R019 in lambda-z.ts).
    */
   readonly adjRSquaredFactor?: number;
+  /**
+   * Terminal-phase span ratio `(tEnd - tStart) / halfLife` below which
+   * `computeNca` emits a `LAMBDAZ_LOW_SPAN` warning. PKNCA's conventional
+   * value is 2 (`min.span.ratio`).
+   *
+   * DIAGNOSTIC ONLY. This never discards a candidate window, never makes
+   * {@link lambdaZBestFit} return `null`, and never changes which window is
+   * selected — matching PKNCA, where `min.span.ratio` is consumed post-hoc by
+   * `exclude_nca_*()` and is not read by `pk.nca()` at all.
+   * {@link LambdaZResult.spanRatio} is reported regardless of this field;
+   * `undefined` only means "emit no warning".
+   *
+   * Deliberately defaults to `undefined`, NOT to PKNCA's 2: at 2 the reference
+   * fixtures' own profiles would emit warnings on 4 of 18 with no consumer
+   * opt-in.
+   */
+  readonly minSpanRatio?: number;
   /** Indices of selected points (manual-points mode). */
   readonly manualPoints?: Int32Array;
   /** Inclusive index range of selected points (manual-time-range mode). */
@@ -185,6 +202,25 @@ export interface LambdaZResult {
   readonly pointsUsed: Int32Array;
   readonly tStart: number;
   readonly tEnd: number;
+  /**
+   * Terminal-phase span ratio: `(tEnd - tStart) / halfLife` — how many
+   * half-lives the fitted window actually covers. PKNCA reports this as
+   * `span.ratio`; its conventional threshold flags `< 2`.
+   *
+   * DIAGNOSTIC ONLY. Nothing in the fit or in window selection reads this
+   * value; see {@link LambdaZStrategy.minSpanRatio}.
+   *
+   * It is the one fit-quality statistic that stays informative at small `n`,
+   * where adjusted R² cannot: at `n = 3` a single residual degree of freedom
+   * leaves three points near-collinear almost unconditionally, so a slope
+   * resting on well under one half-life can still report adj-R² ≈ 0.99.
+   *
+   * `NaN` when `lambdaZ <= 0` — a non-decaying fit implies no half-life, so no
+   * span ratio exists. {@link lambdaZBestFit} never returns such a fit (it drops
+   * `lambdaZ <= 0` candidates before selection), but {@link lambdaZManual}
+   * deliberately permits them.
+   */
+  readonly spanRatio: number;
 }
 
 /** Outcome of {@link applyBlqStrategy}. */
@@ -253,14 +289,39 @@ export interface ParameterValues {
  * Diagnostic warning emitted by `computeNca` when a parameter sits in a
  * dubious regime (high extrapolation, low R², high BLQ fraction, etc.).
  */
+/**
+ * Warning codes emitted by `computeNca` itself.
+ *
+ * **This union is deliberately OPEN, and that is a contract — not an oversight.**
+ * `string & {}` keeps editor autocomplete for the core codes below while still
+ * accepting any other string, which is what the `| string` on the old inline
+ * union did implicitly.
+ *
+ * Closing it was attempted and REVERTED: consumers layer their own diagnostics
+ * onto the same warning stream rather than forking the type. nca-studio alone
+ * mints 40+ codes on it (`ENGINE_ERROR`, `PER_KG_NO_BW`, `UNMAPPABLE_ROUTE`,
+ * `SPARSE_*`, `RAC_*`, …) and documents the reliance in three separate files —
+ * e.g. `adapter/route-normalize.ts`: "rides the OPEN `nca.ParameterWarning.code`
+ * union — no sci-comp change". Closing the union would break every one of those
+ * call sites on the next dependency bump, which no minor release may do.
+ *
+ * Fully closing it therefore requires a coordinated downstream migration to a
+ * sanctioned extension mechanism (e.g. a namespaced `code` or a separate
+ * consumer-warning type), not a one-line type edit here. Tracked as GAP-W7.
+ */
+export type ParameterWarningCode =
+  | 'AUC_EXTRAP_HIGH'
+  | 'AUMC_EXTRAP_HIGH'
+  | 'LAMBDAZ_LOW_R2'
+  | 'LAMBDAZ_FEW_POINTS'
+  | 'LAMBDAZ_LOW_SPAN'
+  | 'BLQ_HIGH_FRACTION'
+  // eslint-disable-next-line @typescript-eslint/ban-types -- load-bearing: `string & {}`
+  // preserves literal autocomplete that a bare `| string` would collapse. See above.
+  | (string & {});
+
 export interface ParameterWarning {
-  readonly code:
-    | 'AUC_EXTRAP_HIGH'
-    | 'AUMC_EXTRAP_HIGH'
-    | 'LAMBDAZ_LOW_R2'
-    | 'LAMBDAZ_FEW_POINTS'
-    | 'BLQ_HIGH_FRACTION'
-    | string;
+  readonly code: ParameterWarningCode;
   readonly severity: 'info' | 'warning' | 'error';
   readonly message: string;
 }

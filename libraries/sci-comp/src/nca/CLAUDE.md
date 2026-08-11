@@ -15,7 +15,7 @@ src/nca/
     auc.ts                          # AUC: 3 methods × {naive, Neumaier-compensated} = 6 + neumaierSum + aucExtrapolateToInfinity
     aumc.ts                         # AUMC first-moment: 3 methods × {naive, compensated} = 6 + two-term aumcExtrapolateToInfinity
     cmax.ts                         # findCmax — first-occurrence Cmax/Tmax
-    lambda-z.ts                     # lambdaZBestFit (auto subset; PKNCA/WinNonlin flat-tolerance adj-R² tie-break — most points within adjRSquaredFactor of the global-max adj-R²) + lambdaZManual; centered-sum OLS
+    lambda-z.ts                     # lambdaZBestFit (auto subset; PKNCA/WinNonlin flat-tolerance adj-R² tie-break — most points within adjRSquaredFactor of the global-max adj-R²) + lambdaZManual; centered-sum OLS; reports spanRatio (diagnostic only, never gates)
     c0.ts                           # estimateC0 + insertC0 — IV bolus back-extrapolation;
     derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated, meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag
     compute-nca.ts                  # computeNca orchestrator — full pipeline
@@ -34,6 +34,8 @@ src/nca/
 - **Observed vs. computed Cmax**: reported Cmax/Tmax are the OBSERVED peak from the original (non-augmented) profile, even when the orchestrator inserts a t=0 point. Internal lambda_z fit and AUC integration use the AUGMENTED profile. Don't conflate.
 
 - **Status flag separates degeneracy modes**: `'failed'` (no measurable point), `'partial'` (Cmax/AUClast computed but lambda_z not estimable → no AUCinf, t½, CL, Vz), `'ok'` (all parameters). All numeric fields default to `NaN` when not computed.
+
+- **Span ratio is a diagnostic, NOT a gate**: `LambdaZResult.spanRatio` = `(tEnd − tStart)/halfLife` is always reported; `LambdaZStrategy.minSpanRatio` only decides whether `computeNca` emits a `LAMBDAZ_LOW_SPAN` warning. It must never discard a candidate window, never make `lambdaZBestFit` return `null`, never touch `status`. The selected fit is identical with the threshold set and unset — asserted in both `lambda-z.test.ts` and `compute-nca.test.ts`, and that identity IS the contract. Rationale: PKNCA's `min.span.ratio` is not read by `pk.nca()` (only post-hoc by `exclude_nca_*()`), and gating at the conventional 2 would flip 4 of the 18 reference profiles off the lambda_z PKNCA returns — destroying the parity the fixtures exist to protect. Defaults to `undefined`, deliberately not to 2. `spanRatio` is `NaN` when `lambdaZ <= 0` (only reachable via `lambdaZManual`, which permits any slope sign).
 
 - **Reference data lives with tests**: CSV inputs in `__tests__/datasets/` and JSON fixtures in `__tests__/fixtures/` are committed source artifacts. Regenerate via `__tests__/regen-fixtures.R` + `merge-fixtures.mjs` (PKNCA 0.12.1 oracle) — see `__tests__/REGEN.md`.
 

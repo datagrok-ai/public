@@ -1,4 +1,5 @@
 import type {LambdaZResult, LambdaZStrategy} from './types';
+import {halfLifeFromLambdaZ} from './derived';
 
 /**
  * Auto best-fit terminal slope (lambda_z).
@@ -169,13 +170,32 @@ function fitLogLinear(
     1 - (1 - rSquared) * (n - 1) / (n - 2) :
     rSquared;
 
+  const lambdaZ = -slope;
+  const tStart = time[indices[0]];
+  const tEnd = time[indices[n - 1]];
+
+  // Terminal-phase span ratio — how many half-lives the fitted window covers.
+  // DIAGNOSTIC ONLY: nothing below or above this line reads it for selection.
+  //
+  // Computed HERE, not post-selection in `lambdaZBestFit`, because
+  // `LambdaZResult` has exactly ONE construction site and `spanRatio` is a
+  // required field — attaching it only to the best-fit winner would leave
+  // `lambdaZManual` (which returns straight from here) unable to build a result.
+  // The `lambdaZ > 0` branch is therefore load-bearing HERE even though it is
+  // dead for the best-fit path: `lambdaZBestFit` drops `lambdaZ <= 0` candidates
+  // at the filter above, so the SELECTED fit always takes the finite branch,
+  // but `lambdaZManual` documents that it permits any slope sign — and a
+  // non-decaying fit has no half-life for a window to span.
+  const spanRatio = lambdaZ > 0 ? (tEnd - tStart) / halfLifeFromLambdaZ(lambdaZ) : NaN;
+
   return {
-    lambdaZ: -slope,
+    lambdaZ,
     intercept,
     rSquared,
     adjRSquared,
     pointsUsed: Int32Array.from(indices),
-    tStart: time[indices[0]],
-    tEnd: time[indices[n - 1]],
+    tStart,
+    tEnd,
+    spanRatio,
   };
 }

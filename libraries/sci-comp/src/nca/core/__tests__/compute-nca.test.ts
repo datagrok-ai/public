@@ -1,6 +1,6 @@
 import {computeNca} from '../compute-nca';
 import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
-import type {ProfileInputs, NcaRules} from '../types';
+import type {ProfileInputs, NcaRules, ParameterWarning} from '../types';
 
 const DEFAULT_RULES: NcaRules = {
   aucMethod: 'linear-up-log-down',
@@ -355,5 +355,85 @@ describe('computeNca — provenance', () => {
     expect(r.provenance.aucMethod).toBe('linear-up-log-down');
     expect(r.provenance.blqApplied.conc.length).toBe(5);
     expect(r.provenance.lambdaZ).not.toBeNull();
+  });
+});
+
+describe('computeNca — LAMBDAZ_LOW_SPAN (terminal-phase span diagnostic)', () => {
+  // Clean IV-bolus mono-exponential, k = ln2 → t½ = 1 h. Sampling to 4 h gives
+  // the λz window a span of several half-lives, so the default (unset) and
+  // cleared-threshold cases are both unambiguous.
+  const times = [0, 0.5, 1, 1.5, 2, 3, 4];
+  const conc = times.map((t) => 100 * Math.exp(-Math.LN2 * t));
+  const lowSpan = (r: ReturnType<typeof computeNca>) =>
+    r.provenance.warnings.find((w) => w.code === 'LAMBDAZ_LOW_SPAN');
+
+  it('emits nothing when minSpanRatio is unset — the warning is opt-in', () => {
+    const r = computeNca(ivInputs(times, conc, 100), DEFAULT_RULES);
+    expect(r.provenance.lambdaZ!.spanRatio).toBeGreaterThan(0);
+    expect(lowSpan(r)).toBeUndefined();
+  });
+
+  it('emits nothing when the span clears the threshold', () => {
+    const rules: NcaRules = {...DEFAULT_RULES,
+      lambdaZ: {...DEFAULT_RULES.lambdaZ, minSpanRatio: 2}};
+    const r = computeNca(ivInputs(times, conc, 100), rules);
+    expect(r.provenance.lambdaZ!.spanRatio).toBeGreaterThan(2);
+    expect(lowSpan(r)).toBeUndefined();
+  });
+
+  it('flags a short span at severity "warning" without altering the result', () => {
+    const off = computeNca(ivInputs(times, conc, 100), DEFAULT_RULES);
+    // A threshold no real fit can clear — forces the warning on.
+    const rules: NcaRules = {...DEFAULT_RULES,
+      lambdaZ: {...DEFAULT_RULES.lambdaZ, minSpanRatio: 1e6}};
+    const on = computeNca(ivInputs(times, conc, 100), rules);
+
+    const w = lowSpan(on);
+    expect(w).toBeDefined();
+    expect(w!.severity).toBe('warning');
+
+    // The Variant-A contract at the computeNca level: raising the flag changes
+    // NOTHING — not the status, not the fit, not one downstream parameter.
+    // A gating implementation would drop `status` to 'partial' and NaN the tail.
+    expect(on.status).toBe('ok');
+    expect(on.status).toBe(off.status);
+    expect(on.values.lambdaZ).toBe(off.values.lambdaZ);
+    expect(on.values.halfLife).toBe(off.values.halfLife);
+    expect(on.values.aucInf).toBe(off.values.aucInf);
+    expect(on.values.vz).toBe(off.values.vz);
+    expect(Array.from(on.provenance.lambdaZ!.pointsUsed))
+      .toEqual(Array.from(off.provenance.lambdaZ!.pointsUsed));
+  });
+});
+
+/**
+ * REGRESSION GUARD — `ParameterWarning.code` must stay an OPEN union.
+ *
+ * This is a compile-time test: if someone closes `ParameterWarningCode` to the
+ * core literals, this file stops typechecking and `npm run build` fails. It
+ * exists because closing the union WAS attempted during the span-ratio change
+ * and reverted — consumers layer their own diagnostics onto the same warning
+ * stream (nca-studio alone mints 40+ codes and documents the reliance in three
+ * files), so a closed union breaks every one of them on the next dependency
+ * bump. A minor release may not do that.
+ *
+ * Runtime assertions here are incidental; the type-check is the real test.
+ */
+describe('ParameterWarning.code — open-union contract', () => {
+  it('accepts a consumer-minted code that sci-comp does not declare', () => {
+    const consumerWarning: ParameterWarning = {
+      code: 'PER_KG_NO_BW', // a real nca-studio code, absent from the core union
+      severity: 'warning',
+      message: 'dose is per-kg but no body weight was supplied',
+    };
+    expect(consumerWarning.code).toBe('PER_KG_NO_BW');
+
+    // And the core codes still typecheck as literals.
+    const coreWarning: ParameterWarning = {
+      code: 'LAMBDAZ_LOW_SPAN',
+      severity: 'warning',
+      message: 'short terminal-phase span',
+    };
+    expect(coreWarning.code).toBe('LAMBDAZ_LOW_SPAN');
   });
 });

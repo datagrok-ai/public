@@ -269,6 +269,30 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
         `(${lambdaZRes.pointsUsed.length})`,
     });
   }
+  // Terminal-phase span diagnostic. OPT-IN — fires only when the caller sets a
+  // threshold (PKNCA's convention is 2; sci-comp does not default to it).
+  //
+  // This NEVER changes which window was selected, never nulls the fit and never
+  // touches `status`: the fit being flagged here is byte-identical to the fit that
+  // would be returned with `minSpanRatio` unset. PKNCA behaves the same way —
+  // `min.span.ratio` is not read by `pk.nca()`, only post-hoc by `exclude_nca_*()`.
+  //
+  // `severity: 'warning'`, not `'error'`: a short-span fit is one a scientist
+  // should look at, not one the engine should reject on their behalf.
+  //
+  // No NaN guard needed: `spanRatio` is NaN only for a non-decaying fit, and
+  // `NaN < threshold` is false, so such a fit silently emits nothing.
+  if (lambdaZRes !== null && rules.lambdaZ.minSpanRatio !== undefined &&
+      lambdaZRes.spanRatio < rules.lambdaZ.minSpanRatio) {
+    warnings.push({
+      code: 'LAMBDAZ_LOW_SPAN',
+      severity: 'warning',
+      message:
+        `lambda_z window spans ${lambdaZRes.spanRatio.toFixed(2)} half-lives, below ` +
+        `the ${rules.lambdaZ.minSpanRatio} threshold — the terminal slope rests on ` +
+        `too short a window (adjusted R² cannot detect this at small n)`,
+    });
+  }
   const blqFraction = countBlq(inputs.blqMask) / inputs.blqMask.length;
   if (blqFraction > 0.5) {
     warnings.push({
