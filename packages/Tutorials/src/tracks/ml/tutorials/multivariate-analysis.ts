@@ -83,7 +83,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
       'The column that labels the points on the plots. Here, each row is a car model.');
 
-    await this.action('Press "RUN" and wait for the analysis to complete', dlg.onClose);
+    await this.action('Click "RUN" and wait for the analysis to complete', dlg.onClose);
 
     let viewerRoots: HTMLElement[];
 
@@ -93,8 +93,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       'the better the prediction.',
       '# Scores\n\n' +
       'Similar cars sit close together, dissimilar ones far apart:\n\n' +
-      '* Volvos are close to each other\n' +
-      '* Porsche and Mercedes are far apart',
+      '* `Volvos` are close to each other\n' +
+      '* `Porsche` and `Mercedes` are far apart',
       '# Loadings\n\n' +
       'How strongly each latent factor describes each feature. Features sitting together carry the same information, ' +
       'features on opposite sides are inversely related:\n\n' +
@@ -156,6 +156,6 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.action('Explore each viewer', new Observable((subscriber: any) => {
       //@ts-ignore
       $(doneBtn).one('click', () => subscriber.next(true));
-    }), undefined, 'Press "Next" to switch to the next viewer');
+    }), undefined, 'Click "Next" to switch to the next viewer');
   }
 }
