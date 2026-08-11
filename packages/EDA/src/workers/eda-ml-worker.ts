@@ -43,7 +43,8 @@ onmessage = async (e: MessageEvent) => {
         const u = pls.uScores(); // A x nRows
         const p = pls.xLoadings(); // A x m
         const q = pls.yLoadings(); // length A
-        postMessage({b, t, u, p, q});
+        const vip = pls.vip(); // length m
+        postMessage({b, t, u, p, q, vip});
       } finally {
         pls.free();
       }

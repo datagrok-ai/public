@@ -48,6 +48,7 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - **PLS regression and analysis** (`pls-tools.ts`, `pls-ml.ts`): Multivariate analysis for high-dimensional data
 - **Rust+WASM backend** (`wasm/eda-api.ts` → `workers/eda-ml-worker.ts`): PLS1 fit off the UI thread
 - Supports both linear and quadratic PLS models
+- **Project persistence — do not revert:** the multivariate analysis never adds columns directly. `performMVA` reserves the result names (`getMvaNames`), then calls the `multivariateAnalysisTransform` package function (`meta.role: transform`) through a FuncCall with `{processed: false}`, and only then creates the viewers. That call goes into the table creation script, so a data-synced project replays it and restores the columns the saved layout refers to; without it the restored viewers crash on missing columns. The transform takes **column names**, not `column_list`: a replayed creation script passes such values as strings. The model (features, coefficients, bias) is stored in the `mvaModel` table tag, and the model scatter plot carries `initializationFunction: 'mvaModelInitFunction'`, which rebuilds the prediction-formula tooltip on project/layout opening. Regression tests: `category 'Multivariate analysis: projects'`.
 
 #### XGBoost (`xgbooster.ts`)
 - **XGBoost** v3.3.0 via a minimal C++/Emscripten wasm module (`wasm/XGBoostAPI.*`)
