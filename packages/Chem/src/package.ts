@@ -232,6 +232,9 @@ export class PackageFunctions {
     DG.ObjectHandler.register(new MpoProfileHandler());
   }
 
+  @grok.decorators.autostart()
+  static async initChemAutostart(): Promise<void> { }
+
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
     'description': 'Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib',
@@ -2520,12 +2523,12 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activity: DG.Column,
     @grok.decorators.param({
       type: 'string',
-      options: {choices: ['none', 'lg', '-lg'], initialValue: '-lg', description: 'Activity scaling before assembly'},
+      options: {choices: ['none', 'lg', '-lg'], initialValue: 'none', description: 'Activity scaling before assembly'},
     }) scaling: string = '-lg',
     @grok.decorators.param({
       type: 'string',
       options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
-        initialValue: 'Auto (from scaling)',
+        initialValue: 'Higher is better',
         description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
     }) activityDirection: string = 'Auto (from scaling)',
     @grok.decorators.param({
@@ -2539,12 +2542,8 @@ export class PackageFunctions {
       type: 'int',
       options: {initialValue: '3', caption: 'Series levels', min: '1', max: '5',
         description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
-    }) fragmentationLevels: number = 3,
+    }) fragmentationLevels: number = 2,
     @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
-    @grok.decorators.param({
-      options: {initialValue: 'false', caption: 'SAR transfer',
-        description: 'Also find core pairs whose potency trends run in parallel (a scan quadratic in row count)'},
-    }) sarTransfer: boolean = false,
   ): Promise<void> {
     // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
     // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
@@ -2557,13 +2556,9 @@ export class PackageFunctions {
     }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
-    const viewer = view.addViewer('SAR Matrix Viewer');
-    viewer.setOptions({
-      moleculesColumnName: molecules.name,
+    view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
-      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, sarTransfer,
-    });
-    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, sarTransfer: true});
   }
 
   @grok.decorators.func({

@@ -205,6 +205,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:Init', {});
   }
 
+  export async function initChemAutostart(): Promise<void> {
+    return await grok.functions.call('Chem:InitChemAutostart', {});
+  }
+
   /**
   Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib
   */
@@ -853,8 +857,8 @@ export namespace funcs {
   /**
   Groups related compound series into potency-colored matrices and predicts virtual analogs.
   */
-  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , threshold: number , predictVirtual: boolean ): Promise<void> {
-    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, threshold, predictVirtual });
+  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual });
   }
 
   /**

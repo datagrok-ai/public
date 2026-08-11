@@ -17,6 +17,11 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//meta.role: autostart
+export async function initChemAutostart() : Promise<void> {
+  await PackageFunctions.initChemAutostart();
+}
+
 //name: Recalculate Coordinates
 //description: Recalculates 2D coordinates for molecules in the column using RDKit CoordGen or Open Chem Lib
 //input: dataframe table 
@@ -1142,14 +1147,14 @@ export function sarMatrixViewer() : any {
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
 //input: column activity { type: numerical }
-//input: string scaling = '-lg' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
-//input: string activityDirection = 'Auto (from scaling)' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
+//input: string scaling = 'none' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
+//input: string activityDirection = 'Higher is better' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
-//input: double threshold = 0.5 { description: Core-similarity clustering threshold (lower groups more distant cores) }
+//input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
 //input: bool predictVirtual = true 
 //top-menu: Chem | Analyze | SAR Matrix...
-export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, threshold: number, predictVirtual: boolean) : Promise<void> {
-  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, threshold, predictVirtual);
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean) : Promise<void> {
+  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual);
 }
 
 //name: Scaffold Tree Filter

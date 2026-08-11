@@ -264,10 +264,9 @@ async function buildRowKeys(rows: SarMatrixRow[], foldedPositions: string[]): Pr
   const fragmentColumns = foldedPositions.map((p) => rows.map((row) => row.foldedValues[p] ?? ''));
   const linked = await (await getRdKitService()).linkRGroupFragments(cores, fragmentColumns, attachIdx);
   rows.forEach((row, i) => {
-    // The linker writes attachment points as isotopes; restoring the map-number form keeps the open
-    // position drawn as an R label rather than as a numbered star.
+    // The linker leaves the open (column-axis) position as `[*:N]`, which draws as an R label.
     if (linked[i])
-      row.keySmiles = linked[i].replace(/\[(\d+)\*\]/g, '[*:$1]');
+      row.keySmiles = linked[i];
   });
 }
 

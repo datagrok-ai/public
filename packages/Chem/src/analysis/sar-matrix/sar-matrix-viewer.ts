@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -508,7 +509,9 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** Cleared when a new set of matrices arrives, so the tree closes to its roots once per analysis
    *  rather than snapping shut again every time the list is redrawn. */
   private collapseSeeded = false;
-
+  get helpUrl() {
+    return 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
+  }
   constructor() {
     super();
     // Data properties rather than hidden strings, so both columns are pickable from the property panel
