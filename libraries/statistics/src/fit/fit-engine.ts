@@ -727,6 +727,13 @@ export const fitFunctions: {[key: string]: FitFunction<any>} = {
   '4pl-dose-response': new FourPLDoseResponseFunction(),
 };
 
+/** What a series is fitted with when it does not say - the value the option falls back to. */
+export const DEFAULT_FIT_FUNCTION = 'sigmoid';
+
+/** The notation a custom function was described with. Kept so that picking one by name for another
+ * curve can store the function itself: a name only resolves while something else carries it. */
+export const fitFunctionDescriptions: {[key: string]: IFitFunctionDescription} = {};
+
 // Declaration merging keeps the class from drifting off IFitSeriesOptions.
 export interface FitSeries extends IFitSeriesOptions {}
 
@@ -742,7 +749,7 @@ export class FitSeries implements IFitSeries {
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
 export const fitSeriesProperties: DG.Property[] = [
   DG.Property.js('fitFunction', DG.TYPE.STRING,
-    {category: 'Fitting', choices: Object.keys(fitFunctions), defaultValue: 'sigmoid'}),
+    {category: 'Fitting', choices: Object.keys(fitFunctions), defaultValue: DEFAULT_FIT_FUNCTION}),
   DG.Property.js('pointColor', DG.TYPE.STRING,
     {category: 'Rendering', nullable: true, inputType: 'Color'}),
   DG.Property.js('fitLineColor', DG.TYPE.STRING,
@@ -797,8 +804,12 @@ export function isFit<K extends keyof FitTypeMap>(fit: Fit, name: K): fit is Fit
 }
 
 export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction<Fit> {
+  // a series reaches here without one whenever the option was cleared, and the panel and the renderer
+  // both ask before anything fills the default in - naming none is naming the default
+  if (seriesFitFunc == null)
+    return fitFunctions[DEFAULT_FIT_FUNCTION];
   if (typeof seriesFitFunc === 'string')
-    return fitFunctions[seriesFitFunc];
+    return fitFunctions[seriesFitFunc] ?? fitFunctions[DEFAULT_FIT_FUNCTION];
   else if (!fitFunctions[seriesFitFunc.name]) {
     const name = seriesFitFunc.name;
     const paramNames = seriesFitFunc.parameterNames;
@@ -812,6 +823,7 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
       (getInitParamsFunc as (x: number[], y: number[]) => Float32Array), paramNames);
     fitFunctions[name] = fitFunc;
   }
+  fitFunctionDescriptions[seriesFitFunc.name] ??= seriesFitFunc;
 
   return fitFunctions[seriesFitFunc.name];
 }

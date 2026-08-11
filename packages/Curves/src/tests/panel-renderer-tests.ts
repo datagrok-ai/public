@@ -13,6 +13,8 @@ import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions, series
 import {sigmoidPoints, ciCurveJson, labelledCurveJson, curveJson, renderedTexts} from './curve-data';
 import {multiSeriesCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
+import {getSeriesFitFunction} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {fitFunctions, fitFunctionDescriptions} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 /** Curve carrying stored parameters whose inflection point is above 1, where converting in place
  * would log it again on the next pass. */
@@ -350,6 +352,64 @@ category('panel and renderer', () => {
       'a line has no asymptotes, so an ICxx would never be drawn');
     // the rest of the series options are untouched
     expect(named(JSON.stringify(linear)).includes('markerType'), true);
+  });
+
+  test('a custom fit function is offered once, everywhere, and never an empty one', async () => {
+    const custom = {name: 'TestCustomFit', function: '(params, x) => params[0] * x',
+      getInitialParameters: '(x, y) => new Float32Array([1])', parameterNames: ['Slope']};
+    const withCustom = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    withCustom.series![0].fitFunction = custom as any;
+    try {
+      // rendering the cell is what registers it, and the panel is opened after that
+      getSeriesFitFunction(withCustom.series![0]);
+      const choices = seriesPropertiesFor(withCustom, custom as any).find((p) => p.name === 'fitFunction')!.choices!;
+      expect(choices.filter((c) => c === custom.name).length, 1, 'a registered function is named once');
+      expect(choices.includes(''), false, 'a series is fitted with something, so none is not a choice');
+
+      // registered once, it can be picked for any curve, not only the one that brought it
+      const plain = seriesPropertiesFor(JSON.parse(curveJson(-6.5)) as IFitChartData, null)
+        .find((p) => p.name === 'fitFunction')!.choices!;
+      expect(plain.includes(custom.name), true, 'and offered wherever a fit function is picked');
+      expect(plain.includes(''), false, 'here too');
+    } finally {
+      delete fitFunctions[custom.name];
+    }
+  });
+
+  test('picking a custom fit function stores the notation, not a name nothing can resolve', async () => {
+    const custom = {name: 'TestStoredFit', function: '(params, x) => params[0] * x',
+      getInitialParameters: '(x, y) => new Float32Array([1])', parameterNames: ['Slope']};
+    try {
+      // rendering the column that carries it is what registers it, and its notation with it
+      const carrier = JSON.parse(curveJson(-6.5)) as IFitChartData;
+      carrier.series![0].fitFunction = custom as any;
+      getSeriesFitFunction(carrier.series![0]);
+
+      // a curve that has never seen that function, the way another column would be
+      const cell = curveJson(-6.5);
+      const col = DG.Column.fromStrings('curve', [cell, cell]);
+      col.semType = FitConstants.FIT_SEM_TYPE;
+      const df = DG.DataFrame.fromColumns([col]);
+      df.name = 'customFitNotationStored';
+      const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+
+      changeCurvesOptions(gridCell, {property: {name: 'fitFunction'}, value: custom.name} as unknown as DG.InputBase,
+        'seriesOptions', 'Cell');
+      await delay(300);
+      const stored = JSON.parse(df.col('curve')!.get(0)!).series[0].fitFunction;
+      expect(typeof stored, 'object', 'the name alone would not resolve in a session that never loaded it');
+      expect(stored.name, custom.name);
+      expect(!!stored.function && !!stored.getInitialParameters, true, 'the notation travels with the curve');
+
+      changeCurvesOptions(gridCell, {property: {name: 'fitFunction'}, value: 'linear'} as unknown as DG.InputBase,
+        'seriesOptions', 'Cell');
+      await delay(300);
+      expect(JSON.parse(df.col('curve')!.get(0)!).series[0].fitFunction, 'linear',
+        'a built-in one is always there, so it stays a name');
+    } finally {
+      delete fitFunctions[custom.name];
+      delete fitFunctionDescriptions[custom.name];
+    }
   });
 
   test('several droplines are named, and one off the plot is not drawn', async () => {

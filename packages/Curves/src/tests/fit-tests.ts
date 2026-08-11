@@ -12,6 +12,7 @@ import {getDataPoints} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {
   fitSeries,
   fitFunctions,
+  DEFAULT_FIT_FUNCTION,
   getFitFunction,
   getStatistic,
   getStatisticProperty,
@@ -79,6 +80,20 @@ category('fit', () => {
     expect(logLinearFitFunc.y(logLinearFitFunc.getInitialParameters(logLinearXs, logLinearYs), 1.1), 96.29031327635312);
     expect(exponentialFitFunc.y(exponentialFitFunc.getInitialParameters(exponentialXs, exponentialYs), 1.1), 11.080315836233387);
     expect(polynomialFitFunc.y(polynomialFitFunc.getInitialParameters(polynomialXs, polynomialYs), 1.1), 7.3231);
+  });
+
+  test('a series that names no fit function is fitted with the default', async () => {
+    // clearing the option leaves the series without one, and the panel and the renderer both ask
+    // before anything fills the default in
+    const cleared = new FitSeries(sigmoidSeries.points);
+    expect(getSeriesFitFunction(cleared).name, DEFAULT_FIT_FUNCTION, 'naming none should name the default');
+    (cleared as any).fitFunction = null;
+    expect(getSeriesFitFunction(cleared).name, DEFAULT_FIT_FUNCTION, 'and so should clearing it');
+    (cleared as any).fitFunction = 'no such fit function';
+    expect(getSeriesFitFunction(cleared).name, DEFAULT_FIT_FUNCTION, 'as should naming one that is gone');
+    // what the property panel asks of every series before it offers droplines
+    expect(getSeriesFitFunction(cleared).hasAsymptotes !== undefined, true,
+      'the fit it hands back should be usable, not undefined');
   });
 
   test('getCurve', async () => {
