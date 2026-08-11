@@ -352,6 +352,8 @@ category('panel and renderer', () => {
       'a line has no asymptotes, so an ICxx would never be drawn');
     // the rest of the series options are untouched
     expect(named(JSON.stringify(linear)).includes('markerType'), true);
+    // the render stamps this one on every paint, so editing it never took
+    expect(named(curveJson(-6.5)).includes('columnName'), false, 'the column a series came from is not a setting');
   });
 
   test('a custom fit function is offered once, everywhere, and never an empty one', async () => {

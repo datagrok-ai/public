@@ -87,9 +87,11 @@ export function normalizeStatisticNames(chartData: IFitChartData, names: string[
 /** Series properties with `fitFunction` naming every registered function, custom ones included. */
 export function seriesPropertiesFor(chartData: IFitChartData,
   customFitFunction: IFitFunctionDescription | null): DG.Property[] {
-  // an ICxx name only resolves for a curve that levels off at both ends
-  const properties = fitSeriesProperties.filter((p) => p.name !== 'droplines' ||
-    (chartData.series ?? []).some((series) => getSeriesFitFunction(series).hasAsymptotes));
+  // columnName is stamped by the render, not chosen; an ICxx name only resolves for a curve that
+  // levels off at both ends
+  const properties = fitSeriesProperties.filter((p) => p.name !== 'columnName')
+    .filter((p) => p.name !== 'droplines' ||
+      (chartData.series ?? []).some((series) => getSeriesFitFunction(series).hasAsymptotes));
   // a custom function registers itself the first time it is used, so the registry is what there is to
   // pick from - read here rather than off fitSeriesProperties, which captured it before any registered
   const choices = [...new Set([...(customFitFunction ? [customFitFunction.name] : []),

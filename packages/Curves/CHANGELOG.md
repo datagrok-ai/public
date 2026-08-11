@@ -4,6 +4,7 @@
 
 * Curves: Multi curve viewer: The axis names and the title are shown in the property panel, not left blank while the plot draws them. Clearing one now takes it off the plot, as it already did in the grid, rather than quietly falling back to what the data named
 * Curves: Naming one axis draws that one. Both names were needed before either appeared, so clearing **X Axis Name** took the y name with it
+* Curves: **Column Name** is no longer offered in the series options. The render stamps it on every paint so the legend can say which column a curve came from, so a name typed there was written into the cell and then overwritten before it was ever drawn
 * Curves: A column whose `.%fit` tag is empty renders again - reading it parsed an empty string and threw on every cell
 * GROK-20664: Curves: The statistics on a plot keep their font. They were drawn in whatever font the caller had last set on the canvas, since only the other parts of the chart named one - so opening the filter changed them, and scrolling the panel changed them back. Statistics and the labels that share their column are now written in the plot's own font
 * GROK-20664: Curves: The statistics and droplines lists are shown whole in the property panel. A multi-choice is capped at 155px and always draws its scrollbar, which cut ten statistics down to six and put a second scrollbar inside a panel that already scrolls
