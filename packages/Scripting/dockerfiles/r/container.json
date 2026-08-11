@@ -1,5 +1,5 @@
 {
-  "image": "datagrok/jkg_r:bleeding-edge",
+  "image": "datagrok/jkg_r:1.0.2",
   "cpu": 2,
   "memory": 8192,
   "shm_size": 2048,
