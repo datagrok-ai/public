@@ -49,7 +49,7 @@ const domainSystemColumns: [string, string][] = [
 
 const domainTypeMap: {[type: string]: string} = {
   string: 'string', int: 'number', float: 'number', bool: 'boolean', datetime: 'Dayjs',
-  string_list: 'string[]', ref: 'string', user: 'string', group: 'string',
+  string_list: 'string[]', ref: 'string', user: 'string', group: 'string', file: 'string',
 };
 
 function normEol(s: string): string {

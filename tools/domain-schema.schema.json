@@ -211,8 +211,8 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type."
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File)."
         },
         "required": {"type": "boolean", "default": false},
         "unique": {

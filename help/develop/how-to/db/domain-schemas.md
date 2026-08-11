@@ -103,8 +103,20 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 ### Column options
 
 Column `type` is one of `string`, `int`, `float`, `bool`, `datetime`, `string_list`,
-`ref` (foreign key to another table in the same manifest), `user`, or `group`
-(foreign keys to platform users/groups, rendered with the matching pickers).
+`ref` (foreign key to another table in the same manifest), `user` or `group`
+(foreign keys to platform users/groups, rendered with the matching pickers), or
+`file` (a user-uploaded file in platform file storage).
+
+A `file` column stores a `file://<connection>/<path>` string. Row dialogs render a
+file input: picking a local file uploads it to the shared `System:DomainFiles`
+storage under an unguessable per-value path, and grids render the file with its
+name and size, with download and preview available from the **Context Panel**.
+Anyone who obtains the stored path can access the file — access control comes from
+the row and column security of the column that carries it.
+
+```json
+"issue": {"columns": {"attachment": {"type": "file", "friendlyName": "Attachment"}}}
+```
 
 | Option         | Description                                                                     |
 |----------------|---------------------------------------------------------------------------------|
