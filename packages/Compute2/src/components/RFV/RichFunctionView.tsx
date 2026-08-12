@@ -524,6 +524,13 @@ export const RichFunctionView = Vue.defineComponent({
       return activeExports;
     });
 
+    // The Excel report (or a sole export) keeps its direct ribbon icon; the rest go to the menu
+    const directExport = Vue.computed(() => {
+      const list = exports.value;
+      return list.find((e) => e.name === 'Default Excel') ?? (list.length === 1 ? list[0] : null);
+    });
+    const menuExports = Vue.computed(() => exports.value.filter((e) => e !== directExport.value));
+
     // One entry per visible dataframe param, viewer configs merged across its tabs
     const collectDfExportEntries = (): DfExportEntry[] => {
       const map = tabToPropertiesMap.value;
@@ -651,10 +658,10 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value?.length > 1 &&
+      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && menuExports.value.length > 0 &&
         <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
-            exports.value.map(({ name, handler }) =>
+            menuExports.value.map(({ name, handler }) =>
               <span onClick={() => guardedExport(handler)}>
                 <div> {name} </div>
               </span>
@@ -693,9 +700,9 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { exportsVisible.value && !uiBlocked.value && exports.value?.length === 1 && <IconFA
+          { exportsVisible.value && !uiBlocked.value && directExport.value && <IconFA
             name='arrow-to-bottom'
-            onClick={() => guardedExport(exports.value[0].handler)}
+            onClick={() => guardedExport(directExport.value!.handler)}
             tooltip='Generate report for the current step'
           /> }
           { isFittingEnabled.value && !uiBlocked.value && <IconImage
