@@ -680,8 +680,13 @@ export async function setupScriptsAIPanelUI() {
   };
 
   grok.events.onViewAdded.subscribe((view) => {
-    if (view.type === 'ScriptView')
-      setTimeout(() => handleView(view as DG.ScriptView), 500);
+    if (view.type === 'ScriptView') {
+      const scriptView = view as DG.ScriptView;
+      setTimeout(() => {
+        handleView(scriptView);
+        scriptView.subs.push(scriptView.tabs.onTabChanged.subscribe(() => handleView(scriptView)));
+      }, 500);
+    }
   });
 }
 

@@ -90,6 +90,7 @@
 * AI: Added a Run button to the ribbon of file views opened from `MyFiles/agents/scripts/`
 * AI: Added wand icon to open curated prompt suggestions menu (loaded from suggestions.yaml)
 * AI: Assistant messages now show a code icon and a rerun icon for executed exec code
+* GROK-20649: Scripts: Ribbon panel disappears when switching between tabs (Layout, Debug)
 
 ## 1.0.4 (2026-02-01)
 
