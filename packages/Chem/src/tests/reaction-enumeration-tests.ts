@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';

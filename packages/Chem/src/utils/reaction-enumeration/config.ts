@@ -44,7 +44,7 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
   keep_building_blocks_in_final_output: false,
   max_num_components: 4,
   max_num_routes_per_compound: -1,
-  max_num_combinations_per_template: 50,
+  max_num_combinations_per_template: -1,
   products_specs: {
     exclusion_smarts_products_file_smarts_col: 'SMARTS',
     max_num_heavy_atoms: -1,

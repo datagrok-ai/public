@@ -3,7 +3,7 @@ import {Subscription} from 'rxjs';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package, PackageFunctions} from '../../package';
+import {PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
 import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
@@ -11,26 +11,10 @@ import {tryGetRxn} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
 import {ChipEl, EnumeratorNav} from './enumerator-nav';
 import {
-  combinationLimitsChanged, detectChemSemTypes, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
+  combinationLimitsChanged, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
   productFiltersChangedCount, roundsLabel,
 } from './shared';
-
-const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
-const BUNDLED_BBS = 'enumerations/bb.csv';
-const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
-
-async function loadBundledCsv(name: string): Promise<DG.DataFrame | null> {
-  try {
-    const text = await _package.files.readAsText(name);
-    const df = DG.DataFrame.fromCsv(text);
-    df.name = name.replace(/\.csv$/i, '');
-    await detectChemSemTypes(df);
-    return df;
-  } catch (e) {
-    console.warn(`Could not load bundled file ${name}: ${e}`);
-    return null;
-  }
-}
+import {loadEnumerationDefaults} from './default-files';
 
 function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
@@ -193,7 +177,8 @@ export class EnumeratorConfigForm {
 
   private constructor(
     private readonly deps: EnumeratorConfigFormDeps,
-    templatesDf: DG.DataFrame | null, bbsDf: DG.DataFrame | null, exclusionDf: DG.DataFrame | null,
+    templatesDf: DG.DataFrame | null, bbsDf: DG.DataFrame | null, reagentsDf: DG.DataFrame | null,
+    exclusionDf: DG.DataFrame | null,
   ) {
     this.config = cloneConfig(DEFAULT_CONFIG);
 
@@ -229,13 +214,13 @@ export class EnumeratorConfigForm {
       'Column in the building blocks file that contains SMILES.', false);
 
     this.reagentsInput = ui.input.table('Reagents file (optional)', {
-      value: undefined, nullable: true,
+      value: reagentsDf ?? undefined, nullable: true,
       tooltipText: 'Optional table of reagent SMILES. When set, switches to reagents mode: every ' +
         'round uses exactly one building block (or product of an earlier round) and fills every ' +
         'remaining slot with reagents from this file — produces derivatives of each BB across rounds.',
     });
     const REAGENTS_COL_TOOLTIP = 'Column in the reagents file that contains the reagent SMILES.';
-    this.reagentsColInput = makeColInput('Reagent SMILES column', null,
+    this.reagentsColInput = makeColInput('Reagent SMILES column', reagentsDf,
       this.config.enumeration.reagent_smiles_column, isStringCol, REAGENTS_COL_TOOLTIP, true);
     // The platform marks this invalid because it has no table to pick a column from yet, not because
     // it's empty (nullable is true) — disable it and say why, instead of fighting the invalid style.
@@ -390,10 +375,8 @@ export class EnumeratorConfigForm {
   }
 
   static async create(deps: EnumeratorConfigFormDeps): Promise<EnumeratorConfigForm> {
-    const [templatesDf, bbsDf, exclusionDf] = await Promise.all([
-      loadBundledCsv(BUNDLED_TEMPLATES), loadBundledCsv(BUNDLED_BBS), loadBundledCsv(BUNDLED_EXCLUSION),
-    ]);
-    return new EnumeratorConfigForm(deps, templatesDf, bbsDf, exclusionDf);
+    const t = await loadEnumerationDefaults();
+    return new EnumeratorConfigForm(deps, t.templates, t.bbs, t.reagents, t.exclusion);
   }
 
   getConfig = (): EnumeratorConfig => this.config;

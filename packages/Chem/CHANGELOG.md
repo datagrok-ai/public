@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Reaction Enumerator: Added package settings (category "Enumeration") letting admins set per-group default file paths for reaction templates, building blocks and reagents; missing files show a warning balloon and fall back to the bundled ones
+
 * Substructure filter: Added a 'Filter as you draw' checkbox to the sketcher dialog — when unchecked, filtering is deferred until OK is clicked instead of running on every sketch edit
 
 * Added `Filter by Substructure`, `Similarity To` and `Diverse Subset` — table-aware twins of `searchSubstructure`, `getSimilarities` and `getDiversities`, which take a bare column. They declare `(table, column {semType: Molecule}, …)` and return rows or a column added to the table, so a caller has something to carry on with instead of a detached frame or a boxed BitSet
