@@ -56,7 +56,7 @@ jobs:
         run: mvn --batch-mode -DskipTests package
       - name: Test
         working-directory: ./connectors
-        run: mvn -DtestFailureIgnore=true test
+        run: mvn -Dmaven.test.failure.ignore=true test
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
