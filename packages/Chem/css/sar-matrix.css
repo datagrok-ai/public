@@ -5,8 +5,10 @@
   min-height: 0;
 }
 
-/* Wide enough that a card indented two levels still shows its label and a one-line description;
-   `NAV_W` in the viewer has to match, since cell widths are fitted against what is left over. */
+/* Wide enough that a card indented two levels still shows its label and a one-line description.
+   Three things carry this number and all three must agree: this rule, `.chem-sar-xfer-list` (whose
+   cards are the same shape), and `NAV_W` in the viewer — cell widths for BOTH panes are fitted
+   against what is left over, so a narrower list here sizes the other pane's cells wrongly. */
 .chem-sar-nav {
   display: flex;
   flex-direction: column;
@@ -79,14 +81,6 @@
 .chem-sar-nav-list {
   flex: 1;
   overflow-y: auto;
-}
-
-.chem-sar-nav-section {
-  padding: 6px 12px 4px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--grey-5);
 }
 
 /* A view whose compounds are contained in the card above it; the rule marks the nesting that the
@@ -179,17 +173,6 @@ i.chem-sar-card-twisty:hover {
   align-items: center;
   gap: 4px;
   min-width: 0;
-}
-
-.chem-sar-card-arrow {
-  color: var(--grey-4);
-  flex-shrink: 0;
-}
-
-.chem-sar-card-target-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .chem-sar-card-score-box {
@@ -368,16 +351,6 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
-.chem-sar-transfer-note {
-  max-width: 640px;
-  margin-top: 10px;
-  padding: 8px 10px;
-  font-size: 12px;
-  color: var(--grey-6);
-  background: #2083D530;
-  border-radius: 4px;
-}
-
 /* Root of the viewer's own context-panel content. */
 .chem-sar-matrix-cp {
   padding: 8px;
@@ -427,7 +400,6 @@ i.chem-sar-card-twisty:hover {
 .chem-sar-cp-rv {
   text-align: right;
 }
-
 
 .chem-sar-cp-section {
   display: flex;
@@ -498,9 +470,64 @@ i.chem-sar-card-twisty:hover {
 
 /* Narrower than the series navigator: a transfer card carries two short core labels and a
    correlation, where a series card has to fit a structure and a four-part description. */
+/* Same width as `.chem-sar-nav` — the cards carry a core thumbnail and a description of the same
+   shape, and the pane beside it fits its cells against the same leftover. */
 .chem-sar-xfer-list {
-  flex: 0 0 240px;
-  min-width: 240px;
+  flex: 0 0 320px;
+  min-width: 320px;
   border-right: 1px solid var(--grey-2);
   overflow-y: auto;
+}
+
+/* Popup holding the filter group. Wider than the platform's own Filters panel, which is docked and can
+   be dragged: this one cannot, so it has to fit its widest filter outright — the category list carries
+   a checkbox, a series name and a row count, and its header a row of six icons. Filters fill the panel
+   width so each keeps its name, enable checkbox and remove control, and the substructure filter gets a
+   sketch area big enough to draw in. No per-filter height is capped here — that is what clips the
+   headers and takes those controls with them. */
+.chem-sar-struct-filters {
+  width: 360px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.chem-sar-struct-filters .d4-filter-group-wrapper {
+  flex-direction: column;
+}
+
+.chem-sar-struct-filters .d4-filter-group {
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.chem-sar-struct-filters .d4-filter {
+  width: 100%;
+}
+
+/* A sketcher built inside a popup host has its minimum width zeroed, so that one opened against a
+   screen edge is not clipped. Mounting the filter group in a popup puts the substructure filter's
+   sketcher in exactly that state, and the zero survives into the editing dialog — which is
+   free-floating and sizes to its content, so the drawing area collapses to a fraction of the
+   palette. 500px is the width the sketcher reports for itself and what it already gets everywhere
+   the popup path is not taken. */
+.d4-dialog-contents .chem-sketcher-host {
+  min-width: 500px!important;
+}
+
+.chem-sar-struct-icon {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+/* Rank/threshold form and the series filter icon on one row, so the icon sits with the controls it
+   supplements rather than below them. */
+.chem-sar-nav-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.chem-sar-nav-controls .ui-form {
+  flex: 1;
+  min-width: 0;
 }

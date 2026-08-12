@@ -1,19 +1,46 @@
-import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+
+import {Fingerprint, rdKitFingerprintToBitArray} from '../../utils/chem-common';
+import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {SarMatrix, SarMatrixCell, logSarTime} from './sar-matrix-types';
 
 /**
- * SAR-transfer detection, literature-style: a transfer holds between two analog series (each a core
- * varied at one R-position) whose potencies are correlated across the substituents they SHARE —
- * regardless of whether the two cores are structurally similar or landed in the same cluster. So this
- * scans EVERY core pair across all matrices, catching transfers between differently-scaffolded series
- * (the valuable "carry the SAR to another chemotype" case), not only cores grouped in one matrix.
+ * SAR-transfer detection: a transfer holds between two analog series (each a core varied at one
+ * R-position) whose potencies track each other across the compounds the two series have in common.
+ *
+ * Two conditions, and both are load-bearing.
+ *
+ * The SUBSTITUENT must be the same R-group, matched by identity. That is what makes the comparison
+ * controlled: the claim is that one particular change did one particular thing on two scaffolds, and it
+ * only holds if both series actually made that change. A merely similar R-group does not support it.
+ *
+ * The COMPOUNDS must clear a Morgan-similarity floor. Two molecules can share a substituent and have
+ * nothing else in common, and carrying a result between unrelated chemotypes on that basis is not a
+ * transfer — over a handful of points their agreement is coincidence. Since the substituent is held
+ * identical, what this threshold really measures is how related the two cores are, which is exactly the
+ * question of whether a transfer between them is plausible.
+ *
+ * Only pairs from DIFFERENT matrices are reported. Two cores of one matrix are held together by that
+ * matrix's own additive row-plus-column model, so their trends run parallel by construction — reporting
+ * it states the assumption back, and since it scores near-perfectly it would crowd the genuinely
+ * informative cross-chemotype pairs out of the list.
  */
 
-/** Minimum shared, both-observed substituents for a pair to be considered. */
+/** Minimum matched compound pairs for a series pair to be considered. */
 const MIN_COMMON = 3;
 /** Minimum Pearson correlation for a transfer to be reported. */
 const MIN_CORRELATION = 0.7;
 /** Cap on reported transfers, strongest first. */
 const MAX_TRANSFERS = 16;
+/** Display cap on predicted columns. A series can carry hundreds of predictions and they are read
+ *  alongside the measured ones, so the trend view takes only the most promising — ordered first, so
+ *  the cut can never hide the analog most worth making. */
+const MAX_PREDICTED = 6;
+/** Morgan Tanimoto a matched pair's compounds must reach. Held well below the value that would mean
+ *  "nearly the same molecule": the two carry the same R-group on deliberately different scaffolds, so
+ *  demanding near-identity would reject every cross-chemotype pair the scan exists to find. */
+export const DEFAULT_TRANSFER_SIMILARITY = 0.5;
 
 /** One side of a transfer: a core (a matrix row) varied at one R-position. */
 export interface TransferSide {
@@ -22,31 +49,60 @@ export interface TransferSide {
   position: string;
 }
 
+/** A predicted analog one side of a transfer still has open — what the transfer argues for making. */
+export interface VirtualAnalog {
+  col: number;
+  substSmiles: string;
+  value: number;
+}
+
 /** A detected transfer between two cores, possibly in different matrices. */
 export interface Transfer {
   a: TransferSide;
   b: TransferSide;
-  /** Shared substituent SMILES, in a's column order. */
+  /** The R-group of each matched pair. Both sides carry it — that is what being matched means — so the
+   *  one label is true of the columns under it on both rows. */
   substituents: string[];
-  /** Column indices in matrix a / b for each shared substituent (aligned to `substituents`). */
+  /** Column indices in matrix a / b for each matched pair (aligned to `substituents`). */
   aCols: number[];
   bCols: number[];
-  /** a's / b's cell for each shared substituent (aligned to `substituents`). */
+  /** a's / b's cell for each matched pair (aligned to `substituents`). */
   aCells: SarMatrixCell[];
   bCells: SarMatrixCell[];
+  /** Mean compound Tanimoto over the matched pairs. The R-groups are identical by construction, so
+   *  what this measures is how alike the two scaffolds carrying them are. */
+  similarity: number;
   correlation: number;
-  /** True when the two cores come from different matrices (a cross-series transfer). */
-  crossMatrix: boolean;
+  /** Predicted analogs open on each side, in column order. */
+  aVirtual: VirtualAnalog[];
+  bVirtual: VirtualAnalog[];
+  /** R-groups one side measured and the other has only predicted — what the transfer argues for
+   *  making. Kept apart from the matched pairs: these carry no second observation, so they are shown
+   *  but take no part in the correlation or the fold-change match. */
+  predictedSubstituents: string[];
+  predictedACols: number[];
+  predictedBCols: number[];
 }
 
-/** One core varied at one position, indexed by substituent. */
+/** One observed compound of a series: where it sits, what it measured, and what it varies. */
+interface SeriesPoint {
+  col: number;
+  cell: SarMatrixCell;
+  value: number;
+  substSmiles: string;
+  /** Index into the shared compound fingerprint table. */
+  fp: number;
+  /** The compound itself, compared for identity — one compound cannot corroborate itself. */
+  smiles: string;
+}
+
+/** One core varied at one position: its observed compounds and the analogs it still has open. */
 interface RowSeries {
   matrixIndex: number;
   rowIndex: number;
   position: string;
-  order: string[];
-  cellBySubst: Map<string, SarMatrixCell>;
-  colBySubst: Map<string, number>;
+  points: SeriesPoint[];
+  virtual: VirtualAnalog[];
 }
 
 function pearson(xs: number[], ys: number[]): number | null {
@@ -89,23 +145,124 @@ function positionColumns(matrix: SarMatrix): Map<string, {order: string[], cols:
   return byPosition;
 }
 
-/** Every (core, position) as an analog series indexed by substituent. */
-function gatherSeries(matrices: SarMatrix[]): RowSeries[] {
+/**
+ * Morgan fingerprints for every observed compound in the matrices, keyed by SMILES.
+ *
+ * Built once for the whole scan: the same compound sits in as many series as it has cut sites, and
+ * fingerprinting is the one part of this that pays a round trip to the RDKit workers.
+ */
+async function fingerprintTable(matrices: SarMatrix[]):
+  Promise<{index: Map<string, number>, fps: (BitArray | null)[]}> {
+  const index = new Map<string, number>();
+  const smiles: string[] = [];
+  for (const matrix of matrices) {
+    for (const rowCells of matrix.cells) {
+      for (const cell of rowCells) {
+        if (cell.kind === 'real' && cell.smiles !== null && !index.has(cell.smiles)) {
+          index.set(cell.smiles, smiles.length);
+          smiles.push(cell.smiles);
+        }
+      }
+    }
+  }
+  if (!smiles.length)
+    return {index, fps: []};
+  const service = await getRdKitService();
+  const raw = (await service.getFingerprints(Fingerprint.Morgan, smiles, false)).fps;
+  return {index, fps: raw.map((fp) => fp ? rdKitFingerprintToBitArray(fp) : null)};
+}
+
+/**
+ * Every (core, position) as an analog series, carrying its observed compounds and its open analogs.
+ *
+ * A series holding fewer observations than a transfer needs is dropped here rather than compared:
+ * matching is one-to-one, so it could never reach `MIN_COMMON` pairs however good its partner is.
+ */
+function gatherSeries(matrices: SarMatrix[], fpIndex: Map<string, number>): RowSeries[] {
   const series: RowSeries[] = [];
   matrices.forEach((matrix, matrixIndex) => {
     for (const [position, {order, cols}] of positionColumns(matrix)) {
       matrix.rows.forEach((_row, rowIndex) => {
-        const cellBySubst = new Map<string, SarMatrixCell>();
-        const colBySubst = new Map<string, number>();
-        order.forEach((sub, k) => {
-          cellBySubst.set(sub, matrix.cells[rowIndex][cols[k]]);
-          colBySubst.set(sub, cols[k]);
+        const points: SeriesPoint[] = [];
+        const virtual: VirtualAnalog[] = [];
+        order.forEach((substSmiles, k) => {
+          const col = cols[k];
+          const cell = matrix.cells[rowIndex][col];
+          if (cell.value === null)
+            return;
+          if (cell.kind === 'real' && cell.smiles !== null) {
+            const fp = fpIndex.get(cell.smiles);
+            if (fp !== undefined)
+              points.push({col, cell, value: cell.value, substSmiles, fp, smiles: cell.smiles});
+          } else if (cell.kind === 'virtual')
+            virtual.push({col, substSmiles, value: cell.value});
         });
-        series.push({matrixIndex, rowIndex, position, order, cellBySubst, colBySubst});
+        if (points.length >= MIN_COMMON)
+          series.push({matrixIndex, rowIndex, position, points, virtual});
       });
     }
   });
   return series;
+}
+
+/**
+ * Pair the two series up: one pairing per R-group both have explored, kept only when the two compounds
+ * carrying it are alike enough to count as related chemotypes.
+ *
+ * Substituents are matched by identity, which makes the correspondence one-to-one for free — a series
+ * lists each R-group once — so nothing has to arbitrate between competing partners. The result comes
+ * back in a's column order, which the trend view reads left to right and the fold-change match walks in
+ * consecutive steps.
+ */
+function matchPoints(a: RowSeries, b: RowSeries, threshold: number,
+  sim: (i: number, j: number) => number): {ai: number, bi: number, s: number}[] {
+  const bBySubst = new Map<string, number>();
+  b.points.forEach((point, j) => bBySubst.set(point.substSmiles, j));
+  const matched: {ai: number, bi: number, s: number}[] = [];
+  for (let i = 0; i < a.points.length; i++) {
+    const j = bBySubst.get(a.points[i].substSmiles);
+    if (j === undefined)
+      continue;
+    // One compound is not evidence that two cores track each other. Matrices are an overlapping cover,
+    // so the same compound reaches both series routinely; matched against itself it puts its own
+    // potency on both axes, which forces r to 1. Compared by structure rather than by row, since one
+    // compound measured on two rows is still one compound.
+    if (a.points[i].smiles === b.points[j].smiles)
+      continue;
+    const s = sim(a.points[i].fp, b.points[j].fp);
+    if (s >= threshold)
+      matched.push({ai: i, bi: j, s});
+  }
+  return matched;
+}
+
+/**
+ * The R-groups one series has measured and the other has only predicted — the analogs this transfer
+ * argues for making. Most promising first, so the display cap cannot hide the best one.
+ */
+function predictedPairs(a: RowSeries, b: RowSeries, higherIsBetter: boolean):
+  {subst: string, aCol: number, bCol: number, value: number}[] {
+  const out: {subst: string, aCol: number, bCol: number, value: number}[] = [];
+  const collect = (measured: RowSeries, open: RowSeries, measuredIsA: boolean): void => {
+    const bySubst = new Map<string, VirtualAnalog>();
+    for (const analog of open.virtual)
+      bySubst.set(analog.substSmiles, analog);
+    for (const point of measured.points) {
+      const analog = bySubst.get(point.substSmiles);
+      if (analog === undefined)
+        continue;
+      out.push({
+        subst: point.substSmiles,
+        aCol: measuredIsA ? point.col : analog.col,
+        bCol: measuredIsA ? analog.col : point.col,
+        value: analog.value,
+      });
+    }
+  };
+  collect(a, b, true);
+  collect(b, a, false);
+  out.sort((p, q) => higherIsBetter ? q.value - p.value : p.value - q.value);
+  return out.slice(0, MAX_PREDICTED);
 }
 
 /** Unordered key for a core pair, so R1 and R2 transfers between the same two cores dedupe to one. */
@@ -116,38 +273,43 @@ function pairKey(a: TransferSide, b: TransferSide): string {
 }
 
 /**
- * Every SAR transfer across the whole set of matrices, strongest first: for each pair of series at
- * the same R-position (within OR across matrices) that share at least `MIN_COMMON` observed
- * substituents, the Pearson correlation of their potencies; kept when it clears `MIN_CORRELATION`.
- * The best-correlating R-position is kept per core pair.
+ * Every SAR transfer across the whole set of matrices, strongest first: for each pair of series at the
+ * same R-position, every R-group both explored is paired up, the pairs whose compounds are too unalike
+ * are dropped, and the Pearson correlation of the rest is kept when it clears `MIN_CORRELATION` over at
+ * least `MIN_COMMON` pairs. The best-correlating R-position is kept per core pair.
+ *
+ * @param matrices Matrices to scan.
+ * @param similarity Compound Tanimoto a pair must reach for the two scaffolds to count as related.
+ * @param higherIsBetter Which end of the activity is more potent, for ordering the predicted analogs.
  */
-export function computeAllTransfers(matrices: SarMatrix[]): Transfer[] {
-  const series = gatherSeries(matrices);
+export async function computeAllTransfers(matrices: SarMatrix[],
+  similarity: number = DEFAULT_TRANSFER_SIMILARITY, higherIsBetter = true): Promise<Transfer[]> {
+  const t0 = performance.now();
+  const {index, fps} = await fingerprintTable(matrices);
+  const sim = (i: number, j: number): number => {
+    const x = fps[i];
+    const y = fps[j];
+    return x && y ? tanimotoSimilarity(x, y) : 0;
+  };
+  const series = gatherSeries(matrices, index);
   const bestByPair = new Map<string, Transfer>();
   for (let i = 0; i < series.length; i++) {
     for (let j = i + 1; j < series.length; j++) {
       const s1 = series[i];
       const s2 = series[j];
-      if (s1.matrixIndex === s2.matrixIndex && s1.rowIndex === s2.rowIndex)
-        continue; // same core — not a transfer
+      // Two cores of one matrix are not evidence of anything: the matrix assumes one additive model
+      // across its rows, so they track each other by construction.
+      if (s1.matrixIndex === s2.matrixIndex)
+        continue;
       if (s1.position !== s2.position)
         continue; // compare like positions so the substituent trends are comparable
-      const shared = s1.order.filter((sub) => s2.cellBySubst.has(sub));
-      if (shared.length < MIN_COMMON)
+      const matched = matchPoints(s1, s2, similarity, sim);
+      if (matched.length < MIN_COMMON)
         continue;
-      const xs: number[] = [];
-      const ys: number[] = [];
-      for (const sub of shared) {
-        const c1 = s1.cellBySubst.get(sub)!;
-        const c2 = s2.cellBySubst.get(sub)!;
-        if (c1.kind === 'real' && c1.value !== null && c2.kind === 'real' && c2.value !== null) {
-          xs.push(c1.value);
-          ys.push(c2.value);
-        }
-      }
-      const corr = pearson(xs, ys);
+      const corr = pearson(matched.map((m) => s1.points[m.ai].value), matched.map((m) => s2.points[m.bi].value));
       if (corr === null || corr < MIN_CORRELATION)
         continue;
+      const predicted = predictedPairs(s1, s2, higherIsBetter);
       const a: TransferSide = {matrixIndex: s1.matrixIndex, rowIndex: s1.rowIndex, position: s1.position};
       const b: TransferSide = {matrixIndex: s2.matrixIndex, rowIndex: s2.rowIndex, position: s2.position};
       const key = pairKey(a, b);
@@ -155,25 +317,32 @@ export function computeAllTransfers(matrices: SarMatrix[]): Transfer[] {
       if (existing && existing.correlation >= corr)
         continue;
       bestByPair.set(key, {
-        a, b, substituents: shared,
-        aCols: shared.map((sub) => s1.colBySubst.get(sub)!),
-        bCols: shared.map((sub) => s2.colBySubst.get(sub)!),
-        aCells: shared.map((sub) => s1.cellBySubst.get(sub)!),
-        bCells: shared.map((sub) => s2.cellBySubst.get(sub)!),
+        a, b,
+        substituents: matched.map((m) => s1.points[m.ai].substSmiles),
+        aCols: matched.map((m) => s1.points[m.ai].col),
+        bCols: matched.map((m) => s2.points[m.bi].col),
+        aCells: matched.map((m) => s1.points[m.ai].cell),
+        bCells: matched.map((m) => s2.points[m.bi].cell),
+        similarity: matched.reduce((sum, m) => sum + m.s, 0) / matched.length,
         correlation: corr,
-        crossMatrix: s1.matrixIndex !== s2.matrixIndex,
+        aVirtual: s1.virtual,
+        bVirtual: s2.virtual,
+        predictedSubstituents: predicted.map((p) => p.subst),
+        predictedACols: predicted.map((p) => p.aCol),
+        predictedBCols: predicted.map((p) => p.bCol),
       });
     }
   }
+  logSarTime(`transfers (${series.length} series, ${fps.length} compounds)`, t0);
   return [...bestByPair.values()].sort((p, q) => q.correlation - p.correlation).slice(0, MAX_TRANSFERS);
 }
 
 export interface TransferStats {
   correlation: number;
-  /** Per-step effect-size agreement (0-1) over consecutive shared substituents, or null. */
+  /** Per-step effect-size agreement (0-1) over consecutive matched pairs, or null. */
   foldMatch: number | null;
-  /** The follower core's predicted (virtual) analog the transfer lets you fill in, or null. */
-  benefiting: {side: 'a' | 'b', substIndex: number} | null;
+  /** The follower core's predicted analog the transfer argues for making, or null. */
+  benefiting: {side: 'a' | 'b', substSmiles: string, value: number} | null;
 }
 
 function observed(cell: SarMatrixCell): number | null {
@@ -182,8 +351,8 @@ function observed(cell: SarMatrixCell): number | null {
 
 /**
  * Detailed statistics for a transfer: the correlation, the fold-change match (per-step effect-size
- * agreement between the two cores), and the "benefiting" virtual cell — the untested analog in one
- * core that the transferred rule predicts (preferring the follower core `b`).
+ * agreement between the two cores), and the "benefiting" analog — the untested compound one core is
+ * still missing that the transferred rule predicts, preferring the follower core `b`.
  */
 export function transferStats(transfer: Transfer, higherIsBetter: boolean): TransferStats {
   const deltas: {a: number, b: number}[] = [];
@@ -206,20 +375,20 @@ export function transferStats(transfer: Transfer, higherIsBetter: boolean): Tran
     foldMatch = sum / deltas.length;
   }
 
-  let benefiting: {side: 'a' | 'b', substIndex: number} | null = null;
-  let best = higherIsBetter ? -Infinity : Infinity;
-  for (const [side, cells] of [['b', transfer.bCells], ['a', transfer.aCells]] as const) {
-    for (let k = 0; k < cells.length; k++) {
-      const cell = cells[k];
-      if (cell.kind !== 'virtual' || cell.value === null)
-        continue;
-      if (higherIsBetter ? cell.value > best : cell.value < best) {
-        best = cell.value;
-        benefiting = {side, substIndex: k};
+  let benefiting: {side: 'a' | 'b', substSmiles: string, value: number} | null = null;
+  for (const [side, analogs] of [['b', transfer.bVirtual], ['a', transfer.aVirtual]] as const) {
+    let best = higherIsBetter ? -Infinity : Infinity;
+    let pick: VirtualAnalog | null = null;
+    for (const analog of analogs) {
+      if (higherIsBetter ? analog.value > best : analog.value < best) {
+        best = analog.value;
+        pick = analog;
       }
     }
-    if (benefiting)
+    if (pick) {
+      benefiting = {side, substSmiles: pick.substSmiles, value: pick.value};
       break; // prefer the follower core's analogs
+    }
   }
   return {correlation: transfer.correlation, foldMatch, benefiting};
 }

@@ -24,8 +24,28 @@ function fakeFrags(): MmpFragments {
   return {fragCodes, idToName, sizes};
 }
 
-function realCell(value: number, molIdx = 0): SarMatrixCell {
-  return {kind: 'real', value, molIdx, smiles: null};
+function realCell(value: number, molIdx = 0, smiles: string | null = null): SarMatrixCell {
+  return {kind: 'real', value, molIdx, smiles};
+}
+
+/**
+ * Distinct probe compounds for the two sides of a transfer. These are fingerprinted, so they have to
+ * parse; the side-'b' entries are close analogs of their side-'a' counterparts but never equal to them,
+ * because one compound on both sides is skipped rather than matched.
+ *
+ * The R-groups come from `makeMatrix`, which labels column i 'Si' on every matrix — identical across
+ * the two sides, which is what a pairing requires. Tests that are not about the compound-similarity
+ * floor pass a threshold of 0, so their outcome cannot turn on a fingerprint value.
+ */
+const XFER_MOLS_A = ['Cc1ccccc1', 'CCCCCCCC', 'c1ccncc1', 'OC(=O)CCl', 'C1CCOC1', 'c1ccc2ccccc2c1'];
+const XFER_MOLS_B = ['CCc1ccccc1', 'CCCCCCCCC', 'Cc1ccncc1', 'OC(=O)CCCl', 'C1CCOCC1', 'Cc1ccc2ccccc2c1'];
+
+/** A row of observed cells for one side of a transfer, column i carrying that side's probe i. */
+function xferRow(values: number[], side: 'a' | 'b' = 'a'): SarMatrixCell[] {
+  const mols = side === 'a' ? XFER_MOLS_A : XFER_MOLS_B;
+  if (values.length > mols.length)
+    throw new Error(`xferRow: ${values.length} columns asked for, only ${mols.length} probes defined`);
+  return values.map((v, i) => realCell(v, (side === 'a' ? 0 : 100) + i, mols[i]));
 }
 
 function virtualCell(value: number, support = 1): SarMatrixCell {
@@ -268,49 +288,45 @@ category('SAR Matrix', () => {
   });
 
   test('computeAllTransfers finds a cross-matrix transfer between differently-scaffolded series', async () => {
-    // Two matrices whose columns share substituent SMILES (S0..S2); a row in each tracks the other.
+    // Two matrices whose columns carry the same R-groups (S0..S2); a row in each tracks the other.
     const matA = makeMatrix([
-      [realCell(1), realCell(2), realCell(3)],
-      [realCell(5), realCell(4), realCell(3)], // uncorrelated with matB's row, so it isn't the pick
+      xferRow([1, 2, 3]),
+      xferRow([5, 4, 3]), // uncorrelated with matB's row, so it isn't the pick
     ]);
-    const matB = makeMatrix([[realCell(2), realCell(3), realCell(4)]]);
-    const transfers = computeAllTransfers([matA, matB]);
-    const cross = transfers.find((t) => t.crossMatrix);
-    expect(cross !== undefined, true, 'a cross-series transfer between the two matrices must be found');
-    expect(cross!.a.matrixIndex !== cross!.b.matrixIndex, true, 'the two cores come from different matrices');
-    expect(cross!.substituents.length, 3, 'all three shared substituents are used');
-    expectFloat(cross!.correlation, 1, 0.01);
-  });
-
-  test('computeAllTransfers marks a within-matrix pair as not cross-matrix', async () => {
-    const mat = makeMatrix([
-      [realCell(1), realCell(2), realCell(3)],
-      [realCell(2), realCell(3), realCell(4)],
-    ]);
-    const transfers = computeAllTransfers([mat]);
-    expect(transfers.length, 1, 'one within-matrix transfer');
-    expect(transfers[0].crossMatrix, false, 'same matrix — not a cross-series transfer');
+    const matB = makeMatrix([xferRow([2, 3, 4], 'b')]);
+    // Threshold 0 opens the compound-similarity gate, so the outcome rests on the R-groups alone.
+    const transfers = await computeAllTransfers([matA, matB], 0);
+    expect(transfers.length, 1, 'a transfer between the two matrices must be found');
+    expect(transfers[0].a.matrixIndex !== transfers[0].b.matrixIndex, true,
+      'the two cores come from different matrices');
+    expect(transfers[0].substituents.length, 3, 'all three shared R-groups are used');
     expectFloat(transfers[0].correlation, 1, 0.01);
   });
 
+  test('computeAllTransfers does not report two cores of one matrix', async () => {
+    // Perfectly correlated rows, and deliberately no transfer: one matrix already models its rows with
+    // a single additive row-plus-column fit, so a pair inside it tracks by construction.
+    const mat = makeMatrix([xferRow([1, 2, 3]), xferRow([2, 3, 4], 'b')]);
+    expect((await computeAllTransfers([mat], 0)).length, 0, 'a within-matrix pair is not a transfer');
+  });
+
   test('computeAllTransfers skips pairs below the correlation floor', async () => {
-    const mat = makeMatrix([
-      [realCell(1), realCell(2), realCell(3)],
-      [realCell(3), realCell(1), realCell(2)], // ρ ≈ -0.5, below the 0.7 floor
-    ]);
-    expect(computeAllTransfers([mat]).length, 0, 'uncorrelated rows yield no transfer');
+    const matA = makeMatrix([xferRow([1, 2, 3])]);
+    const matB = makeMatrix([xferRow([3, 1, 2], 'b')]); // ρ ≈ -0.5, below the 0.7 floor
+    expect((await computeAllTransfers([matA, matB], 0)).length, 0, 'uncorrelated series yield no transfer');
   });
 
   test('computeAllTransfers dedupes the same core pair to its best position', async () => {
-    // Same two cores share substituents at both R1 (ρ=1) and R2 (ρ≈0.98) — only R1 survives.
-    const cells: SarMatrixCell[][] = [
-      [realCell(1), realCell(2), realCell(3), realCell(1), realCell(2), realCell(4)],
-      [realCell(2), realCell(3), realCell(4), realCell(1), realCell(2), realCell(3)],
-    ];
+    // The same two cores pair at both R1 (ρ=1) and R2 (ρ≈0.98) — only R1 survives.
     const positions = ['R1', 'R2'];
-    const mat = makeMatrix(cells, positions);
-    mat.columns.forEach((c, i) => c.position = i < 3 ? 'R1' : 'R2');
-    const transfers = computeAllTransfers([mat]);
+    const twoPosition = (values: number[], side: 'a' | 'b'): SarMatrix => {
+      const m = makeMatrix([xferRow(values, side)], positions);
+      m.columns.forEach((c, i) => c.position = i < 3 ? 'R1' : 'R2');
+      return m;
+    };
+    const matA = twoPosition([1, 2, 3, 1, 2, 4], 'a');
+    const matB = twoPosition([2, 3, 4, 1, 2, 3], 'b');
+    const transfers = await computeAllTransfers([matA, matB], 0);
     expect(transfers.length, 1, 'the two R-positions collapse to one entry for this core pair');
     expect(transfers[0].a.position, 'R1', 'R1 is the more-correlated position, so it is kept');
   });
@@ -318,10 +334,10 @@ category('SAR Matrix', () => {
   test('transferStats: identical per-step deltas give foldMatch = 1, no benefiting cell without a virtual',
     async () => {
       // matB = matA − 9, so the trends are identical: correlation 1 and every step delta matches.
-      const matA = makeMatrix([[realCell(10), realCell(12), realCell(14), realCell(20)]]); // deltas +2, +2, +6
-      const matB = makeMatrix([[realCell(1), realCell(3), realCell(5), realCell(11)]]); // same deltas
-      const transfers = computeAllTransfers([matA, matB]);
-      expect(transfers.length, 1, 'one cross-series transfer between the two single-row matrices');
+      const matA = makeMatrix([xferRow([10, 12, 14, 20])]); // deltas +2, +2, +6
+      const matB = makeMatrix([xferRow([1, 3, 5, 11], 'b')]); // same deltas
+      const transfers = await computeAllTransfers([matA, matB], 0);
+      expect(transfers.length, 1, 'one transfer between the two single-row matrices');
       const stats = transferStats(transfers[0], true);
       expectFloat(stats.correlation, 1, 0.01);
       expect(stats.foldMatch !== null, true);
@@ -330,9 +346,9 @@ category('SAR Matrix', () => {
     });
 
   test('transferStats: differing step magnitudes give a lower foldMatch', async () => {
-    const matA = makeMatrix([[realCell(10), realCell(12), realCell(14), realCell(20)]]); // deltas +2, +2, +6
-    const matB = makeMatrix([[realCell(1), realCell(2), realCell(3), realCell(4)]]); // same direction, +1 each
-    const transfers = computeAllTransfers([matA, matB]);
+    const matA = makeMatrix([xferRow([10, 12, 14, 20])]); // deltas +2, +2, +6
+    const matB = makeMatrix([xferRow([1, 2, 3, 4], 'b')]); // same direction, +1 each
+    const transfers = await computeAllTransfers([matA, matB], 0);
     expect(transfers.length, 1);
     const stats = transferStats(transfers[0], true);
     expect(stats.foldMatch !== null, true);
@@ -342,14 +358,59 @@ category('SAR Matrix', () => {
   });
 
   test('transferStats points benefiting at the follower core\'s virtual analog', async () => {
-    const matA = makeMatrix([[realCell(1), realCell(2), realCell(3), realCell(4)]]);
-    const matB = makeMatrix([[realCell(2), realCell(3), realCell(4), virtualCell(10)]]);
-    const transfers = computeAllTransfers([matA, matB]);
-    expect(transfers.length, 1, 'one cross-series transfer between the two single-row matrices');
+    const matA = makeMatrix([xferRow([1, 2, 3, 4])]);
+    const matB = makeMatrix([[...xferRow([2, 3, 4], 'b'), virtualCell(10)]]);
+    const transfers = await computeAllTransfers([matA, matB], 0);
+    expect(transfers.length, 1, 'one transfer between the two single-row matrices');
     const stats = transferStats(transfers[0], true);
     expect(stats.benefiting !== null, true, 'the follower core has an untested (virtual) analog to fill');
     expect(stats.benefiting!.side, 'b', 'the follower is the second matrix');
-    expect(stats.benefiting!.substIndex, 3, 'the virtual sits at the fourth shared substituent');
+    expect(stats.benefiting!.substSmiles, 'S3', 'the virtual sits at the follower core\'s fourth substituent');
+  });
+
+  test('computeAllTransfers carries the analogs one side has only predicted', async () => {
+    // The leader measured all four R-groups; the follower has the fourth only as a prediction. That
+    // column is what the transfer argues for, so it comes back alongside the three that are matched —
+    // and separately from them, since it has no second observation to correlate.
+    const matA = makeMatrix([xferRow([1, 2, 3, 4])]);
+    const matB = makeMatrix([[...xferRow([2, 3, 4], 'b'), virtualCell(10)]]);
+    const transfers = await computeAllTransfers([matA, matB], 0);
+    expect(transfers.length, 1);
+    expect(transfers[0].substituents.length, 3, 'three measured pairs carry the correlation');
+    expect(transfers[0].predictedSubstituents.length, 1, 'the predicted analog is carried separately');
+    expect(transfers[0].predictedSubstituents[0], 'S3', 'the R-group the follower has not made');
+    expect(transfers[0].predictedACols[0], 3, 'the leader measured it at its fourth column');
+    expect(transfers[0].predictedBCols[0], 3, 'the follower has it predicted at its fourth column');
+  });
+
+  test('computeAllTransfers ignores a compound shared by both series', async () => {
+    // The overlapping cover puts one compound in several matrices at once. Matched against itself it
+    // would put its own potency on both axes and report a perfect correlation that means nothing, so
+    // these two series — same compounds, same potencies — must yield no transfer at all.
+    const matA = makeMatrix([xferRow([1, 2, 3])]);
+    const matB = makeMatrix([xferRow([1, 2, 3])]);
+    expect((await computeAllTransfers([matA, matB], 0)).length, 0,
+      'a series compared against its own compounds is not a transfer');
+  });
+
+  test('computeAllTransfers requires the same R-group, not merely a similar one', async () => {
+    // Same compounds and the same perfect trend, but the follower files them under different
+    // substituents. A transfer claims one particular change did one particular thing on two scaffolds,
+    // and two series that never made the same change support no such claim.
+    const matA = makeMatrix([xferRow([1, 2, 3])]);
+    const matB = makeMatrix([xferRow([2, 3, 4], 'b')]);
+    matB.columns.forEach((col, i) => col.substSmiles = `T${i}`);
+    expect((await computeAllTransfers([matA, matB], 0)).length, 0, 'different R-groups are not a pairing');
+  });
+
+  test('computeAllTransfers applies the compound similarity floor', async () => {
+    // Identical R-groups and a perfect trend either way, so only the similarity gate decides. At 0
+    // every pair passes; at 1 none can, since the two sides are different compounds by construction.
+    const matA = makeMatrix([xferRow([1, 2, 3])]);
+    const matB = makeMatrix([xferRow([2, 3, 4], 'b')]);
+    expect((await computeAllTransfers([matA, matB], 0)).length, 1, 'an open gate admits the transfer');
+    expect((await computeAllTransfers([matA, matB], 1)).length, 0,
+      'demanding all but identical compounds admits none');
   });
 
   test('linkRGroupFragments joins a core with a fragment at its attachment point', async () => {

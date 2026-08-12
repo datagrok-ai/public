@@ -11,7 +11,8 @@ import {renderMolecule} from '../../rendering/render-molecule';
 import * as TextUtils from '@datagrok-libraries/gridext/src/utils/TextUtils';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
-import {computeAllTransfers, Transfer, TransferSide, transferStats} from './sar-matrix-transfer';
+import {computeAllTransfers, DEFAULT_TRANSFER_SIMILARITY, Transfer, TransferSide, transferStats}
+  from './sar-matrix-transfer';
 import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
 import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
 
@@ -39,6 +40,10 @@ const GRID_SCROLLBAR_H = 18;
 /** Small inline thumbnail of the transfer's benefiting substituent, in the statistics block. */
 const BENEFIT_MOL_W = 62;
 const BENEFIT_MOL_H = 34;
+/** Core thumbnail on a navigator card. Shared by the matrix and transfer lists so a card reads the
+ *  same in both and the description column is left the same width in each. */
+const CARD_CORE_W = 78;
+const CARD_CORE_H = 44;
 /** Cells grow to fill the pane, but never past this — beyond it the structures just float in space. */
 const CELL_W_MAX = 210;
 /** Navigator width + paddings + border-spacing, subtracted when fitting cells to the pane. Must track
@@ -58,12 +63,6 @@ const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
 const MAKELIST_NAME = 'SAR virtual analogs';
 
 type AnalogPanelBuilder = () => HTMLElement;
-/** Navigator filter metrics — always numbers a matrix card is currently reporting, so the threshold
- *  and the ranking talk about the same quantity. Which are on offer follows the rank scheme. */
-const FILTER_BEST = 'Best';
-const FILTER_MEAN = 'Mean';
-const FILTER_SPREAD = 'Spread';
-const FILTER_BEST_R = 'Best R';
 
 const COLSORT_POTENCY = 'Potency';
 const COLSORT_MW = 'Molecular weight';
@@ -79,6 +78,10 @@ const RERANK_ONLY_PROPS = ['rankScheme', 'activityDirection'];
 /** Properties that change nothing but what is drawn — no re-fragmentation, and no re-ranking either,
  *  which would reorder the navigator for what is only a change of column caption. */
 const RENDER_ONLY_PROPS = ['columnCaption', 'idColumnName'];
+
+/** Properties only the transfer scan reads. The matrices themselves are untouched, so re-fragmenting
+ *  for one would throw away seconds of RDKit work to recompute a list the current matrices still support. */
+const TRANSFER_ONLY_PROPS = ['transferSimilarity'];
 
 /** The viewer's two tabs (MMP-style). The matrix tab is the default; the transfer tab computes its
  *  quadratic core-vs-core comparison lazily, the first time it is opened for the current matrices. */
@@ -348,6 +351,24 @@ const PANEL_CHROME = 30;
 
 const GRID_FONT = 'Roboto, "Segoe UI", sans-serif';
 
+/** Column captions of the per-cell frame the filter runs over. They are what the filter widgets are
+ *  labelled with, so they name the two structure axes as the matrix itself does. */
+const STRUCT_CORE = 'Core';
+const STRUCT_R = 'R';
+const STRUCT_POTENCY = 'Potency';
+const STRUCT_REFS = 'Reference points';
+const STRUCT_MW = 'MW';
+/** Column captions of the per-series frame the navigator filter runs over. */
+const NAV_SERIES = 'Series';
+const NAV_CORE = 'Core';
+const NAV_BEST = 'Best';
+const NAV_MEAN = 'Mean';
+const NAV_SPREAD = 'Spread';
+const NAV_BEST_R = 'Best R';
+const NAV_COMPOUNDS = 'Compounds';
+const NAV_CORES = 'Cores';
+const NAV_LEVEL = 'Level';
+
 /** How one of a cell's corner chips is drawn. The two corners carry different kinds of fact — the
  *  potency the matrix is colored by, and the identity of the compound it came from — so they are kept
  *  on opposite diagonals and never collide however wide either one gets. */
@@ -364,7 +385,7 @@ interface ChipStyle {
  *  nav grouping and the pane's sibling lookup both key on this, so the card "+N" and the pane dropdown
  *  can never disagree about which targets a source reaches. */
 function transferSourceKey(t: Transfer): string {
-  return `${t.crossMatrix}:${t.a.matrixIndex}:${t.a.rowIndex}`;
+  return `${t.a.matrixIndex}:${t.a.rowIndex}`;
 }
 
 /** One displayed grid row: which matrix row it is, and which of that matrix's columns map to the
@@ -437,6 +458,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   grouping: string;
   fragmentationLevels: number;
   threshold: number;
+  transferSimilarity: number;
   predictVirtual: boolean;
   rankScheme: string;
 
@@ -448,6 +470,9 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** Whether `transfers` reflects the current `matrices`. False until the transfer tab runs its
    *  lazy computation, and reset by {@link invalidateTransfers} on every rebuild or re-rank. */
   private transfersComputed = false;
+  /** Bumped every time the transfer list is dropped. A scan that started before the bump is holding
+   *  indices into matrices that have since been rebuilt or reordered, so it must not publish. */
+  private transferGeneration = 0;
   /** A lazy transfer computation is already scheduled — a second tab activation must not stack one. */
   private transfersComputing = false;
   /** Index into `matrices` of the series the matrix pane is showing. */
@@ -511,17 +536,30 @@ export class SarMatrixViewer extends DG.JsViewer {
    *  holds each canvas's deferred draw until it fires. */
   private navCoreObserver: IntersectionObserver | null = null;
   private readonly navPendingCores: Map<Element, () => void> = new Map();
-  /** Which per-matrix number the navigator filter compares — the same one the card shows. */
-  private filterMetric = FILTER_BEST;
-  /** Threshold for that number, or null when the list is unfiltered. */
-  private filterMin: number | null = null;
   /** Potency a cell must reach to stay drawn in the matrix pane; null leaves every cell alone. Rows and
    *  columns left with nothing drawn are dropped rather than shown as empty bands. */
-  private cellMin: number | null = null;
-  /** Fewest reference points — measured compounds in its row and column — a virtual analog must rest
-   *  on to stay drawn; 0 keeps every prediction. Only virtual cells are judged by it, since an observed
-   *  compound rests on nothing. */
-  private minSupport = 0;
+  private cellPass: Set<string> | null = null;
+  /** One row per series, so the navigator can be filtered by the platform’s own filters: a
+   *  substructure sketcher over the cores, histograms over the numbers the cards print. */
+  private navFrame: DG.DataFrame | null = null;
+  private navFilters: DG.FilterGroup | null = null;
+  private navSub: {unsubscribe(): void} | null = null;
+  /** Matrix ids the navigator filter admits, or null while it admits everything. */
+  private navPass: Set<string> | null = null;
+  /** Frame row index -> matrix id, so a filtered frame maps back onto the cards. */
+  private navKeys: string[] = [];
+  /** Refreshes the navigator match count. Held because the filter group updates the list outside the
+   *  render that created it. */
+  private navMatchCount: (() => void) | null = null;
+  /** Frame row index -> the cell it describes, so a filtered frame maps back onto the matrices. */
+  private cellKeys: string[] = [];
+  /** One row per distinct (core, substituent) the matrices contain, both typed as molecules, so the
+   *  platform's own substructure filter applies to them. Built on first use rather than with the
+   *  matrices: nothing needs it until the filter is opened, and building it costs a pass over every
+   *  cell. Null until then. */
+  private structFrame: DG.DataFrame | null = null;
+  private structFilters: DG.FilterGroup | null = null;
+  private structSub: {unsubscribe(): void} | null = null;
   /** Parts of the matrix pane the potency threshold updates in place, so moving it repaints rather
    *  than rebuilds. Null while no matrix pane is on screen. */
   private paneGridHost: HTMLElement | null = null;
@@ -558,6 +596,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       {min: 1, max: MAX_SERIES_LEVELS, friendlyName: 'Series levels'});
     // Only read under Similarity grouping; Site grouping matches exactly and has nothing to tune.
     this.threshold = this.float('threshold', 0.5);
+    // How alike the two scaffolds must be, once the R-group is held identical. Read only by the
+    // transfer scan, so it retunes the tab without re-fragmenting anything.
+    this.transferSimilarity = this.float('transferSimilarity', DEFAULT_TRANSFER_SIMILARITY,
+      {min: 0.1, max: 1, friendlyName: 'Transfer similarity',
+        description: 'How alike two compounds carrying the same R-group must be for a transfer between their scaffolds to count'});
     this.predictVirtual = this.bool('predictVirtual', true);
     // "SAR transfer" is a tab, not a ranking mode, so it is not offered as a rank scheme.
     this.rankScheme = this.string('rankScheme', SarRankScheme.Potency,
@@ -574,8 +617,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
     ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
     const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferHost);
-    ui.tooltip.bind(transferPane.header, 'Pairs of cores whose potency trends run in parallel across ' +
-      'shared substituents — detected when the tab is first opened');
+    ui.tooltip.bind(transferPane.header, 'Pairs of cores whose potency trends run in parallel across the ' +
+      'R-groups they have both explored — detected when the tab is first opened');
     // Lives with the tab control itself (not this.subs): tab switching must keep working across a
     // detach/re-attach cycle, and the subscription dies with the viewer's DOM anyway.
     this.tabs.onTabChanged.subscribe(() => {
@@ -643,6 +686,12 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.navCoreObserver?.disconnect();
     this.navCoreObserver = null;
     this.navPendingCores.clear();
+    // The pair frame is held by a headless view of its own, so nothing else drops this subscription.
+    this.structSub?.unsubscribe();
+    this.structSub = null;
+    this.navSub?.unsubscribe();
+    this.navSub = null;
+    this.navMatchCount = null;
     super.detach();
   }
 
@@ -806,6 +855,14 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.reRank();
       return;
     }
+    if (property !== null && TRANSFER_ONLY_PROPS.includes(property.name)) {
+      // Drop the list and let the tab rebuild it; if the tab is not showing, nothing is recomputed
+      // at all until it next is.
+      this.invalidateTransfers();
+      if (this.transferTabActive)
+        this.activateTransferTab();
+      return;
+    }
     this.scheduleCompute();
   }
 
@@ -918,14 +975,10 @@ export class SarMatrixViewer extends DG.JsViewer {
    * Left empty until then, which is what keeps it out of the rest of the viewer: the per-matrix
    * correlation chip and the trend view all read this list, so none of them has to test whether the
    * tab was ever opened. */
-  private computeTransfers(): void {
-    this.transfers = computeAllTransfers(this.matrices);
-    this.transfersComputed = true;
-  }
-
   /** Drop the transfer list and the tab's content: the matrices it indexed into are gone (rebuilt or
    *  reordered). The next visit to the transfer tab recomputes against the current matrices. */
   private invalidateTransfers(): void {
+    this.transferGeneration++;
     this.releaseSlot(this.transferSlot);
     ui.empty(this.transferHost);
     this.transfers = [];
@@ -982,104 +1035,219 @@ export class SarMatrixViewer extends DG.JsViewer {
     return n ? sum / n : null;
   }
 
-  /**
-   * Slider bounds for a set of activity values: a step no finer than 0.01 rounded down to a 1/2/5
-   * decade, with the ends snapped to it. A raw range/100 step lands on values like 7.5965998802185098,
-   * which is unreadable in the field and impossible to type back.
-   */
-  private sliderBounds(values: number[]): {lo: number, hi: number, step: number} {
-    const rawLo = values.length ? Math.min(...values) : 0;
-    const rawHi = values.length ? Math.max(...values) : 1;
-    const target = (rawHi - rawLo) / 100;
-    const decade = target > 0 ? Math.pow(10, Math.floor(Math.log10(target))) : 0.1;
-    const scaled = target / decade;
-    const step = Math.max(0.01, decade * (scaled >= 5 ? 5 : scaled >= 2 ? 2 : 1));
-    const round2 = (v: number): number => Math.round(v * 100) / 100;
-    return {lo: round2(Math.floor(rawLo / step) * step), hi: round2(Math.ceil(rawHi / step) * step), step};
-  }
-
   /** Rows and columns of a matrix that survive the current Vary and cell filters — what the pane
    *  actually draws, as opposed to what the matrix holds. */
   private visibleDims(matrix: SarMatrix): {rows: number, cols: number} {
     const all = this.visibleColIdxs(matrix);
     if (!this.cellFilterActive)
       return {rows: matrix.rows.length, cols: all.length};
-    const cols = all.filter((ci) => matrix.cells.some((row) => this.passesCell(row[ci])));
+    const cols = all.filter((ci) => matrix.cells.some((_row, ri) => this.cellVisible(matrix, ri, ci)));
     const rows = matrix.rows.filter((_row, ri) =>
-      cols.some((ci) => this.passesCell(matrix.cells[ri][ci]))).length;
+      cols.some((ci) => this.cellVisible(matrix, ri, ci))).length;
     return {rows, cols: cols.length};
   }
 
-  /** True while any matrix-pane cell filter is set, so the untouched case can skip the work entirely. */
+  /** True while the filter is narrowing anything, so the untouched case skips the work entirely. */
   private get cellFilterActive(): boolean {
-    return this.cellMin !== null || this.minSupport > 0;
+    return this.cellPass !== null;
   }
+
+  /** Whether the filter admits this cell. Everything passes while no filter is set, which is what
+   *  keeps the lookup off the painting path until the user asks for it. */
+  private cellVisible(matrix: SarMatrix, ri: number, ci: number): boolean {
+    return this.cellPass === null || this.cellPass.has(`${matrix.id}:${ri}:${ci}`);
+  }
+
 
   /**
-   * Whether a cell survives the matrix-pane filters: potency, and how many observations back it.
+   * One row per matrix cell, carrying everything the filter can ask about: the row's core and the
+   * column's substituent as molecules, and the cell's potency, reference points and substituent
+   * weight as numbers. Typed this way the platform supplies every filter itself — sketchers for the
+   * two structures, histograms for the three numbers — which is the same set MMP gets over its
+   * fragment table, rather than controls hand-built to look like them.
    *
-   * Support only applies to predictions — an observed compound was measured, so there is nothing to
-   * support it with, and a support cut is meant to thin out the guesses rather than the data. The
-   * potency comparison follows the activity direction, as everywhere else.
+   * Per cell rather than per distinct pair, because potency and reference count belong to a cell: a
+   * pair repeated across matrices has a different value in each, and there would be no single row to
+   * put on the histogram.
    */
-  private passesCell(cell: SarMatrixCell): boolean {
-    if (!this.cellFilterActive)
-      return true;
-    if (cell.kind === 'empty' || cell.value === null)
-      return false;
-    // Counted over both arms, not the weaker one: the panel lists the row's and the column's measured
-    // compounds together as the prediction's reference points, so the threshold counts the same set.
-    if (cell.kind === 'virtual' && (cell.references ?? 0) < this.minSupport)
-      return false;
-    if (this.cellMin === null)
-      return true;
-    return this.higherIsBetter ? cell.value >= this.cellMin : cell.value <= this.cellMin;
-  }
-
-  /** The number the navigator filter compares for one matrix — the card's "best" or "mean" potency,
-   *  on the active scale. Null when the matrix has no observed compound to take it from. */
-  private matrixMetric(matrix: SarMatrix): number | null {
-    if (this.filterMetric === FILTER_MEAN)
-      return this.meanRealActivity(matrix);
-    if (this.filterMetric === FILTER_SPREAD)
-      return matrix.scores[SarRankScheme.Discontinuity] ?? null;
-    if (this.filterMetric === FILTER_BEST_R) {
-      const raw = matrix.scores[SarRankScheme.Preferred];
-      // The card prints the direction-adjusted value; the threshold has to compare the same number.
-      return raw === undefined ? null : (this.higherIsBetter ? raw : -raw);
+  private buildStructFrame(): DG.DataFrame {
+    const cores: string[] = [];
+    const subs: string[] = [];
+    const potency: number[] = [];
+    const refs: number[] = [];
+    const weights: number[] = [];
+    this.cellKeys = [];
+    for (const matrix of this.matrices) {
+      for (let ri = 0; ri < matrix.rows.length; ri++) {
+        for (let ci = 0; ci < matrix.columns.length; ci++) {
+          const cell = matrix.cells[ri][ci];
+          if (cell.kind === 'empty' || cell.value === null)
+            continue; // nothing to filter on, and it already draws blank
+          cores.push(matrix.rows[ri].coreSmiles);
+          subs.push(matrix.columns[ci].substSmiles);
+          potency.push(cell.value);
+          // A measured compound has no reference points to rest on, so it is given the count of the
+          // measured neighbours it shares a row and column with — the same quantity, defined for it —
+          // rather than a blank the histogram would have to guess at.
+          refs.push(cell.references ?? this.observedNeighbours(matrix, ri, ci));
+          const mw = substituentMW(matrix.columns[ci].substSmiles);
+          weights.push(Number.isFinite(mw) ? mw : 0);
+          this.cellKeys.push(`${matrix.id}:${ri}:${ci}`);
+        }
+      }
     }
-    if (!matrix.realCount)
-      return null;
-    return this.higherIsBetter ? matrix.maxActivity : matrix.minActivity;
+    const coreCol = DG.Column.fromStrings(STRUCT_CORE, cores);
+    const subCol = DG.Column.fromStrings(STRUCT_R, subs);
+    coreCol.semType = DG.SEMTYPE.MOLECULE;
+    subCol.semType = DG.SEMTYPE.MOLECULE;
+    return DG.DataFrame.fromColumns([
+      coreCol,
+      subCol,
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, STRUCT_POTENCY, potency),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, STRUCT_REFS, refs),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, STRUCT_MW, weights),
+    ]);
   }
 
-  /** Which filter metrics the current rank scheme offers — the numbers its cards actually print.
-   *  Filtering on a quantity the cards are not showing compares the threshold against something the
-   *  user cannot see, and its units need not even match. */
-  private filterMetricOptions(): string[] {
-    if (this.rankScheme === SarRankScheme.Discontinuity)
-      return [FILTER_SPREAD];
-    if (this.rankScheme === SarRankScheme.Preferred)
-      return [FILTER_BEST_R];
-    return [FILTER_BEST, FILTER_MEAN];
+  /** Measured compounds sharing this cell's row or column — what a prediction here would rest on. */
+  private observedNeighbours(matrix: SarMatrix, ri: number, ci: number): number {
+    let n = 0;
+    for (let c = 0; c < matrix.columns.length; c++) {
+      if (c !== ci && matrix.cells[ri][c].kind === 'real')
+        n++;
+    }
+    for (let r = 0; r < matrix.rows.length; r++) {
+      if (r !== ri && matrix.cells[r][ci].kind === 'real')
+        n++;
+    }
+    return n;
   }
+
+  /** Read the frame's filter back into the passing-cell set, then repaint. Left null while everything
+   *  passes, so an untouched filter costs nothing on the per-cell path. */
+  private syncStructFilter(): void {
+    const frame = this.structFrame;
+    if (frame === null)
+      return;
+    if (frame.filter.trueCount === frame.rowCount)
+      this.cellPass = null;
+    else {
+      const pass = new Set<string>();
+      for (let i = 0; i < frame.rowCount; i++) {
+        if (frame.filter.get(i))
+          pass.add(this.cellKeys[i]);
+      }
+      this.cellPass = pass;
+    }
+    this.applyCellFilter();
+  }
+
+
+  /** The pair frame's filter group, built on first use. A filter group belongs to a view, so a
+   *  headless one is created for the frame and never shown — only its filters are, in a popup. */
+  private structureFilterRoot(): HTMLElement {
+    if (this.structFilters === null) {
+      this.structFrame = this.buildStructFrame();
+      const view = DG.TableView.create(this.structFrame, false);
+      // The default set, not a hand-picked one: the platform already gives a molecule column its
+      // sketcher filter and a numeric column its histogram, along with the per-filter and
+      // whole-group on/off switches. Naming the filters explicitly only risks diverging from that.
+      this.structFilters = view.getFiltersGroup();
+      this.structSub = DG.debounce(this.structFrame.onFilterChanged, 300).subscribe(() => this.syncStructFilter());
+    }
+    return this.structFilters.root;
+  }
+
 
   /**
-   * Whether a matrix clears the filter.
-   *
-   * For the potency metrics the comparison follows the activity direction, so the threshold means "at
-   * least this potent" rather than "numerically larger" — on a scale where smaller is better, asking
-   * for more potency selects the smaller numbers. Spread is not a potency: a wider spread is always
-   * more discontinuous, whichever way the activity runs, so it always compares upwards.
+   * One row per series, carrying its drawn core as a molecule and the numbers its card prints. Same
+   * mechanism as the matrix pane's filter: the platform supplies a sketcher for the core and a
+   * histogram for each number, so finding a series by substructure and by potency is one filter group
+   * rather than a bespoke control per quantity.
    */
+  private buildNavFrame(): DG.DataFrame {
+    const series: string[] = [];
+    const cores: string[] = [];
+    const best: number[] = [];
+    const mean: number[] = [];
+    const spread: number[] = [];
+    const bestR: number[] = [];
+    const compounds: number[] = [];
+    const coreCount: number[] = [];
+    const level: number[] = [];
+    this.navKeys = [];
+    for (const matrix of this.matrices) {
+      series.push(matrix.label);
+      cores.push(this.matrixCore(matrix));
+      // Direction-adjusted, so "more potent" is always the larger number on the histogram whichever
+      // way the assay runs — otherwise the same drag means opposite things on -lg and raw scales.
+      const top = matrix.realCount ? (this.higherIsBetter ? matrix.maxActivity : -matrix.minActivity) : NaN;
+      best.push(top);
+      const m = this.meanRealActivity(matrix);
+      mean.push(m === null ? NaN : (this.higherIsBetter ? m : -m));
+      spread.push(matrix.scores[SarRankScheme.Discontinuity] ?? NaN);
+      const pref = matrix.scores[SarRankScheme.Preferred];
+      bestR.push(pref === undefined ? NaN : (this.higherIsBetter ? pref : -pref));
+      compounds.push(matrix.realCount);
+      coreCount.push(matrix.rows.length);
+      level.push(matrix.level - 1);
+      this.navKeys.push(matrix.id);
+    }
+    const coreCol = DG.Column.fromStrings(NAV_CORE, cores);
+    coreCol.semType = DG.SEMTYPE.MOLECULE;
+    return DG.DataFrame.fromColumns([
+      // First, and a plain string: the platform gives a string column a category list with a search
+      // box, which is how a named series is actually looked for — typed, not picked off a histogram.
+      DG.Column.fromStrings(NAV_SERIES, series),
+      coreCol,
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, NAV_BEST, best),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, NAV_MEAN, mean),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, NAV_SPREAD, spread),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, NAV_BEST_R, bestR),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, NAV_COMPOUNDS, compounds),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, NAV_CORES, coreCount),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, NAV_LEVEL, level),
+    ]);
+  }
+
+  /** Read the series frame's filter back into the passing-matrix set and reapply it to the cards. */
+  private syncNavFilter(): void {
+    const frame = this.navFrame;
+    if (frame === null)
+      return;
+    if (frame.filter.trueCount === frame.rowCount)
+      this.navPass = null;
+    else {
+      const pass = new Set<string>();
+      for (let i = 0; i < frame.rowCount; i++) {
+        if (frame.filter.get(i))
+          pass.add(this.navKeys[i]);
+      }
+      this.navPass = pass;
+    }
+    this.updateNavVisibility();
+    this.navMatchCount?.();
+  }
+
+  /** The series filter group, built on first use, mounted in a popup off the navigator's filter icon. */
+  private navFilterRoot(): HTMLElement {
+    if (this.navFilters === null) {
+      this.navFrame = this.buildNavFrame();
+      const view = DG.TableView.create(this.navFrame, false);
+      this.navFilters = view.getFiltersGroup();
+      // Asked for by name, because the default set leaves it out: every series name is distinct, so a
+      // category list would hold one entry per row and the platform declines to build one. It is still
+      // how a named series is looked for — the list has a search box, which is what turns "3" into
+      // every series carrying a 3 — so the filter is added explicitly.
+      this.navFilters.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: NAV_SERIES}, false);
+      this.navSub = DG.debounce(this.navFrame.onFilterChanged, 300).subscribe(() => this.syncNavFilter());
+    }
+    return this.navFilters.root;
+  }
+
+  /** Whether a matrix clears the series filter. Unfiltered until the filter group narrows the frame. */
   private passesFilter(matrix: SarMatrix): boolean {
-    if (this.filterMin === null)
-      return true;
-    const value = this.matrixMetric(matrix);
-    if (value === null)
-      return false;
-    const upwards = this.filterMetric === FILTER_SPREAD ? true : this.higherIsBetter;
-    return upwards ? value >= this.filterMin : value <= this.filterMin;
+    return this.navPass === null || this.navPass.has(matrix.id);
   }
 
   /** The score block on the right of a navigator card: one big value per line with its caption under
@@ -1161,7 +1329,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     // are on the matrix pane's own chips the moment a card is opened.
     const desc = `${matrix.rows.length} cores · ${matrix.positions.join('/')} · ${matrix.realCount} cpd` +
       (folded ? ` · ${folded} inside` : '');
-    const core = this.lazyCoreDepiction(this.matrixCore(matrix), 78, 44);
+    const core = this.lazyCoreDepiction(this.matrixCore(matrix), CARD_CORE_W, CARD_CORE_H);
     core.classList.add('chem-sar-card-core');
     // Numbered from the matrices, not from the fragmentation passes: the first pass produces series,
     // which are the ROWS of a matrix rather than anything the navigator lists, so calling the first
@@ -1273,13 +1441,6 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   /** A transfer navigator section (same-series or cross-series): a header, then one card per source
    *  core — with a target dropdown when that source transfers to more than one core. */
-  private buildTransferSection(title: string, transfers: Transfer[]): HTMLElement[] {
-    if (!transfers.length)
-      return [];
-    const cards = this.groupTransfersBySource(transfers).map((group) => this.buildTransferCard(group));
-    return [ui.divText(title, 'chem-sar-nav-section'), ...cards];
-  }
-
   /** Select a specific transfer (by its identity in this.transfers) and redraw the trend view.
    *  Only the transfer tab is rebuilt — the matrix tab is untouched and must not move. */
   private selectTransfer(transfer: Transfer): void {
@@ -1322,15 +1483,39 @@ export class SarMatrixViewer extends DG.JsViewer {
     ui.setUpdateIndicator(this.transferHost, true, 'Detecting SAR transfers...');
     // Timeout, MMP-style: let the tab switch and the indicator paint before the synchronous
     // quadratic pass freezes the frame.
-    setTimeout(() => {
-      this.transfersComputing = false;
+    setTimeout(async () => {
       // A matrix rebuild that started meanwhile is about to replace `matrices`; computing now would
       // mark stale transfers as current. Its final render() re-enters the activation instead.
-      if (this.detached || this.computing)
+      if (this.detached || this.computing) {
+        this.transfersComputing = false;
+        ui.setUpdateIndicator(this.transferHost, false);
         return;
-      this.computeTransfers();
-      this.transferIndex = 0;
+      }
+      // Held across the await, not just up to it: fingerprinting goes out to the RDKit workers, and a
+      // tab bounce or a threshold change in that window would otherwise start a second full scan.
+      const generation = this.transferGeneration;
+      let detected: Transfer[] | null = null;
+      try {
+        detected = await computeAllTransfers(this.matrices, this.transferSimilarity, this.higherIsBetter);
+      } catch (e) {
+        console.error('SAR Matrix | transfer detection failed', e);
+      }
+      this.transfersComputing = false;
       ui.setUpdateIndicator(this.transferHost, false);
+      // The await handed control back to the event loop. Anything that dropped the list while it was
+      // out there bumped the generation, and these indices no longer address the matrices on screen —
+      // publishing them would label a card with a core that is not the one it was computed from.
+      if (this.detached || generation !== this.transferGeneration)
+        return;
+      if (detected === null) {
+        ui.empty(this.transferHost);
+        this.transferHost.appendChild(ui.divText('SAR transfer detection failed — see the browser console.',
+          'chem-sar-empty-note'));
+        return;
+      }
+      this.transfers = detected;
+      this.transfersComputed = true;
+      this.transferIndex = 0;
       this.renderTransferPanel();
     }, 100);
   }
@@ -1347,17 +1532,16 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (this.transfers.length === 0) {
       this.transferHost.appendChild(ui.divText(this.matrices.length === 0 ?
         'No SAR matrices to compare — build matrices first on the SAR Matrix tab.' :
-        'No SAR transfers detected: no two cores share enough substituents with correlated ' +
-        'potency trends.', 'chem-sar-empty-note'));
+        'No SAR transfers detected: no two cores share enough R-groups, on scaffolds alike enough, ' +
+        'with correlated potency trends. Lower "Transfer similarity" to accept less alike scaffolds.',
+      'chem-sar-empty-note'));
       return;
     }
     if (this.transferIndex >= this.transfers.length)
       this.transferIndex = 0;
     const list = ui.div([], 'chem-sar-xfer-list');
-    for (const el of this.buildTransferSection('SAME-SERIES', this.transfers.filter((t) => !t.crossMatrix)))
-      list.appendChild(el);
-    for (const el of this.buildTransferSection('CROSS-SERIES', this.transfers.filter((t) => t.crossMatrix)))
-      list.appendChild(el);
+    for (const group of this.groupTransfersBySource(this.transfers))
+      list.appendChild(this.buildTransferCard(group));
     this.transferHost.appendChild(list);
     this.transferHost.appendChild(this.buildTransferPane(this.transfers[this.transferIndex]));
   }
@@ -1377,26 +1561,22 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Show the selected transfer when it belongs to this group, otherwise the strongest (first).
     const shown = (selected && group.includes(selected)) ? selected : group[0];
 
-    const desc: HTMLElement[] = [
-      ui.divText('→', 'chem-sar-card-arrow'),
-      ui.divText(this.transferTargetLabel(shown), 'chem-sar-card-target-text'),
-    ];
-    if (group.length > 1) {
-      const more = ui.divText(`+${group.length - 1}`, 'chem-sar-nav-badge');
-      ui.tooltip.bind(more, () =>
-        `${group.length - 1} more target core${group.length - 1 === 1 ? '' : 's'} — switch in the transfer panel.`);
-      desc.push(more);
-    }
+    // Only the source core is named. Which target it carries to is a choice, not an identity, and the
+    // pane's own dropdown is where it is made — repeating it here cost a wrapped line per card.
     const body = ui.divV([
       ui.divText(this.sideLabel(shown.a), 'chem-sar-card-title'),
-      ui.divH(desc, 'chem-sar-card-desc'),
     ], 'chem-sar-card-body');
+    // The source core the card is named after, drawn the way a matrix card draws its series core.
+    // Painted up front rather than through the navigator's deferred observer: that observer belongs to
+    // the matrix list and is disconnected whenever it refills, which would leave these blank.
+    const sourceRow = this.matrices[shown.a.matrixIndex].rows[shown.a.rowIndex];
+    const core = renderMoleculeOnColor(sourceRow.keySmiles, CARD_CORE_W, CARD_CORE_H, CORE_BG_ARGB);
+    core.classList.add('chem-sar-card-core');
     const scoreBox = this.cardScoreBox([{value: `r ${shown.correlation.toFixed(2)}`, label: 'transfer'}],
-      () => shown.crossMatrix ?
-        'Correlation of two different chemotypes’ potency trends across shared substituents — the SAR ' +
-      'learned on one series should carry to the other. 1.00 = perfectly parallel.' :
-        'Correlation of the two cores’ potency trends (SAR transfer): 1.00 = perfectly parallel.');
-    const card = ui.divH([body, scoreBox], 'chem-sar-card');
+      () => `${this.sideLabel(shown.a)} → ${this.transferTargetLabel(shown)}. Correlation of two ` +
+        'different chemotypes’ potency trends across the R-groups they have both explored — the SAR ' +
+        'learned on one should carry to the other. 1.00 = perfectly parallel.');
+    const card = ui.divH([core, body, scoreBox], 'chem-sar-card');
     if (selected && group.includes(selected))
       card.classList.add('selected');
     card.onclick = () => this.selectTransfer(shown);
@@ -1444,80 +1624,24 @@ export class SarMatrixViewer extends DG.JsViewer {
     const refill = (): void => {
       this.updateNavVisibility();
       const hits = this.matrices.filter((matrix) => this.passesFilter(matrix)).length;
-      matchCount.innerText = this.filterMin === null ? '' : `${hits} of ${this.matrices.length} match`;
+      const filtered = this.navPass !== null;
+      matchCount.innerText = filtered ? `${hits} of ${this.matrices.length} match` : '';
     };
 
-    // The metrics on offer follow the rank scheme, so the threshold always compares the number the
-    // cards are printing. A scheme change can leave the previous metric unavailable — and a threshold
-    // in potency units is meaningless against a spread — so both fall back together.
-    const metrics = this.filterMetricOptions();
-    if (!metrics.includes(this.filterMetric)) {
-      this.filterMetric = metrics[0];
-      this.filterMin = null;
-    }
-    const metricInput = ui.input.choice('Filter', {
-      value: this.filterMetric,
-      items: metrics,
-      onValueChanged: (value) => {
-        this.filterMetric = value!;
-        // Best and mean are different scales, so carrying the number over misleads; the bounds belong
-        // to the metric too, so the control itself has to be rebuilt.
-        this.filterMin = null;
-        this.render();
-      },
-    });
-    ui.tooltip.bind(metricInput.root, () => metrics.length === 1 ?
-      `Ranking by "${this.rankScheme}", so the threshold applies to that same number.` :
-      'Which of a matrix\'s two reported potencies the threshold applies to — its best compound, or ' +
-      'the mean over its observed compounds.');
+    // One form rather than a loose input: it aligns the label column for us, which hand-placing does
+    // not, and it keeps the spacing consistent with every other panel in the platform.
+    const controls = ui.form([rankInput]);
 
-    // Bounds come from the metric actually being filtered; a potency range would put the handle
-    // nowhere near a spread of 1.9.
-    const values: number[] = [];
-    for (const matrix of this.matrices) {
-      const value = this.matrixMetric(matrix);
-      if (value !== null)
-        values.push(value);
-    }
-    const {lo, hi, step} = this.sliderBounds(values);
-    const round2 = (v: number): number => Math.round(v * 100) / 100;
-    // The end that lets everything through, which is where "no filter" sits: the bottom when the test
-    // compares upwards, the top when it compares downwards.
-    const upwards = this.filterMetric === FILTER_SPREAD ? true : this.higherIsBetter;
-    const neutral = upwards ? lo : hi;
+    // Every filter lives in the platform's own filter group: a substructure sketcher over the cores
+    // plus a histogram per printed number, which no pair of header inputs can express.
+    const navIcon = ui.icons.filter(() => {
+      ui.showPopup(ui.div(this.navFilterRoot(), 'chem-sar-struct-filters'), navIcon, {vertical: true});
+    }, 'Filter series by core structure, potency, SAR spread, size');
+    navIcon.classList.add('chem-sar-struct-icon');
+    this.navMatchCount = refill;
 
-    // The label follows the comparison, which follows the metric: potency on a smaller-is-better scale
-    // keeps the SMALLER numbers, so a fixed "Min value" would name the opposite of what it does.
-    const minInput = ui.input.float(upwards ? 'Min value' : 'Max value', {
-      value: this.filterMin ?? neutral,
-      min: lo,
-      max: hi,
-      step,
-      showSlider: hi > lo,
-      onValueChanged: (value) => {
-        const raw = (value === null || value === undefined || Number.isNaN(value)) ? neutral : value;
-        // Snap to the step and to two decimals: the slider still emits float noise, and the threshold
-        // is echoed straight into the field the user reads.
-        const picked = round2(Math.round(raw / step) * step);
-        // Parked at the neutral end means "show everything" rather than a threshold that happens to
-        // admit every matrix — the difference shows up in whether the match count is worth printing.
-        this.filterMin = picked === neutral ? null : picked;
-        refill();
-      },
-    });
-    ui.tooltip.bind(minInput.root, () => {
-      const what = this.filterMetric === FILTER_SPREAD ? 'an activity spread of at least this much' :
-        upwards ? `a ${this.filterMetric.toLowerCase()} of at least this` :
-          `a ${this.filterMetric.toLowerCase()} of at most this — smaller is more potent on the ` +
-            `${this.scalingLabel} scale`;
-      return `Keep only matrices with ${what}. The number is the one on the cards. Park the handle at ` +
-        'the far end to show all; a parent is kept whenever anything inside it matches.';
-    });
-    // One form rather than loose inputs: it aligns the label column for us, which hand-placing them in
-    // a row does not, and it keeps the spacing consistent with every other panel in the platform.
-    const controls = ui.form([rankInput, metricInput, minInput]);
-
-    const header = ui.divV([sub, controls, matchCount], 'chem-sar-nav-header');
+    const header = ui.divV([sub, ui.divH([controls, navIcon], 'chem-sar-nav-controls'), matchCount],
+      'chem-sar-nav-header');
     this.fillNavList(list, parents);
     refill(); // initial visibility + match count (a threshold can survive a navigator rebuild)
     return ui.divV([header, list], 'chem-sar-nav');
@@ -1612,7 +1736,7 @@ export class SarMatrixViewer extends DG.JsViewer {
    */
   private updateNavVisibility(): void {
     const parents = this.navParents;
-    const filtering = this.filterMin !== null;
+    const filtering = this.navPass !== null;
     const children = this.navChildren(parents);
     const hits = new Map<number, boolean>();
     const anyHit = (i: number): boolean => {
@@ -1672,7 +1796,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const rowPasses = (i: number): boolean => {
       const row = state.rows[i];
       return row === undefined || !this.cellFilterActive ||
-        row.colIdxs.some((ci) => this.passesCell(row.matrix.cells[row.rowIndex][ci]));
+        row.colIdxs.some((ci) => this.cellVisible(row.matrix, row.rowIndex, ci));
     };
     state.df.filter.init(rowPasses);
     state.colKeyToIdx.forEach((idx, key) => {
@@ -1680,7 +1804,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (column === null)
         return;
       column.visible = !this.cellFilterActive || state.rows.some((row, i) =>
-        rowPasses(i) && this.passesCell(row.matrix.cells[row.rowIndex][row.colIdxs[idx]]));
+        rowPasses(i) && this.cellVisible(row.matrix, row.rowIndex, row.colIdxs[idx]));
     });
     this.refitColumns();
     state.grid.invalidate();
@@ -1934,7 +2058,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     // A cell the threshold has blanked is not selectable: it draws as empty, so opening the compound
     // behind it would answer a click the user never appeared to make, and the context panel would
     // describe a molecule that is not on screen.
-    if (cell.kind === 'empty' || cell.value === null || !this.passesCell(cell))
+    if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(matrix, ri, ci))
       return;
     grok.shell.windows.showContextPanel = true;
     // A real compound becomes the host grid's current row and (ctrl/shift) extends its selection; a
@@ -1986,7 +2110,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
     // Blanked by the threshold reads as empty, so it must hover as empty too — otherwise the value the
     // filter just hid comes straight back under the cursor.
-    if (cell.kind === 'empty' || cell.value === null || !this.passesCell(cell))
+    if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(paneRow.matrix, paneRow.rowIndex, ci))
       return false;
     ui.tooltip.show(ui.divText(this.cellTooltipText(cell)), x, y);
     return true;
@@ -2132,7 +2256,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     // A cell below the threshold is blanked rather than removed: its row and column are still there
     // because something else in them survived, and leaving the slot empty keeps the grid readable as a
     // table instead of resequencing every neighbour.
-    if (cell.kind === 'empty' || cell.value === null || !this.passesCell(cell)) {
+    if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(matrix, ri, paneRow.colIdxs[colIndex])) {
       g.fillStyle = cssColor(this.root, '--white', '#ffffff');
       g.fillRect(b.x, b.y, b.width, b.height);
       return;
@@ -2343,24 +2467,24 @@ export class SarMatrixViewer extends DG.JsViewer {
   private cpReferences(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
     const block = ui.divV([]);
     const self = matrix.cells[rowIdx][colIdx];
-    const collect = (pick: (ri: number, ci: number) => boolean): SarMatrixCell[] => {
-      const found: SarMatrixCell[] = [];
+    const collect = (pick: (ri: number, ci: number) => boolean): {cell: SarMatrixCell, ri: number, ci: number}[] => {
+      const found: {cell: SarMatrixCell, ri: number, ci: number}[] = [];
       for (let ri = 0; ri < matrix.rows.length; ri++) {
         for (let ci = 0; ci < matrix.columns.length; ci++) {
           const c = matrix.cells[ri][ci];
           if (c !== self && c.kind === 'real' && c.value !== null && pick(ri, ci))
-            found.push(c);
+            found.push({cell: c, ri, ci});
         }
       }
       return found;
     };
-    const section = (title: string, all: SarMatrixCell[]): void => {
-      const shown = all.filter((c) => this.passesCell(c));
+    const section = (title: string, all: {cell: SarMatrixCell, ri: number, ci: number}[]): void => {
+      const shown = all.filter((e) => this.cellVisible(matrix, e.ri, e.ci));
       if (shown.length === 0)
         return;
       block.appendChild(this.cpSection(title,
         shown.length === all.length ? `${all.length}` : `${shown.length} of ${all.length}`));
-      block.appendChild(ui.divH(shown.map((c) => this.cpFragment(c.smiles, c.value ?? 0)),
+      block.appendChild(ui.divH(shown.map((e) => this.cpFragment(e.cell.smiles, e.cell.value ?? 0)),
         'chem-sar-cp-decomp'));
     };
     section('Measured with this core', collect((ri) => ri === rowIdx));
@@ -2464,18 +2588,16 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /**
-   * The SAR transfer view: two cores whose potency trends run in parallel across the substituents
-   * they share — within one matrix, or across two matrices (a cross-series transfer between different
-   * chemotypes) — with a trend strip under each so the parallel is visible directly. The two rows go
-   * through the same virtualized grid as the matrix pane, each resolving against its own matrix.
+   * The SAR transfer view: two cores from different matrices whose potency trends run in parallel across
+   * the R-groups they have both explored, with a trend strip under each so the parallel is visible
+   * directly. The two rows go through the same virtualized grid as the matrix pane, each resolving
+   * against its own matrix.
    */
   private buildTransferPane(transfer: Transfer): HTMLElement {
-    const matrixA = this.matrices[transfer.a.matrixIndex];
     const from = this.sideLabel(transfer.a);
     const to = this.sideLabel(transfer.b);
     const bar = ui.divH([
-      ui.divText(transfer.crossMatrix ? 'Cross-series SAR transfer' : `${matrixA.label} · SAR transfer`,
-        'chem-sar-main-title'),
+      ui.divText('Cross-series SAR transfer', 'chem-sar-main-title'),
       ui.divText(`${from} → ${to} · across ${transfer.a.position} · r = ${transfer.correlation.toFixed(2)}`),
     ], 'chem-sar-main-bar');
 
@@ -2498,30 +2620,27 @@ export class SarMatrixViewer extends DG.JsViewer {
 
     // Each side keeps its own matrix (a cross-series transfer's two cores live in different ones), so
     // its cells, potency range, core alignment and context panel all resolve against that matrix.
+    // Measured pairs first, then the analogs the transfer argues for: one side has the compound, the
+    // other only a prediction, so the column shows the evidence and the proposal side by side.
     const rows = [
-      this.transferPaneRow(transfer.a, transfer.aCols),
-      this.transferPaneRow(transfer.b, transfer.bCols),
+      this.transferPaneRow(transfer.a, [...transfer.aCols, ...transfer.predictedACols]),
+      this.transferPaneRow(transfer.b, [...transfer.bCols, ...transfer.predictedBCols]),
     ];
     // Every column is the same R-position here, and the Label metric is a matrix-pane control, so the
     // headers carry only the position band and the depiction.
-    const columns: PaneColumn[] = transfer.substituents.map((substSmiles) =>
-      ({substSmiles, position: transfer.a.position, caption: ''}));
+    const matchedCount = transfer.substituents.length;
+    const columns: PaneColumn[] = [...transfer.substituents, ...transfer.predictedSubstituents]
+      .map((substSmiles, i) => ({substSmiles, position: transfer.a.position,
+        caption: i < matchedCount ? '' : 'predicted'}));
     const gridHost = this.buildPaneGrid(rows, columns, this.transferSlot);
     // Two rows only: size the grid to its content instead of stretching it, so the trend strips and
     // the statistics stay on screen rather than being pushed below a half-empty grid.
     gridHost.style.flex = '0 0 auto';
     gridHost.style.height = `${COL_HEADER_H + rows.length * CELL_H + GRID_SCROLLBAR_H}px`;
 
-    const noteText = transfer.crossMatrix ?
-      `${from} and ${to} are different chemotypes, yet their potencies track together across these ` +
-        `shared substituents — so a substituent change learned on ${from} should transfer to ${to}.` :
-      `Both cores follow the same trend across ${transfer.a.position}, so a change learned on ${from} ` +
-        `is expected to carry over to ${to}.`;
-    const note = ui.divText(noteText, 'chem-sar-transfer-note');
-
     // A plain div, not ui.box: ui.box pins an explicit pixel width, which stops the content from
     // growing with the pane.
-    const scroll = ui.div([this.buildTransferStats(transfer), note], 'chem-sar-main-scroll');
+    const scroll = ui.div([this.buildTransferStats(transfer)], 'chem-sar-main-scroll');
     const parts = controlBar ? [bar, controlBar, gridHost, scroll] : [bar, gridHost, scroll];
     return ui.divV(parts, 'chem-sar-main');
   }
@@ -2537,13 +2656,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     const rows = [
       row('Correlation (Pearson r)', text(`r = ${stats.correlation.toFixed(2)}`)),
       row('Fold-change match', text(stats.foldMatch === null ? '—' : `${Math.round(stats.foldMatch * 100)}%`)),
+      row('Shared R-groups', text(`${transfer.substituents.length} · scaffolds ${transfer.similarity.toFixed(2)}`)),
     ];
     if (stats.benefiting) {
       const side = stats.benefiting.side === 'a' ? transfer.a : transfer.b;
       rows.push(row('Benefiting cell', ui.divH([
         text(`${this.sideLabel(side)} ×`),
-        renderMoleculeOnColor(transfer.substituents[stats.benefiting.substIndex],
-          BENEFIT_MOL_W, BENEFIT_MOL_H, HEADER_ARGB),
+        renderMoleculeOnColor(stats.benefiting.substSmiles, BENEFIT_MOL_W, BENEFIT_MOL_H, HEADER_ARGB),
       ], 'chem-sar-xfer-ben')));
     }
     return ui.divV([ui.divText('Transfer statistics', 'chem-sar-xfer-title'), ...rows], 'chem-sar-xfer-stats');
@@ -2581,10 +2700,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     const involving = this.transfers.filter((t) => t.a.matrixIndex === idx || t.b.matrixIndex === idx);
     if (involving.length) {
       const best = involving[0];
-      const crossing = involving.some((t) => t.crossMatrix);
       items.push(chip(`r ${best.correlation.toFixed(2)}`,
-        crossing ? 'Strongest SAR-transfer correlation for this series, incl. cross-series pairs' :
-          'Best row-to-row potency-trend correlation (SAR transfer)', 'chem-sar-chip-transfer'));
+        'Strongest SAR-transfer correlation between this series and another', 'chem-sar-chip-transfer'));
     }
     return ui.divH(items, 'chem-sar-chips');
   }
@@ -2621,70 +2738,14 @@ export class SarMatrixViewer extends DG.JsViewer {
       'potency (μ) or molecular weight (MW). Columns keep their order; only the caption is added.');
     controls.push(labelInput.root);
 
-    // Bounds span every matrix, not just this one, so moving between matrices does not shift the track
-    // under the handle and a threshold means the same thing wherever it is set.
-    const activities: number[] = [];
-    for (const m of this.matrices) {
-      if (m.realCount) {
-        activities.push(m.minActivity);
-        activities.push(m.maxActivity);
-      }
-    }
-    const cellBounds = this.sliderBounds(activities);
-    const cellNeutral = this.higherIsBetter ? cellBounds.lo : cellBounds.hi;
-    const cellInput = ui.input.float(this.higherIsBetter ? 'Min value' : 'Max value', {
-      value: this.cellMin ?? cellNeutral,
-      min: cellBounds.lo,
-      max: cellBounds.hi,
-      step: cellBounds.step,
-      showSlider: cellBounds.hi > cellBounds.lo,
-      showPlusMinus: false,
-      onValueChanged: (value) => {
-        const raw = (value === null || value === undefined || Number.isNaN(value)) ? cellNeutral : value;
-        const picked = Math.round(Math.round(raw / cellBounds.step) * cellBounds.step * 100) / 100;
-        this.cellMin = picked === cellNeutral ? null : picked;
-        this.applyCellFilter(); // filter + repaint the live grid; no rebuild
-      },
-    });
-    ui.tooltip.bind(cellInput.root, () => 'Keep only compounds at least this potent — the rest are left ' +
-      'blank, and any row or column with nothing left is dropped. At the far end nothing is filtered.');
-    controls.push(cellInput.root);
-
-    // How many measured compounds a prediction rests on. Capped at the largest present, so the slider
-    // cannot be dragged into a range that would blank every prediction on every matrix.
-    let maxRefs = 0;
-    for (const m of this.matrices) {
-      for (const row of m.cells) {
-        for (const c of row) {
-          if (c.kind === 'virtual')
-            maxRefs = Math.max(maxRefs, c.references ?? 0);
-        }
-      }
-    }
-    // Only offered when predictions exist to thin out — with virtual analogs switched off it would be a
-    // control that cannot change anything on screen.
-    if (this.predictVirtual && maxRefs > 0) {
-      // Shortened to fit the label column; the tooltip carries the full meaning.
-      const refsInput = ui.input.int('Min references', {
-        value: this.minSupport,
-        min: 0,
-        max: maxRefs,
-        step: 1,
-        showSlider: true,
-        showPlusMinus: false,
-        onValueChanged: (value) => {
-          this.minSupport = (value === null || value === undefined || Number.isNaN(value)) ? 0 :
-            Math.max(0, Math.round(value));
-          this.applyCellFilter();
-        },
-      });
-      ui.tooltip.bind(refsInput.root, () => 'Hide virtual analogs resting on fewer than this many ' +
-        'measured compounds — the ones listed as "Measured with this core" and "Measured with this ' +
-        'substituent" when a cell is open. A prediction with one reference point is extrapolating from ' +
-        'a single neighbour. Observed compounds are never hidden by this.');
-      controls.push(refsInput.root);
-    } else
-      this.minSupport = 0; // no control to clear it with, so it must not stay silently applied
+    // Every filter lives behind one icon: the two sketchers would dwarf the bar, and splitting the
+    // cell cuts away from them left two places to look for "why is this cell blank".
+    const filterIcon = ui.icons.filter(() => {
+      ui.showPopup(ui.div(this.structureFilterRoot(), 'chem-sar-struct-filters'),
+        filterIcon, {vertical: true});
+    }, 'Filter cells by potency, reference points, core and R-group');
+    filterIcon.classList.add('chem-sar-struct-icon');
+    controls.push(filterIcon);
     const controlBar = ui.divH(controls, 'chem-sar-control-bar');
 
     // Every row of this pane shows the same matrix and the same visible columns; the Vary filter
