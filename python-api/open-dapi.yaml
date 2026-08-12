@@ -88,7 +88,7 @@ paths:
     post:
       operationId: applySchema
       summary: apply schema
-      description: "Applies a partial manifest to a user-managed schema: body {tables?, propertySchemas?, dropTables?, ifVersion?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. Requires Edit on the schema entity."
+      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, ifVersion?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. On a user-managed schema this requires Edit and ifVersion tracks the schema's apply counter. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
       tags:
         - domains
       parameters:
@@ -326,7 +326,7 @@ paths:
     post:
       operationId: getFacets
       summary: get facets
-      description: "Batched facet computation for filter panels (entity-filters §5.1): spec = {filter, facets: [{id, kind: categories|histogram|minMax|count|plan, column?|columns?, limit?, search?, bins?, min?, max?}]}. Each facet is computed under all other filters (conditions on its own column stripped); counts respect the row predicate and column security."
+      description: "Batched facet computation for filter panels (entity-filters §5.1): spec = {filter, facets: [{id, kind: categories|histogram|minMax|count|plan, column?|columns?, limit?, search?, bins?, min?, max?, stripSelf?}]}. Each facet is computed under all other filters (conditions on its own column stripped); a histogram facet may pass stripSelf: false to keep them (buckets under the full filter). Counts respect the row predicate and column security."
       tags:
         - domains
       parameters:
