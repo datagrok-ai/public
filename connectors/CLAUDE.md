@@ -44,8 +44,11 @@ Use `/test-connectors` to run tests.
 ### Docker
 
 ```bash
-# Build image
+# Build the main image (all providers on lean/patched drivers)
 docker build -t grok_connect .
+
+# Build the extended image (CVE-quarantined drivers: Neptune, Impala)
+docker build --build-arg FLAVOR=extended --build-arg GROK_CONNECT_PROVIDERS="Neptune,Impala" -t grok_connect_extended .
 
 # Run container
 docker run -p 1234:1234 grok_connect
@@ -456,6 +459,11 @@ Default settings (can be overridden):
 ## Notes
 
 - Java 8 is required (some JDBC drivers don't support newer versions)
+- Two image flavors from one codebase: `datagrok/grok_connect` (main) and `datagrok/grok_connect_extended`
+  (opt-in; ships only the CVE-quarantined drivers — Amazon Neptune 3.0.3, Cloudera Impala). The `FLAVOR`
+  build arg prunes `lib/`; `GROK_CONNECT_PROVIDERS` (comma-separated `descriptor.type` values, empty = all)
+  limits what a running instance advertises. ProviderManager also probes each provider's driver class and
+  skips providers whose driver jar is absent, so `/conn` never advertises a provider that cannot connect.
 - JDBC drivers in `lib/` are not managed by Maven (pre-built)
 - Kotlin is used only for SAP HANA provider and utilities
 - TestContainers tests require Docker to be running

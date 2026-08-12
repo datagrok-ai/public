@@ -19,6 +19,8 @@ RUN mvn dependency:go-offline --fail-never
 COPY $GROK_CONNECT_SOURCE_DIR /tmp/connectors
 ARG GROK_CONNECT_DIR
 ARG DEBIAN_FRONTEND=noninteractive
+# main: every driver except the CVE-quarantined ones; extended: only those (see EXTENDED_JARS)
+ARG FLAVOR=main
 RUN set -ex ; \
     savedAptMark="$(apt-mark showmanual)" ; \
     apt-get update ; \
@@ -29,6 +31,14 @@ RUN set -ex ; \
     mvn -Dmaven.test.skip=true package ; \
     mkdir -p ${GROK_CONNECT_DIR} ; \
     mv /tmp/connectors/grok_connect/lib ${GROK_CONNECT_DIR}/lib ; \
+    EXTENDED_JARS="amazon-neptune-jdbc-driver-3.0.3-all.jar ImpalaJDBC42.jar" ; \
+    cd ${GROK_CONNECT_DIR}/lib ; \
+    if [ "$FLAVOR" = "extended" ] ; then \
+      for f in * ; do case " $EXTENDED_JARS " in *" $f "*) ;; *) rm -f "$f" ;; esac ; done ; \
+    else \
+      rm -f $EXTENDED_JARS ; \
+    fi ; \
+    cd /tmp/connectors ; \
     mv /tmp/connectors/grok_connect/target/grok_connect-*.jar ${GROK_CONNECT_DIR}/grok_connect.jar ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
@@ -54,6 +64,9 @@ RUN groupadd --gid 2001 grok ; \
 
 COPY --chown=grok:grok --from=grok_connect_builder ${GROK_CONNECT_DIR} ${GROK_CONNECT_DIR}
 COPY $GROK_CONNECT_SOURCE_DIR/grok_connect/northwind ${HOME_DIR}/northwind
+# comma-separated provider allowlist; empty = all whose driver is present (see ProviderManager)
+ARG GROK_CONNECT_PROVIDERS=""
+ENV GROK_CONNECT_PROVIDERS=${GROK_CONNECT_PROVIDERS}
 # https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/jvm-ttl-dns.html
 RUN echo "networkaddress.cache.ttl=5" >> $JAVA_HOME/jre/lib/security/java.security
 

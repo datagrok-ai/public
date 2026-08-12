@@ -1,13 +1,12 @@
 # Grok Connect changelog
 
-# 2.7.3
+# 2.8.0
 
+* GROK-18695: Split into two images built from one codebase: `datagrok/grok_connect` (main — all providers on lean or patched drivers) and `datagrok/grok_connect_extended` (opt-in; quarantines the drivers with unfixable CVE surface: Amazon Neptune 3.0.3 and Cloudera Impala). Docker `FLAVOR` build arg prunes `lib/`; runtime provider set = `GROK_CONNECT_PROVIDERS` env allowlist (empty = all) intersected with a driver-presence probe, so a provider whose driver jar is absent is never advertised on `/conn`
+* ProviderManager: reflective, fault-tolerant provider registration (a broken/missing provider logs a warning instead of failing startup). HBase is no longer advertised — it has shipped without its Phoenix driver and could never connect
 * GROK-18695: Driver refresh sweep (keep providers in main image on patched drivers): hive-jdbc + hive-standalone-metastore-common 4.0.0-alpha-2 → 4.0.1 (last Java-8 build; clears hive-service CVE-2024-23945), hadoop-common 3.4.3, zookeeper pin 3.9.5, postgresql 42.7.13, mysql-connector-j 9.7.0, mariadb 3.5.10, cassandra java-driver 4.17.0, clickhouse-jdbc 0.6.5, mongodb-driver 3.12.14, sqlite-jdbc 3.53.2.1, Oracle ojdbc8/xdb/xmlparserv2 23.26.3.0.0, SAP ngdbc 2.29.7, terajdbc 20.00.00.58, jackcess 4.0.11, org.json 20260719, dnsjava 3.6.5, nimbus-jose-jwt 9.48, gson 2.14.0, BouncyCastle jdk15on 1.70 → jdk18on 1.85.x
 * GROK-18695: Widened the hive-jdbc jline exclusion to `org.jline:*` (drops jline-remote-telnet 3.22.0, GHSA HIGHs)
 * GROK-18695: Athena: migrated from the discontinued Simba 2.x driver (`AthenaJDBC42-2.0.35.1000.jar`, embedded jackson 2.14.0 / log4j 2.17.1) to the first-party AWS Athena JDBC v3 driver 3.8.0 (lean jar + AWS SDK v2 from Maven, so netty stays on the patched bom pin). Driver class `com.amazon.athena.jdbc.AthenaDriver`, URL `jdbc:athena://`; credentials now passed as `User`/`Password`/`SessionToken`; `S3OutputLocation`/`Schema`/`S3OutputEncOption` mapped to v3 `OutputLocation`/`Database`/`EncryptionOption`; legacy `SocketTimeout`/`UseResultsetStreaming` jdbc properties translated/dropped; CSE_KMS results fall back to the `GetQueryResults` fetcher
-
-# 2.7.2
-
 * GROK-18695: Security — driver updates: databricks-jdbc 2.6.40 → 2.8.3 (embeds jackson 2.21.5, clears CVE-2026-54512/13 + log4j 2.20/netty-common 4.1.86 rows), redshift-jdbc42 2.1.0.28 → 2.2.8, mssql-jdbc 12.8.2 → 12.10.2.jre8 (clears CVE-2025-59250), logback 1.2.13 → 1.3.16, netty pins 4.1.135 → 4.1.137.Final (new 2026 netty advisories)
 * GROK-18695: Security — removed the unused CData DynamoDB driver jar (provider was already unregistered) and the direct `commons-lang:2.4` dependency (`NotImplementedException` → `UnsupportedOperationException`)
 * Fixed `grok_connect.sh` referencing a stale hardcoded jar version

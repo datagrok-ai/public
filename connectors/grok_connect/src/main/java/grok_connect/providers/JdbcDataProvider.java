@@ -38,6 +38,10 @@ public abstract class JdbcDataProvider extends DataProvider {
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
 
+    public String getDriverClassName() {
+        return driverClassName;
+    }
+
     public void prepareProvider() throws GrokConnectException {
     }
 
