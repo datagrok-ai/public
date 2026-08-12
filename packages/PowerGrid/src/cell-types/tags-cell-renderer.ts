@@ -151,7 +151,40 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     return items;
   }
 
-  private getColor(gridColumn: DG.GridColumn, tag: string): number {
+  /** Tag → index in the exact list the platform's categorical color editor shows
+   * (split by the multi-value separator, trimmed, deduped, sorted when the separator
+   * tag is set; raw category order otherwise), so default colors match the editor.
+   * Cached by column version. */
+  private tagIndexes(gridColumn: DG.GridColumn, col: DG.Column): Map<string, number> {
+    const cached = gridColumn.temp['tagIndexes'];
+    if (cached?.version === col.version)
+      return cached.indexes;
+    let sep = col.getTag(DG.Tags.MultiValueSeparator);
+    let values: string[];
+    if (!sep)
+      values = col.categories;
+    else {
+      if (sep === '\\n') sep = '\n';
+      const set = new Set<string>();
+      for (const cat of col.categories)
+        for (const s of cat.split(sep).map((x: string) => x.trim()))
+          if (s) set.add(s);
+      values = [...set].sort();
+    }
+    const indexes = new Map(values.map((v, i) => [v, i]));
+    gridColumn.temp['tagIndexes'] = {version: col.version, indexes};
+    return indexes;
+  }
+
+  private getColor(gridCell: DG.GridCell, tag: string): number {
+    const gridColumn = gridCell.gridColumn;
+    const defined: number | string | undefined = gridColumn.categoryColors?.[tag];
+    if (defined != null)
+      return typeof defined === 'string' ? DG.Color.fromHtml(defined) : defined;
+    const col = gridCell.tableColumn;
+    const idx = col ? this.tagIndexes(gridColumn, col).get(tag) : undefined;
+    if (idx !== undefined)
+      return DG.Color.getCategoricalColor(idx);
     const colors = gridColumn.temp['catColors'] ??= {};
     return colors[tag] ??= DG.Color.getCategoricalColor(Object.keys(colors).length);
   }
@@ -173,7 +206,7 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
     const layout = this.calculateLayout(g, w, h, values);
 
     for (const item of layout) {
-      const color = this.getColor(gridCell.gridColumn, item.tag);
+      const color = this.getColor(gridCell, item.tag);
       g.fillStyle = DG.Color.toHtml(color);
       g.roundRect(x + item.x, y + item.y, item.width, item.height, 4);
       g.fill();

@@ -4,6 +4,7 @@
 
 * Introduced SVG cell renderer with content-based LRU caching for canvas rendering
 * Added SVG semantic type auto-detector
+* Tags cell renderer: Tags are colored consistently with the Colors panel — explicitly assigned category colors apply, and default colors follow the categorical color editor's value order instead of first-seen order
 * Tags cell renderer: Fixed missing return in `getColor` that left first render of a new tag with an undefined color
 * Tags cell renderer: Fixed empty cells painting a zero-width chip (empty tokens are dropped after the split)
 * Pie chart sparkline: Filter null columns in hit-test so hovering with stale/missing column names no longer throws
