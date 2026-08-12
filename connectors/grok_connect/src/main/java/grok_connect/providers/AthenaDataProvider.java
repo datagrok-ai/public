@@ -16,7 +16,7 @@ import serialization.Types;
 
 public class AthenaDataProvider extends JdbcDataProvider {
     public AthenaDataProvider() {
-        driverClassName = "com.simba.athena.jdbc.Driver";
+        driverClassName = "com.amazon.athena.jdbc.AthenaDriver";
 
         Property encode = new Property(Property.STRING_TYPE, DbCredentials.S3OutputEncOption,
                 "The encryption protocol that the driver uses to encrypt your query results "
@@ -77,18 +77,9 @@ public class AthenaDataProvider extends JdbcDataProvider {
         }};
 
         descriptor.jdbcPropertiesTemplate = new ArrayList<Property>() {{
-            add(new Property(Property.INT_TYPE, "SocketTimeout",
-                    "The amount of time, in seconds, that the connector waits for data to be transferred\n" +
-                            "over an established, open connection before timing out the connection.\n" +
-                            "A value of 0 indicates that the connector never times out the connection. Default value is 50.", new Prop()));
-
-            add(new Property(Property.INT_TYPE, "UseResultsetStreaming",
-                    "This property specifies whether the connector uses the AWS result set streaming API\n" +
-                            "for result set fetching. If you are connecting to Athena through a proxy server, make sure that the\n" +
-                            "proxy server does not block port 444. The result set streaming API uses port\n" +
-                            "444 on the Athena server for outbound communications. By default 0 for Datagrok.\n" +
-                            "1: The connector uses the result set streaming API.\n" +
-                            "0: The connector uses pagination logic for result set fetching.", new Prop()));
+            add(new Property(Property.INT_TYPE, "NetworkTimeoutMillis",
+                    "The amount of time, in milliseconds, that the driver waits for a network\n" +
+                            "connection to be established, including the time to send API requests.", new Prop()));
         }};
     }
 
@@ -99,33 +90,40 @@ public class AthenaDataProvider extends JdbcDataProvider {
 
     @Override
     public String getConnectionStringImpl(DataConnection conn) {
-        String formatString;
+        String region = conn.get(DbCredentials.REGION_ID);
         String vpc = conn.get(DbCredentials.VPC_ENDPOINT);
-        if (GrokConnectUtil.isEmpty(vpc))
-            formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;";
-        else
-            formatString = vpc + ".athena.%s.vpce.amazonaws.com:443;";
-        return String.format(formatString,
-                conn.get(DbCredentials.REGION_ID));
+        String url = String.format("jdbc:athena://Region=%s;", region);
+        if (GrokConnectUtil.isNotEmpty(vpc))
+            url += String.format("AthenaEndpoint=%s.athena.%s.vpce.amazonaws.com:443;", vpc, region);
+        return url;
     }
 
     @Override
     public Properties getProperties(DataConnection conn) {
         Properties properties = getJdbcProperties(conn);
+        // v2 (Simba) knobs that may persist on saved connections; v3 names differ
+        properties.remove("UseResultsetStreaming");
+        Object socketTimeout = properties.remove("SocketTimeout");
+        if (socketTimeout != null && !properties.containsKey("NetworkTimeoutMillis"))
+            properties.put("NetworkTimeoutMillis", String.valueOf(Long.parseLong(socketTimeout.toString()) * 1000));
         String accessKey = (String) conn.credentials.parameters.get(DbCredentials.ACCESS_KEY);
         String secretKey = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
         if (GrokConnectUtil.isNotEmpty(accessKey) && GrokConnectUtil.isNotEmpty(secretKey)) {
-            properties.put("AwsCredentialsProviderClass", "grok_connect.utils.CustomAthenaSessionCredentialsProvider");
-            properties.put("AwsCredentialsProviderArguments", buildArguments(accessKey, secretKey, (String) conn.credentials.parameters.get("token")));
+            properties.put("User", accessKey);
+            properties.put("Password", secretKey);
+            String token = (String) conn.credentials.parameters.get("token");
+            if (GrokConnectUtil.isNotEmpty(token))
+                properties.put("SessionToken", token);
         }
 
         if (!conn.hasCustomConnectionString()) {
-            setIfNotNull(properties, "S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
-            setIfNotNull(properties, "Schema", conn.getDb());
-            setIfNotNull(properties, "S3OutputEncOption", conn.get(DbCredentials.S3OutputEncOption));
+            setIfNotNull(properties, "OutputLocation", conn.get(DbCredentials.S3OutputLocation));
+            setIfNotNull(properties, "Database", conn.getDb());
+            setIfNotNull(properties, "EncryptionOption", conn.get(DbCredentials.S3OutputEncOption));
         }
-        if (!properties.containsKey("UseResultsetStreaming"))
-            properties.setProperty("UseResultsetStreaming", "0");
+        // the streaming-results client isn't shipped; CSE_KMS results can't use the direct S3 fetcher
+        if ("CSE_KMS".equals(properties.get("EncryptionOption")))
+            properties.put("ResultFetcher", "GetQueryResults");
         return properties;
     }
 
@@ -190,30 +188,4 @@ public class AthenaDataProvider extends JdbcDataProvider {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
 
-    private static String escapeArg(String value) {
-        if (value == null) return "";
-        String escaped = value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"");
-        if (escaped.contains(",")) {
-            escaped = "\"" + escaped + "\"";
-        }
-        return escaped;
-    }
-
-    private static String buildArguments(String accessKey, String secretKey, String sessionToken) {
-        if (sessionToken == null || sessionToken.isEmpty()) {
-            return String.join(",",
-                    escapeArg(accessKey),
-                    escapeArg(secretKey)
-            );
-        }
-        else {
-            return String.join(",",
-                    escapeArg(accessKey),
-                    escapeArg(secretKey),
-                    escapeArg(sessionToken)
-            );
-        }
-    }
 }

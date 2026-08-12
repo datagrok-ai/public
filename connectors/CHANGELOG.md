@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.7.3
+
+* GROK-18695: Athena: migrated from the discontinued Simba 2.x driver (`AthenaJDBC42-2.0.35.1000.jar`, embedded jackson 2.14.0 / log4j 2.17.1) to the first-party AWS Athena JDBC v3 driver 3.8.0 (lean jar + AWS SDK v2 from Maven, so netty stays on the patched bom pin). Driver class `com.amazon.athena.jdbc.AthenaDriver`, URL `jdbc:athena://`; credentials now passed as `User`/`Password`/`SessionToken`; `S3OutputLocation`/`Schema`/`S3OutputEncOption` mapped to v3 `OutputLocation`/`Database`/`EncryptionOption`; legacy `SocketTimeout`/`UseResultsetStreaming` jdbc properties translated/dropped; CSE_KMS results fall back to the `GetQueryResults` fetcher
+
 # 2.7.2
 
 * GROK-18695: Security — driver updates: databricks-jdbc 2.6.40 → 2.8.3 (embeds jackson 2.21.5, clears CVE-2026-54512/13 + log4j 2.20/netty-common 4.1.86 rows), redshift-jdbc42 2.1.0.28 → 2.2.8, mssql-jdbc 12.8.2 → 12.10.2.jre8 (clears CVE-2025-59250), logback 1.2.13 → 1.3.16, netty pins 4.1.135 → 4.1.137.Final (new 2026 netty advisories)
