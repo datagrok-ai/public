@@ -8,17 +8,20 @@ Non-Compartmental Analysis (PK).
 src/nca/
   index.ts                          # Public namespace entry — re-exports core
   README.md                         # Module overview + quickstart
-  core/    
+  core/
+    index.ts                        # Authoritative export list for the namespace
     types.ts                        # ProfileInputs, NcaRules, ComputeResult, BlqStrategy, LambdaZStrategy, ParameterValues, ProfileProvenance, RouteCode
     prng.ts                         # mulberry32 + deriveWorkerSeeds
     blq.ts                          # applyBlqStrategy — 4 BLQ rules × 4 phases
     auc.ts                          # AUC: 3 methods × {naive, Neumaier-compensated} = 6 + neumaierSum + aucExtrapolateToInfinity
     aumc.ts                         # AUMC first-moment: 3 methods × {naive, compensated} = 6 + two-term aumcExtrapolateToInfinity
     cmax.ts                         # findCmax — first-occurrence Cmax/Tmax
-    lambda-z.ts                     # lambdaZBestFit (auto subset, adj-R² + tie-break) + lambdaZManual; centered-sum OLS
-    c0.ts                           # estimateC0 + insertC0 — IV bolus back-extrapolation;
+    lambda-z.ts                     # lambdaZBestFit (auto subset; PKNCA/WinNonlin flat-tolerance adj-R² tie-break — most points within adjRSquaredFactor of the global-max adj-R²) + lambdaZManual; centered-sum OLS; reports spanRatio (diagnostic only, never gates)
+    c0.ts                           # estimateC0 + insertC0 — IV bolus back-extrapolation (PKNCA c0/logslope/c1/cmin/set0 method chain)
     derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated, meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag
-    compute-nca.ts                  # computeNca orchestrator — full pipeline
+    compute-nca.ts                  # computeNca orchestrator — full per-profile pipeline
+    sparse.ts                       # sparseAuc + buildCompositeProfile — composite AUClast for destructive/batch designs; Holder covariance SE, Nedelman-Jia Satterthwaite df, Student-t CI
+    bootstrap.ts                    # summarizeBootstrap — stratified-by-timepoint resampling + BCa interval for the nonlinear parameters, with a self-suppression gate
     __tests__/                      # Per-module tests + reference-suite vs fixtures
   __tests__/                        # Cross-module assets
     datasets/                       # CSV inputs (committed)
@@ -35,8 +38,18 @@ src/nca/
 
 - **Status flag separates degeneracy modes**: `'failed'` (no measurable point), `'partial'` (Cmax/AUClast computed but lambda_z not estimable → no AUCinf, t½, CL, Vz), `'ok'` (all parameters). All numeric fields default to `NaN` when not computed.
 
+- **Span ratio is a diagnostic, NOT a gate**: `LambdaZResult.spanRatio` = `(tEnd − tStart)/halfLife` is always reported; `LambdaZStrategy.minSpanRatio` only decides whether `computeNca` emits a `LAMBDAZ_LOW_SPAN` warning. It must never discard a candidate window, never make `lambdaZBestFit` return `null`, never touch `status`. The selected fit is identical with the threshold set and unset — asserted in both `lambda-z.test.ts` and `compute-nca.test.ts`, and that identity IS the contract. Defaults to `undefined`, deliberately not to PKNCA's 2: gating at 2 would flip 4 of the 27 reference profiles off the lambda_z PKNCA returns, destroying the parity the fixtures exist to protect. Full rationale is on the `LambdaZResult.spanRatio` TSDoc — don't restate it in a third place.
+
 - **Reference data lives with tests**: CSV inputs in `__tests__/datasets/` and JSON fixtures in `__tests__/fixtures/` are committed source artifacts. Regenerate via `__tests__/regen-fixtures.R` + `merge-fixtures.mjs` (PKNCA 0.12.1 oracle) — see `__tests__/REGEN.md`.
 
 - **Route gates live in the orchestrator, not the kernels**: `vss` is `NaN` for non-IV routes (an extravascular Vss would be `Vss/F` confounded by absorption); `tlag` is `NaN` for IV routes (no absorption phase). `meanResidenceTime`/`volumeSteadyState`/`tlag` stay pure and route-agnostic; `computeNca` applies the gate and copies the `NaN` sentinel. The writer in nca-studio copies the sentinel — it never re-derives the gate.
 
 - **AUMC has its OWN moment kernels** (`aumc.ts`), not AUC of a `t·C` array — the log-linear interval has a distinct closed form. The infinite tail is **two-term** (`(tLast·cLast)/λz + cLast/λz²`); the one-term form silently under-reports AUMC/MRT/Vss. MRT is a single unified column for all routes (`aumcInf/aucInf − T_inf/2`, `T_inf = 0` for bolus/EV).
+
+- **Sparse is a separate entry point, not a mode of `computeNca`**: destructive/batch designs make per-subject NCA undefined, so `sparseAuc` takes a different input shape (`SparseInput` — flat columnar over animal × nominal time) and returns a different result. There is no fallback path between the two, and `computeNca` must not grow one.
+
+- **Sparse topology comes from the data, never from the label**: the r_ij overlap matrix decides destructive / batch / serial; a caller-supplied `declaredTopology` is only cross-checked (`SPARSE_TOPOLOGY_MISMATCH`). One code path covers all three because Holder's covariance estimator reduces to Bailer's when every r_ij = 0 — don't branch on topology.
+
+- **`blq.ts` is deliberately NOT reused by `sparse.ts`**: the phase model (preFirstMeasurable / embedded / afterLast) is a per-profile time-ordering concept, and the composite pools many animals at ONE nominal timepoint where no phase exists. Only the `BlqRule` type and its per-rule semantics are shared, and BLQ is imputed **before** averaging. Routing sparse through `applyBlqStrategy` looks like de-duplication but forces an ill-fitting model.
+
+- **The bootstrap suppresses itself instead of returning a fake interval**: `summarizeBootstrap` returns `suppressed: true` + `suppressReason` when the design is combinatorially degenerate (`h = Π_i C(2n_i − 1, n_i) ≤ 360`, an unconditional floor) or any timepoint falls below the calibrated `minNPerTimepoint`. Callers fall back to the closed-form CI, which is **never** gated. Don't add a force/override flag — the suppression IS the result.

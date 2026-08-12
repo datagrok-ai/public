@@ -36,7 +36,7 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       const dfDemog = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       grok.shell.addTableView(dfDemog);
       await new Promise((r) => setTimeout(r, 1500));
-      const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       const tvSpgi = grok.shell.addTableView(dfSpgi);
       await new Promise((r) => setTimeout(r, 1500));
       const radar = tvSpgi.addViewer('Radar');

@@ -79,6 +79,19 @@ GROK-20316: Added a `dapi2.domains` generated-client smoke test (`queryRows` ove
 GROK-20315: Added `Dapi: domains batch` suite for the phase-2 `grok.dapi.domains` surface (batch upload via CSV/DataFrame/d42/Parquet, upsert counts, partial-success reports, multi-entity transactions with `$ref` + rollback, aggregate, `queryDf` values and column tags) plus the `item_event` detail table in `databases/apitests/schema.json`.
 
 GROK-20307: Added `Dapi: domains` suite for `grok.dapi.domains` (row CRUD, optimistic concurrency, business-key dedup, promote, audit) over the new `databases/apitests/schema.json` fixture schema.
+* Tests: added the `Undo` category covering the new `grok.shell.undo/redo/canUndo/canRedo/onUndo/onRedo` and `DG.UndoService` surface — push/undo/redo round trip, multi-level LIFO, event firing, release of records on table close, and one-way records
+* Tests: fixed `Undo: multi-level LIFO` / `onUndo fires` — `UndoService.contextCheck` only applies records whose context is the current table, so the tests now take the view before undoing (the Dart-side suite gets the same isolation by nulling `contextCheck`, which JS callers cannot do)
+* Tests: split `Dapi: all data sources` into 14 per-source tests (`all data sources: queries` … `environments`) — the combined test summed 14 sequential round trips and drew one misleading 3s+ band in the stress report at high concurrency instead of showing per-endpoint latency
+* GROK-20443: Node runner: default `--mode` flipped to `stress` — `grok stresstest` passes no mode flag, so the `functional` default silently tripled the nightly Stress-Tests workload (29 → 105 tests) and fired false regression alerts; functional runs opt in via `--mode=functional` (`npm run start-node` updated)
+* Tests: fixed flaky `shell.route returns a View` — `shell.route` returns the current view, which is null when earlier tests close all views; the test now opens its own view and routes to it
+* Tests: annotated UI-independent categories (dapi, dataframe, functions, bitset, valuematcher, property, stats, shell) with `node: true` — `grok test` now runs them headless in Node before the browser pass; view/dialog/grid tests keep `node: false`
+* Tests: adopted DBTests' browser-bound tests as `DB: Data sync` / `DB: Client cache` / `DB: Benchmarks` (streaming into a table view, IndexedDB client cache, cached benchmarks) so DBTests runs fully headless
+
+* Moved SPGI test datasets (`SPGI-linked1/2`, `SPGI_v2_infinity`) from the Demo files root into the package (`files/datasets`); viewer tests now read `System:AppData/ApiTests/datasets/...`
+
+* Node runner: Expanded coverage from `dapi/` to all UI-independent categories (dataframe, functions, bitset, valuematcher, property, stats, shell); added `--mode functional|stress` (stress keeps the old stressTest-only behavior); per-file load errors no longer abort the run
+
+* Security: rebuilt `apitests-docker-test1` on `python:3.12-alpine` (+ `apk upgrade`, refreshed pip/setuptools/wheel) to clear base-OS CVEs (expat/krb5/openssl/musl) and stale Python tooling.
 
 Add `Dapi: entities.save (polymorphic)` tests covering Project and DataConnection round-trip via `grok.dapi.entities.save`.
 

@@ -1,6 +1,7 @@
-/** Saves and loads FuncFlow documents. .ffjson v2 — Rete-native. */
+/** Saves and loads FuncFlow documents (the `.flow` JSON payload, v2). */
 
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 import {FlowEditor} from '../rete/flow-editor';
 import {createNode, ensureFunctionsRegistered} from '../rete/node-factory';
@@ -28,6 +29,7 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
   }));
 
   const annotations = flow.getAnnotations().map((a) => a.toDoc());
+  const groups = flow.getGroups().map((g) => g.toDoc());
 
   let author = 'unknown';
   try {author = grok.shell.user?.login ?? 'unknown';} catch { /* no shell */ }
@@ -42,20 +44,18 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
     nodes,
     connections,
     annotations,
+    groups,
     metadata: {settings},
   };
 }
 
-/** Deserialize into the editor. Clears the editor first. Skips nodes whose
- *  registered type is not currently known (e.g. a DG.Func that disappeared).
- *  Connections referencing missing nodes are silently skipped. */
+/** Clears the editor first; unknown node types and connections referencing missing nodes are skipped. */
 export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): Promise<void> {
-  // DG-func node factories exist only after catalog registration; make it
-  // deterministic here so no load path can race the view's deferred timer.
+  // DG-func factories exist only after catalog registration — no load path may race the view's deferred timer.
   ensureFunctionsRegistered();
   await flow.clear();
 
-  // Map old node ids → new node ids (Rete generates a fresh id on construction).
+  // Old node id → new node id (Rete generates a fresh id on construction).
   const idMap = new Map<string, string>();
 
   for (const docNode of doc.nodes) {
@@ -67,12 +67,11 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     node.label = docNode.label;
     node.properties = {...docNode.properties};
     node.inputValues = {...docNode.inputValues};
-    // Migration: older saves carried the per-node annotation in
-    // properties.description before we promoted it to a top-level field.
+    // Migration: older saves carried the per-node annotation in properties.description.
     node.description = docNode.description ?? String(docNode.properties?.description ?? '');
     delete (node.properties as Record<string, unknown>).description;
     node.collapsed = docNode.collapsed === true;
-    await flow.addNodeAt(node, docNode.pos.x, docNode.pos.y);
+    await flow.addNodeAt(node, docNode.pos?.x ?? 0, docNode.pos?.y ?? 0);
     idMap.set(docNode.id, node.id);
   }
 
@@ -80,7 +79,13 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     const source = idMap.get(c.source);
     const target = idMap.get(c.target);
     if (!source || !target) continue;
-    await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
+    try {
+      await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
+    } catch (e) {
+      // A slot key that no longer exists (renamed/removed func parameter) — skip the wire, keep loading.
+      console.warn(`FuncFlow: skipped connection ${c.sourceOutput} → ${c.targetInput}: ${(e as Error).message}`);
+      continue;
+    }
     if (c.waypoints && c.waypoints.length > 0) {
       // Match by source/target/keys since the new connection has a fresh id.
       const newConn = flow.getConnections().find((nc) =>
@@ -95,22 +100,38 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
   if (doc.annotations) {
     for (const a of doc.annotations) flow.addAnnotation(a);
   }
+
+  if (doc.groups) {
+    for (const gd of doc.groups) {
+      // Members resolve through idMap; a group whose nodes all vanished is dropped.
+      const memberIds = gd.memberIds
+        .map((mid) => idMap.get(mid))
+        .filter((mid): mid is string => mid !== undefined);
+      if (memberIds.length === 0) continue;
+      flow.createGroup(memberIds, {
+        title: gd.title,
+        description: gd.description,
+        minimized: gd.minimized,
+        pos: gd.pos,
+      });
+    }
+  }
 }
 
 export function downloadFlow(doc: FuncFlowDocument): void {
   const json = JSON.stringify(doc, null, 2);
-  const blob = new Blob([json], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${doc.name || 'flow'}.ffjson`;
-  a.click();
-  URL.revokeObjectURL(url);
+  DG.Utils.download(`${doc.name || 'flow'}.flow`, json, 'application/json');
 }
 
+/** Reads a `.flow` file: bare JSON or annotated script body. Inlined rather than
+ *  reusing parseFlowBody — flow-script-format imports this module. */
 export async function loadFlowFromFile(file: File): Promise<FuncFlowDocument> {
   const text = await file.text();
-  const doc = JSON.parse(text) as FuncFlowDocument;
+  const lines = text.split('\n');
+  let i = 0;
+  while (i < lines.length && (lines[i].trimStart().startsWith('//') || lines[i].trim() === ''))
+    i++;
+  const doc = JSON.parse(lines.slice(i).join('\n')) as FuncFlowDocument;
   if (doc.version !== '2.0')
     throw new Error(`Unsupported flow file version "${doc.version}"; expected 2.0`);
   return doc;

@@ -95,8 +95,8 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:ShowPcaPlot', {});
   }
 
-  export async function showGroupMeanCorrelation(): Promise<void> {
-    return await grok.functions.call('Proteomics:ShowGroupMeanCorrelation', {});
+  export async function abundanceCorrelation(): Promise<void> {
+    return await grok.functions.call('Proteomics:AbundanceCorrelation', {});
   }
 
   export async function showQcDashboard(): Promise<void> {
@@ -117,6 +117,10 @@ export namespace funcs {
 
   export async function exportEnrichmentInputs(): Promise<void> {
     return await grok.functions.call('Proteomics:ExportEnrichmentInputs', {});
+  }
+
+  export async function rankAbundance(): Promise<void> {
+    return await grok.functions.call('Proteomics:RankAbundance', {});
   }
 
   export async function enrichmentCharts(): Promise<void> {
@@ -151,6 +155,10 @@ export namespace funcs {
    */
   export async function publishedAnalysisPanelWidget(proteinId: string ): Promise<any> {
     return await grok.functions.call('Proteomics:PublishedAnalysisPanelWidget', { proteinId });
+  }
+
+  export async function proteomicsSettingsEditor(propList: any ): Promise<any> {
+    return await grok.functions.call('Proteomics:ProteomicsSettingsEditor', { propList });
   }
 
   export async function recoverPublishedProjectsOnStartup(): Promise<void> {

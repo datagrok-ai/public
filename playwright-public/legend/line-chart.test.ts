@@ -110,6 +110,7 @@ test('Line chart legend', async ({page}) => {
   await softStep('Sc3 steps 4-5 / Sc4 steps 6-7: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
       let pid: string | null = null;
+      let __layoutId: string | null = null;
       try {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
@@ -119,6 +120,13 @@ test('Line chart legend', async ({page}) => {
         proj.addChild(__ti);
         await (window as any).grok.dapi.tables.uploadDataFrame(__df);
         await (window as any).grok.dapi.tables.save(__ti);
+        // Attach the current viewer layout to the project so reopen restores the
+        // viewers (not just the table); otherwise shell.tv.viewers is empty after
+        // reopen and the legend/colour assertions find no viewer.
+        const __layout = (window as any).grok.shell.tv.saveLayout();
+        proj.addChild(__layout);
+        await (window as any).grok.dapi.layouts.save(__layout);
+        __layoutId = __layout.id;
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
@@ -129,6 +137,10 @@ test('Line chart legend', async ({page}) => {
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
+        // project.open() restores the table but NOT custom viewers — re-apply the saved
+        // layout so the viewer(s) are present for the checks below.
+        await new Promise((r) => setTimeout(r, 1500));
+        try { if (__layoutId) (window as any).grok.shell.tv.loadLayout(await (window as any).grok.dapi.layouts.find(__layoutId)); } catch (_) {}
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId: pid};
       }

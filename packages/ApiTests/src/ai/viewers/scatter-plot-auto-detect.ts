@@ -125,6 +125,48 @@ category('AI: Viewers: ScatterPlot auto-detect', () => {
     });
   }
 
+  test('range coexists with min/max when all three suffixes present', async () => {
+    const c = df([
+      nums('a', [1, 2, 3, 4, 5, 6, 7, 8]),
+      nums('a error range', [0.1, 0.2, 0.15, 0.25, 0.18, 0.22, 0.19, 0.21]),
+      nums('a error min', [0.8, 1.7, 2.6, 3.5, 4.4, 5.3, 6.2, 7.1]),
+      nums('a error max', [1.2, 2.3, 3.4, 4.5, 5.6, 6.7, 7.8, 8.9]),
+      nums('b', [10, 20, 30, 40, 50, 60, 70, 80]),
+      nums('b error range', [1, 2, 1.5, 2.5, 1.8, 2.2, 1.9, 2.1]),
+      nums('b error min', [9, 18, 28, 38, 48, 58, 68, 78]),
+      nums('b error max', [11, 22, 32, 42, 52, 62, 72, 82]),
+    ]).plot.scatter() as DG.ScatterPlotViewer;
+    const {xBase, yBase} = expectAxisPair(c, ['a', 'b']);
+    expect(c.props['xWhiskerRangeColumnName'], xBase + ' error range');
+    expect(c.props['xWhiskerMinColumnName'], xBase + ' error min');
+    expect(c.props['xWhiskerMaxColumnName'], xBase + ' error max');
+    expect(c.props['yWhiskerRangeColumnName'], yBase + ' error range');
+    expect(c.props['yWhiskerMinColumnName'], yBase + ' error min');
+    expect(c.props['yWhiskerMaxColumnName'], yBase + ' error max');
+  });
+
+  test('min-only suffix auto-detected without a matching max', async () => {
+    const c = buildPair(' whisker min').plot.scatter() as DG.ScatterPlotViewer;
+    const {xBase, yBase} = expectAxisPair(c, ['a', 'b']);
+    expect(c.props['xWhiskerMinColumnName'], xBase + ' whisker min');
+    expect(c.props['yWhiskerMinColumnName'], yBase + ' whisker min');
+    expectCleared(c.props['xWhiskerMaxColumnName']);
+    expectCleared(c.props['xWhiskerRangeColumnName']);
+  });
+
+  test('fallback axis pick skips whisker columns', async () => {
+    const c = df([
+      nums('a', [1, 2, 3, 4, 5, 6, 7, 8]),
+      nums('a min', [0.8, 1.7, 2.6, 3.5, 4.4, 5.3, 6.2, 7.1]),
+      nums('a max', [1.2, 2.3, 3.4, 4.5, 5.6, 6.7, 7.8, 8.9]),
+      nums('plain', [100, 200, 300, 400, 500, 600, 700, 800]),
+    ]).plot.scatter() as DG.ScatterPlotViewer;
+    expect(c.props['xColumnName'], 'a');
+    expect(c.props['xWhiskerMinColumnName'], 'a min');
+    expect(c.props['xWhiskerMaxColumnName'], 'a max');
+    expect(c.props['yColumnName'], 'plain');
+  });
+
   // === Tag-based detection ===
 
   test('tag "whisker.range" on numeric column drives axis pick + range slot', async () => {

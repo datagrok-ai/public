@@ -6,8 +6,12 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const datasets = [
-  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta', monomers: 39},
-  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm', monomers: 17},
+  // Split to Monomers emits one column per position = the MAX split width across all rows of the
+  // deployed fixture (splitAlignedSequences in @datagrok-libraries/bio/src/utils/splitter.ts).
+  // filter_FASTA.csv max sequence length = 38; filter_HELM.csv max monomer count = 10
+  // (PEPTIDE1{A.R.C.A.A.K.T.C.D.A}); filter_MSA.csv alignment width = 17.
+  {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv', units: 'fasta', monomers: 38},
+  {name: 'HELM', path: 'System:AppData/Bio/tests/filter_HELM.csv', units: 'helm', monomers: 10},
   {name: 'MSA', path: 'System:AppData/Bio/tests/filter_MSA.csv', units: 'separator', monomers: 17},
 ];
 // Opens the Bio top-menu and drills to a leaf, polling for each menu node instead of fixed sleeps.
@@ -171,8 +175,8 @@ for (const ds of datasets) {
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
         return cols.filter((c: any) => c.semType === 'Monomer').length;
       });
-      // N per-position Monomer columns = alignment width of the source (convert.md matrix / convert-run.md):
-      // FASTA -> 39, HELM -> 17, MSA -> 17. A broken split emitting a single column must fail here.
+      // N per-position Monomer columns = max split width across the source rows:
+      // FASTA -> 38, HELM -> 10, MSA -> 17. A broken split emitting a single column must fail here.
       expect(monCount - beforeMonCount).toBe(ds.monomers);
     });
     finishSpec();

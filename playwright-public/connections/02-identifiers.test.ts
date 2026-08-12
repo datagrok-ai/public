@@ -8,8 +8,8 @@ import {
   expandDbGroupWrapper,
   expandDbProvider,
   expandTreeNode,
+  ensureConnection,
   fillConnectionField,
-  findConnectionByFriendlyName,
   goHome,
   readMenuItems,
   rightClickTreeNode,
@@ -35,10 +35,14 @@ test.skip(!PG_PASSWORD, 'DG_PG_PASSWORD not set — scenario requires reachable 
 // 8. Reload, verify column no longer carries the semantic type
 
 const PROVIDER = 'Postgres';
-const CONNECTION = 'test_postgres';
+// Own subject, not 01's test_postgres: 03 renames that one away mid-run, and with files
+// spread across workers this suite has no say in when that happens.
+const CONNECTION = 'identifiers_test_postgres';
 // Server-side stored name (PascalCase'd from the friendly name) — used by the
 // platform when naming the inline Schemas/Catalogs wrapper under the connection.
-const CONN_SERVER_NAME = 'TestPostgres';
+// The Schemas/Catalogs wrapper is named after the connection in PascalCase, so derive it
+// rather than restate it - a renamed connection otherwise leaves this pointing at nothing.
+const CONN_SERVER_NAME = CONNECTION.split('_').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
 const CONNECTION_DASH = CONNECTION.replace(/_/g, '-');
 const SCHEMA = 'public';
 const TABLE = 'customers';
@@ -56,9 +60,7 @@ test.describe.serial('Connections / Identifiers', () => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
     await goHome(page);
-    const conn = await findConnectionByFriendlyName(page, CONNECTION);
-    if (!conn)
-      throw new Error(`prerequisite: connection "${CONNECTION}" must exist (run adding.test.ts first)`);
+    await ensureConnection(page, CONNECTION);
     // Probe the right-click menu for "Configure Identifiers..." — that
     // entry is provided by a plugin / feature not active on the
     // ephemeral CI Datlas, where the menu shows only Browse / New
@@ -163,10 +165,10 @@ test.describe.serial('Connections / Identifiers', () => {
     await applyAutomationSetup(page);
 
     // Open the customers table via the schema tree:
-    // Postgres → test_postgres → Schemas → public → customers → Get All.
-    // The Schemas wrapper's `name=` uses the *server-side* stored name
-    // (`TestPostgres`), not the friendly name (`test_postgres`); the schema
-    // tree nodes themselves use the dash-version of the friendly name.
+    // Postgres → connection → Schemas → public → customers → Get All.
+    // The Schemas wrapper's `name=` uses the server-side stored name (PascalCase of the
+    // friendly name, see CONN_SERVER_NAME); the schema tree nodes themselves use the
+    // dash-version of the friendly name.
     await expandDbProvider(page, PROVIDER);
     await expandDbConnection(page, PROVIDER, CONNECTION);
     await expandDbGroupWrapper(page, PROVIDER, CONN_SERVER_NAME, 'Schemas');
@@ -178,18 +180,19 @@ test.describe.serial('Connections / Identifiers', () => {
     await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 60_000 });
     await showContextPanel(page);
 
-    // Verify semType on the column server-side. This is the runtime answer to
-    // "is the identifier active?" — UI then renders blue text from this value.
+    // Verify semType on the column. This is the runtime answer to "is the identifier
+    // active?" — UI then renders blue text from this value.
     // SCOPE NOTE: visual blue-highlight verification belongs in identifiers-ui.md;
     // grid cells are canvas-rendered, so we cannot read pixel colours from the DOM.
-    const semType = await page.evaluate((col) => {
+    // Poll: semantic types are detected asynchronously, so the grid canvas exists before
+    // the column carries one — reading once here returned null on a slower stand.
+    await expect.poll(async () => page.evaluate((col) => {
       const g = (window as unknown as { grok: any }).grok;
       const tv = g.shell.tv;
       if (!tv) return null;
       const c = tv.dataFrame.col(col);
       return c ? c.semType : null;
-    }, COLUMN);
-    expect(semType).toBe(SEM_TYPE);
+    }, COLUMN), { timeout: 30_000, intervals: [500] }).toBe(SEM_TYPE);
   });
 
   test('3. Remove identifiers config and verify the column no longer carries the type', async ({ page }) => {

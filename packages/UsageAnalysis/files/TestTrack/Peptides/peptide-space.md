@@ -3,7 +3,8 @@ feature: peptides
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [peptide-space-sar-with-mcl]
+realizes_atlas: [peptide-space-sar-with-mcl]
+realizes: [bio.menu.analyze.sar, bio.viewer.sequence-space, peptides.viewer.active-peptide-selection, peptides.viewer.logo-summary-table]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/peptides/peptide-space.md
 migration_date: 2026-05-27

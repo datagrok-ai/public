@@ -1,8 +1,12 @@
 ---
 feature: legend
+realizes_atlas: []
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+realized_as:
+  - structure-rendering-spec.ts
 target_layer: playwright
 coverage_type: regression
-priority: p1
+priority: p2
 pyramid_layer: integration
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/structure-rendering.md
@@ -22,7 +26,7 @@ Verifies that when a legend is bound to a column of chemical structures (`Molecu
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`) and wait for `Molecule` semantic-type detection on the `Core` and `Structure` columns
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`) and wait for `Molecule` semantic-type detection on the `Core` and `Structure` columns
 2. Add seven viewers via the JS API: **Scatter plot**, **Histogram**, **Line chart**, **Bar chart**, **Pie chart**, **Trellis plot**, **Box plot**
 
 ## Scenarios
@@ -67,5 +71,5 @@ Verifies that when a legend is bound to a column of chemical structures (`Molecu
 ---
 {
   "order": 2,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

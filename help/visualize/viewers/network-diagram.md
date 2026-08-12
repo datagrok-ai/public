@@ -1,5 +1,12 @@
 ---
 title: "Network diagram"
+description: Visualize graphs where column values become nodes and rows become edges, with color and size coding.
+keywords:
+  - node-link graph
+  - network visualization
+  - graph diagram
+  - nodes and edges
+  - force-directed layout
 ---
 
 Network diagram visualizes graphs, where values of the specified two columns become nodes and rows become

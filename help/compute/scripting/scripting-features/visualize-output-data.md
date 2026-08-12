@@ -3,6 +3,14 @@ title: "Visualize output data"
 sidebar_position: 2
 mdx:
   format: mdx
+description: Attach and customize viewers such as scatter plots and line charts for script output dataframes.
+keywords:
+  - output dataframe viewer
+  - scatter plot annotation
+  - line chart annotation
+  - viewer properties
+  - camelCase viewer options
+  - regression line
 ---
 
 ```mdx-code-block

@@ -1,5 +1,12 @@
 ---
 title: "Conversion functions"
+description: Reference for functions that convert values between boolean, string, date, qualified number, and timespan types.
+keywords:
+  - conversion functions reference
+  - type casting functions
+  - parse string to number
+  - qualified number functions
+  - tostring toboolean
 ---
 
 *Function List:*

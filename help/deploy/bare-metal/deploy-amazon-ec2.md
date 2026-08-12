@@ -1,6 +1,13 @@
 ---
 title: "AWS EC2"
 sidebar_position: 2
+description: Run Datagrok on a single AWS EC2 instance configured with RDS for the database and S3 for file storage.
+keywords:
+  - aws ec2
+  - single instance deployment
+  - rds endpoint
+  - s3 bucket storage
+  - instance metadata credentials
 ---
 
 Use [Docker Compose on a regular host](deploy-regular.md) on a single EC2 instance,

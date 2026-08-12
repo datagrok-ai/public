@@ -1,14 +1,17 @@
-import {Subsector} from '../sparklines/piechart';
+import {NumericalDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export enum SectorType {
   SECTOR = 'sector',
   SUBSECTOR = 'subsector'
 }
 
-export interface VlaaivisColumnMetadata extends Subsector {
+// Vlaaivis always works with a desirability LINE plus min/max, i.e. the numerical member of
+// PropertyDesirability. Typing it on the union instead forces a narrowing check at every use.
+export type VlaaivisColumnMetadata = NumericalDesirability & {
+  name: string;
   groupName?: string;
   sectorColor?: string;
-}
+};
 
 export const TAGS = {
   VLAAIVIS_METADATA: '.vlaaivis-metadata',

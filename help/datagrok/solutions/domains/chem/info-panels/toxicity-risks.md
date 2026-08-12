@@ -1,5 +1,13 @@
 ---
 title: "Toxicity risks"
+description: Explains how Datagrok predicts toxicity risk alerts from structural fragments using precompiled RTECS-derived data.
+keywords:
+  - toxicity risk prediction
+  - mutagenicity alerts
+  - carcinogenicity fragments
+  - RTECS database
+  - structural fragment toxicity
+  - openchemlib
 ---
 
 From [openmolecules](https://www.openmolecules.org/properties/properties.html#tox):

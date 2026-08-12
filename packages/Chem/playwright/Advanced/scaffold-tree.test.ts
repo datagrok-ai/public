@@ -18,7 +18,7 @@ test('Chem: Scaffold Tree viewer smoke', async ({page}) => {
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { grok.shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     grok.shell.addTableView(df);
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});

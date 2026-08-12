@@ -1,4 +1,13 @@
-# Most Potent Residues
+---
+title: "Most Potent Residues"
+description: Identify the most potent monomer at each sequence position and display activity statistics per position.
+keywords:
+  - monomer position analysis
+  - peptide activity
+  - sequence-activity relationship
+  - mean difference
+  - p-value
+---
 
 The Most Potent Residues viewer identifies the most potent monomer at each position and displays relevant statistics. Statistics include mean difference, p-value, count and ratio. The algorithm analyzes activity distributions with position invariants to identify monomers with the highest activity for each position. You can adjust the viewer through the property panel to target either high or low activity values.
 

@@ -1,5 +1,16 @@
 # Compute2 changelog
 
+## v.next
+
+* RFV: Added a default Grid viewer for dataframe outputs without a viewer annotation (e.g. query results)
+* RFV: Added a "Save as project" export (visible tables and viewers; data sync when inputs are literals)
+* RFV: URL parameters as input overrides with auto-run, and a "Copy link with inputs" export
+
+## 1.5.10 (2026-08-07)
+
+* Fixed context help not showing for functions annotated with `readme` instead of `help`
+* Added a general-purpose run comparison tool (Model Hub > Tools > Compare Runs)
+
 ## 1.5.8 (2026-07-07)
 
 - Model Hub: add the `roleOnlyModelFilter` package setting to use the faster role-only model filter (off by default; the legacy tag-or-role filter is unchanged)

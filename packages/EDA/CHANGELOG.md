@@ -1,7 +1,26 @@
 # EDA changelog
 
-## v.next
+## 1.8.0 (2026-08-14)
 
+Improved ML features:
+
+* Added variables importance in projection the PLS regression and multivariate analysis
+* Updated the multivariate analysis demo application
+* Fixes:
+  * Serialization of PLS and OLS models;
+  * The loss of the analysis results in saved projects.
+
+## 1.7.0 (2026-07-17)
+
+Upgrade XGBoost
+
+* XGBoost v3.3.0, minimal build
+* Fixed classification objectives
+* Training 1.3 - 2.2× faster
+* Prediction 1.4 - 3.4× faster
+* Input validation in TypeScript
+* Breaking: models saved by earlier EDA versions (v1 container) are no longer
+  loadable — retrain and re-save them
 * Moved the EDA Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.6.2 (2026-06-23)

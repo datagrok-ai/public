@@ -4,6 +4,16 @@ mdx:
   format: mdx
 sidebar_position: 3
 unlisted: false
+description: The User Profile view shows personal account settings, credentials, permissions, and activity for any user.
+keywords:
+  - account settings
+  - user profile
+  - credentials
+  - permissions
+  - roles
+  - group membership
+  - user activity log
+  - notifications
 ---
 
 The **User Profile** view provides personal account settings and user-specific

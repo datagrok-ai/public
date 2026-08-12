@@ -1,6 +1,5 @@
-/** First-class Flow entity: the `.flow` body format, deterministic loading,
- *  the context-panel widget, and the live save → run → round-trip path
- *  (Script with language 'flow' executed through the package script handler). */
+/** First-class Flow entity: the `.flow` body format, loading, the context-panel
+ *  widget, and the live save → run round-trip. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -14,6 +13,7 @@ import {FuncFlowView} from '../funcflow-view';
 import {FuncFlowDocument, FlowSettings} from '../serialization/flow-schema';
 import {_package} from '../package';
 import {makeEditor, destroyEditor, addNode, TestEditor} from './test-utils';
+import {SpacePicker, spaceEntityName} from '../ui/space-picker';
 
 const SETTINGS = {scriptName: 'EntityFlow', scriptDescription: 'entity test', tags: ['funcflow']};
 
@@ -52,7 +52,6 @@ category('Flow: entity format', () => {
       expect(doc.connections.length, 1);
       expect(doc.metadata?.settings?.scriptName, 'EntityFlow');
 
-      // The parsed doc reloads into an editor with the same topology.
       await deserializeFlow(doc, e.flow);
       expect(e.flow.getNodeCount(), 2);
       expect(e.flow.getConnectionCount(), 1);
@@ -118,7 +117,6 @@ category('Flow: entity loading', () => {
       } finally {
         destroyEditor(e);
       }
-      // No waiting, no timers: loadFromJson awaits editor readiness itself.
       await view.loadFromJson(json);
       const flow = (view as any).flow;
       expect(flow.getNodeCount(), 2);
@@ -126,6 +124,30 @@ category('Flow: entity loading', () => {
     } finally {
       ((view as any).flow)?.destroy?.();
       view.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('loadFromJson accepts both .flow shapes: bare JSON and annotated body', async () => {
+    const e = makeEditor();
+    let bare: string; let annotated: string;
+    try {
+      await buildPassThroughFlow(e);
+      bare = JSON.stringify(serializeFlow(e.flow, SETTINGS));
+      annotated = flowScriptText(e.flow, SETTINGS);
+    } finally {
+      destroyEditor(e);
+    }
+    for (const [label, text] of [['bare JSON', bare!], ['annotated body', annotated!]] as const) {
+      const view = new FuncFlowView();
+      try {
+        await view.loadFromJson(text);
+        const flow = (view as any).flow;
+        expect(flow.getNodeCount(), 2, `${label}: nodes loaded`);
+        expect(flow.getConnectionCount(), 1, `${label}: connection loaded`);
+      } finally {
+        ((view as any).flow)?.destroy?.();
+        view.root.remove();
+      }
     }
   }, {timeout: 30000});
 
@@ -144,9 +166,6 @@ category('Flow: entity loading', () => {
     }
   }, {timeout: 30000});
 
-  // Output nodes keep paramName as the assigned variable (no label camel-casing),
-  // so the `//output:` header, the body assignment, and the copy key in
-  // FlowEntityHandler.run() are one identifier — even for a non-'result' name.
   test('output paramName drives both the header and the body assignment', async () => {
     const e = makeEditor();
     try {
@@ -167,10 +186,8 @@ category('Flow: entity loading', () => {
   }, {timeout: 30000});
 });
 
-/** The bundled `scripts/*.flow` files are hand-committed from the `files/*.ffjson`
- *  demos (see the `.flow` header format). This guards them against drift: each
- *  must equal the canonical `flowScriptText` the app would write for that graph —
- *  same header (name / language / tags / ordered `//output:` lines) and body. */
+/** The bundled `scripts/*.flow` files are hand-committed from the `files/*.flow`
+ *  demos — each must equal the canonical `flowScriptText` body, else regenerate the file. */
 category('Flow: bundled flow scripts', () => {
   before(async () => {
     ensureFunctionsRegistered();
@@ -185,9 +202,8 @@ category('Flow: bundled flow scripts', () => {
     };
   };
 
-  /** Regenerate the canonical `.flow` body for a bundled `.ffjson` demo. */
-  async function canonicalFlow(ffjsonFile: string): Promise<{header: string; outputs: string[]}> {
-    const json = await _package.files.readAsText(ffjsonFile);
+  async function canonicalFlow(demoFile: string): Promise<{header: string; outputs: string[]}> {
+    const json = await _package.files.readAsText(demoFile);
     const doc = JSON.parse(json) as FuncFlowDocument;
     const e = makeEditor();
     try {
@@ -204,7 +220,7 @@ category('Flow: bundled flow scripts', () => {
   test('Workflow Demo: canonical header, outputs ordered by execution', async () => {
     let gen: {header: string; outputs: string[]};
     try {
-      gen = await canonicalFlow('Workflow Demo.ffjson');
+      gen = await canonicalFlow('Workflow Demo.flow');
     } catch {
       expect(true, true, 'files/ not available on this stand — skipped');
       return;
@@ -212,8 +228,6 @@ category('Flow: bundled flow scripts', () => {
     expect(gen.header.includes('//name: Workflow Demo'), true);
     expect(gen.header.includes(`//language: ${FLOW_LANGUAGE}`), true);
     expect(gen.header.includes('//tags: flow'), true);
-    // Three Table Outputs, ordered by the topological (execution) order — the
-    // exact order the committed scripts/Workflow Demo.flow header carries.
     const expected = [
       '//output: dataframe helmResult',
       '//output: dataframe CHemblResult',
@@ -226,7 +240,7 @@ category('Flow: bundled flow scripts', () => {
   test('Sequence demo: canonical header with the single result output', async () => {
     let gen: {header: string; outputs: string[]};
     try {
-      gen = await canonicalFlow('Sequence demo.ffjson');
+      gen = await canonicalFlow('Sequence demo.flow');
     } catch {
       expect(true, true, 'files/ not available on this stand — skipped');
       return;
@@ -264,12 +278,9 @@ category('Flow: entity server round-trip', () => {
       expect(found!.inputs.length, 1);
       expect(found!.inputs[0].name, 'a');
 
-      // Execute the entity like any function — resolves the 'flow' language
-      // through the package script handler, compiles, runs, copies outputs.
       const result = await grok.functions.call(found!.nqName, {a: 5});
       expect(result, 5);
 
-      // Default value path: prepare() with no explicit inputs.
       const call = (found! as DG.Func).prepare({a: 7});
       await call.call(undefined, undefined, {processed: true});
       expect(call.outputs['result'], 7);
@@ -279,10 +290,81 @@ category('Flow: entity server round-trip', () => {
         await grok.dapi.scripts.delete(saved).catch(() => {});
     }
   }, {timeout: 120000});
+
+  test('bound-script requalification: the dashboard producing call keeps its namespace', async () => {
+    // the dapi update path can return the entity WITHOUT its namespace —
+    // the save path re-fetches so the producing call stays qualified
+    const e = makeEditor();
+    const view = new FuncFlowView();
+    let saved: DG.Script | null = null;
+    try {
+      await buildPassThroughFlow(e);
+      const name = `FFNq${Math.floor(Math.random() * 1e6)}`;
+      const text = flowScriptText(e.flow, {...SETTINGS, scriptName: name});
+      saved = await grok.dapi.scripts.save(DG.Script.create(text));
+
+      // The update path — exactly what saveToServer does on a re-save.
+      const upd = DG.Script.create(text);
+      upd.id = saved!.id;
+      const updated = await grok.dapi.scripts.save(upd);
+
+      const fetched = await grok.dapi.scripts.find(updated.id);
+      expect(String(fetched!.nqName).includes(':'), true, 'fetched entity carries the namespace');
+      expect(fetched!.prepare({a: 1}).toString().startsWith(fetched!.nqName), true,
+        'the serialized producing call is namespace-qualified');
+
+      const probe = view as unknown as {
+        editorReady: Promise<void>;
+        boundScript: DG.Script | null;
+        ensureBoundScriptQualified(): Promise<void>;
+      };
+      await probe.editorReady;
+      probe.boundScript = updated;
+      await probe.ensureBoundScriptQualified();
+      expect(String(probe.boundScript!.nqName).includes(':'), true,
+        'the bound script is requalified before stamping creation scripts');
+      saved = fetched;
+    } finally {
+      destroyEditor(e);
+      await new Promise((r) => setTimeout(r, 120));
+      ((view as any).flow)?.destroy?.();
+      view.root.remove();
+      if (saved != null)
+        await grok.dapi.scripts.delete(saved).catch(() => {});
+    }
+  }, {timeout: 120000});
+
+  test('scriptExistsOnServer gates silent save vs Save As', async () => {
+    const e = makeEditor();
+    const view = new FuncFlowView();
+    const exists = (id: string): Promise<boolean> =>
+      (view as unknown as {scriptExistsOnServer(id: string): Promise<boolean>}).scriptExistsOnServer(id);
+    let saved: DG.Script | null = null;
+    try {
+      await buildPassThroughFlow(e);
+
+      const bogus = `00000000-0000-0000-0000-${String(Math.floor(Math.random() * 1e12)).padStart(12, '0')}`;
+      expect(await exists(bogus), false, 'a never-saved id is not on the server');
+
+      const name = `FFExists${Math.floor(Math.random() * 1e6)}`;
+      saved = await grok.dapi.scripts.save(DG.Script.create(flowScriptText(e.flow, {...SETTINGS, scriptName: name})));
+      expect(await exists(saved!.id), true, 'a saved id resolves on the server');
+
+      const deletedId = saved!.id;
+      await grok.dapi.scripts.delete(saved);
+      saved = null;
+      expect(await exists(deletedId), false, 'a deleted id is no longer on the server');
+    } finally {
+      destroyEditor(e);
+      if (saved != null)
+        await grok.dapi.scripts.delete(saved).catch(() => {});
+      await new Promise((r) => setTimeout(r, 120)); // let the deferred initEditor run before teardown
+      ((view as any).flow)?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 120000});
 });
 
-// The exact server contract the SpacePicker and Save As dialog rely on:
-// root/subspace creation, subspace listing, and binding a flow into a space.
 category('Flow: space binding', () => {
   before(async () => {
     ensureFunctionsRegistered();
@@ -303,19 +385,15 @@ category('Flow: space binding', () => {
       expect(root != null, true);
       sub = await grok.dapi.spaces.id(root!.id).addSubspace(subName);
       expect(await grok.dapi.spaces.id(root!.id).subspaceExists(subName), true);
-      // What the picker's lazy loader runs on expand.
       const children = await grok.dapi.spaces.id(root!.id).children.filter('Project', false).list();
       expect(children.some((c) => c.id === sub!.id), true);
 
-      // What Save As does: save the entity, then bind it into the space.
       const name = `FFSpaceFlow${stamp}`;
       saved = await grok.dapi.scripts.save(DG.Script.create(flowScriptText(e.flow, {...SETTINGS, scriptName: name})));
       await grok.dapi.spaces.id(sub!.id).addEntity(saved!.id, false);
       const found = await grok.dapi.scripts.find(saved!.id);
-      // Ownership moved: the namespace is rewritten to the subspace path.
       expect(found!.nqName.toLowerCase(), `${sub!.nqName}:${found!.name}`.toLowerCase());
 
-      // A flow living in a space stays runnable through the script handler.
       const result = await grok.functions.call(found!.nqName, {a: 4});
       expect(result, 4);
     } finally {
@@ -328,4 +406,143 @@ category('Flow: space binding', () => {
         await grok.dapi.spaces.delete(root).catch(() => {});
     }
   }, {timeout: 120000});
+
+  test('SpacePicker content mode lists subspaces + entities and activates on dblclick', async () => {
+    const poll = async <T>(probe: () => T | null | undefined, timeoutMs = 20000): Promise<T> => {
+      const start = Date.now();
+      for (;;) {
+        const v = probe();
+        if (v != null) return v;
+        if (Date.now() - start > timeoutMs) throw new Error('poll: timed out');
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    };
+    const stamp = Math.floor(Math.random() * 1e6);
+    let root: DG.Project | null = null;
+    let sub: DG.Project | null = null;
+    let saved: DG.Script | null = null;
+    let picker: SpacePicker | null = null;
+    const e = makeEditor();
+    try {
+      await buildPassThroughFlow(e);
+      root = await grok.dapi.spaces.createRootSpace(`FFPick${stamp}`);
+      sub = await grok.dapi.spaces.id(root!.id).addSubspace(`Sub${stamp}`);
+      saved = await grok.dapi.scripts.save(DG.Script.create(
+        flowScriptText(e.flow, {...SETTINGS, scriptName: `FFPickFlow${stamp}`})));
+      await grok.dapi.spaces.id(root!.id).addEntity(saved!.id, false);
+
+      const activated: string[] = [];
+      picker = await SpacePicker.create({showContent: true,
+        onEntityActivated: (ent) => activated.push(ent.id)});
+      document.body.appendChild(picker.root);
+
+      expect(picker.root.textContent!.includes('New subspace'), false, 'no create button in content mode');
+      expect(!!picker.root.querySelector(`[data-testid="ff-space-ffpick${stamp}"]`),
+        true, 'root space listed with a name-based test-id');
+
+      const grp = picker.tree.children.find((c) =>
+        (c.value as DG.Project | null)?.id === root!.id) as DG.TreeViewGroup;
+      expect(!!grp, true, 'root space group resolvable in the tree');
+      grp.expanded = true;
+      await poll(() => picker!.root.querySelector(`[data-testid="ff-space-sub${stamp}"]`));
+      const flowRow = await poll(() => {
+        for (const row of Array.from(picker!.root.querySelectorAll<HTMLElement>('[data-testid^="ff-space-item-"]'))) {
+          if ((row.textContent ?? '').toLowerCase().includes(`ffpickflow${stamp}`)) return row;
+        }
+        return null;
+      });
+
+      flowRow.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
+      await poll(() => activated.length > 0 ? true : null);
+      expect(activated[0], saved!.id, 'the saved flow entity was activated');
+
+      expect(spaceEntityName(sub!), `Sub${stamp}`);
+    } finally {
+      destroyEditor(e);
+      picker?.root.remove();
+      if (saved != null)
+        await grok.dapi.scripts.delete(saved).catch(() => {});
+      if (sub != null)
+        await grok.dapi.spaces.delete(sub).catch(() => {});
+      if (root != null)
+        await grok.dapi.spaces.delete(root).catch(() => {});
+    }
+  }, {timeout: 120000});
+});
+
+category('Flow: save button + auto-pin', () => {
+  before(async () => {
+    ensureFunctionsRegistered();
+  });
+
+  test('Save is available for any non-empty canvas; the tooltip tracks the dirty state', async () => {
+    const view = new FuncFlowView();
+    const probe = view as unknown as {
+      flow: Parameters<typeof addNode>[0] & {destroy?(): void; notifyNodeParamsChanged(id: string): void};
+      saveButton: HTMLElement;
+      editorReady: Promise<void>;
+      saveAvailability(): {enabled: boolean; tooltip: string};
+      currentSnapshot(): string;
+      markSaved(): void;
+    };
+    try {
+      await probe.editorReady;
+
+      expect(probe.saveAvailability().enabled, false, 'empty canvas → disabled');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('empty'), true,
+        'tooltip explains the empty canvas');
+      expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), true,
+        'button greyed on an empty canvas');
+
+      const node = await addNode(probe.flow, 'Constants/String');
+      expect(probe.saveAvailability().enabled, true, 'an edit enables Save');
+      expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), false,
+        'button un-greyed after an edit');
+
+      probe.markSaved();
+      expect(probe.saveAvailability().enabled, true, 'Save stays available after a save (dashboard gateway)');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
+        'tooltip explains no changes');
+
+      // serializeFlow stamps fresh timestamps each call — the delay makes them differ if they leaked
+      const snap = probe.currentSnapshot();
+      await new Promise((r) => setTimeout(r, 5));
+      expect(probe.currentSnapshot(), snap, 'snapshot is stable across calls (no volatile timestamps)');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
+        'still clean after a delay — no false "changed"');
+
+      node.properties['value'] = 'changed';
+      probe.flow.notifyNodeParamsChanged(node.id);
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), false,
+        'a parameter edit marks the flow dirty (onGraphEdited path)');
+    } finally {
+      await new Promise((r) => setTimeout(r, 120));
+      probe.flow?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('auto-pin arms on construction and waits until this view is current', async () => {
+    const view = new FuncFlowView();
+    const probe = view as unknown as {
+      flow: {destroy?(): void};
+      editorReady: Promise<void>;
+      autoPinHandler: (() => void) | null;
+      teardownAutoPin(): void;
+    };
+    try {
+      await probe.editorReady;
+      expect(typeof probe.autoPinHandler, 'function', 'auto-pin is armed');
+
+      probe.autoPinHandler!();
+      expect(probe.autoPinHandler != null, true, 'stays armed while not the current view');
+
+      probe.teardownAutoPin();
+      expect(probe.autoPinHandler, null, 'teardown disarms the handler');
+    } finally {
+      await new Promise((r) => setTimeout(r, 120));
+      probe.flow?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 30000});
 });

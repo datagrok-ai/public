@@ -2,8 +2,11 @@
 feature: chem
 target_layer: playwright
 coverage_type: regression
-priority: p2
-realizes: []
+priority: p1
+realizes_atlas: []
+realizes: [chem.panel.chemistry.rendering, chem.panel.chemistry.highlight, chem.panel.chemistry.descriptors, chem.panel.chemistry.properties, chem.panel.biology.drug-likeness, chem.panel.biology.structural-alerts, chem.panel.biology.pharmacophores, chem.panel.biology.toxicity, chem.panel.structure.identifiers, chem.panel.structure.2d-structure, chem.panel.structure.3d-structure, chem.cell.molecule]
+realized_as:
+  - info-panels-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md
 migration_date: 2026-05-11

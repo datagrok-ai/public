@@ -7,9 +7,9 @@ Covers applying sticky metadata to data points in a grid: a single cell, a whole
 
 - A metadata schema matching molecules exists (entity type `semtype=molecule`, with properties
   `rating`/int, `notes`/string, `verified`/bool, `review_date`/datetime). The autotest creates
-  its own `PW_SM_Schema_<suffix>` in `beforeAll` and deletes it in `afterAll` — it does not rely
+  its own `PW_SM2_Schema_<suffix>` in `beforeAll` and deletes it in `afterAll` — it does not rely
   on a pre-seeded schema.
-- `System:DemoFiles/SPGI.csv` opens with a `Structure` column detected as `Molecule`
+- `System:DemoFiles/chem/SPGI.csv` opens with a `Structure` column detected as `Molecule`
   (3624 rows).
 
 ---
@@ -80,6 +80,6 @@ Covers applying sticky metadata to data points in a grid: a single cell, a whole
 
 ## Cleanup
 
-- Delete the `PW_SM_Schema_<suffix>` schema and its entity type (removes all values written
+- Delete the `PW_SM2_Schema_<suffix>` schema and its entity type (removes all values written
   during this scenario).
 - Close all views (`grok.shell.closeAll()`).

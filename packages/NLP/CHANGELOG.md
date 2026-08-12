@@ -1,5 +1,11 @@
 # NLP changelog
 
+## v.next
+
+* GROK-18695: Migrated AWS Translate to AWS SDK v3 (removes unpatchable aws-sdk v2 advisory)
+* GROK-18695: Dependency security updates — overrode uuid to 11.x and protobufjs to 7.6.5 (clears aws-sdk and @xenova/transformers transitive advisories)
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages, upgraded pip/setuptools/wheel, and added security floors for pillow/urllib3/requests/werkzeug/filelock/idna
+
 ## 1.2.4 (2025-07-04)
 
 Updated default params for text clustering

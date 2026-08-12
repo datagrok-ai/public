@@ -1,5 +1,9 @@
 ---
 feature: legend
+realizes_atlas: []
+realizes: [viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+realized_as:
+  - color-consistency-spec.ts
 target_layer: playwright
 coverage_type: edge
 priority: p0
@@ -24,7 +28,7 @@ Verifies that customizing colors for a categorical column — whether done throu
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`)
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`)
 2. Add six viewers via the JS API (omit Scatter plot — it is covered by `scatterplot.md`): **Histogram**, **Line chart**, **Bar chart**, **Pie chart**, **Trellis plot**, **Box plot**
 3. Set the categorical legend on each viewer to `Stereo Category`, using the viewer's own legend-source property:
    * Histogram, Line chart, Bar chart → **Split**
@@ -71,5 +75,5 @@ Verifies that customizing colors for a categorical column — whether done throu
 ---
 {
   "order": 4,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

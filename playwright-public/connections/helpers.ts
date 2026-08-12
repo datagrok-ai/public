@@ -498,6 +498,30 @@ export async function findConnectionByFriendlyName(
   }, friendlyName);
 }
 
+/**
+ * Provision a Postgres connection against the in-CI northwind demo if one with this
+ * friendly name is not there already. The numbered files in this folder read as a
+ * chain (01 creates, 03 renames, 05 deletes), and that chain only holds while every
+ * file runs in order in one worker. Playwright hands files to whichever worker is
+ * free, so a suite whose subject "must exist" is a suite that fails whenever it is
+ * scheduled early.
+ */
+export async function ensureConnection(page: Page, friendlyName: string): Promise<void> {
+  if (await findConnectionByFriendlyName(page, friendlyName)) return;
+  await page.evaluate(({ name, server, port, db, login, password }) => {
+    const g = (window as unknown as { grok: any }).grok;
+    const DG = (window as unknown as { DG: any }).DG;
+    return g.dapi.connections.save(DG.DataConnection.create(name, {
+      dataSource: 'Postgres',
+      server: `${server}:${port}`,
+      port: Number(port),
+      db, ssl: false, login, password,
+    }));
+  }, { name: friendlyName, server: PG_SERVER, port: PG_PORT, db: PG_DB, login: PG_LOGIN, password: PG_PASSWORD });
+  if (!await findConnectionByFriendlyName(page, friendlyName))
+    throw new Error(`could not provision connection "${friendlyName}"`);
+}
+
 /** Delete every connection with a given friendly name (safe cleanup before/after). */
 export async function deleteConnectionByFriendlyName(
   page: Page, friendlyName: string,

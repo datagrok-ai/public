@@ -3,7 +3,10 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p0
+realizes_atlas: []
 realizes: []
+realized_as:
+  - sketcher-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
 migration_date: 2026-05-11
@@ -33,6 +36,7 @@ scope_reductions:
     check: A-STRUCT-02
     rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage) — applies to sketcher.md only"
 related_bugs: []
+realizes: [chem.cell-editor.molecule, chem.sketcher.open-chem-lib, chem.action.copy-as-smiles, chem.action.copy-as-molfile-v2000]
 ---
 
 # Chem | Sketcher cell editor — Favorites / Recent / Copy / Paste round-trip

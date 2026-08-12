@@ -1,5 +1,15 @@
 ---
 title: "Function annotations"
+description: Reference for annotating function parameters in Datagrok scripts and queries to auto-generate validated UI.
+keywords:
+  - function header
+  - parameter annotation
+  - input output annotation
+  - choices and validators
+  - autocomplete suggestions
+  - lookup tables
+  - complex calculated columns
+  - custom function editor
 ---
 
 # Function annotations
@@ -147,16 +157,17 @@ For all parameters:
 
 For `dataframe` type:
 
-| Option      | Value       | Description                             |
-|-------------|-------------|-----------------------------------------|
-| columns     | numerical   | Only numerical columns will be loaded   |
-| columns     | categorical | Only categorical columns will be loaded |
+| Option      | Value                  | Description                                                  |
+|-------------|------------------------|--------------------------------------------------------------|
+| columns     | numerical              | Only numerical columns will be loaded (including datetime)   |
+| columns     | numerical_no_datetime  | Same as numerical, but datetime columns are excluded         |
+| columns     | categorical            | Only categorical columns will be loaded                      |
 
 For `column` and `column_list` types
 
 | Option     | Value                           | Description                                                                 |
 |------------|---------------------------------|-----------------------------------------------------------------------------|
-| type       | numerical,categorical,dateTime  | In a dialog, only numerical columns will be shown                           |
+| type       | numerical, numerical_no_datetime, categorical, datetime, categorical_or_datetime, or a column type such as int, double, string | In a dialog, only matching columns will be shown. Datetime columns are numerical, so use `numerical_no_datetime` to exclude them |
 | format     | MM/dd/yyyy                      | Datetime format, for dateTime columns and datetime type only                |
 | allowNulls | true/false                      | Adds validation of the missing values presence                              |
 | action     | join("table parameter name")    | Joins result to the specified table, for output parameters only             |
@@ -1137,7 +1148,7 @@ The `meta` object can contain both dataframe-level and column-level tags:
 ```
   This sets a dataframe-level tag:
 
-  - `.data-connection = "System:Datagrok"`
+- `.data-connection = "System:Datagrok"`
 
 - **Column-level tags**  
   If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
@@ -1148,9 +1159,9 @@ The `meta` object can contain both dataframe-level and column-level tags:
 ```
   This applies the following tags to the `mol` column:
 
-  - `DbTable = "structures"`
-  - `DbSchema = "public"`
-  - `DbColumn = "mol"`
+- `DbTable = "structures"`
+- `DbSchema = "public"`
+- `DbColumn = "mol"`
 
 Dataframe-level and column-level metadata can be combined within a single `meta` block:
 ```javascript 

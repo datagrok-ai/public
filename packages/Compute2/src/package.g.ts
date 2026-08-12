@@ -71,6 +71,12 @@ export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
 }
 
+//name: Compare Runs
+//description: Compare data across model runs: scalars or a single table column
+export async function CompareRuns() : Promise<void> {
+  await PackageFunctions.CompareRuns();
+}
+
 //name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
@@ -188,4 +194,38 @@ export async function TestCustomExportModel(a: number) : Promise<number> {
 //output: string result
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
   return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
+}
+
+//input: int a 
+//input: double b 
+//input: bool flag 
+//input: string s 
+//input: datetime when 
+//input: dataframe df 
+//input: double opt { optional: true }
+//input: int nul { nullable: true }
+//output: double result
+export async function TestUrlInputsFixture(a: number, b: number, flag: boolean, s: string, when: any, df: DG.DataFrame, opt: number, nul: number) : Promise<number> {
+  return await PackageFunctions.TestUrlInputsFixture(a, b, flag, s, when, df, opt, nul);
+}
+
+//input: int x 
+//output: dataframe res
+export async function TestProjectExportSingleOut(x: number) : Promise<any> {
+  return await PackageFunctions.TestProjectExportSingleOut(x);
+}
+
+//input: dataframe df 
+//input: int x 
+//output: dataframe res1
+//output: dataframe res2
+export async function TestProjectExportMultiOut(df: DG.DataFrame, x: number) : Promise<any> {
+  return await PackageFunctions.TestProjectExportMultiOut(df, x);
+}
+
+//input: file file { optional: true; nullable: true }
+//input: int x 
+//output: dataframe res
+export async function TestProjectExportFileIn(file: DG.FileInfo, x: number) : Promise<any> {
+  return await PackageFunctions.TestProjectExportFileIn(file, x);
 }

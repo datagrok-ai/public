@@ -3,7 +3,8 @@ feature: working-with-nan-infinity
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes: []
+realizes_atlas: []
+realizes: [viewers.scatter-plot]
 realized_as:
   - working-with-nan-infinity-spec.ts
 related_bugs: []

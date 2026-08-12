@@ -11,6 +11,9 @@ import {HTFunctionOrderingLSKey} from '../consts';
 export async function chemFunctionsDialog(app: HitAppBase<any>,
   onOk: (result: IComputeDialogResult) => void, onCancel: () => void,
   template: Omit<HitTriageTemplate, 'dataSourceType'>, dialog?: boolean,
+  // When true, each function/script/query gets a "re-run when campaign opens" checkbox whose state
+  // is persisted in the campaign's compute config (see HitDesignApp.reComputeOnCampaignOpen).
+  rerunOnOpen?: boolean,
 ): Promise<IChemFunctionsDialogResult> {
   return _chemFunctionsDialog(
     app.computeFunctions,
@@ -19,5 +22,11 @@ export async function chemFunctionsDialog(app: HitAppBase<any>,
     dialog,
     () => grok.chem.descriptorsTree() as Promise<IDescriptorTree>,
     HTFunctionOrderingLSKey,
+    undefined,
+    rerunOnOpen ? {
+      label: 'Re-run when campaign opens',
+      tooltip: 'Recompute this function for the whole molecule column every time this campaign is ' +
+        'opened. Useful for database lookups that may resolve after the molecule was first drawn.',
+    } : undefined,
   );
 }

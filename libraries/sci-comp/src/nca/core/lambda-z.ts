@@ -1,29 +1,31 @@
 import type {LambdaZResult, LambdaZStrategy} from './types';
+import {halfLifeFromLambdaZ} from './derived';
 
 /**
  * Auto best-fit terminal slope (lambda_z).
  *
- * PKNCA-compatible algorithm: iterate over subsets of the last `k` eligible
- * post-Cmax points, fit a log-linear OLS regression on each subset, and
- * pick the candidate that maximises adjusted R². A point is **eligible**
- * when it is post-Cmax (or Cmax itself, if `excludeCmax` is `false`),
- * measurable (`blqMask[i] === 0`), positive, and finite.
+ * Iterates over subsets of the last `k` eligible post-Cmax points, fits a log-linear
+ * OLS regression on each, and picks the subset with the MOST points whose adjusted R²
+ * is within `adjRSquaredFactor` of the maximum adjusted R² across candidates — the
+ * PKNCA / WinNonlin best-fit tie-break. A point is **eligible** when it is post-Cmax
+ * (or Cmax itself, if `excludeCmax` is `false`), measurable (`blqMask[i] === 0`),
+ * positive, and finite.
  *
- * A subset is **valid** when:
- * - it has at least `options.minPoints` points;
- * - the fitted slope is negative (so `lambda_z = -slope > 0`);
- * - `adjRSquared >= options.minRSquared`.
- *
+ * A subset is **valid** when it has at least `options.minPoints` points, the fitted
+ * slope is negative (so `lambda_z = -slope > 0`), and `adjRSquared >= minRSquared`.
  * Returns the best valid candidate, or `null` if none qualifies.
  *
- * Reference: <https://billdenney.github.io/pknca/articles/Selection-of-Calculation-Intervals.html>
+ * **Only the tie-break matches PKNCA.** Two guards are stricter, and both drop
+ * candidates BEFORE the maximum adjusted R² is taken:
+ * - `minRSquared` has no PKNCA equivalent — `pk.calc.half.life` carries no adj-R²
+ *   floor; it is a sci-comp guardrail.
+ * - PKNCA takes its maximum over the sign-unfiltered candidate set and rejects
+ *   `lambda.z <= 0` only at the final selection mask, so a spurious high-R²,
+ *   wrong-signed short window can raise its ceiling until nothing survives and PKNCA
+ *   declines to auto-select. Dropping those windows first means sci-comp always
+ *   auto-selects the best valid window instead.
  *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param blqMask - 1 = BLQ, 0 = measurable. Same length as `time`.
- * @param cmaxIdx - Index of the observed Cmax in `time` / `conc`.
- * @param options - Strategy parameters (`minPoints`, `minRSquared`, `excludeCmax`).
- * @returns The fit result, or `null` if no eligible subset qualifies.
+ * Reference: <https://billdenney.github.io/pknca/articles/Selection-of-Calculation-Intervals.html>
  */
 export function lambdaZBestFit(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
@@ -40,20 +42,28 @@ export function lambdaZBestFit(
   if (eligible.length < options.minPoints) return null;
 
   const factor = options.adjRSquaredFactor ?? 0;
-  let best: LambdaZResult | null = null;
-  let bestScore = -Infinity;
+  // `factor` is a FLAT tolerance off the single global maximum adj-R², not an
+  // additive per-point bonus: an additive `adjRSquared + factor·n` score
+  // accumulates with window length and over-selects long windows.
+  const candidates: {fit: LambdaZResult; n: number}[] = [];
+  let maxAdjRSquared = -Infinity;
   for (let k = options.minPoints; k <= eligible.length; k++) {
     const subset = eligible.slice(eligible.length - k);
     const fit = fitLogLinear(time, conc, subset);
     if (fit === null) continue;
     if (fit.lambdaZ <= 0) continue;
     if (fit.adjRSquared < options.minRSquared) continue;
-    // Score favours larger subsets when adj-R² values are close
-    // (PKNCA convention; factor = 1e-4 in their defaults).
-    const score = fit.adjRSquared + factor * subset.length;
-    if (score > bestScore) {
+    candidates.push({fit, n: k});
+    if (fit.adjRSquared > maxAdjRSquared) maxAdjRSquared = fit.adjRSquared;
+  }
+  // Among windows within `factor` of the global-max adj-R², keep the most points.
+  // `factor = 0` collapses to strict max adj-R², ties → more points.
+  let best: LambdaZResult | null = null;
+  let bestN = -1;
+  for (const {fit, n} of candidates) {
+    if (fit.adjRSquared >= maxAdjRSquared - factor && n > bestN) {
       best = fit;
-      bestScore = score;
+      bestN = n;
     }
   }
   return best;
@@ -63,16 +73,11 @@ export function lambdaZBestFit(
  * Manual lambda_z fit on a caller-supplied set of point indices.
  *
  * No best-fit search, no validity checks beyond `n >= 2` and
- * positivity / finiteness — the caller is presumed to know what they
- * picked. The returned slope can have any sign (caller decides whether to
- * reject `lambdaZ <= 0`).
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param pointIndices - Indices into `time` / `conc` of the chosen points.
- *                       Out-of-range or non-positive / non-finite entries
- *                       are silently dropped.
- * @returns The fit result, or `null` if fewer than 2 valid points remain.
+ * positivity / finiteness — the caller is presumed to know what they picked.
+ * Out-of-range or non-positive / non-finite `pointIndices` are silently
+ * dropped; `null` is returned if fewer than 2 valid points remain. The
+ * returned slope can have any sign (caller decides whether to reject
+ * `lambdaZ <= 0`).
  */
 export function lambdaZManual(
   time: Float64Array, conc: Float64Array, pointIndices: Int32Array,
@@ -133,13 +138,23 @@ function fitLogLinear(
     1 - (1 - rSquared) * (n - 1) / (n - 2) :
     rSquared;
 
+  const lambdaZ = -slope;
+  const tStart = time[indices[0]];
+  const tEnd = time[indices[n - 1]];
+
+  // Diagnostic only — see LambdaZResult.spanRatio. The NaN branch is reachable
+  // only via `lambdaZManual`, which permits a non-decaying fit; such a fit has
+  // no half-life for a window to span.
+  const spanRatio = lambdaZ > 0 ? (tEnd - tStart) / halfLifeFromLambdaZ(lambdaZ) : NaN;
+
   return {
-    lambdaZ: -slope,
+    lambdaZ,
     intercept,
     rSquared,
     adjRSquared,
     pointsUsed: Int32Array.from(indices),
-    tStart: time[indices[0]],
-    tEnd: time[indices[n - 1]],
+    tStart,
+    tEnd,
+    spanRatio,
   };
 }

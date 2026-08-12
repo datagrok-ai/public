@@ -457,42 +457,73 @@ test('MonomerPosition hover tooltip — GROK-15934 regression (no null-receiver 
       return tv.dataFrame.selection.trueCount;
     });
 
-    // Click the column-header WebLogo strip; pick the largest canvas (row-marker canvas is small).
+    // Address the WebLogo glyphs the way a user reaches them: walk the grid's own header
+    // band and keep the screen points where the grid canvas is the TOPMOST element and the
+    // pixel under it is inked. A point picked from canvas geometry alone is not enough —
+    // the canvas is wider than the grid clipping it, and neighbouring panels' inputs sit on
+    // top of the overflow, so those clicks never reach the grid at all.
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const mainGrid = tv.grid;
-      const canvases = Array.from(mainGrid.root.querySelectorAll('canvas'));
-      let canvas: HTMLCanvasElement | null = null;
+      const box = mainGrid.root.getBoundingClientRect();
+      const chh = mainGrid.props.colHeaderHeight;
+
+      // The grid stacks a transparent overlay canvas above the one that carries the glyphs,
+      // and elementFromPoint returns the overlay — so reachability is checked on whatever is
+      // topmost, while the ink is sampled from the largest (content) canvas.
+      let content: HTMLCanvasElement | null = null;
       let maxArea = 0;
-      for (const c of canvases) {
-        const rr = (c as HTMLCanvasElement).getBoundingClientRect();
-        if (rr.width * rr.height > maxArea) {
-          maxArea = rr.width * rr.height;
-          canvas = c as HTMLCanvasElement;
+      for (const c of Array.from(mainGrid.root.querySelectorAll('canvas')) as HTMLCanvasElement[]) {
+        const cr = c.getBoundingClientRect();
+        if (cr.width * cr.height > maxArea) {
+          maxArea = cr.width * cr.height;
+          content = c;
         }
       }
-      if (!canvas) return {canvasFound: false, selAfter: -1};
-      const r = canvas.getBoundingClientRect();
-      const chh = mainGrid.props.colHeaderHeight;
-      // Click into the column-header WebLogo strip, past the row-header column.
-      const cx = r.x + 250;
-      const cy = r.y + Math.max(20, chh / 2);
-      const opts = {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 0, view: window};
-      canvas.dispatchEvent(new MouseEvent('mousemove', opts));
-      canvas.dispatchEvent(new MouseEvent('mousedown', opts));
-      canvas.dispatchEvent(new MouseEvent('mouseup', opts));
-      canvas.dispatchEvent(new MouseEvent('click', opts));
-      await new Promise((res) => setTimeout(res, 2000));
-      // Re-resolve the model TableView post-click (active view may drift on dock dispatch).
-      const tv2 = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
-      return {canvasFound: true, selAfter: tv2.dataFrame.selection.trueCount};
+      if (!content) return {canvasFound: false, points: [] as Array<{x: number; y: number}>};
+      const cr = content.getBoundingClientRect();
+      const ctx = content.getContext('2d')!;
+      const inked = (x: number, y: number): boolean => {
+        const px = Math.round((x - cr.x) * (content!.width / cr.width));
+        const py = Math.round((y - cr.y) * (content!.height / cr.height));
+        if (px < 0 || py < 0 || px >= content!.width || py >= content!.height) return false;
+        const d = ctx.getImageData(px, py, 1, 1).data;
+        return d[3] > 0 && (d[0] < 240 || d[1] < 240 || d[2] < 240);
+      };
+
+      const points: Array<{x: number; y: number}> = [];
+      for (let x = box.left + 6; x < box.right - 6; x += 3) {
+        for (let y = box.top + chh - 6; y > box.top + 6; y -= 4) {
+          const el = document.elementFromPoint(x, y) as HTMLElement | null;
+          if (!el || !el.closest('[name="viewer-Grid"]')) continue;
+          if (inked(x, y)) {
+            points.push({x, y});
+            break;
+          }
+        }
+      }
+      return {canvasFound: true, points};
     });
     expect(result.canvasFound, 'main grid canvas not found for WebLogo header click').toBe(true);
-    // Selection may or may not grow depending on where the click landed; either is acceptable.
-    if (result.selAfter === selBefore) {
-      console.log(`[note] WebLogo header click did not raise selection.trueCount (before=${selBefore}, after=${result.selAfter}) — ` +
-        `hit-test landed on an empty canvas region. Re-hover assertion below still exercises the post-click model state.`);
+    expect(result.points.length, 'no monomer glyphs found in the grid column-header band').toBeGreaterThan(0);
+
+    // Synthetic MouseEvents do not drive the d4 grid hit-test — only the real mouse does.
+    let selAfter = selBefore;
+    for (const p of result.points) {
+      await page.mouse.move(p.x - 30, p.y - 30);
+      await page.mouse.move(p.x, p.y, {steps: 4});
+      await page.mouse.click(p.x, p.y);
+      await page.waitForTimeout(700);
+      selAfter = await page.evaluate(() => {
+        // Re-resolve the model TableView post-click (active view may drift on dock dispatch).
+        const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
+        return tv.dataFrame.selection.trueCount;
+      });
+      if (selAfter > selBefore) break;
     }
+    expect(selAfter,
+      `WebLogo header click did not raise selection.trueCount (before=${selBefore}) ` +
+      `across ${result.points.length} glyph runs`).toBeGreaterThan(selBefore);
 
     // Re-hover the SVM after the selection mutation.
     const svmRect = await page.evaluate(() => {

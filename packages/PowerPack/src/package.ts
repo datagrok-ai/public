@@ -209,6 +209,29 @@ export class PackageFunctions {
     return widget;
   }
 
+  /** The formula editor as a plain *value* editor — the same CodeMirror field,
+   *  column/function autocomplete and inline validation as the Add New Column
+   *  dialog, with no column at the end of it.
+   *
+   *  Hosts prepare an `AddNewColumn` call carrying the table and the starting
+   *  expression, flag it (`aux.expressionEditorOnly`, plus
+   *  `aux.filterFormulaEditor` to constrain it to a boolean formula), and read
+   *  edits back from `call.inputParams['expression'].onChanged` — the widget
+   *  publishes the text there on a debounce. Used by Flow's row-condition
+   *  nodes; the Dart viewer `filter` property editor is the same idea in
+   *  dialog form. */
+  @grok.decorators.func({
+    name: 'expressionEditorWidget',
+    description: 'Formula editor bound to a table, editing an expression as a value',
+    meta: {includeInFlow: 'false'},
+  })
+  static expressionEditorWidget(
+    @grok.decorators.param({type: 'funccall'}) call: DG.FuncCall): DG.Widget {
+    const widget = new DG.Widget(ui.div());
+    new AddNewColumnDialog(call, widget);
+    return widget;
+  }
+
   @grok.decorators.func({})
   static getFuncTableViewWidget(func: DG.Func, inputParams: Record<string, any>): DG.Widget {
     return DG.Widget.fromRoot(createFuncTableViewWidget(func, inputParams));
@@ -375,8 +398,8 @@ export class PackageFunctions {
 
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
-    grok.events.onViewAdded.subscribe((view) => _viewerGallery(view));
-    _viewerGallery(grok.shell.v);
+    grok.events.onViewAdded.subscribe((view) => configViewerGallery(view));
+    configViewerGallery(grok.shell.v);
   }
 
   @grok.decorators.fileViewer({
@@ -487,7 +510,9 @@ grok.events.onContextMenu.subscribe((args) => {
   });
 });
 
-function _viewerGallery(view: DG.ViewBase): void {
+//name: configViewerGallery
+//input: view view
+export function configViewerGallery(view: DG.ViewBase): void {
   if (view?.type == 'TableView') {
     const panels = view.getRibbonPanels();
     for (const p of panels) {

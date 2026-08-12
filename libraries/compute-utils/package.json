@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.46.6",
+  "version": "1.46.9",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -12,6 +12,7 @@
     "@datagrok-libraries/utils": "^4.7.0",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/uuid": "^10.0.0",
+    "@types/wu": "^2.1.44",
     "apache-arrow": "^21.0.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.27.0",
@@ -27,13 +28,12 @@
     "lodash.isequal": "^4.5.0",
     "lru-cache": "^10.4.3",
     "rxjs": "^6.6.7",
-    "uuid": "^10.0.0",
+    "uuid": "^11.1.1",
     "wu": "^2.1.0"
   },
   "devDependencies": {
     "@datagrok-libraries/codegen-async-to-sync": "^0.1.0",
     "@types/lodash.isequal": "^4.5.8",
-    "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",
     "datagrok-tools": "^5.1.9",
@@ -64,5 +64,8 @@
     "*.css",
     "./old-views/**/*.ts",
     "./old-components/**/*.ts"
-  ]
+  ],
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
 }

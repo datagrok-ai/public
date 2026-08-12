@@ -2,8 +2,9 @@
 feature: powerpack
 target_layer: playwright
 coverage_type: regression
-priority: p1
-realizes: [add-new-column-paste-complex-formula]
+priority: p2
+realizes_atlas: [add-new-column-paste-complex-formula]
+realizes: [powerpack.dialogs.add-new-column]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/highlight.md
 migration_date: 2026-05-20
@@ -129,7 +130,7 @@ Bug-invariant assertions:
 - At least one rendered span has a blue computed color (the
   `getColumnNamesAndSelections → addColHighlight` pipeline completed successfully).
 
-1. Switch the active dataset to SPGI by opening `System:DemoFiles/SPGI.csv` — a
+1. Switch the active dataset to SPGI by opening `System:DemoFiles/chem/SPGI.csv` — a
    TableView with the SPGI grid should become the active view (SPGI carries the
    `Whole blood assay 1`, `Route Admin`, `Chemical Space X`, `Average Mass`, and
    `Species` columns referenced by the GROK-17004 repro formula).

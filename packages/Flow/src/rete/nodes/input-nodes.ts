@@ -1,16 +1,13 @@
-/** Input nodes — emit `//input:` annotation lines in the generated script.
- *
- * Each input node has exactly one output socket carrying the declared DG type.
- * Per-type qualifiers (nullable, min/max, semType, choices, …) live in
- * `node.properties` and are rendered into the annotation line by the emitter.
- *
- * No inline widgets — all property editing happens in the side panel. */
+/** Input nodes — emit `//input:` lines. Qualifiers live in `node.properties`; each node
+ *  carries an inline value editor mirrored in the side panel (see `utils/input-values.ts`). */
 
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
+import {InputValueControl} from './input-value-control';
 
-const COLOR_INPUT = '#66BB6A';
+const COLOR_INPUT = categoricalColor(CAT.green);
 
 abstract class InputBase extends FlowNode {
   constructor(label: string, paramName: string, dgType: string, slotName = 'value', extraProps: Record<string, any> = {}) {
@@ -20,6 +17,8 @@ abstract class InputBase extends FlowNode {
     this.properties = {paramName, defaultValue: '', ...extraProps};
     (this as unknown as {color: string}).color = COLOR_INPUT;
     this.addOutput(slotName, new ClassicPreset.Output(getSocket(dgType), slotName));
+    // Built lazily on first render so subclass dgOutputType overrides (Blob) apply.
+    this.addControl('value', new InputValueControl(this));
   }
 }
 
@@ -43,6 +42,24 @@ export class StringInputNode extends InputBase {
   constructor() {
     super('String Input', 'text', 'string', 'value',
       {nullable: false, caption: '', choices: '', semType: ''});
+  }
+}
+
+/** A String Input pre-tagged `semType: Molecule` — enough for the value editor to become
+ *  Chem's sketcher; emits an ordinary string input line. */
+export class MoleculeInputNode extends InputBase {
+  constructor() {
+    super('Sketcher Input', 'molecule', 'string', 'molecule',
+      {nullable: false, caption: '', choices: '', semType: 'Molecule'});
+  }
+}
+
+/** The macromolecule counterpart of {@link MoleculeInputNode} — `semType: Macromolecule`
+ *  routes the value editor to Helm's. */
+export class HelmInputNode extends InputBase {
+  constructor() {
+    super('Helm Input', 'sequence', 'string', 'sequence',
+      {nullable: false, caption: '', choices: '', semType: 'Macromolecule'});
   }
 }
 

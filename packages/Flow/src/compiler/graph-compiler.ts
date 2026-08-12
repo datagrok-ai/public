@@ -1,18 +1,13 @@
-/** Compiles the FuncFlow graph into a flat ordered list of `CompiledStep`s.
- *
- * Rete-aware: input/output keys are strings; pass-through outputs use the
- * `<inputName>__pt` convention (see `func-node.ts`). The compiler resolves
- * input expressions by walking incoming connections and looking up the
- * source node's output variable in `outputVarMap`.
- *
- * The output expressions are JavaScript snippets that the script-emitter
- * inserts into the generated body. */
+/** Compiles the FuncFlow graph into a flat ordered list of `CompiledStep`s
+ *  whose expressions are JS snippets the script-emitter inserts into the body. */
 
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode, FlowConnection, isExecKey} from '../rete/scheme';
 import {FuncNode, defaultTableParam} from '../rete/nodes/func-node';
 import {topologicalSort} from './topological-sort';
 import {stringListToArrayLiteral} from '../types/type-map';
+import {effectiveFuncInputs} from '../utils/func-input-overrides';
+import {isInputOptional} from '../utils/dart-proxy-utils';
 
 export type StepKind = 'input' | 'output' | 'utility' | 'func';
 
@@ -25,25 +20,26 @@ export interface CompiledStep {
   variableName: string;
   /** input slot key → source expression to feed in. */
   inputs: Map<string, string>;
-  /** real output slot key → variable name we declared. */
+  /** real output slot key → expression that yields its value: the call variable,
+   *  or `<var>.<outputName>` for a multi-output func (`grok.functions.call`
+   *  returns an object keyed by the declared output names). */
   outputs: Map<string, string>;
-  /** With `cloneDataframeInputs` (instrumented runs): snapshot variable →
-   *  original source expression, one per connected dataframe input. The call,
-   *  the pass-through outputs, and the live-stash all use the snapshot, so an
-   *  in-place function mutates its own copy — never the upstream node's
-   *  captured value (which must stay "the state at that node"). */
+  /** With `cloneDataframeInputs`: snapshot variable → source expression, one per
+   *  connected dataframe input — an in-place function mutates its own copy,
+   *  never the upstream node's captured value. */
   cloneInputs?: Map<string, string>;
   /** Snapshot of node.properties at compile time. */
   properties: Record<string, unknown>;
   /** Snapshot of node.inputValues (hardcoded primitive defaults). */
   inputValues: Record<string, unknown>;
+  /** The real `grok.functions.call` arguments when a FUNC_WRAPPER reshaped the
+   *  node's inputs; `inputs` stays keyed by the exposed slots. */
+  callInputs?: Map<string, string>;
 }
 
 const PASSTHROUGH_SUFFIX = '__pt';
 
-/** Every node that must run to produce `targetId`'s output: the target plus all
- *  its transitive predecessors (walking connections backward — data,
- *  pass-through, and order edges alike). The set is closed under "ancestors",
+/** The target plus all its transitive predecessors — closed under "ancestors",
  *  so emitting only these steps yields a self-contained sub-script. */
 export function sliceUpTo(flow: FlowEditor, targetId: string): Set<string> {
   const connections = flow.getConnections();
@@ -59,10 +55,7 @@ export function sliceUpTo(flow: FlowEditor, targetId: string): Set<string> {
   return result;
 }
 
-/** Every node whose result can be affected by a change at `rootId`: the node
- *  itself plus all its transitive successors (walking connections forward —
- *  data, pass-through, and order edges alike). The mirror of {@link sliceUpTo};
- *  used to invalidate run results precisely after a graph edit. */
+/** The node plus all its transitive successors — the mirror of {@link sliceUpTo}. */
 export function sliceDownFrom(flow: FlowEditor, rootId: string): Set<string> {
   const connections = flow.getConnections();
   const result = new Set<string>();
@@ -77,20 +70,11 @@ export function sliceDownFrom(flow: FlowEditor, rootId: string): Set<string> {
   return result;
 }
 
-/** When `liveBoundary` is set, a connection whose *source* node is not in the
- *  set resolves to a `_ffLive(nodeId, outputKey)` call — reading the value that
- *  node produced in a prior instrumented run from the live-value registry —
- *  instead of an in-script variable. This is what lets a single node be re-run
- *  in isolation (its upstream inputs come from the registry, not a re-run). */
 export interface CompileOptions {
-  /** Snapshot-clone every connected dataframe input of a func step (see
-   *  `CompiledStep.cloneInputs`). On for instrumented emission: many platform
-   *  functions transform tables **in place**, and without per-step clones they
-   *  would mutate the very instance stashed as the upstream node's live value —
-   *  corrupting node previews (a node's preview must show the state AT that
-   *  node) and making autorun slice re-runs non-idempotent (e.g. re-running a
-   *  descriptor calc appends its columns a second time). Off for clean scripts,
-   *  which run once from scratch and keep the platform's in-place idiom. */
+  /** Snapshot-clone every connected dataframe input of a func step — many
+   *  platform functions transform tables in place and would otherwise mutate
+   *  the instance stashed as the upstream node's live value, making slice
+   *  re-runs non-idempotent. Off for clean scripts, which run once from scratch. */
   cloneDataframeInputs?: boolean;
 }
 
@@ -100,7 +84,6 @@ export function compileGraph(
   const sortedIds = topologicalSort(flow);
   const connections = flow.getConnections();
 
-  // Index incoming connections per (targetId → targetInput → connection)
   const incoming = new Map<string, Map<string, FlowConnection>>();
   for (const c of connections) {
     let perNode = incoming.get(c.target);
@@ -122,8 +105,6 @@ export function compileGraph(
     if (kind === 'input') {
       const paramName = String(node.properties['paramName'] ?? 'input');
       usedVarNames.add(paramName);
-      // Map every data output slot of an input node to the param name (the
-      // exec-out ordering port carries no data and is skipped).
       const outKeys = Object.keys(node.outputs).filter((k) => !isExecKey(k));
       for (const key of outKeys)
         outputVarMap.set(`${nodeId}:${key}`, paramName);
@@ -178,14 +159,11 @@ export function compileGraph(
       continue;
     }
 
-    // -------- func step --------
-    // Exec ordering ports carry no data — exclude them from data resolution.
     const funcName = node.dgFuncName || node.label;
     const ptCount = node.passthroughCount;
     const inputKeys = Object.keys(node.inputs).filter((k) => !isExecKey(k));
     const outputKeys = Object.keys(node.outputs).filter((k) => !isExecKey(k));
 
-    // Variable name based on title + first real output's name.
     const realOutputKeys = outputKeys.filter((k) => !k.endsWith(PASSTHROUGH_SUFFIX));
     const firstRealKey = realOutputKeys[0];
     let varBase = toCamelCase(node.label);
@@ -193,10 +171,10 @@ export function compileGraph(
     const varName = uniqueVarName(varBase, usedVarNames);
     usedVarNames.add(varName);
 
-    // Resolve inputs: connected → expression from outputVarMap, else hardcoded.
-    // Column / column-list values are deferred to a second pass: they compile to
-    // `table.col(...)` against an associated dataframe input, which must be
-    // resolved first.
+    // Column / column-list values are deferred to a second pass: they compile
+    // to `table.col(...)` against a dataframe input that must be resolved first.
+    const optionalInputs = new Set(node.dgFunc ?
+      effectiveFuncInputs(node.dgFunc).filter((p) => isInputOptional(p)).map((p) => p.name) : []);
     const inputMap = new Map<string, string>();
     for (const key of inputKeys) {
       const conn = incoming.get(nodeId)?.get(key);
@@ -208,27 +186,29 @@ export function compileGraph(
       const slotType = slotTypeOf(node, key);
       if (slotType === 'column' || slotType === 'column_list') continue; // pass 2
       const val = node.inputValues[key];
+      // An untouched optional scalar (seeded ''/null) stays OUT of the call so
+      // the function's own default applies — passing '' where the default is
+      // null changes behavior.
+      if (optionalInputs.has(key) && (val == null || String(val).trim() === '')) continue;
+      // OpenFile forwards any non-null sheetName to the importer, and only the
+      // Excel importer takes one — a sheet name on a non-xlsx path crashes the import.
+      if (key === 'sheetName' && funcName.split(':').pop()!.toLowerCase() === 'openfile' &&
+          !/\.xlsx$/i.test(String(node.inputValues['fullPath'] ?? ''))) continue;
       if (slotType === 'string_list') {
-        // Comma-separated → JS array of trimmed, non-empty strings. Empty → omit
-        // so the function falls back to its own default (don't force `[]`).
+        // Empty → omit so the function falls back to its own default.
         const lit = stringListToArrayLiteral(val);
         if (lit !== '[]') inputMap.set(key, lit);
         continue;
       }
       if (slotType === 'list') {
-        // Native DG List input (incl. list<string> params) → a JS array; emit
-        // as a JSON array literal. Empty → omit so the function default applies.
         if (Array.isArray(val) && val.length > 0) inputMap.set(key, JSON.stringify(val));
         continue;
       }
       if (val !== undefined)
         inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
     }
-    // Snapshot-clone connected dataframe inputs (instrumented runs): rewrite
-    // the input expression to a fresh snapshot variable BEFORE pass 2, so
-    // inlined `table.col(...)` args select from the very instance the call
-    // receives. The pass-through mapping below then also picks up the snapshot
-    // — the (possibly mutated) copy flows on, the upstream value stays intact.
+    // Snapshot-clone rewrite must run BEFORE pass 2, so inlined `table.col(...)`
+    // args select from the very instance the call receives.
     const cloneMap = new Map<string, string>();
     if (opts?.cloneDataframeInputs) {
       for (const key of inputKeys) {
@@ -243,8 +223,7 @@ export function compileGraph(
       }
     }
 
-    // Pass 2: inline unconnected column / column-list values as `table.col(...)`
-    // expressions, resolving the table from the node's `columnTables` association.
+    // Pass 2: inline unconnected column / column-list values as `table.col(...)`.
     for (const key of inputKeys) {
       if (inputMap.has(key) || !(key in node.inputValues)) continue;
       const slotType = slotTypeOf(node, key);
@@ -255,7 +234,6 @@ export function compileGraph(
       if (tableExpr) inputMap.set(key, columnSelectionExpr(slotType, raw, tableExpr));
     }
 
-    // Map output slots: pass-throughs → corresponding input expr; real → varName.
     const outputMap = new Map<string, string>();
     for (const key of outputKeys) {
       const ptInput = key.endsWith(PASSTHROUGH_SUFFIX)
@@ -265,12 +243,18 @@ export function compileGraph(
         const inExpr = inputMap.get(ptInput) ?? 'undefined';
         outputVarMap.set(`${nodeId}:${key}`, inExpr);
       } else {
-        const realCount = realOutputKeys.length;
-        const outVarName = realCount === 1 ? varName : `${varName}_${key}`;
-        outputMap.set(key, outVarName);
-        outputVarMap.set(`${nodeId}:${key}`, outVarName);
+        // `grok.functions.call` returns the value directly for a single-output
+        // func, but an object keyed by the declared output names for a multi-output one.
+        const outExpr = realOutputKeys.length === 1 ? varName : `${varName}${propertyAccessor(key)}`;
+        outputMap.set(key, outExpr);
+        outputVarMap.set(`${nodeId}:${key}`, outExpr);
       }
     }
+
+    // Runs after the clone rewrite, so the wrapper sees the snapshot variables
+    // the call must receive.
+    const callInputs = node.funcWrapper ?
+      new Map(Object.entries(node.funcWrapper.mapInputs(Object.fromEntries(inputMap)))) : undefined;
 
     steps.push({
       nodeId, nodeType: 'func', funcName,
@@ -279,6 +263,7 @@ export function compileGraph(
       cloneInputs: cloneMap.size > 0 ? cloneMap : undefined,
       properties: {...node.properties, _passthroughCount: ptCount},
       inputValues: {...node.inputValues},
+      callInputs,
     });
   }
 
@@ -302,9 +287,8 @@ function compileUtilityNode(
     if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap, liveBoundary));
   }
 
-  // Side-effect-only utilities (Log / Info / Warning) have no data output
-  // socket — their step must declare NO outputs, or downstream instrumentation
-  // (`__ff_stash`, output summaries) would reference an undeclared variable.
+  // A side-effect-only utility's step must declare NO outputs, or downstream
+  // instrumentation would reference an undeclared variable.
   const firstOutKey = Object.keys(node.outputs).find((k) => !isExecKey(k));
   return {
     nodeId: node.id, nodeType: 'utility', funcName: utilityKind(node),
@@ -316,11 +300,8 @@ function compileUtilityNode(
   };
 }
 
-/** Stable utility node kind — the trailing segment of the registered type name
- *  (`Constants/String` → `String`). Labels are user-editable (constant nodes
- *  title themselves `const: <value>`), so emission dispatch must not read
- *  `node.label`; it stays only a fallback for nodes created outside the
- *  factory (tests). */
+/** Stable utility node kind (`Constants/String` → `String`) — labels are
+ *  user-editable, so emission dispatch must not read `node.label`. */
 function utilityKind(node: FlowNode): string {
   return node.dgTypeName?.split('/').pop() ?? node.label;
 }
@@ -329,11 +310,9 @@ function slotTypeOf(node: FlowNode, key: string): string | undefined {
   return (node.inputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
 }
 
-/** Resolve the table expression a column/column-list input selects from: the
- *  dataframe input recorded in the node's `columnTables` association, falling
- *  back (older graphs / hand-built nodes) to the numeric-suffix pairing then
- *  the first connected dataframe input. Returns undefined when no dataframe
- *  input is resolvable, in which case the column value is dropped. */
+/** The table expression a column/column-list input selects from: the node's
+ *  `columnTables` association, falling back to the numeric-suffix pairing then
+ *  the first connected dataframe input. */
 function tableExprForColumnParam(
   node: FlowNode, paramName: string, inputMap: Map<string, string>,
 ): string | undefined {
@@ -351,9 +330,8 @@ function tableExprForColumnParam(
   return undefined;
 }
 
-/** `table.col('name')` for a column, `[table.col('a'), table.col('b')]` for a
- *  column-list (comma-separated, trimmed) — identical to the Select Column(s)
- *  utility emission, so inlined columns and explicit nodes generate the same code. */
+/** `table.col('name')` / `[table.col('a'), …]` — identical to the Select
+ *  Column(s) utility emission. */
 function columnSelectionExpr(slotType: string, raw: string, tableExpr: string): string {
   if (slotType === 'column') return `${tableExpr}.col('${escapeColumnName(raw)}')`;
   const names = raw.split(',').map((s) => s.trim()).filter(Boolean);
@@ -378,8 +356,7 @@ function resolveInputExpr(
 function resolveConnExpr(
   c: FlowConnection, outputVarMap: Map<string, string>, liveBoundary?: Set<string>,
 ): string {
-  // Source outside the compiled slice → read its captured value from the
-  // live-value registry rather than an (absent) in-script variable.
+  // Source outside the compiled slice → read its captured value from the live registry.
   if (liveBoundary && !liveBoundary.has(c.source))
     return `_ffLive(${JSON.stringify(c.source)}, ${JSON.stringify(String(c.sourceOutput))})`;
   return outputVarMap.get(`${c.source}:${String(c.sourceOutput)}`) ?? 'undefined';
@@ -397,8 +374,17 @@ function toCamelCase(s: string): string {
     .join('');
 }
 
+const JS_IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
+/** `.name` for a valid identifier, else `['name']`. */
+function propertyAccessor(key: string): string {
+  return JS_IDENTIFIER_RE.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`;
+}
+
 function uniqueVarName(base: string, used: Set<string>): string {
   if (!base) base = 'v';
+  // `toCamelCase` keeps digits — a leading digit is illegal in a variable name.
+  if (/^[0-9]/.test(base)) base = `_${base}`;
   if (!used.has(base)) return base;
   let i = 2;
   while (used.has(`${base}${i}`)) i++;

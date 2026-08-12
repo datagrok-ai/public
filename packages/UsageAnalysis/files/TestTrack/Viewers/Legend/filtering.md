@@ -1,5 +1,9 @@
 ---
 feature: legend
+realizes_atlas: []
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot, viewers.filters.histogram, viewers.filters.categorical, chem.filter.substructure-filter]
+realized_as:
+  - filtering-spec.ts
 target_layer: playwright
 coverage_type: regression
 priority: p1
@@ -24,7 +28,7 @@ Verifies that a viewer's legend always reflects the currently visible rows, no m
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`) — wait for table view + semantic-type detection on `Core` / `Structure` columns
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`) — wait for table view + semantic-type detection on `Core` / `Structure` columns
 2. Add seven viewers via the JS API: **Scatter plot**, **Histogram**, **Line chart**, **Bar chart**, **Pie chart**, **Trellis plot**, **Box plot**
 3. Set the categorical legend on each viewer to `Stereo Category`, using the viewer's own legend-source property:
    * Scatter plot → **Color**
@@ -115,5 +119,5 @@ Verifies that a viewer's legend always reflects the currently visible rows, no m
 ---
 {
   "order": 3,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

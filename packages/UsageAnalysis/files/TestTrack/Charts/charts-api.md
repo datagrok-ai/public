@@ -3,7 +3,10 @@ feature: charts
 target_layer: apitest
 coverage_type: regression
 priority: p0
-realizes: [charts.cp.open-viewer-with-required-columns]
+realizes_atlas: [charts.cp.open-viewer-with-required-columns]
+realizes: [charts.viewer.radar, charts.viewer.sunburst, charts.viewer.tree, charts.viewer.timelines]
+realized_as:
+  - charts-api-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

@@ -25,6 +25,9 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
     });
     await waitForChemMenu(page);
     await waitForMolecule(page);
+    // Load the Chem package bundle so `Chem:substructureFilter` resolves for synchronous filter
+    // operations (fg.updateOrAdd) — the semType detector alone does not load it.
+    await page.evaluate(async () => { await grok.functions.call('Chem:getRdKitModule', {}); });
   });
 
   // ===== Block A — Filter Panel basics =====

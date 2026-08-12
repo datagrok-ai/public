@@ -27,5 +27,5 @@
 ---
 {
   "order": 1,
-  "datasets": ["System:DemoFiles/SPGI.csv","System:DemoFiles/SPGI-linked1.csv","System:DemoFiles/SPGI-linked2.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv","System:AppData/ApiTests/datasets/SPGI-linked1.csv","System:AppData/ApiTests/datasets/SPGI-linked2.csv"]
 }

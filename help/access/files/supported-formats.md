@@ -1,4 +1,15 @@
-# Supported formats
+---
+title: "Supported formats"
+description: Reference of file formats Datagrok can open, including domain-specific chemistry, biology, and scientific formats.
+keywords:
+  - supported file formats
+  - file types
+  - sdf
+  - fasta
+  - smiles
+  - molecule file formats
+  - required plugins
+---
 
 Datagrok supports over 50 file formats, including domain-specific formats like SDF, FASTA, and others. Datagrok also understands how data is structured or represented within those files (e.g., assay plates within an XLSX, SDTM conventions within a CSV, and notations like SMILES and HELM).
 

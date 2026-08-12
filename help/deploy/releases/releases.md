@@ -8,6 +8,8 @@ keywords:
   - release summary
 ---
 
+<!-- markdownlint-disable MD024 -->
+
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775/159), [Platform releases](https://community.datagrok.ai/t/platform-releases/73/21)
 
@@ -283,8 +285,8 @@ Improved in-platform model training:
 [MLflow](https://mlflow.org/) integration ([learn more](../../learn/mlflow.md)):
 * Import and apply MLflow predictive models directly to Datagrok datasets
 * Streamlined model management:
-   * Automatic MLflow model fetching
-   * Input annotation via MLflow tags
+  * Automatic MLflow model fetching
+  * Input annotation via MLflow tags
 * MLflow models inference support
 
 ### Platform performance

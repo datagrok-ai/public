@@ -3,7 +3,8 @@ feature: dendrogram
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [GROK-13041]
+realizes_atlas: [GROK-13041]
+realizes: [chem.menu.analyze.hierarchical-clustering, dendrogram.viewer.dendrogram]
 produced_from: atlas-driven
 related_bugs:
   - GROK-13041

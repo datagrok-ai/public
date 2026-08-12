@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
+import {fitFunctions} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {
   IFitChartData,
   IFitChartOptions,
@@ -7,11 +8,17 @@ import {
   IFitSeries,
   IFitPoint,
   FIT_FUNCTION_SIGMOID,
+  FitFunctionName,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};
+
+/** XML attributes are strings, so `!!element.getAttribute(name)` is true for "False" as well. */
+function xmlBool(element: Element | undefined, name: string): boolean {
+  return element?.getAttribute(name)?.toLowerCase() === 'true';
+}
 
 
 /** Constructs {@link IFitChartOptions} from grid and settings xml tags.
@@ -28,7 +35,9 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
 
     xAxisName: settings.getAttribute('xLabel')!,
     yAxisName: settings.getAttribute('yLabel')!,
-    logX: !!settings.getAttribute('logX')!,
+    logX: xmlBool(settings, 'logX'),
+    // only when declared, or the key owns it and no Column or Dataframe option can cascade onto it
+    ...(settings.getAttribute('logY') !== null ? {logY: xmlBool(settings, 'logY')} : {}),
   };
 }
 
@@ -38,16 +47,18 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
 */
 function getSeriesOptions(series: Element): IFitSeriesOptions {
   const params = (series.getElementsByTagName('params')[0]?.childNodes[0].nodeValue)?.split(',')!.map(Number)!;
-  let funcType = series.getElementsByTagName('function')[0]?.getAttribute('type')!;
-  funcType = !funcType || funcType === 'sigif' ? FIT_FUNCTION_SIGMOID : funcType;
+  const declaredType = series.getElementsByTagName('function')[0]?.getAttribute('type');
+  // 'sigif' is this format's name for a sigmoid; an unregistered name would render nothing
+  const funcType = !declaredType || declaredType === 'sigif' || !(declaredType in fitFunctions) ?
+    FIT_FUNCTION_SIGMOID : declaredType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
   const lineColor = series.getElementsByTagName('settings')[0].getAttribute('color')!;
-  const drawLine = !!series.getElementsByTagName('settings')[0].getAttribute('drawLine')!;
+  const drawLine = xmlBool(series.getElementsByTagName('settings')[0], 'drawLine');
   const seriesName = series.getAttribute('name')!;
 
   const seriesOptions: IFitSeriesOptions = {
     name: seriesName,
-    fitFunction: funcType,
+    fitFunction: funcType as FitFunctionName,
     markerType: DG.MARKER_TYPE.CIRCLE,
     pointColor: markerColor,
     fitLineColor: lineColor,

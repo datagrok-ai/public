@@ -28,14 +28,9 @@ export interface C0Options {
 /**
  * Estimate the dose-time concentration for an IV bolus profile.
  *
- * The function never throws; on inputs where every method fails it returns
- * `null`. NaN concentrations are treated as missing.
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param blqMask - 1 = BLQ, 0 = measurable. Same length as `time`.
- * @param options - Optional dose time and method chain.
- * @returns The estimated c0 (>= 0), or `null` if every strategy fails.
+ * `time` is sorted ascending, `conc` has the same length, and `blqMask` marks
+ * BLQ points with 1. NaN concentrations are treated as missing. The function
+ * never throws; it returns `null` when every method in the chain fails.
  */
 export function estimateC0(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
@@ -146,10 +141,7 @@ function c0CMin(conc: Float64Array, blqMask: Uint8Array): number | null {
  * before AUC and lambda_z computation.
  *
  * Re-finds Cmax on the augmented profile; for IV bolus this typically
- * shifts Tmax to `timeDose`.
- *
- * @returns The augmented profile and the new Cmax index, or `null` when
- *          c0 estimation fails entirely.
+ * shifts Tmax to `timeDose`. Returns `null` when c0 estimation fails.
  */
 export function insertC0(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
@@ -165,7 +157,6 @@ export function insertC0(
   const blqMask2 = new Uint8Array(n + 1);
   time2[0] = timeDose;
   conc2[0] = c0;
-  // Original tail
   time2.set(time, 1);
   conc2.set(conc, 1);
   blqMask2.set(blqMask, 1);

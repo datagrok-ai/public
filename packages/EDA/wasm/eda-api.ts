@@ -130,6 +130,7 @@ export async function _principalComponentAnalysisNipalsInWebWorker(
  *   [3] uScores          — Y-scores, `componentsCount` columns of length rowCount
  *   [4] xLoadings        — X-loadings, `componentsCount` columns of length #features
  *   [5] yLoadings        — Y-loadings `q`, one column of length componentsCount
+ *   [6] vip              — variable importance in projection, one column of length #features
  *
  * Matches the retired C++ `partialLeastSquareExtended`: predictors and
  * response are standardised here with the population std (`||x - mean|| /
@@ -140,7 +141,7 @@ export async function _principalComponentAnalysisNipalsInWebWorker(
  */
 export async function _partialLeastSquareRegressionInWebWorker(
   table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, componentsCount: number,
-): Promise<[DG.Column, DG.Column, DG.Column[], DG.Column[], DG.Column[], DG.Column]> {
+): Promise<[DG.Column, DG.Column, DG.Column[], DG.Column[], DG.Column[], DG.Column, DG.Column]> {
   const cols = features.toList();
   const m = cols.length;
   const nRows = table.rowCount;
@@ -193,10 +194,10 @@ export async function _partialLeastSquareRegressionInWebWorker(
     stdY[i] = (ry[i] - yMean) / yStd;
 
   // Fit in the worker; xMeans/xStds are small (length m) so left untransferred.
-  const {b, t, u, p, q} = await runEdaMlWorker(
+  const {b, t, u, p, q, vip} = await runEdaMlWorker(
     {method: 'pls', flatX, nRows, stdY, xMeans, xStds, yMean, yStd, componentsCount},
     [flatX.buffer, stdY.buffer],
-  ); // b: raw coeffs (m); t,u: A x nRows; p: A x m; q: A
+  ); // b: raw coeffs (m); t,u: A x nRows; p: A x m; q: A; vip: m
 
   // prediction = D · b on raw predictors, no intercept (C++ parity).
   const predData = new Float32Array(nRows);
@@ -234,8 +235,9 @@ export async function _partialLeastSquareRegressionInWebWorker(
   const prediction = DG.Column.fromFloat32Array('0', predData);
   const regrCoeffs = DG.Column.fromFloat32Array('0', Float32Array.from(b));
   const yLoadings = DG.Column.fromFloat32Array('0', Float32Array.from(q));
+  const vipCol = DG.Column.fromFloat32Array('0', Float32Array.from(vip));
 
-  return [prediction, regrCoeffs, tScores, uScores, xLoadings, yLoadings];
+  return [prediction, regrCoeffs, tScores, uScores, xLoadings, yLoadings, vipCol];
 }
 
 /**

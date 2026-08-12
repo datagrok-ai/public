@@ -52,7 +52,6 @@ category('Flow: inspect / slice', () => {
       const sliced = emitScript(e.flow, settings, {onlyNodeIds: slice});
       const full = emitScript(e.flow, settings);
 
-      // The sliced script stops at ToString; the full one declares the output param.
       expect(/\/\/output:/.test(full), true, 'full script declares an output');
       expect(/\/\/output:/.test(sliced), false, 'sliced script has no output node');
     } finally {
@@ -61,22 +60,18 @@ category('Flow: inspect / slice', () => {
   });
 
   test('missingRequiredInputs reports unfilled, unconnected required inputs', async () => {
-    // A bare FlowNode with two declared required inputs; neither connected.
     const node = new FlowNode('probe');
     node.requiredInputs = ['table', 'molecules'];
     (node.inputs as Record<string, {label?: string}>)['table'] = {label: 'table'};
     (node.inputs as Record<string, {label?: string}>)['molecules'] = {label: 'molecules'};
 
-    // Nothing connected, nothing filled → both missing.
     let missing = missingRequiredInputs(node, () => false);
     expect(missing.length, 2);
 
-    // Fill one via an input value → only the other remains.
     node.inputValues['molecules'] = 'smiles';
     missing = missingRequiredInputs(node, () => false);
     expect(missing.join(','), 'table');
 
-    // Connect the remaining one → none missing.
     missing = missingRequiredInputs(node, (k) => k === 'table');
     expect(missing.length, 0);
   });

@@ -7,7 +7,7 @@ import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {serializeFlow, deserializeFlow} from '../serialization/flow-serializer';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 const SETTINGS = {name: 'OrderFlow', description: '', tags: ['funcflow']};
 
@@ -21,7 +21,6 @@ category('Flow: order edges', () => {
     expect(areTypesCompatible('order', 'order'), true);
     expect(areTypesCompatible('order', 'dataframe'), false);
     expect(areTypesCompatible('dataframe', 'order'), false);
-    // The dynamic/object wildcards must NOT swallow order ports.
     expect(areTypesCompatible('order', 'dynamic'), false);
     expect(areTypesCompatible('dynamic', 'order'), false);
     expect(areTypesCompatible('order', 'object'), false);
@@ -37,11 +36,62 @@ category('Flow: order edges', () => {
     }
   });
 
+  test('exec squares are hover-only until wired: data-wired flips with an order edge', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Utilities/Info', 0, 0);
+      const b = await addNode(e.flow, 'Utilities/Info', 300, 0);
+      const row = (id: string): HTMLElement | null =>
+        e.container.querySelector(`.ff-node[data-node-id="${id}"] .ff-node-exec-row`);
+      await until(() => row(a.id) != null && row(b.id) != null);
+      expect(row(a.id)!.dataset.wired, 'false', 'unwired row hidden by default');
+      const port = e.container.querySelector(`.ff-node[data-node-id="${a.id}"] .ff-exec-out`);
+      expect((port?.getAttribute('title') ?? '').includes('Run order'), true, 'plain-language tooltip');
+      expect(port?.querySelector('.ff-socket')?.hasAttribute('title'), false, 'order dot has no shadowing title');
+
+      await e.flow.addConnectionByKeys(a.id, EXEC_OUT_KEY, b.id, EXEC_IN_KEY);
+      await e.flow.updateNode(a.id);
+      await e.flow.updateNode(b.id);
+      const wired = await until(() =>
+        row(a.id)?.dataset.wired === 'true' && row(b.id)?.dataset.wired === 'true');
+      expect(wired, true, 'both ends stay visible once an order edge exists');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an order drag lights every other node\'s opposite exec square and dims the rest', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Utilities/Info', 0, 0);
+      const b = await addNode(e.flow, 'Utilities/Info', 300, 0);
+      const c = await addNode(e.flow, 'Utilities/Info', 600, 0);
+      const nodeEl = (id: string): HTMLElement | null =>
+        e.container.querySelector(`.ff-node[data-node-id="${id}"]`);
+      await until(() => nodeEl(a.id) != null && nodeEl(b.id) != null && nodeEl(c.id) != null);
+
+      (e.flow as unknown as {beginConnectHints(n: string, k: string, s: string): void})
+        .beginConnectHints(a.id, EXEC_OUT_KEY, 'output');
+      expect(e.container.classList.contains('ff-connecting'), true, 'connect mode on');
+      expect(e.container.classList.contains('ff-connecting-order'), true, 'order drag marked (squares stay visible)');
+      expect(nodeEl(a.id)!.classList.contains('ff-node-source'), true, 'source undimmed');
+      for (const other of [b, c]) {
+        expect(nodeEl(other.id)!.classList.contains('ff-node-compat'), true, 'other node lit as a target');
+        expect(nodeEl(other.id)!.querySelector('[data-testid="ff-exec-in"]')!
+          .classList.contains('ff-socket-compat'), true, 'its exec-in square glows');
+      }
+
+      (e.flow as unknown as {endConnectHints(): void}).endConnectHints();
+      expect(e.container.classList.contains('ff-connecting-order'), false, 'order class cleared on drop');
+      expect(e.container.querySelectorAll('.ff-socket-compat, .ff-node-compat').length, 0, 'hints cleared');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('an order edge overrides vertical position in the topological sort', async () => {
     const e = makeEditor();
     try {
-      // `first` is placed LOW on the canvas, `second` HIGH — without an edge the
-      // sort would run the higher (second) node first. The order edge flips it.
       const first = await addNode(e.flow, 'Utilities/Info', 0, 500);
       const second = await addNode(e.flow, 'Utilities/Info', 0, 10);
 
@@ -59,7 +109,6 @@ category('Flow: order edges', () => {
   test('order edges sequence the emitted script but add no data / variables', async () => {
     const e = makeEditor();
     try {
-      // Two Log nodes, distinguishable by label, with `b` positioned ABOVE `a`.
       const a = await addNode(e.flow, 'Utilities/Log', 0, 400);
       a.properties['label'] = 'AAA';
       const b = await addNode(e.flow, 'Utilities/Log', 0, 20);
@@ -67,11 +116,10 @@ category('Flow: order edges', () => {
       await e.flow.addConnectionByKeys(a.id, EXEC_OUT_KEY, b.id, EXEC_IN_KEY);
 
       const script = emitScript(e.flow, SETTINGS);
-      // The ordering edge is invisible in the output — no exec ports leak in.
       expect(script.includes('__exec'), false, 'no exec port keys in generated code');
-      // ...but the run order is enforced: AAA logged before BBB.
-      const iA = script.indexOf(`'AAA:'`);
-      const iB = script.indexOf(`'BBB:'`);
+      // Labels are JSON-escaped into the script, hence the stringify lookups.
+      const iA = script.indexOf(JSON.stringify('AAA:'));
+      const iB = script.indexOf(JSON.stringify('BBB:'));
       expect(iA >= 0 && iB >= 0, true, 'both Log steps present');
       expect(iA < iB, true, 'order edge sequenced AAA before BBB');
     } finally {
@@ -82,8 +130,6 @@ category('Flow: order edges', () => {
   test('an order edge does not feed data into the target', async () => {
     const e = makeEditor();
     try {
-      // A constant ordered before a Value Output via exec ports only — the
-      // output has no data input, so it must emit nothing for its value.
       const c = await addNode(e.flow, 'Constants/String', 0, 0);
       c.properties['value'] = 'hello';
       const out = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
@@ -91,7 +137,6 @@ category('Flow: order edges', () => {
       await e.flow.addConnectionByKeys(c.id, EXEC_OUT_KEY, out.id, EXEC_IN_KEY);
 
       const script = emitScript(e.flow, SETTINGS);
-      // The order edge must NOT be mistaken for the output's value.
       expect(/result\s*=/.test(script), false, 'order edge is not wired as the output value');
       expect(script.includes('__exec'), false);
     } finally {

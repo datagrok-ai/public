@@ -1,87 +1,122 @@
-/** Autorun: debounced re-execution of the flow after every result-affecting
- *  edit.
- *
- *  The scheduler consumes the classified `GraphEdit` stream (after the
- *  execution controller invalidated the affected downstream cone) and
- *  accumulates the invalidated node ids. One debounce interval after the last
- *  edit it asks the host to run — handing over the accumulated dirty set so
- *  the host can re-run only the affected slice (live-boundary expansion in
- *  `ExecutionController.runAutorun`), not the whole graph.
- *
- *  Edits that cannot affect results (adding a disconnected node, removing an
- *  isolated one) schedule nothing. A run already in progress postpones the
- *  attempt — the dirty set keeps accumulating and the next interval retries. */
+/** Autorun: debounced re-execution of the affected slice after every
+ *  result-affecting edit, fed by the classified `GraphEdit` stream. */
 
 import {GraphEdit} from '../rete/flow-editor';
+import {FlowNode} from '../rete/scheme';
+import {safeGet} from '../utils/dart-proxy-utils';
 
-/** Delay between the last result-affecting edit and the automatic run. Long
- *  enough to swallow a burst (typing a value, dragging several wires), short
- *  enough to feel live. */
+/** Delay between the last result-affecting edit and the automatic run. */
 export const AUTORUN_DEBOUNCE_MS = 1000;
 
+// Live-by-default nodes rerun even while the ribbon autorun toggle is OFF: the
+// two lists below plus any function declaring `meta.autorun: true` on itself.
+// Edit the lists for functions you don't own; prefer the meta for ones you do.
+
+/** DG function simple names (case-insensitive) that are live by default. */
+export const AUTORUN_FUNC_NAMES: string[] = [
+  'OpenFile',
+  'AddNewColumn',
+];
+
+/** Registered node-type names (`FlowNode.dgTypeName`) that are live by
+ *  default; a trailing `*` matches a prefix — `'Viewers/*'` = every viewer. */
+export const AUTORUN_NODE_TYPES: string[] = [
+  'Viewers/*',
+];
+
+/** Whether edits touching this node rerun it even when the autorun toggle is off. */
+export function isAutorunByDefault(node: FlowNode): boolean {
+  const fn = node.dgFunc?.name?.toLowerCase();
+  if (fn && AUTORUN_FUNC_NAMES.some((n) => n.toLowerCase() === fn)) return true;
+  try {
+    const meta = safeGet(node.dgFunc?.options, 'autorun');
+    if (meta === true || String(meta).toLowerCase() === 'true') return true;
+  } catch {/* options can throw on odd Dart proxies — fall through */}
+  const typeName = node.dgTypeName ?? '';
+  for (const pat of AUTORUN_NODE_TYPES) {
+    if (pat.endsWith('*') ? typeName.startsWith(pat.slice(0, -1)) : typeName === pat)
+      return true;
+  }
+  // Viewer nodes not registered under Viewers/ (constructed directly in code).
+  return node.properties['viewerType'] != null;
+}
+
 export class AutorunScheduler {
-  /** Whether autorun is on — toggled from the ribbon; off by default. */
+  /** Autorun for EVERY node — toggled from the ribbon; live-by-default nodes
+   *  schedule runs regardless of this flag. */
   enabled = false;
 
-  /** Invalidated node ids accumulated since the last successful run. */
   private dirty = new Set<string>();
   private timer: ReturnType<typeof setTimeout> | null = null;
-  /** While > 0, firing is suspended (edits still accumulate) — see {@link hold}. */
   private holds = 0;
 
-  /** @param run attempt a run for the accumulated dirty set:
-   *  - `'started'` — a run began; the set is consumed;
-   *  - `'busy'`    — a run is still in progress; keep the set, retry after
-   *                  another interval;
-   *  - `'skipped'` — the graph can't autorun right now (validation errors,
-   *                  a parameter dialog would be needed); keep the set but
-   *                  don't poll — the next edit reschedules anyway.
-   *  @param debounceMs override for tests. */
+  /** `run` outcomes: 'started' consumes the dirty set; 'busy' keeps it and
+   *  retries after another interval; 'skipped' keeps it until the next edit.
+   *  `liveOnly` is true when the toggle is off (the set holds only
+   *  live-by-default node ids — run just those via `runLiveNodes`). */
   constructor(
-    private readonly run: (dirty: Set<string>) => 'started' | 'busy' | 'skipped',
+    private readonly run: (dirty: Set<string>, liveOnly: boolean) => 'started' | 'busy' | 'skipped',
     private readonly debounceMs = AUTORUN_DEBOUNCE_MS,
+    private readonly isLiveNode: (nodeId: string) => boolean = () => false,
   ) {}
 
-  /** Flip the mode. Turning it off drops any pending run and dirty state. */
   toggle(): boolean {
     this.enabled = !this.enabled;
     if (!this.enabled) this.reset();
     return this.enabled;
   }
 
-  /** Feed one classified edit and the node ids it invalidated (from
-   *  `ExecutionController.applyGraphEdit`). Schedules a debounced run when the
-   *  edit can affect results. */
+  /** Feed one classified edit and the node ids it invalidated. */
   onEdit(edit: GraphEdit, affected: Set<string>): void {
-    if (!this.enabled) return;
     if (edit.kind === 'cleared') {
       this.reset();
       return;
     }
-    // A fresh node changes nothing until it's wired; a removed node's
-    // connection-removal events have already been fed separately.
-    if (edit.kind === 'node-added' || edit.kind === 'node-removed') return;
-    for (const id of affected) this.dirty.add(id);
+    // A removed node's connection-removal events have already been fed separately.
+    if (edit.kind === 'node-removed') return;
+    if (edit.kind === 'node-added') {
+      // A live node dropped ready-to-run (a file dragged from the files tree)
+      // must run at once; readiness is re-checked at fire time, so a bare
+      // toolbox drop schedules and then quietly no-ops.
+      if (this.enabled || !this.isLiveNode(edit.nodeId)) return;
+      this.dirty.add(edit.nodeId);
+      this.schedule();
+      return;
+    }
+    if (!this.enabled) {
+      // Only the live nodes the edit touched (never the whole cone) enter the
+      // set, so nothing else on the canvas ever runs uninvited.
+      const live = [...affected].filter((id) => this.isLiveNode(id));
+      if (live.length === 0) return;
+      for (const id of live) this.dirty.add(id);
+    }
+    else {
+      for (const id of affected) this.dirty.add(id);
+    }
     this.schedule();
   }
 
-  /** Schedule a debounced run for an externally computed dirty set — e.g. the
-   *  moment autorun is switched on, everything without a fresh result
-   *  (`ExecutionController.pendingNodes`) is kicked off without waiting for an
-   *  edit. No-op while disabled. */
+  /** Schedule an externally computed dirty set (e.g. on toggle-on); no-op while disabled. */
   kick(dirty: Set<string>): void {
     if (!this.enabled) return;
     for (const id of dirty) this.dirty.add(id);
     this.schedule();
   }
 
+  /** Schedule the live-by-default nodes among `ids` without an edit (flow load). */
+  kickLive(ids: Iterable<string>): void {
+    let any = false;
+    for (const id of ids) {
+      if (!this.isLiveNode(id)) continue;
+      this.dirty.add(id);
+      any = true;
+    }
+    if (any) this.schedule();
+  }
+
   /** Suspend firing while a modal interaction is in progress (edits still
-   *  accumulate). Concretely: a function-editor dialog intercepts the global
-   *  `d4-before-run-action` event, which fires for EVERY client funccall — an
-   *  autorun kicking in mid-dialog would run the same function, get its call
-   *  canceled by the dialog's interceptor, and resolve the dialog round-trip
-   *  early with the wrong funccall (the user's OK then writes nothing back).
-   *  Re-entrant: every `hold` needs a `release`. */
+   *  accumulate) — an autorun mid-dialog gets hijacked by the function editor's
+   *  `d4-before-run-action` interceptor. Re-entrant: every `hold` needs a `release`. */
   hold(): void {
     this.holds++;
     if (this.timer !== null) {
@@ -90,14 +125,12 @@ export class AutorunScheduler {
     }
   }
 
-  /** Undo one {@link hold}; when the last one lifts, anything accumulated in
-   *  the meantime is scheduled. */
+  /** Undo one {@link hold}; when the last one lifts, the backlog is scheduled. */
   release(): void {
     this.holds = Math.max(0, this.holds - 1);
-    if (this.holds === 0 && this.enabled && this.dirty.size > 0) this.schedule();
+    if (this.holds === 0 && this.dirty.size > 0) this.schedule();
   }
 
-  /** Cancel any pending run and forget the accumulated dirty set. */
   reset(): void {
     if (this.timer !== null) {
       clearTimeout(this.timer);
@@ -111,8 +144,9 @@ export class AutorunScheduler {
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
-      if (!this.enabled || this.holds > 0) return;
-      const outcome = this.run(new Set(this.dirty));
+      // No `enabled` check: a pending set exists only if `onEdit` admitted it.
+      if (this.holds > 0) return;
+      const outcome = this.run(new Set(this.dirty), !this.enabled);
       if (outcome === 'started')
         this.dirty.clear();
       else if (outcome === 'busy')

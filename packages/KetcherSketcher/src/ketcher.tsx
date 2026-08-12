@@ -36,6 +36,10 @@ Object.defineProperty(SVGLength.prototype, 'value', {
 });
 
 export class KetcherSketcher extends grok.chem.SketcherBase {
+  // ketcher-core is built on module-level singletons (CoreEditor, indigoWorker, ketcherProvider),
+  // so only one live editor per page is possible (upstream limitation): mounting a new one
+  // suspends all others behind a "Reload" placeholder instead of letting them silently break.
+  private static _instances = new Set<KetcherSketcher>();
   _smiles: string | null = null;
   _molV2000: string | null = null;
   _molV3000: string | null = null;
@@ -46,9 +50,24 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   updatingMolecule = false;
   private importedMoleculesCounter = 0;
   private _detached = false;
+  private _suspended = false;
 
   constructor() {
     super();
+    this.ketcherHost = ui.div([], 'ketcher-host');
+    this.root.appendChild(this.ketcherHost);
+    KetcherSketcher._instances.add(this);
+    this._mountEditor();
+  }
+
+  private _mountEditor(): void {
+    for (const other of KetcherSketcher._instances) {
+      if (other !== this)
+        other._suspend();
+    }
+    this._suspended = false;
+    ui.empty(this.ketcherHost);
+
     const structServiceProvider = new StandaloneStructServiceProvider();
 
     const props = {
@@ -74,9 +93,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         //     this._sketcher?.editor.setOptions(opts);
         //   }
         // });
-        this.setMoleculeFromHost();
+        this._restoreMolecule();
         (this._sketcher.editor as any).subscribe('change', async () => {
-          if (this._detached)
+          if (this._detached || this._suspended)
             return;
           this.updatingMolecule = false;
           // we do not reset explicit mol in case this is the first change event called after ketcher was created
@@ -95,7 +114,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
           // while the awaits above are still pending; ketcher-core then drops its singleton
           // instance and any getMolfile() still in flight throws "couldnt find ketcher instance N".
           try {
-            if (this._detached)
+            if (this._detached || this._suspended)
               return;
             this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
             this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
@@ -108,13 +127,43 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
     };
 
-    this.ketcherHost = ui.div([], 'ketcher-host');
-
-    const component = React.createElement(Editor, props, null);
     this.reactRoot = ReactDOM.createRoot(this.ketcherHost);
-    this.reactRoot.render(component);
+    this.reactRoot.render(React.createElement(Editor, props, null));
+  }
 
-    this.root.appendChild(this.ketcherHost);
+  private _suspend(): void {
+    if (this._suspended || this._detached || this.reactRoot === null)
+      return;
+    this._suspended = true;
+    try {
+      this.reactRoot.unmount();
+    } catch (e) {
+      console.error(e);
+    }
+    this.reactRoot = null;
+    this._sketcher = null;
+    if (this.updatingMolecule) {
+      this.updatingMolecule = false;
+      this.onChanged.next(null);
+    }
+    ui.empty(this.ketcherHost);
+    this.ketcherHost.appendChild(ui.divV([
+      ui.divText('This sketcher was paused because another Ketcher sketcher was opened. ' +
+        'Ketcher supports only one active editor per page.'),
+      ui.button('Reload', () => this._mountEditor()),
+    ], 'ketcher-suspended'));
+  }
+
+  private _restoreMolecule(): void {
+    if (this._smiles === null && this._smarts !== null) {
+      this.smarts = this._smarts;
+      return;
+    }
+    const mol = this.molFile;
+    if (mol)
+      this.molFile = mol;
+    else
+      this.setMoleculeFromHost();
   }
 
   async init(host: grok.chem.Sketcher) {
@@ -261,6 +310,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   detach() {
     this._detached = true;
+    KetcherSketcher._instances.delete(this);
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     this.reactRoot?.unmount();
     this.reactRoot = null;

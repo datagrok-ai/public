@@ -1,3 +1,13 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: edge
+priority: p2
+realizes: [views.queries, sharing.share-dialog, file.menu.save.tables-as-project]
+realized_as: []
+related_bugs: []
+---
+
 # Visual Query Advanced — manual UI checks
 
 This is the **manual companion** to `visual-query-advanced.md`. The autotest

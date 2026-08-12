@@ -1,5 +1,12 @@
 ---
 title: "Create a custom view"
+description: Register a custom view by extending ViewBase, or quickly create one with grok.shell.newView.
+keywords:
+  - DG.ViewBase
+  - view tag registration
+  - grok.shell.newView
+  - custom navigation view
+  - view URL path handler
 ---
 
 A view is a set of visualizations grouped together. Typically it is associated with a particular dataframe (then it is

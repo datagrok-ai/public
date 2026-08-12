@@ -1,5 +1,4 @@
-/** Typed socket for FuncFlow. Wraps a Datagrok type string and routes
- * compatibility checks through `areTypesCompatible` from `type-map`. */
+/** Typed socket wrapping a Datagrok type string; compatibility via `areTypesCompatible`. */
 import {ClassicPreset} from 'rete';
 import {areTypesCompatible} from '../types/type-map';
 
@@ -14,8 +13,7 @@ export class TypedSocket extends ClassicPreset.Socket {
   }
 }
 
-/** Cache of TypedSocket instances by dgType — sockets are pure value-objects
- * so we share one per type. Keeps reference equality where possible. */
+/** One shared TypedSocket per dgType so reference equality holds. */
 const _socketCache = new Map<string, TypedSocket>();
 
 export function getSocket(dgType: string): TypedSocket {

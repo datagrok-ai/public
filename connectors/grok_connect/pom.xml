@@ -29,7 +29,8 @@
          The jackson/netty BOMs manage the transitive artifacts (netty-codec-http2,
          netty-resolver-dns, netty-codec-redis, jackson-annotations, ...) that the
          direct jackson/netty deps below don't cover; the rest are pinned
-         individually. jena (needs Java 11) and jline (major bump) are left as-is. -->
+         individually. jena (needs Java 11) is left as-is; jline (4.x needs Java 11)
+         is excluded from hive-jdbc instead. -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -80,6 +81,26 @@
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-yarn-server-common</artifactId>
                 <version>3.3.2</version>
+            </dependency>
+            <dependency> <!-- CVE-2023-34610; pulled in by fst via hadoop-yarn-server-applicationhistoryservice -->
+                <groupId>com.cedarsoftware</groupId>
+                <artifactId>json-io</artifactId>
+                <version>4.14.1</version>
+            </dependency>
+            <dependency> <!-- CVE-2023-44483 -->
+                <groupId>org.apache.santuario</groupId>
+                <artifactId>xmlsec</artifactId>
+                <version>2.3.4</version>
+            </dependency>
+            <dependency> <!-- CVE-2025-48924 -->
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.18.0</version>
+            </dependency>
+            <dependency> <!-- CVE-2024-29131, CVE-2024-29133, CVE-2026-45205 -->
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-configuration2</artifactId>
+                <version>2.15.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -550,6 +571,11 @@
             <artifactId>jaybird-jdk18</artifactId>
             <version>3.0.2</version>
         </dependency>
+        <dependency> <!-- 2.16+ required: commons-compress >=1.27 on the test classpath calls FileTimes.toUnixTime -->
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.16.1</version>
+        </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
@@ -606,6 +632,14 @@
                 <exclusion> <!-- remediating vulnerability CVE-2024-36114 -->
                     <groupId>io.airlift</groupId>
                     <artifactId>aircompressor</artifactId>
+                </exclusion>
+                <exclusion> <!-- remediating GHSA-2r2c-cx56-8933/GHSA-47qp-hqvx-6r3f; fixed jline 4.x needs Java 11 -->
+                    <groupId>org.jline</groupId>
+                    <artifactId>jline</artifactId>
+                </exclusion>
+                <exclusion> <!-- embeds protobuf-java 3.7.1 (CVE-2024-7254 et al.); YARN RPC is unused over JDBC -->
+                    <groupId>org.apache.hadoop.thirdparty</groupId>
+                    <artifactId>hadoop-shaded-protobuf_3_7</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -762,25 +796,15 @@
             <artifactId>commons-compress</artifactId>
             <version>1.28.0</version>
         </dependency>
-        <dependency> <!-- compile scope: main code uses lang3 (DataQuery -> WordUtils); commons-compress 1.28 needs modern lang3 (ArrayFill, SystemProperties) - transitive 3.10 breaks TestContainers -->
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.18.0</version>
-        </dependency>
-        <dependency> <!-- compile scope: main code uses commons-io (Blob/ClobTypeConverter -> IOUtils); commons-compress 1.28 needs modern commons-io (FileTimes) - stale version breaks TestContainers -->
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.20.0</version>
-        </dependency>
         <dependency> <!-- remediating vulnerability CVE in 3.5.1 -->
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
             <version>3.6.1</version>
         </dependency>
-        <dependency> <!-- remediating vulnerability -->
+        <dependency> <!-- remediating vulnerability CVE-2025-53864 -->
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.37.2</version>
+            <version>9.37.4</version>
         </dependency>
         <dependency> <!-- remediating vulnerability CVE-2024-47561, CVE-2023-39410 -->
             <groupId>org.apache.avro</groupId>

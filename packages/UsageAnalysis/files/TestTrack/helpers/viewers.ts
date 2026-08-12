@@ -46,7 +46,7 @@ export interface OpenTableOptions {
  * spec behavior is unchanged.
  */
 export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
-  const p = options?.path ?? 'System:DemoFiles/SPGI.csv';
+  const p = options?.path ?? 'System:DemoFiles/chem/SPGI.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
   const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
   await page.evaluate(async ({path, openFile, semTypeTimeoutMs}) => {

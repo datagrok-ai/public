@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.8
+ARG PYTHON_VERSION=3.11
 ARG CONFIG_SOURCE_DIR=./src
 ARG HOME_DIR=/home/grok
 ARG VIRTUAL_ENV=${HOME_DIR}/venv
@@ -12,8 +12,8 @@ COPY --from=datagrok/kyotocabinet:1.2.79 /usr/local/bin/kc* /usr/local/kyotocabi
 ARG CONFIG_SOURCE_DIR
 ARG PYTHON_VERSION
 COPY ${CONFIG_SOURCE_DIR}/requirements.in /tmp/requirements.in
-# build-essential + python headers: newer releases of pinned packages' transitive deps
-# (cymem, murmurhash, ...) no longer ship cp38 wheels, so pip-compile must build sdists
+# build-essential + python headers: some pinned packages (pyphysio, image, ...)
+# ship only sdists, so pip-compile must build them for metadata
 RUN set -ex ; \
     savedAptMark="$(apt-mark showmanual)" ; \
     apt-get update ; \
@@ -25,9 +25,11 @@ RUN set -ex ; \
       libpython${PYTHON_VERSION}-dev \
     ; \
     pip install --no-cache-dir pip-tools ; \
+    # torch_stable.html is frozen at torch 2.3.x; +cpu wheels live on the per-package cpu indexes \
     pip-compile \
       --pip-args='--retries 5 --timeout 300' \
-      --find-links='https://download.pytorch.org/whl/torch_stable.html' \
+      --find-links='https://download.pytorch.org/whl/cpu/torch/' \
+      --find-links='https://download.pytorch.org/whl/cpu/torchvision/' \
       /tmp/requirements.in > /tmp/requirements.txt ; \
     pip uninstall -y pip-tools ; \
     apt-mark auto '.*' > /dev/null ; \
@@ -58,6 +60,8 @@ RUN set -ex ; \
       git \
       zlib1g-dev \
       build-essential \
+      protobuf-compiler \
+      libprotobuf-dev \
       python${PYTHON_VERSION}-dev \
       libpython${PYTHON_VERSION}-dev \
     ; \
@@ -67,9 +71,26 @@ RUN set -ex ; \
     pip install --no-cache-dir textract==1.6.3 ; \
     pip install --timeout 3600 --no-cache-dir \
       --requirement ${VIRTUAL_ENV}/requirements.txt ; \
-    python -m spacy download en_core_web_sm ; \
-    python -m spacy download de_core_news_sm ; \
-    python -m spacy download xx_ent_wiki_sm ; \
+    # cld3 bindings ship no cp311 wheels; their sdists need protoc, pybind11 and \
+    # (pycld3) re-cythonizing, since its pregenerated cython output predates py3.11 \
+    pip install --no-cache-dir pybind11 'cython<3' ; \
+    USE_CYTHON=1 pip install --no-cache-dir --no-build-isolation pycld3==0.22 ; \
+    pip install --no-cache-dir --no-build-isolation gcld3==3.0.13 ; \
+    pip uninstall -y pybind11 cython ; \
+    # kyotocabinet-python's setup.py uses `os` relying on the py<=3.8 stdlib \
+    # distutils leaking it via `import *`; patch the import and build against \
+    # the copied-in kyotocabinet headers (kcutilmgr is on PATH here) \
+    python -c "import urllib.request; urllib.request.urlretrieve('https://dbmx.net/kyotocabinet/pythonpkg/kyotocabinet-python-1.23.tar.gz', '/tmp/kc.tgz')" ; \
+    tar -xzf /tmp/kc.tgz -C /tmp ; \
+    sed -i '1i import os' /tmp/kyotocabinet-python-1.23/setup.py ; \
+    pip install --no-cache-dir --no-build-isolation /tmp/kyotocabinet-python-1.23 ; \
+    rm -rf /tmp/kc.tgz /tmp/kyotocabinet-python-1.23 ; \
+    # explicit model-wheel URLs: `spacy download` resolves an empty version here \
+    # (compatibility lookup fails in the build env) and 404s \
+    pip install --no-cache-dir \
+      https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.6.0/en_core_web_sm-3.6.0-py3-none-any.whl \
+      https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.6.0/de_core_news_sm-3.6.0-py3-none-any.whl \
+      https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.6.0/xx_ent_wiki_sm-3.6.0-py3-none-any.whl ; \
     find ${VIRTUAL_ENV} -type d \( -path *tensorflow \) -prune -false -depth \( \
       \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
           -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
@@ -94,6 +115,7 @@ RUN set -ex ; \
     wget https://github.com/jgm/pandoc/releases/download/3.1.6/pandoc-3.1.6-1-amd64.deb ; \
     dpkg -i pandoc-3.1.6-1-amd64.deb ; \
     apt-get update ; \
+    apt-get -y upgrade ; \
     apt-get install -y --no-install-recommends \
       texlive-xetex texlive-fonts-recommended texlive-plain-generic \
       libprotobuf-dev \
@@ -107,7 +129,8 @@ RUN set -ex ; \
       # NLP END \
       gdal-bin \
       ghostscript \
-      gnuplot \
+      # gnuplot-nox: the qt-enabled default drags in vulnerable qtbase libs \
+      gnuplot-nox \
       libcairo2-dev \
       libglu1-mesa-dev \
       libgdal-dev \
@@ -123,6 +146,11 @@ RUN set -ex ; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ; \
     apt-get clean ; \
     rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/* ; \
+    # security floors for the base interpreter's tooling (VEX); ensurepip's bundled \
+    # pip/setuptools wheels are scanner-flagged and only seed venvs, which are \
+    # created in the build stages only \
+    python -m pip install --no-cache-dir --upgrade pip setuptools wheel ; \
+    rm -f /usr/lib/python3*/ensurepip/_bundled/*.whl ; \
     groupadd --gid 2001 grok ; \
     useradd --system --create-home --home ${HOME_DIR} --gid grok --uid 1001 grok ; \
     groupadd --gid 1000 node ; \

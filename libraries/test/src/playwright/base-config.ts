@@ -9,15 +9,19 @@ import * as path from 'path';
 //
 // Put only genuinely package-specific overrides in the consumer config; everything
 // general lives here.
-const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai').replace(/\/$/, '');
+// Falling back to a deployed environment is not a safe default: specs create projects,
+// edit shares and delete entities, so a harness that forgot to export DATAGROK_URL would
+// do all of that against dev while the output still looked like a normal run. `grok test`
+// always sets it; anything else should say where it is pointing.
+const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
 
 export const baseConfig = defineConfig({
   testMatch: '**/*.test.ts',
-  // Many specs share UI/server state across tests in a file, so the suite is
-  // designed to be sequential. Consumers can opt into parallelism per-file via
-  // test.describe.parallel once their specs are independent.
+  // Many specs share UI/server state across tests in a file, so ordering WITHIN a file
+  // stays sequential. Separate files are independent, so they can run alongside each
+  // other; PLAYWRIGHT_WORKERS lets CI dial that per agent without a republish.
   fullyParallel: false,
-  workers: 1,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 4),
   retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
   expect: {timeout: 15_000},

@@ -9,8 +9,19 @@ export const ClaudeModel = {
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
-export type ToolActivityEvent = {sessionId: string, summary: string};
-export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean};
+/** `name` is the bare tool name (mcp prefix stripped); absent for progress-only activity. */
+export type ToolActivityEvent = {sessionId: string, summary: string, name?: string};
+/** A runtime gate blocked the turn's Stop — a revision is being generated behind the visible
+ * answer; `FinalEvent.revision` will say whether it replaces the original or the original stands. */
+export type RevisionStartEvent = {sessionId: string};
+/** Per-turn metrics the runtime forwards from the SDK `result` message (see docs/BENCHMARK.md). */
+export type TurnServerMetrics = {
+  inputTokens: number | null, outputTokens: number | null,
+  cacheReadTokens: number | null, cacheCreationTokens: number | null,
+  costUsd: number | null, numTurns: number | null,
+  durationMs: number | null, durationApiMs: number | null,
+};
+export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean, metrics?: TurnServerMetrics, revision?: 'kept' | 'replaced'};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
@@ -27,6 +38,7 @@ export class ClaudeRuntimeClient {
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
   public onToolActivity = new rxjs.Subject<ToolActivityEvent>();
+  public onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
@@ -100,13 +112,19 @@ export class ClaudeRuntimeClient {
         this.onChunk.next({sessionId: data.sessionId, content: data.content});
         break;
       case 'tool_activity':
-        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
+        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary,
+          ...(data.name ? {name: data.name} : {})});
+        break;
+      case 'revision_start':
+        this.onRevisionStart.next({sessionId: data.sessionId});
         break;
       case 'final':
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
           ...(data.unverified ? {unverified: true} : {}),
+          ...(data.metrics ? {metrics: data.metrics} : {}),
+          ...(data.revision ? {revision: data.revision} : {}),
         });
         break;
       case 'error':
@@ -145,7 +163,8 @@ export class ClaudeRuntimeClient {
     };
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel}): void {
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
+    clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -155,6 +174,7 @@ export class ClaudeRuntimeClient {
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       ...(options?.model ? {model: options.model} : {}),
+      ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
     }));
   }
 
@@ -206,12 +226,26 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel,
+    systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    // Never wait forever: if the runtime's watchdog kills a wedged turn, no final/error for this
+    // sid ever arrives, and an untimed query() then hangs its caller permanently (this hung a
+    // full benchmark arm in its judging phase). The default comfortably exceeds the runtime's own
+    // 90s idle watchdog, so it only fires when the turn is truly gone.
+    const timeoutMs = options?.timeoutMs ?? 120_000;
     return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
-      const cleanup = () => { subs.forEach((s) => s.unsubscribe()); };
+      const timer = window.setTimeout(() => {
+        cleanup();
+        this.abort(sid);
+        reject(new Error(`query timed out after ${timeoutMs / 1000}s`));
+      }, timeoutMs);
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        subs.forEach((s) => s.unsubscribe());
+      };
       subs.push(this.onFinal.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
         cleanup();
@@ -237,6 +271,7 @@ export class ClaudeRuntimeClient {
     }
     this.onChunk.complete();
     this.onToolActivity.complete();
+    this.onRevisionStart.complete();
     this.onFinal.complete();
     this.onError.complete();
     this.onAborted.complete();
@@ -248,6 +283,7 @@ export class ClaudeRuntimeClient {
     this.onAuthError.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
+    this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();

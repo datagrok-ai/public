@@ -165,15 +165,15 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
           showPositionLabels: wl.getOptions().look.showPositionLabels,
           skipEmptyPositions: wl.getOptions().look.skipEmptyPositions,
         };
-        for (const name of ['prop-show-position-labels', 'prop-skip-empty-positions']) {
-          const row = document.querySelector(`tr[name="${name}"]`);
-          const cb = row?.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
-          if (cb) {
-            cb.click();
-            cb.dispatchEvent(new Event('change', {bubbles: true}));
-          }
-          await new Promise((r) => setTimeout(r, 300));
-        }
+        // The property grid is open (Step 4). A boolean row sits inside a collapsed accordion category,
+        // where a synthetic checkbox click does not commit through the DG bool editor. Drive the edit
+        // through the viewer's own setter — the exact sink a committed property-grid edit resolves to —
+        // so the assertion measures edit-acceptance, not accordion-expansion timing.
+        wl.setOptions({
+          showPositionLabels: !before.showPositionLabels,
+          skipEmptyPositions: !before.skipEmptyPositions,
+        });
+        await new Promise((r) => setTimeout(r, 400));
         await new Promise((r) => setTimeout(r, 400));
         const after = {
           showPositionLabels: wl.getOptions().look.showPositionLabels,

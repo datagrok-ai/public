@@ -98,6 +98,7 @@ export interface IDartApi {
   grok_View_AddViewer(v: any, vi: any): any;
   grok_View_SetRibbonPanels(v: any, panels: any, clear: Bool): any;
   grok_View_GetRibbonPanels(v: any): any;
+  grok_View_Get_JsView(v: any): any;
   grok_View_Get_ToolboxPage(v: any): any;
   grok_View_Detach(v: any): any;
   grok_View_DetachViewers(v: any): any;
@@ -109,6 +110,7 @@ export interface IDartApi {
   grok_View_Set_IsPinned(v: any, value: Bool): any;
   grok_ScriptView_Set_Code(v: any, s: String): any;
   grok_ScriptView_Get_Code(v: any): any;
+  grok_ScriptView_Get_TabControl(v: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
   grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
@@ -162,6 +164,7 @@ export interface IDartApi {
   grok_ScriptsView(params: any): any;
   grok_ScriptView(script: any): any;
   grok_DataQueryView(q: any): any;
+  grok_DataQueryView_Get_TabControl(v: any): any;
   grok_TabControlBase_Get_Header(tc: any): any;
   grok_TabControlBase_Get_Panes(tc: any): any;
   grok_TabControlBase_Clear(tc: any): any;
@@ -460,6 +463,8 @@ export interface IDartApi {
   grok_Widget_Get_Parent(widget: any): any;
   grok_Widget_Get_Children(widget: any): any;
   grok_Widget_GetFunctions(widget: any): any;
+  grok_Widget_Get_AIDescription(widget: any): any;
+  grok_Widget_Set_AIDescription(widget: any, x: String): any;
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_Column_GetColors(column: any): any;
@@ -1007,6 +1012,14 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
+  grok_Shell_Undo(): any;
+  grok_Shell_Redo(): any;
+  grok_Shell_Get_CanUndo(): any;
+  grok_Shell_Get_CanRedo(): any;
+  grok_UndoService_Get_UndoName(): any;
+  grok_UndoService_Get_RedoName(): any;
+  grok_UndoService_Clear(): any;
+  grok_UndoService_Push(name: String, undo: any, redo: any, context: any): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
   grok_Shell_OpenLocalFile(file: any): Promise<any>;
@@ -1608,6 +1621,8 @@ export interface IDartApi {
   grok_Property_Set_Description(p: any, x: String): any;
   grok_Property_Get_Nullable(p: any): any;
   grok_Property_Set_Nullable(p: any, x: Bool): any;
+  grok_Property_Get_IsOptional(p: any): any;
+  grok_Property_Set_IsOptional(p: any, x: Bool): any;
   grok_Property_Get_InitialValue(p: any): any;
   grok_Property_Set_InitialValue(p: any, x: any): any;
   grok_Property_Get_DefaultValue(p: any): any;
@@ -1873,6 +1888,8 @@ export interface IDartApi {
   grok_Func_Set_Description(func: any, x: String): any;
   grok_Func_Get_InputParams(func: any): any;
   grok_Func_Get_OutputParams(func: any): any;
+  grok_Func_Get_Tags(func: any): any;
+  grok_Func_Set_Tags(func: any, tags: any): any;
   grok_Func_Prepare(func: any, parameters: any): any;
   grok_Func_PrepareAsync(func: any, parameters: any): Promise<any>;
   grok_Func_Find(packageName: String, functionName: String, tags: any, meta: any, resultType: String, resultSemType: String): any;
@@ -2060,58 +2077,24 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  grok_ViewerEvent_Create(): any;
+  grok_ViewerEvent_Get_viewer(x: any): any;
+  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
+  grok_ViewerEvent_Get_type(x: any): any;
+  grok_ViewerEvent_Set_type(x: any, v: String): any;
+  grok_ViewerEvent_Get_eventFlag(x: any): any;
+  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
+  grok_ViewerEvent_Get_filters(x: any): any;
+  grok_ViewerEvent_Set_filters(x: any, v: any): any;
+  grok_ViewerEvent_Get_row(x: any): any;
+  grok_ViewerEvent_Set_row(x: any, v: Num): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
+  grok_ViewerEvent_Get_bitset(x: any): any;
+
   // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
-
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
-  grok_GridCellStyle_Create(): any;
-  grok_GridCellStyle_Get_defaultStyle(): any;
-  grok_GridCellStyle_Set_defaultStyle(v: any): any;
-  grok_GridCellStyle_Get_textStyle(): any;
-  grok_GridCellStyle_Set_textStyle(v: any): any;
-  grok_GridCellStyle_Get_numberStyle(): any;
-  grok_GridCellStyle_Set_numberStyle(v: any): any;
-  grok_GridCellStyle_Get_styles(): any;
-  grok_GridCellStyle_Set_styles(v: any): any;
-  grok_GridCellStyle_Get_font(x: any): any;
-  grok_GridCellStyle_Set_font(x: any, v: String): any;
-  grok_GridCellStyle_Get_horzAlign(x: any): any;
-  grok_GridCellStyle_Set_horzAlign(x: any, v: String): any;
-  grok_GridCellStyle_Get_vertAlign(x: any): any;
-  grok_GridCellStyle_Set_vertAlign(x: any, v: String): any;
-  grok_GridCellStyle_Get_tooltip(x: any): any;
-  grok_GridCellStyle_Set_tooltip(x: any, v: String): any;
-  grok_GridCellStyle_Get_cursor(x: any): any;
-  grok_GridCellStyle_Set_cursor(x: any, v: String): any;
-  grok_GridCellStyle_Get_textWrap(x: any): any;
-  grok_GridCellStyle_Set_textWrap(x: any, v: String): any;
-  grok_GridCellStyle_Get_marker(x: any): any;
-  grok_GridCellStyle_Set_marker(x: any, v: String): any;
-  grok_GridCellStyle_Get_textColor(x: any): any;
-  grok_GridCellStyle_Set_textColor(x: any, v: Num): any;
-  grok_GridCellStyle_Get_backColor(x: any): any;
-  grok_GridCellStyle_Set_backColor(x: any, v: Num): any;
-  grok_GridCellStyle_Get_marginLeft(x: any): any;
-  grok_GridCellStyle_Set_marginLeft(x: any, v: Num): any;
-  grok_GridCellStyle_Get_marginRight(x: any): any;
-  grok_GridCellStyle_Set_marginRight(x: any, v: Num): any;
-  grok_GridCellStyle_Get_marginTop(x: any): any;
-  grok_GridCellStyle_Set_marginTop(x: any, v: Num): any;
-  grok_GridCellStyle_Get_marginBottom(x: any): any;
-  grok_GridCellStyle_Set_marginBottom(x: any, v: Num): any;
-  grok_GridCellStyle_Get_textVertical(x: any): any;
-  grok_GridCellStyle_Set_textVertical(x: any, v: Bool): any;
-  grok_GridCellStyle_Get_imageScale(x: any): any;
-  grok_GridCellStyle_Set_imageScale(x: any, v: Num): any;
-  grok_GridCellStyle_Get_opacity(x: any): any;
-  grok_GridCellStyle_Set_opacity(x: any, v: Num): any;
-  grok_GridCellStyle_Get_clip(x: any): any;
-  grok_GridCellStyle_Set_clip(x: any, v: Bool): any;
-  grok_GridCellStyle_Get_element(x: any): any;
-  grok_GridCellStyle_Set_element(x: any, v: any): any;
-  grok_GridCellStyle_Get_choices(x: any): any;
-  grok_GridCellStyle_Set_choices(x: any, v: any): any;
-  grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
   // Generated from ../d4/lib/src/viewers/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
@@ -2163,22 +2146,56 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
-  grok_ViewerEvent_Create(): any;
-  grok_ViewerEvent_Get_viewer(x: any): any;
-  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
-  grok_ViewerEvent_Get_type(x: any): any;
-  grok_ViewerEvent_Set_type(x: any, v: String): any;
-  grok_ViewerEvent_Get_eventFlag(x: any): any;
-  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
-  grok_ViewerEvent_Get_filters(x: any): any;
-  grok_ViewerEvent_Set_filters(x: any, v: any): any;
-  grok_ViewerEvent_Get_row(x: any): any;
-  grok_ViewerEvent_Set_row(x: any, v: Num): any;
-  grok_ViewerEvent_Get_mouseEvent(x: any): any;
-  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
-  grok_ViewerEvent_Get_bitset(x: any): any;
-
   // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
+
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  grok_GridCellStyle_Create(): any;
+  grok_GridCellStyle_Get_defaultStyle(): any;
+  grok_GridCellStyle_Set_defaultStyle(v: any): any;
+  grok_GridCellStyle_Get_textStyle(): any;
+  grok_GridCellStyle_Set_textStyle(v: any): any;
+  grok_GridCellStyle_Get_numberStyle(): any;
+  grok_GridCellStyle_Set_numberStyle(v: any): any;
+  grok_GridCellStyle_Get_styles(): any;
+  grok_GridCellStyle_Set_styles(v: any): any;
+  grok_GridCellStyle_Get_font(x: any): any;
+  grok_GridCellStyle_Set_font(x: any, v: String): any;
+  grok_GridCellStyle_Get_horzAlign(x: any): any;
+  grok_GridCellStyle_Set_horzAlign(x: any, v: String): any;
+  grok_GridCellStyle_Get_vertAlign(x: any): any;
+  grok_GridCellStyle_Set_vertAlign(x: any, v: String): any;
+  grok_GridCellStyle_Get_tooltip(x: any): any;
+  grok_GridCellStyle_Set_tooltip(x: any, v: String): any;
+  grok_GridCellStyle_Get_cursor(x: any): any;
+  grok_GridCellStyle_Set_cursor(x: any, v: String): any;
+  grok_GridCellStyle_Get_textWrap(x: any): any;
+  grok_GridCellStyle_Set_textWrap(x: any, v: String): any;
+  grok_GridCellStyle_Get_marker(x: any): any;
+  grok_GridCellStyle_Set_marker(x: any, v: String): any;
+  grok_GridCellStyle_Get_textColor(x: any): any;
+  grok_GridCellStyle_Set_textColor(x: any, v: Num): any;
+  grok_GridCellStyle_Get_backColor(x: any): any;
+  grok_GridCellStyle_Set_backColor(x: any, v: Num): any;
+  grok_GridCellStyle_Get_marginLeft(x: any): any;
+  grok_GridCellStyle_Set_marginLeft(x: any, v: Num): any;
+  grok_GridCellStyle_Get_marginRight(x: any): any;
+  grok_GridCellStyle_Set_marginRight(x: any, v: Num): any;
+  grok_GridCellStyle_Get_marginTop(x: any): any;
+  grok_GridCellStyle_Set_marginTop(x: any, v: Num): any;
+  grok_GridCellStyle_Get_marginBottom(x: any): any;
+  grok_GridCellStyle_Set_marginBottom(x: any, v: Num): any;
+  grok_GridCellStyle_Get_textVertical(x: any): any;
+  grok_GridCellStyle_Set_textVertical(x: any, v: Bool): any;
+  grok_GridCellStyle_Get_imageScale(x: any): any;
+  grok_GridCellStyle_Set_imageScale(x: any, v: Num): any;
+  grok_GridCellStyle_Get_opacity(x: any): any;
+  grok_GridCellStyle_Set_opacity(x: any, v: Num): any;
+  grok_GridCellStyle_Get_clip(x: any): any;
+  grok_GridCellStyle_Set_clip(x: any, v: Bool): any;
+  grok_GridCellStyle_Get_element(x: any): any;
+  grok_GridCellStyle_Set_element(x: any, v: any): any;
+  grok_GridCellStyle_Get_choices(x: any): any;
+  grok_GridCellStyle_Set_choices(x: any, v: any): any;
+  grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 }

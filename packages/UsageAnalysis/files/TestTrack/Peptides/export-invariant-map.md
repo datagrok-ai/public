@@ -3,7 +3,8 @@ feature: peptides
 target_layer: playwright
 coverage_type: smoke
 priority: p2
-realizes: [export-invariant-map-from-sar-viewer]
+realizes_atlas: [export-invariant-map-from-sar-viewer]
+realizes: [bio.menu.analyze.sar, peptides.viewer.sequence-variability-map, peptides.viewer.most-potent-residues, peptides.action.export-invariant-map]
 produced_from: atlas-driven
 realized_as:
   - export-invariant-map-spec.ts

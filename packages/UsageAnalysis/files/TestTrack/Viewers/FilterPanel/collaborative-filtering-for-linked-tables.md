@@ -3,7 +3,8 @@ feature: filters
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: []
+realizes_atlas: []
+realizes: [viewers.filters, viewers.filters.categorical, data.menu.link-tables]
 realized_as:
   - collaborative-filtering-for-linked-tables-spec.ts
 related_bugs: []
@@ -14,9 +15,9 @@ related_bugs: []
 //name: Link Test
 //language: javascript
 
-let df1 = await grok.data.files.openTable('System:DemoFiles/SPGI.csv');
-let df2 = await grok.data.files.openTable('System:DemoFiles/SPGI-linked1.csv');
-let df3 = await grok.data.files.openTable('System:DemoFiles/SPGI-linked2.csv');
+let df1 = await grok.data.files.openTable('System:DemoFiles/chem/SPGI.csv');
+let df2 = await grok.data.files.openTable('System:AppData/ApiTests/datasets/SPGI-linked1.csv');
+let df3 = await grok.data.files.openTable('System:AppData/ApiTests/datasets/SPGI-linked2.csv');
 
 grok.data.linkTables(df3, df2, ['Sample Name', 'link column 1', 'link column 2', 'link column 3'], ['Sample Name', 'link column 1', 'link column 2', 'link column 3'], [DG.SYNC_TYPE.FILTER_TO_FILTER]);
 grok.data.linkTables(df1, df2, ['Id'], ['Concept Id'], [DG.SYNC_TYPE.SELECTION_TO_FILTER]);

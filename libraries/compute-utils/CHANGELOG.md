@@ -1,5 +1,14 @@
 # compute-utils changelog
 
+## 1.46.9 (2026-08-07)
+
+* Exported `CONFIG_PATH` (workflow config FuncCall option key) from funccall-utils
+* Added `getRunTitle` helper: user-given run title, or function name with start time
+
+## 1.46.8 (2026-07-13)
+
+* Viewers: Re-set the options on them when remounted. Fixes the bug with incorrectly configured viewers.
+
 ## 1.46.6 (2026-07-07)
 
 * Model catalog: add a `roleOnlyFilter` config option and a `getModelFilter` helper to filter models by the model role only (faster); the legacy tag-or-role filter stays the default

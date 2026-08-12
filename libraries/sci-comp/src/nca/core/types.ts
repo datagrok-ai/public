@@ -4,13 +4,10 @@
  * Only types that are part of the pure-math contract live here. Types tied
  * to the Datagrok DataFrame layer (`ColumnContract`, `ValidationError`,
  * `ProfileIndex`, ...) live in the `packages/NCA/` package, not in this
- * library. See `docs/nca_core_interface_v2_1.md` for the architectural
- * rationale.
+ * library.
  */
 
-// ──────────────────────────────────────────────────────────────────────────
 // Units
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Concentration unit string literal. */
 export type ConcentrationUnit =
@@ -28,9 +25,7 @@ export type VolumeUnit = 'L' | 'mL' | 'L/kg' | 'mL/kg';
 /** Clearance unit string literal. */
 export type ClearanceUnit = 'L/h' | 'mL/min' | 'mL/min/kg' | 'L/h/kg';
 
-// ──────────────────────────────────────────────────────────────────────────
 // Routes
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Human-readable route label. Used in ProfileKey / metadata. */
 export type Route = 'IV-bolus' | 'IV-infusion' | 'PO' | 'SC' | 'IM' | 'other';
@@ -52,9 +47,7 @@ export const ROUTE_SC: RouteCode = 3;
 export const ROUTE_IM: RouteCode = 4;
 export const ROUTE_OTHER: RouteCode = 5;
 
-// ──────────────────────────────────────────────────────────────────────────
 // Profile inputs — what the core receives for a single subject's profile
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * One profile's data plus its dosing context. The arrays are sorted by time.
@@ -84,9 +77,7 @@ export interface ProfileInputs {
   readonly bodyWeight: number | null;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Rules — solver configuration for one profile
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Trapezoidal AUC integration scheme. */
 export type AucMethod = 'linear' | 'log-linear' | 'linear-up-log-down';
@@ -121,13 +112,23 @@ export interface LambdaZStrategy {
   /** When true, the Cmax point is excluded from the lambda_z candidate window. */
   readonly excludeCmax: boolean;
   /**
-   * PKNCA-style tie-breaking factor for adj-R². When two candidate subsets
-   * have adj-R² within this distance, the one with more points wins.
-   * Implemented as an additive score `adjRSquared + adjRSquaredFactor * n`.
-   * PKNCA default is `1e-4`. Set to `0` to disable tie-breaking and use
-   * strict max adj-R² (then the smaller subset wins on ties).
+   * PKNCA-style tie-breaking factor for adj-R². The best-fit search picks the
+   * window with the MOST points whose adj-R² is within this FLAT distance of the
+   * maximum adj-R² across all candidate windows — a tolerance off the single
+   * global maximum, not an additive `adjRSquared + factor·n` score. PKNCA
+   * default is `1e-4`; `0` disables tie-breaking (strict max adj-R², ties →
+   * more points).
    */
   readonly adjRSquaredFactor?: number;
+  /**
+   * Terminal-phase span ratio below which `computeNca` emits a
+   * `LAMBDAZ_LOW_SPAN` warning. Defaults to `undefined` — no warning — rather
+   * than to PKNCA's conventional 2.
+   *
+   * Emitting the warning is all it does; it never affects the fit. See
+   * {@link LambdaZResult.spanRatio}.
+   */
+  readonly minSpanRatio?: number;
   /** Indices of selected points (manual-points mode). */
   readonly manualPoints?: Int32Array;
   /** Inclusive index range of selected points (manual-time-range mode). */
@@ -157,9 +158,7 @@ export interface NcaRules {
   readonly compensatedSummation: boolean;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Sub-results returned by individual core functions
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Outcome of {@link findCmax}. */
 export interface CmaxResult {
@@ -181,6 +180,25 @@ export interface LambdaZResult {
   readonly pointsUsed: Int32Array;
   readonly tStart: number;
   readonly tEnd: number;
+  /**
+   * Terminal-phase span ratio: `(tEnd - tStart) / halfLife` — how many
+   * half-lives the fitted window actually covers. PKNCA reports this as
+   * `span.ratio`; its conventional threshold flags `< 2`.
+   *
+   * **Diagnostic only, never a gate.** Nothing in the fit or in window
+   * selection reads it: the selected window is identical whether or not
+   * {@link LambdaZStrategy.minSpanRatio} is set, and that identity is the
+   * contract (asserted in `lambda-z.test.ts` and `compute-nca.test.ts`). It
+   * earns its place because adjusted R² cannot discriminate at small `n` —
+   * at `n = 3` one residual degree of freedom leaves three points
+   * near-collinear almost unconditionally, so a slope resting on well under
+   * one half-life still reports adj-R² ≈ 0.99.
+   *
+   * `NaN` when `lambdaZ <= 0` — a non-decaying fit has no half-life. Only
+   * {@link lambdaZManual} can produce one; {@link lambdaZBestFit} drops such
+   * candidates before selection.
+   */
+  readonly spanRatio: number;
 }
 
 /** Outcome of {@link applyBlqStrategy}. */
@@ -191,9 +209,7 @@ export interface BlqProcessingResult {
   readonly excluded: Int32Array;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Final compute result
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Numeric NCA parameters for one profile.
@@ -246,17 +262,31 @@ export interface ParameterValues {
 }
 
 /**
+ * Warning codes emitted by `computeNca`.
+ *
+ * **The union is deliberately OPEN, and that is a contract.** Consumers layer
+ * their own diagnostics onto the same warning stream rather than forking the
+ * type — nca-studio alone mints 40+ codes on it. Closing it is a breaking
+ * change that needs a downstream migration to a sanctioned extension
+ * mechanism, not a type edit here.
+ */
+export type ParameterWarningCode =
+  | 'AUC_EXTRAP_HIGH'
+  | 'AUMC_EXTRAP_HIGH'
+  | 'LAMBDAZ_LOW_R2'
+  | 'LAMBDAZ_FEW_POINTS'
+  | 'LAMBDAZ_LOW_SPAN'
+  | 'BLQ_HIGH_FRACTION'
+  // eslint-disable-next-line @typescript-eslint/ban-types -- load-bearing: `string & {}`
+  // preserves literal autocomplete that a bare `| string` would collapse.
+  | (string & {});
+
+/**
  * Diagnostic warning emitted by `computeNca` when a parameter sits in a
  * dubious regime (high extrapolation, low R², high BLQ fraction, etc.).
  */
 export interface ParameterWarning {
-  readonly code:
-    | 'AUC_EXTRAP_HIGH'
-    | 'AUMC_EXTRAP_HIGH'
-    | 'LAMBDAZ_LOW_R2'
-    | 'LAMBDAZ_FEW_POINTS'
-    | 'BLQ_HIGH_FRACTION'
-    | string;
+  readonly code: ParameterWarningCode;
   readonly severity: 'info' | 'warning' | 'error';
   readonly message: string;
 }

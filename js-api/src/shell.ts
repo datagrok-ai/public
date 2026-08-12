@@ -368,6 +368,71 @@ export class Shell {
   }
 
   get startUri(): string { return api.grok_Get_StartUri(); }
+
+  /** Reverses the last operation recorded for the active table or view (Ctrl+Z). */
+  undo(): void { api.grok_Shell_Undo(); }
+
+  /** Re-applies the last undone operation (Ctrl+Shift+Z, Ctrl+Y). */
+  redo(): void { api.grok_Shell_Redo(); }
+
+  get canUndo(): boolean { return api.grok_Shell_Get_CanUndo(); }
+  get canRedo(): boolean { return api.grok_Shell_Get_CanRedo(); }
+
+  /** Fires after an operation has been undone. */
+  get onUndo(): rxjs.Observable<UndoRecordArgs> { return __obs('d4-undo'); }
+
+  /** Fires after an operation has been redone. */
+  get onRedo(): rxjs.Observable<UndoRecordArgs> { return __obs('d4-redo'); }
+}
+
+
+export interface UndoRecordArgs {
+  /** Human-readable operation name, as shown in the Edit menu. */
+  name: string;
+
+  /** DataFrame or view the record belongs to, or null for workspace-level operations. */
+  context: any;
+}
+
+
+/**
+ * Multi-level undo/redo. Records are kept in memory only, are bounded by count and by
+ * size, and are dropped when the table or view they belong to is closed.
+ * @example
+ * const before = column.get(0);
+ * column.set(0, 42);
+ * DG.UndoService.push('Set value', () => column.set(0, before), {
+ *   redo: () => column.set(0, 42),
+ *   context: column.dataFrame
+ * });
+ * */
+export class UndoService {
+  /** Registers an undoable operation that has already been performed.
+   * Without [options.redo] the operation can be undone but not redone. */
+  static push(name: string, undo: () => void, options?: { redo?: () => void, context?: any }): void {
+    api.grok_UndoService_Push(name, undo, options?.redo ?? null, toDart(options?.context ?? null));
+  }
+
+  /** Performs [action] and registers [undo] as its inverse. */
+  static run<T>(name: string, action: () => T, undo: () => void, options?: { redo?: () => void, context?: any }): T {
+    const result = action();
+    UndoService.push(name, undo, options);
+    return result;
+  }
+
+  static get undoName(): string | null { return api.grok_UndoService_Get_UndoName(); }
+  static get redoName(): string | null { return api.grok_UndoService_Get_RedoName(); }
+
+  /** Drops both stacks. */
+  static clear(): void { api.grok_UndoService_Clear(); }
+
+  /** Claims Ctrl+Z for [element]: while focus is inside it, the platform does not undo.
+   * Use it for embedded editors (sketchers, graph editors, notebooks) that keep their own
+   * history, instead of installing a document-level key handler. */
+  static ownScope(element: HTMLElement): void { element.setAttribute('data-dg-owns-undo', 'true'); }
+
+  /** Returns Ctrl+Z to the platform. See {@link ownScope}. */
+  static releaseScope(element: HTMLElement): void { element.removeAttribute('data-dg-owns-undo'); }
 }
 
 

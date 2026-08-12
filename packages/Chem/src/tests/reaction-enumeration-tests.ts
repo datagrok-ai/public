@@ -1,11 +1,12 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {cloneConfig, DEFAULT_CONFIG} from '../utils/reaction-enumeration/config';
 import {
-  enumerate, formatRoute, Route,
+  enumerate, formatRoute, OutputRow, Route,
   splitSmartsByReactants, stripOuterParens, TemplateInput,
 } from '../utils/reaction-enumeration/enumerate';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
@@ -35,8 +36,43 @@ function colAsStrings(df: DG.DataFrame, name: string): string[] {
   return out;
 }
 
-// (parseMultiStepReaction and BRANCH_DELIMITER are imported from the renderer above so the
-// test can't drift out of sync with the implementation.)
+// (parseMultiStepReaction is imported from the renderer above so the test can't drift out of
+// sync with the implementation.)
+
+// Output rows hold canonical SMILES, so any input list compared against them must be canonicalized
+// the same way.
+function canonicalizer(rdkit: any): (s: string) => string {
+  return (s: string): string => {
+    const m = rdkit.get_mol(s);
+    try {return (m && m.is_valid()) ? m.get_smiles() : s;} finally {
+      try {m?.delete();} catch {/* ignore */}
+    }
+  };
+}
+
+// Per-step (per-round) override tests assert equivalence: narrowing a round via perRoundOverrides
+// must yield exactly the same OUTPUT ROWS as running globally with that narrowed list — not just
+// the same product SMILES, but the same route, template attribution, and round tag too. Comparing
+// only product SMILES would let a subtly wrong route or round-attribution slip through as "passing"
+// (e.g. a product correctly formed but mis-tagged as round 1 instead of round 2, or built via the
+// wrong template) — sort by a composite key so row order (which can differ between the two run
+// paths) doesn't matter, then compare field-by-field for a precise failure message.
+function rowSortKey(r: OutputRow): string {
+  return [r.product, r.round, r.reaction_name, r.template, r.route].join('');
+}
+function expectSameRows(a: OutputRow[], b: OutputRow[], label: string): void {
+  const sa = [...a].sort((x, y) => rowSortKey(x).localeCompare(rowSortKey(y)));
+  const sb = [...b].sort((x, y) => rowSortKey(x).localeCompare(rowSortKey(y)));
+  expect(sa.length, sb.length, `${label}: row count differs (${sa.length} vs ${sb.length})`);
+  for (let i = 0; i < sa.length; i++) {
+    expect(sa[i].product, sb[i].product, `${label}: row[${i}].product differs`);
+    expect(sa[i].round, sb[i].round, `${label}: row[${i}].round differs for product "${sa[i].product}"`);
+    expect(sa[i].reaction_name, sb[i].reaction_name,
+      `${label}: row[${i}].reaction_name differs for product "${sa[i].product}"`);
+    expect(sa[i].template, sb[i].template, `${label}: row[${i}].template differs for product "${sa[i].product}"`);
+    expect(sa[i].route, sb[i].route, `${label}: row[${i}].route differs for product "${sa[i].product}"`);
+  }
+}
 
 async function runFullSetup(opts?: {
   maxComponents?: number; maxCombos?: number;
@@ -355,7 +391,6 @@ category('Reaction Enumeration', () => {
     // Disulfide: only Cys-Cys can react (only Cys has a thiol). Expect exactly one canonical product.
     const disulfideRows = rows.filter((r) => r.reaction_name === 'Disulfide formation');
     expect(disulfideRows.length > 0, true, 'Disulfide formation produced no rows — Cys + Cys should match');
-    // The product should contain an S-S bond.
     expect(disulfideRows[0].product.includes('SS') || /S.{0,3}S/.test(disulfideRows[0].product), true,
       `Disulfide product missing SS link: ${disulfideRows[0].product}`);
   }, {timeout: 120000});
@@ -620,7 +655,7 @@ category('Reaction Enumeration', () => {
   //
   // Shared helpers for the reagents-mode tests. We split the AA library into a disjoint BB-pool
   // and reagent-pool, then use peptide coupling (a symmetric 2-slot template that yields chain-
-  // extendable dipeptides). The structural invariant we verify is the spec from the email:
+  // extendable dipeptides). The structural invariant we verify:
   //   every step uses EXACTLY ONE reactant from the "main pool" (BBs in round 1, or any earlier
   //   product / BB in round R > 1), and EVERY remaining slot is filled from reagents.
   async function loadAaSplit(rdkit: any, bbCount: number) {
@@ -704,7 +739,7 @@ category('Reaction Enumeration', () => {
   }, {timeout: 300000});
 
   test('reagents mode: multi-round — every step is one main-pool reactant plus reagents only', async () => {
-    // Spec from the email:
+    // Reagents-mode invariant, round by round:
     //   round 1: BB + reagent(s)               → P1
     //   round 2: P1 + reagent(s)               → P2
     //   ...
@@ -759,9 +794,9 @@ category('Reaction Enumeration', () => {
 
   test('reagents mode: empty reagents array behaves like standard depth-first', async () => {
     // The reagentsMode branch must be skipped when no reagents are provided so existing setups
-    // keep working without surprises. Run the same template/BBs once with reagents=[] and once
-    // with reagents undefined; both should produce identical product sets to a baseline that
-    // doesn't pass the field at all.
+    // keep working without surprises. Compare a baseline run (reagents field omitted entirely)
+    // against the same run with reagents explicitly set to an empty array — both must produce
+    // identical product sets.
     const rdkit = getRdKitModule();
     const bbsDf = await loadCsv('enumerations/aa_bb.csv');
     const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
@@ -871,4 +906,314 @@ category('Reaction Enumeration', () => {
     }
     expect(multiStepChecked > 0, true, 'No multi-step routes produced — round 2 wasn\'t exercised');
   }, {timeout: 600000});
+
+  // ── per-step (per-round) subsets ─────────────────────────────────────────
+  test('per-step: undefined ≡ empty-object overrides (global fallback)', async () => {
+    const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 100000;
+
+    const base = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts});
+    expect(base.rows.length > 0, true, 'Expected products from the global run');
+    // An all-empty override array must behave exactly like passing no overrides at all.
+    const withEmpty = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts,
+      perRoundOverrides: [{}]});
+    expectSameRows(base.rows, withEmpty.rows, 'empty-override fallback');
+  }, {timeout: 120000});
+
+  test('per-step: round-1 template subset ≡ global templates narrowed', async () => {
+    const rdkit = getRdKitModule();
+    const bbsDf = await loadCsv('enumerations/aa_bb.csv');
+    const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
+    const buildingBlocks = colAsStrings(bbsDf, 'SMILES').filter((s) => s.trim().length > 0);
+    const smartsList = colAsStrings(rxnsDf, 'reaction_smarts');
+    const namesList = rxnsDf.col('reaction_name') ? colAsStrings(rxnsDf, 'reaction_name') : null;
+    const templates: TemplateInput[] = [];
+    for (let i = 0; i < smartsList.length; i++) {
+      const smarts = (smartsList[i] ?? '').trim();
+      if (!smarts) continue;
+      templates.push({smarts, blockingSmartsList: [], reactionName: namesList?.[i] ?? ''});
+    }
+    expect(templates.length >= 2, true, 'Expected at least 2 templates in aa_reactions.csv');
+
+    const config = cloneConfig(DEFAULT_CONFIG);
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 100000;
+
+    const only = [templates[0]];
+    // Override the global two-template run to use only template[0] in round 1 …
+    const viaOverride = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts: [],
+      perRoundOverrides: [{templates: only}]});
+    // … must match running globally with just template[0].
+    const viaGlobal = await enumerate({rdkit, config, templates: only, buildingBlocks, exclusionSmarts: []});
+    const full = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts: []});
+
+    expect(viaOverride.rows.length > 0, true, 'Expected products from the single-template round');
+    expectSameRows(viaOverride.rows, viaGlobal.rows, 'template subset');
+    expect(full.rows.length >= viaOverride.rows.length, true,
+      `Full template set should yield ≥ products than a single-template subset ` +
+      `(${full.rows.length} vs ${viaOverride.rows.length})`);
+  }, {timeout: 300000});
+
+  test('per-step: keep_building_blocks_in_final_output respects a round-1 BB override', async () => {
+    // A BB excluded by the round-1 override must not reappear as an unreacted round-0 row.
+    const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = true;
+    config.keep_building_blocks_in_final_output = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 100000;
+
+    expect(buildingBlocks.length >= 4, true, 'Need ≥ 4 BBs to leave a meaningful excluded remainder');
+    const half = buildingBlocks.slice(0, Math.max(2, Math.floor(buildingBlocks.length / 2)));
+    expect(half.length < buildingBlocks.length, true, 'Expected at least one excluded BB to test against');
+
+    const {rows} = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts,
+      perRoundOverrides: [{buildingBlocks: half}]});
+
+    const canon = (s: string): string => {
+      const m = rdkit.get_mol(s);
+      try {return (m && m.is_valid()) ? m.get_smiles() : s;} finally {
+        try {m?.delete();} catch {/* ignore */}
+      }
+    };
+    const canonHalf = new Set(half.map(canon));
+    const round0Rows = rows.filter((r) => r.round === 0);
+    expect(round0Rows.length > 0, true, 'Expected round-0 (BB) rows in the output');
+    for (const row of round0Rows) {
+      expect(canonHalf.has(row.product), true,
+        `Round-0 row "${row.product}" is not in the round-1 BB override — it should have been ` +
+        `excluded from the output, not just from round-1's reactions`);
+    }
+  }, {timeout: 300000});
+
+  test('per-step: breadth-first round-1 BB override has zero effect — round 0 AND round 1 stay full', async () => {
+    // Breadth-first mode: `eligibleSmiles` never reads `activeBBs`, so a round-1 BB override must
+    // have zero effect — override and no-override runs must produce IDENTICAL rows, round 0 and 1 alike.
+    const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = false;
+    config.keep_building_blocks_in_final_output = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 100000;
+
+    expect(buildingBlocks.length >= 4, true, 'Need ≥ 4 BBs to leave a meaningful excluded remainder');
+    const half = buildingBlocks.slice(0, Math.max(2, Math.floor(buildingBlocks.length / 2)));
+    expect(half.length < buildingBlocks.length, true, 'Expected at least one excluded BB to test against');
+
+    const withOverride = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts,
+      perRoundOverrides: [{buildingBlocks: half}]});
+    const withoutOverride = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts});
+
+    // Locks the allPriorPool leak shut: if round 1 (or round 0) were still being narrowed by the
+    // override, this equality would fail the moment any BB outside `half` stopped contributing a
+    // round-0 or round-1 row.
+    expectSameRows(withOverride.rows, withoutOverride.rows,
+      'breadth-first round-1 BB override vs no override');
+
+    const round0Rows = withOverride.rows.filter((r) => r.round === 0);
+    expect(round0Rows.length > 0, true, 'Expected round-0 (BB) rows in the output');
+    const canon = (s: string): string => {
+      const m = rdkit.get_mol(s);
+      try {return (m && m.is_valid()) ? m.get_smiles() : s;} finally {
+        try {m?.delete();} catch {/* ignore */}
+      }
+    };
+    const canonFull = new Set(buildingBlocks.map(canon));
+    for (const row of round0Rows) {
+      expect(canonFull.has(row.product), true,
+        `Round-0 row "${row.product}" should reflect the FULL BB set in breadth-first mode — the ` +
+        `round-1 override has no effect here, so it must not narrow the kept-BB output either`);
+    }
+  }, {timeout: 300000});
+
+  test('per-step: round-1 building-block subset ≡ global BBs narrowed (depth-first)', async () => {
+    const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = true;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 100000;
+
+    expect(buildingBlocks.length >= 4, true, 'Need ≥ 4 BBs to form a meaningful subset');
+    const half = buildingBlocks.slice(0, Math.max(2, Math.floor(buildingBlocks.length / 2)));
+
+    const viaOverride = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts,
+      perRoundOverrides: [{buildingBlocks: half}]});
+    const viaGlobal = await enumerate({rdkit, config, templates, buildingBlocks: half, exclusionSmarts});
+    const full = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts});
+
+    expectSameRows(viaOverride.rows, viaGlobal.rows, 'BB subset');
+    expect(full.rows.length >= viaOverride.rows.length, true,
+      `Full BB set should yield ≥ products than a BB subset (${full.rows.length} vs ${viaOverride.rows.length})`);
+  }, {timeout: 300000});
+
+  test('per-step: BB override in breadth-first mode emits a "no effect" warning', async () => {
+    // BB overrides do nothing in breadth-first mode (a round draws from the union of all earlier
+    // products, never from the per-round BB override). A silent no-op here is easy for a user to
+    // miss after switching strategy without revisiting the step tab, so the engine must surface
+    // it as a warning.
+    const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
+    config.enumeration.num_rounds = 1;
+    config.enumeration.depth_first = false;
+    config.products_specs.min_num_carbon_atoms = -1;
+    config.products_specs.max_num_carbon_atoms = -1;
+    config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
+    config.products_specs.only_these_atoms_allowed = [];
+    config.max_num_combinations_per_template = 100000;
+
+    expect(buildingBlocks.length >= 2, true, 'Need ≥ 2 BBs for a meaningful subset');
+    const half = buildingBlocks.slice(0, Math.max(1, Math.floor(buildingBlocks.length / 2)));
+
+    const {warnings} = await enumerate({rdkit, config, templates, buildingBlocks, exclusionSmarts,
+      perRoundOverrides: [{buildingBlocks: half}]});
+    const hasNoEffectWarning = warnings.some((w) =>
+      w.includes('building-block override has no effect in breadth-first mode'));
+    expect(hasNoEffectWarning, true,
+      `Expected a "no effect in breadth-first mode" warning. Warnings: ${warnings.join(' | ')}`);
+  }, {timeout: 300000});
+
+  // Every per-round test above pins round 1, where the override is the only thing feeding the
+  // reactant pool. Round 2 is the case the feature exists for and the one with a real interaction:
+  // its pool is `activeBBs ∪ prevRoundProducts`, so an override there must narrow the BB half
+  // without touching round 1's output or the products round 1 handed forward.
+  test('per-round: a round-2 BB override narrows round 2 only, leaving round 1 untouched', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, peptideTemplate} = await loadAaSplit(rdkit, 8);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 2;
+    config.enumeration.depth_first = true;
+    config.max_num_combinations_per_template = 100000;
+
+    const canon = canonicalizer(rdkit);
+    const half = bbs.slice(0, 4);
+    expect(half.length < bbs.length, true, 'Expected at least one excluded BB to test against');
+    const canonHalf = new Set(half.map(canon));
+
+    const common = {rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: []};
+    const base = await enumerate(common);
+    const withOverride = await enumerate({...common, perRoundOverrides: [{}, {buildingBlocks: half}]});
+
+    const byRound = (rows: OutputRow[], r: number): OutputRow[] => rows.filter((row) => row.round === r);
+    expectSameRows(byRound(base.rows, 1), byRound(withOverride.rows, 1),
+      'round 1 must be identical — the override applies to round 2 only');
+
+    const round2 = byRound(withOverride.rows, 2);
+    expect(round2.length > 0, true, 'Expected round-2 products; the override case is untested otherwise');
+    expect(round2.length <= byRound(base.rows, 2).length, true,
+      'A round-2 BB override must not produce MORE round-2 rows than the unrestricted run');
+
+    // Depth-first round 2 combines exactly one round-1 product with BBs, so every other reactant in
+    // the final step has to come from the override subset.
+    const round1Products = new Set(byRound(base.rows, 1).map((row) => row.product));
+    for (const row of round2) {
+      const steps = parseMultiStepReaction(row.route).flat();
+      const last = steps[steps.length - 1];
+      const reactants = last.slice(0, last.indexOf('>>')).split('.').filter((s) => s.length > 0);
+      for (const r of reactants) {
+        expect(canonHalf.has(r) || round1Products.has(r), true,
+          `Round-2 step "${last}" used "${r}", which is neither a round-1 product nor in the ` +
+          `round-2 building-block override`);
+      }
+    }
+  }, {timeout: 300000});
+
+  test('per-round: a round-1 reagent subset ≡ running globally with only those reagents', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, peptideTemplate} = await loadAaSplit(rdkit, 5);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    const half = reagents.slice(0, Math.max(2, Math.floor(reagents.length / 2)));
+    expect(half.length < reagents.length, true, 'Expected at least one excluded reagent to test against');
+
+    const common = {rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: []};
+    const viaOverride = await enumerate({...common, reagents, perRoundOverrides: [{reagents: half}]});
+    const viaGlobal = await enumerate({...common, reagents: half});
+    const full = await enumerate({...common, reagents});
+
+    expect(viaOverride.rows.length > 0, true, 'Expected products from the narrowed reagent round');
+    expectSameRows(viaOverride.rows, viaGlobal.rows, 'reagent subset');
+    expect(full.rows.length >= viaOverride.rows.length, true,
+      `The full reagent pool should yield ≥ products than a subset ` +
+      `(${full.rows.length} vs ${viaOverride.rows.length})`);
+  }, {timeout: 300000});
+
+  test('per-round: a reagent override outside reagents mode emits a "no effect" warning', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, peptideTemplate} = await loadAaSplit(rdkit, 5);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    // No `reagents` field, so reagents mode never engages and the override can't be read.
+    const {warnings} = await enumerate({
+      rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: [],
+      perRoundOverrides: [{reagents: reagents.slice(0, 2)}],
+    });
+    expect(warnings.some((w) => w.includes('reagent override has no effect outside reagents mode')), true,
+      `Expected a "no effect outside reagents mode" warning. Warnings: ${warnings.join(' | ')}`);
+  }, {timeout: 300000});
+
+  // Template rows routinely share one reaction SMARTS across different blocking-group variants, so
+  // matching an override on SMARTS text alone would silently pick the wrong row.
+  test('per-round: a template override tells apart two rows sharing one SMARTS', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, peptideTemplate} = await loadAaSplit(rdkit, 12); // includes cysteine, the only S-containing BB
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+    config.max_num_combinations_per_template = 100000;
+
+    const plain: TemplateInput = {...peptideTemplate, blockingSmartsList: []};
+    const blocked: TemplateInput = {...peptideTemplate, blockingSmartsList: ['[#16]']};
+    const common = {rdkit, config, buildingBlocks: bbs, exclusionSmarts: []};
+
+    const plainOnly = await enumerate({...common, templates: [plain]});
+    const blockedOnly = await enumerate({...common, templates: [blocked]});
+    expect(blockedOnly.rows.length > 0, true, 'Expected products from the blocked variant');
+    expect(blockedOnly.rows.length < plainOnly.rows.length, true,
+      `The blocking group must actually exclude something, or the two variants are ` +
+      `indistinguishable and this test proves nothing (${blockedOnly.rows.length} vs ${plainOnly.rows.length})`);
+
+    // Both rows are present globally; the override names only the blocked one.
+    const viaOverride = await enumerate({
+      ...common, templates: [plain, blocked], perRoundOverrides: [{templates: [blocked]}],
+    });
+    expectSameRows(viaOverride.rows, blockedOnly.rows, 'blocking-group variant selected by the override');
+  }, {timeout: 300000});
+
+  test('per-round: a template override matching no global template falls back and warns', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, peptideTemplate} = await loadAaSplit(rdkit, 5);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    const unknown: TemplateInput = {
+      smarts: '[C:1][OH:2]>>[C:1][O:2]C', blockingSmartsList: [], reactionName: 'Not in the global set',
+    };
+    const common = {rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: []};
+    const viaOverride = await enumerate({...common, perRoundOverrides: [{templates: [unknown]}]});
+    const base = await enumerate(common);
+
+    expectSameRows(viaOverride.rows, base.rows, 'non-matching template override falls back to the global set');
+    expect(viaOverride.warnings.some((w) => w.includes('matches none of the global reaction templates')), true,
+      `Expected a fallback warning. Warnings: ${viaOverride.warnings.join(' | ')}`);
+  }, {timeout: 300000});
 });

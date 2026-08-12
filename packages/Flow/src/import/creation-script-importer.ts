@@ -1,49 +1,5 @@
-/** Builds a flow graph from a Datagrok table-creation script.
- *
- * Creation scripts are the linear cascades of function calls Datagrok records
- * when a table is produced in a reproducible way (file share, query, …) and
- * then transformed (calculated columns, chem properties, …):
- *
- *   Mol1K = OpenFile("System:AppData/Chem/mol1K.csv") //{"timestamp": …}
- *   Chem:addChemPropertiesColumns(Mol1K, "molecule", true, …)
- *   AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = true)
- *
- * Each line parses (`grok.functions.parse`) into a `DG.FuncCall`. Confirmed
- * shapes (from the live parser):
- *   - An assignment is a `SetVar` call: `variableName:string` + `value:dynamic`
- *     (the assigned call/literal).
- *   - A variable read is a `GetVar` call (`variableName:string`).
- *   - A column argument parses to `ResolveColumn(value:dynamic, parentTable:dataframe)`
- *     where `value` is the column name string and `parentTable` is often **null**
- *     (resolved at runtime from the enclosing call's table). The `ResolveColumn`
- *     function misbehaves on the Datagrok side, so we substitute the built-in
- *     **Select Column** utility (`table.col('name')`): its `columnName` property
- *     gets the column name and its `table` input is wired to the enclosing call's
- *     table (or `parentTable` when the script provides one). `ResolveColumnList`
- *     maps to **Select Columns** the same way.
- *
- * Build rules:
- *   1. Each call becomes a `FuncNode`. Primitive inputs on *editable* slots
- *      (string/int/double/num/bool) are stored in `node.inputValues` (shown and
- *      editable in the property panel). Primitive inputs on other slots
- *      (e.g. `dynamic` column names) get a **Constant node** wired in — those
- *      slots aren't editable in the panel and need an explicit producer.
- *   2. `FuncCall` inputs are resolved recursively; `GetVar` resolves through the
- *      variable table; a resolver's missing dataframe input is wired to the
- *      enclosing call's table.
- *   3. **Bare (mutating) calls** — `addChemPropertiesColumns(Mol1K, …)` mutate
- *      their table in place, so after the call the consumed variable advances to
- *      that node's `<input>__pt` pass-through. The next consumer connects there,
- *      so the topological sort reproduces the script's line order while the
- *      compiler resolves the pass-through to the same expression (no extra
- *      variable). **Assignments** (`y = f(x)`) produce a new variable and never
- *      advance their inputs.
- *   4. The first assigned variable is the script's result, wired to an output
- *      node.
- *
- * The graph is built in memory (DOM-free, synchronous — see
- * `buildCreationScriptGraph`) so it is directly testable; `applyGraphToEditor`
- * pushes it into a live `FlowEditor`. */
+/** Builds a flow graph from a Datagrok table-creation script — the reverse of
+ *  the creation-script emitter. */
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -54,7 +10,6 @@ import {TypedSocket} from '../rete/sockets';
 import {layoutGraph} from '../rete/graph-layout';
 import {constLabel} from '../rete/nodes/utility-nodes';
 
-// Re-exported for the layout-invariant tests, which import them from here.
 export {estimateNodeWidth, estimateNodeHeight} from '../rete/graph-layout';
 import {
   registerBuiltinNodes, registerAllFunctions, createNode, ensureFuncNodeType,
@@ -62,14 +17,10 @@ import {
 
 const PASSTHROUGH_SUFFIX = '__pt';
 
-/** DG slot types whose primitive value is editable in the property panel and
- *  emitted as a literal by the compiler — kept as `inputValues` rather than a
- *  wired-in Constant node (see `func-node.ts` PRIMITIVE_DEFAULTS). */
+/** Slot types kept as editable `inputValues` rather than a wired-in Constant node. */
 const EDITABLE_PRIMITIVE_SLOTS = new Set(['string', 'int', 'double', 'num', 'bool']);
 
-/** Platform resolvers replaced by the Select Column / Select Columns /
- *  Select Table utilities (the `ResolveColumn` / `ResolveTable` functions
- *  misbehave at runtime). */
+// Platform resolvers replaced by the Select utilities — the originals misbehave at runtime.
 const SINGLE_COLUMN_RESOLVER = 'resolvecolumn';
 const LIST_COLUMN_RESOLVER = 'resolvecolumnlist';
 const TABLE_RESOLVER = 'resolvetable';
@@ -77,7 +28,6 @@ const SELECT_COLUMN_TYPE = 'Utilities/Select Column';
 const SELECT_COLUMNS_TYPE = 'Utilities/Select Columns';
 const SELECT_TABLE_TYPE = 'Utilities/Select Table';
 
-/** A value's location in the graph: a specific output slot of a node. */
 interface OutputRef {
   node: FlowNode;
   outputKey: string;
@@ -88,16 +38,14 @@ interface BuiltConnection {
   sourceKey: string;
   target: FlowNode;
   targetKey: string;
-  /** True for execution-order ("order") edges (exec-out → exec-in): a pure
-   *  run-order dependency carrying no data, excluded from the layout. */
+  /** Pure run-order edge (exec-out → exec-in), excluded from the layout. */
   order?: boolean;
 }
 
 export interface BuiltGraph {
   nodes: FlowNode[];
   connections: BuiltConnection[];
-  /** Every script variable, in first-assignment order — each is wired to its
-   *  own output node. */
+  /** Script variables in first-assignment order, each wired to a SetVar terminal. */
   outputVariables: string[];
   warnings: string[];
 }
@@ -109,9 +57,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-/** Build the in-memory graph for a creation script. Synchronous and DOM-free:
- *  it constructs `FlowNode` instances and connection records but touches no
- *  editor, so it is the unit-test entry point. */
+/** Synchronous and DOM-free — touches no editor, so it is the unit-test entry point. */
 export function buildCreationScriptGraph(script: string): BuiltGraph {
   registerBuiltinNodes();
   registerAllFunctions();
@@ -130,7 +76,6 @@ export async function applyGraphToEditor(graph: BuiltGraph, flow: FlowEditor): P
   return connectionsAdded;
 }
 
-/** Build the graph and add it to the editor. */
 export async function buildFlowFromCreationScript(flow: FlowEditor, script: string): Promise<ImportResult> {
   const graph = buildCreationScriptGraph(script);
   const connectionsAdded = await applyGraphToEditor(graph, flow);
@@ -142,19 +87,15 @@ export async function buildFlowFromCreationScript(flow: FlowEditor, script: stri
   };
 }
 
-/** What kind of resolution an input value produced. */
 type Resolution =
   | {kind: 'ref'; ref: OutputRef; varKey: string | null}
   | {kind: 'literal'; value: string | number | boolean}
   | {kind: 'skip'};
 
 interface CallContext {
-  /** True for bare top-level statements (in-place mutators): consumed variables
-   *  advance to the node's pass-through. False for assignment RHS and nested
-   *  calls. */
+  /** True for bare top-level statements (in-place mutators): consumed variables advance to the pass-through. */
   advanceConsumedVars: boolean;
-  /** Table the enclosing call operates on, used to wire a resolver's missing
-   *  `parentTable`. */
+  /** Table the enclosing call operates on — wires a resolver's missing `parentTable`. */
   contextTable: OutputRef | null;
 }
 
@@ -167,8 +108,7 @@ class CreationScriptBuilder {
   private readonly connections: BuiltConnection[] = [];
   private readonly layer = new Map<FlowNode, number>();
   private readonly warnings: string[] = [];
-  /** Lowercased variable name → the SetVar node that registers it. Used to
-   *  infer order edges to tables referenced by (friendly) name. */
+  /** Lowercased variable name → its SetVar node, for inferring order edges. */
   private readonly setVarNodes = new Map<string, FlowNode>();
 
   build(script: string): BuiltGraph {
@@ -184,11 +124,8 @@ class CreationScriptBuilder {
         this.addCall(fc, {advanceConsumedVars: true, contextTable: null});
     }
 
-    // Each variable feeds a real SetVar(variableName, value) call — the only
-    // terminal node per variable — so running the flow registers the value in
-    // the context under its original name (downstream consumers, a Select
-    // Table in a lower disjoint path, or other scripts can resolve it). The
-    // value is the variable's final ref (last pass-through in its chain).
+    // Each variable terminates in a SetVar node so running the flow registers
+    // the value in the context under its original name.
     const outputVariables: string[] = [];
     for (const name of this.variableOrder) {
       if (!this.variables.has(name.toLowerCase())) continue;
@@ -207,8 +144,6 @@ class CreationScriptBuilder {
       warnings: this.warnings,
     };
   }
-
-  // ---------- parsing ----------
 
   private parseLines(script: string): DG.FuncCall[] {
     const calls: DG.FuncCall[] = [];
@@ -232,14 +167,11 @@ class CreationScriptBuilder {
     }
   }
 
-  // ---------- call classification ----------
-
-  /** A variable assignment parses into a SetVar-shaped call: exactly two
-   *  inputs, a non-empty string `variableName` and a non-null `value`. */
+  /** Don't gate on the input *count*: SetVarFunc has optional `outputName`/`outputIndex`,
+   *  so an assignment surfaces up to four inputs — a strict `=== 2` check drops every assignment. */
   private asAssignment(fc: DG.FuncCall): {name: string; value: unknown} | null {
     try {
       if ((fc.func?.name?.toLowerCase() ?? '') !== 'setvar') return null;
-      if (Object.entries(fc.inputs).length !== 2) return null;
       const name: unknown = fc.inputs['variableName'];
       const value: unknown = fc.inputs['value'];
       if (typeof name !== 'string' || name === '' || value === null || value === undefined) return null;
@@ -249,7 +181,7 @@ class CreationScriptBuilder {
     }
   }
 
-  /** For GetVar calls, the referenced variable name; null for anything else. */
+  /** For GetVar calls, the referenced variable name; null otherwise. */
   private variableNameOf(fc: DG.FuncCall): string | null {
     try {
       if ((fc.func?.name?.toLowerCase() ?? '') !== 'getvar') return null;
@@ -260,8 +192,7 @@ class CreationScriptBuilder {
     }
   }
 
-  /** Whether the call is a column resolver we substitute with Select Column(s).
-   *  Returns the matching utility node type, or null. */
+  /** The matching Select utility type for a column-resolver call, or null. */
   private columnResolverNodeType(fc: DG.FuncCall): string | null {
     const name = fc.func?.name?.toLowerCase() ?? '';
     if (name === SINGLE_COLUMN_RESOLVER) return SELECT_COLUMN_TYPE;
@@ -278,10 +209,7 @@ class CreationScriptBuilder {
     }
   }
 
-  // ---------- graph building ----------
-
   private processAssignment(name: string, value: unknown): void {
-    // Assignment RHS: resolve the producing value, do NOT advance inputs.
     const res = this.resolveValue(value, {advanceConsumedVars: false, contextTable: null}, `variable "${name}"`);
     if (res.kind !== 'ref') {
       if (res.kind === 'literal') {
@@ -298,7 +226,6 @@ class CreationScriptBuilder {
     this.variables.set(name.toLowerCase(), ref);
   }
 
-  /** Resolve an input value to a graph location or a literal. */
   private resolveValue(value: unknown, ctx: CallContext, context: string): Resolution {
     if (value instanceof DG.FuncCall) {
       const varName = this.variableNameOf(value);
@@ -329,8 +256,7 @@ class CreationScriptBuilder {
       return ref ? {kind: 'ref', ref, varKey: null} : {kind: 'skip'};
     }
     if (Array.isArray(value)) {
-      // A column_list argument parses to an array of ResolveColumn calls —
-      // map the whole array to a single Select Columns utility.
+      // A column_list arg parses to an array of ResolveColumn calls — map it to one Select Columns.
       if (value.length > 0 && value.every((v) => this.isSingleColumnResolver(v))) {
         const items = value as DG.FuncCall[];
         const names = items.flatMap((item) => this.columnNames(item));
@@ -351,9 +277,6 @@ class CreationScriptBuilder {
     return {kind: 'skip'};
   }
 
-  /** Create a FuncNode for the call, wire inputs (constants for non-editable
-   *  primitive slots, connections for FuncCall inputs), infer a resolver's
-   *  missing table, and advance consumed variables for mutating calls. */
   private addCall(fc: DG.FuncCall, ctx: CallContext): OutputRef | null {
     const func = fc.func;
     const node = createNode(ensureFuncNodeType(func));
@@ -364,18 +287,14 @@ class CreationScriptBuilder {
     this.addNode(node);
 
     const params = func.inputs;
-    // Resolve dataframe inputs first to establish this call's table context for
-    // sibling column/resolver inputs.
+    // Dataframe inputs first — they establish the table context for sibling column inputs.
     const ordered = [...params].sort((a, b) =>
       (this.isDataframeParam(b) ? 1 : 0) - (this.isDataframeParam(a) ? 1 : 0));
 
     let ownTable: OutputRef | null = null;
-    /** Dataframe param name → its resolved source, for sibling pairing. */
     const dfSources = new Map<string, OutputRef>();
-    /** Table context for a sibling param. Numbered params pair with the
-     *  dataframe param sharing the numeric suffix (JoinTables: keys2/values2
-     *  resolve against table2, not the first table); otherwise the call's
-     *  first table, else the outer context. */
+    // Numbered params pair with the dataframe param sharing the numeric suffix
+    // (JoinTables: keys2 resolves against table2, not the first table).
     const tableCtxFor = (paramName: string): OutputRef | null => {
       const suffix = /(\d+)$/.exec(paramName)?.[1];
       if (suffix !== undefined) {
@@ -391,21 +310,15 @@ class CreationScriptBuilder {
       const value = this.safeInput(fc, param.name);
       const slotType = this.slotType(node, param.name);
 
-      // Column / column-list args: inline the name(s) as an editable input value
-      // (the compiler turns it into `table.col(...)` against the func's dataframe
-      // input — see the seeded `columnTables` association) instead of adding a
-      // Select Column(s) node. `param.name in node.inputValues` is true only when
-      // FuncNode seeded the slot, i.e. the func has a dataframe input to resolve
-      // against; the table-less case falls through to a Select Column node.
+      // `param.name in node.inputValues` holds only when FuncNode seeded the slot,
+      // i.e. the func has a dataframe input; the table-less case falls through to a Select Column node.
       if ((slotType === 'column' || slotType === 'column_list') && param.name in node.inputValues) {
         const names = this.extractColumnNames(value);
         node.inputValues[param.name] = slotType === 'column' ? (names[0] ?? '') : names.join(', ');
         continue;
       }
 
-      // string_list / list<string> args: inline as a comma-separated editable
-      // value (mirrors column_list) instead of a wired List Constant node, so
-      // emit → import → emit round-trips.
+      // Inlined as a comma-separated editable value so emit → import → emit round-trips.
       if (slotType === 'string_list' && param.name in node.inputValues) {
         const items = Array.isArray(value) ?
           (value as unknown[]).map((v) => String(v).trim()).filter(Boolean) :
@@ -414,10 +327,8 @@ class CreationScriptBuilder {
         continue;
       }
 
-      // `list` args (incl. list<string> params): an array of primitives inlines
-      // as the editable array value (the panel edits it with DG's List input),
-      // so emit → import → emit round-trips. Arrays of calls/objects fall
-      // through to the generic resolution (e.g. column resolvers).
+      // An array of primitives inlines as the editable array value; arrays of
+      // calls/objects (e.g. column resolvers) fall through to generic resolution.
       if (slotType === 'list' && param.name in node.inputValues && Array.isArray(value) &&
           (value as unknown[]).every((v) => v === null || ['string', 'number', 'boolean'].includes(typeof v))) {
         node.inputValues[param.name] = (value as unknown[]).filter((v) => v !== null);
@@ -453,24 +364,21 @@ class CreationScriptBuilder {
       }
     }
 
+    // Title Open File nodes with their file — otherwise several are indistinguishable until they run.
+    const path = String(node.inputValues['fullPath'] ?? '');
+    if ((node.dgFuncName ?? '').toLowerCase() === 'openfile' && path !== '')
+      node.label = `${node.label}: ${path.split('/').pop() || path}`;
+
     this.layer.set(node, maxSourceLayer + 1);
     return this.primaryOutput(node);
   }
 
-  /** Substitute a `ResolveColumn` / `ResolveColumnList` call with a Select
-   *  Column / Select Columns utility (`table.col('name')`) — the platform
-   *  resolver misbehaves at runtime. The column name(s) come from the
-   *  resolver's `value` input; the `table` input is the explicit `parentTable`
-   *  if present, else the enclosing call's table. */
   private addColumnSelection(fc: DG.FuncCall, typeName: string, ctx: CallContext): OutputRef | null {
     const names = this.columnNames(fc);
     const tableRef = this.explicitParentTable([fc], ctx) ?? ctx.contextTable;
     return this.addSelect(typeName, names, tableRef);
   }
 
-  /** Substitute a `ResolveTable` call with the Select Table utility
-   *  (`grok.shell.tableByName(name)`) — the platform resolver misbehaves at
-   *  runtime. Titled `table: <name>` so collapsed nodes stay readable. */
   private addTableSelection(fc: DG.FuncCall): OutputRef | null {
     const node = createNode(SELECT_TABLE_TYPE);
     if (!node) return null;
@@ -483,8 +391,6 @@ class CreationScriptBuilder {
     return {node, outputKey: 'table'};
   }
 
-  /** Create a Select Column / Select Columns utility for the given column
-   *  names, wired to `tableRef`. */
   private addSelect(typeName: string, names: string[], tableRef: OutputRef | null): OutputRef | null {
     const node = createNode(typeName);
     if (!node) return null;
@@ -505,8 +411,6 @@ class CreationScriptBuilder {
     return this.primaryOutput(node);
   }
 
-  /** The first explicit (non-null) `parentTable` among the resolver calls,
-   *  resolved to its graph location. */
   private explicitParentTable(items: DG.FuncCall[], ctx: CallContext): OutputRef | null {
     for (const item of items) {
       const parentTable = this.safeInput(item, 'parentTable');
@@ -519,9 +423,6 @@ class CreationScriptBuilder {
     return null;
   }
 
-  /** Column name(s) from a column / column-list argument, however it parsed:
-   *  a `ResolveColumn` / `ResolveColumnList` call, an array of them, a plain
-   *  string, or null. Used to inline columns as editable input values. */
   private extractColumnNames(value: unknown): string[] {
     if (value === null || value === undefined) return [];
     if (typeof value === 'string') return [value];
@@ -548,7 +449,6 @@ class CreationScriptBuilder {
     return key ? {node, outputKey: key} : null;
   }
 
-  /** Literal value → constant utility node, titled after its value. */
   private addConstant(value: string | number | boolean): OutputRef | null {
     let typeName: string;
     if (typeof value === 'boolean')
@@ -569,7 +469,6 @@ class CreationScriptBuilder {
     return {node, outputKey: 'value'};
   }
 
-  /** Array of primitive literals → List constant (comma-separated). */
   private addListConstant(values: Array<string | number | boolean>): OutputRef | null {
     const node = createNode('Constants/List');
     if (!node) return null;
@@ -581,13 +480,8 @@ class CreationScriptBuilder {
     return {node, outputKey: 'value'};
   }
 
-  // ---------- low-level graph ops ----------
-
   private addNode(node: FlowNode): void {
-    // Imported nodes start collapsed (title bar only) so the whole flow fits
-    // a view; the user expands individual nodes as needed. Connections keep
-    // their endpoints — collapsed nodes still expose socket DOM at the title
-    // bar edges (see node-component.tsx).
+    // Imported nodes start collapsed so the whole flow fits a view.
     node.collapsed = true;
     this.nodes.push(node);
   }
@@ -613,9 +507,7 @@ class CreationScriptBuilder {
     return param.propertyType === 'dataframe' || String(param.propertyType) === 'dataframe';
   }
 
-  /** Wire the variable's final ref into a real `SetVar(variableName, value)`
-   *  call so running the flow registers the value in the context under its
-   *  original name. This is the only terminal node per variable. */
+  /** Wires the variable's final ref into a real SetVar call — the only terminal node per variable. */
   private wireSetVar(varName: string): void {
     const ref = this.variables.get(varName.toLowerCase());
     if (!ref) return;
@@ -634,25 +526,8 @@ class CreationScriptBuilder {
     this.setVarNodes.set(varName.toLowerCase(), node);
   }
 
-  /** Infer run-order ("order") edges for tables referenced by name.
-   *
-   *  A creation script can read a table another statement produced via its
-   *  *friendly* name — `Mol1KLocal = OpenTable(…)` at the top, then
-   *  `JoinTables("mol1K local", …)` at the bottom. That reference parses to a
-   *  `ResolveTable`, which we substitute with a `Select Table`
-   *  (`grok.shell.tableByName(...)`) node — but there is no *data* edge back to
-   *  the producer, so nothing forces the producer to run first; only the
-   *  vertical-position heuristic does, which the user can break by moving nodes.
-   *
-   *  We add an order edge from the producing variable's `SetVar` (the node that
-   *  registers the finished table in the context) to the `Select Table` node,
-   *  matching the table name against variable names after normalization
-   *  (case / space / underscore insensitive — the same name↔friendlyName
-   *  convention the Datagrok resolver uses). Order edges carry no data; they
-   *  only constrain execution order (and are excluded from the layout).
-   *
-   *  Creation scripts are linear and acyclic — a statement can only reference
-   *  already-created tables — so the inferred edges never form a cycle. */
+  /** Order edge from a table-producing SetVar to each Select Table reading it by (normalized)
+   *  name — nothing else forces the producer to run first. Creation scripts are acyclic. */
   private inferOrderEdges(): void {
     if (this.setVarNodes.size === 0) return;
     const byNorm = new Map<string, FlowNode>();
@@ -683,11 +558,6 @@ class CreationScriptBuilder {
     return this._setVarFunc;
   }
 
-  // ---------- layout ----------
-
-  /** Layered left-to-right layout, one **horizontal band per disjoint path** —
-   *  delegated to the shared `layoutGraph` (see `rete/graph-layout.ts`), using
-   *  the layer map assigned incrementally during the build. */
   private layout(): void {
     const dataEdges = this.connections
       .filter((c) => !c.order)
@@ -696,24 +566,17 @@ class CreationScriptBuilder {
   }
 }
 
-// ---------- helpers ----------
-
 function isPrimitive(v: unknown): v is string | number | boolean {
   return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
 }
 
-/** Canonicalize a variable / table name for matching across the name↔friendlyName
- *  convention: lowercase, drop everything but letters and digits (so spaces,
- *  underscores, capitalization, and punctuation are all ignored). "Mol1KLocal",
- *  "mol1K local", and "mol_1k_local" all collapse to "mol1klocal". Mirrors the
- *  normalization the layout's `orderedComponents` uses for banding. */
+/** Matches names across the name↔friendlyName convention: "Mol1KLocal" ≡ "mol1K local". */
 function normalizeName(s: unknown): string {
   return String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 
-/** Remove a trailing `// …` comment (creation scripts carry `//{"timestamp"}`
- *  metadata), ignoring `//` inside string literals such as URLs. */
+/** Removes a trailing `// …` comment (the `//{"timestamp"}` metadata), quote-aware so URLs survive. */
 function stripTrailingComment(line: string): string {
   let quote: string | null = null;
   for (let i = 0; i < line.length - 1; i++) {

@@ -1,5 +1,11 @@
 ---
 title: "Supported shares"
+description: Overview of the file storage sources Datagrok can connect to as file shares, with links to their parameters.
+keywords:
+  - supported file shares
+  - cloud storage providers
+  - file share connectors
+  - storage sources
 ---
 
 Much like connectors, supported shares enable

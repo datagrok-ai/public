@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import AWS from 'aws-sdk';
+import {TranslateClient, TranslateTextCommand} from '@aws-sdk/client-translate';
 
 import lang2code from './lang2code.json';
 import code2lang from './code2lang.json';
@@ -60,7 +60,7 @@ class NLPPackage extends DG.Package {
 export const _package = new NLPPackage();
 
 // AWS service instances
-let translate: AWS.Translate;
+let translate: TranslateClient;
 //let comprehendMedical;
 
 // UI components for the `Translation` panel
@@ -78,15 +78,13 @@ const mainWidget = new DG.Widget(mainDiv);
 let sourceLang: string; let sourceCode: string;
 let sourceText: string; let cropped: boolean;
 
-async function translateText(translate: AWS.Translate, params: { Text: string; SourceLanguageCode: any; TargetLanguageCode: any; }): Promise<{translation: string, error: number}> {
-  return new Promise((resolve, reject) => {
-    translate.translateText(params, (err, data) => {
-      if (err) reject(err);
-      resolve({translation: data.TranslatedText, error: 0});
-    });
-  }).catch((err) => {
+async function translateText(translate: TranslateClient, params: { Text: string; SourceLanguageCode: any; TargetLanguageCode: any; }): Promise<{translation: string, error: number}> {
+  try {
+    const data = await translate.send(new TranslateTextCommand(params));
+    return {translation: data.TranslatedText ?? '', error: 0};
+  } catch (err) {
     return {translation: '', error: 1};
-  }) as Promise<{translation: string, error: number}>;
+  }
 }
 
 // async function detectEntities(comprehendMedical, params) {
@@ -207,12 +205,10 @@ export class PackageFunctions {
 
   @grok.decorators.init({name: 'exportFunc'})
   static async initAWS() {
-    AWS.config.update({
-      apiVersion: 'latest',
+    translate = new TranslateClient({
       credentials: await getCredentials(),
       region: 'us-east-2',
     });
-    translate = new AWS.Translate();
     //comprehendMedical = new AWS.ComprehendMedical();
   }
 

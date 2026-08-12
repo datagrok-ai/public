@@ -1,3 +1,14 @@
+---
+feature: scripts
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes_atlas: []
+realizes: [views.scripts, scripting.js, file.menu.save.tables-as-project]
+realized_as:
+  - scripts-layout.test.ts
+related_bugs: []
+---
 
 1. Create a script 
     //name: test_Layout  

@@ -1,5 +1,12 @@
 ---
 title: "Data provenance"
+description: How Datagrok traces the queries, transformations, scripts, and models behind a result.
+keywords:
+  - data provenance
+  - data lineage
+  - trace data origin
+  - dependency tracking
+  - self-documented data flows
 ---
 
 Data provenance lets you trace every dependency behind a result: the queries that

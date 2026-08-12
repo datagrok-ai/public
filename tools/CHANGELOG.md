@@ -1,6 +1,6 @@
 # Datagrok-tools changelog
 
-## 6.5.0 (WIP)
+## 6.5.5 (WIP)
 
 * GROK-20298: `grok api --ui` — a relation-bearing table's `<Table>Ui` handle carries `<Table>Update` as its fifth generic too (`<Table>Ui.client`, `.table()` and the `<Schema>UiDb` property), so `<table>Ui.client.update(id, {labels: [...]})` compiles instead of failing the excess-property check.
 * GROK-20298: `grok api` — typed many-to-many relations: a table's `relations` block is validated with the server's rules (via/target declared in the same manifest, junction distinct from both sides, self-referential relations explicit, FK sides unique-or-explicit, junction `businessKey` covering both) and emitted as an expand-map entry `'<name>': {<name>?: {id: string; name: string}[]}`, a `<name>?: string[]` link set on `<Table>Insert`, and a new `<Table>Update` type (`Partial<<Table>Row>` plus the link sets) used by the transaction op union and passed as the client's fifth generic, so `update()` takes the link sets directly. Manifests without relations generate byte-identically.
@@ -12,6 +12,38 @@
 * GROK-20602: **BREAKING** — `grok api` domain codegen v2: **datetime columns (including `created_on`/`updated_on`) are now typed as dayjs `Dayjs`** in `<Table>Row` (`Dayjs | string` on inserts) and generated clients pass `datetimeColumns` so JSON reads materialize dayjs objects — code that treated these fields as strings no longer compiles (untyped `table('s.t')` clients are unchanged). Also: `choices` columns emit named literal-union aliases used in Row/Insert; `<Table>Column` unions and NEW `<Table>Expand` maps are threaded through the client generics (filters/columns/expand keys compile-checked); a typed `<Schema>TransactionOp` union powers `<schema>Db.transaction`; the client map now uses LAZY getters — importing db.ts no longer touches `grok.dapi` at import time. Regenerate with `grok api` and fix datetime call sites. Migration note: choices-alias names are derived as `<Table><Column>`; when two tables' aliases collide with different value sets, the LATER table (manifest order) gets a `<Table>`-suffixed name — reordering manifest tables can therefore rename such aliases; keep table order stable or update imports after reordering.
 * GROK-20319: `grok api` — generated domain clients now pass the `<Table>Insert` interface as the second `DG.DomainTableClient` generic, so `insert()` enforces required columns at compile time (e.g. `insert({})` no longer compiles); over-long client lines wrap before the type.
 * GROK-20317: `grok api` — typed domain-table clients: for packages that declare `databases/<schema>/schema.json` manifests, generates `src/generated/db.ts` with per-table `<Table>Row`/`<Table>Insert` interfaces, `<Table>Column` name unions, and a per-schema `<schema>Db` client map over `grok.dapi.domains` (manifests are validated against `domain-schema.schema.json` first; packages without manifests are untouched).
+## 6.5.4 (2026-08-07)
+
+* func-gen-plugin — `#meta.comparison` in an `.ivp` model now lands as the `comparison` option on the generated dataframe output (run comparison reads index/split/mode/units defaults from there) instead of function-level meta.
+
+## 6.5.3 (2026-08-04)
+
+* GROK-18695: Security — bumped `adm-zip` to 0.6.0 (CVE-2026-39244). Below 0.6.0 it sized a buffer from the ZIP header's declared uncompressed size before validating it, so a ~120-byte crafted archive forced a multi-GB allocation; `grok report` opens archives fetched from a server. The APIs it uses are unchanged. Also refreshed the lockfile to clear five more high-severity audit findings (`brace-expansion`, `fast-uri`, `ip-address`, `js-yaml`, `postcss`), all within existing ranges.
+
+## 6.5.2 (2026-07-27)
+
+* `grok publish` — a failed `docker push` is no longer reported as a successful one. `image.json` claimed the tag regardless, so the server recorded a container image that was never published and the spawner failed validation forever ("Image ... not found in any registry") with no recovery short of another publish. The push failure now falls back to an image that is actually in the registry, and says so.
+
+## 6.5.1 (2026-07-22)
+
+* `grok test` — the Node-pass report now merges into the browser report by column name. The line-wise merge assumed identical column order, so node rows landed misaligned (string values in the integer `ms` column) and the CI test-report upload failed with `invalid input syntax for type integer`.
+
+## 6.5.5 (WIP)
+
+* `grok test` — added a Node (browserless) pass: tests annotated `{node: true}` run headless under the js-api Node runtime before the browser launches; the browser pass excludes them and is skipped entirely when nothing browser-only matches. New flags: `--skip-node`, `--node-only`. Packages opt in by exporting `testNode()` from `package-test.ts`; others keep the previous behavior.
+
+## 6.4.8 (2026-07-22)
+
+* GROK-20452: `grok publish` — always `docker build` the tools-generated worker dirs (`dockerfiles/queue`, `dockerfiles/celery`, `dockerfiles/<app>-celery`) instead of reusing a cached local tag. The "found local image" shortcut froze the worker at whatever stock base the daemon had when the tag was first built (CI ran day-old worker code with a fresh base available); the layer cache keeps an unchanged rebuild near-instant.
+* `grok test` — `--no-retry` is now honored for Playwright runs. minimist parsed `--no-retry` as `{retry:false}`, so the flag was silently dropped and failed specs were still retried once; normalized so `--retries=0` reaches Playwright.
+
+## 6.4.7 (2026-07-22)
+
+* GROK-20452: `grok publish` — generate `dockerfiles/celery` / `dockerfiles/queue` **before** gathering files for the zip. They were generated after, so the generated Dockerfile never reached the server: `meta.queue` functions fell back to a server-side container named `<pkg>-queue-celery` while the client had built `<pkg>-queue` — image validation 404'd and the worker container never started ("Container is not started" on every call).
+
+## 6.4.6 (2026-07-22)
+
+* `grok test` — the whole-run Puppeteer cap (60 min) is now overridable via `GROK_TEST_INVOCATION_TIMEOUT_MS`. When the cap fires mid-pass all collected results are discarded (empty `test-report.csv`, "Passed tests: 0"), which CI reports as "no results produced"; loaded CI agents can now raise the cap instead.
 
 ## 6.4.5 (2026-06-23)
 

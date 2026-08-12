@@ -5,6 +5,7 @@
 * GROK-20602: BREAKING regen — `grok api` codegen v2 for the Northwind demo schema: datetime fields are dayjs, typed expand/transaction surface, lazy db.ts clients
 * Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API
 
+* GROK-19337: Peptides-SAR tutorial: Fixed callouts rendering body text as bold headings (`paragraphs()` now emits a bold title only when one is explicitly passed), removed spurious mid-sentence `<br>` line breaks, and narrowed the action panel (~18% narrower dock ratio)
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
 * Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split
 * Demo app: Made the "Updating..." overlay clearly readable during demo loading — scoped CSS (`.demo-app-loading > .d4-update-shadow`) gives the overlay a solid translucent white background with a subtle backdrop blur and renders the label/loader at full opacity, so widget text underneath no longer bleeds through
@@ -13,6 +14,9 @@
 * Tutorials: Fixed the Radar step highlight in the Viewers tutorial landing on the hidden "Recently used" card instead of the visible gallery card
 * Tutorials: Updated the Diff Studio tutorial with respect to the main app modifications
 * GROK-20145: Demo | Form viewer: Error on URL direct opening
+* GROK-20408: Tutorials: Fixed `waitForElementClick` dropping the first 500ms of clicks, hanging forever on a not-yet-rendered element, and leaking listeners with no cancellation — replaced by `elementClick` (immediate listener, polling getter with timeout, Observable so `firstEvent` cancels on close)
+* GROK-20648: Multivariate Analysis tutorial: Improved the step and viewer descriptions, and fixed the fourth viewer hint describing Regression Coefficients while pointing at Variable Importance
+* GROK-20424: Tutorials: Fixed the Calculated Columns tutorial hanging on the "Enter the expression" step — the MutationObserver watched `.cm-line`, which is null before CodeMirror renders, throwing `observe: parameter 1 is not of type 'Node'`; now watches the always-present dialog root subtree
 
 ## 1.11.2 (2026-04-10)
 

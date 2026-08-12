@@ -3,7 +3,10 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [sunburst-scatterplot-shared-color-isolation]
+realizes_atlas: [sunburst-scatterplot-shared-color-isolation]
+realizes: [charts.viewer.sunburst, viewers.scatter-plot]
+realized_as:
+  - sunburst-scatterplot-color-pollution-bug-spec.ts
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -42,7 +45,7 @@ A clean Datagrok session. Single scenario; SPGI.csv as the source
 
 Steps:
 
-1. Open `System:DemoFiles/SPGI.csv`. Wait for semType detection.
+1. Open `System:DemoFiles/chem/SPGI.csv`. Wait for semType detection.
 
 2. Add a Sunburst viewer via `tv.addViewer('Sunburst')`. Wait 3000ms.
    Configure Sunburst hierarchy to a categorical string column likely
@@ -102,6 +105,6 @@ Steps:
 ```json
 {
   "order": 36,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }
 ```
