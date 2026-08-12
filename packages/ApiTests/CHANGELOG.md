@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: `Dapi: domain frame editor` covers the move of the editor into the platform — `DomainFrameEditor.attachTo(frame, schema, table)` adopting a frame its HOST owns (the Dart Domain View's entry point), with `DG.DomainFrameEditor` asserted to be the very class `@datagrok-libraries/domain-ui` exports.
+
 GROK-20298: `Dapi: domain frame editor` covers the ref-column gate lift — a writable `ref` column is editable in `DomainGrid` (the in-place picker's precondition), a cleared ref reaches the update op as an explicit `null`, a required ref clear blocks the save, and a pick back to the original drops the pending change.
 
 GROK-20298: Added `Dapi: domain relations` — the many-to-many surface over the new `tags` relation of `apitests.item` (junction `item_tag`, target `tag`): insert-with-links and the deduped `{id, name}` expand, the `queryDf` chips column plus its `'~tags.id'` companion, relation filter paths (`tags.name`, `tags.id` ANY-of, the empty selection) and the owner-counting `tags.id` categories facet with display names, set-replace `update` semantics (replace, no-op re-send, absent key, `[]` clear, rolled-back missing target), the create-and-link transaction with an element-wise `$ref`, and the batch refusal.

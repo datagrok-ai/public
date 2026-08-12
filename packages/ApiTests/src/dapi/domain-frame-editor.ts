@@ -3,8 +3,8 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {DomainFrameEditor, DomainGrid, SERVICE_COLUMNS, STATE_COLUMN, CHANGES_COLUMN,
-  ERRORS_COLUMN, validateCellValue} from '@datagrok-libraries/domain-ui';
+import {DomainFrameEditor, DomainGrid, DomainSaveResult, SERVICE_COLUMNS, STATE_COLUMN,
+  CHANGES_COLUMN, ERRORS_COLUMN, validateCellValue} from '@datagrok-libraries/domain-ui';
 import {withRestrictedUser} from './domain-lifecycle';
 
 // ui-js-api WO-7: @datagrok-libraries/domain-ui — DomainFrameEditor (THE single
@@ -166,6 +166,59 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
+  test('an added-then-deleted row resolves locally on save', async () => {
+    const prefix = `fe-addel-${stamp()}`;
+    await seed(prefix, 1);
+    try {
+      const editor = await editorFor(prefix);
+      const df = editor.dataFrame;
+      const rows = df.rowCount;
+      // Alone in the batch: save() resolves clean with NO transaction — the row
+      // never reached the server, so nothing may survive as pending state.
+      editor.markDeleted(editor.addRow({sku: `${prefix}-gone`, name: 'Gone', quantity: 1}));
+      expect(await editor.save(), true, 'save refused an add-then-delete-only batch');
+      expect(df.rowCount, rows, 'the added-then-deleted row survived the save');
+      expect(editor.isDirty, false, 'phantom pending state after the save');
+      // Mixed with a real edit: exactly one op reaches the server.
+      editor.markDeleted(editor.addRow({sku: `${prefix}-gone2`, name: 'Gone2', quantity: 1}));
+      editor.setValue(0, 'name', 'Kept');
+      const saved = await new Promise<DomainSaveResult>((resolve) => {
+        const sub = editor.onSaved.subscribe((r) => { sub.unsubscribe(); resolve(r); });
+        editor.save();
+      });
+      expect(saved.updated, 1, 'the real edit did not land');
+      expect(saved.inserted + saved.deleted, 0, 'the phantom row reached the server');
+      expect(editor.isDirty, false, 'residual dirt after the mixed save');
+      editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('clearSnapshots: an in-place row rewrite does not corrupt originals', async () => {
+    const prefix = `fe-snap-${stamp()}`;
+    await seed(prefix, 1);
+    try {
+      const editor = await editorFor(prefix);
+      const df = editor.dataFrame;
+      const before = df.get('name', 0);
+      editor.beginEdit(0);                            // snapshot holds `before`
+      // A host's in-place refresh: raw value rewrite, no frame event (H8).
+      df.columns.byName('name').set(0, 'Rewritten', false);
+      editor.clearSnapshots();
+      editor.beginEdit(0);                            // re-snapshots the rewritten value
+      df.columns.byName('name').set(0, 'Edited', false);
+      editor.commitEdit(0, 'name');
+      expect(editor.changesOf(0)['name'], 'Rewritten',
+        `stale original survived the rewrite (still '${before}')`);
+      editor.discard();
+      expect(df.get('name', 0), 'Rewritten', 'discard restored the pre-rewrite value');
+      editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
   test('an out-of-band row removal does not desync the per-row state', async () => {
     const prefix = `fe-shift-${stamp()}`;
     await seed(prefix, 3);
@@ -282,6 +335,45 @@ category('Dapi: domain frame editor', () => {
       expect(batch.every((e) => e.tx_id != null), true, 'a batch audit row carries no tx_id');
       expect(batchTx.size, 1, `the batch spanned ${batchTx.size} transactions, not one`);
       editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('attachTo: the host owns the frame, the platform class edits it', async () => {
+    const prefix = `fe-attach-${stamp()}`;
+    await seed(prefix, 2);
+    try {
+      // ONE class, not a copy: the platform surface and the library import are
+      // the same object, so a Dart host and a plugin drive the same editor.
+      expect((DG as any).DomainFrameEditor === DomainFrameEditor, true,
+        'DG.DomainFrameEditor and the domain-ui export are different classes');
+
+      // The host's own frame — what the Dart Domain View hands over: no client,
+      // just the table address.
+      const df = await items().queryDf(specFor(prefix) as any);
+      const editor = await DomainFrameEditor.attachTo(df, 'apitests', 'item');
+      try {
+        expect(editor.dataFrame === df, true, 'attachTo rebuilt the frame instead of adopting it');
+        expect(editor.table, 'apitests.item', 'attachTo resolved another table');
+        for (const name of SERVICE_COLUMNS)
+          expect(df.columns.contains(name), true, `${name} was not attached to the host frame`);
+
+        // Driven exactly as a grid drives it — beginEdit, the host writes the
+        // cell, commitEdit — and the state lands in the host's own frame.
+        editor.beginEdit(0);
+        const original = df.get('name', 0);
+        df.set('name', 0, 'Written by the host');
+        editor.commitEdit(0, 'name');
+        expect(editor.stateOf(0), 'modified', 'the host edit was not tracked');
+        expect(editor.changesOf(0)['name'], original, '~changes does not hold the ORIGINAL value');
+        expect(df.getCol(STATE_COLUMN).get(0), 'modified',
+          'the state did not reach the host frame');
+        editor.discard();
+        expect(df.get('name', 0), original, 'discard did not restore the host frame');
+      } finally {
+        editor.detach();
+      }
     } finally {
       await cleanup(prefix);
     }
