@@ -1,0 +1,38 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "testdb",
+  "version": "1.0.0",
+  "tables": {
+    "sample": {
+      "securityMode": "row",
+      "businessKey": ["name"],
+      "idempotency": true,
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "count": {"type": "int", "min": 0},
+        "ratio": {"type": "float"},
+        "active": {"type": "bool"},
+        "measured_on": {"type": "datetime"},
+        "tags": {"type": "string_list"},
+        "owner": {"type": "user"},
+        "status": {"type": "string", "choices": ["new", "done"]}
+      },
+      "schemas": ["extra"]
+    },
+    "sample_event": {
+      "securityMode": "master",
+      "delegate": "sample_id",
+      "audit": false,
+      "columns": {
+        "sample_id": {"type": "ref", "ref": "sample", "onDelete": "cascade", "required": true},
+        "kind": {"type": "string", "required": true}
+      }
+    }
+  },
+  "propertySchemas": {
+    "extra": {
+      "note": {"type": "string"},
+      "score": {"type": "float", "required": true}
+    }
+  }
+}

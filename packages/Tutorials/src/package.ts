@@ -12,6 +12,7 @@ import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
+import {northwindDemo} from './demo-app/northwind-demo';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
 import {DemoAppWidget} from './demo-app/widget';
 import { bio } from './tracks/bio';
@@ -207,6 +208,18 @@ export class PackageFunctions {
   static async _databasesDemo() : Promise<void> {
     grok.shell.addView(DG.View.createByType(DG.View.DATABASES));
     showHelp('/help/access/access.md#data-connection');
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'demoPath': 'Data Access | Domain Databases',
+      'isDemoScript': 'True'
+    },
+    'name': 'domainDatabasesDemo',
+    'description': 'Domain databases turn plugin-shipped PostgreSQL schemas into platform entities with row/column security, audit history, and standard browsing UI. This demo walks through the classic Northwind database shipped with the Tutorials package: browsing schemas and tables, exploring orders with search and filters, opening an order with its line items and audit history, and querying the data from JavaScript.'
+  })
+  static async _domainDatabasesDemo() : Promise<void> {
+    await northwindDemo();
   }
 
 

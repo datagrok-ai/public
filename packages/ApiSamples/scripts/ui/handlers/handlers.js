@@ -73,6 +73,7 @@ v.append(ui.div([
     'icon': handler.renderIcon(orange),
     'markup': handler.renderMarkup(orange, 'myContext'),
     'card': handler.renderCard(orange),
+    'list item': handler.renderListItem(orange),
     'tooltip': handler.renderTooltip(orange),
     'properties': handler.renderProperties(orange),
   })

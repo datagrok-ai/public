@@ -1767,9 +1767,22 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   private renameOwnColumns(): void {
     if (this.fragmentsColumn)
-      this.fragmentsColumn.name = this.resolveColumnName('colors');
+      this.renameColumn(this.fragmentsColumn, this.resolveColumnName('colors'));
     if (this.labelsColumn)
-      this.labelsColumn.name = this.resolveColumnName('labels');
+      this.renameColumn(this.labelsColumn, this.resolveColumnName('labels'));
+  }
+
+  private claimColumnName(name: string, ownColumn: DG.Column | null): string {
+    const collision = this.dataFrame!.columns.byName(name);
+    if (!collision || collision === ownColumn)
+      return name;
+    return this.dataFrame!.columns.getUnusedName(name);
+  }
+
+  private renameColumn(column: DG.Column, name: string): string {
+    name = this.claimColumnName(name, column);
+    column.name = name;
+    return name;
   }
 
   private resolveColumnName(suffix: string): string {
@@ -1780,13 +1793,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   private ensureColumn(
     suffix: string, existingColumn: DG.Column | null, description: string, hidden: boolean = true,
   ): IColumnResult {
-    const columnName = this.resolveColumnName(suffix);
     if (existingColumn)
-      existingColumn.name = columnName;
-    return this.getOrCreateColumn(columnName, description, hidden);
+      return {column: existingColumn, isNew: false};
+    return this.getOrCreateColumn(this.resolveColumnName(suffix), description, hidden);
   }
 
   private getOrCreateColumn(columnName: string, description: string, hidden: boolean = true): IColumnResult {
+    columnName = this.claimColumnName(columnName, null);
     let column = this.dataFrame!.columns.byName(columnName);
     const isNew = !column;
 

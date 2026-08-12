@@ -1,0 +1,6 @@
+{
+  "name": "@datagrok/domain-fixture",
+  "friendlyName": "DomainFixture",
+  "version": "1.0.0",
+  "description": "Fixture package for grok api domain codegen tests"
+}

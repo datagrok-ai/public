@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -14,6 +15,13 @@ import java.util.stream.Collectors;
 
 public class ProviderManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProviderManager.class);
+
+    /**
+     * Read-oriented engines / federation layers that must never advertise write support even though
+     * they are JDBC providers with auto-interpolation (connector-writes WO-4).
+     */
+    private static final Set<String> WRITE_DENYLIST = new HashSet<>(Arrays.asList(
+            "Athena", "BigQuery", "Impala", "Hive", "Hive2", "Virtuoso", "Denodo", "Neptune", "PI"));
 
     // Registration is reflective so an image shipped without a provider's driver jar
     // (or even without the provider class) degrades to a startup warning instead of
@@ -72,6 +80,24 @@ public class ProviderManager {
                 continue;
             }
             providersMap.put(type, provider);
+        }
+        // Central supportsWrite default: every auto-interpolation JDBC provider not on the denylist can
+        // execute prepared-statement mutations. Providers that set the flag explicitly keep their value.
+        for (JdbcDataProvider provider : providersMap.values()) {
+            DataSource descriptor = provider.descriptor;
+            if (!descriptor.supportsWrite)
+                descriptor.supportsWrite = provider.autoInterpolation() && !WRITE_DENYLIST.contains(descriptor.type);
+            // bulk insert rides the same prepared-statement batching as writes (default loader);
+            // providers with a native fast path (Postgres COPY) still advertise it here (connector-writes WO-5).
+            if (!descriptor.supportsBulkInsert)
+                descriptor.supportsBulkInsert = descriptor.supportsWrite;
+            // DDL is opt-in per provider — no generic-JDBC DDL fallback (unlike DML): a supportsDdl
+            // provider must ship a hand-authored dgToNativeType map (connector-writes WO-B6).
+            if (descriptor.supportsDdl && descriptor.dgToNativeType == null) {
+                LOGGER.error("Provider {} declares supportsDdl without a dgToNativeType map; disabling DDL",
+                        descriptor.type);
+                descriptor.supportsDdl = false;
+            }
         }
         LOGGER.info("Registered providers: {}", providersMap.keySet());
     }

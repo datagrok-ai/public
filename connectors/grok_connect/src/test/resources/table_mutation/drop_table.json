@@ -1,0 +1,8 @@
+{
+  "#type": "DropTable",
+  "name": "drop orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": true
+}

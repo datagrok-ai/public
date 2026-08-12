@@ -6,8 +6,16 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.JdbcDataProvider;
+import grok_connect.table_mutation.DestructiveAction;
+import grok_connect.table_mutation.MutationConfirmationRequiredException;
+import grok_connect.table_mutation.MutationPlan;
+import grok_connect.table_mutation.MutationResult;
+import grok_connect.table_mutation.MutationRunner;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.TableMutation;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
 import org.slf4j.LoggerFactory;
@@ -44,6 +52,7 @@ public class GrokConnect {
     public static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .registerTypeAdapter(DataQuery.class, new DataQueryDeserializer())
+            .registerTypeAdapter(TableMutation.class, new TableMutationDeserializer())
             .create();
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
@@ -91,6 +100,7 @@ public class GrokConnect {
                 long startTime = System.currentTimeMillis();
                 DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
                 DataFrame dataFrame = provider.execute(call);
+                result.rawWriteDetected = Boolean.TRUE.equals(call.aux.get(DataProvider.RAW_WRITE_DETECTED));
                 double execTime = (System.currentTimeMillis() - startTime) / 1000.0;
                 result.blob = dataFrame.toByteArray();
                 result.blobLength = result.blob.length;
@@ -116,7 +126,7 @@ public class GrokConnect {
                 buffer.bufPos = result.blob.length;
 
             } catch (QueryCancelledByUser | GrokConnectException ex) {
-                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
                         ? (Exception) ex.getCause() : ex);
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
             }
@@ -133,6 +143,48 @@ public class GrokConnect {
             }
 
             return response;
+        });
+
+        post("/mutate", (request, response) -> {
+            response.type(MediaType.APPLICATION_JSON);
+            try {
+                FuncCall call = gson.fromJson(request.body(), FuncCall.class);
+                if (call == null || call.func == null)
+                    return mutationError(response, "validation", "Request body must be a FuncCall with a TableMutation func", null);
+                if (call.options == null)
+                    call.options = new HashMap<>();
+                call.setParamValues();
+                call.afterDeserialization();
+                if (!(call.func instanceof TableMutation))
+                    return mutationError(response, "validation", "func must be a TableMutation, got: " + call.func.type, null);
+                if (call.func.connection == null)
+                    return mutationError(response, "validation", "Mutation has no connection", null);
+                DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
+                if (provider == null)
+                    return mutationError(response, "validation", "Unknown data source: " + call.func.connection.dataSource, null);
+                if (!(provider instanceof JdbcDataProvider) || !provider.descriptor.supportsWrite)
+                    return mutationError(response, "capability", "Provider does not support writes", provider.descriptor.type);
+                MutationResult result = MutationRunner.execute((JdbcDataProvider) provider, call);
+                return gson.toJson(result);
+            } catch (MutationConfirmationRequiredException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "destructive-confirmation-required", ex.getMessage(), ex.providerType, ex.plan, null);
+            } catch (MutationValidationException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "validation", ex.getMessage(), null, null, ex.refusals);
+            } catch (JsonParseException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "validation", ex.getMessage(), null);
+            } catch (UnsupportedOperationException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "capability", ex.getMessage(), null);
+            } catch (QueryCancelledByUser | GrokConnectException ex) {
+                // execution errors are reported inside the payload, mirroring /query
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                MutationResult result = new MutationResult();
+                result.errorMessage = ex.getMessage();
+                return gson.toJson(result);
+            }
         });
 
         post("/test", (request, response) -> {
@@ -321,6 +373,25 @@ public class GrokConnect {
         return buffer;
     }
 
+    private static String mutationError(Response response, String error, String message, String providerType) {
+        return mutationError(response, error, message, providerType, null, null);
+    }
+
+    private static String mutationError(Response response, String error, String message, String providerType,
+                                        MutationPlan plan, List<DestructiveAction> refusals) {
+        response.status(HttpURLConnection.HTTP_BAD_REQUEST);
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", error);
+        body.put("message", message);
+        if (providerType != null)
+            body.put("provider", providerType);
+        if (plan != null)
+            body.put("plan", plan); // the refusal carries the plan — the UI confirms without a second round trip
+        if (refusals != null && !refusals.isEmpty())
+            body.put("refusals", refusals);
+        return gson.toJson(body);
+    }
+
     public static BufferAccessor packException(DataQueryRunResult result, Exception ex) {
         Map<String, String> exception = printError(ex);
         result.errorMessage = exception.get("errorMessage");
@@ -329,6 +400,11 @@ public class GrokConnect {
     }
 
     public static Map<String, String> printError(Throwable ex) {
+        if (ex == null)
+            return new HashMap<String, String>() {{
+                put("errorMessage", DEFAULT_LOG_EXCEPTION_MESSAGE);
+                put("errorStackTrace", "");
+            }};
         String errorMessage = ex.getMessage();
         String errorStackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));

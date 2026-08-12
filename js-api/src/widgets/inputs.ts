@@ -11,7 +11,7 @@ import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
 import {InputBase} from "./inputs-base";
 import {CodeEditor} from "./code-editor";
-import {TypeAheadConfig, CodeConfig} from "./types";
+import {TypeAheadConfig, TypeAheadCallbackSource, CodeConfig} from "./types";
 
 import '../../css/typeahead-input.css';
 
@@ -62,11 +62,109 @@ export class TypeAhead extends InputBase {
     const inputElement = ui.input.string(name, {value: ''});
     super(inputElement.dart);
 
+    if (typeof config.source === 'function') {
+      this._initCallbackSource(config.source, config);
+      return;
+    }
+
     const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
-      {input: <HTMLInputElement> this.input}, config);
+      {input: <HTMLInputElement> this.input}, config) as typeaheadConfig<Dictionary>;
 
     typeahead(typeAheadConfig);
     this._changeStyles();
+  }
+
+  /** Self-contained dropdown for callback sources: typeahead-standalone only supports
+   * local/prefetch/remote URL sources, so async callbacks (server-backed suggestions) get a
+   * minimal debounced dropdown reusing the same CSS classes as the standalone path. */
+  private _initCallbackSource(source: TypeAheadCallbackSource, config: TypeAheadConfig): void {
+    const input = <HTMLInputElement> this.input;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'typeahead-standalone ui-input-root';
+    input.parentElement!.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+    const list = document.createElement('div');
+    list.className = 'ui-input-list tt-hide';
+    wrapper.appendChild(list);
+
+    const minLength = config.minLength ?? 1;
+    const limit = config.limit ?? 5;
+    let timer: any = null;
+    let requestId = 0;
+    let items: Dictionary[] = [];
+    let selectedIdx = -1;
+
+    const hide = () => {
+      if (timer != null) {
+        clearTimeout(timer);   // a pending debounce must not query into a closed dropdown
+        timer = null;
+      }
+      list.classList.add('tt-hide');
+      selectedIdx = -1;
+    };
+    const pick = (ev: Event, i: number) => {
+      const item = items[i];
+      this.value = `${item.label ?? ''}`;
+      hide();
+      config.onSubmit?.(ev, item);
+    };
+    const render = () => {
+      list.textContent = '';
+      items.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = i === selectedIdx ? 'tt-suggestion tt-selected' : 'tt-suggestion';
+        el.textContent = `${item.label ?? ''}`;
+        el.addEventListener('mousedown', (ev) => { ev.preventDefault(); pick(ev, i); });
+        list.appendChild(el);
+      });
+      list.classList.toggle('tt-hide', items.length === 0);
+    };
+
+    input.addEventListener('input', () => {
+      if (timer != null)
+        clearTimeout(timer);
+      const query = input.value;
+      if (query.length < minLength) {
+        items = [];
+        hide();
+        return;
+      }
+      timer = setTimeout(async () => {
+        const id = ++requestId;
+        let results: (string | Dictionary)[];
+        try {
+          results = await source(query);
+        }
+        catch (e) {
+          console.error('TypeAhead callback source failed:', e);
+          results = [];
+        }
+        if (id !== requestId)
+          return;
+        items = results.slice(0, limit).map((x) => typeof x === 'string' ? {label: x} : x);
+        selectedIdx = -1;
+        render();
+      }, config.debounceRemote ?? 100);
+    });
+    input.addEventListener('keydown', (ev) => {
+      if (list.classList.contains('tt-hide'))
+        return;
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        selectedIdx = ev.key === 'ArrowDown'
+          ? (selectedIdx + 1) % items.length
+          : (selectedIdx <= 0 ? items.length - 1 : selectedIdx - 1);
+        render();
+        ev.preventDefault();
+      }
+      else if (ev.key === 'Enter' && selectedIdx >= 0) {
+        pick(ev, selectedIdx);
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      else if (ev.key === 'Escape')
+        hide();
+    });
+    input.addEventListener('blur', () => hide());
   }
 
   _changeStyles() {

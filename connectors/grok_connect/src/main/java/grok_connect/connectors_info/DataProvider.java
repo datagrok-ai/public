@@ -13,6 +13,11 @@ public abstract class DataProvider
     public static String QUERY_COUNT = "#queryCount";
     public static String QUERY_MEMORY_LIMIT_MB = "#queryMemoryLimitMB";
     public static String QUERY_TIMEOUT_SEC = "#queryTimeoutSec";
+    // §6.2 raw-SQL policy (connector-writes WO-B13): FuncCall.options keys set by Datlas and the
+    // FuncCall.aux key GrokConnect reports detection through.
+    public static String READ_ONLY = "readOnly";
+    public static String AUDIT_RAW_WRITES = "auditRawWrites";
+    public static String RAW_WRITE_DETECTED = "rawWriteDetected";
 
     public DataSource descriptor;
 

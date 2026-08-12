@@ -1,0 +1,18 @@
+{
+  "#type": "DeleteRows",
+  "name": "delete orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "whereClauses": [
+    {
+      "field": "status",
+      "pattern": "obsolete",
+      "dataType": "string",
+      "matcher": {"expression": "obsolete", "op": "equals", "values": ["obsolete"], "include1": true}
+    }
+  ],
+  "whereOp": "or",
+  "allowFullTable": false
+}

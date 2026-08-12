@@ -2,6 +2,7 @@
 bin/validators/*.ts
 bin/utils/*.ts
 bin/commands/*.ts
+bin/__tests__/
 test-record.mp4
 test-report.csv
 test-console-output.log

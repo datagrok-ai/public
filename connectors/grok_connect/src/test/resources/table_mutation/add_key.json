@@ -1,0 +1,13 @@
+{
+  "#type": "AddKey",
+  "name": "fk order items",
+  "tableName": "order_items",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "keyType": "foreign",
+  "constraintName": "fk_order_items_order_id",
+  "columns": ["order_id"],
+  "refTable": "orders",
+  "refColumns": ["id"]
+}

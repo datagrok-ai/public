@@ -1,0 +1,19 @@
+{
+  "#type": "UpsertRows",
+  "name": "upsert orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "columns": ["id", "qty"],
+  "columnTypes": ["int", "int"],
+  "rows": [
+    [1, 10],
+    [2, 20]
+  ],
+  "mode": "upsert",
+  "matchKeys": ["id"],
+  "allOrNothing": true,
+  "bulk": false,
+  "payloadFormat": "d42"
+}

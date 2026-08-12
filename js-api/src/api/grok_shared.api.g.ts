@@ -78,6 +78,10 @@ export class DataSourceType {
 
   static Postgres = 'Postgres';
 
+  /// Virtual, credential-less source over an entity-mapped domain schema.
+  /// Executed in-process by DomainDataProvider; never reaches grok_connect.
+  static Domain = 'Domain';
+
   static Redshift = 'Redshift';
 
   static SQLite = 'SQLite';
@@ -124,7 +128,7 @@ export class DataSourceType {
 
   static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'Git', 'SharePoint', 'Amazon EFS'];
 
-  static systemDataSources = ['PostgresDart'];
+  static systemDataSources = ['PostgresDart', 'Domain'];
 
   static secureSources = ['AWS', 'GCP'];
 
@@ -181,6 +185,8 @@ export class Permission {
   static CREATE_DASHBOARD = 'CreateDashboard';
 
   static CREATE_SPACE = 'CreateSpace';
+
+  static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 
   // ===== General =====
   static INVITE_USER = 'InviteUser';
@@ -240,6 +246,22 @@ export class Permission {
 
   static DATA_CONNECTION_LIST_FILES = 'DataConnection.ListFiles';
 
+  // Fine-grained structured-write privileges (UI group 'Write').
+  static DATA_CONNECTION_ADD_ROWS = 'DataConnection.AddRows';
+
+  static DATA_CONNECTION_CHANGE_VALUES = 'DataConnection.ChangeValues';
+
+  static DATA_CONNECTION_REMOVE_ROWS = 'DataConnection.RemoveRows';
+
+  static DATA_CONNECTION_TRUNCATE_TABLE = 'DataConnection.TruncateTable';
+
+  // Fine-grained schema-change privileges (UI group 'Ddl').
+  static DATA_CONNECTION_CREATE_TABLE = 'DataConnection.CreateTable';
+
+  static DATA_CONNECTION_ALTER_SCHEMA = 'DataConnection.AlterSchema';
+
+  static DATA_CONNECTION_DROP_TABLE = 'DataConnection.DropTable';
+
   // ===== Entity: DataQuery =====
   static DATA_QUERY_EXECUTE = 'DataQuery.Execute';
 
@@ -248,6 +270,9 @@ export class Permission {
 
   // ===== Entity: TableInfo =====
   static TABLE_READ_DATA = 'Table.ReadData';
+
+  // ===== Entity: DomainSchema =====
+  static EXTEND = 'Extend';
 
 }
 export class ScriptLanguage {
@@ -268,8 +293,6 @@ export class ScriptLanguage {
   static Octave = 'octave';
 
   static PythonDocker = 'docker';
-
-  static Flow = 'flow';
 
 }
 import {Entity} from '../entities'

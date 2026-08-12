@@ -76,8 +76,8 @@ export class Shell {
    * This allows inspecting an object (like a dataset) temporarily without
    * fully opening it or adding it to the workspace.
    */
-  get preview(): View | null { return toJs(api.grok_Get_CurrentPreview()); }
-  set preview(view: View | null) { api.grok_Set_CurrentPreview(view ? view.dart : null); }
+  get preview(): ViewBase | null { return toJs(api.grok_Get_CurrentPreview()); }
+  set preview(view: ViewBase | null) { api.grok_Set_CurrentPreview(view ? view.dart : null); }
 
   /** Current table view, or null */
   get tv(): TableView { return toJs(api.grok_Get_CurrentView()); }
