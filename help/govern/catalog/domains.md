@@ -200,18 +200,39 @@ corresponding access.
 
 * **Create**: in the table view, click **New...**. The dialog is generated from the table's
   definition: dropdowns for controlled values, pickers for references to other tables and for
-  users and groups, and inline validation with the same rules the server enforces. Columns
-  you don't have access to are not shown.
+  users and groups, file inputs for attachment columns (picking a local file uploads it to
+  Datagrok's file storage — preview and download it later from the row's **Context Panel**),
+  and inline validation with the same rules the server enforces. Columns you don't have
+  access to are not shown.
 * **Edit**: right-click a row and select **Edit...**, or use **Clone...** to create a copy.
-* **Edit in grid**: in grid mode, users with Edit access change cells directly. Edits
-  accumulate with unsaved-change markers, and **Save** commits them all in one transaction —
-  either everything applies or nothing does.
+* **Edit in grid**: in grid mode, users with Edit access change cells directly. Reference,
+  user, and group cells open a lookup picker in place (double-click the cell, or press
+  Enter). Add and delete rows with the **+** and **−** buttons next to the unsaved-changes
+  counter. Edits accumulate with unsaved-change markers, and **Save** commits them all in
+  one transaction — either everything applies or nothing does. While you have unsaved
+  edits, the view asks before refreshing or discarding them.
 
 If someone else changed a row while you were editing it, Datagrok shows a conflict dialog:
 reload their version or overwrite it.
 
 To change several rows at once, select them and use the bulk **Edit**, **Delete**, or
 **Share** actions — each applies as a single all-or-nothing operation.
+
+### Linked items
+
+Tables can link rows to many rows of another table — for example, an issue and its labels.
+Linked items show as chips in the grid and on the row's page. To edit them:
+
+* In a row dialog, use the tags input: search, then pick to add or remove links. Where the
+  schema allows it, type a new name to create and link a new item in one step.
+* In the grid, open the chips cell (double-click, or press Enter) and edit the links in
+  place.
+
+Linked items are filterable like any other column: the filter panel shows their values
+with counts, including a **(no value)** entry for rows with no links, and Ctrl-click
+excludes a value. **Open in Table View** carries the links along as a text column of
+names. Access control applies to links, too: you only see and change links whose rows you
+can access, and links you cannot see are never affected by your edits.
 
 ### Importing and exporting
 

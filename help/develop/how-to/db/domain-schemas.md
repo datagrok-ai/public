@@ -31,8 +31,9 @@ server code, domain tables get the full platform treatment out of the box:
 * **Standard UI**: browsing, search, filtering, create/edit dialogs, in-grid editing,
   import/export, sharing, watching, and history work automatically — see
   [Domains](../../../govern/catalog/domains.md).
-* **Typed API**: a generic JS client (`grok.dapi.domains`) plus generated TypeScript
-  interfaces per table.
+* **Typed API**: a generic JS client (`grok.dapi.domains`), generated TypeScript
+  interfaces per table, and a reflective UI library —
+  [domain-ui](#building-app-ui-the-domain-ui-library).
 
 You declare tables once in a JSON manifest; Datagrok creates the database objects on package
 deployment and upgrades them when the manifest changes.
@@ -161,6 +162,71 @@ Hidden columns never leave the server: they are absent from query results, expor
 filters. Relational columns belong to the table's built-in "core" schema, which is granted to
 all users on deployment.
 
+### Many-to-many relations
+
+A `ref` column links each row to one target row. To link a row to *many* target rows —
+issues to labels, samples to projects — declare a **relation** on the owning table. The
+junction is an ordinary domain table you declare yourself. The relation adds no DDL and no
+migration — it only tells the platform how to travel the junction:
+
+```json
+{
+  "tables": {
+    "label": {
+      "columns": {"name": {"type": "string", "required": true, "isName": true}}
+    },
+    "issue_label": {
+      "securityMode": "master",
+      "delegate": "issue_id",
+      "businessKey": ["issue_id", "label_id"],
+      "columns": {
+        "issue_id": {"type": "ref", "ref": "issue", "required": true, "onDelete": "cascade"},
+        "label_id": {"type": "ref", "ref": "label", "required": true, "onDelete": "cascade"}
+      }
+    },
+    "issue": {
+      "relations": {"labels": {"via": "issue_label", "target": "label"}},
+      "columns": {"title": {"type": "string", "required": true, "isName": true}}
+    }
+  }
+}
+```
+
+That declaration alone powers the whole stack — a chips column in grids, a tags editor in
+row dialogs and in the grid cell popup, a filter facet, related-row panes, and the API
+surface below — with zero UI code. `viaSelf` and `viaTarget` name the junction's FK
+columns explicitly when it carries more than one `ref` to a side (a self-referential
+relation must name both). `allowCreate: true` lets users create and link a new target row
+directly from the tags editor. A relation name shares the expand/filter namespace with
+columns, so it may not collide with one, and the junction's `businessKey` must cover both
+FK columns — that unique index is what makes re-linking idempotent.
+
+Working with relations from the API:
+
+* **Read**: `expand: ['labels']` returns each row's links as an array of `{id, name}`,
+  ordered by display name. DataFrame reads (`queryDf`, **Open in Table View**) flatten the
+  names into a chips-rendered `labels` column instead.
+* **Filter**: dotted paths travel the relation — `labels.name = "bug"`, or chains that
+  continue from the target table. The semantics are per-link: `labels.name != "bug"` means
+  "has a label other than bug", not "has no bug label". The set-level questions live on
+  the id leaf: `labels.id = null` matches rows with no links at all, and excluding a list
+  of ids matches rows linked to none of them.
+* **Write**: `insert` and `patch` accept the relation as the full set of linked ids —
+  `{"labels": [id1, id2]}`. The server diffs it against the links the caller can currently
+  see and applies the difference through ordinary junction writes, so audit, deduplication,
+  and referential actions come free. Consequences: `[]` clears only the links visible to
+  you, an absent key leaves the relation untouched, and a replace never removes a link its
+  author cannot see. `batch` refuses relation keys — load the junction table directly
+  instead. To create a target and link it atomically, use a transaction with `$ref`
+  placeholders inside the id list.
+
+Who may link is decided by the junction table's own security. The recommended shape is the
+one above — a `master`-mode junction delegating to the owner, so Edit on an issue is Edit
+on its links (and unlinking needs no separate Delete grant). A relation whose junction or
+target table you cannot View is invisible everywhere, exactly like a name nobody declared.
+Do not set `defaultRowVisibility: "none"` on a junction or a relation target — rows
+created there could never be linked, and the manifest is rejected.
+
 ### Default filters
 
 Without configuration, the table's
@@ -180,7 +246,7 @@ pre-opened, in order (users can still add more from the panel):
 
 | Key      | Description                                                                                       |
 |----------|----------------------------------------------------------------------------------------------------|
-| `column` | A declared column, a property-schema column, a system column (such as `created_on`), or a dotted reference path like `plate_id.barcode` |
+| `column` | A declared column, a property-schema column, a system column (such as `created_on`), a dotted reference path like `plate_id.barcode`, or a relation id leaf like `labels.id` (relation facets appear automatically only in the automatic panel — a declared `filters` section must list them explicitly to keep them) |
 | `type`   | `categories`, `histogram`, `range`, `text`, or `bool`. Omit to pick automatically from the column type |
 | `bins`   | Histogram bucket count (1–200). Requires an explicit `histogram` or `range` type                    |
 | `label`  | Display caption for the filter                                                                      |
@@ -466,18 +532,24 @@ per-schema client:
 ```ts
 import {gritDb, IssueStatus} from './generated/db';
 
-const projects = await gritDb.project.query({sort: 'name'});   // ProjectRow[]
-await gritDb.issue.insert({project_id: projects[0].id, number: 7, title: 'Typed!'});
-// gritDb.issue.insert({}) — compile error: required columns are enforced
+const projects = await gritDb.projects.query({sort: 'name'});   // ProjectRow[]
+await gritDb.issues.insert({project_id: projects[0].id, number: 7, title: 'Typed!'});
+// gritDb.issues.insert({}) — compile error: required columns are enforced
 ```
+
+Table properties on the schema client are the camelCase plurals of the declared table
+names (`gritDb.issues`, `gritDb.issueLabels`). The declared singular names stay everywhere
+data is addressed: `table('grit.issue')`, transaction ops, and expand keys.
 
 The generated surface is truthful about the wire:
 
 * **Datetimes are dayjs.** Declared datetime columns and `created_on`/`updated_on` are typed
   `Dayjs` and materialize as dayjs objects on JSON reads, including expanded master fields
   and detail child rows (inserts also accept ISO strings). Untyped `table('s.t')` clients
-  keep ISO strings. Regenerating db.ts across this change is breaking — fix call sites that
-  treated datetimes as strings (`a.created_on.valueOf()` instead of `localeCompare`).
+  materialize dayjs too — datetime columns are resolved from the table's registry
+  metadata, with no per-client configuration. Regenerating db.ts across this change is
+  breaking — fix call sites that treated datetimes as strings (`a.created_on.valueOf()`
+  instead of `localeCompare`).
 * **`choices` columns are literal unions** (`IssueStatus = 'open' | 'in progress' | ...`)
   used in both row and insert types — a typo in a status value no longer compiles.
 * **Column names and expand keys are compile-checked** through the client generics: filter
@@ -488,23 +560,23 @@ The generated surface is truthful about the wire:
 Bare `query()` returns an awaitable builder; `query(spec)` is unchanged:
 
 ```ts
-const top = await gritDb.issue.query()
+const top = await gritDb.issues.query()
   .where('project_id', '=', projectId)
   .where({status: 'open'})                        // equality map, AND-combined
   .orderBy('number', true)
   .top(20);
 
-const one = await gritDb.issue.query().where('number', '=', 7).first();  // row | null
-const df = await gritDb.issue.query().where({status: 'open'}).df();      // typed DataFrame
-const n = await gritDb.issue.query().where({status: 'open'}).count();
+const one = await gritDb.issues.query().where('number', '=', 7).first();  // row | null
+const df = await gritDb.issues.query().where({status: 'open'}).df();      // typed DataFrame
+const n = await gritDb.issues.query().where({status: 'open'}).count();
 ```
 
 Condition values are **bound server-side, never interpolated** — any string value works,
 including apostrophes that the filter-string grammar cannot express:
 
 ```ts
-await gritDb.project.query().where('name', '=', "O'Brien's project");
-await gritDb.issue.query({filter: DG.or(
+await gritDb.projects.query().where('name', '=', "O'Brien's project");
+await gritDb.issues.query({filter: DG.or(
   DG.cond('status', '=', 'open'), DG.cond('priority', '=', 'critical'))});
 ```
 
@@ -518,7 +590,7 @@ message text:
 
 ```ts
 try {
-  await gritDb.issue.update(id, {status: 'resolved'}, {version});
+  await gritDb.issues.update(id, {status: 'resolved'}, {version});
 } catch (e) {
   if (e instanceof DG.DomainVersionConflictError)
     grok.shell.info(`expected v${e.expectedVersion}, current v${e.currentVersion}`);
@@ -533,8 +605,8 @@ transaction carries `.opIndex` — the index of the failing op.
 ### Optimistic concurrency
 
 ```ts
-const saved = await gritDb.project.save({key: 'GRIT', name: 'Grit'}); // insert-or-update
-await gritDb.issue.updateWithRetry(id, (fresh) =>
+const saved = await gritDb.projects.save({key: 'GRIT', name: 'Grit'}); // insert-or-update
+await gritDb.issues.updateWithRetry(id, (fresh) =>
   fresh.status === 'open' ? {priority: 'high'} : null);   // null skips the write
 await DG.retryOnVersionConflict(async () => {/* fresh read + transaction write */});
 ```
@@ -550,7 +622,7 @@ types from a tuple ops literal: `const [upd, ins] = await gritDb.transaction([..
 
 ```ts
 const stamp = `test-${Date.now()}`;
-while ((await gritDb.issue.deleteWhere(DG.cond('title', 'like', stamp + '%'))).hasMore);
+while ((await gritDb.issues.deleteWhere(DG.cond('title', 'like', stamp + '%'))).hasMore);
 ```
 
 Soft-deletes up to 1000 matching rows you may delete per call, oldest first, in one
@@ -590,7 +662,8 @@ Runnable in the platform's samples gallery:
 [filters](https://public.datagrok.ai/js/samples/dapi/domains/filters),
 [dataframe](https://public.datagrok.ai/js/samples/dapi/domains/dataframe),
 [idempotency](https://public.datagrok.ai/js/samples/dapi/domains/idempotency),
-[schema](https://public.datagrok.ai/js/samples/dapi/domains/schema).
+[schema](https://public.datagrok.ai/js/samples/dapi/domains/schema),
+[platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid).
 
 ## Customizing the UI
 
@@ -599,13 +672,16 @@ code. Plugins customize it through the standard mechanisms only — rows of each
 the semantic type `<schema>.<table>`:
 
 * **Custom rendering and views**: register an
-  [ObjectHandler](register-identifiers.md) for the semantic type — it overrides the
-  default cards, tooltips, context panel, and entity view for that table only:
+  [ObjectHandler](register-identifiers.md) for the semantic type. Extend
+  `DG.DomainObjectHandler` — override just what you customize, and everything else
+  (cards, tooltips, grid decoration, context panel, permission-gated actions) keeps
+  the platform defaults:
 
   ```ts
-  class IssueHandler extends DG.ObjectHandler {
-    get type() { return 'grit.issue'; }
-    // renderCard, renderTooltip, renderProperties, renderView, ...
+  class IssueHandler extends DG.DomainObjectHandler {
+    constructor() { super('grit.issue'); }
+    renderCard(x) { return ui.card(ui.divText(`#${x.values.number} — ${x.values.title}`)); }
+    renderGrid(grid) { super.renderGrid(grid); grid.col('title').width = 300; }
   }
   DG.ObjectHandler.register(new IssueHandler());
   ```
@@ -617,8 +693,50 @@ the semantic type `<schema>.<table>`:
 * **Search patterns**: claim [identifier patterns](register-identifiers.md) (like
   `GRIT-123`) in the handler, and they resolve from global search.
 
+### Building app UI: the domain-ui library
+
+To build your own UI over domain tables — forms, editable grids, list pages, whole
+browse/CRUD apps — use
+[`@datagrok-libraries/domain-ui`](https://github.com/datagrok-ai/public/tree/master/libraries/domain-ui).
+Everything in it is reflective: components take columns, labels, choices, validation
+rules, and permissions from the runtime registry, so common operations are one or two
+lines:
+
+```ts
+import {domains} from '@datagrok-libraries/domain-ui';
+
+const issues = await domains.table('grit.issue');     // the one await
+grok.shell.addView(issues.app());                     // the whole browse/CRUD app
+const saved = await issues.formDialog({values: {project_id: project.id}});
+```
+
+The library's README documents the full surface: the `domains` facade and its widget
+factories (`form`, `grid`, `list`, `listView`, `app`), schema-level handles
+(`domains.db`), composed pages and dialogs, customization points, and the widget-status
+machine surface for tests and AI assistants. The
+[Grit](https://github.com/datagrok-ai/public/tree/master/packages/Grit) package is the
+reference app built on it.
+
+### Platform building blocks
+
+The lower-level blocks behind the standard UI ship in `datagrok-api` itself:
+
+* `DG.DomainView.create({schema: 'grit', table: 'issue'})` opens the full table view
+  (search, filters, render modes, editing) programmatically — the same view the
+  `/domains/...` routes open.
+* `DG.DomainGrid.create(...)` hosts the editable domain grid inside your own view:
+  platform rendering, batch editing with unsaved-change markers, one-transaction save
+  with the conflict flows, and permission gating down to per-column writability.
+* `DG.DomainFrameEditor.attachTo(df, schema, table)` attaches the same editing state
+  machine to a DataFrame you render yourself — for fully custom hosts.
+
+See the
+[platform-grid](https://public.datagrok.ai/js/samples/dapi/domains/platform-grid) sample.
+
 See also:
 
 * [Domains](../../../govern/catalog/domains.md) — the user-facing guide
+* [`@datagrok-libraries/domain-ui`](https://github.com/datagrok-ai/public/tree/master/libraries/domain-ui) —
+  reflective forms, grids, and app pages over domain tables
 * [Plugin Postgres databases](db-in-plugin.md) — raw SQL storage without entity mapping
 * [Access data](access-data.md) — connections and queries
