@@ -1,6 +1,6 @@
 # statistics changelog
 
-## v.next
+## 1.12.10 (2026-08-12)
 
 * [#2103](https://github.com/datagrok-ai/public/issues/2103): Fit: Added `IFitChartOptions.labels` for values that describe the whole plot and `showLabels` for the names to render. `IFitSeriesOptions.labels` keeps carrying per-curve values. Removed `labelOptions` and `IFitChartLabelOptions`, which nothing ever read - its `visible` is now `showLabels` and a label takes the colour of the series it belongs to. Stored JSON carrying the key is unaffected, since it never had an effect
 * GROK-17637: Fit: Added `IFitChartData.explicit`, naming the options a user set at that level. Only an explicitly set level outranks the value a series declares for itself; anything absent stays advisory, as before
