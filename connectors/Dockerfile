@@ -19,8 +19,6 @@ RUN mvn dependency:go-offline --fail-never
 COPY $GROK_CONNECT_SOURCE_DIR /tmp/connectors
 ARG GROK_CONNECT_DIR
 ARG DEBIAN_FRONTEND=noninteractive
-# main: every driver except the CVE-quarantined ones; extended: only those (see EXTENDED_JARS)
-ARG FLAVOR=main
 RUN set -ex ; \
     savedAptMark="$(apt-mark showmanual)" ; \
     apt-get update ; \
@@ -31,20 +29,24 @@ RUN set -ex ; \
     mvn -Dmaven.test.skip=true package ; \
     mkdir -p ${GROK_CONNECT_DIR} ; \
     mv /tmp/connectors/grok_connect/lib ${GROK_CONNECT_DIR}/lib ; \
-    EXTENDED_JARS="amazon-neptune-jdbc-driver-3.0.3-all.jar ImpalaJDBC42.jar" ; \
-    cd ${GROK_CONNECT_DIR}/lib ; \
-    if [ "$FLAVOR" = "extended" ] ; then \
-      for f in * ; do case " $EXTENDED_JARS " in *" $f "*) ;; *) rm -f "$f" ;; esac ; done ; \
-    else \
-      rm -f $EXTENDED_JARS ; \
-    fi ; \
-    cd /tmp/connectors ; \
     mv /tmp/connectors/grok_connect/target/grok_connect-*.jar ${GROK_CONNECT_DIR}/grok_connect.jar ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ; \
     apt-get clean ; \
     rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/*
+
+# main: every driver except the CVE-quarantined ones; extended: only those.
+# A separate layer so the expensive maven layer above is FLAVOR-independent.
+ARG FLAVOR=main
+RUN set -ex ; \
+    EXTENDED_JARS="amazon-neptune-jdbc-driver-3.0.3-all.jar ImpalaJDBC42.jar" ; \
+    cd ${GROK_CONNECT_DIR}/lib ; \
+    if [ "$FLAVOR" = "extended" ] ; then \
+      for f in * ; do case " $EXTENDED_JARS " in *" $f "*) ;; *) rm -f "$f" ;; esac ; done ; \
+    else \
+      rm -f $EXTENDED_JARS ; \
+    fi
 
 FROM datagrok/openjdk:8 as main
 
