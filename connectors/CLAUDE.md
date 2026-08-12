@@ -311,71 +311,69 @@ grok_connect/src/main/java/grok_connect/
 
 ## Key Technologies
 
-| Category | Technology      | Version |
-|----------|-----------------|---------|
-| Language | Java            | 8       |
-| Language | Kotlin          | 1.6.21  |
-| Build    | Maven           | 3+      |
-| REST     | Spark Java      | 2.9.4   |
-| HTTP     | Jetty           | 9.4.x   |
-| JSON     | Gson            | 2.11.0  |
-| Testing  | JUnit 5         | 5.9.2   |
-| Testing  | TestContainers  | 1.17.6  |
-| Logging  | SLF4J + Logback | 1.2.13  |
-| AWS      | AWS SDK         | 2.20.52 |
+| Category | Technology      | Version         |
+|----------|-----------------|-----------------|
+| Language | Java            | 8               |
+| Language | Kotlin          | 1.6.21          |
+| Build    | Maven           | 3+              |
+| REST     | Spark Java      | 2.9.4           |
+| HTTP     | Jetty           | 9.4.x           |
+| JSON     | Gson            | 2.11.0          |
+| Testing  | JUnit 5         | 5.9.2           |
+| Testing  | TestContainers  | 1.17.6          |
+| Logging  | SLF4J + Logback | 2.0.17 / 1.3.16 |
+| AWS      | AWS SDK         | 2.52.0 (bom)    |
 
 ## Adding a New Database Provider
 
 1. **Create provider class** in `providers/`:
 
-```java
-public class MyDbDataProvider extends JdbcDataProvider {
-    public DataSource descriptor = new DataSource(
-        "MyDB",                          // Display name
-        "jdbc:mydb://{server}:{port}/{db}", // Connection template
-        MyDbDataProvider.class
-    );
-
-    public MyDbDataProvider() {
-        descriptor.type = "MyDB";
-        descriptor.defaultSchema = "public";
-
-        // Define connection parameters
-        descriptor.connectionProperties = Arrays.asList(
-            new Property("server", Property.STRING_TYPE),
-            new Property("port", Property.INT_TYPE, "3306"),
-            new Property("db", Property.STRING_TYPE)
+    ```java
+    public class MyDbDataProvider extends JdbcDataProvider {
+        public DataSource descriptor = new DataSource(
+            "MyDB",                          // Display name
+            "jdbc:mydb://{server}:{port}/{db}", // Connection template
+            MyDbDataProvider.class
         );
+
+        public MyDbDataProvider() {
+            descriptor.type = "MyDB";
+            descriptor.defaultSchema = "public";
+
+            // Define connection parameters
+            descriptor.connectionProperties = Arrays.asList(
+                new Property("server", Property.STRING_TYPE),
+                new Property("port", Property.INT_TYPE, "3306"),
+                new Property("db", Property.STRING_TYPE)
+            );
+        }
+
+        @Override
+        public String getConnectionString(DataConnection conn) {
+            return "jdbc:mydb://" + conn.getServer() + ":" + conn.getPort() + "/" + conn.getDb();
+        }
+
+        // Override methods as needed for provider-specific behavior
     }
+    ```
 
-    @Override
-    public String getConnectionString(DataConnection conn) {
-        return "jdbc:mydb://" + conn.getServer() + ":" + conn.getPort() + "/" + conn.getDb();
-    }
+2. **Add JDBC driver** to `lib/` directory (or as a Maven dependency)
 
-    // Override methods as needed for provider-specific behavior
-}
-```
-
-2. **Add JDBC driver** to `lib/` directory
-
-3. **Register provider** in `ProviderManager.java`:
-
-```java
-register(new MyDbDataProvider());
-```
+3. **Register provider** in `ProviderManager.java` — add its fully-qualified class name to the
+   `PROVIDER_CLASSES` array. Registration is reflective: the provider is advertised on `/conn`
+   only when its driver class is present and it passes the `GROK_CONNECT_PROVIDERS` allowlist.
 
 4. **Add tests** in `src/test/java/`:
 
-```java
-public class MyDbDataProviderTest extends DataProviderTest {
-    @Container
-    public static GenericContainer<?> myDb = new GenericContainer<>("mydb:latest")
-        .withExposedPorts(3306);
+    ```java
+    public class MyDbDataProviderTest extends DataProviderTest {
+        @Container
+        public static GenericContainer<?> myDb = new GenericContainer<>("mydb:latest")
+            .withExposedPorts(3306);
 
-    // Test methods
-}
-```
+        // Test methods
+    }
+    ```
 
 5. **Update CHANGELOG.md**
 
