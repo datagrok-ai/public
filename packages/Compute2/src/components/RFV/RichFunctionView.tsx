@@ -524,12 +524,11 @@ export const RichFunctionView = Vue.defineComponent({
       return activeExports;
     });
 
-    // The Excel report (or a sole export) keeps its direct ribbon icon; the rest go to the menu
+    // The Excel report (or a sole export) also gets a direct ribbon icon next to the menu
     const directExport = Vue.computed(() => {
       const list = exports.value;
       return list.find((e) => e.name === 'Default Excel') ?? (list.length === 1 ? list[0] : null);
     });
-    const menuExports = Vue.computed(() => exports.value.filter((e) => e !== directExport.value));
 
     // One entry per visible dataframe param, viewer configs merged across its tabs
     const collectDfExportEntries = (): DfExportEntry[] => {
@@ -658,10 +657,10 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && menuExports.value.length > 0 &&
+      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
         <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
-            menuExports.value.map(({ name, handler }) =>
+            exports.value.map(({ name, handler }) =>
               <span onClick={() => guardedExport(handler)}>
                 <div> {name} </div>
               </span>
