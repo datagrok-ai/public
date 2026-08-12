@@ -374,6 +374,10 @@ export const RichFunctionView = Vue.defineComponent({
       currentCall,
     );
 
+    // Mounted viewer per tab label; entries of closed tabs go stale (no undefined emit on
+    // unmount) but are never read — collectDfExportEntries iterates visibleTabLabels only
+    const liveViewers = new Map<string, DG.Viewer>();
+
     const hiddenByMeta = Vue.computed(() => {
       const hidden = new Set<string>();
       for (const [name, m] of Object.entries(callMetaValues)) {
@@ -535,7 +539,9 @@ export const RichFunctionView = Vue.defineComponent({
           entry = {name: content.name, isInput, df: content.df.value, viewers: []};
           entries.set(key, entry);
         }
-        const {type, ...options} = content.config;
+        const {type, ...annotated} = content.config;
+        const live = liveViewers.get(label);
+        const options = live ? {...annotated, ...live.getOptions().look} : annotated;
         entry.viewers.push({type: (type as string) ?? DG.VIEWER.GRID, options});
       }
       return [...entries.values()];
@@ -828,6 +834,8 @@ export const RichFunctionView = Vue.defineComponent({
                         dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => {
+                          if (v) liveViewers.set(tabLabel, v);
+                          else liveViewers.delete(tabLabel);
                           setViewerRef(v, tabContent.name, options['type'] as string);
                           applyDefaultGridFloatFormat(v, options['type'] as string);
                         }}

@@ -8,6 +8,7 @@ import './test/navigation';
 import './test/float-display';
 import './test/custom-export';
 import './test/url-inputs';
+import './test/project-export-data';
 import './test/run-comparison-extraction';
 import './test/run-comparison-matching';
 import './test/run-comparison-selection';

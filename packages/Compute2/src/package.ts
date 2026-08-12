@@ -795,6 +795,34 @@ export class PackageFunctions {
     return a;
   }
 
+  // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);
+  // the tests only prepare() these calls, the bodies never run.
+  @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})
+  static async TestProjectExportSingleOut(
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<DG.DataFrame> {
+    return DG.DataFrame.create(x);
+  }
+
+  @grok.decorators.func({outputs: [
+    {type: 'dataframe', name: 'res1'},
+    {type: 'dataframe', name: 'res2'},
+  ]})
+  static async TestProjectExportMultiOut(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<any> {
+    return {res1: df, res2: df};
+  }
+
+  @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})
+  static async TestProjectExportFileIn(
+    @grok.decorators.param({options: {optional: true, nullable: true}}) file: DG.FileInfo,
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<DG.DataFrame> {
+    return DG.DataFrame.create(x);
+  }
+
 }
 
 
