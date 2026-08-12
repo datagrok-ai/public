@@ -404,7 +404,7 @@ export interface IBoxPlotSettings {
   markerSizeColumnName: string;
 
   /// Linear or logarithmic scale for the *Marker Size Column*.
-  markerSizeScaling: keyof typeof AxisType;
+  markerSizeAxisType: keyof typeof AxisType;
 
   markerType: string;
 
@@ -1798,7 +1798,7 @@ export interface ILineChartSettings {
   markersSizeAggrType: string;
 
   /// Linear or logarithmic scale for the marker *Size* column.
-  markerSizeScaling: keyof typeof AxisType;
+  markersSizeAxisType: keyof typeof AxisType;
 
   markersVisibility: string;
   markersVisibilityColumnName: string;
@@ -3091,7 +3091,7 @@ export interface IScatterPlotSettings {
   showMarkersWithEmptySize: boolean;
 
   /// Linear or logarithmic scale for the *Size* column.
-  markerSizeScaling: keyof typeof AxisType;
+  sizeAxisType: keyof typeof AxisType;
 
   /// A categorical column that determines the shape of the markers.
   markers: string;
@@ -3390,7 +3390,7 @@ export interface IScatterPlot3dSettings {
   sizeColumnName: string;
 
   /// Linear or logarithmic scale for the *Size* column.
-  markerSizeScaling: keyof typeof AxisType;
+  sizeAxisType: keyof typeof AxisType;
 
   color: string;
   colorColumnName: string;
