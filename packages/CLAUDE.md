@@ -163,6 +163,19 @@ dockerfiles/
     requirements.in      # Python dependencies (if applicable)
 ```
 
+Instead of a `Dockerfile`, `container.json` may name an already-published `image` — the platform
+then runs that image rather than building one:
+
+```jsonc
+{"image": "datagrok/jkg_r:#{PACKAGE_VERSION}", "cpu": 2, "memory": 8192, "on_demand": true}
+{"image": "datagrok/jkg_r"}   // same thing — an untagged image gets the package version
+```
+
+Prefer either of those over naming a mutable tag. Nothing re-resolves a tag once the image has
+been pulled, so a stand keeps running whatever `:bleeding-edge` meant the day it first started
+the container — sandbox served scripts for days from an image whose digest no longer matched the
+tag. An explicit tag or `@sha256:` digest is honoured as written.
+
 Access from TypeScript via `grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/endpoint', opts)`.
 See **Chem**, **Docking**, **Boltz1**, **Reinvent4** for examples.
 
@@ -314,9 +327,9 @@ So: bump the version, merge to `master`, and watch the run. `grok publish <host>
 thing entirely — it deploys to a Datagrok server, and without `--release` it deploys a *debug*
 build owned by you rather than the stand's current package.
 
-If the package ships `dockerfiles/*/container.json` naming an `image`, tag those images for the
-new version and push them to the registry *before* the bump lands on master — the containers are
-pulled by the tag written in that file.
+If the package ships `dockerfiles/*/container.json` naming an `image`, remember the tag follows
+the version (see above), so the images for the new version must exist in the registry *before*
+the bump lands on master.
 
 ## Naming Conventions
 

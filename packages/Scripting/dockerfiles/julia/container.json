@@ -1,5 +1,5 @@
 {
-  "image": "datagrok/jkg_julia:1.0.2",
+  "image": "datagrok/jkg_julia:#{PACKAGE_VERSION}",
   "cpu": 2,
   "memory": 8192,
   "shm_size": 2048,
