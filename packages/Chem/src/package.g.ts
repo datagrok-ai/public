@@ -1133,6 +1133,30 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData);
 }
 
+//name: SAR Matrix Viewer
+//description: SAR Matrix viewer
+//output: viewer result
+//meta.showInGallery: false
+//meta.role: viewer
+export function sarMatrixViewer() : any {
+  return PackageFunctions.sarMatrixViewer();
+}
+
+//name: SAR Matrix
+//description: Groups related compound series into potency-colored matrices and predicts virtual analogs.
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: column activity { type: numerical }
+//input: string scaling = 'none' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
+//input: string activityDirection = 'Higher is better' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
+//input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
+//input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
+//input: bool predictVirtual = true 
+//top-menu: Chem | Analyze | SAR Matrix...
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean) : Promise<void> {
+  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual);
+}
+
 //name: Scaffold Tree Filter
 //description: Scaffold Tree filter
 //output: filter result

@@ -579,6 +579,15 @@ export class RdKitService {
     (data: string[][]): string[] => ([] as string[]).concat(...data)));
   }
 
+  /** Generalizes `mmpLinkFragments` to K parallel fragment arrays (one per R-group position),
+   *  reusing the same worker striping so multi-position joins parallelize the same way. */
+  async linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: number[]): Promise<string[]> {
+    return withChemCriticalSection(() => this._initParallelWorkersArray([cores, ...fragmentColumns],
+      (i: number, segment: string[][]) =>
+        this.parallelWorkers[i].linkRGroupFragments(segment[0], segment.slice(1), attachIdx),
+      (data: string[][]): string[] => ([] as string[]).concat(...data)));
+  }
+
   async mmpGetMcs(molecules: [string, string][]): Promise<string[]> {
     return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: [string, string][]) =>
       this.parallelWorkers[i].mmpGetMcs(segment),
@@ -601,13 +610,20 @@ export class RdKitService {
   }
 
   /**
-   * gets MCS for every cluster of molecules
-   * @param clusteredMolecules array of arrays of molecules per cluster
-   * @param exactAtomSearch
-   * @param exactBondSearch
+   * Drains `count` independent items through the worker pool: each item runs whole on one worker
+   * while the other workers process other items — true parallelism for per-cluster calls (MCS,
+   * R-group decomposition) that cannot themselves be striped across workers.
+   *
+   * RDKit's MCS (and, through an MCS-derived query core, R-group decomposition) is known to get
+   * stuck for a very long time on pathological inputs. An item running past `timeoutMs` gets its
+   * worker killed and restarted, keeps `fallback` as its result, and the remaining items drain
+   * through the other workers (the timed-out slot stops pulling from the queue — its in-flight
+   * promise never settles once the worker is gone).
    */
-  async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
-    const res = new Array<string>(clusteredMolecules.length).fill('');
+  private async processClusterQueue<TRes>(count: number, fallback: TRes,
+    run: (workerIndex: number, itemIndex: number) => Promise<TRes>,
+    timeoutMs: number, opName: string): Promise<TRes[]> {
+    const res = new Array<TRes>(count).fill(fallback);
     await withChemCriticalSection(async () => {
       const nWorkers = this.parallelWorkers.length;
       const lock = new LockedEntity(0);
@@ -617,27 +633,22 @@ export class RdKitService {
         const index = lock.value;
         lock.value = index + 1;
         lock.release();
-        if (index >= clusteredMolecules.length)
+        if (index >= count)
           return;
-        const mols = clusteredMolecules[index];
-        if (mols.length < 2)
-          res[index] = mols.length === 1 ? mols[0] : '';
-        else {
-          const t = setTimeout(() => {
-            console.warn(`RDKit worker ${workerIndex} timed out in MCS calculation. Restarting...`);
-            this.restartWorker(workerIndex).catch((e) =>
-              console.warn(`RDKit worker ${workerIndex} restart failed: ${e instanceof Error ? e.message : e}`));
-            resolver(); // no point in waiting... its probably stuck
-          }, 45000); // if it is running for more than 30s, restart the worker
-          try {
-            res[index] = await this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
-          } catch (e) {
-            // worker errored or was restarted on timeout — skip this cluster; other workers drain the queue
-            console.warn(`RDKit worker ${workerIndex} MCS calculation failed: ${e instanceof Error ? e.message : e}`);
-            return;
-          } finally {
-            clearTimeout(t);
-          }
+        const t = setTimeout(() => {
+          console.warn(`RDKit worker ${workerIndex} timed out in ${opName}. Restarting...`);
+          this.restartWorker(workerIndex).catch((e) =>
+            console.warn(`RDKit worker ${workerIndex} restart failed: ${e instanceof Error ? e.message : e}`));
+          resolver(); // no point in waiting... its probably stuck; the item keeps its fallback value
+        }, timeoutMs);
+        try {
+          res[index] = await run(workerIndex, index);
+        } catch (e) {
+          // worker errored or was restarted on timeout — skip this item; other workers drain the queue
+          console.warn(`RDKit worker ${workerIndex} ${opName} failed: ${e instanceof Error ? e.message : e}`);
+          return;
+        } finally {
+          clearTimeout(t);
         }
         await process(workerIndex, resolver);
       };
@@ -648,6 +659,29 @@ export class RdKitService {
 
       await Promise.all(promises);
     });
+    return res;
+  }
+
+  /**
+   * gets MCS for every cluster of molecules
+   * @param clusteredMolecules array of arrays of molecules per cluster
+   * @param exactAtomSearch
+   * @param exactBondSearch
+   * @param rawSmarts return each MCS exactly as RDKit produced it (a query SMARTS) instead of
+   * converting to SMILES. Required under non-exact atom/bond comparison, where the MCS carries
+   * generic atom queries that a SMILES round-trip would destroy.
+   */
+  async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean,
+    rawSmarts = false): Promise<string[]> {
+    const res = await this.processClusterQueue<string>(clusteredMolecules.length, '',
+      (workerIndex, index) => {
+        const mols = clusteredMolecules[index];
+        if (mols.length < 2)
+          return Promise.resolve(mols.length === 1 ? mols[0] : '');
+        return this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
+      }, 45000, 'MCS calculation'); // stuck for more than 45s => restart the worker, '' for the cluster
+    if (rawSmarts)
+      return res;
     return res.map((it) => {
       if (!it)
         return '';
@@ -659,6 +693,27 @@ export class RdKitService {
       } catch (_) {}
       return '';
     });
+  }
+
+  /**
+   * R-group decomposition per cluster, `clusterMCS`-style: each cluster decomposes whole on one
+   * worker while other clusters run on other workers, so independent clusters are truly parallel
+   * instead of queueing one behind another on the chem critical section. RGD against an MCS-derived
+   * query core can hang just like the MCS itself; a cluster stuck past a minute kills its worker
+   * (with a console warning) and yields `null`, which callers must handle — skip the cluster or
+   * fall back to a simpler construction.
+   * @param clusters one entry per cluster: its molecules, the core to decompose against, whether
+   * that core is a query (SMARTS) rather than a concrete structure, and the JSON-serialized RGD
+   * options (as {@link getRGroups} takes them)
+   */
+  async clusterRGroups(clusters: {molecules: string[], core: string, coreIsQMol: boolean, options?: string}[]):
+    Promise<(IRGroupAnalysisResult | null)[]> {
+    return this.processClusterQueue<IRGroupAnalysisResult | null>(clusters.length, null,
+      (workerIndex, index) => {
+        const cluster = clusters[index];
+        return this.parallelWorkers[workerIndex]
+          .rGroupAnalysis(cluster.molecules, cluster.core, cluster.coreIsQMol, cluster.options);
+      }, 60000, 'R-group decomposition');
   }
 
   async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {

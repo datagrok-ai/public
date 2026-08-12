@@ -65,6 +65,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -2499,6 +2500,65 @@ export class PackageFunctions {
       scalings: scalings, fragmentCutoff,
     });
     viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+  }
+
+  @grok.decorators.func({
+    name: 'SAR Matrix Viewer',
+    description: 'SAR Matrix viewer',
+    outputs: [{name: 'result', type: 'viewer'}],
+    meta: {showInGallery: 'false', role: 'viewer'},
+  })
+  static sarMatrixViewer(): SarMatrixViewer {
+    return new SarMatrixViewer();
+  }
+
+  @grok.decorators.func({
+    'name': 'SAR Matrix',
+    'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
+    'top-menu': 'Chem | Analyze | SAR Matrix...',
+  })
+  static async sarMatrixAnalysis(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activity: DG.Column,
+    @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['none', 'lg', '-lg'], initialValue: 'none', description: 'Activity scaling before assembly'},
+    }) scaling: string = '-lg',
+    @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
+        initialValue: 'Higher is better',
+        description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
+    }) activityDirection: string = 'Auto (from scaling)',
+    @grok.decorators.param({
+      type: 'double',
+      options: {initialValue: '0.4', description: 'Maximum fragment size relative to core'},
+    }) fragmentCutoff: number = 0.4,
+    // The description has to be a single string literal with no ';' in it: the metadata generator
+    // evaluates literals only, so a '+'-joined one arrives empty, and the annotation it emits is
+    // itself ';'-separated, so a semicolon inside the text would read as the start of a new option.
+    @grok.decorators.param({
+      type: 'int',
+      options: {initialValue: '3', caption: 'Series levels', min: '1', max: '5',
+        description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
+    }) fragmentationLevels: number = 2,
+    @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
+  ): Promise<void> {
+    // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
+    // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
+    // timestamp would produce silent nonsense, so reject it here — this also covers programmatic
+    // callers, which never see the dialog at all.
+    if (!activity.isNumerical || activity.type === DG.COLUMN_TYPE.DATE_TIME) {
+      grok.shell.error(`SAR Matrix: "${activity.name}" is a ${activity.type} column. ` +
+        'Pick a numeric activity column (int, float, bigint or qnum).');
+      return;
+    }
+    checkCurrentView(table);
+    const view = grok.shell.tv as DG.TableView;
+    view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
+      activityColumnName: activity.name,
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual});
   }
 
   @grok.decorators.func({

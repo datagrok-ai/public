@@ -1,0 +1,533 @@
+.chem-sar-matrix {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Wide enough that a card indented two levels still shows its label and a one-line description.
+   Three things carry this number and all three must agree: this rule, `.chem-sar-xfer-list` (whose
+   cards are the same shape), and `NAV_W` in the viewer — cell widths for BOTH panes are fitted
+   against what is left over, so a narrower list here sizes the other pane's cells wrongly. */
+.chem-sar-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 320px;
+  min-width: 320px;
+  border-right: 1px solid var(--grey-2);
+  overflow: hidden;
+}
+
+.chem-sar-nav-header {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-nav-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--green-2);
+  background: var(--green-1);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+/* Explains all three rank schemes at once, so the lines need room to read as a list. */
+.chem-sar-rank-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 380px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+/* Shown in place of the grid when the potency threshold has emptied the matrix. */
+.chem-sar-empty-note {
+  padding: 16px 12px;
+  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--grey-5);
+}
+
+/* The header form lays its own labels out; it only needs to stop overflowing a narrow panel. */
+.chem-sar-nav-header .ui-form {
+  padding: 0;
+  min-width: 0;
+}
+
+.chem-sar-nav-header .ui-input-root {
+  min-width: 0;
+}
+
+.chem-sar-nav-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--grey-5);
+}
+
+/* Empty unless a threshold is set, so it takes no space in the common case. */
+.chem-sar-nav-matches {
+  font-size: 10.5px;
+  color: var(--grey-5);
+}
+
+.chem-sar-nav-matches:empty {
+  display: none;
+}
+
+.chem-sar-nav-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* A view whose compounds are contained in the card above it; the rule marks the nesting that the
+   left margin alone reads as accidental whitespace. */
+.chem-sar-card-nested {
+  border-left: 2px solid var(--grey-2);
+}
+
+/* Expander for a card that has matrices folded into it. Always occupies its width, empty on a leaf,
+   so every card's core starts at the same x whatever its depth. */
+.chem-sar-card-twisty {
+  flex: 0 0 11px;
+  width: 11px;
+  font-size: 10px;
+  text-align: center;
+  color: var(--grey-4);
+}
+
+i.chem-sar-card-twisty:hover {
+  color: var(--grey-6);
+}
+
+.chem-sar-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.chem-sar-card:hover {
+  background: var(--grey-1);
+}
+
+.chem-sar-card.selected {
+  background: #2083D530;
+  border-left-color: var(--blue-1);
+}
+
+.chem-sar-card-core {
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.chem-sar-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chem-sar-card-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Only the name may be clipped — the level badge next to it has to stay readable. */
+.chem-sar-card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Which fragmentation level this matrix sits at; branches end at different depths, so the indent
+   alone does not say. */
+.chem-sar-card-level {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--grey-5);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.chem-sar-card-desc {
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--grey-5);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chem-sar-card-score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 56px;
+  cursor: help;
+}
+
+/* One "value label" line in a card's score box (best / mean / transfer). */
+.chem-sar-card-score-line {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.chem-sar-card-score {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--blue-1);
+}
+
+.chem-sar-card-score-cap {
+  font-size: 9px;
+  color: var(--grey-5);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chem-sar-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.chem-sar-main-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px 2px;
+}
+
+/* Controls row (Vary / Sort), kept off the info row so neither crowds the other. */
+.chem-sar-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 2px 10px 6px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-control-bar .ui-input-root {
+  margin: 0;
+  min-width: 0;
+}
+
+/* A fixed label column so the rows line up when the bar wraps; auto-width left each row starting at a
+   different x, which read as three unrelated controls rather than one group. */
+.chem-sar-control-bar .ui-input-label {
+  font-size: 11px;
+  flex: 0 0 96px;
+  width: 96px;
+  min-width: 0;
+  padding-right: 6px;
+}
+
+/* Widths are left to the platform: a number input is a text box plus a slider sized to match it, and
+   overriding either one alone puts the two out of proportion. */
+.chem-sar-control-bar .ui-input-editor {
+  min-width: 0;
+}
+
+.chem-sar-main-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--grey-6);
+}
+
+/* Summary chips in the matrix pane bar. */
+.chem-sar-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.chem-sar-chip-badge {
+  font-size: 10.5px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.chem-sar-chip-transfer {
+  color: var(--blue-3);
+  background: var(--blue-2);
+  border-color: var(--grey-2);
+  font-weight: 600;
+}
+
+/* Transfer statistics block under the trend table. */
+.chem-sar-xfer-stats {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  max-width: 340px;
+}
+
+.chem-sar-xfer-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+  margin-bottom: 4px;
+}
+
+.chem-sar-xfer-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.chem-sar-xfer-stat-l {
+  font-size: 11.5px;
+  color: var(--grey-5);
+}
+
+.chem-sar-xfer-stat-v {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--grey-6);
+}
+
+.chem-sar-xfer-ben {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Hint text above the "Add to make-list" button in the virtual-cell panel. */
+.chem-sar-cp-hint {
+  font-size: 11.5px;
+  color: var(--grey-5);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.chem-sar-main-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
+/* Host for the virtualized matrix grid — a plain flex fill (not ui.box, which would pin a fixed
+   pixel width) so the grid gets a real height to virtualize against and grows with the pane. */
+.chem-sar-grid-host {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+.chem-sar-grid-host > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Root of the viewer's own context-panel content. */
+.chem-sar-matrix-cp {
+  padding: 8px;
+  font-size: 12px;
+}
+
+.chem-sar-cp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chem-sar-cp-structbox {
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  padding: 6px;
+  margin: 6px 0;
+  display: flex;
+  justify-content: center;
+  background: var(--white);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The structure inside is drawn at a fixed pixel size, and a redraw only follows a resize once the
+   observer reports it. Capping it to the box means a panel dragged narrower clips the old drawing in
+   the meantime, instead of it spilling out and giving the whole panel a horizontal scrollbar. */
+.chem-sar-cp-structbox > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.chem-sar-cp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.chem-sar-cp-rl {
+  color: var(--grey-5);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.chem-sar-cp-rv {
+  text-align: right;
+}
+
+.chem-sar-cp-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--grey-2);
+}
+
+.chem-sar-cp-section-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+}
+
+.chem-sar-cp-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--blue-3);
+  background: #2083D530;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.chem-sar-cp-value {
+  font-weight: 700;
+}
+
+.chem-sar-cp-decomp {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chem-sar-cp-frag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.chem-sar-cp-frag-box {
+  border: 1px solid var(--grey-2);
+  border-radius: 5px;
+  padding: 3px;
+  background: var(--white);
+}
+
+.chem-sar-cp-generate {
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* ---- SAR transfer tab ---------------------------------------------------------------------- */
+
+/* The SAR Transfer tab's pane (sibling to .chem-sar-matrix in the viewer's tab control). */
+.chem-sar-xfer-panel {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Narrower than the series navigator: a transfer card carries two short core labels and a
+   correlation, where a series card has to fit a structure and a four-part description. */
+/* Same width as `.chem-sar-nav` — the cards carry a core thumbnail and a description of the same
+   shape, and the pane beside it fits its cells against the same leftover. */
+.chem-sar-xfer-list {
+  flex: 0 0 320px;
+  min-width: 320px;
+  border-right: 1px solid var(--grey-2);
+  overflow-y: auto;
+}
+
+/* Popup holding the filter group. Wider than the platform's own Filters panel, which is docked and can
+   be dragged: this one cannot, so it has to fit its widest filter outright — the category list carries
+   a checkbox, a series name and a row count, and its header a row of six icons. Filters fill the panel
+   width so each keeps its name, enable checkbox and remove control, and the substructure filter gets a
+   sketch area big enough to draw in. No per-filter height is capped here — that is what clips the
+   headers and takes those controls with them. */
+.chem-sar-struct-filters {
+  width: 360px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.chem-sar-struct-filters .d4-filter-group-wrapper {
+  flex-direction: column;
+}
+
+.chem-sar-struct-filters .d4-filter-group {
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.chem-sar-struct-filters .d4-filter {
+  width: 100%;
+}
+
+/* A sketcher built inside a popup host has its minimum width zeroed, so that one opened against a
+   screen edge is not clipped. Mounting the filter group in a popup puts the substructure filter's
+   sketcher in exactly that state, and the zero survives into the editing dialog — which is
+   free-floating and sizes to its content, so the drawing area collapses to a fraction of the
+   palette. 500px is the width the sketcher reports for itself and what it already gets everywhere
+   the popup path is not taken. */
+.d4-dialog-contents .chem-sketcher-host {
+  min-width: 500px!important;
+}
+
+.chem-sar-struct-icon {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+/* Rank/threshold form and the series filter icon on one row, so the icon sits with the controls it
+   supplements rather than below them. */
+.chem-sar-nav-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.chem-sar-nav-controls .ui-form {
+  flex: 1;
+  min-width: 0;
+}

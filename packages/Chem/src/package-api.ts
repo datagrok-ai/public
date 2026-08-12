@@ -848,6 +848,20 @@ export namespace funcs {
   }
 
   /**
+  SAR Matrix viewer
+  */
+  export async function sarMatrixViewer(): Promise<any> {
+    return await grok.functions.call('Chem:SarMatrixViewer', {});
+  }
+
+  /**
+  Groups related compound series into potency-colored matrices and predicts virtual analogs.
+  */
+  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual });
+  }
+
+  /**
   Scaffold Tree filter
   */
   export async function scaffoldTreeFilter(): Promise<any> {
