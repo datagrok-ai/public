@@ -1,7 +1,10 @@
 # Grok Connect changelog
 
-# 2.7.1
+# 2.7.2
 
+* GROK-18695: Security — driver updates: databricks-jdbc 2.6.40 → 2.8.3 (embeds jackson 2.21.5, clears CVE-2026-54512/13 + log4j 2.20/netty-common 4.1.86 rows), redshift-jdbc42 2.1.0.28 → 2.2.8, mssql-jdbc 12.8.2 → 12.10.2.jre8 (clears CVE-2025-59250), logback 1.2.13 → 1.3.16, netty pins 4.1.135 → 4.1.137.Final (new 2026 netty advisories)
+* GROK-18695: Security — removed the unused CData DynamoDB driver jar (provider was already unregistered) and the direct `commons-lang:2.4` dependency (`NotImplementedException` → `UnsupportedOperationException`)
+* Fixed `grok_connect.sh` referencing a stale hardcoded jar version
 * GROK-18695: Security — added a `<dependencyManagement>` block forcing patched, Java-8-compatible versions of vulnerable transitive dependencies: netty-bom 4.1.135.Final (transitive `netty-codec-http2`/`resolver-dns`/`redis`/…), jackson-bom 2.18.8, protobuf-java 3.25.5, commons-compress 1.26.2, commons-io 2.16.1, commons-beanutils 1.11.0, json-smart 2.5.1, plexus-utils 3.6.1, hadoop-yarn-server-common 3.3.2.
 * GROK-18695: Security — second round: nimbus-jose-jwt 9.37.4 (CVE-2025-53864); new pins json-io 4.14.1 (CVE-2023-34610), xmlsec 2.3.4 (CVE-2023-44483), commons-lang3 3.18.0 (CVE-2025-48924), commons-configuration2 2.15.0 (CVE-2024-29131/29133, CVE-2026-45205); excluded `org.jline:jline` (GHSA-2r2c-cx56-8933, GHSA-47qp-hqvx-6r3f) and `hadoop-shaded-protobuf_3_7` (embeds protobuf-java 3.7.1, CVE-2024-7254) from hive-jdbc; BigQuery companion jackson jars in `lib/` bumped 2.14.3 → 2.18.8 (CVE-2026-54512/54513/54514).
 
