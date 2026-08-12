@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains/platform-grid.js — the editable domain grid with NO package installed: `DG.DomainGrid.create`, the frame's service columns, and the grid's machine surface
 * GROK-20298: Added dapi/domains/relations.js — many-to-many relations end to end: insert with a link set, expand, the d42 chips + id companion, relation filter paths and facet counts, set-replace update, and the create-and-link transaction
 * GROK-20298: Added dapi/domains/extend-schema.js — extending a plugin's domain schema: the Extend grant, the extend apply, and using the new column by its logical name
 * GROK-20298: Added ui/handlers/render-input.js — `ObjectHandler.renderInput`: the meta-provided user selector for a User
