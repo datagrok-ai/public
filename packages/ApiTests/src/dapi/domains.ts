@@ -113,7 +113,7 @@ category('Dapi: domains', () => {
 // Registry reflection (ui-js-api WO-2): grok.dapi.domains.registry — the runtime
 // Property metadata, table info with FK-inverted child tables, and batched
 // display-name resolution. Assertions run against this package's own 'apitests'
-// schema; grit.issue assertions (the dogfood schema with choices/min/nameColumn)
+// schema; grit.issue assertions (the dogfood schema with refs/min/nameColumn)
 // skip cleanly where Grit is not deployed.
 category('Dapi: domain registry', () => {
   const registry = () => grok.dapi.domains.registry;
@@ -134,22 +134,27 @@ category('Dapi: domain registry', () => {
     expect(by('quantity')!.propertyType, 'int');
   });
 
-  test('rowProperties: grit.issue matches schema.json (choices/min/nullable)', async () => {
+  test('rowProperties: grit.issue matches schema.json (refs/min/nullable)', async () => {
     if (!await gritDeployed()) {
       console.log('skipped: Grit is not deployed');
       return;
     }
     const props = await registry().rowProperties('grit.issue');
     const by = (n: string) => props.find((p) => p.name === n)!;
-    expect(JSON.stringify(by('status').choices), JSON.stringify(['open', 'in progress', 'resolved', 'closed']));
-    expect(JSON.stringify(by('priority').choices), JSON.stringify(['low', 'medium', 'high', 'critical']));
     expect(by('number').min, 1, 'min from schema.json');
     expect(by('number').nullable, false, 'required column must not be nullable');
     expect(by('title').nullable, false);
     expect(by('description').nullable, true);
-    expect(by('project_id').semType, 'grit.project', 'ref column must carry the target row semType');
+    // Lookup tables since Grit 2.0.0: status/priority/type are ref columns, so the
+    // allowed values live in the target table and the Property carries its semType.
+    for (const [column, target] of [['project_id', 'grit.project'], ['status_id', 'grit.status'],
+      ['priority_id', 'grit.priority'], ['type_id', 'grit.issue_type']] as [string, string][])
+      expect(by(column).semType, target, `${column} must carry the target row semType`);
+    expect(by('project_id').nullable, false, 'a required ref must not be nullable');
+    expect(by('status_id').nullable, true, 'an optional ref must be nullable');
     expect(by('project_id').friendlyName, 'Project',
       'ref columns must carry the label the platform renders, not the wire name');
+    expect(by('status_id').friendlyName, 'Status', 'the schema.json friendlyName must win');
   });
 
   test('rowProperties: unknown table rejects with a typed validation error', async () => {

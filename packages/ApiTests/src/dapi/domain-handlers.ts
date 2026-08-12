@@ -493,12 +493,14 @@ category('JS: domain handlers', () => {
 
   test('openers: edit dialog saves and resolves true', async () => {
     const handler = new DG.DomainObjectHandler('apitests.item');
+    const info = await grok.dapi.domains.registry.tableInfo('apitests.item');
     const [ins] = await items().insert({sku: `SKU-ED-${stamp()}`, name: 'Editor probe'});
     try {
       const row = await handler.getById(ins.id) as _DG.DomainRow;
       // The instance member delegates to the static: exercising it covers both.
       const pending = handler.editRow(row as any);
-      const dlg = await openDialog('Edit apitests.item');
+      // 'Edit <singular>: <display key>' — the key is this row's, so match the prefix.
+      const dlg = await openDialog(`Edit ${info.singularName}`);
       // Captions are the platform's column labels, not the wire names.
       const input = dlg.inputs.find((i) => `${i.caption}`.toLowerCase() === 'name');
       expect(input != null, true,
