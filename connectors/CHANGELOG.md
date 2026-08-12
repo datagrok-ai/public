@@ -1,5 +1,10 @@
 # Grok Connect changelog
 
+# 2.8.1
+
+* GROK-18695: jackson 2.18.8 → 2.18.9 (pom bom + BigQuery companion lib jars; CVE-2026-59889, GHSA-mhm7-754m-9p8w)
+* GROK-18695: Removed the dead Hive1 (HiveServer1) dependency tree (`hive-jdbc:0.7.1-cdh3u6` pom-type + `cassandra-thrift`) — the provider has shipped without its driver class and is probe-de-advertised; drops commons-lang 2.5 and the 2011-era transitives from the shaded jar
+
 # 2.8.0
 
 * GROK-18695: Split into two images built from one codebase: `datagrok/grok_connect` (main — all providers on lean or patched drivers) and `datagrok/grok_connect_extended` (opt-in; quarantines the drivers with unfixable CVE surface: Amazon Neptune 3.0.3 and Cloudera Impala). Docker `FLAVOR` build arg prunes `lib/`; runtime provider set = `GROK_CONNECT_PROVIDERS` env allowlist (empty = all) intersected with a driver-presence probe, so a provider whose driver jar is absent is never advertised on `/conn`
