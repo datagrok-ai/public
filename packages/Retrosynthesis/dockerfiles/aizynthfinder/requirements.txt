@@ -8,3 +8,8 @@ filelock
 protobuf>=4.25.8
 wheel>=0.46.2
 jaraco.context>=6.1
+pillow>=12.2
+pymongo>=4.6.3
+torch>=2.6
+pytorch-lightning>=2.4
+setuptools>=78.1.1
