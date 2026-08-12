@@ -115,9 +115,18 @@ export async function openFilterPanel(page: Page): Promise<void> {
  * attach. Verbatim equivalent of the `querySelector('[name="icon-<icon>"]')`
  * click + `[name="viewer-<name>"]` waitFor block pasted into the Viewers specs.
  * Pass a non-default `timeoutMs` only when a call-site used a different wait.
+ *
+ * `viewerName` is the DOM-attribute form used for both the `[name="icon-…"]`
+ * click and the `[name="viewer-…"]` DOM wait. For most viewers that same word
+ * is also the `viewer.type` display form (modulo hyphen/space): icon `Bar-chart`
+ * → type `Bar chart`. A few viewers break that coupling — the multi-form viewer
+ * attaches on `[name="viewer-Forms"]` but its `viewer.type` is `FormsViewer`, so
+ * the hyphen/space-insensitive compare cannot bridge `Forms` → `FormsViewer`.
+ * Pass `expectedType` for those (it defaults to `viewerName`, so existing
+ * call-sites are unaffected).
  */
 export async function addViewerByIcon(
-  page: Page, iconName: string, viewerName: string, timeoutMs = 5000,
+  page: Page, iconName: string, viewerName: string, timeoutMs = 5000, expectedType?: string,
 ): Promise<void> {
   await page.evaluate((n) => {
     (document.querySelector('[name="icon-' + n + '"]') as HTMLElement).click();
@@ -128,15 +137,15 @@ export async function addViewerByIcon(
   // reaches for the viewer via `tv.viewers.find(...)` right after this returns
   // otherwise gets `undefined`. Poll enumerability so downstream prop reads are
   // safe regardless of the render-vs-registration race.
-  // `viewerName` is the DOM-attribute form ('Bar-chart'), while viewer.type is
-  // the display form ('Bar chart') — compare hyphen/space-insensitively.
+  // Compare hyphen/space-insensitively; when the icon/DOM name and the type
+  // diverge (Forms → FormsViewer), the caller supplies `expectedType`.
   await page.waitForFunction((vn) => {
     const tv = (window as any).grok?.shell?.tv;
     if (!tv) return false;
     const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
     const v = Array.from(tv.viewers).find((x: any) => norm(x.type) === norm(vn));
     return !!(v && (v as any).props);
-  }, viewerName, {timeout: timeoutMs});
+  }, expectedType ?? viewerName, {timeout: timeoutMs});
 }
 
 // ---------------------------------------------------------------------------
@@ -718,6 +727,85 @@ export async function togglePropertyGridCheckbox(
   await box.click();
   await page.waitForTimeout(700);
   return box.isChecked();
+}
+
+// ---------------------------------------------------------------------------
+// 2c-bis. Top-menu navigation — a PLATFORM behaviour, not a viewer property.
+// ---------------------------------------------------------------------------
+
+/**
+ * Drive a nested top-menu leaf (`{Group} | {Subgroup} | … | {Leaf}`) with the
+ * REAL mouse and return whether the leaf was actuated.
+ *
+ * `path` is the sequence of human menu labels, e.g.
+ * `['View', 'Layout', 'Save to Gallery']`; each segment is turned into the
+ * platform's `[name="div-<A>---<B>---…"]` selector (spaces → hyphens, `---`
+ * separators — the `annotate()` convention).
+ *
+ * WHY THIS EXISTS AND WHY IT IS FIDDLY (live-verified on dev, 2026-08-12):
+ *  - **Readiness is checked by element SIZE, never by DOM presence.** The whole
+ *    submenu tree is rendered *nested inside* the top-level menu item and is
+ *    present in the DOM from the start, but every level below the one currently
+ *    open has a **zero-size** bounding rect (width/height 0). A selector that
+ *    resolves in the DOM therefore proves nothing about clickability — a click
+ *    on a zero-size leaf fails Playwright's visible/stable actuation checks and
+ *    times out. So each level is addressed only once its live rect is non-zero.
+ *  - **A synthetic hover event does NOT expand a subgroup.** The first level
+ *    opens on a click, but a child subgroup expands only when a REAL pointer
+ *    movement lands on it — the Dart menu tracks pointer input through its own
+ *    handlers, and a `dispatchEvent(new MouseEvent('mouseover'))` leaves the
+ *    sub-submenu collapsed (leaf stays zero-size). Hence `page.mouse.move` onto
+ *    each intermediate subgroup, not a synthetic event and not `.hover()`.
+ *
+ * Mechanic: real click on the top-level header → real pointer MOVE onto each
+ * intermediate subgroup (which expands it) → real click on the leaf. The whole
+ * bundle is retried up to `opts.attempts` times (a half-open menu is dismissed
+ * with Escape between attempts); in practice one bundle suffices. Returns `true`
+ * once the leaf is clicked, `false` if every attempt failed — the caller keeps
+ * the hard actuation assertion (`expect(... ).toBe(true)`).
+ */
+export async function driveTopMenuLeaf(
+  page: Page, path: string[], opts: {attempts?: number} = {},
+): Promise<boolean> {
+  const attempts = opts.attempts ?? 4;
+  const selAt = (depth: number) =>
+    `[name="div-${path.slice(0, depth + 1).map((s) => s.replace(/ /g, '-')).join('---')}"]`;
+  // Live centre of a selector, or null when it is absent OR still zero-size.
+  const liveCentre = async (sel: string): Promise<{x: number; y: number} | null> =>
+    page.evaluate((s) => {
+      const e = document.querySelector(s);
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return null;
+      return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+    }, sel);
+  const waitCentre = async (sel: string, ms: number): Promise<{x: number; y: number} | null> => {
+    const deadline = Date.now() + ms;
+    for (;;) {
+      const c = await liveCentre(sel);
+      if (c || Date.now() > deadline) return c;
+      await page.waitForTimeout(150);
+    }
+  };
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const head = await liveCentre(selAt(0));
+    if (head) await page.mouse.click(head.x, head.y);
+    let ok = head != null;
+    for (let depth = 1; ok && depth < path.length; depth++) {
+      // The parent level is open, so this segment now has real size — wait it out.
+      const c = await waitCentre(selAt(depth), 3000);
+      if (!c) { ok = false; break; }
+      if (depth < path.length - 1)
+        await page.mouse.move(c.x, c.y, {steps: 6}); // hover-open the next subgroup
+      else
+        await page.mouse.click(c.x, c.y);            // click the leaf
+    }
+    if (ok) return true;
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,142 +1,607 @@
+/* ---
+realizes: [formsviewer.cp.color-and-renderer-presentation, formsviewer.edge.molecule-column-render, formsviewer.edge.fit-semtype-promotes-renderer-size]
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {HOST, ORDINARY, CURRENT, withConsoleErrorCount} from '../../helpers/forms';
+
+declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
-// The Forms viewer's root carries no `name` attribute, so it is addressed by its
-// class instead of the usual `[name="viewer-…"]`.
-const VIEWER = '.d4-multi-form';
-const VIEWER_NAME = 'Forms';
-const datasetPath = 'System:DemoFiles/demog.csv';
+const demogPath = 'System:DemoFiles/demog.csv';
+const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
+const curvesPath = 'System:DemoFiles/curves.csv';
 
-const TEXT_COLUMNS = ['USUBJID', 'SEX', 'RACE'];
+/** Parse either 'rgb(r, g, b)' (computed style) or '#rrggbb' (DG.Color.toHtml) to [r,g,b]. */
+function toRgb(s: string | null): [number, number, number] | null {
+  if (!s) return null;
+  let m = s.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (m) return [+m[1], +m[2], +m[3]];
+  m = s.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+}
 
-/** How many row forms are on screen — one field name repeats once per form. */
-const formCount = (page: Page) => page.locator(`${VIEWER} [name="input-SEX"]`).count();
+/**
+ * Computed background of a `[column]` field, paired with the colour the column's scheme assigns to
+ * the same row (via meta.colors.getColor — a DIFFERENT channel than the rendered element). colorInt
+ * 4294967295 (0xFFFFFFFF) is the source's "no colour" sentinel that makes the compare vacuous; callers guard it out.
+ */
+async function colorCheck(page: Page, cardSel: string, col: string):
+  Promise<{bg: string; ref: string | null; colorInt: number} | null> {
+  return page.evaluate(({sel, c}) => {
+    const df = grok.shell.t;
+    const card = document.querySelector(sel);
+    const el = card ? card.querySelector(`[column="${c}"]`) as HTMLElement | null : null;
+    if (!el) return null;
+    const row = df.currentRowIdx;
+    const colorInt = df.col(c).meta.colors.getColor(row);
+    const ref = (colorInt && colorInt !== 4294967295) ? DG.Color.toHtml(colorInt) : null;
+    return {bg: getComputedStyle(el).backgroundColor, ref, colorInt};
+  }, {sel: cardSel, c: col});
+}
 
-/** Values of one form, by its index among the forms on screen. */
-async function formValues(page: Page, index: number, columns: string[]): Promise<Record<string, string>> {
-  return page.evaluate(({sel, i, cols}) => {
-    const root = document.querySelector(sel) as HTMLElement;
-    const out: Record<string, string> = {};
-    for (const c of cols) {
-      const all = root.querySelectorAll(`[name="input-${c.replace(/_/g, '-')}"]`);
-      const el = all[i] as HTMLElement | undefined;
-      const inner = el?.querySelector('input') as HTMLInputElement | null;
-      out[c] = ((el as HTMLInputElement)?.value || inner?.value || el?.innerText || '').trim();
+/**
+ * The field's rendered alignment and font vs the GRID column's cell style. The viewer copies
+ * gc.contentCellStyle.font verbatim into the field's inline style.font, so both fonts are normalised
+ * through an identical throwaway element — equality survives shorthand reserialisation.
+ */
+async function styleCheck(page: Page, cardSel: string, col: string):
+  Promise<{fieldAlign: string; refAlign: string | null; fieldFont: string; expectFont: string} | null> {
+  return page.evaluate(({sel, c}) => {
+    const grid = grok.shell.tv.grid;
+    const gc = grid.col(c);
+    const card = document.querySelector(sel);
+    const el = card ? card.querySelector(`[column="${c}"]`) as HTMLElement | null : null;
+    if (!el || !gc) return null;
+    const cs = gc.contentCellStyle;
+    const probe = document.createElement('div');
+    probe.style.font = cs && cs.font ? cs.font : '';
+    return {
+      fieldAlign: getComputedStyle(el).textAlign,
+      refAlign: cs ? (cs.horzAlign ?? null) : null,
+      fieldFont: el.style.font,
+      expectFont: probe.style.font,
+    };
+  }, {sel: cardSel, c: col});
+}
+
+/**
+ * Canvas width/height ATTRIBUTES of a renderer-backed field vs the size getSize prescribes —
+ * recomputed from renderer.defaultWidth/Height and dpr, never hardcoded. The 120/200/300 fallbacks are
+ * the source's sizes when the renderer declares none; Math.floor matches its floor and the canvas setter.
+ */
+async function sizeCheck(page: Page, col: string):
+  Promise<{tag: string; aw: number | null; ah: number | null; ew: number; eh: number; size: string} | null> {
+  return page.evaluate(({sel, c}) => {
+    const grid = grok.shell.tv.grid;
+    const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+    const card = document.querySelector(sel);
+    const el = card ? card.querySelector(`[column="${c}"]`) as any : null;
+    if (!el || !vw) return null;
+    const dpr = window.devicePixelRatio;
+    const size = vw.props.rendererSize as string;
+    const renderer = grid.col(c) ? grid.col(c).renderer : null;
+    const w = renderer ? renderer.defaultWidth : null;
+    const h = renderer ? renderer.defaultHeight : null;
+    let cw: number; let ch: number;
+    if (!w || !h) {
+      if (size === 'normal') { cw = 200; ch = 100; }
+      else if (size === 'large') { cw = 300; ch = 150; }
+      else { cw = 120; ch = 60; }
+    } else {
+      if (size === 'normal') { cw = w; ch = h; }
+      else if (size === 'large') { cw = Math.floor(w * 1.5); ch = Math.floor(h * 1.5); }
+      else { cw = Math.floor(w * 0.66); ch = Math.floor(h * 0.66); }
     }
-    return out;
-  }, {sel: VIEWER, i: index, cols: columns});
+    return {tag: el.tagName, aw: el.width ?? null, ah: el.height ?? null,
+      ew: Math.floor(cw * dpr), eh: Math.floor(ch * dpr), size};
+  }, {sel: CURRENT, c: col});
 }
 
-/** The same values straight from the table, for a given row. */
-async function rowValues(page: Page, row: number, columns: string[]): Promise<Record<string, string>> {
-  return page.evaluate(({r, cols}) => {
-    const df = (window as any).grok.shell.t;
-    const out: Record<string, string> = {};
-    for (const c of cols) out[c] = String(df.col(c).get(r));
-    return out;
-  }, {r: row, cols: columns});
+/**
+ * Set Renderer Size through the property panel choice editor. Renderer Size and Color Code live under
+ * Misc, which can ship COLLAPSED (rows hidden, a direct click times out), so expand it first. The
+ * VALUE element, not the TR row, creates the <select>.
+ */
+async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | 'large'): Promise<void> {
+  await v.ensurePropertyCategory(page, 'Forms', 'misc', 'renderer-size');
+  const sel = page.locator('[name="prop-renderer-size"] select').first();
+  // The row STAYS in edit mode after first use (select visible, label hidden), so reuse the open select.
+  if (!(await sel.isVisible().catch(() => false))) {
+    await page.locator('[name="prop-view-renderer-size"]').first().click();
+    await sel.waitFor({state: 'visible', timeout: 5000});
+  }
+  await sel.selectOption(value);
+  await page.waitForTimeout(300);
 }
 
-/** Real click on the viewer's title-bar Close button, found through its root. */
-async function closeViewer(page: Page): Promise<void> {
-  const point = await page.evaluate((sel) => {
-    const root = document.querySelector(sel) as HTMLElement | null;
-    const target = root?.closest('.panel-base')?.querySelector('[name="Close"]') as HTMLElement | null;
-    if (!target) return null;
-    const r = target.getBoundingClientRect();
-    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
-  }, VIEWER);
-  if (!point) throw new Error('no Close button on the Forms title bar');
-  await page.mouse.click(point.x, point.y);
+async function setColorCodeViaPanel(page: Page, on: boolean): Promise<void> {
+  await v.ensurePropertyCategory(page, 'Forms', 'misc', 'color-code');
+  await v.setPropertyGridCheckbox(page, 'color-code', on, 'misc');
 }
 
-test('Forms viewer', async ({page}) => {
+test('Forms viewer — colour coding and renderer presentation (p2)', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add the viewer
-  await softStep('Add Forms from the Viewers toolbox', async () => {
-    await page.locator('[name="icon-Forms"]').first().click();
-    await page.locator(VIEWER).first().waitFor({timeout: 30_000});
+  // #### Scenario 1 — colour coding (GROK-19339), demog
+  let colorRow = 0;
+  await softStep('Scenario 1 setup — colour-code AGE by background, centre it, give it a distinct font', async () => {
+    await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator('.d4-multi-form').first().waitFor({timeout: 30_000});
 
-    const columns = await page.evaluate(() =>
-      (window as any).grok.shell.t.columns.names() as string[]);
-    for (const column of columns)
-      await expect(page.locator(`${VIEWER} [name="div-${column.replace(/_/g, '-')}"]`).first())
-        .toBeVisible();
-
-    // Out of the box it shows the current row, and nothing else.
-    await expect.poll(() => formCount(page), {timeout: 15_000}).toBe(1);
-  });
-
-  // #### The single form shows the current row
-  await softStep('The form shows the current row and follows it', async () => {
-    const row = await page.evaluate(() => (window as any).grok.shell.t.currentRowIdx);
-    expect(await formValues(page, 0, TEXT_COLUMNS)).toEqual(await rowValues(page, row, TEXT_COLUMNS));
-
-    await page.evaluate(() => { (window as any).grok.shell.t.currentRowIdx = 77; });
-    await expect.poll(() => formValues(page, 0, TEXT_COLUMNS), {timeout: 10_000})
-      .toEqual(await rowValues(page, 77, TEXT_COLUMNS));
-  });
-
-  // #### Selected rows get their own forms
-  await softStep('Show Selected Rows adds a form per selected row', async () => {
-    await v.openViewerProperties(page, VIEWER_NAME).catch(async () => {
-      // The root has no name attribute, so the shared gear helper cannot find it.
-      const point = await page.evaluate((sel) => {
-        const root = document.querySelector(sel) as HTMLElement | null;
-        const gear = root?.closest('.panel-base')
-          ?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-        if (!gear) return null;
-        const r = gear.getBoundingClientRect();
-        return {x: r.x + r.width / 2, y: r.y + r.height / 2};
-      }, VIEWER);
-      if (point) await page.mouse.click(point.x, point.y);
-      await page.locator('.property-grid').first().waitFor({timeout: 10_000});
+    // AGE must be colour-coded BY BACKGROUND: setLinear() is a background scheme, so isTextColorCoded
+    // stays false and the viewer writes the field's backgroundColor (a text-coded column writes
+    // nothing observable). Alignment and font go on the grid column's cell style, re-read in the same pass.
+    const info = await page.evaluate(() => {
+      const df = grok.shell.t;
+      const gc = grok.shell.tv.grid.col('AGE');
+      gc.contentCellStyle.horzAlign = 'center';
+      gc.contentCellStyle.font = 'italic bold 14px "Times New Roman"';
+      df.col('AGE').meta.colors.setLinear();
+      // First row whose AGE gets a real (non-white) scheme colour, so Step 1a is never vacuous.
+      const col = df.col('AGE');
+      let row = 0;
+      for (let i = 0; i < df.rowCount; i++) {
+        const c = col.meta.colors.getColor(i);
+        if (c && c !== 4294967295) { row = i; break; }
+      }
+      df.currentRowIdx = row;
+      return {row, textCoded: !!gc.isTextColorCoded};
     });
+    colorRow = info.row;
+    expect(info.textCoded).toBe(false);
+  });
 
-    await v.ensurePropertyCategory(page, VIEWER_NAME, 'misc', 'show-selected-rows');
-    // The setting ships enabled, so it is set rather than flipped.
-    await v.setPropertyGridCheckbox(page, 'show-selected-rows', true);
+  // #### Step 1a
+  await softStep('Step 1a — the AGE field background equals the AGE colour scheme, both normalized', async () => {
+    // The TEXT colour is never read: the source assigns an invalid CSS value the browser discards — a dead channel.
+    await expect.poll(async () => {
+      const r = await colorCheck(page, CURRENT, 'AGE');
+      if (!r || !r.ref) return false;
+      const a = toRgb(r.bg); const b = toRgb(r.ref);
+      return !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    }, {timeout: 20_000}).toBe(true);
+    const r = await colorCheck(page, CURRENT, 'AGE');
+    expect(r).not.toBeNull();
+    expect(r!.colorInt).not.toBe(4294967295);
+    expect(r!.ref).not.toBeNull();
+  });
 
+  // #### Step 1b
+  await softStep('Step 1b — the AGE field horizontal alignment and font equal the grid column style', async () => {
+    const s = await styleCheck(page, CURRENT, 'AGE');
+    expect(s).not.toBeNull();
+    // Alignment compared read-to-read like the font half: the field's rendered alignment equals the
+    // grid column's runtime cell-style value. The literal 'center' additionally guards against a
+    // vacuous default-vs-default match.
+    expect(s!.refAlign).toBe('center');
+    expect(s!.fieldAlign).toBe(s!.refAlign);
+    // expectFont non-empty proves the grid font actually applied (else an empty-vs-empty match is vacuous).
+    expect(s!.expectFont.length).toBeGreaterThan(0);
+    expect(s!.fieldFont).toBe(s!.expectFont);
+  });
+
+  // #### Step 1c
+  await softStep('Step 1c — Color Code OFF drops the background to an uncoloured field; ON restores it', async () => {
+    await setColorCodeViaPanel(page, false);
+    // USUBJID carries no colour coding — the uncoloured reference, read from the same card, never hardcoded.
+    await expect.poll(async () => {
+      const r = await page.evaluate((sel) => {
+        const card = document.querySelector(sel);
+        const a = card ? card.querySelector('[column="AGE"]') as HTMLElement | null : null;
+        const b = card ? card.querySelector('[column="USUBJID"]') as HTMLElement | null : null;
+        if (!a || !b) return null;
+        return {a: getComputedStyle(a).backgroundColor, b: getComputedStyle(b).backgroundColor};
+      }, CURRENT);
+      return !!r && r.a === r.b;
+    }, {timeout: 20_000}).toBe(true);
+
+    await setColorCodeViaPanel(page, true);
+    await expect.poll(async () => {
+      const r = await colorCheck(page, CURRENT, 'AGE');
+      if (!r || !r.ref) return false;
+      const a = toRgb(r.bg); const b = toRgb(r.ref);
+      return !!a && !!b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    }, {timeout: 20_000}).toBe(true);
+  });
+
+  // #### Scenario 2 — renderer size ladder (GROK-14963), spgi-100
+  let smallW = 0; let smallH = 0; let normalW = 0; let normalH = 0;
+  await softStep('Scenario 2 setup — open spgi-100, add Forms, set a current row', async () => {
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000, settleMs: 2000});
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator(HOST).first().waitFor({timeout: 30_000});
+    await page.evaluate(() => { grok.shell.t.currentRowIdx = 0; });
+    await page.locator(CURRENT).first().waitFor({timeout: 30_000});
+  });
+
+  // #### Step 2a
+  await softStep('Step 2a — at the default small, the Structure canvas is base × 0.66 (floored) × dpr', async () => {
+    // Read the default before writing anything — a set-then-read would prove nothing about it.
+    const def = await page.evaluate(() =>
+      grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer').props.rendererSize);
+    expect(def).toBe('small');
+
+    await expect.poll(async () => {
+      const r = await sizeCheck(page, 'Structure');
+      return !!r && r.tag === 'CANVAS' && r.aw === r.ew && r.ah === r.eh;
+    }, {timeout: 20_000}).toBe(true);
+    const r = await sizeCheck(page, 'Structure');
+    smallW = r!.aw!; smallH = r!.ah!;
+  });
+
+  // #### Step 2b
+  await softStep('Step 2b — normal enlarges the canvas to base × 1 × dpr, above the small values', async () => {
+    await setRendererSizeViaPanel(page, 'normal');
+    await expect.poll(async () => {
+      const r = await sizeCheck(page, 'Structure');
+      return !!r && r.size === 'normal' && r.aw === r.ew && r.ah === r.eh;
+    }, {timeout: 20_000}).toBe(true);
+    const r = await sizeCheck(page, 'Structure');
+    normalW = r!.aw!; normalH = r!.ah!;
+    expect(normalW).toBeGreaterThan(smallW);
+    expect(normalH).toBeGreaterThan(smallH);
+  });
+
+  // #### Step 2c
+  await softStep('Step 2c — large enlarges the canvas to base × 1.5 (floored) × dpr, above the normal values', async () => {
+    await setRendererSizeViaPanel(page, 'large');
+    await expect.poll(async () => {
+      const r = await sizeCheck(page, 'Structure');
+      return !!r && r.size === 'large' && r.aw === r.ew && r.ah === r.eh;
+    }, {timeout: 20_000}).toBe(true);
+    const r = await sizeCheck(page, 'Structure');
+    expect(r!.aw!).toBeGreaterThan(normalW);
+    expect(r!.ah!).toBeGreaterThan(normalH);
+  });
+
+  // #### Scenario 3 — molecular fields render as drawing surfaces, in the Scenario 2 view
+  // #### Step 3a
+  await softStep('Step 3a — the Structure field is a CANVAS carrying its column name; no paint error', async () => {
+    const errCount = await withConsoleErrorCount(page, async () => {
+      await setRendererSizeViaPanel(page, 'normal');
+      await page.evaluate(() => { grok.shell.t.currentRowIdx = 1; grok.shell.t.currentRowIdx = 0; });
+      await expect.poll(async () => {
+        const r = await sizeCheck(page, 'Structure');
+        return !!r && r.tag === 'CANVAS';
+      }, {timeout: 20_000}).toBe(true);
+    });
+    const kind = await page.evaluate((sel) => {
+      const el = document.querySelector(`${sel} [column="Structure"]`);
+      return el ? el.tagName : null;
+    }, CURRENT);
+    expect(kind).toBe('CANVAS');
+    expect(errCount).toBe(0);
+    expect(await page.locator('.d4-balloon.error').count()).toBe(0);
+  });
+
+  // #### Step 3b
+  await softStep('Step 3b — picking Structure, Core, Primary Series Name yields two molecular canvases per card', async () => {
+    // Picker rows are canvas-drawn (no per-checkbox handle), so the ordered subset is set through the
+    // property API. Core sits beyond the 20-field cap on this 88-column table, entering only when picked.
     await page.evaluate(() => {
-      const df = (window as any).grok.shell.t;
-      df.selection.init((i: number) => i < 3);
+      const df = grok.shell.t;
+      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+      vw.setOptions({fieldsColumnNames: ['Structure', 'Core', 'Primary Series Name']});
+      // Seed a small selection so SEVERAL non-empty cards are drawn: "each card carries two molecular
+      // canvases" is only plural beyond the single current-row card. Current row kept off the
+      // selection → drawn set = current + two selected = three cards, each satisfying the poll below.
+      df.mouseOverRowIdx = -1;
+      df.currentRowIdx = 0;
+      df.selection.setAll(false);
+      [3, 7].forEach((r) => df.selection.set(r, true));
     });
-
-    // Three selected rows are shown, alongside the current-row form.
-    await expect.poll(() => formCount(page), {timeout: 15_000}).toBeGreaterThanOrEqual(3);
-
-    const shown = await formValues(page, 0, TEXT_COLUMNS);
-    const candidates = await Promise.all([0, 1, 2, 77].map((r) => rowValues(page, r, TEXT_COLUMNS)));
-    expect(candidates).toContainEqual(shown);
-
-    await page.evaluate(() => (window as any).grok.shell.t.selection.setAll(false));
-    await expect.poll(() => formCount(page), {timeout: 15_000}).toBe(1);
+    // EVERY non-empty card is checked, not just the current one ("each card carries two canvases" is
+    // degenerate for one card). An empty mouse-over card has field divs with no `column` and is filtered out.
+    await expect.poll(async () => page.evaluate((sel) => {
+      const df = grok.shell.t;
+      const picked = ['Structure', 'Core', 'Primary Series Name'];
+      const expectedMol = picked.filter((n) => df.col(n) && df.col(n).semType === 'Molecule').length;
+      const nonEmpty = Array.from(document.querySelectorAll(sel)).filter((c) => c.querySelector('[column]'));
+      const results = nonEmpty.map((card) => {
+        const canvases = picked.filter((n) => {
+          const el = card.querySelector(`[column="${n}"]`);
+          return el && el.tagName === 'CANVAS';
+        });
+        const psn = card.querySelector('[column="Primary Series Name"]');
+        return {
+          molCanvases: canvases.length,
+          namesOk: JSON.stringify(canvases) === JSON.stringify(['Structure', 'Core']),
+          psnIsInput: !!psn && psn.tagName === 'INPUT',
+        };
+      });
+      return JSON.stringify({
+        ready: true,
+        hasNonEmpty: results.length > 0,
+        expectedMol,
+        allTwoMol: results.every((r) => r.molCanvases === expectedMol),
+        allNamesOk: results.every((r) => r.namesOk),
+        allPsnInput: results.every((r) => r.psnIsInput),
+      });
+    }, ORDINARY), {timeout: 20_000}).toBe(JSON.stringify({
+      ready: true, hasNonEmpty: true, expectedMol: 2,
+      allTwoMol: true, allNamesOk: true, allPsnInput: true,
+    }));
   });
 
-  // #### The current-row form can be switched off
-  await softStep('Show Current Row hides the current-row form', async () => {
-    await v.ensurePropertyCategory(page, VIEWER_NAME, 'misc', 'show-current-row');
-    await v.setPropertyGridCheckbox(page, 'show-current-row', false);
-    await expect.poll(() => formCount(page), {timeout: 15_000}).toBe(0);
+  // #### Scenario 4 — curve columns promote the renderer size on attach (GROK-19473), curves
+  await softStep('Scenario 4 setup — open curves, add Forms without touching Renderer Size, pick smiles + multiple prefit', async () => {
+    // The promotion happens while the viewer ATTACHES to a table already carrying a semType 'fit'
+    // column, so the dataset must be fully open before the viewer is added, Renderer Size untouched.
+    await v.openTable(page, {path: curvesPath, semTypeTimeoutMs: 3000, settleMs: 3000});
+    const hasFit = await page.evaluate(() =>
+      grok.shell.t.columns.names().some((n: string) => grok.shell.t.col(n).semType === 'fit'));
+    expect(hasFit).toBe(true);
 
-    await v.setPropertyGridCheckbox(page, 'show-current-row', true);
-    await expect.poll(() => formCount(page), {timeout: 15_000}).toBe(1);
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator(HOST).first().waitFor({timeout: 30_000});
+    await page.evaluate(() => {
+      grok.shell.t.currentRowIdx = 0;
+      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+      vw.setOptions({fieldsColumnNames: ['smiles', 'multiple prefit']});
+    });
+    await page.locator(CURRENT).first().waitFor({timeout: 30_000});
   });
 
-  // #### Closing the viewer
-  await softStep('Close the viewer from its title bar', async () => {
-    await closeViewer(page);
-    await expect(page.locator(VIEWER)).toHaveCount(0);
+  // #### Step 4a
+  await softStep('Step 4a — the curve canvas is at the normal step of the ladder without touching Renderer Size', async () => {
+    // The promotion is read THROUGH the canvas size, never by reading rendererSize back (a set-then-read on the written prop).
+    await expect.poll(async () => page.evaluate((sel) => {
+      const grid = grok.shell.tv.grid;
+      const card = document.querySelector(sel);
+      const el = card ? card.querySelector('[column="multiple prefit"]') as any : null;
+      if (!el) return JSON.stringify({ready: false});
+      const dpr = window.devicePixelRatio;
+      const renderer = grid.col('multiple prefit') ? grid.col('multiple prefit').renderer : null;
+      const w = renderer ? renderer.defaultWidth : null;
+      const h = renderer ? renderer.defaultHeight : null;
+      const css = (size: string): [number, number] => {
+        if (!w || !h) return size === 'normal' ? [200, 100] : size === 'large' ? [300, 150] : [120, 60];
+        return size === 'normal' ? [w, h] : size === 'large'
+          ? [Math.floor(w * 1.5), Math.floor(h * 1.5)] : [Math.floor(w * 0.66), Math.floor(h * 0.66)];
+      };
+      const [nw, nh] = css('normal'); const [sw, sh] = css('small');
+      return JSON.stringify({
+        ready: true,
+        isCanvas: el.tagName === 'CANVAS',
+        atNormal: el.width === Math.floor(nw * dpr) && el.height === Math.floor(nh * dpr),
+        differsFromSmall: el.width !== Math.floor(sw * dpr) || el.height !== Math.floor(sh * dpr),
+      });
+    }, CURRENT), {timeout: 20_000})
+      .toBe(JSON.stringify({ready: true, isCanvas: true, atNormal: true, differsFromSmall: true}));
+  });
+
+  // #### Step 4b
+  await softStep('Step 4b — smiles and multiple prefit both render as canvases; no raw-JSON input, no error', async () => {
+    const errCount = await withConsoleErrorCount(page, async () => {
+      await page.evaluate(() => { grok.shell.t.currentRowIdx = 2; grok.shell.t.currentRowIdx = 0; });
+      await page.waitForTimeout(800);
+    });
+    const kinds = await page.evaluate((sel) => {
+      const card = document.querySelector(sel);
+      const s = card ? card.querySelector('[column="smiles"]') : null;
+      const p = card ? card.querySelector('[column="multiple prefit"]') : null;
+      return {smiles: s ? s.tagName : null, prefit: p ? p.tagName : null};
+    }, CURRENT);
+    expect(kinds.smiles).toBe('CANVAS');
+    expect(kinds.prefit).toBe('CANVAS');
+    expect(errCount).toBe(0);
+    expect(await page.locator('.d4-balloon.error').count()).toBe(0);
+  });
+
+  // #### Step 4c
+  await softStep('Step 4c — with three rows selected, every drawn card holds both a molecule and a curve canvas', async () => {
+    await page.evaluate(() => {
+      const df = grok.shell.t;
+      df.mouseOverRowIdx = -1;
+      // Current row that is NOT among the selection, so the drawn set = current + selected.
+      df.currentRowIdx = 0;
+      df.selection.setAll(false);
+      [2, 5, 8].forEach((r) => df.selection.set(r, true));
+    });
+    // The always-built empty mouse-over card holds neither surface and is not counted.
+    await expect.poll(async () => page.evaluate((sel) => {
+      const df = grok.shell.t;
+      let selCount = 0;
+      for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) selCount++;
+      const expected = (df.currentRowIdx >= 0 ? 1 : 0) + selCount;
+      const cards = Array.from(document.querySelectorAll(sel));
+      let both = 0; let smilesOnly = 0; let prefitOnly = 0;
+      for (const c of cards) {
+        const s = c.querySelector('[column="smiles"]');
+        const p = c.querySelector('[column="multiple prefit"]');
+        const sc = !!s && s.tagName === 'CANVAS';
+        const pc = !!p && p.tagName === 'CANVAS';
+        if (sc && pc) both++;
+        else if (sc) smilesOnly++;
+        else if (pc) prefitOnly++;
+      }
+      // Both sides at runtime: fully-drawn card count = current+selected set size, no hardcoded count.
+      // `expectedPositive` keeps the match non-vacuous.
+      return JSON.stringify({
+        bothMatchesExpected: both === expected, expectedPositive: expected > 0, smilesOnly, prefitOnly,
+      });
+    }, ORDINARY), {timeout: 20_000})
+      .toBe(JSON.stringify({
+        bothMatchesExpected: true, expectedPositive: true, smilesOnly: 0, prefitOnly: 0,
+      }));
+  });
+
+  // #### Scenario 5 — substructure filter drives the card set and repaints the field (GROK-18814), spgi-100
+  const patterns = ['c1ccncc1', 'c1ccccc1', 'C(=O)O', 'C(=O)N', 'Cl', 'F', '[nH]', 'c1ccc2ccccc2c1'];
+  let idCol = '';
+  let pattern = '';
+  let survivorId = '';
+  // Console-error floor for the filter-driven re-render: armed at end of setup, asserted in 5b. The
+  // molecule draw path swallows to console.error, so this floor + the non-empty canvas check stop an
+  // empty canvas from passing the repaint proof.
+  let filterRepaintErrors = 0;
+  const filterErrHandler = (msg: {type(): string}) => { if (msg.type() === 'error') filterRepaintErrors++; };
+
+  await softStep('Scenario 5 setup — open spgi-100, add Forms, select four rows split by a substructure query', async () => {
+    await v.openTable(page, {path: spgiPath, semTypeTimeoutMs: 3000, settleMs: 3000});
+    await v.addViewerByIcon(page, 'Forms', 'Forms', 30_000, 'FormsViewer');
+    await page.locator(HOST).first().waitFor({timeout: 30_000});
+
+    // The leading offset of 2 the slices assume depends on these toggles: Show Selected Rows drives
+    // the selected-row cards; Show Current Row and Show Mouse Over Row each add a leading card.
+    const defaults = await page.evaluate(() => {
+      const vw = grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+      return {sel: vw.props.showSelectedRows, cur: vw.props.showCurrentRow, mo: vw.props.showMouseOverRow};
+    });
+    expect(defaults).toEqual({sel: true, cur: true, mo: true});
+
+    // The Chem sketcher can't be driven headless, so the substructure filter is actuated through a
+    // genuine query (grok.chem.searchSubstructure) whose bitset is applied to df.filter — the channel
+    // the viewer reads. Pattern = first yielding a PROPER subset; the four rows split 2 matched / 2
+    // excluded so the filter provably drops a selected row. Grid↔form highlighting out of scope (forms-ui.md).
+    const setup = await page.evaluate(async ({pats}) => {
+      const df = grok.shell.t;
+      const names = df.columns.names();
+      let id: string | null = null;
+      for (const n of names) {
+        const col = df.col(n);
+        if (col.semType !== 'Molecule' && col.type === 'string') { id = n; break; }
+      }
+      if (!id)
+        for (const n of names) {
+          const col = df.col(n);
+          if (col.semType !== 'Molecule' && (col.type === 'int' || col.type === 'bigint')) { id = n; break; }
+        }
+      if (!id) return {error: 'no non-molecule identifier column on spgi-100'};
+
+      let chosen: string | null = null; let matched: number[] = []; let unmatched: number[] = [];
+      for (const p of pats) {
+        const bs = await grok.chem.searchSubstructure(df.col('Structure'), p);
+        const tc = bs.trueCount;
+        if (tc > 0 && tc < df.rowCount) {
+          chosen = p; matched = []; unmatched = [];
+          for (let i = 0; i < df.rowCount; i++) (bs.get(i) ? matched : unmatched).push(i);
+          break;
+        }
+      }
+      if (!chosen || matched.length < 1 || unmatched.length < 1)
+        return {error: 'no substructure pattern produced a proper subset on spgi-100'};
+
+      const selMatched = matched.slice(0, 2);
+      const selUnmatched = unmatched.slice(0, 2);
+      const selected = [...selMatched, ...selUnmatched];
+      df.selection.setAll(false);
+      for (const r of selected) df.selection.set(r, true);
+      df.mouseOverRowIdx = -1;
+      let current = 0;
+      while (selected.includes(current)) current++;
+      df.currentRowIdx = current;
+
+      const survivorRow = selMatched[0];
+      return {
+        id, pattern: chosen,
+        survivorId: df.col(id).getString(survivorRow),
+        selectedCount: selected.length,
+      };
+    }, {pats: patterns});
+
+    if ((setup as any).error) throw new Error(`[Scenario 5 setup] ${(setup as any).error}`);
+    idCol = (setup as any).id;
+    pattern = (setup as any).pattern;
+    survivorId = (setup as any).survivorId;
+
+    await expect.poll(async () => page.evaluate(({sel, idc}) => {
+      const cards = Array.from(document.querySelectorAll(sel)).slice(2);
+      return cards.map((c) => {
+        const e = c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null;
+        return e ? e.value : null;
+      }).filter((x) => x !== null).length;
+    }, {sel: ORDINARY, idc: idCol}), {timeout: 20_000}).toBe(4);
+
+    // Mark the surviving card's Structure canvas NODE before the filter (card found by stable
+    // id-field value). Step 5b proves the repaint by node REPLACEMENT, not a pixel diff: a bitset
+    // filter applies no highlight, so the redrawn molecule is byte-identical and a diff is impossible.
+    await expect.poll(async () => page.evaluate(({sel, idc, idv}) => {
+      for (const c of Array.from(document.querySelectorAll(sel))) {
+        const e = c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null;
+        if (e && e.value === idv) {
+          const cv = c.querySelector('[column="Structure"]') as HTMLCanvasElement | null;
+          if (cv && cv.tagName === 'CANVAS') { cv.setAttribute('data-repaint-probe', 'forms5b'); return true; }
+        }
+      }
+      return false;
+    }, {sel: ORDINARY, idc: idCol, idv: survivorId}), {timeout: 20_000}).toBe(true);
+
+    // Arm the console-error floor now, so it spans the filter re-render triggered in Step 5a.
+    filterRepaintErrors = 0;
+    page.on('console', filterErrHandler);
+  });
+
+  // #### Step 5a
+  await softStep('Step 5a — after the substructure filter, the selected-row cards equal selection ∩ filter', async () => {
+    await page.evaluate(async ({pat}) => {
+      const df = grok.shell.t;
+      const bs = await grok.chem.searchSubstructure(df.col('Structure'), pat);
+      df.filter.init((i: number) => bs.get(i));
+    }, {pat: pattern});
+
+    // Recompute selection ∩ filter inside the poll, same pass as the card read, so the expected set
+    // isn't captured before the re-render. `excluded` requires the filter to drop a selected row (see forms-core Step 4).
+    await expect.poll(async () => page.evaluate(({sel, idc}) => {
+      const df = grok.shell.t;
+      const inter: string[] = []; let selCount = 0;
+      for (let i = 0; i < df.rowCount; i++) {
+        if (df.selection.get(i)) selCount++;
+        if (df.selection.get(i) && df.filter.get(i)) inter.push(df.col(idc).getString(i));
+      }
+      const tail = (Array.from(document.querySelectorAll(sel)).slice(2)
+        .map((c) => (c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null)?.value ?? null)
+        .filter((x) => x !== null)) as string[];
+      return JSON.stringify({excluded: inter.length < selCount, match: JSON.stringify(inter) === JSON.stringify(tail)});
+    }, {sel: ORDINARY, idc: idCol}), {timeout: 25_000})
+      .toBe(JSON.stringify({excluded: true, match: true}));
+  });
+
+  // #### Step 5b
+  await softStep('Step 5b — the surviving card\'s Structure canvas is rebuilt and drawn (not empty) after the filter', async () => {
+    // Close the console-error floor armed in setup (spanned Step 5a's re-render). The molecule draw
+    // swallows to console.error, so an empty canvas must not pass silently — same floor as 3a/4b.
+    page.off('console', filterErrHandler);
+    expect(filterRepaintErrors).toBe(0);
+
+    // Repaint proof by NODE IDENTITY + a runtime NON-EMPTY check, not a content diff. render() rebuilds
+    // every card: the pre-filter canvas node (tagged in setup) must be GONE, the same surviving row
+    // (by id value — the set shrank and shifted) must hold a FRESH Structure canvas without the marker,
+    // and that canvas must carry real drawn content (opaque non-white pixels counted at runtime). A
+    // same-row content diff is NOT used: a bitset filter carries no highlight, so the molecule is
+    // byte-identical (verified live: len 4162→4162, 664 px unchanged). Thresholds beyond "> 20 drawn" stay in forms-ui.md.
+    await expect.poll(async () => page.evaluate(({sel, idc, idv}) => {
+      const markerGone = !document.querySelector('[data-repaint-probe="forms5b"]');
+      let present = false; let freshCanvas = false; let drawn = 0;
+      for (const c of Array.from(document.querySelectorAll(sel))) {
+        const e = c.querySelector(`[column="${idc}"]`) as HTMLInputElement | null;
+        if (e && e.value === idv) {
+          present = true;
+          const cv = c.querySelector('[column="Structure"]') as HTMLCanvasElement | null;
+          if (cv && cv.tagName === 'CANVAS' && !cv.hasAttribute('data-repaint-probe')) {
+            freshCanvas = true;
+            try {
+              const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+              for (let i = 0; i < d.length; i += 4) {
+                const a = d[i + 3]; const r = d[i]; const g = d[i + 1]; const b = d[i + 2];
+                if (a > 10 && !(r >= 245 && g >= 245 && b >= 245)) drawn++;
+              }
+            } catch (_) { drawn = -1; }
+          }
+        }
+      }
+      return JSON.stringify({markerGone, present, freshCanvas, hasContent: drawn > 20});
+    }, {sel: ORDINARY, idc: idCol, idv: survivorId}), {timeout: 20_000})
+      .toBe(JSON.stringify({markerGone: true, present: true, freshCanvas: true, hasContent: true}));
   });
 
   await v.cleanupShell(page);
-
   v.finishSpec();
 });
