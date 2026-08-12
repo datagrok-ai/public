@@ -83,6 +83,10 @@ const NOISE_IGNORE: RegExp[] = [
   /Failed to execute 'observe' on 'ResizeObserver'/i,
   /ResizeObserver loop/i,
   /The above error occurred in the .* component/i,
+  // The same ResizeObserver race, but re-logged by the platform, which drops the message and prints
+  // `Stack trace <hash>` — only the stack frame identifies it. Never ignore `Stack trace` itself:
+  // real errors wear that same mask.
+  /ZoomTool\.observeCanvasResize/,
 ];
 
 /** A thrown error from a docker-backed app's API layer (e.g. "MolTrack API error: 400 ..."). */
