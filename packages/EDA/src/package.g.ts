@@ -140,6 +140,29 @@ export async function MVA() : Promise<void> {
   await PackageFunctions.MVA();
 }
 
+//description: Add the PLS-based multivariate analysis results to the table.
+//input: dataframe table 
+//input: list<string> featureNames 
+//input: column predict { type: numerical }
+//input: int components { description: Number of latent factors the model extracts from the predictors. }
+//input: bool isQuadratic { description: Include squared terms as additional predictors. }
+//input: bool componentsOnly { description: Add just the PLS components. }
+//input: list<string> xScoreNames 
+//input: list<string> yScoreNames 
+//input: string predictionName 
+//input: string analysisTableName 
+//input: string explVarTableName 
+//meta.role: transform
+export async function multivariateAnalysisTransform(table: DG.DataFrame, featureNames: string[], predict: DG.Column, components: number, isQuadratic: boolean, componentsOnly: boolean, xScoreNames: string[], yScoreNames: string[], predictionName: string, analysisTableName: string, explVarTableName: string) : Promise<void> {
+  await PackageFunctions.multivariateAnalysisTransform(table, featureNames, predict, components, isQuadratic, componentsOnly, xScoreNames, yScoreNames, predictionName, analysisTableName, explVarTableName);
+}
+
+//description: Restore the multivariate analysis model viewer.
+//input: viewer viewer 
+export function mvaModelInitFunction(viewer: any) : void {
+  PackageFunctions.mvaModelInitFunction(viewer);
+}
+
 //name: MVA demo
 //description: Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
 //meta.demoPath: Compute | Multivariate Analysis

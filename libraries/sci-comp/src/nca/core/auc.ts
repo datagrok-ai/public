@@ -1,32 +1,25 @@
 /**
- * Area-under-the-curve (AUC) — naive Float64 trapezoidal implementations.
+ * Area-under-the-curve (AUC) — trapezoidal integration kernels.
  *
- * Three integration schemes that match the PKNCA `auc.method` options:
+ * Three integration schemes matching the PKNCA `auc.method` options:
  * - `linear`              — straight trapezoid;
  * - `log-linear`          — exponential decay assumption between points;
  * - `linear-up/log-down`  — linear on ascending intervals, log-linear on
  *                            descending intervals (PKNCA default).
  *
- * Each function is a pure mathematical kernel that integrates over the
- * inclusive index range `[startIdx, endIdx]` of the profile, summing the
- * contribution of each pair `(i, i+1)`. Caller is responsible for any
- * BLQ pre-processing (see {@link applyBlqStrategy}).
+ * Each scheme comes in a naive and a Neumaier-compensated summation variant.
  *
- * Compensated (Neumaier) variants live next to these in `auc.ts` (Task 1.5).
+ * Shared signature: `time` is sorted ascending, `conc` has the same length,
+ * and integration runs over the inclusive index range `[startIdx, endIdx]`,
+ * summing the contribution of each pair `(i, i+1)` — so the result is `0`
+ * when `endIdx <= startIdx`. Callers handle BLQ pre-processing themselves
+ * (see {@link applyBlqStrategy}).
  */
 
 /**
  * Linear trapezoidal AUC.
  *
  * Formula per interval: `(t_{i+1} − t_i) · (c_i + c_{i+1}) / 2`.
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param startIdx - Inclusive start index.
- * @param endIdx - Inclusive end index. The integration uses pairs
- *                 `(startIdx, startIdx+1), …, (endIdx-1, endIdx)`.
- *                 Returns `0` when `endIdx <= startIdx`.
- * @returns Sum of the trapezoidal contributions.
  */
 export function aucLinearNaive(
   time: Float64Array, conc: Float64Array,
@@ -49,12 +42,6 @@ export function aucLinearNaive(
  * undefined or numerically unstable:
  * - either concentration ≤ 0 (log of non-positive),
  * - or `c_i == c_{i+1}` (division by `ln(1) = 0`).
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param startIdx - Inclusive start index.
- * @param endIdx - Inclusive end index.
- * @returns Sum of the per-interval contributions.
  */
 export function aucLogLinearNaive(
   time: Float64Array, conc: Float64Array,
@@ -84,12 +71,6 @@ export function aucLogLinearNaive(
  * Rationale: drug absorption phases are well-approximated by linear
  * interpolation, while elimination decays follow exponential kinetics and
  * are better captured by the log-linear formula.
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param startIdx - Inclusive start index.
- * @param endIdx - Inclusive end index.
- * @returns Sum of the per-interval contributions.
  */
 export function aucLinearUpLogDownNaive(
   time: Float64Array, conc: Float64Array,
@@ -118,28 +99,19 @@ export function aucLinearUpLogDownNaive(
  * are zero (`0/0`), and `0` when `cLast == 0`. Callers should guard
  * upstream — `lambdaZ <= 0` is a sign that the terminal slope was not
  * estimable and AUCinf should not be reported.
- *
- * @param cLast - Concentration at the last observed time point.
- * @param lambdaZ - Terminal-phase rate constant (1/time-unit).
- * @returns The extrapolated tail area `cLast / lambdaZ`.
  */
 export function aucExtrapolateToInfinity(cLast: number, lambdaZ: number): number {
   return cLast / lambdaZ;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Compensated (Neumaier) variants
+// Compensated (Neumaier) variants. Identical to the naive ones on
+// well-conditioned inputs (< 1e-15 relative); they earn their keep when
+// contributions span many orders of magnitude — a Cmax-dominated spike
+// alongside a long tail of small terminal terms — where naive Float64
+// summation accumulates catastrophic cancellation error.
 //
-// On well-conditioned NCA inputs the compensated variants produce a result
-// identical to the naive ones to within floating-point round-off (< 1e-15
-// of the magnitude). They earn their keep when the contributions span
-// many orders of magnitude — e.g. a Cmax-dominated spike alongside a long
-// tail of small terminal terms — where naive Float64 summation accumulates
-// catastrophic cancellation error.
-//
-// Reference: Neumaier, A. (1974). "Rundungsfehleranalyse einiger Verfahren
-// zur Summation endlicher Summen." ZAMM 54: 39–51.
-// ──────────────────────────────────────────────────────────────────────────
+// Neumaier, A. (1974). "Rundungsfehleranalyse einiger Verfahren zur
+// Summation endlicher Summen." ZAMM 54: 39–51.
 
 /**
  * Neumaier-compensated summation of an iterable of numbers.
@@ -147,10 +119,7 @@ export function aucExtrapolateToInfinity(cLast: number, lambdaZ: number): number
  * Drop-in replacement for `[...values].reduce((s, v) => s + v, 0)` that
  * tracks a running compensation term so that round-off errors of opposite
  * sign cancel out instead of accumulating. Single-pass, O(n) time, O(1)
- * extra memory.
- *
- * @param values - Numbers to sum. Iterated once.
- * @returns The compensated sum.
+ * extra memory. `values` is iterated once.
  */
 export function neumaierSum(values: Iterable<number>): number {
   let sum = 0;

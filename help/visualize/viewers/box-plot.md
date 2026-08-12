@@ -64,29 +64,12 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Category2 Map | string | Time unit map function for *Category 2 Column Names* (applicable to dates only). |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
-| **Statistics** | | |
-| Show Group Comparison | boolean | Compare group means with the test that fits the data: * 2 groups — t-test * 3+ groups — one-way ANOVA * vs control — each group against a control * two category columns — two-way ANOVA Method and control are set on-chart. Hidden above 30 group combinations. |
-| Show Comparison Controls | boolean | Show the on-chart group-comparison controls (method, control comparisons, control group); with *Auto Layout* they are also hidden when the viewer is small. |
-| Show Assumption Checks | boolean | Show the ANOVA/t-test assumption checks under the p-value: per-group normality (Shapiro-Wilk) and equal variances (Brown-Forsythe). Diagnostics only — they never change the test. |
-| Alpha | number | Significance level for the group comparison (0 < alpha < 1). |
-| Show Statistics | boolean |  |
-| Statistics Format | string | Format for the statistics table values (p-values and comparison statistics use fixed formats). |
-| Show Total Count | boolean |  |
-| Show Inliers Count | boolean | Shown values count inside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
-| Show Outliers Count | boolean | Shown values count outside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
-| Show Min | boolean |  |
-| Show Max | boolean |  |
-| Show Avg | boolean |  |
-| Show Med | boolean |  |
-| Show Stdev | boolean |  |
-| Show Q1 | boolean |  |
-| Show Q3 | boolean |  |
-| **Category** | | |
+| **X Axis** | | |
 | Show Category Axis | boolean |  |
 | Show Category Selector | boolean |  |
 | Label Orientation | textorientation |  |
 | Show Minor Categories | boolean | Display subcategories - category combinations in the x axis table. |
-| **Value** | | |
+| **Y Axis** | | |
 | Value Column Name | string |  |
 | Axis Type | string |  |
 | Value Min | number |  |
@@ -106,6 +89,10 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Invert Color Scheme | boolean |  |
 | Color Min | number |  |
 | Color Max | number |  |
+| **Size** | | |
+| Show Size Selector | boolean |  |
+| Marker Size Column Name | string |  |
+| Marker Size Scaling | string | Linear or logarithmic scale for the *Marker Size Column*. |
 | **Marker** | | |
 | Show Markers | boolean | Show individual data point markers. When off, only the box / violin shapes are drawn. |
 | Markers Column Name | string |  |
@@ -115,10 +102,6 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Marker Type | string |  |
 | Marker Size | number |  |
 | Marker Opacity | number |  |
-| **Size** | | |
-| Show Size Selector | boolean |  |
-| Marker Size Column Name | string |  |
-| Marker Size Scaling | string | Linear or logarithmic scale for the *Marker Size Column*. |
 | **General** | | |
 | Show Mean Cross | boolean |  |
 | Show Lower Dash | boolean |  |
@@ -137,8 +120,6 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Selected Rows Color | number |  |
 | Missing Value Color | number |  |
 | Default Box Color | number |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
@@ -147,6 +128,25 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
+| **Statistics** | | |
+| Show Group Comparison | boolean | Compare group means with the test that fits the data: * 2 groups — t-test * 3+ groups — one-way ANOVA * vs control — each group against a control * two category columns — two-way ANOVA Method and control are set on-chart. Hidden above 30 group combinations. |
+| Show Comparison Controls | boolean | Show the on-chart group-comparison controls (method, control comparisons, control group); with *Auto Layout* they are also hidden when the viewer is small. |
+| Show Assumption Checks | boolean | Show the ANOVA/t-test assumption checks under the p-value: per-group normality (Shapiro-Wilk) and equal variances (Brown-Forsythe). Diagnostics only — they never change the test. |
+| Alpha | number | Significance level for the group comparison (0 < alpha < 1). |
+| Covariate Column Name | string | Numeric covariate to adjust the value by before comparing groups (e.g. organ weight by body weight). See *Adjustment* for the transform. Single category column only. |
+| Adjustment Mode | string | How the *Adjust By* covariate transforms the plotted value: * ratio — plot value / covariate * regressOut — plot the value residualized on the covariate ANCOVA (a *method* choice) handles the covariate inside the test instead. |
+| Show Statistics | boolean |  |
+| Statistics Format | string | Format for the statistics table values (p-values and comparison statistics use fixed formats). |
+| Show Total Count | boolean |  |
+| Show Inliers Count | boolean | Shown values count inside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
+| Show Outliers Count | boolean | Shown values count outside lower and upper bounds, where: IQR = Q3 - Q1. Lower Bound = Q1 - (1.5 * IQR). Upper Bound = Q3 + (1.5 * IQR). |
+| Show Min | boolean |  |
+| Show Max | boolean |  |
+| Show Avg | boolean |  |
+| Show Med | boolean |  |
+| Show Stdev | boolean |  |
+| Show Q1 | boolean |  |
+| Show Q3 | boolean |  |
 | **Selection** | | |
 | Show Selected Rows | boolean | When checked, selected points are highlighted using the selected rows color. When unchecked, selected points use their regular color coding. |
 | **Style** | | |
@@ -174,6 +174,9 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Show Tooltip | string | Controls box plot tooltip visibility |
 | Show Labels | visibilitymode |  |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Annotations** | | |

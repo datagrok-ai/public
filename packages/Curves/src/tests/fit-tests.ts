@@ -12,6 +12,7 @@ import {getDataPoints} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {
   fitSeries,
   fitFunctions,
+  DEFAULT_FIT_FUNCTION,
   getFitFunction,
   getStatistic,
   getStatisticProperty,
@@ -79,6 +80,20 @@ category('fit', () => {
     expect(logLinearFitFunc.y(logLinearFitFunc.getInitialParameters(logLinearXs, logLinearYs), 1.1), 96.29031327635312);
     expect(exponentialFitFunc.y(exponentialFitFunc.getInitialParameters(exponentialXs, exponentialYs), 1.1), 11.080315836233387);
     expect(polynomialFitFunc.y(polynomialFitFunc.getInitialParameters(polynomialXs, polynomialYs), 1.1), 7.3231);
+  });
+
+  test('a series that names no fit function is fitted with the default', async () => {
+    // clearing the option leaves the series without one, and the panel and the renderer both ask
+    // before anything fills the default in
+    const cleared = new FitSeries(sigmoidSeries.points);
+    expect(getSeriesFitFunction(cleared).name, DEFAULT_FIT_FUNCTION, 'naming none should name the default');
+    (cleared as any).fitFunction = null;
+    expect(getSeriesFitFunction(cleared).name, DEFAULT_FIT_FUNCTION, 'and so should clearing it');
+    (cleared as any).fitFunction = 'no such fit function';
+    expect(getSeriesFitFunction(cleared).name, DEFAULT_FIT_FUNCTION, 'as should naming one that is gone');
+    // what the property panel asks of every series before it offers droplines
+    expect(getSeriesFitFunction(cleared).hasAsymptotes !== undefined, true,
+      'the fit it hands back should be usable, not undefined');
   });
 
   test('getCurve', async () => {
@@ -493,5 +508,16 @@ category('fit', () => {
     expect(exponential(params, 0.0005), 94.57587501550823);
     expect(exponential(params, 0.5), 0.2957925783034655);
     expect(exponential(params, 0.98746), 0.0010630898492656174);
+  });
+
+  test('the combined error model fits to fixed values', async () => {
+    // noisy on purpose: a perfect fit leaves no residuals for the error model to weigh
+    const series = {fitFunction: 'sigmoid', errorModel: 'combined',
+      points: [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4]
+        .map((x, i) => ({x: x, y: (5 + 95 / (1 + Math.pow(10, Math.log10(x) + 6.5))) * (1 + 0.08 * Math.sin(i * 2.4))}))};
+    const logOptions = {logX: true, logY: false};
+    const fit = fitSeries(series as any, getSeriesFitFunction(series as any), undefined, logOptions);
+    expectArray(Array.from(fit.parameters).map((p) => Number(p.toFixed(6))),
+      [100.771515, 0.984725, -6.517356, 5.065719]);
   });
 });

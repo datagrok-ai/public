@@ -49,36 +49,32 @@ export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[
 }
 
 function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect {
-  let x = bounds.x;
-  let y = bounds.y;
-  let width = bounds.width;
-  let height = bounds.height;
-  let boundsAdjusted = false;
+  // an edge that is set is exact; the rest keep their padding, so setting one edge does not
+  // pull the opposite one onto the outermost point and cut the curve that overshoots it
+  const padded = padBounds(bounds, chartOptions);
+  let x = padded.x;
+  let y = padded.y;
+  let width = padded.width;
+  let height = padded.height;
 
   if (chartOptions.minX != null && chartOptions.minX <= bounds.maxX &&
     ((!chartOptions.logX) || (chartOptions.logX && chartOptions.minX > 0))) {
     width += x - chartOptions.minX;
     x = chartOptions.minX;
-    boundsAdjusted = true;
   }
   if (chartOptions.maxX != null && chartOptions.maxX >= bounds.minX &&
-    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0))) {
+    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0)))
     width += chartOptions.maxX - (x + width);
-    boundsAdjusted = true;
-  }
   if (chartOptions.minY != null && chartOptions.minY <= bounds.maxY &&
     ((!chartOptions.logY) || (chartOptions.logY && chartOptions.minY > 0))) {
     height += y - chartOptions.minY;
     y = chartOptions.minY;
-    boundsAdjusted = true;
   }
   if (chartOptions.maxY != null && chartOptions.maxY >= bounds.minY &&
-    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0))) {
+    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0)))
     height += chartOptions.maxY - (y + height);
-    boundsAdjusted = true;
-  }
 
-  return boundsAdjusted ? new DG.Rect(x, y, width, height) : padBounds(bounds, chartOptions);
+  return new DG.Rect(x, y, width, height);
 }
 
 function padBounds(bounds: DG.Rect, chartOptions: IFitChartOptions, ratio = 0.05): DG.Rect {

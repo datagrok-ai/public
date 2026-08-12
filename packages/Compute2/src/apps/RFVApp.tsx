@@ -6,12 +6,13 @@ import {Subject, BehaviorSubject, of, from} from 'rxjs';
 import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getViewersHook, historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
-import {catchError, debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
+import {catchError, debounceTime, filter, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults} from '../utils';
+import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -96,6 +97,38 @@ export const RFVApp = Vue.defineComponent({
       else setViewName(modelName);
     }, {immediate: true});
 
+    const formReplaced$ = new BehaviorSubject<DG.InputForm | undefined>(undefined);
+    // dataframe/file inputs that came from URL entity ids, kept for link export
+    const urlEntityIds = new Map<string, string>();
+
+    const clearUrlInputs = () => {
+      for (const key of Object.keys(searchParams)) {
+        if (key !== 'id')
+          (searchParams as any)[key] = undefined;
+      }
+      setViewPath(searchParams.id ? `?id=${searchParams.id}` : '?');
+    };
+
+    // URL inputs act as overrides: entity values are pre-loaded first, then the whole
+    // patch is applied in one sync block after the form is built (defaults already in)
+    const applyUrlInputsFlow = async (urlParams: URLSearchParams) => {
+      const call = currentFuncCall.value;
+      const {patch, entityIds, warnings} = await parseUrlInputs(call, urlParams);
+      for (const warning of warnings)
+        grok.shell.warning(warning);
+      for (const [name, id] of entityIds)
+        urlEntityIds.set(name, id);
+      if (patch.size > 0) {
+        await formReplaced$.pipe(filter((form) => form != null), take(1)).toPromise();
+        if (currentFuncCall.value !== call)
+          return;
+        applyUrlInputs(call, patch);
+        if (missingMandatoryInputs(call).length === 0)
+          runRequests$.next(true);
+      }
+      clearUrlInputs();
+    };
+
     Vue.watch(currentFuncCall, async () => {
       if (globalThis.initialURLHandled)
         return;
@@ -105,12 +138,26 @@ export const RFVApp = Vue.defineComponent({
       const startUrl = new URL(grok.shell.startUri);
       const loadingId = startUrl.searchParams.get('id');
 
-      if (!loadingId)
+      if (loadingId) {
+        const fc = await historyUtils.loadRun(loadingId);
+        currentFuncCall.value = Vue.markRaw(fc);
         return;
+      }
 
-      const fc = await historyUtils.loadRun(loadingId);
-      currentFuncCall.value = Vue.markRaw(fc);
+      if ([...startUrl.searchParams.keys()].length > 0)
+        await applyUrlInputsFlow(startUrl.searchParams);
     }, {immediate: true});
+
+    const copyUrlWithInputs = async () => {
+      const {url, skipped} = buildInputsUrl(currentFuncCall.value, urlEntityIds);
+      if (!await copyText(url)) {
+        grok.shell.warning('Could not access the clipboard');
+        return;
+      }
+      grok.shell.info(skipped.length > 0 ?
+        `Link copied (inputs not included: ${skipped.join(', ')})` :
+        'Link copied to clipboard');
+    };
 
 
     // Replace the object on every transition so RichFunctionView's
@@ -198,7 +245,11 @@ export const RFVApp = Vue.defineComponent({
           viewersHook={viewersHook.value}
           onUpdate:funcCall={(fc) => currentFuncCall.value = Vue.markRaw(fc)}
           onRunClicked={() => runRequests$.next(true)}
-          onFormReplaced={onUpdateForm}
+          onFormReplaced={(form) => {
+            formReplaced$.next(form);
+            onUpdateForm();
+          }}
+          urlExportHandler={copyUrlWithInputs}
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
           onSaveToHistory={() => saveRun()}

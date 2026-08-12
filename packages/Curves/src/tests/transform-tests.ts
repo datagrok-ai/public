@@ -11,7 +11,7 @@ import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 category('viewport', () => {
   test('viewportMethods', async () => {
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(120, 20, 160, 100));
-    const [dataBox] = layoutChart(screenBounds, false, false);
+    const [dataBox] = layoutChart(screenBounds, false, false, false);
     const dataBounds = new DG.Rect(0.1, 0.06, 7, 5.94);
     const viewport = new Viewport(dataBounds, dataBox, false, false);
 

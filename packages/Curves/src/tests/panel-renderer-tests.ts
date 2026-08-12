@@ -13,6 +13,8 @@ import {normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions, series
 import {sigmoidPoints, ciCurveJson, labelledCurveJson, curveJson, renderedTexts} from './curve-data';
 import {multiSeriesCurveJson} from './curve-data';
 import {getOrCreateParsedChartData, getColumnChartOptions} from '../fit/fit-chart-data';
+import {getSeriesFitFunction} from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {fitFunctions, fitFunctionDescriptions} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 /** Curve carrying stored parameters whose inflection point is above 1, where converting in place
  * would log it again on the next pass. */
@@ -350,6 +352,97 @@ category('panel and renderer', () => {
       'a line has no asymptotes, so an ICxx would never be drawn');
     // the rest of the series options are untouched
     expect(named(JSON.stringify(linear)).includes('markerType'), true);
+    // the render stamps this one on every paint, so editing it never took
+    expect(named(curveJson(-6.5)).includes('columnName'), false, 'the column a series came from is not a setting');
+  });
+
+  test('a custom fit function is offered once, everywhere, and never an empty one', async () => {
+    const custom = {name: 'TestCustomFit', function: '(params, x) => params[0] * x',
+      getInitialParameters: '(x, y) => new Float32Array([1])', parameterNames: ['Slope']};
+    const withCustom = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    withCustom.series![0].fitFunction = custom as any;
+    try {
+      // rendering the cell is what registers it, and the panel is opened after that
+      getSeriesFitFunction(withCustom.series![0]);
+      const choices = seriesPropertiesFor(withCustom, custom as any).find((p) => p.name === 'fitFunction')!.choices!;
+      expect(choices.filter((c) => c === custom.name).length, 1, 'a registered function is named once');
+      expect(choices.includes(''), false, 'a series is fitted with something, so none is not a choice');
+
+      // registered once, it can be picked for any curve, not only the one that brought it
+      const plain = seriesPropertiesFor(JSON.parse(curveJson(-6.5)) as IFitChartData, null)
+        .find((p) => p.name === 'fitFunction')!.choices!;
+      expect(plain.includes(custom.name), true, 'and offered wherever a fit function is picked');
+      expect(plain.includes(''), false, 'here too');
+    } finally {
+      delete fitFunctions[custom.name];
+    }
+  });
+
+  test('picking a custom fit function stores the notation, not a name nothing can resolve', async () => {
+    const custom = {name: 'TestStoredFit', function: '(params, x) => params[0] * x',
+      getInitialParameters: '(x, y) => new Float32Array([1])', parameterNames: ['Slope']};
+    try {
+      // rendering the column that carries it is what registers it, and its notation with it
+      const carrier = JSON.parse(curveJson(-6.5)) as IFitChartData;
+      carrier.series![0].fitFunction = custom as any;
+      getSeriesFitFunction(carrier.series![0]);
+
+      // a curve that has never seen that function, the way another column would be
+      const cell = curveJson(-6.5);
+      const col = DG.Column.fromStrings('curve', [cell, cell]);
+      col.semType = FitConstants.FIT_SEM_TYPE;
+      const df = DG.DataFrame.fromColumns([col]);
+      df.name = 'customFitNotationStored';
+      const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+
+      changeCurvesOptions(gridCell, {property: {name: 'fitFunction'}, value: custom.name} as unknown as DG.InputBase,
+        'seriesOptions', 'Cell');
+      await delay(300);
+      const stored = JSON.parse(df.col('curve')!.get(0)!).series[0].fitFunction;
+      expect(typeof stored, 'object', 'the name alone would not resolve in a session that never loaded it');
+      expect(stored.name, custom.name);
+      expect(!!stored.function && !!stored.getInitialParameters, true, 'the notation travels with the curve');
+
+      changeCurvesOptions(gridCell, {property: {name: 'fitFunction'}, value: 'linear'} as unknown as DG.InputBase,
+        'seriesOptions', 'Cell');
+      await delay(300);
+      expect(JSON.parse(df.col('curve')!.get(0)!).series[0].fitFunction, 'linear',
+        'a built-in one is always there, so it stays a name');
+    } finally {
+      delete fitFunctions[custom.name];
+      delete fitFunctionDescriptions[custom.name];
+    }
+  });
+
+  test('statistics are written in the plot font, not the one the caller left', async () => {
+    const data = JSON.parse(curveJson(-6.5)) as IFitChartData;
+    data.chartOptions!.showStatistics = ['auc', 'rSquared'];
+    const col = DG.Column.fromStrings('curve', [JSON.stringify(data)]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'statisticsFont';
+
+    // the grid hands the renderer whatever font it last drew with, which is what used to change
+    // the statistics when the filter opened and change them back when the panel was scrolled
+    const fontsWhenCallerLeft = (callerFont: string): string[] => {
+      const fonts: string[] = [];
+      const g = ui.canvas(400, 300).getContext('2d')!;
+      const fillText = g.fillText.bind(g);
+      g.fillText = ((text: string, x: number, y: number) => {
+        if (text.includes(':')) fonts.push(g.font);
+        fillText(text, x, y);
+      }) as any;
+      g.font = callerFont;
+      new FitChartCellRenderer().renderCurves(g, new DG.Rect(0, 0, 400, 300),
+        getOrCreateParsedChartData(df.cell(0, 'curve')));
+      return [...new Set(fonts)];
+    };
+
+    const seeded = fontsWhenCallerLeft('20px Comic Sans MS');
+    expect(seeded.length, 1, 'every statistic should be written alike');
+    expect(seeded[0].includes('Comic Sans'), false, 'and not in whatever the caller was using');
+    expect(fontsWhenCallerLeft('11px Roboto, "Roboto Local"')[0], seeded[0],
+      'the same font however the canvas reached the renderer');
   });
 
   test('several droplines are named, and one off the plot is not drawn', async () => {

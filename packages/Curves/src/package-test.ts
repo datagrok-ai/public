@@ -12,6 +12,7 @@ import './tests/calculated-columns-tests';
 import './tests/panel-renderer-tests';
 import './tests/multi-curve-viewer-tests';
 import './tests/legend-tests';
+import './tests/fit-cache-tests';
 import './tests/project-tests';
 
 export const _package = new DG.Package();

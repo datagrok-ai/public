@@ -44,6 +44,11 @@
         "vss": 10.007561201435,
         "tlag": null,
         "pct_aumcextrap": 4.802119569088
+      },
+      "provenance": {
+        "lambda_z_time_first": 1.5,
+        "lambda_z_time_last": 24,
+        "span_ratio": 6.492127684
       }
     }
   ]

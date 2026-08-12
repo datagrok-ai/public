@@ -10,7 +10,7 @@ import {
   IFitFunctionDescription,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
-import {fitFunctions, fitSeriesProperties, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/fit-engine';
+import {fitFunctions, fitFunctionDescriptions, fitSeriesProperties, getStatisticProperty, DEFAULT_FIT_FUNCTION} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {getColumnChartOptions, getDataFrameChartOptions, CHART_OPTIONS, SERIES_OPTIONS} from './fit-chart-data';
 import {isNativeFormat} from './curve-converter';
 
@@ -84,17 +84,21 @@ export function normalizeStatisticNames(chartData: IFitChartData, names: string[
   return resolved;
 }
 
-/** Series properties with `fitFunction` able to name a custom JS function alongside the built-ins. */
+/** Series properties with `fitFunction` naming every registered function, custom ones included. */
 export function seriesPropertiesFor(chartData: IFitChartData,
   customFitFunction: IFitFunctionDescription | null): DG.Property[] {
-  // an ICxx name only resolves for a curve that levels off at both ends
-  const properties = fitSeriesProperties.filter((p) => p.name !== 'droplines' ||
-    (chartData.series ?? []).some((series) => getSeriesFitFunction(series).hasAsymptotes));
-  if (!customFitFunction)
-    return properties;
+  // columnName is stamped by the render, not chosen; an ICxx name only resolves for a curve that
+  // levels off at both ends
+  const properties = fitSeriesProperties.filter((p) => p.name !== 'columnName')
+    .filter((p) => p.name !== 'droplines' ||
+      (chartData.series ?? []).some((series) => getSeriesFitFunction(series).hasAsymptotes));
+  // a custom function registers itself the first time it is used, so the registry is what there is to
+  // pick from - read here rather than off fitSeriesProperties, which captured it before any registered
+  const choices = [...new Set([...(customFitFunction ? [customFitFunction.name] : []),
+    ...Object.keys(fitFunctions)])];
   return properties.map((p) => p.name !== 'fitFunction' ? p :
-    DG.Property.js('fitFunction', DG.TYPE.STRING, {category: 'Fitting',
-      choices: [customFitFunction.name, ...Object.keys(fitFunctions)], defaultValue: customFitFunction.name}));
+    DG.Property.js('fitFunction', DG.TYPE.STRING, {category: 'Fitting', choices: choices,
+      nullable: false, defaultValue: customFitFunction?.name ?? DEFAULT_FIT_FUNCTION}));
 }
 
 /** Records that the user set this option here, so it outranks the value the data declares. */
@@ -113,15 +117,23 @@ function unclaim(chartData: IFitChartData, options: OptionsSection, propertyName
   return true;
 }
 
+/** A custom fit function is stored as the notation that describes it, not as its name: the name only
+ * resolves while something else in the session carries the function, which a saved table may not. */
+function storedValue(propertyName: string, value: any): any {
+  return propertyName === 'fitFunction' && typeof value === 'string' && fitFunctionDescriptions[value] ?
+    fitFunctionDescriptions[value] : value;
+}
+
 function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, options: OptionsSection): void {
   const propertyName = inputBase.property.name as string;
+  const value = storedValue(propertyName, inputBase.value);
   if (options === CHART_OPTIONS) {
     if (chartData.chartOptions === undefined) return;
-    (chartData.chartOptions as any)[propertyName] = inputBase.value;
+    (chartData.chartOptions as any)[propertyName] = value;
   } else {
     if (chartData.series === undefined) return;
     for (const series of chartData.series)
-      (series as IFitSeries as any)[propertyName] = inputBase.value;
+      (series as IFitSeries as any)[propertyName] = value;
   }
   claim(chartData, options, propertyName);
 }
@@ -155,7 +167,7 @@ export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBa
 
   const chartOptions = manipulationLevel === MANIPULATION_LEVEL.DATAFRAME ?
     getDataFrameChartOptions(gridCell.cell.dataFrame) : getColumnChartOptions(gridCell.cell.column);
-  ((chartOptions[options] ??= {}) as any)[propertyName] = inputBase.value;
+  ((chartOptions[options] ??= {}) as any)[propertyName] = storedValue(propertyName, inputBase.value);
   claim(chartOptions, options, propertyName);
 
   let columns: DG.Column[];

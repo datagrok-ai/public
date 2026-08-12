@@ -72,6 +72,17 @@ function insertedAfter(names: string[], added: string[], anchor: string): string
   return [...rest.slice(0, at), ...added, ...rest.slice(at)];
 }
 
+/** A multi-choice is capped at 155px and always draws its scrollbar, which cut the statistics off and
+ * left a second scrollbar inside a panel that already scrolls. These lists are short enough to read. */
+function showWholeList(input: DG.InputBase): DG.InputBase {
+  const checks = input.root.querySelector('.ui-input-multi-choice-checks') as HTMLElement | null;
+  if (checks) {
+    checks.style.maxHeight = 'none';
+    checks.style.overflowY = 'visible';
+  }
+  return input;
+}
+
 export class FitGridCellHandler extends DG.ObjectHandler {
   get type(): string {
     return 'GridCell';
@@ -146,7 +157,7 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
       seriesSource.fitFunction : null;
     const fitSeriesChildren = seriesPropertiesFor(chartData, customFitFunction).map((p) => {
       if (p.name !== 'fitFunction' || !customFitFunction)
-        return ui.input.forProperty(p, seriesSource, seriesOptionsRefresh);
+        return showWholeList(ui.input.forProperty(p, seriesSource, seriesOptionsRefresh));
       // the input is bound to the name, so a pick has to be written back to the series
       const named = {...seriesSource, fitFunction: customFitFunction.name};
       return ui.input.forProperty(p, named, {onValueChanged: (v: any, inputBase: DG.InputBase) => {
@@ -160,7 +171,7 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
     if (chartData.chartOptions?.showStatistics)
       chartData.chartOptions.showStatistics = normalizeStatisticNames(chartData, chartData.chartOptions.showStatistics);
     ui.forms.addGroup(form, 'Chart options', chartPropertiesFor(chartData).map((p) =>
-      ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
+      showWholeList(ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh))));
     acc.addPane('Options', () => form);
 
     const choices = (chartData.series?.length ?? 0) > 1 ? ['all', 'aggregated'] : ['all'];

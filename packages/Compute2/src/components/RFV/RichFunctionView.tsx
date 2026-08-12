@@ -30,6 +30,7 @@ import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, getViewers} from '../../utils';
+import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 
 
 interface ScalarsState {
@@ -161,13 +162,17 @@ const tabToProperties = (fc: DG.FuncCall) => {
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
-    const dfViewers = Utils.getPropViewers(dfProp).config;
+    let dfViewers = Utils.getPropViewers(dfProp).config;
+    // Outputs without a viewer annotation (e.g. queries) get a plain grid by default
+    const isDefaultGrid = dfViewers.length === 0 && isOutput;
+    if (isDefaultGrid)
+      dfViewers = [{type: DG.VIEWER.GRID}];
     if (dfViewers.length === 0) return;
     if (hideEmpty && isOutput && isEmptyDataFrame(fc.outputs[dfProp.name])) return;
 
     dfViewers.forEach((dfViewer) => {
       const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
-      const dfNameWithViewer = `${dfBlockTitle} / ${dfViewer['type']}`;
+      const dfNameWithViewer = isDefaultGrid ? `${dfBlockTitle}` : `${dfBlockTitle} / ${dfViewer['type']}`;
 
       const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
@@ -281,6 +286,10 @@ export const RichFunctionView = Vue.defineComponent({
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
+    },
+    // standalone hosts that support URL inputs pass a handler; adds a "Copy link with inputs" export
+    urlExportHandler: {
+      type: Function as Vue.PropType<() => void>,
     },
     view: {
       type: DG.View,
@@ -504,8 +513,33 @@ export const RichFunctionView = Vue.defineComponent({
         activeExports.push({name, handler});
       }
       activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
+      if (canSaveProject())
+        activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
+      if (props.urlExportHandler)
+        activeExports.push({name: 'Copy link with inputs', handler: () => props.urlExportHandler!()});
       return activeExports;
     });
+
+    // One entry per visible dataframe param, viewer configs merged across its tabs
+    const collectDfExportEntries = (): DfExportEntry[] => {
+      const map = tabToPropertiesMap.value;
+      const entries = new Map<string, DfExportEntry>();
+      for (const label of visibleTabLabels.value) {
+        const isInput = map.inputs.has(label);
+        const content = (isInput ? map.inputs : map.outputs).get(label);
+        if (!content || content.type !== 'dataframe' || !content.df.value)
+          continue;
+        const key = `${isInput ? 'in' : 'out'}:${content.name}`;
+        let entry = entries.get(key);
+        if (!entry) {
+          entry = {name: content.name, isInput, df: content.df.value, viewers: []};
+          entries.set(key, entry);
+        }
+        const {type, ...options} = content.config;
+        entry.viewers.push({type: (type as string) ?? DG.VIEWER.GRID, options});
+      }
+      return [...entries.values()];
+    };
 
     // When keepExportsVisible is set the export icons stay put regardless of isOutputOutdated
     // (no ribbon rebuild/flicker); guard the click so a stale/in-flight run surfaces a shell

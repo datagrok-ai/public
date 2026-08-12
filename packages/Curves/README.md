@@ -199,7 +199,7 @@ returns the result of the fit function. These functions are written as JavaScrip
 
 ## Multi Curve Viewer
 
-To compare dose-response curves from multiple cells, put them on the Multi Curve Viewer::
+To compare dose-response curves from multiple cells, put them on the Multi Curve Viewer:
 
 ![](img/multi-curve-viewer.gif)
 

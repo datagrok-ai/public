@@ -5,32 +5,24 @@
  * is the basis for the mean residence time (MRT) and the steady-state volume
  * (Vss). It is **not** the AUC of a `t·C` array: the log-linear interval has a
  * distinct closed form derived from the exponential interpolant. The three
- * schemes mirror the {@link module:auc} options and are tied to the same
- * `rules.aucMethod` choice:
- * - `linear`              — trapezoid on the moment curve;
- * - `log-linear`          — exact moment of an exponential interpolant;
- * - `linear-up/log-down`  — linear on ascending intervals, log-linear on
- *                            descending ones (PKNCA default).
+ * schemes mirror the `auc.ts` options and are tied to the same
+ * `rules.aucMethod` choice, with the same signature convention and the same
+ * naive / Neumaier-compensated pairing.
  *
  * Closed forms over an interval `[t₁, t₂]` (Gabrielsson & Weiss §2.8.1;
  * Yamaoka et al. 1978):
  * - linear:     `(t₂ − t₁)·(t₁·c₁ + t₂·c₂) / 2`
  * - log-linear: `(t₁·c₁ − t₂·c₂)/k + (c₁ − c₂)/k²`,
  *               where `k = ln(c₁/c₂)/(t₂ − t₁)` is the per-interval elimination
- *               rate (`k > 0` when `c₁ > c₂ > 0`) — the **same orientation**
- *               `auc.ts` uses inline (`Math.log(c1/c2)`), so the second term
- *               carries its stated sign. A flipped `ln(c₂/c₁)` would silently
- *               sign-flip the `1/k²` term and fail PKNCA parity on descending
- *               segments.
+ *               rate (`k > 0` when `c₁ > c₂ > 0`). The orientation matters: a
+ *               flipped `ln(c₂/c₁)` sign-flips the `1/k²` term and breaks PKNCA
+ *               parity on descending segments.
  *
  * The log-linear moment falls back to the linear formula when the exponential
  * interpolant is undefined or numerically unstable (`c₁ ≤ 0`, `c₂ ≤ 0`, or
- * `c₁ = c₂`), matching the `auc.ts` fallback rules.
- *
- * Compensated (Neumaier) variants live alongside the naive ones: the
- * `(c₁−c₂)/k²` term is sensitive to catastrophic cancellation as `k → 0`
- * (near-flat segments) under naive Float64 summation — the same regime that
- * motivated the compensated AUC kernels.
+ * `c₁ = c₂`), matching the `auc.ts` fallback rules. The `(c₁−c₂)/k²` term is
+ * what makes the compensated variants worth having: it loses precision to
+ * cancellation as `k → 0` on near-flat segments.
  */
 
 /**
@@ -58,15 +50,7 @@ function logMoment(t1: number, c1: number, t2: number, c2: number): number {
   return (t1 * c1 - t2 * c2) / k + (c1 - c2) / (k * k);
 }
 
-/**
- * Linear trapezoidal AUMC over the inclusive index range `[startIdx, endIdx]`.
- *
- * @param time - Time vector, sorted ascending.
- * @param conc - Concentration vector, same length as `time`.
- * @param startIdx - Inclusive start index.
- * @param endIdx - Inclusive end index. Returns `0` when `endIdx <= startIdx`.
- * @returns Sum of the per-interval moment contributions.
- */
+/** Linear trapezoidal AUMC over the inclusive index range `[startIdx, endIdx]`. */
 export function aumcLinearNaive(
   time: Float64Array, conc: Float64Array,
   startIdx: number, endIdx: number,
@@ -79,8 +63,8 @@ export function aumcLinearNaive(
 
 /**
  * Log-linear trapezoidal AUMC. Falls back to the linear moment formula when
- * either concentration is non-positive or `c₁ == c₂` (mirrors
- * {@link aumcLogLinearNaive}'s AUC counterpart).
+ * either concentration is non-positive or `c₁ == c₂`, mirroring
+ * {@link aucLogLinearNaive}.
  */
 export function aumcLogLinearNaive(
   time: Float64Array, conc: Float64Array,
@@ -115,9 +99,7 @@ export function aumcLinearUpLogDownNaive(
   return aumc;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Compensated (Neumaier) variants — see auc.ts for the summation rationale.
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Linear trapezoidal AUMC with Neumaier-compensated summation. */
 export function aumcLinearCompensated(
@@ -194,11 +176,6 @@ export function aumcLinearUpLogDownCompensated(
  * returns `0` when `cLast == 0`, `+Infinity` when `lambdaZ == 0` with
  * `cLast > 0`, and `NaN` for the `0/0` case. Callers guard upstream —
  * `lambdaZ <= 0` means the terminal slope was not estimable.
- *
- * @param tLast - Time of the last observed point.
- * @param cLast - Concentration at the last observed point.
- * @param lambdaZ - Terminal-phase rate constant (1/time-unit).
- * @returns The extrapolated tail moment.
  */
 export function aumcExtrapolateToInfinity(
   tLast: number, cLast: number, lambdaZ: number,

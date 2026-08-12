@@ -448,11 +448,11 @@ export interface IScatterPlotSettings {
   /// Shows a distribution histogram along the X axis (at the top)
   showXHistogram: boolean;
 
-  /// Shows a distribution histogram along the Y axis (on the right)
-  showYHistogram: boolean;
-
   /// Number of bins for axis histograms
   histogramBins: number;
+
+  /// Shows a distribution histogram along the Y axis (on the right)
+  showYHistogram: boolean;
 
   /// Point lower bound for x axis whiskers. Selecting it disables *X Whisker Range*.
   xWhiskerMin: string;
@@ -543,18 +543,6 @@ export interface IScatterPlotSettings {
 
   markerMaxSize: number;
 
-  /// When defined, a line would be drawn for each series (defined by the categorical color column)
-  /// using the order specified by "Lines Order"
-  linesOrder: string;
-  linesOrderColumnName: string;
-
-  /// When defined, lines are split into separate series by this categorical column instead of the color column.
-  linesBy: string;
-  linesByColumnName: string;
-
-  /// Defines the width of the lines connecting the markers. See **Lines Width**.
-  linesWidth: number;
-
   /// Label columns to show next to the markers.
   labelColumnNames: Array<string>;
 
@@ -581,6 +569,18 @@ export interface IScatterPlotSettings {
 
   /// Label inner content size.
   labelContentSize: number;
+
+  /// When defined, a line would be drawn for each series (defined by the categorical color column)
+  /// using the order specified by "Lines Order"
+  linesOrder: string;
+  linesOrderColumnName: string;
+
+  /// When defined, lines are split into separate series by this categorical column instead of the color column.
+  linesBy: string;
+  linesByColumnName: string;
+
+  /// Defines the width of the lines connecting the markers. See **Lines Width**.
+  linesWidth: number;
 
   /// Controls the indication of the current row
   showCurrentPoint: boolean;
@@ -751,6 +751,13 @@ export interface IScatterPlotSettings {
 
   regressionLineTransparency: number;
 
+  /// Fit the per-category regression lines by ANCOVA: one common (pooled) slope, each line through
+  /// its group's adjusted mean, with a *Regression Confidence Level* band. Needs numerical X and Y.
+  regressionCommonSlope: boolean;
+
+  /// Confidence level (%) of the band around each common-slope line.
+  regressionConfidenceLevel: number;
+
   /// Moving (rolling) average line visibility.
   showMovingAverageLine: boolean;
 
@@ -822,6 +829,19 @@ export interface IBarChartSettings {
   /// Determines what happens when you click on a bar.
   onClick: keyof typeof RowGroupAction;
 
+  /// A categorical column to split data on (each bar represents a category)
+  split: string;
+  splitColumnName: string;
+
+  /// Time unit map function for *Split* (applicable to dates only).
+  splitMap: string;
+
+  showCategoryValues: boolean;
+
+  showValuesInsteadOfCategories: boolean;
+
+  showCategorySelector: boolean;
+
   /// Value column. See *Value Aggr Type* for aggregation options.
   value: string;
   valueColumnName: string;
@@ -857,30 +877,6 @@ export interface IBarChartSettings {
 
   orientation: string;
 
-  /// A categorical column to split data on (each bar represents a category)
-  split: string;
-  splitColumnName: string;
-
-  /// Time unit map function for *Split* (applicable to dates only).
-  splitMap: string;
-
-  showCategoryValues: boolean;
-
-  showValuesInsteadOfCategories: boolean;
-
-  showCategorySelector: boolean;
-
-  /// A categorical column to further split data on.
-  /// Each category would become a part of the bar resulting from *Split*.
-  /// Shows stacked bars only when *Value Aggr Type* is additive.
-  stack: string;
-  stackColumnName: string;
-
-  /// Time unit map function for *Stack* (applicable to dates only).
-  stackMap: string;
-
-  showStackSelector: boolean;
-
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
   color: string;
@@ -892,6 +888,17 @@ export interface IBarChartSettings {
   invertColorScheme: boolean;
 
   linearColorScheme: Array<number>;
+
+  /// A categorical column to further split data on.
+  /// Each category would become a part of the bar resulting from *Split*.
+  /// Shows stacked bars only when *Value Aggr Type* is additive.
+  stack: string;
+  stackColumnName: string;
+
+  /// Time unit map function for *Stack* (applicable to dates only).
+  stackMap: string;
+
+  showStackSelector: boolean;
 
   /// Whether the selected rows are indicated.
   /// Only works for cumulative aggregations such as count.
@@ -1065,42 +1072,6 @@ export interface IBoxPlotSettings {
   /// Time unit map function for *Category 2 Column Names* (applicable to dates only).
   category2Map: string;
 
-  /// Compare group means with the test that fits the data:
-  /// * 2 groups — t-test
-  /// * 3+ groups — one-way ANOVA
-  /// * vs control — each group against a control
-  /// * two category columns — two-way ANOVA
-  ///
-  /// Method and control are set on-chart. Hidden above 30 group combinations.
-  showGroupComparison: boolean;
-
-  /// Show the on-chart group-comparison controls (method, control comparisons, control group);
-  /// with *Auto Layout* they are also hidden when the viewer is small.
-  showComparisonControls: boolean;
-
-  /// Show the ANOVA/t-test assumption checks under the p-value: per-group normality
-  /// (Shapiro-Wilk) and equal variances (Brown-Forsythe). Diagnostics only — they
-  /// never change the test.
-  showAssumptionChecks: boolean;
-
-  /// Significance level for the group comparison (0 < alpha < 1).
-  alpha: number;
-
-  /// Test method (empty = auto-selected by category count):
-  /// * 2 categories — Welch / Student
-  /// * 3+ categories — Welch / Fisher ANOVA
-  /// * control comparisons — Dunnett / Holm-Welch
-  method: string;
-
-  /// Compare each group against the control group (3+ categories). Driven by the on-chart control
-  /// selector: on when a group is picked, off when its blank row is picked.
-  controlComparisons: boolean;
-
-  /// Category used as the control group for control comparisons.
-  controlGroup: string;
-
-  showStatistics: boolean;
-
   showCategoryAxis: boolean;
 
   showCategorySelector: boolean;
@@ -1159,6 +1130,13 @@ export interface IBoxPlotSettings {
 
   colorMax: number;
 
+  showSizeSelector: boolean;
+
+  markerSizeColumnName: string;
+
+  /// Linear or logarithmic scale for the *Marker Size Column*.
+  markerSizeScaling: keyof typeof AxisType;
+
   /// Show individual data point markers. When off, only the box / violin shapes are drawn.
   showMarkers: boolean;
 
@@ -1171,13 +1149,6 @@ export interface IBoxPlotSettings {
   markerMinSize: number;
 
   markerMaxSize: number;
-
-  showSizeSelector: boolean;
-
-  markerSizeColumnName: string;
-
-  /// Linear or logarithmic scale for the *Marker Size Column*.
-  markerSizeScaling: keyof typeof AxisType;
 
   markerType: string;
 
@@ -1210,6 +1181,61 @@ export interface IBoxPlotSettings {
   showMouseOverPoint: boolean;
 
   showMouseOverRowGroup: boolean;
+
+  /// Compare group means with the test that fits the data:
+  /// * 2 groups — t-test
+  /// * 3+ groups — one-way ANOVA
+  /// * vs control — each group against a control
+  /// * two category columns — two-way ANOVA
+  ///
+  /// Method and control are set on-chart. Hidden above 30 group combinations.
+  showGroupComparison: boolean;
+
+  /// Show the on-chart group-comparison controls (method, control comparisons, control group);
+  /// with *Auto Layout* they are also hidden when the viewer is small.
+  showComparisonControls: boolean;
+
+  /// Show the ANOVA/t-test assumption checks under the p-value: per-group normality
+  /// (Shapiro-Wilk) and equal variances (Brown-Forsythe). Diagnostics only — they
+  /// never change the test.
+  showAssumptionChecks: boolean;
+
+  /// Significance level for the group comparison (0 < alpha < 1).
+  alpha: number;
+
+  /// Numeric covariate to adjust the value by before comparing groups (e.g. organ weight
+  /// by body weight). See *Adjustment* for the transform. Single category column only.
+  covariate: string;
+  covariateColumnName: string;
+
+  /// Test method (empty = auto-selected by category count):
+  /// * 2 categories — Welch / Student
+  /// * 3+ categories — Welch / Fisher ANOVA
+  /// * control comparisons — Dunnett / Holm-Welch
+  method: string;
+
+  /// Compare each group against the control group (3+ categories). Driven by the on-chart control
+  /// selector: on when a group is picked, off when its blank row is picked.
+  controlComparisons: boolean;
+
+  /// Category used as the control group for control comparisons.
+  controlGroup: string;
+
+  /// How the *Adjust By* covariate transforms the plotted value:
+  /// * ratio — plot value / covariate
+  /// * regressOut — plot the value residualized on the covariate
+  ///
+  /// ANCOVA (a *method* choice) handles the covariate inside the test instead.
+  adjustmentMode: string;
+
+  /// Control baseline for control comparisons, driven by the on-chart toggle:
+  /// * Pooled control — one control group compared against across all data
+  /// * Matched · per stratum — each box vs the control within its own stratum (the 2nd split column)
+  ///
+  /// Matched needs a second category column; otherwise it behaves as pooled.
+  baselineMode: string;
+
+  showStatistics: boolean;
 
   /// When checked, selected points are highlighted using the selected rows color.
   /// When unchecked, selected points use their regular color coding.
@@ -1640,18 +1666,6 @@ export interface IDensityPlotSettings {
   y: string;
   yColumnName: string;
 
-  autoLayout: boolean;
-
-  axisFont: string;
-
-  showColorScale: boolean;
-
-  invertColorScheme: boolean;
-
-  colorTransformType: keyof typeof AxisType;
-
-  linearColorScheme: Array<number>;
-
   showXAxis: boolean;
 
   showYAxis: boolean;
@@ -1675,6 +1689,18 @@ export interface IDensityPlotSettings {
   xMax: number;
 
   yMax: number;
+
+  showColorScale: boolean;
+
+  invertColorScheme: boolean;
+
+  colorTransformType: keyof typeof AxisType;
+
+  linearColorScheme: Array<number>;
+
+  autoLayout: boolean;
+
+  axisFont: string;
 
   bins: number;
 
@@ -1918,22 +1944,6 @@ export interface IHistogramSettings {
 
   valueMax: number;
 
-  /// A categorical column to split data on (each bar represents a category)
-  split: string;
-  splitColumnName: string;
-
-  /// Whether the values should be normalized when multiple histograms are shown.
-  /// If true, you are comparing distributions; if false, you are comparing absolute values.
-  /// Requires *Split Column Name* to be set.
-  normalizeValues: boolean;
-
-  /// If true, split are shown as stacked bins
-  splitStack: boolean;
-
-  /// Spline tension in case multiple histograms are shown.
-  /// Requires *Split Column Name* to be set.
-  splineTension: number;
-
   showYAxis: boolean;
 
   /// Scale of the vertical (bin count) axis. On the logarithmic scale,
@@ -1952,6 +1962,33 @@ export interface IHistogramSettings {
   /// that are clipped by the vertical axis range.
   showClippedBinIndicators: boolean;
 
+  /// Numerical column to be used for color-coding.
+  /// The values in the bin get aggregated using the *Color Aggr Type* property.
+  color: string;
+  colorColumnName: string;
+
+  colorAggrType: string;
+
+  invertColorScheme: boolean;
+
+  linearColorScheme: Array<number>;
+
+  /// A categorical column to split data on (each bar represents a category)
+  split: string;
+  splitColumnName: string;
+
+  /// Whether the values should be normalized when multiple histograms are shown.
+  /// If true, you are comparing distributions; if false, you are comparing absolute values.
+  /// Requires *Split Column Name* to be set.
+  normalizeValues: boolean;
+
+  /// If true, split are shown as stacked bins
+  splitStack: boolean;
+
+  /// Spline tension in case multiple histograms are shown.
+  /// Requires *Split Column Name* to be set.
+  splineTension: number;
+
   /// Whether the horizontal axis should be zoomed to the range of the visible bins.
   zoomToRange: boolean;
 
@@ -1964,17 +2001,6 @@ export interface IHistogramSettings {
   /// Whether markers should be drown when multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   showMarkers: boolean;
-
-  /// Numerical column to be used for color-coding.
-  /// The values in the bin get aggregated using the *Color Aggr Type* property.
-  color: string;
-  colorColumnName: string;
-
-  colorAggrType: string;
-
-  invertColorScheme: boolean;
-
-  linearColorScheme: Array<number>;
 
   /// Indicates current row as a dot on the horizontal axis
   showCurrentRow: boolean;
@@ -2210,6 +2236,14 @@ export interface ILineChartSettings {
 
   splineTension: number;
 
+  markersSize: string;
+  markersSizeColumnName: string;
+
+  markersSizeAggrType: string;
+
+  /// Linear or logarithmic scale for the marker *Size* column.
+  markerSizeScaling: keyof typeof AxisType;
+
   /// A categorical column that determines the shape of the markers.
   markers: string;
   markersColumnName: string;
@@ -2226,28 +2260,14 @@ export interface ILineChartSettings {
   /// A boolean column that determines whether to show markers.
   showMarkers: keyof typeof VisibilityMode;
 
-  markersSize: string;
-  markersSizeColumnName: string;
-
-  markersSizeAggrType: string;
-
-  /// Linear or logarithmic scale for the marker *Size* column.
-  markerSizeScaling: keyof typeof AxisType;
-
   markersVisibility: string;
   markersVisibilityColumnName: string;
 
-  /// Show vertical line reflecting the position of the current row
-  /// See also *Current Line Color*
-  showCurrentRowLine: boolean;
+  lineWidth: number;
 
-  /// Determines whether the line is highlighted when you hover over the corresponding category.
-  /// Example: "Split by" = "SEX" and you hover over the "Male" category in the filter.
-  showMouseOverCategory: boolean;
+  lineTransparency: number;
 
-  /// When checked, selected points and line segments are highlighted using the selected rows color.
-  /// When unchecked, they keep their regular color coding.
-  showSelectedRows: boolean;
+  lineColoringType: string;
 
   overviewAggrType: string;
 
@@ -2295,6 +2315,18 @@ export interface ILineChartSettings {
   /// With 1 standard deviation, greater variation would be expected.
   showSuppressedVariation: boolean;
 
+  /// Show vertical line reflecting the position of the current row
+  /// See also *Current Line Color*
+  showCurrentRowLine: boolean;
+
+  /// Determines whether the line is highlighted when you hover over the corresponding category.
+  /// Example: "Split by" = "SEX" and you hover over the "Male" category in the filter.
+  showMouseOverCategory: boolean;
+
+  /// When checked, selected points and line segments are highlighted using the selected rows color.
+  /// When unchecked, they keep their regular color coding.
+  showSelectedRows: boolean;
+
   /// Show vertical line reflecting the position of the mouse-over row
   /// See also *Mouse Over Line Color*
   showMouseOverRowLine: boolean;
@@ -2320,11 +2352,7 @@ export interface ILineChartSettings {
 
   segmentsFont: string;
 
-  lineWidth: number;
-
   whiskerWidth: number;
-
-  lineTransparency: number;
 
   /// Height of the overview chart
   overviewHeight: number;
@@ -2339,8 +2367,6 @@ export interface ILineChartSettings {
   xAxisHeight: number;
 
   chartTypes: Array<string>;
-
-  lineColoringType: string;
 
   lineColor: number;
 
@@ -2956,6 +2982,12 @@ export interface IPcPlotSettings {
   /// Should be a subset of *Column Names*.
   logColumnsColumnNames: Array<string>;
 
+  /// Determines the way a value is mapped to the vertical scale.
+  /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
+  /// FALSE: uses the same scale. This lets you compare values across columns
+  /// if units are the same (for instance, use it for tracking change over time).'
+  normalizeEachColumn: boolean;
+
   color: string;
   colorColumnName: string;
 
@@ -2972,11 +3004,25 @@ export interface IPcPlotSettings {
 
   colorMax: number;
 
-  /// Determines the way a value is mapped to the vertical scale.
-  /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
-  /// FALSE: uses the same scale. This lets you compare values across columns
-  /// if units are the same (for instance, use it for tracking change over time).'
-  normalizeEachColumn: boolean;
+  densityStyle: string;
+
+  showInterquartileRange: boolean;
+
+  showUpperDash: boolean;
+
+  showLowerDash: boolean;
+
+  showMeanCross: boolean;
+
+  showMedian: boolean;
+
+  showCircles: boolean;
+
+  whiskerLineWidth: number;
+
+  interquartileLineWidth: number;
+
+  bins: number;
 
   showCurrentLine: boolean;
 
@@ -3042,26 +3088,6 @@ export interface IPcPlotSettings {
   maxCategories: number;
 
   horzMargin: number;
-
-  densityStyle: string;
-
-  showInterquartileRange: boolean;
-
-  showUpperDash: boolean;
-
-  showLowerDash: boolean;
-
-  showMeanCross: boolean;
-
-  showMedian: boolean;
-
-  showCircles: boolean;
-
-  whiskerLineWidth: number;
-
-  interquartileLineWidth: number;
-
-  bins: number;
 
   legendVisibility: keyof typeof VisibilityMode;
 
@@ -3254,6 +3280,12 @@ export interface IPivotViewerSettings {
   /// Filters dataframe based on current row. works only if rowSource is set to All. See also "rowSource".
   filteringEnabled: boolean;
 
+  /// Joined tables, as serialized [TableJoin]s. See also [joinFields].
+  joins: Array<string>;
+
+  /// Table-qualified names of the columns selected in the Data and Join rows.
+  joinFields: Array<string>;
+
   gridLook: any;
 
   allowViewers: boolean;
@@ -3345,14 +3377,14 @@ export interface IPointsViewerSettings {
 }
 
 export interface IRocCurveSettings {
-  /// Columns to be put on the X axis
-  predictionColumnNames: Array<string>;
-
-  /// Column to be put on the Y axis
+  /// Column with the actual class
   targetColumn: string;
 
   /// Positive class name
   positiveClass: string;
+
+  /// Columns with the predicted scores
+  predictionColumnNames: Array<string>;
 
   /// Select to draw thresholds
   showThreshold: boolean;
@@ -3403,14 +3435,33 @@ export interface IRocCurveSettings {
 }
 
 export interface IScatterPlot3dSettings {
+  showFilteredOutPoints: boolean;
+
   x: string;
   xColumnName: string;
+
+  xAxisType: keyof typeof AxisType;
+
+  showXSelector: boolean;
 
   y: string;
   yColumnName: string;
 
+  yAxisType: keyof typeof AxisType;
+
+  showYSelector: boolean;
+
   z: string;
   zColumnName: string;
+
+  zAxisType: keyof typeof AxisType;
+
+  showZSelector: boolean;
+
+  color: string;
+  colorColumnName: string;
+
+  showColorSelector: boolean;
 
   size: string;
   sizeColumnName: string;
@@ -3418,27 +3469,35 @@ export interface IScatterPlot3dSettings {
   /// Linear or logarithmic scale for the *Size* column.
   markerSizeScaling: keyof typeof AxisType;
 
-  color: string;
-  colorColumnName: string;
+  linearColorScheme: Array<number>;
+
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
+  categoricalColorScheme: Array<number>;
+
+  markerType: string;
+
+  markerOpacity: number;
+
+  markerRandomRotation: boolean;
 
   label: string;
   labelColumnName: string;
 
-  showXSelector: boolean;
+  /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
+  /// the mouse is currently hovering over).
+  showMouseOverRowGroup: boolean;
 
-  showYSelector: boolean;
-
-  showZSelector: boolean;
-
-  showColorSelector: boolean;
+  /// When checked, selected markers are highlighted using the selected rows color.
+  /// When unchecked, selected markers use their regular color coding.
+  showSelectedRows: boolean;
 
   showAxes: boolean;
 
-  xAxisType: keyof typeof AxisType;
+  showVerticalGridLines: boolean;
 
-  yAxisType: keyof typeof AxisType;
+  showHorizontalGridLines: boolean;
 
-  zAxisType: keyof typeof AxisType;
+  dynamicCameraMovement: boolean;
 
   backColor: number;
 
@@ -3455,33 +3514,6 @@ export interface IScatterPlot3dSettings {
   axisTextColor: number;
 
   gridLineColor: number;
-
-  linearColorScheme: Array<number>;
-
-  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
-  categoricalColorScheme: Array<number>;
-
-  dynamicCameraMovement: boolean;
-
-  showVerticalGridLines: boolean;
-
-  showHorizontalGridLines: boolean;
-
-  showFilteredOutPoints: boolean;
-
-  /// Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that
-  /// the mouse is currently hovering over).
-  showMouseOverRowGroup: boolean;
-
-  /// When checked, selected markers are highlighted using the selected rows color.
-  /// When unchecked, selected markers use their regular color coding.
-  showSelectedRows: boolean;
-
-  markerType: string;
-
-  markerOpacity: number;
-
-  markerRandomRotation: boolean;
 
   axisFont: string;
 
@@ -3857,10 +3889,6 @@ export interface ITrellisPlotSettings {
   //if false, full screen icon will not be shown on inner viewer hover
   allowViewerFullScreen: boolean;
 
-  yLabelsOrientation: keyof typeof TextOrientation;
-
-  xLabelsOrientation: keyof typeof TextOrientation;
-
   categoryLabelFont: string;
 
   innerViewerLook: any;
@@ -3869,27 +3897,31 @@ export interface ITrellisPlotSettings {
 
   showGridlines: string;
 
-  showXSelectors: boolean;
-
-  showYSelectors: boolean;
-
   /// Shows horizontal axis for each inner viewer row.
   /// Depending on selected inner viewer, axis may be hidden automatically.
   showXAxes: keyof typeof VisibilityMode;
 
+  showXSelectors: boolean;
+
+  showXLabels: boolean;
+
+  xLabelsOrientation: keyof typeof TextOrientation;
+
   /// Shows vertical axis for each inner viewer column.
   /// Depending on selected inner viewer, axis may be hidden automatically.
   showYAxes: keyof typeof VisibilityMode;
+
+  showYSelectors: boolean;
+
+  showYLabels: boolean;
+
+  yLabelsOrientation: keyof typeof TextOrientation;
 
   /// If checked, all inner viewers use the same axis scales.
   globalScale: boolean;
 
   /// Shows range sliders for inner viewer axis. Available only if corresponding axes (X or Y) are shown.
   showRangeSliders: boolean;
-
-  showXLabels: boolean;
-
-  showYLabels: boolean;
 
   showControlPanel: boolean;
 

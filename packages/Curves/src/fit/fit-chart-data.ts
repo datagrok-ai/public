@@ -67,7 +67,7 @@ function mergeLabels(target: IFitChartOptions | undefined, ...sources: (IFitChar
   }
 }
 
-export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOptions {
+export function mergeChartOptions(chartOptions: IFitChartOptions[], series: IFitSeries[] = []): IFitChartOptions {
   if (chartOptions.length === 0)
     return {};
 
@@ -104,6 +104,16 @@ export function mergeChartOptions(chartOptions: IFitChartOptions[]): IFitChartOp
     if (options.allowXZeroes !== null && options.allowXZeroes !== undefined && options.allowXZeroes)
       allowXZeroes = true;
   }
+
+  // a range a cell declares for its own chart is not one for an overlay of many: it would cut off
+  // the curves a wider column contributes, and adding a column could no longer widen the axis
+  for (const s of series)
+    for (const p of s.points) {
+      if (p.x < minX) minX = Number.MAX_VALUE;
+      if (p.x > maxX) maxX = Number.MIN_VALUE;
+      if (p.y < minY) minY = Number.MAX_VALUE;
+      if (p.y > maxY) maxY = Number.MIN_VALUE;
+    }
 
   return {
     minX: minX === Number.MAX_VALUE ? undefined : minX,
@@ -187,11 +197,13 @@ export function sanitizeCellValue(value: string): string {
 
 /** Constructs {@link IFitChartData} for a cell, applying the column and dataframe levels. */
 function getChartData(tableCell: DG.Cell): IFitChartData {
-  const cellValue = sanitizeCellValue(tableCell.value as string);
+  const cellValue = tableCell.value as string;
   const column = tableCell.column;
-  const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
+  let cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
     parseCellValue(cellValue, column) :
-    createDefaultChartData()) : JSON.parse(cellValue ?? '{}') ?? {};
+    createDefaultChartData()) : JSON.parse(sanitizeCellValue(cellValue) ?? '{}') ?? {};
+  if (column?.type === DG.TYPE.STRING && !cellChartData.series?.length)
+    cellChartData = parseCellValue(sanitizeCellValue(cellValue), column);
 
   const columnChartOptions = tableCell.column ? getColumnChartOptions(tableCell.column) : {};
   const dfChartOptions = tableCell.column ? getDataFrameChartOptions(tableCell.dataFrame) : {};
@@ -213,14 +225,36 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
   return cellChartData;
 }
 
+/** Kept apart from [fittedCurves]: a viewer merges a cell's series and applies its own log options. */
+export const viewerFits: DG.LruCache<string, FitCurve> = new DG.LruCache<string, FitCurve>(2000);
+const chartDataIds: WeakMap<IFitChartData, number> = new WeakMap<IFitChartData, number>();
+let nextChartDataId = 0;
+
+/** A parsed cell's identity: re-parsing yields a new object, and so a new id, retiring its fits. */
+export function chartDataId(data: IFitChartData): number {
+  let id = chartDataIds.get(data);
+  if (id === undefined)
+    chartDataIds.set(data, id = ++nextChartDataId);
+  return id;
+}
+
+/** The log options belong here with the cell: the same curve fits differently on a log axis. */
+function cellCurveKey(column: DG.Column, tableCell: DG.Cell, idx: number, logOptions?: LogOptions): string {
+  return `tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || ` +
+    `colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${idx} || ` +
+    `logX: ${logOptions?.logX} || logY: ${logOptions?.logY}`;
+}
+
 /** Returns existing, or fits curve for the specified grid cell and series. */
 export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction<Fit>,
-  chartLogOptions: LogOptions, tableCell?: DG.Cell, useCache = true): FitCurve {
+  chartLogOptions: LogOptions, tableCell?: DG.Cell, useCache = true, identity?: string): FitCurve {
   const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell, useCache);
-  // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
   const column = tableCell?.column;
+  if (identity)
+    return viewerFits.getOrCreate(`${identity} || logX: ${chartLogOptions?.logX} || logY: ${chartLogOptions?.logY}`,
+      () => fitSeries(series, fitFunc, dataPoints, chartLogOptions));
   return (useCache && column && tableCell) ?
-    fittedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${seriesIdx}`, () => {
+    fittedCurves.getOrCreate(cellCurveKey(column, tableCell, seriesIdx, chartLogOptions), () => {
       return fitSeries(series, fitFunc, dataPoints, chartLogOptions);
     }) : fitSeries(series, fitFunc, dataPoints, chartLogOptions);
 }
@@ -230,7 +264,7 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
   userParamsFlag?: boolean, tableCell?: DG.Cell, useCache = true): {x: number[], y: number[]} {
   const column = tableCell?.column;
   return (useCache && column && tableCell) ?
-    curvesDataPoints.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell.rowIndex} || idx: ${idx} || userParamsFlag: ${userParamsFlag}`, () => {
+    curvesDataPoints.getOrCreate(`${cellCurveKey(column, tableCell, idx, logOptions)} || userParamsFlag: ${userParamsFlag}`, () => {
       return getDataPoints(series, logOptions, userParamsFlag);
     }) : getDataPoints(series, logOptions, userParamsFlag);
 }
@@ -238,11 +272,12 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
 /** Reads a level's options, migrating a value stored under the pre-`.%` tag name so that only one of
  * the two ever holds the options. */
 function readChartOptions(tags: any): IFitChartData {
+  // an empty tag parsed to an exception on every cell of the column
   const stored = tags[FitConstants.TAG_FIT];
-  if (stored !== null && stored !== undefined)
+  if (stored)
     return JSON.parse(stored);
   const legacy = tags[FitConstants.TAG_FIT_LEGACY];
-  const migrated = legacy !== null && legacy !== undefined;
+  const migrated = !!legacy;
   tags[FitConstants.TAG_FIT] = migrated ? legacy : JSON.stringify(createDefaultChartData());
   if (migrated)
     delete tags[FitConstants.TAG_FIT_LEGACY];

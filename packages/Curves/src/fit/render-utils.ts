@@ -19,6 +19,8 @@ import {FitFunction, getStatistic, getStatisticProperty} from '@datagrok-librari
 
 /** How often what is drawn reports where it went, which is enough to tell a busy corner from a free one. */
 export const CURVE_SAMPLE_PX_STEP = 8;
+const STATISTICS_FONT = '11px Roboto, "Roboto Local"';
+const STATISTICS_LINE_PX = 15;
 
 /** Where a piece of text ends up, so the legend does not take a corner the plot already writes in. */
 function reportText(drawnAt: DG.Point[] | undefined, g: CanvasRenderingContext2D, text: string,
@@ -186,7 +188,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
         (p.color ? DG.Color.fromHtml(p.color) ? p.color : pointColor : pointColor);
     const marker = p.marker ? p.marker as DG.MARKER_TYPE : series.markerType as DG.MARKER_TYPE;
     const outlierMarker = p.outlierMarker ? p.outlierMarker as DG.MARKER_TYPE : series.outlierMarkerType as DG.MARKER_TYPE;
-    const size = !connectDots ? p.outlier ? FitConstants.OUTLIER_PX_SIZE * ratio : p.size ? p.size : defaultSize : defaultSize;
+    const outlierSize = Math.min(FitConstants.OUTLIER_PX_SIZE * ratio, viewport.screen.height / 10);
+    const size = !connectDots ? p.outlier ? outlierSize : p.size ? p.size : defaultSize : defaultSize;
     const markerToDraw = !connectDots ? p.outlier ? outlierMarker : marker : marker;
 
     DG.Paint.marker(g, markerToDraw, xScreen, yScreen, color, size);
@@ -467,12 +470,13 @@ export function renderLabels(g: CanvasRenderingContext2D, labels: {[key: string]
   if (!labels || !names || names.length === 0)
     return 0;
   const dataBox = renderOptions.dataBox;
+  g.font = STATISTICS_FONT;
   let line = renderOptions.startLine ?? 0;
   for (const name of names) {
     const value = labels[name];
     if (value === undefined || value === null)
       continue;
-    const y = dataBox.y + 20 + 20 * line;
+    const y = dataBox.y + STATISTICS_LINE_PX * (line + 1);
     if (y > dataBox.maxY)
       break;
     g.fillStyle = renderOptions.color;
@@ -497,6 +501,7 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
   const fit = toDataSpace(getSeriesFit(series, fitFunc, dataPoints, renderOptions.logOptions),
     renderOptions.logOptions);
   const color = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
+  g.font = STATISTICS_FONT;
   let line = renderOptions.startLine ?? 0;
   for (const statName of statistics) {
     const value = getStatistic(fit, statName);
@@ -504,7 +509,7 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
     // skip statistics this fit function does not produce instead of rendering NaN
     if (value === undefined || !prop)
       continue;
-    const y = dataBox.y + 20 + 20 * line;
+    const y = dataBox.y + STATISTICS_LINE_PX * (line + 1);
     if (y > dataBox.maxY)
       break;
     g.fillStyle = color;
@@ -533,11 +538,15 @@ export function renderAxesLabels(g: CanvasRenderingContext2D, renderOptions: Fit
     g.font = '11px Roboto, "Roboto Local"';
     g.textAlign = 'center';
     g.fillStyle = 'black';
-    g.fillText(renderOptions.xAxisName!, dataBox.midX - 5, screenBounds.maxY - FitConstants.X_AXIS_LABEL_BOTTOM_PX_MARGIN);
-    g.translate(screenBounds.x, screenBounds.y);
-    g.rotate(-Math.PI / 2);
-    const axesTopPxMargin = renderOptions.showTitle ? FitConstants.AXES_TOP_PX_MARGIN_WITH_TITLE : FitConstants.AXES_TOP_PX_MARGIN;
-    g.fillText(renderOptions.yAxisName!, -(dataBox.height / 2 + axesTopPxMargin + 15), 15);
-    g.restore();
+    if (renderOptions.xAxisName)
+      g.fillText(renderOptions.xAxisName, dataBox.midX, screenBounds.maxY - FitConstants.X_AXIS_LABEL_BOTTOM_PX_MARGIN);
+    if (renderOptions.yAxisName) {
+      g.save();
+      g.translate(screenBounds.x, screenBounds.y);
+      g.rotate(-Math.PI / 2);
+      const axesTopPxMargin = renderOptions.showTitle ? FitConstants.AXES_TOP_PX_MARGIN_WITH_TITLE : FitConstants.AXES_TOP_PX_MARGIN;
+      g.fillText(renderOptions.yAxisName, -(dataBox.height / 2 + axesTopPxMargin), 15);
+      g.restore();
+    }
   }
 }

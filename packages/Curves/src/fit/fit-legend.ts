@@ -41,6 +41,16 @@ const CORNER_FREE_ENOUGH = 2;
  * a cell by a few pixels does not flip the legend between the two. */
 const NAME_STICKY_CROWDING = 12;
 const LEGEND_BACKGROUND = 'rgba(255, 255, 255, 0.75)';
+/** The hover may fill most of the window; a tooltip taller than that is off the screen anyway. */
+const TOOLTIP_HEIGHT_FRACTION = 0.75;
+/** A row of a listed legend is a label; the whole of a name is what hovering that one row is for. */
+const MAX_TOOLTIP_ROW_PX = 400;
+
+/** How many rows the hover lists before it counts the rest instead. */
+export function maxTooltipRows(): number {
+  return Math.max(10, Math.floor(window.innerHeight * TOOLTIP_HEIGHT_FRACTION /
+    FitConstants.LEGEND_RECORD_PX_HEIGHT));
+}
 
 let measureCanvas: CanvasRenderingContext2D | undefined;
 const lastLayout = new WeakMap<IFitChartData, {box: DG.Rect, rows: LegendRow[], moreBox?: DG.Rect,
@@ -211,13 +221,21 @@ function drawGlyph(g: CanvasRenderingContext2D, entry: LegendEntry, x: number, m
 
 /** The legend as a tooltip: the same glyphs and names, for what the plot had no room to say. */
 export function legendTooltipElement(entries: LegendEntry[]): HTMLElement {
-  return ui.divV(entries.map((entry) => {
+  // hovering one row is there to give back the whole of a name the plot shortened, so it is said in
+  // full however long; a list of many is a legend, and a legend's rows are labels
+  const whole = entries.length === 1;
+  const shown = entries.slice(0, maxTooltipRows());
+  const rows = shown.map((entry) => {
     const canvas = ui.canvas(glyphWidth(1), FitConstants.LEGEND_RECORD_PX_HEIGHT);
     drawGlyph(canvas.getContext('2d')!, entry, 0, FitConstants.LEGEND_RECORD_PX_HEIGHT / 2, 1);
-    const row = ui.divH([canvas, ui.divText(entry.text, {style: {color: entry.color}})]);
+    const row = ui.divH([canvas, ui.divText(whole ? entry.text : ellipsize(entry.text, MAX_TOOLTIP_ROW_PX),
+      {style: {color: entry.color}})]);
     row.style.alignItems = 'center';
     return row;
-  }));
+  });
+  if (entries.length > shown.length)
+    rows.push(ui.divText(`+${entries.length - shown.length} more`));
+  return ui.divV(rows);
 }
 
 /** Draws the legend in the corner of the plot, over a backdrop so the curves underneath
