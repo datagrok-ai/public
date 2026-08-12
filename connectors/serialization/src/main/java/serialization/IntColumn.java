@@ -41,6 +41,31 @@ public class IntColumn extends AbstractColumn<Integer> {
     }
 
     @Override
+    public void decode(BufferAccessor buf) {
+        int id = buf.readInt32();
+        switch (id) {
+            case 1: // raw
+                if (buf.readInt8() == ColumnEncoderArchiveType.ARCHIVE_TYPE_ZLIB)
+                    data = ByteData.toInt32List(Zlib.inflate(buf.readUint8List()));
+                else
+                    data = buf.readInt32List();
+                break;
+            case 2: // pattern
+                data = new serialization.codecs.IntSequencePattern(buf).toInt32List();
+                break;
+            case 3: // rle
+                data = serialization.codecs.IntRle.decode(buf);
+                break;
+            case 4: // bitIntList
+                data = serialization.codecs.BitIntList.fromBuffer(buf).toInt32List();
+                break;
+            default:
+                throw new RuntimeException("decoding " + name + ": int encoder " + id + " not found");
+        }
+        length = data.length;
+    }
+
+    @Override
     public void add(Integer value) {
         ensureSpace(1);
         data[length++] = (value != null) ? value : None;

@@ -182,10 +182,21 @@ export class ViewBase extends Widget {
    * own `getFunctions()` here, so callers holding `grok.shell.v` see these functions. */
   getFunctions(): Func[] { return []; }
 
-  /** Handles URL path. Override in subclasses. */
+  /** Handles URL path. Override in subclasses.
+   *
+   * [_urlPath] is the path WITHOUT the query string (see {@link acceptsPath});
+   * the router has already updated the address bar, so read the parameters from
+   * `window.location.search`.
+   *
+   * A handler may route elsewhere — set `grok.shell.v` to another view and the
+   * router leaves it alone (it only falls back to this view when the handler
+   * changed nothing). */
   handlePath(_urlPath: string): void { }
 
   /** Checks if URL path is acceptable. Override in subclasses.
+   *
+   * [_urlPath] is the path WITHOUT the query string: a view claims a URL by its
+   * path, and decides what the parameters mean in {@link handlePath}.
    * @returns {boolean} "true" if path is acceptable, "false" otherwise. */
   acceptsPath(_urlPath: string): boolean { return false; }
 

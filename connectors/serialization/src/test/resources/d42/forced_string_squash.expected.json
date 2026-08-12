@@ -1,0 +1,21 @@
+{
+  "frame": "forced_string_squash",
+  "rowCount": 7,
+  "columns": [
+    {
+      "name": "s",
+      "dgType": "string",
+      "valueEncoding": "string",
+      "encoderId": 2,
+      "values": [
+        "10001",
+        "10002",
+        "10001",
+        "20003",
+        "10002",
+        "30004",
+        "10001"
+      ]
+    }
+  ]
+}

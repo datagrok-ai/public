@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.idea
+upload.keys.json
+tsconfig.json
+.eslintrc.json

@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20602: BREAKING regen — `grok api` codegen v2 for the Northwind demo schema: datetime fields are dayjs, typed expand/transaction surface, lazy db.ts clients
+* Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API
+
 * GROK-19337: Peptides-SAR tutorial: Fixed callouts rendering body text as bold headings (`paragraphs()` now emits a bold title only when one is explicitly passed), removed spurious mid-sentence `<br>` line breaks, and narrowed the action panel (~18% narrower dock ratio)
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
 * Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split

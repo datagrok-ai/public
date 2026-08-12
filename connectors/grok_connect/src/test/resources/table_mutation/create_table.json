@@ -1,0 +1,22 @@
+{
+  "#type": "CreateTable",
+  "name": "create orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "columns": [
+    {"name": "id", "type": "int", "nullable": false},
+    {"name": "big_id", "type": "bigint", "nullable": true},
+    {"name": "note", "type": "string", "nullable": true, "defaultValue": "n/a"},
+    {"name": "qty", "type": "float", "nullable": false, "defaultValue": "0"},
+    {"name": "active", "type": "bool", "nullable": false, "defaultValue": "true"},
+    {"name": "created", "type": "datetime", "nullable": false, "defaultValue": "2026-01-01T00:00:00.000Z"}
+  ],
+  "primaryKey": ["id"],
+  "indexes": [
+    {"name": "ix_orders_created", "columns": ["created"], "unique": false},
+    {"columns": ["big_id"], "unique": true}
+  ],
+  "ifNotExists": false
+}

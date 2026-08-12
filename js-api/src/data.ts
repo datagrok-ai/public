@@ -2,7 +2,7 @@ import {Column, DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
-import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder, Property} from "./entities";
+import {ColumnInfo, DataConnection, DdlBuilder, TableInfo, TableQueryBuilder, TableMutationBuilder, MutationResult, Property} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 import { Grid } from "./grid";
 import {Tags} from "./api/ddt.api.g";
@@ -121,6 +121,30 @@ export class Db {
     return TableQueryBuilder.from(tableName, connectionId);
   }
 
+  /** Returns a {@link DbTable} for structured writes (insert/upsert/update/delete)
+   * against [tableName] on the [connectionId] connection.
+   * @param connectionId - fully-qualified connection name (see [nqName])
+   * @param tableName - database table name (optionally schema-qualified, e.g. `public.orders`) */
+  table(connectionId: string, tableName: string): DbTable {
+    return new DbTable(connectionId, tableName);
+  }
+
+  /** Creates a {@link TableMutationBuilder} for fluent `UPDATE`/`DELETE` composition.
+   * @param connectionId - fully-qualified connection name (see [nqName])
+   * @param tableName - database table name */
+  buildMutation(connectionId: string, tableName: string): TableMutationBuilder {
+    return TableMutationBuilder.from(tableName, connectionId);
+  }
+
+  /** Creates a {@link DdlBuilder} for structured DDL (create/alter/drop tables, indexes,
+   * keys) against the [connectionId] connection. Every operation supports `dryRun()`
+   * (the exact SQL plus live-data destructive pre-checks) and the
+   * `confirmDestructive` execution contract — see {@link DdlCommand}.
+   * @param connectionId - fully-qualified connection name (see [nqName]) */
+  ddl(connectionId: string): DdlBuilder {
+    return new DdlBuilder(connectionId);
+  }
+
   /** Returns database catalog (e.g. database) information for the given connection.
    * If {@link catalog} is specified, returns only the matching catalog.
    * For databases that don't support catalogs (e.g., MySQL, Oracle),
@@ -128,6 +152,152 @@ export class Db {
    * or '<unknown database name>' if not set. */
   async getInfo(connection: DataConnection, catalog: string | null = null): Promise<DbInfo[]> {
     return grok.dapi.connections.getDatabaseInfo(connection, catalog);
+  }
+}
+
+/**
+ * Structured write access to one database table, obtained via {@link Db.table}.
+ * All operations return a {@link MutationResult}; the matching fine-grained saved-connection
+ * privilege (`DataConnection.AddRows` for insert, `ChangeValues` for update, `RemoveRows` for
+ * delete, `AddRows`+`ChangeValues` for upsert) and per-provider write capability are enforced
+ * server-side (unsupported operations reject with a structured capability error, never a 500).
+ * An operation that fails as a whole (rolled back, nothing applied) REJECTS the returned
+ * promise with the SQL error; per-row errors under `allOrNothing: false` resolve with
+ * `errors`/`errorCount` in the {@link MutationResult}.
+ * Values are always sent as bound parameters — never interpolated SQL.
+ *
+ * `where` conditions (`update`/`delete`) are **equality by value**, plus string
+ * patterns for text columns (e.g. `contains foo`). Numeric/date range grammar (`> 5`,
+ * `10-20`) in `where` is phase B.
+ */
+export class DbTable {
+  constructor(public readonly connectionId: string, public readonly tableName: string) {}
+
+  /** Inserts rows from a DataFrame (bulk) or an array of row objects. An `object[]` is
+   * converted to a typed DataFrame at the API boundary: each column's type is inferred by
+   * scanning **all** of its values, `Date`/`dayjs` values become a real datetime column, and
+   * nulls are preserved (a genuine null lands as SQL NULL). A mixed or all-null column throws. */
+  insert(rows: DataFrame | object[],
+    options: {allOrNothing?: boolean, errorOnDuplicate?: boolean} = {}): Promise<MutationResult> {
+    return this._insert(rows, options, false);
+  }
+
+  /** Inserts or updates rows, matching existing rows on `options.keys`. An `object[]` is
+   * typed the same way as {@link insert}. */
+  upsert(rows: DataFrame | object[],
+    options: {keys: string[], allOrNothing?: boolean}): Promise<MutationResult> {
+    if (options?.keys == null || options.keys.length === 0)
+      throw new Error('upsert requires options.keys (the match-key columns)');
+    return this._insert(rows, options, true);
+  }
+
+  /** Updates the columns in `spec.set` on the rows matching `spec.where`. `where` is equality
+   * by value (string values may use string patterns, e.g. `contains foo`); numeric/date range
+   * grammar is phase B. */
+  async update(spec: {set: Record<string, any>, where: Record<string, any>}): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_Update(this.connectionId, this.tableName,
+      JSON.stringify(spec.set ?? {}), JSON.stringify(spec.where ?? {})));
+  }
+
+  /** Deletes the rows matching `spec.where` (same `where` semantics as {@link update}).
+   * An empty `where` requires `allowFullTable: true`. */
+  async delete(spec: {where: Record<string, any>, allowFullTable?: boolean}): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_Delete(this.connectionId, this.tableName,
+      JSON.stringify(spec.where ?? {}), spec.allowFullTable ?? false));
+  }
+
+  /** Creates the table from the DataFrame's own schema and bulk-loads [df] into it, in
+   * one operation (v1 mode is implicitly `create`; a future `replace` extends the options).
+   * The table must not already exist. Columns map dg type → native type (all nullable, no
+   * keys or indexes — for keys, run `grok.data.db.ddl(...).createTable(...)` first, then a
+   * plain {@link insert}). Requires provider DDL+write support (Postgres, MySQL/MariaDB,
+   * MSSQL, Oracle) and the `DataConnection.CreateTable` privilege. A failed load REJECTS
+   * the returned promise; on providers without transactional DDL (MySQL, Oracle) the CREATE
+   * commits first, so a failed load leaves an empty table — the leftover note rides in the
+   * rejection message, and the result's `plan.transactionalDdl` says which contract applies.
+   *
+   * With `dryRun: true`, nothing executes: the result's `plan.statements` carries the exact
+   * `CREATE TABLE` SQL derived from the DataFrame. */
+  async uploadAs(df: DataFrame, options: {dryRun?: boolean} = {}): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_UploadAs(this.connectionId, this.tableName,
+      df.dart, JSON.stringify(options ?? {})));
+  }
+
+  private async _insert(rows: DataFrame | object[], options: any, upsert: boolean): Promise<MutationResult> {
+    let df: DataFrame;
+    if (rows instanceof DataFrame)
+      df = rows;
+    else if (Array.isArray(rows))
+      df = DbTable.toTypedDataFrame(rows);
+    else
+      throw new Error('rows must be a DataFrame or an array of row objects');
+    const optionsJson = JSON.stringify(options ?? {});
+    const res: string = upsert
+      ? await api.grok_DbTable_Upsert(this.connectionId, this.tableName, df.dart, optionsJson)
+      : await api.grok_DbTable_Insert(this.connectionId, this.tableName, df.dart, optionsJson);
+    return JSON.parse(res);
+  }
+
+  /** Builds a null-preserving, typed {@link DataFrame} from an array of row objects.
+   *
+   * Columns are the union of all row keys, in first-seen order. Each column's type is
+   * resolved by scanning **all** of its non-null values:
+   * - `boolean` → bool;
+   * - `Date` or `dayjs` → datetime (detected on the live value, before any serialization, so
+   *   dates round-trip as a real datetime column rather than a stringified one);
+   * - numbers → int, widened to double if any value is fractional or outside the int32 range
+   *   (so large or fractional magnitudes like `1e21` become a float column). An exact integer
+   *   beyond 2^53 can't be represented as a JS number — pass a DataFrame with a bigint or
+   *   string column if you need one;
+   * - anything else → string.
+   *
+   * A column that is entirely null, or that mixes incompatible types, throws a clear error
+   * naming the column. Nulls are preserved via {@link Column.fromList} — unlike
+   * `DataFrame.fromObjects`, which coerces a null to the empty string. */
+  private static toTypedDataFrame(rows: object[]): DataFrame {
+    const INT32_MIN = -2147483648, INT32_MAX = 2147483647;
+    // dayjs values carry a stable `$isDayjsObject` marker (what `dayjs.isDayjs` checks);
+    // duck-type it so js-api needn't import dayjs here. Both Date and dayjs expose a
+    // `valueOf()` returning epoch ms, which `Column.fromList`'s datetime branch consumes.
+    const isDateLike = (v: any) => v instanceof Date || v.$isDayjsObject === true;
+    const columns: string[] = [];
+    for (const row of rows)
+      for (const k of Object.keys(row as any))
+        if (!columns.includes(k)) columns.push(k);
+
+    const cols: Column[] = [];
+    for (const name of columns) {
+      const values = rows.map((row) => {
+        const v = (row as any)[name];
+        return v === undefined ? null : v;
+      });
+      let hasBool = false, hasDate = false, hasNumber = false, hasString = false;
+      let widen = false, sawValue = false;
+      for (const v of values) {
+        if (v === null) continue;
+        sawValue = true;
+        if (typeof v === 'boolean') hasBool = true;
+        else if (isDateLike(v)) hasDate = true;
+        else if (typeof v === 'number') {
+          hasNumber = true;
+          if (!Number.isInteger(v) || v < INT32_MIN || v > INT32_MAX) widen = true;
+        }
+        else hasString = true;
+      }
+      if (!sawValue)
+        throw new Error(`Column "${name}": every value is null, so its type cannot be inferred. ` +
+          `Pass a DataFrame with typed columns, or include at least one non-null value.`);
+      const kinds = (hasBool ? 1 : 0) + (hasDate ? 1 : 0) + (hasNumber ? 1 : 0) + (hasString ? 1 : 0);
+      if (kinds > 1)
+        throw new Error(`Column "${name}": mixed value types. Every value in a column must share one type ` +
+          `(bool, number, Date/dayjs, or string). Pass a DataFrame with typed columns to control the mapping.`);
+      const type = hasBool ? TYPE.BOOL
+        : hasDate ? TYPE.DATE_TIME
+        : hasNumber ? (widen ? TYPE.FLOAT : TYPE.INT)
+        : TYPE.STRING;
+      cols.push(Column.fromList(type as any, name, values));
+    }
+    return DataFrame.fromColumns(cols);
   }
 }
 

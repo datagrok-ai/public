@@ -1,0 +1,103 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "grit",
+  "version": "2.0.0",
+  "extensible": {"tables": true},
+  "tables": {
+    "project": {
+      "securityMode": "table",
+      "businessKey": ["key"],
+      "friendlyName": "Projects",
+      "columns": {
+        "key": {"type": "string", "required": true, "unique": true, "description": "Short prefix for issue numbers, e.g. GRIT"},
+        "name": {"type": "string", "required": true},
+        "description": {"type": "string"}
+      }
+    },
+    "status": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Statuses",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "description": {"type": "string"}
+      }
+    },
+    "priority": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Priorities",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "description": {"type": "string"},
+        "priority": {"type": "int", "description": "Urgency rank; higher is more urgent"}
+      }
+    },
+    "issue_type": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Issue Types",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "description": {"type": "string"}
+      }
+    },
+    "issue": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "extensible": true,
+      "businessKey": ["project_id", "number"],
+      "friendlyName": "Issues",
+      "columns": {
+        "project_id": {"type": "ref", "ref": "project", "onDelete": "restrict", "required": true},
+        "number": {"type": "int", "required": true, "min": 1, "description": "Per-project issue number; assigned by the app"},
+        "title": {"type": "string", "required": true, "isName": true},
+        "description": {"type": "string"},
+        "status_id": {"type": "ref", "ref": "status", "onDelete": "restrict", "friendlyName": "Status"},
+        "priority_id": {"type": "ref", "ref": "priority", "onDelete": "restrict", "friendlyName": "Priority"},
+        "type_id": {"type": "ref", "ref": "issue_type", "onDelete": "setnull", "friendlyName": "Type"},
+        "reporter": {"type": "user"},
+        "assignee": {"type": "user", "onDelete": "setnull"}
+      },
+      "relations": {
+        "labels": {"via": "issue_label", "target": "label"}
+      },
+      "filters": [
+        {"column": "status_id.name", "label": "Status"},
+        {"column": "priority_id.name", "label": "Priority"},
+        {"column": "type_id.name", "label": "Type"},
+        {"column": "labels.id", "label": "Labels"},
+        {"column": "assignee"},
+        {"column": "project_id.name", "label": "Project"}
+      ]
+    },
+    "comment": {
+      "securityMode": "master",
+      "delegate": "issue_id",
+      "friendlyName": "Comments",
+      "columns": {
+        "issue_id": {"type": "ref", "ref": "issue", "onDelete": "cascade", "required": true},
+        "text": {"type": "string", "required": true}
+      }
+    },
+    "label": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Labels",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true},
+        "color": {"type": "string"}
+      }
+    },
+    "issue_label": {
+      "securityMode": "master",
+      "delegate": "issue_id",
+      "businessKey": ["issue_id", "label_id"],
+      "audit": false,
+      "columns": {
+        "issue_id": {"type": "ref", "ref": "issue", "onDelete": "cascade", "required": true},
+        "label_id": {"type": "ref", "ref": "label", "onDelete": "cascade", "required": true}
+      }
+    }
+  }
+}

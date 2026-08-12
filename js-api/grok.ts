@@ -35,4 +35,9 @@ export * from './src/chem';
 export * from './src/ml';
 export * from './src/decorators/functions';
 
+/** Generated REST client — currently type-only: all generated functions belonged to the
+ * domains namespace, removed at typed-surface parity (use grok.dapi.domains).
+ * {@link dapi2Init} remains for future generated routers. */
+export {dapi2, init as dapi2Init} from './src/dapi.g';
+
 export const log = Logger.getStatic();

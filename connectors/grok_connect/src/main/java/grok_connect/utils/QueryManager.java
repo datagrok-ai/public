@@ -9,11 +9,14 @@ import java.util.regex.Pattern;
 
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.handlers.QueryHandler;
 import grok_connect.log.EventType;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.TableMutation;
 import grok_connect.table_query.TableQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +45,14 @@ public class QueryManager {
     private int columnCount;
     private boolean isFinished = false;
     private boolean supportsFetchSize = true;
+    private boolean committed;
 
     public QueryManager(String message) {
         LOGGER.debug("Deserializing json call and preprocessing it...");
         query = GrokConnect.gson.fromJson(message, FuncCall.class);
+        // mutations must never enter the query/dryRun path (dryRun executes twice and commits)
+        if (query.func instanceof TableMutation)
+            throw new MutationValidationException("Table mutations are not allowed on the query socket; use POST /mutate");
         query.setParamValues();
         query.afterDeserialization();
         isDebug = query.debugQuery;
@@ -70,6 +77,7 @@ public class QueryManager {
     }
 
     public void initResultSet(FuncCall query) throws GrokConnectException, QueryCancelledByUser, SQLException {
+        committed = false; // dryRun re-inits the SAME instance: a stale flag would skip the real run's commit
         LOGGER.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to {} database...", provider.descriptor.type);
         connection = provider.getConnection(query.func.connection);
         LOGGER.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Received connection to {} database", provider.descriptor.type);
@@ -95,7 +103,7 @@ public class QueryManager {
         provider.getResultSetSubDf(query, resultSet, provider.getResultSetManager(), -1, columnCount,
                 1, true);
         MDC.remove(QueryHandler.CALL_ID_HEADER);
-        close();
+        close(true);
         MDC.put(QueryHandler.CALL_ID_HEADER, sessionId);
     }
 
@@ -125,13 +133,26 @@ public class QueryManager {
         return df;
     }
 
-    public void close() throws SQLException {
+    /** Commits once, right before the COMPLETED token is sent (WS frames are FIFO, so this
+     *  happens-before Datlas resolving the caller's future); close(true) is a no-op afterwards. */
+    public void commitPending() throws SQLException {
+        if (connection != null && !connection.isClosed() && !connection.getAutoCommit() && !committed) {
+            connection.commit();
+            committed = true;
+        }
+    }
+
+    public void close(boolean commit) throws SQLException {
         if (resultSet != null && !resultSet.isClosed())
             resultSet.close();
         if (connection != null && !connection.isClosed()) {
             LOGGER.debug("Closing DB connection...");
-            if (!connection.getAutoCommit())
-                connection.commit();
+            if (!committed && !connection.getAutoCommit()) {
+                if (commit)
+                    connection.commit();
+                else
+                    provider.rollbackQuietly(connection); // failed rollback evicts — never pool a dirty connection
+            }
             QueryMonitor.getInstance().removeResultSet(query.id);
             connection.close();
             LOGGER.debug("Closed DB connection");
@@ -145,6 +166,12 @@ public class QueryManager {
 
     public FuncCall getQuery() {
         return query;
+    }
+
+    /** True when the §6.2 post-hoc detector flagged this call (an update count was observed on a
+     *  no-result-set statement while allowRawWrites auditing was requested — WO-B13). */
+    public boolean isRawWriteDetected() {
+        return Boolean.TRUE.equals(query.aux.get(DataProvider.RAW_WRITE_DETECTED));
     }
 
     private void changeFetchSize(DataFrame df) {

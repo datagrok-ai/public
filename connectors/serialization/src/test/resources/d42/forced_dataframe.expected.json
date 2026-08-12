@@ -1,0 +1,29 @@
+{
+  "frame": "forced_dataframe",
+  "rowCount": 3,
+  "columns": [
+    {
+      "name": "df",
+      "dgType": "dataframe",
+      "valueEncoding": "dataframe",
+      "encoderId": 1,
+      "values": [
+        {
+          "rowCount": 3,
+          "cols": [
+            "i",
+            "s"
+          ]
+        },
+        null,
+        {
+          "rowCount": 1,
+          "cols": [
+            "i",
+            "s"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "frame": "forced_qnum",
+  "rowCount": 6,
+  "columns": [
+    {
+      "name": "q",
+      "dgType": "qnum",
+      "valueEncoding": "qnum",
+      "encoderId": 1,
+      "values": [
+        "4014000000000001",
+        "4024000000000002",
+        "400c000000000003",
+        null,
+        "4045000000000002",
+        "c01d000000000002"
+      ]
+    }
+  ]
+}

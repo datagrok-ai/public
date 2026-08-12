@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DataQuery;
@@ -22,8 +23,28 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.log.EventType;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.AddKey;
+import grok_connect.table_mutation.AlterTable;
+import grok_connect.table_mutation.BatchInsertBulkLoader;
+import grok_connect.table_mutation.BulkLoader;
+import grok_connect.table_mutation.ColumnSpec;
+import grok_connect.table_mutation.CreateIndex;
+import grok_connect.table_mutation.CreateTable;
+import grok_connect.table_mutation.DeleteRows;
+import grok_connect.table_mutation.DropIndex;
+import grok_connect.table_mutation.DropTable;
+import grok_connect.table_mutation.IndexSpec;
+import grok_connect.table_mutation.InsertRows;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.TableMutation;
+import grok_connect.table_mutation.TruncateTable;
+import grok_connect.table_mutation.UpdateRows;
+import grok_connect.table_mutation.UpsertRows;
 import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.FieldPredicate;
 import grok_connect.table_query.GroupAggregation;
+import grok_connect.table_query.PredicateCompiler;
+import grok_connect.table_query.SqlNames;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
 import org.apache.commons.lang.NotImplementedException;
@@ -35,6 +56,7 @@ import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
     public static Pattern UUID_REGEX = Pattern.compile("^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$");
+    private static final Gson REFUSAL_GSON = new Gson();
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
@@ -197,8 +219,9 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public ResultSet executeQuery(String query, FuncCall queryRun,
                                   Connection connection, int timeout, int fetchSize) throws SQLException {
+        if (isReadOnly(queryRun))
+            checkReadOnlyStatement(query);
         DataQuery dataQuery = queryRun.func;
-        String mainCallId = (String) queryRun.aux.get("mainCallId");
 
         ResultSet resultSet;
         if (dataQuery.inputParamsCount() > 0) {
@@ -256,32 +279,99 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                 }
                 logger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
-                resultSet = executeStatement(statement, timeout, mainCallId, fetchSize);
+                resultSet = executeStatement(statement, queryRun, timeout, fetchSize);
             } else {
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating manually SQL query parameters...");
                 query = manualQueryInterpolation(query, dataQuery);
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters");
                 logger.info("Query before execution: {}", query);
-                resultSet = executeStatement(connection.prepareStatement(query), timeout, mainCallId, fetchSize);
+                resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
             }
         } else {
             logger.info("Query before execution: {}", query);
-            resultSet = executeStatement(connection.prepareStatement(query), timeout, mainCallId, fetchSize);
+            resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
         }
+
+        // Census completeness (WO-B13 follow-up): result-set-returning writes (INSERT ... RETURNING,
+        // row-returning procedures) never hit the no-result-set detector in executeStatement — reuse
+        // the classifier so they are still counted while allowRawWrites is ON.
+        if (resultSet != null && optionEnabled(queryRun, DataProvider.AUDIT_RAW_WRITES)
+                && !StatementClassifier.isRead(query, descriptor.commentStart))
+            queryRun.aux.put(DataProvider.RAW_WRITE_DETECTED, true);
 
         return resultSet;
     }
 
-    private ResultSet executeStatement(PreparedStatement statement, int timeout, String mainCallId,
+    private ResultSet executeStatement(PreparedStatement statement, FuncCall queryRun, int timeout,
                                        int fetchSize) throws SQLException {
+        String mainCallId = (String) queryRun.aux.get("mainCallId");
         queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
         logger.debug(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing Statement...");
         statement.setFetchSize(fetchSize);
         ResultSet resultSet = executeStatement(statement);
+        // §6.2 deprecation-window telemetry (WO-B13): while allowRawWrites is ON, Datlas asks for
+        // post-hoc detection — a statement that completed without a result set but with an update
+        // count wrote data (or ran DDL); recorded on the call for the Datlas audit event.
+        if (resultSet == null && optionEnabled(queryRun, DataProvider.AUDIT_RAW_WRITES)) {
+            try {
+                if (statement.getUpdateCount() != -1)
+                    queryRun.aux.put(DataProvider.RAW_WRITE_DETECTED, true);
+            } catch (SQLException e) {
+                logger.debug("getUpdateCount is not supported for {}", descriptor.type);
+            }
+        }
         logger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Executed Statement");
         queryMonitor.removeStatement(mainCallId);
         return resultSet;
+    }
+
+    /** True when Datlas requested the §6.2 read-only query policy for this call (allowRawWrites
+     *  off and the caller holds no fine write privilege on the connection). */
+    protected static boolean isReadOnly(FuncCall queryRun) {
+        return optionEnabled(queryRun, DataProvider.READ_ONLY);
+    }
+
+    private static boolean optionEnabled(FuncCall queryRun, String key) {
+        Object value = queryRun == null || queryRun.options == null ? null : queryRun.options.get(key);
+        return Boolean.TRUE.equals(value) || "true".equals(value);
+    }
+
+    /**
+     * Refuses a statement that does not classify as a read (WO-B13, §6.2): a conservative
+     * read-whitelist on the first keyword; batch mode passes every statement here separately.
+     * The refusal is a structured JSON error ({@code {error: 'read-only', message}}) carried in
+     * the SQLException message, so it survives both the /query and the streaming error channels
+     * intact. The driver read-only session ({@link #applyReadOnlySession}) backstops whatever
+     * the classifier lets through (e.g. writes hidden inside CTEs).
+     */
+    protected void checkReadOnlyStatement(String query) throws SQLException {
+        if (StatementClassifier.isRead(query, descriptor.commentStart))
+            return;
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "read-only");
+        error.put("message", "This connection is read-only for the caller: the statement does not classify as a read, "
+                + "the deployment's allowRawWrites flag is off, and the caller holds none of the fine write privileges "
+                + "(DataConnection.AddRows/ChangeValues/RemoveRows/TruncateTable). "
+                + "Use structured table mutations, or ask the connection owner to grant a write privilege.");
+        throw new SQLException(REFUSAL_GSON.toJson(error));
+    }
+
+    /**
+     * Best-effort driver read-only session for the §6.2 policy, applied before any statement of a
+     * read-only call executes. The default asks the driver via {@link Connection#setReadOnly};
+     * whether that actually rejects writes is declared per provider in
+     * {@code DataSource.readOnlySessionEnforced} (advisory otherwise — the statement classifier
+     * remains the only guard). Never throws: a driver that rejects setReadOnly degrades to
+     * advisory with a warning. HikariCP resets the readOnly flag when the connection returns to
+     * the pool, so later borrowers (e.g. sanctioned mutations) are unaffected.
+     */
+    public void applyReadOnlySession(Connection connection) {
+        try {
+            connection.setReadOnly(true);
+        } catch (SQLException e) {
+            logger.warn("setReadOnly is not supported for {} - read-only enforcement is advisory", descriptor.type, e);
+        }
     }
 
     protected ResultSet executeStatement(PreparedStatement statement) throws SQLException {
@@ -296,7 +386,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         if (funcParam.value == null) {
             statement.setNull(parameterIndex, java.sql.Types.TIMESTAMP);
             return;
@@ -386,7 +476,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         statement.setString(n, value);
     }
 
-    protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
+    public List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
         List<String> names = new ArrayList<>();
         String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
         query = query
@@ -423,6 +513,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+        if (isReadOnly(queryRun))
+            applyReadOnlySession(connection);
         configureAutoCommit(connection);
         try {
             // Remove header lines
@@ -490,18 +582,64 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame execute(FuncCall queryRun) throws QueryCancelledByUser, GrokConnectException {
-        try (Connection connection = getConnection(queryRun.func.connection);
-                ResultSet resultSet = getResultSet(queryRun, connection,100)) {
-            if (resultSet == null)
-                return new DataFrame();
-            ResultSetManager resultSetManager = getResultSetManager();
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            resultSetManager.init(metaData, 100);
-            return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),1, false);
+        if (queryRun.func instanceof TableMutation)
+            throw new GrokConnectException("Table mutations must be executed via POST /mutate, not the query path");
+        Connection connection = null;
+        ResultSet resultSet = null;
+        try {
+            connection = getConnection(queryRun.func.connection);
+            resultSet = getResultSet(queryRun, connection, 100);
+            DataFrame dataFrame = new DataFrame();
+            if (resultSet != null) {
+                ResultSetManager resultSetManager = getResultSetManager();
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                resultSetManager.init(metaData, 100);
+                dataFrame = getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(), 1, false);
+            }
+            if (!connection.getAutoCommit())
+                connection.commit();
+            return dataFrame;
         } catch (SQLException e) {
+            rollbackQuietly(connection);
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw new GrokConnectException(e);
+        } catch (QueryCancelledByUser | RuntimeException e) {
+            rollbackQuietly(connection);
+            throw e;
+        } finally {
+            if (resultSet != null)
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    logger.warn("Failed to close ResultSet", e);
+                }
+            if (connection != null)
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    logger.warn("Failed to close connection", e);
+                }
+        }
+    }
+
+    public void rollbackQuietly(Connection connection) {
+        if (connection == null)
+            return;
+        try {
+            if (!connection.getAutoCommit())
+                connection.rollback();
+        } catch (SQLException e) {
+            // A connection whose transaction state is unknown must never return to the pool:
+            // HikariCP cannot see work done past its proxy (e.g. the Postgres COPY API runs on the
+            // unwrapped physical connection), so its state reset on return would silently COMMIT
+            // the leftover transaction and poison later borrowers. Evict the connection instead.
+            logger.warn("Failed to rollback transaction - evicting the connection from the pool", e);
+            try {
+                connection.abort(Runnable::run);
+            } catch (Throwable t) {
+                logger.warn("Failed to abort connection after rollback failure", t);
+            }
         }
     }
 
@@ -715,6 +853,461 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public String queryTableSql(TableQuery query) {
         return query.toSql();
+    }
+
+    public String insertSql(InsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("InsertRows requires a non-empty columns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        return "INSERT INTO " + mutationTableName(m) + " (" +
+                m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) +
+                ") VALUES (" + String.join(", ", Collections.nCopies(m.columns.size(), "?")) + ")";
+    }
+
+    /**
+     * INSERT that tolerates duplicate-key conflicts by skipping them (batch mode, {@code errorOnDuplicate ==
+     * false}; connector-writes WO-6). The generic provider has no portable ignore-duplicates form, so it
+     * emits the plain insert — duplicates surface as errors. Providers with a native form (Postgres
+     * {@code ON CONFLICT DO NOTHING}) override; a skipped row reports an update count of 0.
+     */
+    public String insertIgnoreDuplicatesSql(InsertRows m) {
+        return insertSql(m);
+    }
+
+    /**
+     * Creates the streamed bulk-insert loader for {@code m} on {@code conn} (connector-writes WO-5).
+     * The default chunked-{@code executeBatch} loader works on any prepared-statement provider;
+     * providers with a native fast path (Postgres COPY) override this.
+     */
+    public BulkLoader createBulkLoader(Connection conn, InsertRows m) throws SQLException {
+        return new BatchInsertBulkLoader(this, conn, m);
+    }
+
+    public String updateSql(UpdateRows m, List<FuncParam> collectedParams) {
+        if (m.setColumns == null || m.setColumns.isEmpty())
+            throw new MutationValidationException("UpdateRows requires a non-empty setColumns list");
+        if (m.setValues == null || m.setTypes == null
+                || m.setValues.size() != m.setColumns.size() || m.setTypes.size() != m.setColumns.size())
+            throw new MutationValidationException("UpdateRows setColumns/setValues/setTypes must be parallel lists of equal size");
+        m.setColumns.forEach(this::validateMutationIdentifier);
+        StringBuilder sql = new StringBuilder("UPDATE ").append(mutationTableName(m)).append(" SET ");
+        sql.append(m.setColumns.stream().map((c) -> addBrackets(c) + " = ?").collect(Collectors.joining(", ")));
+        appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
+        return sql.toString();
+    }
+
+    /**
+     * Key-based batched UPDATE for the {@code mode == "update"} batch path (connector-writes WO-6):
+     * {@code UPDATE <fqtn> SET <non-key col> = ? ... WHERE <keyColumn> = ? AND ...}, one row of
+     * placeholders bound per CSV / inline row. {@code keyColumns} must be a non-empty subset of
+     * {@code columns} (a payload lacking a key column is a validation error) and at least one non-key
+     * column must remain to update. Bind parameters follow {@link #updateByKeyBindOrder}.
+     */
+    public String updateByKeySql(InsertRows m) {
+        validateUpdateByKeyColumns(m);
+        List<String> nonKey = updateNonKeyColumns(m);
+        StringBuilder sql = new StringBuilder("UPDATE ").append(mutationTableName(m)).append(" SET ");
+        sql.append(nonKey.stream().map((c) -> addBrackets(c) + " = ?").collect(Collectors.joining(", ")));
+        sql.append(" WHERE ").append(m.keyColumns.stream().map((k) -> addBrackets(k) + " = ?")
+                .collect(Collectors.joining(" AND ")));
+        return sql.toString();
+    }
+
+    /** Parameter bind order for {@link #updateByKeySql}: non-key columns (in column order) then key columns. */
+    public int[] updateByKeyBindOrder(InsertRows m) {
+        validateUpdateByKeyColumns(m);
+        List<Integer> order = new ArrayList<>();
+        for (int c = 0; c < m.columns.size(); c++)
+            if (!m.keyColumns.contains(m.columns.get(c)))
+                order.add(c);
+        for (String key : m.keyColumns)
+            order.add(m.columns.indexOf(key));
+        int[] result = new int[order.size()];
+        for (int i = 0; i < result.length; i++)
+            result[i] = order.get(i);
+        return result;
+    }
+
+    protected void validateUpdateByKeyColumns(InsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("Update mode requires a non-empty columns list");
+        if (m.keyColumns == null || m.keyColumns.isEmpty())
+            throw new MutationValidationException("Update mode requires a non-empty keyColumns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        for (String key : m.keyColumns) {
+            validateMutationIdentifier(key);
+            if (!m.columns.contains(key))
+                throw new MutationValidationException("keyColumn '" + key + "' must be present in columns");
+        }
+        if (updateNonKeyColumns(m).isEmpty())
+            throw new MutationValidationException("Update mode requires at least one non-key column");
+    }
+
+    private List<String> updateNonKeyColumns(InsertRows m) {
+        List<String> nonKey = new ArrayList<>();
+        for (String col : m.columns)
+            if (!m.keyColumns.contains(col))
+                nonKey.add(col);
+        return nonKey;
+    }
+
+    public String deleteSql(DeleteRows m, List<FuncParam> collectedParams) {
+        if ((m.whereClauses == null || m.whereClauses.isEmpty()) && !m.allowFullTable)
+            throw new MutationValidationException("DeleteRows without whereClauses requires allowFullTable");
+        StringBuilder sql = new StringBuilder("DELETE FROM ").append(mutationTableName(m));
+        appendWhere(sql, m.whereClauses, m.whereOp, collectedParams);
+        return sql.toString();
+    }
+
+    /**
+     * Dialect-specific INSERT-or-UPDATE for {@code rowCount} value tuples. The generic JDBC provider has
+     * no portable upsert — overridden per dialect (connector-writes WO-4); MutationRunner maps the
+     * {@link UnsupportedOperationException} to the structured capability error. {@code rowCount} is 1 for
+     * dialects executed via addBatch ({@link #upsertBatchRows}==1: Postgres/MySQL/Oracle) and the chunk
+     * size for MERGE-over-VALUES dialects (MS SQL, Snowflake).
+     */
+    public String upsertSql(UpsertRows m, int rowCount) {
+        throw new UnsupportedOperationException("Upsert is not supported for provider " + descriptor.type);
+    }
+
+    /**
+     * Number of value tuples emitted per upsert statement: 1 = single-row statements executed via
+     * addBatch (Postgres, MySQL, Oracle); &gt;1 = multi-row VALUES chunks executed one executeUpdate per
+     * chunk (MERGE-over-VALUES dialects). {@code columnCount} lets bound-parameter-limited dialects cap
+     * the chunk size (MS SQL: 2100-parameter limit).
+     */
+    public int upsertBatchRows(int columnCount) {
+        return 1;
+    }
+
+    protected void validateUpsertColumns(UpsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty columns list");
+        if (m.matchKeys == null || m.matchKeys.isEmpty())
+            throw new MutationValidationException("UpsertRows requires a non-empty matchKeys list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        for (String key : m.matchKeys) {
+            validateMutationIdentifier(key);
+            if (!m.columns.contains(key))
+                throw new MutationValidationException("matchKey '" + key + "' must be present in columns");
+        }
+    }
+
+    protected List<String> upsertNonKeyColumns(UpsertRows m) {
+        List<String> nonKey = new ArrayList<>();
+        for (String col : m.columns)
+            if (!m.matchKeys.contains(col))
+                nonKey.add(col);
+        return nonKey;
+    }
+
+    private String valuesTuples(int columnCount, int rowCount) {
+        String tuple = "(" + String.join(", ", Collections.nCopies(columnCount, "?")) + ")";
+        return String.join(", ", Collections.nCopies(rowCount, tuple));
+    }
+
+    /** MERGE-over-VALUES upsert (MS SQL / Snowflake shape). {@code trailingSemicolon} for T-SQL's MERGE. */
+    protected String mergeValuesUpsertSql(UpsertRows m, int rowCount, boolean trailingSemicolon) {
+        validateUpsertColumns(m);
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        String on = m.matchKeys.stream().map((k) -> "t." + addBrackets(k) + " = src." + addBrackets(k))
+                .collect(Collectors.joining(" AND "));
+        StringBuilder sql = new StringBuilder("MERGE INTO ").append(mutationTableName(m)).append(" AS t USING (VALUES ")
+                .append(valuesTuples(m.columns.size(), rowCount)).append(") AS src (").append(colList)
+                .append(") ON (").append(on).append(")");
+        List<String> nonKey = upsertNonKeyColumns(m);
+        if (!nonKey.isEmpty())
+            sql.append(" WHEN MATCHED THEN UPDATE SET ").append(nonKey.stream()
+                    .map((c) -> "t." + addBrackets(c) + " = src." + addBrackets(c)).collect(Collectors.joining(", ")));
+        sql.append(" WHEN NOT MATCHED THEN INSERT (").append(colList).append(") VALUES (")
+                .append(m.columns.stream().map((c) -> "src." + addBrackets(c)).collect(Collectors.joining(", ")))
+                .append(")");
+        if (trailingSemicolon)
+            sql.append(";");
+        return sql.toString();
+    }
+
+    public String mutationTableName(TableMutation m) {
+        validateMutationIdentifier(m.tableName);
+        if (GrokConnectUtil.isNotEmpty(m.schema))
+            validateMutationIdentifier(m.schema);
+        if (GrokConnectUtil.isNotEmpty(m.catalog))
+            validateMutationIdentifier(m.catalog);
+        return SqlNames.fullTableName(m.tableName, m.schema, m.catalog, this);
+    }
+
+    /**
+     * Neutralizes caller-supplied identifiers on the (destructive) mutation boundary: rejects any
+     * table/schema/catalog/column/predicate-field name whose segments are empty or carry the
+     * provider's bracket/quote chars or control chars — a hostile identifier becomes a clean
+     * pre-validation 400 instead of a downstream db-error. Applied only here, not in the shared
+     * addBrackets read path. Dotted names (schema.table, table.column) are validated per segment.
+     */
+    public void validateMutationIdentifier(String identifier) {
+        if (GrokConnectUtil.isEmpty(identifier))
+            throw new MutationValidationException("Mutation identifier must not be empty");
+        String brackets = descriptor.nameBrackets;
+        for (String segment : identifier.split("\\.", -1)) {
+            if (segment.isEmpty())
+                throw new MutationValidationException("Invalid mutation identifier: '" + identifier + "'");
+            for (int i = 0; i < segment.length(); i++) {
+                char c = segment.charAt(i);
+                if (c < 0x20 || c == '"' || c == '\'' || c == '`' || c == ';' || brackets.indexOf(c) >= 0)
+                    throw new MutationValidationException("Illegal character in mutation identifier: '" + identifier + "'");
+            }
+        }
+    }
+
+    /**
+     * Offending column name for a per-row mutation error, or {@code null} if the driver does not expose
+     * it (connector-writes WO-6). Postgres reads {@code PSQLException.getServerErrorMessage()}; other
+     * drivers fall back to code + message only.
+     */
+    public String mutationErrorColumn(SQLException e) {
+        return null;
+    }
+
+    /** Human-readable mutation-error message; providers may enrich it (Postgres appends the constraint name). */
+    public String mutationErrorMessage(SQLException e) {
+        return e.getMessage();
+    }
+
+    // ---- DDL emission (connector-writes WO-B6) — statement text only; execution/dryRun is WO-B7 ----
+
+    /** Native column type for a dg scalar type via the descriptor's hand-authored reverse map (ARCHITECTURE §3.3). */
+    public String nativeType(String dgType) {
+        String nativeType = descriptor.dgToNativeType == null ? null : descriptor.dgToNativeType.get(dgType);
+        if (nativeType == null)
+            throw new MutationValidationException("No native type for dg type '" + dgType
+                    + "' on provider " + descriptor.type);
+        return nativeType;
+    }
+
+    /**
+     * DEFAULT-value literal typed by the dg type (DDL cannot bind parameters): parse-validated numerics,
+     * true/false bools, single-quote-doubled strings and ISO datetimes — the DomainDdlGenerator.sqlLiteral
+     * discipline. A hostile value either fails validation or stays an inert quoted literal.
+     */
+    public String ddlLiteral(String dgType, String value) {
+        if (value == null)
+            return "NULL";
+        switch (dgType) {
+            case "int":
+            case "bigint":
+                try {
+                    return Long.toString(Long.parseLong(value.trim()));
+                } catch (NumberFormatException e) {
+                    throw new MutationValidationException("Invalid " + dgType + " literal: '" + value + "'");
+                }
+            case "float":
+                double parsed;
+                try {
+                    parsed = Double.parseDouble(value.trim());
+                } catch (NumberFormatException e) {
+                    throw new MutationValidationException("Invalid float literal: '" + value + "'");
+                }
+                if (Double.isNaN(parsed) || Double.isInfinite(parsed))
+                    throw new MutationValidationException("Invalid float literal: '" + value + "'");
+                return Double.toString(parsed);
+            case "bool":
+                return boolDdlLiteral(value.trim().equalsIgnoreCase("true"));
+            default: // string, datetime
+                return "'" + stringLiteralEscape(value) + "'";
+        }
+    }
+
+    /**
+     * Escapes a value for embedding in a single-quoted SQL literal. Quote doubling is enough for
+     * dialects with standard-conforming strings; MySQL/MariaDB treat backslash as an escape character
+     * by default and override to double it too.
+     */
+    protected String stringLiteralEscape(String value) {
+        return value.replace("'", "''");
+    }
+
+    /** Boolean DDL literal; dialects without a boolean type (MS SQL bit, Oracle number(1)) emit 1/0. */
+    protected String boolDdlLiteral(boolean value) {
+        return value ? "true" : "false";
+    }
+
+    /** Column definition: name, native type, DEFAULT before NOT NULL (the order Oracle requires; valid everywhere). */
+    protected String columnDefinitionSql(ColumnSpec c) {
+        if (c == null)
+            throw new MutationValidationException("Column spec is required");
+        validateMutationIdentifier(c.name);
+        if (GrokConnectUtil.isEmpty(c.type))
+            throw new MutationValidationException("Column '" + c.name + "' requires a dg type");
+        StringBuilder def = new StringBuilder(addBrackets(c.name)).append(" ").append(nativeType(c.type));
+        if (c.defaultValue != null)
+            def.append(" DEFAULT ").append(ddlLiteral(c.type, c.defaultValue));
+        if (!c.nullable)
+            def.append(" NOT NULL");
+        return def.toString();
+    }
+
+    /** IF NOT EXISTS on CREATE TABLE; dialects without the form (MS SQL, Oracle) emit a plain CREATE — a duplicate table surfaces as a db-error. */
+    protected boolean supportsCreateIfNotExists() {
+        return true;
+    }
+
+    /** CREATE TABLE (+ one CREATE [UNIQUE] INDEX per {@link IndexSpec}); FKs are added afterwards via {@link AddKey}. */
+    public List<String> createTableSql(CreateTable m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("CreateTable requires a non-empty columns list");
+        String table = mutationTableName(m);
+        List<String> defs = new ArrayList<>();
+        for (ColumnSpec c : m.columns)
+            defs.add(columnDefinitionSql(c));
+        if (m.primaryKey != null && !m.primaryKey.isEmpty()) {
+            m.primaryKey.forEach(this::validateMutationIdentifier);
+            defs.add("PRIMARY KEY (" + m.primaryKey.stream().map(this::addBrackets)
+                    .collect(Collectors.joining(", ")) + ")");
+        }
+        List<String> statements = new ArrayList<>();
+        statements.add("CREATE TABLE " + (m.ifNotExists && supportsCreateIfNotExists() ? "IF NOT EXISTS " : "")
+                + table + " (" + String.join(", ", defs) + ")");
+        if (m.indexes != null)
+            for (IndexSpec index : m.indexes)
+                statements.add(createIndexStatement(m, index.name, index.columns, index.unique));
+        return statements;
+    }
+
+    /** Single-action ALTER TABLE (ARCHITECTURE §3.4.1); per-action field presence is validated here. */
+    public String alterTableSql(AlterTable m) {
+        String table = mutationTableName(m);
+        if (GrokConnectUtil.isEmpty(m.action))
+            throw new MutationValidationException("AlterTable requires an action");
+        switch (m.action) {
+            case "addColumn":
+                if (m.column == null)
+                    throw new MutationValidationException("AlterTable addColumn requires a column spec");
+                return alterAddColumnSql(m, table);
+            case "dropColumn":
+                validateMutationIdentifier(m.columnName);
+                return "ALTER TABLE " + table + " DROP COLUMN " + addBrackets(m.columnName);
+            case "renameColumn":
+                validateMutationIdentifier(m.columnName);
+                validateMutationIdentifier(m.newName);
+                return alterRenameColumnSql(m, table);
+            case "changeType":
+                validateMutationIdentifier(m.columnName);
+                if (GrokConnectUtil.isEmpty(m.newType))
+                    throw new MutationValidationException("AlterTable changeType requires newType");
+                return alterChangeTypeSql(m, table);
+            case "setNullable":
+                validateMutationIdentifier(m.columnName);
+                if (m.nullable == null)
+                    throw new MutationValidationException("AlterTable setNullable requires an explicit nullable value");
+                return alterSetNullableSql(m, table);
+            default:
+                throw new MutationValidationException("Unknown AlterTable action: '" + m.action + "'");
+        }
+    }
+
+    protected String alterAddColumnSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ADD COLUMN " + columnDefinitionSql(m.column);
+    }
+
+    protected String alterRenameColumnSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " RENAME COLUMN " + addBrackets(m.columnName)
+                + " TO " + addBrackets(m.newName);
+    }
+
+    /** PG shape; MySQL (MODIFY), MS SQL and Oracle override. */
+    protected String alterChangeTypeSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName)
+                + " TYPE " + nativeType(m.newType);
+    }
+
+    /** PG shape; dialects that restate the column type (MySQL, MS SQL) or use MODIFY (Oracle) override. */
+    protected String alterSetNullableSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName)
+                + (m.nullable ? " DROP NOT NULL" : " SET NOT NULL");
+    }
+
+    public String createIndexSql(CreateIndex m) {
+        return createIndexStatement(m, m.indexName, m.columns, m.unique);
+    }
+
+    /** CREATE [UNIQUE] INDEX; auto-name ix_&lt;table&gt;_&lt;col1&gt;_.. (the domain generator convention) when absent. */
+    protected String createIndexStatement(TableMutation m, String name, List<String> columns, boolean unique) {
+        if (columns == null || columns.isEmpty())
+            throw new MutationValidationException("Index requires a non-empty columns list");
+        columns.forEach(this::validateMutationIdentifier);
+        String indexName = GrokConnectUtil.isNotEmpty(name) ? name
+                : "ix_" + baseTableName(m) + "_" + String.join("_", columns);
+        validateMutationIdentifier(indexName);
+        return "CREATE " + (unique ? "UNIQUE " : "") + "INDEX " + addBrackets(indexName)
+                + " ON " + mutationTableName(m) + " ("
+                + columns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) + ")";
+    }
+
+    /** Unqualified table name for auto-generated index/constraint names. */
+    protected String baseTableName(TableMutation m) {
+        validateMutationIdentifier(m.tableName);
+        return m.tableName.substring(m.tableName.lastIndexOf('.') + 1);
+    }
+
+    /** PG/Oracle shape (schema-qualified name); MySQL / MS SQL override with DROP INDEX &lt;name&gt; ON &lt;table&gt;. */
+    public String dropIndexSql(DropIndex m) {
+        validateMutationIdentifier(m.indexName);
+        String qualified = m.indexName;
+        if (GrokConnectUtil.isNotEmpty(m.schema)) {
+            validateMutationIdentifier(m.schema);
+            qualified = m.schema + "." + m.indexName;
+        }
+        return "DROP INDEX " + addBrackets(qualified);
+    }
+
+    /** ALTER TABLE ADD CONSTRAINT — primary or foreign key; auto-names pk_&lt;table&gt; / fk_&lt;table&gt;_&lt;col&gt; (the domain convention). */
+    public String addKeySql(AddKey m) {
+        String table = mutationTableName(m);
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("AddKey requires a non-empty columns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        if ("primary".equals(m.keyType)) {
+            String name = GrokConnectUtil.isNotEmpty(m.constraintName) ? m.constraintName : "pk_" + baseTableName(m);
+            validateMutationIdentifier(name);
+            return "ALTER TABLE " + table + " ADD CONSTRAINT " + addBrackets(name) + " PRIMARY KEY (" + colList + ")";
+        }
+        if ("foreign".equals(m.keyType)) {
+            if (GrokConnectUtil.isEmpty(m.refTable) || m.refColumns == null || m.refColumns.isEmpty())
+                throw new MutationValidationException("AddKey foreign requires refTable and refColumns");
+            validateMutationIdentifier(m.refTable);
+            m.refColumns.forEach(this::validateMutationIdentifier);
+            String name = GrokConnectUtil.isNotEmpty(m.constraintName) ? m.constraintName
+                    : "fk_" + baseTableName(m) + "_" + String.join("_", m.columns);
+            validateMutationIdentifier(name);
+            return "ALTER TABLE " + table + " ADD CONSTRAINT " + addBrackets(name) + " FOREIGN KEY (" + colList
+                    + ") REFERENCES " + addBrackets(m.refTable) + " ("
+                    + m.refColumns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) + ")";
+        }
+        throw new MutationValidationException("AddKey keyType must be 'primary' or 'foreign', got '" + m.keyType + "'");
+    }
+
+    public String dropTableSql(DropTable m) {
+        return "DROP TABLE " + mutationTableName(m);
+    }
+
+    public String truncateTableSql(TruncateTable m) {
+        return "TRUNCATE TABLE " + mutationTableName(m);
+    }
+
+    /** Appends a WHERE section identical in shape to TableQuery.toSql's (shared PredicateCompiler). */
+    protected void appendWhere(StringBuilder sql, List<FieldPredicate> whereClauses, String whereOp, List<FuncParam> collectedParams) {
+        if (whereClauses == null || whereClauses.isEmpty())
+            return;
+        String op = GrokConnectUtil.isEmpty(whereOp) ? "and" : whereOp;
+        if (!op.equals("and") && !op.equals("or"))
+            throw new MutationValidationException("whereOp must be 'and' or 'or', got '" + whereOp + "'");
+        List<String> clauses = new ArrayList<>();
+        for (FieldPredicate clause : whereClauses) {
+            validateMutationIdentifier(clause.field);
+            clauses.add(String.format("  (%s)", PredicateCompiler.compile(clause, this, collectedParams)));
+        }
+        sql.append(System.lineSeparator()).append("WHERE").append(System.lineSeparator());
+        sql.append(String.join(String.format(" %s%s", op, System.lineSeparator()), clauses));
     }
 
     public String castParamValueToSqlDateTime(FuncParam param) {

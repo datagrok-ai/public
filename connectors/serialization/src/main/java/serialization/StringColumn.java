@@ -1,6 +1,7 @@
 package serialization;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,11 @@ public class StringColumn extends AbstractColumn<String> {
     private String[] data;
     private Integer[] idxs;
     private List<String> categories;
+
+    // Decoded categorical state (set by decode): resolve get(idx) via
+    // categories[catIndexes[idx]] WITHOUT re-categorizing / re-sorting.
+    private int[] catIndexes;
+    private boolean decoded;
 
     public StringColumn(String name) {
         super(name);
@@ -36,12 +42,15 @@ public class StringColumn extends AbstractColumn<String> {
     @Override
     public void empty() {
         length = 0;
+        decoded = false;
+        catIndexes = null;
         data = new String[initColumnSize];
         categorize();
     }
 
     @Override
     public void encode(BufferAccessor buf) {
+        materialize();
         categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
@@ -51,13 +60,94 @@ public class StringColumn extends AbstractColumn<String> {
     }
 
     @Override
+    public void decode(BufferAccessor buf) {
+        int id = buf.readInt32();
+        String[] cats;
+        switch (id) {
+            case 0: // categories: StringList + nested int column of indices.
+                cats = buf.readStringList();
+                break;
+            case 1: // prefixes: common prefix + per-category postfixes.
+                cats = decodePrefixes(buf);
+                break;
+            case 2: // squash: fixed-length strings squashed by differing positions.
+                cats = serialization.codecs.StringSquash.decode(buf);
+                break;
+            case 3: // zlib (write-disabled, read-supported for old blobs).
+                cats = decodeZlib(buf);
+                break;
+            default:
+                throw new RuntimeException("decoding " + name + ": string encoder " + id + " not supported");
+        }
+        // All string encoders finish with a nested int column of row -> category indices.
+        IntColumn intCol = new IntColumn("", 0);
+        intCol.decode(buf);
+        adoptDecoded(cats, (int[]) intCol.toArray());
+    }
+
+    // Ports StringPrefixEncoder.decode (string_column_encoders.dart:99-137) up to,
+    // but not including, the trailing indices int column (read by the caller).
+    private static String[] decodePrefixes(BufferAccessor buf) {
+        String prefix = buf.readString();
+        int length = buf.readInt32();
+        boolean transpose = buf.readInt8() == 1;
+        int[] lengths;
+        if (transpose)
+            lengths = new int[]{ buf.readInt32() };
+        else {
+            IntColumn lc = new IntColumn("", 0);
+            lc.decode(buf);
+            lengths = (int[]) lc.toArray();
+        }
+        int archive = buf.readInt8();
+        byte[] bytes = buf.readUint8List();
+        if (archive == ColumnEncoderArchiveType.ARCHIVE_TYPE_ZLIB)
+            bytes = Zlib.inflate(bytes);
+        String[] postfixes = serialization.codecs.StringListBytes.decode(bytes, length, lengths, transpose);
+        String[] cats = new String[postfixes.length];
+        for (int i = 0; i < postfixes.length; i++)
+            cats[i] = postfixes[i].equals("$&") ? "" : prefix + postfixes[i];
+        return cats;
+    }
+
+    // Ports StringZLibEncoder.decode (string_column_encoders.dart:224-250) up to,
+    // but not including, the trailing indices int column (read by the caller). The
+    // zlib bytes precede the indices column on the wire and building the categories
+    // does not depend on the indices, so the read order is preserved.
+    private static String[] decodeZlib(BufferAccessor buf) {
+        int length = buf.readInt32();
+        boolean transpose = buf.readInt8() == 1;
+        int[] lengths;
+        if (transpose)
+            lengths = new int[]{ buf.readInt32() };
+        else {
+            IntColumn lc = new IntColumn("", 0);
+            lc.decode(buf);
+            lengths = (int[]) lc.toArray();
+        }
+        byte[] decoded = Zlib.inflate(buf.readUint8List());
+        return serialization.codecs.StringListBytes.decode(decoded, length, lengths, transpose);
+    }
+
+    // Adopts decoded categories + indices directly (no re-sort).
+    void adoptDecoded(String[] cats, int[] indices) {
+        categories = new ArrayList<>(Arrays.asList(cats));
+        catIndexes = indices;
+        length = indices.length;
+        decoded = true;
+        data = null;
+    }
+
+    @Override
     public void add(String value) {
+        materialize();
         ensureSpace(1);
         data[length++] = value;
     }
 
     @Override
     public void addAll(String[] values) {
+        materialize();
         ensureSpace(values.length);
         for (String value : values)
             data[length++] = value;
@@ -65,16 +155,24 @@ public class StringColumn extends AbstractColumn<String> {
 
     @Override
     public String get(int idx) {
-        return data[idx];
+        return decoded ? categories.get(catIndexes[idx]) : data[idx];
     }
 
     @Override
     public void set(int index, String value) {
+        materialize();
         data[index] = value;
     }
 
     @Override
     public long memoryInBytes() {
+        if (decoded) {
+            long size = 0;
+            for (String s : categories)
+                if (s != null)
+                    size += s.length();
+            return size * 2 + (long) catIndexes.length * 4;
+        }
         long size = 0;
         for (String s : data)
             if (s != null)
@@ -84,11 +182,18 @@ public class StringColumn extends AbstractColumn<String> {
 
     @Override
     public boolean isNone(int idx) {
-        return data[idx] == null || data[idx].equals("");
+        String v = decoded ? categories.get(catIndexes[idx]) : data[idx];
+        return v == null || v.equals("");
     }
 
     @Override
     public Object toArray() {
+        if (decoded) {
+            String[] arr = new String[length];
+            for (int i = 0; i < length; i++)
+                arr[i] = categories.get(catIndexes[i]);
+            return arr;
+        }
         return data;
     }
 
@@ -98,6 +203,19 @@ public class StringColumn extends AbstractColumn<String> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    // Rebuilds the flat [data] array from decoded categorical state so mutating /
+    // re-encoding paths keep working after a decode.
+    private void materialize() {
+        if (!decoded)
+            return;
+        String[] arr = new String[length];
+        for (int i = 0; i < length; i++)
+            arr[i] = categories.get(catIndexes[i]);
+        data = arr;
+        catIndexes = null;
+        decoded = false;
     }
 
     private void categorize() {

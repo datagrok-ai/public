@@ -6,6 +6,7 @@ public interface Column<T> extends Taggable {
     int getLength();
     String getType();
     void encode(BufferAccessor buf);
+    void decode(BufferAccessor buf);
     void add(T value);
     void addAll(T[] value);
     T get(int idx);
@@ -27,6 +28,12 @@ public interface Column<T> extends Taggable {
                 return new BigIntColumn(name, initColumnSize);
             case Types.DATE_TIME:
                 return new DateTimeColumn(name, initColumnSize);
+            case Types.QNUM:
+                return new QNumColumn(name, initColumnSize);
+            case Types.BYTE_ARRAY:
+                return new ByteArrayColumn(name, initColumnSize);
+            case Types.DATA_FRAME:
+                return new DataFrameColumn(name, initColumnSize);
             case Types.COLUMN_LIST:
                 return new ComplexTypeColumn(name, initColumnSize);
             case Types.BOOL:
