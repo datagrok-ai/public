@@ -34,13 +34,13 @@ license). The supported connectors with their specific parameters are:
 | [HBase](./hbase.md)              |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [Hive](./hive.md)                |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [Hive2](./hive2.md)              |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Impala](./impala.md)            |  ✓      | ✓    | ✓   | ✓             |              |               |     | ✓                 | ✓     | ✓        | [See the list](./impala.md#connection-parameters)      |
+| [Impala](./impala.md)*            |  ✓      | ✓    | ✓   | ✓             |              |               |     | ✓                 | ✓     | ✓        | [See the list](./impala.md#connection-parameters)      |
 | [MariaDB](./mariadb.md)          |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [MongoDB](./mongodb.md)          |  ✓      | ✓    | ✓   |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        ||
 | [MS SQL](./mssql.md)             |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        ||
 | [MySql](./mysql.md)              |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [Neo4j](./neo4j.md)              |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Neptune](./neptune.md)          |  ✓      | ✓    |     |               | ✓            | ✓             |     | ✓                 |       |          | [See the list](./neptune.md#connection-parameters)     |
+| [Neptune](./neptune.md)*          |  ✓      | ✓    |     |               | ✓            | ✓             |     | ✓                 |       |          | [See the list](./neptune.md#connection-parameters)     |
 | [OData](./odata.md)                |        |      |     |               |              |               |     |                   |       |          | [See the list](./odata.md#connection-parameters)       |
 | [Oracle](./oracle.md)            |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [PI](./pi.md)                    |  ✓      |      | ✓   |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        | [See the list](./pi.md#connection-parameters)          |
@@ -56,6 +56,8 @@ license). The supported connectors with their specific parameters are:
 | [Vertica](./vertica.md)          |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [Virtuoso](./virtuoso.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [Web](./web.md)                    |        |      |     |               |              |               |     |                   |       |          | [See the list](./web.md#connection-parameters)         |
+
+\* Served by the optional `grok_connect_extended` service — ask your administrator to enable it if the connector is missing.
 
 See also:
 

@@ -13,6 +13,10 @@ keywords:
 ---
 
 Provides access to [Impala](https://impala.apache.org/) query engine via a JDBC driver.
+This connector is served by the optional **grok_connect_extended** service. If it does not appear
+under **Data > Databases**, ask your administrator to enable it (Helm: `grokConnectExtended.enabled: true`;
+Docker Compose: start the `grok_connect_extended` profile).
+
 
 ## Connection parameters
 
