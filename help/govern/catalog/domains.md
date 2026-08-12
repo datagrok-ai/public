@@ -250,6 +250,16 @@ grants apply to the domain and all of its tables and column groups at once. To m
 to a single table, right-click it and select **Share...**, or use the grants editor in its
 **Sharing** pane.
 
+### Linking to spaces
+
+To organize domain data alongside other assets, drag rows (up to 100 at a time), or a whole
+table, from a domain view onto a space in the **Browse** tree. The dropped items become links:
+everyone with access to the space can **view** them — the linked rows, or all rows of a linked
+table. Space access never grants editing — editing still requires a direct grant on the row or
+table. Removing a link (right-click it in the space) revokes the access it provided. Only rows
+of tables with row-level sharing can be linked individually — for other tables, link the table
+itself.
+
 ## Collaboration
 
 * **Favorites and comments**: star a row or discuss it in its **Chats** pane, like any
