@@ -47,7 +47,6 @@ import grok_connect.table_query.PredicateCompiler;
 import grok_connect.table_query.SqlNames;
 import grok_connect.table_query.TableQuery;
 import grok_connect.utils.*;
-import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.DataFrame;
@@ -60,6 +59,10 @@ public abstract class JdbcDataProvider extends DataProvider {
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
+
+    public String getDriverClassName() {
+        return driverClassName;
+    }
 
     public void prepareProvider() throws GrokConnectException {
     }
@@ -439,7 +442,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             return;
                             //todo: implement other types
                         } else {
-                            throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
+                            throw new UnsupportedOperationException("Non-string lists are not implemented for manual param interpolation providers");
                         }
                     default:
                         queryBuffer.append(param.value.toString());

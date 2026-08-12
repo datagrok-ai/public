@@ -1,66 +1,86 @@
 package grok_connect.utils;
 
 import grok_connect.connectors_info.DataSource;
-import grok_connect.providers.*;
+import grok_connect.providers.JdbcDataProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ProviderManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProviderManager.class);
+
     /**
      * Read-oriented engines / federation layers that must never advertise write support even though
      * they are JDBC providers with auto-interpolation (connector-writes WO-4).
      */
     private static final Set<String> WRITE_DENYLIST = new HashSet<>(Arrays.asList(
             "Athena", "BigQuery", "Impala", "Hive", "Hive2", "Virtuoso", "Denodo", "Neptune", "PI"));
+
+    // Registration is reflective so an image shipped without a provider's driver jar
+    // (or even without the provider class) degrades to a startup warning instead of
+    // failing class linking; the driver probe below keeps such providers off /conn.
+    private static final String[] PROVIDER_CLASSES = {
+            "grok_connect.providers.AccessDataProvider",
+            "grok_connect.providers.AthenaDataProvider",
+            "grok_connect.providers.BigQueryDataProvider",
+            "grok_connect.providers.CassandraDataProvider",
+            "grok_connect.providers.Db2DataProvider",
+            "grok_connect.providers.FirebirdDataProvider",
+            "grok_connect.providers.HBaseDataProvider",
+            "grok_connect.providers.HiveDataProvider",
+            "grok_connect.providers.Hive2DataProvider",
+            "grok_connect.providers.MariaDbDataProvider",
+            "grok_connect.providers.MongoDbDataProvider",
+            "grok_connect.providers.MsSqlDataProvider",
+            "grok_connect.providers.MySqlDataProvider",
+            "grok_connect.providers.Neo4jDataProvider",
+            "grok_connect.providers.OracleDataProvider",
+            "grok_connect.providers.PostgresDataProvider",
+            "grok_connect.providers.PIDataProvider",
+            "grok_connect.providers.RedshiftDataProvider",
+            "grok_connect.providers.TeradataDataProvider",
+            "grok_connect.providers.VerticaDataProvider",
+            "grok_connect.providers.VirtuosoDataProvider",
+            "grok_connect.providers.ImpalaDataProvider",
+            "grok_connect.providers.DenodoDataProvider",
+            "grok_connect.providers.SnowflakeDataProvider",
+            "grok_connect.providers.ClickHouseProvider",
+            "grok_connect.providers.NeptuneDataProvider",
+            "grok_connect.providers.SapHanaDataProvider",
+            "grok_connect.providers.DatabricksProvider",
+    };
+
     private final Map<String, JdbcDataProvider> providersMap;
 
     public ProviderManager() {
-        LOGGER.debug("Initializing providers HashMap");
-        List<JdbcDataProvider> providersList = new ArrayList<JdbcDataProvider>() {{
-            add(new AccessDataProvider());
-            add(new AthenaDataProvider());
-            add(new BigQueryDataProvider());
-            add(new CassandraDataProvider());
-            add(new Db2DataProvider());
-            add(new FirebirdDataProvider());
-            add(new HBaseDataProvider());
-            add(new HiveDataProvider());
-            add(new Hive2DataProvider());
-            add(new MariaDbDataProvider());
-            add(new MongoDbDataProvider());
-            add(new MsSqlDataProvider());
-            add(new MySqlDataProvider());
-            add(new Neo4jDataProvider());
-            add(new OracleDataProvider());
-            add(new PostgresDataProvider());
-            add(new PIDataProvider());
-            add(new RedshiftDataProvider());
-//            add(new SQLiteDataProvider());
-            add(new TeradataDataProvider());
-            add(new VerticaDataProvider());
-            add(new VirtuosoDataProvider());
-            add(new ImpalaDataProvider());
-            add(new DenodoDataProvider());
-            add(new SnowflakeDataProvider());
-            add(new ClickHouseProvider());
-            add(new NeptuneDataProvider());
-//            add(new DynamoDBDataProvider());
-            add(new SapHanaDataProvider());
-            add(new DatabricksProvider());
-        }};
-        providersMap = providersList.stream()
-                .collect(Collectors.toMap(provider -> provider.descriptor.type,
-                Function.identity()));
+        Set<String> allowed = parseAllowlist(System.getenv("GROK_CONNECT_PROVIDERS"));
+        providersMap = new LinkedHashMap<>();
+        for (String className : PROVIDER_CLASSES) {
+            JdbcDataProvider provider;
+            try {
+                provider = (JdbcDataProvider) Class.forName(className).newInstance();
+            }
+            catch (Throwable e) {
+                LOGGER.warn("Provider {} skipped: {}", className, e.toString());
+                continue;
+            }
+            String type = provider.descriptor.type;
+            if (allowed != null && !allowed.contains(type))
+                continue;
+            String driver = provider.getDriverClassName();
+            if (driver != null && !isDriverPresent(driver)) {
+                LOGGER.warn("Provider {} skipped: driver {} is not on the classpath", type, driver);
+                continue;
+            }
+            providersMap.put(type, provider);
+        }
         // Central supportsWrite default: every auto-interpolation JDBC provider not on the denylist can
         // execute prepared-statement mutations. Providers that set the flag explicitly keep their value.
         for (JdbcDataProvider provider : providersMap.values()) {
@@ -78,6 +98,26 @@ public class ProviderManager {
                         descriptor.type);
                 descriptor.supportsDdl = false;
             }
+        }
+        LOGGER.info("Registered providers: {}", providersMap.keySet());
+    }
+
+    private static Set<String> parseAllowlist(String value) {
+        if (GrokConnectUtil.isEmpty(value) || value.trim().equals("*"))
+            return null;
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(GrokConnectUtil::isNotEmpty)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static boolean isDriverPresent(String driverClassName) {
+        try {
+            Class.forName(driverClassName, false, ProviderManager.class.getClassLoader());
+            return true;
+        }
+        catch (Throwable e) {
+            return false;
         }
     }
 
