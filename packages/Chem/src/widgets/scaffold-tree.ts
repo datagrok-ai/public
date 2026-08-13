@@ -1753,11 +1753,22 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.assignScaffoldColors();
   }
 
-  private getPeerViewers(): ScaffoldTreeViewer[] {
+  private static getLiveViewers(): ScaffoldTreeViewer[] {
     return Array.from(grok.shell.tv?.viewers ?? []).filter(
-      (v) => v !== this && v.type === ScaffoldTreeViewer.TYPE &&
-        (v as ScaffoldTreeViewer).molColumn?.name === this.molColumn?.name,
+      (v) => v.type === ScaffoldTreeViewer.TYPE,
     ) as ScaffoldTreeViewer[];
+  }
+
+  private getPeerViewers(): ScaffoldTreeViewer[] {
+    return ScaffoldTreeViewer.getLiveViewers().filter(
+      (v) => v !== this && v.molColumn?.name === this.molColumn?.name,
+    );
+  }
+
+  private isColumnInUse(column: DG.Column): boolean {
+    return ScaffoldTreeViewer.getLiveViewers().some(
+      (v) => v.fragmentsColumn === column || v.labelsColumn === column,
+    );
   }
 
   private renamePeerColumns(): void {
@@ -1776,6 +1787,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const collision = this.dataFrame!.columns.byName(name);
     if (!collision || collision === ownColumn)
       return name;
+    if (collision.getTag(EXCLUDE_FROM_FILTER_COLUMN_SELECT) === 'true' && !this.isColumnInUse(collision)) {
+      this.dataFrame!.columns.remove(collision);
+      return name;
+    }
     return this.dataFrame!.columns.getUnusedName(name);
   }
 
