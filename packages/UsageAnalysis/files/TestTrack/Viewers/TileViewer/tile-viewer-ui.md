@@ -1,95 +1,65 @@
 # Tile Viewer — manual checklist
 
-All scenarios should start with the following sequence of events:
-1. Close all
-2. Open demog
-3. Add Tile Viewer
+Exploratory only. Everything that could be automated has moved into the section's
+Playwright scenarios, so what is left here is what a person still has to judge by eye.
+Automated elsewhere, do not repeat here: the Edit Form designer (field removal, label
+deletion, RESET, CLOSE AND APPLY) and the layout round-trip in
+`tile-viewer-selection-form-editor.md`; dragging a tile between lanes, the lanes ladder
+and the persistence peak in `tile-viewer-lanes-persist.md`; the property surface, the
+auto-generate states and the context-menu inventory in `tile-viewer.md`.
 
-## Edit Form dialog
+All scenarios start with: Close all → open demog → add a Tile Viewer.
 
-1. Right-click a tile and choose Edit Form...
-2. Drag a column name from the column list onto the form canvas
-3. Remove a field by clicking X on it
-4. Click CLOSE AND APPLY — form updates to reflect the changes
+## Colour coding on tiles
 
-## Form field visibility
+Colour coding is applied from the GRID's column menu — the Tile Viewer's own context menu
+has no Colour Coding item. Whether a tile field reflects it, and how legibly, is a visual
+judgement, which is why it stays here.
 
-1. Open the Edit Form dialog
-2. Toggle a field off (hidden) in the form editor
-3. Verify that field is no longer shown on tiles
-4. Toggle the field back on — tiles update to show the field again
+1. In the grid, open the AGE column's menu and switch colour coding to Linear
+2. Look at the tiles: the AGE field's background should form a gradient across rows, and the
+   value text should stay readable against it
+3. Switch the RACE column to Categorical colour coding
+4. Look at the tiles: each RACE value should get a visibly distinct background, and no two
+   adjacent categories should be hard to tell apart
+5. Turn colour coding off on both columns — the tile fields return to a plain background
 
-## Form field header
+## Edit Form with a different source table
 
-1. Open the Edit Form dialog
-2. Toggle off the header label for a field
-3. Verify tiles display the value without the column name prefix
-4. Toggle the header label back on — column name reappears as label
+The SketchView has no table field on the current build, so this flow cannot be driven as
+written and is kept as a manual probe of the broken-binding behaviour.
 
-## Drag between lanes
+1. Open demog and spgi-100
+2. On the spgi-100 view add a Tile Viewer, open Edit Form..., design a card, CLOSE AND APPLY
+3. Switch the viewer's Table to demog
+4. Look at the tiles: report anything that renders as a broken or empty binding placeholder
 
-1. Set Lane Column to RACE
-2. Drag a tile from one lane to another
-3. Verify the tile's RACE value in the linked grid matches the target lane
-4. Undo the drag — tile returns to the original lane
+## Picking the lanes column from the property panel
 
-## Card markup
+The automated scenarios set the lanes column through the viewer's property object, because
+the picker is a canvas grid with no selector for an individual row. The UI pick itself is
+therefore exercised nowhere else, and this is the step that covers it.
 
-1. Open the property panel for Tile Viewer
-2. Set Card Markup to `${AGE} — ${SEX}`
-3. Verify a tile displays the interpolated age and sex values
+1. Open the viewer's Properties → Data and click the Lanes column picker
+2. Choose RACE: the tiles regroup into one lane per race, each lane headed by its value
+3. Choose a numeric column such as AGE: report whether the picker offers it at all, and if
+   it does, whether the resulting lanes are usable or one lane per distinct number
+4. Clear the picker: the tiles collapse back into a single lane
 
-## Color coding
+## Hamburger menu walk
 
-1. Right-click a tile and choose Color Coding > AGE
-2. Verify tile backgrounds are colored by AGE gradient
-3. Change color coding to RACE (categorical)
-4. Verify each RACE value gets a distinct tile background color
-5. Remove color coding — tiles return to the default background
+Nothing on this surface is automated: no scenario opens the hamburger menu, and none
+measures how long a menu takes to open. This walk is therefore the ONLY coverage the
+surface has, and a defect missed here is missed everywhere.
 
----
-
-## From tile.md (already automated in tile-spec.ts — kept here for reference)
-
-### Multiple DataFrames Handling
-
-1. Open SPGI, SPGI-linked1, and SPGI-linked2 datasets
-2. On the SPGI view, add a Tile Viewer
-3. In the Context Panel, open Data > Table and switch between SPGI-linked2, SPGI-linked1, SPGI
-4. Verify viewer rebinds to each chosen table and re-renders without errors
-
-### Building from List of Columns
-
-1. Right-click the viewer and choose Edit Form...
-2. Drag a few columns onto the card, click CLOSE AND APPLY
-3. Save the layout and reopen the project
-4. Verify the saved card layout is restored exactly
-
-### Edit form with Table Change
-
-1. Open demog in addition to SPGI
-2. On SPGI, open Edit Form..., change the source table to demog, press Reset, add a few demog columns, click CLOSE AND APPLY
-3. In the Tile Viewer settings, switch Data > Table to demog
-4. Verify viewer displays demog data with no errors and no broken-binding placeholders inside tiles
-
-### Hamburger menu
-
-1. Open the Hamburger menu and walk through every item — each opens its dialog or submenu without errors
-2. Slowly hover Properties > Data > Lanes
-3. Verify submenu opens smoothly and the page does not freeze
-
-### Calculated column
-
-1. Create a calculated column `${Average Mass} + 5` named `cc`
-2. Open Edit Form... > Reset, add `cc` to the card, click CLOSE AND APPLY
-3. Click the `cc` column header, change the formula in the Context Pane, and click Apply
-4. Verify column values and tiles update immediately
-
-### Calculated column with filters
-
-1. Apply filters on `cc`, Stereo Category, and one more column
-2. Change the `cc` formula
-3. Verify tiles update correctly while filters stay applied
+1. Open the viewer's hamburger menu and walk every top-level entry and submenu
+2. Report any entry that opens nothing, opens the wrong thing, or leaves the page unresponsive
+3. On a table with MANY distinct lane values, time the hamburger OPENING itself — that is
+   where the cost sits (GROK-19356), not in walking the submenus. Report a noticeable delay
+   between the click and the menu appearing
+4. Note that a group row (Properties, Lanes) does not expand on hover, and clicking it closes
+   the whole menu — report it if either behaves differently for you, since that is what makes
+   this surface awkward to automate and worth a human pass
 
 ---
 {
