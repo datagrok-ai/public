@@ -37,11 +37,21 @@ async function closeDialog(page: import('@playwright/test').Page): Promise<void>
 
 // Switch the sketcher backend through the dialog's hamburger menu.
 async function switchBackendInDialog(page: import('@playwright/test').Page, name: string): Promise<void> {
-  await page.locator('.d4-dialog .fa-bars').first().click();
-  await page.waitForTimeout(800);
-  await page.locator('.d4-menu-item-label').filter({hasText: new RegExp(`^${name}$`)}).first().click();
+  const hamburger = page.locator('.d4-dialog .fa-bars').first();
+  await hamburger.waitFor({state: 'visible', timeout: 30_000});
+  await hamburger.click();
+  const item = page.locator('.d4-menu-item-label').filter({hasText: new RegExp(`^${name}$`)}).first();
+  await item.waitFor({state: 'visible', timeout: 15_000});
+  await item.click();
   await page.waitForFunction((b) => (window as any).DG?.chem?.currentSketcherType === b, name, {timeout: 60000});
-  await page.waitForTimeout(2500);
+  // The new backend mounts asynchronously — a fixed settle is enough on an idle stand and too short
+  // under load, which is where this spec flaked (Block C click timeout).
+  await page.waitForFunction(() => {
+    const d = document.querySelector('.d4-dialog');
+    if (!d) return false;
+    return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
+      || !!d.querySelector('canvas');
+  }, null, {timeout: 60_000});
 }
 
 test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reopen', async ({page}) => {

@@ -11,10 +11,10 @@ test.use(specTestOptions);
 // other target is a full stand, where this walk does complete. Skipping unconditionally meant it
 // ran nowhere.
 const MINIMAL_CI_STACK = /xamgle-nginx/.test(process.env.DATAGROK_URL ?? '');
-async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetPath: string) {
+async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetPath: string, inlineCsv = '') {
   await softStep(`[${label}] Open ${datasetPath} + wait for Chem menu (Molecule semType)`, async () => {
     const isSdf = datasetPath.toLowerCase().endsWith('.sdf');
-    await page.evaluate(async ({path, isSdf}) => {
+    await page.evaluate(async ({path, isSdf, csv}) => {
       document.body.classList.add('selenium');
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
@@ -23,14 +23,17 @@ async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetP
         if (!(grok as any).shell.tv) break;
         await new Promise(r => setTimeout(r, 200));
       }
-      if (isSdf) {
+      if (path === 'inline:v3000') {
+        grok.shell.addTableView(DG.DataFrame.fromCsv(csv));
+      }
+      else if (isSdf) {
         await ((DG as any).Func.find({name: 'OpenFile'})[0])
           .prepare({fullPath: path}).call(undefined, undefined, {processed: false});
       } else {
         const df = await grok.dapi.files.readCsv(path);
         grok.shell.addTableView(df);
       }
-    }, {path: datasetPath, isSdf});
+    }, {path: datasetPath, isSdf, csv: inlineCsv});
     await waitForChemMenu(page);
   });
 }
@@ -172,8 +175,8 @@ async function reRunWithCustomParam(page: Page, label: string, defaultParams: st
   });
 }
 
-async function runActivityCliffsWalk(page: Page, label: string, datasetPath: string) {
-  await openDatasetAndWaitForMolecule(page, label, datasetPath);
+async function runActivityCliffsWalk(page: Page, label: string, datasetPath: string, inlineCsv = '') {
+  await openDatasetAndWaitForMolecule(page, label, datasetPath, inlineCsv);
   await openActivityCliffsDialog(page, label);
   const defaultParams = await okAndWaitForScatter(page, `${label}/defaults`);
   await toggleShowOnlyCliffs(page, label);
@@ -205,10 +208,13 @@ test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
   // at all — Activity Cliffs needs an activity column, so its editor opened with empty Column and
   // Activities inputs and OK silently did nothing. Build a V3000 fixture with an activity column
   // instead, so the format is actually covered.
-  const v3kFixture = `System:AppData/Chem/temp/activity-cliffs-v3000-${Date.now()}.csv`;
-  let v3kFixtureWritten = false;
-  await softStep('Setup: build the molV3000 fixture (structures + activity)', async () => {
-    const built = await page.evaluate(async (path) => {
+  // molV3000 coverage used to point at DemoFiles ApprovedDrugs2015.sdf, which has NO numeric column
+  // at all — Activity Cliffs needs an activity column, so its editor opened with empty Column and
+  // Activities inputs and OK silently did nothing. Build the frame in memory instead: no file
+  // storage involved, so a wobbly FileShare cannot take this walk down.
+  let v3kCsv = '';
+  await softStep('Setup: build the molV3000 frame (structures + activity)', async () => {
+    const built = await page.evaluate(async () => {
       await grok.functions.call('Chem:getRdKitModule', {});
       const src = await grok.dapi.files.readCsv('System:AppData/Chem/tests/smiles-50.csv');
       const smilesCol: any = src.columns.toList().find((c: any) => /smiles/i.test(c.name));
@@ -226,29 +232,22 @@ test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
         DG.Column.fromStrings('molecule', mols),
         DG.Column.fromList('double' as any, 'activity', acts),
       ]);
-      await grok.dapi.files.writeAsText(path, out.toCsv());
-      return {rows: mols.length, bytes: (await grok.dapi.files.readAsText(path)).length};
-    }, v3kFixture);
+      return {rows: mols.length, csv: out.toCsv()};
+    });
     expect(built.rows, 'no V3000 structures produced for the fixture').toBeGreaterThan(10);
-    expect(built.bytes, `fixture not written to ${v3kFixture}`).toBeGreaterThan(0);
-    v3kFixtureWritten = true;
+    v3kCsv = built.csv;
   });
 
   const datasets: [string, string][] = [
     ['smiles-50', 'System:AppData/Chem/tests/smiles-50.csv'],
     ['mol1K', 'System:AppData/Chem/mol1K.sdf'],
-    ['molV3000', v3kFixture],
+    ['molV3000', 'inline:v3000'],
     ['smiles_2_columns', 'System:AppData/Chem/tests/smiles_2_columns.csv'],
     ['spgi-100', 'System:AppData/Chem/tests/spgi-100.csv'],
   ];
   for (const [label, path] of datasets)
-    await runActivityCliffsWalk(page, label, path);
+    await runActivityCliffsWalk(page, label, path, path === 'inline:v3000' ? v3kCsv : '');
 
-  if (v3kFixtureWritten) {
-    await page.evaluate(async (path) => {
-      try { await grok.dapi.files.delete(path); } catch (_) { /* best effort */ }
-    }, v3kFixture).catch(() => {});
-  }
 
   finishSpec();
 });
