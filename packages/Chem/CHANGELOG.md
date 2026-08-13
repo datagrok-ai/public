@@ -1,8 +1,10 @@
 # Chem changelog
 
-## v.next
+## 1.17.11-1 (2026-08-13)
 
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
+* Scaffold Tree: Fixed column rename still colliding with a peer viewer's column after the peer count changed
+* Scaffold Tree: A stale colors/labels column left behind by a closed or reloaded viewer is now removed and its name reclaimed, instead of pushing the new column aside to a "(2)"-suffixed name
 
 ## 1.17.11 (2026-06-04)
 
