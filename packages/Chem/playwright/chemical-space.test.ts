@@ -179,8 +179,16 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   await runChemicalSpaceWalk(page, 'D2 molV2000', 'System:AppData/Chem/mol1K.sdf', 'method');
   await runChemicalSpaceWalk(page, 'D3 molV3000', 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf', 'cluster-mcs');
 
-  await softStep('No console errors across the multi-format walk', async () =>
-    expect(consoleErrors, `console errors: ${consoleErrors.join(' | ')}`).toEqual([]));
+  // GROK-20717: under a loaded run (4 workers) the core raises "Concurrent modification during
+  // iteration" from ObservableMap here. The check stays as is — it is a real error — but the
+  // message names the ticket so the failure needs no re-investigation.
+  await softStep('No console errors across the multi-format walk', async () => {
+    const known = consoleErrors.filter((e) => /Concurrent modification during iteration/.test(e));
+    expect(consoleErrors,
+      `console errors: ${consoleErrors.join(' | ')}` +
+      (known.length ? ' — this is GROK-20717 (core, open), not a Chemical Space defect' : ''),
+    ).toEqual([]);
+  });
 
   finishSpec();
 });

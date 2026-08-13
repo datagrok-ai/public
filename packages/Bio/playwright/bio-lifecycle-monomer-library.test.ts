@@ -4,6 +4,7 @@ sub_features_covered: [bio.api.get-monomer-lib-helper, bio.lifecycle.init, bio.m
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {acquireMonomerLibLock, releaseMonomerLibLock} from './helpers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
@@ -11,6 +12,8 @@ import {
 } from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
 
+test.beforeEach(async () => { await acquireMonomerLibLock(); });
+test.afterEach(() => releaseMonomerLibLock());
 // Opens ribbon Bio | Manage | Monomer Libraries, waiting on each submenu instead of blind sleeps.
 async function openManageMonomerLibrariesRibbon(page: any): Promise<void> {
   // The Bio top menu belongs to a table view, so a caller arriving from the manage view finds no
