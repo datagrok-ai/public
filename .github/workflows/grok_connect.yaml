@@ -190,7 +190,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Upload Artifact
-        if: github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
+        if: steps.param.outputs.tar != '' && github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
         id: docker-artifact
         uses: actions/upload-artifact@v4
         with:
