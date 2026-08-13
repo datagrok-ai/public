@@ -92,6 +92,7 @@ test('Pie corner, trellis default, bar chart placement (SPGI)', async ({page}) =
   });
 
   expect(errors, `page errors: ${errors.join(' | ')}`).toHaveLength(0);
+  v.finishSpec('Auto placement failures');
 });
 
 test('Mini icon clickability and sizes, tooltip hover highlight', async ({page}) => {
@@ -212,4 +213,5 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
   });
 
   expect(errors, `page errors: ${errors.join(' | ')}`).toHaveLength(0);
+  v.finishSpec('Mini icon / tooltip failures');
 });

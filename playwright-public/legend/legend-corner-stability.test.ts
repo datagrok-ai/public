@@ -8,8 +8,11 @@ sub_features_covered: [legend.corner.hysteresis-band, legend.corner.priority,
 // ladder is pure priority order, so a free rightTop always wins; zooming/panning a
 // filter-by-zoom scatter never moves the legend even as categories vanish (item counts are
 // not placement inputs); a narrowed docked legend ellipsizes labels but never crushes the
-// marker icons (flex: 0 0 auto); and above 20K rows corner auto-placement and occupancy
-// marking are skipped entirely while an explicit corner still works.
+// marker icons (flex: 0 0 auto); above 20K rows corner auto-placement and occupancy
+// marking are skipped entirely while an explicit corner still works; and a floating pie
+// resized slowly at a fractional devicePixelRatio never flaps docked↔corner (the pie's
+// marks and corner offsets describe the same viewer-frame future-circle geometry, so the
+// decision cannot destroy its own justification).
 
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
@@ -227,4 +230,73 @@ test('Zoom stability, icon clipping, large-dataset gate (demog)', async ({page})
   expect(errors, `page errors:\n${errors.join('\n')}`).toEqual([]);
   await v.cleanupShell(page);
   v.finishSpec('Zoom stability / icon clipping / row-cap failures');
+});
+
+test('Floating pie: slow height growth at fractional DPR never flaps (SPGI)', async ({page}) => {
+  test.setTimeout(900_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e).slice(0, 300)));
+
+  await loginToDatagrok(page);
+  await v.openTable(page);
+
+  await softStep('Dragging the floating dialog taller moves the legend at most once', async () => {
+    await page.evaluate(() => {
+      Object.defineProperty(window, 'devicePixelRatio', {get: () => 0.8999999, configurable: true});
+      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Primary Series Name'});
+    });
+    await page.waitForTimeout(3000);
+    await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Pie chart');
+      tv.dockManager.findNode(x.root).container.float();
+    });
+    await page.waitForTimeout(1500);
+
+    // drag the SE corner handle so the floating dialog becomes exactly 395x513
+    await page.evaluate(async () => {
+      const dlg = document.querySelector('.dialog-floating') as HTMLElement;
+      const se = dlg.querySelector('.resize-handle-se') as HTMLElement;
+      const r0 = dlg.getBoundingClientRect();
+      const hr = se.getBoundingClientRect();
+      const ev = (type: string, x: number, y: number) => new MouseEvent(type,
+        {bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: 0});
+      const sx = hr.x + hr.width / 2;
+      const sy = hr.y + hr.height / 2;
+      const dx = 395 - r0.width;
+      const dy = 513 - r0.height;
+      se.dispatchEvent(ev('mousedown', sx, sy));
+      for (let i = 1; i <= 10; i++) {
+        document.dispatchEvent(ev('mousemove', sx + dx * i / 10, sy + dy * i / 10));
+        await new Promise((r) => setTimeout(r, 30));
+      }
+      document.dispatchEvent(ev('mouseup', sx + dx, sy + dy));
+    });
+    await page.waitForTimeout(2500);
+    await recordPlacements(page);
+    await page.evaluate(() => { (window as any).__legendMoves = []; });
+
+    // slowly drag the south handle 190px down, 2px per move
+    await page.evaluate(async () => {
+      const dlg = document.querySelector('.dialog-floating') as HTMLElement;
+      const s = dlg.querySelector('.resize-handle-s') as HTMLElement;
+      const hr = s.getBoundingClientRect();
+      const ev = (type: string, cx: number, cy: number) => new MouseEvent(type,
+        {bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0});
+      const sx = hr.x + hr.width / 2;
+      const sy = hr.y + hr.height / 2;
+      s.dispatchEvent(ev('mousedown', sx, sy));
+      for (let d = 2; d <= 190; d += 2) {
+        document.dispatchEvent(ev('mousemove', sx, sy + d));
+        await new Promise((r) => setTimeout(r, 130));
+      }
+      document.dispatchEvent(ev('mouseup', sx, sy + 190));
+    });
+    await page.waitForTimeout(1500);
+    expectNoOscillation(await moves(page), 'floating pie height growth');
+  });
+
+  expect(errors, `page errors:\n${errors.join('\n')}`).toEqual([]);
+  await v.cleanupShell(page);
+  v.finishSpec('Floating pie stability failures');
 });
