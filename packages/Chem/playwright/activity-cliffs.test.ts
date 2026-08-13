@@ -49,25 +49,27 @@ async function openActivityCliffsDialog(page: Page, label: string) {
   });
 }
 
-async function okAndWaitForScatter(page: Page, label: string): Promise<string> {
+async function okAndWaitForScatter(page: Page, label: string, previousParams = ''): Promise<string> {
   let params = '';
   await softStep(`[${label}] OK → Scatter plot + activityCliffsParams tag`, async () => {
     await page.locator('.d4-dialog [name="button-OK"]').click();
-    const result = await page.evaluate(async () => {
-      for (let i = 0; i < 45; i++) {
+    const result = await page.evaluate(async (prev) => {
+      for (let i = 0; i < 90; i++) {
         const tv = grok.shell.tv;
         const types = Array.from(tv?.viewers ?? []).map((v: any) => v.type);
         const hasScatter = types.some(t => /Scatter plot/i.test(t));
         const acParams = tv?.dataFrame?.getTag?.('activityCliffsParams');
-        if (hasScatter && acParams) return {ok: true, types, params: acParams, attempt: i+1};
+        // On a re-run the previous scatter and tag are still there, so "a tag exists" is not a
+        // readiness signal — wait until it actually changes.
+        if (hasScatter && acParams && acParams !== prev) return {ok: true, types, params: acParams, attempt: i+1};
         await new Promise(r => setTimeout(r, 2000));
       }
       const tv2 = grok.shell.tv;
       return {ok: false, types: Array.from(tv2?.viewers ?? []).map((v: any) => v.type),
         params: tv2?.dataFrame?.getTag?.('activityCliffsParams')};
-    });
+    }, previousParams);
     expect((result as any).ok,
-      `[${label}] Activity Cliffs OK did not produce Scatter plot + activityCliffsParams tag within 90s. result=${JSON.stringify(result)}`,
+      `[${label}] Activity Cliffs OK did not produce a Scatter plot + a fresh activityCliffsParams tag within 180s. result=${JSON.stringify(result)}`,
     ).toBe(true);
     params = (result as any).params ?? '';
   });
@@ -75,28 +77,28 @@ async function okAndWaitForScatter(page: Page, label: string): Promise<string> {
 }
 
 async function toggleShowOnlyCliffs(page: Page, label: string) {
-  await softStep(`[${label}] Toggle Show only cliffs → showOnlyCliffs option enabled`, async () => {
-    const before = await page.evaluate(() => {
-      const scatter: any = Array.from((grok as any).shell.tv?.viewers ?? []).find((v: any) => v.type === 'Scatter plot');
-      return scatter?.getOptions?.()?.look?.showOnlyCliffs ?? false;
-    });
+  await softStep(`[${label}] Toggle Show only cliffs → cliffs filter applied`, async () => {
+    // The switch does not touch a viewer option — it tags the dataframe `filterCliffs` and narrows
+    // df.filter to the cliff pairs (libraries/ml/src/viewers/activity-cliffs.ts:198). Assert that.
+    const before = await page.evaluate(() => ({
+      trueCount: grok.shell.t.filter.trueCount,
+      tag: grok.shell.t.getTag('filterCliffs') ?? '',
+    }));
     // No JS API substitution — the toggle must be driven through the UI switch (.md Notes), and with
     // the real mouse: an element.click() on the switch decorator leaves the option untouched.
     const switchEl = page.locator('[name="input-host-Show-only-cliffs"] .ui-input-switch').first();
     await switchEl.waitFor({state: 'visible', timeout: 15_000});
     await switchEl.click();
-    await page.waitForFunction((prev) => {
-      const scatter: any = Array.from((grok as any).shell.tv?.viewers ?? []).find((v: any) => v.type === 'Scatter plot');
-      const now = scatter?.getOptions?.()?.look?.showOnlyCliffs ?? false;
-      return now !== prev;
-    }, before, {timeout: 15000});
-    const after = await page.evaluate(() => {
-      const scatter: any = Array.from((grok as any).shell.tv?.viewers ?? []).find((v: any) => v.type === 'Scatter plot');
-      return scatter?.getOptions?.()?.look?.showOnlyCliffs ?? false;
-    });
-    // Non-cliff points are hidden on the scatter canvas — canvas visibility is not DOM-observable,
-    // so assert the showOnlyCliffs viewer option (the state that drives the hide) flipped to true.
-    expect(after, `[${label}] Show only cliffs toggle did not enable showOnlyCliffs`).toBe(true);
+    await page.waitForFunction((prev: any) =>
+      (grok.shell.t.getTag('filterCliffs') ?? '').length > 0 && grok.shell.t.filter.trueCount < prev.trueCount,
+    before, {timeout: 30_000});
+    const after = await page.evaluate(() => ({
+      trueCount: grok.shell.t.filter.trueCount,
+      tag: grok.shell.t.getTag('filterCliffs') ?? '',
+    }));
+    expect(after.tag.length, `[${label}] Show only cliffs did not tag the dataframe`).toBeGreaterThan(0);
+    expect(after.trueCount, `[${label}] Show only cliffs did not narrow the filter ` +
+      `(${before.trueCount} -> ${after.trueCount})`).toBeLessThan(before.trueCount);
   });
 }
 
@@ -162,7 +164,7 @@ async function reRunWithCustomParam(page: Page, label: string, defaultParams: st
     await page.keyboard.press('Tab');
     await expect(cutoff).toHaveValue('60');
   });
-  const customParams = await okAndWaitForScatter(page, `${label}/custom`);
+  const customParams = await okAndWaitForScatter(page, `${label}/custom`, defaultParams);
   await softStep(`[${label}] Edited-param run differs from defaults`, async () => {
     expect(customParams,
       `[${label}] activityCliffsParams should reflect the edited cutoff (differ from defaults "${defaultParams}")`,
@@ -199,15 +201,54 @@ test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
   await loginToDatagrok(page);
   await page.waitForFunction(() => typeof grok !== 'undefined' && !!(grok as any).shell, undefined, {timeout: 30000});
 
+  // molV3000 coverage used to point at DemoFiles ApprovedDrugs2015.sdf, which has NO numeric column
+  // at all — Activity Cliffs needs an activity column, so its editor opened with empty Column and
+  // Activities inputs and OK silently did nothing. Build a V3000 fixture with an activity column
+  // instead, so the format is actually covered.
+  const v3kFixture = `System:AppData/Chem/temp/activity-cliffs-v3000-${Date.now()}.csv`;
+  let v3kFixtureWritten = false;
+  await softStep('Setup: build the molV3000 fixture (structures + activity)', async () => {
+    const built = await page.evaluate(async (path) => {
+      await grok.functions.call('Chem:getRdKitModule', {});
+      const src = await grok.dapi.files.readCsv('System:AppData/Chem/tests/smiles-50.csv');
+      const smilesCol: any = src.columns.toList().find((c: any) => /smiles/i.test(c.name));
+      const actCol: any = src.columns.toList().find((c: any) => c.type === 'double' || c.type === 'int');
+      const mols: string[] = [];
+      const acts: number[] = [];
+      for (let i = 0; i < Math.min(40, src.rowCount); i++) {
+        const v3 = await grok.functions.call('Chem:convertMolNotation',
+          {molecule: smilesCol.get(i), sourceNotation: 'smiles', targetNotation: 'v3Kmolblock'});
+        if (!String(v3).includes('V3000')) continue;
+        mols.push(String(v3));
+        acts.push(Number(actCol.get(i)));
+      }
+      const out = DG.DataFrame.fromColumns([
+        DG.Column.fromStrings('molecule', mols),
+        DG.Column.fromList('double' as any, 'activity', acts),
+      ]);
+      await grok.dapi.files.writeAsText(path, out.toCsv());
+      return {rows: mols.length, bytes: (await grok.dapi.files.readAsText(path)).length};
+    }, v3kFixture);
+    expect(built.rows, 'no V3000 structures produced for the fixture').toBeGreaterThan(10);
+    expect(built.bytes, `fixture not written to ${v3kFixture}`).toBeGreaterThan(0);
+    v3kFixtureWritten = true;
+  });
+
   const datasets: [string, string][] = [
     ['smiles-50', 'System:AppData/Chem/tests/smiles-50.csv'],
     ['mol1K', 'System:AppData/Chem/mol1K.sdf'],
-    ['ApprovedDrugs2015', 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf'],
+    ['molV3000', v3kFixture],
     ['smiles_2_columns', 'System:AppData/Chem/tests/smiles_2_columns.csv'],
     ['spgi-100', 'System:AppData/Chem/tests/spgi-100.csv'],
   ];
   for (const [label, path] of datasets)
     await runActivityCliffsWalk(page, label, path);
+
+  if (v3kFixtureWritten) {
+    await page.evaluate(async (path) => {
+      try { await grok.dapi.files.delete(path); } catch (_) { /* best effort */ }
+    }, v3kFixture).catch(() => {});
+  }
 
   finishSpec();
 });
