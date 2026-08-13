@@ -44,14 +44,9 @@ async function switchBackendInDialog(page: import('@playwright/test').Page, name
   await item.waitFor({state: 'visible', timeout: 15_000});
   await item.click();
   await page.waitForFunction((b) => (window as any).DG?.chem?.currentSketcherType === b, name, {timeout: 60000});
-  // The new backend mounts asynchronously — a fixed settle is enough on an idle stand and too short
-  // under load, which is where this spec flaked (Block C click timeout).
-  await page.waitForFunction(() => {
-    const d = document.querySelector('.d4-dialog');
-    if (!d) return false;
-    return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
-      || !!d.querySelector('canvas');
-  }, null, {timeout: 60_000});
+  // Deliberately a settle, not a DOM gate: the outgoing backend's canvas is still mounted while the
+  // new one builds, so "a canvas exists" is true immediately and lets the spec act too early.
+  await page.waitForTimeout(2500);
 }
 
 test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reopen', async ({page}) => {
