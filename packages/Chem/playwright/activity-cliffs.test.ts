@@ -7,10 +7,6 @@ import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 
-// The ui_tests stack the Jenkins job spins up is reachable only as http://xamgle-nginx:8889; any
-// other target is a full stand, where this walk does complete. Skipping unconditionally meant it
-// ran nowhere.
-const MINIMAL_CI_STACK = /xamgle-nginx/.test(process.env.DATAGROK_URL ?? '');
 async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetPath: string, inlineCsv = '') {
   await softStep(`[${label}] Open ${datasetPath} + wait for Chem menu (Molecule semType)`, async () => {
     const isSdf = datasetPath.toLowerCase().endsWith('.sdf');
@@ -198,7 +194,6 @@ test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
   // CI SKIP (approved): heavy UMAP over 5 datasets exceeds the minimal CI stack (ApprovedDrugs2015 >90s,
   // no scatter) and the "Show only cliffs" / "N cliffs" UI controls aren't reachable there — the .md
   // forbids JS-API substitution for the toggle. Runs on a full stack. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
-  test.skip(MINIMAL_CI_STACK, 'CI-env: heavy UMAP walk — re-check on the minimal stack is pending (Jenkins was down); green on a full stand in ~3 min');
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);

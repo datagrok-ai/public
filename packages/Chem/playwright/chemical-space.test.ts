@@ -7,10 +7,6 @@ import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 
-// The ui_tests stack the Jenkins job spins up is reachable only as http://xamgle-nginx:8889; any
-// other target is a full stand, where this walk does complete. Skipping unconditionally meant it
-// ran nowhere.
-const MINIMAL_CI_STACK = /xamgle-nginx/.test(process.env.DATAGROK_URL ?? '');
 async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetPath: string) {
   await softStep(`[${label}] Open ${datasetPath} + wait for Chem menu (Molecule semType)`, async () => {
     const isSdf = datasetPath.toLowerCase().endsWith('.sdf');
@@ -163,11 +159,13 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   // CI SKIP (approved): 6 heavy dim-reduction (UMAP/t-SNE) runs across 3 datasets time out / race on the
   // minimal CI stack ("Close active view" timeouts + "Concurrent modification"). Runs on a full stack.
   // See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
-  test.skip(MINIMAL_CI_STACK, 'CI-env: heavy dim-reduction walk — re-check on the minimal stack is pending (Jenkins was down); green on a full stand in ~1 min');
   test.setTimeout(600_000); // 6 dim-reduction runs (2 × 3 datasets) @ ~45-90s each + margin
 
   const consoleErrors: string[] = [];
-  const isBenignError = (t: string) => /Failed to load resource/.test(t) || /404 \(\)/.test(t) || /favicon/.test(t);
+  // WebGPU is absent in headless CI chromium and the dim-reduction code just reports it — same
+  // class of noise as a 404 for a lazy asset.
+  const isBenignError = (t: string) => /Failed to load resource/.test(t) || /404 \(\)/.test(t) ||
+    /favicon/.test(t) || /WebGPU is not supported/.test(t);
   page.on('console', (msg) => {
     if (msg.type() === 'error' && !isBenignError(msg.text())) consoleErrors.push(msg.text());
   });
