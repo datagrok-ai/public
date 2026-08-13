@@ -45,6 +45,8 @@ async function expandAndVerifyPanes(
 test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async ({page}) => {
   test.setTimeout(600_000);
 
+  const smartsFixturePath = `System:AppData/Chem/temp/info-panels-smarts-${Date.now()}.csv`;
+  let smartsFixtureWritten = false;
   await loginToDatagrok(page);
   await page.waitForFunction(() => (window as any).grok?.shell != null, null, {timeout: 30000});
 
@@ -181,12 +183,27 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
 
   // ===== Phase B — Multi-format coverage =====
 
-  type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile'; bestEffort?: boolean};
+  type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile'};
+  // SMARTS fixture is written here rather than read from a checked-in dataset: the previous path
+  // pointed into another package's AppData, where no such file exists, so the variant silently
+  // skipped itself on every run. Values are quoted because SMARTS contain commas.
+  await softStep('Phase B setup: write the SMARTS fixture', async () => {
+    const written = await page.evaluate(async (path) => {
+      const rows = ['[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1', '[CX3](=O)[OX2H1]', '[#6]-[#7]',
+        '[OX2H][CX4]', '[#6]=[#8]'];
+      const csv = ['smarts'].concat(rows.map((r) => '"' + r + '"')).join(String.fromCharCode(10));
+      await grok.dapi.files.writeAsText(path, csv);
+      return (await grok.dapi.files.readAsText(path)).length;
+    }, smartsFixturePath);
+    expect(written, `SMARTS fixture not written to ${smartsFixturePath}`).toBeGreaterThan(0);
+    smartsFixtureWritten = true;
+  });
+
   const variants: Variant[] = [
     {id: 'B-smiles', format: 'smiles', path: 'System:AppData/Chem/tests/smiles-50.csv', opener: 'csv'},
     {id: 'B-molV2000', format: 'molV2000', path: 'System:AppData/Chem/mol1K.sdf', opener: 'openFile'},
     {id: 'B-molV3000', format: 'molV3000', path: 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf', opener: 'openFile'},
-    {id: 'B-smarts', format: 'smarts', path: 'System:AppData/UsageAnalysis/test_datasets/SMARTS_example_temp.csv', opener: 'csv', bestEffort: true},
+    {id: 'B-smarts', format: 'smarts', path: smartsFixturePath, opener: 'csv'},
   ];
 
   for (const v of variants) {
@@ -204,11 +221,6 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
           return {ok: true, rows: grok.shell.tv?.dataFrame?.rowCount ?? 0};
         } catch (e) { return {ok: false, err: String(e), rows: 0}; }
       }, {path: v.path, opener: v.opener});
-      if (v.bestEffort && !(opened as any).ok) {
-        // bestEffort dataset (e.g. SMARTS) may be absent/unloadable on dev — defer, don't hard-fail.
-        console.log(`[${v.id}] open failed — bestEffort, skipping (${JSON.stringify(opened)})`);
-        return;
-      }
       expect((opened as any).ok, `[${v.id}] open failed: ${JSON.stringify(opened)}`).toBe(true);
       await waitForChemMenu(page).catch(() => {});
       await waitForMolecule(page).catch(() => {});
@@ -248,6 +260,11 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   });
 
   await page.evaluate(() => grok.shell.closeAll());
+  if (smartsFixtureWritten) {
+    await page.evaluate(async (path) => {
+      try { await grok.dapi.files.delete(path); } catch (_) { /* best effort */ }
+    }, smartsFixturePath).catch(() => {});
+  }
 
   finishSpec();
 });

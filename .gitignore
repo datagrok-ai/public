@@ -21,6 +21,12 @@ test-record.mp4
 test-report.csv
 test-console-output.log
 
+# Playwright run artifacts left in a package by `grok test` / a local run.
+# .auth.json holds a live auth token — it must never be committed.
+packages/*/.auth.json
+packages/*/e2e/
+packages/*/playwright/test-output/
+
 # Dev auth + Playwright test outputs (UsageAnalysis test automation)
 packages/UsageAnalysis/auth-dev.json
 packages/UsageAnalysis/test-playwright-output/

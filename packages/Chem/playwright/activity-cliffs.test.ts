@@ -7,6 +7,10 @@ import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 
+// The ui_tests stack the Jenkins job spins up is reachable only as http://xamgle-nginx:8889; any
+// other target is a full stand, where this walk does complete. Skipping unconditionally meant it
+// ran nowhere.
+const MINIMAL_CI_STACK = /xamgle-nginx/.test(process.env.DATAGROK_URL ?? '');
 async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetPath: string) {
   await softStep(`[${label}] Open ${datasetPath} + wait for Chem menu (Molecule semType)`, async () => {
     const isSdf = datasetPath.toLowerCase().endsWith('.sdf');
@@ -33,20 +37,11 @@ async function openDatasetAndWaitForMolecule(page: Page, label: string, datasetP
 
 async function openActivityCliffsDialog(page: Page, label: string) {
   await softStep(`[${label}] Open Chem → Analyze → Activity Cliffs dialog`, async () => {
-    await page.evaluate(async () => {
-      const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement | null;
-      if (!chemMenu) throw new Error('Top-menu Chem entry not found');
-      chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      let ac: HTMLElement | undefined;
-      for (let i = 0; i < 40; i++) {
-        ac = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-          .find(m => m.textContent!.trim() === 'Activity Cliffs...') as HTMLElement | undefined;
-        if (ac) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      if (!ac) throw new Error('"Activity Cliffs..." sub-menu item not found');
-      (ac.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
-    });
+    // Real mouse: a synthetic click reaches the leaf without the submenu ever opening, and the
+    // dialog then shows up with an uninitialised editor — OK runs it with no columns picked.
+    await page.locator('[name="div-Chem"]').click();
+    await page.locator('[name="div-Chem---Analyze"]').hover();
+    await page.locator('[name="div-Chem---Analyze---Activity-Cliffs..."]').click();
     await page.locator('.d4-dialog').waitFor({timeout: 15000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim() ?? '');
@@ -85,21 +80,11 @@ async function toggleShowOnlyCliffs(page: Page, label: string) {
       const scatter: any = Array.from((grok as any).shell.tv?.viewers ?? []).find((v: any) => v.type === 'Scatter plot');
       return scatter?.getOptions?.()?.look?.showOnlyCliffs ?? false;
     });
-    // No JS API substitution — the toggle must be driven through the UI switch (.md Notes).
-    const clicked = await page.evaluate(async () => {
-      let host: Element | null = null;
-      for (let i = 0; i < 20; i++) {
-        host = document.querySelector('[name="input-host-Show-only-cliffs"]');
-        if (host) break;
-        await new Promise(r => setTimeout(r, 500));
-      }
-      if (!host) return {ok: false, reason: 'Show-only-cliffs host widget not found after 10s poll'};
-      const switchEl = host.querySelector('.ui-input-switch') as HTMLElement | null;
-      if (!switchEl) return {ok: false, reason: 'switch decorator not found inside host'};
-      switchEl.click();
-      return {ok: true};
-    });
-    expect((clicked as any).ok, `[${label}] Show-only-cliffs UI toggle: ${JSON.stringify(clicked)}`).toBe(true);
+    // No JS API substitution — the toggle must be driven through the UI switch (.md Notes), and with
+    // the real mouse: an element.click() on the switch decorator leaves the option untouched.
+    const switchEl = page.locator('[name="input-host-Show-only-cliffs"] .ui-input-switch').first();
+    await switchEl.waitFor({state: 'visible', timeout: 15_000});
+    await switchEl.click();
     await page.waitForFunction((prev) => {
       const scatter: any = Array.from((grok as any).shell.tv?.viewers ?? []).find((v: any) => v.type === 'Scatter plot');
       const now = scatter?.getOptions?.()?.look?.showOnlyCliffs ?? false;
@@ -168,8 +153,13 @@ async function clickFirstCliffsRow(page: Page, label: string) {
 async function reRunWithCustomParam(page: Page, label: string, defaultParams: string) {
   await openActivityCliffsDialog(page, `${label}/rerun`);
   await softStep(`[${label}] Change Similarity cutoff 80 → 60`, async () => {
+    // fill() alone updates the DOM input but not the Dart-side value — the run still uses 80.
+    // Type it and blur so the input commits.
     const cutoff = page.locator('.d4-dialog [name="input-Similarity-cutoff"]');
-    await cutoff.fill('60');
+    await cutoff.click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('60', {delay: 50});
+    await page.keyboard.press('Tab');
     await expect(cutoff).toHaveValue('60');
   });
   const customParams = await okAndWaitForScatter(page, `${label}/custom`);
@@ -203,7 +193,7 @@ test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
   // CI SKIP (approved): heavy UMAP over 5 datasets exceeds the minimal CI stack (ApprovedDrugs2015 >90s,
   // no scatter) and the "Show only cliffs" / "N cliffs" UI controls aren't reachable there — the .md
   // forbids JS-API substitution for the toggle. Runs on a full stack. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
-  test.skip(true, 'CI-env: heavy UMAP walk + UI controls unavailable on the minimal CI stack (findings §B1)');
+  test.skip(MINIMAL_CI_STACK, 'CI-env: heavy UMAP walk + UI controls unavailable on the minimal CI stack (findings §B1)');
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);
