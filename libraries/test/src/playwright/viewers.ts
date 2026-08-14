@@ -733,6 +733,8 @@ export async function setViewerProps(
 export function finishSpec(prefix = 'Step failures'): void {
   if (stepErrors.length === 0) return;
   const summary = stepErrors.map((e: StepError) => `- ${e.step}: ${e.error}`).join('\n');
+  // drain: the array is worker-global, and a leftover failure would fail every later test
+  stepErrors.length = 0;
   throw new Error(`${prefix}:\n${summary}`);
 }
 

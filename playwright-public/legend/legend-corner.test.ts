@@ -442,7 +442,7 @@ test('Markers selector — picking a column works, including after a tooltip cyc
   await v.cleanupShell(page);
 });
 
-test('Resize drag — one transition, and GROK-19041 equation avoidance', async ({page}) => {
+test('Resize drag — no oscillation, and GROK-19041 equation avoidance', async ({page}) => {
   test.setTimeout(900_000);
 
   const errors: string[] = [];
@@ -453,7 +453,7 @@ test('Resize drag — one transition, and GROK-19041 equation avoidance', async 
   await v.addLegendViewers(page, {column: 'Stereo Category', viewers: [
     {type: 'Scatter plot', column: 'Stereo Category'}]});
 
-  await softStep('A continuous drag out of the mini icon moves the legend exactly once', async () => {
+  await softStep('A continuous drag out of the mini icon tracks the size without oscillating', async () => {
     await v.setViewerProps(page, 'Scatter plot',
       [{set: {legendVisibility: 'Auto', legendPosition: 'Auto'}, wait: 1200}]);
     await v.resizeViewer(page, 'Scatter plot', 240, 400);
@@ -482,10 +482,16 @@ test('Resize drag — one transition, and GROK-19041 equation avoidance', async 
     });
     await page.waitForTimeout(1500);
     const modes = await page.evaluate(() => (window as any).__modes);
-    // one entry for the starting state plus at most one move
-    expect(modes.length, `the legend moved mid-drag: ${modes.join(' -> ')}`)
-      .toBeLessThanOrEqual(2);
-    expect((await v.getLegendState(page, 'Scatter plot'))?.mode).not.toBe('miniIcon');
+    // placement is decided per frame now, so a monotone drag may legitimately pass through
+    // the states its sizes settle to (mini icon exit while still narrow, then the vertical
+    // flip) — but each hysteresis band flips at most once and no state is ever revisited
+    expect(modes.length, `too many moves mid-drag: ${modes.join(' -> ')}`)
+      .toBeLessThanOrEqual(3);
+    expect(new Set(modes).size, `the legend oscillated mid-drag: ${modes.join(' -> ')}`)
+      .toBe(modes.length);
+    const finalState = await v.getLegendState(page, 'Scatter plot');
+    expect(finalState?.mode).toBe('docked');
+    expect(finalState?.slot, 'a wide viewer settles on the right').toBe('right');
   });
 
   await softStep('GROK-19041 — the auto legend leaves the regression equation corner', async () => {
