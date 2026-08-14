@@ -56,6 +56,17 @@ public class ClickHouseProvider extends JdbcDataProvider {
         return "jdbc:clickhouse://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        Properties properties = defaultConnectionProperties(conn);
+        // ClickHouse >= 26 compresses HTTP responses in a framing the v1 driver can't decode
+        // ("Magic is not correct"); keep native lz4 but turn off the HTTP-layer compression
+        // https://github.com/ClickHouse/clickhouse-java/issues/2636
+        properties.setProperty("compress", "1");
+        properties.setProperty("custom_http_params", "enable_http_compression=0");
+        return properties;
+    }
+
 
     @Override
     public String getSchemasSql(String db) {
