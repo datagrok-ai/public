@@ -50,7 +50,9 @@ src/
 ├── polyfills.ts            # Chrome 50 / Dartium polyfills — imported first from package.ts / package-test.ts
 ├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, isEnterKey/copyToClipboard
 ├── ai/                     # AI panels, search, and UI wiring
-│   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel
+│   ├── panel.ts            # AIPanel (singleton shell chat), DBAIPanel, ScriptingAIPanel, StreamingPanel
+│   ├── ai-window.ts        # AIWindowManager — mounts panels into grok.shell.windows.ai, Ctrl+I toggle
+│   ├── prompt-suggestions.ts # Curated prompt suggestions (files/suggestions.yaml), wand-icon menu
 │   ├── ui.ts               # Setup functions that wire panels into the platform UI
 │   ├── storage.ts          # ConversationStorage — IndexedDB persistence for chat history
 │   ├── usage-limiter.ts    # Per-user daily request limits (group-configurable)
@@ -89,17 +91,93 @@ a structured output schema).
 `CombinedAISearchAssistant` collects all `aiSearchProvider` functions, uses `ClaudeRuntimeClient.query()` to rank them
 by relevance to the user query, then presents results in a lazy tab control.
 
-### AI Panels (`src/ai/panel.ts`)
+### AI Panel (`src/ai/panel.ts`) — one singleton everywhere
 
-Four panel classes handle UI for different contexts:
+The assistant is ONE `AIPanel` instance (created by `initAIWindow()`) with one Claude session,
+used for every view — there are no per-view or specialized panels anymore. It survives view
+switches — `AIWindowManager` (`src/ai/ai-window.ts`) never remounts on `onCurrentViewChanged`;
+instead, every prompt gets a fresh workspace snapshot from `buildWorkspaceContext()` (current view
+details, all open views, all workspace tables), and `datagrok-exec`/`datagrok_verify` blocks run
+against the live `grok.shell.v`. The ribbon AI icons on table/script/query views just toggle this
+singleton.
 
-- `TVAIPanel` — table view assistant
-- `DBAIPanel` — database query editor assistant
-- `ScriptingAIPanel` — script generation assistant
-- `ShellAIPanel` — context-free shell / general-purpose assistant (set up by `setupShellAIPanelUI()`)
-
-All panels stream through `ClaudeRuntimeClient` and share a common `StreamingPanel` base with chat history,
+The panel streams through `ClaudeRuntimeClient` (`StreamingPanel` interface) with chat history,
 streaming display, and conversation persistence via `ConversationStorage`.
+
+### View functions (`src/ai/view-tools.ts`, `src/ai/db-view-functions.ts`)
+
+The assistant reaches a view's operations through the platform's `getFunctions()` — every Widget
+(and thus every view) returns the registered `DG.Func`s applicable to it. A view's set comes from:
+
+1. **Dart `View.getFunctions()`** (core) — the base returns registered functions declaring
+   `meta.viewType: <viewType>`; subclasses add view-specific `CustomFunc`s on top
+   (`DataQueryView`: `getQueryInfo` / `setQueryAndRun`; `ScriptView`: `getScriptCode` /
+   `setScriptCode`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
+2. **JS `ViewBase.getFunctions()`** (js-api) — a JS-defined view overrides it to return its
+   registered package functions; e.g. Flow's `FuncFlowView` returns the `flowViewFunction`-tagged
+   Flow functions (`listFlowNodes`, `findFlowNodeTypes`, `addFlowNode`, `connectFlowNodes`,
+   `setFlowNodeInputs`, `selectFlowNode`, `runFlow`, guides). Those functions take the generic
+   `view` argument and reach the instance via `view.jsView` (interop `grok_View_Get_JsView`).
+3. **`meta.viewType` package functions** — any package can register a function with
+   `meta: {viewType: '<viewType>'}` taking the view; Grokky registers the DataQueryView SQL set
+   (`listDbCatalogs/Schemas/Tables`, `getDbTableDetails`, `listDbJoins`, `getSqlTestResult` — in
+   `db-view-functions.ts`, discovering the connection through the view's native `getQueryInfo`).
+
+Because a view can have hundreds of functions (TableView commands), Grokky never declares them all
+to Claude. Instead `viewFunctionTools()` declares four STATIC meta-tools every full-mode turn
+(stable defs — prompt-cache friendly): `list_view_functions(query, widget?)` (search, ≤10 results),
+`list_view_widgets()` (the view's widget tree: per-widget ref/type/aiDescription/function count),
+`get_view_function_result(name, parameters, widget?)` (read-only invoke), and `call_view_function`
+(state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
+`grok.shell.v` at call time, inject the `view` argument, run `func.apply()`, and serialize the
+result. The optional `widget` argument (a ref like `"0.2"` from `list_view_widgets`, an index path
+through `Widget.children`) retargets listing/invocation at a sub-widget's own `getFunctions()`.
+Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
+`datagrok-view` MCP server whose calls round-trip to the browser as `input_request`.
+
+`aiDescription` and `getFunctions()` are WIDGET-level concepts (Dart `Widget` in d4, js-api
+`Widget`/`DartWidget`/`Viewer`/`ViewBase`) — views inherit them; the interop surface is
+`grok_Widget_Get/Set_AIDescription` (the old `grok_View_*` pair is removed). `buildWorkspaceContext()`
+prepends the current view's briefing ("About this view") plus the briefings of sub-widgets that
+carry one ("Widgets here"). Entity gallery views (Dart `DataSourceCardView` subclasses:
+users, groups, roles, projects, connections, queries, dockers, packages, files, ...) all inherit
+`listItems` / `searchItems` / `selectItem` / `listItemCommands` / `runItemCommand` /
+`refreshItems` from the base class, plus per-view extras.
+
+Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
+always briefed with their title) expose `getDialogInfo` (incl. the dialog body text) / `setInput` /
+`clickButton` plus the legacy per-button funcs, and complex dialogs add their own functions via
+`Modal.aiFunctions` — the **Save Project dialog** ships `getProjectSaveInfo` / `setProjectName` /
+`setProjectDescription` / `setSaveMode` / `setPresentationMode` with its entity-list child widget
+(`ProjectEntityMoveWidget`) exposing `listEntities` / `setEntityAction` / `setDataSync`, and the
+**Share dialog** ships `getShareInfo` / `addShareGrantee` / `setShareAccess` / `setShareMessage`
+(the `datagrok-projects` skill drives both), **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
+`expandPane`, **column selectors** (`ColumnComboBox`) `setColumn`, **range sliders** `getRange` /
+`setRange`, **viewer legends** `listCategories` / `selectCategory`, **property grids** (`PropGrid`)
+`getProperties` / `setProperty`, **per-column filters** (`GridFilterBase`) `resetFilter`,
+**membership editors** `listMembers` / `addMember` / `removeMember`, and xamgle surfaces —
+**Browse panel** `listNodes` / `expandNode` / `selectNode` (projecting its non-Widget tree),
+**chemical sketcher** `getMolecule` / `setMolecule` / `clearMolecule`, **console**, **favorites**,
+**functions widget** `searchFunctions`. Controls that are NOT `Widget` subclasses (inputs, tree
+nodes, tag editors, popups) are invisible to the widget tree and must be projected through their
+host's `getFunctions()` — see d4 `CLAUDE.md` "AI Integration" for the full conventions. **Dart viewers** ship quick commands via the `TextInterpreter` mixin (d4
+`text_interpreter.dart`): no-param `reg()` commands matched by name/synonyms (`zoomIn`, `zoomOut`,
+`resetView`) and parameterized funcs with anchored `searchPattern` regexes (`xBy`/`yBy`/`colorBy`/
+`sizeBy`/`splitBy`/`stackBy`/`valueBy`/`categoryBy`(columnName), `aggregationType`, `chartType`,
+`bins`) across scatter plot, line chart, bar chart, histogram, pie chart, box plot, density plot,
+PC plot, tree map, and 3D scatter plot. The same funcs serve the sync interpreter
+(`Prompt.process` matches `searchPattern` before the generic property interpreter) and the
+assistant (system prompt prefers a targeted widget's quick functions — soft rule, see
+`prompts.ts` "View functions"). Open dialogs live outside the view's DOM subtree, so `collectWidgets()` adds them as
+extra roots with `dlg<N>` refs — this is how the assistant fills and confirms a dialog that an
+entity command opened.
+
+#### AI window visibility (sync with core)
+
+`grok.shell.windows.showAI` (core, xamgle `ai_panel.dart`) is the single source of truth. Manual close
+(X on the docked panel) resets core's `_aiDockNode` (handled in `docking.dart` `onClosing`) and the
+value is persisted in core `Settings.showAI`, restored on startup. PowerPack's status-bar robot icon
+and Grokky's `AIWindowManager` both read/write `showAI` and react to `onPanelVisibilityChanged`.
 
 #### Shell AI Panel features
 
@@ -124,10 +202,12 @@ can vary per turn without restarting the session.
 Setup functions called from `init()` that attach AI panels to platform UI elements:
 
 - `setupSearchUI()` — wires `CombinedAISearchAssistant` into the global search bar
-- `setupTableViewAIPanelUI()` — adds `TVAIPanel` to table views
-- `setupScriptsAIPanelUI()` — adds `ScriptingAIPanel` to script views
-- `setupAIQueryEditorUI()` — adds `DBAIPanel` to the query editor
-- `setupShellAIPanelUI()` — adds `ShellAIPanel` to the shell/AI sidebar
+- `setupTableViewAIPanelUI()` — adds the AI ribbon icon to table views (toggles the singleton panel)
+- `setupScriptsAIPanelUI()` — adds the AI icon to script views (toggles the singleton panel)
+- `setupAIQueryEditorUI()` — called by the core query editor; just reports whether AI is configured
+  (the query view's tools are collected at prompt time)
+- `setupShellAIPanelUI()` — shows the singleton panel in the AI window
+- `setupAgentScriptsUI()` — adds a Run button to file views under `MyFiles/agents/scripts/`
 
 `runPromptWithLifecycle()` is the central routing function: intercepts `!`/`!!` prefixes,
 skips `grok.ai.processPrompt()` when `rawRender` is on, and calls `runClaudeStreaming()`.

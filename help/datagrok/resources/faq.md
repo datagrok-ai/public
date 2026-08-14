@@ -3,6 +3,16 @@ title: FAQ
 sidebar_position: 2
 mdx:
   format: mdx
+description: Answers frequently asked questions about Datagrok's drug discovery, deployment, data access, security, and development capabilities.
+keywords:
+  - frequently asked questions
+  - drug design and discovery
+  - assay plates and curves
+  - deployment requirements
+  - data security and encryption
+  - authentication and authorization
+  - dose-response curves
+  - maximum dataset size
 ---
 
 ## Quick reference

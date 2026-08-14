@@ -24,6 +24,9 @@ export interface SettingsInterface {
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
 
+  /// Default state of the "Send notifications" checkbox in the sharing dialog
+  sendNotificationOnShareCheckbox: boolean;
+
   /// Controls whether tables pane automatically shows when more
   /// than one table is open
   autoShowTablesPane: boolean;
@@ -103,6 +106,8 @@ export interface SettingsInterface {
 
   showHelp: boolean;
 
+  showAI: boolean;
+
   enableBetaViewers: boolean;
 
   //@Prop(editor: 'Beta') bool enableViewerFunctions = false;
@@ -119,6 +124,8 @@ export interface SettingsInterface {
   allowViewerMinimization: boolean;
 
   viewersToTrellis: boolean;
+
+  enableDomainDatabases: boolean;
 
   dateFormat: string;
 

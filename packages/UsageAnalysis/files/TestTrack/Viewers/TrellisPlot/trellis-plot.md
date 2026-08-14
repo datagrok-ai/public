@@ -8,8 +8,7 @@ realizes_atlas:
   - trellisplot.cp.tiled-single-column
   - trellisplot.int.selectors-labels-visibility-coupling
   - trellisplot.int.undo-redo-viewer-lifecycle
-realizes:
-  - viewers.trellis-plot
+realizes: [viewers.trellis-plot, entities.viewer.action.use-in-trellis, curves.viewer.multi-curve]
 priority: p0
 target_layer: playwright
 coverage_type: smoke

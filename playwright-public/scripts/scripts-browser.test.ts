@@ -140,7 +140,13 @@ test.describe.serial('Scripts: Browser', () => {
 
     const activityHeader = page.locator('.d4-accordion-pane-header', { hasText: /Activity/i }).first();
     await expect(activityHeader).toBeVisible({ timeout: 8_000 });
-    await activityHeader.click();
+    // The context panel rebuilds its accordion as the object's panes finish loading, so a
+    // header that was visible a moment ago can be detached by the time the click lands.
+    // Re-resolve on each attempt instead of holding the stale element.
+    await expect(async () => {
+      await page.locator('.d4-accordion-pane-header', { hasText: /Activity/i }).first()
+        .click({ timeout: 3_000 });
+    }).toPass({ timeout: 20_000 });
     await expect(activityHeader).toBeVisible();
   });
 

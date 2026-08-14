@@ -3,6 +3,15 @@ title: "Enhance input UI"
 sidebar_position: 1
 mdx:
   format: mdx
+description: Customize script input forms with captions, units, categories, choices, and conditional visibility.
+keywords:
+  - input captions and hints
+  - measurement units
+  - input categories
+  - choices annotation
+  - visible and enabled expressions
+  - conditional inputs
+  - form customization
 ---
 
 ```mdx-code-block

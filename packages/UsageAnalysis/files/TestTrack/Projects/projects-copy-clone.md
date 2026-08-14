@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [projects.cp.save-copy-with-link-mode]
-realizes: [views.projects]
+realizes: [views.projects, sharing.share-dialog]
 realized_as:
   - projects-copy-clone-spec.ts
 produced_from: migrated

@@ -1,24 +1,22 @@
 /**
  * Sparse / destructive-sampling NCA — design-aware closed-form AUC with an
- * honest standard error and degrees of freedom (UC-04 / FR-301..306).
+ * honest standard error and degrees of freedom.
  *
  * When each animal contributes only one (destructive) or a few (batch) samples,
  * per-subject NCA is undefined. The standard approach builds a **composite**
  * mean concentration-time profile per nominal timepoint and integrates that.
- * The statistically correct AUC variance for such a design is **Bailer's method**
+ * The correct AUC variance for such a design is **Bailer's method**
  * (destructive) generalised to **Holder's covariance estimator** (batch), with a
  * **Nedelman-Jia correlated Satterthwaite df** for the t-based CI.
- *
- * ## What this module computes (validated against PKNCA 0.12.1, AC-U1..U3)
  *
  * - {@link buildCompositeProfile}: arithmetic mean / SD / %CV / n / %BLQ per
  *   nominal timepoint, with the PKNCA `arithmetic mean, <=50% BLQ` rule (a
  *   timepoint whose BLQ fraction exceeds 50 % contributes a zero mean to the
- *   AUClast point estimate). BLQ is imputed **before** averaging (AD-5).
+ *   AUClast point estimate). BLQ is imputed **before** averaging.
  * - {@link sparseAuc}: the composite **AUClast** (linear-trapezoidal, anchored
  *   at t=0, C=0), its Holder variance, the Nedelman-Jia df, and the Student-t CI.
  *
- * ## The math (reproduced verbatim from the primary sources)
+ * ## The math
  *
  * Lever-arm linear-trapezoidal weights over the design timepoints (with the
  * t=0 anchor): `w = c(0, diff(t)/2) + c(diff(t)/2, 0)` — PKNCA
@@ -44,18 +42,18 @@
  * where Σ is the covariance matrix of the timepoint means (Σ_ii = σ̂_i²/r_i,
  * Σ_ij = r_ij σ̂_ij/(r_i r_j)).
  *
- * ## Scientific guards (the honesty core — thesis #4)
+ * ## Scientific guards
  *
- * - **Linear-trapezoidal only** (AD-3): the Holder variance is valid only where
- *   AUC is linear in the timepoint means. A steep, wide-gap terminal phase makes
- *   the linear rule over-estimate a convex decline; {@link sparseAuc} raises
+ * - **Linear-trapezoidal only**: the Holder variance is valid only where AUC is
+ *   linear in the timepoint means. A steep, wide-gap terminal phase makes the
+ *   linear rule over-estimate a convex decline; {@link sparseAuc} raises
  *   `SPARSE_TERMINAL_OVEREST` (Jia-Nedelman 1996).
- * - **Topology from the data, not the label** (AD-2): destructive / batch / serial
- *   is derived from the r_ij overlap matrix and cross-checked against the declared
+ * - **Topology from the data, not the label**: destructive / batch / serial is
+ *   derived from the r_ij overlap matrix and cross-checked against the declared
  *   label (`SPARSE_TOPOLOGY_MISMATCH`).
- * - **Variance-borrowing for n=1** (AD-7 / FR-306): a singleton timepoint has no
- *   sample variance; rather than silently zeroing it (→ false-narrow CI), a
- *   Nedelman variance-vs-mean power law fit across the n≥2 timepoints models it
+ * - **Variance-borrowing for n=1**: a singleton timepoint has no sample
+ *   variance; rather than silently zeroing it (→ false-narrow CI), a Nedelman
+ *   variance-vs-mean power law fit across the n≥2 timepoints models it
  *   (`SPARSE_VARIANCE_MODELED`).
  *
  * @see Holder DJ (2001) "Comments on Nedelman and Jia's Extension of Satterthwaite's
@@ -68,9 +66,7 @@
 import type {BlqRule} from './types';
 import {studentTInv} from '../../stats/distributions';
 
-// ──────────────────────────────────────────────────────────────────────────
 // Public types
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Data-derived sampling topology (from the r_ij overlap matrix). */
 export type SamplingTopology = 'destructive' | 'batch' | 'serial';
@@ -101,17 +97,17 @@ export interface SparseInput {
 export interface SparseAucOptions {
   /** Two-sided CI confidence level. Default 0.95. */
   readonly ciLevel?: number;
-  /** Per-record BLQ rule applied before averaging (AD-5). Default `'set-zero'`. */
+  /** Per-record BLQ rule applied before averaging. Default `'set-zero'`. */
   readonly blqRule?: BlqRule;
   /**
-   * Estimated terminal half-life, for the `SPARSE_TERMINAL_OVEREST` heuristic
-   * (AD-3). When absent, the heuristic falls back to the concentration-only
-   * criterion (terminal mean < 20 % Cmax) so the flag never silently disappears.
+   * Estimated terminal half-life, for the `SPARSE_TERMINAL_OVEREST` heuristic.
+   * When absent, the heuristic falls back to the concentration-only criterion
+   * (terminal mean < 20 % Cmax) so the flag never silently disappears.
    */
   readonly estimatedHalfLife?: number;
-  /** Enable Nedelman variance-borrowing for n=1 timepoints (AD-7). Default true. */
+  /** Enable Nedelman variance-borrowing for n=1 timepoints. Default true. */
   readonly varianceBorrow?: boolean;
-  /** Declared topology label, cross-checked against the data (AD-2). */
+  /** Declared topology label, cross-checked against the data. */
   readonly declaredTopology?: SamplingTopology;
 }
 
@@ -162,9 +158,7 @@ export interface SparseAucResult {
   readonly warnings: ReadonlyArray<SparseWarning>;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Internal: grouping by nominal time
-// ──────────────────────────────────────────────────────────────────────────
 
 /** One nominal timepoint's imputed samples + animal ids, post BLQ rule. */
 interface TimeGroup {
@@ -177,16 +171,13 @@ interface TimeGroup {
 }
 
 /**
- * Per-record BLQ imputation for the composite pool (AD-5, impute-before-average).
+ * Per-record BLQ imputation for the composite pool (impute before averaging).
  *
  * Deliberately NOT `applyBlqStrategy` from `blq.ts`: that function's rules are
- * keyed on a single profile's *phase* (preFirstMeasurable / embedded / afterLast),
- * which is a per-profile-time-ordering concept. The sparse composite pools many
- * animals at ONE nominal timepoint — there is no within-record phase, so the
- * phase model does not apply. We reuse `blq.ts`'s `BlqRule` **type** and its exact
- * set-zero / set-half-lloq / exclude / missing **semantics** at the pooling step;
- * sharing the phase machinery would force an ill-fitting model. (Reviewer note,
- * UC-04 build: this is a justified deviation from the §1a "reuse blq.ts" anchor.)
+ * keyed on a single profile's *phase* (preFirstMeasurable / embedded /
+ * afterLast), which is a time-ordering concept. The sparse composite pools many
+ * animals at ONE nominal timepoint, where no within-record phase exists. Only
+ * the `BlqRule` type and its per-rule semantics are shared.
  */
 function imputeBlq(conc: number, blq: number, lloqVal: number, rule: BlqRule): number | null {
   if (blq === 0) return conc;
@@ -220,9 +211,7 @@ function groupByTime(input: SparseInput, rule: BlqRule): TimeGroup[] {
     .map(([time, g]) => ({time, conc: g.conc, animals: g.animals, nBlq: g.nBlq}));
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Internal: per-timepoint statistics
-// ──────────────────────────────────────────────────────────────────────────
 
 function mean(xs: ReadonlyArray<number>): number {
   if (xs.length === 0) return NaN;
@@ -231,7 +220,7 @@ function mean(xs: ReadonlyArray<number>): number {
   return s / xs.length;
 }
 
-/** Sample variance (n−1). Returns 0 when n < 2 (caller may model it — AD-7). */
+/** Sample variance (n−1). Returns 0 when n < 2; the caller may model it. */
 function sampleVar(xs: ReadonlyArray<number>, m: number): number {
   const n = xs.length;
   if (n < 2) return 0;
@@ -240,9 +229,7 @@ function sampleVar(xs: ReadonlyArray<number>, m: number): number {
   return ss / (n - 1);
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Internal: lever-arm weights (PKNCA sparse_auc_weight_linear)
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Lever-arm linear-trapezoidal weights over `times` (which must start with the
@@ -260,15 +247,13 @@ function leverArmWeights(times: ReadonlyArray<number>): number[] {
   return w;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Public: composite profile builder
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Build the composite mean concentration-time profile from sparse observations:
- * arithmetic mean / sample-SD / %CV / n / %BLQ per nominal time (AD-4 arithmetic
- * mean is load-bearing for the closed-form variance). BLQ is imputed per
- * `blqRule` **before** pooling (AD-5).
+ * arithmetic mean / sample-SD / %CV / n / %BLQ per nominal time. The
+ * arithmetic (not geometric) mean is load-bearing for the closed-form
+ * variance. BLQ is imputed per `blqRule` **before** pooling.
  */
 export function buildCompositeProfile(
   input: SparseInput, blqRule: BlqRule = 'set-zero',
@@ -290,9 +275,7 @@ export function buildCompositeProfile(
   return {timepoints};
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Public: design-aware closed-form sparse AUC + SE + df + CI
-// ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Compute the composite sparse AUClast with its Holder standard error,
@@ -311,15 +294,12 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
   const composite = buildCompositeProfile(input, blqRule);
   const K = groups.length;
 
-  // --- Per-timepoint mean, n, sample variance.
   const means = groups.map((g) => mean(g.conc));
   const r = groups.map((g) => g.conc.length);
   const variances = groups.map((g, i) => sampleVar(g.conc, means[i]));
 
-  // --- AD-7: variance-borrowing for n=1 timepoints (Nedelman var-vs-mean fit).
   if (varianceBorrow) modelSingletonVariances(means, r, variances, warnings);
 
-  // --- r_ij overlap matrix + topology (AD-2 / AD-11).
   const rij = overlapMatrix(groups);
   const topology = deriveTopology(r, rij, K);
   if (input.animalId === null) {
@@ -337,29 +317,24 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
     });
   }
 
-  // --- Mean profile for AUClast with the >50%-BLQ-zeroing rule.
+  // Mean profile for AUClast with the >50%-BLQ-zeroing rule.
   const meansForAuc = means.map((m, i) => (r[i] > 0 && groups[i].nBlq / r[i] > 0.5 ? 0 : m));
 
-  // --- Anchored timepoint vector (t=0, C=0) + lever-arm weights.
+  // Anchored timepoint vector (t=0, C=0) + lever-arm weights.
   const times = [0, ...groups.map((g) => g.time)];
   const wAll = leverArmWeights(times);
   const w = wAll.slice(1); // weight on each measured timepoint mean
 
-  // --- AUClast = linear trapezoidal on the anchored mean profile to the last
-  // measurable (non-zero) timepoint.
   const auc = aucLast([0, ...meansForAuc], times);
-
-  // --- Holder A1 covariance matrix of the timepoint means (Σ).
   const Sigma = covarianceMatrix(groups, means, r, variances, rij);
 
-  // --- ψ = wᵀ Σ w  (A1 variance).
+  // ψ = wᵀ Σ w  (Holder A1 variance).
   let psi = 0;
   for (let i = 0; i < K; i++)
     for (let j = 0; j < K; j++) psi += w[i] * w[j] * Sigma[i][j];
 
   const se = Math.sqrt(Math.max(psi, 0));
 
-  // --- Nedelman-Jia correlated Satterthwaite df.
   const df = satterthwaiteDf(w, Sigma, r, rij, psi);
   if (!Number.isFinite(df) || df <= 0) {
     warnings.push({
@@ -369,10 +344,9 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
     });
   }
 
-  // --- AD-3: terminal-overestimation heuristic.
   flagTerminalOverest(groups, meansForAuc, options.estimatedHalfLife, warnings);
 
-  // --- Student-t CI.
+  // Student-t CI.
   let ci: [number, number] = [NaN, NaN];
   if (Number.isFinite(df) && df > 0 && se > 0) {
     const t = studentTInv(1 - (1 - ciLevel) / 2, df);
@@ -382,9 +356,7 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
   return {auc, se, df, ci, topology, composite, warnings};
 }
 
-// ──────────────────────────────────────────────────────────────────────────
 // Internal: AUClast, overlap matrix, covariance, df, topology, guards
-// ──────────────────────────────────────────────────────────────────────────
 
 /** Linear-trapezoidal AUC to the last measurable (non-zero) concentration. */
 function aucLast(conc: ReadonlyArray<number>, time: ReadonlyArray<number>): number {
@@ -488,8 +460,8 @@ function satterthwaiteDf(
 }
 
 /**
- * AD-7 — model the variance of n=1 timepoints from a Nedelman variance-vs-mean
- * power law fitted across the n≥2 timepoints (`ln σ̂² = a + b·ln μ`). Mutates
+ * Model the variance of n=1 timepoints from a Nedelman variance-vs-mean power
+ * law fitted across the n≥2 timepoints (`ln σ̂² = a + b·ln μ`). Mutates
  * `variances` in place and raises `SPARSE_VARIANCE_MODELED`. No-op when there
  * are no singletons, or fewer than two n≥2 timepoints with a positive mean.
  */
@@ -536,8 +508,8 @@ function modelSingletonVariances(
 }
 
 /**
- * AD-3 — flag a likely AUC over-estimation on a steep, wide-gap terminal phase
- * (the linear rule over-estimates a convex decline). Trigger: terminal gap
+ * Flag a likely AUC over-estimation on a steep, wide-gap terminal phase (the
+ * linear rule over-estimates a convex decline). Trigger: terminal gap
  * `(t_K − t_{K−1}) > 2 × t½` AND terminal mean `< 20 % Cmax`. With no t½, fall
  * back to the concentration-only criterion so the flag never disappears silently.
  */

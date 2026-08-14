@@ -5,7 +5,7 @@ coverage_type: regression
 priority: p2
 realizes_atlas:
   - scatterplot.int.lines-by-overrides-color-split
-realizes: []
+realizes: [viewers.scatter-plot]
 realized_as:
   - scatter-plot-spec.ts
 related_bugs:

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: []
-realizes: [views.browse]
+realizes: [tutorials.app.demo]
 realized_as:
   - demo_apps.test.ts
 related_bugs: [GROK-14320, GROK-18050]

@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
-import {FitChartCellRenderer, layoutChart} from '../fit/fit-renderer';
+import {FitChartCellRenderer} from '../fit/fit-renderer';
+import {layoutChart} from '../fit/fit-layout';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
@@ -10,7 +11,7 @@ import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 category('viewport', () => {
   test('viewportMethods', async () => {
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(120, 20, 160, 100));
-    const [dataBox] = layoutChart(screenBounds, false, false);
+    const [dataBox] = layoutChart(screenBounds, false, false, false);
     const dataBounds = new DG.Rect(0.1, 0.06, 7, 5.94);
     const viewport = new Viewport(dataBounds, dataBox, false, false);
 

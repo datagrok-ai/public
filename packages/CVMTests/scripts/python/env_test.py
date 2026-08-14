@@ -2,6 +2,7 @@
 #description: anchors count in html
 #language: python
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, {pip: [beautifulsoup4,]}]
+#meta.timeout: 600
 #input: string html
 #output: int count
 

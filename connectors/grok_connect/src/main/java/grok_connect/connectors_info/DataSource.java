@@ -23,6 +23,28 @@ public class DataSource
     public boolean limitAtEnd = true;
     public boolean requiresFullyQualifiedTable = false;
     public boolean supportCatalogs = false;
+    // Write capability flags (connector-writes WO-4); default false, set centrally in ProviderManager
+    // (supportsWrite) and per-provider (upsert/bulk/ddl/generatedKeys). Consulted by /mutate and Datlas/UI.
+    public boolean supportsWrite = false;
+    public boolean supportsUpsert = false;
+    public boolean supportsBulkInsert = false;
+    public boolean supportsDdl = false;
+    // Advisory: DDL joins the transaction (Postgres, MS SQL); false = implicit DDL commit — a failed
+    // multi-statement DDL or create-mode load cannot roll its DDL back (connector-writes WO-B6).
+    public boolean supportsTransactionalDdl = false;
+    public boolean supportsGeneratedKeys = false;
+    // Whether the driver-level read-only session (Connection.setReadOnly) actually rejects writes on
+    // this provider (real enforcement) or is advisory only — the honesty declaration of the §6.2
+    // read-only query policy (connector-writes WO-B13). Serialized into /conn.
+    public boolean readOnlySessionEnforced = false;
+    /**
+     * dg scalar type (string|int|bigint|float|bool|datetime) → exact native type emitted into
+     * CREATE TABLE / ADD COLUMN / ALTER COLUMN TYPE. Hand-authored per dialect — NOT an inversion of
+     * {@link #typesMap} (regex-keyed, many-to-one). Non-null iff {@link #supportsDdl} (enforced in
+     * ProviderManager); serialized into /conn like typesMap so Datlas and the UI can show the native
+     * type a dg column will become.
+     */
+    public Map<String, String> dgToNativeType;
     public List<Property> connectionTemplate;
     public List<Property> credentialsTemplate;
     public List<Property> cacheTemplate = new ArrayList<Property>() {{

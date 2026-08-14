@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [bio.int.empty-input-on-row-viewers]
-realizes: [bio.sequence-similarity-search, bio.sequence-diversity-search, bio.analyze.activity-cliffs]
+realizes: [bio.viewer.sequence-similarity-search, bio.viewer.sequence-diversity-search, bio.menu.analyze.activity-cliffs, bio.menu.search.similarity-search, bio.menu.search.diversity-search]
 produced_from: atlas-driven
 related_bugs:
   - GROK-16111

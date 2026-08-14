@@ -17,7 +17,21 @@ export type ICodeEditorOptions = {
   root?: HTMLDivElement;
 }
 
-export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+/** Async suggestion callback for {@link TypeAheadConfig.source}: receives the typed query and
+ * resolves to suggestions — strings or objects with a `label` (extra fields ride along and are
+ * passed to `onSubmit` intact, e.g. `{label, value}` for lookups resolving to an id).
+ *
+ * The callback path is a self-contained dropdown, not typeahead-standalone: of the
+ * {@link TypeAheadConfig} keys it honors only `minLength`, `limit`, `debounceRemote`, and
+ * `onSubmit`; `display`, `templates`, `highlight`, `hint`, `autoSelect`, `diacritics`,
+ * `preventSubmit`, and the other standalone options are ignored. */
+export type TypeAheadCallbackSource = (query: string) => Promise<(string | Dictionary)[]>;
+
+export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className' | 'source'> & {
+  /** Suggestion source: any typeahead-standalone source (`local`/`prefetch`/`remote` URLs),
+   * or an async callback — the way to serve suggestions from a server-side query. */
+  source: typeaheadConfig<Dictionary>['source'] | TypeAheadCallbackSource;
+};
 
 export type MarkdownConfig = {
   value?: string;
@@ -28,6 +42,16 @@ export type CodeConfig = {
   mode?: string;
   placeholder?: string;
 };
+
+/** See {@link TabControl.create} and `ui.tabControl` */
+export interface ITabControlOptions {
+
+  /** Whether the tab header is rendered vertically, on the left side */
+  vertical?: boolean;
+
+  /** When provided, the currently selected pane is persisted across sessions in localStorage */
+  key?: string;
+}
 
 /** See {@link Menu.items} */
 export interface IMenuItemsOptions<T = any> {

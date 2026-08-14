@@ -84,21 +84,16 @@ const NAN_VALUES: ParameterValues = Object.freeze({
  * - `'ok'`      — every parameter computed.
  */
 export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResult {
-  // ─────────────────────────────────────────────────────────────────────
   // Step 1: BLQ pre-processing on the raw concentrations.
-  // ─────────────────────────────────────────────────────────────────────
   const blqRes: BlqProcessingResult = applyBlqStrategy(
     inputs.conc, inputs.blqMask, inputs.lloq, 0, rules.blq,
   );
   const procConc = blqRes.conc;
-  // Effective BLQ mask = original BLQ ∪ excluded by rule.
   const effBlq = new Uint8Array(inputs.blqMask);
   for (let k = 0; k < blqRes.excluded.length; k++)
     effBlq[blqRes.excluded[k]] = 1;
 
-  // ─────────────────────────────────────────────────────────────────────
   // Step 2: Observed Cmax/Tmax on raw post-BLQ profile.
-  // ─────────────────────────────────────────────────────────────────────
   const observedCmax = findCmax(inputs.time, procConc, effBlq);
   if (observedCmax === null) {
     return {
@@ -114,13 +109,11 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     };
   }
 
-  // ─────────────────────────────────────────────────────────────────────
   // Step 3: Augment with a t=0 observation when missing, mirroring PKNCA:
   //   - IV bolus      → insert (0, c0) where c0 is back-extrapolated.
   //   - extravascular → insert (0, 0)  (pre-dose conc = 0 by convention).
   // An existing t=0 row counts even when conc(0) = 0 — that's a valid
   // pre-dose observation for extravascular profiles, not a missing value.
-  // ─────────────────────────────────────────────────────────────────────
   const hasT0 = (
     inputs.time.length > 0 && inputs.time[0] === 0 && effBlq[0] === 0 &&
     Number.isFinite(procConc[0])
@@ -147,9 +140,7 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────
   // Step 4: AUClast over the augmented profile (skipping NaN/excluded).
-  // ─────────────────────────────────────────────────────────────────────
   const dense = collectMeasurable(augTime, augConc, augBlq);
   let aucLast = NaN;
   let aumcLast = NaN;
@@ -171,15 +162,15 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   }
 
   // Tlag is an OBSERVED quantity (independent of lambda_z) and an absorption
-  // concept — reported for extravascular routes only; NaN for IV (AD-6/P3).
+  // concept — reported for extravascular routes only; NaN for IV.
   const isIv =
     inputs.route === ROUTE_IV_BOLUS || inputs.route === ROUTE_IV_INFUSION;
   let tlag = NaN;
   if (!isIv && augTime.length >= 1) {
-    // Compute on the BLQ-processed AUGMENTED series with BLQ/excluded points
-    // treated as 0 (below LLOQ), NOT the dense (BLQ-removed) profile — a BLQ
-    // sample before the first measurable point IS the lag boundary, and
-    // dropping it would underestimate Tlag (AD-10, pinned to the AUC start).
+    // Computed on the AUGMENTED series with BLQ/excluded points treated as 0,
+    // NOT the dense (BLQ-removed) profile: a BLQ sample before the first
+    // measurable point IS the lag boundary, and dropping it would
+    // underestimate Tlag.
     const tlagConc = new Float64Array(augTime.length);
     for (let i = 0; i < augTime.length; i++) {
       tlagConc[i] =
@@ -188,9 +179,7 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     tlag = tlagOf(augTime, tlagConc);
   }
 
-  // ─────────────────────────────────────────────────────────────────────
   // Step 5: lambda_z.
-  // ─────────────────────────────────────────────────────────────────────
   const lambdaZRes: LambdaZResult | null =
     (rules.lambdaZ.mode === 'auto-best-fit') ?
       lambdaZBestFit(augTime, augConc, augBlq, cmaxIdxForFit, rules.lambdaZ) :
@@ -198,9 +187,7 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
         lambdaZManual(augTime, augConc, rules.lambdaZ.manualPoints) :
         null;
 
-  // ─────────────────────────────────────────────────────────────────────
   // Step 6: AUCinf and derived parameters.
-  // ─────────────────────────────────────────────────────────────────────
   let aucInf = NaN;
   let aumcInf = NaN;
   let halfLife = NaN;
@@ -229,17 +216,15 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
     cl = clearance(inputs.dose, aucInf);
     vz = volumeTerminal(inputs.dose, lambdaZRes.lambdaZ, aucInf);
     mrt = meanResidenceTime(aumcInf, aucInf, tInf);
-    // Vss is IV-only — for extravascular data it would be Vss/F confounded
-    // by absorption (a category error, not a high number).
+    // IV-only: for extravascular data Vss would be Vss/F confounded by
+    // absorption — a category error, not a high number.
     vss = isIv ? volumeSteadyState(inputs.dose, aumcInf, aucInf, tInf) : NaN;
     pctExtrap = pctExtrapolated(aucLast, aucInf);
     pctExtrapAumc = pctExtrapolatedAumc(aumcLast, aumcInf);
     status = 'ok';
   }
 
-  // ─────────────────────────────────────────────────────────────────────
   // Step 7: Quality warnings.
-  // ─────────────────────────────────────────────────────────────────────
   const warnings: ParameterWarning[] = [];
   if (status === 'ok' && pctExtrap > rules.extrapWarnPct) {
     warnings.push({
@@ -267,6 +252,21 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
       message:
         `lambda_z fit used the minimum allowed number of points ` +
         `(${lambdaZRes.pointsUsed.length})`,
+    });
+  }
+  // Opt-in terminal-phase span diagnostic — see LambdaZResult.spanRatio. Warns
+  // but never rejects: a short-span fit is one a scientist should look at, not
+  // one the engine should discard for them. No NaN guard needed, since
+  // `NaN < threshold` is false.
+  if (lambdaZRes !== null && rules.lambdaZ.minSpanRatio !== undefined &&
+      lambdaZRes.spanRatio < rules.lambdaZ.minSpanRatio) {
+    warnings.push({
+      code: 'LAMBDAZ_LOW_SPAN',
+      severity: 'warning',
+      message:
+        `lambda_z window spans ${lambdaZRes.spanRatio.toFixed(2)} half-lives, below ` +
+        `the ${rules.lambdaZ.minSpanRatio} threshold — the terminal slope rests on ` +
+        `too short a window (adjusted R² cannot detect this at small n)`,
     });
   }
   const blqFraction = countBlq(inputs.blqMask) / inputs.blqMask.length;
@@ -319,19 +319,14 @@ function collectMeasurable(
     tBuf.push(time[i]);
     cBuf.push(conc[i]);
   }
-  // Drop the TRAILING run of non-positive (≤ 0) concentrations. A trailing
-  // zero is an unflagged below-LLOQ washout sample — common when a dataset
-  // encodes BLQ as conc=0 and carries no LLOQ/BLQ-flag column, so `blqMask`
-  // is all-zeros and the BLQ strategy never sees it. Such a point must NOT
-  // anchor the terminal: as `cLast` it is the λz extrapolation base, so
-  // `cLast = 0` blocks AUCinf/t½/CL/Vz even when λz is perfectly well-formed
-  // (the `cLast > 0` status gate), and in the AUClast trapezoid it adds a
-  // spurious tail-to-zero area. PKNCA's `conc.blq` default excludes trailing
-  // BLQ; this mirrors it. EMBEDDED zeros are intentionally KEPT — PKNCA
-  // set-zeros embedded BLQ into the trapezoid, and `lambdaZBestFit` already
-  // excludes all `conc ≤ 0` from the regression, so the fit is unaffected
-  // either way; only the trailing anchor is corrected here.
-  // (BUG-05 / GROK-20219; verified against PKNCA 0.12.1 rat-IV R005/R013.)
+  // Drop the TRAILING run of non-positive concentrations, mirroring PKNCA's
+  // `conc.blq` default. A trailing zero is an unflagged below-LLOQ washout
+  // sample — common when a dataset encodes BLQ as conc=0 and carries no
+  // LLOQ/BLQ-flag column, leaving `blqMask` all-zeros. It must not anchor the
+  // terminal: as `cLast` it is the λz extrapolation base, so `cLast = 0`
+  // blocks AUCinf/t½/CL/Vz even for a well-formed λz, and it adds a spurious
+  // tail-to-zero area to AUClast. EMBEDDED zeros are deliberately KEPT —
+  // `lambdaZBestFit` already excludes `conc ≤ 0` from the regression.
   while (cBuf.length > 0 && cBuf[cBuf.length - 1] <= 0) {
     cBuf.pop();
     tBuf.pop();

@@ -1,12 +1,4 @@
-/** Main FuncFlow view — Datagrok ViewBase that hosts the Rete editor.
- *
- * Layout: [function-browser]  |  [Rete canvas container]
- *                                  + status bar at the bottom
- *                                  (property panel goes into the native context panel)
- *
- * The canvas container is a plain `<div>`; the Rete `AreaPlugin` builds the
- * scrollable/zoomable inner content inside it. Drag-and-drop from the
- * Datagrok browse tree is bound to this div via `ui.makeDroppable`. */
+/** Main FuncFlow view — the Datagrok ViewBase hosting the Rete canvas, ribbon, status bar, and panels. */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -23,7 +15,7 @@ import {ColumnPicker} from './panel/column-picker';
 import {FuncEditorLauncher} from './panel/func-editor-launcher';
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs,
-  createNode, FuncInfo,
+  createNode, ensureFuncNodeType, FuncInfo,
 } from './rete/node-factory';
 import {validateGraph} from './compiler/validator';
 import {emitScript} from './compiler/script-emitter';
@@ -38,25 +30,31 @@ import {FlowSettings, FuncFlowDocument} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
 import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execution/autorun';
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
-import {ValueSummary} from './execution/execution-state';
-import {buildPreview, setPreviewCellFocusHandler} from './execution/value-inspector';
+import {ValueSummary, NodeExecStatus} from './execution/execution-state';
+import {OutputViewsManager, OutputTab, OutputTabInfo} from './views/output-views-manager';
+import {buildPreview, setPreviewCellFocusHandler, releasePreviewCellFocusHandler, hasRenderablePreview}
+  from './execution/value-inspector';
 import {SuggestionPane, FF_SUGGEST_MIME} from './panel/suggestion-pane';
 import {
   collectSuggestContext, computeSuggestions, Suggestion, CellSignal,
 } from './suggest/suggestion-engine';
 import {_package} from './package';
 import {setTid} from './utils/test-ids';
+import {getFuncDisplayName} from './utils/dart-proxy-utils';
+import {
+  addPendingFile, getPendingFile, isPendingFileId, persistPendingFile, removePendingFile,
+  syncFlowFilePermissions,
+} from './utils/uploaded-files';
 import {GuideHost} from './guide/guide-model';
 import {GuideRunner} from './guide/guide-runner';
 import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
 import {TUTORIALS} from './guide/guide-content';
 import {summarizeFlow} from './summary/summary-generator';
+import {FlowAIContext} from './ai-tools';
 
-/** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
- *  scientist never faces a blank canvas. */
 const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
-  {label: 'Workflow demo', file: 'Workflow Demo.ffjson', desc: 'A sample multi-step data workflow.'},
-  {label: 'Bio Molecules', file: 'Sequence demo.ffjson', desc: 'A Peptides conversion and calculation.'},
+  {label: 'Workflow demo', file: 'Workflow Demo.flow', desc: 'A sample multi-step data workflow.'},
+  {label: 'Bio Molecules', file: 'Sequence demo.flow', desc: 'A Peptides conversion and calculation.'},
 ];
 
 export class FuncFlowView extends DG.ViewBase {
@@ -64,58 +62,45 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
-  /** Toolbox Suggestions pane (bottom ~30% of the browser). Public for tests. */
+  /** Public for tests. */
   suggestionPane!: SuggestionPane;
-  /** The node the user last clicked — a suggestion-context signal that
-   *  outlives a deselect ("the currently clicked node"). */
+  /** The node last clicked — outlives a deselect. */
   private focusNodeId: string | null = null;
-  /** The cell last clicked in the output preview (semType + value). */
   private previewCell: CellSignal | null = null;
-  /** Bottom output panel — a pane of the view's vertical splitter (see
-   *  `initUI`). Public so hosts (the creation-script dialog) and tests can
-   *  reach it; created disabled when `options.outputPanel` is false. */
+  /** Public for hosts and tests; created disabled when `options.outputPanel` is false. */
   outputPreview!: OutputPreviewPanel;
-  /** Whether this view gets the bottom output panel (false for embedded
-   *  hosts — the creation-script dialog). */
   private readonly outputPanelEnabled: boolean;
-  /** Debounced rerun-on-change; toggled by the ribbon bolt icon, off by
-   *  default. Created with the execution controller in `initEditor`. */
   private autorunScheduler: AutorunScheduler | null = null;
   private autorunIcon: HTMLElement | null = null;
-  /** The ribbon Save button (non-creation mode only), greyed when there is
-   *  nothing to save — an empty canvas or no change since the last save. */
   private saveButton: HTMLButtonElement | null = null;
-  /** Serialized graph+settings at the last save / load, for detecting unsaved
-   *  changes; null before the first baseline is recorded. */
   private savedSnapshot: string | null = null;
-  /** One-shot handler that pins this (preview) view on the first interaction so
-   *  the toolbox appears; cleared once it fires (see `setupAutoPin`). */
+  private platformSubs: {unsubscribe(): void}[] = [];
   private autoPinHandler: (() => void) | null = null;
   private canvasContainer!: HTMLElement;
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
   private startBgRaf = 0;
+  private recentFlowsHost!: HTMLElement;
+  private recentFlowsLoading = false;
   private helpButton!: HTMLElement;
   private readonly guideRunner = new GuideRunner();
   private statusBar!: HTMLElement;
   private nodeCountLabel!: HTMLElement;
   private linkCountLabel!: HTMLElement;
   private validationLabel!: HTMLElement;
+  /** Public for tests. */
+  outputViews!: OutputViewsManager;
+  private viewTabStrip!: HTMLElement;
+  /** Kept by reference — `setRibbonPanels` MOVES elements. */
+  private flowRibbonPanels: HTMLElement[][] = [];
 
-  /** Desired initial minimap state, applied once the editor is created (the
-   *  editor is built async). Hosts set this before the editor exists — e.g. the
-   *  creation-script preview dialog opens with the minimap minimized. */
   private minimapCollapsed = false;
 
-  /** When the view edits the creation scripts of specific tables (the
-   *  `creationScriptEditor` entry point), these are those tables — keyed for
-   *  the per-table split by their `.VariableName` tag. Presence adds a primary
-   *  **Save** action to the ribbon that writes a creation script back to each. */
   private readonly tableInfos: DG.TableInfo[];
 
   private flowSettings: FlowSettings = {
-    scriptName: 'MyFuncFlow',
-    scriptDescription: 'Generated by FuncFlow',
+    scriptName: 'My flow',
+    scriptDescription: '',
     tags: ['funcflow'],
   };
 
@@ -128,33 +113,40 @@ export class FuncFlowView extends DG.ViewBase {
     grok.shell.windows.showToolbox = true;
   }
 
-  /** The platform Script entity (language 'flow') this view edits, when opened
-   *  from / saved to the server. Null for scratch flows — Save asks for a name. */
   private boundScript: DG.Script | null = null;
 
-  /** Resolves once `initEditor()` has built the Rete editor (deferred a tick
-   *  off the constructor). Load paths await this instead of retrying on
-   *  timers, so opening an entity cannot race editor construction. */
+  private dashboardProjectId: string | null = null;
+
+  /** Resolves once `initEditor()` built the editor; load paths await it instead of retrying on timers. */
   private editorReadyResolve!: () => void;
   private readonly editorReady = new Promise<void>((resolve) => {
     this.editorReadyResolve = resolve;
   });
 
-  /** Watches the canvas for its first real layout when a fit-to-screen was
-   *  requested before the view was attached (see `fitToScreen`). */
   private pendingFitObserver: ResizeObserver | null = null;
 
-  /** @param tableInfos tables whose creation scripts this view edits — passing a
-   *  non-empty array enables the **Save Creation Scripts** ribbon action.
-   *  @param options `outputPanel: false` creates the view without the bottom
-   *  output panel — for embedded hosts (the creation-script dialog), where a
-   *  run-results pane makes no sense. `enableOutputPanel()` turns it on later
-   *  (e.g. when that view is promoted into the real editor). */
+  private detached = false;
+  private initEditorTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Kept so detach() releases only this view's registration. */
+  private previewCellHandler:
+    ((cell: {semType: string | null; column: string; value: unknown}) => void) | null = null;
+  /** Serializes canvas loads — two interleaved clear()+add sequences would merge both graphs. */
+  private loadChain: Promise<void> = Promise.resolve();
+
   constructor(tableInfos: DG.TableInfo[] = [], options: {outputPanel?: boolean} = {}) {
     super();
-    this.name = 'FuncFlow';
+    this.name = 'Flow';
+    this.aiDescription = 'Flow — Datagrok\'s visual pipeline editor: the user composes functions, ' +
+      'queries, and scripts into an executable graph on a canvas. Act on it through the view ' +
+      'functions (search list_view_functions with the word "flow"): listFlowNodes (call first to ' +
+      'see the canvas), getFlowNodeDetails, findFlowNodeTypes, addFlowNode, connectFlowNodes, ' +
+      'setFlowNodeInputs, selectFlowNode, runFlow; listFlowGuides / startFlowGuide launch ' +
+      'interactive tutorials — offer one when the user asks how to do something here. When user asks about how to do something, ' +
+      'Make sure to list guides (run the function listing the guides) to see if there are guides that cover the question, and if so and confidence is high, call that guide function';
     this.tableInfos = tableInfos;
     this.outputPanelEnabled = options.outputPanel !== false;
+    // Test-harness hook — lives on this view's root so it dies with the DOM (never a global).
+    (this.root as unknown as {__ffView?: FuncFlowView}).__ffView = this;
 
     registerBuiltinNodes();
 
@@ -162,7 +154,6 @@ export class FuncFlowView extends DG.ViewBase {
     this.setupRibbon();
     this.setupStatusBar();
 
-    // Browser lives in the platform toolbox window now — make sure both panels are visible.
     this.toolbox = this.functionBrowser.root;
     grok.shell.windows.showToolbox = true;
     grok.shell.windows.showContextPanel = true;
@@ -175,10 +166,15 @@ export class FuncFlowView extends DG.ViewBase {
         console.warn('FuncFlow: error registering functions:', e);
       }
     }, 100);
+
+    // Suppress the platform's "drop to open" overlay so the canvas receives OS file drags.
+    this.platformSubs.push(grok.events.onFileDragEnter.subscribe((ev) => {
+      const target = ev.causedBy?.target;
+      if (target !== null && target instanceof HTMLElement &&  (target === this.canvasContainer || this.canvasContainer.contains(target)))
+        ev.preventDefault();
+    }));
   }
 
-  /** A view bound to a platform flow-script entity: loads its body and makes
-   *  Save write back to the server. */
   static forScript(script: DG.Script): FuncFlowView {
     const view = new FuncFlowView();
     view.bindScript(script);
@@ -191,17 +187,13 @@ export class FuncFlowView extends DG.ViewBase {
     this.updatePath();
     try {
       const {doc} = parseFlowBody(script.script);
-      // The entity is already on the server → its loaded state is the saved
-      // baseline, so Save stays disabled until the user edits.
-      void this.loadFromDoc(doc).then(() => this.markSaved());
+      void this.loadFromDoc(doc).then(() => this.markSaved())
+        .catch((e) => grok.shell.error(`Cannot load flow "${this.name}": ${e instanceof Error ? e.message : e}`));
     } catch (e) {
       grok.shell.error(`Cannot read flow "${this.name}": ${e instanceof Error ? e.message : e}`);
     }
   }
 
-  /** Keeps the browser URL on the entity route (ScriptView's '/script/<id>'
-   *  shape, which routes back into the visual editor). The Dart host may not
-   *  be attached yet — core sets the same path at open time in that case. */
   private updatePath(): void {
     const id = this.boundScript?.id;
     if (!id) return;
@@ -215,10 +207,9 @@ export class FuncFlowView extends DG.ViewBase {
       onFunctionDoubleClick: (info: FuncInfo) => void this.addNodeByType(info.nodeTypeName),
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
+      onLocalFilesPicked: (files: File[]) => void this.addUploadedFileNodes(files),
     });
 
-    // Suggestions pane — the bottom ~30% of the toolbox. Recomputes from the
-    // full canvas context (selection, focus node, captured data, preview cell).
     this.suggestionPane = new SuggestionPane(
       async () => this.flow ?
         computeSuggestions(await collectSuggestContext(
@@ -227,27 +218,19 @@ export class FuncFlowView extends DG.ViewBase {
       (s) => void this.applySuggestion(s),
     );
     this.functionBrowser.root.appendChild(this.suggestionPane.root);
-    // A cell clicked in the output preview is a context signal ("clicked a
-    // Molecule value") — remember it and recompute.
-    setPreviewCellFocusHandler((cell) => {
+    this.previewCellHandler = (cell): void => {
       this.previewCell = cell;
       this.suggestionPane.refresh();
-    });
+    };
+    setPreviewCellFocusHandler(this.previewCellHandler);
 
-    // The canvas is a direct `.ui-box` child (the splitter pane), where core
-    // css forces `overflow: auto !important` on EVERY child — `ui-div`-classed
-    // ones via `div.ui-box > div.ui-div`, all others via a huge
-    // `div.ui-box:not(…) > *:not(.ui-div):not(…)` rule that outranks anything
-    // reasonable. Keep `ui.div` (the exempt, low-specificity branch) and win
-    // it back with `div.ui-box > div.ui-div.funcflow-canvas-container
-    // { overflow: hidden !important }` in funcflow.css — otherwise the
-    // transformed Rete canvas grows giant scrollbars.
+    // Core css forces `overflow: auto !important` on `.ui-box` children; funcflow.css wins it back
+    // for this class with a higher-specificity `overflow: hidden !important`.
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
     setTid(this.canvasContainer, 'canvas');
     this.startPanel = this.buildStartPanel();
     this.canvasContainer.appendChild(this.startPanel);
 
-    // Non-invasive floating help button (bottom-left) → tutorials & how-to menu.
     this.helpButton = createHelpButton((ev) => openGuideMenu(this.guideHost, this.guideRunner, ev));
     this.canvasContainer.appendChild(this.helpButton);
 
@@ -259,34 +242,24 @@ export class FuncFlowView extends DG.ViewBase {
     setTid(this.validationLabel, 'statusbar-validation');
     ui.tooltip.bind(this.nodeCountLabel, 'Total number of nodes in the graph');
     ui.tooltip.bind(this.linkCountLabel, 'Total number of connections between nodes');
-    this.statusBar = ui.div(
-      [this.nodeCountLabel, this.linkCountLabel, this.validationLabel],
-      'funcflow-status-bar',
-    );
+    this.viewTabStrip = ui.div([], 'ff-view-tabs');
+    setTid(this.viewTabStrip, 'view-tabs');
+    const statusLabels = ui.div(
+      [this.nodeCountLabel, this.linkCountLabel, this.validationLabel], 'ff-status-labels');
+    this.statusBar = ui.div([this.viewTabStrip, statusLabels], 'funcflow-status-bar');
     setTid(this.statusBar, 'statusbar');
 
-    // Bottom output panel — a real pane of the view, not a dock-manager dock:
-    // canvas and panel share a vertical splitter (`ui.splitV`), so the panel is
-    // resizable via the divider, minimizes to its header strip, and can never
-    // linger over other views. Created disabled for embedded hosts.
     this.outputPreview = new OutputPreviewPanel({enabled: this.outputPanelEnabled});
     const canvasBox = ui.box(this.canvasContainer);
-    // The canvas absorbs all space the panel doesn't take — the panel's
-    // explicit height (its pane is `flex: 0 0 auto`) is the single source of
-    // truth, in every panel state and under `splitV`'s own resize handling.
+    // The panel's explicit height (its pane is `flex: 0 0 auto`) is the single source of truth.
     canvasBox.style.flex = '1 1 0';
     canvasBox.style.minHeight = '0';
     const split = ui.splitV([canvasBox, this.outputPreview.root], {style: {flex: '1 1 0', width: '100%', height: '100%'}}, true);
-    // The divider only makes sense when there is something to resize.
     const divider = split.querySelector('.ui-split-v-divider') as HTMLElement | null;
     const syncDivider = (state: OutputPanelState): void => {
       if (divider) divider.style.display = state === 'expanded' ? '' : 'none';
     };
-    // Opening the output preview minimizes the overview minimap so the two
-    // don't crowd the same corner — fired only on the hidden → visible edge
-    // (re-expanding the preview later, or the user reopening the minimap, is
-    // left alone). This lives here rather than in OutputPreviewPanel because
-    // the minimap belongs to the editor, not the preview.
+    // Minimize the minimap only on the hidden → visible edge — later re-expands are the user's choice.
     let lastPanelState: OutputPanelState = this.outputPreview.panelState;
     this.outputPreview.onStateChanged = (state) => {
       syncDivider(state);
@@ -299,37 +272,39 @@ export class FuncFlowView extends DG.ViewBase {
     const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
     setTid(this.root, 'view');
-    this.root.appendChild(mainLayout);
+    // Panes are display-toggled, never unmounted — hosted TableView DOM must persist.
+    const contentHost = ui.div([mainLayout], 'ff-view-content');
+    setTid(contentHost, 'view-content');
+    this.root.appendChild(contentHost);
     this.root.appendChild(this.statusBar);
     mainLayout.style.flex = '1';
     mainLayout.style.overflow = 'hidden';
+
+    this.outputViews = new OutputViewsManager(contentHost, mainLayout, this.viewTabStrip, {
+      onActiveTabChanged: (tab) => this.onOutputTabChanged(tab),
+      runFlow: () => this.runInstrumented(),
+    });
 
     this.setupFileDropTarget();
     this.installPortContextMenu();
     this.setupAutoPin();
 
-    setTimeout(() => this.initEditor(), 50);
+    this.initEditorTimer = setTimeout(() => {
+      this.initEditorTimer = null;
+      if (!this.detached) this.initEditor();
+    }, 50);
   }
 
-  // ---------- per-port "View Output" preview (KNIME pattern #2) ----------
-
-  /** Right-click on an output socket → menu with "View output" if a runtime
-   *  value is captured for that port. The handler runs in capture phase so
-   *  it intercepts the contextmenu before AreaPlugin emits its `'contextmenu'`
-   *  signal (which would route to the node menu). */
+  /** Capture phase — intercepts the contextmenu before AreaPlugin routes it to the node menu. */
   private installPortContextMenu(): void {
     this.canvasContainer.addEventListener('contextmenu', (ev) => {
       const target = ev.target as HTMLElement | null;
-      // Suppress root menu on input sockets — there's no output value to
-      // show, and without this we'd otherwise leak the "Add annotation
-      // here" item from the area-plugin's container-level emission.
+      // No output value on input sockets — also suppresses the area-plugin's "Add annotation here" item.
       if (target?.closest('.ff-socket-row-input')) {
         ev.preventDefault();
         ev.stopPropagation();
         return;
       }
-      // Match anywhere in an output row — dot, wrapper, or label — so the
-      // user doesn't have to right-click the 12px socket dot precisely.
       const rowEl = target?.closest('.ff-socket-row-output') as HTMLElement | null;
       if (!rowEl) return;
       const nodeEl = rowEl.closest('.ff-node') as HTMLElement | null;
@@ -353,22 +328,15 @@ export class FuncFlowView extends DG.ViewBase {
       const menu = DG.Menu.popup();
       if (summary && this.isPortPreviewable(summary))
         menu.item('View output', () => this.showPortPreview(rowEl, outputKey, summary));
-      // Inspect-anywhere: run just the slice up to this node and preview it —
-      // no full run, no Output node required.
       menu.item(summary ? 'Re-run up to here' : 'Run up to here & preview',
         () => this.previewNodeData(nodeId));
       menu.show({causedBy: ev});
     }, true);
   }
 
-  /** Live subscription capturing a viewer's option changes into its node. */
   private viewerEditSub: {unsubscribe(): void} | undefined;
 
-  /** Show a live viewer in the context panel and persist its option changes
-   *  onto the node. `grok.shell.o = viewer` makes Datagrok render the viewer's
-   *  full settings editor; we debounce `onPropertyValueChanged`, read
-   *  `getOptions().look` (dropping the `#type` tag), and store it as the node's
-   *  `viewerLook` so a re-run reproduces the exact look. */
+  /** Shows the live viewer in the context panel and persists its option changes into the node's `viewerLook`. */
   private editViewer(nodeId: string, viewer: unknown): void {
     const v = viewer as {
       root?: HTMLElement;
@@ -406,8 +374,6 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  /** Run only the slice up to this node and open its data preview — the
-   *  "inspect anywhere" entry point from an output-port right-click. */
   private previewNodeData(nodeId: string): void {
     this.executionController?.previewNodeData(nodeId, {
       name: this.flowSettings.scriptName,
@@ -416,7 +382,6 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
-  /** Re-run just this node using upstream values captured from a prior run. */
   private rerunNode(nodeId: string): void {
     this.executionController?.rerunNode(nodeId, {
       name: this.flowSettings.scriptName,
@@ -435,9 +400,6 @@ export class FuncFlowView extends DG.ViewBase {
 
   private currentPortPopup: HTMLElement | null = null;
 
-  /** Floating popover anchored next to a port's screen position. Reuses the
-   *  same `buildPreview` renderer the docked panel uses. Auto-closes on
-   *  Esc or click-outside. */
   private showPortPreview(anchorEl: HTMLElement, name: string, summary: ValueSummary): void {
     if (this.currentPortPopup) this.currentPortPopup.remove();
     const inner = buildPreview(name, summary);
@@ -481,11 +443,7 @@ export class FuncFlowView extends DG.ViewBase {
         const execState = this.executionController?.state.getNodeState(node.id);
         this.propertyPanel.showNode(node, execState);
         grok.shell.o = this.propertyPanel.root;
-        // Lazy: opens (or updates) the bottom-docked output panel only if
-        // this node has captured runtime values from a prior run.
         this.executionController?.showOutputsForNode(node);
-        // Clicking a node re-anchors the suggestion context; a stale preview
-        // cell from another node's data no longer applies.
         this.focusNodeId = node.id;
         this.previewCell = null;
         this.suggestionPane?.refresh();
@@ -495,9 +453,22 @@ export class FuncFlowView extends DG.ViewBase {
         grok.shell.o = this.propertyPanel.root;
         this.suggestionPane?.refresh();
       },
-      // Selection changes that bypass `nodepicked` — the marquee (its release
-      // is swallowed before it can bubble to any container listener), Ctrl+A,
-      // modifier-click removals, programmatic selects.
+      // A re-click must restore a stale context (a tab switch replaced grok.shell.o, or an unshown preview).
+      isNodeContextCurrent: (node: FlowNode) => {
+        if (this.propertyPanel.shownNodeId !== node.id) return false;
+        try {
+          if (grok.shell.o !== this.propertyPanel.root) return false;
+        } catch {/* current-object read failed — treat as stale and re-show */
+          return false;
+        }
+        const preview = this.outputPreview;
+        if (preview.isEnabled && preview.pinnedNodeId == null && preview.currentNodeId !== node.id) {
+          const state = this.executionController?.state.getNodeState(node.id);
+          if (state != null && hasRenderablePreview(state)) return false;
+        }
+        return true;
+      },
+      // Selection changes that bypass `nodepicked` — marquee, Ctrl+A, modifier-click removals.
       onSelectionChanged: () => this.suggestionPane?.refresh(),
       onGraphChanged: () => {
         this.updateStatusBar();
@@ -506,33 +477,48 @@ export class FuncFlowView extends DG.ViewBase {
         this.flow?.refreshMinimap();
         this.updateSaveButtonState();
         this.suggestionPane?.refresh();
+        this.outputViews?.syncTabs(this.tableOutputs());
+        this.propertyPanel.refreshShownNode();
+        this.updateAutorunIndicator();
       },
-      // Classified edits: invalidate exactly the affected downstream cone, and
-      // feed the same set to the autorun scheduler (a rerun of just that slice).
       onGraphEdited: (edit) => {
         const affected = this.executionController?.applyGraphEdit(edit) ?? new Set<string>();
         this.autorunScheduler?.onEdit(edit, affected);
-        // `onGraphChanged` does NOT fire on parameter edits (only structural
-        // add/remove/clear + annotations) — `notifyNodeParamsChanged` reports
-        // via `onGraphEdited` only. So refresh Save state here too, else editing
-        // a value on a saved flow would leave Save greyed.
+        // `onGraphChanged` does not fire on parameter edits — refresh Save state here too.
         this.updateSaveButtonState();
         this.suggestionPane?.refresh();
+        // paramName renames arrive as params-changed — the tab set/labels must track them here.
+        this.outputViews?.syncTabs(this.tableOutputs());
+        if (edit.kind === 'params-changed') {
+          this.propertyPanel.refreshShownNode();
+          // params-changed doesn't fire onGraphChanged — recompute the "Needs input" hint here.
+          this.refreshNodeHints();
+        }
+        this.updateAutorunIndicator();
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
       canRerunNode: (nodeId: string) => this.executionController?.canRerunNode(nodeId) ?? false,
+      // Only suggestions wired FROM the drag-source node apply to a socket drag.
+      getSocketSuggestions: async (nodeId: string) => {
+        if (!this.flow) return [];
+        const ctx = await collectSuggestContext(this.flow, this.executionController ?? null, nodeId, null);
+        return computeSuggestions(ctx)
+          .filter((s) => s.wire.some((w) => w.fromNodeId === nodeId))
+          .map((s) => ({typeName: s.typeName, reason: s.reason, prefill: s.prefill}));
+      },
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);
     this.executionController = new ExecutionController(this.flow, this.outputPreview);
-    // Fresh captured values (node completed / invalidated) change what fits
-    // next — recompute. Debounced in the pane, so per-node bursts are cheap.
-    this.executionController.onNodeStateChanged = () => this.suggestionPane?.refresh();
-    // Empty-canvas-click deselects happen inside rete with no callback — any
-    // release on the canvas re-reads the selection. (Marquee releases never
-    // get here — they are swallowed in `installRectSelect`; those report via
-    // `onSelectionChanged` instead.)
+    this.executionController.onNodeStateChanged = (nodeId) => {
+      this.suggestionPane?.refresh();
+      this.updateOutputViewValue(nodeId);
+      this.refreshOpenFileTitle(nodeId);
+      this.updateAutorunIndicator();
+      this.propertyPanel.updateExecState(nodeId, this.executionController?.state.getNodeState(nodeId));
+    };
+    // Empty-canvas deselects happen inside rete with no callback — re-read the selection on any release.
     this.canvasContainer.addEventListener('pointerup', () => this.suggestionPane?.refresh());
     this.autorunScheduler = new AutorunScheduler((dirty, liveOnly) => {
       const settings = {
@@ -540,49 +526,42 @@ export class FuncFlowView extends DG.ViewBase {
         description: this.flowSettings.scriptDescription,
         tags: this.flowSettings.tags,
       };
-      // Toggle off → the set holds only live-by-default nodes; run exactly
-      // those (input-satisfied ones), never the rest of the canvas.
       return (liveOnly ?
         this.executionController?.runLiveNodes(dirty, settings) :
         this.executionController?.runAutorun(dirty, settings)) ?? 'skipped';
     },
     AUTORUN_DEBOUNCE_MS,
-    // Live-by-default nodes (Open File, Add New Column, viewers, …) rerun on
-    // change even with the ribbon toggle off.
     (id) => {
       const n = this.flow?.getNodeById(id);
       return n != null && isAutorunByDefault(n);
     });
 
-    // Column inputs (column / column_list) get a picker dialog seeded by the
-    // upstream table — running the flow up to that point on demand if needed.
     const columnPicker = new ColumnPicker(this.flow, this.executionController, () => ({
       name: this.flowSettings.scriptName,
       description: this.flowSettings.scriptDescription,
       tags: this.flowSettings.tags,
     }));
     this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
+    // Captured-only read — a panel render must never kick off work.
+    this.propertyPanel.getUpstreamTable = (sourceNodeId) =>
+      this.executionController?.cloneForNode(sourceNodeId) ?? null;
+    this.propertyPanel.runUpstreamNode = (sourceNodeId) =>
+      this.executionController.produceTableForNode(sourceNodeId, {
+        name: this.flowSettings.scriptName,
+        description: this.flowSettings.scriptDescription,
+        tags: this.flowSettings.tags,
+      });
 
-    // Functions with their own custom editor (an `editor:` meta or the explicit
-    // allowlist) get an icon in the parameters pane header that opens that
-    // editor seeded with the node's real upstream tables; the edited values are
-    // written back into the panel, so re-render it on completion.
     const funcEditorLauncher = new FuncEditorLauncher(this.flow, this.executionController, () => ({
       name: this.flowSettings.scriptName,
       description: this.flowSettings.scriptDescription,
       tags: this.flowSettings.tags,
     }));
     this.propertyPanel.onEditFuncParams = (node) => {
-      // No autorun while the editor dialog is open: the dialog intercepts the
-      // global `d4-before-run-action` event, and a mid-dialog rerun of the same
-      // function would be mistaken for the dialog's own run action — canceling
-      // the rerun's call and resolving the round-trip with stale values. The
-      // writeback below reports the edit, so the rerun happens right after.
+      // Hold autorun — a mid-dialog rerun of the same function would be mistaken for the dialog's own run action.
       this.autorunScheduler?.hold();
       void funcEditorLauncher.open(node).then((applied) => {
         if (applied) {
-          // The editor dialog wrote new values into `inputValues` — the same
-          // invalidation as any parameter edit in the panel.
           this.flow.notifyNodeParamsChanged(node.id);
           this.propertyPanel.showNode(node, this.executionController?.state.getNodeState(node.id));
         }
@@ -593,29 +572,19 @@ export class FuncFlowView extends DG.ViewBase {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };
     this.executionController.onRunEnd = (success: boolean) => {
+      this.saveDialogRunEnd?.(success);
       if (!success) return;
-      grok.shell.info('Flow execution completed');
-      // Land the user on the first output node — selecting it opens the
-      // bottom-docked panel with the captured value (if any).
       this.autoSelectFirstOutputNode();
     };
 
-    // "Edit settings" on a viewer preview → show the live viewer in the context
-    // panel (Datagrok renders its full settings editor) and capture every change
-    // back into the node's stored options, so a re-run reproduces the look.
     this.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
-    // Baseline for the Save button: an empty scratch flow starts "unchanged"
-    // (a load path records its own baseline once it finishes deserializing).
     this.markSaved();
     this.editorReadyResolve();
   }
 
-  /** Re-render every node so the pre-run "Needs input" hint reflects the
-   *  current wiring (connections don't otherwise re-render their endpoints).
-   *  Cheap for the small graphs Flow targets; debounced via rAF. */
   private hintRaf = 0;
   private refreshNodeHints(): void {
     if (!this.flow || this.hintRaf) return;
@@ -625,25 +594,16 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
-  /** Turn the bottom output panel on for a view created without it (the
-   *  creation-script dialog) — e.g. when that view is promoted into the real
-   *  editor via "Open In Editor". */
   enableOutputPanel(): void {
     this.outputPreview.setEnabled(true);
   }
 
-  /** Set the overview minimap's collapsed state. Remembered and (re)applied when
-   *  the editor finishes initializing, so it can be called before that. */
   setMinimapCollapsed(collapsed: boolean): void {
     this.minimapCollapsed = collapsed;
     this.flow?.setMinimapCollapsed(collapsed);
   }
 
-  /** Find the first output node in the graph (preferring one that has
-   *  captured runtime values) and programmatically select it. SetVar nodes
-   *  count as outputs too (they compile to the same thing) — a flow whose
-   *  terminals are SetVars (e.g. an imported creation script) lands on its
-   *  first stored value just like one with Output nodes. */
+  /** SetVar terminals count as outputs — they compile to the same thing. */
   private autoSelectFirstOutputNode(): void {
     if (!this.flow) return;
     const outputs = this.flow.getNodes().filter((n) => n.dgNodeType === 'output' || isSetVarNode(n));
@@ -655,17 +615,102 @@ export class FuncFlowView extends DG.ViewBase {
     void this.flow.selectNode((withValue ?? outputs[0]).id);
   }
 
-  /** Accept drops of Datagrok files (→ OpenFile node), DG.Func (→ matching node),
-   *  and HTML5 native drags from the function browser (carry typeName via the
-   *  FF_DRAG_MIME data type). */
+  /** Table-carrying terminals, one tab each: Table Outputs, dataframe Value Outputs, SetVar-with-table. */
+  private tableOutputs(): OutputTabInfo[] {
+    if (!this.flow) return [];
+    const res: OutputTabInfo[] = [];
+    for (const n of this.flow.getOutputNodes()) {
+      const isTable = n.dgTypeName === 'Outputs/Table Output' ||
+        (n.dgTypeName === 'Outputs/Value Output' && n.properties['outputType'] === 'dataframe');
+      if (isTable)
+        res.push({nodeId: n.id, paramName: String(n.properties['paramName'] ?? '').trim() || n.label});
+    }
+    for (const n of this.flow.getNodes()) {
+      if (isSetVarNode(n)) {
+        const name = String(n.inputValues['variableName'] ?? '').trim();
+        if (name === '') continue;
+        const src = this.flow.getInputSource(n.id, 'value');
+        const dgType = src ? (src.node.outputs[src.outputKey] as
+          {socket?: {dgType?: string}} | undefined)?.socket?.dgType : undefined;
+        if (dgType === 'dataframe') res.push({nodeId: n.id, paramName: name});
+      }
+    }
+    return res;
+  }
+
+  /** Restamps an Open File node's title from its path — only after a completed run. */
+  private refreshOpenFileTitle(nodeId: string): void {
+    const node = this.flow?.getNodeById(nodeId);
+    if (!node || (node.dgFuncName ?? '').toLowerCase() !== 'openfile') return;
+    if (this.executionController?.state.getNodeState(nodeId)?.status !== NodeExecStatus.completed) return;
+    const path = String(node.inputValues['fullPath'] ?? '');
+    if (path === '') return;
+    // Restamp only machine-stamped titles — a user-renamed node keeps its name.
+    const base = (node.dgFunc ? getFuncDisplayName(node.dgFunc) : '') || 'Open File';
+    if (node.label !== base && !node.label.startsWith(`${base}: `)) return;
+    const fileName = path.split('/').pop() || path;
+    const label = `${base}: ${fileName}`;
+    if (node.label === label) return;
+    node.label = label;
+    void this.flow.updateNode(node.id);
+  }
+
+  private updateOutputViewValue(nodeId: string): void {
+    if (!this.outputViews || !this.flow) return;
+    const node = this.flow.getNodeById(nodeId);
+    if (!node || (node.dgNodeType !== 'output' && !isSetVarNode(node))) return;
+    const st = this.executionController?.state.getNodeState(nodeId);
+    if (st?.status === NodeExecStatus.completed && st.outputs) {
+      const summary = Object.values(st.outputs)
+        .find((s) => s?.type === 'dataframe' && s.clone instanceof DG.DataFrame);
+      if (summary) this.outputViews.setValue(nodeId, summary.clone as DG.DataFrame);
+    }
+    else if (st?.status === NodeExecStatus.stale)
+      this.outputViews.markStale(nodeId);
+  }
+
+  /** Surfaces the active tab's ribbon/toolbox on this view (the `DG.MultiView.currentView` recipe). */
+  private onOutputTabChanged(tab: OutputTab | null): void {
+    const tv = tab?.tv ?? null;
+    try {
+      if (tv == null) {
+        if (this.flowRibbonPanels.length > 0) this.setRibbonPanels(this.flowRibbonPanels);
+        this.toolbox = this.functionBrowser.root;
+        return;
+      }
+      // Capture ONCE, unwrapped — `setRibbonPanels` moves elements, so re-reading `getRibbonPanels()`
+      // after a swap returns empty husks. Core-hidden items are dropped; Flow's Save pill leads.
+      if (tab!.ribbonPanels == null) {
+        const unwrap = (el: HTMLElement): HTMLElement =>
+          el.classList.contains('d4-ribbon-item') && el.firstElementChild instanceof HTMLElement ?
+            el.firstElementChild : el;
+        tab!.ribbonPanels = tv.getRibbonPanels()
+          .map((p) => p.map(unwrap).filter((el) => el.style.display !== 'none'))
+          .filter((p) => p.length > 0);
+      }
+      const saveHost = this.flowRibbonPanels[0]?.[0];
+      this.setRibbonPanels(saveHost != null ? [[saveHost], ...tab!.ribbonPanels] : tab!.ribbonPanels);
+      this.toolbox = tv.toolbox;
+    } catch (e) {
+      console.warn('FuncFlow: ribbon/toolbox swap failed', e);
+    }
+  }
+
+  private captureOutputViews(): FuncFlowDocument['outputViews'] {
+    const layouts = this.outputViews?.captureLayouts() ?? {};
+    const names = Object.keys(layouts);
+    if (names.length === 0) return undefined;
+    const res: NonNullable<FuncFlowDocument['outputViews']> = {};
+    for (const name of names) res[name] = {layout: layouts[name]};
+    return res;
+  }
+
   private setupFileDropTarget(): void {
     ui.makeDroppable(this.canvasContainer, {
       acceptDrop: (drag: any) =>
         (drag instanceof DG.FileInfo && drag.isFile) || drag instanceof DG.Func,
       doDrop: (args) => {
         const drag = args.dragObject;
-        // Place the node where it was dropped (like the native drag from the
-        // function browser), not in the center. `dropEvent` carries the pointer.
         const ev = args.dropEvent;
         if (drag instanceof DG.Func) {void this.addFuncNode(drag, ev); return;}
         const fi = drag as DG.FileInfo;
@@ -673,18 +718,22 @@ export class FuncFlowView extends DG.ViewBase {
       },
     });
 
-    // Native HTML5 drag/drop from the function browser and the Suggestions pane.
     this.canvasContainer.addEventListener('dragover', (ev) => {
       if (!ev.dataTransfer) return;
       const types = Array.from(ev.dataTransfer.types);
-      if (types.includes(FF_DRAG_MIME) || types.includes(FF_SUGGEST_MIME)) {
+      if (types.includes(FF_DRAG_MIME) || types.includes(FF_SUGGEST_MIME) || types.includes('Files')) {
         ev.preventDefault();
         ev.dataTransfer.dropEffect = 'copy';
       }
     });
     this.canvasContainer.addEventListener('drop', (ev) => {
-      // A dragged suggestion carries its full JSON payload — apply it (wiring,
-      // prefill and all) at the drop point.
+      const osFiles = ev.dataTransfer?.files;
+      if (osFiles != null && osFiles.length > 0) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void this.addUploadedFileNodes(Array.from(osFiles), ev);
+        return;
+      }
       const sug = ev.dataTransfer?.getData(FF_SUGGEST_MIME);
       if (sug) {
         ev.preventDefault();
@@ -700,8 +749,6 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
-  /** Add a node and place it at the canvas position corresponding to the given
-   *  screen-space pointer event. Used by drop handlers. */
   private async addNodeByTypeAt(typeName: string, clientX: number, clientY: number): Promise<FlowNode | null> {
     if (!this.flow) return null;
     const node = createNode(typeName);
@@ -727,11 +774,25 @@ export class FuncFlowView extends DG.ViewBase {
     return node;
   }
 
-  /** Accept a toolbox suggestion: create the node — at the drop point when the
-   *  suggestion was dragged onto the canvas (`at`), else next to its (first)
-   *  source — prefill the suggested input values (column names, a clicked
-   *  molecule), and wire every suggested connection — accepting "Join Tables"
-   *  for two selected tables lands it connected to both. */
+  /** Collected by the AI assistant through `view.getFunctions()` (the Dart JsViewHost forwards here). */
+  getFunctions(): DG.Func[] {
+    return DG.Func.find({package: 'Flow', tags: ['flowViewFunction']});
+  }
+
+  /** Facade the registered AI view functions use to act on this instance. */
+  aiContext(): FlowAIContext | null {
+    if (!this.flow)
+      return null;
+    return {
+      flow: () => this.flow,
+      execution: () => this.executionController ?? null,
+      addNodeByType: (typeName: string) => this.addNodeByType(typeName),
+      run: () => this.runInstrumented(),
+      runGuide: (guide) => void this.guideRunner.run(guide, this.guideHost),
+    };
+  }
+
+  /** Creates the suggested node (at the drop point, else next to its source), prefills and wires it. */
   private async applySuggestion(s: Suggestion, at?: {clientX: number; clientY: number}): Promise<void> {
     if (!this.flow) return;
     const node = createNode(s.typeName);
@@ -756,16 +817,12 @@ export class FuncFlowView extends DG.ViewBase {
     if (s.prefill && Object.keys(s.prefill).length > 0) {
       for (const [k, v] of Object.entries(s.prefill)) node.inputValues[k] = v;
       await this.flow.updateNode(node.id);
-      // Report the programmatic writes like a panel edit — drives invalidation
-      // and lets live-by-default nodes autorun with the prefilled value.
       this.flow.notifyNodeParamsChanged(node.id);
     }
     this.updateStatusBar();
     this.suggestionPane?.refresh();
   }
 
-  /** Place a node of the given type at the drop pointer when one is provided
-   *  (drag-and-drop), else in the center (double-click / programmatic add). */
   private addNodeByTypeAtDrop(typeName: string, dropEvent?: MouseEvent): Promise<FlowNode | null> {
     return dropEvent ?
       this.addNodeByTypeAt(typeName, dropEvent.clientX, dropEvent.clientY) :
@@ -781,22 +838,24 @@ export class FuncFlowView extends DG.ViewBase {
     const node = await this.addNodeByTypeAtDrop(typeName, dropEvent);
     if (node) {
       node.inputValues['fullPath'] = filePath;
+      const fileName = filePath.split('/').pop() || filePath;
+      node.label = `${node.label}: ${fileName}`;
       await this.flow.updateNode(node.id);
-      // Report the programmatic param write like any panel edit — it drives
-      // invalidation AND lets the live-by-default autorun load the file.
       this.flow.notifyNodeParamsChanged(node.id);
-      grok.shell.info(`Added OpenFile node for: ${filePath}`);
     }
   }
 
   private async addFuncNode(func: DG.Func, dropEvent?: MouseEvent): Promise<void> {
+    // Explicit intent — a func outside the catalog allowlist registers on the fly.
     const info = getRegisteredFuncs().find((f) => f.func.name === func.name);
-    if (!info) {
+    let typeName: string;
+    try {
+      typeName = info?.nodeTypeName ?? ensureFuncNodeType(func);
+    } catch {
       grok.shell.warning(`Function "${func.name}" is not available as a node`);
       return;
     }
-    if (await this.addNodeByTypeAtDrop(info.nodeTypeName, dropEvent))
-      grok.shell.info(`Added node: ${func.name}`);
+    await this.addNodeByTypeAtDrop(typeName, dropEvent);
   }
 
   private findOpenFileNodeType(): string | null {
@@ -807,9 +866,68 @@ export class FuncFlowView extends DG.ViewBase {
     return null;
   }
 
-  // ---------- guide system (tutorials + how-to) ----------
+  private findUploadedFileNodeType(): string | null {
+    for (const info of getRegisteredFuncs()) {
+      if (info.func.name === 'readUploadedFile')
+        return info.nodeTypeName;
+    }
+    return null;
+  }
 
-  /** What the interactive guides need from this view. */
+  /** OS files dropped on the canvas: bytes go to the pending store, reaching the server only on save. */
+  private async addUploadedFileNodes(files: File[], dropEvent?: MouseEvent): Promise<void> {
+    const typeName = this.findUploadedFileNodeType();
+    if (!typeName) {
+      grok.shell.warning('Uploaded File node is not available');
+      return;
+    }
+    let offset = 0;
+    for (const file of files) {
+      let fileId: string;
+      try {
+        fileId = addPendingFile(file.name, new Uint8Array(await file.arrayBuffer()));
+      } catch (e: any) {
+        grok.shell.error(e?.message ?? String(e));
+        continue;
+      }
+      const node = dropEvent ?
+        await this.addNodeByTypeAt(typeName, dropEvent.clientX + offset, dropEvent.clientY + offset) :
+        await this.addNodeByType(typeName);
+      if (!node) continue;
+      node.label = file.name;
+      node.inputValues['fileId'] = fileId;
+      node.inputValues['fileName'] = file.name;
+      await this.flow.updateNode(node.id);
+      this.flow.notifyNodeParamsChanged(node.id);
+      offset += 40;
+    }
+    this.updateStatusBar();
+  }
+
+  /** Uploads pending files and rewrites node fileIds to real ids before any serialization that outlives the session. */
+  private async persistPendingUploads(): Promise<void> {
+    if (!this.flow) return;
+    const upType = this.findUploadedFileNodeType();
+    if (!upType) return;
+    for (const node of this.flow.getNodes()) {
+      if (node.dgTypeName !== upType) continue;
+      const fileId = node.inputValues['fileId'];
+      if (typeof fileId !== 'string' || !isPendingFileId(fileId)) continue;
+      if (!getPendingFile(fileId)) {
+        throw new Error(`Uploaded file "${node.inputValues['fileName'] ?? node.label}" is no longer ` +
+          'available in this session — drop it onto the canvas again before saving');
+      }
+      const fi = await persistPendingFile(fileId);
+      node.inputValues['fileId'] = fi.id;
+      await this.flow.updateNode(node.id);
+    }
+  }
+
+  private async syncUploadedFilePermissions(): Promise<void> {
+    if (this.boundScript?.script)
+      await syncFlowFilePermissions(this.boundScript);
+  }
+
   private get guideHost(): GuideHost {
     return {
       getFlow: () => this.flow,
@@ -819,14 +937,16 @@ export class FuncFlowView extends DG.ViewBase {
           this.functionBrowser.render();
         } catch {/* not ready yet */}
       },
+      showToolboxTab: (name) => {
+        try {
+          this.functionBrowser.showTab(name);
+        } catch {/* not ready yet */}
+      },
+      hideStartPanel: () => this.hideStartPanel(),
       anchorEl: this.helpButton,
     };
   }
 
-  // ---------- start panel (U1: never open empty) ----------
-
-  /** A welcoming overlay shown over the empty canvas: pick a template, open a
-   *  saved flow, import from a table, or start blank — instead of a blank page. */
   private buildStartPanel(): HTMLElement {
     const title = ui.divText('Start a flow', 'funcflow-start-title');
     const subtitle = ui.divText(
@@ -838,7 +958,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.divText(t.label, 'funcflow-start-card-title'),
         ui.divText(t.desc, 'funcflow-start-card-desc'),
       ], 'funcflow-start-card');
-      setTid(card, 'start-template', t.file.replace(/\.ffjson$/i, ''));
+      setTid(card, 'start-template', t.file.replace(/\.flow$/i, ''));
       card.onclick = (): void => void this.loadTemplate(t.file);
       ui.tooltip.bind(card, `Open the "${t.label}" template`);
       return card;
@@ -852,8 +972,6 @@ export class FuncFlowView extends DG.ViewBase {
     blankCard.onclick = (): void => this.hideStartPanel();
     cards.push(blankCard);
 
-    // Primary call-to-action: launch the hands-on tour (the first tutorial),
-    // which walks a newcomer through loading data and adding a column.
     const firstFlowBtn = ui.button('Create your first flow', () => {
       this.hideStartPanel();
       void this.guideRunner.run(TUTORIALS[0], this.guideHost);
@@ -866,7 +984,6 @@ export class FuncFlowView extends DG.ViewBase {
     setTid(openBtn, 'start-open');
     const actions = ui.divH([firstFlowBtn, openBtn], 'funcflow-start-actions');
 
-    // Discovery hint, with an actionable link that launches the interface tour.
     const interfaceTour = TUTORIALS.find((t) => t.id === 'interface-tour');
     const tourLink = ui.link('take a tour of the interface', () => {
       this.hideStartPanel();
@@ -879,29 +996,65 @@ export class FuncFlowView extends DG.ViewBase {
     hint.appendChild(document.createTextNode(
       '. You can also double-click a function in the list on the left, or drag a file onto the canvas.'));
 
+    this.recentFlowsHost = setTid(ui.divV([], 'funcflow-start-recent'), 'start-recent');
+    void this.refreshRecentFlows();
+
     const panel = ui.divV([
       title, subtitle,
       ui.divH(cards, 'funcflow-start-cards'),
+      this.recentFlowsHost,
       actions, hint,
     ], 'funcflow-start-panel');
     setTid(panel, 'start-panel');
     return setTid(ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay'), 'start-overlay');
   }
 
-  /** Decorative animated backdrop host. The graph is drawn by
-   *  `renderStartBackground` at the container's *actual* size (re-run on resize)
-   *  so it fills any shape with no scaling distortion. */
+  private async refreshRecentFlows(): Promise<void> {
+    if (this.recentFlowsLoading) return;
+    this.recentFlowsLoading = true;
+    try {
+      const flows = await grok.dapi.scripts.list(
+        {pageSize: 12, pageNumber: 1, filter: 'language="flow"', order: '!updatedOn'});
+      this.recentFlowsHost.innerHTML = '';
+      if (flows.length === 0) return;
+      this.recentFlowsHost.appendChild(ui.divText('Recent flows', 'funcflow-start-recent-title'));
+      const list = ui.divV([], 'funcflow-start-recent-list');
+      for (const f of flows) {
+        const row = ui.div([ui.render(f)], 'funcflow-start-recent-item');
+        setTid(row, 'start-recent-item', f.friendlyName || f.name);
+        // Capture phase — the entity markup's own click would swallow the open.
+        row.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          void this.openRecentFlow(f);
+        }, true);
+        list.appendChild(row);
+      }
+      this.recentFlowsHost.appendChild(list);
+    } catch { /* server unreachable — no section */ }
+    finally {
+      this.recentFlowsLoading = false;
+    }
+  }
+
+  private async openRecentFlow(f: DG.Script): Promise<void> {
+    try {
+      // Re-find by id so the body is guaranteed present, not a lean listing row.
+      const full = await grok.dapi.scripts.find(f.id);
+      this.bindScript((full as DG.Script | null) ?? f);
+      this.hideStartPanel();
+    } catch (e: any) {
+      grok.shell.error(`Could not open "${f.friendlyName || f.name}": ${e?.message ?? e}`);
+    }
+  }
+
   private buildStartBackground(): HTMLElement {
     this.startBg = ui.div([], 'funcflow-start-bg');
     setTid(this.startBg, 'start-bg');
     return this.startBg;
   }
 
-  /** Lay a flowing-edges graph across the real container dimensions: nodes on a
-   *  jittered grid sized to W×H, connected left-to-right with horizontal-flow
-   *  beziers. Because the SVG viewBox equals the pixel size, dots stay round and
-   *  curves keep their shape on portrait, square, or ultrawide alike. The jitter
-   *  is deterministic, so resizing reflows smoothly instead of reshuffling. */
+  /** Deterministic jittered graph sized to the real container — resizing reflows instead of reshuffling. */
   private renderStartBackground(): void {
     if (!this.startBg) return;
     const W = this.canvasContainer.clientWidth || 1200;
@@ -930,7 +1083,6 @@ export class FuncFlowView extends DG.ViewBase {
         dots.push(`<circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="5.5" ` +
           `fill="${COLORS[(c + r) % COLORS.length]}" stroke="#ffffff" stroke-width="2"/>`);
         if (c >= cols - 1) continue;
-        // Right neighbor, plus an occasional diagonal branch — a flowing DAG.
         const targets = [r];
         if (rnd(c + 3, r + 7) > 0.5 && r + 1 < rows) targets.push(r + 1);
         if (rnd(c + 5, r + 2) > 0.62 && r - 1 >= 0) targets.push(r - 1);
@@ -949,8 +1101,6 @@ export class FuncFlowView extends DG.ViewBase {
       paths.join('') + dots.join('') + `</svg>`;
   }
 
-  /** Draw the backdrop sized to the canvas, on the next frame so the container
-   *  is laid out. Done lazily each time the panel is shown (no resize tracking). */
   private drawStartBackgroundSoon(): void {
     if (this.startBgRaf) cancelAnimationFrame(this.startBgRaf);
     this.startBgRaf = requestAnimationFrame(() => {
@@ -959,30 +1109,35 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
-  /** Show the start overlay (e.g. from the ribbon "Templates…" item). */
   private showStartPanel(): void {
     this.startPanel.style.display = 'flex';
     this.drawStartBackgroundSoon();
+    void this.refreshRecentFlows();
   }
 
   private hideStartPanel(): void {
     this.startPanel.style.display = 'none';
   }
 
-  /** Hide the overlay only while the canvas has content; show it on an empty one. */
+  /** Annotations count as content — the overlay must not cover (and swallow clicks on) a lone note. */
   private updateStartPanelVisibility(): void {
-    const empty = !this.flow || this.flow.getNodeCount() === 0;
+    const wasHidden = this.startPanel.style.display === 'none';
+    const empty = (!this.flow ||
+      (this.flow.getNodeCount() === 0 && this.flow.getAnnotations().length === 0)) &&
+      !this.guideRunner.isRunning;
     this.startPanel.style.display = empty ? 'flex' : 'none';
-    if (empty) this.drawStartBackgroundSoon();
+    if (empty) {
+      this.drawStartBackgroundSoon();
+      if (wasHidden) void this.refreshRecentFlows();
+    }
   }
 
-  /** Load a bundled template flow from the package `files/` folder. */
   private async loadTemplate(file: string): Promise<void> {
     try {
       const json = await _package.files.readAsText(file);
       await this.loadFromJson(json);
       this.hideStartPanel();
-      grok.shell.info(`Opened template: ${file.replace(/\.ffjson$/i, '')}`);
+      grok.shell.info(`Opened template: ${file.replace(/\.flow$/i, '')}`);
     } catch (e: any) {
       grok.shell.error(`Could not open template "${file}": ${e?.message ?? e}`);
     }
@@ -1005,11 +1160,11 @@ export class FuncFlowView extends DG.ViewBase {
       m = m.item('Open from platform…', () => void this.openFromPlatform());
     m = m.item('Save', () => void this.saveFlow());
     if (!creationMode)
-      m = m.item('Save As…', () => void this.saveAsDialog());
+      m = m.item('Save As…', () => void this.saveDialog({asNew: true}));
     this.ribbonMenu = m
       .separator()
-      .item('Import .ffjson…', () => void this.openFlow())
-      .item('Export .ffjson', () => this.exportFfjson())
+      .item('Import .flow…', () => void this.openFlow())
+      .item('Export .flow', () => void this.exportFlowFile())
       .separator()
       .item('Templates…', () => this.showStartPanel())
       .item('Settings…', () => this.editSettings())
@@ -1020,7 +1175,10 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Continue', () => this.executionController?.continueBreakpoint())
       .item('Stop', () => this.executionController?.stopRun())
       .separator()
-      .item('Clear run highlights', () => this.executionController?.resetVisuals())
+      .item('Clear run highlights', () => {
+        this.executionController?.resetVisuals();
+        this.outputViews?.clearValues();
+      })
       .endGroup()
       .group('Edit')
       .item('Undo', () => void this.flow?.undo())
@@ -1055,16 +1213,27 @@ export class FuncFlowView extends DG.ViewBase {
     // The tooltip is dynamic so it always names the current state.
     const autorunIcon = setTid(ui.iconFA('bolt', () => this.toggleAutorun()), 'ribbon', 'autorun');
     autorunIcon.classList.add('ff-autorun-toggle');
-    ui.tooltip.bind(autorunIcon, () => this.autorunScheduler?.enabled ?
-      'Autorun is on — the flow reruns the affected nodes after every change. Click to turn off.' :
-      'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change. ' +
-      'Live nodes (Open File, Add New Column, viewers) still rerun on change.');
+    ui.tooltip.bind(autorunIcon, () => {
+      if (!this.autorunScheduler?.enabled) {
+        return 'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change. ' +
+          'Live nodes (Open File, Add New Column, viewers) still rerun on change.';
+      }
+      const blockers = this.executionController?.autorunBlockers() ?? [];
+      if (blockers.length === 0)
+        return 'Autorun is on — the flow reruns the affected nodes after every change. Click to turn off.';
+      return ui.divV([
+        ui.divText('Autorun is on, but waiting for:'),
+        ...blockers.map((b) => ui.divText('• ' + b)),
+        ui.divText('Set the values on the nodes (or in the context panel), or press Run to be asked for them.',
+          'ff-autorun-tooltip-hint'),
+      ]);
+    });
     this.autorunIcon = autorunIcon;
 
     // Saving leads the ribbon; saveFlow routes to the right target (entity
     // update / Save As for never-saved flows / creation scripts).
     const saveButton = creationMode ?
-      ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
+      ui.bigButton('Save', () => void this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
       ui.bigButton('Save', () => {if (this.saveAvailability().enabled) void this.saveFlow();}, '');
     saveButton.prepend(ui.iconFA('cloud-upload'));
     const saveEl = setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save');
@@ -1112,6 +1281,9 @@ export class FuncFlowView extends DG.ViewBase {
     ];
 
     this.setRibbonPanels(panels);
+    // Kept by reference: `setRibbonPanels` moves (reparents) elements, so these
+    // same references restore Flow's ribbon when leaving an output-view tab.
+    this.flowRibbonPanels = panels;
     this.updateSaveButtonState();
   }
 
@@ -1135,6 +1307,17 @@ export class FuncFlowView extends DG.ViewBase {
       const pending = this.executionController?.pendingNodes() ?? new Set<string>();
       if (pending.size > 0) this.autorunScheduler.kick(pending);
     }
+    this.updateAutorunIndicator();
+  }
+
+  /** Amber "waiting" badge on the bolt while autorun is on but can't run what's
+   *  pending (an input node without a value, validation errors) — the dynamic
+   *  tooltip names the exact blockers. Cleared the moment nothing blocks. */
+  private updateAutorunIndicator(): void {
+    if (!this.autorunIcon) return;
+    const blocked = (this.autorunScheduler?.enabled ?? false) &&
+      (this.executionController?.autorunBlockers() ?? []).length > 0;
+    this.autorunIcon.classList.toggle('ff-autorun-blocked', blocked);
   }
 
   // ---------- Save button state ----------
@@ -1157,20 +1340,23 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  /** Record the current graph as the saved baseline (after a save, or after
-   *  loading a flow that already lives on the server / a fresh empty flow). */
-  private markSaved(): void {
-    this.savedSnapshot = this.currentSnapshot();
+  /** Record the saved baseline (after a save, or after loading a flow that
+   *  already lives on the server / a fresh empty flow). Pass the snapshot
+   *  taken when the payload was built so mid-save edits stay "unsaved". */
+  private markSaved(snapshot?: string): void {
+    this.savedSnapshot = snapshot ?? this.currentSnapshot();
     this.updateSaveButtonState();
   }
 
-  /** Whether Save is available, and the tooltip explaining why not. Save makes
-   *  sense only for a non-empty canvas that differs from the last saved state. */
+  /** Whether Save is available, and its tooltip. The button is the gateway to
+   *  both saving the script AND publishing a dashboard, so it stays enabled
+   *  for any non-empty canvas — a freshly opened (unchanged) flow must still
+   *  open the dialog to publish; the tooltip reflects the dirty state. */
   private saveAvailability(): {enabled: boolean; tooltip: string} {
     if ((this.flow?.getNodeCount() ?? 0) === 0)
       return {enabled: false, tooltip: 'Nothing to save yet — the canvas is empty'};
     if (this.savedSnapshot !== null && this.currentSnapshot() === this.savedSnapshot)
-      return {enabled: false, tooltip: 'No changes to save since the last save'};
+      return {enabled: true, tooltip: 'No changes since the last save — open to publish a dashboard or save as new'};
     return {enabled: true, tooltip: 'Save this flow to the platform'};
   }
 
@@ -1217,12 +1403,65 @@ export class FuncFlowView extends DG.ViewBase {
     this.root.removeEventListener('keydown', h, opts);
   }
 
-  /** View closed — a pending debounced autorun must not fire into it. */
+  /** View closed — release everything that outlives the view's DOM: pending
+   *  timers/rAFs, the deferred editor init, the guide, the run (its event
+   *  subscription and captured live values), panel editors, and the shell's
+   *  current-object pointer if it is ours. */
   detach(): void {
+    this.detached = true;
+    if (this.initEditorTimer != null) {
+      clearTimeout(this.initEditorTimer);
+      this.initEditorTimer = null;
+    }
+    if (this.hintRaf) {
+      cancelAnimationFrame(this.hintRaf);
+      this.hintRaf = 0;
+    }
+    if (this.startBgRaf) {
+      cancelAnimationFrame(this.startBgRaf);
+      this.startBgRaf = 0;
+    }
     this.autorunScheduler?.reset();
+    this.guideRunner.stop();
     this.teardownAutoPin();
+    for (const sub of this.platformSubs) sub.unsubscribe();
+    this.platformSubs = [];
+    this.viewerEditSub?.unsubscribe();
+    this.viewerEditSub = undefined;
+    this.pendingFitObserver?.disconnect();
+    this.pendingFitObserver = null;
+    this.currentPortPopup?.remove();
+    this.currentPortPopup = null;
+    // Un-mount the last-shown node's custom editors (their detach() releases
+    // widget subscriptions), and stop the module-level preview-cell hook from
+    // feeding this dead view.
+    this.propertyPanel?.clear();
+    releasePreviewCellFocusHandler(this.previewCellHandler);
+    // The shell must not keep rendering a destroyed view's panel/viewer.
+    try {
+      if (grok.shell.o === this.propertyPanel?.root) grok.shell.o = null;
+    } catch {/* shell not available in this host */}
+    // Bytes of files dropped but never saved would otherwise sit in the
+    // page-global pending registry forever.
+    this.dropPendingUploads();
+    this.suggestionPane?.destroy();
+    this.functionBrowser?.destroy();
+    this.outputViews?.destroy();
+    // Dispose BEFORE the editor: clearing this flow's live-registry entries
+    // iterates the editor's nodes.
+    this.executionController?.dispose();
     this.flow?.destroy();
     super.detach();
+  }
+
+  /** Remove this flow's not-yet-persisted uploaded files from the pending
+   *  registry — the view owned them, and they are gone with it. */
+  private dropPendingUploads(): void {
+    if (!this.flow) return;
+    for (const node of this.flow.getNodes()) {
+      const fileId = String(node.inputValues['fileId'] ?? '');
+      if (fileId.startsWith('pending:')) removePendingFile(fileId);
+    }
   }
 
   /** Re-arrange the existing graph with the importer's layered/banded layout. */
@@ -1245,6 +1484,7 @@ export class FuncFlowView extends DG.ViewBase {
   private async newFlow(): Promise<void> {
     await this.flow.clear();
     this.boundScript = null;
+    this.dashboardProjectId = null;
     this.propertyPanel.clear();
     this.updateStatusBar();
     this.updateStartPanelVisibility();
@@ -1253,39 +1493,31 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private async openFlow(): Promise<void> {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.ffjson,.json';
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const doc = await loadFlowFromFile(file);
-        await this.loadFromDoc(doc);
-        this.boundScript = null; // an imported file is a new, unsaved flow
-        grok.shell.info(`Loaded flow: ${doc.name}`);
-      } catch (e: any) {
-        grok.shell.error(`Failed to load flow: ${e.message}`);
-      }
+    DG.Utils.openFile({
+      accept: '.flow',
+      open: async (file) => {
+        try {
+          const doc = await loadFlowFromFile(file);
+          await this.loadFromDoc(doc);
+          this.boundScript = null; // an imported file is a new, unsaved flow
+          grok.shell.info(`Loaded flow: ${doc.name}`);
+        } catch (e: any) {
+          grok.shell.error(`Failed to load flow: ${e.message}`);
+        }
+      },
     });
-    input.click();
   }
 
   /** Save: in creation-script mode writes creation scripts back to the tables;
-   *  otherwise updates the bound entity, or opens Save As for a flow that was
-   *  never saved. A bound id is *not* proof the entity is on the server — a
-   *  template (or a flow whose entity was deleted) carries an id that `find`
-   *  can't resolve — so we verify it exists before a silent update; templates
-   *  previously slipped through and saved silently under the template name. */
+   *  otherwise always opens the combined save dialog — script name/space plus
+   *  the dashboard section (run the flow → publish its result tables). */
   private async saveFlow(): Promise<void> {
     if (!this.flow) return;
     if (this.tableInfos.length > 0) {
-      this.saveCreationScriptsDialog();
+      await this.saveCreationScriptsDialog();
       return;
     }
-    const id = this.boundScript?.id;
-    if (id && await this.scriptExistsOnServer(id)) await this.saveToServer();
-    else await this.saveAsDialog();
+    await this.saveDialog();
   }
 
   /** Whether a script id resolves to a real, accessible server entity.
@@ -1301,101 +1533,247 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** The `.flow` entity body for the current graph — the single writer, so the
-   *  annotation header and the ffjson payload can never disagree. */
+   *  annotation header and the flow JSON payload can never disagree. */
   private entityBodyText(): string {
     if (!this.flowSettings.tags.includes(FLOW_TAG))
       this.flowSettings.tags.push(FLOW_TAG);
-    return flowScriptText(this.flow, this.flowSettings);
+    return flowScriptText(this.flow, this.flowSettings, {
+      outputViews: this.captureOutputViews(),
+      dashboard: this.dashboardProjectId != null ? {projectId: this.dashboardProjectId} : undefined,
+    });
   }
 
-  private async saveToServer(): Promise<void> {
+  /** @param silent no "saved" balloon — for follow-up saves that only persist
+   *  metadata (e.g. the dashboard binding right after a publish).
+   *  @returns whether the save reached the server — callers must not proceed
+   *  to share/publish on false. */
+  private async saveToServer(silent = false): Promise<boolean> {
     try {
+      // Local files live in memory until this moment — persist them first so
+      // the saved body references real, server-addressable file ids.
+      await this.persistPendingUploads();
       const script = DG.Script.create(this.entityBodyText());
+      // Snapshot what is actually in the payload BEFORE the server round-trip:
+      // an edit made while the save is in flight must keep Save enabled, not be
+      // silently blessed as "saved" by a post-await snapshot.
+      const savedSnapshot = this.currentSnapshot();
       if (this.boundScript?.id)
         script.id = this.boundScript.id;
-      this.boundScript = await grok.dapi.scripts.save(script);
+      const saved = await grok.dapi.scripts.save(script);
+      // The UPDATE path (save with an existing id) returns an entity WITHOUT
+      // its namespace — a call serialized from it reads `FlowName()`, which
+      // breaks for anyone else once shared. Re-fetch so the bound entity
+      // always carries the server-qualified name (`user:FlowName`) — what
+      // `stampCreationScripts` embeds into dashboard creation scripts.
+      this.boundScript = (await grok.dapi.scripts.find(saved.id).catch(() => null)) ?? saved;
       this.name = this.flowSettings.scriptName;
       this.updatePath();
-      this.markSaved(); // this graph is now the saved baseline → Save greys out
-      grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
+      this.markSaved(savedSnapshot); // the payload we sent is the saved baseline
+      void this.syncUploadedFilePermissions();
+      if (!silent) grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
+      return true;
     } catch (e: any) {
       grok.shell.error(`Failed to save flow: ${e?.message ?? e}`);
+      return false;
     }
   }
 
-  /** First save (or Save As): name / description, optionally bound to a space
-   *  chosen in the hierarchical picker. By default (no space) the flow is
-   *  saved as a plain script in the user's namespace. */
-  private async saveAsDialog(): Promise<void> {
+  /** Fires while the save dialog is open and a run initiated from it ends —
+   *  refreshes the dialog's dashboard section. */
+  private saveDialogRunEnd: ((success: boolean) => void) | null = null;
+
+  /** The combined save dialog: script name / description / space on top, the
+   *  dashboard section below. A bound entity is updated in place (Save As
+   *  forces a new one via `asNew`). The dashboard section is run-aware: no
+   *  computed outputs → a Run button; outputs → the table list + a "Create
+   *  dashboard" toggle that opens the core Save-project dialog after saving. */
+  private async saveDialog(opts: {asNew?: boolean} = {}): Promise<void> {
     const nameInput = ui.input.string('Name', {value: this.flowSettings.scriptName,
       tooltipText: 'The flow is saved as a platform script entity under this name'});
     const descInput = ui.input.textArea('Description', {value: this.flowSettings.scriptDescription,
       tooltipText: 'Shown in galleries, previews and the context panel'});
+    descInput.root.style.marginBottom = '6px';
+    // Names aren't prose — the browser's squiggle under "MyFuncFlow" reads as
+    // an error right next to the real (amber) warning line.
+    nameInput.input.setAttribute('spellcheck', 'false');
+    descInput.input.setAttribute('spellcheck', 'false');
 
-    const noSpaceLabel = 'Saved as a plain script (not bound to a space)';
     let targetSpace: DG.Project | null = null;
-    const spaceLabel = ui.divText(noSpaceLabel, 'funcflow-save-space-label');
-    const clearLink = ui.link('clear', () => updateSpace(null),
-      'Save as a plain script, not bound to a space');
+    // Reserves its line (min-height in CSS) so appearing text never shifts the form.
     const warningDiv = ui.divText('', 'funcflow-save-name-warning');
-    warningDiv.style.color = '#b26a00'; // matches the warnings strip in saveCreationScriptsDialog
 
     // Best-effort duplicate-name check: purely advisory — the server keeps
     // names unique within a space by suffixing, and plain scripts may repeat.
     let warnTimer: ReturnType<typeof setTimeout> | null = null;
+    const findClashes = async (name: string, space: DG.Project | null): Promise<DG.Script[]> => {
+      const esc = name.replace(/"/g, '\\"');
+      const scope = space ? ` and namespace = "${space.nqName}:"` : '';
+      return (await grok.dapi.scripts
+        .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
+        .filter((s) => s.id !== this.boundScript?.id);
+    };
     const refreshNameWarning = async () => {
       const name = nameInput.value.trim();
       warningDiv.textContent = '';
       if (name === '') return;
-      const esc = name.replace(/"/g, '\\"');
-      const scope = targetSpace ? ` and namespace = "${targetSpace.nqName}:"` : '';
       try {
-        const clashes = (await grok.dapi.scripts
-          .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
-          .filter((s) => s.id !== this.boundScript?.id);
-        if (clashes.length > 0) {
+        // Short enough for one line — the reserved line must not wrap and shift the form.
+        if ((await findClashes(name, targetSpace)).length > 0) {
           warningDiv.textContent = targetSpace ?
-            `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name` :
-            `A flow named "${name}" already exists`;
+            `Already used in "${targetSpace.friendlyName}" — it will get a unique name` :
+            'This name is already in use — the flow will be saved separately';
         }
       } catch {/* advisory only */}
     };
-    const updateSpace = (space: DG.Project | null) => {
-      targetSpace = space;
-      spaceLabel.textContent = space ? `Space: ${space.friendlyName}` : noSpaceLabel;
-      clearLink.style.display = space ? '' : 'none';
-      void refreshNameWarning();
-    };
-    updateSpace(null);
 
-    const pickerHost = ui.div([]);
+    // ---- space binding: a regular form row (caption / value / actions) ----
+    const noSpaceText = 'None — saved to your scripts';
+    const spaceValue = ui.divText(noSpaceText, 'ff-save-space-value ff-save-space-none');
+    ui.tooltip.bind(spaceValue, 'Where this flow will live');
+    const pickerHost = ui.div([], 'ff-save-space-picker-host');
+    pickerHost.style.display = 'none';
     let picker: SpacePicker | null = null;
-    const bindBtn = ui.button('Add to space…', async () => {
+    const togglePicker = async () => {
       if (picker == null) {
         picker = await SpacePicker.create();
         picker.onChanged = (space) => updateSpace(space);
         pickerHost.appendChild(picker.root);
+        pickerHost.style.display = '';
       } else
         pickerHost.style.display = pickerHost.style.display === 'none' ? '' : 'none';
-    });
-    ui.tooltip.bind(bindBtn,
+    };
+    const chooseLink = ui.link('Choose…', () => void togglePicker(),
       'Choose a space (or subspace) to organize and share this flow; by default it is saved as a plain script in your namespace');
-    ui.tooltip.bind(spaceLabel, 'Where this flow will live');
+    // Clearing goes through the picker when it exists, so its highlighted row
+    // and footer label ("New space…" vs "New subspace…") stay in sync.
+    const clearIcon = ui.iconFA('times',
+      () => picker != null ? picker.clearSelection() : updateSpace(null),
+      'Remove from space — save as a plain script');
+    clearIcon.classList.add('ff-save-space-clear');
+    const spaceCaption = document.createElement('label');
+    spaceCaption.className = 'ui-label ui-input-label';
+    spaceCaption.textContent = 'Space';
+    // ui-input-root makes the caption inherit the dialog form's label column
+    // (right-aligned, 140px, grey) so the row lines up with Name/Description.
+    const spaceRow = ui.divH([spaceCaption, spaceValue, chooseLink, clearIcon],
+      {classes: 'ui-input-root ff-save-space-row', style: {alignItems: 'center', gap: '8px'}});
+
+    const updateSpace = (space: DG.Project | null) => {
+      targetSpace = space;
+      spaceValue.textContent = space ? space.friendlyName : noSpaceText;
+      spaceValue.classList.toggle('ff-save-space-none', space == null);
+      chooseLink.textContent = space ? 'Change…' : 'Choose…';
+      clearIcon.style.display = space ? '' : 'none';
+      void refreshNameWarning();
+    };
+    updateSpace(null);
+
+    // ---- dashboard section (run-aware) ----
+    const computedTabs = (): OutputTab[] =>
+      this.outputViews?.getTabs().filter((t) => t.df != null) ?? [];
+    const dashHost = ui.divV([], 'ff-save-dash');
+    const publishInput = ui.input.bool('Create dashboard', {value: true,
+      tooltipText: 'After saving the flow, open the standard Save-project dialog seeded with the ' +
+        'computed output tables and their layouts (data sync, sharing, upload)'});
+    // 'new' is applied only at save time, so the choice stays reversible.
+    let dashMode: 'update' | 'new' = 'update';
+    // The publish-mode combo only makes sense while publishing is on.
+    let modeRoot: HTMLElement | null = null;
+    publishInput.onChanged.subscribe(() => {
+      if (modeRoot != null) modeRoot.style.display = publishInput.value ? '' : 'none';
+      syncOk();
+    });
+    let runningNow = false;
+    let okBtn: HTMLButtonElement | null = null;
+    const syncOk = () => {
+      if (okBtn == null) return;
+      const empty = nameInput.value.trim() === '';
+      const disabled = empty || runningNow;
+      okBtn.disabled = disabled;
+      okBtn.classList.toggle('disabled', disabled);
+      // Forewarn the second step: with "Create dashboard" on, OK leads into
+      // the platform's Save-project dialog rather than straight to done.
+      const publishes = publishInput.value === true && computedTabs().length > 0;
+      okBtn.textContent = publishes ? 'Save & publish…' : 'Save';
+      okBtn.title = empty ? 'Give the flow a name' : runningNow ? 'Waiting for the run to finish' :
+        publishes ? 'Saves the flow, then opens the dashboard-project setup' : '';
+    };
+    const refreshDash = (state: {running?: boolean, failed?: boolean, ranOnce?: boolean} = {}): void => {
+      runningNow = state.running === true;
+      syncOk();
+      ui.empty(dashHost);
+      dashHost.appendChild(ui.divText('Dashboard', 'ff-save-dash-title'));
+      const tabs = computedTabs();
+      if (tabs.length > 0) {
+        dashHost.appendChild(ui.divText('Result tables:', 'ff-save-dash-hint'));
+        dashHost.appendChild(ui.divV(tabs.map((t) => ui.divH([
+          ui.iconFA('table'),
+          ui.divText(t.df!.name || t.paramName),
+          ui.divText(`${t.df!.rowCount.toLocaleString()} × ${t.df!.columns.length}`, 'ff-save-dash-dims'),
+        ], {classes: 'ff-save-dash-row', style: {alignItems: 'center', gap: '6px'}}))));
+        dashHost.appendChild(publishInput.root);
+        if (this.dashboardProjectId != null) {
+          const modeInput = ui.input.choice('Publish', {
+            value: dashMode === 'new' ? 'As a new dashboard' : 'Update the existing dashboard',
+            items: ['Update the existing dashboard', 'As a new dashboard'],
+            tooltipText: 'This flow already published a dashboard — update it in place, or leave it be and publish a new one',
+            onValueChanged: (v) => dashMode = v === 'As a new dashboard' ? 'new' : 'update',
+          });
+          modeRoot = modeInput.root;
+          modeRoot.style.display = publishInput.value ? '' : 'none';
+          dashHost.appendChild(modeRoot);
+        } else
+          modeRoot = null;
+      }
+      else if (state.running) {
+        dashHost.appendChild(ui.divH([ui.loader(), ui.divText('Running the flow…')],
+          {classes: 'ff-save-dash-running', style: {alignItems: 'center', gap: '8px'}}));
+      } else {
+        // Three distinct idle states: never ran, ran and failed, ran fine but
+        // produced no tables — the user who just clicked Run must not see the
+        // section silently bounce back to the initial hint.
+        const ranButNothing = state.failed === false && state.ranOnce === true;
+        dashHost.appendChild(state.failed ?
+          ui.divText('The run failed — check the highlighted step on the canvas.', 'ff-save-dash-failed') :
+          ranButNothing ?
+            ui.divText('The run produced no result tables — check the flow\'s output nodes.', 'ff-save-dash-failed') :
+            ui.divText('Run the flow to publish its result tables as a dashboard.', 'ff-save-dash-hint'));
+        const runBtn = ui.button(state.failed || ranButNothing ? 'Run again' : 'Run the flow', () => {
+          refreshDash({running: true});
+          this.runInstrumented();
+        });
+        runBtn.style.alignSelf = 'flex-start';
+        runBtn.style.marginLeft = '0';
+        dashHost.appendChild(runBtn);
+      }
+    };
+    refreshDash();
+    this.saveDialogRunEnd = (success) => refreshDash({failed: !success, ranOnce: true});
 
     const dlg = ui.dialog({title: 'Save Flow'})
-      .add(ui.divV([nameInput.root, descInput.root, warningDiv,
-        ui.divH([bindBtn, spaceLabel, clearLink], {style: {alignItems: 'center', gap: '8px'}}),
-        pickerHost]))
+      .add(ui.divV([nameInput.root, warningDiv, descInput.root,
+        spaceRow, pickerHost, dashHost]))
       .onOK(async () => {
         const name = nameInput.value.trim();
         if (name === '') { // reachable via Enter even while the Save button is disabled
           grok.shell.warning('Give the flow a name first');
           return;
         }
+        if (runningNow) {
+          grok.shell.warning('Wait for the run to finish');
+          return;
+        }
         this.flowSettings.scriptName = name;
         this.flowSettings.scriptDescription = descInput.value;
-        this.boundScript = null; // Save As always creates a new entity
-        await this.saveToServer();
+        // Update the bound entity in place; Save As (or a stale/deleted binding —
+        // e.g. a template id `find` can't resolve) creates a new one. A new
+        // script also gets a new dashboard.
+        if (opts.asNew || !(this.boundScript?.id && await this.scriptExistsOnServer(this.boundScript.id))) {
+          this.boundScript = null;
+          this.dashboardProjectId = null;
+        }
+        // A failed save must not go on to share/publish a stale entity.
+        if (!await this.saveToServer()) return;
         const saved = this.boundScript as DG.Script | null;
         if (targetSpace && saved?.id) {
           try {
@@ -1405,17 +1783,19 @@ export class FuncFlowView extends DG.ViewBase {
             grok.shell.error(`Could not add to space: ${e?.message ?? e}`);
           }
         }
+        if (saved != null && publishInput.value === true && computedTabs().length > 0) {
+          if (dashMode === 'new') this.dashboardProjectId = null;
+          await this.openDashboardDialog();
+        }
       });
+    dlg.onClose.subscribe(() => {
+      this.saveDialogRunEnd = null;
+      if (warnTimer != null) clearTimeout(warnTimer);
+    });
     dlg.show({width: 500});
     // Validate before close: empty names never reach the OK handler.
-    const okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
+    okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
     if (okBtn) okBtn.textContent = 'Save';
-    const syncOk = () => {
-      if (okBtn == null) return;
-      const empty = nameInput.value.trim() === '';
-      okBtn.disabled = empty;
-      okBtn.classList.toggle('disabled', empty);
-    };
     nameInput.onChanged.subscribe(() => {
       syncOk();
       if (warnTimer != null) clearTimeout(warnTimer);
@@ -1423,6 +1803,23 @@ export class FuncFlowView extends DG.ViewBase {
     });
     syncOk();
     void refreshNameWarning();
+    // A fresh (unsaved) flow keeps the template name — pre-uniquify it so the
+    // dialog doesn't open with an "already exists" warning the user didn't cause.
+    if (this.boundScript == null && !opts.asNew) {
+      const orig = nameInput.value;
+      void (async () => {
+        try {
+          if ((await findClashes(orig.trim(), null)).length === 0 || nameInput.value !== orig) return;
+          for (let i = 2; i <= 9; i++) {
+            const cand = `${orig.trim()} ${i}`;
+            if ((await findClashes(cand, null)).length === 0) {
+              if (nameInput.value === orig) nameInput.value = cand;
+              return;
+            }
+          }
+        } catch {/* advisory only */}
+      })();
+    }
   }
 
   /** Pick a flow entity from the server and open it in this view. */
@@ -1453,11 +1850,131 @@ export class FuncFlowView extends DG.ViewBase {
       .show();
   }
 
-  /** Download the graph as a local `.ffjson` file (the pre-entity behavior). */
-  private exportFfjson(): void {
+  // ---------- publish as dashboard (via the core Save-project dialog) ----------
+
+  /** Input-node types that cannot be replayed from a literal default — a flow
+   *  taking one of these cannot be data-synced (the creation script would have
+   *  no value to pass), so its outputs publish as static snapshots. */
+  private static readonly NON_SYNCABLE_INPUTS = new Set([
+    'Inputs/Table Input', 'Inputs/Column Input', 'Inputs/Column List Input',
+    'Inputs/File Input', 'Inputs/Blob Input', 'Inputs/Map Input', 'Inputs/Dynamic Input',
+  ]);
+
+  /** How many outputs the flow script declares (output nodes + SetVar
+   *  terminals). Decides whether the creation script needs the output
+   *  accessor — `.param` is only valid with more than one output. */
+  private flowOutputCount(): number {
+    let count = 0;
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType === 'output') count++;
+      else if (isSetVarNode(n) && String(n.inputValues['variableName'] ?? '').trim() !== '' &&
+          this.flow.getInputSource(n.id, 'value') != null) count++;
+    }
+    return count;
+  }
+
+  /** Belt-and-braces before stamping creation scripts: a bound script whose
+   *  `nqName` carries no namespace would serialize an unqualified call
+   *  (`FlowName()` instead of `user:FlowName()`) that breaks when shared —
+   *  re-fetch the entity from the server, which always returns it qualified. */
+  private async ensureBoundScriptQualified(): Promise<void> {
+    const s = this.boundScript;
+    if (s?.id == null) return;
+    let nq = '';
+    try {
+      nq = s.nqName ?? '';
+    } catch {/* Dart proxy read can throw */}
+    if (!nq.includes(':'))
+      this.boundScript = (await grok.dapi.scripts.find(s.id).catch(() => null)) ?? s;
+  }
+
+  /** Stamp each computed output table with the producing call (`.script` +
+   *  `.VariableName` df tags) so the core Save-project dialog offers data sync
+   *  — identical producing calls dedup on project open, so the flow runs ONCE
+   *  and every table binds its own output. Skipped (static snapshots) when the
+   *  flow isn't saved or takes inputs without a literal default. */
+  private stampCreationScripts(tabs: OutputTab[]): void {
+    if (this.boundScript == null) return;
+    const nonLiteral = this.flow.getNodes().some((n) =>
+      n.dgNodeType === 'input' && FuncFlowView.NON_SYNCABLE_INPUTS.has(n.dgTypeName ?? ''));
+    if (nonLiteral) return;
+    let callStr: string;
+    try {
+      // Serialized by the platform itself (`prepare().toString()` — the same
+      // source of truth the creation-script emitter uses). Optional inputs at
+      // their defaults are omitted by the serializer.
+      const params: Record<string, unknown> = {};
+      for (const n of this.flow.getNodes()) {
+        if (n.dgNodeType !== 'input') continue;
+        const pname = String(n.properties['paramName'] ?? '').trim();
+        const def = n.properties['defaultValue'];
+        if (pname !== '' && def !== undefined && def !== '') params[pname] = def;
+      }
+      callStr = this.boundScript.prepare(params).toString();
+    } catch (e) {
+      console.warn('FuncFlow: could not serialize the producing call', e);
+      return;
+    }
+    const accessor = this.flowOutputCount() > 1;
+    let ts = Date.now();
+    for (const tab of tabs) {
+      const df = tab.df!;
+      if (!df.name) df.name = tab.paramName;
+      df.setTag(DG.Tags.VariableName, tab.paramName);
+      df.setTag(DG.Tags.CreationScript,
+        `${tab.paramName} = ${callStr}${accessor ? '.' + tab.paramName : ''} //{"timestamp": ${ts++}}`);
+    }
+  }
+
+  /** The platform's standard Save-project dialog, seeded with the computed
+   *  output tables and their tab views — data-sync toggles, dependency
+   *  handling, layout linking, upload, and sharing all come from core
+   *  (`DG.Project.showSaveDialog`). Tabs never opened this session ship their
+   *  stored layout as a view state string (a layout saved with the flow
+   *  applies even without visiting the tab). A previously published project is
+   *  passed back so re-publishing UPDATES it; the binding persists in the
+   *  flow (saved silently right after, since the script was just saved). */
+  private async openDashboardDialog(): Promise<void> {
+    const tabs = this.outputViews?.getTabs().filter((t) => t.df != null) ?? [];
+    if (tabs.length === 0) return;
+    await this.ensureBoundScriptQualified();
+    this.stampCreationScripts(tabs);
+    const layoutsByParam = this.outputViews.captureLayouts();
+    try {
+      const saved = await DG.Project.showSaveDialog({
+        tables: tabs.map((t) => t.df!),
+        views: tabs.map((t) => t.tv),
+        layouts: tabs.map((t) => t.tv != null ? null : layoutsByParam[t.paramName] ?? null),
+        name: this.flowSettings.scriptName,
+        description: this.flowSettings.scriptDescription,
+        project: this.dashboardProjectId ?? undefined,
+      });
+      if (saved?.id && saved.id !== this.dashboardProjectId) {
+        this.dashboardProjectId = saved.id;
+        if (this.boundScript != null)
+          await this.saveToServer(true); // persist the binding in the entity body
+      }
+      // The end of a two-dialog journey must not be silence — the earlier
+      // "saved" balloon fired before this dialog even opened.
+      if (saved?.id)
+        grok.shell.info(`Dashboard "${saved.friendlyName ?? this.flowSettings.scriptName}" published`);
+    } catch (e) {
+      grok.shell.error(`Publish failed: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  /** Download the graph as a local `.flow` file (the pre-entity behavior). */
+  private async exportFlowFile(): Promise<void> {
+    // Best-effort: an export with pending (in-memory) file ids would not be
+    // portable — persist them first; on failure export anyway with a warning.
+    try {
+      await this.persistPendingUploads();
+    } catch (e: any) {
+      grok.shell.warning(`Uploaded files were not persisted — the export will not be portable. ${e?.message ?? e}`);
+    }
     const doc = serializeFlow(this.flow, this.flowSettings);
     downloadFlow(doc);
-    grok.shell.info('Flow exported as .ffjson');
+    grok.shell.info('Flow exported as .flow');
   }
 
   private editSettings(): void {
@@ -1520,14 +2037,16 @@ export class FuncFlowView extends DG.ViewBase {
     // surfaced by Datagrok's standard script-run dialog.
     const func = DG.Script.create(script);
     const fc = func.prepare();
+    const report = (e: unknown): void =>
+      grok.shell.error(`Run failed: ${e instanceof Error ? e.message : e}`);
     if (func.inputs.length === 0)
-      void fc.call(undefined, undefined, {processed: true});
+      void fc.call(undefined, undefined, {processed: true}).catch(report);
     else {
       fc.getEditor(false).then((e: HTMLElement) => {
-        ui.dialog({title: func.friendlyName ?? func.name}).add(e).show().onOK(async () => {
-          await fc.call(undefined, undefined, {processed: true});
+        ui.dialog({title: func.friendlyName ?? func.name}).add(e).show().onOK(() => {
+          void fc.call(undefined, undefined, {processed: true}).catch(report);
         });
-      });
+      }).catch(report);
     }
   }
 
@@ -1580,12 +2099,12 @@ export class FuncFlowView extends DG.ViewBase {
     const blocks: HTMLElement[] = [];
     if (warnings.length > 0) {
       const list = ui.divV(warnings.map((m) => ui.divText(`• ${m}`)));
-      list.style.color = '#b26a00';
+      list.style.color = 'var(--orange-3, #805125)';
       list.style.marginBottom = '8px';
       list.style.maxHeight = '120px';
       list.style.overflow = 'auto';
       blocks.push(ui.divText(`${warnings.length} warning(s) — these nodes have no creation-script form:`,
-        {style: {fontWeight: 'bold', color: '#b26a00'}}));
+        {style: {fontWeight: 'bold', color: 'var(--orange-3, #805125)'}}));
       blocks.push(list);
     }
     const pre = document.createElement('pre');
@@ -1607,8 +2126,17 @@ export class FuncFlowView extends DG.ViewBase {
    *  horizontal tab, and on Save write it back to the table via
    *  `TableInfo.saveCreationScript`. Only available when the view was opened with
    *  `tableInfos` (the `creationScriptEditor` entry point). */
-  private saveCreationScriptsDialog(): void {
+  private async saveCreationScriptsDialog(): Promise<void> {
     if (!this.flow || this.tableInfos.length === 0) return;
+
+    // Creation scripts outlive the session — pending local files must be on
+    // the server before the emitted script can reference them.
+    try {
+      await this.persistPendingUploads();
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? String(e));
+      return;
+    }
 
     // The variable name a table is referenced by in the script — its
     // `.VariableName` tag, matching the SetVar/anchor names the emitter splits on
@@ -1648,12 +2176,12 @@ export class FuncFlowView extends DG.ViewBase {
     const blocks: HTMLElement[] = [];
     if (warnings.length > 0) {
       const list = ui.divV(warnings.map((m) => ui.divText(`• ${m}`)));
-      list.style.color = '#b26a00';
+      list.style.color = 'var(--orange-3, #805125)';
       list.style.maxHeight = '90px';
       list.style.overflow = 'auto';
       list.style.marginBottom = '8px';
       blocks.push(ui.divText(`${warnings.length} warning(s):`,
-        {style: {fontWeight: 'bold', color: '#b26a00'}}));
+        {style: {fontWeight: 'bold', color: 'var(--orange-3, #805125)'}}));
       blocks.push(list);
     }
     blocks.push(tabs.root);
@@ -1678,26 +2206,39 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private downloadScriptAsJs(script: string): void {
-    const blob = new Blob([script], {type: 'text/javascript'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.flowSettings.scriptName || 'script'}.js`;
-    a.click();
-    URL.revokeObjectURL(url);
+    DG.Utils.download(`${this.flowSettings.scriptName || 'script'}.js`, script, 'text/javascript');
   }
 
   /** Load a flow from a JSON string (file viewer entry point). */
   async loadFromJson(json: string): Promise<void> {
-    await this.loadFromDoc(JSON.parse(json) as FuncFlowDocument);
+    // Accepts both `.flow` shapes: the annotated script body (header + JSON)
+    // and the bare JSON document — parseFlowBody handles either.
+    await this.loadFromDoc(parseFlowBody(json).doc);
   }
 
   /** Load a parsed flow document. Awaits editor construction, so it is safe
-   *  to call right after the constructor (no timer race). */
+   *  to call right after the constructor (no timer race). Loads are
+   *  serialized: deserialize is clear() + per-node adds, so two interleaved
+   *  loads (a double-clicked recent-flow row) would merge both graphs. */
   async loadFromDoc(doc: FuncFlowDocument): Promise<void> {
+    const run = this.loadChain.then(() => this.doLoadFromDoc(doc));
+    this.loadChain = run.catch(() => {});
+    return run;
+  }
+
+  private async doLoadFromDoc(doc: FuncFlowDocument): Promise<void> {
     await this.editorReady;
     await deserializeFlow(doc, this.flow);
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+    // Output-view tabs: rebuild the tab set from the fresh graph, then stash
+    // the saved layouts (keyed by paramName — node ids were just remapped);
+    // each applies once its tab is activated with a value.
+    this.outputViews?.syncTabs(this.tableOutputs());
+    if (doc.outputViews) {
+      this.outputViews?.setPendingLayouts(Object.fromEntries(
+        Object.entries(doc.outputViews).map(([name, v]) => [name, v.layout])));
+    }
+    this.dashboardProjectId = doc.dashboard?.projectId ?? null;
     this.name = doc.name || 'FuncFlow';
     this.updateStatusBar();
     this.fitToScreen();
@@ -1736,17 +2277,24 @@ export class FuncFlowView extends DG.ViewBase {
    *  function calls Datagrok records for reproducibly-created tables
    *  (the script behind a project's data sync). Replaces the current graph. */
   async loadFromCreationScript(script: string): Promise<void> {
-    await this.editorReady;
-    try {
-      await this.flow.clear();
-      const result = await buildFlowFromCreationScript(this.flow, script);
-      this.updateStatusBar();
-      this.fitToScreen();
-      for (const warning of result.warnings) grok.shell.warning(warning);
-      grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
-    } catch (e: any) {
-      grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
-    }
+    // Same serialization as loadFromDoc — this path also clears + re-adds.
+    const run = this.loadChain.then(async () => {
+      await this.editorReady;
+      try {
+        await this.flow.clear();
+        const result = await buildFlowFromCreationScript(this.flow, script);
+        this.updateStatusBar();
+        this.fitToScreen();
+        for (const warning of result.warnings) grok.shell.warning(warning);
+        // The imported graph arrives mostly un-run (files may autorun, the
+        // rest sits idle) — say what to do next, not just what happened.
+        grok.shell.info(`Imported ${result.nodesAdded} steps — press Run to compute them`);
+      } catch (e: any) {
+        grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
+      }
+    });
+    this.loadChain = run.catch(() => {});
+    return run;
   }
 
   /** Dialog: paste a creation script (or prefill it from an open table that
@@ -1779,6 +2327,17 @@ export class FuncFlowView extends DG.ViewBase {
         const script = scriptInput.value.trim();
         if (script === '') {
           grok.shell.warning('Creation script is empty');
+          return;
+        }
+        // Importing clears the canvas — and is not undoable. A non-empty flow
+        // deserves a confirmation before it is silently replaced.
+        const nodeCount = this.flow?.getNodes().length ?? 0;
+        if (nodeCount > 0) {
+          ui.dialog({title: 'Replace current flow?'})
+            .add(ui.divText(`Importing replaces the current flow (${nodeCount} ` +
+              `node${nodeCount === 1 ? '' : 's'}). This cannot be undone.`))
+            .onOK(() => void this.loadFromCreationScript(script))
+            .show();
           return;
         }
         void this.loadFromCreationScript(script);

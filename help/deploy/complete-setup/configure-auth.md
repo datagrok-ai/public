@@ -1,6 +1,14 @@
 ---
 title: "Configure authentication"
 sidebar_position: 1
+description: Set up login-password, LDAP, OAuth, OpenID, SAML, or IAP authentication for a Datagrok server.
+keywords:
+  - sso login
+  - ldap authentication
+  - active directory sync
+  - openid connect
+  - saml provider
+  - google identity-aware proxy
 ---
 
 Datagrok supports many [authentication](../../govern/access-control/access-control.md#authentication) methods, including popular methods such as SSO and OAuth:

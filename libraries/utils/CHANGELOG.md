@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.7.8 (2026-08-07)
+
+* #3765: Forms viewer: Added ability to pin the rows
+
 ## 4.7.7 (2026-07-09)
 
 * GROK-20367: Forms viewer: Number formatting does not match grid in some cases

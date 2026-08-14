@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [radar-table-rebind-project-roundtrip]
-realizes: [charts.radar]
+realizes: [charts.viewer.radar]
 realized_as:
   - radar-save-reopen-bug-spec.ts
 pyramid_layer: bug-focused
@@ -41,7 +41,7 @@ selectors deferred per cycle charts-migrate-2026-05-07).
 
 Steps:
 
-1. Open `System:DemoFiles/demog.csv` and `System:DemoFiles/SPGI.csv` in the
+1. Open `System:DemoFiles/demog.csv` and `System:DemoFiles/chem/SPGI.csv` in the
    same session (both as TableViews via `grok.shell.addTableView`).
 2. On the SPGI view, add a Radar viewer (`tv.addViewer('Radar')`).
    **Expected:** Radar attached to SPGI without console error.
@@ -78,6 +78,6 @@ Steps:
 ```json
 {
   "order": 32,
-  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/SPGI.csv"]
 }
 ```

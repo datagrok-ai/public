@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [notebooks.cp.delete-notebook, notebooks.cp.rename-notebook, notebooks.cp.share-notebook, notebooks.cp.apply-notebook-to-table]
-realizes: [views.notebooks]
+realizes: [views.notebooks, ml.menu.notebooks.new-notebook, ml.menu.notebooks.browse-notebooks, ml.menu.notebooks.open-in-notebook, notebooks.view.notebook, sharing.share-dialog]
 produced_from: atlas-driven
 realized_as:
   - notebooks-context-menu-smoke-spec.ts

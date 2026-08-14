@@ -1,5 +1,13 @@
 ---
 title: "Upload data"
+description: Upload a CSV file to Datagrok user storage via a POST request and optionally apply a saved layout.
+keywords:
+  - CSV upload
+  - REST API upload
+  - POST request
+  - file upload
+  - apply layout
+  - curl example
 ---
 
 To upload a CSV file to the user storage, make the following POST request with the CSV content as body:

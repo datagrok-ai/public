@@ -1,5 +1,13 @@
 ---
 title: "Bar chart"
+description: Display grouped categorical data as rectangular bars with lengths proportional to their values.
+keywords:
+  - column chart
+  - stacked bars
+  - categorical data
+  - relative values
+  - split by category
+  - group by date part
 ---
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent.
@@ -48,7 +56,13 @@ Year - Month' and 'Year - Quarter':
 | On Click | string | Determines what happens when you click on a bar. |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
-| **Value** | | |
+| **X Axis** | | |
+| Split Column Name | string | A categorical column to split data on (each bar represents a category) |
+| Split Map | string | Time unit map function for *Split* (applicable to dates only). |
+| Show Category Values | boolean |  |
+| Show Values Instead Of Categories | boolean |  |
+| Show Category Selector | boolean |  |
+| **Y Axis** | | |
 | Value Column Name | string | Value column. See *Value Aggr Type* for aggregation options. |
 | Value Aggr Type | string | Value aggregation. |
 | Relative Values | boolean | When true, each outermost bar is of the same width. This mode is useful for comparing relative value frequency when the *Stack* column is specified. |
@@ -79,8 +93,6 @@ Year - Month' and 'Year - Quarter':
 | Outer Margin Bottom | number |  |
 | Show Empty Bars | boolean | Indicates whether categories with no matching rows should appear as zero-height bars. |
 | Show Labels | string |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
@@ -88,21 +100,15 @@ Year - Month' and 'Year - Quarter':
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **Category** | | |
-| Split Column Name | string | A categorical column to split data on (each bar represents a category) |
-| Split Map | string | Time unit map function for *Split* (applicable to dates only). |
-| Show Category Values | boolean |  |
-| Show Values Instead Of Categories | boolean |  |
-| Show Category Selector | boolean |  |
-| **Stack** | | |
-| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *Value Aggr Type* is additive. |
-| Stack Map | string | Time unit map function for *Stack* (applicable to dates only). |
-| Show Stack Selector | boolean |  |
 | **Color** | | |
 | Color Column Name | string | Numerical column to be used for color-coding. The values in the bin get aggregated using the *Color Aggr Type* property. |
 | Color Aggr Type | string | Color aggregation type. |
 | Invert Color Scheme | boolean |  |
 | Linear Color Scheme | list |  |
+| **Stack** | | |
+| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *Value Aggr Type* is additive. |
+| Stack Map | string | Time unit map function for *Stack* (applicable to dates only). |
+| Show Stack Selector | boolean |  |
 | **Selection** | | |
 | Show Selected Rows | boolean | Whether the selected rows are indicated. Only works for cumulative aggregations such as count. |
 | **Style** | | |
@@ -123,6 +129,9 @@ Year - Month' and 'Year - Quarter':
 | Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Annotations** | | |

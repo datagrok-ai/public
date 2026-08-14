@@ -16,6 +16,10 @@ export const stepErrors: StepError[] = [];
 export async function softStep(name: string, fn: () => Promise<void>): Promise<void> {
   try { await test.step(name, fn); }
   catch (e: any) {
+    // `test.skip()` inside a step signals itself by throwing TestSkipError; recording
+    // that as a step error reports a deliberate skip as a failed test.
+    if (e?.constructor?.name === 'TestSkipError' || String(e?.message).startsWith('Test is skipped:'))
+      throw e;
     stepErrors.push({step: name, error: e?.message ?? String(e)});
     console.error(`[STEP FAILED] ${name}: ${e?.message ?? e}`);
   }

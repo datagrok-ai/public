@@ -59,17 +59,21 @@ category('Layouts', () => {
     await awaitCheck(() => list!.children.length === num, 'Layout was not saved', 3000);
     num--;
     try {
-      (list!.firstElementChild as HTMLElement).focus();
-      list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
-      await delay(100);
-      await awaitCheck(() => document.querySelector('[d4-name="Upload"]') !== null, 'Cannot find context menu', 3000);
-      (document.querySelector('[d4-name="Upload"]') as HTMLElement).click();
-      await delay(1000);
+      const openContextMenu = async () => {
+        (list!.firstElementChild as HTMLElement).focus();
+        list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
+        await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null,
+          'Cannot find context menu', 3000);
+      };
 
-      (list!.firstElementChild as HTMLElement).focus();
-      list!.firstElementChild!.dispatchEvent(new MouseEvent('contextmenu'));
-      await delay(100);
-      await awaitCheck(() => document.querySelector('[d4-name="Delete"]') !== null, 'Cannot find context menu', 3000);
+      await openContextMenu();
+      // "Upload" only shows while the layout is dirty or not on the server; Save above saved it.
+      const upload = document.querySelector('[d4-name="Upload"]') as HTMLElement | null;
+      if (upload !== null) {
+        upload.click();
+        await delay(1000);
+        await openContextMenu();
+      }
       (document.querySelector('[d4-name="Delete"]') as HTMLElement).click();
       let d: DG.Dialog;
       await awaitCheck(() => {

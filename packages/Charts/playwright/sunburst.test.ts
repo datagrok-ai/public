@@ -7,7 +7,7 @@ import {saveAllTablesWithProvenance, deleteProjectWithCleanup} from '@datagrok-l
 
 test.use(specTestOptions);
 
-const spgiPath = 'System:DemoFiles/SPGI.csv';
+const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 const demogPath = 'System:DemoFiles/demog.csv';
 
 test('Charts / Sunburst viewer', async ({page}) => {

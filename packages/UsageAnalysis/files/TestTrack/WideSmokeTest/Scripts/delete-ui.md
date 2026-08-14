@@ -6,5 +6,6 @@
 
 ---
 {
-"order": 5
+"order": 5,
+"realizes": ["views.scripts"]
 }

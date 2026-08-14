@@ -1,5 +1,12 @@
 ---
 title: "Filter to column"
+description: Save the rows currently passing a filter as a new boolean column.
+keywords:
+  - filter to column
+  - save filter as column
+  - filter state column
+  - boolean filter flag
+  - persist filter result
 ---
 
 Saves currently filtered rows as a column.

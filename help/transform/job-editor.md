@@ -1,5 +1,12 @@
 ---
 title: "Job editor"
+description: Define data flows by dragging and dropping functions, connecting outputs to inputs, and editing parameters.
+keywords:
+  - job editor
+  - data flow builder
+  - drag and drop pipeline
+  - function chaining
+  - workflow editor
 ---
 
 Use job editor to define data flows and transformation by drag-and-dropping

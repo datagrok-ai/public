@@ -3,6 +3,12 @@ title: "Layout"
 sidebar_position: 2
 mdx:
   format: mdx
+description: Save and reuse the visual arrangement of viewers, independent of the underlying dataset.
+keywords:
+  - view layout
+  - dashboard template
+  - layout gallery
+  - reusable viewer arrangement
 ---
 
 In Datagrok, the visual representation of data (a _layout_) is separate from the data itself

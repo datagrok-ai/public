@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [projects.int.derive-then-save-inside-project, projects.op.share_with_recipient_open, projects.op.rename_project]
-realizes: [views.projects]
+realizes: [views.projects, data.menu.join-tables]
 realized_as:
   - projects-lifecycle-derived-spec.ts
 pyramid_layer: proactive-lifecycle

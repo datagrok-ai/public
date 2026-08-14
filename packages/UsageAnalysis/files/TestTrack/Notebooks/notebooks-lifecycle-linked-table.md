@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p0
 realizes_atlas: [notebooks.cp.new-blank-notebook, notebooks.cp.rename-notebook, notebooks.cp.delete-notebook]
-realizes: [views.notebooks]
+realizes: [ml.menu.notebooks.new-notebook]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

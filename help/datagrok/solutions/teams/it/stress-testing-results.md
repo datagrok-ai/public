@@ -1,5 +1,14 @@
 ---
 title: "Stress testing results"
+description: Automated stress testing results measuring Datagrok performance under concurrent user load.
+keywords:
+  - stress testing
+  - load testing
+  - selenium test automation
+  - concurrent users
+  - performance benchmarks
+  - scalability testing
+  - db query performance
 ---
 
 Stress testing is an important part of the [Quality Assurance](../../../../develop/qa/quality-assurance.md#automated-testing)

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [charts.int.tree-rowsource-onclick-state-machine]
-realizes: [charts.tree]
+realizes: [charts.viewer.tree]
 realized_as:
   - tree-rowsource-onclick-state-bug-spec.ts
 pyramid_layer: bug-focused

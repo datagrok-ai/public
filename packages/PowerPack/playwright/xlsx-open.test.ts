@@ -4,6 +4,8 @@ sub_features_covered: [powerpack.io, powerpack.io.exceljs-service, powerpack.io.
 // GROK-19329 regression: XLSX opens across all 5 entry paths + optional sheetName.
 
 import {test, expect, Page} from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 import {loginToDatagrok, loginAsSecondUser, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers';
@@ -54,32 +56,36 @@ async function openTableFromFileWithTimeout(
   ]);
 }
 
-// Locate the first reachable XLSX fixture under System:DemoFiles, or null.
-async function locatePlatformXlsxFixture(page: Page): Promise<string | null> {
-  return await page.evaluate(async () => {
+// The fixture ships next to this spec — `playwright/` is npmignored, so it is not part of the
+// published package. It is uploaded to the package's AppData folder so every entry-path scenario
+// has a real platform file to open, and removed again in the spec's `finally`.
+//
+// This replaced an anonymous S3 connection to s3://datagrok-data/tests/excel. That never resolved:
+// `anonymous` belongs to S3DataProvider's credentialsTemplate, not its connectionTemplate, so the
+// saved connection had no credentials and the server answered `Credentials for ... not found`.
+// Every layer swallowed it (files.list returns [] on error, the old locator caught everything),
+// leaving a skip that blamed outbound S3 access.
+const FIXTURE_FILE = 'excel-rich-text-test.xlsx';
+const FIXTURE_PATH = `System:AppData/PowerPack/${FIXTURE_FILE}`;
+
+async function uploadXlsxFixture(page: Page): Promise<string> {
+  const bytes = Array.from(fs.readFileSync(path.join(__dirname, 'fixtures', FIXTURE_FILE)));
+  const err = await page.evaluate(async (args: {p: string; b: number[]}) => {
     const grok = (window as any).grok;
-    const candidates = [
-      'System:DemoFiles/test/excel/excel-1mb.xlsx',
-      'System:DemoFiles/test/excel/excel-rich-text-test.xlsx',
-      'System:DemoFiles/SPGI-linked.xlsx',
-    ];
-    for (const path of candidates) {
-      try {
-        if (await grok.dapi.files.exists(path)) return path;
-      } catch (_) { /* try next */ }
-    }
     try {
-      const items = await grok.dapi.files.list('System:DemoFiles/test/excel', false);
-      for (const it of items ?? []) {
-        const n = (it?.name ?? it?.fileName ?? '').toLowerCase();
-        if (n.endsWith('.xlsx')) {
-          const full = it?.fullPath ?? it?.path ?? `System:DemoFiles/test/excel/${it?.name}`;
-          return full as string;
-        }
-      }
-    } catch (_) { /* ignore */ }
-    return null;
-  });
+      await grok.dapi.files.write(args.p, args.b);
+      return (await grok.dapi.files.exists(args.p)) ? null : 'file is absent right after write';
+    } catch (e: any) { return String(e?.message ?? e); }
+  }, {p: FIXTURE_PATH, b: bytes});
+  expect(err, `could not upload the XLSX fixture to ${FIXTURE_PATH}`).toBeNull();
+  return FIXTURE_PATH;
+}
+
+async function deleteXlsxFixture(page: Page): Promise<void> {
+  await page.evaluate(async (p: string) => {
+    const grok = (window as any).grok;
+    try { await grok.dapi.files.delete(p); } catch (_) { /* best-effort cleanup */ }
+  }, FIXTURE_PATH).catch(() => {});
 }
 
 // GROK-19329 invariant: active TableView has rows and no error balloon is on-screen.
@@ -208,16 +214,8 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
   // Cold-start guard: load PowerPack + wait for xlsxFileHandler registration before any scenario.
   await ensurePowerPackLoaded(page);
 
-  const xlsxPath = await locatePlatformXlsxFixture(page);
-  test.skip(
-    !xlsxPath,
-    'No XLSX fixture reachable under System:DemoFiles on this server.\n' +
-    'Tried: System:DemoFiles/test/excel/excel-1mb.xlsx, excel-rich-text-test.xlsx,\n' +
-    'SPGI-linked.xlsx. Setup step 2 prerequisite from xlsx-open.md is not satisfied.\n' +
-    'Provision an XLSX fixture under System:DemoFiles, then re-run.',
-  );
-  const xlsxFullPath = xlsxPath!;
-  const xlsxFileName = xlsxFullPath.split('/').pop() ?? 'fixture.xlsx';
+  const xlsxFullPath = await uploadXlsxFixture(page);
+  const xlsxFileName = FIXTURE_FILE;
 
   const observations: Record<string, {rowCount: number; colCount: number; errorBalloons: number}> = {};
 
@@ -515,6 +513,7 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
       const grok = (window as any).grok;
       try { grok.shell.closeAll(); } catch (_) {}
     }).catch(() => {});
+    await deleteXlsxFixture(page);
 
     console.log('Per-scenario observations:', JSON.stringify(observations, null, 2));
   }

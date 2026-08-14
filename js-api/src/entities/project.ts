@@ -34,6 +34,19 @@ export class Project extends Entity {
 
   static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
 
+  /** Opens the "Save project" dialog for the given tables only (no workspace scan), with
+   * `views[i]` or `layouts[i]` as the layout. Pass `project` to re-publish into it. */
+  static showSaveDialog(options: {tables: DataFrame[], views?: (TableView | null)[],
+      layouts?: (string | null)[], name?: string, description?: string,
+      project?: Project | string}): Promise<Project | null> {
+    return (api as any).grok_Project_OpenSaveDialog(
+      options.tables.map((t) => t.dart),
+      (options.views ?? []).map((v) => v == null ? null : v.dart),
+      options.layouts ?? [],
+      options.name ?? '', options.description ?? '',
+      typeof options.project === 'string' ? options.project : options.project?.id ?? '');
+  }
+
   get pictureUrl(): string {
     return api.grok_PictureMixin_Get_PictureUrl(this.dart);
   }

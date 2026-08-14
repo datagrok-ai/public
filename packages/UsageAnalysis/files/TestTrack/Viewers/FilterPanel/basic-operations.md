@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [filters.cp.add-categorical-and-select, filters.cp.reset-clears-all]
-realizes: [viewers.filters, viewers.filters.categorical, viewers.filters.histogram]
+realizes: [viewers.filters, viewers.filters.categorical, viewers.filters.histogram, chem.filter.substructure-filter, chem.filter.scaffold-tree-filter, chem.action.use-as-filter]
 realized_as:
   - basic-operations-spec.ts
 related_bugs: []

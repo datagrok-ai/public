@@ -16,7 +16,7 @@ realized_as:
 coverage_type: regression
 priority: p0
 realizes_atlas: [notebooks.cp.browse-and-open-html]
-realizes: [views.notebooks]
+realizes: [views.notebooks, ml.menu.notebooks.browse-notebooks, ml.menu.notebooks.new-notebook, notebooks.view.notebook]
 produced_from: migrated
 related_bugs:
   - GROK-11693

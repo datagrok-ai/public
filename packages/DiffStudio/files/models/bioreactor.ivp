@@ -3,6 +3,7 @@
 #meta.role: model
 #meta.icon: files/icons/_bioreactor.png
 #meta.help: models/bioreactor.md
+#meta.comparison: {"index": "t"}
 #comment:
   Source: https://doi.org/10.1074/jbc.RA117.000303.
   Controlled Fab-arm exchange (cFAE) assembly of a bispecific IgG1

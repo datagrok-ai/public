@@ -206,7 +206,7 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     try { grok.shell.closeAll(); } catch (_) { /* best-effort */ }
     let df: any = null;
     try { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
-    catch (_) { df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv'); }
+    catch (_) { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
     grok.shell.addTableView(df);
     // Molecule semtype detection needs the Chem package (RDKit) loaded and runs asynchronously —
     // warm up the bundle and poll until the Structure column is classified, rather than resolving on

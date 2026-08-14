@@ -92,6 +92,20 @@ test('PowerPack: Add new column autocomplete (demog — type, Ctrl+Space, $)', a
     await page.keyboard.press('Escape');
     await page.waitForTimeout(150);
   };
+  // The tooltip becomes visible slightly before an option is made active; an Enter that lands in
+  // that gap closes the list without inserting anything.
+  const waitForActiveCompletion = async () => {
+    await page.locator('.cm-tooltip-autocomplete li[aria-selected="true"]').first()
+      .waitFor({timeout: 5_000, state: 'attached'});
+  };
+  const waitForNonEmptyDoc = async (): Promise<string> => {
+    for (let i = 0; i < 20; i++) {
+      const doc = await readDoc();
+      if (doc.trim().length > 0) return doc;
+      await page.waitForTimeout(100);
+    }
+    return await readDoc();
+  };
   await softStep('Scenario 1 Step 1-2: focus editor and type "a"', async () => {
     await cmRef.click();
     await page.waitForTimeout(120);
@@ -112,11 +126,12 @@ test('PowerPack: Add new column autocomplete (demog — type, Ctrl+Space, $)', a
     expect(hasFnStartingWithA).toBe(true);
   });
   await softStep('Scenario 1 Step 4a: select function from list via Enter on highlighted entry', async () => {
+    await waitForActiveCompletion();
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);
   });
   await softStep('Scenario 1 Step 5 (via Enter): verify function inserted as Name(params)', async () => {
-    const doc = await readDoc();
+    const doc = await waitForNonEmptyDoc();
     const normalized = doc.replace(/\s+/g, ' ').trim();
     expect(normalized.length).toBeGreaterThan(0);
     expect(/^[Aa][A-Za-z0-9_]*\([^)]*\)/.test(normalized)).toBe(true);
@@ -149,7 +164,7 @@ test('PowerPack: Add new column autocomplete (demog — type, Ctrl+Space, $)', a
     await page.waitForTimeout(300);
   });
   await softStep('Scenario 1 Step 5 (via mouse click): verify function inserted as Name(params)', async () => {
-    const doc = await readDoc();
+    const doc = await waitForNonEmptyDoc();
     const normalized = doc.replace(/\s+/g, ' ').trim();
     expect(normalized.length).toBeGreaterThan(0);
     expect(/^[Aa][A-Za-z0-9_]*\([^)]*\)/.test(normalized)).toBe(true);

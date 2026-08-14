@@ -1,27 +1,27 @@
-SMILES
-CCN
-CCCN
-CCCCN
-CC(N)C
-CC(C)CN
-c1ccncc1
-c1cccc2ncccc12
-c1cnc2ccccc2n1
-c1ccc2ncccc2c1
-CC(=O)O
-CCC(=O)O
-CCCC(=O)O
-Oc1ccccc1
-OCc1ccccc1
-c1ccc(cc1)B(O)O
-c1ccnc(c1)B(O)O
-FC(F)(F)c1ccccc1
-c1ccc(cc1)C(=O)O
-O=C(O)c1ccc(N)cc1
-O=C(O)c1ccc(O)cc1
-O=C(O)c1ccc(F)cc1
-O=C(O)c1ccc(Cl)cc1
-O=C(O)c1ccc(Br)cc1
-O=C(O)c1ccc(C)cc1
-O=C(O)c1ccc(OC)cc1
-O=C(O)c1ccc(C(F)(F)F)cc1
+SMILES,Name,MW,LogP,PSA,HBA,HBD,Rotatable bonds
+CCN,Ethylamine,45.09,-0.35,26.02,1,1,0
+CCCN,Propylamine,59.11,0.11,26.02,1,1,1
+CCCCN,Butylamine,73.14,0.56,26.02,1,1,2
+CC(N)C,Isopropylamine,59.11,0.01,26.02,1,1,0
+CC(C)CN,Isobutylamine,73.14,0.33,26.02,1,1,1
+c1ccncc1,Pyridine,79.10,0.66,12.89,1,0,0
+c1cccc2ncccc12,Quinoline,129.16,1.98,12.89,1,0,0
+c1cnc2ccccc2n1,Quinoxaline,130.15,1.1,25.78,2,0,0
+c1ccc2ncccc2c1,Quinoline,129.16,1.98,12.89,1,0,0
+CC(=O)O,Acetic acid,60.05,-0.3,37.3,2,1,0
+CCC(=O)O,Propionic acid,74.08,0.16,37.3,2,1,1
+CCCC(=O)O,Butyric acid,88.11,0.61,37.3,2,1,2
+Oc1ccccc1,Phenol,94.11,1.31,20.23,1,1,0
+OCc1ccccc1,Benzyl alcohol,108.14,1.06,20.23,1,1,1
+c1ccc(cc1)B(O)O,Phenylboronic acid,121.93,1.38,40.46,2,2,1
+c1ccnc(c1)B(O)O,Pyridin-2-ylboronic acid,122.92,0.92,53.35,3,2,1
+FC(F)(F)c1ccccc1,(Trifluoromethyl)benzene,146.11,2.51,0,0,0,1
+c1ccc(cc1)C(=O)O,Benzoic acid,122.12,1.14,37.3,2,1,1
+O=C(O)c1ccc(N)cc1,4-Aminobenzoic acid,137.14,0.47,63.32,3,2,1
+O=C(O)c1ccc(O)cc1,4-Hydroxybenzoic acid,138.12,0.8,57.53,3,2,1
+O=C(O)c1ccc(F)cc1,4-Fluorobenzoic acid,140.11,1.25,37.3,2,1,1
+O=C(O)c1ccc(Cl)cc1,4-Chlorobenzoic acid,156.57,1.75,37.3,2,1,1
+O=C(O)c1ccc(Br)cc1,4-Bromobenzoic acid,201.02,1.87,37.3,2,1,1
+O=C(O)c1ccc(C)cc1,4-Methylbenzoic acid,136.15,1.49,37.3,2,1,1
+O=C(O)c1ccc(OC)cc1,4-Methoxybenzoic acid,152.15,1.07,46.53,3,1,2
+O=C(O)c1ccc(C(F)(F)F)cc1,4-(Trifluoromethyl)benzoic acid,190.12,1.99,37.3,2,1,2

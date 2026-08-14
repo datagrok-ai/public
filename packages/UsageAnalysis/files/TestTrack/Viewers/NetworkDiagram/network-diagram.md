@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.network-diagram, entities.viewer.action.close-viewer]
 realized_as:
   - network-diagram-spec.ts
 related_bugs:

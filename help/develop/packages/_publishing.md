@@ -1,7 +1,17 @@
+---
+title: "Publishing"
+description: Explains package version control, debug versus release deployment modes, and sharing published packages.
+keywords:
+  - grok publish --release
+  - debug version
+  - published package entity
+  - version rollback
+  - publishing from git
+  - package privileges
+---
+
 <!-- TITLE: Publishing -->
 <!-- ORDER: 2 -->
-
-# Publishing
 
 After your package for Datagrok is ready, you might want to publish the package. This document describes various aspects
 of publishing packages to Datagrok.

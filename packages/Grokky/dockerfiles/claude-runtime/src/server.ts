@@ -7,6 +7,8 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {startWorkspaceSync} from './sync/workspace';
+import {buildHelpIndex} from './help-index';
+import {WORKSPACE} from './constants';
 import {rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 import {emit, handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import type {WsSender} from './session';
@@ -21,8 +23,9 @@ let authProc: ChildProcess | null = null;
 
 function handleAuthStart(ws: WsSender): void {
   if (authProc) {
-    emit(ws, {type: 'auth_error', message: 'Authentication already in progress'});
-    return;
+    authProc.removeAllListeners('exit');
+    authProc.kill();
+    authProc = null;
   }
   authProc = spawn('claude', ['auth', 'login'], {
     env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},
@@ -245,5 +248,10 @@ process.on('uncaughtException', (err) => console.error('uncaughtException (survi
 const server = serve({fetch: app.fetch, port: PORT});
 injectWebSocket(server);
 startWorkspaceSync();
+try {
+  buildHelpIndex(WORKSPACE);
+} catch (e: any) {
+  console.warn('help-index: build failed:', e.message);
+}
 
 console.log(`claude-runtime listening on :${PORT}`);

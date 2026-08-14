@@ -11,8 +11,8 @@ Covers the admin configuration surface of Sticky Meta: defining a metadata **ent
 
 **Test data**
 
-- Entity type name: `PW_SM_Type_<suffix>`, matching expression `semtype=molecule`.
-- Schema name: `PW_SM_Schema_<suffix>`, associated with the entity type above, properties:
+- Entity type name: `PW_SM1_Type_<suffix>`, matching expression `semtype=molecule`.
+- Schema name: `PW_SM1_Schema_<suffix>`, associated with the entity type above, properties:
   `rating` (int), `notes` (string), `verified` (bool), `review_date` (datetime).
 
 > Navigation note: the Datagrok SPA ignores `goto()` between sibling Sticky-Meta routes

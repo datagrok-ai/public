@@ -1,0 +1,253 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "title": "Datagrok domain schema manifest",
+  "description": "Declares entity-mapped tables of a plugin database schema (databases/<schema>/schema.json). Tables get platform row/column security, Datlas-managed CRUD, and an in-transaction audit trail.",
+  "type": "object",
+  "required": ["name", "version", "tables"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "name": {
+      "description": "Logical schema name; must match the databases/<name>/ directory.",
+      "$ref": "#/definitions/identifier"
+    },
+    "version": {
+      "type": "string",
+      "description": "Manifest version (semver recommended). Recorded in the registry on deploy."
+    },
+    "extensible": {
+      "type": "object",
+      "description": "Opt-in for user extensions of this schema. Users holding the Extend permission on the schema entity may then add their own tables; per-table column extension is opted in with the table's own 'extensible' flag. User objects are retained across plugin upgrades and never appear in generated typed clients.",
+      "required": ["tables"],
+      "additionalProperties": false,
+      "properties": {
+        "tables": {
+          "type": "boolean",
+          "description": "Whether users may add their own tables to this schema."
+        }
+      }
+    },
+    "tables": {
+      "type": "object",
+      "description": "Entity-mapped tables keyed by table name.",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/definitions/identifier"},
+      "additionalProperties": {"$ref": "#/definitions/table"}
+    },
+    "propertySchemas": {
+      "type": "object",
+      "description": "Named groups of dynamic (jsonb) properties; grant a schema to a group to control column visibility.",
+      "propertyNames": {"$ref": "#/definitions/identifier"},
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "propertyNames": {"$ref": "#/definitions/columnName"},
+        "additionalProperties": {"$ref": "#/definitions/column"}
+      }
+    },
+    "migrations": {
+      "type": "object",
+      "description": "Explicit statements for destructive changes the diff engine refuses to apply automatically."
+    }
+  },
+  "definitions": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "maxLength": 63
+    },
+    "columnName": {
+      "description": "An identifier that additionally may not start with 'x_' — that prefix is reserved for the physical names of user-added extension columns.",
+      "allOf": [
+        {"$ref": "#/definitions/identifier"},
+        {"not": {"type": "string", "pattern": "^x_"}}
+      ]
+    },
+    "table": {
+      "type": "object",
+      "required": ["columns"],
+      "additionalProperties": false,
+      "properties": {
+        "securityMode": {
+          "enum": ["table", "master", "row"],
+          "default": "table",
+          "description": "table: one check against the table entity; master: delegate to the master row via the delegate column; row: per-row grants with lazy/eager promotion."
+        },
+        "promotion": {
+          "enum": ["lazy", "eager"],
+          "default": "lazy",
+          "description": "Row mode only. lazy: entities row created on first share; eager: at insert."
+        },
+        "defaultRowVisibility": {
+          "enum": ["table", "none"],
+          "default": "table",
+          "description": "Row/master modes: whether table-level View shows unshared rows."
+        },
+        "delegate": {
+          "$ref": "#/definitions/identifier",
+          "description": "Master mode: the ref column whose target row's security applies."
+        },
+        "softDelete": {"type": "boolean", "default": true},
+        "audit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Per-table in-transaction audit trail (before/after diffs, history, restore)."
+        },
+        "extensible": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether users holding Extend on this schema may add their own columns to this table. Such columns stay optional, non-unique, outside the business key, and may not cascade deletes; they are stored under an 'x_' physical prefix but addressed by their declared name everywhere."
+        },
+        "idempotency": {
+          "type": "boolean",
+          "default": false,
+          "description": "Adds the idempotency_key system column for replay-safe creates."
+        },
+        "ginIndex": {
+          "type": "boolean",
+          "default": false,
+          "description": "Adds a GIN (jsonb_path_ops) index on the data column."
+        },
+        "businessKey": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/identifier"},
+          "minItems": 1,
+          "description": "Natural key: powers dedup-on-insert, upsert matching, and entity handles."
+        },
+        "friendlyName": {"type": "string"},
+        "description": {"type": "string"},
+        "singularName": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Explicit singular display name ('New <singular>...' buttons); defaults to a guess from the table name."
+        },
+        "pluralName": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Explicit plural display name (view titles); defaults to a guess from the table name."
+        },
+        "columns": {
+          "type": "object",
+          "description": "Relational columns keyed by column name. System columns (id, is_deleted, version, created_on, updated_on, author_id, idempotency_key, data) are generated and must not be declared.",
+          "propertyNames": {"$ref": "#/definitions/columnName"},
+          "additionalProperties": {"$ref": "#/definitions/column"}
+        },
+        "schemas": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/identifier"},
+          "description": "Property schemas contributing jsonb keys to this table."
+        },
+        "relations": {
+          "type": "object",
+          "description": "Many-to-many relations of this table keyed by relation name: each links the table to a target table through a junction table. The name shares one namespace with the columns (it is what expand and filter paths address), so it may not collide with a column of this table. Declaration order is preserved and is the order every UI surface lays the relations out in.",
+          "propertyNames": {"$ref": "#/definitions/columnName"},
+          "additionalProperties": {"$ref": "#/definitions/relation"}
+        },
+        "filters": {
+          "type": "array",
+          "description": "Default filter panel for this table (entity filters): declared columns pre-open in order. Absent = heuristics by column type, INCLUDING one facet per travelable many-to-many relation. Declaring this section replaces the whole heuristic set, relation facets included — to keep one, list it explicitly as {\"column\": \"<relation>.id\"}.",
+          "items": {
+            "type": "object",
+            "required": ["column"],
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "type": "string",
+                "description": "Column name, a filterable system column (id, author_id, created_on, updated_on, version), or a dotted forward FK path (e.g. 'category_id.name', max 3 hops)."
+              },
+              "type": {
+                "enum": ["categories", "histogram", "range", "text", "bool"],
+                "description": "Filter kind; defaults by column type. histogram/range need a numeric or datetime column, text a string column, bool a bool column."
+              },
+              "bins": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 200,
+                "description": "Histogram bin count (type histogram/range only)."
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "description": "Display label for the filter; defaults to the column's friendly name."
+              }
+            }
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "required": ["via", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "via": {
+          "$ref": "#/definitions/identifier",
+          "description": "Junction table declared in this manifest; differs from the owner and the target table. Its businessKey must contain both FK columns — that is what keeps re-linking the same pair idempotent."
+        },
+        "target": {
+          "$ref": "#/definitions/identifier",
+          "description": "Related table declared in this manifest."
+        },
+        "viaSelf": {
+          "$ref": "#/definitions/identifier",
+          "description": "Junction ref column pointing back at the owner table; may be omitted when the junction has exactly one such column. Self-referential relations must declare it."
+        },
+        "viaTarget": {
+          "$ref": "#/definitions/identifier",
+          "description": "Junction ref column pointing at the target table; may be omitted when the junction has exactly one such column. Self-referential relations must declare it."
+        },
+        "allowCreate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the UI may create a target row on the fly while linking (still subject to create permission on the target table)."
+        }
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "user", "group", "file"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = FK to the core users/groups tables with the matching semantic type; file = a file://<connection>/<path> string into platform file storage (semantic type File)."
+        },
+        "required": {"type": "boolean", "default": false},
+        "unique": {
+          "type": "boolean",
+          "default": false,
+          "description": "Unique among live (not soft-deleted) rows."
+        },
+        "isName": {
+          "type": "boolean",
+          "default": false,
+          "description": "Marks the primary display-name column (string columns only; at most one per table). Its value titles cards, tooltips, and entity views, and becomes the friendly name of promoted rows. Convention fallback: a string column literally named 'name'."
+        },
+        "ref": {
+          "$ref": "#/definitions/identifier",
+          "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."
+        },
+        "onDelete": {
+          "enum": ["cascade", "restrict", "setnull"],
+          "description": "Engine-enforced referential action on soft delete (ref/user/group columns)."
+        },
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "choices": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Controlled dictionary of allowed values."
+        },
+        "semType": {"type": "string"},
+        "friendlyName": {"type": "string"},
+        "description": {"type": "string"},
+        "default": {
+          "description": "Default value for new rows / UI inputs."
+        },
+        "format": {"type": "string"}
+      }
+    }
+  }
+}

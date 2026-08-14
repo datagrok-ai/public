@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [powerpack.cp.db-explorer-enrichment, powerpack.int.db-explorer-enrichment-runs]
-realizes: []
+realizes: [powerpack.db-explorer]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/PowerPack/data-enrichment.md
 migration_date: 2026-05-25

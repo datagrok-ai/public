@@ -1,22 +1,5 @@
-/** In-view bottom output panel.
- *
- *  Behavior contract (splitter rework — replaces the old dock-manager panel):
- *  - The panel is a permanent pane of the Flow view's vertical splitter
- *    (`ui.splitV`), owned by the view — never docked to the platform dock
- *    manager, so it can never leak over other views or outlive its flow.
- *  - It is not closable. It starts fully hidden; the first renderable output
- *    (clicking a completed node, or a run's focus node) expands it. The header
- *    caret minimizes it to a slim strip; the choice is remembered — while
- *    minimized, later clicks update the content but never pop the panel back
- *    up. Restoring is always an explicit header click.
- *  - `clear()` empties and hides it (graph change / new run — values are
- *    stale), preserving the user's minimized preference.
- *  - Embedded hosts (the creation-script dialog) construct it disabled: it
- *    never shows there, only in the real editor view.
- *
- *  Rendering is delegated to {@link buildValuePreviews} from
- *  `value-inspector.ts` — keeps the DataFrame / Column / graphics / primitive
- *  layout consistent with the context panel. */
+/** In-view bottom output panel — a pane of the Flow view's vertical splitter,
+ *  never a dock-manager dock (a dock outlives and overlaps views). */
 
 import * as ui from 'datagrok-api/ui';
 
@@ -28,39 +11,40 @@ export type OutputPanelState = 'hidden' | 'minimized' | 'expanded';
 
 /** Height of the header strip — the whole panel when minimized. */
 const HEADER_HEIGHT = 30;
-/** Default expanded height; replaced by the real height once the user resizes
- *  (captured on minimize, and the splitter divider writes `style.height`). */
 const DEFAULT_EXPANDED_HEIGHT = 260;
 
 export class OutputPreviewPanel {
-  /** The splitter pane (`ui.box`) the view mounts as the bottom `splitV` item. */
   readonly root: HTMLElement;
   private readonly contentEl: HTMLElement;
   private readonly nodeLabelEl: HTMLElement;
   private readonly caretEl: HTMLElement;
+  private readonly pinEl: HTMLElement;
 
   private state: OutputPanelState = 'hidden';
-  /** The user minimized the panel — remembered for the view's lifetime so
-   *  showing new content never pops the panel back up uninvited. */
+  /** Remembered for the view's lifetime — new content never pops the panel back up. */
   private userMinimized = false;
   private expandedHeight = DEFAULT_EXPANDED_HEIGHT;
-  /** Disabled panels never show — embedded hosts (dialogs) construct it so. */
   private enabled: boolean;
 
-  /** What the panel currently renders. `ExecutionState.setNodeStatus` always
-   *  builds a fresh state object, so reference identity of the state IS value
-   *  identity — re-clicking the same node with unchanged results must not
-   *  rebuild the preview (grids re-mount, scroll resets, the panel jumps). */
+  /** `ExecutionState.setNodeStatus` always builds a fresh state object, so
+   *  reference identity of the state IS value identity — same pair means the
+   *  preview must not rebuild (grids re-mount, scroll resets). */
   private lastNodeId: string | null = null;
   private lastState: NodeExecState | null = null;
 
-  /** Called when the user clicks "Edit settings" on a viewer preview — the host
-   *  shows the viewer in the context panel and captures its option changes. */
+  /** Pinned node: other clicks don't switch the preview; survives `clear()`. */
+  private pinnedId: string | null = null;
+
+  private updating = false;
+
+  /** Called when the user clicks the gear on a viewer preview. */
   onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
 
-  /** Fired on every hidden/minimized/expanded transition — the view syncs the
-   *  splitter divider (resizing a hidden or minimized pane makes no sense). */
+  /** Fired on every hidden/minimized/expanded transition. */
   onStateChanged?: (state: OutputPanelState) => void;
+
+  /** Fired on a user unpin via the header icon (not on programmatic `unpin()`). */
+  onUnpinned?: () => void;
 
   constructor(options: {enabled?: boolean} = {}) {
     this.enabled = options.enabled !== false;
@@ -71,21 +55,66 @@ export class OutputPreviewPanel {
     this.caretEl.addEventListener('click', () => this.toggle());
     ui.tooltip.bind(this.caretEl, () => this.state === 'minimized' ? 'Expand outputs' : 'Minimize outputs');
     this.nodeLabelEl = setTid(ui.div([], 'ff-output-panel-node'), 'output-panel-node');
+    this.pinEl = setTid(ui.iconFA('thumbtack', () => this.togglePin()), 'output-panel-pin');
+    this.pinEl.classList.add('ff-output-panel-pin');
+    ui.tooltip.bind(this.pinEl, () => this.pinnedId != null ?
+      'Unpin — clicking a node switches the preview again' :
+      'Pin this preview — keep it while you adjust other nodes');
     const title = ui.div([], 'ff-output-panel-title');
-    title.textContent = 'Outputs';
+    title.textContent = 'Preview';
     const header = setTid(
-      ui.div([title, this.nodeLabelEl, this.caretEl], 'ff-output-panel-header'), 'output-panel-header');
+      ui.div([title, this.nodeLabelEl, this.pinEl, this.caretEl], 'ff-output-panel-header'), 'output-panel-header');
 
     this.contentEl = setTid(ui.div([], 'ff-output-panel-content'), 'output-panel-content');
 
     this.root = setTid(ui.box(), 'output-panel');
     this.root.classList.add('ff-output-panel');
-    // Pin the pane so the canvas (flex: 1 1 0) absorbs all remaining space:
-    // the pane's height IS its size, in every state.
+    // The canvas (flex: 1 1 0) absorbs all remaining space; the pane's height IS its size.
     this.root.style.flex = '0 0 auto';
     this.root.appendChild(header);
     this.root.appendChild(this.contentEl);
     this.applyState();
+    this.updatePinVisual();
+  }
+
+  get pinnedNodeId(): string | null {
+    return this.pinnedId;
+  }
+
+  togglePin(): void {
+    if (this.pinnedId != null) {
+      this.unpin();
+      this.onUnpinned?.();
+      return;
+    }
+    if (this.lastNodeId != null) {
+      this.pinnedId = this.lastNodeId;
+      this.updatePinVisual();
+    }
+  }
+
+  unpin(): void {
+    this.pinnedId = null;
+    this.updatePinVisual();
+  }
+
+  /** Overlay a spinner on the kept (stale) content while the pinned node recomputes. */
+  markUpdating(message = 'Recalculating...'): void {
+    if (!this.enabled || this.state === 'hidden' || this.lastNodeId == null) return;
+    this.updating = true;
+    ui.setUpdateIndicator(this.contentEl, true, message);
+  }
+
+  clearUpdating(): void {
+    if (!this.updating) return;
+    this.updating = false;
+    ui.setUpdateIndicator(this.contentEl, false);
+  }
+
+  private updatePinVisual(): void {
+    this.pinEl.dataset.pinned = this.pinnedId != null ? 'true' : 'false';
+    // A pinned-but-cleared panel keeps the icon so the user can still unpin.
+    this.pinEl.style.display = this.lastNodeId != null || this.pinnedId != null ? '' : 'none';
   }
 
   get panelState(): OutputPanelState {
@@ -96,34 +125,30 @@ export class OutputPreviewPanel {
     return this.enabled;
   }
 
-  /** The node whose values the panel currently renders, or null when empty —
-   *  lets the invalidator close the panel only when *its* node went stale. */
   get currentNodeId(): string | null {
     return this.lastNodeId;
   }
 
-  /** Turn the panel on/off. Off = never shows (embedded hosts). Turning it on
-   *  does not show anything by itself — the next renderable output does. */
+  /** Off = never shows (embedded hosts). */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (!enabled) this.clear();
   }
 
-  /** Show the runtime values for one node. No-op when disabled or when the
-   *  node has nothing renderable (DataFrame grid, column sample, graphics,
-   *  widget/viewer root). First content ever → the panel expands (or appears
-   *  minimized if the user minimized it earlier); afterwards content updates
-   *  in place and the current state is respected. */
+  /** Show the runtime values for one node; no-op when disabled or nothing renderable. */
   showForNode(node: {id: string; label: string}, state: NodeExecState | undefined): void {
     if (!this.enabled || !state) return;
-    // Status, duration, error, primitives — those go in the property panel
-    // (see `buildExecutionMeta`). This panel only shows rich values.
+    if (this.pinnedId != null && node.id !== this.pinnedId) return;
     if (!hasRenderablePreview(state)) return;
 
-    // Same node, same captured state, panel visible → the content is already
-    // right; rebuilding would re-mount the grids and reset their scroll.
-    if (this.state !== 'hidden' && node.id === this.lastNodeId && state === this.lastState) return;
+    // Same node, same captured state → rebuilding would re-mount the grids and
+    // reset their scroll.
+    if (this.state !== 'hidden' && node.id === this.lastNodeId && state === this.lastState) {
+      this.clearUpdating();
+      return;
+    }
 
+    this.clearUpdating();
     const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
     inner.style.padding = '8px 12px';
     this.contentEl.innerHTML = '';
@@ -131,17 +156,15 @@ export class OutputPreviewPanel {
     this.nodeLabelEl.textContent = node.label;
     this.lastNodeId = node.id;
     this.lastState = state;
+    this.updatePinVisual();
 
     if (this.state === 'hidden')
       this.setState(this.userMinimized ? 'minimized' : 'expanded');
   }
 
-  /** Collapse to the header strip. Remembered: subsequent content never
-   *  auto-expands — only an explicit `expand()` (header click) does. */
   minimize(): void {
     this.userMinimized = true;
     if (this.state === 'expanded') {
-      // Keep the height the user (or the splitter divider) last gave it.
       const h = this.root.offsetHeight;
       if (h > HEADER_HEIGHT + 10) this.expandedHeight = h;
       this.setState('minimized');
@@ -158,14 +181,15 @@ export class OutputPreviewPanel {
     else if (this.state === 'expanded') this.minimize();
   }
 
-  /** Empty and hide the panel (graph change / new run — values are stale).
-   *  The user's minimized preference survives. */
+  /** Empty and hide; the user's minimized preference AND the pin survive. */
   clear(): void {
+    this.clearUpdating();
     this.contentEl.innerHTML = '';
     this.nodeLabelEl.textContent = '';
     this.lastNodeId = null;
     this.lastState = null;
     this.setState('hidden');
+    this.updatePinVisual();
   }
 
   private setState(state: OutputPanelState): void {
@@ -182,9 +206,8 @@ export class OutputPreviewPanel {
       return;
     }
     s.display = '';
-    // `ui.splitV`'s container-resize handler keeps rewriting `style.height` on
-    // every pane; min/max clamp the rendered size so a minimized strip stays a
-    // strip and an expanded pane can't be squeezed below its header.
+    // `ui.splitV` keeps rewriting `style.height` on every pane; min/max clamp
+    // the rendered size so its resize handling can't drift a minimized strip.
     if (this.state === 'minimized') {
       s.height = `${HEADER_HEIGHT}px`;
       s.maxHeight = `${HEADER_HEIGHT}px`;

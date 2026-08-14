@@ -5,8 +5,7 @@ realizes_atlas:
   - boxplot.int.inside-outside-values
   - boxplot.int.auto-layout-hides-chrome
   - boxplot.int.showmarkers-gates-marker-props
-realizes:
-  - viewers.box-plot
+realizes: [viewers.box-plot]
 priority: p2
 target_layer: playwright
 coverage_type: smoke

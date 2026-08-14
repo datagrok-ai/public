@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [projects.cp.share-spaces-datasync, projects.op.rename_external_dep, projects.op.share_with_recipient_open, projects.op.rename_project]
-realizes: [views.projects]
+realizes: [views.projects, views.space]
 realized_as:
   - projects-lifecycle-spaces-spec.ts
 pyramid_layer: proactive-lifecycle

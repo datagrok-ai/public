@@ -24,6 +24,11 @@ export function kebabToCamelCase(s: string, firstUpper: boolean = true): string 
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
 }
 
+export function snakeToCamelCase(s: string, firstUpper: boolean = true): string {
+  s = s.replace(/_./g, (x) => x[1].toUpperCase());
+  return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
+}
+
 export function descriptionToComment(s: string) {
   if (s.length === 0)
     return '';
@@ -109,6 +114,7 @@ export const replacers: Indexable = {
   NAME_TITLECASE: (s: string, name: string) => s.replace(/#{NAME_TITLECASE}/g, name[0].toUpperCase() + name.slice(1).toLowerCase()),
   NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{NAME_LOWERCASE}/g, name.toLowerCase()),
   NAME_PREFIX: (s: string, name: string) => s.replace(/#{NAME_PREFIX}/g, name.slice(0, 3)),
+  DOMAIN_TABLE: (s: string, table: string) => s.replace(/#{DOMAIN_TABLE}/g, table),
   PACKAGE_DETECTORS_NAME: (s: string, name: string) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name)),
   PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, name),
   FUNC_DESCRIPTION: (s: string, desc: string) => s.replace(/#{FUNC_DESCRIPTION}/g, descriptionToComment(desc)),

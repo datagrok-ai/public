@@ -11,8 +11,7 @@ realizes_atlas:
   - tileviewer.cp.viewer-local-filter-vs-dataframe-filter
   - tileviewer.cp.scroll-survives-added-viewer
   - tileviewer.int.viewer-local-filter-vs-df-filter
-realizes:
-  - viewers.tile-viewer
+realizes: [viewers.tile-viewer]
 realized_as:
   - tile-viewer-spec.ts
 related_bugs:

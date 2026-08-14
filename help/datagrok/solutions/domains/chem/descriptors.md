@@ -1,5 +1,15 @@
 ---
 title: "Supported descriptors"
+description: Reference list of molecular descriptors Datagrok can calculate, including EState-VSA, Lipinski, and 3D descriptors.
+keywords:
+  - molecular descriptors
+  - RDKit descriptors
+  - QED drug-likeness score
+  - Lipinski rule of five
+  - topological descriptors
+  - 3D shape descriptors
+  - fragment counts
+  - physicochemical properties
 ---
 
 Datagrok supports calculation of the following descriptors:

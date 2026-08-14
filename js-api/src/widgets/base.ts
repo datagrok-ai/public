@@ -209,6 +209,37 @@ export interface IRectBounds {
 }
 
 /**
+ * Live state of ONE named input of a widget, as reported by
+ * {@link IWidgetStatus.inputs} — the machine-readable counterpart of what the user
+ * sees in a form. Values and validation are read on demand, never cached: a widget
+ * reports whatever it holds at the moment {@link Widget.getWidgetStatus} is called.
+ *
+ * {@link name} is the name the widget's properties address the input by, so
+ * `widget.props[status.name] = value` writes exactly what typing into it would.
+ */
+export interface IInputStatus {
+  /** Name of the input — also its property name in {@link Widget.props}. */
+  name: string;
+  /** Human-facing label. */
+  caption?: string;
+  /** Value type: a {@link TYPE} name ('string', 'int', 'datetime'...), or 'ref' when
+   * the value addresses another object (see {@link ref}). */
+  type: string;
+  semType?: string;
+  value: any;
+  /** Allowed values, when the input is a closed vocabulary. */
+  choices?: any[];
+  /** Whether an empty value is a validation error. */
+  required: boolean;
+  valid: boolean;
+  /** Validation message; absent while {@link valid}. */
+  error?: string;
+  description?: string;
+  /** What a `'ref'` value points at (a domain table address, 'User', 'Group'...). */
+  ref?: string;
+}
+
+/**
  * Runtime snapshot of a widget's structure, used by the automated testing system.
  * Returned by {@link Widget.getWidgetStatus}.
  */
@@ -225,6 +256,9 @@ export interface IWidgetStatus {
   description: string | null;
   /** Validation error message; null means the widget is in a valid state. */
   error: string | null;
+  /** Live state of the widget's named inputs — present on widgets that edit named
+   * values (forms), absent on the ones that do not. */
+  inputs?: IInputStatus[];
 }
 
 /** Base class for controls that have a visual root and a set of properties. */
@@ -298,6 +332,14 @@ export class Widget<TSettings = any> {
     Used in the UI to display context actions, and for the AI integrations. */
   getFunctions(): Func[] { return this._functions;  }
 
+  private _aiDescription: string | null = null;
+
+  /** A short AI-facing briefing: what this widget is, what its functions do, and how the
+   * assistant should approach it (e.g. which {@link getFunctions} entries to call first).
+   * Shown to the AI assistant as part of the workspace context. */
+  get aiDescription(): string | null { return this._aiDescription; }
+  set aiDescription(x: string | null) { this._aiDescription = x; }
+
   /** Gets called when viewer's property is changed.
    * @param {Property} property - or null, if multiple properties were changed. */
   onPropertyChanged(property: Property | null): void {}
@@ -329,6 +371,11 @@ export class Widget<TSettings = any> {
   detach(): void {
     this.subs.forEach((s) => s.unsubscribe());
     this.isDetached = true;
+    // A detached widget must stop showing up in Widget.getAll(): drop the Dart
+    // wrapper {@link toDart} registered. Dart-owned widgets ({@link DartWidget})
+    // keep their registration - it belongs to the Dart lifecycle.
+    if (this.dart != null)
+      api.grok_Widget_Unregister(this.dart);
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
@@ -399,6 +446,18 @@ export class DartWidget extends Widget {
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
   getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
+
+  /** AI briefing of the underlying Dart widget. */
+  get aiDescription(): string | null {
+    const f = (api as any).grok_Widget_Get_AIDescription;
+    return f ? (f(this.dart) ?? null) : null;
+  }
+
+  set aiDescription(x: string | null) {
+    const f = (api as any).grok_Widget_Set_AIDescription;
+    if (f)
+      f(this.dart, x);
+  }
 
   onEvent(eventId: string | null = null): rxjs.Observable<any> {
     if (eventId === null)

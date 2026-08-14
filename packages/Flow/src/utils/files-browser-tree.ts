@@ -6,9 +6,7 @@ import {setTid} from './test-ids';
 
 type FileArgFunc = (f: DG.FileInfo) => void;
 
-// Stable, addressable test-ids on every tree row so tutorials and UI tests can
-// target a specific connection / folder / file by its name (e.g. the Demo
-// connection's expander, or the demog.csv file).
+// Name-based test-ids on every tree row so tutorials/UI tests can target a specific connection/folder/file.
 const stampConnection = (root: HTMLElement, name: string): void => {
   setTid(root, 'files-conn', name);
   root.dataset.conn = name;
@@ -28,9 +26,6 @@ interface ExpandedState {
   [key: string]: ExpandedState;
 }
 
-// onSelected will be called when a file node is selected.
-// onDblClick will be called when a file node is double-clicked (or activated with Enter).
-// An optional localStorage key will be used to save and restore the expanded state of the tree.
 export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc, localStorageKey?: string): DG.TreeViewGroup {
   const tree = ui.tree();
 
@@ -41,8 +36,7 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
     return () => item.remove();
   };
 
-  // A stable identity for a group, used both as the localStorage key and to match
-  // saved state against live nodes. Values are unique within their parent.
+  // Stable group identity — the localStorage key; unique within its parent.
   const nodeKey = (node: DG.TreeViewNode): string | null => {
     const v = node.value;
     if (v instanceof DG.FileInfo)
@@ -52,8 +46,6 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
     return null;
   };
 
-  // Lists the content of a node's value: the connection root for a connection node,
-  // or the directory itself for a folder node.
   const listContent = async (value: unknown): Promise<DG.FileInfo[]> => {
     if (value instanceof DG.DataConnection) {
       const path = value.nqName.endsWith('/') ? value.nqName : value.nqName + '/';
@@ -64,7 +56,6 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
     return [];
   };
 
-  // Directories first, then alphabetical (case-insensitive).
   const sortFiles = (files: DG.FileInfo[]): void => {
     files.sort((a, b) => {
       if (a.isDirectory !== b.isDirectory)
@@ -78,8 +69,7 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
     return ui.divH([...(oh ? [oh.renderIcon(f.dart)] : []), ui.divText(f.fileName)], {style: {alignItems: 'center', gap: '4px'}});
   };
 
-  // Lazily populates a group's children once. The promise is cached per Dart node handle so
-  // that a manual expand and a programmatic restore never double-load the same group.
+  // Cached per Dart node handle so a manual expand and a programmatic restore never double-load.
   const loadCache = new Map<unknown, Promise<void>>();
   const ensureLoaded = (group: DG.TreeViewGroup): Promise<void> => {
     let p = loadCache.get(group.dart);
@@ -116,25 +106,22 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
     }
   };
 
-  // Lazy loading: fires for any descendant group being expanded, at any depth.
+  // Fires for any descendant group at any depth.
   tree.onChildNodeExpanding.subscribe((n) => {
     ensureLoaded(n);
   });
 
-  // Selection / activation events fire only for actual files.
   tree.onSelectedNodeChanged.subscribe((n) => {
     const v = n?.value;
     if (v instanceof DG.FileInfo && v.isFile)
       onSelected(v);
   });
-  // onNodeEnter is the equivalent of double clicking a node.
+  // onNodeEnter is the equivalent of double-clicking a node.
   tree.onNodeEnter.subscribe((n) => {
     const v = n?.value;
     if (v instanceof DG.FileInfo && v.isFile)
       onDblClick(v);
   });
-
-  // --- Expanded-state persistence ---------------------------------------------------------
 
   const collectExpanded = (group: DG.TreeViewGroup): ExpandedState => {
     const state: ExpandedState = {};
@@ -158,15 +145,14 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
     }
   };
 
-  // Expands the groups described by `state`, in order, loading each level before descending.
-  // A group that no longer exists stops expansion of everything downstream of it.
+  // Loads each level before descending; a vanished group stops expansion of its branch.
   const expandFromState = async (group: DG.TreeViewGroup, state: ExpandedState): Promise<void> => {
     for (const key of Object.keys(state)) {
       const child = group.children.find(
         (c): c is DG.TreeViewGroup => c instanceof DG.TreeViewGroup && nodeKey(c) === key);
       if (!child)
-        continue; // group is gone — do not descend into this branch
-      await ensureLoaded(child); // make sure nested groups exist before recursing
+        continue;
+      await ensureLoaded(child);
       child.expanded = true;
       await expandFromState(child, state[key]);
     }
@@ -190,8 +176,6 @@ export function getFilesBrowser(onSelected: FileArgFunc, onDblClick: FileArgFunc
 
   if (localStorageKey)
     tree.onChildNodeExpandedChanged.subscribe(() => saveExpandedState());
-
-  // --- Initial population ------------------------------------------------------------------
 
   const processTree = async () => {
     const removeMainTreeLoader = addLoader(tree);

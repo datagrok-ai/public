@@ -3,13 +3,13 @@ sub_features_covered: [peptides.model.add-cluster-max-activity, peptides.model.a
 --- */
 // SAR viewer lifecycle — top-menu Bio | Analyze | SAR... launch, verify model.add-* surfaces realize,
 // and round-trip the Settings-dialog Viewers-pane toggles (Dendrogram + Active peptide selection).
-// The config dialog exposes only [name="input-Generate-clusters"], so per-viewer surfaces (CMA,
-// Dendrogram) are driven via direct PeptidesModel JS-API. Dendrogram + LST attach tolerantly on
-// this build (addLogoSummaryTable throws circular-JSON without an explicit clustersColumn).
+// Cluster max activity has no UI entry point and is driven through the model; Dendrogram goes
+// through its Settings toggle, which is the only path that proves the viewer actually mounts.
 
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForViewers} from './helpers';
 
 test.use(specTestOptions);
 
@@ -23,6 +23,34 @@ const VIEWER_TYPE = {
   CLUSTER_MAX_ACTIVITY: 'Active peptide selection',
   MCL: 'MCL',
 };
+
+const DEFAULT_ATTACH_VIEWERS = [
+  VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP,
+  VIEWER_TYPE.MOST_POTENT_RESIDUES,
+  VIEWER_TYPE.MCL,
+  VIEWER_TYPE.LOGO_SUMMARY_TABLE,
+];
+
+/** Open the Settings dialog from the ribbon wrench and expand its Viewers pane. */
+async function openViewersPane(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const wrench = document.querySelector(
+      'i.grok-icon.fa-wrench[aria-label="Peptides analysis settings"]') as HTMLElement | null;
+    if (wrench) wrench.click();
+  });
+  await page.locator('[name="dialog-Peptides-settings"]').waitFor({timeout: 8000});
+  await page.evaluate(async () => {
+    const dlg = document.querySelector('[name="dialog-Peptides-settings"]')!;
+    // d4 panes signal collapse via the content's display, not a class.
+    const pane = Array.from(dlg.querySelectorAll('.d4-accordion-pane'))
+      .find((p) => p.querySelector('.d4-accordion-pane-header')?.textContent?.trim() === 'Viewers');
+    const content = pane?.querySelector('.d4-accordion-pane-content') as HTMLElement | null;
+    if (content && getComputedStyle(content).display === 'none') {
+      (pane!.querySelector('.d4-accordion-pane-header') as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  });
+}
 
 test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + Settings dialog Viewers-pane round-trip', async ({page}) => {
   test.setTimeout(360_000);
@@ -106,11 +134,13 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     await page.waitForFunction(() => {
       return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
     }, {timeout: 90000});
-    // Let MCL clustering / sequence-space settle before probing the viewer set.
-    await page.waitForTimeout(10000);
   });
 
-  await softStep('Scenario 1 (step 4): verify deterministic default-attach (SVM + MPR + MCL)', async () => {
+  await softStep('Scenario 1 (step 4): verify deterministic default-attach (SVM + MPR + MCL + LST)', async () => {
+    const viewers = await waitForViewers(page, DEFAULT_ATTACH_VIEWERS);
+    for (const type of DEFAULT_ATTACH_VIEWERS)
+      expect(viewers, `${type} must attach after Launch SAR`).toContain(type);
+
     const state = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = tv.dataFrame.temp['peptidesModel'];
@@ -132,62 +162,52 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     expect(state.findMcl, 'findViewer(VIEWER_TYPE.MCL) must return non-null').toBe(true);
   });
 
-  // Exercise the remaining model.add-* surfaces via direct JS-API (no DOM driver on this build).
-  await softStep('Scenario 1 (steps 4-5): exercise the remaining model.add-* family (CMA + Dendrogram + LST)', async () => {
+  // Cluster max activity has no launch-dialog input, so it is driven through the model directly.
+  await softStep('Scenario 1 (step 4): exercise peptides.model.add-cluster-max-activity', async () => {
     const result = await page.evaluate(async (VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = tv.dataFrame.temp['peptidesModel'];
-      const out: any = {modelPresent: !!model};
-
-      // peptides.model.add-cluster-max-activity (model.ts#L1211)
-      try { await model.addClusterMaxActivityViewer(); out.cmaInvoked = 'ok'; }
-      catch (e) { out.cmaInvoked = 'threw: ' + String(e).slice(0, 240); }
-
-      // peptides.model.add-dendrogram (model.ts#L1069)
-      try { await model.addDendrogram(); out.dendroInvoked = 'ok'; }
-      catch (e) { out.dendroInvoked = 'threw: ' + String(e).slice(0, 240); }
-
-      // peptides.model.add-logo-summary-table (model.ts#L1195) — known to throw default-prop here.
-      try { await model.addLogoSummaryTable(); out.lstInvoked = 'ok'; }
-      catch (e) { out.lstInvoked = 'threw: ' + String(e).slice(0, 240); }
-
-      // Settle for dock-manager + viewer-mount.
+      await model.addClusterMaxActivityViewer();
       await new Promise((r) => setTimeout(r, 6000));
-
-      const viewers = Array.from(tv.viewers).map((v) => v.type);
-      out.viewers = viewers;
-      out.findCma = !!model.findViewer(VT.CLUSTER_MAX_ACTIVITY);
-      out.findDendro = !!model.findViewer(VT.DENDROGRAM);
-      out.findLst = !!model.findViewer(VT.LOGO_SUMMARY_TABLE);
-      return out;
+      return {
+        viewers: Array.from(tv.viewers).map((v) => v.type),
+        findCma: !!model.findViewer(VT.CLUSTER_MAX_ACTIVITY),
+      };
     }, VIEWER_TYPE);
 
-    expect(result.cmaInvoked, 'addClusterMaxActivityViewer() invocation should not throw').toBe('ok');
     expect(result.viewers, 'Active peptide selection viewer (peptides.model.add-cluster-max-activity) must attach')
       .toContain(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY);
     expect(result.findCma, 'findViewer(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY) must return non-null').toBe(true);
+  });
 
-    // addDendrogram wraps the inner call in try/catch; tolerant on visible attach.
-    expect(result.dendroInvoked, 'addDendrogram() invocation must not throw uncaught (internal try/catch swallows)')
-      .toBe('ok');
-    if (!result.findDendro) {
-      console.log(`[note] Dendrogram viewer did not visibly attach via addDendrogram() on this build ` +
-        `(Dendrogram-package hierarchicalClustering function-find at model.ts#L1087 may fail or produce no dockable ` +
-        `viewer — errors swallowed to _package.logger.error per try/catch at L1094). ` +
-        `peptides.model.add-dendrogram code path was invoked end-to-end; visible attach is build-/package-dependent.`);
-    }
+  // Dendrogram ships OFF by default. Driving it through the Settings toggle is the path a user
+  // has; addDendrogram() swallows its own failures into the logger (model.ts#L1094), so calling
+  // it directly can only ever report "did not throw" and proves nothing about the viewer.
+  await softStep('Scenario 1 (step 5): turn Dendrogram ON via the Settings dialog', async () => {
+    await openViewersPane(page);
+    const cb = page.locator('[name="dialog-Peptides-settings"] [name="input-Dendrogram"]');
+    await cb.waitFor({timeout: 8000});
+    expect(await cb.isEnabled(),
+      'Dendrogram toggle is disabled — TreeHelper did not load (settings.ts#L139)').toBe(true);
+    // Real click: a dispatched MouseEvent flips the checkbox without the platform ever
+    // seeing the input, so the setting is applied but no viewer is ever added.
+    if (!await cb.isChecked())
+      await cb.click();
+    expect(await cb.isChecked(), 'Dendrogram checkbox should be ON before OK').toBe(true);
+    await page.locator('[name="dialog-Peptides-settings"] [name="button-OK"]').click();
 
-    // addLogoSummaryTable throws default-prop on this build (downstream d4 serialization); tolerant.
-    if (result.lstInvoked !== 'ok') {
-      console.log(`[note] addLogoSummaryTable() default-prop invocation threw on this build: ${result.lstInvoked}. ` +
-        `peptides.model.add-logo-summary-table entry point was invoked; the d4 viewer serialization circular ref ` +
-        `appears unrelated to the lifecycle assertion (model.ts#L1195 body ran, the throw originates downstream).`);
-    }
-    if (!result.findLst) {
-      console.log(`[note] Logo Summary Table viewer did not visibly attach via direct addLogoSummaryTable() invocation ` +
-        `on this build (cluster-/settings-dependent; see also sar-spec.ts which records the same on the context-panel ` +
-        `path).`);
-    }
+    await page.waitForFunction(() =>
+      !document.querySelector('[name="dialog-Peptides-settings"]'), null, {timeout: 8000});
+
+    // The dendrogram is not a viewer: Dendrogram's hierarchicalClusteringUI attaches it as a
+    // GridNeighbor beside the grid and parks it in grid.temp, so tv.viewers and findViewer
+    // never see it however long you wait for them.
+    const attached = await page.waitForFunction(() => {
+      const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
+      return !!tv.grid?.temp?.['__dendrogram_neighbor_temp__'];
+    }, null, {timeout: 120_000}).then(() => true).catch(() => false);
+    expect(attached,
+      'Dendrogram did not attach to the grid once its Settings toggle was turned ON').toBe(true);
   });
 
   await softStep('Scenario 2 (steps 1-2): open Settings dialog, confirm Viewers-pane structure', async () => {

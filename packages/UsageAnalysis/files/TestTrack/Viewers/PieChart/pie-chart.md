@@ -6,7 +6,7 @@ priority: p2
 realizes_atlas:
   - piechart.int.in-viewer-column-selector-reconfigures-pie
   - piechart.int.mouseover-row-group-cross-highlight
-realizes: []
+realizes: [viewers.pie-chart]
 realized_as:
   - pie-chart-spec.ts
 related_bugs: []

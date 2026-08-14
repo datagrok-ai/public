@@ -1,21 +1,9 @@
-/** Curated, hand-written plain-language summaries for the functions a scientist
- *  actually chains, plus Flow's built-in node types — the data behind the
- *  heuristic node/flow summaries (U12 "the flow documents itself").
- *
- *  Coverage was chosen empirically from the live catalog (800 registered funcs:
- *  287 core, 122 Chem, 48 Bio, …) — see the retired summary-diag suite. Anything
- *  not listed here falls back to a humanized name in `summary-generator.ts`, so
- *  this map only needs the high-traffic functions to lift the average.
- *
- *  Keys are the **bare** DG function name, lower-cased (the generator strips any
- *  `Package:` prefix and lower-cases before lookup). Built-ins are keyed by their
- *  registered node type name. */
+/** Curated plain-language summaries. Keys: bare DG function name, lower-cased;
+ *  built-ins by registered node type name. Anything missing falls back to a humanized name. */
 
 import {FlowNode} from '../rete/scheme';
 
 export type SummaryTemplate = (node: FlowNode) => string;
-
-// ---------- small formatters (shared with templates) ----------
 
 export const str = (v: unknown): string => (v == null ? '' : String(v)).trim();
 export const truncate = (s: string, n = 44): string => (s.length > n ? s.slice(0, n - 1) + '…' : s);
@@ -27,7 +15,6 @@ export const basename = (p: unknown): string => {
 export const iv = (node: FlowNode, key: string): unknown =>
   (node.inputValues as Record<string, unknown> | undefined)?.[key];
 export const ivs = (node: FlowNode, key: string): string => str(iv(node, key));
-/** A node property (paramName, outputType, …). */
 export const prop = (node: FlowNode, key: string): string =>
   str((node.properties as Record<string, unknown> | undefined)?.[key]);
 
@@ -36,8 +23,6 @@ function enabledFlags(node: FlowNode, flags: Array<[string, string]>): string {
   const on = flags.filter(([k]) => iv(node, k) === true || iv(node, k) === 'true').map(([, label]) => label);
   return on.join(', ');
 }
-
-// ---------- curated function summaries (bare name, lower-cased) ----------
 
 export const CURATED_FUNC_SUMMARIES: Record<string, SummaryTemplate> = {
   // --- data sources (core) ---
@@ -163,8 +148,6 @@ export const CURATED_FUNC_SUMMARIES: Record<string, SummaryTemplate> = {
   'splittomonomerstopmenu': () => 'Splits sequences into monomers',
   'importfasta': () => 'Opens a FASTA file',
 };
-
-// ---------- built-in node summaries (keyed by registered type name) ----------
 
 export const BUILTIN_SUMMARIES: Record<string, SummaryTemplate> = {
   'Utilities/Select Column': (n) => `Picks column ${prop(n, 'columnName') || ivs(n, 'columnName') || ''}`.trim(),

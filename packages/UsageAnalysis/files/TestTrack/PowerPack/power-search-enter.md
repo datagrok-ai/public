@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [powerpack.cp.power-search-dispatch, powerpack.int.welcome-view-power-search]
-realizes: []
+realizes: [powerpack.search.power-pack, powerpack.view.welcome]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Powerpack/power-search-enter.md
 migration_date: 2026-05-23

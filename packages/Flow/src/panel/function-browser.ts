@@ -1,12 +1,17 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncInfo, getRegisteredFuncs, isWorkflowFunc, VIEWER_NODE_TYPES} from '../rete/node-factory';
+import {
+  FuncInfo, getRegisteredFuncs, isWorkflowFunc, ensureFuncNodeType, loadQueryFuncs, VIEWER_NODE_TYPES,
+} from '../rete/node-factory';
+import {BUILTIN_SECTIONS} from '../rete/builtin-catalog';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
+import {SpacePicker} from '../ui/space-picker';
 import {categorizeBySignature, domainCategory} from '../types/type-map';
+import {getFavorites, isFavorite, toggleFavorite, onFavoritesChanged} from './favorites';
+import {supportedUploadExtensions} from '../utils/uploaded-files';
 
-/** Whether a function's output is a widget (→ the Widgets pane, not a category). */
 export function funcOutputsWidget(f: FuncInfo): boolean {
   try {
     return f.func.outputs.some((o) => String(o.propertyType) === 'widget');
@@ -17,9 +22,7 @@ export function funcOutputsWidget(f: FuncInfo): boolean {
 
 export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
 
-/** The task-oriented categories, in the order a scientist meets a pipeline:
- *  get data in → combine → reshape → derive columns → compute values →
- *  visualize → everything else. Used both to bucket and to order the tree. */
+/** Task categories in pipeline order — used both to bucket and to order the tree. */
 export const FUNC_CATEGORIES = [
   'Data Sources',
   'Workflows',
@@ -34,24 +37,7 @@ export const FUNC_CATEGORIES = [
 ] as const;
 export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
 
-/** Bucket a function by **what it does**, derived from its input/output
- *  signature (and role for viewers) — delegates to the shared
- *  `categorizeBySignature` (the same logic that colors node title bars). The
- *  key distinctions, validated against the live catalog:
- *  - **Data Sources** produce a table from *no* table input (OpenFile, DB
- *    queries, generators). A join is NOT a data source — it consumes tables.
- *  - **Combine Tables** take ≥2 tables (join / union / link / react).
- *  - **Transform Tables** take exactly one table and return a table or mutate
- *    it in place (filter, aggregate, pivot, sort, …).
- *  - **Column Operations** emit a column / column list (AddNewColumn, descriptors).
- *  - **Compute Values** emit a scalar (statistics, math, text, predicates).
- *  - **Visualize** emit a viewer / view / widget / graphics.
- *  - **Cheminformatics** / **Bioinformatics** — grouped by source package
- *    (domain wins over the signature category), so a scientist finds all
- *    chem/bio steps together regardless of what they do.
- *  - **Workflows** — saved flows (`DG.Script`, language `flow`); checked
- *    before everything else since their signature reads as a data source.
- *  - **Other** — expression/filter builders and dynamic helpers. */
+/** Bucket a function by what it does — domain package wins over the signature category. */
 export function categorizeFunc(func: DG.Func, role: string | null, packageName?: string): FuncCategory {
   if (isWorkflowFunc(func)) return 'Workflows';
   const inputTypes = func.inputs.map((i) => String(i.propertyType));
@@ -63,17 +49,13 @@ export function categorizeFunc(func: DG.Func, role: string | null, packageName?:
     role) as FuncCategory;
 }
 
-/** For each domain section, the flagship package whose functions lead the list
- *  (the rest of that domain's packages follow). */
+/** Flagship package whose functions lead each domain section. */
 export const DOMAIN_PRIMARY_PACKAGE: Record<string, string> = {
   Cheminformatics: 'Chem',
   Bioinformatics: 'Bio',
 };
 
-/** The "most-used" operations a scientist reaches for first inside a domain
- *  section — matched as lowercased substrings against the function name (lower
- *  index = higher up). Everything unlisted sorts after these, alphabetically —
- *  so descriptors / properties / similarity lead each domain list. */
+/** Lowercased substring matches against the function name; lower index sorts higher, unlisted last. */
 export const DOMAIN_PRIORITY_KEYWORDS: Record<string, string[]> = {
   Cheminformatics: [
     'descriptor', 'propert', 'fingerprint', 'similar', 'substructure',
@@ -86,10 +68,6 @@ export const DOMAIN_PRIORITY_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
-/** Order a domain section's items: flagship-package functions first (Chem under
- *  Cheminformatics, Bio under Bioinformatics), then the rest; within each group
- *  the curated "most-used" operations (descriptors, properties, …) lead, then
- *  alphabetical by package, then by display name. Pure — returns a new array. */
 export function orderDomainSection(items: FuncInfo[], category: string): FuncInfo[] {
   const primary = DOMAIN_PRIMARY_PACKAGE[category];
   const keywords = DOMAIN_PRIORITY_KEYWORDS[category] ?? [];
@@ -111,45 +89,49 @@ export function orderDomainSection(items: FuncInfo[], category: string): FuncInf
   });
 }
 
-/** MIME-ish key used to carry a node type name through HTML5 drag/drop.
- *  The canvas drop handler reads this and adds the corresponding node at
- *  the drop point. */
+/** Drag-payload key carrying a node type name through HTML5 drag/drop. */
 export const FF_DRAG_MIME = 'application/x-funcflow-node';
 
 export interface FunctionBrowserCallbacks {
   onFunctionDoubleClick: (funcInfo: FuncInfo) => void;
   onBuiltinNodeDoubleClick: (nodeTypeName: string) => void;
-  /** Double-click (or Enter) on a file in the Files tree → add an OpenFile node. */
   onFileDoubleClick: (file: DG.FileInfo) => void;
+  onLocalFilesPicked: (files: File[]) => void;
 }
 
-/** Connection display name for a query func, used to group queries in the
- *  Queries pane (`friendlyName` falls back to `name`). */
+/** Queries-pane grouping key; empty when the query carries no connection (such queries are skipped). */
 export function queryConnectionName(f: FuncInfo): string {
   if (!(f.func instanceof DG.DataQuery)) return '';
   try {
     const conn = (f.func as DG.DataQuery).connection as DG.DataConnection | null;
-    return (conn?.friendlyName ?? conn?.name ?? 'Other') || 'Other';
+    return conn ? ((conn.friendlyName ?? conn.name) || '') : '';
   } catch {
-    return 'Other';
+    return '';
   }
 }
 
-/** Persisted UI state for the browser (the group-by mode). Section
- *  expand/collapse state is NOT kept here — the platform accordion
- *  (`ui.accordion(key)`) persists it itself in `localStorage['Accordion:<key>']`,
- *  keyed by pane name. */
+/** Only the group-by mode — pane expand state is persisted by the keyed accordion itself. */
 interface BrowserState {
   groupBy: GroupByMode;
 }
 const LS_KEY = 'funcflow.browser.v1';
-/** Persistence key of the toolbox accordion; the nested per-connection
- *  accordion inside the Queries pane uses `<key>.queries`. */
+/** Persistence key of the toolbox accordion; the Queries pane nests `<key>.queries`. */
 export const TOOLBOX_ACCORDION_KEY = 'funcflow.toolbox';
+/** Persistence key of the top tab strip — DG.TabControl remembers the selected tab itself. */
+export const TOOLBOX_TABS_KEY = 'funcflow.toolbox.tab';
+export const TOOLBOX_TABS = ['Files', 'Spaces', 'Queries', 'Workflows', 'Favorites'] as const;
+
+/** Same glyphs the platform Browse tree uses for these concepts (browse_panel_tree.dart). */
+export const TOOLBOX_TAB_ICONS: Record<(typeof TOOLBOX_TABS)[number], string> = {
+  'Files': 'folder',
+  'Spaces': 'brackets-curly',
+  'Queries': 'database',
+  'Workflows': 'sitemap',
+  'Favorites': 'star',
+};
 const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
 
-/** Case- AND whitespace-insensitive substring match — so "openfile" matches
- *  "Open File" and "table output" matches "TableOutput". */
+/** Case- and whitespace-insensitive substring match. */
 export function nameMatchesQuery(text: string, query: string): boolean {
   if (!query) return true;
   const t = (text || '').toLowerCase();
@@ -157,10 +139,6 @@ export function nameMatchesQuery(text: string, query: string): boolean {
   return t.includes(q) || t.replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
 }
 
-/** Whether a function matches a search query. Matches the display name AND the
- *  raw function name / friendlyName — the toolbox shows the friendly name (e.g.
- *  "Open File") but users search by the name they know (e.g. "OpenFile"), and
- *  vice versa — all whitespace-insensitive; plus description, tags, role, pkg. */
 export function funcMatchesSearch(f: FuncInfo, query: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();
@@ -173,32 +151,76 @@ export function funcMatchesSearch(f: FuncInfo, query: string): boolean {
     f.packageName.toLowerCase().includes(q);
 }
 
-/** Left sidebar: searchable, groupable function catalog */
+const GROUP_BY_LABELS: Record<GroupByMode, string> = {
+  category: 'what it does',
+  role: 'role',
+  tags: 'tags',
+  package: 'package',
+};
+
+const SECTION_ICONS: Record<string, string> = {
+  'Cheminformatics': 'flask',
+  'Bioinformatics': 'dna',
+  'Data Sources': 'database',
+  'Combine Tables': 'layer-group',
+  'Transform Tables': 'random',
+  'Column Operations': 'columns',
+  'Compute Values': 'calculator',
+  'Visualize': 'chart-bar',
+  'Other': 'ellipsis-h',
+  'Viewers': 'chart-pie',
+  'Widgets': 'puzzle-piece',
+  'Inputs': 'sign-in-alt',
+  'Outputs': 'sign-out-alt',
+  'Constants': 'hashtag',
+  'Utilities': 'wrench',
+  'Debug': 'bug',
+};
+
+/** `name` is a bare FA5 name (light weight) or a full `fas fa-…` override. */
+function sectionIcon(name: string): HTMLElement {
+  const i = document.createElement('i');
+  const cls = name.includes(' ') ? name : `fal fa-${name}`;
+  i.className = `grok-icon ${cls} funcflow-section-icon`;
+  return i;
+}
+
 export class FunctionBrowser {
   root: HTMLElement;
   private searchInput!: HTMLInputElement;
-  private groupBySelect!: HTMLSelectElement;
+  private groupByBtn!: HTMLElement;
   private treeContainer!: HTMLElement;
   private groupBy: GroupByMode = 'category';
-  /** The toolbox accordion, rebuilt on every render. A keyed `ui.accordion`
-   *  restores pane states from localStorage at construction and persists them
-   *  on header clicks — no manual bookkeeping. Exposed for tests. */
+  /** Rebuilt on every render; a keyed accordion persists pane states itself. */
   accordion: DG.Accordion | null = null;
-  /** The nested per-connection accordion inside the Queries pane (built lazily
-   *  when that pane first expands). Exposed for tests. */
   queriesAccordion: DG.Accordion | null = null;
   private callbacks: FunctionBrowserCallbacks;
-  /** The Files tree (KNIME-style file browser). Built lazily once and reused
-   *  across renders so its expanded state and scroll position survive a search. */
   private filesTreeRoot?: HTMLElement;
+  topTabs: DG.TabControl | null = null;
+  private queriesTabContent!: HTMLElement;
+  private workflowsTabContent!: HTMLElement;
+  private favoritesTabContent!: HTMLElement;
+  private spacesTabContent!: HTMLElement;
+  spacePicker: SpacePicker | null = null;
+  private favoritesUnsub: (() => void) | null = null;
+  private queryFuncs: FuncInfo[] | null = null;
+  private queryFuncsRequested = false;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
     this.callbacks = callbacks;
     this.loadState();
     this.root = this.buildUI();
+    // Stars update in place — no full re-render, so tree scroll positions survive.
+    this.favoritesUnsub = onFavoritesChanged(() => {
+      this.syncStars();
+      this.renderFavoritesTab();
+    });
   }
 
-  // ---------- persistence (localStorage) ----------
+  destroy(): void {
+    this.favoritesUnsub?.();
+    this.favoritesUnsub = null;
+  }
 
   private loadState(): void {
     try {
@@ -217,16 +239,13 @@ export class FunctionBrowser {
   }
 
   private buildUI(): HTMLElement {
-    // Search bar
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'text';
-    this.searchInput.placeholder = 'Search functions...';
+    this.searchInput.placeholder = 'Search functions, queries, flows…';
     this.searchInput.className = 'funcflow-search-input';
     setTid(this.searchInput, 'browser-search');
     this.searchInput.addEventListener('input', () => this.render());
 
-    // Clear (✕) affordance at the right edge of the search box — shown only
-    // while there's text to clear.
     const clearBtn = document.createElement('span');
     clearBtn.className = 'funcflow-search-clear';
     clearBtn.innerHTML = '&times;';
@@ -243,57 +262,147 @@ export class FunctionBrowser {
     syncClear();
     const searchWrap = ui.div([this.searchInput, clearBtn], 'funcflow-search-wrap');
 
-    // Group by selector
-    this.groupBySelect = document.createElement('select');
-    this.groupBySelect.className = 'funcflow-groupby-select';
-    setTid(this.groupBySelect, 'browser-groupby');
-    const groupByLabels: Record<GroupByMode, string> = {
-      category: 'what it does',
-      role: 'role',
-      tags: 'tags',
-      package: 'package',
-    };
-    for (const opt of Object.keys(groupByLabels) as GroupByMode[]) {
-      const option = document.createElement('option');
-      option.value = opt;
-      option.textContent = `Group by: ${groupByLabels[opt]}`;
-      this.groupBySelect.appendChild(option);
-    }
-    this.groupBySelect.value = this.groupBy; // restore persisted mode
-    this.groupBySelect.addEventListener('change', () => {
-      this.groupBy = this.groupBySelect.value as GroupByMode;
-      this.saveState();
-      this.render();
+    this.groupByBtn = setTid(ui.div([], 'funcflow-groupby-btn'), 'browser-groupby');
+    this.syncGroupByLabel();
+    ui.tooltip.bind(this.groupByBtn, 'How the function list below is organized');
+    this.groupByBtn.addEventListener('click', () => {
+      DG.Menu.popup()
+        .items(Object.values(GROUP_BY_LABELS), (label) => {
+          const mode = (Object.keys(GROUP_BY_LABELS) as GroupByMode[])
+            .find((k) => GROUP_BY_LABELS[k] === label)!;
+          this.setGroupBy(mode);
+        }, {radioGroup: 'ff-groupby', isChecked: (label) => GROUP_BY_LABELS[this.groupBy] === label})
+        .show();
     });
+    const zoneLabel = ui.div([], 'funcflow-zone-label');
+    zoneLabel.textContent = 'Functions';
+    const catalogHeader = setTid(
+      ui.div([zoneLabel, this.groupByBtn], 'funcflow-catalog-header'), 'browser-catalog-header');
 
     this.treeContainer = setTid(ui.div([], 'funcflow-tree-container'), 'browser-tree');
 
     const container = ui.divV([
       searchWrap,
-      this.groupBySelect,
+      this.buildTopTabs(),
+      catalogHeader,
       this.treeContainer,
     ], 'funcflow-browser');
 
     return setTid(container, 'browser');
   }
 
-  /** Domain sections floated to the very top of the function list (right after
-   *  the Queries pane) — the science a chemist/biologist reaches for first. */
+  setGroupBy(mode: GroupByMode): void {
+    this.groupBy = mode;
+    this.saveState();
+    this.syncGroupByLabel();
+    this.render();
+  }
+
+  private syncGroupByLabel(): void {
+    this.groupByBtn.textContent = `by: ${GROUP_BY_LABELS[this.groupBy]} ▾`;
+  }
+
+  private buildTopTabs(): HTMLElement {
+    const tabs = DG.TabControl.create(false, TOOLBOX_TABS_KEY);
+    this.topTabs = tabs;
+    this.queriesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-queries');
+    this.workflowsTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-workflows');
+    this.favoritesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-favorites');
+    this.spacesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-spaces');
+    const filesContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-files');
+
+    const panes: Array<{name: (typeof TOOLBOX_TABS)[number]; content: () => HTMLElement; tip: string}> = [
+      {name: 'Files', tip: 'Files — browse data files. Double-click or drag a file onto the canvas to load it.',
+        content: () => {
+          if (filesContent.childElementCount === 0) {
+            const text = document.createElement('span');
+            text.className = 'funcflow-tab-hint-text';
+            text.textContent = 'Double-click or drag a file to load it — or open a local one:';
+            const hint = ui.div([text, this.buildUploadButton()], 'funcflow-tab-hint');
+            filesContent.appendChild(hint);
+          }
+          filesContent.appendChild(this.getFilesTreeRoot());
+          return filesContent;
+        }},
+      {name: 'Spaces', tip: 'Spaces — shared hierarchical folders. Double-click a flow, query, or file inside ' +
+        'a space to use it here.',
+        content: () => this.getSpacesTabContent()},
+      {name: 'Queries', tip: 'Queries — database queries, grouped by data connection. Double-click or drag to add.',
+        content: () => this.queriesTabContent},
+      {name: 'Workflows', tip: 'Workflows — saved flows, reusable as nodes in this flow. Double-click or drag to add.',
+        content: () => this.workflowsTabContent},
+      {name: 'Favorites', tip: 'Favorites — nodes you starred. Hover any node in the toolbox and click its ★ ' +
+        'to pin it here.',
+        content: () => this.favoritesTabContent},
+    ];
+    for (const p of panes) {
+      const pane = tabs.addPane(p.name, p.content);
+      setTid(pane.header, 'browser-tab', p.name);
+      pane.header.dataset.tab = p.name;
+      // The label span is kept so the search badge appended after it never clips.
+      const label = document.createElement('span');
+      label.className = 'funcflow-tab-label';
+      while (pane.header.firstChild) pane.header.firstChild.remove();
+      const icon = document.createElement('i');
+      icon.className = `grok-icon fal fa-${TOOLBOX_TAB_ICONS[p.name]} funcflow-tab-icon`;
+      label.appendChild(icon);
+      pane.header.appendChild(label);
+      pane.header.setAttribute('aria-label', p.name);
+      ui.tooltip.bind(pane.header, p.tip);
+    }
+
+    const host = ui.div([tabs.root], 'funcflow-top-tabs');
+    return setTid(host, 'browser-tabs');
+  }
+
+  /** Built once on first activation and reused so expanded spaces survive a search. */
+  private getSpacesTabContent(): HTMLElement {
+    if (this.spacesTabContent.childElementCount === 0) {
+      const hint = ui.div([], 'funcflow-tab-hint');
+      hint.textContent = 'Browse spaces — double-click or drag a flow, query, or file to add it.';
+      this.spacesTabContent.appendChild(hint);
+      const host = ui.div([ui.loader()]);
+      this.spacesTabContent.appendChild(host);
+      void SpacePicker.create({
+        showContent: true,
+        onEntityActivated: (e) => this.activateSpaceEntity(e),
+      }).then((picker) => {
+        this.spacePicker = picker;
+        host.replaceChildren(picker.root);
+      });
+    }
+    return this.spacesTabContent;
+  }
+
+  private activateSpaceEntity(e: DG.Entity): void {
+    if (e instanceof DG.FileInfo) {
+      if (e.isFile) this.callbacks.onFileDoubleClick(e);
+      return;
+    }
+    if (!(e instanceof DG.Func)) return;
+    const info = getRegisteredFuncs().find((f) => f.func.id === e.id);
+    if (info)
+      this.callbacks.onFunctionDoubleClick(info);
+    else
+      this.callbacks.onBuiltinNodeDoubleClick(ensureFuncNodeType(e));
+  }
+
+  showTab(name: (typeof TOOLBOX_TABS)[number]): void {
+    if (this.topTabs) this.topTabs.currentPane = this.topTabs.getPane(name);
+  }
+
   private static readonly DOMAIN_CATEGORIES = ['Cheminformatics', 'Bioinformatics'];
 
   render(): void {
+    this.root.dataset.searching = String(!!this.searchInput.value);
     this.treeContainer.innerHTML = '';
-    // The platform accordion: a keyed one restores/persists pane states itself.
-    // While a search is active every matching section is forced open — build an
-    // UNKEYED accordion then, so the forced states don't overwrite the user's.
+    // Search forces matching panes open — build an UNKEYED accordion then, so forced states never overwrite the user's.
     const acc = ui.accordion(this.searchInput.value ? null : TOOLBOX_ACCORDION_KEY);
     this.accordion = acc;
     this.queriesAccordion = null;
 
-    // DG function nodes — queries, widget-producers, and (already-excluded)
-    // viewer functions don't appear here; they live in their dedicated panes.
     const funcs = this.filterBySearch(getRegisteredFuncs()
-      .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f)));
+      .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f) && !isWorkflowFunc(f.func)));
     const grouped = this.groupFunctions(funcs);
     const renderCategory = (category: string): void => {
       const raw = grouped[category];
@@ -307,13 +416,6 @@ export class FunctionBrowser {
       }, {count: items.length});
     };
 
-    // Section order: Files, Queries, the Cheminformatics / Bioinformatics
-    // domain sections (the science a chemist/biologist reaches for first),
-    // the task categories (Data Sources → … → Compute Values), Viewers,
-    // Widgets, the building-block built-ins (Inputs / Outputs / Constants /
-    // Utilities), then the Other catch-all, and Debug last.
-    this.renderFilesSection(acc);
-    this.renderQueriesSection(acc);
     for (const domain of FunctionBrowser.DOMAIN_CATEGORIES) renderCategory(domain);
 
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped))
@@ -328,14 +430,48 @@ export class FunctionBrowser {
 
     acc.end();
     this.treeContainer.appendChild(acc.root);
+    this.renderTabs();
   }
 
-  /** Adds one toolbox section as an accordion pane. Content builds lazily on
-   *  first expand; on a keyed accordion the remembered state wins over the
-   *  `expanded` default. While a search is active the pane is forced open (the
-   *  accordion is unkeyed then, so nothing persists). Pane headers keep the
-   *  `data-section` attribute and `ff-browser-section-<title>` test id the
-   *  guide and tests address sections by. */
+  private renderTabs(): void {
+    this.renderQueriesTab();
+    this.renderWorkflowsTab();
+    this.renderFavoritesTab();
+    this.updateTabBadges();
+  }
+
+  private updateTabBadges(): void {
+    if (!this.topTabs) return;
+    const query = this.searchInput.value.toLowerCase();
+    const counts: Record<string, number> = {
+      'Queries': (this.queryFuncs ?? []).filter((f) => funcMatchesSearch(f, query)).length,
+      'Workflows': getRegisteredFuncs()
+        .filter((f) => isWorkflowFunc(f.func) && funcMatchesSearch(f, query)).length,
+      'Favorites': getFavorites().filter((e) => nameMatchesQuery(e.label, query)).length,
+    };
+    for (const name of Object.keys(counts)) {
+      let header: HTMLElement | null = null;
+      try {
+        header = this.topTabs.getPane(name)?.header ?? null;
+      } catch {/* pane missing — nothing to badge */}
+      if (!header) continue;
+      let badge = header.querySelector<HTMLElement>('.funcflow-tab-badge');
+      if (!query || counts[name] === 0) {
+        badge?.remove();
+        header.classList.toggle('funcflow-tab-dim', !!query && counts[name] === 0);
+        continue;
+      }
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'funcflow-tab-badge';
+        header.appendChild(badge);
+      }
+      badge.textContent = String(counts[name]);
+      header.classList.remove('funcflow-tab-dim');
+    }
+  }
+
+  /** One toolbox section pane; content builds lazily on first expand, and an active search forces it open. */
   private addSection(acc: DG.Accordion, title: string, getContent: () => HTMLElement, opts: {
     expanded?: boolean; count?: number; tooltip?: string; tidParts?: Array<string | number>;
   } = {}): DG.AccordionPane {
@@ -347,14 +483,13 @@ export class FunctionBrowser {
     if (header) {
       header.dataset.section = title;
       setTid(header, 'browser-section', title);
+      if (SECTION_ICONS[title]) header.insertBefore(sectionIcon(SECTION_ICONS[title]), header.firstChild);
       if (opts.tooltip) ui.tooltip.bind(header, opts.tooltip);
     }
     if (opts.tidParts) setTid(pane.root, ...opts.tidParts);
     return pane;
   }
 
-  /** In "what it does" mode, order groups by the curated task sequence
-   *  (Data Sources first); in every other mode fall back to alphabetical. */
   private orderGroupKeys(keys: string[]): string[] {
     if (this.groupBy !== 'category') return keys.sort();
     const idx = (k: string): number => {
@@ -364,8 +499,7 @@ export class FunctionBrowser {
     return keys.sort((a, b) => idx(a) - idx(b) || a.localeCompare(b));
   }
 
-  /** The KNIME-style Files browser — built once, reused across renders so its
-   *  expanded folders and scroll position survive a search keystroke. */
+  /** Built once and reused so expanded folders and scroll survive a search keystroke. */
   private getFilesTreeRoot(): HTMLElement {
     if (!this.filesTreeRoot) {
       const tree = getFilesBrowser(
@@ -373,43 +507,127 @@ export class FunctionBrowser {
         (f) => this.callbacks.onFileDoubleClick(f),                // dbl-click / Enter → OpenFile node
         'funcflow.files.v1');
       this.filesTreeRoot = tree.root;
+      // The tab pane owns the height now — drop the tree's standalone cap.
+      this.filesTreeRoot.style.maxHeight = '';
     }
     return this.filesTreeRoot;
   }
 
-  private renderFilesSection(acc: DG.Accordion): void {
-    this.addSection(acc, 'Files',
-      () => ui.div([this.getFilesTreeRoot()], 'funcflow-section-content'), {
-        expanded: true,
-        tooltip: 'Browse data files. Double-click or drag a file onto the canvas to load it.',
-        tidParts: ['browser-files'],
-      });
+  private buildUploadButton(): HTMLElement {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files ?? []);
+      if (files.length > 0) this.callbacks.onLocalFilesPicked(files);
+      input.value = ''; // re-picking the same file must fire change again
+    });
+    // input.click() bubbles back up to the chip — don't re-trigger the picker.
+    input.addEventListener('click', (ev) => ev.stopPropagation());
+    const icon = document.createElement('i');
+    icon.className = 'grok-icon fal fa-folder-open';
+    const btn = ui.div([icon, input], 'funcflow-upload-btn');
+    ui.tooltip.bind(btn, 'Open a local file — it becomes a node on the canvas ' +
+      'and is stored with the flow when you save.');
+    btn.addEventListener('click', () => {
+      // Resolved at click time so handlers from lazily-loaded packages count.
+      input.accept = supportedUploadExtensions().map((e) => `.${e}`).join(',');
+      input.click();
+    });
+    return setTid(btn, 'browser-upload');
   }
 
-  private renderQueriesSection(acc: DG.Accordion): void {
-    // Group every registered query by its connection (friendlyName ?? name).
-    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+  private static emptyNote(text: string): HTMLElement {
+    const el = ui.div([], 'funcflow-tab-empty');
+    el.textContent = text;
+    return el;
+  }
+
+  private renderQueriesTab(): void {
+    // The query list comes from the server (loadQueryFuncs) — the registry's DG.Func.find scan misses queries.
+    if (this.queryFuncs === null) {
+      this.queriesTabContent.innerHTML = '';
+      this.queriesAccordion = null;
+      this.queriesTabContent.appendChild(ui.loader());
+      if (!this.queryFuncsRequested) {
+        this.queryFuncsRequested = true;
+        loadQueryFuncs().catch((e) => {
+          console.warn('FuncFlow: query catalog load failed', e);
+          return [] as FuncInfo[];
+        }).then((funcs) => {
+          this.queryFuncs = funcs;
+          this.renderQueriesTab();
+          this.updateTabBadges();
+        });
+      }
+      return;
+    }
     const query = this.searchInput.value.toLowerCase();
-    const matching = query ? queries.filter((f) => funcMatchesSearch(f, query)) : queries;
-    if (matching.length === 0) return;
+    const matching = query ? this.queryFuncs.filter((f) => funcMatchesSearch(f, query)) : this.queryFuncs;
+    this.queriesTabContent.innerHTML = '';
+    this.queriesAccordion = null;
+    if (matching.length === 0) {
+      this.queriesTabContent.appendChild(FunctionBrowser.emptyNote(
+        query ? 'No queries match the search.' : 'No database queries available.'));
+      return;
+    }
 
     const byConn = new Map<string, FuncInfo[]>();
     for (const f of matching) {
       const conn = queryConnectionName(f);
+      if (!conn) continue; // no connection object — skipped by design
       let arr = byConn.get(conn);
       if (!arr) byConn.set(conn, arr = []);
       arr.push(f);
     }
-
-    this.addSection(acc, 'Queries', () => this.buildQueriesContent(byConn), {
-      count: matching.length,
-      tooltip: 'Database queries, grouped by data connection. Double-click or drag to add.',
-      tidParts: ['browser-queries'],
-    });
+    this.queriesTabContent.appendChild(this.buildQueriesContent(byConn));
   }
 
-  /** The Queries pane content: a nested accordion with one pane per connection
-   *  (its own persistence key — pane names are the connection names). */
+  private renderWorkflowsTab(): void {
+    const flows = getRegisteredFuncs().filter((f) => isWorkflowFunc(f.func));
+    const query = this.searchInput.value.toLowerCase();
+    const matching = query ? flows.filter((f) => funcMatchesSearch(f, query)) : flows;
+    matching.sort((a, b) => a.name.localeCompare(b.name));
+    this.workflowsTabContent.innerHTML = '';
+    if (matching.length === 0) {
+      this.workflowsTabContent.appendChild(FunctionBrowser.emptyNote(
+        query ? 'No workflows match the search.' :
+          'No saved flows yet. Save a flow and it appears here, ready to reuse as a node.'));
+      return;
+    }
+    const content = ui.div([], 'funcflow-section-content');
+    for (const info of matching) content.appendChild(this.createFuncItem(info));
+    this.workflowsTabContent.appendChild(content);
+  }
+
+  private renderFavoritesTab(): void {
+    const query = this.searchInput.value.toLowerCase();
+    const favs = getFavorites().filter((e) => nameMatchesQuery(e.label, query));
+    this.favoritesTabContent.innerHTML = '';
+    if (favs.length === 0) {
+      this.favoritesTabContent.appendChild(FunctionBrowser.emptyNote(
+        query ? 'No favorites match the search.' :
+          'Nothing starred yet. Hover any node in the toolbox and click its ★ to pin it here.'));
+      return;
+    }
+    const content = ui.div([], 'funcflow-section-content');
+    for (const e of favs) {
+      const info = getRegisteredFuncs().find((f) => f.nodeTypeName === e.type);
+      const item = this.makeToolboxItem(e.label, e.type);
+      item.dataset.testid = tid('browser-fav-item', e.type);
+      if (info) item.dataset.func = info.func.name;
+      ui.tooltip.bind(item, info?.func.description || `${e.label}. Double-click or drag to add.`);
+      item.addEventListener('dblclick', () => {
+        if (info) this.callbacks.onFunctionDoubleClick(info);
+        else this.callbacks.onBuiltinNodeDoubleClick(e.type);
+      });
+      this.makeItemDraggable(item, e.type);
+      content.appendChild(item);
+    }
+    this.favoritesTabContent.appendChild(content);
+  }
+
   private buildQueriesContent(byConn: Map<string, FuncInfo[]>): HTMLElement {
     const hasSearch = !!this.searchInput.value;
     const inner = ui.accordion(hasSearch ? null : `${TOOLBOX_ACCORDION_KEY}.queries`);
@@ -427,26 +645,29 @@ export class FunctionBrowser {
       pane.root.dataset.queryConn = conn;
       setTid(pane.root, 'browser-query-conn', conn);
       const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
-      if (header) ui.tooltip.bind(header, `Queries from the “${conn}” connection`);
+      if (header) {
+        header.insertBefore(sectionIcon('database'), header.firstChild);
+        ui.tooltip.bind(header, `Queries from the “${conn}” connection`);
+      }
     }
     inner.end();
     return ui.div([inner.root], 'funcflow-section-content funcflow-subsections');
   }
 
-  /** The Viewers pane — manually-built viewer nodes (core charts first, then
-   *  discovered package viewers). Each adds a `Viewers/<label>` node. */
   private renderViewersSection(acc: DG.Accordion): void {
     const query = this.searchInput.value.toLowerCase();
-    const types = query ? VIEWER_NODE_TYPES.filter((v) => nameMatchesQuery(v.label, query)) : VIEWER_NODE_TYPES;
+    const synonymHit = query.length >= 3 &&
+      ['chart', 'charts', 'plot', 'plots', 'graph', 'graphs', 'viewer', 'viewers']
+        .some((w) => w.startsWith(query) || query.startsWith(w));
+    const types = query && !synonymHit ?
+      VIEWER_NODE_TYPES.filter((v) => nameMatchesQuery(v.label, query)) : VIEWER_NODE_TYPES;
     if (types.length === 0) return;
 
     this.addSection(acc, 'Viewers', () => {
       const content = ui.div([], 'funcflow-section-content');
       for (const vt of types) {
-        const item = ui.div([], 'funcflow-func-item');
-        item.textContent = vt.label;
+        const item = this.makeToolboxItem(vt.label, vt.nodeTypeName);
         item.dataset.testid = tid('browser-item', vt.nodeTypeName);
-        item.dataset.nodeTypeName = vt.nodeTypeName;
         ui.tooltip.bind(item, `Add a ${vt.label} viewer. Wire a table in, then run. Double-click or drag.`);
         item.addEventListener('dblclick', () => this.callbacks.onBuiltinNodeDoubleClick(vt.nodeTypeName));
         this.makeItemDraggable(item, vt.nodeTypeName);
@@ -460,8 +681,6 @@ export class FunctionBrowser {
     });
   }
 
-  /** The Widgets pane — functions that produce a widget (info panels, search
-   *  widgets, …), kept out of the categories. */
   private renderWidgetsSection(acc: DG.Accordion): void {
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
     const query = this.searchInput.value.toLowerCase();
@@ -481,66 +700,10 @@ export class FunctionBrowser {
     });
   }
 
-  /** Renders the built-in node sections named in `titles` (lets the caller
-   *  interleave them with other panes — Debug goes last in the toolbox). */
   private renderBuiltinNodes(acc: DG.Accordion, titles: string[]): void {
     const query = this.searchInput.value.toLowerCase();
 
-    // Input nodes
-    const inputNodes = [
-      {name: 'Table Input', type: 'Inputs/Table Input', desc: 'Dataframe input parameter'},
-      {name: 'Column Input', type: 'Inputs/Column Input', desc: 'Single column from a table'},
-      {name: 'Column List Input', type: 'Inputs/Column List Input', desc: 'Multiple columns from a table'},
-      {name: 'String Input', type: 'Inputs/String Input', desc: 'Text input parameter'},
-      {name: 'Number Input', type: 'Inputs/Number Input', desc: 'Floating-point number input'},
-      {name: 'Int Input', type: 'Inputs/Int Input', desc: 'Integer number input'},
-      {name: 'Boolean Input', type: 'Inputs/Boolean Input', desc: 'True/false toggle input'},
-      {name: 'DateTime Input', type: 'Inputs/DateTime Input', desc: 'Date and time input'},
-      {name: 'File Input', type: 'Inputs/File Input', desc: 'File upload input'},
-      {name: 'Map Input', type: 'Inputs/Map Input', desc: 'Key-value map input'},
-      {name: 'Dynamic Input', type: 'Inputs/Dynamic Input', desc: 'Dynamically-typed input'},
-      {name: 'String List Input', type: 'Inputs/String List Input', desc: 'List of strings input'},
-      {name: 'Blob Input', type: 'Inputs/Blob Input', desc: 'Binary data input'},
-    ];
-    const outputNodes = [
-      {name: 'Table Output', type: 'Outputs/Table Output', desc: 'Marks a dataframe as script output'},
-      {name: 'Value Output', type: 'Outputs/Value Output', desc: 'Marks a value as script output (configurable type)'},
-    ];
-    const utilityNodes = [
-      {name: 'Select Column', type: 'Utilities/Select Column', desc: 'Gets a column from a table by name'},
-      {name: 'Select Columns', type: 'Utilities/Select Columns', desc: 'Gets multiple columns by names (comma-separated)'},
-      {name: 'Select Table', type: 'Utilities/Select Table', desc: 'Gets an open table by name via grok.shell.tableByName()'},
-      {name: 'Add Table View', type: 'Utilities/Add Table View', desc: 'Opens a table in a new view via grok.shell.addTableView()'},
-      {name: 'Log', type: 'Utilities/Log', desc: 'Logs a value to the browser console'},
-      {name: 'Info', type: 'Utilities/Info', desc: 'Shows an info balloon via grok.shell.info()'},
-      {name: 'Warning', type: 'Utilities/Warning', desc: 'Shows a warning balloon via grok.shell.warning()'},
-      {name: 'ToString', type: 'Utilities/ToString', desc: 'Converts any value to a string'},
-      {name: 'FromJSON', type: 'Utilities/FromJSON', desc: 'Parses a JSON string into an object'},
-      {name: 'ToJSON', type: 'Utilities/ToJSON', desc: 'Serializes a value to a JSON string'},
-    ];
-    const constantNodes = [
-      {name: 'String', type: 'Constants/String', desc: 'A constant text value'},
-      {name: 'Int', type: 'Constants/Int', desc: 'A constant integer value'},
-      {name: 'Double', type: 'Constants/Double', desc: 'A constant floating-point value'},
-      {name: 'Boolean', type: 'Constants/Boolean', desc: 'A constant true/false value'},
-      {name: 'List', type: 'Constants/List', desc: 'A constant list of comma-separated values'},
-    ];
-    const debugNodes = [
-      {name: 'Breakpoint', type: 'Debug/Breakpoint', desc: 'Pauses execution in debug mode until Continue is clicked'},
-    ];
-
-    // All built-in sections start collapsed: they are building-blocks a scientist
-    // reaches for deliberately, not the first thing to scan. The data-function
-    // categories below (Data Sources first) are what's expanded-ready instead.
-    const sections: {title: string; nodes: {name: string; type: string; desc?: string}[]; tip?: string}[] = [
-      {title: 'Inputs', nodes: inputNodes, tip: 'Script input parameters (become //input: lines)'},
-      {title: 'Outputs', nodes: outputNodes, tip: 'Script output parameters (become //output: lines)'},
-      {title: 'Constants', nodes: constantNodes, tip: 'Constant literal values'},
-      {title: 'Utilities', nodes: utilityNodes, tip: 'Helper operations (logging, type conversion, etc.)'},
-      {title: 'Debug', nodes: debugNodes, tip: 'Debugging and execution control nodes'},
-    ];
-
-    for (const section of sections.filter((s) => titles.includes(s.title))) {
+    for (const section of BUILTIN_SECTIONS.filter((s) => titles.includes(s.title))) {
       const filtered = query ?
         section.nodes.filter((n) => nameMatchesQuery(n.name, query)) :
         section.nodes;
@@ -549,10 +712,8 @@ export class FunctionBrowser {
       this.addSection(acc, section.title, () => {
         const content = ui.div([], 'funcflow-section-content');
         for (const node of filtered) {
-          const item = ui.div([], 'funcflow-func-item');
-          item.textContent = node.name;
+          const item = this.makeToolboxItem(node.name, node.type); // type e.g. "Inputs/Table Input"
           item.dataset.testid = tid('browser-item', node.type);
-          item.dataset.nodeTypeName = node.type; // e.g. "Inputs/Table Input"
           const tip = node.desc ?
             `${node.desc}. Double-click or drag to add` :
             `Double-click or drag to add ${node.name}`;
@@ -568,14 +729,39 @@ export class FunctionBrowser {
     }
   }
 
-  /** One draggable, double-clickable catalog row for a DG function. Shared by
-   *  the category sections and the Queries pane. */
+  private static applyStarState(star: HTMLElement, fav: boolean): void {
+    star.className = `funcflow-item-star grok-icon ${fav ? 'fas' : 'fal'} fa-star` +
+      (fav ? ' funcflow-item-star-active' : '');
+  }
+
+  private makeToolboxItem(label: string, typeName: string): HTMLElement {
+    const labelEl = ui.div([], 'funcflow-item-label');
+    labelEl.textContent = label;
+    const star = document.createElement('i');
+    FunctionBrowser.applyStarState(star, isFavorite(typeName));
+    ui.tooltip.bind(star, () => isFavorite(typeName) ? 'Remove from Favorites' : 'Add to Favorites');
+    star.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleFavorite({type: typeName, label});
+    });
+    star.addEventListener('dblclick', (ev) => ev.stopPropagation());
+    setTid(star, 'browser-item-star', typeName);
+    const item = ui.div([labelEl, star], 'funcflow-func-item');
+    item.dataset.nodeTypeName = typeName;
+    return item;
+  }
+
+  private syncStars(): void {
+    for (const item of Array.from(this.root.querySelectorAll<HTMLElement>('.funcflow-func-item[data-node-type-name]'))) {
+      const star = item.querySelector<HTMLElement>('.funcflow-item-star');
+      if (star) FunctionBrowser.applyStarState(star, isFavorite(item.dataset.nodeTypeName!));
+    }
+  }
+
   private createFuncItem(info: FuncInfo): HTMLElement {
-    const item = ui.div([], 'funcflow-func-item');
-    item.textContent = info.name;
+    const item = this.makeToolboxItem(info.name, info.nodeTypeName);
     item.dataset.testid = tid('browser-item', info.nodeTypeName);
-    item.dataset.nodeTypeName = info.nodeTypeName;     // registered factory name
-    item.dataset.func = info.func.name;                // the DG function it adds
+    item.dataset.func = info.func.name;
     if (info.packageName) item.dataset.package = info.packageName;
     let tip = info.func.description || info.name;
     if (info.packageName)
@@ -588,8 +774,6 @@ export class FunctionBrowser {
     return item;
   }
 
-  /** Wire HTML5 drag on a browser item so dropping it on the canvas creates
-   *  the matching node at the drop point. */
   private makeItemDraggable(item: HTMLElement, typeName: string): void {
     item.draggable = true;
     item.addEventListener('dragstart', (ev) => {
@@ -615,9 +799,7 @@ export class FunctionBrowser {
 
     for (const f of funcs) {
       let keys: string[];
-      // Saved flows get their own 'Workflows' section in EVERY grouping — their
-      // role/tags/package say nothing useful (a script from whatever package
-      // the user happened to save it in).
+      // Saved flows get their own 'Workflows' section in EVERY grouping — their role/tags/package say nothing useful.
       if (isWorkflowFunc(f.func))
         keys = ['Workflows'];
       else {

@@ -14,6 +14,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
+    "@datagrok-libraries/domain-ui": "../../libraries/domain-ui",
     "@datagrok-libraries/utils": "^4.6.14",
     "@datagrok-libraries/test": "^1.1.0",
     "cash-dom": "^8.1.1",
@@ -45,10 +46,10 @@
   "scripts": {
     "debug-js-api-tests": "webpack && grok publish localhost",
     "release-js-api-tests": "grok publish localhost --release",
-    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
+    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/domain-ui datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-api": "npm link datagrok-api",
-    "build-js-api-tests-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
+    "build-js-api-tests-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm --prefix ./../../libraries/domain-ui run build && npm run build",
     "build-js-api-tests": "webpack",
     "build": "grok api && grok check --soft && webpack",
     "test": "grok test",
@@ -66,8 +67,8 @@
     "release-js-api-tests-local": "webpack && grok publish localhost --release",
     "debug-js-api-tests-localhost": "grok publish localhost",
     "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release",
-    "start-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin",
-    "stress-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --concurrencyRange=10-100 --step=5"
+    "start-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --mode=functional",
+    "stress-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --mode=stress --concurrencyRange=10-100 --step=5"
   },
   "canEdit": [
     "Administrators"

@@ -1,5 +1,13 @@
 ---
 title: "Interactive modeling"
+description: Train classical ML models interactively with automatic model selection, tips, and comparison tools.
+keywords:
+  - interactive model training
+  - model autoselection
+  - hyperparameter tuning
+  - model comparison tool
+  - roc curve
+  - confusion matrix
 ---
 
 The predictive modeling toolkit allows an interactive visualization tool for the models. 

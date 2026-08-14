@@ -16,6 +16,7 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.OracleResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.AlterTable;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
@@ -42,6 +43,16 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "\"";
+        descriptor.supportsUpsert = true;
+        descriptor.supportsDdl = true; // emission-only in v1; supportsTransactionalDdl stays false — implicit DDL commit
+        descriptor.dgToNativeType = new HashMap<String, String>() {{
+            put("string", "varchar2(4000)"); // deliberate §3.3 deviation: CLOB breaks indexing/DISTINCT/GROUP BY
+            put("int", "number(10)");
+            put("bigint", "number(19)");
+            put("float", "binary_double");
+            put("bool", "number(1)");
+            put("datetime", "timestamp");
+        }};
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("long", Types.INT);
@@ -87,6 +98,56 @@ public class OracleDataProvider extends JdbcDataProvider {
                     "Use NCHAR semantics for all character data", new Prop()));
         }};
 
+    }
+
+    /** MERGE ... USING (SELECT ? AS col FROM dual) — one row per statement, addBatch'd by MutationRunner. */
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        validateUpsertColumns(m);
+        String selectCols = m.columns.stream().map((c) -> "? AS " + addBrackets(c)).collect(Collectors.joining(", "));
+        String on = m.matchKeys.stream().map((k) -> "t." + addBrackets(k) + " = src." + addBrackets(k))
+                .collect(Collectors.joining(" AND "));
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        StringBuilder sql = new StringBuilder("MERGE INTO ").append(mutationTableName(m)).append(" t USING (SELECT ")
+                .append(selectCols).append(" FROM dual) src ON (").append(on).append(")");
+        List<String> nonKey = upsertNonKeyColumns(m);
+        if (!nonKey.isEmpty())
+            sql.append(" WHEN MATCHED THEN UPDATE SET ").append(nonKey.stream()
+                    .map((c) -> "t." + addBrackets(c) + " = src." + addBrackets(c)).collect(Collectors.joining(", ")));
+        sql.append(" WHEN NOT MATCHED THEN INSERT (").append(colList).append(") VALUES (")
+                .append(m.columns.stream().map((c) -> "src." + addBrackets(c)).collect(Collectors.joining(", ")))
+                .append(")");
+        return sql.toString();
+    }
+
+    /** Oracle has no CREATE TABLE IF NOT EXISTS — a duplicate table surfaces as a db-error. */
+    @Override
+    protected boolean supportsCreateIfNotExists() {
+        return false;
+    }
+
+    /** number(1) has no true/false literals. */
+    @Override
+    protected String boolDdlLiteral(boolean value) {
+        return value ? "1" : "0";
+    }
+
+    /** Oracle ADD takes no COLUMN keyword. */
+    @Override
+    protected String alterAddColumnSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ADD " + columnDefinitionSql(m.column);
+    }
+
+    @Override
+    protected String alterChangeTypeSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType);
+    }
+
+    /** MODIFY toggles nullability without restating the type. */
+    @Override
+    protected String alterSetNullableSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName)
+                + (m.nullable ? " NULL" : " NOT NULL");
     }
 
     @Override

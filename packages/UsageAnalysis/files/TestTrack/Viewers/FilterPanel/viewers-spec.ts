@@ -4,7 +4,7 @@ import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
-const datasetPath = 'System:DemoFiles/SPGI.csv';
+const datasetPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Filter Panel — Viewers interaction', async ({page}) => {
   test.setTimeout(600_000);

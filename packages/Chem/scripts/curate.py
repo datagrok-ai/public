@@ -4,14 +4,14 @@
 #language: python
 #sample: chem/chem_standards.csv
 #meta.domain: chem
-#input: dataframe data [Input data table]
-#input: column molecules {type:categorical; semType: Molecule}
-#input: bool kekulization = false
-#input: bool normalization = false
-#input: bool reionization = false
-#input: bool neutralization = false
-#input: bool tautomerization = false
-#input: bool mainFragment = false
+#input: dataframe data {nullable: false} [Input data table]
+#input: column molecules {type:categorical; semType: Molecule; nullable: false}
+#input: bool kekulization = false [Write the result as a Kekule SMILES instead of an aromatic one]
+#input: bool normalization = true [Apply RDKit functional-group normalization]
+#input: bool reionization = true [Move protons to the strongest acidic sites]
+#input: bool neutralization = true [Neutralize formal charges where possible]
+#input: bool tautomerization = false [Canonicalize the tautomer — slow, and opinionated]
+#input: bool mainFragment = true [Keep only the largest fragment, dropping salts and solvents]
 #output: dataframe curated {action:join(data); semType: Molecule} [Molecules, in SMILES format]
 
 import numpy as np

@@ -1,5 +1,15 @@
 # Flow function-catalog snapshot (empirical)
 
+> **Historical note (2026-07-20):** the deny pipeline this document describes
+> (structural rules + role/tag rules + the `EXCLUDED_FUNC_NQNAMES` denylist) has
+> been **replaced by an explicit allowlist** —
+> [`src/rete/included-funcs.ts`](../src/rete/included-funcs.ts), frozen from the
+> exact catalog this pipeline produced on a live server, plus a
+> `meta.includeInFlow: true` opt-in for everything else (saved flows and
+> queries always included by kind; `includeInFlow: false` still opts out). The
+> rules below are kept as the rationale for *why* each function is or isn't on
+> the list.
+
 Captured from the live `localhost` catalog with a one-off diagnostic test that
 dumped every registered function's `nqName`/role/tags/input-output signature and
 its computed category (since retired). The behaviour it established is locked in

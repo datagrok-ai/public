@@ -15,7 +15,8 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {SoftmaxClassifier} from '../softmax-classifier';
-import {getLinearRegressionParams, getPredictionByLinearRegression} from '../regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression,
+  packLinearRegressionModel, unpackLinearRegressionModel} from '../regression';
 import {PlsModel} from '../pls/pls-ml';
 import {accuracy, madError} from './utils';
 
@@ -79,13 +80,26 @@ async function linregRoundTrip(target: DG.Column, features: DG.ColumnList, r2Flo
   const params = await getLinearRegressionParams(features, target);
   const before = getPredictionByLinearRegression(features, params);
 
-  // Pack/unpack exactly as train/applyLinearRegression do, through a copied
-  // byte buffer so it is a genuine serialization round-trip.
-  const bytes = Uint8Array.from(new Uint8Array(params.buffer));
-  const restored = new Float32Array(bytes.buffer);
-  const after = getPredictionByLinearRegression(features, restored);
+  // Pack/unpack exactly as train/applyLinearRegression do.
+  const restored = unpackLinearRegressionModel(packLinearRegressionModel(params, features.names()));
+  const after = getPredictionByLinearRegression(features, restored.params, restored.names);
 
   expect(madError(before, after) < ROUNDTRIP_EPS, true, 'linreg pack/unpack changed predictions');
+  expect(restored.names !== undefined, true, 'linreg pack/unpack lost the feature names');
+  expect(restored.names!.join(), features.names().join(), 'linreg pack/unpack changed feature names');
+
+  // Reordering the table must not disturb the prediction: features are matched
+  // by name, not by position.
+  const shuffled = DG.DataFrame.fromColumns(features.toList().slice().reverse()).columns;
+  const afterShuffle = getPredictionByLinearRegression(shuffled, restored.params, restored.names);
+  expect(madError(before, afterShuffle) < ROUNDTRIP_EPS, true, 'linreg prediction depends on column order');
+
+  // A model saved before the names were stored is a bare Float32Array buffer.
+  const legacy = unpackLinearRegressionModel(Uint8Array.from(new Uint8Array(params.buffer)));
+  const afterLegacy = getPredictionByLinearRegression(features, legacy.params, legacy.names);
+  expect(legacy.names === undefined, true, 'legacy linreg model reported feature names');
+  expect(madError(before, afterLegacy) < ROUNDTRIP_EPS, true, 'legacy linreg model no longer loads');
+
   const score = r2(target, before);
   expect(score > r2Floor, true, `linreg R² too low: ${score} (expected > ${r2Floor})`);
 }

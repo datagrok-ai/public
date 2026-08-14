@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p2
 realizes_atlas: [powerpack.cp.add-new-column-persists]
-realizes: []
+realizes: [powerpack.dialogs.add-new-column]
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-autocomplete

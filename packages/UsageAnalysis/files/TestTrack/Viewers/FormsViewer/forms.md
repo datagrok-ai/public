@@ -4,8 +4,7 @@ realizes_atlas:
   - formsviewer.cp.color-and-renderer-presentation
   - formsviewer.edge.molecule-column-render
   - formsviewer.edge.fit-semtype-promotes-renderer-size
-realizes:
-  - viewers.form
+realizes: [powergrid.viewer.forms, curves.cell.fit, chem.cell.molecule]
 priority: p2
 target_layer: playwright
 realized_as:

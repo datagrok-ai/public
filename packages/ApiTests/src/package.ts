@@ -8,6 +8,24 @@ import dayjs from "dayjs";
 
 export const _package = new DG.Package();
 
+// The domain-ui library this package tests, reachable from the browser as
+// `apitests.domainUi` — library-only surface has no other way into a console or
+// a manual probe (sample scripts run with the platform globals only).
+export * as domainUi from '@datagrok-libraries/domain-ui';
+import {domains} from '@datagrok-libraries/domain-ui';
+
+//name: Domain Items
+//description: A complete browse/CRUD app over apitests.item, from domain-ui defaults alone
+//meta.role: app
+//input: string path {meta.url: true; optional: true}
+//output: view result
+export async function domainItemsApp(): Promise<DG.ViewBase> {
+  // UI-FACADE §1.1, verbatim. The declared `path` input is what makes the app
+  // URL-addressable; the page reads the deep link itself (restoreFromUrl), so the
+  // function takes no parameter.
+  return (await domains.table('apitests.item')).app();
+}
+
 //name: getTable
 //input: string name
 //input: string path {optional: true}

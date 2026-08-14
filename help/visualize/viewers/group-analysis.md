@@ -1,5 +1,12 @@
 ---
 title: "Group analysis viewer"
+description: Group data by one or more columns and compare groups using aggregations, in-cell charts, and statistics.
+keywords:
+  - group by
+  - aggregation table
+  - in-cell charts
+  - group comparison
+  - summary statistics per group
 ---
 
 Group analysis viewer groups data by one or more columns and analyzes them using aggregations, charts, and statistical tests. It helps compare groups and understand their characteristics.

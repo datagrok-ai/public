@@ -140,6 +140,17 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 
+    /** MERGE-over-VALUES upsert (MS SQL shape, no trailing semicolon). Emission + flag only in phase A. */
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        return mergeValuesUpsertSql(m, rowCount, false);
+    }
+
+    @Override
+    public int upsertBatchRows(int columnCount) {
+        return Math.max(1, Math.min(500, 2000 / Math.max(1, columnCount)));
+    }
+
     private void init() {
         driverClassName = DRIVER_CLASS_NAME;
         descriptor = new DataSource();
@@ -147,6 +158,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         descriptor.description = DESCRIPTION;
         descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
         descriptor.supportCatalogs = true;
+        descriptor.supportsUpsert = true; // emission + flag only in phase A; no container integration (WO-4)
         descriptor.defaultSchema = DEFAULT_SCHEMA;
         Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD);
         cloudProviders.choices = AVAILABLE_CLOUDS;

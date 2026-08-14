@@ -54,7 +54,7 @@ export const getPackage = (func: DG.Func) => {
 }
 
 export const hasContextHelp = (func?: DG.Func) => {
-  return !!(func?.options?.['help']);
+  return !!(func?.options?.['help'] ?? func?.options?.['readme']);
 };
 
 export const isRunningOnInput = (func: DG.Func) => {
@@ -177,6 +177,15 @@ export const getStarted = (call: DG.FuncCall) => {
   } catch {
     return 'Not completed';
   }
+};
+
+/** Display title of a run: the user-given title, or the function name with the start time. */
+export const getRunTitle = (call: DG.FuncCall) => {
+  const title = call.options?.['title'];
+  if (title)
+    return title;
+  const funcName = call.func?.friendlyName ?? call.func?.name ?? 'Run';
+  return `${funcName} — ${getStarted(call)}`;
 };
 
 export const delay = (delayInms: number) => {

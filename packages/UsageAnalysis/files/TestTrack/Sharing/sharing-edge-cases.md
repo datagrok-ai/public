@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: [sharing.cp.cp-share-with-all-users, sharing.cp.cp-advanced-editor-matrix, sharing.int.x-project-dependency-cascade]
-realizes: []
+realizes: [sharing.share-dialog]
 realized_as:
   - sharing-edge-cases-spec.ts
 related_bugs: []

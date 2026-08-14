@@ -66,6 +66,18 @@ interface FixtureProfile {
     tlag?: number | null; // present for extravascular; null for IV (gate)
     pct_aumcextrap?: number | null;
   };
+  /** PKNCA fit provenance, committed alongside the parameters. */
+  provenance?: {
+    lambda_z_n_points?: number | null;
+    lambda_z_r_squared?: number | null;
+    lambda_z_adj_r_squared?: number | null;
+    lambda_z_time_first?: number | null;
+    lambda_z_time_last?: number | null;
+    clast_obs?: number | null;
+    c0_extrapolated?: number | null;
+    /** PKNCA's own `span.ratio` — the rule-18 oracle for `LambdaZResult.spanRatio`. */
+    span_ratio?: number | null;
+  };
 }
 
 interface FixtureFile {
@@ -379,3 +391,98 @@ describe('reference suite (Task 1.9.5) — full computeNca pipeline vs PKNCA', (
   });
 });
 
+
+/**
+ * Span-ratio values on the reference corpus.
+ *
+ * NO expectation changes anywhere above: `minSpanRatio` is diagnostic, so window
+ * selection — and therefore every asserted PKNCA-parity value — is untouched.
+ * These are additive value assertions for the new field.
+ *
+ * The `< 2` assertions are the empirical claim the contribution rests on: PKNCA
+ * returns a valid lambda_z for these profiles and so do we, correctly — but the
+ * terminal slope rests on less than two half-lives and nothing in the output said
+ * so. `02_indometh` subject 1 is the worst case in the corpus at 0.69, and it
+ * carries adj-R² 0.994.
+ */
+describe('reference suite — LambdaZResult.spanRatio', () => {
+  /** PKNCA's own `span.ratio`, as committed by `regen-fixtures.R`. */
+  function oracle(fx: FixtureProfile): number {
+    const v = fx.provenance?.span_ratio;
+    expect(v).toBeDefined();
+    expect(v).not.toBeNull();
+    return v!;
+  }
+
+  /**
+   * ALL FOUR committed fixtures, table-driven.
+   *
+   * Deliberately not two hand-written blocks for theoph/indometh: rule 18 names
+   * `rat_simple` explicitly, `04_iv_infusion` is the only fixture exercising the
+   * infusion path, and every one of them already carries the oracle. Driving the
+   * table means a fifth fixture cannot be silently left uncovered.
+   * (Peer review 2026-08-11, finding F2 — the first cut covered 2 of 4.)
+   */
+  const SPAN_FIXTURES: ReadonlyArray<{
+    csv: string; json: string; timeCol: string; route: RouteCode;
+    dose: (row: Record<string, number>) => number; tInf?: number;
+  }> = [
+    {csv: '01_theoph.csv', json: '01_theoph.json', timeCol: 'Time',
+      route: ROUTE_PO, dose: (r) => r.Dose * r.Wt},
+    {csv: '02_indometh.csv', json: '02_indometh.json', timeCol: 'time',
+      route: ROUTE_IV_BOLUS, dose: () => 25},
+    {csv: '03_rat_simple.csv', json: '03_rat_simple.json', timeCol: 'Time',
+      route: ROUTE_PO, dose: (r) => r.Dose},
+    {csv: '04_iv_infusion.csv', json: '04_iv_infusion.json', timeCol: 'time',
+      route: ROUTE_IV_INFUSION, dose: () => 100, tInf: 1},
+  ];
+
+  it.each(SPAN_FIXTURES.map((f) => [f.json, f] as const))(
+    '%s — every subject matches PKNCA span.ratio on PKNCA\'s own window',
+    (_json, spec) => {
+      const subjects = loadAndGroup(spec.csv);
+      const fxBySubject = new Map(loadFixture(spec.json).profiles
+        .map((f) => [f.profile_key.subject, f]));
+      expect(subjects.length).toBeGreaterThan(0);
+
+      for (const group of subjects) {
+        const fx = fxBySubject.get(group.subject)!;
+        expect(fx).toBeDefined();
+        const inputs = buildInputs(group.rows, spec.timeCol,
+          spec.dose(group.rows[0]), spec.route, spec.tInf ?? null);
+        const r = computeNca(inputs, PKNCA_RULES);
+        expect(r.provenance.lambdaZ).not.toBeNull();
+        expect(relErr(r.provenance.lambdaZ!.spanRatio, oracle(fx)))
+          .toBeLessThan(TOL.lambdaZ);
+        // Same window PKNCA chose — without this the value agreement could be
+        // coincidental rather than a parity result.
+        expect(r.provenance.lambdaZ!.tStart).toBe(fx.provenance!.lambda_z_time_first);
+        expect(r.provenance.lambdaZ!.tEnd).toBe(fx.provenance!.lambda_z_time_last);
+      }
+    });
+
+  it('the corpus incidence the contribution rests on: 4 of 18 below span 2', () => {
+    // The empirical claim, asserted against the committed PKNCA output rather
+    // than restated in prose. `02_indometh` subject 1 is the worst case: its
+    // slope rests on under ONE half-life while adj-R² reads ~0.994 — "excellent"
+    // by every other statistic in the PKNCA output set. That inversion is why
+    // spanRatio exists.
+    //
+    // Scoped to the two HUMAN reference fixtures on purpose — "4 of 18" is a
+    // claim about theoph+indometh specifically (12 + 6 profiles). The synthetic
+    // rat / infusion fixtures are covered for PARITY by the table above but are
+    // not part of this incidence statistic.
+    const below: string[] = [];
+    for (const file of ['01_theoph.json', '02_indometh.json']) {
+      for (const p of loadFixture(file).profiles)
+        if (oracle(p) < 2) below.push(`${file}/${p.profile_key.subject}`);
+    }
+
+    expect(below.length).toBe(4);
+
+    const ind1 = loadFixture('02_indometh.json').profiles
+      .find((f) => f.profile_key.subject === '1')!;
+    expect(oracle(ind1)).toBeLessThan(1);
+    expect(ind1.provenance!.lambda_z_adj_r_squared).toBeGreaterThan(0.99);
+  });
+});

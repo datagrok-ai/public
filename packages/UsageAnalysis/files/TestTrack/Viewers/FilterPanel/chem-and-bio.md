@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: [viewers.filters]
+realizes: [viewers.filters, chem.filter.substructure-filter, bio.filter.bio-substructure-filter]
 realized_as:
   - chem-and-bio-spec.ts
 related_bugs: []

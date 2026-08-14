@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.map-viewer, gis.import.kml, gis.import.geo-json, gis.import.kmz]
 realized_as:
   - map-spec.ts
 related_bugs: []

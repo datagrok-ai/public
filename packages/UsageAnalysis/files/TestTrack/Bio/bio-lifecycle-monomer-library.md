@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.op.load_monomer_library, bio.op.save_monomer_library]
-realizes: []
+realizes: [bio.menu.manage.monomer-libraries]
 produced_from: atlas-driven
 realized_as:
   - bio-lifecycle-monomer-library-spec.ts

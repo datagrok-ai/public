@@ -1,4 +1,14 @@
-# Create custom connectors
+---
+title: "Create custom connectors"
+description: Extend Grok Connect with a custom Java data connector and JDBC driver to support new database providers.
+keywords:
+  - custom database connector
+  - grok connect
+  - jdbc driver java
+  - extend grok connect
+  - add new data provider
+  - java connector development
+---
 
 Datagrok server uses 
 [Grok Connect](https://github.com/datagrok-ai/public/blob/master/connectors/README.md) service to 

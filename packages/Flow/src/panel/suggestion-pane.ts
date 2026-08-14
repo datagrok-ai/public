@@ -1,25 +1,12 @@
-/** Toolbox Suggestions pane — the bottom ~30% of the function browser.
- *
- *  Renders the ranked next steps from the suggestion engine
- *  ([suggestion-engine.ts](../suggest/suggestion-engine.ts)) and refreshes,
- *  debounced, whenever the host reports a context change (selection, graph
- *  edit, run completion, a preview-cell click). The header caret minimizes it
- *  to a slim strip; the choice persists in localStorage.
- *
- *  Items behave like toolbox nodes: DOUBLE-click hands the suggestion back to
- *  the host (`onAccept` — creates the node, prefills its inputs, wires the
- *  suggested connections), and they are HTML5-draggable onto the canvas — the
- *  full suggestion travels as JSON under {@link FF_SUGGEST_MIME} so a drop
- *  still gets the wiring and prefill, just at the drop point. */
+/** Toolbox Suggestions pane — renders ranked next steps from the suggestion engine; items are
+ *  double-clickable and HTML5-draggable onto the canvas like toolbox rows. */
 
 import * as ui from 'datagrok-api/ui';
 
 import {Suggestion} from '../suggest/suggestion-engine';
 import {setTid} from '../utils/test-ids';
 
-/** DataTransfer type for dragging a suggestion onto the canvas. The payload is
- *  the whole `Suggestion` as JSON (a plain-data object) — unlike the browser's
- *  `FF_DRAG_MIME`, which carries only a typeName. */
+/** DataTransfer type carrying the whole `Suggestion` as JSON (unlike `FF_DRAG_MIME`, which carries only a typeName). */
 export const FF_SUGGEST_MIME = 'application/x-funcflow-suggestion';
 
 const LS_KEY = 'funcflow-suggestions-collapsed';
@@ -33,10 +20,8 @@ export class SuggestionPane {
   private collapsed = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private refreshSeq = 0;
-  /** JSON of the last rendered set — identical recomputes (a click that didn't
-   *  change the context) skip the DOM rebuild entirely. */
+  /** JSON of the last rendered set — identical recomputes skip the DOM rebuild. */
   private lastRenderedSig = '';
-  /** Last rendered set — exposed for tests. */
   suggestions: Suggestion[] = [];
 
   constructor(
@@ -51,19 +36,22 @@ export class SuggestionPane {
     this.caretEl.addEventListener('click', () => this.setCollapsed(!this.collapsed));
     ui.tooltip.bind(this.caretEl, () => this.collapsed ? 'Expand suggestions' : 'Minimize suggestions');
 
+    const bulb = ui.iconFA('lightbulb');
+    bulb.classList.add('ff-suggest-pane-bulb');
     const title = ui.div([], 'ff-suggest-pane-title');
     title.textContent = 'Suggestions';
     this.countEl = setTid(ui.div([], 'ff-suggest-pane-count'), 'suggest-pane-count');
     const header = setTid(
-      ui.div([title, this.countEl, this.caretEl], 'ff-suggest-pane-header'), 'suggest-pane-header');
+      ui.div([bulb, title, this.countEl, this.caretEl], 'ff-suggest-pane-header'), 'suggest-pane-header');
     header.addEventListener('click', (e) => {
-      if (e.target === header || e.target === title) this.setCollapsed(!this.collapsed);
+      if (e.target === header || e.target === title || e.target === bulb) this.setCollapsed(!this.collapsed);
     });
 
     this.listEl = setTid(ui.div([], 'ff-suggest-pane-list'), 'suggest-pane-list');
 
     this.root = setTid(ui.div([header, this.listEl], 'ff-suggest-pane'), 'suggest-pane');
     this.applyCollapsed();
+    this.render(); // show the "select a node…" hint until the first refresh
   }
 
   private setCollapsed(v: boolean): void {
@@ -80,7 +68,6 @@ export class SuggestionPane {
     this.caretEl.textContent = this.collapsed ? '▸' : '▾';
   }
 
-  /** Debounced recompute + render. Safe to call from any context signal. */
   refresh(): void {
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
@@ -89,10 +76,7 @@ export class SuggestionPane {
     }, REFRESH_DEBOUNCE_MS);
   }
 
-  /** Immediate recompute (tests / expand). Stale async results are dropped;
-   *  a result identical to what's already rendered skips the DOM rebuild
-   *  (suggestions are plain JSON data — the same signature means the same
-   *  items, wiring and prefills included). */
+  /** Immediate recompute; stale async results are dropped and an identical result skips the DOM rebuild. */
   async refreshNow(): Promise<void> {
     if (this.collapsed) return;
     const seq = ++this.refreshSeq;
@@ -111,16 +95,17 @@ export class SuggestionPane {
   private render(): void {
     this.listEl.innerHTML = '';
     this.countEl.textContent = this.suggestions.length ? String(this.suggestions.length) : '';
+    this.root.dataset.empty = String(this.suggestions.length === 0);
     if (this.suggestions.length === 0) {
       const empty = ui.div([], 'ff-suggest-pane-empty');
-      empty.textContent = 'Select a node — or run the flow — to see what fits next.';
+      empty.textContent = 'Click a step on the canvas — or run the flow — to see what you can add next.';
       this.listEl.appendChild(empty);
       return;
     }
     for (const s of this.suggestions) {
-      const label = ui.div([], 'ff-suggest-pane-item-label');
+      const label = ui.span([], 'ff-suggest-pane-item-label');
       label.textContent = s.label;
-      const reason = ui.div([], 'ff-suggest-pane-item-reason');
+      const reason = ui.span([], 'ff-suggest-pane-item-reason');
       reason.textContent = s.reason;
       const item = setTid(ui.div([label, reason], 'ff-suggest-pane-item'), 'suggest-pane-item');
       item.addEventListener('dblclick', () => this.onAccept(s));

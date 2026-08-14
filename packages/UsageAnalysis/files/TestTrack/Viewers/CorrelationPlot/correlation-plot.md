@@ -3,8 +3,7 @@ feature: correlationplot
 realizes_atlas:
   - correlationplot.cp.property-surface-smoke
   - correlationplot.int.menu-toggles-mirror-props
-realizes:
-  - viewers.correlation-plot
+realizes: [viewers.correlation-plot, entities.viewer.action.open-as-table]
 priority: p2
 target_layer: playwright
 coverage_type: smoke

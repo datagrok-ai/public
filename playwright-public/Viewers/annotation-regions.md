@@ -166,5 +166,5 @@ Verifies the user-visible warning surfaces when PowerPack is not installed (i.e.
 ---
 {
   "order": 29,
-  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/chem/SPGI.csv"]
 }

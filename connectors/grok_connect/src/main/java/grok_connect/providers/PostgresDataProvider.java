@@ -9,6 +9,10 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.table_mutation.BulkLoader;
+import grok_connect.table_mutation.InsertRows;
+import grok_connect.table_mutation.MutationValidationException;
+import grok_connect.table_mutation.PostgresCopyBulkLoader;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.PatternMatcher;
@@ -31,6 +35,24 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
         descriptor.canBrowseSchema = true;
         descriptor.supportCatalogs = true;
+        descriptor.supportsUpsert = true;
+        descriptor.supportsGeneratedKeys = true;
+        descriptor.supportsDdl = true;
+        descriptor.supportsTransactionalDdl = true;
+        // pgjdbc maps setReadOnly(true) to READ ONLY transaction characteristics (the
+        // default_transaction_read_only semantics) — real enforcement, including writes hidden in
+        // CTEs the first-keyword classifier cannot see (connector-writes WO-B13, §6.2).
+        descriptor.readOnlySessionEnforced = true;
+        // Seeded from the domain-schemas generator DomainDdlGenerator._sqlTypes (scalar subset) + bigint,
+        // so an externally created table and a domain table get identical PG types (ARCHITECTURE §3.3).
+        descriptor.dgToNativeType = new HashMap<String, String>() {{
+            put("string", "text");
+            put("int", "int");
+            put("bigint", "int8");
+            put("float", "float8");
+            put("bool", "bool");
+            put("datetime", "timestamp without time zone");
+        }};
         descriptor.defaultSchema = "public";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -76,6 +98,71 @@ public class PostgresDataProvider extends JdbcDataProvider {
                     "Enable TCP keepalive", new Prop()));
         }};
 
+    }
+
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        validateUpsertColumns(m);
+        String colList = m.columns.stream().map(this::addBrackets).collect(java.util.stream.Collectors.joining(", "));
+        String tuple = "(" + String.join(", ", java.util.Collections.nCopies(m.columns.size(), "?")) + ")";
+        String values = String.join(", ", java.util.Collections.nCopies(rowCount, tuple));
+        String keyList = m.matchKeys.stream().map(this::addBrackets).collect(java.util.stream.Collectors.joining(", "));
+        StringBuilder sql = new StringBuilder("INSERT INTO ").append(mutationTableName(m)).append(" (")
+                .append(colList).append(") VALUES ").append(values).append(" ON CONFLICT (").append(keyList).append(") ");
+        List<String> nonKey = upsertNonKeyColumns(m);
+        if (nonKey.isEmpty())
+            sql.append("DO NOTHING");
+        else
+            sql.append("DO UPDATE SET ").append(nonKey.stream()
+                    .map((c) -> addBrackets(c) + " = EXCLUDED." + addBrackets(c))
+                    .collect(java.util.stream.Collectors.joining(", ")));
+        return sql.toString();
+    }
+
+    @Override
+    public String insertIgnoreDuplicatesSql(InsertRows m) {
+        return insertSql(m) + " ON CONFLICT DO NOTHING";
+    }
+
+    @Override
+    public String mutationErrorColumn(SQLException e) {
+        org.postgresql.util.ServerErrorMessage sem = serverError(e);
+        if (sem == null)
+            return null;
+        return grok_connect.utils.GrokConnectUtil.isEmpty(sem.getColumn()) ? null : sem.getColumn();
+    }
+
+    @Override
+    public String mutationErrorMessage(SQLException e) {
+        org.postgresql.util.ServerErrorMessage sem = serverError(e);
+        if (sem == null)
+            return e.getMessage();
+        String constraint = sem.getConstraint();
+        return grok_connect.utils.GrokConnectUtil.isEmpty(constraint)
+                ? e.getMessage() : e.getMessage() + " (constraint: " + constraint + ")";
+    }
+
+    /** Walks the SQLException chain (BatchUpdateException carries the real cause via getNextException). */
+    private org.postgresql.util.ServerErrorMessage serverError(SQLException e) {
+        for (SQLException cur = e; cur != null; cur = cur.getNextException())
+            if (cur instanceof org.postgresql.util.PSQLException)
+                return ((org.postgresql.util.PSQLException) cur).getServerErrorMessage();
+        return null;
+    }
+
+    @Override
+    public BulkLoader createBulkLoader(Connection conn, InsertRows m) throws SQLException {
+        String mode = grok_connect.utils.GrokConnectUtil.isEmpty(m.mode) ? "insert" : m.mode;
+        // COPY is the fast atomic path: insert-only and all-or-nothing (it cannot skip duplicates or report
+        // per-row). Partial mode, upsert and update all use the default savepoint-capable loader (WO-6).
+        if (!mode.equals("insert") || !m.allOrNothing)
+            return super.createBulkLoader(conn, m);
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("Bulk insert requires a non-empty columns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        String cols = m.columns.stream().map(this::addBrackets).collect(java.util.stream.Collectors.joining(", "));
+        String copySql = "COPY " + mutationTableName(m) + " (" + cols + ") FROM STDIN (FORMAT csv)";
+        return new PostgresCopyBulkLoader(conn, copySql);
     }
 
     @Override

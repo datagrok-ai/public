@@ -18,15 +18,19 @@ category('Docker', () => {
   const containerSimple: string = 'cvm-tests-cvmtests-docker-test2';
   const incorrectId: string = '00000000-0000-0000-0000-000000000000';
 
+  // Queues the warm-up without awaiting anything: before() runs on the framework's fixed
+  // 100s budget, and one awaited container start over it fails the whole category with
+  // "before() failed" (build 1192). Every test starts what it needs under its own timeout.
   before(async () => {
-    await stopContainer(containerOnDemandName);
-    await startContainer(containerSimple);
+    await grok.dapi.docker.dockerContainers.run((await findContainer(containerSimple)).id);
   });
 
+  // Budget above datlas' own containerStatusTimeout (5 min) so a start that never
+  // completes surfaces its real error instead of an opaque EXECUTION TIMEOUT.
   test('Get response: On demand', async () => {
     const container = await stopContainer(containerOnDemandName);
     await testResponse(container.id);
-  }, {timeout: 240000 /*stressTest: true*/});
+  }, {timeout: 360000 /*stressTest: true*/});
 
   test('Container timeout', async () => {
     let container = await stopContainer(containerOnDemandName);
@@ -66,6 +70,7 @@ category('Docker', () => {
     let ws: WebSocket | undefined;
     try {
       const container = await startContainer(containerSimple);
+      await waitUntilAnswering(container.id);
       ws = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
       const testMessage = 'Hello World!';
       await new Promise<void>((res, rej) => {
@@ -96,8 +101,13 @@ category('Docker', () => {
     } finally {
       ws?.close();
     }
-  });
+    // startContainer alone measured 27s on the CI stand — nothing left of the 30s default.
+  }, {timeout: 240000}); // browser WebSocket global with cookie-session auth
 });
+// Tests are browser-only by default. This category has no node-capable tests yet:
+// under the Node runtime the docker proxy returns 401 where the browser (cookie
+// session) gets the real status (e.g. 404 for a missing container), and the
+// WebSocket proxy relies on the browser WebSocket global.
 
 async function findContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();
@@ -108,18 +118,52 @@ async function findContainer(containerName: string): Promise<DG.DockerContainer>
   return container;
 }
 
+// run/stop reject with the bare response body, which reaches JS opaque (logged as just "null").
+function describeFailure(action: string, container: DG.DockerContainer, name: string, e: any): Error {
+  return new Error(`Failed to ${action} container "${name}" (id ${container.id}, ` +
+    `status "${container.status}"): ${e?.message ?? e}`);
+}
+
 async function stopContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await findContainer(containerName);
+  // DockerRouter.stop answers 400 for `error`; nothing to stop anyway, and a later run clears it.
+  if (container.status === 'error')
+    return container;
   //@ts-ignore
-  if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping'))
-    await grok.dapi.docker.dockerContainers.stop(container.id, true);
+  if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping')) {
+    try {
+      await grok.dapi.docker.dockerContainers.stop(container.id, true);
+    } catch (e: any) {
+      throw describeFailure('stop', container, containerName, e);
+    }
+  }
   return container;
 }
 
 async function startContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await findContainer(containerName);
-  await grok.dapi.docker.dockerContainers.run(container.id, true);
+  try {
+    await grok.dapi.docker.dockerContainers.run(container.id, true);
+  } catch (e: any) {
+    throw describeFailure('start', container, containerName, e);
+  }
   return container;
+}
+
+/// `run(id, true)` returns once the platform marks the container started, which is earlier
+/// than the app inside binding its port — opening the WebSocket proxy right then fails with
+/// `Connection refused, errno = 111`. Poll a cheap HTTP path until it answers.
+async function waitUntilAnswering(containerId: string, attempts: number = 45): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/square?number=4');
+      if (response.status === 200)
+        return;
+    }
+    catch (_) {}
+    await delay(2000);
+  }
+  throw new Error(`Container ${containerId} did not answer within ${attempts * 2}s of being reported started`);
 }
 
 async function testResponse(containerId: string): Promise<void> {

@@ -1,3 +1,8 @@
+---
+realizes_atlas: []
+realizes: [viewers.form]
+---
+
 # Form tests (manual)
 
 All scenarios should start with the following sequence of events:

@@ -3,13 +3,19 @@ import path from 'path';
 import {help} from '../utils/ent-helpers';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
+import {generateDomainClients} from './api';
 
+/** The domain-ui library version a scaffolded domain app depends on. */
+const domainUiDependency = '^0.1.0';
 
-export function add(args: { _: string[] }) {
-  const nOptions = Object.keys(args).length - 1;
+export function add(args: { _: string[], domain?: string | boolean }) {
+  // `--domain` is the only option any `add` entity takes (`grok add app --domain`).
+  const nOptions = Object.keys(args).length - 1 - (args.domain === undefined ? 0 : 1);
   const nArgs = args['_'].length;
   if (nArgs < 2 || nArgs > 5 || nOptions > 0) return false;
   const entity = args['_'][1];
+  if (args.domain !== undefined && entity !== 'app')
+    return color.error('`--domain` applies to `grok add app` only');
 
   const curDir = process.cwd();
   const curFolder = path.basename(curDir);
@@ -60,6 +66,126 @@ export function add(args: { _: string[] }) {
         'package-template', 'src', 'package.js'), 'utf8');
       fs.writeFileSync(packageEntry, contents, 'utf8');
     }
+  }
+
+  /** The manifest at [manifestPath], or null when it is missing or unreadable. */
+  function readManifest(manifestPath: string): any {
+    if (!fs.existsSync(manifestPath)) return null;
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      if (typeof manifest?.name !== 'string' || manifest?.tables == null) {
+        color.error(`${manifestPath} is not a domain schema manifest (no \`name\` / \`tables\`)`);
+        return null;
+      }
+      return manifest;
+    } catch (error) {
+      color.error(`Error while reading ${manifestPath}:`);
+      console.error(error);
+      return null;
+    }
+  }
+
+  /** Copies a schema manifest into `databases/<schema>/` (where `grok api` and the
+   * publisher look for it); returns its schema name and table names. */
+  function copyManifest(manifestPath: string): [string, string[]] | null {
+    const manifest = readManifest(path.resolve(curDir, manifestPath));
+    if (manifest == null) return null;
+    const target = path.join(curDir, 'databases', manifest.name, 'schema.json');
+    if (path.resolve(curDir, manifestPath) !== target) {
+      fs.mkdirSync(path.dirname(target), {recursive: true});
+      fs.copyFileSync(path.resolve(curDir, manifestPath), target);
+      console.log(`Copied the schema manifest to databases/${manifest.name}/schema.json`);
+    }
+    return [manifest.name, Object.keys(manifest.tables)];
+  }
+
+  /** Adds `import {domains} from '@datagrok-libraries/domain-ui';` to the package
+   * entry file, after its existing imports (which webpack's externals depend on). */
+  function addDomainUiImport() {
+    const contents = fs.readFileSync(packageEntry, 'utf8');
+    if (contents.includes('@datagrok-libraries/domain-ui')) return;
+    const eol = contents.includes('\r\n') ? '\r\n' : '\n';
+    const line = `import {domains} from '@datagrok-libraries/domain-ui';`;
+    const lines = contents.split(/\r?\n/);
+    let last = -1;
+    for (let i = 0; i < lines.length; i++)
+      if (/^(import .*|export .* from .*);\s*$/.test(lines[i])) last = i;
+    lines.splice(last + 1, 0, line);
+    fs.writeFileSync(packageEntry, lines.join(eol), 'utf8');
+  }
+
+  /** `grok add app [name] --domain <schema>[.<table>] | <schema.json path>` — a working
+   * browse/CRUD app per table, from the `domain-ui` defaults alone. */
+  function addDomainApp(domainArg: string | boolean, appName: string | null): boolean | void {
+    if (typeof domainArg !== 'string' || domainArg === '')
+      return color.error('`--domain` needs `<schema>` or `<schema>.<table>`, ' +
+        'or a path to a schema.json manifest');
+
+    let schema: string;
+    let tables: string[];
+    if (/\.json$/i.test(domainArg)) {
+      const copied = copyManifest(domainArg);
+      if (copied == null) return false;
+      [schema, tables] = copied;
+    } else {
+      if (!/^[A-Za-z_]\w*(\.[A-Za-z_]\w*)?$/.test(domainArg))
+        return color.error(`Malformed domain address: ${domainArg}. ` +
+          'Use `<schema>`, `<schema>.<table>`, or a path to a schema.json manifest');
+      const dot = domainArg.indexOf('.');
+      schema = dot === -1 ? domainArg : domainArg.slice(0, dot);
+      if (dot !== -1)
+        tables = [domainArg.slice(dot + 1)];
+      else {
+        // Table names of a whole schema are only known offline from its manifest.
+        const manifest = readManifest(path.join(curDir, 'databases', schema, 'schema.json'));
+        if (manifest == null)
+          return color.error(`No \`databases/${schema}/schema.json\` in this package: name a table ` +
+            `(\`--domain ${schema}.<table>\`) or pass the path to the schema manifest`);
+        tables = Object.keys(manifest.tables);
+      }
+    }
+    if (tables.length === 0)
+      return color.error(`Schema \`${schema}\` declares no tables`);
+    if (appName != null && tables.length > 1)
+      return color.error(`\`--domain ${domainArg}\` covers ${tables.length} tables — ` +
+        'name a single table to name its app');
+
+    createPackageEntryFile();
+    const template = fs.readFileSync(path.join(templateDir, 'entity-template', 'domain-app' + ext), 'utf8');
+    const entry = fs.readFileSync(packageEntry, 'utf8');
+    const added: string[] = [];
+    const addedTables: string[] = [];
+    for (const table of tables) {
+      // No 'App' postfix — `grok check` asks apps to drop it (check.ts:350-356).
+      const funcName = appName ?? utils.snakeToCamelCase(table);
+      if (!validateName(funcName)) return false;
+      if (new RegExp(`function\\s+${funcName}\\s*\\(`).test(entry)) {
+        color.warn(`${funcName} is already declared in ${path.relative(curDir, packageEntry)} — skipped`);
+        continue;
+      }
+      fs.appendFileSync(packageEntry,
+        utils.replacers['DOMAIN_TABLE'](insertName(funcName, template), `${schema}.${table}`));
+      added.push(funcName);
+      addedTables.push(`${schema}.${table}`);
+    }
+    if (added.length === 0) return true;
+
+    addDomainUiImport();
+
+    const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    packageObj.dependencies = packageObj.dependencies ?? {};
+    if (packageObj.dependencies['@datagrok-libraries/domain-ui'] === undefined) {
+      packageObj.dependencies['@datagrok-libraries/domain-ui'] = domainUiDependency;
+      fs.writeFileSync(packagePath, JSON.stringify(packageObj, null, 2), 'utf8');
+    }
+
+    // Manifests in the package get typed clients AND the typed UI wrappers the app
+    // code can switch to; a schema deployed by another package has none, and the
+    // reflective app above needs none.
+    if (!generateDomainClients(curDir, {ui: true})) return false;
+
+    console.log(help.domainApp(added, addedTables));
+    return true;
   }
 
   let name;
@@ -120,6 +246,10 @@ export function add(args: { _: string[] }) {
     break;
 
   case 'app':
+    if (args.domain !== undefined) {
+      if (nArgs > 3) return false;
+      return addDomainApp(args.domain, nArgs === 3 ? args['_'][2] : null);
+    }
     if (nArgs !== 3) return false;
 
     // App name check

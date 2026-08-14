@@ -2,6 +2,7 @@
 #description: Environment with Python 3.12 template
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.12, {pip: [httpx]}]
+#meta.timeout: 600
 #input: string text
 #output: string result
 

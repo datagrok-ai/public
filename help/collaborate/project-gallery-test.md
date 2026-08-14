@@ -1,7 +1,16 @@
+---
+title: "Tests: Project Browser"
+description: Manual test scenarios for browsing, sharing, and managing projects in the project browser.
+keywords:
+  - project browser test
+  - share project dialog
+  - project context panel
+  - workspace tree
+  - test scenarios
+---
+
 <!-- TITLE: Tests: Project Browser -->
 <!-- SUBTITLE: -->
-
-# Tests: Project Browser
 
 Project browser allows you to view previously created [projects](project.md), view their properties and manage them.
 

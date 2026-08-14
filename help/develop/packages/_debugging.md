@@ -1,7 +1,16 @@
+---
+title: "Debugging"
+description: How to configure VS Code and JetBrains WebStorm to debug Datagrok packages, plus common troubleshooting steps.
+keywords:
+  - vs code launch.json
+  - webstorm shell script configuration
+  - grok create --ide
+  - source-based packages
+  - chrome debugging
+---
+
 <!-- TITLE: Debugging -->
 <!-- ORDER: 3 -->
-
-# Debugging
 
 This document discusses debugging of your packages for Datagrok in two popular IDEs &mdash; [Visual Studio Code] and
 [JetBrains WebStorm].

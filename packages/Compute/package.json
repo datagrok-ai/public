@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",
+    "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",

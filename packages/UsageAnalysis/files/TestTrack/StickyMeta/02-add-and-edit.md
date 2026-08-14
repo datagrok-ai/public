@@ -21,7 +21,7 @@ Covers applying sticky metadata to data points in a grid: a single cell, a whole
   `rating`/int, `notes`/string, `verified`/bool, `review_date`/datetime). The autotest creates
   its own `PW_SM_Schema_<suffix>` in `beforeAll` and deletes it in `afterAll` — it does not rely
   on a pre-seeded schema.
-- `System:DemoFiles/SPGI.csv` opens with a `Structure` column detected as `Molecule`
+- `System:DemoFiles/chem/SPGI.csv` opens with a `Structure` column detected as `Molecule`
   (3624 rows).
 
 ---

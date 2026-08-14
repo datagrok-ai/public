@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [projects.cp.upload-save-reopen-golden]
-realizes: [views.projects]
+realizes: [views.projects, viewers.pivot-viewer, data.menu.aggregate-rows, data.menu.join-tables, views.space, views.databases]
 realized_as:
   - complex-integration-spec.ts
 pyramid_layer: integration

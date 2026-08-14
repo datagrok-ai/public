@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [biostructureviewer.cp.viewer-add-and-render-pdb, biostructureviewer.cp.file-open-pdb-routes-to-molstar, biostructureviewer.cp.pdb-id-data-provider-roundtrip, biostructureviewer.cp.ligand-overlay-row-driven]
-realizes: [biostructureviewer.biostructure]
+realizes: [biostructureviewer.viewer.biostructure, bio.menu.transform.fetch-pdb-sequences]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/BiostructureViewer/biostructure-viewer.md
 migration_date: '2026-06-04'

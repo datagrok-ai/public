@@ -1,5 +1,14 @@
 ---
 title: "Datagrok for Enterprise IT"
+description: Overview of enterprise IT capabilities in Datagrok, including security, storage, governance, and monitoring.
+keywords:
+  - role-based access control
+  - authentication and authorization
+  - data governance
+  - on-premises deployment
+  - usage monitoring
+  - audit trail
+  - grok compute
 ---
 
 Software is eating the world, and IT has become a critical competence in all businesses. Datagrok enables IT to become a

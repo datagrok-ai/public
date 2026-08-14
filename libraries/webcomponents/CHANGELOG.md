@@ -1,5 +1,13 @@
 # webcomponents changelog
 
+## 0.3.6 (2026-08-11)
+
+* Viewer: Fixed `viewer-data-frame-changed` firing inside the Dart event (grid mutations in handlers crashed)
+
+## 0.3.5 (2026-08-07)
+
+* Viewer: apply dataframe and options set in one tick as a single transition (new `ViewerHost` core), fixing look/frame crashes and removing the property-order dependency
+
 ## 0.3.4 (2026-07-02)
 
 * Fixed validation popover scrolling, scrollbar visibility, and above/below positioning

@@ -1,5 +1,13 @@
 ---
 title: "Function call"
+description: Explains what a function call entity records in Datagrok and how to filter, audit, and replay function runs.
+keywords:
+  - func call
+  - job execution history
+  - macro recording
+  - console log
+  - run history
+  - smart search filters
 ---
 
 Function Call is a result of executing a <!--data job

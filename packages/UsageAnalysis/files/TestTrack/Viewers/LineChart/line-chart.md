@@ -4,8 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes:
-  - viewers.line-chart
+realizes: [viewers.line-chart, viewers.filters.histogram, viewers.filters.categorical]
 realized_as:
   - line-chart-spec.ts
 related_bugs: []

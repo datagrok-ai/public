@@ -3,12 +3,27 @@
 import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
-  DESIRABILITY_PROFILE_TYPE, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
+  DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
   MpoScale, NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
 } from './mpo-types';
 
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
 export * from './mpo-types';
+
+/// Desirability of a single value against a piecewise-linear line; 0 outside the line's range.
+/// `mapColumnDesirability` inlines this for the column-at-a-time hot path — this stays for
+/// callers scoring one value, such as the PowerGrid pie-chart sparkline.
+export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine): number {
+  if (desirabilityLine.length === 0 || x < desirabilityLine[0][0] || x > desirabilityLine[desirabilityLine.length - 1][0])
+    return 0;
+  for (let i = 0; i < desirabilityLine.length - 1; i++) {
+    const [x1, y1] = desirabilityLine[i];
+    const [x2, y2] = desirabilityLine[i + 1];
+    if (x >= x1 && x <= x2)
+      return x1 === x2 ? y1 : y1 + (y2 - y1) / (x2 - x1) * (x - x1);
+  }
+  return 0;
+}
 
 export function isNumerical(p: PropertyDesirability): p is NumericalDesirability {
   return p.functionType === 'numerical';
@@ -50,6 +65,12 @@ export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalD
   return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max, line: []};
 }
 
+export function rangeNumericalToColumn(prop: NumericalDesirability, col: DG.Column): void {
+  prop.min = col.min;
+  prop.max = col.max;
+  prop.line = [];
+}
+
 export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
 
 export function isMpoNumericColumn(col: DG.Column): boolean {
@@ -71,6 +92,14 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export function lockProfileRanges(profile: DesirabilityProfile): void {
+  for (const key in profile.properties) {
+    const prop = profile.properties[key];
+    if (isNumerical(prop))
+      prop.rangeUserSet = true;
+  }
+}
+
 export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
   return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
@@ -84,9 +113,13 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
   if (version < 1) {
     for (const key in raw.properties)
       raw.properties[key] = migrateDesirability(raw.properties[key]);
-    raw.version = CURRENT_MPO_VERSION;
   }
 
+  // v1 → v2: lock ranges on all numerical properties
+  if (version < 2)
+    lockProfileRanges(raw);
+
+  raw.version = CURRENT_MPO_VERSION;
   return raw;
 }
 

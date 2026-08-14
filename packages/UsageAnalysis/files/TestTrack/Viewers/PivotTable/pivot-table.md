@@ -4,8 +4,7 @@ realizes_atlas:
   - pivottable.cp.chrome-history-and-drag-config
   - pivottable.int.history-menu-requires-existing-columns
   - pivottable.int.default-aggr-type-remembered
-realizes:
-  - viewers.pivot-table
+realizes: [viewers.pivot-viewer]
 priority: p2
 target_layer: playwright
 coverage_type: regression

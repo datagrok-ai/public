@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [models.op.train_and_save_model, models.op.apply_model_on_table, models.op.run_performance_evaluation, models.op.edit_model_metadata, models.op.share_model, models.op.delete_model]
-realizes: [views.models]
+realizes: [views.models, eda.model.linear-regression, ml.menu.models.train-model, ml.menu.models.apply-model, sharing.share-dialog]
 realized_as:
   - models-lifecycle-csv-table-spec.ts
 related_bugs: []

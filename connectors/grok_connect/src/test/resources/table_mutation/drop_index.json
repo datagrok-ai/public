@@ -1,0 +1,9 @@
+{
+  "#type": "DropIndex",
+  "name": "drop index orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "indexName": "ix_orders_status_created"
+}

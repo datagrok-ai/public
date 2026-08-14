@@ -1,9 +1,5 @@
 /* eslint-disable max-len */
-/** Property panel — renders into Datagrok's native context panel.
- *
- * Reads from a `FlowNode` selected on the canvas and edits its `properties`
- * and `inputValues` maps. Re-renders the node on the canvas whenever a
- * property changes so visible state (title, etc.) stays in sync. */
+/** Property panel — renders into Datagrok's native context panel. */
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -15,8 +11,12 @@ import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
 import {getParamDescription, getParamDisplayName, getFuncDisplayName, getTags} from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
-import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
-import {hiddenInputsOf, customEditorFor, CustomInputEditorFactory} from '../utils/func-input-overrides';
+import {shouldUseFunctionEditor, hasEditorShortcut} from '../utils/func-editor-utils';
+import {
+  hiddenInputsOf, customEditorFor, CustomInputEditorFactory, effectiveFuncInputs, inputHiddenByCondition,
+  inputCaptionOf,
+} from '../utils/func-input-overrides';
+import {buildInputValueEditor} from '../utils/input-values';
 import {ColumnPickRequest} from './column-picker';
 import { processChoiceInput } from './choice-input-processor';
 
@@ -50,10 +50,6 @@ const UTILITY_PROP_TOOLTIPS: Record<string, Record<string, string>> = {
   'List': {value: 'Comma-separated list of values'},
 };
 
-/** Primitive func-input types edited with a native Datagrok input (built from
- *  the property via `ui.input.forProperty`, which honours the declared type,
- *  numeric range, choices, and nullability). Structural (column/column_list)
- *  and `string_list` inputs are handled separately. */
 const PRIMITIVE_INPUT_TYPES: ReadonlySet<string> = new Set([
   'string', 'int', 'double', 'num', 'qnum', 'datetime', 'bool',
 ]);
@@ -69,12 +65,9 @@ const OUTPUT_TYPE_VALUES = [
   'map', 'datetime', 'blob', 'funccall',
 ];
 
-/** A property's `choices` as a non-empty string list, or `[]` when it has none
- *  (or the Dart proxy access fails). Empty entries are dropped — the nullable
- *  empty option is added separately by `stringChoiceOptions`. */
 export function propertyChoices(param: DG.Property): string[] {
   try {
-    const choices = (param as unknown as {choices?: unknown}).choices;
+    const choices: unknown = param.choices;
     if (!Array.isArray(choices)) return [];
     return choices.map((c) => String(c)).filter((c) => c.length > 0);
   } catch {
@@ -82,11 +75,7 @@ export function propertyChoices(param: DG.Property): string[] {
   }
 }
 
-/** Build the option list for a string input that declares `choices`, or `null`
- *  when there are none (caller renders a free-text field instead). A nullable
- *  property gets a leading empty option; the current value is preserved as an
- *  option even when it isn't among the declared choices, so imported values are
- *  never silently dropped. */
+/** Choice options for a string input; nullable adds a leading empty option, and the current value is kept even when undeclared. */
 export function stringChoiceOptions(choices: string[], nullable: boolean, current: string): string[] | null {
   if (choices.length === 0) return null;
   let options = [...choices];
@@ -110,18 +99,14 @@ export class PropertyPanel {
   root: HTMLElement;
   private contentDiv: HTMLElement;
   private flow: FlowEditor;
-  /** The node the panel currently renders — the target of change reports. */
   private currentNode: FlowNode | null = null;
+  private currentExecState?: NodeExecState;
+  private execSection: HTMLElement | null = null;
 
-  /** Set by the view: opens a column / columns picker dialog for a func-node
-   *  column input, seeded by the upstream table (running the flow up to that
-   *  point if needed). When unset, the picker icon is not rendered. */
+  /** Set by the view: opens a column / columns picker dialog for a func-node column input; unset → no picker icon. */
   onPickColumns?: (req: ColumnPickRequest) => void;
 
-  /** Set by the view: opens the function's own editor dialog (functions with
-   *  `editor:` meta or on the explicit allowlist) seeded with the node's real
-   *  upstream tables, then writes the edited values back into `inputValues`.
-   *  When unset, the editor icon is not rendered. */
+  /** Set by the view: opens the function's own editor dialog and writes edits back into `inputValues`; unset → no editor icon. */
   onEditFuncParams?: (node: FlowNode) => void;
 
   constructor(flow: FlowEditor) {
@@ -131,40 +116,32 @@ export class PropertyPanel {
   }
 
   showNode(node: FlowNode, execState?: NodeExecState): void {
+    // Release watchers/custom editors BEFORE the DOM they feed is thrown away.
+    this.disposeEditors();
     this.contentDiv.innerHTML = '';
+    this.inputWatchers.clear();
     this.currentNode = node;
+    this.currentExecState = execState;
 
-    // Coerce: labels can be derived from non-string values (constant nodes
-    // title themselves after their value) and DG string inputs throw on
-    // anything but a string. Title is cosmetic — it never changes what the
-    // flow computes, so it must not invalidate run results.
     const titleInput = this.createTextarea('Title', String(node.label ?? ''), (v) => {
       node.label = String(v ?? '');
       void this.flow.updateNode(node.id);
     }, undefined, true);
-    const typeBadge = setTid(ui.div([], 'funcflow-type-badge'), 'property-type-badge');
-    typeBadge.textContent = node.dgNodeType || 'function';
-    const titleRow = setTid(ui.div([titleInput, typeBadge], 'funcflow-title-row'), 'property-title-row');
+    const titleRow = setTid(ui.div([titleInput], 'funcflow-title-row'), 'property-title-row');
 
-    // One header block (shared padding) so Title, chips, and Description line up.
     const header = setTid(ui.div([titleRow], 'funcflow-panel-header'), 'property-header');
 
-    if (node.dgFunc) header.appendChild(this.buildFuncChips(node));
+    header.appendChild(this.buildFuncChips(node));
 
-    // Per-node description: rendered under the title in the canvas, and
-    // embedded as the [description] suffix in //input:/output: lines.
-    // Cosmetic like the title — annotations don't change computed values.
-    // For func nodes it starts as the function's own description; an edit
-    // stores the override on the node (the function text stays the fallback).
     let funcDesc = '';
     try {
       funcDesc = node.dgFunc?.description ?? '';
     } catch {/* Dart proxy access can throw */}
     const descSeed = node.description?.trim() ? node.description : funcDesc;
-    header.appendChild(this.createTextarea('Description', descSeed, (v) => {
+    header.appendChild(this.createTextAreaRow('Description', descSeed, (v) => {
       node.description = v;
       void this.flow.updateNode(node.id);
-    }, undefined, true));
+    }, true, 'Describe what this step does…'));
     this.contentDiv.appendChild(header);
 
     const acc = ui.accordion('funcflow-context-panel');
@@ -179,41 +156,64 @@ export class PropertyPanel {
 
     this.contentDiv.appendChild(acc.root);
 
-    // Execution metadata — status / duration / per-output dims / error.
-    // Rich previews (grid, sample, image) live in the bottom-docked panel
-    // instead, to keep this panel narrow.
-    if (execState) {
-      const header = ui.div([], 'funcflow-prop-section-header');
-      header.textContent = 'Execution';
-      this.contentDiv.appendChild(header);
-      this.contentDiv.appendChild(buildExecutionMeta(execState));
-    }
+    // Own container: a run finishing while the user types refreshes just this section (the full rebuild is focus-guarded).
+    this.execSection = ui.div([]);
+    this.renderExecSection();
+    this.contentDiv.appendChild(this.execSection);
+  }
+
+  private renderExecSection(): void {
+    if (!this.execSection) return;
+    this.execSection.innerHTML = '';
+    if (!this.currentExecState) return;
+    const header = ui.div([], 'funcflow-prop-section-header');
+    header.textContent = 'Execution';
+    this.execSection.appendChild(header);
+    this.execSection.appendChild(buildExecutionMeta(this.currentExecState));
   }
 
   clear(): void {
+    this.disposeEditors();
     this.currentNode = null;
+    this.currentExecState = undefined;
+    this.execSection = null;
     this.contentDiv.innerHTML = '';
     this.contentDiv.appendChild(ui.divText('Select a node to view its properties'));
   }
 
-  /** Report a (non-cosmetic) parameter edit on the shown node — routed to the
-   *  editor so run results downstream of the node get invalidated (and autorun,
-   *  when enabled, reruns the affected slice). Every semantic editor helper
-   *  below funnels its change through a {@link changeReporter}, never here
-   *  directly. */
-  private paramsChanged(): void {
-    if (this.currentNode) this.flow.notifyNodeParamsChanged(this.currentNode.id);
+  get shownNodeId(): string | null {
+    return this.currentNode?.id ?? null;
   }
 
-  /** A change reporter for ONE editor: report a parameter edit only when the
-   *  value ACTUALLY differs from the last seen one.
-   *
-   *  Why: creating/initializing a Datagrok input (`ui.input.forProperty`,
-   *  `initInputValue` setting `stringValue`, …) can fire `onValueChanged`
-   *  immediately — but not for every input type, so "skip the first event" is
-   *  wrong too. Without this guard, merely clicking a node (which rebuilds the
-   *  panel) would count as an edit — invalidating results and, with autorun
-   *  on, rerunning the flow on every selection. */
+  updateExecState(nodeId: string, execState?: NodeExecState): void {
+    if (this.currentNode?.id !== nodeId || this.currentExecState === execState) return;
+    this.currentExecState = execState;
+    // The Execution section holds no inputs, so it re-renders even when the full rebuild below is focus-guarded.
+    this.renderExecSection();
+    this.refreshShownNode();
+  }
+
+  /** Rebuild the panel for the shown node — skipped while the user is typing here (a rebuild would steal focus). */
+  refreshShownNode(): void {
+    if (!this.currentNode) return;
+    if (this.root.contains(document.activeElement) && document.activeElement !== document.body) return;
+    // Never rebuild under an open modal — a dialog launched from this panel holds live objects the rebuild destroys.
+    if (DG.Dialog.getOpenDialogs().length > 0) return;
+    if (!this.flow.getNodes().some((n) => n.id === this.currentNode!.id)) {
+      this.clear();
+      return;
+    }
+    this.showNode(this.currentNode, this.currentExecState);
+  }
+
+  private paramsChanged(): void {
+    if (this.currentNode) {
+      this.flow.notifyNodeParamsChanged(this.currentNode.id);
+      this.syncMissingRows(this.currentNode);
+    }
+  }
+
+  /** Per-editor guard: report only a REAL change — creating/initializing a DG input can fire `onValueChanged` immediately, so an unguarded report would turn every panel rebuild into an edit. */
   private changeReporter(initial: unknown): (v: unknown) => void {
     let last = initial;
     return (v: unknown): void => {
@@ -223,9 +223,7 @@ export class PropertyPanel {
     };
   }
 
-  /** Loose equality across the forms an editor and the stored value can take:
-   *  scalars compare by string form (`5` vs `'5'`, `null`/`undefined` vs `''`),
-   *  arrays/objects (list inputs) by JSON. */
+  /** Loose equality: scalars by string form (`5` ≡ `'5'`, `null` ≡ `''`), arrays/objects by JSON. */
   static sameValue(a: unknown, b: unknown): boolean {
     if (a === b) return true;
     const isObj = (x: unknown): boolean => typeof x === 'object' && x !== null;
@@ -239,24 +237,27 @@ export class PropertyPanel {
     return String(a ?? '') === String(b ?? '');
   }
 
-  // ---------- panes ----------
-
-  /** Compact chips replacing the old Function pane: full name, package, roles,
-   *  tags — one wrapping row instead of a label+value row each. The function
-   *  description lives in the header Description input now. */
   private buildFuncChips(node: FlowNode): HTMLElement {
     const chips = setTid(ui.div([], 'funcflow-chips'), 'prop-func-chips');
     const add = (text: string, tip: string, cls?: string, tid?: string): void => {
+      if (chips.childElementCount > 0) chips.appendChild(ui.div([], 'funcflow-chip-sep'));
       const chip = ui.div([], 'funcflow-chip' + (cls ? ` ${cls}` : ''));
       chip.textContent = text;
       ui.tooltip.bind(chip, tip);
       if (tid) setTid(chip, tid);
       chips.appendChild(chip);
     };
+    const kindWords: Record<string, string> = {
+      func: 'Function', utility: 'Utility', input: 'Input', output: 'Output',
+    };
+    add(kindWords[node.dgNodeType ?? ''] ?? 'Function', 'Node kind', 'funcflow-chip-kind', 'property-type-badge');
+    // Package disambiguates a vague function name (e.g. which "Descriptors") —
     const fullName = node.dgFuncName ?? node.dgFunc?.name ?? '';
-    if (fullName) add(fullName, 'Full function name', 'funcflow-chip-muted', 'prop-func-fullname');
-    // Package disambiguates a vague function name (e.g. which "Descriptors").
-    if (node.dgPackageName) add(node.dgPackageName, 'Package', undefined, 'prop-func-package');
+    const pkg = node.dgPackageName ?? '';
+    const nameChip = pkg && fullName.toLowerCase().startsWith(`${pkg.toLowerCase()}:`) ?
+      fullName.slice(pkg.length + 1) : fullName;
+    if (nameChip) add(nameChip, 'Full function name', 'funcflow-chip-muted', 'prop-func-fullname');
+    if (pkg) add(pkg, 'Package', undefined, 'prop-func-package');
     const roles = (node.dgRole ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     for (const r of roles) add(r, 'Role');
     const tags = node.dgFunc ? getTags(node.dgFunc) : [];
@@ -269,24 +270,23 @@ export class PropertyPanel {
     const func = node.dgFunc;
     if (!func) return;
 
-    if (func.inputs.length > 0) {
-      // The pane is titled with the function itself — it IS the function's
-      // parameter form (chips above carry package/role/tags).
+    // The parameters the NODE exposes — the wrapper's when one is registered, so the form matches the node's own sockets.
+    const funcInputs = effectiveFuncInputs(func);
+    if (funcInputs.length > 0) {
       let paneTitle = '';
       try {
         paneTitle = getFuncDisplayName(func);
       } catch {/* Dart proxy access can throw */}
       if (!paneTitle) paneTitle = 'Parameters';
-      const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
+      const dataframeParams = funcInputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
       const hidden = hiddenInputsOf(func);
       const pane = acc.addPane(paneTitle, () => {
         const content = ui.div([], 'funcflow-accordion-content ui-form');
-        for (const inp of func.inputs) {
+        for (const inp of funcInputs) {
           if (hidden.has(inp.name)) continue;
+          if (inputHiddenByCondition(func, inp.name, node)) continue;
           const tip = buildFuncInputTooltip(inp);
-          // Display label — the property's caption when declared, else its name.
-          // Purely cosmetic: the slot key / `inputValues` stay keyed by name.
-          const label = getParamDisplayName(inp);
+          const label = inputCaptionOf(func, inp.name) ?? getParamDisplayName(inp);
           const custom = customEditorFor(func, inp.name);
           const isEditable = custom !== null || inp.name in node.inputValues;
           if (!isEditable) {
@@ -309,17 +309,9 @@ export class PropertyPanel {
           if (pt === 'column' || pt === 'column_list')
             content.appendChild(this.createColumnRow(node, inp.name, pt === 'column_list', dataframeParams, tip, label));
           else if (pt === 'string_list') {
-            // Comma-separated string (native DG input, to match the primitives);
-            // the compiler trims and turns it into an array. (`list<string>`
-            // arrives here as `string_list` — DG normalizes it.)
             content.appendChild(this.createStringInput(inp.name, String(node.inputValues[inp.name] ?? ''),
               (v) => {node.inputValues[inp.name] = v;}, `${tip} | Comma-separated list of strings`, label));
           } else if (pt === 'list' || PRIMITIVE_INPUT_TYPES.has(pt)) {
-            // A native Datagrok input built straight from the property — it
-            // honours the declared type, numeric range, choices, and nullability
-            // (choice-bearing strings render as a combo automatically). A `list`
-            // property (incl. list<string>: propertyType 'list', subtype
-            // 'string') gets DG's List input; its value is a JS array.
             content.appendChild(this.createPropertyInput(inp, node, tip));
           }
         }
@@ -329,11 +321,6 @@ export class PropertyPanel {
     }
   }
 
-  /** Functions with their own custom editor (an `editor:` meta, or the explicit
-   *  allowlist — e.g. AddNewColumn) get a small "Open editor" button in the
-   *  parameters pane header (the pane titled with the function name) that opens
-   *  that editor seeded with the node's real upstream tables. Rendered only
-   *  when the view wired `onEditFuncParams`. */
   private decorateEditorHeader(pane: DG.AccordionPane, node: FlowNode, func: DG.Func): void {
     if (!this.onEditFuncParams) return;
     let hasEditor = false;
@@ -343,15 +330,12 @@ export class PropertyPanel {
     if (!hasEditor) return;
     const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
     if (!header) return;
-    const btn = document.createElement('button');
-    btn.textContent = 'Open editor';
+    const btn = ui.button('Open editor', () => this.onEditFuncParams!(node));
     btn.classList.add('funcflow-func-editor-btn');
     ui.tooltip.bind(btn, 'Edit the parameters in the function’s own dialog (needs all table inputs connected)');
     setTid(btn, 'prop-func-editor');
-    btn.onclick = (ev): void => {
-      ev.stopPropagation(); // don't toggle the pane
-      this.onEditFuncParams!(node);
-    };
+    // The click must not bubble into the accordion header (it would toggle the pane).
+    btn.addEventListener('click', (ev) => ev.stopPropagation());
     header.appendChild(btn);
   }
 
@@ -363,25 +347,9 @@ export class PropertyPanel {
         node.properties['paramName'] = v;
       }));
 
-      const outputType = node.dgOutputType;
-      if (outputType === 'bool') {
-        content.appendChild(this.createToggle('Default', Boolean(node.properties['defaultValue']), (v) => {
-          node.properties['defaultValue'] = v;
-        }));
-      } else if (outputType === 'int') {
-        content.appendChild(this.createNumberInput('Default', Number(node.properties['defaultValue'] ?? 0), (v) => {
-          node.properties['defaultValue'] = Math.round(v);
-        }, 0, 1));
-      } else if (outputType === 'double') {
-        content.appendChild(this.createNumberInput('Default', Number(node.properties['defaultValue'] ?? 0), (v) => {
-          node.properties['defaultValue'] = v;
-        }, 3, 0.1));
-      } else if (node.properties['defaultValue'] !== undefined && outputType !== 'dataframe' &&
-                 outputType !== 'file' && outputType !== 'map' && outputType !== 'blob') {
-        content.appendChild(this.createTextarea('Default', String(node.properties['defaultValue'] ?? ''), (v) => {
-          node.properties['defaultValue'] = v;
-        }));
-      }
+      const valueEditor = buildInputValueEditor(node, () => this.paramsChanged());
+      if (valueEditor)
+        content.appendChild(this.propRow(ui.div([valueEditor.root], 'funcflow-prop-row funcflow-dg-row'), 'Value'));
 
       if (node.properties['nullable'] !== undefined)
         content.appendChild(this.createToggle('Nullable', Boolean(node.properties['nullable']), (v) => {node.properties['nullable'] = v;}));
@@ -394,7 +362,8 @@ export class PropertyPanel {
       if (node.properties['semType'] !== undefined)
         content.appendChild(this.createCombo('SemType', String(node.properties['semType'] ?? ''), SEMTYPE_VALUES, (v) => {node.properties['semType'] = v;}));
       if (node.properties['choices'] !== undefined)
-        content.appendChild(this.createTextarea('Choices (comma-sep)', String(node.properties['choices'] ?? ''), (v) => {node.properties['choices'] = v;}));
+        content.appendChild(this.createTextarea('Choices (comma-sep)', String(node.properties['choices'] ?? ''), (v) => {node.properties['choices'] = v;},
+          'Comma-separated list of allowed values — the run dialog and the value editor show them as a dropdown', false, 'Choices'));
       if (node.properties['min'] !== undefined)
         content.appendChild(this.createTextarea('Min', String(node.properties['min'] ?? ''), (v) => {node.properties['min'] = v;}));
       if (node.properties['max'] !== undefined)
@@ -409,7 +378,6 @@ export class PropertyPanel {
   private addOutputNodePane(acc: DG.Accordion, node: FlowNode): void {
     acc.addPane('Output Configuration', () => {
       const content = ui.div([], 'funcflow-accordion-content');
-      // The strip row displays paramName / outputType — re-render it on edit.
       content.appendChild(this.createTextarea('Param Name', String(node.properties['paramName'] ?? ''), (v) => {
         node.properties['paramName'] = v;
         void this.flow.updateNode(node.id);
@@ -425,14 +393,11 @@ export class PropertyPanel {
     }, true);
   }
 
-  /** Viewer node: the curated, exposed look options (column choices, title).
-   *  Everything else is edited live via the preview's "Edit settings" button. */
   private addViewerNodePane(acc: DG.Accordion, node: FlowNode): void {
     if (!node.properties['viewerLook'] || typeof node.properties['viewerLook'] !== 'object')
       node.properties['viewerLook'] = {};
     const look = node.properties['viewerLook'] as Record<string, unknown>;
     const specs = (node.properties['viewerOptionSpecs'] as Array<{key: string; label: string; kind: string}>) ?? [];
-    // The table the viewer plots — its column options pick from it.
     const tableParam = this.dataframeInputKeys(node)[0];
     const setLook = (key: string) => (v: unknown): void => {
       const s = String(v ?? '').trim();
@@ -446,16 +411,12 @@ export class PropertyPanel {
       content.appendChild(ui.div([ui.label('Type'),
         ui.divText(String(node.properties['viewerType']))], 'funcflow-prop-row'));
       for (const o of specs) {
-        // A column option can also be wired in (a column socket). When connected,
-        // the wired column wins — show it as connected rather than an editor.
         if (o.kind === 'column' && this.flow.isInputConnected(node.id, o.key)) {
           const row = ui.div([ui.divText(`${o.label}: connected`)], 'funcflow-prop-row');
           ui.tooltip.bind(row, 'A column is wired into this option; its name is used.');
           content.appendChild(row);
           continue;
         }
-        // Column option → name field + picker dialog (seeded by the wired table);
-        // non-column option (e.g. Title) → plain text.
         if (o.kind === 'column') {
           content.appendChild(this.createColumnFieldRow({
             nodeId: node.id, label: o.label, isList: false,
@@ -488,7 +449,6 @@ export class PropertyPanel {
       void this.flow.updateNode(node.id);
     };
 
-    // A 'table' (dataframe) input means column-valued properties can be picked.
     const tableParam = this.dataframeInputKeys(node)[0];
 
     acc.addPane('Configuration', () => {
@@ -496,12 +456,8 @@ export class PropertyPanel {
       const nodeTips = UTILITY_PROP_TOOLTIPS[kind] ?? {};
       for (const [key, val] of props) {
         const tip = nodeTips[key];
-        // Display caption mirrors core's fallback humanization; `key` stays
-        // the row identity (data-param / storage).
         const caption = propertyNameToFriendly(key);
         const isConstValue = isConstant && key === 'value';
-        // Column-valued props (Select Column → columnName, Select Columns →
-        // columnNames) get the picker dialog when there's a table to pick from.
         if (tableParam && (key === 'columnName' || key === 'columnNames')) {
           content.appendChild(this.createColumnFieldRow({
             nodeId: node.id, label: key, caption, isList: key === 'columnNames',
@@ -536,10 +492,6 @@ export class PropertyPanel {
     }, true);
   }
 
-  /** What's actually wired (disconnected slots are noise — the sockets on the
-   *  canvas already show them), plus what's still MISSING: required inputs
-   *  neither connected nor filled and required properties left empty. The pane
-   *  opens expanded when something is missing. */
   private addConnectionsPane(acc: DG.Accordion, node: FlowNode): void {
     const isConnected = (key: string): boolean => this.flow.isInputConnected(node.id, key);
     const missingInputs = missingRequiredInputs(node, isConnected);
@@ -592,8 +544,6 @@ export class PropertyPanel {
         .filter(([key, out]) => out && !isExecKey(key) && targetsOf(key).length > 0)
         .map(([key, out]) => this.buildConnRow('OUT', out!.label ?? key, out!.socket.dgType, '→', targetsOf(key), key)));
 
-      // Order edges (exec ports) carry no data — show them as plain run-order
-      // facts instead of IN/OUT rows with a raw `__exec_*` key.
       const nodeLabel = (id: string): string => String(this.flow.getNodeById(id)?.label ?? '?');
       addGroup('Run order', [
         ...conns.filter((c) => c.target === node.id && String(c.targetInput) === EXEC_IN_KEY)
@@ -608,16 +558,14 @@ export class PropertyPanel {
     }, hasMissing);
   }
 
-  /** "Node title · slot label" for the far end of a connection. A pass-through
-   *  source renders as its humanized base input name (its literal label is
-   *  just `→`). */
+  /** "Node title · slot label" for the far end; a pass-through label's trailing arrow is canvas affordance and is stripped. */
   private endpointText(nodeId: string, side: 'input' | 'output', key: string): string {
     const n = this.flow.getNodeById(nodeId);
     const name = String(n?.label ?? '?');
     let slot = propertyNameToFriendly(key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key);
     const ports = (side === 'input' ? n?.inputs : n?.outputs) as
       Record<string, {label?: string} | undefined> | undefined;
-    const lbl = ports?.[key]?.label;
+    const lbl = ports?.[key]?.label?.replace(/\s*→$/, '');
     if (lbl && lbl !== '→') slot = lbl;
     return `${name} · ${slot}`;
   }
@@ -658,6 +606,33 @@ export class PropertyPanel {
     return row;
   }
 
+  /** Surgically drop resolved "missing" rows after an edit — no rebuild, so typing keeps focus. */
+  private syncMissingRows(node: FlowNode): void {
+    const rows = Array.from(this.contentDiv.querySelectorAll<HTMLElement>('.funcflow-conn-missing'));
+    if (rows.length === 0) return;
+    const isConnected = (key: string): boolean => this.flow.isInputConnected(node.id, key);
+    const still = new Set<string>([
+      ...missingRequiredInputs(node, isConnected),
+      ...missingRequiredProps(node),
+    ]);
+    let removed = false;
+    for (const row of rows) {
+      if (!still.has(row.dataset.missing ?? '')) {
+        row.remove();
+        removed = true;
+      }
+    }
+    if (removed && still.size === 0) {
+      for (const lbl of Array.from(this.contentDiv.querySelectorAll<HTMLElement>('.funcflow-conn-group-label'))) {
+        if (lbl.textContent === 'Missing') {
+          if (lbl.nextElementSibling?.classList.contains('funcflow-conn-separator'))
+            lbl.nextElementSibling.remove();
+          lbl.remove();
+        }
+      }
+    }
+  }
+
   private buildMissingRow(label: string, why: string, key = label): HTMLElement {
     const warn = ui.element('span');
     warn.textContent = '⚠ ';
@@ -680,69 +655,67 @@ export class PropertyPanel {
 
   // ---------- editor helpers ----------
 
-  private labelWithTooltip(text: string, explicitTip?: string): HTMLElement {
-    const lbl = ui.label(text);
-    const tip = explicitTip ?? PROP_TOOLTIPS[text];
-    if (tip) ui.tooltip.bind(lbl, tip);
-    return lbl;
+  private static propTip(label: string, caption?: string, explicitTip?: string): string | undefined {
+    return explicitTip ?? PROP_TOOLTIPS[caption ?? label] ?? PROP_TOOLTIPS[label];
   }
 
-  private buildTextareaEl(value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLTextAreaElement {
-    const textarea = document.createElement('textarea');
-    textarea.value = value;
-    textarea.className = 'funcflow-prop-textarea';
-    textarea.rows = 1;
-    const autosize = (): void => {
-      textarea.style.height = 'auto';
-      textarea.style.height = textarea.scrollHeight + 'px';
-    };
-    textarea.addEventListener('input', () => {
-      autosize();
-      onChange(textarea.value);
-    });
-    setTimeout(autosize, 0);
-    if (inputTooltip) ui.tooltip.bind(textarea, inputTooltip);
-    return textarea;
-  }
-
-  /** Stamp an input row with its test-id + a human-findable `data-param` (the
-   *  input/param name), so a specific field is addressable in the context panel. */
   private propRow(el: HTMLElement, label: string): HTMLElement {
     setTid(el, 'prop-input', label);
     el.dataset.param = label;
     return el;
   }
 
-  /** `caption` is display-only; `label` stays the row identity (data-param). */
+  /** Every editor in this panel is a real Datagrok input (`ui.input.*`), never a hand-rolled element. */
+  private dgRow(label: string, input: DG.InputBase): HTMLElement {
+    return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), label);
+  }
+
+  /** Single-line DG string row; `cosmetic` edits (Title, Description) never report an invalidating change. */
   private createTextarea(
     label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, cosmetic = false,
     caption?: string,
   ): HTMLElement {
     const report = this.changeReporter(value);
-    const apply = cosmetic ? onChange : (v: string): void => {
-      onChange(v);
-      report(v);
-    };
-    return this.propRow(ui.div([this.labelWithTooltip(caption ?? label, inputTooltip),
-      this.buildTextareaEl(value, apply, inputTooltip)], 'funcflow-prop-row'), label);
+    const input = ui.input.string(caption ?? label, {
+      tooltipText: PropertyPanel.propTip(label, caption, inputTooltip),
+      onValueChanged: (v) => {
+        const s = String(v ?? '');
+        onChange(s);
+        if (!cosmetic) report(s);
+      },
+    });
+    PropertyPanel.initInputValue(input, value);
+    return this.dgRow(label, input);
   }
 
-  /** Initialize a DG input's editor from a stored value via the `stringValue`
-   *  setter — `ui.input.forProperty` (and the `value` init option) does not
-   *  reliably load the editor itself. Guarded: a value the editor can't parse
-   *  just leaves it at its own blank/default state. */
+  private createTextAreaRow(
+    label: string, value: string, onChange: (v: string) => void, cosmetic = false, placeholder?: string,
+  ): HTMLElement {
+    const report = this.changeReporter(value);
+    const input = ui.input.textArea(label, {
+      tooltipText: PropertyPanel.propTip(label),
+      onValueChanged: (v) => {
+        const s = String(v ?? '');
+        onChange(s);
+        if (!cosmetic) report(s);
+      },
+    });
+    if (placeholder) {
+      try {
+        (input.input as HTMLTextAreaElement).placeholder = placeholder;
+      } catch {/* editor element not a textarea on this build */}
+    }
+    PropertyPanel.initInputValue(input, value);
+    return this.dgRow(label, input);
+  }
+
+  /** Initialize via the guarded `stringValue` setter — `ui.input.forProperty` / the `value` init option don't reliably load the editor. */
   private static initInputValue(input: DG.InputBase, v: unknown, setStringValue = true): void {
     try {
       if (v !== undefined && v !== null && String(v) !== '') setStringValue ? (input.stringValue = String(v)) : (input.value = v);
     } catch {/* leave the editor as-is */}
   }
 
-  /** A native Datagrok input for a primitive func parameter, built from the
-   *  property so it honours the declared type, numeric range, choices, and
-   *  nullability — replacing the bespoke combo/number/toggle wiring. Edits are
-   *  written back to the node's `inputValues`; the caption comes from the
-   *  property. The row (not the DG root) carries the `data-param` / test-id so
-   *  the field stays addressable by name. */
   private createPropertyInput(param: DG.Property, node: FlowNode, inputTooltip: string): HTMLElement {
     const report = this.changeReporter(node.inputValues[param.name]);
     const input = ui.input.forProperty(param, null, {
@@ -750,6 +723,7 @@ export class PropertyPanel {
       onValueChanged: (v) => {
         node.inputValues[param.name] = v;
         report(v);
+        this.notifyInputChanged(param.name, v);
       },
     });
     if (param.choices && input instanceof DG.ChoiceInput && node.dgFunc) {
@@ -758,31 +732,99 @@ export class PropertyPanel {
     } else {
        PropertyPanel.initInputValue(input, node.inputValues[param.name]);
     }
+    this.addEditorShortcut(input, node, param.name);
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
   }
 
-  /** A registered custom editor (`CUSTOM_FUNC_INPUT_EDITORS`) replacing the
-   *  default input for one func parameter. Storage stays `inputValues[name]`
-   *  and edits are reported like any other editor, so invalidation/autorun,
-   *  the compiler, and required-input checks see no difference. */
+  private addEditorShortcut(input: DG.InputBase, node: FlowNode, paramName: string): void {
+    if (!this.onEditFuncParams || !node.dgFunc || !hasEditorShortcut(node.dgFunc, paramName)) return;
+    const pencil = ui.iconFA('pencil', () => this.onEditFuncParams!(node),
+      'Edit in the function’s own dialog (needs all table inputs connected)');
+    pencil.classList.add('funcflow-input-editor-pencil');
+    setTid(pencil, `prop-input-editor-${paramName}`);
+    input.addOptions(pencil);
+  }
+
   private createCustomInputRow(
     factory: CustomInputEditorFactory, param: DG.Property, node: FlowNode, tip: string,
   ): HTMLElement {
     const report = this.changeReporter(node.inputValues[param.name]);
-    const ed = factory(param);
+    const ed = factory(param, {
+      inputValue: (name) => node.inputValues[name],
+      // Captured columns/tables only — resolving an uncomputed table would mean running the flow while a panel renders.
+      columns: (tableParam) => this.upstreamColumns(node, tableParam),
+      table: (tableParam) => this.upstreamTable(node, tableParam),
+      isConnected: (tableParam) => this.flow.isInputConnected(node.id, tableParam),
+      produceTable: (tableParam) => this.produceUpstreamTable(node, tableParam),
+      watch: (name, cb) => this.watchInput(name, cb),
+      node,
+    });
+    this.editorDisposers.push(ed);
     ed.onChanged = (v): void => {
       if (ed.isValid && !ed.isValid()) return;
       node.inputValues[param.name] = v;
       report(v);
+      this.notifyInputChanged(param.name, v);
     };
     ed.setValue(node.inputValues[param.name]);
     ui.tooltip.bind(ed.element, tip);
     return this.propRow(ui.div([ed.element], 'funcflow-prop-row funcflow-dg-row'), param.name);
   }
 
-  /** A native Datagrok single-line string input (used where there's no
-   *  `DG.Property` to drive `forProperty` — e.g. a `string_list` slot edited as
-   *  a comma-separated string), so its styling matches the primitive inputs. */
+  /** Live per-input subscriptions for editors depending on a sibling parameter — refreshShownNode skips itself while focus is inside the panel, so a rebuild can't deliver these. */
+  private readonly inputWatchers = new Map<string, Array<(v: unknown) => void>>();
+
+  private watchInput(name: string, cb: (v: unknown) => void): void {
+    const list = this.inputWatchers.get(name);
+    if (list) list.push(cb);
+    else this.inputWatchers.set(name, [cb]);
+  }
+
+  private notifyInputChanged(name: string, value: unknown): void {
+    for (const cb of this.inputWatchers.get(name) ?? []) {
+      try {
+        cb(value);
+      } catch (e) {
+        console.error(`Flow: input watcher for "${name}" failed`, e);
+      }
+    }
+  }
+
+  /** Wired by the view to `ExecutionController.cloneForNode`; unset in headless editors. */
+  getUpstreamTable?: (sourceNodeId: string) => DG.DataFrame | null;
+
+  /** Wired by the view to `ExecutionController.produceTableForNode`; only ever called from an explicit user action, never from a render. */
+  runUpstreamNode?: (sourceNodeId: string) => Promise<DG.DataFrame | null>;
+
+  private upstreamTable(node: FlowNode, tableParam: string): DG.DataFrame | null {
+    if (!this.getUpstreamTable) return null;
+    const src = this.flow.getInputSource(node.id, tableParam);
+    return src ? this.getUpstreamTable(src.node.id) : null;
+  }
+
+  private upstreamColumns(node: FlowNode, tableParam: string): DG.Column[] | null {
+    const table = this.upstreamTable(node, tableParam);
+    return table ? Array.from(table.columns) : null;
+  }
+
+  private async produceUpstreamTable(node: FlowNode, tableParam: string): Promise<DG.DataFrame | null> {
+    const src = this.flow.getInputSource(node.id, tableParam);
+    if (!src || !this.runUpstreamNode) return null;
+    return this.runUpstreamNode(src.node.id);
+  }
+
+  private readonly editorDisposers: Array<{detach?: () => void}> = [];
+
+  private disposeEditors(): void {
+    for (const ed of this.editorDisposers.splice(0)) {
+      try {
+        ed.detach?.();
+      } catch (e) {
+        console.error('Flow: custom editor cleanup failed', e);
+      }
+    }
+  }
+
   private createStringInput(
     label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, caption?: string,
   ): HTMLElement {
@@ -795,30 +837,16 @@ export class PropertyPanel {
       },
     });
     PropertyPanel.initInputValue(input, value);
-    // Display caption may differ from the identity; keep the row keyed by name.
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), label);
   }
 
-  /** A column / column-list input laid out side by side with its table picker:
-   *  the column-name field (≈70%) and, when the func has 2+ dataframe inputs, a
-   *  table chooser (≈30%) writing the node's `columnTables` association. With a
-   *  single dataframe input the field spans full width (the table is implicit). */
-  /** Input keys on a node whose socket is a dataframe — the tables a column
-   *  field can pick from. (Func nodes may have several; viewers / Select Column
-   *  utilities have one named 'table'.) */
   private dataframeInputKeys(node: FlowNode): string[] {
     return (Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>)
       .filter(([, inp]) => inp?.socket.dgType === 'dataframe')
       .map(([k]) => k);
   }
 
-  /** A column / column-list field laid out with its picker: the name field, an
-   *  optional table-chooser (multi-table funcs), and the picker icon that opens
-   *  a dialog seeded by the chosen table input. Storage is fully delegated via
-   *  `getValue`/`setValue`, so this serves **any** node with a column field —
-   *  func inputs (`inputValues`), viewer look options, Select Column utilities.
-   *  `label` is the identity — the picker's `data-param` / test-id key; the
-   *  visible caption is `caption ?? label` (display only). */
+  /** Column / column-list field with its table chooser and picker icon; storage is delegated via `getValue`/`setValue`, so it serves any node with a column field. */
   private createColumnFieldRow(opts: {
     nodeId: string;
     label: string;
@@ -826,18 +854,11 @@ export class PropertyPanel {
     tip: string;
     getValue: () => string;
     setValue: (v: string) => void;
-    /** Display caption when it differs from the identity `label` (optional). */
     caption?: string;
-    /** Single dataframe input the columns come from (most nodes). */
     tableParam?: string;
-    /** Per-row table chooser for multi-table funcs (JoinTables keys1→table1, …). */
-    tableSelect?: {options: string[]; get: () => string; set: (v: string) => void};
+    tableSelect?: {options: string[]; labels?: string[]; get: () => string; set: (v: string) => void};
   }): HTMLElement {
-    // A column / column-list value is a plain (comma-separated) name string, so
-    // it uses a native Datagrok string input with its own caption — not
-    // `forProperty`, which would build a column picker bound to a live table we
-    // don't have here. The table chooser (multi-table funcs) and the picker icon
-    // are appended *inside* the input via `addOptions` (trailing controls).
+    // ui.input.string, not `forProperty` — forProperty would build a column picker bound to a live table we don't have here.
     const report = this.changeReporter(opts.getValue());
     const nameInput = ui.input.string(opts.caption ?? opts.label, {
       tooltipText: opts.tip,
@@ -852,14 +873,28 @@ export class PropertyPanel {
     let getTableParam = (): string => opts.tableParam ?? '';
     if (opts.tableSelect) {
       const ts = opts.tableSelect;
-      const select = this.buildSelectEl(ts.get(), ts.options, ts.set, 'Which table input this column refers to');
-      select.classList.add('funcflow-col-table-select');
-      getTableParam = (): string => select.value || ts.options[0];
-      nameInput.addOptions(select);
+      const items = ts.labels ?? ts.options;
+      const toParam = (label: unknown): string => {
+        const i = items.indexOf(String(label ?? ''));
+        return ts.options[i >= 0 ? i : 0];
+      };
+      const toLabel = (param: string): string => items[Math.max(0, ts.options.indexOf(param))];
+      const reportTable = this.changeReporter(ts.get());
+      const tableChoice = ui.input.choice('', {
+        items,
+        tooltipText: 'Which table input this column refers to',
+        onValueChanged: (v) => {
+          const s = toParam(v);
+          ts.set(s);
+          reportTable(s);
+        },
+      });
+      PropertyPanel.initInputValue(tableChoice, toLabel(ts.get()), false);
+      tableChoice.root.classList.add('funcflow-col-table-select');
+      getTableParam = (): string => toParam(tableChoice.value);
+      nameInput.addOptions(tableChoice.root);
     }
 
-    // Column chooser — opens a dialog seeded by the upstream table (running the
-    // flow up to that point if needed) so users pick from a real column list.
     if (this.onPickColumns && (opts.tableSelect || opts.tableParam)) {
       const pickBtn = ui.iconFA('list', () => {
         this.onPickColumns!({
@@ -868,7 +903,7 @@ export class PropertyPanel {
           current: opts.getValue(),
           anchor: pickBtn,
           apply: (value: string) => {
-            nameInput.value = value; // fires onValueChanged → opts.setValue
+            nameInput.value = value;
             opts.setValue(value);
           },
         });
@@ -888,16 +923,16 @@ export class PropertyPanel {
       `${tip} | Comma-separated column names` :
       `${tip} | Column name (compiled to table.col(...))`;
 
-    // Single dataframe input → fixed table; multi-table funcs → a per-row select
-    // writing the node's `columnTables` association (keys1→table1, keys2→table2).
     let tableParam: string | undefined = dataframeParams[0];
-    let tableSelect: {options: string[]; get: () => string; set: (v: string) => void} | undefined;
+    let tableSelect: {options: string[]; labels?: string[]; get: () => string; set: (v: string) => void} | undefined;
     if (dataframeParams.length >= 2) {
       if (!node.properties['columnTables']) node.properties['columnTables'] = {};
       const associations = node.properties['columnTables'] as Record<string, string>;
       tableParam = undefined;
       tableSelect = {
         options: dataframeParams,
+        labels: dataframeParams.map((p) =>
+          (node.dgFunc ? inputCaptionOf(node.dgFunc, p) : null) ?? p),
         get: () => associations[paramName] ?? dataframeParams[0],
         set: (v) => {associations[paramName] = v;},
       };
@@ -912,59 +947,45 @@ export class PropertyPanel {
   }
 
   private createNumberInput(label: string, value: number, onChange: (v: number) => void, decimals: number, step: number, inputTooltip?: string, caption?: string): HTMLElement {
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.value = decimals === 0 ? String(Math.round(value)) : value.toFixed(decimals);
-    input.step = String(step);
-    input.className = 'funcflow-prop-input';
     const report = this.changeReporter(value);
-    input.addEventListener('change', () => {
-      const parsed = parseFloat(input.value);
-      if (!isNaN(parsed)) {
-        onChange(parsed);
-        report(parsed);
-      }
-    });
-    if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
-    return this.propRow(ui.div([this.labelWithTooltip(caption ?? label, inputTooltip), input], 'funcflow-prop-row'), label);
+    const opts = {
+      tooltipText: PropertyPanel.propTip(label, caption, inputTooltip),
+      onValueChanged: (v: number | null) => {
+        if (v == null || isNaN(v)) return; // mid-edit blank — keep the stored value
+        onChange(v);
+        report(v);
+      },
+    };
+    const input = decimals === 0 ? ui.input.int(caption ?? label, opts) : ui.input.float(caption ?? label, opts);
+    PropertyPanel.initInputValue(input, value, false);
+    return this.dgRow(label, input);
   }
 
   private createToggle(label: string, value: boolean, onChange: (v: boolean) => void, inputTooltip?: string, caption?: string): HTMLElement {
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = value;
-    input.className = 'funcflow-prop-checkbox';
     const report = this.changeReporter(value);
-    input.addEventListener('change', () => {
-      onChange(input.checked);
-      report(input.checked);
+    const input = ui.input.bool(caption ?? label, {
+      tooltipText: PropertyPanel.propTip(label, caption, inputTooltip),
+      onValueChanged: (v) => {
+        onChange(Boolean(v));
+        report(Boolean(v));
+      },
     });
-    if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
-    const lbl = this.labelWithTooltip(caption ?? label, inputTooltip);
-    return this.propRow(ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row'), label);
-  }
-
-  private buildSelectEl(value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLSelectElement {
-    const select = document.createElement('select');
-    select.className = 'funcflow-prop-input';
-    for (const opt of options) {
-      const optEl = document.createElement('option');
-      optEl.value = opt;
-      optEl.textContent = opt || '(none)';
-      if (opt === value) optEl.selected = true;
-      select.appendChild(optEl);
-    }
-    const report = this.changeReporter(value);
-    select.addEventListener('change', () => {
-      onChange(select.value);
-      report(select.value);
-    });
-    if (inputTooltip) ui.tooltip.bind(select, inputTooltip);
-    return select;
+    PropertyPanel.initInputValue(input, Boolean(value), false);
+    return this.dgRow(label, input);
   }
 
   private createCombo(label: string, value: string, options: string[], onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
-    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
-      this.buildSelectEl(value, options, onChange, inputTooltip)], 'funcflow-prop-row'), label);
+    const report = this.changeReporter(value);
+    const input = ui.input.choice(label, {
+      items: options,
+      tooltipText: PropertyPanel.propTip(label, undefined, inputTooltip),
+      onValueChanged: (v) => {
+        const s = String(v ?? '');
+        onChange(s);
+        report(s);
+      },
+    });
+    PropertyPanel.initInputValue(input, value, false);
+    return this.dgRow(label, input);
   }
 }

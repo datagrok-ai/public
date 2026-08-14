@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
-realizes: [charts.sankey, charts.chord, charts.surface-plot, charts.radar, charts.tree, charts.globe, charts.word-cloud, charts.sunburst]
+realizes: [charts.viewer.sunburst]
 realized_as:
   - sunburst-spec.ts
 pyramid_layer: integration
@@ -53,7 +53,7 @@ and Filters — not as an isolated single-viewer smoke test.
 1. Authenticate as test user.
 2. Open `System:DemoFiles/demog.csv` (target table for inherit-from-grid
    and collaborative-filtering sub-flows).
-3. Open `System:DemoFiles/SPGI_v2.csv` (primary source driving
+3. Open `System:DemoFiles/chem/SPGI.csv` (primary source driving
    hierarchy / nulls / project-save sub-flows).
 4. For each opened table view, add a **Sunburst** viewer via
    **Add viewer** → **Sunburst**.

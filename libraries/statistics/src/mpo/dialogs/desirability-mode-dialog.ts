@@ -154,7 +154,12 @@ export class DesirabilityModeDialog {
         inputs.set(cfg.key, ui.input.float(cfg.label, {value: prop[cfg.key] ?? cfg.fallback(), format: '#0.000', onValueChanged: (v) => {
           const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
           prop[cfg.key] = value;
-          this.onUpdate({[cfg.key]: value} as Partial<NumericalDesirability>);
+          const patch: Partial<NumericalDesirability> = {[cfg.key]: value};
+          if (cfg.key === 'min' || cfg.key === 'max') {
+            prop.rangeUserSet = true;
+            patch.rangeUserSet = true;
+          }
+          this.onUpdate(patch);
           previewEditor.redrawAll(false);
         }}));
       }

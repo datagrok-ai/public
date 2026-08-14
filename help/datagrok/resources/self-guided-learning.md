@@ -3,6 +3,16 @@ title: "Self-guided learning"
 mdx:
   format: mdx
 sidebar_position: 2
+description: Organizes help pages, demo apps, interactive tutorials, webinars, and demo datasets by capability and domain for learning Datagrok.
+keywords:
+  - interactive tutorials
+  - demo app
+  - webinars
+  - demo datasets
+  - learning track
+  - cheminformatics tutorial
+  - bioinformatics tutorial
+  - scripting tutorial
 ---
 
 To get you started, we've prepared the following resources:

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p1
 realizes_atlas: [charts.int.sunburst-unsupported-column-defense]
-realizes: [charts.sunburst]
+realizes: [charts.viewer.sunburst]
 realized_as:
   - sunburst-date-column-bug-spec.ts
 pyramid_layer: bug-focused

@@ -50,4 +50,4 @@ category('Dapi: entities.save (polymorphic)', () => {
     created.length = 0;
   });
 
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});

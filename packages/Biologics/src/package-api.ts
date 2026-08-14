@@ -9,6 +9,13 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace queries {
   /**
+  "Find ADCs in biologics database linked to a specified drug identifier."
+  */
+  export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Biologics:ADCsLinkedToDrug', { drugID });
+  }
+
+  /**
   "Get comprehensive antibody profile filtered by organism and target, including HC/LC chains, dose-response curves, and all assay data."
   */
   export async function antibodyProfileByOrganismAndTarget(organism: string , target: string ): Promise<DG.DataFrame> {
@@ -34,13 +41,6 @@ export namespace queries {
   */
   export async function adcsWithIC50HLThan(value: number , valueTarget: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:ADCsWithIC50HLThan', { value, valueTarget });
-  }
-
-  /**
-  "Find ADCs in biologics database linked to a specified drug identifier."
-  */
-  export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('Biologics:AdcsLinkedToDrug', { drugID });
   }
 
   /**

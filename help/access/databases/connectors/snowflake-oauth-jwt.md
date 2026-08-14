@@ -1,4 +1,15 @@
-# Snowflake OAuth (JWT) Authentication
+---
+title: "Snowflake OAuth (JWT) Authentication"
+description: Configure per-user Snowflake access in Datagrok using OAuth (JWT) authentication so row-level security and roles apply automatically.
+keywords:
+  - snowflake oauth
+  - jwt authentication
+  - row-level security
+  - external oauth integration
+  - rsa key pair
+  - per-user snowflake identity
+  - security integration
+---
 
 Datagrok supports per-user Snowflake access using OAuth (JWT) authentication. When enabled, each user's queries run under their own Snowflake identity, so row-level security policies and role-based access apply automatically.
 

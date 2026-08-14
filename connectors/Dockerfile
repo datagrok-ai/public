@@ -36,6 +36,18 @@ RUN set -ex ; \
     apt-get clean ; \
     rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/*
 
+# main: every driver except the CVE-quarantined ones; extended: only those.
+# A separate layer so the expensive maven layer above is FLAVOR-independent.
+ARG FLAVOR=main
+RUN set -ex ; \
+    EXTENDED_JARS="amazon-neptune-jdbc-driver-3.0.3-all.jar ImpalaJDBC42.jar" ; \
+    cd ${GROK_CONNECT_DIR}/lib ; \
+    if [ "$FLAVOR" = "extended" ] ; then \
+      for f in * ; do case " $EXTENDED_JARS " in *" $f "*) ;; *) rm -f "$f" ;; esac ; done ; \
+    else \
+      rm -f $EXTENDED_JARS ; \
+    fi
+
 FROM datagrok/openjdk:8 as main
 
 # Java 8 derives its default charset from the locale; in a minimal image that is
@@ -54,6 +66,9 @@ RUN groupadd --gid 2001 grok ; \
 
 COPY --chown=grok:grok --from=grok_connect_builder ${GROK_CONNECT_DIR} ${GROK_CONNECT_DIR}
 COPY $GROK_CONNECT_SOURCE_DIR/grok_connect/northwind ${HOME_DIR}/northwind
+# comma-separated provider allowlist; empty = all whose driver is present (see ProviderManager)
+ARG GROK_CONNECT_PROVIDERS=""
+ENV GROK_CONNECT_PROVIDERS=${GROK_CONNECT_PROVIDERS}
 # https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/jvm-ttl-dns.html
 RUN echo "networkaddress.cache.ttl=5" >> $JAVA_HOME/jre/lib/security/java.security
 

@@ -30,6 +30,7 @@ import {
   TypeAheadConfig,
   ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
   EmailDialog, EmailDialogOptions,
+  ITabControlOptions,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -37,7 +38,7 @@ import $ from 'cash-dom';
 import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, Grid, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -204,16 +205,17 @@ export function accordion(key: any = null): Accordion {
 
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
- * @param {Object} pages - list of page factories
- * @param {boolean} vertical
- * @param {string} key - when provided, the currently selected pane is persisted across sessions
+ * @param pages - list of page factories
+ * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
+ * @param key - deprecated, use `options.key` instead.
  * @returns {TabControl} */
-export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false, key: string | null = null): TabControl {
-  let tabs = TabControl.create(vertical, key);
+export function tabControl(pages: { [key: string]: any; } | null = null,
+                           options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
+  let tabs = TabControl.create(options, key);
   if (pages != null) {
-    for (let key of Object.keys(pages)) {
-      let value = pages[key];
-      tabs.addPane(key, value instanceof Function ? value : () => render(value));
+    for (let name of Object.keys(pages)) {
+      let value = pages[name];
+      tabs.addPane(name, value instanceof Function ? value : () => render(value));
     }
   }
   return tabs;
@@ -1744,7 +1746,12 @@ export class ObjectHandler<T = any> {
     return divText(this.getCaption(x));
   }
 
-  /** Renders markup for the item. */
+  /** Renders markup for the item. [context] says what the item is being rendered FOR,
+   * so one handler can serve several surfaces. The platform's many-to-many chips pass
+   * `{relation, table, input: 'tags'}` — the relation's name, the OWNER's
+   * `'<schema>.<table>'`, and the widget kind. A chip's `DG.DomainRow` is a
+   * `{id, displayName}` stub with no column values, so read its name through
+   * `getCaption(x)` / `x.displayName` — `x.values[nameColumn]` is undefined there. */
   renderMarkup(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
@@ -1757,6 +1764,19 @@ export class ObjectHandler<T = any> {
   /** Renders card div for the item. */
   renderCard(x: T, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
+  }
+
+  /** Renders the item as a list item — used when displaying objects in lists
+   * (such as wide html grids, or popups in type-ahead boxes).
+   * By default, renders the item's name. */
+  renderListItem(x: T, context: any = null): HTMLDivElement {
+    return divText(this.getCaption(x));
+  }
+
+  /** Renders an input for the item (e.g. to be used in forms);
+   * null when the handler does not define one. */
+  renderInput(x: T, context: any = null): InputBase | null {
+    return null;
   }
 
   /** Renders properties list for the item. */
@@ -1774,6 +1794,36 @@ export class ObjectHandler<T = any> {
   /** Renders view for the item. */
   renderView(x: T, context: any = null): HTMLElement {
     return this.renderProperties(x);
+  }
+
+  /** Customizes a {@link Grid} presenting a collection of this handler's objects
+   * IN PLACE: column order/visibility, captions, cell renderers, interactivity.
+   * `options.items` is the DataFrame backing the grid when the caller wants the
+   * handler to tag or (re)bind it; when omitted, operate on `grid.dataFrame`.
+   *
+   * Contract: derive presentation from column tags/semTypes only — the frame may
+   * be a pure data frame (e.g. a `queryDf` result) with NO hidden `~item` object
+   * column; never assume one. Interactivity that needs the object goes through
+   * the semType renderer/context machinery.
+   *
+   * Dispatch: OVERRIDING this member takes FULL responsibility for grid decoration
+   * of the built-in views (e.g. the Domain View grid). Any handler that does not
+   * override it — including one written against this version of the API — falls
+   * through to the platform meta for {@link type}, from EITHER side: the Dart
+   * dispatch skips the sentinel-marked base (see below), and the base itself
+   * delegates, so `ObjectHandler.forEntity(x).renderGrid(grid)` decorates exactly
+   * like the platform. To opt out of decoration entirely, override it with an
+   * empty body. */
+  renderGrid(grid: Grid, options?: {items?: DataFrame}): void {
+    let type: string;
+    try {
+      type = this.type;         // abstract on the base, and JS getters may throw
+    } catch (_) {
+      return;
+    }
+    const dart: EntityMetaDartProxy | null = toJs(api.grok_Meta_DartForType(type));
+    if (dart != null)
+      dart.renderGrid(grid, options);
   }
 
   /** Converts object to its markup description */
@@ -1846,6 +1896,13 @@ export class ObjectHandler<T = any> {
   }
 }
 
+// Sentinel for the Dart dispatch guard: prototype-chain lookups find the base
+// member on EVERY class-based handler, so it is marked as the platform default
+// and treated as absent — only a real override takes over grid decoration.
+// Keeping it marked also avoids a round trip: the Dart side already knows which
+// meta the base would delegate to.
+(ObjectHandler.prototype.renderGrid as any).isPlatformDefault = true;
+
 export class EntityMetaDartProxy extends ObjectHandler {
 
   constructor(d: any) {
@@ -1856,13 +1913,21 @@ export class EntityMetaDartProxy extends ObjectHandler {
   get type(): string { return api.grok_Meta_Get_Type(this.dart); }
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, toDart(x)); }
+  /** Loads the object by id through the Dart meta (null when it does not exist
+   * or the meta cannot address it). */
+  async getById(id: string): Promise<any> { return await api.grok_Meta_GetById(this.dart, id); }
 
   renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, toDart(x)); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x)); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x), toDart(context)); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x), toDart(context)); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x), toDart(context)); }
+  renderListItem(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderListItem(this.dart, toDart(x), toDart(context)); }
+  renderInput(x: any, context: any = null): InputBase | null { return toJs(api.grok_Meta_RenderInput(this.dart, toDart(x))); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }
+  renderGrid(grid: Grid, options?: {items?: DataFrame}): void {
+    api.grok_Meta_RenderGrid(this.dart, grid.dart, options?.items ? toDart(options.items) : null);
+  }
 }
 
 /**
@@ -2592,11 +2657,35 @@ export namespace hints {
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
+    let clippers: HTMLElement[] | null = null;
+    function targetClipped(): boolean {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0)
+        return true;
+      if (r.bottom <= 0 || r.right <= 0 || r.top >= window.innerHeight || r.left >= window.innerWidth)
+        return true;
+      if (clippers == null) {
+        clippers = [];
+        for (let p = el.parentElement; p != null && p !== document.body; p = p.parentElement) {
+          const style = getComputedStyle(p);
+          if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
+            clippers.push(p);
+        }
+      }
+      for (const p of clippers) {
+        const pr = p.getBoundingClientRect();
+        if (r.bottom <= pr.top || r.top >= pr.bottom || r.right <= pr.left || r.left >= pr.right)
+          return true;
+      }
+      return false;
+    }
+
     let setPosition = setInterval(function () {
       if ($('body').has(el).length != 0) {
         const indicatorNode = el.getBoundingClientRect();
         hintIndicator.style.left = indicatorNode.left + 'px';
         hintIndicator.style.top = indicatorNode.top + 'px';
+        hintIndicator.style.display = targetClipped() ? 'none' : '';
       } else {
         hintIndicator.remove();
         clearInterval(setPosition);

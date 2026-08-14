@@ -1,15 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, category, expect, delay, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, delay, test} from '@datagrok-libraries/test/src/test';
 
+// Test xlsx files live in the public data.datagrok.ai bucket (s3://datagrok-data/tests/excel),
+// read through an anonymous S3 connection created in before().
+let dc: DG.DataConnection;
 
-async function testExcelImport(path: string, isBenchmarkTest: boolean) {
+async function testExcelImport(fileName: string, isBenchmarkTest: boolean) {
   if (isBenchmarkTest && !DG.Test.isInBenchmark)
     return;
   let error = '';
   let views: DG.TableView[] = [];
   try {
-    const tables = await grok.data.files.openTables(path);
+    const tables = await grok.data.files.openTables(`${dc.nqName}/${fileName}`);
     views = tables.map((table) => grok.shell.addTableView(table));
     await delay(10);
   } catch (e) {
@@ -24,12 +27,26 @@ async function testExcelImport(path: string, isBenchmarkTest: boolean) {
 
 category('Excel', () => {
   category('Excel: Import', () => {
-    test('rich text test', async () => await testExcelImport('System:DemoFiles/test/excel/excel-rich-text-test.xlsx', false));
-    test('1MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-1mb.xlsx', false));
-    test('5MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-5mb.xlsx', true), {benchmark: true});
-    test('10MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-10mb.xlsx', true), {benchmark: true});
-    test('40MB 2 spreadsheets', async () => await testExcelImport('System:DemoFiles/test/excel/excel-40mb-2-spreadsheets.xlsx', true), {benchmark: true, benchmarkTimeout: 70000, timeout: 70000});
-    test('50.2MB', async () => await testExcelImport('System:DemoFiles/test/excel/excel-50.2mb.xlsx', true), {benchmark: true, benchmarkTimeout: 90000, timeout: 90000});
-    test('80MB MAX', async () => await testExcelImport('System:DemoFiles/test/excel/excel-80mb-max.xlsx', true), {benchmark: true, benchmarkTimeout: 120000, timeout: 120000});
+    before(async () => {
+      // Random suffix: parallel CI runs with a same-named connection cross-delete each other
+      dc = DG.DataConnection.create(`PowerPack Excel Tests ${DG.Utils.randomString(8)}`, {
+        dataSource: 'S3',
+        region: 'us-east-2',
+        bucket: 'datagrok-data',
+        dir: 'tests/excel',
+        anonymous: true,
+      } as any);
+      dc = await grok.dapi.connections.save(dc);
+    });
+    after(async () => {
+      await grok.dapi.connections.delete(dc);
+    });
+    test('rich text test', async () => await testExcelImport('excel-rich-text-test.xlsx', false));
+    test('1MB', async () => await testExcelImport('excel-1mb.xlsx', false));
+    test('5MB', async () => await testExcelImport('excel-5mb.xlsx', true), {benchmark: true});
+    test('10MB', async () => await testExcelImport('excel-10mb.xlsx', true), {benchmark: true});
+    test('40MB 2 spreadsheets', async () => await testExcelImport('excel-40mb-2-spreadsheets.xlsx', true), {benchmark: true, benchmarkTimeout: 70000, timeout: 70000});
+    test('50.2MB', async () => await testExcelImport('excel-50.2mb.xlsx', true), {benchmark: true, benchmarkTimeout: 90000, timeout: 90000});
+    test('80MB MAX', async () => await testExcelImport('excel-80mb-max.xlsx', true), {benchmark: true, benchmarkTimeout: 120000, timeout: 120000});
   });
 }, {owner: 'dkovalyov@datagrok.ai', clear: false});

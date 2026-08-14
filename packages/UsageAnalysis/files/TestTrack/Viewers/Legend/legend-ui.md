@@ -1,5 +1,6 @@
 ---
 feature: legend
+realizes: [viewers.line-chart, viewers.scatter-plot]
 target_layer: manual-only
 coverage_type: regression
 priority: p2
@@ -27,7 +28,7 @@ manual QA can reproduce end-to-end.
 
 Each scenario starts by opening SPGI fresh:
 
-1. Open `System:DemoFiles/SPGI.csv` — wait for table view + semantic-type detection
+1. Open `System:DemoFiles/chem/SPGI.csv` — wait for table view + semantic-type detection
 
 ## Scenarios
 
@@ -112,5 +113,5 @@ gradient swatch appearance.
 ---
 {
   "order": 99,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

@@ -3,6 +3,10 @@ const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive'},
   boolean: ['dartium'],
 });
+// minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
+// test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
+// (Playwright kept retrying failed specs). Normalize back to the flag the commands read.
+if (argv.retry === false) argv['no-retry'] = true;
 const help = require('./commands/help').help;
 const runAllCommand = require('./utils/utils').runAll;
 

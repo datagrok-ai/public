@@ -3,7 +3,7 @@
  * @module entities/property
  */
 
-import {ColumnType, SemType, TYPE, Type} from "../const";
+import {ColumnTypeFilter, SemType, TYPE, Type} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {MapProxy} from "../proxies";
 import {IDartApi} from "../api/grok_api.g";
@@ -97,9 +97,10 @@ export interface IProperty {
   /** Additional options. */
   options?: any;
 
-  /** Filter for columns, can be numerical, categorical or directly a column type (string, int...)
+  /** Filter for columns, can be numerical, numerical_no_datetime, categorical, datetime,
+   * categorical_or_datetime, or directly a column type (string, int...)
    * Applicable when type = Column */
-  columnTypeFilter?: ColumnType | 'numerical' | 'categorical' | null;
+  columnTypeFilter?: ColumnTypeFilter | null;
 
 
   viewer?: string;
@@ -186,6 +187,11 @@ export class Property implements IProperty {
   get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
 
+  /** Whether this function parameter is optional (declared with a default value).
+   * What the platform's own call machinery consults; `false` for non-parameter properties. */
+  get isOptional(): boolean { return api.grok_Property_Get_IsOptional(this.dart) === true; }
+  set isOptional(x: boolean) { api.grok_Property_Set_IsOptional(this.dart, x); }
+
   /** Initial value used when initializing UI */
   get initialValue(): string { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
   set initialValue(s: string) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
@@ -246,7 +252,7 @@ export class Property implements IProperty {
   get vectorName(): string { return api.grok_Property_Get_VectorName(this.dart); }
 
   /** Column type filter (previously "columnFilter") */
-  get columnTypeFilter(): ColumnType | 'numerical' | 'categorical' | null {
+  get columnTypeFilter(): ColumnTypeFilter | null {
     return api.grok_Property_Get_ColumnTypeFilter(this.dart);
   }
 

@@ -1,3 +1,7 @@
+---
+realizes: [file.menu.save.as-csv-options, import.csv, chem.cell.molecule]
+---
+
 # Molecule column in exported CSV
 
 Verifies that a molecule column exported to CSV is written out as SMILES
@@ -18,5 +22,5 @@ text, and reads back correctly when the exported file is reopened.
 ---
 {
   "order": 5,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

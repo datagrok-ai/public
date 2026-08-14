@@ -22,10 +22,33 @@ button[title="About"], button[title="Help (?)"] {
     overflow: hidden!important;
 }
 
+.ketcher-host div[title="Switch to Macromolecule mode"] {
+    display: none;
+}
+
 .ketcher-resizing {
     width: 100%!important;
 }
 
+.ketcher-suspended {
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-color-light);
+}
+
+.ketcher-suspended > div:first-child {
+    max-width: 430px;
+}
+
+.ketcher-suspended > button {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 12px;
+}
 [class*="Settings-module_settings__"] {
     height: 40vh!important;
 }

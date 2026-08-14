@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [chem.cp.similarity-search-viewer]
-realizes: [chem.search.similarity-search, chem.chem-similarity-search]
+realizes: [chem.menu.search.similarity-search, chem.viewer.chem-similarity-search]
 realized_as:
   - similarity-search-spec.ts
 produced_from: migrated

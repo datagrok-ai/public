@@ -29,7 +29,22 @@ IFitChartData {
 ```
 Each `IFitSeries` has `points: IFitPoint[]` (x, y, outlier, color, marker, stdev) plus fit configuration (fitFunction, parameters, colors, showFitLine, clickToToggle, droplines, etc.).
 
-Options cascade: **DataFrame tags → Column tags → Cell JSON → Series defaults**, merged at render time.
+Labels are values the fit cannot produce - a plate's Z prime, an assay name, a compound id.
+`chartOptions.labels` describes the whole plot and renders once; `series.labels` describes one curve
+and renders with it. `chartOptions.showLabels` picks which names to draw, exactly as `showStatistics`
+does for statistics, so it inherits the cascade and the persistence below for free. Unlike every other
+option, `chartOptions.labels` merges **per key** across levels - labels are data, not a setting.
+
+Options precedence, applied at render time in `fit/fit-chart-data.ts`:
+
+**value the curve declares → dataframe explicit → column explicit → cell explicit**
+
+Every level stores what it holds in a tag (`FitConstants.TAG_FIT`, dataframe and column) or in the
+cell JSON, alongside an `explicit` list naming the options a user actually set there. An option that
+is merely present fills a gap (`mergeProperties`); only an **explicitly set** one overrides the value
+a series declares for itself. Setting a level clears the claims of the narrower levels below it, so a
+Column change reaches every cell and a Dataframe change reaches every column - without deleting the
+data's own values, which is how a setting survives a layout applied to a fresh table.
 
 ## Curve Converter Architecture
 
@@ -57,6 +72,9 @@ The Curves package supports **multiple curve data formats** through a dynamic co
 - `FitConstants.TAG_CURVE_FORMAT` = `'.%curve-format'` — column tag storing format name (e.g. `'3dx'`, `'compact-dr'`, `'pzfx'`)
 - `FitConstants.FIT_SEM_TYPE` = `'fit'` — semantic type for fit curves
 - `FitConstants.TAG_FIT_CHART_FORMAT` = `'.fitChartFormat'` — legacy tag for format identification
+- `FitConstants.TAG_FIT` = `'.%fit'` — dataframe/column tag holding that level's options. The `.%`
+  prefix is what makes the platform serialize it into a layout; `TAG_FIT_LEGACY` (`'.fit'`) is read
+  and migrated once, then removed
 
 ### Supported Formats
 
@@ -114,10 +132,26 @@ Central module for the converter system:
 3. `detectPzfxCurveChart` — matches PZFX XY table XML
 4. `detectCompactDoseResponse` — matches compact DR JSON with `p` + `poi` fields
 
+### Chart Data & Caches — `src/fit/fit-chart-data.ts`
+
+A leaf module, so the renderer and the statistics do not import each other through it:
+- **Caching**: four `DG.LruCache` instances: `parsedCurves` (parsed IFitChartData), `fittedCurves` (fitted
+  curve results), `curvesDataPoints` (extracted data points), and `viewerFits`. Nothing ever invalidates
+  them - correctness is entirely in the key, which is why the axes belong there alongside the cell: the
+  same curve fits differently on a log axis, and a grid, a property panel and a trellis can be showing
+  it in different spaces at once. `viewerFits` is separate on purpose: a viewer's curves are not the
+  grid's (it merges a cell's series and applies its own log options), so the two must never answer for
+  each other. It is keyed on `chartDataId()` - a short stand-in for the parsed cell's object identity,
+  so re-parsing a cell retires the fits made from it without any invalidation code
+
+- `getOrCreateParsedChartData(cell)` — cached parse with the precedence above applied
+- `getColumnChartOptions` / `getDataFrameChartOptions` — read a level's options, migrating `.fit` onto `.%fit`
+- `mergeProperties` (gap filling) and the explicit overrides that outrank a series' own value
+- `mergeSeries`, `substituteZeroes`, `sanitizeCellValue`
+
 ### Cell Renderer — `src/fit/fit-renderer.ts`
 
 `FitChartCellRenderer` (extends `DG.GridCellRenderer`) — the main grid cell renderer for `fit` cells:
-- **Caching**: three `DG.LruCache` instances: `parsedCurves` (parsed IFitChartData), `fittedCurves` (fitted curve results), `curvesDataPoints` (extracted data points)
 - **render()**: parses cell via `parseCellValue()` → renders axes, fit lines, points, confidence intervals, droplines, statistics, title, legend
 - **onClick()**: toggles outlier status on points (native format only), updates dependent statistics columns
 - **onDoubleClick()**: opens `inspectCurve` dialog (resizable chart editor)
@@ -125,11 +159,34 @@ Central module for the converter system:
 - Outlier toggling is only available for native format columns (`isNativeFormat()`)
 
 Key helper functions:
-- `getOrCreateParsedChartData(cell)` — cached parse with options merge (DF → Column → Cell cascade)
-- `getOrCreateCachedFitCurve(series, ...)` — cached Nelder-Mead fit
-- `substituteZeroes(data)` — replaces x=0 with calculated substitute when logX is enabled
-- `setOutlier(gridCell, point, ...)` — toggles outlier, updates cell JSON, fires custom event
-- `layoutChart(rect, ...)` — computes viewport, xAxis, yAxis rectangles with margins
+- `getOrCreateCachedFitCurve(series, ...)` — cached Nelder-Mead fit (in `fit-chart-data.ts`)
+- `layoutChart(rect, ...)` and the `*Shown` predicates — geometry and what a cell of a given size has
+  room for, in `fit-layout.ts`
+- `setOutlier`, `inspectCurve`, `handleClick`, `handleMouseMove` — what a user does to a curve, in
+  `fit-interaction.ts`. The renderer's `onClick`/`onMouseMove` delegate to them; `handleMouseMove`
+  takes the renderer as the base `DG.GridCellRenderer` type so the two modules do not import each other
+
+Parameters stored in a cell are **always data space**; `seriesInFitSpace()` hands the renderer a copy
+in the optimizer's coordinates for the curve, the confidence band and the droplines, and everything
+shown as a number goes through `toDataSpace()` instead. See "Fit statistics" below.
+
+### Fit statistics
+
+Statistics come from the typed fit, not positional parameter indices: `getSeriesFit()` → a `Fit`
+subclass, read by name with `getStatistic(fit, name)`. Each fit function advertises its own set via
+`statisticsProperties`, so a linear fit has no `ic50` and asking returns `undefined`, not `NaN`.
+`toDataSpace()` converts log-fitted statistics back to data space exactly once — **aggregate before
+calling it**, so an averaged IC50 stays a geometric mean.
+
+Legacy names (`interceptX`, `top`, …) are persisted in `showStatistics`, in the `.statistics` column
+tag and in recorded transforms; `LEGACY_FIT_STATISTICS` is append-only and resolved through an alias
+table. `addStatisticsColumn` and the `.sourceColumn` sweep in `setOutlier` are the legacy path, kept
+so existing projects keep working.
+
+`curveStatistic` / `curveAggrStatistic` add statistics as **calculated columns** (`meta.vectorFunc` +
+`action: join(table)`, called with `processed: false`). Three traps there fail silently — a parameter
+must not be named after the package module global, the result column name must be stable, and on
+recalculation the function gets a detached column. See `src/tests/calculated-columns-tests.ts`.
 
 ### Property Panel — `src/fit/fit-grid-cell-handler.ts`
 
@@ -137,7 +194,18 @@ Key helper functions:
 - **Options pane**: switch level (Dataframe/Column/Cell), series and chart options
 - **Chart pane**: enlarged `GridCellWidget` rendering
 - **Fit pane**: per-series or aggregated statistics with "+" buttons to extract stats as columns
-- Uses `parseCellValue()` for format-agnostic cell parsing
+- `addStatisticColumn()` runs `curveStatistic`/`curveAggrStatistic` and puts the result right after
+  the curve column, in the dataframe and in the grid, which keep their order separately
+
+### Options — `src/fit/fit-options.ts`
+
+Writing an option at any level, kept apart from the panel that renders it:
+- `changeCurvesOptions(gridCell, input, section, level)` — the single entry point
+- `claim`/`unclaim` — record or drop "the user set this here", which is what outranks the data
+- `chartPropertiesFor` / `seriesPropertiesFor` / `normalizeStatisticNames` — the property lists the
+  panel binds to, built from the cell's own fit functions rather than a fixed legacy list
+- `STATISTIC_AFFECTING_OPTIONS` gates the notification: only these refit dependent statistic columns,
+  everything else notifies at dataframe level, which marks the table modified without recalculating
 
 ### Rendering Utilities — `src/fit/render-utils.ts`
 
@@ -149,11 +217,26 @@ Low-level canvas drawing functions using `CanvasRenderingContext2D`:
 | `renderFitLine` | Fitted curve line (solid/dotted/dashed/dashdotted) |
 | `renderConfidenceIntervals` | Shaded confidence bands |
 | `renderConnectDots` | Direct point-to-point line connections |
-| `renderDroplines` | IC50 droplines |
+| `renderDroplines` | ICxx / ECxx droplines, resolved through `FitFunction.inverse` |
 | `renderStatistics` | In-chart text labels for selected statistics |
 | `renderTitle` | Chart title |
 | `renderAxesLabels` | X and Y axis name labels |
-| `renderLegend` | Color-coded legend |
+
+### Legend — `src/fit/fit-legend.ts`
+
+The legend annotates the plot from a corner, over a backdrop, taking at most 40% of the width and
+half the height. `chooseLegendCorner()` picks the corner: `renderPoints` and `renderFitLine` report
+where they put ink (`drawnAt`), each corner is scored by how much of it falls within a clearance ring,
+ties go to the corner the ink keeps furthest away, and the top right one stays unless another is less
+than half as crowded - otherwise the legend would hop about as rows are hovered or the grid scrolls.
+
+A column that holds a single curve gets no row of its own; a name that two columns share is qualified
+with the column, while the same name twice in one column is left alone (the prefix would be identical);
+a name too long is ellipsized; rows past the corner collapse into `+N more`. `legendTooltip()` answers
+the hover - the whole of a shortened name, or every row when the pointer is on `+N more` - reading the
+layout the render recorded, since only the render knows which corner it chose. `isLegendVisible()` is
+the single gate (the `showLegend` chart option and the size thresholds), used by the renderer and the
+hover alike. Rows are measured on a canvas context of its own, since hit testing has none to draw on.
 
 ### Converters — `src/fit/converters/`
 
@@ -191,8 +274,13 @@ Test entry point: `src/package-test.ts` — imports all test files.
 | `converter-tests.ts` | All converters (XML, compact DR, PZFX), caching, format detection, rendering integration |
 | `fit-tests.ts` | Core fitting algorithms (sigmoid, linear, log-linear, exponential, polynomial) |
 | `curves-cell-renderer-tests.ts` | Cell renderer creation and rendering performance |
+| `calculated-columns-tests.ts` | `curveStatistic`/`curveAggrStatistic` as calculated columns, statistic-space round trips, aggregation |
+| `panel-renderer-tests.ts` | Property panel construction, option precedence between levels, notification gating |
 | `transform-tests.ts` | Viewport coordinate transformations |
 | `pzfx-tests.ts` | PZFX file parser |
+| `legend-tests.ts` | Legend rows, the reserved strip, ellipsis and overflow |
+| `multi-curve-viewer-tests.ts` | The viewer works on copies of the cached cell data |
+| `curve-data.ts` | Shared sigmoid data and `renderedTexts()` used by the suites above (not a suite) |
 
 ## Source Structure
 
@@ -204,9 +292,15 @@ src/
   package-test.ts         — Test entry point
   fit/
     curve-converter.ts    — Converter registry, LRU cache, parseCellValue() entry point
-    fit-renderer.ts       — FitChartCellRenderer, caching, chart layout, merging
-    fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stats calculation
-    render-utils.ts       — Canvas drawing functions (points, lines, CIs, droplines, legend)
+    fit-chart-data.ts     — Options precedence, parsed-chart-data and fit caches (leaf module)
+    fit-layout.ts         — Chart geometry, and what fits in a cell of a given size
+    fit-legend.ts         — Legend rows, the strip they are given, and their drawing
+    fit-renderer.ts       — FitChartCellRenderer: assembling a chart onto a canvas
+    fit-interaction.ts    — Outlier toggle, tooltip, click handling, the chart editor dialog
+    fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stat column extraction
+    fit-options.ts        — changeCurvesOptions, claims, panel property lists
+    fit-statistics.ts     — Per-series and aggregated statistics calculation
+    render-utils.ts       — Canvas drawing functions (points, lines, CIs, droplines, statistics)
     fit-parser.ts         — XML 3DX → IFitChartData parser (used by xml-converter)
     data-to-curves.ts     — Data to Curves pipeline (UI dialog + conversion logic)
     multi-curve-viewer.ts — MultiCurveViewer (overlay viewer)
@@ -220,6 +314,7 @@ src/
     pzfx/
       pzfx-parser.ts      — PZFX file parser
   tests/
+    curve-data.ts         — Shared sigmoid test data
     detector-tests.ts     — Semantic type detector tests (all formats)
     converter-tests.ts    — Converter tests (all formats, caching, integration)
     fit-tests.ts          — Fitting algorithm tests
@@ -241,13 +336,21 @@ detectors.js              — Semantic type detectors (all curve formats)
 | Converter infrastructure | `src/fit/curve-converter.ts` |
 | Existing converters | `src/fit/converters/` |
 | Function/demo/init registration | `src/package.ts` |
-| Cell renderer (render, click, tooltip) | `src/fit/fit-renderer.ts` |
+| Cell renderer (drawing) | `src/fit/fit-renderer.ts` |
+| Click, tooltip, outlier toggle, editor dialog | `src/fit/fit-interaction.ts` |
+| Chart geometry, size thresholds | `src/fit/fit-layout.ts` |
+| Legend rows, width and drawing | `src/fit/fit-legend.ts` |
+| Options precedence, parse and fit caches | `src/fit/fit-chart-data.ts` |
 | Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` |
-| Canvas drawing (points, lines, axes) | `src/fit/render-utils.ts` |
+| Writing an option at a level, claims | `src/fit/fit-options.ts` |
+| Statistics calculation (per-series, aggregated) | `src/fit/fit-statistics.ts` |
+| Canvas drawing (points, lines, axes, statistics, labels) | `src/fit/render-utils.ts` |
 | Data to Curves dialog & conversion | `src/fit/data-to-curves.ts` |
 | Multi-curve overlay viewer | `src/fit/multi-curve-viewer.ts` |
 | XML 3DX format parsing | `src/fit/fit-parser.ts` |
 | Fit data types (IFitChartData, etc.) | `@datagrok-libraries/statistics/src/fit/fit-curve.ts` |
+| Fit functions, typed fits, optimizer | `.../fit/fit-engine.ts` |
+| Series-level API (getSeriesFit, toDataSpace) | `.../fit/fit-data.ts` |
 | Constants (tags, sizes, thresholds) | `@datagrok-libraries/statistics/src/fit/const.ts` |
 | Semantic type detection | `detectors.js` |
 | Test entry point | `src/package-test.ts` |

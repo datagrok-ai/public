@@ -1,5 +1,13 @@
 ---
 title: "Column Manager"
+description: Use Column Manager to navigate, select, and batch-edit columns across open tables in a tabular view.
+keywords:
+  - column viewer
+  - column list
+  - batch column actions
+  - column statistics
+  - select multiple columns
+  - view columns
 unlisted: true
 sidebar_position: 4
 ---

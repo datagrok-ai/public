@@ -9,6 +9,7 @@ import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
+import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
 import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
 import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
@@ -68,9 +69,20 @@ function setVueAppOptions(app: Vue.App<any>) {
     app.config.performance = true;
 }
 
+// Compute2-only extension of the Model Hub view: adds the run comparison tool
+// to the ribbon menu without touching the shared model-catalog code (used by Compute1).
+class Compute2ModelCatalogView extends ModelCatalogView {
+  constructor(viewName: string, roleOnlyFilter = false) {
+    super(viewName, roleOnlyFilter);
+    this.ribbonMenu.group('Tools')
+      .item('Compare Runs...', () => grok.functions.call('Compute2:CompareRuns'))
+      .endGroup();
+  }
+}
+
 const modelCatalogOptions = {
   _package,
-  ViewClass: ModelCatalogView,
+  ViewClass: Compute2ModelCatalogView,
   segment: 'Modelhub',
   viewName: 'Model Hub',
   funcName: 'modelCatalog',
@@ -270,6 +282,35 @@ export class PackageFunctions {
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Compare Runs',
+    description: 'Compare data across model runs: scalars or a single table column',
+  })
+  static async CompareRuns() {
+    const view = new DG.ViewBase();
+    view.name = 'Run Comparison';
+    view.helpUrl = '/help/compute/run-comparison.md';
+    view.setRibbonPanels([[
+      ui.iconFA('question',
+        () => window.open('https://datagrok.ai/help/compute/run-comparison', '_blank'),
+        'Open the Run Comparison documentation'),
+    ]]);
+    view.root.classList.remove('ui-panel');
+    const app = Vue.createApp(RunComparisonAppInstance, {roleOnlyFilter: modelCatalogOptions.roleOnlyFilter});
+    setVueAppOptions(app);
+    app.mount(view.root);
+
+    grok.events.onViewRemoved.pipe(
+      filter((closedView) => closedView === view),
+      take(1),
+    ).subscribe(() => {
+      app.unmount();
+    });
+
+    grok.shell.addView(view);
   }
 
 
@@ -737,6 +778,49 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
     return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
+  }
+
+  // Fixture for the URL-inputs parsing tests (see test/url-inputs.ts).
+  @grok.decorators.func()
+  static async TestUrlInputsFixture(
+    @grok.decorators.param({type: 'int'}) a: number,
+    b: number,
+    flag: boolean,
+    s: string,
+    @grok.decorators.param({type: 'datetime'}) when: dayjs.Dayjs,
+    df: DG.DataFrame,
+    @grok.decorators.param({options: {optional: true}}) opt: number,
+    @grok.decorators.param({type: 'int', options: {nullable: true}}) nul: number,
+  ): Promise<number> {
+    return a;
+  }
+
+  // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);
+  // the tests only prepare() these calls, the bodies never run.
+  @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})
+  static async TestProjectExportSingleOut(
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<DG.DataFrame> {
+    return DG.DataFrame.create(x);
+  }
+
+  @grok.decorators.func({outputs: [
+    {type: 'dataframe', name: 'res1'},
+    {type: 'dataframe', name: 'res2'},
+  ]})
+  static async TestProjectExportMultiOut(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<any> {
+    return {res1: df, res2: df};
+  }
+
+  @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})
+  static async TestProjectExportFileIn(
+    @grok.decorators.param({options: {optional: true, nullable: true}}) file: DG.FileInfo,
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<DG.DataFrame> {
+    return DG.DataFrame.create(x);
   }
 
 }

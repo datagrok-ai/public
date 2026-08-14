@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [chem.cp.substructure-search-with-filter]
-realizes: [chem.substructure-filter]
+realizes: [chem.filter.substructure-filter, chem.action.use-as-filter, view.menu.layout.clone-view]
 realized_as:
   - structure-filter-spec.ts
 produced_from: migrated

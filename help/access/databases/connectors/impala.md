@@ -1,8 +1,22 @@
 ---
 title: "Impala"
+description: Connect Datagrok to the Apache Impala query engine using SQL over JDBC, with schema browsing and joins.
+keywords:
+  - apache impala
+  - impala query engine
+  - impala jdbc driver
+  - connect to impala
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - connection test
 ---
 
 Provides access to [Impala](https://impala.apache.org/) query engine via a JDBC driver.
+This connector is served by the optional **grok_connect_extended** service. If it does not appear
+under **Data > Databases**, ask your administrator to enable it (Helm: `grokConnectExtended.enabled: true`;
+Docker Compose: start the `grok_connect_extended` profile).
+
 
 ## Connection parameters
 
@@ -22,7 +36,7 @@ Provides access to [Impala](https://impala.apache.org/) query engine via a JDBC 
 | `num`, `int`, `double` | =                    | =100                       |
 |                        | >                    | >1.02                      |
 |                        | >=                   | >=4.1                      |
-|                        | \<=                   | \<=100                      |
+|                        | \<=                  | \<=100                     |
 |                        | !=                   | !=5                        |
 |                        | in                   | in (1, 3, 10.2)            |
 |                        | min-max              | 1.5-10.0                   |
