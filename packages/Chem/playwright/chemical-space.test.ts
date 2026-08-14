@@ -148,7 +148,10 @@ async function runChemicalSpaceWalk(page: Page, label: string, datasetPath: stri
       });
       grok.shell.closeAll();
     });
-    await page.waitForFunction(() => grok.shell.tv == null, null, {timeout: 15_000});
+    // `grok.shell.tv` falls back to the current view once the last table view is gone (it reports
+    // "Home"), so it never becomes null — count the table views instead.
+    await page.waitForFunction(() => Array.from((grok.shell as any).tableViews).length === 0,
+      null, {timeout: 15_000});
   });
 }
 
@@ -156,11 +159,13 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   // CI SKIP (approved): 6 heavy dim-reduction (UMAP/t-SNE) runs across 3 datasets time out / race on the
   // minimal CI stack ("Close active view" timeouts + "Concurrent modification"). Runs on a full stack.
   // See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
-  test.skip(true, 'CI-env: heavy dim-reduction walk does not complete on the minimal CI stack (findings §B1)');
   test.setTimeout(600_000); // 6 dim-reduction runs (2 × 3 datasets) @ ~45-90s each + margin
 
   const consoleErrors: string[] = [];
-  const isBenignError = (t: string) => /Failed to load resource/.test(t) || /404 \(\)/.test(t) || /favicon/.test(t);
+  // WebGPU is absent in headless CI chromium and the dim-reduction code just reports it — same
+  // class of noise as a 404 for a lazy asset.
+  const isBenignError = (t: string) => /Failed to load resource/.test(t) || /404 \(\)/.test(t) ||
+    /favicon/.test(t) || /WebGPU is not supported/.test(t);
   page.on('console', (msg) => {
     if (msg.type() === 'error' && !isBenignError(msg.text())) consoleErrors.push(msg.text());
   });
@@ -172,8 +177,16 @@ test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)',
   await runChemicalSpaceWalk(page, 'D2 molV2000', 'System:AppData/Chem/mol1K.sdf', 'method');
   await runChemicalSpaceWalk(page, 'D3 molV3000', 'System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf', 'cluster-mcs');
 
-  await softStep('No console errors across the multi-format walk', async () =>
-    expect(consoleErrors, `console errors: ${consoleErrors.join(' | ')}`).toEqual([]));
+  // GROK-20717: under a loaded run (4 workers) the core raises "Concurrent modification during
+  // iteration" from ObservableMap here. The check stays as is — it is a real error — but the
+  // message names the ticket so the failure needs no re-investigation.
+  await softStep('No console errors across the multi-format walk', async () => {
+    const known = consoleErrors.filter((e) => /Concurrent modification during iteration/.test(e));
+    expect(consoleErrors,
+      `console errors: ${consoleErrors.join(' | ')}` +
+      (known.length ? ' — this is GROK-20717 (core, open), not a Chemical Space defect' : ''),
+    ).toEqual([]);
+  });
 
   finishSpec();
 });
