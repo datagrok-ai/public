@@ -122,11 +122,13 @@ test('Legend selectors and column switching (SPGI)', async ({page}) => {
     });
     const mini = await legendInfo(page, 'Scatter plot');
     expect(`${mini.mode}/${mini.slot}`).toBe('miniIcon/rightBottom');
-    // the icon is positioned from the bottom, lifted above the x-axis strip
+    // the icon anchors where the corner legend sat: from the bottom, above the x-axis strip
     const bottomPx = parseInt(mini.iconStyle.bottom || '');
     expect(bottomPx, `icon not in the bottom corner: ${JSON.stringify(mini.iconStyle)}`).toBeGreaterThanOrEqual(2);
     expect(bottomPx, 'icon must sit just above the x-axis, not mid-viewer').toBeLessThan(80);
-    expect(mini.iconStyle.right).toBe('5px');
+    const rightPx = parseInt(mini.iconStyle.right || '');
+    expect(rightPx, `icon must hug the right edge: ${JSON.stringify(mini.iconStyle)}`).toBeGreaterThanOrEqual(5);
+    expect(rightPx).toBeLessThan(60);
     expect(mini.iconStyle.top).toBe('');
   });
 

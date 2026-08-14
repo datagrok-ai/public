@@ -1,7 +1,8 @@
 /* ---
-sub_features_covered: [legend.placement.markers-no-flap, legend.sizing.whole-rows,
-  legend.header.column-priority, legend.mini-icon.axis-offsets, legend.tooltip.outside-viewer,
-  legend.sections.splitter-scroll]
+sub_features_covered: [legend.placement.markers-no-flap, legend.placement.bar-stack-no-flap,
+  legend.sizing.whole-rows, legend.sizing.item-font-and-chrome, legend.header.column-priority,
+  legend.mini-icon.axis-offsets, legend.tooltip.outside-viewer, legend.sections.splitter-scroll,
+  legend.tooltip.no-stale-reclaim]
 --- */
 // Round-16 pins. A scatter with clustered data, a color column and a datetime marker
 // column never flaps docked/top ↔ corner/rightBottom while widening (the undocked chart
@@ -73,6 +74,76 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     const slots = moves.map((s: string) => s.split('->')[1]);
     expect(slots.filter((s: string, i: number) => i >= 2 && slots[i - 2] === s),
       'returned to a slot it had just left').toEqual([]);
+    await closeViewer(page, 'Scatter plot');
+  });
+
+  await softStep('Widening a stacked bar chart never flaps between top and a corner', async () => {
+    await page.evaluate(() => {
+      (window as any).grok.shell.tv.addViewer('Bar chart',
+        {splitColumnName: 'Stereo Category', stackColumnName: 'Scaffold Names'});
+    });
+    await page.waitForTimeout(2500);
+    await v.resizeViewer(page, 'Bar chart', 600, 700);
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__moves = [];
+      w.__sub = w.grok.events.onEvent('d4-legend-placement-changed').subscribe((e: any) => {
+        const a = e.args ?? e;
+        w.__moves.push(`${a.fromMode}/${a.fromSlot}->${a.toMode}/${a.toSlot}`);
+      });
+    });
+    for (let w = 604; w <= 800; w += 4) {
+      await page.evaluate(({width}) => {
+        const tv = (window as any).grok.shell.tv;
+        const x = tv.viewers.find((q: any) => q.type === 'Bar chart');
+        const host = x.root.parentElement ?? x.root;
+        host.style.width = `${width}px`;
+        host.style.height = `700px`;
+        window.dispatchEvent(new Event('resize'));
+      }, {width: w});
+      await page.waitForTimeout(200);
+    }
+    await page.waitForTimeout(800);
+    const moves = await page.evaluate(() => {
+      const w = window as any; w.__sub?.unsubscribe(); return w.__moves;
+    });
+    expect(moves.length, `bar chart flapped while widening:\n${moves.join('\n')}`).toBeLessThanOrEqual(2);
+    const slots = moves.map((s: string) => s.split('->')[1]);
+    expect(slots.filter((s: string, i: number) => i >= 2 && slots[i - 2] === s),
+      'returned to a slot it had just left').toEqual([]);
+    await closeViewer(page, 'Bar chart');
+  });
+
+  await softStep('A long-label top legend sizes to its real columns — no phantom second column', async () => {
+    await page.evaluate(() => {
+      (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Scaffold Names'});
+    });
+    await page.waitForTimeout(2500);
+    const read = () => page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
+      const root = x.root.querySelector('[name="legend"]') as HTMLElement;
+      const list = root.querySelector('.d4-legend-list') as HTMLElement;
+      const items = Array.from(root.querySelectorAll('[name="legend-item"]')) as HTMLElement[];
+      const lr = list.getBoundingClientRect();
+      const visible = items.filter((i) => {
+        const r = i.getBoundingClientRect();
+        return r.bottom <= lr.bottom + 2 && r.top >= lr.top - 2;
+      }).length;
+      return {items: Number(root.getAttribute('data-legend-items')),
+        state: `${root.getAttribute('data-legend-mode')}/${root.getAttribute('data-legend-slot')}`,
+        visible, scroll: list.scrollHeight > list.clientHeight + 2};
+    });
+    for (const w of [606, 640]) {
+      await v.resizeViewer(page, 'Scatter plot', w, 735);
+      await page.waitForTimeout(1500);
+      const s = await read();
+      if (s.state !== 'docked/top') continue;
+      expect(s.visible, `at ${w}px only ${s.visible}/${s.items} items visible: ${JSON.stringify(s)}`)
+        .toBe(s.items);
+      expect(s.scroll, `at ${w}px the estimate fit columns the DOM could not`).toBe(false);
+    }
     await closeViewer(page, 'Scatter plot');
   });
 
@@ -263,6 +334,158 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     expect(s.canScroll, 'the squeezed extra list must scroll').toBe(true);
     expect(s.scrolled, 'scrollTop must actually move').toBe(true);
     expect(s.clipped, 'no clipping without a scrollbar').toBe(false);
+  });
+
+  await softStep('Expanding from the mini icon never de-docks the legend on a later tooltip', async () => {
+    // corner -> collapse -> Auto -> hover-expand leaves a tooltip-visible flag; the next
+    // row tooltip must not reclaim the now-docked legend out of the flex layout (that
+    // painted the canvas at full width under a shrunken CSS box: blur + broken hit tests)
+    await closeViewer(page, 'Scatter plot');
+    await page.evaluate(() => {
+      (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Series'});
+    });
+    await page.waitForTimeout(2500);
+    await v.resizeViewer(page, 'Scatter plot', 760, 600);
+    await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightTop'}, wait: 1500}]);
+    await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
+      const root = x.root.querySelector('[name="legend"]') as HTMLElement;
+      root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+      await new Promise((r) => setTimeout(r, 300));
+      (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
+      await new Promise((r) => setTimeout(r, 1200));
+    });
+    await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'Auto'}, wait: 1500}]);
+
+    const mini = await page.evaluate(() => {
+      const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
+      const r = el.getBoundingClientRect();
+      return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+    });
+    await page.mouse.move(mini.x - 40, mini.y + 40);
+    await page.mouse.move(mini.x, mini.y, {steps: 5});
+    await page.waitForTimeout(1500);
+    await page.mouse.click(mini.x, mini.y);
+    await page.waitForTimeout(2000);
+
+    // hover data points (row tooltips fire), then force a repaint
+    const c = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
+      const r = (x.root.querySelector('canvas') as HTMLElement).getBoundingClientRect();
+      return {x: r.x, y: r.y, w: r.width, h: r.height};
+    });
+    for (let i = 0; i < 10; i++)
+      await page.mouse.move(c.x + c.w * (0.25 + 0.05 * i), c.y + c.h * 0.5);
+    await page.waitForTimeout(600);
+    await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
+      x.props.showRegressionLine = true;
+      await new Promise((r) => setTimeout(r, 800));
+      x.props.showRegressionLine = false;
+    });
+    await page.waitForTimeout(1500);
+
+    const s = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
+      const root = x.root.querySelector('[name="legend"]') as HTMLElement;
+      const dpr = window.devicePixelRatio;
+      const canvases = Array.from(x.root.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      return {mode: root.getAttribute('data-legend-mode'),
+        docked: x.root.contains(root) && root.parentElement !== x.root,
+        canvases: canvases.map((cv) => {
+          const r = cv.getBoundingClientRect();
+          return {css: `${Math.round(r.width)}x${Math.round(r.height)}`, attr: `${cv.width}x${cv.height}`,
+            ok: Math.abs(cv.width - r.width * dpr) <= 2 && Math.abs(cv.height - r.height * dpr) <= 2};
+        })};
+    });
+    expect(s.mode, `legend must stay expanded: ${JSON.stringify(s)}`).toBe('docked');
+    expect(s.docked, 'the docked legend was pulled out of the flex layout').toBe(true);
+    for (const cv of s.canvases)
+      expect(cv.ok, `canvas backing store out of sync: ${JSON.stringify(s.canvases)}`).toBe(true);
+  });
+
+  await softStep('A bar chart corner legend lands beside the bars on the very first placement', async () => {
+    await closeViewer(page, 'Scatter plot');
+    await page.evaluate(() => {
+      (window as any).grok.shell.tv.addViewer('Bar chart',
+        {splitColumnName: 'Stereo Category', stackColumnName: 'Series'});
+    });
+    await page.waitForTimeout(2500);
+    await v.resizeViewer(page, 'Bar chart', 620, 760);
+    await page.waitForTimeout(1500);
+    const read = () => page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Bar chart');
+      const root = x.root.querySelector('[name="legend"]') as HTMLElement;
+      return {state: `${root.getAttribute('data-legend-mode')}/${root.getAttribute('data-legend-slot')}`,
+        bottom: parseFloat(root.style.bottom || '0'), right: parseFloat(root.style.right || '0')};
+    });
+    const first = await read();
+    await v.resizeViewer(page, 'Bar chart', 622, 760);
+    await page.waitForTimeout(1500);
+    const settled = await read();
+    expect(first.state).toBe(settled.state);
+    // the first anchor must already be the settled one — a stale-geometry anchor put the
+    // legend on the axis until a resize re-resolved
+    expect(Math.abs(first.bottom - settled.bottom),
+      `first placement ${JSON.stringify(first)} vs settled ${JSON.stringify(settled)}`).toBeLessThanOrEqual(2);
+    expect(Math.abs(first.right - settled.right)).toBeLessThanOrEqual(2);
+
+    // the mini icon anchors where the legend sat (below the axis), not at the viewer edge
+    await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Bar chart');
+      const root = x.root.querySelector('[name="legend"]') as HTMLElement;
+      root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+      await new Promise((r) => setTimeout(r, 300));
+      (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
+      await new Promise((r) => setTimeout(r, 1200));
+    });
+    const icon = await page.evaluate(() => {
+      const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
+      return {bottom: parseFloat(el.style.bottom || '0'), right: parseFloat(el.style.right || '0')};
+    });
+    expect(Math.abs(icon.bottom - settled.bottom),
+      `icon ${JSON.stringify(icon)} must anchor at the legend's corner ${JSON.stringify(settled)}`)
+      .toBeLessThanOrEqual(20);
+    expect(Math.abs(icon.right - settled.right)).toBeLessThanOrEqual(20);
+    await closeViewer(page, 'Bar chart');
+  });
+
+  await softStep('A pie chart mini icon tucks beside the circle, not at the viewer corner', async () => {
+    await page.evaluate(() => {
+      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Primary Series Name'});
+    });
+    await page.waitForTimeout(2500);
+    await v.resizeViewer(page, 'Pie chart', 620, 760);
+    await page.waitForTimeout(1500);
+    await page.evaluate(async () => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Pie chart');
+      const root = x.root.querySelector('[name="legend"]') as HTMLElement;
+      root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
+      await new Promise((r) => setTimeout(r, 300));
+      (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
+      await new Promise((r) => setTimeout(r, 1200));
+    });
+    const icon = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const x = tv.viewers.find((q: any) => q.type === 'Pie chart');
+      const el = x.root.querySelector('[name="mini-legend-icon"]') as HTMLElement;
+      const r = el.getBoundingClientRect();
+      const vr = x.root.getBoundingClientRect();
+      return {fromRight: Math.round(vr.right - r.right), fromTop: Math.round(r.top - vr.top),
+        display: el.style.display};
+    });
+    expect(icon.display).toBe('block');
+    expect(icon.fromRight, `icon must be pulled toward the circle: ${JSON.stringify(icon)}`)
+      .toBeGreaterThan(40);
+    expect(icon.fromTop, 'icon must sit beside the circle, not at the viewer top').toBeGreaterThan(40);
+    await closeViewer(page, 'Pie chart');
   });
 
   expect(errors, `page errors:\n${errors.join('\n')}`).toEqual([]);
