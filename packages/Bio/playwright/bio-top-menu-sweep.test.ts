@@ -4,7 +4,7 @@ sub_features_covered: [bio.analyze.activity-cliffs.top-menu, bio.analyze.compare
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
-import {openBioGroup, openBioMenu, dialog, cancelDialog, loadBioTable} from './helpers';
+import {openBioGroup, openBioMenu, dialog, cancelDialog, loadBioTable, closeExtraViewers} from './helpers';
 
 test.use(specTestOptions);
 
@@ -12,14 +12,16 @@ const ANTIBODIES = 'System:AppData/Bio/samples/antibodies.csv';
 const TABLE = 'antibodies';
 const ROWS = 40;
 
-/** What a Bio top-menu leaf is expected to produce. Exactly one of dialog/viewer/view is set —
- * the dialog `name` attribute is the function's friendly name, which is not always the menu label. */
+/** What a Bio top-menu leaf is expected to produce. Exactly one of dialog/viewer/view/filter is
+ * set — the dialog `name` attribute is the function's friendly name, which is not always the menu
+ * label. */
 interface Leaf {
   group: string;
   leaf: string;
   dialog?: string;
   viewer?: string;
   view?: string;
+  filter?: boolean;
 }
 
 const BIO_LEAVES: Leaf[] = [
@@ -43,7 +45,9 @@ const BIO_LEAVES: Leaf[] = [
   {group: 'Manage', leaf: 'Monomers', view: 'Manage Monomers'},
   {group: 'Search', leaf: 'Similarity-Search', viewer: 'Sequence Similarity Search'},
   {group: 'Search', leaf: 'Diversity-Search', viewer: 'Sequence Diversity Search'},
-  {group: 'Search', leaf: 'Subsequence-Search-...', dialog: 'Substructure-Search'},
+  // Adds a macromolecule filter rather than opening anything. The column-picker dialog only
+  // appears because this table has two Macromolecule columns; with one it filters straight away.
+  {group: 'Search', leaf: 'Subsequence-Search-...', filter: true},
 ];
 
 /** Leaves other packages contribute to the Bio menu. They are smoke-checked only when their
@@ -103,6 +107,16 @@ test('Bio top menu — every leaf opens its dialog, viewer or view and closes cl
         expect(await dlg.locator('[name="button-OK"]').count()).toBe(1);
         await cancelDialog(page, l.dialog);
       }
+      else if (l.filter) {
+        // Two Macromolecule columns here, so the platform asks which one first.
+        const picker = dialog(page, 'Substructure-Search');
+        await picker.waitFor({state: 'visible', timeout: 15_000});
+        await picker.locator('[name="button-OK"]').click();
+        await picker.waitFor({state: 'detached', timeout: 30_000});
+        // What the run actually produces is asserted by the dedicated test below — today it
+        // produces nothing, so the sweep only pins that the entry point opens and dismisses.
+        await closeExtraViewers(page);
+      }
       else if (l.viewer) {
         await page.waitForFunction((t) => Array.from(((grok.shell.tv as any)?.viewers ?? []) as any[])
           .some((v: any) => v.type === t), l.viewer, {timeout: 120_000});
@@ -157,4 +171,31 @@ test('Bio top menu — leaves contributed by other packages open when those pack
     if (skipped.length > 0)
       console.log(`[note] not installed on this stand, so not exercised: ${skipped.join(', ')}`);
     finishSpec();
+  });
+
+test('Bio Search | Subsequence Search adds the filter whichever column count the table has',
+  async ({page}) => {
+    test.setTimeout(300_000);
+    test.fail(true, 'Subsequence Search is a no-op once the table has more than one Macromolecule ' +
+      'column: the column-picker dialog appears, OK closes it, the Filters panel docks empty and no ' +
+      'macromolecule filter is added. Calling Bio:SubsequenceSearchTopMenu directly on the same ' +
+      'table does add it. Remove test.fail when fixed.');
+    stepErrors.length = 0;
+    await loginToDatagrok(page);
+    await loadBioTable(page, ANTIBODIES, ROWS, TABLE);
+
+    await openBioMenu(page, 'Search', 'Subsequence-Search-...');
+    const picker = dialog(page, 'Substructure-Search');
+    await picker.waitFor({state: 'visible', timeout: 60_000});
+    // The picker preselects a column, so OK alone is a complete, valid run.
+    expect(await picker.locator('.d4-column-selector-column').first().textContent()).toBe('AntibodyHC');
+    await picker.locator('[name="button-OK"]').click();
+    await picker.waitFor({state: 'detached', timeout: 30_000});
+
+    await page.waitForFunction(() => ((grok.shell.tv as any)
+      .getFiltersGroup({createDefaultFilters: false}).filters ?? []).length > 0,
+    null, {timeout: 60_000});
+    const columns = await page.evaluate(() => (grok.shell.tv as any)
+      .getFiltersGroup({createDefaultFilters: false}).filters.map((f: any) => f.columnName ?? null));
+    expect(columns).toContain('AntibodyHC');
   });
