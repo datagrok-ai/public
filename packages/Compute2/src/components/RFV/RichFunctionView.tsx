@@ -29,7 +29,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, getViewers} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 
 
@@ -616,10 +616,7 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const pinView = () => {
-      if (props.view && !props.view.isPinned)
-        props.view.pin();
-    };
+    const pinView = () => pinViewHelper(props.view);
 
     const runSA = async () => {
       pinView();

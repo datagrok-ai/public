@@ -11,7 +11,7 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {compositorOverlay} from '../directives/compositor-overlay';
-import {canUseResults} from '../utils';
+import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
 
 const RUN_DEBOUNCE_TIME = 250;
@@ -184,9 +184,7 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const onInputChanged = () => {
-      if (props.view && !props.view.isPinned) {
-        props.view.pin();
-      }
+      pinView(props.view);
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
       updateCallState({isOutputOutdated: true});
       searchParams.id = undefined;
