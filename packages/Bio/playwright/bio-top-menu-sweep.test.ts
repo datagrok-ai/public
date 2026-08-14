@@ -4,7 +4,7 @@ sub_features_covered: [bio.analyze.activity-cliffs.top-menu, bio.analyze.compare
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
-import {openBioGroup, openBioMenu, dialog, cancelDialog, loadBioTable, closeExtraViewers} from './helpers';
+import {openBioGroup, openBioMenu, dialog, cancelDialog, setText, loadBioTable, closeExtraViewers} from './helpers';
 
 test.use(specTestOptions);
 
@@ -20,6 +20,9 @@ interface Leaf {
   leaf: string;
   dialog?: string;
   viewer?: string;
+  /** Property the viewer fills once it has finished computing — a docked but empty viewer is
+   * not a working menu entry. */
+  viewerReady?: string;
   view?: string;
   filter?: boolean;
 }
@@ -43,10 +46,10 @@ const BIO_LEAVES: Leaf[] = [
   {group: 'Manage', leaf: 'Match-with-Monomer-Library...', dialog: 'matchWithMonomerLibrary'},
   {group: 'Manage', leaf: 'Monomer-Libraries', view: 'Manage Monomer Libraries'},
   {group: 'Manage', leaf: 'Monomers', view: 'Manage Monomers'},
-  {group: 'Search', leaf: 'Similarity-Search', viewer: 'Sequence Similarity Search'},
-  {group: 'Search', leaf: 'Diversity-Search', viewer: 'Sequence Diversity Search'},
-  // Adds a macromolecule filter rather than opening anything. The column-picker dialog only
-  // appears because this table has two Macromolecule columns; with one it filters straight away.
+  {group: 'Search', leaf: 'Similarity-Search', viewer: 'Sequence Similarity Search', viewerReady: 'idxs'},
+  {group: 'Search', leaf: 'Diversity-Search', viewer: 'Sequence Diversity Search', viewerReady: 'renderMolIds'},
+  // Filters rows rather than adding a column or a viewer. With a single Macromolecule column the
+  // filter is added straight away; with several, a search dialog asks which column and what to find.
   {group: 'Search', leaf: 'Subsequence-Search-...', filter: true},
 ];
 
@@ -108,18 +111,37 @@ test('Bio top menu — every leaf opens its dialog, viewer or view and closes cl
         await cancelDialog(page, l.dialog);
       }
       else if (l.filter) {
-        // Two Macromolecule columns here, so the platform asks which one first.
-        const picker = dialog(page, 'Substructure-Search');
-        await picker.waitFor({state: 'visible', timeout: 15_000});
-        await picker.locator('[name="button-OK"]').click();
-        await picker.waitFor({state: 'detached', timeout: 30_000});
-        // What the run actually produces is asserted by the dedicated test below — today it
-        // produces nothing, so the sweep only pins that the entry point opens and dismisses.
+        // One Macromolecule column would filter straight away; two make the entry point open its
+        // search dialog first. OK narrows the row filter — an empty query matches everything, so
+        // the search only means anything with a real subsequence typed in.
+        const dlg = dialog(page, 'Substructure-Search');
+        await dlg.waitFor({state: 'visible', timeout: 60_000});
+        const query: string = await page.evaluate(() =>
+          grok.shell.tv.dataFrame.col('AntibodyHC')!.get(0)!.substring(30, 40));
+        await setText(page, 'Substructure-Search', 'Substructure', query);
+        await dlg.locator('[name="button-OK"]').click();
+        await dlg.waitFor({state: 'detached', timeout: 30_000});
+
+        await page.waitForFunction(() => grok.shell.tv.dataFrame.filter.trueCount <
+          grok.shell.tv.dataFrame.rowCount, null, {timeout: 60_000});
+        const kept = await page.evaluate((q) => {
+          const df = grok.shell.tv.dataFrame;
+          const col = df.col('AntibodyHC')!;
+          const rows: string[] = [];
+          for (let i = 0; i < df.rowCount; i++) if (df.filter.get(i)) rows.push(col.get(i) ?? '');
+          return {count: rows.length, allMatch: rows.every((r) => r.includes(q))};
+        }, query);
+        expect(kept.count).toBeGreaterThan(0);
+        expect(kept.allMatch).toBe(true);
+        await page.evaluate(() => grok.shell.tv.dataFrame.filter.setAll(true));
         await closeExtraViewers(page);
       }
       else if (l.viewer) {
-        await page.waitForFunction((t) => Array.from(((grok.shell.tv as any)?.viewers ?? []) as any[])
-          .some((v: any) => v.type === t), l.viewer, {timeout: 120_000});
+        await page.waitForFunction(({t, ready}) => {
+          const v = Array.from(((grok.shell.tv as any)?.viewers ?? []) as any[])
+            .find((vw: any) => vw.type === t);
+          return !!v && (v as any)[ready] != null;
+        }, {t: l.viewer, ready: l.viewerReady!}, {timeout: 120_000});
         await page.evaluate((t) => {
           for (const v of Array.from(((grok.shell.tv as any)?.viewers ?? []) as any[]))
             if (v.type === t) v.close();
@@ -127,6 +149,14 @@ test('Bio top menu — every leaf opens its dialog, viewer or view and closes cl
       }
       else {
         await page.waitForFunction((n) => grok.shell.v?.name === n, l.view, {timeout: 120_000});
+        // A view that opens empty is as broken as one that does not open.
+        const rendered = await page.evaluate(() => {
+          const root = grok.shell.v.root;
+          return {height: Math.round(root.getBoundingClientRect().height),
+            nodes: root.querySelectorAll('*').length};
+        });
+        expect(rendered.height).toBeGreaterThan(0);
+        expect(rendered.nodes).toBeGreaterThan(10);
         await page.evaluate((n) => { if (grok.shell.v?.name === n) grok.shell.v.close(); }, l.view);
       }
 
@@ -171,31 +201,4 @@ test('Bio top menu — leaves contributed by other packages open when those pack
     if (skipped.length > 0)
       console.log(`[note] not installed on this stand, so not exercised: ${skipped.join(', ')}`);
     finishSpec();
-  });
-
-test('Bio Search | Subsequence Search adds the filter whichever column count the table has',
-  async ({page}) => {
-    test.setTimeout(300_000);
-    test.fail(true, 'Subsequence Search is a no-op once the table has more than one Macromolecule ' +
-      'column: the column-picker dialog appears, OK closes it, the Filters panel docks empty and no ' +
-      'macromolecule filter is added. Calling Bio:SubsequenceSearchTopMenu directly on the same ' +
-      'table does add it. Remove test.fail when fixed.');
-    stepErrors.length = 0;
-    await loginToDatagrok(page);
-    await loadBioTable(page, ANTIBODIES, ROWS, TABLE);
-
-    await openBioMenu(page, 'Search', 'Subsequence-Search-...');
-    const picker = dialog(page, 'Substructure-Search');
-    await picker.waitFor({state: 'visible', timeout: 60_000});
-    // The picker preselects a column, so OK alone is a complete, valid run.
-    expect(await picker.locator('.d4-column-selector-column').first().textContent()).toBe('AntibodyHC');
-    await picker.locator('[name="button-OK"]').click();
-    await picker.waitFor({state: 'detached', timeout: 30_000});
-
-    await page.waitForFunction(() => ((grok.shell.tv as any)
-      .getFiltersGroup({createDefaultFilters: false}).filters ?? []).length > 0,
-    null, {timeout: 60_000});
-    const columns = await page.evaluate(() => (grok.shell.tv as any)
-      .getFiltersGroup({createDefaultFilters: false}).filters.map((f: any) => f.columnName ?? null));
-    expect(columns).toContain('AntibodyHC');
   });

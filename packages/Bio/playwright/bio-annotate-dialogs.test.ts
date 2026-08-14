@@ -45,9 +45,19 @@ test('Bio Analyze | Compare sequences — defaults, custom result name, identica
       {timeout: 60_000});
     const added = (await colNames(page)).filter((n) => !before.includes(n));
     expect(added).toEqual([c1 + ' vs ' + c2]);
-    const renderer = await page.evaluate((n) =>
-      grok.shell.tv.dataFrame.col(n)!.getTag('cell.renderer'), added[0]);
-    expect(renderer).toBe('MacromoleculeDifference');
+    const diff = await page.evaluate((n) => {
+      const df = grok.shell.tv.dataFrame;
+      const col = df.col(n)!;
+      const hc = df.col('AntibodyHC')!;
+      const lc = df.col('AntibodyLC')!;
+      let mismatched = 0;
+      for (let i = 0; i < col.length; i++)
+        if ((col.get(i) ?? '') !== `${hc.get(i)}#${lc.get(i)}`) mismatched++;
+      return {renderer: col.getTag('cell.renderer'), mismatched};
+    }, added[0]);
+    expect(diff.renderer).toBe('MacromoleculeDifference');
+    // The column is the two sources paired per row — that pairing is the whole feature.
+    expect(diff.mismatched).toBe(0);
   });
 
   await softStep('A custom result name and swapped columns are both honoured', async () => {
@@ -120,6 +130,27 @@ test('Bio Annotate | Scan Liabilities — default rules, then a narrowed rule se
       });
       expect(defaultHits).toBeGreaterThan(0);
       expect(await colNames(page)).not.toContain('AntibodyHC_liability_count');
+      // Each hit must point at the motif it claims to have matched, at the position it reports.
+      const misplaced = await page.evaluate(() => {
+        const df = grok.shell.tv.dataFrame;
+        const seq = df.col('AntibodyHC')!;
+        const ann = df.col('~AntibodyHC_annotations')!;
+        let bad = 0;
+        let checked = 0;
+        for (let i = 0; i < ann.length; i++) {
+          const raw = ann.get(i);
+          if (!raw) continue;
+          for (const hit of JSON.parse(raw)) {
+            if (!hit.matchedMonomers) continue;
+            checked++;
+            if ((seq.get(i) ?? '').substr(hit.positionIndex, hit.matchedMonomers.length) !== hit.matchedMonomers)
+              bad++;
+          }
+        }
+        return {bad, checked};
+      });
+      expect(misplaced.checked).toBeGreaterThan(0);
+      expect(misplaced.bad).toBe(0);
     });
 
     await softStep('Only the oxidation rules, output switched to the summary count column', async () => {
