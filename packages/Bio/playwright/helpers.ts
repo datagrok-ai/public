@@ -90,7 +90,7 @@ export async function setText(page: Page, dlgName: string, input: string, value:
   const inp = page.locator(`[name="dialog-${dlgName}"] [name="input-host-${input}"] input`);
   await inp.click();
   await inp.press('Control+a');
-  await inp.type(value);
+  await inp.pressSequentially(value);
   await inp.press('Tab');
 }
 
