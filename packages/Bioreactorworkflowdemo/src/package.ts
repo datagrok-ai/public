@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import type {PipelineConfiguration} from '@datagrok-libraries/compute-api';
+import type {IRuntimeLinkController, PipelineConfiguration} from '@datagrok-libraries/compute-api';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -13,6 +13,49 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export const _package = new DG.Package();
+
+const DAILY_SUMMARY_COLUMNS = [
+  {field: 'solutionAdded', name: 'Solution added', units: 'L'},
+  {field: 'substrateAdded', name: 'Substrate added', units: 'g'},
+  {field: 'incomingVolume', name: 'Incoming volume', units: 'L'},
+  {field: 'incomingBiomass', name: 'Incoming biomass', units: 'g/L'},
+  {field: 'incomingSubstrate', name: 'Incoming substrate', units: 'g/L'},
+  {field: 'maximumGrowthRate', name: 'Maximum growth rate', units: '1/h'},
+  {field: 'halfSaturationConstant', name: 'Monod constant', units: 'g/L'},
+  {field: 'yieldCoefficient', name: 'Biomass yield', units: 'g/g'},
+  {field: 'decayConstant', name: 'Decay rate', units: '1/h'},
+  {field: 'dayDuration', name: 'Day duration', units: 'h'},
+  {field: 'finalVolume', name: 'Final volume', units: 'L'},
+  {field: 'finalBiomass', name: 'Final biomass', units: 'g/L'},
+  {field: 'finalSubstrate', name: 'Final substrate', units: 'g/L'},
+  {field: 'finalBiomassMass', name: 'Final biomass mass', units: 'g'},
+  {field: 'finalSubstrateMass', name: 'Final substrate mass', units: 'g'},
+  {field: 'biomassMassChange', name: 'Biomass mass change', units: 'g'},
+  {field: 'substrateConsumed', name: 'Substrate consumed', units: 'g'},
+] as const;
+
+function makeDailySummary(dayGetter: (field: string) => unknown[]): DG.DataFrame {
+  const firstField = DAILY_SUMMARY_COLUMNS[0].field;
+  const dayCount = dayGetter(firstField).length;
+  const columns: DG.Column[] = [
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Day', Array.from({length: dayCount}, (_, index) => index + 1)),
+  ];
+
+  for (const {field, name, units} of DAILY_SUMMARY_COLUMNS) {
+    const column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, dayGetter(field));
+    column.meta.units = units;
+    columns.push(column);
+  }
+
+  const summary = DG.DataFrame.fromColumns(columns);
+  summary.name = 'Cultivation summary';
+  return summary;
+}
+
+function populateDailySummary({controller}: {controller: IRuntimeLinkController}): void {
+  const summary = makeDailySummary((field) => controller.getAll(`day_${field}`) ?? []);
+  controller.setAll('summary', summary, 'restricted');
+}
 
 //name: BioreactorWorkflow
 //description: Configure and simulate daily bacterial growth in a bioreactor
@@ -69,6 +112,11 @@ export function bioreactorWorkflow(params: {version?: string}): PipelineConfigur
           },
         ],
       },
+      {
+        id: 'summary',
+        nqName: 'BioreactorWorkflowDemo:Summary',
+        friendlyName: 'Summary',
+      },
     ],
     links: [
       {
@@ -118,6 +166,14 @@ export function bioreactorWorkflow(params: {version?: string}): PipelineConfigur
         from: 'source:bioreactorConfiguration/dayDuration',
         to: 'target:dailyCultivation/all(dayCalculation)/dayDuration',
         defaultRestrictions: {target: 'disabled'},
+      },
+      {
+        id: 'daily-summary',
+        from: `day_(template):dailyCultivation/all(dayCalculation)/ ${
+          DAILY_SUMMARY_COLUMNS.map(({field}) => field).join(' | ')
+        }`,
+        to: 'summary:summary/summaryInput',
+        handler: populateDailySummary,
       },
     ],
   };
@@ -238,6 +294,16 @@ export function dayCalculation(
     substrateConsumed: result.substrateConsumed,
     dailyProfile,
   };
+}
+
+//name: Summary
+//description: Collect all daily cultivation inputs and outputs in one table
+//input: dataframe summaryInput {caption: Daily cultivation data}
+//output: dataframe summary {caption: Cultivation summary}
+export function summary(summaryInput: DG.DataFrame): DG.DataFrame {
+  const result = summaryInput.clone();
+  result.name = 'Cultivation summary';
+  return result;
 }
 
 //name: info

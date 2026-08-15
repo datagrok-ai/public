@@ -29,6 +29,13 @@ export namespace funcs {
     return await grok.functions.call('BioreactorWorkflowDemo:DayCalculation', { solutionAdded, substrateAdded, incomingVolume, incomingBiomass, incomingSubstrate, maximumGrowthRate, halfSaturationConstant, yieldCoefficient, decayConstant, dayDuration });
   }
 
+  /**
+  Collect all daily cultivation inputs and outputs in one table
+  */
+  export async function summary(summaryInput: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('BioreactorWorkflowDemo:Summary', { summaryInput });
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('BioreactorWorkflowDemo:Info', {});
   }
