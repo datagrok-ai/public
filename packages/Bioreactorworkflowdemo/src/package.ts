@@ -299,7 +299,7 @@ export function dayCalculation(
 //name: Summary
 //description: Collect all daily cultivation inputs and outputs in one table
 //input: dataframe summaryInput {caption: Daily cultivation data}
-//output: dataframe summary {caption: Cultivation summary}
+//output: dataframe summary {caption: Cultivation summary; viewer: Grid(block: 50) | Line chart(block: 50, x: "Day", y: "Final biomass", title: "Biomass growth")}
 export function summary(summaryInput: DG.DataFrame): DG.DataFrame {
   const result = summaryInput.clone();
   result.name = 'Cultivation summary';
