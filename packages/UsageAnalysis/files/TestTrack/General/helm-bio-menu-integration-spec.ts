@@ -41,7 +41,7 @@ const BIO_FUNCS: BioFn[] = [
   {leaf: 'div-Bio---Annotate---Manage-Annotations...', label: 'Manage Annotations', expect: 'run'},
   {leaf: 'div-Bio---Search---Similarity-Search', label: 'Similarity Search', expect: 'viewer', type: 'Sequence Similarity Search'},
   {leaf: 'div-Bio---Search---Diversity-Search', label: 'Diversity Search', expect: 'viewer', type: 'Sequence Diversity Search'},
-  {leaf: 'div-Bio---Search---Subsequence-Search-...', label: 'Subsequence Search', expect: 'viewer', type: 'Filters'},
+  {leaf: 'div-Bio---Search---Subsequence-Search...', label: 'Subsequence Search', expect: 'viewer', type: 'Filters'},
   {leaf: 'div-Bio---PolyTool---Convert...', label: 'PolyTool Convert', expect: 'run'},
   {leaf: 'div-Bio---PolyTool---Enumerate-HELM...', label: 'PolyTool Enumerate HELM', expect: 'run'},
 ];

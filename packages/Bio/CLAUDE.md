@@ -57,11 +57,11 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 | `Bio \| Calculate \| Similarity...` | `sequenceSimilarityScoring` | Sum of monomer fingerprint similarities vs reference |
 | `Bio \| Search \| Similarity Search` | `similaritySearchTopMenu` | K-nearest neighbor sequence search |
 | `Bio \| Search \| Diversity Search` | `diversitySearchTopMenu` | Maximally diverse subset selection |
-| `Bio \| Search \| Subsequence Search ...` | `SubsequenceSearchTopMenu` | Substructure filter (regex or RDKit) |
+| `Bio \| Search \| Subsequence Search...` | `SubsequenceSearchTopMenu` | Subsequence filter (regex or RDKit) |
 | `Bio \| Manage \| Monomer Libraries` | `manageLibrariesView` | Full monomer library management UI |
 | `Bio \| Manage \| Monomers` | `manageMonomersView` | Individual monomer CRUD editor |
 | `Bio \| Manage \| Match with Monomer Library...` | `matchWithMonomerLibrary` | Matches molecules to library monomers |
-| `Bio \| Annotate \| Apply Numbering Scheme...` | `applyNumberingScheme` | Assigns antibody numbering (IMGT/Kabat/Chothia/AHo) via any registered engine |
+| `Bio \| Annotate \| Apply Numbering Scheme...` | `applyNumberingScheme` | Assigns antibody numbering (IMGT/Kabat) via any registered engine |
 | `Bio \| Annotate \| Scan Liabilities...` | `scanLiabilities` | Scans macromolecule sequences for deamidation / oxidation / other liabilities |
 | `Bio \| Annotate \| Manage Annotations...` | `manageAnnotations` | View and manage sequence annotations on macromolecule columns |
 

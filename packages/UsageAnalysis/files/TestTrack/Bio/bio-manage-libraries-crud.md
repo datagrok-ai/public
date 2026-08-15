@@ -180,9 +180,8 @@ Steps:
    `[name="div-Bio---Manage---Match-with-Monomer-Library..."]`
    per `.claude/skills/grok-browser/references/bio.md#L490-L498`.
 3. Wait for the dialog to mount:
-   `[name="dialog-matchWithMonomerLibrary"]` (title
-   `matchWithMonomerLibrary` — note the raw function-name title
-   is a documented minor inconsistency per `bio.md#L494`).
+   `[name="dialog-Match-with-Monomer-Library"]` (title
+   `Match with Monomer Library`).
 4. Verify the dialog exposes three host inputs:
    - `[name="input-host-Table"]` — current table picker.
    - `[name="input-host-Molecules"]` — sequence/molecules

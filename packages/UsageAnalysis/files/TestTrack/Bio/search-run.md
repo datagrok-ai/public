@@ -9,7 +9,7 @@
 | # | Step | Time | Result | Playwright | Notes |
 |---|------|------|--------|------------|-------|
 | 1 | Open sample_FASTA.csv | 6s | PASS | PASSED | Opened `System:AppData/Bio/samples/FASTA.csv`; 64 rows, 6 columns; `Sequence` column detected as `Macromolecule`. |
-| 2 | Open Bio > Search > Subsequence Search | 2s | PASS | PASSED | Menu item name is `div-Bio---Search---Subsequence-Search-...` (trailing hyphen — the label is `"Subsequence Search "` with a trailing space). Action adds a single Bio substructure filter card for the `Sequence` column; no dialog opens. |
+| 2 | Open Bio > Search > Subsequence Search | 2s | PASS | PASSED | Menu item name is `div-Bio---Search---Subsequence-Search...`. Action adds a single Bio subsequence filter card for the `Sequence` column; no dialog opens. |
 | 3 | Set Sequence filter to MHAILRYFIRRLFYHIFYKIYSLISKKHQSLPSDVRQF | 3s | PASS | PASSED | Typed into `[name="viewer-Filters"] input[placeholder="Substructure"]`. Table filtered from 64 rows to 1 matching row. |
 | 4 | Click Reset Filter | 3s | PASS | PASSED | Reset (↺) is the `icon-arrow-rotate-left` on the filter group header. No confirmation prompt — the substructure input cleared and row count returned to 64. |
 
@@ -38,10 +38,9 @@ All four steps passed on the dev server with both the MCP reproduction and the g
 - `df.filter.trueCount` is a stable verification point for both the filtered (1) and reset (64) states.
 
 ### What did not work
-- The `name=` attribute for the menu item is `div-Bio---Search---Subsequence-Search-...` — the trailing hyphen comes from the label `"Subsequence Search "` having a trailing space, which then gets hyphen-normalised before the `...` dialog suffix. This was not guessable from the scenario text; required one exploratory call to enumerate `[name^="div-Bio---"]` items.
+- The `name=` attribute for the menu item is `div-Bio---Search---Subsequence-Search...`. This was not guessable from the scenario text; required one exploratory call to enumerate `[name^="div-Bio---"]` items.
 
 ### Suggestions for the platform
-- Trim trailing whitespace from menu item captions before generating the `name=` attribute — `div-Bio---Search---Subsequence-Search...` (without the extra hyphen) would match the rest of the Bio menu family and the naming convention in `grok-browser/references/`.
 - The Subsequence Search entry carries a `...` dialog suffix in its `name=` but no dialog is actually opened — it acts directly on the filter panel. Either drop the `...` (it breaks the "dialog suffix" convention from `grok-browser/SKILL.md`) or route the action through an explicit dialog.
 
 ### Suggestions for the scenario

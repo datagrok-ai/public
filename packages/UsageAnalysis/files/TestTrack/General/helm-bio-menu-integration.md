@@ -54,7 +54,7 @@ clean up (cancel dialogs, close added viewers, remove added columns).
 | `Annotate \| Manage Annotations...` | Bio | Dialog opens; OK runs |
 | `Search \| Similarity Search` | Bio | Docks a **Sequence Similarity Search** viewer |
 | `Search \| Diversity Search` | Bio | Docks a **Sequence Diversity Search** viewer |
-| `Search \| Subsequence Search ...` | Bio | Docks the **Filters** panel (HELM substructure filter) |
+| `Search \| Subsequence Search...` | Bio | Docks the **Filters** panel (HELM subsequence filter) |
 | `PolyTool \| Convert...` | SequenceTranslator | Opens the conversion dialog (routes to To-Atomic-Level on this column) |
 | `PolyTool \| Enumerate HELM...` | SequenceTranslator | Dialog opens; OK runs HELM enumeration |
 

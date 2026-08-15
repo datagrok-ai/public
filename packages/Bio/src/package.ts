@@ -177,7 +177,7 @@ export class PackageFunctions {
     return await standardizeMonomerLibrary(library);
   }
 
-  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)',})
+  @grok.decorators.func({name: 'Match with Monomer Library', 'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)',})
   static async matchWithMonomerLibrary(table: DG.DataFrame,
       @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}})molecules: DG.Column,
       @grok.decorators.param({type: 'string', options: {choices: ['PEPTIDE', 'RNA', 'CHEM'], initialValue: 'PEPTIDE', caption: 'Polymer Type'}})polymerType: PolymerType = 'PEPTIDE') {
@@ -504,7 +504,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Apply Numbering Scheme',
-    description: 'Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)',
+    description: 'Assigns antibody numbering (IMGT/Kabat)',
     'top-menu': 'Bio | Annotate | Apply Numbering Scheme...',
   })
   static applyNumberingScheme(): void {
@@ -1487,7 +1487,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Subsequence Search',
-    'top-menu': 'Bio | Search | Subsequence Search ...',
+    'top-menu': 'Bio | Search | Subsequence Search...',
     editor: 'Bio:SearchSubsequenceEditor'
   })
   static SubsequenceSearchTopMenu(macromolecules: DG.Column): void {
