@@ -27,6 +27,7 @@ export async function standardiseMonomerLibrary(library: string) : Promise<strin
   return await PackageFunctions.standardiseMonomerLibrary(library);
 }
 
+//name: Match with Monomer Library
 //description: Matches molecules in a column with monomers from the selected library(s)
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
@@ -228,7 +229,7 @@ export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column,
 }
 
 //name: Apply Numbering Scheme
-//description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
+//description: Assigns antibody numbering (IMGT/Kabat)
 //top-menu: Bio | Annotate | Apply Numbering Scheme...
 export function applyNumberingScheme() : void {
   PackageFunctions.applyNumberingScheme();
@@ -674,7 +675,7 @@ export function searchSubsequenceEditor(call: DG.FuncCall) : void {
 
 //name: Subsequence Search
 //input: column macromolecules 
-//top-menu: Bio | Search | Subsequence Search ...
+//top-menu: Bio | Search | Subsequence Search...
 //editor: Bio:SearchSubsequenceEditor
 export function SubsequenceSearchTopMenu(macromolecules: DG.Column) : void {
   PackageFunctions.SubsequenceSearchTopMenu(macromolecules);

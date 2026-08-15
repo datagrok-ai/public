@@ -97,7 +97,7 @@ test('Bio Subsequence Search filter and reset on filter_FASTA', async ({page}) =
       (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
       (await waitEl('[name="div-Bio---Search"]'))
         .dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-      (await waitEl('[name="div-Bio---Search---Subsequence-Search-..."]')).click();
+      (await waitEl('[name="div-Bio---Search---Subsequence-Search..."]')).click();
     });
     await page.locator('[name="viewer-Filters"] input[placeholder="Substructure"]')
       .waitFor({timeout: 30_000});

@@ -88,7 +88,7 @@ export class SubstructureSearchDialog {
     this.separator = this.col.getTag(bioTAGS.separator);
     this.updateInputs();
 
-    this.dialog = ui.dialog('Substructure Search')
+    this.dialog = ui.dialog('Subsequence Search')
       .add(ui.divV([
         ui.divText(`Notation: ${this.units}`, 'notation-text'),
         this.inputsDiv,
