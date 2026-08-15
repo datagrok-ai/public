@@ -1,0 +1,102 @@
+/* Property grid skin — name column plus an inline editor per row, category headers between.
+   Tokens only; css/tokens.css, css/inputs.css and the skins of the inline editors in use
+   (choice.css, number.css) must be loaded alongside. */
+.u2-propgrid {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+}
+
+.u2-propgrid-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 40%) 1fr;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--dg-inline-control-height);
+  column-gap: var(--dg-space-m);
+  padding: 0 var(--dg-space-m);
+}
+
+.u2-propgrid-row:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-propgrid-name {
+  overflow: hidden;
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-propgrid-editor {
+  min-width: 0;
+}
+
+.u2-propgrid-value {
+  display: block;
+  overflow: hidden;
+  padding: 0 var(--dg-space-s);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-propgrid-editor > .u2-input-root {
+  width: 100%;
+}
+
+.u2-propgrid-editor input.u2-input-editor,
+.u2-propgrid-editor select.u2-input-editor,
+.u2-propgrid-editor .u2-input-editor.u2-number {
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-propgrid-category {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: var(--dg-space-s);
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-s);
+  font-weight: var(--dg-font-weight-bold);
+  background: var(--dg-bg-secondary);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.u2-propgrid-category:hover {
+  background: var(--dg-hover);
+}
+
+.u2-propgrid-category:focus-visible {
+  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline-offset: calc(-2 * var(--dg-border-width));
+}
+
+.u2-propgrid-chevron {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+  transition: transform 100ms ease;
+}
+
+.u2-propgrid-category[aria-expanded='true'] .u2-propgrid-chevron {
+  transform: rotate(90deg);
+}
+
+.u2-propgrid-category-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

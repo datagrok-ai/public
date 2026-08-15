@@ -1,0 +1,70 @@
+/* u2 virtualized tree (see src/components/tree.ts). Rows are VirtualList rows; everything here
+   styles the row content: the per-depth indent (--u2-tree-indent, set inline by JS) with its
+   guide lines, the twistie, and the rename / loading / error states. Requires css/list.css. */
+.u2-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.u2-tree > .u2-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-tree-row {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  padding-left: var(--u2-tree-indent, 0px);
+  background-image: repeating-linear-gradient(to right,
+    var(--dg-border-subtle) 0 var(--dg-border-width), transparent var(--dg-border-width) 12px);
+  background-size: var(--u2-tree-indent, 0px) 100%;
+  background-repeat: no-repeat;
+}
+
+.u2-tree-twistie {
+  flex: 0 0 auto;
+  width: 14px;
+  text-align: center;
+  color: var(--dg-text-color-light);
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-tree-twistie-hidden {
+  visibility: hidden;
+  cursor: default;
+}
+
+.u2-tree-label,
+.u2-tree-loading,
+.u2-tree-error {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-tree-loading {
+  color: var(--dg-text-color-light);
+  font-style: italic;
+}
+
+.u2-tree-error {
+  color: var(--dg-error);
+}
+
+.u2-tree-rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: none;
+  border-bottom: var(--dg-input-border-focus);
+  border-radius: 0;
+  outline: none;
+  padding: 0;
+}

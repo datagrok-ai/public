@@ -1,0 +1,87 @@
+/* Async-state skin — loader, skeleton, empty and error rows. Tokens only; css/tokens.css must
+   be loaded alongside, and css/elements.css for the Retry button. */
+.u2-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color-light);
+}
+
+.u2-loader-spinner {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--dg-border);
+  border-top-color: var(--dg-accent);
+  border-radius: 50%;
+  animation: u2-loader-spin 0.8s linear infinite;
+}
+
+@keyframes u2-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.u2-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-m) 0;
+}
+
+.u2-skeleton-line {
+  height: var(--dg-space-l);
+  background: var(--dg-bg-secondary);
+  border-radius: var(--dg-radius);
+  animation: u2-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.u2-skeleton-line:last-child {
+  width: 60%;
+}
+
+@keyframes u2-skeleton-pulse {
+  50% {
+    background: var(--dg-border);
+  }
+}
+
+.u2-async-empty {
+  padding: var(--dg-space-xl);
+  text-align: center;
+  color: var(--dg-text-color-light);
+}
+
+.u2-async-error {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-m) 0;
+}
+
+.u2-async-error-message {
+  color: var(--dg-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u2-loader-spinner {
+    width: auto;
+    height: auto;
+    border: none;
+    border-radius: 0;
+    color: var(--dg-accent);
+    animation: none;
+  }
+
+  .u2-loader-spinner::after {
+    content: '•••';
+  }
+
+  .u2-skeleton-line {
+    animation: none;
+  }
+}

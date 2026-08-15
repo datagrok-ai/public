@@ -1,0 +1,68 @@
+/* Number input skin — underline editor plus a spinner column revealed on hover/focus.
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+.u2-input-editor.u2-number {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+}
+
+/* :not() keeps the invalid underline from inputs.css winning regardless of sheet order */
+.u2-input-editor.u2-number:not(.u2-invalid) {
+  border-bottom: var(--dg-input-border);
+}
+
+.u2-input-editor.u2-number:not(.u2-invalid):focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-number > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--dg-space-xl) 0 var(--dg-space-s);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.u2-number > input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+.u2-number-spinner {
+  position: absolute;
+  top: 0;
+  right: var(--dg-space-xs);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  visibility: hidden;
+}
+
+.u2-number:hover .u2-number-spinner,
+.u2-number:focus-within .u2-number-spinner {
+  visibility: visible;
+}
+
+.u2-number-spin {
+  display: block;
+  width: 12px;
+  height: 9px;
+  padding: 0;
+  font-size: var(--dg-font-size-xs);
+  line-height: 9px;
+  color: var(--dg-text-color-light);
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-number-spin:hover {
+  color: var(--dg-accent);
+  background: var(--dg-hover-subtle);
+}

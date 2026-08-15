@@ -1,0 +1,90 @@
+/* Toolbar skin (see src/components/toolbar.ts). Tokens only — css/tokens.css must be loaded alongside. */
+.u2-toolbar {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  min-width: 0;
+  height: calc(var(--dg-button-height) + 2 * var(--dg-space-xs));
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  overflow: hidden;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+}
+
+.u2-toolbar-hidden {
+  display: none;
+}
+
+.u2-toolbar-btn {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--dg-space-s);
+  height: var(--dg-button-height);
+  padding: 0 var(--dg-space-s);
+  font: inherit;
+  color: var(--dg-text-color);
+  white-space: nowrap;
+  background: none;
+  border: var(--dg-border-width) solid transparent;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.u2-toolbar-btn:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-toolbar-btn:active,
+.u2-toolbar-btn-pressed {
+  color: var(--dg-text-color);
+  background: var(--dg-steel-1);
+  border-color: var(--dg-border);
+}
+
+.u2-toolbar-btn:focus-visible {
+  border-color: var(--dg-focus);
+}
+
+.u2-toolbar-icon {
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-toolbar-arrow {
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+}
+
+.u2-toolbar-btn-menu .u2-toolbar-arrow {
+  margin-left: calc(-1 * var(--dg-space-xs));
+}
+
+.u2-toolbar-sep {
+  flex-shrink: 0;
+  width: var(--dg-border-width);
+  height: calc(var(--dg-button-height) - 2 * var(--dg-space-xs));
+  margin: 0 var(--dg-space-xs);
+  background: var(--dg-border);
+}
+
+.u2-toolbar-slot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.u2-toolbar-overflow {
+  margin-left: auto;
+  padding: 0 var(--dg-space-xs);
+  font-size: var(--dg-font-size-h1);
+  color: var(--dg-text-color-light);
+}

@@ -1,0 +1,77 @@
+/* Progress skin. Tokens only; css/tokens.css must be loaded alongside. Under reduced motion the
+   indeterminate bar stops sliding and pulses a full-width fill instead. */
+.u2-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+  font-family: var(--dg-font-family);
+}
+
+.u2-progress-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-progress-track {
+  flex: 1;
+  min-width: 0;
+  height: 4px;
+  overflow: hidden;
+  background: var(--dg-grey-2);
+  border-radius: var(--dg-radius);
+}
+
+.u2-progress-fill {
+  width: 0;
+  height: 100%;
+  background: var(--dg-accent);
+  border-radius: inherit;
+  transition: width 0.15s linear;
+}
+
+.u2-progress-percent {
+  flex-shrink: 0;
+  min-width: 34px;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  text-align: right;
+}
+
+.u2-progress-description {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-progress-indeterminate .u2-progress-fill {
+  width: 40%;
+  transition: none;
+  animation: u2-progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes u2-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u2-progress-fill {
+    transition: none;
+  }
+
+  .u2-progress-indeterminate .u2-progress-fill {
+    width: 100%;
+    animation: u2-progress-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes u2-progress-pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+}

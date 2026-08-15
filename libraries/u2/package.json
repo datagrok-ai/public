@@ -1,0 +1,42 @@
+{
+  "name": "@datagrok-libraries/u2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "fullName": "U2",
+  "version": "0.0.1",
+  "description": "Next-gen Datagrok UI library: design tokens, headless signal-based components, standalone gallery",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "dependencies": {
+    "@floating-ui/dom": "^1.6.0",
+    "datagrok-api": "^1.27.0",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.11.0",
+    "@typescript-eslint/parser": "^5.11.0",
+    "eslint": "^8.18.0",
+    "eslint-config-google": "^0.14.0",
+    "http-server": "^14.1.1",
+    "typescript": "^5.5.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test tests/*.test.js",
+    "manifest": "node scripts/gen-manifest.mjs",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "gallery": "http-server . -c-1 -o /gallery/",
+    "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "libraries/u2"
+  }
+}
