@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.8.3
+
+* GROK-20712: Provider allowlist is now baked into the image at build time (`providers.conf` written by the Dockerfile `FLAVOR` layer from the `GROK_CONNECT_PROVIDERS` build arg) instead of being read from a runtime env variable, so the main/extended provider partition cannot be overridden at deploy time
+
 # 2.8.2
 
 * GrokConnect: ClickHouse: Fix "Execution failed" against ClickHouse >= 26
