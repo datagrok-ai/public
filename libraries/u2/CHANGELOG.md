@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Added item actions (list-item-rendering recipe): the Action type, rowActions() hover/focus-revealed icon block (opacity-hidden so buttons keep their space and stay tabbable), actionsMenu(), and VirtualList contextActions — right-click selects the row and opens the full action list at the cursor
+* Added timestamp() element factory: locale short date (year only when not current), full date-time in the tooltip; accepts Date, numbers, strings, or anything with toDate()
+* Added css/adaptive.css: u2-adaptive container + u2-p1/u2-p2 priority classes — secondary row content hides as the pane narrows (container queries, fixed 420/340px defaults)
+* Menu: item icons now render as icon glyphs instead of raw text
+
 * Overlay: fixed positioning strategy + animationFrame autoUpdate (dock_spawn moves anchors outside scroll/resize); Combobox popup anchored to the input, not the stretched root
 * host(): optional closeIn dock manager — auto-detaches on pane ✕ via onClosed (the platform never kills non-view dock content)
 * Added ambient scope ownership (Scope.ambient/runWith, Component.build) — components and signal bindings created under an owner are disposed with it
@@ -46,6 +51,7 @@
 * Icons: standalone fallback upgraded to the platform's own FA Pro 5.15.4 (true Light face, full 2309-name map, brands included); faces requested on first icon() use to avoid blank first paint
 * Added dropDownButton: plain (whole button opens a fresh Menu per open) and split (main action + attached arrow) modes, aria-expanded via a self-disposing per-open scope, ArrowDown opens
 * Added MenuBar: classic top-menu over Menu popups — click opens, instant hover-switch while open, roving arrows switch the open menu, transparent chrome for ribbon/toolbar hosting
+* Added DateInput + DateTimeInput (the 18th audited control): shared APG-pattern calendar popup, strict yyyy-MM-dd[ HH:mm] parse/commit with min/max clamp, native Date values, time segments keep time-of-day on day change; objectForm datetime properties now generate DateTimeInput (Date/dayjs/ISO coerced)
 * Added AsyncPager<T> (src/core/pager.ts): the paged twin of AsyncSource — pages accumulate into one items signal, short page marks done, reset() drops in-flight responses and re-reads the total; dg dapiPager() pages any grok.dapi.* collection (factory-per-request, thunk filter, order pass-through); gallery pager page
 
 * Initial scaffold: library skeleton, platform-free-core eslint guard, vendor/ layout, standalone gallery shell

@@ -84,6 +84,27 @@ export function span(text: Text, cls?: string): HTMLSpanElement {
   return setText(element('span', cls), text);
 }
 
+export interface DateLike { toDate(): Date }
+
+/** Compact timestamp, full truth on hover (docs/recipes/list-item-rendering.md): renders the
+ * locale short date — the year appears only when it is not the current one — with the full
+ * date-time in the tooltip. Accepts anything date-shaped (`dayjs` satisfies {@link DateLike});
+ * an invalid date renders empty. */
+export function timestamp(value: Date | number | string | DateLike, cls?: string): HTMLSpanElement {
+  const date = value instanceof Date ? value :
+    typeof value === 'object' && value !== null ? value.toDate() :
+      new Date(value);
+  const el = element('span', 'u2-timestamp', cls);
+  if (!(date instanceof Date) || isNaN(date.getTime()))
+    return el;
+  const withYear = date.getFullYear() !== new Date().getFullYear();
+  el.textContent = date.toLocaleDateString(undefined,
+    {month: 'short', day: 'numeric', ...(withYear ? {year: 'numeric'} : {})});
+  el.title = date.toLocaleString(undefined,
+    {month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+  return el;
+}
+
 export function label(text: Text, cls?: string): HTMLLabelElement {
   return setText(element('label', 'u2-label', cls), text);
 }

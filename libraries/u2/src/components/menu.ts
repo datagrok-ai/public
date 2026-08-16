@@ -6,6 +6,7 @@ import {autoUpdate, computePosition, flip, offset, shift} from '@floating-ui/dom
 import {signal, ReadonlySignal} from '../core/signals.js';
 import {Scope} from '../core/scope.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../core/overlay.js';
+import {icon as iconElement} from './icon.js';
 
 export interface MenuItemOptions {
   icon?: string;
@@ -208,7 +209,10 @@ export class Menu {
     }
     const icon = document.createElement('span');
     icon.className = 'u2-menu-icon';
-    icon.textContent = options.check ? '✓' : (options.icon ?? '');
+    if (options.check)
+      icon.textContent = '✓';
+    else if (options.icon)
+      icon.append(iconElement(options.icon));
     const label = document.createElement('span');
     label.className = 'u2-menu-label';
     label.textContent = node.label;

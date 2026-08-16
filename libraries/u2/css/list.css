@@ -44,3 +44,23 @@
   background: var(--dg-steel-1);
   color: var(--dg-accent);
 }
+
+/* hover-revealed action block (src/components/actions.ts): invisible until its row — a list row
+   or any element carrying .u2-row — is hovered, or a button in it holds focus. Hidden by opacity,
+   not display: the buttons keep their space (no layout shift on hover) and stay tabbable, so
+   keyboard users reach them; pointer-events blocks clicks on the invisible state. */
+.u2-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  margin-left: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.u2-list-row:hover .u2-row-actions,
+.u2-row:hover .u2-row-actions,
+.u2-row-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}

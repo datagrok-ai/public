@@ -83,3 +83,10 @@
   outline: var(--dg-border-width) solid var(--dg-focus);
   outline-offset: var(--dg-space-xs);
 }
+
+/* compact timestamp (src/core/elements.ts timestamp()): short date visual, full date-time in title */
+.u2-timestamp {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+}

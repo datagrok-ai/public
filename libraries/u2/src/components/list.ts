@@ -8,6 +8,7 @@
 
 import {Component} from '../core/component.js';
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
+import {Action, actionsMenu} from './actions.js';
 
 export interface VirtualListOptions<T> {
   itemHeight?: number;
@@ -17,6 +18,9 @@ export interface VirtualListOptions<T> {
   keyOf?: (item: T) => string;
   /** `row` is the pooled row element — set per-row attributes on it; it is reset before each call. */
   render: (item: T, index: number, row: HTMLElement) => HTMLElement;
+  /** The item's FULL action list: right-click selects the row and opens it as a menu at the
+   * cursor. The hover block (`rowActions`) shows the icon-bearing subset of the same list. */
+  contextActions?: (item: T, index: number) => Action[];
 }
 
 interface IndexRange {
@@ -84,6 +88,21 @@ export class VirtualList<T> extends Component {
       if (row)
         this.selectedIndex.value = Number(row.dataset.index);
     });
+    const contextActions = options.contextActions;
+    if (contextActions) {
+      this._on(this._content, 'contextmenu', (e) => {
+        const row = (e.target as Element).closest('.u2-list-row') as HTMLElement | null;
+        if (!row)
+          return;
+        const index = Number(row.dataset.index);
+        const actions = contextActions(this._items[index], index);
+        if (actions.length === 0)
+          return;
+        e.preventDefault();
+        this.selectedIndex.value = index;
+        actionsMenu(actions).show({x: e.clientX ?? 0, y: e.clientY ?? 0});
+      });
+    }
 
     const resize = new ResizeObserver(() => this._renderVisible());
     resize.observe(this.root);

@@ -9,6 +9,7 @@ import {TextInput} from '../components/text-input.js';
 import {NumberInput} from '../components/number-input.js';
 import {BoolInput} from '../components/bool-input.js';
 import {ChoiceInput} from '../components/choice-input.js';
+import {DateTimeInput} from '../components/date-input.js';
 import {fromDartInput} from './from-dart-input.js';
 import {Editors} from './editors.js';
 
@@ -59,7 +60,7 @@ export interface PropertySource {
   getProperties(): PropertyLike[];
 }
 
-type Kind = 'string' | 'int' | 'float' | 'bool' | 'choice' | 'readonly';
+type Kind = 'string' | 'int' | 'float' | 'bool' | 'choice' | 'datetime' | 'readonly';
 
 interface Field {
   prop: PropertyLike;
@@ -202,8 +203,9 @@ export class ObjectForm extends Form {
       return 'choice';
     switch (prop.propertyType ?? prop.type) {
       case 'string':
-      case 'datetime': // the date picker is the one v1 control still deferred (PLAN.md P4)
         return 'string';
+      case 'datetime':
+        return 'datetime';
       case 'int':
       case 'bigint':
         return 'int';
@@ -229,6 +231,8 @@ export class ObjectForm extends Form {
       case 'float':
         return new NumberInput({...options, mode: kind === 'int' ? 'int' : 'float',
           min: ObjectForm._number(prop.min), max: ObjectForm._number(prop.max)});
+      case 'datetime':
+        return new DateTimeInput(options);
       case 'readonly': {
         const input = new TextInput(options);
         input.enabled = false;
@@ -252,6 +256,16 @@ export class ObjectForm extends Form {
       }
       case 'choice':
         return value === null || value === undefined ? null : String(value);
+      case 'datetime': {
+        if (value === null || value === undefined || value === '')
+          return null;
+        if (value instanceof Date)
+          return value;
+        // dayjs values (Dart-bound datetime props) expose toDate()
+        const dayjsLike = value as {toDate?: () => Date};
+        const date = typeof dayjsLike.toDate === 'function' ? dayjsLike.toDate() : new Date(value as string | number);
+        return isNaN(date.getTime()) ? null : date;
+      }
       default:
         return value === null || value === undefined ? '' : String(value);
     }
