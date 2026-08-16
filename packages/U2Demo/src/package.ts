@@ -27,6 +27,8 @@ import '@datagrok-libraries/u2/css/typeahead.css';
 import '@datagrok-libraries/u2/css/entity.css';
 import '@datagrok-libraries/u2/css/badge.css';
 import '@datagrok-libraries/u2/css/table.css';
+import '@datagrok-libraries/u2/css/adaptive.css';
+import '@datagrok-libraries/u2/css/buttons.css';
 import '../css/u2demo.css';
 
 import {MenuBar, signal} from '@datagrok-libraries/u2';

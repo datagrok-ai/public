@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {
-  signal, computed, Component, Scope, VirtualList, TextInput,
-  Splitter, divV, divH, span, button, dot, loader, tableFromMap, iconButton,
+  signal, computed, Component, Scope, VirtualList, TextInput, Splitter,
+  divV, divH, span, button, dot, loader, tableFromMap, iconButton, rowActions, timestamp,
 } from '@datagrok-libraries/u2';
-import type {ReadonlySignal} from '@datagrok-libraries/u2';
+import type {Action, ReadonlySignal} from '@datagrok-libraries/u2';
 import {dapiPager, chip} from '@datagrok-libraries/u2/src/dg/index.js';
 
 const PAGE_SIZE = 30;
@@ -23,12 +23,29 @@ function created(date: dayjs.Dayjs): string {
   return date && date.isValid() ? date.format('MMM D, YYYY HH:mm') : '';
 }
 
+function reportActions(r: DG.UserReport): Action[] {
+  const actions: Action[] = [{name: 'Copy description', icon: 'copy', run: () => {
+    navigator.clipboard.writeText(r.description ?? '');
+    grok.shell.info('Description copied');
+  }}];
+  if (r.jiraTicket) {
+    actions.push({name: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
+      run: () => window.open(`https://reddata.atlassian.net/browse/${r.jiraTicket}`)});
+  }
+  actions.push({name: 'Copy id', run: () => {
+    navigator.clipboard.writeText(r.id);
+    grok.shell.info('Id copied');
+  }});
+  return actions;
+}
+
 function reportRow(r: DG.UserReport): HTMLElement {
   return divV([
     divH([span(r.description ?? '', 'u2demo-report-text'),
-      span(r.reporter?.friendlyName ?? '', 'u2demo-dim')], 'u2demo-report-line'),
-    divH([span(created(r.createdOn), 'u2demo-dim'),
-      dot(r.isResolved ? 'success' : 'warning')], 'u2demo-report-line'),
+      span(r.reporter?.friendlyName ?? '', 'u2demo-dim u2-p2')], 'u2demo-report-line'),
+    divH([timestamp(r.createdOn),
+      divH([rowActions(reportActions(r)), dot(r.isResolved ? 'success' : 'warning')], 'u2demo-row')],
+    'u2demo-report-line'),
   ], 'u2demo-report');
 }
 
@@ -57,7 +74,9 @@ export function buildReportsBrowser(): ReportsBrowserParts {
     });
     scope.own(() => pager.dispose());
 
-    const list = new VirtualList<DG.UserReport>({itemHeight: ROW_HEIGHT, keyOf: (r) => r.id, render: reportRow});
+    const list = new VirtualList<DG.UserReport>({itemHeight: ROW_HEIGHT, keyOf: (r) => r.id,
+      render: reportRow, contextActions: reportActions});
+    list.root.classList.add('u2-adaptive');
     list.setItems(pager.items);
     const onScroll = () => {
       const root = list.root;
