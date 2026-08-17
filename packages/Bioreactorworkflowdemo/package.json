@@ -1,7 +1,11 @@
 {
-  "name": "bioreactorworkflowdemo",
+  "name": "@datagrok/bioreactorworkflowdemo",
   "friendlyName": "BioreactorWorkflowDemo",
-  "version": "0.0.1",
+    "author": {
+    "name": "Gennadii Zakharov",
+    "email": "gzakharov@datagrok.ai"
+  },
+  "version": "0.2",
   "description": "Compute2 low-code workflow demo for simulating daily bacterial growth in a bioreactor",
   "dependencies": {
     "@datagrok-libraries/compute-api": "^0.7.6",
