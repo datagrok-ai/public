@@ -1,51 +1,22 @@
-/**
- * Playwright helpers shared by Viewers/Legend/* spec files.
- *
- * Each helper is a verbatim extraction of a block previously pasted into
- * every Legend spec — same selectors, same sleeps, same JS-API fallbacks.
- * Imported as: `import * as v from '../../helpers/viewers';`.
- *
- * Behavioral contract: a helper must produce the same observable end-state
- * as the inline block it replaces. Do not "improve" sleeps or selectors here
- * — those changes belong in a follow-up that replaces fixed setTimeout with
- * expect.poll across the suite (see review item 5).
- */
-
 import {Page, expect} from '@playwright/test';
 import {createHash} from 'crypto';
 import {stepErrors, StepError} from '../spec-login';
 
-// ---------------------------------------------------------------------------
-// 1. openTable — canonical open prelude used by Legend + FilterPanel specs.
-// ---------------------------------------------------------------------------
-
 export interface OpenTableOptions {
-  /** Demo file path. Defaults to spgi-100 (the standard fixture for Legend specs). */
+
   path?: string;
-  /** When true, prime the Filter Panel (Filters viewer) after open. */
+
   withFilterPanel?: boolean;
-  /** Semantic type hint (unused by the open path; reserved for callers). */
+
   semType?: 'Molecule' | 'Macromolecule';
-  /** Force the OpenFile path (also auto-detected for .sdf/.nwk/.pdb). */
+
   sdf?: boolean;
-  /** Extra settle after the Grid is visible (ms). */
+
   settleMs?: number;
-  /** Cap on the semantic-type-detection race (ms). Defaults to 5000; pass 3000
-   * to match the shorter inline prelude that the Viewers specs hand-rolled. */
+
   semTypeTimeoutMs?: number;
 }
 
-/**
- * Open a demo table, attach the default TableView, wait for semantic-type
- * detection + Bio/Chem render settle, and (optionally) prime the Filter Panel.
- *
- * Superset of the prelude block pasted into every Legend / FilterPanel spec.
- * CSV sources go through `readCsv` + `addTableView`; .sdf/.nwk/.pdb (or
- * `sdf: true`) route through the OpenFile function-call recorder (verbatim from
- * openers.ts openTableFromFile). Selenium class + simpleMode +
- * showFiltersIconsConstantly are set the same way as in the inline form so
- * spec behavior is unchanged.
- */
 export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
   const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
@@ -96,35 +67,13 @@ export async function openTable(page: Page, options?: OpenTableOptions): Promise
   if (options?.withFilterPanel) await openFilterPanel(page);
 }
 
-/**
- * Prime the Filter Panel (Filters viewer) on the active TableView: open the
- * filters group, wait for the first `.d4-filter`, and hover it. Extracted from
- * the withFilterPanel half of the original openTable prelude.
- */
 export async function openFilterPanel(page: Page): Promise<void> {
   await page.evaluate(() => (window as any).grok.shell.tv.getFiltersGroup());
   await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
-  // Real DOM gesture on the Filter Panel — exercises the documented
-  // hover-to-reveal header-icons interaction and adds an observable
-  // Playwright-driven call alongside JS-API operations.
+
   await page.locator('[name="viewer-Filters"] .d4-filter').first().hover();
 }
 
-/**
- * Add a viewer by clicking its ribbon/toolbox icon, then wait for the viewer to
- * attach. Verbatim equivalent of the `querySelector('[name="icon-<icon>"]')`
- * click + `[name="viewer-<name>"]` waitFor block pasted into the Viewers specs.
- * Pass a non-default `timeoutMs` only when a call-site used a different wait.
- *
- * `viewerName` is the DOM-attribute form used for both the `[name="icon-…"]`
- * click and the `[name="viewer-…"]` DOM wait. For most viewers that same word
- * is also the `viewer.type` display form (modulo hyphen/space): icon `Bar-chart`
- * → type `Bar chart`. A few viewers break that coupling — the multi-form viewer
- * attaches on `[name="viewer-Forms"]` but its `viewer.type` is `FormsViewer`, so
- * the hyphen/space-insensitive compare cannot bridge `Forms` → `FormsViewer`.
- * Pass `expectedType` for those (it defaults to `viewerName`, so existing
- * call-sites are unaffected).
- */
 export async function addViewerByIcon(
   page: Page, iconName: string, viewerName: string, timeoutMs = 5000, expectedType?: string,
 ): Promise<void> {
@@ -132,13 +81,7 @@ export async function addViewerByIcon(
     (document.querySelector('[name="icon-' + n + '"]') as HTMLElement).click();
   }, iconName);
   await page.locator('[name="viewer-' + viewerName + '"]').waitFor({timeout: timeoutMs});
-  // The DOM node attaches a tick before the viewer is enumerable in
-  // grok.shell.tv.viewers (and before its props object exists). A caller that
-  // reaches for the viewer via `tv.viewers.find(...)` right after this returns
-  // otherwise gets `undefined`. Poll enumerability so downstream prop reads are
-  // safe regardless of the render-vs-registration race.
-  // Compare hyphen/space-insensitively; when the icon/DOM name and the type
-  // diverge (Forms → FormsViewer), the caller supplies `expectedType`.
+
   await page.waitForFunction((vn) => {
     const tv = (window as any).grok?.shell?.tv;
     if (!tv) return false;
@@ -148,16 +91,6 @@ export async function addViewerByIcon(
   }, expectedType ?? viewerName, {timeout: timeoutMs});
 }
 
-// ---------------------------------------------------------------------------
-// 2. addLegendViewers — uniform viewer-attach + legend-column binding.
-// ---------------------------------------------------------------------------
-
-/**
- * Mapping from viewer type to the property that binds the legend's category
- * source. Scalar columns: scatter/histogram/line/bar/pie. Array columns:
- * Trellis + Box plot. Pulled from the per-viewer if/else blocks duplicated
- * across filtering/color-consistency/visibility-and-positioning specs.
- */
 export const LEGEND_COLUMN_PROP: Record<string, {prop: string; array: boolean}> = {
   'Scatter plot':  {prop: 'colorColumnName', array: false},
   'Histogram':     {prop: 'splitColumnName', array: false},
@@ -169,24 +102,16 @@ export const LEGEND_COLUMN_PROP: Record<string, {prop: string; array: boolean}> 
 };
 
 export interface ViewerSpec {
-  /** Viewer type (e.g. 'Scatter plot'). */
+
   type: string;
-  /** Override column for this viewer (e.g. 'Series' for scatterplot). Default = options.column. */
+
   column?: string;
-  /** Override the prop (e.g. 'markersColumnName' for scatter markers). */
+
   prop?: string;
-  /** Force value to be an array (overrides LEGEND_COLUMN_PROP.array). */
+
   array?: boolean;
 }
 
-/**
- * Add a list of viewers to the active TableView and bind each one's
- * legend column. Sets `legendVisibility = 'Always'` for every non-Grid
- * viewer (matching the inline pattern in filtering-spec.ts etc).
- *
- * Verbatim equivalent of the `const names = [...]; for (const n of names) tv.addViewer(n); ...`
- * blocks duplicated across 7+ specs.
- */
 export async function addLegendViewers(
   page: Page,
   options: {column: string; viewers: (string | ViewerSpec)[]; settleMs?: number},
@@ -217,92 +142,30 @@ export async function addLegendViewers(
   }, {s: specs, defaultCol: options.column, settle: settleMs, map: LEGEND_COLUMN_PROP});
 }
 
-// ---------------------------------------------------------------------------
-// 2b. pickColumnViaSelector — type-and-search column selector (UI path).
-// ---------------------------------------------------------------------------
-
 export interface PickColumnOptions {
-  /**
-   * Suffix of the column-combobox name attribute. The selector matched is
-   * `[name="div-column-combobox-<suffix>"]` — see `references/viewers.md`.
-   * Examples (lowercase, multi-word uses double dash):
-   *   - `'color'`              Scatter plot color
-   *   - `'size'`               Scatter plot size
-   *   - `'split'`              Histogram / Bar / Line split
-   *   - `'split--by'`          Timelines split-by
-   *   - `'category'`           Pie chart category
-   *   - `'x'` / `'y'`          Generic XY axis
-   *   - `'stack'`              Bar chart stack
-   */
+
   comboboxSuffix: string;
-  /** Column name to type into the selector. */
+
   columnName: string;
-  /**
-   * Optional viewer type for post-flow verification (e.g. 'Scatter plot').
-   * When set together with propName, the helper reads `props[propName]` after
-   * the UI flow and reports (via `usedFallback`) whether the JS-API
-   * substitution had to be applied.
-   */
+
   viewerType?: string;
-  /**
-   * Property name to verify the change landed (e.g. 'colorColumnName',
-   * 'splitColumnName'). Pass together with viewerType.
-   */
+
   propName?: string;
-  /**
-   * Opt-in JS-API substitution: when true (and viewerType/propName are set),
-   * a UI flow that did not land the column falls back to assigning the prop
-   * directly. Default false — a broken UI path is reported, not masked.
-   */
+
   allowFallback?: boolean;
-  /**
-   * How to wait for the popup to open after the trigger mousedown:
-   *   - `'sleep'` (default) — fixed 500ms wait. Matches the original
-   *     scatter-plot-spec.ts:25-47 pattern.
-   *   - `'backdrop'` — poll for `.d4-column-selector-backdrop` (up to 3s).
-   *     Matches density-plot-spec.ts:29-38. More reliable when the popup
-   *     init is slow, but the backdrop element doesn't render on every
-   *     build/widget — fall back to sleep if it doesn't appear.
-   *   - `'either'` — race backdrop (3s) vs 500ms sleep, whichever first.
-   *     Robust default for new call sites that don't know which strategy
-   *     fits.
-   */
+
   popupWaitStrategy?: 'sleep' | 'backdrop' | 'either';
-  /**
-   * Optional scope for the column-combobox lookup. When provided, the
-   * helper restricts the `[name="div-column-combobox-<suffix>"]` query
-   * to descendants of this CSS selector — e.g. `[name="viewer-Density-plot"]`
-   * for density-plot, where the same combobox suffix can appear elsewhere
-   * on the page (gear panel, second viewer instance, etc).
-   */
+
   scopeSelector?: string;
 }
 
-/**
- * Drive the column-selector widget: open the popup, type the column name,
- * press Enter. Verbatim extraction of `setColumnViaSelector` from
- * scatter-plot-spec.ts:25-47 — same mousedown-on-`.d4-column-selector-column`
- * trigger, same first-key + rest-of-name typing rhythm (avoids the timing
- * bug where the popup's async-focused search input drops the first letter),
- * same ArrowDown + Enter commit. The prop-equality JS-API fallback is
- * opt-in via `allowFallback`; the return value reports whether it fired.
- *
- * Assumes the viewer's properties Context Panel (gear) is already open, or
- * the target column-combobox is rendered somewhere on the page. Callers that
- * need to open the gear first should do so before invoking this helper.
- *
- * Reference: `.claude/skills/grok-browser/references/viewers.md` "Column
- * Selectors on Viewers" + `density-plot-run.md` rows 17-19 (UI flow
- * validated against dev).
- */
 export async function pickColumnViaSelector(
   page: Page, opts: PickColumnOptions,
 ): Promise<{usedFallback: boolean}> {
   const selectorName = `div-column-combobox-${opts.comboboxSuffix}`;
   const scope = opts.scopeSelector ?? null;
   const strategy = opts.popupWaitStrategy ?? 'sleep';
-  // Open the popup. Mousedown on .d4-column-selector-column is the proven
-  // trigger — direct click or focus does NOT reliably open the popup.
+
   await page.evaluate(({name, sc}) => {
     document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
     const root: Document | Element = sc
@@ -318,16 +181,14 @@ export async function pickColumnViaSelector(
   } else if (strategy === 'backdrop') {
     await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
       null, {timeout: 3000}).catch(() => {});
-  } else { // 'either' — race
+  } else { 
     await Promise.race([
       page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
         null, {timeout: 3000}).catch(() => {}),
       page.waitForTimeout(500),
     ]);
   }
-  // Type the column name. First key separated by a 100ms wait — the popup
-  // focuses its search input asynchronously via Timer.run and the first
-  // letter sometimes drops if both keys land in the same tick.
+
   await page.keyboard.press(opts.columnName[0].toLowerCase());
   await page.waitForTimeout(100);
   if (opts.columnName.length > 1)
@@ -336,8 +197,6 @@ export async function pickColumnViaSelector(
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
 
-  // Post-flow verify: read the prop back and, only when the caller opted in,
-  // substitute via JS API. `usedFallback` lets callers assert the UI path.
   let usedFallback = false;
   if (opts.viewerType && opts.propName) {
     const applied = await page.evaluate(({vt, prop, col}) => {
@@ -356,74 +215,26 @@ export async function pickColumnViaSelector(
 }
 
 export interface TrustedPickColumnOptions {
-  /**
-   * Suffix of the on-viewer column-combobox name attribute, lowercase — the
-   * selector matched is `[name="div-column-combobox-<role>"]`. Scatter plot
-   * exposes `x`, `y`, `color` and `size`.
-   */
+
   role: string;
-  /** Column name to commit through the popup. */
+
   columnName: string;
-  /**
-   * Which element of the selector receives the click:
-   *   - `'auto'` (default) — the column-name label, falling back to the caption
-   *     and then to the selector box. An unassigned selector shows only its
-   *     caption, and its column label has a zero-sized box.
-   *   - `'column'` — the column-name label only. Use this to express a guard
-   *     that the label text itself is a hit target for the popup.
-   */
+
   target?: 'auto' | 'column';
-  /**
-   * Viewer whose on-viewer selectors are driven. Defaults to `'Scatter plot'`;
-   * the root is resolved on the instance that is NOT inside a dialog, because a
-   * dialog can embed its own preview copy of the same viewer.
-   */
+
   viewerType?: string;
-  /** Property read back after the commit. Defaults to `<role>ColumnName`. */
+
   propName?: string;
-  /**
-   * Where the column selector lives, when it is NOT hosted inside the viewer
-   * root. Package viewers (e.g. GIS Map) render their selectors into the
-   * Context Panel property grid — pass `'.property-grid'` for those. The
-   * viewer root is still used for the pointer move and the property read-back.
-   */
+
   scopeSelector?: string;
-  /** How long to wait for the popup after the click. Defaults to 6000 ms. */
+
   backdropTimeoutMs?: number;
-  /** Settle after the commit before the property is read back. Defaults to 900 ms. */
+
   commitSettleMs?: number;
-  /**
-   * When true (default), a popup that never opens is an error. Pass false to
-   * make the caller responsible for asserting `popupOpened` — the shape a
-   * hit-target guard needs.
-   */
+
   requirePopup?: boolean;
 }
 
-/**
- * Drive a viewer's on-viewer column selector with trusted input only: move the
- * real pointer over the plot, real-click the selector's text, type the column
- * name with real keys and commit with Enter, then read the resulting property
- * back.
- *
- * Preferred over `pickColumnViaSelector` for viewer-hosted selectors. That
- * helper drives the popup with a synthetic mousedown and commits with
- * ArrowDown + Enter; both are weaker here — a selector that carries
- * `visibility: hidden` until the pointer is over the viewer cannot take focus,
- * so a synthetic open leaves the keystrokes routed to whatever was focused
- * before and the pick silently drops, and ArrowDown moves off the exact match
- * when the typed text matches more than one column. It also does not substitute
- * the property assignment for a failed UI flow: a broken selector raises here
- * instead of being masked.
- *
- * Throws when the selector exposes no clickable text, when the popup does not
- * open (unless `requirePopup: false`), and when the property does not hold the
- * requested column after the commit — the message names the role, the expected
- * and the observed value.
- *
- * Reference: `.claude/skills/grok-browser/references/viewers/scatterplot.md`
- * "On-viewer column selectors".
- */
 export async function pickColumnViaSelectorTrusted(
   page: Page, opts: TrustedPickColumnOptions,
 ): Promise<{popupOpened: boolean}> {
@@ -432,9 +243,6 @@ export async function pickColumnViaSelectorTrusted(
   const target = opts.target ?? 'auto';
   const propName = opts.propName ?? `${opts.role}ColumnName`;
 
-  // Move the pointer over the plot: Color and Size carry `visibility: hidden`
-  // until the viewer is hovered, and a hidden selector takes neither a click
-  // nor focus.
   const canvas = await page.evaluate((rn: string) => {
     const root = [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
     const el = root?.querySelector('canvas[name="canvas"]') ?? root;
@@ -470,9 +278,6 @@ export async function pickColumnViaSelectorTrusted(
   if (!point)
     throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} selector exposes no clickable text`);
 
-  // A click that lands while the viewer is still building its Context Panel is
-  // swallowed, so the click is retried once before giving up. Retrying beats
-  // sleeping before the click: the common case costs nothing.
   let popupOpened = false;
   for (let attempt = 0; attempt < 2 && !popupOpened; attempt++) {
     if (attempt > 0) await page.waitForTimeout(500);
@@ -486,9 +291,6 @@ export async function pickColumnViaSelectorTrusted(
     throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} column popup did not open`);
   }
 
-  // The popup grid is canvas-rendered, so the name goes in as real keystrokes.
-  // The first key is separated from the rest because the popup focuses its
-  // search input a tick later; Enter alone commits the match.
   const text = opts.columnName.toLowerCase();
   await page.keyboard.press(text[0]);
   await page.waitForTimeout(150);
@@ -508,15 +310,6 @@ export async function pickColumnViaSelectorTrusted(
   return {popupOpened: true};
 }
 
-/**
- * Open a viewer's properties Context Panel by clicking the gear icon. The
- * gear is scoped to the viewer's panel-titlebar to disambiguate across
- * multiple viewers on screen.
- *
- * Selectors from `references/viewers.md`:
- *   - viewer container: `[name="viewer-<Type>"]` (spaces preserved or dashed)
- *   - title-bar gear:   `.panel-titlebar [name="icon-font-icon-settings"]`
- */
 export async function openViewerGear(page: Page, viewerType: string): Promise<void> {
   await page.evaluate((vt) => {
     const candidates = [
@@ -536,29 +329,6 @@ export async function openViewerGear(page: Page, viewerType: string): Promise<vo
   await page.waitForTimeout(1000);
 }
 
-// ---------------------------------------------------------------------------
-// 2c. Context Panel property grid — the UI path to every viewer property.
-//
-// Both d4 viewers and package viewers (GIS Map) render their properties as a
-// `.property-grid` table in the Context Panel. Every row carries a stable
-// `name` attribute derived from the property caption: "Marker Min Size" →
-// `prop-marker-min-size`, its category header → `prop-category-markers`, and
-// the element showing the current value → `prop-view-marker-min-size`.
-//
-// These helpers drive that grid instead of assigning `viewer.props.x`, so a
-// broken editor, a collapsed category or a value that does not commit fails the
-// test rather than passing silently.
-// ---------------------------------------------------------------------------
-
-/**
- * Real click on a viewer title-bar icon. The title bar lives on the viewer's
- * `.panel-base` ancestor, not inside the viewer root, and multiple viewers
- * expose identically-named icons — hence the scoped lookup.
- *
- * `viewerName` is the DOM-attribute form ('3d-scatter-plot', 'Map').
- * Known icons: `icon-font-icon-settings` (gear), `icon-font-icon-menu`,
- * `icon-font-icon-help`, `icon-expand-arrows`, and `Close`.
- */
 export async function clickViewerTitlebarIcon(
   page: Page, viewerName: string, iconName: string,
 ): Promise<void> {
@@ -574,14 +344,6 @@ export async function clickViewerTitlebarIcon(
   await page.mouse.click(point.x, point.y);
 }
 
-/**
- * Open a viewer's properties in the Context Panel through its gear icon.
- *
- * `probeSelector` is what proves the right properties are on screen. The
- * default only checks that some property grid is there — pass a viewer-specific
- * row (e.g. `[name="prop-category-misc"]`) when another entity may have taken
- * the Context Panel over, which filtering and selecting both do.
- */
 export async function openViewerProperties(
   page: Page, viewerName: string, probeSelector = '.property-grid',
 ): Promise<void> {
@@ -591,24 +353,15 @@ export async function openViewerProperties(
   await page.waitForTimeout(500);
 }
 
-/**
- * Make a property-grid category's rows reachable. The category header is a
- * toggle, and acting on the table (filtering, selecting) can replace the
- * Context Panel content entirely — so this reopens the panel when needed and
- * retries rather than clicking blindly once.
- */
 export async function ensurePropertyCategory(
   page: Page, viewerName: string, category: string, probeProp: string, timeoutMs = 20_000,
 ): Promise<void> {
   const headerSelector = `[name="prop-category-${category}"]`;
   const header = page.locator(headerSelector);
-  // Deadline rather than a fixed number of attempts: a viewer that is still
-  // building its Context Panel just needs another go round, and the happy path
-  // still returns on the first check.
+
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    // Probe the row that belongs to THIS category — a same-named row in another
-    // category can be visible while this one is still collapsed.
+
     const index = await propertyRowIndex(page, probeProp, category);
     if (index >= 0 &&
         await page.locator(`.property-grid tr[name="prop-${probeProp}"]`).nth(index).isVisible())
@@ -623,14 +376,6 @@ export async function ensurePropertyCategory(
   throw new Error(`property-grid category "${category}" never exposed prop-${probeProp}`);
 }
 
-/**
- * Index of a property row among the rows sharing its name, restricted to one
- * category. A caption can repeat across categories — Network diagram has an
- * "Edge Width" column selector under Data and an "Edge Width" number under Misc,
- * both rendered as `tr[name="prop-edge-width"]` — so an unqualified locator
- * silently drives whichever comes first. Returns 0 when `category` is omitted,
- * and -1 when the category holds no such row.
- */
 async function propertyRowIndex(page: Page, prop: string, category?: string): Promise<number> {
   if (!category) return 0;
   return page.evaluate(({p, c}) => {
@@ -649,20 +394,12 @@ async function propertyRowIndex(page: Page, prop: string, category?: string): Pr
   }, {p: prop, c: category});
 }
 
-/** Locator for a property row, disambiguated by category when one is given. */
 async function propertyRow(page: Page, prop: string, category?: string) {
   const index = await propertyRowIndex(page, prop, category);
   if (index < 0) throw new Error(`no prop-${prop} row inside category "${category}"`);
   return page.locator(`.property-grid tr[name="prop-${prop}"]`).nth(index);
 }
 
-/**
- * Value the property grid displays for a property — what the user reads back.
- * Label-rendered properties expose it as text, slider-backed ones (sizes,
- * opacity, radius) render an input, and booleans render a checkbox reported as
- * `'true'` / `'false'`. Returns `''` when the property has no row on screen —
- * check for that rather than asserting `''` means anything.
- */
 export async function propertyGridValue(page: Page, prop: string, category?: string): Promise<string> {
   const index = await propertyRowIndex(page, prop, category);
   if (index < 0) return '';
@@ -678,7 +415,6 @@ export async function propertyGridValue(page: Page, prop: string, category?: str
   }, {p: prop, i: index});
 }
 
-/** Commit a value into a property-grid text or slider editor. */
 export async function setPropertyGridValue(
   page: Page, prop: string, value: string, category?: string,
 ): Promise<void> {
@@ -691,7 +427,6 @@ export async function setPropertyGridValue(
   await page.waitForTimeout(700);
 }
 
-/** Pick a value in a property-grid choice editor (a `select` opened by the cell click). */
 export async function selectPropertyGridChoice(
   page: Page, prop: string, value: string, category?: string,
 ): Promise<void> {
@@ -701,12 +436,6 @@ export async function selectPropertyGridChoice(
   await page.waitForTimeout(900);
 }
 
-/**
- * Put a property-grid boolean into a known state. Prefer this over
- * `togglePropertyGridCheckbox` whenever the step needs the setting ON (or OFF)
- * rather than flipped — several viewer settings ship enabled, so a blind toggle
- * turns them off and the step then tests the opposite of what it says.
- */
 export async function setPropertyGridCheckbox(
   page: Page, prop: string, desired: boolean, category?: string,
 ): Promise<void> {
@@ -718,7 +447,6 @@ export async function setPropertyGridCheckbox(
   expect(await box.isChecked()).toBe(desired);
 }
 
-/** Flip a property-grid boolean and report the state it ended up in. */
 export async function togglePropertyGridCheckbox(
   page: Page, prop: string, category?: string,
 ): Promise<boolean> {
@@ -729,48 +457,13 @@ export async function togglePropertyGridCheckbox(
   return box.isChecked();
 }
 
-// ---------------------------------------------------------------------------
-// 2c-bis. Top-menu navigation — a PLATFORM behaviour, not a viewer property.
-// ---------------------------------------------------------------------------
-
-/**
- * Drive a nested top-menu leaf (`{Group} | {Subgroup} | … | {Leaf}`) with the
- * REAL mouse and return whether the leaf was actuated.
- *
- * `path` is the sequence of human menu labels, e.g.
- * `['View', 'Layout', 'Save to Gallery']`; each segment is turned into the
- * platform's `[name="div-<A>---<B>---…"]` selector (spaces → hyphens, `---`
- * separators — the `annotate()` convention).
- *
- * WHY THIS EXISTS AND WHY IT IS FIDDLY (live-verified on dev, 2026-08-12):
- *  - **Readiness is checked by element SIZE, never by DOM presence.** The whole
- *    submenu tree is rendered *nested inside* the top-level menu item and is
- *    present in the DOM from the start, but every level below the one currently
- *    open has a **zero-size** bounding rect (width/height 0). A selector that
- *    resolves in the DOM therefore proves nothing about clickability — a click
- *    on a zero-size leaf fails Playwright's visible/stable actuation checks and
- *    times out. So each level is addressed only once its live rect is non-zero.
- *  - **A synthetic hover event does NOT expand a subgroup.** The first level
- *    opens on a click, but a child subgroup expands only when a REAL pointer
- *    movement lands on it — the Dart menu tracks pointer input through its own
- *    handlers, and a `dispatchEvent(new MouseEvent('mouseover'))` leaves the
- *    sub-submenu collapsed (leaf stays zero-size). Hence `page.mouse.move` onto
- *    each intermediate subgroup, not a synthetic event and not `.hover()`.
- *
- * Mechanic: real click on the top-level header → real pointer MOVE onto each
- * intermediate subgroup (which expands it) → real click on the leaf. The whole
- * bundle is retried up to `opts.attempts` times (a half-open menu is dismissed
- * with Escape between attempts); in practice one bundle suffices. Returns `true`
- * once the leaf is clicked, `false` if every attempt failed — the caller keeps
- * the hard actuation assertion (`expect(... ).toBe(true)`).
- */
 export async function driveTopMenuLeaf(
   page: Page, path: string[], opts: {attempts?: number} = {},
 ): Promise<boolean> {
   const attempts = opts.attempts ?? 4;
   const selAt = (depth: number) =>
     `[name="div-${path.slice(0, depth + 1).map((s) => s.replace(/ /g, '-')).join('---')}"]`;
-  // Live centre of a selector, or null when it is absent OR still zero-size.
+
   const liveCentre = async (sel: string): Promise<{x: number; y: number} | null> =>
     page.evaluate((s) => {
       const e = document.querySelector(s);
@@ -793,13 +486,13 @@ export async function driveTopMenuLeaf(
     if (head) await page.mouse.click(head.x, head.y);
     let ok = head != null;
     for (let depth = 1; ok && depth < path.length; depth++) {
-      // The parent level is open, so this segment now has real size — wait it out.
+
       const c = await waitCentre(selAt(depth), 3000);
       if (!c) { ok = false; break; }
       if (depth < path.length - 1)
-        await page.mouse.move(c.x, c.y, {steps: 6}); // hover-open the next subgroup
+        await page.mouse.move(c.x, c.y, {steps: 6}); 
       else
-        await page.mouse.click(c.x, c.y);            // click the leaf
+        await page.mouse.click(c.x, c.y);            
     }
     if (ok) return true;
     await page.keyboard.press('Escape');
@@ -808,60 +501,40 @@ export async function driveTopMenuLeaf(
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// 2d. viewerSignature — proof that a viewer actually repainted.
-// ---------------------------------------------------------------------------
-
-/**
- * Hash of a screenshot of the viewer region. Use it to assert that an action
- * changed what the user sees when `countCanvasPixels` cannot: WebGL-backed
- * viewers (3D scatter plot, GIS Map markers) expose no readable 2d context, and
- * a screenshot is the only read that covers every layer on screen.
- *
- * Only meaningful for asserting CHANGE. Equality is not proof of "nothing
- * happened" — an unrelated repaint elsewhere in the viewer changes the hash too.
- */
 export async function viewerSignature(page: Page, viewerName: string): Promise<string> {
   const shot = await page.locator(`[name="viewer-${viewerName}"]`).first().screenshot();
   return createHash('md5').update(shot).digest('hex');
 }
 
-// ---------------------------------------------------------------------------
-// 3. readLegend — DOM read of a viewer's legend items.
-// ---------------------------------------------------------------------------
-
 export interface LegendInfo {
-  /** Count of `.d4-legend-item` elements in this viewer's [name="legend"] host. */
+
   itemCount: number;
-  /** Per-item text labels (from `.d4-legend-value`). */
+
   labels: string[];
-  /** Whether the [name="legend"] host is present at all. */
+
   legendRendered: boolean;
+
+  laidOut: boolean;
 }
 
-/**
- * Read a viewer's legend (item count + labels) via DOM. Verbatim equivalent
- * of the `sp.root.querySelectorAll('[name="legend"] .d4-legend-item')` snippet
- * duplicated 60+ times across the Legend specs.
- */
 export async function readLegend(page: Page, viewerType: string): Promise<LegendInfo> {
   return await page.evaluate((vt) => {
     const tv = (window as any).grok.shell.tv;
     const v = tv?.viewers?.find((x: any) => x.type === vt);
-    if (!v) return {itemCount: 0, labels: [], legendRendered: false};
-    const legendRoot = v.root.querySelector('[name="legend"]');
+    if (!v) return {itemCount: 0, labels: [], legendRendered: false, laidOut: false};
+    const legendRoot = v.root.querySelector('[name="legend"]') as HTMLElement | null;
     const items = Array.from(v.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
+    const rect = legendRoot?.getBoundingClientRect();
+    const laidOut = !!legendRoot && getComputedStyle(legendRoot).display !== 'none' &&
+      legendRoot.offsetParent !== null && !!rect && rect.width > 0 && rect.height > 0;
     return {
       itemCount: items.length,
       labels: items.map((it) => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim()),
       legendRendered: !!legendRoot,
+      laidOut,
     };
   }, viewerType);
 }
-
-// ---------------------------------------------------------------------------
-// 3b. countCanvasPixels — content-level read of a viewer's canvas.
-// ---------------------------------------------------------------------------
 
 export interface RgbRange {
   rMin: number; rMax: number;
@@ -870,29 +543,12 @@ export interface RgbRange {
 }
 
 export interface CanvasPixelCounts {
-  /** Non-white opaque pixels on the viewer's first canvas. -1 on fault. */
+
   total: number;
-  /** Subset of `total` inside `opts.rgbRange` (== total without a range). -1 on fault. */
+
   matched: number;
 }
 
-/**
- * Count content pixels on a viewer's first canvas via getImageData. The viewer
- * is located in `grok.shell.tv.viewers` hyphen/space-insensitively (same
- * normalization as addViewerByIcon, so both 'Bar chart' and 'Bar-chart' work).
- * `total` counts opaque non-white pixels; `matched` counts the subset that
- * falls inside `opts.rgbRange` (inclusive bounds per channel).
- *
- * Fault-tolerant by contract: a missing viewer/canvas/2d-context or a
- * getImageData throw returns {total: -1, matched: -1} — the caller decides
- * whether that is a failure. Viewer canvases are same-origin drawn, so
- * getImageData is not blocked by tainting.
- *
- * LIGHT-THEME assumption: `total` treats near-white (r,g,b >= 250) as the
- * background. On a dark theme the background is not white, so `total` would
- * approach the whole canvas area and total-based thresholds turn vacuous;
- * rgbRange-based `matched` counts stay theme-independent.
- */
 export async function countCanvasPixels(
   page: Page, viewerType: string, opts?: {rgbRange?: RgbRange; canvasSelector?: string},
 ): Promise<CanvasPixelCounts> {
@@ -921,44 +577,12 @@ export async function countCanvasPixels(
   }, {vt: viewerType, range: opts?.rgbRange ?? null, cs: opts?.canvasSelector ?? 'canvas'});
 }
 
-/**
- * Orange selection-overlay hue range. Covers the canonical Datagrok selection
- * color #ff8c00 (255,140,0) and its bar-overlay blend shades #bc9a4e
- * (188,154,78) and #e5b354 (229,179,84). Exclusions by construction:
- * the default bar fill #96d794 (150,215,148) fails gMax=200; white fails the
- * non-white pre-filter; every grey (r=g=b) is impossible here because
- * rMin=150 with bMax=110 cannot both hold when r == b.
- *
- * CAVEAT: only valid while the chart draws no other orange — a viewer with
- * colorColumnName / stackColumnName set may paint categorical-palette oranges
- * inside this range and break the `=== 0` "overlay absent" reading. Keep such
- * columns unset in steps that assert on this range.
- */
 export const SELECTION_HUE_RANGE: RgbRange = {rMin: 150, rMax: 255, gMin: 100, gMax: 200, bMin: 0, bMax: 110};
 
-/**
- * Count canvas pixels in the orange selection-overlay hue. Returns 0 when the
- * Selected Rows overlay is absent, > 0 when it is rendered, and -1 on fault
- * (no canvas / getImageData failure) — the caller decides how to treat -1.
- */
 export async function countSelectionHuePixels(page: Page, viewerType: string): Promise<number> {
   return (await countCanvasPixels(page, viewerType, {rgbRange: SELECTION_HUE_RANGE})).matched;
 }
 
-/**
- * Per-color canvas histogram snapshot + diff. Catches repaints that RECOLOR
- * pixels without changing the non-white total (e.g. the Filtered Rows overlay
- * under rowSource 'All' re-shades bar segments in place, so countCanvasPixels
- * totals stay equal while ~570 px change color). snapshotCanvasColors stores
- * the histogram on the page; diffCanvasColors returns the summed per-color
- * pixel delta vs the stored snapshot and replaces it. deltaPx is -1 when the
- * viewer/canvas cannot be read or no snapshot was taken (fault, not "equal").
- *
- * The snapshot persists on the page and diff REPLACES it (this is what lets a
- * settle-precheck diff chain into the measured diff). The flip side: a later
- * step that forgets its own snapshotCanvasColors will silently diff against a
- * stale frame — always snapshot at the step's own baseline.
- */
 export async function snapshotCanvasColors(
   page: Page, viewerType: string, canvasSelector = 'canvas',
 ): Promise<boolean> {
@@ -1014,33 +638,15 @@ export async function diffCanvasColors(
   }, {vt: viewerType, cs: canvasSelector});
 }
 
-// ---------------------------------------------------------------------------
-// 3c. Waiting for the UI instead of sleeping through it.
-//
-// A fixed `waitForTimeout` is both the slowest and the least reliable way to
-// wait: too short and the step is flaky, too long and every run pays for the
-// worst case. These helpers block on the condition the step actually cares
-// about, so a repaint that lands in 200ms costs 200ms and a repaint that never
-// lands fails with a message naming what was expected.
-// ---------------------------------------------------------------------------
-
 export interface CanvasChangeOptions {
-  /** Minimum pixel delta that counts as "it repainted". Defaults to 1. */
+
   minDelta?: number;
-  /** Canvas inside the viewer to read. Defaults to the first one. */
+
   canvasSelector?: string;
-  /** How long to wait for the repaint. Defaults to 15s. */
+
   timeoutMs?: number;
 }
 
-/**
- * Wait until the viewer's canvas differs from the last `snapshotCanvasColors`
- * by at least `minDelta` pixels, then re-snapshot and return the delta.
- *
- * Replaces the `snapshot → waitForTimeout → diff → expect` ladder: the wait ends
- * as soon as the repaint lands, and a repaint that never happens fails here
- * rather than in a bare numeric assertion further down.
- */
 export async function waitForCanvasChange(
   page: Page, viewerType: string, opts: CanvasChangeOptions = {},
 ): Promise<number> {
@@ -1074,14 +680,6 @@ export async function waitForCanvasChange(
   return (await diffCanvasColors(page, viewerType, canvasSelector)).deltaPx;
 }
 
-/**
- * Wait until the viewer's canvas stops changing on its own.
- *
- * Call this before taking the snapshot that a later `waitForCanvasChange` will
- * diff against. Without it, a repaint still in flight from the previous action
- * (a filter, a layout pass) lands after the snapshot and is credited to the next
- * one — which is how a step can "prove" a change that its own action never made.
- */
 export async function waitForCanvasQuiet(
   page: Page, viewerType: string,
   opts: {canvasSelector?: string; stableReads?: number; timeoutMs?: number} = {},
@@ -1111,11 +709,6 @@ export async function waitForCanvasQuiet(
   {timeout: opts.timeoutMs ?? 20_000, polling: 300});
 }
 
-/**
- * Wait until a screenshot of the viewer stops matching `baseline`, and return
- * the new signature. For WebGL-backed viewers, where `waitForCanvasChange`
- * cannot read the pixels — see `viewerSignature`.
- */
 export async function waitForViewerRepaint(
   page: Page, viewerName: string, baseline: string, timeoutMs = 15_000,
 ): Promise<string> {
@@ -1124,7 +717,6 @@ export async function waitForViewerRepaint(
   return viewerSignature(page, viewerName);
 }
 
-/** Wait until the property grid shows `expected` for a property. */
 export async function waitForPropertyValue(
   page: Page, prop: string, expected: string, category?: string, timeoutMs = 10_000,
 ): Promise<void> {
@@ -1132,42 +724,25 @@ export async function waitForPropertyValue(
     {timeout: timeoutMs, intervals: [100, 200, 300, 500]}).toBe(expected);
 }
 
-// ---------------------------------------------------------------------------
-// 4. changeLegendItemColor — picker UI flow + JS-API fallback.
-// ---------------------------------------------------------------------------
-
 export interface ChangeColorOptions {
-  /** Viewer type (e.g. 'Histogram', 'Scatter plot', 'Line chart'). */
+
   viewerType: string;
-  /** Category label (e.g. 'R_ONE'). The dialog name is `dialog-<sanitized>`. */
+
   category: string;
-  /** Target color as rgb tuple — used to locate the swatch via inline style. */
+
   rgb: [number, number, number];
-  /** Target color as hex (e.g. '#1f77b4') — used for the tag-verify assertion. */
+
   hex: string;
-  /** Column carrying `.color-coding-categorical` (e.g. 'Stereo Category'). */
+
   column: string;
-  /**
-   * Additive map for fallback. The fallback applies setCategorical with the
-   * full map so previously-applied colors are not reset (github-3132 invariant).
-   * Default: the single {category: hex} pair.
-   */
+
   additive?: Record<string, string>;
-  /** Optional alt viewer-container selectors (e.g. 'Line chart' uses both 'viewer-Line-chart' and 'viewer-Line chart'). */
+
   altContainerNames?: string[];
 }
 
-/**
- * Change a legend item's color via right-click picker. Falls back to
- * `col.meta.colors.setCategorical` if the UI flow does not commit (validated
- * 2026-05-08 — both paths exist in every picker-using spec).
- *
- * Verbatim extraction of the ~50-line block duplicated in legend-github-3132,
- * legend-grok-17278, legend-grok-17438, color-consistency, scatterplot,
- * line-chart, and visibility-and-positioning specs.
- */
 export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions): Promise<void> {
-  // Dialog name sanitization mirrors the existing specs: `R_ONE` → `dialog-R-ONE`.
+
   const dlgName = 'dialog-' + opts.category.replace(/[_\s]/g, '-');
   const containers = [
     `viewer-${opts.viewerType}`,
@@ -1224,7 +799,7 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
     }, {col: opts.column, add: additive});
     await page.waitForTimeout(800);
   }
-  // Final assert: the column tag carries the requested color for the category.
+
   const final = await page.evaluate(({c, col}) => {
     const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
     const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
@@ -1233,11 +808,6 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
   expect(final).toBe(lowerHex);
 }
 
-// ---------------------------------------------------------------------------
-// 5. clickCanvasFilter — Bar/Pie click-to-filter with multi-position retry.
-// ---------------------------------------------------------------------------
-
-/** Geometry positions for Bar / Pie hit-tests. Tuned to headless layouts. */
 const BAR_POSITIONS = (w: number, h: number, nCats: number) => [
   {x: w * 0.5, y: h * 0.2},
   {x: w * 0.5, y: h * 0.4},
@@ -1255,29 +825,21 @@ const PIE_POSITIONS = (w: number, h: number) => [
 ];
 
 export interface CanvasFilterOptions {
-  /** 'Bar chart' or 'Pie chart'. */
+
   viewerType: 'Bar chart' | 'Pie chart';
-  /** Column on which the categorical filter will narrow (e.g. 'Stereo Category'). */
+
   column: string;
 }
 
 export interface CanvasFilterResult {
-  /** Filtered-row count after the click (or after JS-API fallback). */
+
   totalFiltered: number;
-  /** For Bar chart: number of categories still represented (1 if narrowed). */
+
   survivors: number;
-  /** Whether the canvas click actually narrowed the filter (false → fallback used). */
+
   canvasClickWorked: boolean;
 }
 
-/**
- * Click-to-filter on Bar / Pie canvas with multi-position retry. If the
- * canvas click does not narrow the filter, falls back to a Filter Panel
- * categorical filter that produces the same user-observable contract.
- *
- * Verbatim extraction of the ~70-line block in filtering-spec.ts and
- * legend-grok-17222-spec.ts.
- */
 export async function clickCanvasFilter(
   page: Page, opts: CanvasFilterOptions,
 ): Promise<CanvasFilterResult> {
@@ -1329,10 +891,10 @@ export async function clickCanvasFilter(
         ? probe.survivors === 1 && probe.totalFiltered > 0
         : probe.totalFiltered !== setup.before && probe.totalFiltered > 0;
       if (ok) { canvasClickWorked = true; break; }
-    } catch (_) { /* try next position */ }
+    } catch (_) {  }
   }
   if (!canvasClickWorked) {
-    // JS-API fallback: post-condition only — narrow to one category via FP.
+
     const probe = await page.evaluate(async (col) => {
       const tv = (window as any).grok.shell.tv;
       const df = tv.dataFrame;
@@ -1359,15 +921,6 @@ export async function clickCanvasFilter(
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// 6. applyCategoricalFilter — fg.updateOrAdd with CATEGORICAL filter.
-// ---------------------------------------------------------------------------
-
-/**
- * Apply a categorical filter via the Filter Panel. Verbatim extraction of
- * the `fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, ...})` block
- * duplicated across filtering / legend-grok-17222 / legend-api specs.
- */
 export async function applyCategoricalFilter(
   page: Page, column: string, selected: string[], settleMs = 1500,
 ): Promise<{filteredCount: number}> {
@@ -1381,15 +934,66 @@ export async function applyCategoricalFilter(
   }, {col: column, sel: selected, settle: settleMs});
 }
 
-// ---------------------------------------------------------------------------
-// 7. resetFilters — clear all filters and reset df.filter to all-true.
-// ---------------------------------------------------------------------------
+export async function applyNumericFilter(
+  page: Page, column: string, min: number, max = 1e12, settleMs = 1500,
+): Promise<number> {
+  return await page.evaluate(async ({col, mn, mx, settle}) => {
+    const tv = (window as any).grok.shell.tv;
+    const df = tv.dataFrame;
+    const fg = tv.getFiltersGroup();
+    const settled = new Promise<void>((resolve) => {
+      const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, settle);
+    });
+    fg.updateOrAdd({type: 'histogram', column: col, min: mn, max: mx});
+    await settled;
+    return df.filter.trueCount;
+  }, {col: column, mn: min, mx: max, settle: settleMs});
+}
 
-/**
- * Reset every filter (FP + in-viewer) and set df.filter to all-true.
- * Verbatim extraction of the reset block used at the start of multiple
- * softSteps in filtering / legend-grok-17222 / scatterplot specs.
- */
+export interface LayoutRoundTripResult {
+
+  layoutId: string;
+
+  filteredAfter: number;
+
+  rowCountAfter: number;
+
+  viewersAfter: number;
+}
+
+export async function saveAndReloadLayout(
+  page: Page, namePrefix: string, applyCapMs = 3500,
+): Promise<LayoutRoundTripResult> {
+  return await page.evaluate(async ({prefix, cap}) => {
+    const grok = (window as any).grok;
+    const tv = grok.shell.tv;
+    const layout = tv.saveLayout();
+    layout.name = prefix + '_' + Date.now();
+    const saved = await grok.dapi.layouts.save(layout);
+    await new Promise((r) => setTimeout(r, 1000)); 
+    const applied = new Promise<void>((resolve) => {
+      const sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, cap);
+    });
+    tv.loadLayout(await grok.dapi.layouts.find(saved.id));
+    await applied;
+
+    for (let i = 0; i < 40; i++) {
+      const t = grok.shell.tv;
+      if (t?.dataFrame?.rowCount > 0 && t?.viewers?.length > 0) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const now = grok.shell.tv;
+    return {
+      layoutId: saved.id,
+      filteredAfter: now.dataFrame.filter.trueCount,
+      rowCountAfter: now.dataFrame.rowCount,
+      viewersAfter: now.viewers.length,
+    };
+  }, {prefix: namePrefix, cap: applyCapMs});
+}
+
 export async function resetFilters(page: Page, opts: {clearScatterFilter?: boolean} = {}): Promise<void> {
   await page.evaluate(async (clearSp) => {
     const tv = (window as any).grok.shell.tv;
@@ -1406,16 +1010,6 @@ export async function resetFilters(page: Page, opts: {clearScatterFilter?: boole
   }, opts.clearScatterFilter ?? false);
 }
 
-// ---------------------------------------------------------------------------
-// 8. cleanupShell — closeAll + 500ms settle, the canonical Cleanup softStep.
-// ---------------------------------------------------------------------------
-
-/**
- * Reset the shell: closeAll views + 500ms settle. Verbatim equivalent of the
- * Cleanup softStep body duplicated at the end of every Legend spec.
- *
- * Use inside `softStep('Cleanup', ...)` to preserve the soft-failure semantics.
- */
 export async function cleanupShell(
   page: Page,
   opts: {clearStereoCategoryColorCoding?: boolean} = {},
@@ -1435,26 +1029,15 @@ export async function cleanupShell(
   await page.waitForTimeout(500);
 }
 
-// ---------------------------------------------------------------------------
-// 9. setViewerProps — drive a viewer's props through a set→wait→read-back ladder.
-// ---------------------------------------------------------------------------
-
 export interface ViewerPropStep {
-  /** Props to assign this step (one or many, in insertion order). */
+
   set: Record<string, any>;
-  /** Settle delay in ms after the assignment (default `delayMs`). */
+
   wait?: number;
-  /** Prop name → its value is collected; array → an object keyed by those names; omitted → nothing. */
+
   read?: string | string[];
 }
 
-/**
- * Collapses the repeated `h.props.x = v; await sleep; r.push(h.props.x)` ladders
- * that fill the viewer specs. Finds the current table view's viewer by `type`,
- * then for each step assigns `set`, waits, and reads back `read`. Returns the
- * collected values in order. Behaviourally identical to the hand-rolled blocks:
- * same set order, same per-step delay, read-back happens after the wait.
- */
 export async function setViewerProps(
   page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 300,
 ): Promise<any[]> {
@@ -1463,8 +1046,15 @@ export async function setViewerProps(
       .find((x: any) => x.type === viewerType) as any;
     const out: any[] = [];
     for (var step of steps) {
+
+      const settled = new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = h.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
+        catch (_) {  }
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, step.wait ?? delayMs);
+      });
       for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
-      await new Promise((res) => setTimeout(res, step.wait ?? delayMs));
+      await settled;
       if (step.read === undefined) continue;
       if (Array.isArray(step.read)) {
         const obj: Record<string, any> = {};
@@ -1477,16 +1067,61 @@ export async function setViewerProps(
   }, {viewerType, steps, delayMs});
 }
 
-// ---------------------------------------------------------------------------
-// 10. finishSpec — trailing soft-step assertion (throws if any softStep failed).
-// ---------------------------------------------------------------------------
+export async function waitForViewerRendered(page: Page, viewerType: string, capMs = 1000): Promise<void> {
+  await page.evaluate(({type, capMs}) => new Promise<void>((resolve) => {
+    const w = window as any;
+    const t0 = Date.now();
+    const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => x.type === type) as any;
+    if (!v) { setTimeout(resolve, 0); return; }
 
-/**
- * Verbatim equivalent of the `if (stepErrors.length > 0) throw new Error(...)`
- * block at the end of every Legend spec. Reads from the shared `stepErrors`
- * array exported by spec-login. Pass a non-default `prefix` only if a spec
- * wants a different message header.
- */
+    w.__lastRender = w.__lastRender ?? {};
+    if (!v.__renderStamped) {
+      try {
+        v.onViewerRendered.subscribe(() => { w.__lastRender[type] = Date.now(); });
+        v.__renderStamped = true;
+      } catch (_) {  }
+    }
+    const before = w.__lastRender[type] ?? 0;
+    if (before && Date.now() - before < 400) { resolve(); return; }
+    const tick = () => {
+      if ((w.__lastRender[type] ?? 0) > before || Date.now() - t0 >= capMs) { resolve(); return; }
+      setTimeout(tick, 25);
+    };
+    tick();
+  }), {type: viewerType, capMs});
+}
+
+export async function waitForViewerEvent(
+  page: Page, viewerType: string, eventProp: string, capMs = 3000,
+): Promise<void> {
+  await page.evaluate(({type, eventProp, capMs}) => new Promise<void>((resolve) => {
+    const v = Array.from((window as any).grok.shell.tv.viewers).find((x: any) => x.type === type) as any;
+    if (!v) { setTimeout(resolve, 0); return; }
+    let sub: any = null;
+    try { sub = v[eventProp].subscribe(() => { sub.unsubscribe(); resolve(); }); }
+    catch (_) {  }
+    setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, capMs);
+  }), {type: viewerType, eventProp, capMs});
+}
+
+export async function pollValue<T>(
+  read: () => Promise<T>, ok: (value: T) => boolean, timeoutMs = 2500, intervalMs = 100,
+): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  let value = await read();
+  while (!ok(value) && Date.now() < deadline) {
+    await new Promise((res) => setTimeout(res, intervalMs));
+    value = await read();
+  }
+  return value;
+}
+
+export async function closeAllAndWait(page: Page): Promise<void> {
+  await page.evaluate(() => (window as any).grok.shell.closeAll());
+  await page.waitForFunction(() => Array.from((window as any).grok.shell.tableViews).length === 0,
+    null, {timeout: 5000}).catch(() => {});
+}
+
 export function finishSpec(prefix = 'Step failures'): void {
   if (stepErrors.length === 0) return;
   const summary = stepErrors.map((e: StepError) => `- ${e.step}: ${e.error}`).join('\n');

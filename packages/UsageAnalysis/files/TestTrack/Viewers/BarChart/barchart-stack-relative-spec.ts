@@ -29,7 +29,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
 
   await page.locator('[name="viewer-Bar-chart"]').first().hover();
-  await page.waitForTimeout(300);
+  await v.waitForViewerRendered(page, 'Bar chart', 300);
 
   await page.evaluate(() => {
     const bcEl = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
@@ -37,37 +37,53 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     const gear = panelBase.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
     gear.click();
   });
-  await page.waitForTimeout(500);
+  await v.pollValue(() => page.evaluate(() => !!document.querySelector('.property-grid')),
+    (up) => up, 500, 100);
 
-  await page.evaluate(async ({split, value}) => {
+  await v.setViewerProps(page, 'Bar chart',
+    [{set: {splitColumnName: splitCol, valueColumnName: valueCol, valueAggrType: 'sum'}, wait: 900}]);
+
+  const legendItemCount = () => page.evaluate(() => {
     const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-    bc.props.splitColumnName = split;
-    bc.props.valueColumnName = value;
-    bc.props.valueAggrType = 'sum';
-    await new Promise((r) => setTimeout(r, 900));
-  }, {split: splitCol, value: valueCol});
+    return bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length as number;
+  });
+  const legendGone = () => page.evaluate(() => {
+    const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+    const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+    const laidOut = !!el && getComputedStyle(el).display !== 'none' &&
+      el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
+    const items = bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
+    return !laidOut && items === 0;
+  });
+  const setStackColumn = (stack: string | null) => page.evaluate((s: string | null) => {
+    const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+    bc.props.stackColumnName = s;
+  }, stack);
 
   await softStep('Scenario 1 Step 4: Relative Values + Stack normalizes bars to equal width (canvas delta), chart not blank (github-2659)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    // Set the Stack column and let the absolute-width stacked layout settle.
-    const pre = await page.evaluate(async ({stack}) => {
+
+    await setStackColumn(stackCol);
+
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900});
+    const pre = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.stackColumnName = stack;
-      await new Promise((r) => setTimeout(r, 900));
       return {stackDefaultRel: bc.props.relativeValues};
-    }, {stack: stackCol});
-    // Snapshot the absolute-width stacked layout, then enable Relative Values:
-    // each outer bar normalizes to equal width — the width normalization is a
-    // large canvas color delta.
+    });
+
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); 
     const settle = await v.diffCanvasColors(page, 'Bar chart');
-    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(500);
-    const info = await page.evaluate(async ({split, stack}) => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.relativeValues = true;
-      await new Promise((r) => setTimeout(r, 1000));
+    });
+
+    const deltaPx = await v.waitForCanvasChange(page, 'Bar chart', {minDelta: 5001, timeoutMs: 1300});
+    const info = await page.evaluate(({split, stack}) => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = cv ? cv.getBoundingClientRect() : {width: 0, height: 0};
       const legendHost = bc.root.querySelector('[name="legend"]');
@@ -86,8 +102,6 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
         stackCats: df.col(stack).categories.length,
       };
     }, {split: splitCol, stack: stackCol});
-    await page.waitForTimeout(300);
-    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.stack).toBe(stackCol);
     expect(info.split).toBe(splitCol);
@@ -148,17 +162,19 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   });
 
   await softStep('Scenario 1 Step 9: disabling Relative Values reverts bars to absolute widths (canvas delta)', async () => {
-    // Snapshot the normalized (equal-width) layout, disable Relative Values, and
-    // measure the canvas color delta as bars revert to absolute widths.
+
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); 
     const settle = await v.diffCanvasColors(page, 'Bar chart');
-    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(500);
-    const info = await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.relativeValues = false;
-      await new Promise((r) => setTimeout(r, 800));
+    });
+    const deltaPx = await v.waitForCanvasChange(page, 'Bar chart', {minDelta: 5001, timeoutMs: 1100});
+    const info = await page.evaluate(() => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = cv ? cv.getBoundingClientRect() : {width: 0, height: 0};
       return {
@@ -169,8 +185,6 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
         stack: bc.props.stackColumnName,
       };
     });
-    await page.waitForTimeout(300);
-    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     expect(info.rel).toBe(false);
     expect(info.stack).toBe(stackCol);
     expect(info.hasCanvas).toBe(true);
@@ -179,53 +193,62 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   });
 
   await softStep('Scenario 1 Step 11: removing the Stack column collapses to single-segment bars, no legend', async () => {
-    const info = await page.evaluate(async () => {
+    await setStackColumn(null);
+    await v.pollValue(legendGone, (gone) => gone, 800, 100);
+    const info = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.stackColumnName = null;
-      await new Promise((r) => setTimeout(r, 800));
+      const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+      const legendLaidOut = !!el && getComputedStyle(el).display !== 'none' &&
+        el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
       return {
         stack: bc.props.stackColumnName,
-        legendRendered: !!bc.root.querySelector('[name="legend"]'),
+        legendLaidOut,
         legendItems: bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     });
     expect(info.stack).toBeNull();
-    expect(info.legendRendered).toBe(false);
+    expect(info.legendLaidOut).toBe(false);
     expect(info.legendItems).toBe(0);
     expect(info.hasCanvas).toBe(true);
   });
 
   await softStep('Scenario 2 Step 3: Relative Values without a Stack column has no stacking effect, no error', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    // Relative Values stays ON at exit: the next steps verify that adding a
-    // Stack column activates it.
-    const info = await page.evaluate(async () => {
+
+    const entry = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      const stackAtEntry = bc.props.stackColumnName;
-      const legendAtBaseline = bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
-      bc.props.relativeValues = true;
-      await new Promise((r) => setTimeout(r, 800));
+      return {
+        stackAtEntry: bc.props.stackColumnName,
+        legendAtBaseline: bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+      };
+    });
+    await v.setViewerProps(page, 'Bar chart', [{set: {relativeValues: true}, wait: 800}]);
+    const info = await page.evaluate((base: {stackAtEntry: string | null; legendAtBaseline: number}) => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = cv ? cv.getBoundingClientRect() : {width: 0, height: 0};
+      const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+      const legendLaidOut = !!el && getComputedStyle(el).display !== 'none' &&
+        el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
       return {
-        stackAtEntry,
-        legendAtBaseline,
+        stackAtEntry: base.stackAtEntry,
+        legendAtBaseline: base.legendAtBaseline,
         rel: bc.props.relativeValues,
         stackAfter: bc.props.stackColumnName,
-        legendRendered: !!bc.root.querySelector('[name="legend"]'),
+        legendLaidOut,
         legendItems: bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
         hasCanvas: !!cv,
         canvasW: rect.width,
         canvasH: rect.height,
       };
-    });
+    }, entry);
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.stackAtEntry).toBeNull();
     expect(info.legendAtBaseline).toBe(0);
     expect(info.rel).toBe(true);
     expect(info.stackAfter).toBeNull();
-    expect(info.legendRendered).toBe(false);
+    expect(info.legendLaidOut).toBe(false);
     expect(info.legendItems).toBe(0);
     expect(info.hasCanvas).toBe(true);
     expect(info.canvasW).toBeGreaterThan(0);
@@ -235,19 +258,16 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
   await softStep('Scenario 2 Step 5-6: setting a Stack column activates stacking — bars normalize to equal width (canvas delta), legend renders', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    // At entry Relative Values is on but inert (no Stack). Snapshot the inert
-    // single-segment layout, add the Stack column, and measure the canvas color
-    // delta: Relative Values now activates and each bar normalizes to equal
-    // width, split into stacked segments.
+
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); 
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
     expect(settle.deltaPx).toBeLessThan(500);
-    const info = await page.evaluate(async ({stack}) => {
+    await setStackColumn(stackCol);
+    const deltaPx = await v.waitForCanvasChange(page, 'Bar chart', {minDelta: 5001, timeoutMs: 1300});
+    const info = await page.evaluate(({stack}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.stackColumnName = stack;
-      await new Promise((r) => setTimeout(r, 1000));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = cv ? cv.getBoundingClientRect() : {width: 0, height: 0};
       return {
@@ -260,8 +280,6 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
         stackCats: grok.shell.tv.dataFrame.col(stack).categories.length,
       };
     }, {stack: stackCol});
-    await page.waitForTimeout(300);
-    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.stack).toBe(stackCol);
     expect(info.rel).toBe(true);
@@ -276,32 +294,41 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
   await softStep('Scenario 2 Step 7-8: remove Stack reverts to inert; re-add re-activates (repeatable)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    const info = await page.evaluate(async ({stack}) => {
+    await setStackColumn(null);
+    await v.pollValue(legendGone, (gone) => gone, 900, 100);
+    const afterRemove = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.stackColumnName = null;
-      await new Promise((r) => setTimeout(r, 900));
-      const afterRemove = {
+      const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+      const legendLaidOut = !!el && getComputedStyle(el).display !== 'none' &&
+        el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
+      return {
         stack: bc.props.stackColumnName,
-        legendRendered: !!bc.root.querySelector('[name="legend"]'),
+        legendLaidOut,
         legendItems: bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
-      bc.props.stackColumnName = stack;
-      await new Promise((r) => setTimeout(r, 900));
+    });
+    await setStackColumn(stackCol);
+    await v.pollValue(legendItemCount, (n) => n >= 2, 900, 100);
+    const info = await page.evaluate((removed: typeof afterRemove) => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+      const legendLaidOut = !!el && getComputedStyle(el).display !== 'none' &&
+        el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
       const afterReadd = {
         stack: bc.props.stackColumnName,
-        legendRendered: !!bc.root.querySelector('[name="legend"]'),
+        legendLaidOut,
         legendItems: bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
       };
-      return {afterRemove, afterReadd, rel: bc.props.relativeValues};
-    }, {stack: stackCol});
+      return {afterRemove: removed, afterReadd, rel: bc.props.relativeValues};
+    }, afterRemove);
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.afterRemove.stack).toBeNull();
-    expect(info.afterRemove.legendRendered).toBe(false);
+    expect(info.afterRemove.legendLaidOut).toBe(false);
     expect(info.afterRemove.legendItems).toBe(0);
     expect(info.afterRemove.hasCanvas).toBe(true);
     expect(info.afterReadd.stack).toBe(stackCol);
-    expect(info.afterReadd.legendRendered).toBe(true);
+    expect(info.afterReadd.legendLaidOut).toBe(true);
     expect(info.afterReadd.legendItems).toBeGreaterThanOrEqual(2);
     expect(info.rel).toBe(true);
     expect(errAfter).toBe(errBefore);
@@ -309,21 +336,23 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
   await softStep('Scenario 2 Step 9-10: disabling Relative Values (no Stack) restores the baseline', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    const info = await page.evaluate(async () => {
+    await setStackColumn(null);
+    await v.pollValue(legendGone, (gone) => gone, 700, 100);
+    await v.setViewerProps(page, 'Bar chart', [{set: {relativeValues: false}, wait: 700}]);
+    const info = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.stackColumnName = null;
-      await new Promise((r) => setTimeout(r, 700));
-      bc.props.relativeValues = false;
-      await new Promise((r) => setTimeout(r, 700));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = cv ? cv.getBoundingClientRect() : {width: 0, height: 0};
+      const el = bc.root.querySelector('[name="legend"]') as HTMLElement | null;
+      const legendLaidOut = !!el && getComputedStyle(el).display !== 'none' &&
+        el.getBoundingClientRect().height > 0 && el.offsetParent !== null;
       return {
         rel: bc.props.relativeValues,
         stack: bc.props.stackColumnName,
         hasCanvas: !!cv,
         canvasW: rect.width,
         canvasH: rect.height,
-        legendRendered: !!bc.root.querySelector('[name="legend"]'),
+        legendLaidOut,
         legendItems: bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
       };
     });
@@ -333,7 +362,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     expect(info.hasCanvas).toBe(true);
     expect(info.canvasW).toBeGreaterThan(0);
     expect(info.canvasH).toBeGreaterThan(0);
-    expect(info.legendRendered).toBe(false);
+    expect(info.legendLaidOut).toBe(false);
     expect(info.legendItems).toBe(0);
     expect(errAfter).toBe(errBefore);
   });

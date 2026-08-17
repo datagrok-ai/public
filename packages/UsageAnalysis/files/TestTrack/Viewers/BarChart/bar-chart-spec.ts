@@ -12,8 +12,6 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-// Per-color canvas-delta floors. Each floor MUST stay above PRECHECK_CEIL so a
-// settle-drain artifact cannot satisfy it, and below a real repaint's delta.
 const T = {
   colorColumn: 800,
   invertScheme: 800,
@@ -45,11 +43,8 @@ test('Bar chart tests', async ({page}) => {
     const gear = panelBase.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
     gear.click();
   });
-  await page.waitForTimeout(500);
+  await v.pollValue(() => page.locator('.property-grid').count(), (n) => n > 0, 500, 100);
 
-  // Snapshot the current canvas frame, wait for late renders to drain, and
-  // return the residual settle delta (precheck). Leaves the snapshot set to
-  // the settled frame so the next diffCanvasColors measures only the action.
   async function canvasBaseline(): Promise<number> {
     await v.snapshotCanvasColors(page, 'Bar chart');
     await page.waitForTimeout(500);
@@ -60,135 +55,127 @@ test('Bar chart tests', async ({page}) => {
   }
 
   await softStep('Color coding', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'RACE';
       bc.props.valueColumnName = 'AGE';
       bc.props.colorColumnName = '';
       bc.props.invertColorScheme = false;
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
 
-    // Color-code by HEIGHT — bars recolor by aggregated height.
     const preColor = await canvasBaseline();
-    const setColor = await page.evaluate(async () => {
+    const setColor = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.colorColumnName = 'HEIGHT';
-      await new Promise((r) => setTimeout(r, 600));
       return {colorColumnName: bc.props.colorColumnName, aggr: bc.props.colorAggrType};
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
     const colorDelta = await canvasDelta();
+    console.log(`[bar-chart] colorDelta=${colorDelta}`);
 
-    // Aggregation cycles keep the read-back coverage of the original spec.
     const aggrReads = await v.setViewerProps(page, 'Bar chart', [
       {set: {colorAggrType: 'min'}, wait: 200, read: 'colorAggrType'},
       {set: {colorAggrType: 'max'}, wait: 200, read: 'colorAggrType'},
       {set: {colorAggrType: 'med'}, wait: 200, read: 'colorAggrType'},
     ]);
 
-    // Let the trailing 'med' aggregation repaint settle before snapshotting the
-    // invert baseline, so the precheck measures a drained frame (not the tail of
-    // the aggregation recolor).
     await page.waitForTimeout(400);
 
-    // Invert the color scheme — the gradient reverses, recoloring the bars.
     const preInvert = await canvasBaseline();
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.invertColorScheme = true;
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
     const invertDelta = await canvasDelta();
+    console.log(`[bar-chart] invertDelta=${invertDelta}`);
 
-    const colColRead = await page.evaluate(async () => {
+    const colColRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.colorColumnName = '';
       bc.props.invertColorScheme = false;
-      await new Promise((r) => setTimeout(r, 300));
       return bc.props.colorColumnName;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 300);
 
     expect(setColor.colorColumnName).toBe('HEIGHT');
     expect(aggrReads).toEqual(['min', 'max', 'med']);
-    expect(preColor).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preColor).toBeGreaterThanOrEqual(0);
     expect(preColor).toBeLessThan(PRECHECK_CEIL);
     expect(colorDelta).toBeGreaterThan(T.colorColumn);
-    expect(preInvert).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preInvert).toBeGreaterThanOrEqual(0);
     expect(preInvert).toBeLessThan(PRECHECK_CEIL);
     expect(invertDelta).toBeGreaterThan(T.invertScheme);
     expect(colColRead).toBe('');
   });
 
   await softStep('Include nulls', async () => {
-    // HEIGHT carries 751 missing values → a "missing" bar renders when
-    // includeNulls is on (DIS_POP and the other categoricals have zero nulls).
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'HEIGHT';
       bc.props.includeNulls = true;
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
 
-    // Dropping the missing bar repaints the chart.
     const preOff = await canvasBaseline();
-    const offRead = await page.evaluate(async () => {
+    const offRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.includeNulls = false;
-      await new Promise((r) => setTimeout(r, 500));
       return bc.props.includeNulls;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
     const offDelta = await canvasDelta();
+    console.log(`[bar-chart] includeNulls offDelta=${offDelta}`);
 
-    // Re-adding it repaints again.
     const preOn = await canvasBaseline();
-    const onRead = await page.evaluate(async () => {
+    const onRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.includeNulls = true;
-      await new Promise((r) => setTimeout(r, 500));
       return bc.props.includeNulls;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
     const onDelta = await canvasDelta();
+    console.log(`[bar-chart] includeNulls onDelta=${onDelta}`);
 
     expect(offRead).toBe(false);
     expect(onRead).toBe(true);
-    expect(preOff).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preOff).toBeGreaterThanOrEqual(0);
     expect(preOff).toBeLessThan(PRECHECK_CEIL);
     expect(offDelta).toBeGreaterThan(T.includeNulls);
-    expect(preOn).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preOn).toBeGreaterThanOrEqual(0);
     expect(preOn).toBeLessThan(PRECHECK_CEIL);
     expect(onDelta).toBeGreaterThan(T.includeNulls);
   });
 
   await softStep('Bar style', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'RACE';
       bc.props.valueColumnName = 'AGE';
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
 
-    // Bar border 0 → 2 adds visible outlines around every bar.
     const preBorder = await canvasBaseline();
-    const borderRead = await page.evaluate(async () => {
+    const borderRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.barBorderLineWidth = 2;
-      await new Promise((r) => setTimeout(r, 500));
       return bc.props.barBorderLineWidth;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
     const borderDelta = await canvasDelta();
+    console.log(`[bar-chart] borderDelta=${borderDelta}`);
 
-    // Max bar height 50 → 20 makes the bars thinner (exact width is not
-    // pixel-measurable headless; the repaint delta is the drivable proxy).
     const preHeight = await canvasBaseline();
-    const heightRead = await page.evaluate(async () => {
+    const heightRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.maxBarHeight = 20;
-      await new Promise((r) => setTimeout(r, 500));
       return bc.props.maxBarHeight;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
     const heightDelta = await canvasDelta();
+    console.log(`[bar-chart] heightDelta=${heightDelta}`);
 
-    // Remaining style props keep the read-back coverage of the original spec.
     const styleReads = await v.setViewerProps(page, 'Bar chart', [
       {set: {barCornerRadius: 10}, wait: 200, read: 'barCornerRadius'},
       {set: {verticalAlign: 'Top'}, wait: 200, read: 'verticalAlign'},
@@ -197,47 +184,45 @@ test('Bar chart tests', async ({page}) => {
       {set: {showCategoryZeroBaseline: false}, wait: 200, read: 'showCategoryZeroBaseline'},
     ]);
 
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.barBorderLineWidth = 0;
       bc.props.barCornerRadius = 0;
       bc.props.maxBarHeight = 50;
       bc.props.showCategoryZeroBaseline = true;
-      await new Promise((r) => setTimeout(r, 300));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 300);
 
     expect(borderRead).toBe(2);
     expect(heightRead).toBe(20);
     expect(styleReads).toEqual([10, 'Top', 'Bottom', 'Center', false]);
-    expect(preBorder).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preBorder).toBeGreaterThanOrEqual(0);
     expect(preBorder).toBeLessThan(PRECHECK_CEIL);
     expect(borderDelta).toBeGreaterThan(T.barBorder);
-    expect(preHeight).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preHeight).toBeGreaterThanOrEqual(0);
     expect(preHeight).toBeLessThan(PRECHECK_CEIL);
     expect(heightDelta).toBeGreaterThan(T.maxBarHeight);
   });
 
   await softStep('Labels', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'RACE';
       bc.props.valueColumnName = 'AGE';
       bc.props.showLabels = 'inside';
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
 
-    // 'inside' → 'never' removes the in-bar value labels: the label glyphs
-    // vanish from the canvas.
     const preLabels = await canvasBaseline();
-    const neverRead = await page.evaluate(async () => {
+    const neverRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.showLabels = 'never';
-      await new Promise((r) => setTimeout(r, 500));
       return bc.props.showLabels;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
     const labelsDelta = await canvasDelta();
+    console.log(`[bar-chart] labelsDelta=${labelsDelta}`);
 
-    // Remaining label modes keep the read-back coverage of the original spec.
     const labelReads = await v.setViewerProps(page, 'Bar chart', [
       {set: {showLabels: 'outside'}, wait: 200, read: 'showLabels'},
       {set: {showLabels: 'auto'}, wait: 200, read: 'showLabels'},
@@ -245,7 +230,7 @@ test('Bar chart tests', async ({page}) => {
 
     expect(neverRead).toBe('never');
     expect(labelReads).toEqual(['outside', 'auto']);
-    expect(preLabels).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preLabels).toBeGreaterThanOrEqual(0);
     expect(preLabels).toBeLessThan(PRECHECK_CEIL);
     expect(labelsDelta).toBeGreaterThan(T.labels);
   });
@@ -256,12 +241,6 @@ test('Bar chart tests', async ({page}) => {
     const off = Object.fromEntries(ctrls.map((k) => [k, false]));
     const on = Object.fromEntries(ctrls.map((k) => [k, true]));
 
-    // The in-chart selector nodes (value / category / stack) are always present
-    // but toggle their computed `display` (flex ↔ none) with the show*Selector
-    // props. Count the ones actually laid out (display !== none): 3 when on, 0
-    // when off. showValueAxis and showCategoryValues are canvas-drawn — they
-    // toggle no DOM node, so they stay covered by the prop read-back rather than
-    // a DOM count. See the .md note.
     const countVisibleSelectors = () => page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const root = bc.root as HTMLElement;
@@ -277,55 +256,41 @@ test('Bar chart tests', async ({page}) => {
     expect(offReads[0]).toEqual(off);
     expect(onReads[0]).toEqual(on);
     expect(offVisible).toBe(0);
-    // Exactly three column-selector nodes (value / category / stack) lay out when
-    // the show*Selector props are on.
     expect(onVisible).toBe(3);
   });
 
   await softStep('Aggregation types', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'RACE';
       bc.props.valueColumnName = 'AGE';
       bc.props.valueAggrType = 'avg';
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
 
-    // avg → max changes every bar's aggregated height.
     const preAggr = await canvasBaseline();
-    const aggrRead = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.valueAggrType = 'max';
-      await new Promise((r) => setTimeout(r, 500));
-      return bc.props.valueAggrType;
-    });
+    const aggrRead = (await v.setViewerProps(page, 'Bar chart',
+      [{set: {valueAggrType: 'max'}, wait: 500, read: 'valueAggrType'}]))[0];
     const aggrDelta = await canvasDelta();
+    console.log(`[bar-chart] aggrDelta=${aggrDelta}`);
 
-    // Rebinding the value column AGE → WEIGHT re-scales the bars.
     const preSwitch = await canvasBaseline();
-    const valueRead = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.valueColumnName = 'WEIGHT';
-      await new Promise((r) => setTimeout(r, 500));
-      return bc.props.valueColumnName;
-    });
+    const valueRead = (await v.setViewerProps(page, 'Bar chart',
+      [{set: {valueColumnName: 'WEIGHT'}, wait: 500, read: 'valueColumnName'}]))[0];
     const switchDelta = await canvasDelta();
+    console.log(`[bar-chart] switchDelta=${switchDelta}`);
 
     expect(aggrRead).toBe('max');
     expect(valueRead).toBe('WEIGHT');
-    expect(preAggr).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preAggr).toBeGreaterThanOrEqual(0);
     expect(preAggr).toBeLessThan(PRECHECK_CEIL);
     expect(aggrDelta).toBeGreaterThan(T.aggrType);
-    expect(preSwitch).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preSwitch).toBeGreaterThanOrEqual(0);
     expect(preSwitch).toBeLessThan(PRECHECK_CEIL);
     expect(switchDelta).toBeGreaterThan(T.valueSwitch);
   });
 
   await softStep('Legend position', async () => {
-    // Replace the viewer with a fresh Bar chart: after the earlier sections'
-    // prop churn the stacked-legend host will not render, whereas a clean-state
-    // viewer materializes it reliably. The legend host is churn-sensitive, not
-    // broken, so recreating is a harness reset, not a workaround for a product bug.
     await page.evaluate(async () => {
       const old = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       if (old) old.close();
@@ -334,13 +299,13 @@ test('Bar chart tests', async ({page}) => {
     await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
     await page.waitForTimeout(500);
 
-    // Setting a Stack column materializes the legend; the legend host is absent
-    // before it and present after — a DOM round-trip, not a prop echo. Driven in
-    // one evaluate (the render is sensitive to churn across round-trips).
     const legend = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const root = bc.root as HTMLElement;
-      const rendered = () => !!root.querySelector('[name="legend"]');
+      const laidOut = () => {
+        const el = root.querySelector('[name="legend"]') as HTMLElement | null;
+        return !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0;
+      };
       const items = () => root.querySelectorAll('[name="legend"] .d4-legend-item').length;
 
       bc.props.splitColumnName = 'RACE';
@@ -348,11 +313,11 @@ test('Bar chart tests', async ({page}) => {
       bc.props.stackColumnName = '';
       bc.props.legendVisibility = 'Always';
       await new Promise((r) => setTimeout(r, 800));
-      const before = rendered();
+      const before = laidOut();
 
       bc.props.stackColumnName = 'SEX';
       await new Promise((r) => setTimeout(r, 1500));
-      const after = rendered();
+      const after = laidOut();
       const afterItems = items();
 
       const positions: string[] = [];
@@ -364,16 +329,18 @@ test('Bar chart tests', async ({page}) => {
 
       bc.props.stackColumnName = '';
       await new Promise((r) => setTimeout(r, 1500));
-      const cleared = rendered();
+      const clearedLaidOut = laidOut();
+      const clearedItems = items();
 
-      return {before, after, afterItems, positions, cleared};
+      return {before, after, afterItems, positions, clearedLaidOut, clearedItems};
     });
 
     expect(legend.before).toBe(false);
     expect(legend.after).toBe(true);
     expect(legend.afterItems).toBeGreaterThanOrEqual(2);
     expect(legend.positions).toEqual(['Left', 'Right', 'Top', 'Bottom']);
-    expect(legend.cleared).toBe(false);
+    expect(legend.clearedLaidOut).toBe(false);
+    expect(legend.clearedItems).toBe(0);
   });
 
   await softStep('Title and description', async () => {
@@ -384,8 +351,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.description = 'By race';
       await new Promise((r) => setTimeout(r, 400));
       const root = bc.root as HTMLElement;
-      // Title renders in the panel titlebar (.panel-titlebar-text), the
-      // description inside the viewer root.
+
       const panel = (root.closest('.panel-base') as HTMLElement) ?? root;
       const panelText = panel.innerText ?? panel.textContent ?? '';
       const rootText = root.innerText ?? root.textContent ?? '';
@@ -403,7 +369,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.descriptionVisibilityMode = 'Never';
       await new Promise((res) => setTimeout(res, 300));
       r.hidden = bc.props.descriptionVisibilityMode;
-      // DOM-primary: 'Never' removes the description text from the viewer body.
+
       const rootTextHidden = root.innerText ?? root.textContent ?? '';
       r.descGoneFromDom = rootTextHidden.includes('By race');
 
@@ -420,50 +386,42 @@ test('Bar chart tests', async ({page}) => {
   });
 
   await softStep('Show values instead of categories', async () => {
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'RACE';
       bc.props.valueColumnName = 'AGE';
       bc.props.valueAggrType = 'avg';
       bc.props.showValuesInsteadOfCategories = false;
-      await new Promise((r) => setTimeout(r, 600));
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 600);
 
-    // Toggling category labels to aggregated values repaints the axis strip.
     const preShow = await canvasBaseline();
-    const onRead = await page.evaluate(async () => {
+    const onRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.showValuesInsteadOfCategories = true;
-      await new Promise((r) => setTimeout(r, 500));
       return bc.props.showValuesInsteadOfCategories;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
     const showDelta = await canvasDelta();
+    console.log(`[bar-chart] showValuesDelta=${showDelta}`);
 
-    const offRead = await page.evaluate(async () => {
+    const offRead = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.showValuesInsteadOfCategories = false;
-      await new Promise((r) => setTimeout(r, 300));
       return bc.props.showValuesInsteadOfCategories;
     });
+    await v.waitForViewerRendered(page, 'Bar chart', 300);
 
     expect(onRead).toBe(true);
     expect(offRead).toBe(false);
-    expect(preShow).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(preShow).toBeGreaterThanOrEqual(0);
     expect(preShow).toBeLessThan(PRECHECK_CEIL);
     expect(showDelta).toBeGreaterThan(T.showValues);
   });
 
   await softStep('Context menu', async () => {
-    // Right-clicking the bar chart canvas opens its context menu; the whole menu
-    // tree is materialized into the DOM as .d4-menu-item-label nodes, so the
-    // bar-chart-specific groups and their children can be read from the flat list
-    // in one pass. The manual scenario's value-axis and legend zone right-clicks
-    // (Axis Type / Include Nulls / Legend Visibility / Legend Position) are
-    // reduced to the same labels surfaced here — a positional right-click on those
-    // zones is not reliable headless. Toggling Show Value Axis from the menu
-    // confirms the menu is live (the prop round-trips).
     const result = await page.evaluate(async () => {
-      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
+      const bc = Array.from(grok.shell.tv.viewers).find((view: any) => view.type === 'Bar chart') as any;
       bc.props.splitColumnName = 'RACE';
       bc.props.valueColumnName = 'AGE';
       bc.props.stackColumnName = 'SEX';
@@ -525,7 +483,6 @@ test('Bar chart tests', async ({page}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((view: any) => view.type === 'Bar chart') as any;
       const r: any[] = [];
 
-      // Cycle Row Source through all three values (Filtered, Selected, All).
       for (const src of ['Filtered', 'Selected', 'All']) {
         bc.props.rowSource = src;
         await new Promise((res) => setTimeout(res, 200));
@@ -570,8 +527,6 @@ test('Bar chart tests', async ({page}) => {
     expect(result[3]).toBe('SPGI');
     expect(result[4]).toBe('${CAST Idea ID} < 634835');
     expect(result[5]).toBe('Chemical Space Y');
-    // Honest layout round-trip: color coding and filter survive save → close →
-    // reload.
     expect(result[6]).toBe('Chemical Space Y');
     expect(result[7]).toBe('${CAST Idea ID} < 634835');
   });
