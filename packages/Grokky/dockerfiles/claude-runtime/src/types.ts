@@ -117,6 +117,7 @@ export type OutgoingMessage =
   | {type: 'revision_start'; sessionId: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
+  | {type: 'auth_required'; sessionId: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}

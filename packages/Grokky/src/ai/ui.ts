@@ -486,13 +486,6 @@ async function streamOnce(
         } else if (evt.revision === 'kept')
           toolStatus = ''; // original answer stands; just drop the Revising status
         const fullContent = accumulated || evt.content;
-        if (/Failed to authenticate.*API Error: 401|authentication_error|\/login/i.test(fullContent)) {
-          panel.clearStreaming();
-          panel.appendStreamedElement(buildAuthRenewalWidget(client));
-          cleanup();
-          resolve();
-          return;
-        }
         const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
         const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
@@ -507,14 +500,15 @@ async function streamOnce(
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
-        if (/401|authentication|credentials|\/login/i.test(evt.message)) {
-          panel.clearStreaming();
-          panel.appendStreamedElement(buildAuthRenewalWidget(client));
-          cleanup();
-          resolve();
-          return;
-        }
         endWithError(`Claude: ${evt.message}`);
+      });
+
+      forSession(client.onAuthRequired, () => {
+        panel.cancelInputRequest();
+        panel.clearStreaming();
+        panel.appendStreamedElement(buildAuthRenewalWidget(client));
+        cleanup();
+        resolve();
       });
 
       forSession(client.onAborted, async () => {

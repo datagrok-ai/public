@@ -36,6 +36,7 @@ const sessions = new Map<string, SessionRecord>();
 
 // Last assistant uuid of the in-flight turn; committed to the record on a clean result.
 const pendingUuid = new Map<string, string>();
+const authFailed = new Set<string>();
 
 // Visible streamed text of the in-flight turn, per session — the grounding gate reads it at Stop
 // to decide whether the answer makes platform how-to claims (grounding.ts makesPlatformClaims).
@@ -67,6 +68,8 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
   const e = event as any;
   switch (event.type) {
   case 'assistant':
+    if (e.error === 'authentication_failed')
+      authFailed.add(sid);
     if (e.uuid)
       pendingUuid.set(sid, e.uuid);
     for (const block of e.message?.content ?? []) {
@@ -95,6 +98,10 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
   case 'result': {
     const revising = endRevision(sid);
     flushFenceState(ws, sid);
+    if (authFailed.delete(sid)) {
+      emit(ws, {type: 'auth_required', sessionId: sid});
+      break;
+    }
     if (e.subtype === 'success') {
       // Commit the resume point only on clean completion — aborted turns never reach here.
       if (e.session_id)
@@ -382,6 +389,7 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
   if (rec)
     rec.forkNext = true;
   pendingUuid.delete(sid);
+  authFailed.delete(sid);
   endRevision(sid);
   if (ws)
     flushFenceState(ws, sid);

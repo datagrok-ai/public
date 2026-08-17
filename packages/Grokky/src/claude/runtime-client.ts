@@ -48,6 +48,7 @@ export class ClaudeRuntimeClient {
   public onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
   public onAuthDone = new rxjs.Subject<void>();
   public onAuthError = new rxjs.Subject<AuthErrorEvent>();
+  public onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   private _skillNames: string[] | null = null;
 
   private constructor() {}
@@ -149,6 +150,9 @@ export class ClaudeRuntimeClient {
         break;
       case 'auth_error':
         this.onAuthError.next({message: data.message});
+        break;
+      case 'auth_required':
+        this.onAuthRequired.next({sessionId: data.sessionId});
         break;
       }
     };
@@ -281,6 +285,7 @@ export class ClaudeRuntimeClient {
     this.onAuthUrl.complete();
     this.onAuthDone.complete();
     this.onAuthError.complete();
+    this.onAuthRequired.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
     this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
@@ -293,5 +298,6 @@ export class ClaudeRuntimeClient {
     this.onAuthUrl = new rxjs.Subject<AuthUrlEvent>();
     this.onAuthDone = new rxjs.Subject<void>();
     this.onAuthError = new rxjs.Subject<AuthErrorEvent>();
+    this.onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   }
 }
