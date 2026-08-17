@@ -41,7 +41,7 @@ export async function request<T = unknown>(
       'Authorization': ctx.apiKey,
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)),
   });
 
   if (!res.ok) {
