@@ -17,6 +17,8 @@ const DEFAULT_CONFIG: LimitsConfig = {
   defaultDailyLimit: 20,
   groupLimits: {
     'AI Folks': 1000,
+    'Developers': 1000,
+    'Administrators': 1000,
   },
 };
 
@@ -62,8 +64,6 @@ export class UsageLimiter {
   }
 
   private async resolveDailyLimit(): Promise<number> {
-    this.dailyLimit = 1000;  // TODO: handle better - need this to unblock my work
-
     if (this.dailyLimit != null)
       return this.dailyLimit;
     const userGroup = await grok.dapi.groups.find(grok.shell.user.group.id);
