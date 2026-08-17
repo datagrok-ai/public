@@ -100,10 +100,12 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall) : Promise<any>
   return await PackageFunctions.getPolyToolConvertEditor(call);
 }
 
+//name: PolyTool: Convert Notation
+//description: Convert a column of sequences in custom notation to HELM and/or molfiles
 //input: dataframe table 
 //input: column seqCol { caption: Sequence }
-//input: bool generateHelm = true 
-//input: bool chiralityEngine = true 
+//input: bool generateHelm = true { description: Also produce a HELM column alongside the molfiles }
+//input: bool chiralityEngine = true { description: Use the chirality engine when building structures }
 //input: object rules 
 //output: column result
 //editor: SequenceTranslator:getPolyToolConvertEditor
@@ -259,6 +261,7 @@ export function copyOligoAsImage(value: DG.SemanticValue) : void {
   PackageFunctions.copyOligoAsImage(value);
 }
 
+//name: HELM to Oligonucleotide
 //description: Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
 //input: dataframe table 
 //input: column helmCol { caption: HELM column; semType: Macromolecule }
@@ -267,6 +270,7 @@ export async function convertHelmToOligoNucleotide(table: DG.DataFrame, helmCol:
   return await PackageFunctions.convertHelmToOligoNucleotide(table, helmCol);
 }
 
+//name: Combine Sense + Antisense to Oligonucleotide
 //description: Combine separate sense + antisense HELM columns into one OligoNucleotide column
 //input: dataframe table 
 //input: column senseCol { caption: Sense; semType: Macromolecule }
