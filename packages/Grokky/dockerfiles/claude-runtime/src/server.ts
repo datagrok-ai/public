@@ -11,6 +11,7 @@ import {buildHelpIndex} from './help-index';
 import {WORKSPACE} from './constants';
 import {rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 import {emit, handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
+import {setAuthPid} from './watchdog';
 import type {WsSender} from './session';
 
 const PORT = 5355;
@@ -19,18 +20,32 @@ const PORT = 5355;
 // Subscription auth — relays the interactive `claude auth login` flow to the browser
 // ---------------------------------------------------------------------------
 
+const AUTH_TIMEOUT_MS = 2 * 60_000;
+
 let authProc: ChildProcess | null = null;
+let authTimer: NodeJS.Timeout | null = null;
+
+function killAuth(): void {
+  authProc?.removeAllListeners('exit');
+  authProc?.kill();
+  if (authTimer)
+    clearTimeout(authTimer);
+  authTimer = null;
+  authProc = null;
+  setAuthPid(null);
+}
 
 function handleAuthStart(ws: WsSender): void {
-  if (authProc) {
-    authProc.removeAllListeners('exit');
-    authProc.kill();
-    authProc = null;
-  }
+  killAuth();
   authProc = spawn('claude', ['auth', 'login'], {
     env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},
     stdio: ['pipe', 'pipe', 'pipe'],
   });
+  setAuthPid(authProc.pid ?? null);
+  authTimer = setTimeout(() => {
+    killAuth();
+    emit(ws, {type: 'auth_error', message: 'Authentication timed out — please start again'});
+  }, AUTH_TIMEOUT_MS);
 
   let urlSent = false;
   const onData = (data: Buffer) => {
@@ -47,7 +62,7 @@ function handleAuthStart(ws: WsSender): void {
   authProc.stderr?.on('data', onData);
 
   authProc.on('exit', (code) => {
-    authProc = null;
+    killAuth();
     if (code === 0)
       emit(ws, {type: 'auth_done'});
     else
@@ -55,7 +70,7 @@ function handleAuthStart(ws: WsSender): void {
   });
 
   authProc.on('error', (err: Error) => {
-    authProc = null;
+    killAuth();
     emit(ws, {type: 'auth_error', message: err.message});
   });
 }
