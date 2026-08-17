@@ -29,6 +29,9 @@ const MAX_SESSIONS = 200;
 const TURN_IDLE_TIMEOUT_MS = 90000;
 const KILL_GRACE_MS = 2000;
 
+// An unanswered AskUserQuestion would hold the turn open forever, blocking the workspace sync idle gate.
+const ASK_USER_TIMEOUT_MS = 60000;
+
 // forkNext is set on abort: the next turn forks off lastCleanUuid, dropping the aborted turn.
 interface SessionRecord {sdkId: string; lastCleanUuid?: string; forkNext?: boolean}
 
@@ -312,8 +315,15 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate, viewToolsServer);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion') {
-        const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
-        return {behavior: 'allow' as const, updatedInput};
+        try {
+          const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input, ASK_USER_TIMEOUT_MS);
+          return {behavior: 'allow' as const, updatedInput};
+        } catch (e) {
+          if (active.abortController.signal.aborted)
+            throw e;
+          return {behavior: 'deny' as const,
+            message: 'The user did not answer the question in time. Proceed without the answer or end the turn.'};
+        }
       }
       return {behavior: 'allow' as const, updatedInput: input};
     };
