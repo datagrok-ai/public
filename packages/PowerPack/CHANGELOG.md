@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20631: Fire one open per Workspace row double-click and await the in-flight project preview before opening
 * 23226: Use hasOwnProperty for function-name map lookups in getFunctionNameAtPosition to ignore inherited Object.prototype keys
 * Add New Column: Added an expression-only widget mode (`aux.expressionEditorOnly`) that edits a formula as a value — no Apply button, no preview, and the debounced text published back onto the call so a host can read it through `call.inputParams['expression'].onChanged`
 * Add New Column: The expression-only mode now validates what it is given — the formula is evaluated on the preview frame and checked against the call's declared type, so a filter/condition editor refuses anything that is not true/false. The verdict is published on the widget root (`data-expression-error` + an `expression-validated` event), the only channel that survives the package boundary
