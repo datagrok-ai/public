@@ -9,26 +9,36 @@ import type {GroundingGate} from './grounding';
 import {buildSystemPrompt} from './prompts';
 
 // ---------------------------------------------------------------------------
-// Workspace access guard — PreToolUse hook blocking absolute /workspace paths
+// Filesystem access guard — PreToolUse hook blocking absolute /workspace paths
+// and everything under /users except the session user's own directory
 // ---------------------------------------------------------------------------
 
-const USER_WORKSPACE_PATTERN = /\/users\/[\w.-]+\/workspace/g;
-const WORKSPACE_ACCESS_PATTERN = /\/workspace(?:[/"'\s\\]|$)/;
+const USER_DIR_PATTERN = /\/users(?:\/[\w.-]+)?/g;
+const PARENT_DIR_PATTERN = /(?<![\w.])\.\.(?![\w.])/;
+const WORKSPACE_ACCESS_PATTERN = /\/workspace(?![\w.-])/;
 
-const blockWorkspaceAccess: HookCallback = async (input) => {
-  if (input.hook_event_name !== 'PreToolUse')
-    return {continue: true};
-  const inputStr = JSON.stringify(input.tool_input ?? '');
-  const stripped = inputStr.replace(USER_WORKSPACE_PATTERN, '');
-  if (WORKSPACE_ACCESS_PATTERN.test(stripped)) {
-    console.log(`PreToolUse: blocked /workspace reference in ${input.tool_name}`);
-    return {
-      decision: 'block',
-      reason: 'Direct access to /workspace is blocked. Use cwd-relative `workspace/...` paths (e.g. `workspace/packages/Chem/...`) instead.',
-    };
-  }
-  return {continue: true};
-};
+export function makeAccessGuard(userDir?: string): HookCallback {
+  return async (input) => {
+    if (input.hook_event_name !== 'PreToolUse')
+      return {continue: true};
+    const inputStr = JSON.stringify(input.tool_input ?? '');
+    const foreign = [...inputStr.matchAll(USER_DIR_PATTERN)].find((m) => m[0] !== userDir)?.[0];
+    // For a keyed session the only legitimate workspace is the user's own /users/<id>/workspace —
+    // with it removed, any remaining /workspace reference (the shared clone) is a violation.
+    const outsideOwn = userDir ? inputStr.split(userDir + '/workspace').join('') : '';
+    const reason = foreign ?
+      `Access to ${foreign} is blocked — you may only access your own directory${userDir ? ` (${userDir})` : ''}.` :
+      PARENT_DIR_PATTERN.test(inputStr) ?
+        'Parent-directory (`..`) path segments are blocked — use paths inside the current directory.' :
+        WORKSPACE_ACCESS_PATTERN.test(outsideOwn) ?
+          'Direct access to /workspace is blocked — use cwd-relative `workspace/...` paths instead.' :
+          null;
+    if (!reason)
+      return {continue: true};
+    console.log(`PreToolUse: blocked in ${input.tool_name}: ${reason}`);
+    return {decision: 'block', reason};
+  };
+}
 
 // ---------------------------------------------------------------------------
 // URL plumbing — container-to-host rewrites and MCP request headers
@@ -302,7 +312,7 @@ export function buildOptions(
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
-      PreToolUse: [{hooks: [blockWorkspaceAccess]}],
+      PreToolUse: [{hooks: [makeAccessGuard(userDir)]}],
       ...(postToolHooks.length ? {PostToolUse: [{hooks: postToolHooks}]} : {}),
       ...(stopHooks.length ? {Stop: [{hooks: stopHooks}]} : {}),
     },
