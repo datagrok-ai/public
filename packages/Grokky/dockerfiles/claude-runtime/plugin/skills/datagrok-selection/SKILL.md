@@ -1,6 +1,6 @@
 ---
 name: datagrok-selection
-description: Manipulate row selection (`df.selection`) on a Datagrok DataFrame inside a datagrok-exec block — set, clear, invert, add to, remove from, intersect, and read the selection mask. Also covers current row (`df.currentRowIdx`), the cross-skill bridges to/from the filter, and how to materialize the selected rows as a new DataFrame. Use whenever the user says "select rows", "deselect", "invert selection", "highlight rows", "selected rows", "clear selection", "current row", "currentRowIdx", "count selected", "list selected indexes", "selection from filter", "filter from selection", or asks for selected rows as a new table. Does NOT cover row filtering (separate skill `datagrok-filtering`) or generic DataFrame cloning (`datagrok-df-and-columns`).
+description: Manipulate row selection (`df.selection`) on a Datagrok DataFrame via the datagrok_exec tool — set, clear, invert, add to, remove from, intersect, and read the selection mask. Also covers current row (`df.currentRowIdx`), the cross-skill bridges to/from the filter, and how to materialize the selected rows as a new DataFrame. Use whenever the user says "select rows", "deselect", "invert selection", "highlight rows", "selected rows", "clear selection", "current row", "currentRowIdx", "count selected", "list selected indexes", "selection from filter", "filter from selection", or asks for selected rows as a new table. Does NOT cover row filtering (separate skill `datagrok-filtering`) or generic DataFrame cloning (`datagrok-df-and-columns`).
 ---
 
 # datagrok-selection
@@ -85,7 +85,7 @@ ambiguous — pick the path matching context ("scroll to" → current row;
 | any unselected?           | `t.selection.anyFalse`                            |
 | next / prev set bit       | `t.selection.findNext(i, true)` / `findPrev(i, true)` |
 
-```datagrok-exec
+```js
 // How many rows are currently selected?
 return {selected: t.selection.trueCount, unselected: t.selection.falseCount, total: t.rowCount};
 ```
@@ -109,7 +109,7 @@ The four modes map directly to BitSet operations:
 
 `t.selection.init(pred)` is the fast, buffer-direct path for **replace**:
 
-```datagrok-exec
+```js
 // Select rows where age > 40 (replace).
 const age = t.getCol('age');
 t.selection.init(i => (age.get(i)) > 40);
@@ -118,7 +118,7 @@ return {selected: t.selection.trueCount};
 
 For add / remove / intersect with a predicate, build a fresh BitSet and combine:
 
-```datagrok-exec
+```js
 // Add to the current selection (union, don't replace).
 const act = t.getCol('activity');
 t.selection.or(DG.BitSet.create(t.rowCount, i => (act.get(i)) > 7));
@@ -129,7 +129,7 @@ t.selection.or(DG.BitSet.create(t.rowCount, i => (act.get(i)) > 7));
 `t.selection.set(i, x, notify)` writes one bit. **Pass `notify=false` in a
 loop, then call `fireChanged()` once** — otherwise N writes fire N events:
 
-```datagrok-exec
+```js
 // Select explicit indices (replace). Zero the buffer, set bits with notify=false,
 // fire one change at the end.
 const idx = [0, 3, 5, 7, 11];
@@ -156,12 +156,12 @@ t.selection.and(other);          // intersect
 
 ## Clearing & inverting
 
-```datagrok-exec
+```js
 // Deselect everything. setAll(FALSE), not TRUE.
 t.selection.setAll(false);
 ```
 
-```datagrok-exec
+```js
 // Flip the current selection.
 t.selection.invert();
 ```
@@ -183,7 +183,7 @@ Same shape as `t.clone(t.filter)` — different mask:
 | `t.clone(t.filter)`    | `t.filter`     | no — clone of visible rows |
 | `t.clone(t.selection)` | `t.selection`  | no — clone of selected rows |
 
-```datagrok-exec
+```js
 // Open selected rows as a new table view.
 const subset = t.clone(t.selection);
 grok.shell.addTableView(subset);
@@ -209,7 +209,7 @@ a filter event; the reverse holds for `t.filter.copyFrom(t.selection)`.
 
 ## Current row
 
-```datagrok-exec
+```js
 // Focus row 5 (the platform usually does this on click; rarely needed in scripts).
 if (5 >= 0 && 5 < t.rowCount)
   t.currentRowIdx = 5;
@@ -224,7 +224,7 @@ valid "no current row" state.
 No built-in "describe selection" — hand-roll a structured report: count, capped
 index list, sample row from the first selected index.
 
-```datagrok-exec
+```js
 // Describe the current selection.
 const sel = t.selection;
 const all = sel.getSelectedIndexes();
@@ -262,7 +262,7 @@ One event — unlike filter:
 |-----------------------------|-----------------------------------------------------|
 | `t.onSelectionChanged`      | Any mutation on `t.selection` (`set`, `init`, `setAll`, `and/or/xor/andNot`, `invert`, `copyFrom`). Same observable as `t.selection.onChanged`. |
 
-```datagrok-exec
+```js
 // Log selection count whenever it changes.
 const sub = t.onSelectionChanged.subscribe(() => {
   console.log(`selected: ${t.selection.trueCount}`);
@@ -284,13 +284,13 @@ t.selection.fireChanged();                   // one coalesced event
 
 ## Common patterns
 
-```datagrok-exec
+```js
 // Toggle selection on a single row.
 const i = 5;
 t.selection.set(i, !t.selection.get(i));
 ```
 
-```datagrok-exec
+```js
 // Top N by a column — sort, slice, set.
 const idx = Array.from(t.getSortedOrder(['activity'], [false])).slice(0, 5);
 t.selection.setAll(false, false);
@@ -298,7 +298,7 @@ for (const i of idx) t.selection.set(i, true, false);
 t.selection.fireChanged();
 ```
 
-```datagrok-exec
+```js
 // "Select what I see" → narrow → "filter to what I just selected" pipeline.
 t.selection.copyFrom(t.filter);                                                // visible → selection
 const flag = t.getCol('flag');

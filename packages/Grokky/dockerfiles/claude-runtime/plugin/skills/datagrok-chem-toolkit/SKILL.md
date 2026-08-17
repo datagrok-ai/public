@@ -8,7 +8,7 @@ description: Cheminformatics toolkit catalog for small molecules. Covers RDKit/O
 Function catalog for the **structure-and-modeling** half of Datagrok cheminformatics:
 Chem, Admetica.
 
-Every function below is callable from a `datagrok-exec` block via
+Every function below is callable through the `datagrok_exec` tool via
 `grok.functions.call('<Package>:<funcName>', {param1, param2, ...})`. For ones
 exposed under a top-menu path, the path is shown so you can describe it in plain
 language ("Top menu → Chem → ...").
@@ -25,7 +25,7 @@ written `column<semType>` (e.g. `column<Molecule>`, `column<Macromolecule>`,
 
 If the user asks for a concrete chemistry action ("generate analogs", "dock these
 ligands", "compute IC50", "register this compound", "what is the SMILES of
-aspirin") — emit a `datagrok-exec` block calling the relevant function below,
+aspirin") — call `datagrok_exec` with code calling the relevant function below,
 even if some args have to be guessed from context (table columns, sensible
 defaults). Don't ask the user to re-state inputs you can already infer; if a
 required input is genuinely missing, still emit the block with the best guess
@@ -84,7 +84,7 @@ catalog function exists — call the function.
 ## Calling conventions for column-based functions
 
 Most Chem functions operate on a `DG.Column` of molecules and a parent
-`DG.DataFrame`. Inside a `datagrok-exec` block:
+`DG.DataFrame`. In `datagrok_exec` code:
 
 ```js
 const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);   // first Molecule column
@@ -135,7 +135,7 @@ fallback rendering and a few descriptors (logP, logS, drug-likeness, toxicity).
    or `Boltz1:docking` — **never** to a `Chem:` function. "Generate analogs" /
    "design new molecules" → `Reinvent4:reinvent` / `Reinvent4:reinventTopMenu`
    — **not** R-group, MMP, or reaction enumeration (those operate on existing
-   series). Always emit a `datagrok-exec` block; if a target/seed is missing,
+   series). Always make the `datagrok_exec` call; if a target/seed is missing,
    pass a sensible default (first molecule column, first configured target).
 
 ### Rendering & notation
@@ -182,10 +182,10 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 | Function | Tags | What it does |
 |---|---|---|
 | `addChemPropertiesColumns(table: dataframe, molecules: column<Molecule>, MW?: bool = true, HBA?: bool = false, HBD?: bool = false, logP?: bool = false, logS?: bool = false, PSA?: bool = false, rotatableBonds?: bool = false, stereoCenters?: bool = false, moleculeCharge?: bool = false)` | `topMenu` | OCL-based properties → appended as columns. Top menu: Chem → Calculate → Chemical Properties. |
-| `getProperties(molecules: column<Molecule>, selected?: list<string>)` | `vectorFunc`, `join(table)` | Vector form. `selected` is a subset of the property names above; omit/empty for all. Returns a DataFrame. |
+| `getProperties(molecules: column<Molecule>, selected?: list<string>)` | `vectorFunc` | Vector form. `selected` is a subset of the property names above; omit/empty for all. Returns a standalone DataFrame — NOT auto-joined; append its columns to your table yourself. |
 | `getCLogP(smiles: string)` | — | Single-mol Crippen logP (RDKit). |
 | `getChemPropertyFunction(name: string)` | — | Returns a `(smiles) => any` closure for one property — useful for `column.applyFormula`. |
-| `getDescriptors(molecules: column<Molecule>, selected?: list<string>)` | `vectorFunc`, `join(table)` | RDKit descriptor set (via Chem docker). Returns DataFrame. Use `chemDescriptorsTree()` for the legal `selected` names. |
+| `getDescriptors(molecules: column<Molecule>, selected?: list<string>)` | `vectorFunc` | RDKit descriptor set (via Chem docker). Returns a standalone DataFrame — NOT auto-joined; append its columns yourself. Use `chemDescriptorsTree()` for the legal `selected` names. |
 | `chemDescriptors(table: dataframe, molecules: column<Molecule>, descriptors: list<string>)` | `topMenu` | Same, appended to `table`. |
 | `chemDescriptorsTree()` | — | Returns the tree of available descriptor groups (for UI). |
 | `descriptorsDocker()` | `topMenu` | Opens the descriptors picker dialog. Top menu: Chem → Calculate → Descriptors. |
@@ -194,9 +194,9 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 | `getMorganFingerprint(molString: string)` | — | Single-mol → `DG.BitSet`. |
 | `getFingerprints(col: column<Molecule>, _metric?: string, fingerprintType?: <fp>)` | — | Returns `{entries, options}` for the dim-reduction preprocessor. |
 | `addChemRisksColumns(table: dataframe, molecules: column<Molecule>, mutagenicity?: bool = true, tumorigenicity?: bool = false, irritatingEffects?: bool = false, reproductiveEffects?: bool = false)` | `topMenu` | OCL toxicity risk flags. Top menu: Chem → Calculate → Toxicity Risks. |
-| `getToxicityRisks(molecules: column<Molecule>, risks?: list<string>)` | `vectorFunc`, `join(table)` | Vector form. `risks` is a subset of the risk names above. |
+| `getToxicityRisks(molecules: column<Molecule>, risks?: list<string>)` | `vectorFunc` | Vector form. `risks` is a subset of the risk names above. Returns a standalone DataFrame — NOT auto-joined; append its columns yourself. |
 | `structuralAlertsTopMenu(table: dataframe, molecules: column<Molecule>, pains: bool = true, bms: bool = false, sureChembl: bool = false, mlsmr: bool = false, dundee: bool = false, inpharmatica: bool = false, lint: bool = false, glaxo: bool = false)` | `topMenu` | Apply rule-based structural alerts. Top menu: Chem → Analyze → Structural Alerts. |
-| `getStructuralAlerts(molecules: column<Molecule>, alerts?: list<string>)` | `vectorFunc`, `join(table)` | Vector form. |
+| `getStructuralAlerts(molecules: column<Molecule>, alerts?: list<string>)` | `vectorFunc` | Vector form. Returns a standalone DataFrame — NOT auto-joined; append its columns yourself. |
 | `pharmacophoreFeaturesTopMenu(table: dataframe, molecules: column<Molecule>, donor: bool = true, acceptor: bool = true, hydrophobic: bool = true, aromatic: bool = true, positive: bool = false, negative: bool = false, halogenBond: bool = false)` | `topMenu` | RDKit pharmacophore family flags. Top menu: Chem → Analyze → Pharmacophore Features. |
 | `biochemPropsWidget()` | `topMenu` | Opens the auto-discovery dialog for biochem calculators. Top menu: Chem → Calculate → Biochemical Properties. |
 
@@ -315,7 +315,7 @@ call before invoking — don't guess param names.
 
 ### Panels (context-panel widgets — show in the right-side panel when a molecule cell is selected)
 
-Useful to call from a `datagrok-exec` block when you want to render a panel
+Useful to call via `datagrok_exec` when you want to render a panel
 inline. All return `DG.Widget`.
 
 All entries below have the `panel` tag.
