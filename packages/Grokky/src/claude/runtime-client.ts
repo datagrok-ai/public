@@ -89,7 +89,7 @@ export class ClaudeRuntimeClient {
           null;
       }
       if (this.containerId)
-        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws');
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws', 180_000);
     } catch (e) {
       this.containerId = null;
       this.mcpServerUrl = null;
