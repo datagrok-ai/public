@@ -194,11 +194,32 @@ for (const ds of datasets) {
       await page.locator('[name="dialog-Molecules-to-HELM"] [name="button-OK"]').click();
       // Reverse conversion of atomic-level molecules back to HELM is heavy (full peptide
       // structures + monomer matching); keep a large polled budget for a cold/loaded stack.
-      await page.waitForFunction((base) => {
-        const df = grok.shell.tv.dataFrame;
-        const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-        return cols.filter((c: any) => c.semType === 'Macromolecule').length > base;
-      }, beforeMacroCount, {timeout: 300_000});
+      // The conversion runs as a server-side script, so it can fail instead of merely being slow.
+      // Watch the error channel alongside the column count: otherwise a dead backend costs the full
+      // 300s budget and reports "no column" instead of the actual error.
+      const outcome = await page.evaluate(async (base) => {
+        const errors: string[] = [];
+        const shell: any = grok.shell;
+        const origError = shell.error.bind(shell);
+        shell.error = (m: any) => { errors.push(String(m)); return origError(m); };
+        const started = Date.now();
+        try {
+          while (Date.now() - started < 300_000) {
+            const df = grok.shell.tv.dataFrame;
+            const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+            if (cols.filter((c: any) => c.semType === 'Macromolecule').length > base)
+              return {ok: true, ms: Date.now() - started, err: null};
+            const balloon = document.querySelector('.d4-balloon.error, .grok-balloon-error');
+            if (errors.length > 0 || balloon)
+              return {ok: false, ms: Date.now() - started, err: errors[0] ?? (balloon?.textContent ?? '').trim()};
+            await new Promise((r) => setTimeout(r, 500));
+          }
+          return {ok: false, ms: Date.now() - started, err: 'no Macromolecule column and no error surfaced'};
+        }
+        finally { shell.error = origError; }
+      }, beforeMacroCount);
+      expect(outcome.ok,
+        `Molecules to HELM added no Macromolecule column after ${outcome.ms} ms: ${outcome.err}`).toBe(true);
       const info: {newMacroCount: number, lastUnits: string | null, firstHelm: string | null} =
         await page.evaluate(() => {
           const df = grok.shell.tv.dataFrame;

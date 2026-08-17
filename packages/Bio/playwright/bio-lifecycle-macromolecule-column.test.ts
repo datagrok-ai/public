@@ -16,7 +16,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
   stepErrors.length = 0;
   const stamp = Date.now();
   const projectName = `bio-lifecycle-macromolecule-${stamp}`;
-  const fastaTempPath = `System:AppData/UsageAnalysis/temp/bio-lifecycle-${stamp}.fasta`;
+  const fastaTempPath = `System:AppData/Bio/temp/bio-lifecycle-${stamp}.fasta`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   await loginToDatagrok(page);
   // Scenario 1 — Detect on open + convert-notation round trip

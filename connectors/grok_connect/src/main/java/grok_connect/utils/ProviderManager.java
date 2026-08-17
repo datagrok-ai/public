@@ -4,6 +4,10 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.providers.JdbcDataProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -60,7 +64,7 @@ public class ProviderManager {
     private final Map<String, JdbcDataProvider> providersMap;
 
     public ProviderManager() {
-        Set<String> allowed = parseAllowlist(System.getenv("GROK_CONNECT_PROVIDERS"));
+        Set<String> allowed = parseAllowlist(readProvidersConf());
         providersMap = new LinkedHashMap<>();
         for (String className : PROVIDER_CLASSES) {
             JdbcDataProvider provider;
@@ -100,6 +104,17 @@ public class ProviderManager {
             }
         }
         LOGGER.info("Registered providers: {}", providersMap.keySet());
+    }
+
+    // providers.conf is baked next to the jar by the Dockerfile FLAVOR layer, so the image
+    // partition cannot be overridden at runtime; missing file (local runs) = all providers.
+    private static String readProvidersConf() {
+        try {
+            return new String(Files.readAllBytes(Paths.get("providers.conf")), StandardCharsets.UTF_8);
+        }
+        catch (IOException e) {
+            return null;
+        }
     }
 
     private static Set<String> parseAllowlist(String value) {

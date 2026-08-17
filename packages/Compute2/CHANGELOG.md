@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Fixed view pinning failing depending on the platform's js-api version (pin vs isPinned)
+* Run compare: Fixed Save & Share failing to save and producing projects that crash on open
+
 * RFV: Added a default Grid viewer for dataframe outputs without a viewer annotation (e.g. query results)
 * RFV: Added a "Save as project" export (visible tables and viewers; data sync when inputs are literals)
 * RFV: URL parameters as input overrides with auto-run, and a "Copy link with inputs" export

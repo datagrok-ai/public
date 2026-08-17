@@ -1,0 +1,59 @@
+/* Breadcrumbs skin. Tokens only — css/tokens.css must be loaded alongside.
+   The row never wraps: overflow is what the component measures to collapse the middle. */
+.u2-breadcrumbs {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  white-space: nowrap;
+}
+
+.u2-breadcrumbs-item,
+.u2-breadcrumbs-current {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  max-width: 220px;
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-xs);
+  overflow: hidden;
+  font: inherit;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-breadcrumbs-item {
+  color: var(--dg-accent);
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-breadcrumbs-item:hover {
+  text-decoration: underline;
+}
+
+.u2-breadcrumbs-item:focus-visible {
+  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline-offset: calc(-1 * var(--dg-border-width));
+}
+
+.u2-breadcrumbs-ellipsis {
+  color: var(--dg-text-color-light);
+}
+
+.u2-breadcrumbs-current {
+  display: inline-flex;
+  align-items: center;
+  color: var(--dg-text-color);
+}
+
+.u2-breadcrumbs-sep {
+  flex-shrink: 0;
+  padding: 0 var(--dg-space-xs);
+  color: var(--dg-text-color-light);
+}

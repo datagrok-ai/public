@@ -1889,6 +1889,32 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    'top-menu': 'Chem | Transform | Flatten Molecules...',
+    'name': 'Flatten Molecules',
+    'description': 'Removes stereochemistry from molecules and adds a column with flat SMILES.',
+    'meta': {'role': 'transform'},
+  })
+  static async flattenMolecules(
+    data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    const res = await (await chemCommonRdKit.getRdKitService()).flattenMolecules(molecules.toList());
+    if (overwrite) {
+      molecules.init((i) => res[i]);
+      molecules.meta.units = DG.UNITS.Molecule.SMILES;
+    } else {
+      const colName = data.columns.getUnusedName(`${molecules.name}_flat`);
+      const col = DG.Column.fromStrings(colName, res);
+      col.meta.units = DG.UNITS.Molecule.SMILES;
+      col.semType = DG.SEMTYPE.MOLECULE;
+      if (!join)
+        return col;
+      data.columns.add(col);
+    }
+  }
+
+  @grok.decorators.func({
     name: 'Convert Notation...',
     meta: {action: 'Convert Notation...'},
   })

@@ -1,0 +1,661 @@
+{
+  "schema": "dg-ui/1",
+  "recipes": "docs/recipes/",
+  "components": [
+    {
+      "tag": "u2-text-input",
+      "description": "Single-line text editor with validation.",
+      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "placeholder",
+          "type": "string"
+        },
+        {
+          "name": "search",
+          "type": "bool",
+          "description": "Magnifier affordance plus a clear button."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-text-input",
+        "props": {
+          "label": "Name",
+          "value": "Aspirin"
+        }
+      }
+    },
+    {
+      "tag": "u2-text-area",
+      "description": "Multi-line text editor.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "placeholder",
+          "type": "string"
+        },
+        {
+          "name": "autoGrow",
+          "type": "bool",
+          "description": "Grows with the text instead of scrolling."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-text-area",
+        "props": {
+          "label": "Description",
+          "placeholder": "Up to 40 characters"
+        }
+      }
+    },
+    {
+      "tag": "u2-bool-input",
+      "description": "Checkbox or switch.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "switch",
+          "type": "bool",
+          "description": "Compact toggle instead of a checkbox."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-bool-input",
+        "props": {
+          "label": "Active",
+          "value": true,
+          "switch": true
+        }
+      }
+    },
+    {
+      "tag": "u2-number-input",
+      "description": "Numeric editor with a spinner; text that does not parse only marks the input invalid.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "float",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "mode",
+          "type": "string",
+          "description": "\"int\" or \"float\" (default)."
+        },
+        {
+          "name": "min",
+          "type": "float"
+        },
+        {
+          "name": "max",
+          "type": "float"
+        },
+        {
+          "name": "step",
+          "type": "float",
+          "description": "Spinner and arrow-key increment; 1 by default."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-number-input",
+        "props": {
+          "label": "Amount",
+          "value": 10,
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "tag": "u2-choice-input",
+      "description": "Single choice over a native select.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "items",
+          "type": "string[]"
+        },
+        {
+          "name": "nullable",
+          "type": "bool",
+          "description": "Offers an empty option; true by default."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-choice-input",
+        "props": {
+          "label": "Series",
+          "items": [
+            "a",
+            "b",
+            "c"
+          ],
+          "value": "b"
+        }
+      }
+    },
+    {
+      "tag": "u2-multi-choice-input",
+      "description": "Checkbox list; the value holds the checked items in item order.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string[]",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "items",
+          "type": "string[]"
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-multi-choice-input",
+        "props": {
+          "label": "Tags",
+          "items": [
+            "acid",
+            "base"
+          ],
+          "value": [
+            "acid"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "u2-button",
+      "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command.",
+      "props": [
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "primary",
+          "type": "bool",
+          "description": "Accent styling for the main action."
+        }
+      ],
+      "events": [
+        "click"
+      ],
+      "example": {
+        "tag": "u2-button",
+        "props": {
+          "text": "Save",
+          "primary": true
+        },
+        "on": {
+          "click": "cmd:save"
+        }
+      }
+    },
+    {
+      "tag": "u2-panel",
+      "description": "Padded vertical container.",
+      "props": [
+        {
+          "name": "cls",
+          "type": "string",
+          "description": "Extra layout class."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-panel",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-div-v",
+      "description": "Vertical stack.",
+      "props": [
+        {
+          "name": "cls",
+          "type": "string",
+          "description": "Extra layout class."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-div-v",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-div-h",
+      "description": "Horizontal row.",
+      "props": [
+        {
+          "name": "cls",
+          "type": "string",
+          "description": "Extra layout class."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-div-h",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-splitter",
+      "description": "Resizable panels separated by draggable sashes; every spec child becomes a panel.",
+      "usage": "Master-detail layouts (list left, details right): see the entity-browser recipe. In a platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.",
+      "props": [
+        {
+          "name": "direction",
+          "type": "string",
+          "description": "\"horizontal\" (default) or \"vertical\"."
+        },
+        {
+          "name": "sizes",
+          "type": "json",
+          "description": "Fraction per panel, normalized; equal shares by default."
+        },
+        {
+          "name": "minSize",
+          "type": "float",
+          "description": "Smallest panel size in pixels; 60 by default."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-splitter",
+        "props": {
+          "direction": "horizontal",
+          "sizes": [
+            0.3,
+            0.7
+          ]
+        },
+        "children": [
+          {
+            "tag": "u2-panel",
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "Name"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "children": [
+              {
+                "tag": "u2-text-area",
+                "props": {
+                  "label": "Notes"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-accordion",
+      "description": "Independently expanding panes, one per spec child; the child node carries the pane title.",
+      "props": [],
+      "childProps": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Pane title; numbered when absent."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-accordion",
+        "children": [
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "General"
+            },
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "Name"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Advanced"
+            },
+            "children": [
+              {
+                "tag": "u2-bool-input",
+                "props": {
+                  "label": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-tabs",
+      "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
+      "props": [],
+      "childProps": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Tab label; numbered when absent."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-tabs",
+        "children": [
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Data"
+            },
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "Table"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Style"
+            },
+            "children": [
+              {
+                "tag": "u2-bool-input",
+                "props": {
+                  "label": "Legend"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-form",
+      "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else lands in the form root.",
+      "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.",
+      "props": [
+        {
+          "name": "condensed",
+          "type": "bool",
+          "description": "Tighter rows."
+        },
+        {
+          "name": "wide",
+          "type": "bool",
+          "description": "Two columns."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-form",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          },
+          {
+            "tag": "u2-number-input",
+            "props": {
+              "label": "Amount",
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-property-grid",
+      "description": "Two-column property editor over a JSON descriptor list.",
+      "usage": "For editing a live object that carries Property metadata, prefer `propertyForm` — this grid is for descriptor-driven settings panels.",
+      "props": [
+        {
+          "name": "properties",
+          "type": "json",
+          "description": "Row descriptors: name, type (string/int/float/bool/choice), category, choices, min, max, description, readonly."
+        },
+        {
+          "name": "values",
+          "type": "json",
+          "description": "Initial value per property name."
+        }
+      ],
+      "example": {
+        "tag": "u2-property-grid",
+        "props": {
+          "properties": [
+            {
+              "name": "Title",
+              "type": "string"
+            },
+            {
+              "name": "Rows",
+              "type": "int",
+              "min": 0
+            }
+          ],
+          "values": {
+            "Title": "Demo",
+            "Rows": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "u2-breadcrumbs",
+      "description": "Path bar that collapses its middle segments when it overflows.",
+      "usage": "For navigation within your own view. The shell already renders the view's own breadcrumb from its name/path — don't duplicate it.",
+      "props": [
+        {
+          "name": "items",
+          "type": "string[]"
+        }
+      ],
+      "events": [
+        "click"
+      ],
+      "example": {
+        "tag": "u2-breadcrumbs",
+        "props": {
+          "items": [
+            "Home",
+            "Projects",
+            "Demo"
+          ]
+        }
+      }
+    }
+  ]
+}

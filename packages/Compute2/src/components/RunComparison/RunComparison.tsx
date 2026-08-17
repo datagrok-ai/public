@@ -22,6 +22,7 @@ import {
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
+import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
 import {
   buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
 } from './comparison-builders';
@@ -347,39 +348,30 @@ export const RunComparison = Vue.defineComponent({
     };
 
     // snapshot export: clone of the chart data plus the chart with its current options
-    const snapshotView = (name: string, addToWorkspace: boolean) => {
+    const snapshotData = (name: string) => {
       const df = comparison.value!.chartDf.clone();
       df.name = name;
-      const view = addToWorkspace ? grok.shell.addTableView(df) : DG.TableView.create(df, false);
       const options = chartViewer.value?.getOptions();
-      if (options)
-        view.addViewer(options.type, options.look);
+      return {df, viewers: options ? [{type: options.type as string, options: options.look}] : []};
+    };
+
+    const snapshotView = (name: string) => {
+      const {df, viewers} = snapshotData(name);
+      const view = grok.shell.addTableView(df);
+      for (const {type, options} of viewers)
+        view.addViewer(type, options);
       return view;
     };
 
-    // the platform Save-project dialog handles upload, layout linking, and sharing.
-    // Project.showSaveDialog is newer than the last released js-api (added 2026-07-16,
-    // after datagrok-api 1.27.7), so it is reached via a cast and feature-detected at
-    // runtime; older platforms may have the Dart binding but not the wrapper
-    const jsApiShowSaveDialog = (DG.Project as any).showSaveDialog;
-    const canSaveProject = typeof jsApiShowSaveDialog === 'function' ||
-      typeof (window as any).grok_Project_OpenSaveDialog === 'function';
-
-    const showProjectSaveDialog = (view: DG.TableView, name: string): Promise<DG.Project | null> => {
-      if (typeof jsApiShowSaveDialog === 'function')
-        return jsApiShowSaveDialog.call(DG.Project, {tables: [view.dataFrame], views: [view], name});
-      return (window as any).grok_Project_OpenSaveDialog(
-        [view.dataFrame.dart], [view.dart], [], name, '', '');
-    };
-
     const saveAndShare = async (name: string) => {
-      const view = snapshotView(name, false);
+      const {df, viewers} = snapshotData(name);
+      const layout = captureTableLayout(df, viewers);
       try {
-        await showProjectSaveDialog(view, name);
+        await showProjectSaveDialog([df], [layout], name);
       } catch (e: any) {
         grok.shell.error(e);
       } finally {
-        view.detach();
+        grok.shell.closeTable(df);
       }
     };
 
@@ -390,16 +382,16 @@ export const RunComparison = Vue.defineComponent({
       const nameInput = ui.input.string('Name', {value: currentComparison.chartDf.name || 'Comparison'});
       const dlg = ui.dialog('Export comparison').add(nameInput.root);
       const openLabel = 'OPEN IN WORKSPACE';
-      if (canSaveProject) {
+      if (canSaveProject()) {
         dlg.addButton(openLabel, () => {
           dlg.close();
-          snapshotView(nameInput.value || 'Comparison', true);
+          snapshotView(nameInput.value || 'Comparison');
         });
         dlg.onOK(() => saveAndShare(nameInput.value || 'Comparison'));
         dlg.show({center: true});
         dlg.getButton('OK').innerText = 'SAVE & SHARE';
       } else {
-        dlg.onOK(() => snapshotView(nameInput.value || 'Comparison', true));
+        dlg.onOK(() => snapshotView(nameInput.value || 'Comparison'));
         dlg.show({center: true});
         dlg.getButton('OK').innerText = openLabel;
       }

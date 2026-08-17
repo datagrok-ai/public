@@ -1,0 +1,189 @@
+/* Popup multi-select skin: an underline field that grows with wrapped tags, plus a popup
+   consistent with css/typeahead.css. Tokens only; css/tokens.css and css/inputs.css must be
+   loaded alongside. */
+.u2-input-root[data-u2='multi-select'] {
+  align-items: flex-start;
+}
+
+div.u2-input-editor.u2-multi-select-field {
+  display: flex;
+  align-items: center;
+  min-width: 160px;
+  height: auto;
+  min-height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  border-bottom: var(--dg-input-border);
+  outline: none;
+  cursor: pointer;
+}
+
+.u2-input-inline div.u2-input-editor.u2-multi-select-field {
+  min-height: var(--dg-inline-control-height);
+}
+
+div.u2-input-editor.u2-multi-select-field:focus,
+div.u2-input-editor.u2-multi-select-field.u2-multi-select-open {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+div.u2-input-editor.u2-multi-select-field.u2-invalid {
+  border-bottom-color: var(--dg-error);
+}
+
+.u2-multi-select-tags {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dg-space-s);
+  min-width: 0;
+  padding: var(--dg-space-xs) 0;
+}
+
+.u2-multi-select-placeholder {
+  color: var(--dg-text-color-light);
+}
+
+.u2-multi-select-chevron {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  margin-left: var(--dg-space-s);
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  border-top: 5px solid var(--dg-text-color-light);
+}
+
+.u2-multi-select-open .u2-multi-select-chevron {
+  transform: rotate(180deg);
+}
+
+/* tags come from badge.css; only the truncation is ours */
+.u2-multi-select-tags .u2-tag {
+  max-width: 160px;
+}
+
+.u2-multi-select-tags .u2-tag-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-multi-select-more {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-multi-select-popup {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius);
+  outline: none;
+  box-shadow: var(--dg-shadow-overlay);
+}
+
+.u2-multi-select-filter {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+}
+
+.u2-multi-select-filter-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-xs);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: none;
+  border-bottom: var(--dg-input-border);
+  border-radius: 0;
+  outline: none;
+}
+
+.u2-multi-select-filter-input:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-multi-select-filter-input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+.u2-multi-select-options {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.u2-multi-select-all,
+.u2-multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  cursor: pointer;
+}
+
+.u2-multi-select-all {
+  margin-bottom: var(--dg-space-xs);
+  padding-bottom: var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-multi-select-all:hover,
+.u2-multi-select-option:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-multi-select-option-active {
+  background: var(--dg-steel-1);
+}
+
+.u2-multi-select-check {
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-grey-3);
+  border-radius: var(--dg-radius);
+}
+
+.u2-multi-select-selected > .u2-multi-select-check {
+  background: var(--dg-accent);
+  border-color: var(--dg-accent);
+}
+
+.u2-multi-select-selected > .u2-multi-select-check::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--dg-white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.u2-multi-select-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-multi-select-empty {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}

@@ -1,0 +1,20 @@
+/* Adaptive priority utilities (docs/recipes/list-item-rendering.md): mark the pane or list host
+   `u2-adaptive`, rank hideable content `u2-p1` (hides last) / `u2-p2` (hides first) — as the
+   container narrows, secondary parts drop out instead of squeezing the primary content.
+   Container queries cannot read custom properties, so the breakpoints are fixed; an app needing
+   different thresholds writes its own @container rules against the same classes. */
+.u2-adaptive {
+  container-type: inline-size;
+}
+
+@container (max-width: 420px) {
+  .u2-p2 {
+    display: none;
+  }
+}
+
+@container (max-width: 340px) {
+  .u2-p1 {
+    display: none;
+  }
+}

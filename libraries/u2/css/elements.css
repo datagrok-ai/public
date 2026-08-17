@@ -1,0 +1,92 @@
+/* Fluent primitives skin — buttons, links, panels. Tokens only; css/tokens.css must be
+   loaded alongside. Metrics codify the current platform (ui.css .ui-btn / .ui-link / .ui-panel). */
+.u2-div-v {
+  display: flex;
+  flex-direction: column;
+}
+
+.u2-div-h {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.u2-panel {
+  box-sizing: border-box;
+  padding: var(--dg-space-l);
+}
+
+.u2-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: var(--dg-space-s);
+  height: var(--dg-button-height);
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--dg-accent);
+  background: transparent;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-btn:hover:not(:disabled) {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-btn:active:not(:disabled) {
+  background: var(--dg-hover);
+}
+
+.u2-btn:disabled {
+  color: var(--dg-text-color-disabled);
+  cursor: default;
+  pointer-events: none;
+}
+
+.u2-btn-primary {
+  color: var(--dg-white);
+  background: var(--dg-accent-secondary);
+}
+
+.u2-btn-primary:hover:not(:disabled),
+.u2-btn-primary:active:not(:disabled) {
+  color: var(--dg-white);
+  background: var(--dg-accent);
+}
+
+.u2-btn-primary:disabled {
+  color: var(--dg-grey-4);
+  background: var(--dg-steel-2);
+}
+
+.u2-link {
+  color: var(--dg-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.u2-link:hover {
+  text-decoration: underline;
+}
+
+.u2-link:focus-visible {
+  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline-offset: var(--dg-space-xs);
+}
+
+/* compact timestamp (src/core/elements.ts timestamp()): short date visual, full date-time in title */
+.u2-timestamp {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+}

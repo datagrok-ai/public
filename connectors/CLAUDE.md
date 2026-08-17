@@ -363,7 +363,8 @@ grok_connect/src/main/java/grok_connect/
 
 3. **Register provider** in `ProviderManager.java` — add its fully-qualified class name to the
    `PROVIDER_CLASSES` array. Registration is reflective: the provider is advertised on `/conn`
-   only when its driver class is present and it passes the `GROK_CONNECT_PROVIDERS` allowlist.
+   only when its driver class is present and it passes the `providers.conf` allowlist baked
+   into the image at build time (from the `GROK_CONNECT_PROVIDERS` build arg).
 
 4. **Add tests** in `src/test/java/`:
 
@@ -461,9 +462,11 @@ Default settings (can be overridden):
 - Java 8 is required (some JDBC drivers don't support newer versions)
 - Two image flavors from one codebase: `datagrok/grok_connect` (main) and `datagrok/grok_connect_extended`
   (opt-in; ships only the CVE-quarantined drivers — Amazon Neptune 3.0.3, Cloudera Impala). The `FLAVOR`
-  build arg prunes `lib/`; `GROK_CONNECT_PROVIDERS` (comma-separated `descriptor.type` values, empty = all)
-  limits what a running instance advertises. ProviderManager also probes each provider's driver class and
-  skips providers whose driver jar is absent, so `/conn` never advertises a provider that cannot connect.
+  build arg prunes `lib/`, and the `GROK_CONNECT_PROVIDERS` build arg (comma-separated `descriptor.type`
+  values, empty = all) is baked into the image as `providers.conf` next to the jar — the allowlist is
+  fixed at build time and cannot be changed with a runtime env var. ProviderManager also probes each
+  provider's driver class and skips providers whose driver jar is absent, so `/conn` never advertises
+  a provider that cannot connect.
 - JDBC drivers in `lib/` are not managed by Maven (pre-built)
 - Kotlin is used only for SAP HANA provider and utilities
 - TestContainers tests require Docker to be running

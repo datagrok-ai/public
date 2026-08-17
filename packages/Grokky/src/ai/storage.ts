@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 /* Create a new file: conversation-storage.ts */
 
-import {OpenAI} from 'openai';
 import {MessageType, UIMessage} from './panel';
 
 export interface StoredConversation<T extends MessageType = MessageType, TMeta = any> {

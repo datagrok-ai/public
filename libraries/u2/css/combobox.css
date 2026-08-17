@@ -1,0 +1,85 @@
+/* Combobox skin. Tokens only — css/tokens.css must be loaded alongside. */
+.u2-combobox {
+  display: inline-block;
+}
+
+.u2-combobox-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-xs);
+  font: inherit;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: none;
+  border-bottom: var(--dg-input-border);
+  border-radius: 0;
+  outline: none;
+}
+
+.u2-combobox-input:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-combobox-input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+.u2-combobox-popup {
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius);
+  box-shadow: var(--dg-shadow-overlay);
+}
+
+.u2-combobox-option {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.u2-combobox-option:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-combobox-option-active {
+  color: var(--dg-accent);
+  background: var(--dg-steel-1);
+}
+
+.u2-combobox-loading,
+.u2-combobox-empty,
+.u2-combobox-error {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-combobox-retry {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-combobox-retry:hover {
+  background: var(--dg-hover);
+}

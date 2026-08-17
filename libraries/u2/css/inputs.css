@@ -1,0 +1,218 @@
+/* Input skin — label column + underline editor, as in the current platform (ui.css
+   .ui-input-root / .ui-input-label / .ui-input-editor / .ui-input-switch).
+   Tokens only; css/tokens.css must be loaded alongside. */
+.u2-input-root {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  padding: var(--dg-space-s) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+.u2-input-label {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 100px;
+  height: var(--dg-control-height);
+  margin-right: var(--dg-space-m);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-input-editor {
+  box-sizing: border-box;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: none;
+  border-radius: 0;
+  outline: none;
+}
+
+input.u2-input-editor,
+textarea.u2-input-editor,
+.u2-input-editor.u2-input-search {
+  border-bottom: var(--dg-input-border);
+}
+
+input.u2-input-editor:focus,
+textarea.u2-input-editor:focus,
+.u2-input-editor.u2-input-search:focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-input-editor::placeholder,
+.u2-input-search > input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+textarea.u2-input-editor {
+  height: auto;
+  min-height: calc(var(--dg-control-height) * 2);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  line-height: var(--dg-line-height);
+  resize: vertical;
+}
+
+.u2-input-editor.u2-invalid,
+.u2-input-editor.u2-invalid:focus,
+.u2-input-editor.u2-invalid:focus-within {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+.u2-input-error {
+  margin-left: var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-error);
+}
+
+.u2-input-error:empty {
+  display: none;
+}
+
+.u2-input-inline {
+  padding: 0;
+}
+
+.u2-input-inline .u2-input-editor {
+  height: var(--dg-inline-control-height);
+}
+
+.u2-input-disabled,
+.u2-input-disabled .u2-input-editor {
+  color: var(--dg-text-color-disabled);
+  pointer-events: none;
+}
+
+.u2-input-disabled .u2-input-switch {
+  filter: grayscale(1);
+}
+
+/* search variant */
+.u2-input-editor.u2-input-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  padding: 0 var(--dg-space-xs);
+}
+
+.u2-input-search::before {
+  content: '';
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  background-color: var(--dg-text-color-light);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-input-search > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--dg-space-xs);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.u2-input-clear {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: var(--dg-font-size-xs);
+  line-height: 1;
+  color: var(--dg-text-color-light);
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-input-clear:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover-subtle);
+}
+
+.u2-input-clear[hidden] {
+  display: none;
+}
+
+/* bool variants */
+.u2-input-editor.u2-input-bool {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--dg-space-s);
+}
+
+.u2-input-checkbox {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  border: none;
+  accent-color: var(--dg-accent);
+  cursor: pointer;
+}
+
+.u2-input-switch {
+  display: inline-flex;
+  align-items: center;
+  width: 22px;
+  height: 4px;
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: 9px;
+  outline: none;
+  cursor: pointer;
+}
+
+.u2-input-switch:hover {
+  border-color: var(--dg-grey-3);
+}
+
+.u2-input-switch:focus-visible {
+  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline-offset: var(--dg-space-s);
+}
+
+.u2-input-switch-thumb {
+  position: relative;
+  left: -4px;
+  width: 12px;
+  height: 12px;
+  margin: 2px;
+  background: var(--dg-grey-2);
+  border: var(--dg-border-width) solid var(--dg-grey-2);
+  border-radius: 50%;
+  transition: left 0.2s;
+}
+
+.u2-input-switch:hover .u2-input-switch-thumb {
+  border-color: var(--dg-grey-3);
+}
+
+.u2-input-switch-on {
+  background: var(--dg-steel-2);
+  border-color: var(--dg-steel-2);
+}
+
+.u2-input-switch-on .u2-input-switch-thumb {
+  left: 8px;
+  background: var(--dg-accent);
+  border-color: var(--dg-accent);
+}

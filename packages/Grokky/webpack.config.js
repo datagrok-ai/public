@@ -2,11 +2,15 @@ const path = require('path');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
+const mode = process.env.NODE_ENV ?? 'production';
+if (mode !== 'production')
+  console.warn(`Building Grokky in '${mode}' mode.`);
+
 module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name: `${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',

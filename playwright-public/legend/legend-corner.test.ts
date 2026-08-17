@@ -132,7 +132,9 @@ test('Corner legend — close icon, no phantom scroll, resize re-evaluation', as
     expect(entered.mode, 'a free corner was not taken').toBe('corner');
 
     const modes: string[] = [entered.mode!];
-    for (const [w, h] of [[700, 500], [900, 600], [1100, 600]]) {
+    // sizes where the corner box (sized with the DOM-true item font + chrome) stays clear
+    // of the clustered points — at 700x500 the honest estimate genuinely reaches them
+    for (const [w, h] of [[900, 600], [1000, 600], [1100, 650]]) {
       await v.resizeViewer(page, 'Scatter plot', w, h);
       await page.waitForTimeout(800);
       await v.waitForLegendIdle(page, 'Scatter plot');

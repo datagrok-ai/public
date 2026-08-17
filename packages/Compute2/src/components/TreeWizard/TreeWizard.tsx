@@ -26,7 +26,7 @@ import {
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  reportTree, resolveChosenUuid,
+  pinView, reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
@@ -295,9 +295,8 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
-      if (props.view && !props.view.isPinned && hasNotSavedEdits) {
-        props.view.pin();
-      }
+      if (hasNotSavedEdits)
+        pinView(props.view);
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
         setViewName(modelName.value);

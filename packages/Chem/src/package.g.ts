@@ -854,6 +854,19 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<a
   return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join, kekulize);
 }
 
+//name: Flatten Molecules
+//description: Removes stereochemistry from molecules and adds a column with flat SMILES.
+//input: dataframe data 
+//input: column molecules { semType: Molecule }
+//input: bool overwrite = false 
+//input: bool join = true 
+//output: column result
+//meta.role: transform
+//top-menu: Chem | Transform | Flatten Molecules...
+export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean) : Promise<any> {
+  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join);
+}
+
 //name: Convert Notation...
 //input: column col { semType: Molecule }
 //meta.action: Convert Notation...

@@ -8,21 +8,11 @@
     "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^4.0.77",
-    "@ai-sdk/anthropic": "^3.0.31",
-    "@ai-sdk/openai": "^3.0.23",
-    "@ai-sdk/provider": "^3.0.6",
     "@datagrok-libraries/db-explorer": "^1.7.2",
     "@datagrok-libraries/test": "^1.1.0",
-    "@datagrok-libraries/utils": "^4.6.5",
-    "@modelcontextprotocol/sdk": "^1.21.1",
-    "@types/dom-chromium-ai": "^0.0.10",
-    "ai": "^6.0.62",
-    "cash-dom": "^8.1.5",
     "datagrok-api": "../../js-api",
     "dayjs": "^1.11.19",
-    "js-yaml": "^4.1.0",
-    "openai": "^6.16.0"
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",

@@ -1,0 +1,66 @@
+/* u2 virtualized list (see src/components/list.ts). Rows are absolutely positioned inside a
+   spacer sized to the full item count; their height comes from an inline style set by JS. */
+.u2-list {
+  position: relative;
+  overflow-y: auto;
+  border: var(--dg-border-width) solid var(--dg-border);
+  background: var(--dg-bg);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  outline: none;
+}
+
+.u2-list:focus {
+  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline-offset: calc(-1 * var(--dg-border-width));
+}
+
+.u2-list-content {
+  position: relative;
+}
+
+.u2-list-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0 var(--dg-space-m);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.u2-list-row:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-list-row-selected,
+.u2-list-row-selected:hover {
+  background: var(--dg-steel-1);
+  color: var(--dg-accent);
+}
+
+/* hover-revealed action block (src/components/actions.ts): invisible until its row — a list row
+   or any element carrying .u2-row — is hovered, or a button in it holds focus. Hidden by opacity,
+   not display: the buttons keep their space (no layout shift on hover) and stay tabbable, so
+   keyboard users reach them; pointer-events blocks clicks on the invisible state. */
+.u2-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  margin-left: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.u2-list-row:hover .u2-row-actions,
+.u2-row:hover .u2-row-actions,
+.u2-row-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
