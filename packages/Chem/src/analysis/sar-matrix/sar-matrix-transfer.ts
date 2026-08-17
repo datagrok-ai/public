@@ -25,11 +25,16 @@ import {SarMatrix, SarMatrixCell, logSarTime} from './sar-matrix-types';
  * matrix's own additive row-plus-column model, so their trends run parallel by construction — reporting
  * it states the assumption back, and since it scores near-perfectly it would crowd the genuinely
  * informative cross-chemotype pairs out of the list.
+ *
+ * Agreement is Spearman rank correlation: a transfer claims the two cores rank their shared substituents
+ * the same way, which rank correlation tests directly and a single outlier pair cannot fake.
  */
 
-/** Minimum matched compound pairs for a series pair to be considered. */
+/** Minimum shared substituents between two series to compare their trends. This is an overlap between
+ *  different-scaffold series, not a series length — held low so genuine cross-chemotype transfers are
+ *  not rejected. At the 0.7 floor, three points already demand a perfectly monotone trend. */
 const MIN_COMMON = 3;
-/** Minimum Pearson correlation for a transfer to be reported. */
+/** Minimum Spearman rank correlation for a transfer to be reported. */
 const MIN_CORRELATION = 0.7;
 /** Cap on reported transfers, strongest first. */
 const MAX_TRANSFERS = 16;
@@ -124,6 +129,30 @@ function pearson(xs: number[], ys: number[]): number | null {
   if (vx === 0 || vy === 0)
     return null;
   return cov / Math.sqrt(vx * vy);
+}
+
+/** Average ranks (1-based; ties share their mean rank) — the transform that turns Pearson into
+ *  Spearman. */
+function averageRanks(values: number[]): number[] {
+  const order = values.map((v, i) => ({v, i})).sort((a, b) => a.v - b.v);
+  const ranks = new Array<number>(values.length);
+  let i = 0;
+  while (i < order.length) {
+    let j = i;
+    while (j + 1 < order.length && order[j + 1].v === order[i].v)
+      j++;
+    const rank = (i + j) / 2 + 1;
+    for (let k = i; k <= j; k++)
+      ranks[order[k].i] = rank;
+    i = j + 1;
+  }
+  return ranks;
+}
+
+/** Spearman rank correlation: Pearson over the two value orderings. Null on too few points or a
+ *  constant side. */
+export function spearman(xs: number[], ys: number[]): number | null {
+  return pearson(averageRanks(xs), averageRanks(ys));
 }
 
 /** For one matrix: each R-position's substituents (first column wins per substituent), in column
@@ -297,25 +326,22 @@ export async function computeAllTransfers(matrices: SarMatrix[],
     for (let j = i + 1; j < series.length; j++) {
       const s1 = series[i];
       const s2 = series[j];
-      // Two cores of one matrix are not evidence of anything: the matrix assumes one additive model
-      // across its rows, so they track each other by construction.
-      if (s1.matrixIndex === s2.matrixIndex)
+      // Two cores of one matrix track each other by construction (one additive model across its rows).
+      if (s1.matrixIndex === s2.matrixIndex || s1.position !== s2.position)
         continue;
-      if (s1.position !== s2.position)
-        continue; // compare like positions so the substituent trends are comparable
       const matched = matchPoints(s1, s2, similarity, sim);
       if (matched.length < MIN_COMMON)
         continue;
-      const corr = pearson(matched.map((m) => s1.points[m.ai].value), matched.map((m) => s2.points[m.bi].value));
+      const corr = spearman(matched.map((m) => s1.points[m.ai].value), matched.map((m) => s2.points[m.bi].value));
       if (corr === null || corr < MIN_CORRELATION)
         continue;
-      const predicted = predictedPairs(s1, s2, higherIsBetter);
       const a: TransferSide = {matrixIndex: s1.matrixIndex, rowIndex: s1.rowIndex, position: s1.position};
       const b: TransferSide = {matrixIndex: s2.matrixIndex, rowIndex: s2.rowIndex, position: s2.position};
       const key = pairKey(a, b);
       const existing = bestByPair.get(key);
       if (existing && existing.correlation >= corr)
-        continue;
+        continue; // keep the best-correlated R-position for this core pair
+      const predicted = predictedPairs(s1, s2, higherIsBetter);
       bestByPair.set(key, {
         a, b,
         substituents: matched.map((m) => s1.points[m.ai].substSmiles),

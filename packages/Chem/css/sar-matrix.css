@@ -16,6 +16,30 @@
   min-width: 320px;
   border-right: 1px solid var(--grey-2);
   overflow: hidden;
+  position: relative;
+}
+
+.chem-sar-nav-collapse {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  cursor: pointer;
+  color: var(--grey-4);
+}
+
+.chem-sar-nav.chem-sar-collapsed {
+  flex: 0 0 28px;
+  min-width: 28px;
+}
+
+.chem-sar-nav.chem-sar-collapsed > .chem-sar-nav-header,
+.chem-sar-nav.chem-sar-collapsed > .chem-sar-nav-list {
+  display: none;
+}
+
+.chem-sar-nav.chem-sar-collapsed .chem-sar-nav-collapse {
+  transform: rotate(180deg);
 }
 
 .chem-sar-nav-header {
@@ -488,7 +512,26 @@ i.chem-sar-card-twisty:hover {
 .chem-sar-struct-filters {
   width: 360px;
   max-height: 600px;
-  overflow-y: auto;
+  /* `scroll`, not `auto`: an overlay/auto scrollbar renders as a thin sliver over the fixed-width
+     popup. A reserved, explicitly-sized track keeps it usable. */
+  overflow-y: scroll;
+  scrollbar-width: auto;
+}
+
+.chem-sar-struct-filters::-webkit-scrollbar {
+  width: 12px;
+}
+
+.chem-sar-struct-filters::-webkit-scrollbar-thumb {
+  background: var(--grey-3);
+  border-radius: 6px;
+}
+
+/* A sketcher opened from a filter inside the popup is a free-floating dialog that would otherwise
+   stack below the popup; lift it above so it is not hidden behind the filters. */
+.d4-dialog:has(.chem-sketcher-host),
+.d4-dialog:has(.grok-sketcher) {
+  z-index: 10001 !important;
 }
 
 .chem-sar-struct-filters .d4-filter-group-wrapper {
@@ -517,6 +560,23 @@ i.chem-sar-card-twisty:hover {
 .chem-sar-struct-icon {
   margin-left: 4px;
   cursor: pointer;
+}
+
+/* Active-filter indicator: tint the icon and add a dot so it is clear a filter is narrowing the view. */
+.chem-sar-struct-icon.chem-sar-filter-on {
+  color: var(--blue-1);
+  position: relative;
+}
+
+.chem-sar-struct-icon.chem-sar-filter-on::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-1);
 }
 
 /* Rank/threshold form and the series filter icon on one row, so the icon sits with the controls it

@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../../css/sar-matrix.css';
-import {drawMoleculeToCanvas, drawRdKitMoleculeToOffscreenCanvas, getRdKitModule, getRdKitService}
+import {drawMoleculeToCanvas, getRdKitModule, getRdKitService}
   from '../../utils/chem-common-rdkit';
-import {getMolSafe} from '../../utils/mol-creation_rdkit';
+import {getMoleculeRenderer} from '../../package';
 import {renderMolecule} from '../../rendering/render-molecule';
 import * as TextUtils from '@datagrok-libraries/gridext/src/utils/TextUtils';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
@@ -49,6 +49,8 @@ const CELL_W_MAX = 210;
 /** Navigator width + paddings + border-spacing, subtracted when fitting cells to the pane. Must track
  *  the `.chem-sar-nav` width in the stylesheet, or the cells are fitted against the wrong pane. */
 const NAV_W = 320;
+/** Width of the navigator when collapsed to its expand strip. */
+const NAV_COLLAPSED_W = 28;
 const TABLE_CHROME = 60;
 /** Cell-tint alpha (0-255): solid for observed compounds, fainter for virtual predictions, and
  *  fainter still when a prediction rests on few observations. */
@@ -225,8 +227,7 @@ function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: numbe
   return canvas;
 }
 
-/** Drop the aligned-molblock layouts. Called when the matrices are rebuilt, since none of the cached
- *  keys can be hit again. */
+/** Drop the per-dataset core-alignment layouts on rebuild; the shared renderer's raster cache is LRU. */
 export function clearDepictionCaches(): void {
   alignCache.clear();
 }
@@ -254,69 +255,71 @@ function labelAttachmentPoints(molblock: string): string {
     [...lines.slice(0, endIdx), ...aliases, ...lines.slice(endIdx)].join('\n');
 }
 
-/** Depiction as an offscreen bitmap sized in device pixels. A null template gives a standalone
- *  depiction laid out on its own (substituent headers); a template aligns to the shared core. */
-function depictionCanvas(molStr: string, template: string | null, dw: number, dh: number,
-  argb: number): OffscreenCanvas | null {
-  if (!molStr || dw < 1 || dh < 1)
+/**
+ * The molecule string a cell / core / header is drawn from. With a `template` the fragment is aligned
+ * to the shared core (cached) and its open position R-labelled; without one the map-stripped string is
+ * handed straight to the shared renderer, which lays it out and caches the raster. `null` if empty.
+ */
+function preparedDepiction(molStr: string, template: string | null): string | null {
+  if (!molStr)
     return null;
-  let molCtx = null;
-  let labelled = null;
-  try {
-    // Stripped before alignment, since a molblock encodes the map in a fixed atom-line column where
-    // this substitution could not reach it.
-    const plain = molStr.replace(/\[\*:\d+\]/g, '[*]');
-    molCtx = getMolSafe(template ? alignToTemplate(plain, template) : plain, {}, getRdKitModule());
-    if (!molCtx.mol)
-      return null;
-    if (plain !== molStr) {
-      const aliased = labelAttachmentPoints(molCtx.mol.get_molblock());
-      labelled = getMolSafe(aliased, {}, getRdKitModule());
-      if (labelled.mol) {
-        molCtx.mol.delete();
-        molCtx = labelled;
-        labelled = null;
-      }
-    }
-    if (!molCtx.mol)
-      return null;
-    if (!template)
-      molCtx.mol.set_new_coords(); // no core to align to, so give the fragment a tidy layout of its own
-    const offscreen = new OffscreenCanvas(dw, dh);
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, dw, dh, offscreen, null,
-      {clearBackground: true, backgroundColour: argbToRgba(argb)});
-    return offscreen;
-  } catch (e) {
-    return null; // malformed structure — leave the cell to its background
-  } finally {
-    labelled?.mol?.delete(); // only set when the aliased re-parse failed and was discarded
-    molCtx?.mol?.delete();
-  }
+  const hasAttachment = /\[\*:\d+\]/.test(molStr);
+  // Map numbers distinguish nothing on a one-position matrix, and a molblock hides them in a fixed
+  // atom-line column a string swap can't reach — so strip to bare dummies before any layout.
+  const plain = molStr.replace(/\[\*:\d+\]/g, '[*]');
+  const aligned = template ? alignToTemplate(plain, template) : plain;
+  return aligned.includes('V2000') && hasAttachment ? labelAttachmentPoints(aligned) : aligned;
+}
+
+/** Reused scratch canvas the cached `ImageData` is put onto so it can be blitted through the grid's
+ *  clip (a bare `putImageData` ignores the clip and would paint over the pinned core column or past
+ *  the grid's right edge). Grown as needed; a larger leftover is fine — only the drawn sub-rect is read. */
+let blitCanvas: OffscreenCanvas | null = null;
+function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
+  if (!blitCanvas || blitCanvas.width < w || blitCanvas.height < h)
+    blitCanvas = new OffscreenCanvas(Math.max(w, blitCanvas?.width ?? 0), Math.max(h, blitCanvas?.height ?? 0));
+  return blitCanvas;
 }
 
 /**
- * Draw a depiction onto the grid canvas in device pixels: the bitmap is rendered at the cell's device
- * size and blitted 1:1 at a whole-pixel offset, so it is never resampled and bond lines stay crisp —
- * drawing it through the grid's scaled transform instead lands the rect on fractional device pixels
- * and bilinear-filters every bond.
+ * Draw a depiction onto the grid canvas in device pixels, reusing the shared molecule renderer's mol
+ * and raster LRU caches (see {@link getMoleculeRenderer}) — a repaint of the same structure at the
+ * same size and tint is a cache hit rather than a fresh RDKit parse + rasterization.
  *
- * The device rect comes from the context's own transform rather than from `devicePixelRatio`, which
- * is only the same number when the grid has installed a pure scale; any translate in the transform
- * would displace every cell by a constant.
+ * The bitmap is produced at the cell's device size and blitted 1:1 at a whole-pixel offset, so it is
+ * never resampled and bond lines stay crisp; drawing through the grid's scaled transform instead lands
+ * the rect on fractional device pixels and bilinear-filters every bond. The device rect comes from the
+ * context's own transform rather than `devicePixelRatio`, which are only the same number when the grid
+ * has installed a pure scale — any translate would displace every cell by a constant.
  *
- * The transform is reset for the blit but the clip region deliberately is not, which is why this
- * cannot use `putImageData` — that ignores the clip as well, letting a cell scrolled under the pinned
- * core column, or one running past the grid's right edge, paint outside the grid's own bounds.
+ * The blit reuses a scratch canvas rather than `putImageData` because the transform is reset but the
+ * clip deliberately is not: `putImageData` ignores the clip, letting a cell under the pinned core
+ * column, or one past the grid's right edge, paint outside the grid's own bounds.
  */
 function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
   molStr: string, template: string | null, argb: number): void {
-  const m = g.getTransform();
-  const canvas = depictionCanvas(molStr, template, Math.round(m.a * w), Math.round(m.d * h), argb);
-  if (canvas === null)
+  const renderer = getMoleculeRenderer();
+  if (!renderer)
     return;
+  const molblock = preparedDepiction(molStr, template);
+  if (molblock === null)
+    return;
+  const m = g.getTransform();
+  const dw = Math.round(m.a * w);
+  const dh = Math.round(m.d * h);
+  if (dw < 1 || dh < 1)
+    return;
+  let image: ImageData;
+  try {
+    image = renderer.getCachedMolImageData(molblock, dw, dh, argbToRgba(argb));
+  } catch {
+    return; // malformed structure — leave the cell to its background
+  }
+  const scratch = ensureBlitCanvas(dw, dh);
+  scratch.getContext('2d')!.putImageData(image, 0, 0);
   g.save();
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.drawImage(canvas, Math.round(m.a * x + m.e), Math.round(m.d * y + m.f));
+  g.drawImage(scratch, 0, 0, dw, dh, Math.round(m.a * x + m.e), Math.round(m.d * y + m.f), dw, dh);
   g.restore();
 }
 
@@ -463,148 +466,128 @@ export class SarMatrixViewer extends DG.JsViewer {
   rankScheme: string;
 
   private matrices: SarMatrix[] = [];
-  /** SAR-transfer entries: every correlated core pair across all matrices, including cross-series
-   *  pairs. Computed lazily — empty until the SAR Transfer tab is first opened (see
-   *  {@link activateTransferTab}), and cleared whenever the matrices change under it. */
+  /** Correlated core pairs across all matrices; computed lazily on first SAR-transfer-tab open. */
   private transfers: Transfer[] = [];
-  /** Whether `transfers` reflects the current `matrices`. False until the transfer tab runs its
-   *  lazy computation, and reset by {@link invalidateTransfers} on every rebuild or re-rank. */
+  /** Whether `transfers` matches the current `matrices`. */
   private transfersComputed = false;
-  /** Bumped every time the transfer list is dropped. A scan that started before the bump is holding
-   *  indices into matrices that have since been rebuilt or reordered, so it must not publish. */
+  /** Bumped whenever the transfer list is dropped, so a stale in-flight scan won't publish its result. */
   private transferGeneration = 0;
-  /** A lazy transfer computation is already scheduled — a second tab activation must not stack one. */
+  /** A transfer scan is already scheduled — a second tab activation must not stack another. */
   private transfersComputing = false;
-  /** Index into `matrices` of the series the matrix pane is showing. */
+  /** Index into `matrices` shown in the matrix pane. */
   private selIndex = 0;
-  /** Index into `transfers` of the entry the SAR-transfer tab is showing. Deliberately separate from
-   *  `selIndex`: the two tabs are navigated independently, so a shared index would make picking a
-   *  transfer move the matrix out from under the user. */
+  /** Index into `transfers` shown in the transfer tab — separate from `selIndex` so the two tabs
+   *  navigate independently. */
   private transferIndex = 0;
   /** "Vary" filter: show only this R-position's column group, or all when empty. */
   private varyPosition = '';
-  /** Which metric annotates each substituent column (mean potency or molecular weight). Columns keep
-   *  their as-assembled order — this only controls the caption shown under each, never the order. */
+  /** Metric annotating each substituent column (mean potency or MW); never reorders the columns. */
   columnCaption: string;
-  /** The virtual-analog cell under the last right-click, so the context menu can offer a per-cell
-   *  make-list add. Null when the right-click wasn't on an assembled virtual cell. */
+  /** Virtual cell under the last right-click, for the per-cell make-list add. */
   private contextCell: {matrix: SarMatrix, ri: number, ci: number} | null = null;
-  /** Per-SMILES builders for this viewer's gated "SAR analysis" info panel, so a clicked analog shows
-   *  its SAR context (prediction, support, decomposition, "Add to make-list") alongside the native
-   *  Molecule panels. Registered on click; cleared on recompute and detach. Per-instance so one
-   *  viewer closing can't wipe another's panels. */
+  /** Per-SMILES "SAR analysis" panel builders; per-instance, cleared on recompute and detach. */
   private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
   private readonly host = ui.divH([], 'chem-sar-matrix');
-  /** The SAR Transfer tab's content — sibling pane to `host` in `tabs`, filled lazily on first open. */
   private readonly transferHost = ui.divH([], 'chem-sar-xfer-panel');
-  /** MMP-style tab control holding the matrix pane (default) and the SAR-transfer pane. */
   private readonly tabs: DG.TabControl;
   private computing = false;
-  /** Set when a recompute is requested while one is already running, so it is re-queued after. */
+  /** A recompute was requested mid-compute; re-queued when the running one finishes. */
   private dirty = false;
   private computeTimer = 0;
   /** Set in `detach`, so an in-flight compute can't render into a closed viewer. */
   private detached = false;
-  /** Cell width for the current render, fitted to the pane by `fitCellWidth`. */
   private cellW = CELL_W;
-  /** The matrix pane's virtualized grid, and the SAR-transfer panel's. Held so selection / current-row
-   *  changes can repaint with a cheap `invalidate()` — the highlight is drawn per-cell in
-   *  `paintBodyCell`, so no DOM rebuild is needed. */
+  /** Live pane grids, held so selection changes repaint via a cheap `invalidate()`. */
   private readonly matrixSlot: PaneGridSlot = {state: null, subs: []};
   private readonly transferSlot: PaneGridSlot = {state: null, subs: []};
-  /** Last pointer event over the matrix grid overlay, so a cell click can honor ctrl/shift for the
-   *  host-grid selection extend (`onCellClick` carries no DOM event). */
+  /** Last pointer event over the grid, so a cell click can honor ctrl/shift (onCellClick carries none). */
   private lastGridMouseEvent: MouseEvent | null = null;
-  /** Size observer for the context panel structure currently on screen; replaced when a new cell is
-   *  opened so observers do not accumulate one per click. */
+  /** Size observer for the on-screen context-panel structure; replaced per click so they don't stack. */
   private cpStructureSub: {unsubscribe(): void} | null = null;
-  /** Generation of the context-panel structure awaiting layout, so a panel opened while an earlier one
-   *  is still waiting cannot have its observer overwritten when that earlier wait resolves. */
+  /** Guards a slow layout-wait from overwriting a newer panel's observer. */
   private cpStructureToken = 0;
-  /** Matrices whose folded-in children are hidden, by matrix id. Kept on the viewer rather than
-   *  rebuilt per render so re-ranking or resizing does not reopen everything the user closed. */
+  /** Matrix ids whose children are folded away; kept so re-rank/resize doesn't reopen them. */
   private readonly collapsed = new Set<string>();
-  /** The navigator's card per matrix (index-aligned with `matrices`) and the parent chain they were
-   *  built against. Built ONCE per navigator build; selection, collapse and the threshold filter
-   *  mutate these cards in place (a class swap / display toggles) instead of rebuilding the list —
-   *  with hundreds of series, recreating every card and re-rasterizing every structure on each
-   *  click is what made the navigator feel slow. */
+  /** Cards per matrix (index-aligned) and the parent chain they were built against. Built once, then
+   *  mutated in place on select/collapse/filter — rebuilding every card per click was the slow path. */
   private navCards: HTMLElement[] = [];
   private navParents: number[] = [];
-  /** Rasterizes a card's core structure only when the card first becomes visible (initial viewport,
-   *  scroll, expand, or filter reveal). Recreated with each navigator build; `navPendingCores`
-   *  holds each canvas's deferred draw until it fires. */
+  /** Rasterizes a card's core only when it first scrolls into view; `navPendingCores` holds the
+   *  deferred draws. */
   private navCoreObserver: IntersectionObserver | null = null;
   private readonly navPendingCores: Map<Element, () => void> = new Map();
-  /** Potency a cell must reach to stay drawn in the matrix pane; null leaves every cell alone. Rows and
-   *  columns left with nothing drawn are dropped rather than shown as empty bands. */
+  /** Cell keys passing the potency threshold, or null when unfiltered. */
   private cellPass: Set<string> | null = null;
-  /** One row per series, so the navigator can be filtered by the platform’s own filters: a
-   *  substructure sketcher over the cores, histograms over the numbers the cards print. */
+  /** One row per series, backing the platform filter group over the navigator. */
   private navFrame: DG.DataFrame | null = null;
   private navFilters: DG.FilterGroup | null = null;
+  /** Headless view owning `navFilters`; held so it can be closed (a filter group belongs to a view,
+   *  so dropping the reference alone leaks the Dart-backed view and frame). */
+  private navView: DG.TableView | null = null;
   private navSub: {unsubscribe(): void} | null = null;
   /** Matrix ids the navigator filter admits, or null while it admits everything. */
   private navPass: Set<string> | null = null;
-  /** Frame row index -> matrix id, so a filtered frame maps back onto the cards. */
+  /** Frame row index -> matrix id. */
   private navKeys: string[] = [];
-  /** Refreshes the navigator match count. Held because the filter group updates the list outside the
-   *  render that created it. */
+  /** Refreshes the navigator match count from outside its render. */
   private navMatchCount: (() => void) | null = null;
-  /** Frame row index -> the cell it describes, so a filtered frame maps back onto the matrices. */
+  /** Frame row index -> cell key. */
   private cellKeys: string[] = [];
-  /** One row per distinct (core, substituent) the matrices contain, both typed as molecules, so the
-   *  platform's own substructure filter applies to them. Built on first use rather than with the
-   *  matrices: nothing needs it until the filter is opened, and building it costs a pass over every
-   *  cell. Null until then. */
+  /** One row per (core, substituent) cell, backing the platform filter group over the matrix. */
   private structFrame: DG.DataFrame | null = null;
   private structFilters: DG.FilterGroup | null = null;
+  /** Headless view owning `structFilters` (see {@link navView}). */
+  private structView: DG.TableView | null = null;
   private structSub: {unsubscribe(): void} | null = null;
-  /** Parts of the matrix pane the potency threshold updates in place, so moving it repaints rather
-   *  than rebuilds. Null while no matrix pane is on screen. */
+  /** Matrix-pane parts the potency threshold updates in place; null while no pane is on screen. */
   private paneGridHost: HTMLElement | null = null;
   private paneEmptyNote: HTMLElement | null = null;
   private paneDimsChip: HTMLElement | null = null;
-  /** Cleared when a new set of matrices arrives, so the tree closes to its roots once per analysis
-   *  rather than snapping shut again every time the list is redrawn. */
+  /** The matrix pane's filter icon, so the cell filter can flag it as active. */
+  private matrixFilterIcon: HTMLElement | null = null;
+  /** Whether the navigator is collapsed; on the viewer so it survives a navigator rebuild. */
+  private navCollapsed = false;
+  /** Guards the one-time collapse-to-roots per analysis. */
   private collapseSeeded = false;
   get helpUrl() {
     return 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
   }
   constructor() {
     super();
-    // Data properties rather than hidden strings, so both columns are pickable from the property panel
-    // like any other viewer's. `column()` appends "ColumnName" to the stem, so the field names and
-    // everything that sets them through `setOptions` are unchanged.
-    //
-    // No options: the helper already registers these as string-typed data properties, and passing a
-    // `type` or `semType` overwrites that descriptor and leaves the platform unable to resolve the
-    // property at all ("Property type not found" at construction, which yields a viewer with no
-    // properties whatsoever).
-    this.moleculesColumnName = this.column('molecules');
-    this.activityColumnName = this.column('activity');
-    // Optional: when set, each observed cell captions its structure with that column's value, so a
-    // compound in the matrix can be named against the source table. Empty leaves the cells as they are.
-    this.idColumnName = this.column('id');
-    this.scaling = this.string('scaling', SCALING_METHODS.MINUS_LG, {choices: Object.values(SCALING_METHODS)});
-    this.activityDirection = this.string('activityDirection', DIR_AUTO, {choices: ACTIVITY_DIRECTIONS});
-    this.fragmentCutoff = this.float('fragmentCutoff', 0.4);
-    this.grouping = this.string('grouping', SarGrouping.Site, {choices: Object.values(SarGrouping)});
-    // Named for what the navigator shows rather than for the fragmentation passes underneath: the
-    // cards are series badged L1, L2, L3, and this is how many of those tiers get built.
+    // COLUMN-typed data properties (not the STRING helper) so the picker filters to the right columns:
+    // molecules to the Molecule semantic type, activity to numeric columns. The stored value is the
+    // column name, which everything below reads as a string.
+    this.moleculesColumnName = this.addProperty('moleculesColumnName', DG.TYPE.COLUMN, '',
+      {semType: DG.SEMTYPE.MOLECULE, category: 'Data', description: 'Structures to analyze'});
+    this.activityColumnName = this.addProperty('activityColumnName', DG.TYPE.COLUMN, '',
+      {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Data',
+        description: 'Numeric activity or potency the matrices are coloured and ranked by'});
+    this.idColumnName = this.addProperty('idColumnName', DG.TYPE.COLUMN, '',
+      {nullable: true, category: 'Data',
+        description: 'Optional column labelling each measured cell (e.g. compound id)'});
+    this.scaling = this.string('scaling', SCALING_METHODS.MINUS_LG, {choices: Object.values(SCALING_METHODS),
+      friendlyName: 'Scaling',
+      description: 'Activity transform before the additive model: none, log (lg) or −log (-lg)'});
+    this.activityDirection = this.string('activityDirection', DIR_AUTO, {choices: ACTIVITY_DIRECTIONS,
+      friendlyName: 'Activity direction', description: 'Which end of the scaled activity is more potent'});
+    this.fragmentCutoff = this.float('fragmentCutoff', 0.4, {min: 0.1, max: 1, friendlyName: 'Fragment cutoff',
+      description: 'Largest substituent kept when fragmenting, as a fraction of the core'});
+    this.grouping = this.string('grouping', SarGrouping.Site, {choices: Object.values(SarGrouping),
+      friendlyName: 'Grouping',
+      description: 'How related cores are gathered into one matrix: Site (shared cut) or Similarity (fingerprint)'});
     this.fragmentationLevels = this.int('fragmentationLevels', 3,
-      {min: 1, max: MAX_SERIES_LEVELS, friendlyName: 'Series levels'});
-    // Only read under Similarity grouping; Site grouping matches exactly and has nothing to tune.
-    this.threshold = this.float('threshold', 0.5);
-    // How alike the two scaffolds must be, once the R-group is held identical. Read only by the
-    // transfer scan, so it retunes the tab without re-fragmenting anything.
+      {min: 1, max: MAX_SERIES_LEVELS, friendlyName: 'Series levels',
+        description: 'Nested matrix tiers (L1, L2, …); each level folds matrices one cut broader'});
+    this.threshold = this.float('threshold', 0.5, {min: 0, max: 1, friendlyName: 'Similarity threshold',
+      description: 'Core-similarity cutoff for Similarity grouping (higher = tighter clusters); ignored for Site'});
     this.transferSimilarity = this.float('transferSimilarity', DEFAULT_TRANSFER_SIMILARITY,
       {min: 0.1, max: 1, friendlyName: 'Transfer similarity',
         description: 'How alike two compounds carrying the same R-group must be for a transfer between their scaffolds to count'});
-    this.predictVirtual = this.bool('predictVirtual', true);
-    // "SAR transfer" is a tab, not a ranking mode, so it is not offered as a rank scheme.
+    this.predictVirtual = this.bool('predictVirtual', true, {friendlyName: 'Predict virtual analogs',
+      description: 'Fill unmade core × substituent cells with Free-Wilson predictions'});
     this.rankScheme = this.string('rankScheme', SarRankScheme.Potency,
-      {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred]});
+      {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred],
+        friendlyName: 'Rank by', description: 'How the navigator orders the matrices'});
     // Annotates the substituent columns; changing it repaints and never re-fragments.
     this.columnCaption = this.string('columnCaption', COLSORT_POTENCY, {choices: COLUMN_SORTS});
     this.host.style.height = '100%';
@@ -686,12 +669,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.navCoreObserver?.disconnect();
     this.navCoreObserver = null;
     this.navPendingCores.clear();
-    // The pair frame is held by a headless view of its own, so nothing else drops this subscription.
-    this.structSub?.unsubscribe();
-    this.structSub = null;
-    this.navSub?.unsubscribe();
-    this.navSub = null;
-    this.navMatchCount = null;
+    // Drop the filter machinery and close the headless views that own the filter groups; leaving them
+    // open leaks a Dart-backed view + frame for every filter popup ever opened in this viewer's life.
+    this.resetFilters();
     super.detach();
   }
 
@@ -723,6 +703,41 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.paneGridHost = null;
     this.paneEmptyNote = null;
     this.paneDimsChip = null;
+  }
+
+  /** Drop the lazy filter machinery so it rebuilds against the current matrices. Both filter frames
+   *  are pinned to the analysis they were built for: reused after a rebuild their keys
+   *  ({@link cellKeys}/{@link navKeys}) point at rows that no longer exist, and a still-active filter
+   *  then blanks arbitrary cells or hides every card — cluster ids are reused across builds, so stale
+   *  keys partially match the new matrices rather than failing cleanly. Closing the headless views also
+   *  releases the Dart-backed views + frames a filter group would otherwise keep alive for the session. */
+  private resetFilters(): void {
+    this.structSub?.unsubscribe();
+    this.structSub = null;
+    this.navSub?.unsubscribe();
+    this.navSub = null;
+    try {
+      this.structView?.close();
+    } catch (e) {
+      // the view may already be gone — dropping the reference below is enough
+    }
+    try {
+      this.navView?.close();
+    } catch (e) {
+      // as above
+    }
+    this.structView = null;
+    this.navView = null;
+    this.structFrame = null;
+    this.structFilters = null;
+    this.navFrame = null;
+    this.navFilters = null;
+    this.navMatchCount = null;
+    this.cellKeys = [];
+    this.navKeys = [];
+    // Nothing filtered until the (rebuilt) filter narrows the frame again.
+    this.cellPass = null;
+    this.navPass = null;
   }
 
   /** Reflect the host grid's selection and current row onto the rendered cells. The pane grid draws
@@ -910,6 +925,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     // The transfers on screen index into the matrices about to be replaced, so the transfer tab is
     // cleared now rather than being left pointing at rows that no longer exist if this compute fails.
     this.invalidateTransfers();
+    // Same reasoning for the two filter frames: they key into the old matrices and would mis-filter the
+    // new ones, so drop them (and close the headless views they leak) — they rebuild lazily on reopen.
+    this.resetFilters();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
     const progress = DG.TaskBarProgressIndicator.create('Building SAR matrices...');
@@ -932,6 +950,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.matrices = matrices;
       this.collapseSeeded = false;
       this.selIndex = 0;
+      // Cleared before render(): render() re-activates the SAR-transfer tab, which shows a "Building..."
+      // placeholder and defers while `computing` is set — so leaving it true here strands the transfer
+      // tab on that placeholder until a manual tab switch.
+      this.computing = false;
       this.render();
     } catch (e) {
       if (this.detached)
@@ -1148,11 +1170,11 @@ export class SarMatrixViewer extends DG.JsViewer {
   private structureFilterRoot(): HTMLElement {
     if (this.structFilters === null) {
       this.structFrame = this.buildStructFrame();
-      const view = DG.TableView.create(this.structFrame, false);
+      this.structView = DG.TableView.create(this.structFrame, false);
       // The default set, not a hand-picked one: the platform already gives a molecule column its
       // sketcher filter and a numeric column its histogram, along with the per-filter and
       // whole-group on/off switches. Naming the filters explicitly only risks diverging from that.
-      this.structFilters = view.getFiltersGroup();
+      this.structFilters = this.structView.getFiltersGroup();
       this.structSub = DG.debounce(this.structFrame.onFilterChanged, 300).subscribe(() => this.syncStructFilter());
     }
     return this.structFilters.root;
@@ -1233,8 +1255,8 @@ export class SarMatrixViewer extends DG.JsViewer {
   private navFilterRoot(): HTMLElement {
     if (this.navFilters === null) {
       this.navFrame = this.buildNavFrame();
-      const view = DG.TableView.create(this.navFrame, false);
-      this.navFilters = view.getFiltersGroup();
+      this.navView = DG.TableView.create(this.navFrame, false);
+      this.navFilters = this.navView.getFiltersGroup();
       // Asked for by name, because the default set leaves it out: every series name is distinct, so a
       // category list would hold one entry per row and the platform declines to build one. It is still
       // how a named series is looked for — the list has a search box, which is what turns "3" into
@@ -1619,32 +1641,37 @@ export class SarMatrixViewer extends DG.JsViewer {
       `${deepest} level${deepest === 1 ? '' : 's'}`, 'chem-sar-nav-sub');
     const list = ui.div([], 'chem-sar-nav-list');
     const matchCount = ui.divText('', 'chem-sar-nav-matches');
-    // The cards are built once (fillNavList below); a filter change only shows/hides them, so
-    // dragging the threshold never recreates a card or re-rasterizes a structure.
-    const refill = (): void => {
-      this.updateNavVisibility();
-      const hits = this.matrices.filter((matrix) => this.passesFilter(matrix)).length;
-      const filtered = this.navPass !== null;
-      matchCount.innerText = filtered ? `${hits} of ${this.matrices.length} match` : '';
-    };
-
-    // One form rather than a loose input: it aligns the label column for us, which hand-placing does
-    // not, and it keeps the spacing consistent with every other panel in the platform.
-    const controls = ui.form([rankInput]);
-
-    // Every filter lives in the platform's own filter group: a substructure sketcher over the cores
-    // plus a histogram per printed number, which no pair of header inputs can express.
+    // Platform filter group: a substructure sketcher over the cores plus a histogram per printed number.
+    const navIdleTip = 'Filter series by core structure, potency, SAR spread, size';
     const navIcon = ui.icons.filter(() => {
       ui.showPopup(ui.div(this.navFilterRoot(), 'chem-sar-struct-filters'), navIcon, {vertical: true});
-    }, 'Filter series by core structure, potency, SAR spread, size');
+    }, navIdleTip);
     navIcon.classList.add('chem-sar-struct-icon');
+    // Cards are built once (fillNavList); a filter change only shows/hides them.
+    const refill = (): void => {
+      this.updateNavVisibility();
+      const filtered = this.navPass !== null;
+      const hits = this.matrices.filter((matrix) => this.passesFilter(matrix)).length;
+      matchCount.innerText = filtered ? `${hits} of ${this.matrices.length} match` : '';
+      this.markFilterIcon(navIcon, filtered,
+        `${hits} of ${this.matrices.length} series shown — filter active. Click to edit or clear.`, navIdleTip);
+    };
     this.navMatchCount = refill;
 
-    const header = ui.divV([sub, ui.divH([controls, navIcon], 'chem-sar-nav-controls'), matchCount],
+    const header = ui.divV([sub, ui.divH([ui.form([rankInput]), navIcon], 'chem-sar-nav-controls'), matchCount],
       'chem-sar-nav-header');
     this.fillNavList(list, parents);
     refill(); // initial visibility + match count (a threshold can survive a navigator rebuild)
-    return ui.divV([header, list], 'chem-sar-nav');
+    const nav = ui.divV([header, list], 'chem-sar-nav');
+    const collapseBtn = ui.iconFA('chevron-left', () => {
+      this.navCollapsed = !this.navCollapsed;
+      nav.classList.toggle('chem-sar-collapsed', this.navCollapsed);
+      this.refitColumns();
+    }, 'Collapse / expand the series panel');
+    collapseBtn.classList.add('chem-sar-nav-collapse');
+    nav.appendChild(collapseBtn);
+    nav.classList.toggle('chem-sar-collapsed', this.navCollapsed);
+    return nav;
   }
 
   /** The navigator's child lists, recomputed from the parent chain the cards were built against.
@@ -1774,8 +1801,16 @@ export class SarMatrixViewer extends DG.JsViewer {
   private fitCellWidth(nCols: number): number {
     if (nCols <= 0)
       return CELL_W;
-    const avail = (this.root.clientWidth || 900) - NAV_W - CORE_W - TABLE_CHROME - nCols * 6;
+    const navW = this.navCollapsed ? NAV_COLLAPSED_W : NAV_W;
+    const avail = (this.root.clientWidth || 900) - navW - CORE_W - TABLE_CHROME - nCols * 6;
     return Math.max(CELL_W, Math.min(CELL_W_MAX, Math.floor(avail / nCols)));
+  }
+
+  /** Flag a filter icon as narrowing something: a dot (via the active class) plus a tooltip that says
+   *  what is hidden, or the idle tooltip when nothing is filtered. */
+  private markFilterIcon(icon: HTMLElement, active: boolean, activeTip: string, idleTip: string): void {
+    icon.classList.toggle('chem-sar-filter-on', active);
+    ui.tooltip.bind(icon, active ? activeTip : idleTip);
   }
 
   /**
@@ -1810,14 +1845,22 @@ export class SarMatrixViewer extends DG.JsViewer {
     state.grid.invalidate();
 
     const matrix = state.rows.length ? state.rows[0].matrix : null;
-    if (matrix !== null && this.paneDimsChip !== null) {
+    const idleTip = 'Filter cells by potency, reference points, core and R-group';
+    if (matrix !== null) {
       const {rows, cols} = this.visibleDims(matrix);
-      this.paneDimsChip.innerText = `${rows}×${cols}`;
       const full = `${matrix.rows.length} cores × ${matrix.columns.length} substituents`;
-      ui.tooltip.bind(this.paneDimsChip, () =>
-        rows === matrix.rows.length && cols === matrix.columns.length ? full :
-          `${rows} cores × ${cols} substituents shown, filtered from ${full}`);
-    }
+      const filtered = rows !== matrix.rows.length || cols !== matrix.columns.length;
+      if (this.paneDimsChip !== null) {
+        this.paneDimsChip.innerText = `${rows}×${cols}`;
+        ui.tooltip.bind(this.paneDimsChip, () => filtered ?
+          `${rows} cores × ${cols} substituents shown, filtered from ${full}` : full);
+      }
+      if (this.matrixFilterIcon !== null) {
+        this.markFilterIcon(this.matrixFilterIcon, this.cellFilterActive,
+          `${rows}×${cols} of ${full} shown — filter active. Click to edit or clear.`, idleTip);
+      }
+    } else if (this.matrixFilterIcon !== null)
+      this.markFilterIcon(this.matrixFilterIcon, this.cellFilterActive, 'Filter active. Click to edit or clear.', idleTip);
     const emptied = state.df.filter.trueCount === 0 || this.visibleGridCols(state) === 0;
     if (this.paneGridHost !== null)
       this.paneGridHost.style.display = emptied ? 'none' : '';
@@ -2745,6 +2788,7 @@ export class SarMatrixViewer extends DG.JsViewer {
         filterIcon, {vertical: true});
     }, 'Filter cells by potency, reference points, core and R-group');
     filterIcon.classList.add('chem-sar-struct-icon');
+    this.matrixFilterIcon = filterIcon;
     controls.push(filterIcon);
     const controlBar = ui.divH(controls, 'chem-sar-control-bar');
 

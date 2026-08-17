@@ -176,6 +176,13 @@ export let _properties: any;
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
+
+/** The one molecule cell renderer the platform uses for every Molecule column, so callers that draw
+ *  molecules onto their own canvases (e.g. the SAR Matrix viewer) reuse its shared mol + raster LRU
+ *  caches instead of standing up a private one. Undefined until `initChemInt` has run. */
+export function getMoleculeRenderer(): RDKitCellRenderer | undefined {
+  return _rdRenderer;
+}
 let _initChemPromise: Promise<void> | null = null;
 
 let mpoTreeBrowserSub: Subscription | null = null;
