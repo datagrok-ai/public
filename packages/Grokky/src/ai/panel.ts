@@ -159,6 +159,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return this._onClearChatRequest.asObservable();
   }
   private runButtonTooltip: typeof actionButtionValues[keyof typeof actionButtionValues] = actionButtionValues.run;
+  private get isBusy(): boolean { return this.runButtonTooltip === actionButtionValues.stop; }
+
+  private syncConversationButtons(): void {
+    const buttons: [HTMLElement, string][] = [[this.newChatButton, 'Start New Chat'], [this.historyButton, 'Chat History...']];
+    for (const [b, tooltip] of buttons) {
+      ui.setDisabled(b, this.isBusy, this.isBusy ? 'Wait for response or press Stop' : null);
+      if (!this.isBusy)
+        ui.tooltip.bind(b, tooltip);
+    }
+  }
   public inputControlsDiv: HTMLElement;
   protected attachedEntities: DG.Entity[] = [];
   protected attachmentsRow: HTMLElement = ui.divH([], {style: {flexWrap: 'wrap'}});
@@ -229,7 +239,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.textArea.addEventListener('input', () => { this._promptHistoryIndex = null; this._updateSkillMenu(); });
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
-    this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
+    this.historyButton = ui.iconFA('history', () => this.showHistory());
     this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), micTooltips.default);
     this.checkMicPermission();
     this.copyConversationButton = ui.iconFA('copy', async () => {
@@ -241,6 +251,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }, 'Copy Conversation to Clipboard');
 
     this.newChatButton = ui.icons.add(async () => {
+      if (this.isBusy)
+        return;
       ui.setUpdateIndicator(this.root, true, 'Saving conversation...');
       try {
         await this.saveCurrentConversation(); // will always be first user message
@@ -253,7 +265,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.resetSession();
       this.handleClear();
       this.currentConversationId = null;
-    }, 'Start New Chat');
+    });
+    this.syncConversationButtons();
     this.rawRenderButton = ui.iconFA('terminal', () => {
       this._rawRender = !this._rawRender;
       this.rawRenderButton.style.color = this._rawRender ? 'var(--blue-1)' : '';
@@ -594,6 +607,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.runButton.classList.add('fas', 'fa-stop');
     this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
+    this.syncConversationButtons();
     return {
       loader,
       session: {
@@ -610,6 +624,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.runButton.classList.add('fal', 'fa-paper-plane');
         this.runButton.style.color = 'var(--blue-1)';
         this.runButtonTooltip = actionButtionValues.run;
+        this.syncConversationButtons();
         this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
         this.clearStreamingLoaderTimer();
@@ -882,7 +897,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private tryAgain() {
     if (this._messages.length === 0)
       return; // should never happen, but just in case
-    if (this.runButtonTooltip === actionButtionValues.stop)
+    if (this.isBusy)
       return;
     const inputs = this.getCurrentInputs();
     inputs.prompt = 'Please try again. ';
@@ -929,7 +944,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected handleRun() {
     if (this._pendingInputResolve)
       return;
-    if (this.runButtonTooltip === actionButtionValues.stop)
+    if (this.isBusy)
       return;
     if (!this.textArea.value.trim())
       return;
@@ -1082,6 +1097,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private async showHistory() {
+    if (this.isBusy)
+      return;
     try {
       const conversations = await ConversationStorage.listConversations(
         this.contextId,
