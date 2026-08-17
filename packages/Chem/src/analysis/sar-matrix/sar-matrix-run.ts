@@ -1,4 +1,4 @@
-import * as grok from 'datagrok-api/grok';
+// import * as grok from 'datagrok-api/grok'; // only used by the disabled Murcko call (see below)
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
@@ -15,19 +15,11 @@ import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {logSarTime, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 
 /**
- * Build the structure of every virtual analog by linking its row core to its column
- * substituent, reusing the same `mmpLinkFragments` call the MMP Generations tab uses.
- * All matrices are linked in one batched worker call.
+ * Link each virtual analog's row core to its column substituent in one batched worker call.
  *
- * Single-cut matrices only: `mmpLinkFragments` substitutes `[*:1]` alone, so a core carrying more than
- * one attachment point would come back with unresolved `[*:2]…` dummies — a structurally wrong molecule
- * that then flows into the export and the make-list. Decomposed matrices are linked during assembly
- * (`linkVirtualCellStructures`, multi-attachment); a cell still null there failed that linking and must
- * stay null, which every consumer already handles.
- *
- * The discriminator is `refValues`, not `positions`: `positions` holds only the VARYING positions, so a
- * core decomposed at R1/R2 that varies at R1 alone still carries a `[*:2]`. Only the single-cut
- * assembler leaves `refValues` empty.
+ * Single-cut matrices only (empty `refValues`): `mmpLinkFragments` substitutes `[*:1]` alone, so a
+ * multi-attachment core would return unresolved `[*:2]…` dummies. Decomposed matrices are linked during
+ * assembly instead. `positions` holds only the VARYING positions, so it cannot be the discriminator.
  */
 async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   const cores: string[] = [];
@@ -73,16 +65,9 @@ function matrixContent(matrix: SarMatrix): {rows: Set<string>, cols: Set<string>
 }
 
 /**
- * Drop matrices that are a crop of another — every row, every column and every compound already
- * present in a larger one. Such a matrix shows a corner of a table the user can already see, so it
- * costs a navigator entry and buys nothing.
- *
- * Only all three together justify dropping. A matrix over the same compounds that splits them
- * differently between core and substituent introduces rows or columns the larger one lacks, and that
- * is a different view of the chemistry rather than a duplicate of it.
- *
- * The check runs on assembled matrices, not on the groups they came from: decomposition means two
- * groups keyed differently can still assemble into the same table.
+ * Drop matrices whose rows, columns and compounds are all subsets of a larger one. All three must
+ * match: a different core/substituent split over the same compounds is a distinct view, not a crop.
+ * Runs on assembled matrices, since two differently-keyed groups can assemble into the same table.
  */
 function dropCroppedMatrices(matrices: SarMatrix[]): SarMatrix[] {
   const content = matrices.map(matrixContent);
@@ -93,16 +78,15 @@ function dropCroppedMatrices(matrices: SarMatrix[]): SarMatrix[] {
     const a = content[i];
     const b = content[j];
     if (matrices[i].level !== matrices[j].level) {
-      // A coarser matrix legitimately contains the finer ones — that is the hierarchy, not redundancy.
-      // It earns its place only by being broader, so one that restates a finer matrix exactly is
-      // dropped in favour of it; the finer one is the real matrix and the coarser only renames it.
+      // A coarser matrix containing finer ones is the hierarchy, not redundancy; drop it only when it
+      // restates a finer matrix exactly, keeping the finer one.
       const identical = a.rows.size === b.rows.size && a.cols.size === b.cols.size &&
         a.mols.size === b.mols.size;
       if (!identical || matrices[i].level < matrices[j].level)
         return false;
     }
     const smaller = a.rows.size < b.rows.size || a.cols.size < b.cols.size || a.mols.size < b.mols.size;
-    // Identical content: the earlier index is kept, so the two cannot eliminate each other.
+    // On identical content keep the earlier index, so the two cannot eliminate each other.
     if (!smaller && !(a.rows.size === b.rows.size && a.cols.size === b.cols.size && j < i))
       return false;
     return subset(a.rows, b.rows) && subset(a.cols, b.cols) && subset(a.mols, b.mols);
@@ -122,9 +106,8 @@ export enum SarGrouping {
   Similarity = 'Similarity',
 }
 
-/** Ceiling on {@link SarMatrixParams.fragmentationLevels}. Every level is another fragmentation pass
- *  over every key, and the levels stop earning their cost quickly: a key reduced to a bare ring has
- *  nothing left to strip, so the deeper tiers increasingly just restate the ones below them. */
+/** Ceiling on {@link SarMatrixParams.fragmentationLevels}: each level is another fragmentation pass,
+ *  and deep tiers mostly restate the ones below (a key reduced to a bare ring cannot strip further). */
 export const MAX_SERIES_LEVELS = 5;
 
 export interface SarMatrixParams {
@@ -132,14 +115,11 @@ export interface SarMatrixParams {
   fragmentCutoff: number;
   predictVirtual: boolean;
   grouping: SarGrouping;
-  /** How many tiers of matrices to build. 1 gives the matrices themselves — one per site, their rows
-   *  being the series. Each tier past that relates whole matrices to each other by cutting their keys
-   *  again, giving fewer and broader ones the higher it goes. Counted the way the UI numbers them, so
-   *  3 here means the navigator shows L1, L2 and L3. */
+  /** Tiers of matrices, counted as the UI numbers them (3 => navigator shows L1, L2, L3). Each tier
+   *  past 1 relates whole matrices by cutting their keys again, giving fewer and broader ones. */
   fragmentationLevels: number;
-  /** Whether a higher scaled activity is the more potent one. Passed in rather than re-derived from
-   *  `scaling`, because the caller also honours an explicit direction the user set: deriving it twice
-   *  lets the first ranking sort by one rule while every card's best/mean text reports the other. */
+  /** Whether higher scaled activity is more potent. Passed in rather than re-derived from `scaling`
+   *  so ranking and the cards' best/mean text agree with the direction the user set. */
   higherIsBetter: boolean;
   /** Core-similarity clustering threshold (lower groups more distant cores). Similarity grouping only. */
   threshold: number;
@@ -147,53 +127,47 @@ export interface SarMatrixParams {
 }
 
 /**
- * Bemis-Murcko scaffold per molecule, used to form scaffold-homogeneous clusters. Runs the
- * server-side `Chem:MurckoScaffolds` RDKit script on a throwaway dataframe so the user's table is
- * not modified. Returns [] when the compute environment is unavailable, so clustering falls back
- * to the single-cut core.
+ * Bemis-Murcko scaffolds — DISABLED. The server-side `Chem:MurckoScaffolds` script runs in an
+ * on-demand container that costs ~30 s per call and effectively never resolves on large sets, stalling
+ * the whole pipeline. It only sharpened the decomposition anchor; assembly falls back to whole-molecule
+ * MCS without it. Returns [] so that fallback always runs. To re-enable, restore the body below and the
+ * `grok` import (and a timeout so it can never block again).
  */
-async function computeMurckoScaffolds(molList: string[]): Promise<string[]> {
-  try {
-    // The Python script parses with MolFromSmiles, so molblock input (e.g. an SDF-derived table)
-    // yields empty scaffolds. Convert to SMILES in the worker first.
-    const smilesList = await (await getRdKitService()).convertMolNotation(molList, DG.chem.Notation.Smiles);
+async function computeMurckoScaffolds(_molList: string[]): Promise<string[]> {
+  return [];
+  /*
+  const MURCKO_TIMEOUT_MS = 10000;
+  const compute = (async (): Promise<string[]> => {
+    // MurckoScaffolds parses with MolFromSmiles, so convert molblock input to SMILES first.
+    const smilesList = await (await getRdKitService()).convertMolNotation(_molList, DG.chem.Notation.Smiles);
     const tmp = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smilesList)]);
     tmp.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
     await grok.functions.call('Chem:MurckoScaffolds', {data: tmp, smiles: 'smiles'});
     const scaffolds = tmp.col('scaffolds');
     return scaffolds ? scaffolds.toList().map((s) => s ?? '') : [];
-  } catch (e) {
-    _package.logger.warning(`SAR Matrix: Murcko scaffolds unavailable, clustering by single-cut core: ${e}`);
-    return [];
-  }
+  })().catch(() => [] as string[]);
+  const timeout = new Promise<string[]>((resolve) => setTimeout(() => resolve([]), MURCKO_TIMEOUT_MS));
+  return Promise.race([compute, timeout]);
+  */
 }
 
 /**
- * Run the full SAR Matrix pipeline: fragment the molecules, build matched series,
- * group related cores (by site or by similarity, per `params.grouping`), assemble a potency matrix
- * per group (predicting virtual analogs), and return the matrices ranked by the chosen scheme.
- *
- * @param molecules Molecule column.
- * @param activity Numerical activity column.
- * @param params Analysis parameters.
+ * Run the full SAR Matrix pipeline: fragment molecules, build matched series, group related cores,
+ * assemble a potency matrix per group (predicting virtual analogs), and return them ranked.
  */
 export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<number>,
   params: SarMatrixParams): Promise<SarMatrix[]> {
   const tTotal = performance.now();
   const molList = molecules.toList();
   const scaledCol = params.scaling === SCALING_METHODS.NONE ? activity : scaleActivity(activity, params.scaling);
-  // Missing activities must not become "real" cells: scaleActivity passes the null sentinel through
-  // unchanged, and a sentinel read as a number would render as an extreme potency and poison the
-  // Free-Wilson fit. Map every missing value to NaN so the assemblers can skip it.
-  // The scan is bounded by the row count, never by the raw buffer's length: column storage is
-  // allocated with spare capacity, so the buffer runs past the last row and probing a row that does
-  // not exist fails the platform's own bounds check.
+  // Map missing activities to NaN so assemblers skip them: scaleActivity passes the null sentinel
+  // through unchanged, and read as a number it would poison the Free-Wilson fit. Bound the scan by
+  // row count, not buffer length — column storage has spare capacity past the last row.
   const scaled = scaledCol.getRawData();
   const activities = new Float32Array(activity.length);
   for (let i = 0; i < activities.length; i++)
     activities[i] = activity.isNone(i) ? NaN : scaled[i];
 
-  // The two run concurrently, so each logs its own duration from the shared start.
   const tFrag = performance.now();
   const logAnd = <T>(stage: string) => (r: T): T => {
     logSarTime(stage, tFrag);
@@ -211,29 +185,22 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     await groupSeriesBySite(series) :
     await clusterRelatedCores(series, params.threshold);
   logSarTime(`grouping by ${params.grouping.toLowerCase()} (${base.length} groups)`, t);
-  // Level 1 built the series and level 2 the matrices, so anything past 2 adds a coarser matrix above
-  // the ones already there, holding their compounds over rows that agree a further cut deeper.
-  // Clamped rather than trusted: the inputs that set this are bounded, but a programmatic caller can
-  // pass any number, and each extra level costs another fragmentation pass over every key.
+  // Clamped, not trusted: a programmatic caller can pass any number and each level costs a pass.
   const levels = Math.min(MAX_SERIES_LEVELS, Math.max(1, params.fragmentationLevels));
   t = performance.now();
   const clusters = await buildCoarserLevels(base, levels - 1);
   logSarTime(`coarser levels (${clusters.length} clusters)`, t);
 
-  // Decompose every cluster in one batched pass BEFORE assembly: the MCS anchors and the R-group
-  // decompositions go through a worker-per-cluster queue, so independent clusters run truly in
-  // parallel across the RDKit workers. Calling them per cluster under the Promise.all below would
-  // only serialize every call on the chem critical section — and all on one worker. A null
-  // decomposition (no usable anchor, or a stuck worker killed on timeout) falls back to the
-  // single-position construction inside the assembler.
+  // Decompose all clusters in one batched pass before assembly so they run parallel across workers;
+  // per-cluster calls under the Promise.all below would serialize on one worker. A null decomposition
+  // falls back to single-position construction inside the assembler.
   const clusterMembers = clusters.map((c) => [...new Set(c.series.flatMap((s) => s.members.map((m) => m.molIdx)))]);
   t = performance.now();
   const decomps = await decomposeClusters(clusterMembers, molList, scaffolds);
   logSarTime(`decomposition total (${decomps.filter(Boolean).length}/${clusters.length} clusters decomposed)`, t);
 
-  // A group needs two rows to be a matrix at all: comparing cores is the whole point, and a single
-  // row carries no core comparison and no row effect for the additive model to use. Folding can
-  // collapse a group of several series onto one row, so this is checked after assembly, not before.
+  // A matrix needs >=2 rows to compare cores; folding can collapse several series onto one row, so
+  // this is checked after assembly.
   t = performance.now();
   const assembled = (await Promise.all(clusters
     .map((cluster, i) => assembleMultiPositionMatrix(cluster, molList, activities, params.predictVirtual, decomps[i]))))
@@ -243,9 +210,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   if (matrices.length < assembled.length)
     _package.logger.debug(`SAR Matrix: dropped ${assembled.length - matrices.length} cropped matrices`);
 
-  // Dropping a matrix must not orphan the ones below it, so each survivor is re-linked to its nearest
-  // surviving ancestor. The chain is read from the clusters, which still hold links through groups
-  // that never assembled at all.
+  // Re-link each survivor to its nearest surviving ancestor so dropping a matrix does not orphan the
+  // ones below it. The chain is read from clusters, which hold links through groups that never assembled.
   const clusterParent = new Map(clusters.map((cluster) => [cluster.id, cluster.parentId]));
   const survived = new Set(matrices.map((matrix) => matrix.id));
   for (const matrix of matrices) {
@@ -255,9 +221,8 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
     matrix.parentId = parent;
   }
 
-  // Stable "Series A/B/..." labels assigned before ranking so re-ranking never renames a matrix.
+  // Labels assigned before ranking so re-ranking never renames a matrix.
   matrices.forEach((matrix, i) => matrix.label = seriesLabel(i));
-  // How far to trust each matrix's virtual predictions (leave-one-out over its observed cells).
   t = performance.now();
   matrices.forEach((matrix) => matrix.confidence = computeMatrixConfidence(matrix));
   logSarTime('confidence (leave-one-out)', t);

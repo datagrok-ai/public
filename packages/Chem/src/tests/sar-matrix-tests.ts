@@ -295,8 +295,8 @@ category('SAR Matrix', () => {
     expectFloat(spearman([1, 2, 3, 4], [4, 3, 2, 1])!, -1, 0.001);
     // One extreme value can dominate Pearson but not the ranks — the ordering is still 1:1.
     expectFloat(spearman([1, 2, 3, 100], [1, 2, 3, 4])!, 1, 0.001);
-    // Guards: too few points (below MIN_COMMON) and a constant side both give null.
-    expect(spearman([1, 2, 3], [1, 2, 3]), null, 'fewer than the minimum shared points is null');
+    // Guards: too few points (below MIN_COMMON = 3) and a constant side both give null.
+    expect(spearman([1, 2], [1, 2]), null, 'fewer than the minimum shared points is null');
     expect(spearman([1, 1, 1, 1], [1, 2, 3, 4]), null, 'a constant side has no ordering to correlate');
   });
 
@@ -316,11 +316,20 @@ category('SAR Matrix', () => {
     expectFloat(transfers[0].correlation, 1, 0.01);
   });
 
-  test('computeAllTransfers does not report two cores of one matrix', async () => {
-    // Perfectly correlated rows, and deliberately no transfer: one matrix already models its rows with
-    // a single additive row-plus-column fit, so a pair inside it tracks by construction.
+  test('computeAllTransfers reports two related-core rows of one matrix (the canonical transfer)', async () => {
+    // Rows of one matrix are analog series with related cores — the canonical SAR-transfer pairing.
+    // Real observations are correlated (not the additive fit), so a within-matrix pair is a transfer.
     const mat = makeMatrix([xferRow([1, 2, 3, 4]), xferRow([2, 3, 4, 5], 'b')]);
-    expect((await computeAllTransfers([mat], 0)).length, 0, 'a within-matrix pair is not a transfer');
+    const transfers = await computeAllTransfers([mat], 0);
+    expect(transfers.length, 1, 'a within-matrix related-core pair is a transfer');
+    expect(transfers[0].a.matrixIndex === transfers[0].b.matrixIndex, true, 'both rows are in the one matrix');
+    expectFloat(transfers[0].correlation, 1, 0.01);
+  });
+
+  test('computeAllTransfers: anti-correlated rows of one matrix are not a transfer', async () => {
+    // Within-matrix pairs are compared, but only conserved potency order counts: ρ = -1 is not transfer.
+    const mat = makeMatrix([xferRow([1, 2, 3, 4]), xferRow([4, 3, 2, 1], 'b')]);
+    expect((await computeAllTransfers([mat], 0)).length, 0, 'opposite orderings are not a transfer');
   });
 
   test('computeAllTransfers skips pairs below the correlation floor', async () => {

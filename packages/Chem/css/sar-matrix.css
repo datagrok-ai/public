@@ -5,10 +5,7 @@
   min-height: 0;
 }
 
-/* Wide enough that a card indented two levels still shows its label and a one-line description.
-   Three things carry this number and all three must agree: this rule, `.chem-sar-xfer-list` (whose
-   cards are the same shape), and `NAV_W` in the viewer — cell widths for BOTH panes are fitted
-   against what is left over, so a narrower list here sizes the other pane's cells wrongly. */
+/* Width must match NAV_W in the viewer and .chem-sar-xfer-list — both panes fit cells against the leftover. */
 .chem-sar-nav {
   display: flex;
   flex-direction: column;
@@ -57,7 +54,6 @@
   padding: 2px 5px;
 }
 
-/* Explains all three rank schemes at once, so the lines need room to read as a list. */
 .chem-sar-rank-tip {
   display: flex;
   flex-direction: column;
@@ -67,7 +63,6 @@
   line-height: 1.5;
 }
 
-/* Shown in place of the grid when the potency threshold has emptied the matrix. */
 .chem-sar-empty-note {
   padding: 16px 12px;
   max-width: 520px;
@@ -76,7 +71,6 @@
   color: var(--grey-5);
 }
 
-/* The header form lays its own labels out; it only needs to stop overflowing a narrow panel. */
 .chem-sar-nav-header .ui-form {
   padding: 0;
   min-width: 0;
@@ -92,7 +86,6 @@
   color: var(--grey-5);
 }
 
-/* Empty unless a threshold is set, so it takes no space in the common case. */
 .chem-sar-nav-matches {
   font-size: 10.5px;
   color: var(--grey-5);
@@ -107,14 +100,11 @@
   overflow-y: auto;
 }
 
-/* A view whose compounds are contained in the card above it; the rule marks the nesting that the
-   left margin alone reads as accidental whitespace. */
 .chem-sar-card-nested {
   border-left: 2px solid var(--grey-2);
 }
 
-/* Expander for a card that has matrices folded into it. Always occupies its width, empty on a leaf,
-   so every card's core starts at the same x whatever its depth. */
+/* Always occupies its width, empty on a leaf, so every card's core starts at the same x. */
 .chem-sar-card-twisty {
   flex: 0 0 11px;
   width: 11px;
@@ -167,7 +157,6 @@ i.chem-sar-card-twisty:hover {
   gap: 6px;
 }
 
-/* Only the name may be clipped — the level badge next to it has to stay readable. */
 .chem-sar-card-name {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -175,8 +164,6 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
-/* Which fragmentation level this matrix sits at; branches end at different depths, so the indent
-   alone does not say. */
 .chem-sar-card-level {
   flex: 0 0 auto;
   font-size: 9px;
@@ -208,7 +195,6 @@ i.chem-sar-card-twisty:hover {
   cursor: help;
 }
 
-/* One "value label" line in a card's score box (best / mean / transfer). */
 .chem-sar-card-score-line {
   display: flex;
   align-items: baseline;
@@ -243,7 +229,6 @@ i.chem-sar-card-twisty:hover {
   padding: 6px 10px 2px;
 }
 
-/* Controls row (Vary / Sort), kept off the info row so neither crowds the other. */
 .chem-sar-control-bar {
   display: flex;
   align-items: center;
@@ -258,8 +243,7 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
-/* A fixed label column so the rows line up when the bar wraps; auto-width left each row starting at a
-   different x, which read as three unrelated controls rather than one group. */
+/* Fixed label column so rows stay aligned when the bar wraps. */
 .chem-sar-control-bar .ui-input-label {
   font-size: 11px;
   flex: 0 0 96px;
@@ -268,8 +252,7 @@ i.chem-sar-card-twisty:hover {
   padding-right: 6px;
 }
 
-/* Widths are left to the platform: a number input is a text box plus a slider sized to match it, and
-   overriding either one alone puts the two out of proportion. */
+/* Leave width to the platform: a number input's box and slider are sized to match, override breaks proportion. */
 .chem-sar-control-bar .ui-input-editor {
   min-width: 0;
 }
@@ -280,7 +263,6 @@ i.chem-sar-card-twisty:hover {
   color: var(--grey-6);
 }
 
-/* Summary chips in the matrix pane bar. */
 .chem-sar-chips {
   display: flex;
   align-items: center;
@@ -305,7 +287,6 @@ i.chem-sar-card-twisty:hover {
   font-weight: 600;
 }
 
-/* Transfer statistics block under the trend table. */
 .chem-sar-xfer-stats {
   margin: 10px 0 4px;
   padding: 8px 10px;
@@ -346,7 +327,6 @@ i.chem-sar-card-twisty:hover {
   gap: 4px;
 }
 
-/* Hint text above the "Add to make-list" button in the virtual-cell panel. */
 .chem-sar-cp-hint {
   font-size: 11.5px;
   color: var(--grey-5);
@@ -361,8 +341,7 @@ i.chem-sar-card-twisty:hover {
   padding: 10px;
 }
 
-/* Host for the virtualized matrix grid — a plain flex fill (not ui.box, which would pin a fixed
-   pixel width) so the grid gets a real height to virtualize against and grows with the pane. */
+/* Plain flex fill, not ui.box (which pins a fixed pixel width) — the grid needs a real height to virtualize against. */
 .chem-sar-grid-host {
   flex: 1;
   min-height: 0;
@@ -375,7 +354,6 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
-/* Root of the viewer's own context-panel content. */
 .chem-sar-matrix-cp {
   padding: 8px;
   font-size: 12px;
@@ -399,9 +377,7 @@ i.chem-sar-card-twisty:hover {
   overflow: hidden;
 }
 
-/* The structure inside is drawn at a fixed pixel size, and a redraw only follows a resize once the
-   observer reports it. Capping it to the box means a panel dragged narrower clips the old drawing in
-   the meantime, instead of it spilling out and giving the whole panel a horizontal scrollbar. */
+/* Cap fixed-size drawing to the box so a narrowed panel clips it instead of spilling into a horizontal scrollbar. */
 .chem-sar-cp-structbox > * {
   max-width: 100%;
   min-width: 0;
@@ -481,9 +457,6 @@ i.chem-sar-card-twisty:hover {
   margin-top: 6px;
 }
 
-/* ---- SAR transfer tab ---------------------------------------------------------------------- */
-
-/* The SAR Transfer tab's pane (sibling to .chem-sar-matrix in the viewer's tab control). */
 .chem-sar-xfer-panel {
   display: flex;
   flex-direction: row;
@@ -492,10 +465,7 @@ i.chem-sar-card-twisty:hover {
   overflow: hidden;
 }
 
-/* Narrower than the series navigator: a transfer card carries two short core labels and a
-   correlation, where a series card has to fit a structure and a four-part description. */
-/* Same width as `.chem-sar-nav` — the cards carry a core thumbnail and a description of the same
-   shape, and the pane beside it fits its cells against the same leftover. */
+/* Width must match .chem-sar-nav — the pane beside it fits its cells against the same leftover. */
 .chem-sar-xfer-list {
   flex: 0 0 320px;
   min-width: 320px;
@@ -503,32 +473,25 @@ i.chem-sar-card-twisty:hover {
   overflow-y: auto;
 }
 
-/* Popup holding the filter group. Wider than the platform's own Filters panel, which is docked and can
-   be dragged: this one cannot, so it has to fit its widest filter outright — the category list carries
-   a checkbox, a series name and a row count, and its header a row of six icons. Filters fill the panel
-   width so each keeps its name, enable checkbox and remove control, and the substructure filter gets a
-   sketch area big enough to draw in. No per-filter height is capped here — that is what clips the
-   headers and takes those controls with them. */
+/* Fixed-width popup (cannot be dragged like the docked Filters panel), so it must fit its widest filter outright. */
 .chem-sar-struct-filters {
   width: 360px;
   max-height: 600px;
-  /* `scroll`, not `auto`: an overlay/auto scrollbar renders as a thin sliver over the fixed-width
-     popup. A reserved, explicitly-sized track keeps it usable. */
+  /* `scroll`, not `auto`: an overlay/auto scrollbar renders as a thin sliver over the fixed-width popup. */
   overflow-y: scroll;
   scrollbar-width: auto;
 }
 
 .chem-sar-struct-filters::-webkit-scrollbar {
-  width: 12px;
+  width: 6px;
 }
 
 .chem-sar-struct-filters::-webkit-scrollbar-thumb {
   background: var(--grey-3);
-  border-radius: 6px;
+  border-radius: 3px;
 }
 
-/* A sketcher opened from a filter inside the popup is a free-floating dialog that would otherwise
-   stack below the popup; lift it above so it is not hidden behind the filters. */
+/* Lift the sketcher dialog above the filters popup, which would otherwise stack over it. */
 .d4-dialog:has(.chem-sketcher-host),
 .d4-dialog:has(.grok-sketcher) {
   z-index: 10001 !important;
@@ -547,12 +510,7 @@ i.chem-sar-card-twisty:hover {
   width: 100%;
 }
 
-/* A sketcher built inside a popup host has its minimum width zeroed, so that one opened against a
-   screen edge is not clipped. Mounting the filter group in a popup puts the substructure filter's
-   sketcher in exactly that state, and the zero survives into the editing dialog — which is
-   free-floating and sizes to its content, so the drawing area collapses to a fraction of the
-   palette. 500px is the width the sketcher reports for itself and what it already gets everywhere
-   the popup path is not taken. */
+/* Restore the sketcher's 500px width; the popup host zeroes its min-width and the zero leaks into the dialog. */
 .d4-dialog-contents .chem-sketcher-host {
   min-width: 500px!important;
 }
@@ -562,7 +520,6 @@ i.chem-sar-card-twisty:hover {
   cursor: pointer;
 }
 
-/* Active-filter indicator: tint the icon and add a dot so it is clear a filter is narrowing the view. */
 .chem-sar-struct-icon.chem-sar-filter-on {
   color: var(--blue-1);
   position: relative;
@@ -579,8 +536,6 @@ i.chem-sar-card-twisty:hover {
   background: var(--blue-1);
 }
 
-/* Rank/threshold form and the series filter icon on one row, so the icon sits with the controls it
-   supplements rather than below them. */
 .chem-sar-nav-controls {
   display: flex;
   align-items: flex-start;

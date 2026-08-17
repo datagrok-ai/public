@@ -6,7 +6,6 @@ export enum SarRankScheme {
   Preferred = 'Preferred substituent',
 }
 
-/** Observed activity values of one matrix row (real cells only). */
 function rowValues(matrix: SarMatrix, rowIdx: number): number[] {
   const values: number[] = [];
   for (const cell of matrix.cells[rowIdx]) {
@@ -16,8 +15,8 @@ function rowValues(matrix: SarMatrix, rowIdx: number): number[] {
   return values;
 }
 
-/** Best observed potency, as a higher-is-better score: the max scaled activity when higher means
- *  more potent (`-lg`), else the min (raw `none`/`lg`, where lower nM is more potent). */
+/** Best observed potency as a higher-is-better score: max scaled activity when higher is more
+ *  potent, else min. */
 function potencyScore(matrix: SarMatrix, higherIsBetter: boolean): number {
   if (!matrix.realCount)
     return 0;
@@ -36,8 +35,7 @@ function discontinuityScore(matrix: SarMatrix): number {
   return best;
 }
 
-/** Best mean-potency of any single column — a substituent good across cores. Scored higher-is-
- *  better, so for a lower-is-better activity the most negative column mean wins. */
+/** Best mean-potency of any single column — a substituent good across cores. */
 function preferredScore(matrix: SarMatrix, higherIsBetter: boolean): number {
   let best = -Infinity;
   for (let ci = 0; ci < matrix.columns.length; ci++) {
@@ -56,14 +54,8 @@ function preferredScore(matrix: SarMatrix, higherIsBetter: boolean): number {
   return best === -Infinity ? 0 : best;
 }
 
-/**
- * Step 8 — score every matrix under all schemes and sort by the chosen one. (SAR transfer is its own
- * navigator section, computed globally across matrices in `sar-matrix-transfer.ts`, not a rank mode.)
- *
- * @param higherIsBetter Whether a higher scaled activity means a more potent compound. Potency and
- *   preferred-substituent scores flip with it (the discontinuity spread is direction-agnostic). Every
- *   score is higher-is-better so the top of the list is always best.
- */
+/** Score every matrix under all schemes and sort by the chosen one. Every score is higher-is-better,
+ *  so the top of the list is always best. */
 export function rankMatrices(matrices: SarMatrix[], scheme: SarRankScheme,
   higherIsBetter: boolean = true): SarMatrix[] {
   for (const matrix of matrices) {
@@ -74,7 +66,6 @@ export function rankMatrices(matrices: SarMatrix[], scheme: SarRankScheme,
   return [...matrices].sort((a, b) => (b.scores[scheme] ?? 0) - (a.scores[scheme] ?? 0));
 }
 
-/** The compounds a matrix actually holds — the molecule index of every observed cell. */
 function observedMolecules(matrix: SarMatrix): Set<number> {
   const mols = new Set<number>();
   for (const row of matrix.cells) {
@@ -87,19 +78,11 @@ function observedMolecules(matrix: SarMatrix): Set<number> {
 }
 
 /**
- * Nest the matrices by compound containment: a matrix whose compounds are all present in a larger one
- * becomes its child. This is the anchor-depth ladder, read off the output rather than imposed on it —
- * a parent and a child cover the same chemistry, but split differently between core and substituent
- * (more cores and fewer columns, or the reverse), so descending the tree is descending that dial.
- *
- * Both are worth keeping: neither view is a summary of the other, and the redundancy the flat list
- * appears to contain is really structure that was never displayed. The parent chosen is the smallest
- * strict superset, so a chain nests one level at a time instead of collapsing onto its root.
- *
- * Matrices with identical compound sets cannot both be children of each other; the first in the given
- * order keeps the parent role, which makes the result depend on that order alone and not on scoring.
- *
- * @returns Parent index per matrix, `-1` for a root, indexed against the array passed in.
+ * Nest matrices by compound containment: a matrix whose compounds are all present in a larger one
+ * becomes its child. The parent chosen is the smallest strict superset, so a chain nests one level at
+ * a time instead of collapsing onto its root. For identical compound sets the earlier index keeps the
+ * parent role, making the result depend on input order alone and not on scoring.
+ * @returns Parent index per matrix, `-1` for a root.
  */
 export function nestByContainment(matrices: SarMatrix[]): number[] {
   const mols = matrices.map(observedMolecules);

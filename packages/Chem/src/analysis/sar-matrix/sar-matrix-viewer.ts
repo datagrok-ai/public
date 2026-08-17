@@ -16,89 +16,65 @@ import {computeAllTransfers, DEFAULT_TRANSFER_SIMILARITY, Transfer, TransferSide
 import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
 import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
 
-/** Transparent (alpha 0) so a drawn core has no white box — it blends with the card/pane. */
+/** Transparent (alpha 0) so a drawn core blends with the card/pane instead of showing a white box. */
 const CORE_BG_ARGB = 0x00000000;
 const HEADER_ARGB = 0xFFF7F7F9;
 const WHITE_ARGB = 0xFFFFFFFF;
-/** Linear scheme for potency, matching how the platform colors activity/confidence scores:
- *  red at the low end, green at the high end of the scaled activity. */
 const ACTIVITY_SCHEME = [DG.Color.red, DG.Color.green];
 const CELL_W = 104;
 const CELL_H = 76;
-/** Cell chip plate: height, inner text padding, and inset from the cell's edge. */
 const CHIP_H = 13;
 const CHIP_PAD = 3;
 const CHIP_MARGIN = 3;
 const HEADER_W = 78;
 const HEADER_H = 46;
-/** Grid column-header height: the R-position band, the substituent depiction and the metric caption. */
 const COL_HEADER_H = HEADER_H + 36;
 const CORE_W = 132;
-/** Room for the grid's own horizontal scrollbar, added when a grid is sized to its rows instead of
- *  being stretched to fill the pane. */
+/** Room for the grid's own horizontal scrollbar when a grid is sized to its rows, not stretched. */
 const GRID_SCROLLBAR_H = 18;
-/** Small inline thumbnail of the transfer's benefiting substituent, in the statistics block. */
 const BENEFIT_MOL_W = 62;
 const BENEFIT_MOL_H = 34;
-/** Core thumbnail on a navigator card. Shared by the matrix and transfer lists so a card reads the
- *  same in both and the description column is left the same width in each. */
 const CARD_CORE_W = 78;
 const CARD_CORE_H = 44;
-/** Cells grow to fill the pane, but never past this — beyond it the structures just float in space. */
 const CELL_W_MAX = 210;
-/** Navigator width + paddings + border-spacing, subtracted when fitting cells to the pane. Must track
- *  the `.chem-sar-nav` width in the stylesheet, or the cells are fitted against the wrong pane. */
+/** Must track the `.chem-sar-nav` width in the stylesheet, or cells are fitted against the wrong pane. */
 const NAV_W = 320;
-/** Width of the navigator when collapsed to its expand strip. */
 const NAV_COLLAPSED_W = 28;
 const TABLE_CHROME = 60;
-/** Cell-tint alpha (0-255): solid for observed compounds, fainter for virtual predictions, and
- *  fainter still when a prediction rests on few observations. */
+/** Cell-tint alpha (0-255): solid for observed, fainter for virtual, faintest for thin predictions. */
 const REAL_ALPHA = 102;
 const VIRTUAL_ALPHA = 46;
 const VIRTUAL_ALPHA_MIN = 16;
-/** Support (min of backing row/column observations) at/above which a virtual cell is at full alpha. */
+/** Support at/above which a virtual cell is at full alpha. */
 const FULL_SUPPORT = 3;
-/** Method label carried on every exported/predicted analog. */
 const FREE_WILSON_METHOD = 'local Free-Wilson (row + column effects)';
-/** Name of the running make-list table single-analog "Generate" appends to. */
 const MAKELIST_NAME = 'SAR virtual analogs';
 
 type AnalogPanelBuilder = () => HTMLElement;
 
 const COLSORT_POTENCY = 'Potency';
 const COLSORT_MW = 'Molecular weight';
-/** No "None": sitting beside the potency threshold, a control reading "None" was read as a filter that
- *  was switched off rather than as a column caption, so it always annotates with something. */
 const COLUMN_SORTS = [COLSORT_POTENCY, COLSORT_MW];
 
-/** Properties that only reorder/recolor the already-assembled matrices. Changing one must NOT re-run
- *  fragmentation and decomposition — those cost seconds of RDKit worker time and produce identical
- *  matrices. Every other property (columns, scaling, cutoffs, prediction) does change the assembly. */
+/** Properties that only reorder/recolor already-assembled matrices — must NOT re-run fragmentation. */
 const RERANK_ONLY_PROPS = ['rankScheme', 'activityDirection'];
 
-/** Properties that change nothing but what is drawn — no re-fragmentation, and no re-ranking either,
- *  which would reorder the navigator for what is only a change of column caption. */
+/** Properties that only change what is drawn — no re-fragmentation and no re-ranking. */
 const RENDER_ONLY_PROPS = ['columnCaption', 'idColumnName'];
 
-/** Properties only the transfer scan reads. The matrices themselves are untouched, so re-fragmenting
- *  for one would throw away seconds of RDKit work to recompute a list the current matrices still support. */
+/** Properties only the transfer scan reads; matrices are untouched. */
 const TRANSFER_ONLY_PROPS = ['transferSimilarity'];
 
-/** The viewer's two tabs (MMP-style). The matrix tab is the default; the transfer tab computes its
- *  quadratic core-vs-core comparison lazily, the first time it is opened for the current matrices. */
 const TAB_MATRIX = 'SAR Matrix';
 const TAB_TRANSFER = 'SAR Transfer';
 
-/** Which end of the activity scale is "more potent". Auto derives it from scaling (only −lg is
- *  higher-is-better); the explicit options cover pre-computed pIC50/pKi/%-inhibition left on `none`. */
+/** Auto derives from scaling (only −lg is higher-is-better); explicit options cover precomputed pIC50 etc. */
 const DIR_AUTO = 'Auto (from scaling)';
 const DIR_HIGHER = 'Higher is better';
 const DIR_LOWER = 'Lower is better';
 const ACTIVITY_DIRECTIONS = [DIR_AUTO, DIR_HIGHER, DIR_LOWER];
 
-/** Average molecular weight of a substituent, capping its `[*:n]` attachment points with H so the
- *  weight is that of the capped fragment. Cached (alignment is deterministic); Infinity on failure so
+/** Average MW of a substituent, capping `[*:n]` attachment points with H. Infinity on failure so
  *  unparseable substituents sort last. */
 const mwCache = new Map<string, number>();
 const MW_CACHE_MAX = 4000;
@@ -131,14 +107,10 @@ function substituentMW(smiles: string): number {
 
 const ALIGN_OPTS = JSON.stringify({useCoordGen: true, allowRGroups: true, acceptFailure: true, alignOnly: true});
 
-/** Aligned-molblock cache keyed by template + molecule. Alignment is deterministic, so a resize
- *  re-render reuses the layout instead of re-parsing every core and cell in RDKit. Cleared wholesale
- *  when it grows past the cap so it can't leak across many datasets in one session. */
+/** Aligned-molblock cache keyed by template + molecule; cleared wholesale past the cap to avoid leaks. */
 const alignCache = new Map<string, string>();
 const ALIGN_CACHE_MAX = 4000;
-/** Per-core alignment templates, memoized by core SMILES. The layout is deterministic, so re-renders
- *  (selection, resize) reuse it instead of re-parsing the core in RDKit — and it keeps the alignCache
- *  keys stable. `null` (RDKit couldn't build a template) is cached too, so failures aren't retried. */
+/** Per-core alignment templates by core SMILES. `null` is cached too, so failures aren't retried. */
 const templateCache = new Map<string, string | null>();
 const TEMPLATE_CACHE_MAX = 4000;
 
@@ -146,11 +118,8 @@ function argbToRgba(argb: number): [number, number, number, number] {
   return [DG.Color.r(argb) / 255, DG.Color.g(argb) / 255, DG.Color.b(argb) / 255, DG.Color.a(argb) / 255];
 }
 
-/**
- * A molblock template, laid out canonically, that every cell/core is aligned to so the shared core
- * points the same way across the whole matrix. The `[*:n]` dummies are swapped for hydrogens so the
- * template is a plain substructure (following the MMP viewer's alignment).
- */
+/** Canonical molblock template every cell/core aligns to, so the shared core points the same way.
+ *  `[*:n]` dummies are swapped for H so the template is a plain substructure. */
 function buildAlignmentTemplate(coreSmiles: string): string | null {
   const cached = templateCache.get(coreSmiles);
   if (cached !== undefined)
@@ -204,10 +173,8 @@ function alignToTemplate(molStr: string, templateMolblock: string): string {
   return result;
 }
 
-/** Draw a molecule onto an existing canvas with the given ARGB background baked directly into the
- *  RDKit draw call: bond edges are anti-aliased against whatever background the draw is handed, so a
- *  colour applied afterwards would leave a pale fringe around every bond. Straightens the depiction
- *  for a tidy standalone layout (used for substituents). */
+/** Draw a molecule with the ARGB background baked into the RDKit draw call — a colour applied
+ *  afterwards would leave a pale anti-aliasing fringe around every bond. */
 function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, w: number, h: number,
   argb: number): void {
   try {
@@ -215,11 +182,9 @@ function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, w: numb
       {normalizeDepiction: true, straightenDepiction: true}, null,
       {clearBackground: true, backgroundColour: argbToRgba(argb)});
   } catch (e) {
-    // leave the canvas blank on a malformed structure
   }
 }
 
-/** {@link paintMoleculeOnColor} onto a fresh canvas, eagerly. */
 function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {
   const canvas = ui.canvas(w, h);
   if (smiles)
@@ -232,13 +197,8 @@ export function clearDepictionCaches(): void {
   alignCache.clear();
 }
 
-/**
- * Label every attachment point in a molblock as a plain "R". A matrix varies one position, so the map
- * number distinguishes nothing and only invites reading it against the column header — and which
- * position the decomposition happened to call R1 is arbitrary on a symmetric core. RDKit draws a bare
- * dummy as `*` and appends any map number, so the map is dropped upstream and an atom alias supplies
- * the letter. Returns the input unchanged when there is no attachment point to label.
- */
+/** Label every attachment point in a molblock as a plain "R" via an atom alias (RDKit draws a bare
+ *  dummy as `*`). Map numbers are meaningless on a one-position matrix. Input unchanged if none. */
 function labelAttachmentPoints(molblock: string): string {
   const lines = molblock.split('\n');
   const atomCount = Number.parseInt((lines[3] ?? '').trim().split(/\s+/)[0], 10);
@@ -255,25 +215,19 @@ function labelAttachmentPoints(molblock: string): string {
     [...lines.slice(0, endIdx), ...aliases, ...lines.slice(endIdx)].join('\n');
 }
 
-/**
- * The molecule string a cell / core / header is drawn from. With a `template` the fragment is aligned
- * to the shared core (cached) and its open position R-labelled; without one the map-stripped string is
- * handed straight to the shared renderer, which lays it out and caches the raster. `null` if empty.
- */
+/** The molecule string a cell/core/header is drawn from: aligned to `template` and R-labelled when
+ *  given, else the map-stripped string for the shared renderer. `null` if empty. */
 function preparedDepiction(molStr: string, template: string | null): string | null {
   if (!molStr)
     return null;
   const hasAttachment = /\[\*:\d+\]/.test(molStr);
-  // Map numbers distinguish nothing on a one-position matrix, and a molblock hides them in a fixed
-  // atom-line column a string swap can't reach — so strip to bare dummies before any layout.
   const plain = molStr.replace(/\[\*:\d+\]/g, '[*]');
   const aligned = template ? alignToTemplate(plain, template) : plain;
   return aligned.includes('V2000') && hasAttachment ? labelAttachmentPoints(aligned) : aligned;
 }
 
-/** Reused scratch canvas the cached `ImageData` is put onto so it can be blitted through the grid's
- *  clip (a bare `putImageData` ignores the clip and would paint over the pinned core column or past
- *  the grid's right edge). Grown as needed; a larger leftover is fine — only the drawn sub-rect is read. */
+/** Scratch canvas the cached `ImageData` is blitted through so the grid's clip is respected
+ *  (`putImageData` ignores the clip and would paint over the pinned core column or past the edge). */
 let blitCanvas: OffscreenCanvas | null = null;
 function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
   if (!blitCanvas || blitCanvas.width < w || blitCanvas.height < h)
@@ -281,21 +235,11 @@ function ensureBlitCanvas(w: number, h: number): OffscreenCanvas {
   return blitCanvas;
 }
 
-/**
- * Draw a depiction onto the grid canvas in device pixels, reusing the shared molecule renderer's mol
- * and raster LRU caches (see {@link getMoleculeRenderer}) — a repaint of the same structure at the
- * same size and tint is a cache hit rather than a fresh RDKit parse + rasterization.
- *
- * The bitmap is produced at the cell's device size and blitted 1:1 at a whole-pixel offset, so it is
- * never resampled and bond lines stay crisp; drawing through the grid's scaled transform instead lands
- * the rect on fractional device pixels and bilinear-filters every bond. The device rect comes from the
- * context's own transform rather than `devicePixelRatio`, which are only the same number when the grid
- * has installed a pure scale — any translate would displace every cell by a constant.
- *
- * The blit reuses a scratch canvas rather than `putImageData` because the transform is reset but the
- * clip deliberately is not: `putImageData` ignores the clip, letting a cell under the pinned core
- * column, or one past the grid's right edge, paint outside the grid's own bounds.
- */
+/** Draw a depiction onto the grid canvas in device pixels, reusing the shared renderer's LRU caches.
+ *  The bitmap is produced at device size and blitted 1:1 at a whole-pixel offset so bond lines stay
+ *  crisp (drawing through the grid's scaled transform bilinear-filters every bond). The device rect
+ *  comes from the context transform, not `devicePixelRatio`, so a grid translate can't displace cells.
+ *  Blits via a scratch canvas, not `putImageData`, so the grid's clip is respected. */
 function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
   molStr: string, template: string | null, argb: number): void {
   const renderer = getMoleculeRenderer();
@@ -323,9 +267,8 @@ function drawDepiction(g: CanvasRenderingContext2D, x: number, y: number, w: num
   g.restore();
 }
 
-/** Resolve a Datagrok CSS palette variable (e.g. `--grey-6`) to a color string for canvas painting,
- *  memoized by name so per-cell paints don't re-run `getComputedStyle`. Falls back to `fallback` when
- *  the variable is unset. */
+/** Resolve a Datagrok CSS palette variable to a color string, memoized so per-cell paints don't
+ *  re-run `getComputedStyle`. */
 const cssColorCache = new Map<string, string>();
 function cssColor(root: HTMLElement, name: string, fallback: string): string {
   const cached = cssColorCache.get(name);
@@ -342,26 +285,22 @@ function cssColor(root: HTMLElement, name: string, fallback: string): string {
   return resolved;
 }
 
-/** Context-panel structure sizing: the drawn width is clamped to this range and the height follows.
- *  Below the minimum a structure is unreadable; above the maximum it just wastes panel height. */
+/** Context-panel structure sizing: drawn width is clamped to this range, height follows. */
 const CP_STRUCT_MIN_W = 200;
 const CP_STRUCT_MAX_W = 520;
 const CP_STRUCT_ASPECT = 0.55;
-/** Horizontal chrome between a measured element's client width and the width a structure can occupy:
- *  the box's own padding, and for the panel additionally the panel body's padding and the box border. */
+/** Horizontal chrome subtracted from client width to get the width a structure can occupy. */
 const BOX_CHROME = 12;
 const PANEL_CHROME = 30;
 
 const GRID_FONT = 'Roboto, "Segoe UI", sans-serif';
 
-/** Column captions of the per-cell frame the filter runs over. They are what the filter widgets are
- *  labelled with, so they name the two structure axes as the matrix itself does. */
+/** Column captions of the per-cell frame the filter runs over; also the filter widget labels. */
 const STRUCT_CORE = 'Core';
 const STRUCT_R = 'R';
 const STRUCT_POTENCY = 'Potency';
 const STRUCT_REFS = 'Reference points';
 const STRUCT_MW = 'MW';
-/** Column captions of the per-series frame the navigator filter runs over. */
 const NAV_SERIES = 'Series';
 const NAV_CORE = 'Core';
 const NAV_BEST = 'Best';
@@ -372,56 +311,44 @@ const NAV_COMPOUNDS = 'Compounds';
 const NAV_CORES = 'Cores';
 const NAV_LEVEL = 'Level';
 
-/** How one of a cell's corner chips is drawn. The two corners carry different kinds of fact — the
- *  potency the matrix is colored by, and the identity of the compound it came from — so they are kept
- *  on opposite diagonals and never collide however wide either one gets. */
+/** How a cell corner chip is drawn. The two corners carry different facts and sit on opposite
+ *  diagonals so they never collide however wide either gets. */
 interface ChipStyle {
   corner: 'top-left' | 'bottom-right';
   color: string;
-  /** Set for a predicted value, to keep it visually separable from a measured one. */
   italic?: boolean;
-  /** Dimmed, for a prediction too thin to read as a firm number. */
   faint?: boolean;
 }
 
-/** Identity of a transfer's source core within its section (same- and cross-series kept apart). The
- *  nav grouping and the pane's sibling lookup both key on this, so the card "+N" and the pane dropdown
- *  can never disagree about which targets a source reaches. */
+/** Identity of a transfer's source core within its section, keyed on by the nav grouping and the
+ *  pane's sibling lookup so they can't disagree about which targets a source reaches. */
 function transferSourceKey(t: Transfer): string {
   return `${t.a.matrixIndex}:${t.a.rowIndex}`;
 }
 
-/** One displayed grid row: which matrix row it is, and which of that matrix's columns map to the
- *  displayed columns. Each row carries its OWN matrix, because a transfer's two sides can come from
- *  different matrices — the core, the cells, the potency range and the context panel all resolve
- *  through this descriptor rather than through one pane-wide matrix. */
+/** One displayed grid row. Each row carries its OWN matrix, because a transfer's two sides can come
+ *  from different matrices. */
 interface PaneRow {
   matrix: SarMatrix;
   rowIndex: number;
-  /** One entry per displayed column, indexing into `matrix.columns` / `matrix.cells[rowIndex]`. */
   colIdxs: number[];
-  /** Drawn under the core. */
   label: string;
-  /** Highlight the row's most potent observed cell. Set for a transfer's two sides, where reading the
-   *  trend along each row against the other is the whole point of the view. */
+  /** Highlight the row's most potent observed cell; set for a transfer's two sides. */
   markBest?: boolean;
 }
 
-/** One displayed grid column. */
 interface PaneColumn {
   substSmiles: string;
   position: string;
-  /** The metric caption under the depiction; empty when the Label control is set to None. */
+  /** Metric caption under the depiction; empty when the Label control is None. */
   caption: string;
 }
 
-/** The rendered pane grid plus the per-render row/column state. `onCellRender` fires for every
- *  visible cell on every repaint, so the displayed row/column descriptors, the group boundaries and
- *  the column captions are computed once when the grid is built instead of per cell per repaint. */
+/** The rendered pane grid plus per-render row/column state, computed once at build time since
+ *  `onCellRender` fires per visible cell per repaint. */
 interface MatrixGridState {
   grid: DG.Grid;
-  /** Scaffold frame backing the grid — one row per displayed row, one string column per displayed
-   *  column plus the pinned 'Core'. Held so the grid keeps a live reference for its lifetime. */
+  /** Scaffold frame backing the grid; held so the grid keeps a live reference for its lifetime. */
   df: DG.DataFrame;
   rows: PaneRow[];
   columns: PaneColumn[];
@@ -429,22 +356,18 @@ interface MatrixGridState {
   colKeyToIdx: Map<string, number>;
   /** Indices into `columns` that begin an R-position group — only those draw the position label. */
   firstOfGroup: Set<number>;
-  /** Structure drawn in the pinned column's header, naming the series the rows belong to. Null when
-   *  the rows span more than one matrix, where no single structure describes all of them. */
+  /** Structure in the pinned header; null when rows span more than one matrix. */
   headerCore: string | null;
-  /** One alignment template for the whole pane, from the shared core. The header, every row key and
-   *  every cell are drawn against it, so an attachment point sits in the same place everywhere — laid
-   *  out per depiction instead, the same position appears at a different spot in each and the R labels
-   *  read as though they were swapped. Null when rows span several matrices and share no core. */
+  /** One alignment template for the whole pane so an attachment point sits in the same place
+   *  everywhere. Null when rows span several matrices and share no core. */
   paneTemplate: string | null;
-  /** Per displayed row, the molblock its cells align to. Filled on first paint and kept for the life
-   *  of the grid: every repaint would otherwise re-run the alignment for every visible cell. */
+  /** Per displayed row, the molblock its cells align to; filled on first paint and kept for the
+   *  life of the grid. */
   rowTemplates: (string | null)[];
 }
 
-/** One live pane grid together with the subscriptions it owns. The matrix and the SAR-transfer panel
- *  hold one each: both can be on screen at the same time, so a single shared slot would have each
- *  rebuild silently unsubscribe the other's painters and drop its Dart-backed grid unreleased. */
+/** One live pane grid plus the subscriptions it owns. Matrix and transfer panels hold one each so a
+ *  rebuild of one can't unsubscribe the other's painters or leak its grid. */
 interface PaneGridSlot {
   state: MatrixGridState | null;
   subs: {unsubscribe(): void}[];
@@ -453,7 +376,7 @@ interface PaneGridSlot {
 export class SarMatrixViewer extends DG.JsViewer {
   moleculesColumnName: string;
   activityColumnName: string;
-  /** Optional column captioning each observed cell — empty leaves cells uncaptioned. */
+  /** Optional column captioning each observed cell. */
   idColumnName: string;
   scaling: string;
   activityDirection: string;
@@ -466,26 +389,21 @@ export class SarMatrixViewer extends DG.JsViewer {
   rankScheme: string;
 
   private matrices: SarMatrix[] = [];
-  /** Correlated core pairs across all matrices; computed lazily on first SAR-transfer-tab open. */
+  /** Correlated core pairs; computed lazily on first SAR-transfer-tab open. */
   private transfers: Transfer[] = [];
-  /** Whether `transfers` matches the current `matrices`. */
   private transfersComputed = false;
-  /** Bumped whenever the transfer list is dropped, so a stale in-flight scan won't publish its result. */
+  /** Bumped when the transfer list is dropped, so a stale in-flight scan won't publish its result. */
   private transferGeneration = 0;
-  /** A transfer scan is already scheduled — a second tab activation must not stack another. */
+  /** A transfer scan is already scheduled; a second tab activation must not stack another. */
   private transfersComputing = false;
-  /** Index into `matrices` shown in the matrix pane. */
   private selIndex = 0;
-  /** Index into `transfers` shown in the transfer tab — separate from `selIndex` so the two tabs
-   *  navigate independently. */
+  /** Index into `transfers`; separate from `selIndex` so the two tabs navigate independently. */
   private transferIndex = 0;
   /** "Vary" filter: show only this R-position's column group, or all when empty. */
   private varyPosition = '';
-  /** Metric annotating each substituent column (mean potency or MW); never reorders the columns. */
   columnCaption: string;
-  /** Virtual cell under the last right-click, for the per-cell make-list add. */
   private contextCell: {matrix: SarMatrix, ri: number, ci: number} | null = null;
-  /** Per-SMILES "SAR analysis" panel builders; per-instance, cleared on recompute and detach. */
+  /** Per-SMILES "SAR analysis" panel builders; cleared on recompute and detach. */
   private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
   private readonly host = ui.divH([], 'chem-sar-matrix');
   private readonly transferHost = ui.divH([], 'chem-sar-xfer-panel');
@@ -502,18 +420,16 @@ export class SarMatrixViewer extends DG.JsViewer {
   private readonly transferSlot: PaneGridSlot = {state: null, subs: []};
   /** Last pointer event over the grid, so a cell click can honor ctrl/shift (onCellClick carries none). */
   private lastGridMouseEvent: MouseEvent | null = null;
-  /** Size observer for the on-screen context-panel structure; replaced per click so they don't stack. */
+  /** Context-panel structure size observer; replaced per click so they don't stack. */
   private cpStructureSub: {unsubscribe(): void} | null = null;
   /** Guards a slow layout-wait from overwriting a newer panel's observer. */
   private cpStructureToken = 0;
   /** Matrix ids whose children are folded away; kept so re-rank/resize doesn't reopen them. */
   private readonly collapsed = new Set<string>();
-  /** Cards per matrix (index-aligned) and the parent chain they were built against. Built once, then
-   *  mutated in place on select/collapse/filter — rebuilding every card per click was the slow path. */
+  /** Cards per matrix (index-aligned) and their parent chain; built once, then mutated in place. */
   private navCards: HTMLElement[] = [];
   private navParents: number[] = [];
-  /** Rasterizes a card's core only when it first scrolls into view; `navPendingCores` holds the
-   *  deferred draws. */
+  /** Rasterizes a card's core only when it first scrolls into view. */
   private navCoreObserver: IntersectionObserver | null = null;
   private readonly navPendingCores: Map<Element, () => void> = new Map();
   /** Cell keys passing the potency threshold, or null when unfiltered. */
@@ -521,8 +437,8 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** One row per series, backing the platform filter group over the navigator. */
   private navFrame: DG.DataFrame | null = null;
   private navFilters: DG.FilterGroup | null = null;
-  /** Headless view owning `navFilters`; held so it can be closed (a filter group belongs to a view,
-   *  so dropping the reference alone leaks the Dart-backed view and frame). */
+  /** Headless view owning `navFilters`; held so it can be closed (dropping the reference alone leaks
+   *  the Dart-backed view and frame). */
   private navView: DG.TableView | null = null;
   private navSub: {unsubscribe(): void} | null = null;
   /** Matrix ids the navigator filter admits, or null while it admits everything. */
@@ -554,9 +470,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
   constructor() {
     super();
-    // COLUMN-typed data properties (not the STRING helper) so the picker filters to the right columns:
-    // molecules to the Molecule semantic type, activity to numeric columns. The stored value is the
-    // column name, which everything below reads as a string.
+    // COLUMN-typed properties so the picker filters to the right columns; the stored value is the name.
     this.moleculesColumnName = this.addProperty('moleculesColumnName', DG.TYPE.COLUMN, '',
       {semType: DG.SEMTYPE.MOLECULE, category: 'Data', description: 'Structures to analyze'});
     this.activityColumnName = this.addProperty('activityColumnName', DG.TYPE.COLUMN, '',
@@ -581,35 +495,31 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.threshold = this.float('threshold', 0.5, {min: 0, max: 1, friendlyName: 'Similarity threshold',
       description: 'Core-similarity cutoff for Similarity grouping (higher = tighter clusters); ignored for Site'});
     this.transferSimilarity = this.float('transferSimilarity', DEFAULT_TRANSFER_SIMILARITY,
-      {min: 0.1, max: 1, friendlyName: 'Transfer similarity',
-        description: 'How alike two compounds carrying the same R-group must be for a transfer between their scaffolds to count'});
+      {min: 0, max: 1, friendlyName: 'Transfer similarity',
+        description: 'Optional whole-molecule similarity floor on transfer pairs (0 = off). Transfers ' +
+          'are matched by shared R-groups; raise this to restrict them to more alike scaffolds'});
     this.predictVirtual = this.bool('predictVirtual', true, {friendlyName: 'Predict virtual analogs',
       description: 'Fill unmade core × substituent cells with Free-Wilson predictions'});
     this.rankScheme = this.string('rankScheme', SarRankScheme.Potency,
       {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred],
         friendlyName: 'Rank by', description: 'How the navigator orders the matrices'});
-    // Annotates the substituent columns; changing it repaints and never re-fragments.
     this.columnCaption = this.string('columnCaption', COLSORT_POTENCY, {choices: COLUMN_SORTS});
     this.host.style.height = '100%';
     this.transferHost.style.height = '100%';
 
-    // MMP-style layout: the matrices and the transfer view are tabs of one control rather than the
-    // transfer being docked beneath the viewer. Detecting transfers compares every core against every
-    // other one — quadratic in the total row count — so that tab computes on first open, not up front.
+    // Transfer detection is quadratic in the total row count, so that tab computes on first open.
     this.tabs = ui.tabControl(null, false);
     const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
     ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
     const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferHost);
     ui.tooltip.bind(transferPane.header, 'Pairs of cores whose potency trends run in parallel across the ' +
       'R-groups they have both explored — detected when the tab is first opened');
-    // Lives with the tab control itself (not this.subs): tab switching must keep working across a
-    // detach/re-attach cycle, and the subscription dies with the viewer's DOM anyway.
+    // Not on this.subs: tab switching must survive a detach/re-attach cycle.
     this.tabs.onTabChanged.subscribe(() => {
       if (this.tabs.currentPane?.name === TAB_TRANSFER)
         this.activateTransferTab();
       else {
-        // A pane rebuilt while its tab was hidden sat in a display:none host; repaint it now that
-        // its canvas has real dimensions.
+        // A pane rebuilt while hidden sat in a display:none host; repaint now it has real dimensions.
         this.matrixSlot.state?.grid.invalidate();
       }
     });
@@ -619,26 +529,23 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
-    this.detached = false; // the flag tracks the CURRENT attachment, not whether one ever ended
-    // Cells are fitted to the pane width, so a resize re-fits the columns of the grid already on
-    // screen. Rebuilding the pane instead would replace that grid, and a new grid starts at the first
-    // row — so every step of a splitter drag would throw away where the user had scrolled to.
+    this.detached = false;
+    // Re-fit columns of the on-screen grid rather than rebuild the pane, so a splitter drag keeps the
+    // user's scroll position (a new grid restarts at the first row).
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 200).subscribe(() => {
       if (!this.computing && this.matrices.length)
         this.refitColumns();
     }));
     this.subs.push(this.onContextMenu.subscribe((menu) => this.buildContextMenu(menu)));
-    // Two-way link with the host grid: a selection change there re-rings the matching matrix cells.
-    // The current row is deliberately not watched — nothing is painted from it, and a repaint
-    // re-rasterizes every visible structure, so following it would cost a full redraw per click for
-    // no visible change.
+    // Two-way link with the host grid. Current row is not watched: nothing paints from it and a
+    // repaint re-rasterizes every visible structure.
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
       .subscribe(() => this.syncSelection()));
-    // Capture-phase reset runs before a cell's own bubbling handler, so contextCell reflects only a
-    // right-click that actually landed on a virtual cell (stale otherwise).
+    // Capture-phase reset runs before a cell's bubbling handler, so contextCell reflects only a
+    // right-click that landed on a virtual cell.
     this.host.addEventListener('contextmenu', () => this.contextCell = null, true);
-    // Surface a clicked analog's SAR context at the top of its context panel. Scoped to this viewer
-    // (this.subs, cleared on detach) so it can't inject panes platform-wide after the viewer closes.
+    // Surface a clicked analog's SAR context in its panel; scoped to this.subs so it can't inject
+    // panes platform-wide after the viewer closes.
     this.subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
       const context = acc.context;
       const smiles = context instanceof DG.SemanticValue ? String(context.value) :
@@ -648,14 +555,13 @@ export class SarMatrixViewer extends DG.JsViewer {
       const build = this.analogPanels.get(smiles)!;
       acc.addPane('SAR analysis', () => build(), true, acc.panes.length ? acc.panes[0] : null);
     }));
-    // Start the RDKit workers now so their spawn + WASM instantiation overlaps the compute debounce
-    // instead of being paid serially once the first fragmentation call arrives. A failure here is not
-    // actionable — compute() re-enters the same init and reports it properly.
+    // Spawn RDKit workers now so their WASM init overlaps the compute debounce; a failure here is
+    // re-reported by compute().
     getRdKitService().catch(() => {});
     this.scheduleCompute();
   }
 
-  /** Base `detach` unsubscribes `this.subs`; also stop a pending compute and drop the analog-panel
+  /** Base `detach` unsubscribes `this.subs`; also stop a pending compute and drop analog-panel
    *  builders so a closed viewer leaves no timer firing or stale entries injecting panes. */
   detach(): void {
     this.detached = true;
@@ -664,90 +570,79 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.cpStructureSub?.unsubscribe(); // the panel outlives the viewer; its observer must not
     this.cpStructureSub = null;
     this.releaseMatrixGrid();
-    // The transfer tab's DOM goes with the root, but its Dart-backed grid has to be released by hand.
     this.releaseSlot(this.transferSlot);
     this.navCoreObserver?.disconnect();
     this.navCoreObserver = null;
     this.navPendingCores.clear();
-    // Drop the filter machinery and close the headless views that own the filter groups; leaving them
-    // open leaks a Dart-backed view + frame for every filter popup ever opened in this viewer's life.
     this.resetFilters();
     super.detach();
   }
 
-  /** The matrix pane's grid — what the cell filter, the dimensions chip and `visibleDims` act on.
-   *  Named separately from the transfer panel's so a filter can never reach across to it. */
+  /** The matrix pane's grid. Named separately from the transfer panel's so a filter can't reach it. */
   private get matrixGrid(): MatrixGridState | null {
     return this.matrixSlot.state;
   }
 
-  /** Let go of one pane grid. Dropping the DOM is not enough: the render/click/tooltip subscriptions
-   *  keep the grid — and through it its scaffold DataFrame and the whole SarMatrix — reachable, and a
-   *  Dart-backed grid is only released when it is closed. */
+  /** Release one pane grid: unsubscribing alone isn't enough — the subscriptions keep the grid (and
+   *  its DataFrame + SarMatrix) reachable, and a Dart-backed grid is only released when closed. */
   private releaseSlot(slot: PaneGridSlot): void {
     slot.subs.forEach((s) => s.unsubscribe());
     slot.subs = [];
     try {
       slot.state?.grid?.close?.();
     } catch (e) {
-      // A standalone (view-less) grid may not support close; dropping the reference is enough.
+      // A view-less grid may not support close; dropping the reference is enough.
     }
     slot.state = null;
   }
 
-  /** Release the matrix pane's grid and the pane elements that point into it. */
   private releaseMatrixGrid(): void {
     this.releaseSlot(this.matrixSlot);
-    // The pane those pointed into is about to be replaced; holding them would let the threshold write
-    // into detached elements.
+    // Pane is about to be replaced; holding these would let the threshold write into detached elements.
     this.paneGridHost = null;
     this.paneEmptyNote = null;
     this.paneDimsChip = null;
   }
 
-  /** Drop the lazy filter machinery so it rebuilds against the current matrices. Both filter frames
-   *  are pinned to the analysis they were built for: reused after a rebuild their keys
-   *  ({@link cellKeys}/{@link navKeys}) point at rows that no longer exist, and a still-active filter
-   *  then blanks arbitrary cells or hides every card — cluster ids are reused across builds, so stale
-   *  keys partially match the new matrices rather than failing cleanly. Closing the headless views also
-   *  releases the Dart-backed views + frames a filter group would otherwise keep alive for the session. */
+  /** Drop the lazy filter machinery so it rebuilds against the current matrices. Stale keys
+   *  (cellKeys/navKeys) partially match reused cluster ids, mis-filtering rather than failing cleanly;
+   *  closing the headless views also releases the Dart-backed views + frames. */
   private resetFilters(): void {
-    this.structSub?.unsubscribe();
-    this.structSub = null;
+    this.resetStructFilter();
     this.navSub?.unsubscribe();
     this.navSub = null;
     try {
-      this.structView?.close();
-    } catch (e) {
-      // the view may already be gone — dropping the reference below is enough
-    }
-    try {
       this.navView?.close();
     } catch (e) {
-      // as above
     }
-    this.structView = null;
     this.navView = null;
-    this.structFrame = null;
-    this.structFilters = null;
     this.navFrame = null;
     this.navFilters = null;
     this.navMatchCount = null;
-    this.cellKeys = [];
     this.navKeys = [];
-    // Nothing filtered until the (rebuilt) filter narrows the frame again.
-    this.cellPass = null;
     this.navPass = null;
   }
 
-  /** Reflect the host grid's selection and current row onto the rendered cells. The pane grid draws
-   *  both rings per cell in `paintBodyCell` and reads them straight off the dataframe, so a host-grid
-   *  change only needs a repaint of the visible cells. */
+  /** Drop only the cell (structure) filter so it rebuilds against the current matrix; its rows and
+   *  keys belong to the previous matrix. */
+  private resetStructFilter(): void {
+    this.structSub?.unsubscribe();
+    this.structSub = null;
+    try {
+      this.structView?.close();
+    } catch (e) {
+    }
+    this.structView = null;
+    this.structFrame = null;
+    this.structFilters = null;
+    this.cellKeys = [];
+    this.cellPass = null;
+  }
+
+  /** Repaint both panes so a host-grid selection/current-row change shows on the rendered cells. */
   private syncSelection(): void {
     if (!this.dataFrame)
       return;
-    // Both panes paint the host grid's selection ring, so both have to be repainted for a click in one
-    // to show up in the other.
     this.matrixSlot.state?.grid.invalidate();
     this.transferSlot.state?.grid.invalidate();
   }
@@ -787,11 +682,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return out;
   }
 
-  /**
-   * Build a make-list molecule table from a set of virtual cells. Each row carries its predicted
-   * activity, the support behind that prediction, and full provenance (series, core, R-position,
-   * substituent, method) so it stands on its own once detached from the viewer.
-   */
+  /** Build a make-list molecule table from virtual cells: predicted activity, support, and full
+   *  provenance so each row stands on its own. */
   private buildAnalogTable(cells: {matrix: SarMatrix, ri: number, ci: number}[], name: string): DG.DataFrame {
     const molCol = (name: string, values: string[]): DG.Column => {
       const col = DG.Column.fromStrings(name, values);
@@ -843,8 +735,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       grok.shell.info('This analog has no assembled structure to add.');
       return;
     }
-    // Build a one-row frame so the column schema lives only in buildAnalogTable; append its row to
-    // the running make-list, or open it as the make-list on first use.
     const analog = this.buildAnalogTable([{matrix, ri, ci}], MAKELIST_NAME);
     const existing = grok.shell.tableByName(MAKELIST_NAME);
     if (existing) {
@@ -858,11 +748,8 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
-    // Ranking and potency direction don't change the fragmentation, so they must not trigger a full
-    // rebuild — re-fragmenting to reorder cards or flip the color direction costs seconds of RDKit
-    // worker time for a result the already-assembled matrices can produce directly.
+    // Some properties don't change the fragmentation, so they must not trigger a full rebuild.
     if (property !== null && RENDER_ONLY_PROPS.includes(property.name)) {
-      // Captions and the id column show up in the pane's cells only, so the navigator stays as-is.
       this.renderMatrixPane();
       return;
     }
@@ -871,8 +758,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       return;
     }
     if (property !== null && TRANSFER_ONLY_PROPS.includes(property.name)) {
-      // Drop the list and let the tab rebuild it; if the tab is not showing, nothing is recomputed
-      // at all until it next is.
       this.invalidateTransfers();
       if (this.transferTabActive)
         this.activateTransferTab();
@@ -881,16 +766,14 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.scheduleCompute();
   }
 
-  /** Re-rank the assembled matrices and redraw, without re-fragmenting. Used by the properties that
-   *  only affect ordering/direction, and by the navigator's "Rank by" control. */
+  /** Re-rank the assembled matrices and redraw without re-fragmenting. */
   private reRank(): void {
     if (!this.matrices.length) {
-      this.scheduleCompute(); // nothing assembled yet — the first build still has to run
+      this.scheduleCompute();
       return;
     }
     this.matrices = rankMatrices(this.matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
-    // Transfers index into `matrices` by position, so a reorder invalidates them; the transfer tab
-    // recomputes lazily the next time it is shown (render() below refreshes it if it is up now).
+    // Transfers index into `matrices` by position, so a reorder invalidates them.
     this.invalidateTransfers();
     this.selIndex = 0;
     this.render();
@@ -909,24 +792,20 @@ export class SarMatrixViewer extends DG.JsViewer {
     const activity = this.dataFrame.col(this.activityColumnName);
     if (!molecules || !activity)
       return;
-    // A change arrived mid-compute: mark dirty and let the running compute re-queue when it finishes,
-    // so the final view always reflects the latest property values.
+    // Change arrived mid-compute: re-queue when the running one finishes.
     if (this.computing) {
       this.dirty = true;
       return;
     }
 
     this.computing = true;
-    this.analogPanels.clear(); // drop stale analog-panel closures from the previous matrices
-    clearDepictionCaches(); // the previous matrices' depictions can never be hit again
-    // Emptying the host detaches the grid's DOM but does not release the Dart-backed grid or its
-    // subscriptions; without this the failure path below would leave one live and repainting forever.
+    this.analogPanels.clear();
+    clearDepictionCaches();
+    // Release the Dart-backed grid so the failure path below doesn't leave one repainting forever.
     this.releaseMatrixGrid();
-    // The transfers on screen index into the matrices about to be replaced, so the transfer tab is
-    // cleared now rather than being left pointing at rows that no longer exist if this compute fails.
+    // Transfers and filter frames key into the matrices about to be replaced; drop them now so a
+    // failed compute leaves nothing pointing at rows that no longer exist. Both rebuild lazily.
     this.invalidateTransfers();
-    // Same reasoning for the two filter frames: they key into the old matrices and would mis-filter the
-    // new ones, so drop them (and close the headless views they leak) — they rebuild lazily on reopen.
     this.resetFilters();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
@@ -943,26 +822,23 @@ export class SarMatrixViewer extends DG.JsViewer {
         rankScheme: this.rankScheme as SarRankScheme,
       };
       const matrices = await runSarMatrix(molecules, activity as DG.Column<number>, params);
-      // The viewer may have been closed while the workers were running; rendering into it now would
-      // build a grid nothing will ever release.
+      // Closed while the workers ran; rendering now would build a grid nothing releases.
       if (this.detached)
         return;
       this.matrices = matrices;
       this.collapseSeeded = false;
       this.selIndex = 0;
-      // Cleared before render(): render() re-activates the SAR-transfer tab, which shows a "Building..."
-      // placeholder and defers while `computing` is set — so leaving it true here strands the transfer
-      // tab on that placeholder until a manual tab switch.
+      // Must clear before render(): render() re-activates the transfer tab, which defers while
+      // `computing` is set and would otherwise strand on its "Building..." placeholder.
       this.computing = false;
       this.render();
     } catch (e) {
       if (this.detached)
-        return; // a viewer the user already closed must not report its own teardown as a failure
+        return;
       const message = e instanceof Error ? e.message : String(e);
       ui.empty(this.host);
       this.host.appendChild(ui.divText(`SAR Matrix failed: ${message}`));
-      // The transfer tab may still be showing "Building SAR matrices..." from a mid-compute visit;
-      // there is no render() on this path to replace it.
+      // No render() on this path to replace a mid-compute "Building..." placeholder.
       ui.empty(this.transferHost);
       this.transferHost.appendChild(ui.divText(`SAR Matrix failed: ${message}`, 'chem-sar-empty-note'));
       grok.shell.error(`SAR Matrix: ${message}`);
@@ -977,10 +853,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
   }
 
-  /** Whether a higher scaled activity means a more potent compound — drives coloring, ranking, the
-   *  best-trend, and the transfer benefiting cell. The explicit Activity direction wins; on Auto only
-   *  `-lg` (which turns a lower-is-better IC50 into a higher-is-better value) is higher-is-better,
-   *  while raw (`none`) and `lg` keep the assay's native "lower is more potent" direction. */
+  /** Whether higher scaled activity is more potent. Explicit Activity direction wins; on Auto only
+   *  `-lg` is higher-is-better while raw and `lg` keep the assay's native "lower is more potent". */
   private get higherIsBetter(): boolean {
     if (this.activityDirection === DIR_HIGHER)
       return true;
@@ -989,16 +863,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return this.scaling === SCALING_METHODS.MINUS_LG;
   }
 
-  /** Rebuild the SAR-transfer list: every correlated core pair across all matrices — within a matrix
-   *  AND across matrices (differently-scaffolded series) — strongest first. Runs only from the
-   *  transfer tab's lazy activation, so the quadratic core-vs-core pass is never paid by a session
-   *  that only ever reads the matrices.
-   *
-   * Left empty until then, which is what keeps it out of the rest of the viewer: the per-matrix
-   * correlation chip and the trend view all read this list, so none of them has to test whether the
-   * tab was ever opened. */
-  /** Drop the transfer list and the tab's content: the matrices it indexed into are gone (rebuilt or
-   *  reordered). The next visit to the transfer tab recomputes against the current matrices. */
+  /** Drop the transfer list and tab content; the matrices it indexed are gone. Recomputes on the
+   *  next transfer-tab visit. */
   private invalidateTransfers(): void {
     this.transferGeneration++;
     this.releaseSlot(this.transferSlot);
@@ -1008,9 +874,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.transfersComputed = false;
   }
 
-  /** The potency tint composited over white and returned opaque, for use as a depiction's background.
-   *  RDKit anti-aliases bond edges against whatever background the draw is handed, so a translucent
-   *  tint would let every bond blend toward white and leave a pale fringe once the cell is painted. */
+  /** Potency tint composited over white and returned opaque, for a depiction background: RDKit
+   *  anti-aliases bonds against the draw's background, so a translucent tint leaves a pale fringe. */
   private flatTint(matrix: SarMatrix, value: number, alpha: number): number {
     const c = this.tint(matrix, value, alpha);
     const a = alpha / 255;
@@ -1018,12 +883,10 @@ export class SarMatrixViewer extends DG.JsViewer {
     return DG.Color.argb(255, overWhite(DG.Color.r(c)), overWhite(DG.Color.g(c)), overWhite(DG.Color.b(c)));
   }
 
-  /** Potency tint at an explicit alpha (0-255), green = more potent. `DG.Color.scaleColor`'s own alpha
-   *  arg can't be used (ignored at the scale ends, transparent mid-range), so take its RGB and set
-   *  alpha here. For a lower-is-better activity the value is mirrored so the smallest maps to green. */
+  /** Potency tint at explicit alpha (0-255), green = more potent. `scaleColor`'s own alpha arg is
+   *  unusable (transparent mid-range), so RGB is taken and alpha set here; mirrored for lower-is-better. */
   private tint(matrix: SarMatrix, value: number, alpha: number): number {
-    // A single observed value (or all-equal values) gives a zero-width range; scaleColor would
-    // divide by zero. A lone value is trivially the most potent, so paint it the green end.
+    // Zero-width range would divide by zero in scaleColor; paint the green end.
     if (matrix.maxActivity === matrix.minActivity)
       return DG.Color.argb(alpha, DG.Color.r(DG.Color.green), DG.Color.g(DG.Color.green), DG.Color.b(DG.Color.green));
     const potency = this.higherIsBetter ? value : matrix.minActivity + matrix.maxActivity - value;
@@ -1033,7 +896,6 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   // ---- Navigator (left pane) ----------------------------------------------------------------
 
-  /** Human-readable name of the scaling applied to the activity, for labelling the cells' axis. */
   private get scalingLabel(): string {
     if (this.scaling === SCALING_METHODS.MINUS_LG)
       return '−log₁₀';
@@ -1057,8 +919,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return n ? sum / n : null;
   }
 
-  /** Rows and columns of a matrix that survive the current Vary and cell filters — what the pane
-   *  actually draws, as opposed to what the matrix holds. */
+  /** Rows and columns of a matrix that survive the current Vary and cell filters. */
   private visibleDims(matrix: SarMatrix): {rows: number, cols: number} {
     const all = this.visibleColIdxs(matrix);
     if (!this.cellFilterActive)
@@ -1069,29 +930,18 @@ export class SarMatrixViewer extends DG.JsViewer {
     return {rows, cols: cols.length};
   }
 
-  /** True while the filter is narrowing anything, so the untouched case skips the work entirely. */
   private get cellFilterActive(): boolean {
     return this.cellPass !== null;
   }
 
-  /** Whether the filter admits this cell. Everything passes while no filter is set, which is what
-   *  keeps the lookup off the painting path until the user asks for it. */
   private cellVisible(matrix: SarMatrix, ri: number, ci: number): boolean {
     return this.cellPass === null || this.cellPass.has(`${matrix.id}:${ri}:${ci}`);
   }
 
 
-  /**
-   * One row per matrix cell, carrying everything the filter can ask about: the row's core and the
-   * column's substituent as molecules, and the cell's potency, reference points and substituent
-   * weight as numbers. Typed this way the platform supplies every filter itself — sketchers for the
-   * two structures, histograms for the three numbers — which is the same set MMP gets over its
-   * fragment table, rather than controls hand-built to look like them.
-   *
-   * Per cell rather than per distinct pair, because potency and reference count belong to a cell: a
-   * pair repeated across matrices has a different value in each, and there would be no single row to
-   * put on the histogram.
-   */
+  /** One row per cell of the SELECTED matrix (core/substituent as molecules, potency/refs/weight as
+   *  numbers) so the platform supplies the filters. Scoped to the on-screen matrix to avoid
+   *  fingerprinting cells the user can't see; rebuilds on a matrix switch. */
   private buildStructFrame(): DG.DataFrame {
     const cores: string[] = [];
     const subs: string[] = [];
@@ -1099,18 +949,17 @@ export class SarMatrixViewer extends DG.JsViewer {
     const refs: number[] = [];
     const weights: number[] = [];
     this.cellKeys = [];
-    for (const matrix of this.matrices) {
+    const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
+    if (matrix) {
       for (let ri = 0; ri < matrix.rows.length; ri++) {
         for (let ci = 0; ci < matrix.columns.length; ci++) {
           const cell = matrix.cells[ri][ci];
           if (cell.kind === 'empty' || cell.value === null)
-            continue; // nothing to filter on, and it already draws blank
+            continue;
           cores.push(matrix.rows[ri].coreSmiles);
           subs.push(matrix.columns[ci].substSmiles);
           potency.push(cell.value);
-          // A measured compound has no reference points to rest on, so it is given the count of the
-          // measured neighbours it shares a row and column with — the same quantity, defined for it —
-          // rather than a blank the histogram would have to guess at.
+          // A measured compound has no reference points, so it gets its observed-neighbour count.
           refs.push(cell.references ?? this.observedNeighbours(matrix, ri, ci));
           const mw = substituentMW(matrix.columns[ci].substSmiles);
           weights.push(Number.isFinite(mw) ? mw : 0);
@@ -1145,8 +994,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return n;
   }
 
-  /** Read the frame's filter back into the passing-cell set, then repaint. Left null while everything
-   *  passes, so an untouched filter costs nothing on the per-cell path. */
+  /** Read the frame's filter into the passing-cell set, then repaint; null while everything passes. */
   private syncStructFilter(): void {
     const frame = this.structFrame;
     if (frame === null)
@@ -1165,15 +1013,13 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
 
-  /** The pair frame's filter group, built on first use. A filter group belongs to a view, so a
-   *  headless one is created for the frame and never shown — only its filters are, in a popup. */
+  /** The cell frame's filter group, built on first use. A filter group belongs to a view, so a
+   *  headless one is created and never shown — only its filters are, in a popup. */
   private structureFilterRoot(): HTMLElement {
     if (this.structFilters === null) {
       this.structFrame = this.buildStructFrame();
       this.structView = DG.TableView.create(this.structFrame, false);
-      // The default set, not a hand-picked one: the platform already gives a molecule column its
-      // sketcher filter and a numeric column its histogram, along with the per-filter and
-      // whole-group on/off switches. Naming the filters explicitly only risks diverging from that.
+      // Default set: the platform already gives molecule columns sketchers and numeric columns histograms.
       this.structFilters = this.structView.getFiltersGroup();
       this.structSub = DG.debounce(this.structFrame.onFilterChanged, 300).subscribe(() => this.syncStructFilter());
     }
@@ -1181,12 +1027,8 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
 
-  /**
-   * One row per series, carrying its drawn core as a molecule and the numbers its card prints. Same
-   * mechanism as the matrix pane's filter: the platform supplies a sketcher for the core and a
-   * histogram for each number, so finding a series by substructure and by potency is one filter group
-   * rather than a bespoke control per quantity.
-   */
+  /** One row per series, carrying its core as a molecule and the numbers its card prints, so the
+   *  platform supplies sketcher + histogram filters. */
   private buildNavFrame(): DG.DataFrame {
     const series: string[] = [];
     const cores: string[] = [];
@@ -1201,8 +1043,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     for (const matrix of this.matrices) {
       series.push(matrix.label);
       cores.push(this.matrixCore(matrix));
-      // Direction-adjusted, so "more potent" is always the larger number on the histogram whichever
-      // way the assay runs — otherwise the same drag means opposite things on -lg and raw scales.
+      // Direction-adjusted so "more potent" is always the larger number on the histogram.
       const top = matrix.realCount ? (this.higherIsBetter ? matrix.maxActivity : -matrix.minActivity) : NaN;
       best.push(top);
       const m = this.meanRealActivity(matrix);
@@ -1218,8 +1059,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const coreCol = DG.Column.fromStrings(NAV_CORE, cores);
     coreCol.semType = DG.SEMTYPE.MOLECULE;
     return DG.DataFrame.fromColumns([
-      // First, and a plain string: the platform gives a string column a category list with a search
-      // box, which is how a named series is actually looked for — typed, not picked off a histogram.
+      // Plain string so the platform gives it a searchable category list, for looking up a named series.
       DG.Column.fromStrings(NAV_SERIES, series),
       coreCol,
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, NAV_BEST, best),
@@ -1257,24 +1097,20 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.navFrame = this.buildNavFrame();
       this.navView = DG.TableView.create(this.navFrame, false);
       this.navFilters = this.navView.getFiltersGroup();
-      // Asked for by name, because the default set leaves it out: every series name is distinct, so a
-      // category list would hold one entry per row and the platform declines to build one. It is still
-      // how a named series is looked for — the list has a search box, which is what turns "3" into
-      // every series carrying a 3 — so the filter is added explicitly.
+      // Added explicitly: the default set omits an all-distinct category column, but its search box is
+      // how a named series is looked for.
       this.navFilters.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: NAV_SERIES}, false);
       this.navSub = DG.debounce(this.navFrame.onFilterChanged, 300).subscribe(() => this.syncNavFilter());
     }
     return this.navFilters.root;
   }
 
-  /** Whether a matrix clears the series filter. Unfiltered until the filter group narrows the frame. */
   private passesFilter(matrix: SarMatrix): boolean {
     return this.navPass === null || this.navPass.has(matrix.id);
   }
 
-  /** The score block on the right of a navigator card: one big value per line with its caption under
-   *  it. Shared by the series and transfer cards so a one-line score sits exactly where a two-line one
-   *  does and the two lists read as one column of scores. */
+  /** The score block on the right of a navigator card. Shared by series and transfer cards so both
+   *  lists read as one column of scores. */
   private cardScoreBox(lines: {value: string, label: string}[], tip: () => string): HTMLElement {
     const box = ui.divV(lines.map((ln) => ui.divH([
       ui.divText(ln.value, 'chem-sar-card-score'),
@@ -1284,8 +1120,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return box;
   }
 
-  /** The navigator card's rank score, made legible: best AND mean potency shown on the selected
-   *  scale (matching the cells), plus a hover explanation naming the activity and scaling. */
+  /** The navigator card's rank score: best and mean potency on the selected scale, plus a hover tip. */
   private cardScore(matrix: SarMatrix): {lines: {value: string, label: string}[], tip: string} {
     const scheme = this.rankScheme;
     const unit = this.activityColumnName || 'activity';
@@ -1303,21 +1138,14 @@ export class SarMatrixViewer extends DG.JsViewer {
       return {lines: [{value: this.formatActivity(this.higherIsBetter ? raw : -raw), label: 'best R'}],
         tip: `Best mean potency of any single substituent across the cores (${unit}, ${this.scalingLabel} scale).`};
     }
-    // The only remaining scheme is Discontinuity (the rank choices are Potency/Preferred/Discontinuity).
+    // Remaining scheme is Discontinuity.
     return {lines: [{value: (matrix.scores[SarRankScheme.Discontinuity] ?? 0).toFixed(2), label: 'spread'}],
       tip: `Largest activity spread within a single core, on the ${this.scalingLabel} scale — ` +
         'how discontinuous the SAR is.'};
   }
 
-  /**
-   * The structure a matrix is keyed on, in a form the depiction can draw — what every one of its rows
-   * has in common and, for a coarser matrix, what its children agree on a cut deeper. Drawing the
-   * first row's core instead would show the same picture for a parent and its children, since a row
-   * of the parent is a core of a child.
-   *
-   * Each fragmentation level marks the sites it inherits with its own isotope, which would render as
-   * numbered stars; renumbering them as attachment points draws them as R labels like every other core.
-   */
+  /** The structure a matrix is keyed on, drawable. Isotope-marked inherited sites are renumbered as
+   *  attachment points so they draw as R labels rather than numbered stars. */
   private matrixCore(matrix: SarMatrix): string {
     if (!matrix.siteKey)
       return matrix.rows[0]?.coreSmiles ?? '';
@@ -1325,12 +1153,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return matrix.siteKey.replace(/\[\d+\*\]|\[\*:\d+\]/g, () => `[*:${++n}]`);
   }
 
-  /**
-   * Parent index per matrix, `-1` for a root, against the current (ranked) order. A matrix built at a
-   * coarser fragmentation level owns the ones folded into it; where no coarser level was asked for,
-   * compound containment stands in, so the navigator still groups related views rather than listing
-   * every matrix flat.
-   */
+  /** Parent index per matrix (`-1` for a root) in ranked order; falls back to containment nesting
+   *  when no coarser level was built. */
   private matrixParents(): number[] {
     const byId = new Map<string, number>();
     this.matrices.forEach((matrix, i) => byId.set(matrix.id, i));
@@ -1339,25 +1163,16 @@ export class SarMatrixViewer extends DG.JsViewer {
     return linked.some((p) => p >= 0) ? linked : nestByContainment(this.matrices);
   }
 
-  /** One selectable matrix card: the aligned core drawn (so the matrix is identified by its
-   *  scaffold, not just "Series A"), a descriptor line, and the rank score. `depth` indents a matrix
-   *  folded into the one above it; `folded` is how many are folded into this one, which gives the card
-   *  its expander. */
+  /** One selectable matrix card: aligned core, a descriptor line, and the rank score. `depth`
+   *  indents a folded matrix; `folded` is how many are folded into this one, giving its expander. */
   private buildCard(matrix: SarMatrix, index: number, depth = 0, folded = 0,
     onToggle?: () => void): HTMLElement {
-    // Held to what the list alone has to answer — how big a series is, and how much sits under it.
-    // The description column is barely 110px wide once the structure and the score are placed, so
-    // every extra fact costs a wrapped line on every card; the virtual count and the Free-Wilson R²
-    // are on the matrix pane's own chips the moment a card is opened.
     const desc = `${matrix.rows.length} cores · ${matrix.positions.join('/')} · ${matrix.realCount} cpd` +
       (folded ? ` · ${folded} inside` : '');
     const core = this.lazyCoreDepiction(this.matrixCore(matrix), CARD_CORE_W, CARD_CORE_H);
     core.classList.add('chem-sar-card-core');
-    // Numbered from the matrices, not from the fragmentation passes: the first pass produces series,
-    // which are the ROWS of a matrix rather than anything the navigator lists, so calling the first
-    // listable thing "L2" invited the question of where L1 had gone.
-    // Branches also bottom out at different depths — a key already reduced to a bare ring has nothing
-    // left to strip — so indentation alone does not say which level a card sits at. The badge does.
+    // Level badge, since branches bottom out at different depths so indentation alone doesn't say
+    // which level a card sits at.
     const shown = matrix.level - 1;
     const level = ui.divText(`L${shown}`, 'chem-sar-card-level');
     ui.tooltip.bind(level, () => shown === 1 ?
@@ -1370,14 +1185,14 @@ export class SarMatrixViewer extends DG.JsViewer {
     ], 'chem-sar-card-body');
     const sc = this.cardScore(matrix);
     const scoreBox = this.cardScoreBox(sc.lines, () => sc.tip);
-    // The expander is its own click target: the rest of the card selects the matrix, and collapsing
-    // must not also switch the pane to it. Leaves get a spacer so every core lines up regardless.
+    // The expander is its own click target so collapsing doesn't also select the matrix; leaves get
+    // a spacer so every core lines up.
     let twisty: HTMLElement;
     if (folded > 0 && onToggle) {
       twisty = ui.iconFA(!this.collapsed.has(matrix.id) ? 'chevron-down' : 'chevron-right', (e: MouseEvent) => {
         e.stopPropagation();
         onToggle();
-        // The card is not rebuilt on toggle (the list mutates in place), so flip the icon here.
+        // Card isn't rebuilt on toggle (list mutates in place), so flip the icon here.
         const open = !this.collapsed.has(matrix.id);
         twisty.classList.toggle('fa-chevron-down', open);
         twisty.classList.toggle('fa-chevron-right', !open);
@@ -1390,7 +1205,7 @@ export class SarMatrixViewer extends DG.JsViewer {
 
     const card = ui.divH([twisty, core, body, scoreBox], 'chem-sar-card');
     if (depth > 0) {
-      // Capped: past a couple of levels the indent would eat the card rather than show the nesting.
+      // Capped so deep nesting doesn't eat the card.
       card.style.marginLeft = `${Math.min(depth, 3) * 10}px`;
       card.classList.add('chem-sar-card-nested');
     }
@@ -1400,22 +1215,21 @@ export class SarMatrixViewer extends DG.JsViewer {
     return card;
   }
 
-  /** Card click: move the highlight and rebuild only the matrix pane. The navigator list — hundreds
-   *  of cards and their depictions — is left untouched; rebuilding it per selection is exactly the
-   *  cost this viewer used to pay on every click. */
+  /** Card click: move the highlight and rebuild only the matrix pane, leaving the navigator list
+   *  (hundreds of cards) untouched. */
   private selectMatrix(index: number): void {
     if (index === this.selIndex)
       return;
     this.navCards[this.selIndex]?.classList.remove('selected');
     this.selIndex = index;
     this.navCards[index]?.classList.add('selected');
-    this.varyPosition = ''; // the Vary filter is per-matrix; don't carry it to a different one
+    this.varyPosition = ''; // Vary filter is per-matrix; don't carry it over
+    this.resetStructFilter(); // cell filter is scoped to one matrix; rebuild for the new one
     this.renderMatrixPane();
   }
 
-  /** A card-core canvas whose molecule is drawn on first visibility (via `navCoreObserver`): with
-   *  hundreds of series, rasterizing every structure up front is most of what made the navigator
-   *  expensive to build. Eager fallback when no observer is active. */
+  /** A card-core canvas drawn on first visibility (via `navCoreObserver`); eager fallback when no
+   *  observer is active. */
   private lazyCoreDepiction(smiles: string, w: number, h: number): HTMLElement {
     if (this.navCoreObserver === null)
       return renderMoleculeOnColor(smiles, w, h, CORE_BG_ARGB);
@@ -1439,8 +1253,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return this.coreLabel(side, this.matrices.length > 1);
   }
 
-  /** A transfer's target ("→" side) label with its R-position. The series prefix is dropped when the
-   *  target shares the source's matrix, so it reads "Core 2 · R1" not "Series A · Core 2 · R1". */
+  /** A transfer's target label with its R-position; series prefix dropped when the target shares the
+   *  source's matrix. */
   private transferTargetLabel(transfer: Transfer): string {
     return `${this.coreLabel(transfer.b, transfer.b.matrixIndex !== transfer.a.matrixIndex)} · ${transfer.a.position}`;
   }
@@ -1461,10 +1275,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return [...groups.values()];
   }
 
-  /** A transfer navigator section (same-series or cross-series): a header, then one card per source
-   *  core — with a target dropdown when that source transfers to more than one core. */
-  /** Select a specific transfer (by its identity in this.transfers) and redraw the trend view.
-   *  Only the transfer tab is rebuilt — the matrix tab is untouched and must not move. */
+  /** Select a transfer and redraw the trend view; only the transfer tab is rebuilt. */
   private selectTransfer(transfer: Transfer): void {
     this.transferIndex = Math.max(0, this.transfers.indexOf(transfer));
     this.renderTransferPanel();
@@ -1475,25 +1286,19 @@ export class SarMatrixViewer extends DG.JsViewer {
     return this.tabs.currentPane?.name === TAB_TRANSFER;
   }
 
-  /**
-   * Bring the SAR Transfer tab up to date, computing the transfer list on first open. The quadratic
-   * core-vs-core comparison is exactly what the lazy tab defers: it runs here — behind a spinner and
-   * a timeout so the tab switch paints first — and never anywhere else. Called on every switch to the
-   * tab and from `render()` while the tab is up; both are no-ops when the list is already current.
-   */
+  /** Bring the SAR Transfer tab up to date, computing the (quadratic) transfer list on first open
+   *  behind a spinner. No-op when the list is already current. */
   private activateTransferTab(): void {
     if (this.transfersComputing)
       return;
     if (this.computing) {
-      // The matrices themselves are still being built; compute() ends in render(), which re-enters
-      // here once there is something to compare.
+      // Matrices are still building; compute() ends in render(), which re-enters here.
       ui.empty(this.transferHost);
       this.transferHost.appendChild(ui.divText('Building SAR matrices...', 'chem-sar-empty-note'));
       return;
     }
     if (this.transfersComputed) {
-      // The list is current; rebuild the pane only if it is not on screen (first show after a render
-      // that happened while this tab was hidden), otherwise just repaint the live grid.
+      // List is current; rebuild the pane only if it's not on screen, else repaint the live grid.
       if (this.transferHost.childElementCount === 0)
         this.renderTransferPanel();
       else
@@ -1503,18 +1308,15 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.transfersComputing = true;
     ui.empty(this.transferHost);
     ui.setUpdateIndicator(this.transferHost, true, 'Detecting SAR transfers...');
-    // Timeout, MMP-style: let the tab switch and the indicator paint before the synchronous
-    // quadratic pass freezes the frame.
+    // Timeout so the tab switch and indicator paint before the synchronous quadratic pass.
     setTimeout(async () => {
-      // A matrix rebuild that started meanwhile is about to replace `matrices`; computing now would
-      // mark stale transfers as current. Its final render() re-enters the activation instead.
+      // A matrix rebuild started meanwhile would make these transfers stale; its render() re-enters.
       if (this.detached || this.computing) {
         this.transfersComputing = false;
         ui.setUpdateIndicator(this.transferHost, false);
         return;
       }
-      // Held across the await, not just up to it: fingerprinting goes out to the RDKit workers, and a
-      // tab bounce or a threshold change in that window would otherwise start a second full scan.
+      // Captured before the await so a tab bounce / threshold change in the window can't publish a stale scan.
       const generation = this.transferGeneration;
       let detected: Transfer[] | null = null;
       try {
@@ -1524,9 +1326,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       }
       this.transfersComputing = false;
       ui.setUpdateIndicator(this.transferHost, false);
-      // The await handed control back to the event loop. Anything that dropped the list while it was
-      // out there bumped the generation, and these indices no longer address the matrices on screen —
-      // publishing them would label a card with a core that is not the one it was computed from.
+      // A bumped generation means these indices no longer address the on-screen matrices.
       if (this.detached || generation !== this.transferGeneration)
         return;
       if (detected === null) {
@@ -1542,13 +1342,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     }, 100);
   }
 
-  /**
-   * Rebuild the SAR-transfer tab: the list of detected transfers alongside the trend view of the
-   * selected one, or a note when the current matrices hold no transfer worth showing.
-   */
+  /** Rebuild the SAR-transfer tab: the transfer list plus the trend view of the selected one. */
   private renderTransferPanel(): void {
-    // The tab's own grid, not the matrix's: releasing here is what keeps switching transfers from
-    // stacking up Dart-backed grids, and it cannot touch the matrix tab's slot.
+    // Release the tab's own grid (not the matrix's) so switching transfers doesn't stack up grids.
     this.releaseSlot(this.transferSlot);
     ui.empty(this.transferHost);
     if (this.transfers.length === 0) {
@@ -1568,29 +1364,23 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.transferHost.appendChild(this.buildTransferPane(this.transfers[this.transferIndex]));
   }
 
-  /** Every transfer sharing this one's source core — the alternatives the pane's target dropdown
-   *  switches between. Keys on the same sourceKey as the nav, so card "+N" and dropdown always agree. */
+  /** Every transfer sharing this one's source core — the pane's target-dropdown alternatives. */
   private transferSiblings(transfer: Transfer): Transfer[] {
     const key = transferSourceKey(transfer);
     return this.transfers.filter((t) => transferSourceKey(t) === key);
   }
 
-  /** One selectable card for a group of transfers sharing a source core: the source and its (shown)
-   *  target named in text, a "+N" badge when the source reaches more cores (switched in the pane),
-   *  and the shown transfer's correlation. */
+  /** One selectable card for a group of transfers sharing a source core. */
   private buildTransferCard(group: Transfer[]): HTMLElement {
     const selected = this.transfers[this.transferIndex] ?? null;
-    // Show the selected transfer when it belongs to this group, otherwise the strongest (first).
+    // Selected transfer when it belongs to this group, otherwise the strongest (first).
     const shown = (selected && group.includes(selected)) ? selected : group[0];
 
-    // Only the source core is named. Which target it carries to is a choice, not an identity, and the
-    // pane's own dropdown is where it is made — repeating it here cost a wrapped line per card.
     const body = ui.divV([
       ui.divText(this.sideLabel(shown.a), 'chem-sar-card-title'),
     ], 'chem-sar-card-body');
-    // The source core the card is named after, drawn the way a matrix card draws its series core.
-    // Painted up front rather than through the navigator's deferred observer: that observer belongs to
-    // the matrix list and is disconnected whenever it refills, which would leave these blank.
+    // Painted up front, not via the navigator's deferred observer, which belongs to the matrix list
+    // and would leave these blank on refill.
     const sourceRow = this.matrices[shown.a.matrixIndex].rows[shown.a.rowIndex];
     const core = renderMoleculeOnColor(sourceRow.keySmiles, CARD_CORE_W, CARD_CORE_H, CORE_BG_ARGB);
     core.classList.add('chem-sar-card-core');
@@ -1610,15 +1400,12 @@ export class SarMatrixViewer extends DG.JsViewer {
     const rankInput = ui.input.choice('Rank by', {
       value: rankValue,
       items: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred],
-      // A field assignment raises no onPropertyChanged — the property has no accessor on the viewer —
-      // so re-rank explicitly here. The property-panel path reaches the same method via that event.
+      // A field assignment raises no onPropertyChanged, so re-rank explicitly here.
       onValueChanged: (value) => {
         this.rankScheme = value!;
         this.reRank();
       },
     });
-    // The three schemes answer different questions and the names alone do not say which, so the whole
-    // set is spelled out rather than only the one in force — choosing between them is the point.
     ui.tooltip.bind(rankInput.root, () => {
       const unit = this.activityColumnName || 'activity';
       const mark = (scheme: string): string => scheme === this.rankScheme ? '▸ ' : '   ';
@@ -1641,13 +1428,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       `${deepest} level${deepest === 1 ? '' : 's'}`, 'chem-sar-nav-sub');
     const list = ui.div([], 'chem-sar-nav-list');
     const matchCount = ui.divText('', 'chem-sar-nav-matches');
-    // Platform filter group: a substructure sketcher over the cores plus a histogram per printed number.
     const navIdleTip = 'Filter series by core structure, potency, SAR spread, size';
     const navIcon = ui.icons.filter(() => {
       ui.showPopup(ui.div(this.navFilterRoot(), 'chem-sar-struct-filters'), navIcon, {vertical: true});
     }, navIdleTip);
     navIcon.classList.add('chem-sar-struct-icon');
-    // Cards are built once (fillNavList); a filter change only shows/hides them.
     const refill = (): void => {
       this.updateNavVisibility();
       const filtered = this.navPass !== null;
@@ -1661,7 +1446,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const header = ui.divV([sub, ui.divH([ui.form([rankInput]), navIcon], 'chem-sar-nav-controls'), matchCount],
       'chem-sar-nav-header');
     this.fillNavList(list, parents);
-    refill(); // initial visibility + match count (a threshold can survive a navigator rebuild)
+    refill(); // initial visibility + match count
     const nav = ui.divV([header, list], 'chem-sar-nav');
     const collapseBtn = ui.iconFA('chevron-left', () => {
       this.navCollapsed = !this.navCollapsed;
@@ -1674,9 +1459,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return nav;
   }
 
-  /** The navigator's child lists, recomputed from the parent chain the cards were built against.
-   *  A coarser matrix owns the finer ones folded into it, so each family is one branch of the tree;
-   *  ranked order decides the order of the families and of the siblings within each. */
+  /** The navigator's child lists, from the parent chain the cards were built against. */
   private navChildren(parents: number[]): Map<number, number[]> {
     const children = new Map<number, number[]>();
     parents.forEach((p, i) => {
@@ -1686,14 +1469,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return children;
   }
 
-  /**
-   * Build the navigator's cards, ONCE per navigator build: one card per matrix, each parent
-   * immediately followed by the subtree it owns, all of them in the DOM. What is *shown* is decided
-   * separately by {@link updateNavVisibility} — selection, collapse toggles and the threshold filter
-   * all mutate the existing cards (a class swap / display toggles) instead of coming back here.
-   * The structures themselves rasterize lazily on first visibility ({@link lazyCoreDepiction}), so
-   * building every card up front costs DOM only.
-   */
+  /** Build every navigator card once (parent immediately followed by its subtree); visibility is
+   *  handled separately by {@link updateNavVisibility}. Structures rasterize lazily, so this costs DOM only. */
   private fillNavList(list: HTMLElement, parents: number[]): void {
     ui.empty(list);
     this.navCards = [];
@@ -1711,22 +1488,20 @@ export class SarMatrixViewer extends DG.JsViewer {
           draw();
         }
       }
-    }, {root: list, rootMargin: '300px'}); // pre-draw a little past the viewport so scrolling reads smooth
+    }, {root: list, rootMargin: '300px'}); // pre-draw past the viewport for smooth scrolling
 
     const children = this.navChildren(parents);
     const descendants = (i: number): number =>
       (children.get(i) ?? []).reduce((n, child) => n + 1 + descendants(child), 0);
 
-    // A fresh analysis opens at its roots: with a few hundred matrices the fully expanded list is
-    // unreadable, and the coarsest matrix is the one worth reading first anyway. Seeded once, so a
-    // redraw after a toggle keeps whatever the user has opened since.
+    // A fresh analysis opens collapsed to its roots. Seeded once, so a redraw after a toggle keeps
+    // whatever the user has opened since.
     if (!this.collapseSeeded) {
       this.collapsed.clear();
       for (const parent of children.keys())
         this.collapsed.add(this.matrices[parent].id);
-      // The selection rises to the root that holds it rather than that root being opened to reveal it,
-      // or the family containing whatever ranked first would always arrive expanded. The pane is built
-      // after the navigator, so it picks this up and opens on the broadest matrix of that family.
+      // Raise the selection to its root rather than expanding that root, so the pane opens on the
+      // broadest matrix of the family.
       let root = Math.min(this.selIndex, this.matrices.length - 1);
       while (root >= 0 && parents[root] >= 0)
         root = parents[root];
@@ -1753,14 +1528,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     });
   }
 
-  /**
-   * Show/hide the already-built cards per the collapse state and the threshold filter — pure display
-   * toggles, so neither dragging the threshold nor toggling a branch ever recreates a card.
-   *
-   * A parent that fails the filter is still shown when something under it passes, or the match would
-   * be unreachable. While a filter is on, collapse is ignored down those paths for the same reason —
-   * filtering is a search, and a hit hidden inside a closed node is not a hit the user can see.
-   */
+  /** Show/hide the already-built cards per collapse state and filter (pure display toggles). A parent
+   *  that fails the filter still shows when a descendant passes; collapse is ignored while filtering. */
   private updateNavVisibility(): void {
     const parents = this.navParents;
     const filtering = this.navPass !== null;
@@ -1770,7 +1539,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       const cached = hits.get(i);
       if (cached !== undefined)
         return cached;
-      hits.set(i, true); // guards against a malformed parent chain looping back on itself
+      hits.set(i, true); // guard against a malformed parent chain looping back on itself
       let ok = this.passesFilter(this.matrices[i]);
       for (const child of children.get(i) ?? [])
         ok = anyHit(child) || ok;
@@ -1794,10 +1563,7 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   // ---- Matrix table (right pane) ------------------------------------------------------------
 
-  /**
-   * Grow cells to fill the pane so a narrow matrix doesn't leave half the width empty, but never
-   * shrink below CELL_W — with many columns the table scrolls horizontally instead.
-   */
+  /** Grow cells to fill the pane, never below CELL_W (the table scrolls horizontally instead). */
   private fitCellWidth(nCols: number): number {
     if (nCols <= 0)
       return CELL_W;
@@ -1806,24 +1572,14 @@ export class SarMatrixViewer extends DG.JsViewer {
     return Math.max(CELL_W, Math.min(CELL_W_MAX, Math.floor(avail / nCols)));
   }
 
-  /** Flag a filter icon as narrowing something: a dot (via the active class) plus a tooltip that says
-   *  what is hidden, or the idle tooltip when nothing is filtered. */
+  /** Flag a filter icon as active: a dot plus the active tooltip, or the idle tooltip otherwise. */
   private markFilterIcon(icon: HTMLElement, active: boolean, activeTip: string, idleTip: string): void {
     icon.classList.toggle('chem-sar-filter-on', active);
     ui.tooltip.bind(icon, active ? activeTip : idleTip);
   }
 
-  /**
-   * Apply the potency threshold to the grid already on screen instead of rebuilding it.
-   *
-   * Rows go through the grid's own row filter, columns through `GridColumn.visible`, and the blanking
-   * of surviving-but-failing cells is just a repaint — the painter reads `cellMin` directly. A full
-   * `render()` would rebuild the navigator, re-run the containment nesting, recreate the DataFrame and
-   * grid, and recompute every row's alignment template, none of which the threshold can change.
-   *
-   * The painter maps a grid row back through `gridRowToTable`, so a filtered row set keeps resolving
-   * to the right `PaneRow` without any index bookkeeping here.
-   */
+  /** Apply the cell filter to the on-screen grid instead of rebuilding: rows via the grid's row
+   *  filter, columns via `GridColumn.visible`, failing cells blanked by a repaint. */
   private applyCellFilter(): void {
     const state = this.matrixGrid;
     if (state === null)
@@ -1868,7 +1624,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.paneEmptyNote.style.display = emptied ? '' : 'none';
   }
 
-  /** How many of the pane's columns are currently shown — hidden ones must not claim width. */
   private visibleGridCols(state: MatrixGridState): number {
     let n = 0;
     state.colKeyToIdx.forEach((_idx, key) => {
@@ -1878,13 +1633,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return n;
   }
 
-  /**
-   * Re-fit the live grid's columns to the current pane width. Cell geometry reaches the painters as
-   * the grid's own cell bounds rather than through `cellW`, so a width change needs no rebuild — which
-   * is what lets the grid keep its scroll position across a resize. Widths are clamped to whole
-   * pixels, so a drag that does not cross a pixel boundary is skipped rather than repainting the
-   * viewport on every debounce tick.
-   */
+  /** Re-fit the live grid's columns to the pane width without a rebuild, so scroll position survives
+   *  a resize. Skips sub-pixel changes to avoid repainting on every debounce tick. */
   private refitColumns(): void {
     const state = this.matrixGrid;
     if (state === null)
@@ -1900,17 +1650,15 @@ export class SarMatrixViewer extends DG.JsViewer {
     });
   }
 
-  /** Column indices to show: all, or only the "Vary" position's group when one is chosen. Columns
-   *  keep their as-assembled (frequency) order — the "Label" control annotates them, never reorders. */
+  /** Column indices to show: all, or only the "Vary" position's group when one is chosen. */
   private visibleColIdxs(matrix: SarMatrix): number[] {
     const all = matrix.columns.map((_, ci) => ci);
-    // The potency threshold is NOT applied here: it hides columns through `GridColumn.visible` on the
-    // grid that is already up, so the pane can be built once and filtered without a rebuild.
+    // Threshold is NOT applied here; it hides columns via `GridColumn.visible` on the live grid.
     return this.varyPosition && matrix.positions.includes(this.varyPosition) ?
       all.filter((ci) => matrix.columns[ci].position === this.varyPosition) : all;
   }
 
-  /** Mean observed potency of a column (real cells only), or null when it has no observation. */
+  /** Mean observed potency of a column (real cells only), or null when none. */
   private columnMeanPotency(matrix: SarMatrix, colIdx: number): number | null {
     let sum = 0;
     let n = 0;
@@ -1924,8 +1672,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return n ? sum / n : null;
   }
 
-  /** Caption annotating a column with the chosen metric — its mean potency (scaled) or the
-   *  substituent MW — shown under the substituent header. Empty when labelling is off. */
+  /** Caption under the substituent header: mean potency or substituent MW; empty when labelling is off. */
   private columnSortCaption(matrix: SarMatrix, colIdx: number): string {
     if (this.columnCaption === COLSORT_MW) {
       const mw = substituentMW(matrix.columns[colIdx].substSmiles);
@@ -1938,20 +1685,12 @@ export class SarMatrixViewer extends DG.JsViewer {
     return '';
   }
 
-  /**
-   * Virtualized render of a row/column spec: a scaffold DataFrame (one row per displayed row, one
-   * string column per displayed column plus a pinned 'Core' column) backs a DG.Grid whose every cell
-   * — body, core, and R-group header — is hand-painted in `onCellRender`. Only viewport cells draw,
-   * so a large matrix no longer renders every core×substituent up front, and selection/current-row
-   * changes repaint via `invalidate` instead of rebuilding the DOM. Both the matrix pane and the
-   * transfer pane build through here; each displayed row resolves against its own matrix, which is
-   * what lets a cross-series transfer show two rows drawn from two different matrices.
-   */
+  /** Virtualized render of a row/column spec: a scaffold DataFrame backs a DG.Grid whose every cell
+   *  is hand-painted in `onCellRender`, so only viewport cells draw. Each displayed row resolves
+   *  against its own matrix, which lets a cross-series transfer show rows from two matrices. */
   private buildPaneGrid(rows: PaneRow[], columns: PaneColumn[], slot: PaneGridSlot): HTMLElement {
     this.cellW = this.fitCellWidth(columns.length);
-    // The group boundaries are computed here, once per grid: `onCellRender` runs for every visible
-    // header cell on every repaint, and rescanning the columns there is quadratic in the column count
-    // for a result that cannot change until the grid is rebuilt.
+    // Group boundaries computed once here; rescanning in `onCellRender` would be quadratic per repaint.
     const firstOfGroup = new Set<number>();
     columns.forEach((column, i) => {
       if (i === 0 || columns[i - 1].position !== column.position)
@@ -1961,7 +1700,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const df = DG.DataFrame.create(rows.length);
     df.columns.addNewString('Core');
     const colKeyToIdx = new Map<string, number>();
-    // Stable string keys (never the grid column idx, which pinning and the hidden row header shift).
+    // Stable string keys (never the grid column idx, which pinning shifts).
     columns.forEach((_column, i) => {
       const key = `c${i}`;
       df.columns.addNewString(key);
@@ -1976,27 +1715,18 @@ export class SarMatrixViewer extends DG.JsViewer {
     grid.col('Core')!.width = CORE_W;
     colKeyToIdx.forEach((_i, key) => grid.col(key)!.width = this.cellW);
     grid.col('Core')!.pin();
-    // Resolved once per grid: `onCellRender` runs for the pinned header on every repaint, and the
-    // answer cannot change until the grid is rebuilt. A cross-series transfer draws its two rows from
-    // different matrices, so there is no one series structure to name and the header stays textual.
-    // A single template only serves rows that genuinely share a core. A cluster built on a generic MCS
-    // anchor gives each row a different concrete core, and aligning those to one another's template
-    // silently fails — `generate_aligned_coords` leaves the molecule with its own layout — so every
-    // such row would be drawn in its own orientation. Those panes align per row instead.
+    // Shared template only when every row genuinely shares one concrete core; otherwise null and
+    // those panes align per row (a single template would silently fail to align dissimilar cores).
     const firstCore = rows.length > 0 ? rows[0].matrix.rows[rows[0].rowIndex]?.coreSmiles ?? null : null;
     const sharedCore = firstCore !== null &&
       rows.every((row) => row.matrix.rows[row.rowIndex]?.coreSmiles === firstCore) ? firstCore : null;
-    // Attachment points are capped off the header. It names the scaffold every row shares, while an
-    // open position only means something on a row key, where exactly one is left open; carrying both
-    // here labels a site the rows have already filled and invites reading them as disagreeing with the
-    // column header. Capping leaves the atoms implicit, so nothing is drawn in their place.
+    // Cap attachment points off the header so it names the shared scaffold without labelling filled sites.
     const headerCore = sharedCore === null ? null : sharedCore.replace(/\[\*:\d+\]/g, '[H]');
     const paneTemplate = headerCore !== null ? buildAlignmentTemplate(headerCore) : null;
     const state: MatrixGridState = {grid, df, rows, columns, colKeyToIdx, firstOfGroup, headerCore, paneTemplate,
       rowTemplates: new Array(rows.length).fill(null)};
 
-    // Owned by this grid instance; unsubscribed when the next grid replaces it (or on detach) so
-    // repeated renders can't leak render/click/tooltip handlers into detached grids.
+    // Owned by this grid instance; unsubscribed when replaced or on detach so renders don't leak handlers.
     slot.subs.forEach((s) => s.unsubscribe());
     slot.subs = [];
 
@@ -2009,8 +1739,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (!b || b.width < 1 || b.height < 1)
         return;
       const g = args.g;
-      // The grid's render context already carries a devicePixelRatio scale, so paint in CSS
-      // coordinates; save/restore isolates the fillStyle/font/lineDash changes from other cells.
+      // The context already carries the DPR scale, so paint in CSS coords; save/restore isolates state.
       g.save();
       try {
         const name = c.gridColumn.name;
@@ -2037,8 +1766,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     slot.subs.push(grid.onCellClick.subscribe((c) => this.onGridCellClick(state, c)));
     slot.subs.push(grid.onCellTooltip((c, x, y) => this.onGridCellTooltip(state, c, x, y)));
 
-    // Track the pointer for ctrl/shift selection extend, and decode right-clicks to the assembled
-    // virtual cell so the viewer's context menu can offer a per-cell make-list add.
+    // Track the pointer for ctrl/shift extend, and decode right-clicks to the virtual cell under them.
     const overlay = grid.overlay;
     const onMouseDown = (e: MouseEvent): void => {this.lastGridMouseEvent = e;};
     const onContextMenu = (e: MouseEvent): void => {
@@ -2062,15 +1790,14 @@ export class SarMatrixViewer extends DG.JsViewer {
 
     slot.state = state;
 
-    // The grid virtualizes off its own height, so give it a plain flex host that fills the pane (not
-    // ui.box, which would pin a fixed pixel width and stop the matrix growing with the pane).
+    // Plain flex host that fills the pane, not ui.box (which would pin a fixed width).
     grid.root.style.width = '100%';
     grid.root.style.height = '100%';
     return ui.div([grid.root], 'chem-sar-grid-host');
   }
 
-  /** Resolve a grid body cell to the displayed row descriptor and the index of the matrix column
-   *  behind it. Null for the pinned 'Core' column and for anything outside the built row/column set. */
+  /** Resolve a grid body cell to its row descriptor and matrix column index; null for 'Core' and
+   *  anything outside the built set. */
   private resolveGridCell(state: MatrixGridState, c: DG.GridCell): {paneRow: PaneRow, ci: number} | null {
     const name = c.gridColumn.name;
     if (name === 'Core')
@@ -2085,9 +1812,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return {paneRow, ci: paneRow.colIdxs[idx]};
   }
 
-  /** Click on a grid body cell: open the platform Molecule context, set the host grid's current row /
-   *  selection, and register the cell's SAR panel. The row descriptor carries the matrix, so a
-   *  cross-series transfer opens the panel of whichever matrix the clicked side belongs to. */
+  /** Click on a grid body cell: open the Molecule context, set the host grid's current row/selection,
+   *  and register the cell's SAR panel against whichever matrix the clicked side belongs to. */
   private onGridCellClick(state: MatrixGridState, c: DG.GridCell): void {
     if (!c.isTableCell)
       return;
@@ -2098,28 +1824,24 @@ export class SarMatrixViewer extends DG.JsViewer {
     const matrix = paneRow.matrix;
     const ri = paneRow.rowIndex;
     const cell = matrix.cells[ri][ci];
-    // A cell the threshold has blanked is not selectable: it draws as empty, so opening the compound
-    // behind it would answer a click the user never appeared to make, and the context panel would
-    // describe a molecule that is not on screen.
+    // A threshold-blanked cell draws empty and isn't selectable.
     if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(matrix, ri, ci))
       return;
     grok.shell.windows.showContextPanel = true;
-    // A real compound becomes the host grid's current row and (ctrl/shift) extends its selection; a
-    // virtual analog has no row, so park the current row at -1 to drop any previous real-cell ring.
+    // A real compound becomes the current row and extends selection; a virtual analog has no row.
     if (cell.molIdx !== null) {
       this.dataFrame.currentRowIdx = cell.molIdx;
       const event = this.lastGridMouseEvent ?? new MouseEvent('click');
       this.dataFrame.selection.handleClick((i) => i === cell.molIdx, event, true);
     } else
       this.dataFrame.currentRowIdx = -1;
-    // Any assembled cell opens the platform Molecule context; its SAR context is registered for the
-    // gated "SAR analysis" pane. An unassembled virtual falls back to the standalone SAR panel.
+    // Assembled cell opens the Molecule context (SAR context gated into the "SAR analysis" pane);
+    // an unassembled virtual falls back to the standalone SAR panel.
     if (cell.smiles) {
       this.analogPanels.set(cell.smiles, () => this.buildCellPanel(matrix, ri, ci));
       grok.shell.o = DG.SemanticValue.fromValueType(cell.smiles, DG.SEMTYPE.MOLECULE);
     } else
       grok.shell.o = this.buildCellPanel(matrix, ri, ci);
-    // Repaint so the freshly-set current/selection ring shows immediately.
     state.grid.invalidate();
   }
 
@@ -2134,8 +1856,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (idx === undefined)
         return false;
       const column = state.columns[idx];
-      // Which positions sit at their reference value is a property of the matrix the columns were
-      // taken from — the first displayed row's, since the columns follow that row's position.
       const matrix = state.rows.length ? state.rows[0].matrix : null;
       const otherRefs = matrix ? matrix.positions.filter((p) => p !== column.position) : [];
       const parts = [`${column.position}: ${column.substSmiles}`];
@@ -2151,20 +1871,14 @@ export class SarMatrixViewer extends DG.JsViewer {
       return false;
     const {paneRow, ci} = resolved;
     const cell = paneRow.matrix.cells[paneRow.rowIndex][ci];
-    // Blanked by the threshold reads as empty, so it must hover as empty too — otherwise the value the
-    // filter just hid comes straight back under the cursor.
+    // A threshold-blanked cell must hover as empty too, or the hidden value returns under the cursor.
     if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(paneRow.matrix, paneRow.rowIndex, ci))
       return false;
     ui.tooltip.show(ui.divText(this.cellTooltipText(cell)), x, y);
     return true;
   }
 
-  /**
-   * The id chip's text for an observed cell, or null when there is nothing to label it with.
-   *
-   * Virtual analogs are skipped on purpose: a prediction has no row in the source table, so there is
-   * no id to show and captioning it with anything would invent an identity for a compound nobody made.
-   */
+  /** The id chip's text for an observed cell; null for virtual analogs (no source row to identify). */
   private cellIdText(cell: SarMatrixCell): string | null {
     if (!this.idColumnName || cell.kind !== 'real' || cell.molIdx === null)
       return null;
@@ -2183,23 +1897,17 @@ export class SarMatrixViewer extends DG.JsViewer {
     return `Observed ${this.formatActivity(value)}`;
   }
 
-  /** Paint an R-group column header (position band + straightened substituent depiction + sort
-   *  caption) or the 'Core' column's "Aligned core" label. The header band is pinned on top natively. */
+  /** Paint an R-group column header (position band + substituent depiction + sort caption) or the
+   *  'Core' column's "Aligned core" label. */
   private paintHeader(g: CanvasRenderingContext2D, b: DG.Rect, name: string, state: MatrixGridState): void {
     const grey6 = cssColor(this.root, '--grey-6', '#4a4a4a');
     const grey5 = cssColor(this.root, '--grey-5', '#7d7d7d');
     if (name === 'Core') {
-      // Every header cell paints its own background because the grid's default paint is suppressed;
-      // without this fill the pinned header keeps whatever pixels the previous frame happened to leave
-      // there, so it changes shade as the matrix scrolls.
+      // Each header paints its own background (default paint suppressed), else it keeps stale pixels.
       g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
       g.fillRect(b.x, b.y, b.width, b.height);
-      // The series structure rides in the header rather than only in the navigator: the header is
-      // pinned both ways, so it names what the rows are variations of even once row 1 has scrolled off.
       const captionH = 14;
       if (state.headerCore !== null) {
-        // Aligned to its own template, the way each row's core is, so the header points the same way
-        // as the column beneath it.
         drawDepiction(g, b.x, b.y, b.width, Math.max(1, b.height - captionH), state.headerCore,
           state.paneTemplate, HEADER_ARGB);
       }
@@ -2218,17 +1926,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
     g.fillRect(b.x, b.y, b.width, b.height);
 
-    // Draw the position label only on the first column of a group — per-cell clipping can't paint a
-    // true cross-column spanner, so this reads as the group header (the "at ref" detail is on hover).
+    // Position label only on the first column of a group (per-cell clipping can't span columns).
     const posBandH = 16;
     if (state.firstOfGroup.has(idx)) {
       g.fillStyle = grey6;
       g.font = `600 11px ${GRID_FONT}`;
       g.textAlign = 'left';
       g.textBaseline = 'top';
-      // Plain "R": a matrix varies exactly one position, so the number names nothing the reader can
-      // act on, and it reads as a claim about which decomposition position this is — arbitrary on a
-      // symmetric core, where R1 and R2 are interchangeable.
       g.fillText('R', b.x + 5, b.y + 2, b.width - 10);
     }
 
@@ -2248,12 +1952,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
   }
 
-  /**
-   * The molblock a row's cells align to: the row's own key in the orientation it is actually drawn
-   * in. The key is first aligned to the pane's shared core so rows agree with the header wherever
-   * they can, and that result becomes the row's template — deriving the cells' template from a fresh
-   * layout of the key instead lets a cell's scaffold sit differently from the core printed beside it.
-   */
+  /** The molblock a row's cells align to: the row key aligned to the pane's shared core (so cells
+   *  match the core printed beside them), else laid out on its own. */
   private rowTemplate(state: MatrixGridState, rowIdx: number): string | null {
     const cached = state.rowTemplates[rowIdx];
     if (cached !== null)
@@ -2261,8 +1961,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const paneRow = state.rows[rowIdx];
     const key = paneRow.matrix.rows[paneRow.rowIndex].keySmiles;
     const aligned = state.paneTemplate !== null ? alignToTemplate(key, state.paneTemplate) : '';
-    // A key whose core differs from the shared one cannot align to it, and alignToTemplate hands back
-    // the input untouched, so lay that key out on its own instead.
+    // A key that can't align to the shared core comes back untouched, so lay it out on its own.
     const template = aligned.includes('V2000') ? aligned : buildAlignmentTemplate(key);
     state.rowTemplates[rowIdx] = template;
     return template;
@@ -2275,8 +1974,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const template = this.rowTemplate(state, rowIdx);
     const labelH = 16;
     const molH = Math.max(1, b.height - labelH);
-    // The default cell paint is suppressed, so the cell fills its own background; it also has to be
-    // the colour the depiction bakes in, or the core's anti-aliased bonds carry a fringe of another.
+    // Fill in the depiction's baked-in colour so anti-aliased bonds don't fringe.
     g.fillStyle = DG.Color.toHtml(WHITE_ARGB);
     g.fillRect(b.x, b.y, b.width, b.height);
     drawDepiction(g, b.x, b.y, b.width, molH, row.keySmiles, template, WHITE_ARGB);
@@ -2287,18 +1985,14 @@ export class SarMatrixViewer extends DG.JsViewer {
     g.fillText(paneRow.label, b.x + b.width / 2, b.y + molH + 1, b.width);
   }
 
-  /** Paint one core×substituent cell: potency tint (over white), aligned assembled molecule, value
-   *  chip, virtual/deviant markers, and the host-grid selection/current ring. The tint and the
-   *  additive-fit check use the row's OWN matrix, so two transfer sides drawn from different matrices
-   *  each color against their own activity range. */
+  /** Paint one core×substituent cell: potency tint, aligned molecule, value/id chips, markers, and
+   *  selection ring. Tint uses the row's OWN matrix, so transfer sides colour against their own range. */
   private paintBodyCell(g: CanvasRenderingContext2D, b: DG.Rect, paneRow: PaneRow, rowIdx: number,
     colIndex: number, state: MatrixGridState): void {
     const matrix = paneRow.matrix;
     const ri = paneRow.rowIndex;
     const cell = matrix.cells[ri][paneRow.colIdxs[colIndex]];
-    // A cell below the threshold is blanked rather than removed: its row and column are still there
-    // because something else in them survived, and leaving the slot empty keeps the grid readable as a
-    // table instead of resequencing every neighbour.
+    // A cell below the threshold is blanked, not removed, so the grid stays a readable table.
     if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(matrix, ri, paneRow.colIdxs[colIndex])) {
       g.fillStyle = cssColor(this.root, '--white', '#ffffff');
       g.fillRect(b.x, b.y, b.width, b.height);
@@ -2311,17 +2005,15 @@ export class SarMatrixViewer extends DG.JsViewer {
     const alpha = isVirtual ?
       Math.round(VIRTUAL_ALPHA_MIN + (VIRTUAL_ALPHA - VIRTUAL_ALPHA_MIN) * Math.min(1, support / FULL_SUPPORT)) :
       REAL_ALPHA;
-    // The tint is flattened to an opaque colour and handed to the depiction as its own background, so
-    // the structure's anti-aliased bonds blend into the tint rather than into a lighter fringe. The
-    // fill still runs first, for cells that have no structure to draw over it.
+    // Flattened opaque and used as the depiction background so bonds blend into the tint; fill first
+    // for cells with no structure.
     const bg = this.flatTint(matrix, value, alpha);
     g.fillStyle = DG.Color.toHtml(bg);
     g.fillRect(b.x, b.y, b.width, b.height);
     if (cell.smiles !== null)
       drawDepiction(g, b.x, b.y, b.width, b.height, cell.smiles, this.rowTemplate(state, rowIdx), bg);
 
-    // '~value' chip, top-left, fainter for a single-observation prediction and green when it is the
-    // row's most potent observation (only a prediction-free comparison is worth flagging as "best").
+    // '~value' chip, top-left; green when it's the row's most potent observation.
     const isBest = paneRow.markBest === true && !isVirtual && value === this.bestRowValue(paneRow);
     this.paintChip(g, b, `${isVirtual ? '~' : ''}${this.formatActivity(value)}`, {
       corner: 'top-left',
@@ -2356,14 +2048,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
   }
 
-  /**
-   * Draw one corner chip: a translucent white plate carrying a line of text. The potency value and the
-   * id share it so the two read as the same kind of annotation over the structure rather than as two
-   * unrelated overlays, and the plate is what keeps either legible where a bond runs underneath.
-   *
-   * The text is ellipsized to the cell instead of being handed to `fillText` as a max width, which
-   * condenses the glyphs rather than truncating them — at 10px that turns a long id into a smear.
-   */
+  /** Draw one corner chip: a translucent white plate carrying a line of text (kept legible over a
+   *  bond). Text is ellipsized to the cell rather than condensed by `fillText`'s max width. */
   private paintChip(g: CanvasRenderingContext2D, b: DG.Rect, text: string, style: ChipStyle): void {
     g.save();
     g.font = `${style.italic === true ? 'italic ' : ''}600 10px ${GRID_FONT}`;
@@ -2371,9 +2057,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     g.textBaseline = 'top';
     const trimmed = TextUtils.trimText(text, g, b.width - (CHIP_MARGIN + CHIP_PAD) * 2);
     const chipW = g.measureText(trimmed).width + CHIP_PAD * 2;
-    // The far corner is measured from x/y + size rather than through `right`/`bottom`: the grid hands
-    // the painter a bare rect whose only own members are x, y, width and height, so those accessors
-    // come back undefined and every coordinate derived from them silently becomes NaN.
+    // Measure the far corner from x/y + size: the rect has no right/bottom accessors (would be NaN).
     const atEnd = style.corner === 'bottom-right';
     const x = atEnd ? b.x + b.width - CHIP_MARGIN - chipW : b.x + CHIP_MARGIN;
     const y = atEnd ? b.y + b.height - CHIP_MARGIN - CHIP_H : b.y + CHIP_MARGIN;
@@ -2390,11 +2074,9 @@ export class SarMatrixViewer extends DG.JsViewer {
     return value >= 100 ? value.toFixed(0) : value.toFixed(1);
   }
 
-  /** A context-panel section header with a small provenance badge (mirrors the mockup). */
+  /** A context-panel section header with an optional provenance badge. */
   private cpSection(title: string, badge?: string): HTMLElement {
     const parts = [ui.divText(title, 'chem-sar-cp-section-title')];
-    // Omitted rather than rendered empty: the pill carries its own background and padding, so a blank
-    // one still shows as a small coloured box beside the heading.
     if (badge)
       parts.push(ui.divText(badge, 'chem-sar-cp-badge'));
     return ui.divH(parts, 'chem-sar-cp-section');
@@ -2406,12 +2088,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return ui.divH([ui.divText(label, 'chem-sar-cp-rl'), v], 'chem-sar-cp-row');
   }
 
-  /**
-   * The cell's structure, drawn to the width the panel actually has. A molecule is rasterized at a
-   * fixed pixel size, so a hardcoded box leaves the structure stranded at one size while the panel the
-   * user drags grows around it. Redrawn on resize, but only past a few pixels of change — each redraw
-   * is an RDKit render, and a drag emits a size event per frame.
-   */
+  /** The cell's structure, drawn to the panel's actual width and redrawn on resize past a few pixels
+   *  (each redraw is an RDKit render). */
   private cpStructure(smiles: string): HTMLElement {
     const box = ui.div([], 'chem-sar-cp-structbox');
     let drawnAt = 0;
@@ -2424,18 +2102,15 @@ export class SarMatrixViewer extends DG.JsViewer {
       box.appendChild(renderMolecule(smiles,
         {width, height: Math.round(width * CP_STRUCT_ASPECT), popupMenu: false}));
     };
-    // A newer panel may claim the single observer slot while this one is still waiting to be laid out.
+    // A newer panel may claim the single observer slot while this one is still awaiting layout.
     const token = ++this.cpStructureToken;
     this.cpStructureSub?.unsubscribe();
-    // Wiring up only once the box is actually in the DOM: measured before that, clientWidth is 0 and
-    // the first draw lands on the minimum, leaving a too-small structure until something resizes.
+    // Wired up only once the box is in the DOM, else clientWidth is 0 and the first draw is too small.
     ui.tools.waitForElementInDom(box).then(() => {
       if (token !== this.cpStructureToken)
         return;
-      // The panel container is what a drag resizes, and nothing drawn inside can widen it, so it is
-      // the authority on how much room there is. The box is measured too and the smaller wins: on its
-      // own the box can report the width it was last given rather than the width now available, which
-      // is what lets a structure grow with the panel but never shrink back.
+      // Measure the panel container (what a drag resizes) and the box, smaller wins, so the structure
+      // grows with the panel but never gets stuck at a stale box width.
       const panel = box.closest('.panel-content') as HTMLElement | null;
       const fit = (): void => draw(panel === null ? Math.floor(box.clientWidth) - BOX_CHROME :
         Math.min(Math.floor(box.clientWidth) - BOX_CHROME, Math.floor(panel.clientWidth) - PANEL_CHROME));
@@ -2446,14 +2121,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return box;
   }
 
-  /** A measured analog that fed a prediction: its structure over its observed value. */
-
-  /**
-   * Where a predicted value came from. The additive model is `rowMean + columnMean - grandMean`, so the
-   * compounds that determined it are exactly the measured cells sharing this row and this column —
-   * listed here with their values, and with the arithmetic spelled out, so the number can be checked
-   * rather than trusted.
-   */
+  /** Where a predicted value came from: the additive model `rowMean + colMean - grandMean` with the
+   *  contributing cells and the arithmetic spelled out. */
   private cpPrediction(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
     const sameCore: SarMatrixCell[] = [];
     const sameSubstituent: SarMatrixCell[] = [];
@@ -2478,9 +2147,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const colMean = meanOf(sameSubstituent);
     const grandMean = grandN === 0 ? 0 : grandSum / grandN;
 
-    // Shown as deviations from the matrix mean, which is what the model actually adds up. Read as raw
-    // means it looks wrong whenever both effects are negative — the prediction then falls below every
-    // number on screen, because the two deficits compound.
+    // Shown as deviations from the matrix mean, which is what the model actually adds up.
     const coreEffect = rowMean - grandMean;
     const substEffect = colMean - grandMean;
     const signed = (v: number): string => `${v < 0 ? '−' : '+'}${this.formatActivity(Math.abs(v))}`;
@@ -2498,15 +2165,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return block;
   }
 
-  /**
-   * The observed compounds sharing this cell's core and its substituent — the ones a prediction here
-   * rests on, and for an existing compound the ones it should be read against. Shown for both kinds of
-   * cell: the row and column neighbours are the SAR context whether or not the cell itself was made.
-   *
-   * The selected cell is left out of its own lists, and the matrix-pane potency threshold applies, so a
-   * compound blanked out of the grid does not reappear here. Where the threshold hides some, the badge
-   * reads "shown of total" rather than quietly disagreeing with the counts in the arithmetic above.
-   */
+  /** Observed compounds sharing this cell's core and substituent — its SAR context. The cell itself
+   *  is excluded and the cell filter applies; the badge reads "shown of total" when some are hidden. */
   private cpReferences(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
     const block = ui.divV([]);
     const self = matrix.cells[rowIdx][colIdx];
@@ -2535,9 +2195,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return block;
   }
 
-  /** A small framed fragment (core or substituent) with a caption. */
-  /** A framed fragment tile: the structure, and under it the compound's value when one is given. The
-   *  structure is omitted for an empty SMILES so a valueless tile is never an empty frame. */
+  /** A framed fragment tile: the structure with the compound's value beneath; structure omitted for
+   *  an empty SMILES. */
   private cpFragment(smiles: string | null, value?: number): HTMLElement {
     const parts: HTMLElement[] = [];
     if (smiles)
@@ -2547,12 +2206,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return ui.divV(parts, 'chem-sar-cp-frag');
   }
 
-  /**
-   * Rich SAR context for the selected cell, mirroring the mockup: header (+ "not synthesized" badge
-   * for a prediction), framed structure, SMILES + core, the observed or predicted potency (with the
-   * additive-fit check for real cells), the decomposition, and — for a virtual analog — a design
-   * action to add it to the make-list.
-   */
+  /** SAR context for the selected cell: header, structure, potency, the prediction/references, and —
+   *  for a virtual analog — a make-list action. */
   private buildCellPanel(matrix: SarMatrix, rowIdx: number, colIdx: number): HTMLElement {
     const cell = matrix.cells[rowIdx][colIdx];
     const row = matrix.rows[rowIdx];
@@ -2576,9 +2231,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       ui.divText(this.formatActivity(cell.value), 'chem-sar-cp-value')));
     if (isVirtual) {
       panel.appendChild(this.cpRow('Method', FREE_WILSON_METHOD));
-      // Both arms, with the split shown: a total of 5 drawn 4 + 1 is a different prediction from one
-      // drawn 2 + 3, because the thin arm is what limits it. The weaker arm is called out when it is
-      // down to a single compound, which is where the estimate is really an extrapolation.
+      // Call out a single-compound arm: that's where the estimate is really an extrapolation.
       const refs = cell.references ?? 0;
       const weakest = cell.support ?? 0;
       panel.appendChild(this.cpRow('Reference points',
@@ -2588,8 +2241,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       panel.appendChild(this.cpReferences(matrix, rowIdx, colIdx));
 
     panel.appendChild(this.cpSection('Decomposition', 'R-group'));
-    // The fragments are drawn, so they caption themselves — the core and each R-group are read from
-    // the structures, not from text repeating what the picture already shows.
     const parts = [this.cpFragment(row.keySmiles)];
     matrix.positions.forEach((position) => {
       const v = position === column.position ? column.substSmiles : matrix.refValues[position];
@@ -2610,14 +2261,12 @@ export class SarMatrixViewer extends DG.JsViewer {
     return panel;
   }
 
-  /** One displayed row as a transfer-pane grid row: its own matrix, its columns, and its side label. */
   private transferPaneRow(side: TransferSide, colIdxs: number[]): PaneRow {
     return {matrix: this.matrices[side.matrixIndex], rowIndex: side.rowIndex, colIdxs,
       label: this.sideLabel(side), markBest: true};
   }
 
-  /** Most potent OBSERVED value among a row's displayed cells, or null when it has none. Predictions
-   *  are excluded: a virtual cell is an estimate, so calling it the row's best would overstate it. */
+  /** Most potent OBSERVED value among a row's displayed cells, or null; predictions excluded. */
   private bestRowValue(paneRow: PaneRow): number | null {
     const observed: number[] = [];
     for (const ci of paneRow.colIdxs) {
@@ -2630,12 +2279,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     return this.higherIsBetter ? Math.max(...observed) : Math.min(...observed);
   }
 
-  /**
-   * The SAR transfer view: two cores from different matrices whose potency trends run in parallel across
-   * the R-groups they have both explored, with a trend strip under each so the parallel is visible
-   * directly. The two rows go through the same virtualized grid as the matrix pane, each resolving
-   * against its own matrix.
-   */
+  /** The SAR transfer view: two cores whose potency trends run in parallel, as two rows of the same
+   *  virtualized grid, each resolving against its own matrix. */
   private buildTransferPane(transfer: Transfer): HTMLElement {
     const from = this.sideLabel(transfer.a);
     const to = this.sideLabel(transfer.b);
@@ -2644,7 +2289,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       ui.divText(`${from} → ${to} · across ${transfer.a.position} · r = ${transfer.correlation.toFixed(2)}`),
     ], 'chem-sar-main-bar');
 
-    // When this source core transfers to more than one target, offer a dropdown to switch between them.
+    // Dropdown to switch targets when this source transfers to more than one.
     const siblings = this.transferSiblings(transfer);
     let controlBar: HTMLElement | null = null;
     if (siblings.length > 1) {
@@ -2661,35 +2306,27 @@ export class SarMatrixViewer extends DG.JsViewer {
       controlBar = ui.divH([targetInput.root], 'chem-sar-control-bar');
     }
 
-    // Each side keeps its own matrix (a cross-series transfer's two cores live in different ones), so
-    // its cells, potency range, core alignment and context panel all resolve against that matrix.
-    // Measured pairs first, then the analogs the transfer argues for: one side has the compound, the
-    // other only a prediction, so the column shows the evidence and the proposal side by side.
+    // Each side keeps its own matrix. Measured pairs first, then the predicted analogs the transfer argues for.
     const rows = [
       this.transferPaneRow(transfer.a, [...transfer.aCols, ...transfer.predictedACols]),
       this.transferPaneRow(transfer.b, [...transfer.bCols, ...transfer.predictedBCols]),
     ];
-    // Every column is the same R-position here, and the Label metric is a matrix-pane control, so the
-    // headers carry only the position band and the depiction.
     const matchedCount = transfer.substituents.length;
     const columns: PaneColumn[] = [...transfer.substituents, ...transfer.predictedSubstituents]
       .map((substSmiles, i) => ({substSmiles, position: transfer.a.position,
         caption: i < matchedCount ? '' : 'predicted'}));
     const gridHost = this.buildPaneGrid(rows, columns, this.transferSlot);
-    // Two rows only: size the grid to its content instead of stretching it, so the trend strips and
-    // the statistics stay on screen rather than being pushed below a half-empty grid.
+    // Two rows only: size to content, not stretch, so the statistics stay on screen.
     gridHost.style.flex = '0 0 auto';
     gridHost.style.height = `${COL_HEADER_H + rows.length * CELL_H + GRID_SCROLLBAR_H}px`;
 
-    // A plain div, not ui.box: ui.box pins an explicit pixel width, which stops the content from
-    // growing with the pane.
+    // Plain div, not ui.box (which would pin a fixed width).
     const scroll = ui.div([this.buildTransferStats(transfer)], 'chem-sar-main-scroll');
     const parts = controlBar ? [bar, controlBar, gridHost, scroll] : [bar, gridHost, scroll];
     return ui.divV(parts, 'chem-sar-main');
   }
 
-  /** The "Transfer statistics" block: rank correlation, fold-change match, and the benefiting cell —
-   *  the follower core's untested analog the transferred rule predicts. */
+  /** The "Transfer statistics" block: correlation, fold-change match, and the benefiting cell. */
   private buildTransferStats(transfer: Transfer): HTMLElement {
     const stats = transferStats(transfer, this.higherIsBetter);
     const row = (label: string, value: HTMLElement): HTMLElement =>
@@ -2711,8 +2348,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     return ui.divV([ui.divText('Transfer statistics', 'chem-sar-xfer-title'), ...rows], 'chem-sar-xfer-stats');
   }
 
-  /** Compact summary chips for the current matrix — short labels, full detail on hover: compound
-   *  count, cores×substituents, potency range, virtual count, and transfer r. */
+  /** Compact summary chips for the current matrix, full detail on hover. */
   private buildChips(matrix: SarMatrix): HTMLElement {
     const chip = (text: string, tip: string, cls = ''): HTMLElement => {
       const el = ui.divText(text, `chem-sar-chip-badge ${cls}`.trim());
@@ -2721,8 +2357,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     };
     const items = [
       chip(`${matrix.realCount} cpd`, `${matrix.realCount} observed compounds`),
-      // Reports what is on screen, not what the matrix holds: with a threshold set those differ, and a
-      // chip claiming 18×6 over a grid showing 4×2 is the kind of thing nobody notices is wrong.
+      // Reports what is on screen, not what the matrix holds (a threshold makes them differ).
       ...(() => {
         const {rows, cols} = this.visibleDims(matrix);
         const full = `${matrix.rows.length} cores × ${matrix.columns.length} substituents`;
@@ -2739,7 +2374,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (matrix.virtualCount)
       items.push(chip(`${matrix.virtualCount} virtual`, `${matrix.virtualCount} predicted (virtual) analog(s)`));
     const idx = this.matrices.indexOf(matrix);
-    // this.transfers is sorted by correlation (computeAllTransfers), so the first match is the strongest.
+    // this.transfers is sorted by correlation, so the first match is the strongest.
     const involving = this.transfers.filter((t) => t.a.matrixIndex === idx || t.b.matrixIndex === idx);
     if (involving.length) {
       const best = involving[0];
@@ -2750,11 +2385,9 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   private buildMatrixPane(matrix: SarMatrix): HTMLElement {
-    // Row 1 — title + compact chips (the Free-Wilson fit now rides along as an "R²" chip).
     const infoBar = ui.divH([ui.divText(matrix.label, 'chem-sar-main-title'), this.buildChips(matrix)],
       'chem-sar-main-bar');
 
-    // Row 2 — controls, kept off the info row so neither crowds the other.
     const controls: HTMLElement[] = [];
     if (matrix.positions.length >= 2) {
       const varyValue = this.varyPosition && matrix.positions.includes(this.varyPosition) ?
@@ -2764,7 +2397,7 @@ export class SarMatrixViewer extends DG.JsViewer {
         items: ['All', ...matrix.positions],
         onValueChanged: (value) => {
           this.varyPosition = value === 'All' ? '' : value!;
-          this.renderMatrixPane(); // column choice is a pane concern — the navigator has no stake
+          this.renderMatrixPane();
         },
       });
       controls.push(varyInput.root);
@@ -2781,8 +2414,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       'potency (μ) or molecular weight (MW). Columns keep their order; only the caption is added.');
     controls.push(labelInput.root);
 
-    // Every filter lives behind one icon: the two sketchers would dwarf the bar, and splitting the
-    // cell cuts away from them left two places to look for "why is this cell blank".
+    // All filters behind one icon; the sketchers would dwarf the bar inline.
     const filterIcon = ui.icons.filter(() => {
       ui.showPopup(ui.div(this.structureFilterRoot(), 'chem-sar-struct-filters'),
         filterIcon, {vertical: true});
@@ -2792,11 +2424,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     controls.push(filterIcon);
     const controlBar = ui.divH(controls, 'chem-sar-control-bar');
 
-    // Every row of this pane shows the same matrix and the same visible columns; the Vary filter
-    // picks the columns and the Label control supplies their captions.
     const visible = this.visibleColIdxs(matrix);
-    // Every row is built; the threshold hides them through the grid's row filter afterwards, so moving
-    // the slider never rebuilds this pane.
+    // Every row is built; the filter hides them via the grid's row filter, so no rebuild on filter change.
     const rows: PaneRow[] = matrix.rows.map((row, ri) =>
       ({matrix, rowIndex: ri, colIdxs: visible, label: row.label}));
     const columns: PaneColumn[] = visible.map((ci) => ({
@@ -2805,11 +2434,8 @@ export class SarMatrixViewer extends DG.JsViewer {
       caption: this.columnSortCaption(matrix, ci),
     }));
 
-    // The grid scrolls and virtualizes internally, so it goes in a flex host that fills the pane (no
-    // outer .chem-sar-main-scroll, which would add a second scroll container and its own padding).
     const gridHost = this.buildPaneGrid(rows, columns, this.matrixSlot);
-    // Shown in the grid's place when the threshold empties the matrix; an empty grid reads as a broken
-    // viewer. Built with the pane and toggled by the filter, so no rebuild is needed to reach it.
+    // Shown in the grid's place when the filter empties the matrix; toggled by the filter, no rebuild.
     const reach = matrix.realCount ?
       `its compounds run ${this.formatActivity(matrix.minActivity)}–${this.formatActivity(matrix.maxActivity)}` :
       'it has no observed compounds';
@@ -2823,15 +2449,13 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   private render(): void {
-    // Keep the navigator scrolled where it was — selecting a card lower down must not jump it to the top.
+    // Preserve the navigator scroll position across the rebuild.
     const prevNav = this.host.querySelector('.chem-sar-nav-list');
     const navScroll = prevNav instanceof HTMLElement ? prevNav.scrollTop : 0;
-    // Before the DOM goes: buildPaneGrid installs a new grid, so the previous one (and everything its
-    // handlers close over) has to be let go here.
+    // Release the old grid before its DOM goes.
     this.releaseMatrixGrid();
     ui.empty(this.host);
-    // Palette values are memoized by variable name only, so a theme switch would otherwise keep
-    // painting the previous theme's colors for the life of the session.
+    // Palette cache is keyed by name only, so clear it on a possible theme switch.
     cssColorCache.clear();
     if (this.matrices.length === 0) {
       this.host.appendChild(ui.divText(this.grouping === SarGrouping.Site ?
@@ -2843,16 +2467,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     const newNav = this.host.querySelector('.chem-sar-nav-list');
     if (newNav instanceof HTMLElement)
       newNav.scrollTop = navScroll;
-    // The matrix tab always shows a matrix; SAR transfer has its own tab and never displaces it.
     this.renderMatrixPane();
-    // Only when it is the tab on screen: rebuilt hidden, its grid would size against a display:none
-    // pane, and rebuilding a pane nobody is looking at wastes the very work the lazy tab defers.
+    // Only when it's the tab on screen: rebuilt hidden, its grid would size against a display:none pane.
     if (this.transferTabActive)
       this.activateTransferTab();
   }
 
-  /** Rebuild only the matrix pane (right side), leaving the navigator DOM — and its scroll — alone.
-   *  This is the whole redraw a card click, a Vary/Caption change or an id-column switch needs. */
+  /** Rebuild only the matrix pane, leaving the navigator DOM and its scroll alone. */
   private renderMatrixPane(): void {
     if (this.matrices.length === 0)
       return;
@@ -2860,6 +2481,6 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.host.querySelector(':scope > .chem-sar-main')?.remove();
     const matrix = this.matrices[Math.min(this.selIndex, this.matrices.length - 1)];
     this.host.appendChild(this.buildMatrixPane(matrix));
-    this.syncSelection(); // apply the host grid's current selection/row to the freshly-built cells
+    this.syncSelection();
   }
 }
