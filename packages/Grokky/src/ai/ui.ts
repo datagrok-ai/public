@@ -16,7 +16,6 @@ import {executeSingleBlock, runVerification, renderEntityRefList} from '../claud
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
-import {_package} from '../package';
 
 interface ExecutionPlan {
   plan: string[];
@@ -708,7 +707,8 @@ async function runAgentScript(name: string): Promise<void> {
       return;
     AIWindowManager.instance.showPanel(shell);
     shell.resetSession();
-    const workflow = await _package.files.readAsText(`scripts/${name}.md`);
+    const conn = await grok.dapi.connections.filter('name = "My files"').first();
+    const workflow = await grok.dapi.files.readAsText(`${conn.nqName}/agents/scripts/${name}.md`);
     const prompt =
       `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
       `---\n${workflow}\n---`;
