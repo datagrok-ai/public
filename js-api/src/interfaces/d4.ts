@@ -445,6 +445,23 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
+  /// Sorts the Y categories by this column; see *X Sort By*.
+  ySortBy: string;
+  ySortByColumnName: string;
+
+  /// Aggregation used to compute the per-category sort key for the Y axis.
+  ySortByAggr: string;
+
+  /// A property of the Y sort values to compare them by; see *X Sort By Property*.
+  ySortByProperty: string;
+
+  /// Whether the Y axis categories are sorted in ascending or descending order.
+  ySortOrder: string;
+
+  /// Explicit order of the Y axis categories; takes precedence over *Y Sort By*.
+  /// Unknown names are ignored, unlisted categories are appended in the column's order.
+  yCategoryOrder: Array<string>;
+
   /// Shows a distribution histogram along the X axis (at the top)
   showXHistogram: boolean;
 
@@ -803,6 +820,24 @@ export interface IScatterPlotSettings {
 
   formulaFont: string;
 
+  /// Sorts the X categories by this column; anything but a numerical or semantic one is ignored.
+  xSortBy: string;
+  xSortByColumnName: string;
+
+  /// Aggregation used to compute the per-category sort key for the X axis.
+  xSortByAggr: string;
+
+  /// A property turning the X sort values into numbers, e.g. `Chem:molecularProperty(MW)`.
+  /// Picked from *Order* next to the column.
+  xSortByProperty: string;
+
+  /// Whether the X axis categories are sorted in ascending or descending order.
+  xSortOrder: string;
+
+  /// Explicit order of the X axis categories; takes precedence over *X Sort By*.
+  /// Unknown names are ignored, unlisted categories are appended in the column's order.
+  xCategoryOrder: Array<string>;
+
 }
 
 export enum AxisType {
@@ -1080,6 +1115,24 @@ export interface IBoxPlotSettings {
 
   /// Display subcategories - category combinations in the x axis table.
   showMinorCategories: boolean;
+
+  /// Sorts the categories by this column; anything but a numerical or semantic one is ignored.
+  categorySortBy: string;
+  categorySortByColumnName: string;
+
+  /// Aggregation used to compute the per-category sort key.
+  categorySortByAggr: string;
+
+  /// A property turning the sort values into numbers, e.g. `Chem:molecularProperty(MW)`.
+  /// Picked from *Order* next to the column.
+  categorySortByProperty: string;
+
+  /// Whether the categories are sorted in ascending or descending order.
+  categorySortOrder: string;
+
+  /// Explicit order of the categories (single category level); takes precedence over *Sort By*.
+  /// Unknown names are ignored, unlisted categories are appended in the current order.
+  categoryOrder: Array<string>;
 
   value: string;
   valueColumnName: string;
@@ -2576,6 +2629,24 @@ export interface ILineChartSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
+
+  /// Sorts the X categories by this column; anything but a numerical or semantic one is ignored.
+  xSortBy: string;
+  xSortByColumnName: string;
+
+  /// Aggregation used to compute the per-category sort key for the X axis.
+  xSortByAggr: string;
+
+  /// A property turning the X sort values into numbers, e.g. `Chem:molecularProperty(MW)`.
+  /// Picked from *Order* next to the column.
+  xSortByProperty: string;
+
+  /// Whether the X axis categories are sorted in ascending or descending order.
+  xSortOrder: string;
+
+  /// Explicit order of the X axis categories; takes precedence over *X Sort By*.
+  /// Unknown names are ignored, unlisted categories are appended in the column's order.
+  xCategoryOrder: Array<string>;
 
 }
 

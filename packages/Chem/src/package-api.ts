@@ -1154,6 +1154,13 @@ export namespace funcs {
   }
 
   /**
+  Computes one chemical property for a column of molecules so that the platform can sort and order them by it.
+  */
+  export async function molecularProperty(molecules: DG.Column , property: string ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:MolecularProperty', { molecules, property });
+  }
+
+  /**
    * Predicts toxicity risks (mutagenicity, tumorigenicity, irritating and reproductive effects) and adds them as columns.
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} molecules

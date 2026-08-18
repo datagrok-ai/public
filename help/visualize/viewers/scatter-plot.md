@@ -263,6 +263,9 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | X Whisker Max Column Name | string | Point upper bound for x axis whiskers. Selecting it disables *X Whisker Range*. |
 | X Whisker Range Column Name | string | Point range for x axis whiskers. Applied only if *X Whisker Min* and *X Whisker Max* are not set. |
 | X Axis Label Orientation | string |  |
+| X Sort By Column Name | string | Sorts the X categories by this column; anything but a numerical or semantic one is ignored. |
+| X Sort By Aggr | string | Aggregation used to compute the per-category sort key for the X axis. |
+| X Sort Order | string | Whether the X axis categories are sorted in ascending or descending order. |
 | **Y Axis** | | |
 | Y Column Name | string | A column to use on the Y axis. Could be numerical or categorical. |
 | Y Map | string | Time unit map function for y column (applicable to dates only). |
@@ -273,6 +276,9 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Horizontal Grid Lines | boolean |  |
 | Show Y Axis | boolean |  |
 | Show Y Selector | boolean |  |
+| Y Sort By Column Name | string | Sorts the Y categories by this column; see *X Sort By*. |
+| Y Sort By Aggr | string | Aggregation used to compute the per-category sort key for the Y axis. |
+| Y Sort Order | string | Whether the Y axis categories are sorted in ascending or descending order. |
 | Show Y Histogram | boolean | Shows a distribution histogram along the Y axis (on the right) |
 | Y Whisker Min Column Name | string | Point lower bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
 | Y Whisker Max Column Name | string | Point upper bound for y axis whiskers. Selecting it disables *Y Whisker Range*. |
@@ -289,7 +295,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Size Column Name | string | A numerical column to use for size-coding markers. See also *Marker Min Size* and *Marker Max Size*. |
 | Show Size Selector | boolean |  |
 | Show Markers With Empty Size | boolean | When a *Size* column is set, show rows with empty values instead of hiding them. |
-| Size Axis Type | string | Linear or logarithmic scale for the *Size* column. |
+| Marker Size Scaling | string | Linear or logarithmic scale for the *Size* column. |
 | **Marker** | | |
 | Markers Column Name | string | A categorical column that determines the shape of the markers. |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |

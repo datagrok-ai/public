@@ -2,12 +2,13 @@
 
 ## 1.17.14 (2026-08-13)
 
+* GROK-20436: Chem: Added `Molecular Property`, a vectorized single-property calculator that lets viewers order molecular categories by MW, LogP, PSA and the other OCL properties
 * Reaction Enumerator: Added package settings (category "Enumeration") letting admins set per-group default file paths for reaction templates, building blocks and reagents; missing files show a warning balloon and fall back to the bundled ones
 * Substructure filter: Added a 'Filter as you draw' checkbox to the sketcher dialog — when unchecked, filtering is deferred until OK is clicked instead of running on every sketch edit
 * Added `Filter by Substructure`, `Similarity To` and `Diverse Subset` — table-aware twins of `searchSubstructure`, `getSimilarities` and `getDiversities`, which take a bare column. They declare `(table, column {semType: Molecule}, …)` and return rows or a column added to the table, so a caller has something to carry on with instead of a detached frame or a boxed BitSet
 * Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
 * Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
-* Added `Chemical Space Columns` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
+* Added `Chemical Space` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
 * MPO Score by Profile: Refuses to run when a scored property has no column, naming the ones it couldn't resolve — the underlying `computeMpo` only warns and scores over the rest, which returns a plausible number computed from fewer properties than requested
 * Added `MPO Score by Profile`, `getMpoProfileNames` and `getMpoProfileProperties`: `mpoCalculate` scores columns that already carry desirability tags and `mpoTransformFunction` wants those tags as a JSON blob, so neither could be driven from a profile name. The new function also takes a property→column mapping, so a profile can score a table whose columns are named differently
 * Parameters with a default now declare `initialValue` — the metadata generator reads that, not the TypeScript default, so `aggregation = 'Average'` and friends were registering with no declared default at all

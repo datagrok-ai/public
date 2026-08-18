@@ -64,6 +64,7 @@ import './packages/upload-migrations';
 import './packages/upload-project-isolation';
 import './grid/grid';
 import './grid/filterGroup';
+import './viewers/category-order';
 import './shell/events';
 import './grid/color-coding';
 import './grid/viewer-set-property';
