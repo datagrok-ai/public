@@ -67,6 +67,7 @@ export interface UserMessage {
    * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
    * own off. */
   gates?: {grounding?: boolean; verify?: boolean};
+  resumeExpected?: boolean;
 }
 
 export interface AbortMessage {
@@ -117,6 +118,7 @@ export type OutgoingMessage =
   | {type: 'revision_start'; sessionId: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
+  | {type: 'session_reset'; sessionId: string}
   | {type: 'auth_required'; sessionId: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}

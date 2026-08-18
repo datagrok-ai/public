@@ -400,6 +400,7 @@ async function streamOnce(
     let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
+    let resentAfterReset = false;
 
     const forSession = <T extends {sessionId: string}>(
       source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
@@ -419,12 +420,7 @@ async function streamOnce(
     try {
       const client = ClaudeRuntimeClient.getInstance();
       const nativeCtx = panel.flushNativeContext();
-      // A conversation restored from history exists only in the browser — the runtime session is
-      // fresh — so the first prompt after a load carries the transcript (one-shot; the SDK session
-      // remembers it from then on).
-      const restoredCtx = panel.flushRestoredContext();
-      const enrichedUserPrompt = (restoredCtx ? restoredCtx + '\n---\n\n' : '') +
-        (nativeCtx ? nativeCtx + userPrompt : userPrompt);
+      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       // Three static meta-tools let Claude search and invoke the current view's functions
@@ -599,10 +595,22 @@ async function streamOnce(
       }));
 
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-      client.send(sessionId, prompt, {
-        ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
-        ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+      const sendPrompt = () => {
+        const transcript = resolvedMode === 'bash' || client.isResumable(sessionId) ? '' : panel.restoredTranscript();
+        client.send(sessionId, transcript ? transcript + '\n---\n\n' + prompt : prompt, {
+          ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
+          ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+        });
+      };
+
+      forSession(client.onSessionReset, () => {
+        if (resentAfterReset)
+          return endWithError('Claude: the session was lost and could not be restored');
+        resentAfterReset = true;
+        sendPrompt();
       });
+
+      sendPrompt();
     } catch (e: any) {
       panel.clearStreaming();
       grok.shell.error(`Claude runtime: ${e.message}`);

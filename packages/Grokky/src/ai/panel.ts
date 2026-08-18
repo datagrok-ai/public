@@ -115,8 +115,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   /** Shows the turn's loader again (e.g. right after the user answers an input request),
    * so the wait for the assistant's next move is visibly "working", not dead air. */
   showWaitingIndicator(loader: HTMLElement): void;
-  /** One-shot transcript of a history-restored conversation the runtime has never seen. */
-  flushRestoredContext(): string;
+  restoredTranscript(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
   enableNoPrompt(): void;
@@ -700,21 +699,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._pendingNativeContext.push(prompt);
   }
 
-  /** Set when a conversation is loaded from history: the runtime's session is fresh (or belongs
-   * to another conversation), so the first prompt after a load carries this transcript. */
-  private _restoredContext: string | null = null;
-
-  flushRestoredContext(): string {
-    const ctx = this._restoredContext;
-    this._restoredContext = null;
-    return ctx ?? '';
-  }
-
   /** Serializes the restored messages into a compact transcript the model can act on
    * ("reproduce what we did") — includes executed code blocks recorded as engine messages. */
-  private buildRestoredTranscript(): string {
+  restoredTranscript(): string {
+    const messages = this._messages[this._messages.length - 1]?.role === 'user' ?
+      this._messages.slice(0, -1) : this._messages;
     const parts: string[] = [];
-    for (const m of this._messages) {
+    for (const m of messages) {
       const c: any = (m as any).content;
       const text = typeof c === 'string' ? c :
         Array.isArray(c) ? c.map((x: any) => x?.text ?? '').filter((x: string) => x).join('\n') : '';
@@ -726,7 +717,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     let out = parts.join('\n');
     if (out.length > 9000)
       out = out.slice(0, 4500) + '\n[... middle of the conversation truncated ...]\n' + out.slice(-4500);
-    return out;
+    return out ?
+      '[Conversation restored from saved history — you have no memory of it. ' +
+      'The transcript below is what happened earlier; treat it as this conversation\'s history. ' +
+      'ASSISTANT entries starting with "[executed datagrok_exec]" are code that actually ran.]\n' +
+      out : '';
   }
 
   flushNativeContext(): string {
@@ -1018,7 +1013,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._messages = [];
     this._uiMessages = [];
     this._pendingNativeContext = [];
-    this._restoredContext = null;
     this._promptHistoryIndex = null;
     this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';
@@ -1165,15 +1159,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions, execCode: msg.execCode}); // no loader
       });
       // The runtime never saw this conversation (page reloads drop its session; a live session
-      // holds a DIFFERENT conversation). Start a fresh session and hand the transcript to the
-      // first prompt so follow-ups ("reproduce this", "continue") have the actual history.
+      // holds a DIFFERENT conversation). Starting a fresh session is enough: it is not resumable,
+      // so the next send attaches restoredTranscript() and follow-ups have the actual history.
       this.resetSession();
-      const transcript = this.buildRestoredTranscript();
-      this._restoredContext = transcript ?
-        '[Conversation restored from saved history — you have no memory of it. ' +
-        'The transcript below is what happened earlier; treat it as this conversation\'s history. ' +
-        'ASSISTANT entries starting with "[executed datagrok_exec]" are code that actually ran.]\n' +
-        transcript : null;
       this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {

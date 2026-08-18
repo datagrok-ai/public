@@ -86,7 +86,7 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 
 | `type` | Purpose | Key fields |
 |--------|---------|------------|
-| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?`, `model?` |
+| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?`, `model?`, `resumeExpected?` |
 | `abort` | Cancel an in-progress query | `sessionId` |
 | `input_response` | Reply to an `input_request` (tool call result or user answer) | `sessionId`, `requestId`, `value` |
 | `sync_user_files` | Trigger a skills/knowledge sync | `apiKey`, `mcpServerUrl`, `scope?`, `packageName?` |
@@ -101,6 +101,7 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 | `tool_activity` | Human-readable summary of a tool call in progress | `sessionId`, `summary` |
 | `final` | Completed response (full text + optional structured output) | `sessionId`, `content`, `structured_output?`, `unverified?` |
 | `error` | Session error | `sessionId`, `message` |
+| `session_reset` | The session record is gone but the browser sent `resumeExpected` — the turn was not run; the browser resends the prompt with the conversation transcript prepended | `sessionId` |
 | `aborted` | Confirmed abort | `sessionId` |
 | `queued` | Turn is waiting behind the session's active query (re-sent every 60s while waiting) | `sessionId` |
 | `input_request` | Runtime needs the browser to execute a tool or answer a question | `sessionId`, `requestId`, `toolName`, `input` |

@@ -260,6 +260,9 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
 }
 
 async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
+  if (data.resumeExpected && !sessions.has(sid))
+    return emit(ws, {type: 'session_reset', sessionId: sid});
+
   const images = data.images;
 
   // Don't block this turn on workspace git pull — it runs every 30 min in the background and

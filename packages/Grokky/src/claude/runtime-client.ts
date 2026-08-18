@@ -23,6 +23,7 @@ export type TurnServerMetrics = {
 };
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean, metrics?: TurnServerMetrics, revision?: 'kept' | 'replaced'};
 export type ErrorEvent = {sessionId: string, message: string};
+export type SessionResetEvent = {sessionId: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
 export type AuthUrlEvent = {url: string};
@@ -42,6 +43,7 @@ export class ClaudeRuntimeClient {
   public onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
+  public onSessionReset = new rxjs.Subject<SessionResetEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
   public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
@@ -51,6 +53,7 @@ export class ClaudeRuntimeClient {
   public onAuthError = new rxjs.Subject<AuthErrorEvent>();
   public onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   private _skillNames: string[] | null = null;
+  private _resumable = new Set<string>();
 
   private constructor() {}
 
@@ -139,6 +142,7 @@ export class ClaudeRuntimeClient {
         this.onRevisionStart.next({sessionId: data.sessionId});
         break;
       case 'final':
+        this._resumable.add(data.sessionId);
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
@@ -149,6 +153,10 @@ export class ClaudeRuntimeClient {
         break;
       case 'error':
         this.onError.next({sessionId: data.sessionId, message: data.message});
+        break;
+      case 'session_reset':
+        this._resumable.delete(data.sessionId);
+        this.onSessionReset.next({sessionId: data.sessionId});
         break;
       case 'aborted':
         this.onAborted.next({sessionId: data.sessionId});
@@ -186,6 +194,10 @@ export class ClaudeRuntimeClient {
     };
   }
 
+  isResumable(sessionId: string): boolean {
+    return this._resumable.has(sessionId);
+  }
+
   send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
     clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
@@ -194,6 +206,7 @@ export class ClaudeRuntimeClient {
       type: 'user_message', sessionId, message,
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,
+      ...(this._resumable.has(sessionId) ? {resumeExpected: true} : {}),
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       ...(options?.model ? {model: options.model} : {}),
@@ -297,6 +310,7 @@ export class ClaudeRuntimeClient {
     this.onRevisionStart.complete();
     this.onFinal.complete();
     this.onError.complete();
+    this.onSessionReset.complete();
     this.onAborted.complete();
     this.onInputRequest.complete();
     this.onSyncStatus.complete();
@@ -310,6 +324,7 @@ export class ClaudeRuntimeClient {
     this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
+    this.onSessionReset = new rxjs.Subject<SessionResetEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
     this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();
