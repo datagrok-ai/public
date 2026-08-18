@@ -280,8 +280,11 @@ export class SubstructureFilter extends DG.Filter {
       }));
 
     this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => {
+      this.showOptions = false;
+      this.removeChildIfExists(this.root, this.searchOptionsDiv, 'chem-filter-search-options');
       this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
       this.searchTypeInput.value = SubstructureSearchType.CONTAINS;
+      this.updateFilterUiOnSketcherChanged(DG.WHITE_MOLBLOCK);
     }));
     this.subs.push(grok.events.onCustomEvent(FILTER_ENABLED_SYNC_EVENT).subscribe((state: any) => {
       if (state.colName === this.columnName && state.tableName === this.tableName && state.filterId !== this.filterId)
