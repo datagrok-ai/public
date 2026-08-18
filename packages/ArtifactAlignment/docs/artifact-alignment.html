@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artifact Alignment &amp; Discoverability — Design</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1c2733; --muted: #5b6b7b; --line: #dde4ea;
+    --accent: #1a73c4; --accent-bg: #eef5fc; --ok: #1e7d46; --gap: #b3541e;
+    --code-bg: #f6f8fa; --th-bg: #f0f3f6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color: var(--fg); background: var(--bg); }
+  header { padding: 26px 32px 0; max-width: 1100px; margin: 0 auto; }
+  header h1 { margin: 0 0 4px; font-size: 24px; }
+  header p.sub { margin: 0 0 18px; color: var(--muted); }
+  nav.tabs { position: sticky; top: 0; background: var(--bg); border-bottom: 2px solid var(--line);
+             max-width: 1100px; margin: 0 auto; padding: 0 32px; display: flex; gap: 4px; z-index: 5;
+             flex-wrap: wrap; }
+  nav.tabs button { border: none; background: none; font: inherit; padding: 10px 14px; cursor: pointer;
+             color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  nav.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 32px 60px; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  h2 { font-size: 19px; margin: 28px 0 10px; padding-top: 6px; }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  p, li { max-width: 72em; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--th-bg); }
+  .ok { color: var(--ok); font-weight: 600; }
+  .gap { color: var(--gap); font-weight: 600; }
+  .pill { display: inline-block; background: var(--accent-bg); color: var(--accent); border-radius: 10px;
+          padding: 1px 9px; font-size: 12.5px; font-weight: 600; margin-right: 6px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
+  .card h3 { margin-top: 0; }
+  .note { background: var(--accent-bg); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px;
+         font: 13px ui-monospace, Consolas, monospace; }
+  ol.tasks li, ul.tasks li { margin-bottom: 8px; }
+  .flow { margin: 14px 0; }
+  .legend { color: var(--muted); font-size: 13px; }
+
+  /* --- DG-style static mocks --- */
+  .dgm { border: 1px solid #cfd8dc; border-radius: 6px; background: #fff; margin: 12px 0 20px;
+         font: 13px/1.45 "Segoe UI", Tahoma, sans-serif; color: #263238;
+         box-shadow: 0 2px 8px rgba(0,0,0,.09); }
+  .dgm-title { background: #f8f9fa; border-bottom: 1px solid #e0e5e9; padding: 8px 12px;
+         font-weight: 600; color: #37474f; display: flex; justify-content: space-between;
+         align-items: baseline; gap: 10px; }
+  .dgm-x { color: #90a4ae; font-weight: 400; }
+  .dgm-stage { font-weight: 400; font-size: 12px; color: #78909c; }
+  .dgm-body { padding: 10px 14px; }
+  .dgm-row { display: flex; align-items: baseline; margin: 8px 0; gap: 10px; }
+  .dgm-label { width: 100px; text-align: right; color: #78909c; flex: none; }
+  .dgm-input { flex: 1; border-bottom: 1px solid #cfd8dc; padding: 2px 2px 3px; position: relative; }
+  .dgm-caret { float: right; color: #90a4ae; font-size: 11px; }
+  .dgm-placeholder { color: #b0bec5; }
+  .dgm-chip { display: inline-block; background: #e3f0fa; color: #1a73c4; border-radius: 3px;
+         padding: 0 7px; margin-right: 4px; font-size: 12px; }
+  .dgm-hint { margin-top: 10px; font-size: 12px; color: #78909c; }
+  .dgm-footer { padding: 6px 10px; border-top: 1px solid #e0e5e9; text-align: right; }
+  .dgm-btn { display: inline-block; color: #1a73c4; font-weight: 600; font-size: 12.5px;
+         letter-spacing: .5px; padding: 6px 12px; }
+  .dgm-group { font-weight: 600; color: #546e7a; margin: 10px 0 2px; font-size: 12px;
+         text-transform: uppercase; letter-spacing: .4px; }
+  .dgm-item { display: flex; align-items: baseline; gap: 8px; padding: 6px 4px;
+         border-bottom: 1px solid #eceff1; }
+  .dgm-item:last-child { border-bottom: none; }
+  .dgm-ico { color: #78909c; flex: none; }
+  .dgm-badge { background: #e4f3e9; color: #1e7d46; border-radius: 3px; padding: 0 7px;
+         font-size: 11.5px; white-space: nowrap; }
+  .dgm-badge.dgm-pending { background: #fdf0e4; color: #b3541e; }
+  .dgm-meta { color: #90a4ae; font-size: 12px; margin-left: auto; white-space: nowrap; }
+  .dgm-link { color: #1a73c4; font-size: 12px; margin-left: 10px; }
+  .dgm-split { display: flex; }
+  .dgm-side { width: 165px; flex: none; border-right: 1px solid #e0e5e9; padding: 8px 10px; }
+  .dgm-facet-h { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: #90a4ae;
+         margin: 8px 0 3px; }
+  .dgm-facet { padding: 1px 0; color: #37474f; }
+  .dgm-count { color: #b0bec5; float: right; font-size: 12px; }
+  .dgm-main { flex: 1; padding: 8px 12px; }
+  .dgm-search { border-bottom: 1px solid #cfd8dc; color: #b0bec5; padding: 3px 2px; margin-bottom: 6px; }
+
+  .dgm-crumbs { font-weight: 400; font-size: 12px; color: #78909c; }
+  .dgm-app { display: flex; }
+  .dgm-nav { width: 158px; flex: none; border-right: 1px solid #e0e5e9; background: #fafbfc;
+         padding: 8px 10px; }
+  .dgm-nav-i { padding: 2px 0; color: #37474f; }
+  .dgm-ind { padding-left: 14px; }
+  .dgm-sel { color: #1a73c4; font-weight: 600; }
+  .dgm-hint2 { font-size: 11px; color: #b0bec5; margin-top: 10px; }
+  .dgm-h1 { font-size: 15px; font-weight: 600; color: #263238; }
+  .dgm-sub { font-size: 12px; color: #78909c; margin: 2px 0 8px; }
+  .dgm-toolbar { font-size: 12px; color: #78909c; border-bottom: 1px solid #eceff1;
+         padding-bottom: 5px; margin-bottom: 4px; }
+  .dgm-mut { color: #b0bec5; font-size: 12px; padding: 1px 4px 6px 26px; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Artifact Alignment &amp; Discoverability</h1>
+  <p class="sub">Making Datagrok artifacts (dashboards, queries, model runs) discoverable by aligning
+  them with drug-program structure — delivered as a JS plugin. All mechanics marked ✅ were verified
+  against a live Datagrok deployment (datagrok-api 1.27, August 2026), including permission-enforcement
+  checks under restricted user accounts.</p>
+</header>
+<nav class="tabs" id="tabs">
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="business">Business</button>
+  <button data-tab="schema">Plugin: Schema &amp; Service</button>
+  <button data-tab="ui">Plugin: UI</button>
+  <button data-tab="core">Core (platform) tasks</button>
+</nav>
+<main>
+
+<!-- ============================ OVERVIEW ============================ -->
+<section class="tab active" id="tab-overview">
+  <h2>The idea</h2>
+  <p>Publishing an artifact feels like <b>saving a document to the program's shared place</b> — and it
+  doubles as distribution: the published artifact is automatically visible to the program's audience,
+  replacing manual sharing with N colleagues. Discovery then means one server-side query:
+  <i>"everything approved for program Alpha / molecule GRK-1234 / study ABC-301"</i>.</p>
+
+  <div class="flow">
+  <svg viewBox="0 0 980 210" width="100%" role="img" aria-label="Publish flow">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#5b6b7b"/>
+      </marker>
+    </defs>
+    <g font-family="sans-serif" font-size="13" fill="#1c2733">
+      <rect x="10" y="60" width="170" height="64" rx="9" fill="#fff" stroke="#dde4ea"/>
+      <text x="95" y="86" text-anchor="middle" font-weight="600">Working copy</text>
+      <text x="95" y="106" text-anchor="middle" fill="#5b6b7b" font-size="12">author's, stays mutable</text>
+
+      <rect x="240" y="60" width="170" height="64" rx="9" fill="#eef5fc" stroke="#1a73c4"/>
+      <text x="325" y="86" text-anchor="middle" font-weight="600" fill="#1a73c4">Publish dialog</text>
+      <text x="325" y="106" text-anchor="middle" fill="#5b6b7b" font-size="12">program · study · molecules</text>
+
+      <rect x="470" y="14" width="200" height="64" rx="9" fill="#fff" stroke="#dde4ea"/>
+      <text x="570" y="40" text-anchor="middle" font-weight="600">Version row (approved)</text>
+      <text x="570" y="59" text-anchor="middle" fill="#5b6b7b" font-size="12">one approved row per publication</text>
+
+      <rect x="470" y="112" width="200" height="76" rx="9" fill="#fff" stroke="#dde4ea"/>
+      <text x="570" y="136" text-anchor="middle" font-weight="600">Frozen copy</text>
+      <text x="570" y="154" text-anchor="middle" fill="#5b6b7b" font-size="12">service-owned — immutable</text>
+      <text x="570" y="171" text-anchor="middle" fill="#5b6b7b" font-size="12">audience granted View</text>
+
+      <rect x="760" y="60" width="200" height="64" rx="9" fill="#fff" stroke="#1e7d46"/>
+      <text x="860" y="86" text-anchor="middle" font-weight="600" fill="#1e7d46">Discovery</text>
+      <text x="860" y="106" text-anchor="middle" fill="#5b6b7b" font-size="12">landing page · facets · search</text>
+
+      <line x1="180" y1="92" x2="236" y2="92" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="410" y1="80" x2="466" y2="52" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="410" y1="104" x2="466" y2="140" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="670" y1="46" x2="756" y2="82" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+      <line x1="670" y1="150" x2="756" y2="104" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr)"/>
+      <text x="710" y="34" text-anchor="middle" fill="#5b6b7b" font-size="12">status = approved</text>
+      <text x="440" y="130" text-anchor="middle" fill="#5b6b7b" font-size="12">service</text>
+    </g>
+  </svg>
+  <p class="legend">Re-publishing under the same key appends a <i>new</i> version row (it starts
+  unapproved by server default); the previous approved version <b>stays live and discoverable</b>
+  until the replacement is approved, and only then retires into a separate, non-discoverable history
+  table — see the Schema tab.</p>
+  </div>
+
+  <h2>Principles</h2>
+  <ul>
+    <li><b>Single source of truth.</b> A package-managed domain schema holds identity, relationships,
+      and curation state. Anything owned by another system (program stage, status, indication) is
+      display-only informational state — never governed here.</li>
+    <li><b>Latest-approved primary table, append-only history.</b> Each publication has a durable
+      <code>publication_id</code>; among live rows, at most one <i>approved</i> version and at most
+      one <i>in-review</i> (pending/rejected) version exist per publication — the table's business
+      key <code>(publication_id, status)</code>, backed by a partial unique index over live rows and
+      enforced on insert AND update <span class="ok">✅ verified</span> (a status flip into an
+      occupied slot fails with a typed error), plus the service invariant that at most
+      one non-approved row is live. Discovery reads approved rows only, so it still sees exactly one
+      row per publication. Re-publish appends a new pending row <i>alongside</i> the live approved
+      one; the old version is archived only when its replacement is approved. Versions never share a
+      row, so approval can never leak across versions.</li>
+    <li><b>Immutability by ownership</b> <span class="ok">✅ verified</span> — each published version is
+      a frozen copy created by a catalog service identity; everyone (including the author) holds View
+      and cannot modify or delete it. Data-sync dashboards freeze the <i>definition</i>; data refreshes
+      at open with the opener's rights.</li>
+    <li><b>Review gate is configuration, not architecture.</b> Global default <b>off</b> + a gated
+      artifact-type list (e.g. model runs, reviewed by an SME — a real role). Ungated publications are
+      auto-approved instantly; the schema is identical in both modes. Approval = endorsement badge that
+      pins content (the copy is frozen).</li>
+    <li><b>No deprecation by design.</b> Old and killed-program artifacts are the reuse value; history
+      versions stay accessible, just out of discovery.</li>
+  </ul>
+
+  <h2>What discovery can answer</h2>
+  <ul>
+    <li>Everything for a program / study / workstream / molecule, in any combination, with approval
+      status — one server-side faceted query <span class="ok">✅</span> (incl. M:N molecule paths:
+      <code>compounds.registration_code = "GRK-1234"</code>).</li>
+    <li>Cross-program molecule queries, set questions (<code>compounds.id = null</code>), rollup
+      counts, shareable saved filters, parameterized dashboards with URL deep links.</li>
+    <li>Counts and facets are correct by construction — discovery reads only approved rows, and at
+      most one approved row exists per publication, so no consumer needs to filter out old
+      versions.</li>
+  </ul>
+  <p class="legend">Known limits: text/content search and structure-based chemistry are out
+  (bridgeable via chemistry tooling: structure → registration codes); only published artifacts are
+  discoverable.</p>
+</section>
+
+<!-- ============================ BUSINESS ============================ -->
+<section class="tab" id="tab-business">
+  <h2>Value proposition</h2>
+  <p>"Where is the PK dashboard for study ABC-201?" is a daily question in every program team. The
+  catalog answers it — and unlike document indexes (SharePoint, Confluence) its entries are <b>live,
+  executable, data-connected artifacts</b>. The publisher's own incentive is built in:
+  <b>publishing is distribution</b> — publish once and the right audience sees it, instead of manually
+  sharing with N colleagues.</p>
+  <table>
+    <tr><th>Persona</th><th>Gets</th><th>Pays</th></tr>
+    <tr><td>Program manager / new joiner</td><td>Program landing page, "everything about X" in one query</td><td>—</td></tr>
+    <tr><td>Computational scientist</td><td>Auto-distribution on publish; work stays findable and reusable forever</td><td>Seconds in the publish dialog</td></tr>
+    <tr><td>SME (e.g. modeling lead)</td><td>Curation authority over gated types (model runs)</td><td>Review queue — only where the gate is enabled</td></tr>
+    <tr><td>IT admin</td><td>One registry, auditable grants, drift checks</td><td>Service identity + group provisioning, registry stewardship</td></tr>
+  </table>
+
+  <h2>Adoption model</h2>
+  <ul>
+    <li><b>Default is instant gratification</b>: gate off → publish is immediately discoverable and
+      audience-shared. No approval latency, no bottleneck; the file-share mental model — including
+      re-saving under the same name, which just creates the next version.</li>
+    <li><b>Quality without gates</b>: provenance (author, date, program, study on every hit) plus
+      <b>endorsement</b> — an asynchronous SME badge that upgrades ranking. Junk sinks instead of
+      blocking. Frozen copies mean the badge can never bless content the SME didn't see, and a new
+      version always starts unendorsed.</li>
+    <li><b>The gate where it's real</b>: SME review of model runs is an actual, named role in pharma
+      (model validation culture). Gate selected artifact types; leave dashboards/queries ungated.
+      Note the versioning behavior: an <i>update</i> to a gated artifact also goes through review,
+      but while it is pending <b>the publication keeps serving its last approved version</b> — the
+      update shows as "in re-review" alongside it, visible to the author and approvers only. A
+      rejected update never changes what the audience sees; the previous version retires only when
+      its replacement is approved.</li>
+    <li><b>Cold start</b>: bulk-publish tooling for the existing artifact corpus, and master-data sync
+      for the program/compound/study registry (required in large organizations — a hand-maintained
+      registry drifts; small organizations keep the manual admin path on the same model).</li>
+    <li><b>Reuse is the payoff</b>: publications are never deprecated; killed-program artifacts remain
+      discoverable — "we saw this signal in program X three years ago" is the classic high-value
+      reuse. Search always returns the latest approved version only; earlier versions stay accessible
+      from the publication's history, never cluttering results.</li>
+  </ul>
+
+  <h2>Compliance posture</h2>
+  <p>A discovery catalog with optional curation — <b>not a GxP system of record</b>. Endorsement is a
+  curation signal, not an electronic signature; regulated decisions belong in the customer's validated
+  systems. Several review-workflow requirements are inherent in the design and are therefore not
+  gaps: content pinning and change-triggered re-review (frozen copies; a republished version resets
+  to unapproved while the audience keeps seeing the last approved version until the new one passes),
+  the rejection → resubmission loop (resubmit = the next version through the normal
+  flow, with the rejected version and its reason archived), and reviewer delegation (approvers-group
+  membership). What remains missing is listed below.</p>
+
+  <h2>Compliance gaps — missing code capabilities</h2>
+  <p class="legend">Software gaps only; process, operations, and documentation prerequisites
+  (validation packages, SOPs, backup procedures, time-source configuration) are the customer's and
+  vendor's to run and are not listed here.</p>
+  <table>
+    <tr><th>Capability</th><th>Status</th><th>Owner</th></tr>
+    <tr><td>Audit of permission changes (grant/revoke)</td>
+        <td class="gap">Missing — domain grants produce no audit records; only classic entity shares are logged</td>
+        <td>Platform</td></tr>
+    <tr><td>Electronic-signature semantics (re-authentication at signing, signature manifestation,
+        meaning, non-repudiation)</td>
+        <td class="gap">Missing entirely</td>
+        <td>Platform</td></tr>
+    <tr><td>Record retention holds &amp; tamper prevention (registry rows are admin-editable;
+        audited but not prevented)</td>
+        <td class="gap">Partial — audit trail exists; no retention/hold or edit-prevention features</td>
+        <td>Platform</td></tr>
+    <tr><td>Enforced segregation of duties (author ≠ approver)</td>
+        <td class="gap">Convention only — needs a service-side check now, platform value-conditional
+        column rules eventually</td>
+        <td>Plugin (interim) / Platform</td></tr>
+    <tr><td>Review-queue escalation / SLA (reminders, aging, auto-escalation)</td>
+        <td class="gap">Missing — depends on platform notification infrastructure (the domain watch
+        channel is currently non-functional; see Core tasks); the plugin only supplies the escalation
+        policy on top</td>
+        <td>Platform / plugin</td></tr>
+    <tr><td>Access-review reporting (who can view/approve what, exportable evidence)</td>
+        <td class="gap">Partial — grants are listable per object only; a platform-level export of
+        grants across all domain schemas/tables/property schemas would provide it</td>
+        <td>Platform</td></tr>
+    <tr><td>Reliable schema-migration mechanism (worked destructive-migration path, rename support)</td>
+        <td class="gap">Unproven — the platform's migration key has no worked example; renames are
+        drop+add</td>
+        <td>Platform</td></tr>
+  </table>
+</section>
+
+<!-- ============================ SCHEMA & SERVICE ============================ -->
+<section class="tab" id="tab-schema">
+  <h2>Model</h2>
+  <p class="legend">[I] immutable after creation · [S] synced/mutable (registry only) · [M] mutable
+  post-publish (curation) · [E] enum via <code>choices</code> · ✅ verified on a live deployment.</p>
+
+<div style="overflow-x:auto"><svg viewBox="0 0 1040 1095" style="min-width:920px" width="100%" role="img" aria-label="Domain schema diagram">
+<defs>
+  <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#5b6b7b"/>
+  </marker>
+</defs>
+<g font-family="ui-monospace, Consolas, monospace" font-size="12.5" fill="#1c2733">
+
+  <!-- program -->
+  <rect x="30" y="30" width="290" height="180" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <rect x="30" y="30" width="290" height="26" rx="8" fill="#f0f3f6" stroke="#b9c4ce"/>
+  <text x="42" y="48" font-weight="700">program</text>
+  <text x="308" y="48" text-anchor="end" fill="#5b6b7b" font-size="11">row security ✅</text>
+  <text x="42" y="76">id — PK  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="94">code / name  <tspan fill="#5b6b7b">[S]</tspan></text>
+  <text x="42" y="112">external_ref · DMS doc links  <tspan fill="#5b6b7b">[S]</tspan></text>
+  <text x="42" y="130">viewers/contrib/approvers  <tspan fill="#1a73c4">group</tspan> ✅</text>
+  <text x="42" y="156" fill="#5b6b7b" font-style="italic">stage · status · indication — foreign,</text>
+  <text x="42" y="172" fill="#5b6b7b" font-style="italic">display-only on the landing page</text>
+
+  <!-- program_compound -->
+  <rect x="390" y="30" width="250" height="70" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <rect x="390" y="30" width="250" height="26" rx="8" fill="#f0f3f6" stroke="#b9c4ce"/>
+  <text x="402" y="48" font-weight="700">program_compound</text>
+  <text x="628" y="48" text-anchor="end" fill="#5b6b7b" font-size="11">M:N junction</text>
+  <text x="402" y="78">role  <tspan fill="#5b6b7b">[E, choices]</tspan></text>
+
+  <!-- compound -->
+  <rect x="390" y="140" width="250" height="88" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <rect x="390" y="140" width="250" height="26" rx="8" fill="#f0f3f6" stroke="#b9c4ce"/>
+  <text x="402" y="158" font-weight="700">compound</text>
+  <text x="402" y="186">registration_code — unique  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="402" y="204">name / structure  <tspan fill="#5b6b7b">[S]</tspan></text>
+
+  <!-- groups -->
+  <rect x="710" y="30" width="300" height="132" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <rect x="710" y="30" width="300" height="26" rx="8" fill="#f0f3f6" stroke="#b9c4ce"/>
+  <text x="722" y="48" font-weight="700">platform groups (per program)</text>
+  <text x="722" y="76">Viewers — View on frozen copies</text>
+  <text x="722" y="94">Contributors — create version rows</text>
+  <text x="722" y="112">Approvers — Edit on "approval" schema</text>
+  <text x="722" y="134" fill="#5b6b7b" font-style="italic">provisioned by the catalog service</text>
+
+  <!-- study -->
+  <rect x="30" y="270" width="230" height="110" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <rect x="30" y="270" width="230" height="26" rx="8" fill="#f0f3f6" stroke="#b9c4ce"/>
+  <text x="42" y="288" font-weight="700">study</text>
+  <text x="42" y="316">program — ref  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="334">protocol_code  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="352">phase  <tspan fill="#5b6b7b">[E, I]</tspan></text>
+  <text x="42" y="370">status  <tspan fill="#5b6b7b">[E, S]</tspan></text>
+
+  <!-- alignment -->
+  <rect x="30" y="440" width="600" height="450" rx="8" fill="#fff" stroke="#7d92a5"/>
+  <rect x="30" y="440" width="600" height="28" rx="8" fill="#e8edf2" stroke="#7d92a5"/>
+  <text x="42" y="459" font-weight="700">alignment — live versions only</text>
+  <text x="618" y="459" text-anchor="end" fill="#5b6b7b" font-size="11">master security · delegate: program · audit ✅</text>
+  <text x="42" y="490" fill="#5b6b7b" font-style="italic">AT MOST ONE APPROVED + ONE IN-REVIEW ROW PER PUBLICATION —</text>
+  <text x="42" y="506" fill="#5b6b7b" font-style="italic">businessKey (publication_id, status): unique among live rows, insert &amp; update ✅ · in-review singleton kept by the service</text>
+  <text x="42" y="528">publication_id — durable logical id  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="546">revision  <tspan fill="#5b6b7b">[I]</tspan>  (`version` is a reserved system column ✅)</text>
+  <text x="42" y="564">name — display name (isName) · republish key = (program, study, name)  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="582">artifact_id — unique → frozen copy  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="600">source_artifact_id → author's working copy  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="618">program — ref, required (delegate) · part of republish key  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="636">study — ref 0..1, part of republish key, onDelete: restrict  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="654">workstream  <tspan fill="#5b6b7b">[E, I]</tspan></text>
+  <text x="42" y="672">compounds — M:N via junction ✅  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="690">artifact_type / artifact_author / artifact_created_on  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <line x1="30" y1="700" x2="630" y2="700" stroke="#7d92a5"/>
+  <rect x="31" y="701" width="598" height="102" fill="#eef5fc"/>
+  <text x="42" y="720" font-weight="700" fill="#1a73c4">approval columns — per-column property schemas · View: broad · Edit: approvers only ✅</text>
+  <text x="42" y="738">status  <tspan fill="#5b6b7b">[E: pending|approved|rejected]</tspan>  default 'pending' ✅ — new versions start unapproved, structurally</text>
+  <text x="42" y="756" fill="#5b6b7b" font-style="italic">gate OFF for the type ⇒ service auto-approves instantly</text>
+  <text x="42" y="774">approved_by (user) · approved_on — audit = authoritative record ✅</text>
+  <text x="42" y="792">reject_reason</text>
+  <line x1="30" y1="803" x2="630" y2="803" stroke="#7d92a5"/>
+  <rect x="31" y="804" width="598" height="85" fill="#f5f0fa"/>
+  <text x="42" y="823" font-weight="700" fill="#7248a8">curation — View: broad · Edit: contributors</text>
+  <text x="42" y="841">tags — M:N via junction ✅ (a string-array column has no per-value facets)  <tspan fill="#5b6b7b">[M]</tspan></text>
+  <text x="42" y="859">path — string, folder-like grouping (e.g. "PK/exposure")  <tspan fill="#5b6b7b">[M]</tspan></text>
+  <text x="42" y="877" fill="#5b6b7b" font-style="italic">organize after publish — facets &amp; reuse pickers; copied forward to the next version</text>
+
+  <!-- artifacts -->
+  <text x="710" y="458" font-weight="700" fill="#5b6b7b" font-size="11" font-family="sans-serif">ARTIFACTS</text>
+  <rect x="710" y="470" width="300" height="64" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <text x="722" y="496" font-weight="700">Working copy — author's, mutable</text>
+  <text x="722" y="516" fill="#5b6b7b">stays fully under author control</text>
+  <rect x="710" y="586" width="300" height="120" rx="8" fill="#fff" stroke="#1e7d46"/>
+  <text x="722" y="612" font-weight="700" fill="#1e7d46">Frozen copy — catalog-owned ✅</text>
+  <text x="722" y="632">everyone incl. author: View only</text>
+  <text x="722" y="650">immutable by ownership</text>
+  <text x="722" y="670" fill="#5b6b7b">data-sync: frozen definition,</text>
+  <text x="722" y="686" fill="#5b6b7b">live data at open</text>
+  <line x1="860" y1="534" x2="860" y2="582" stroke="#5b6b7b" stroke-width="1.6" marker-end="url(#arr2)"/>
+  <text x="868" y="562" fill="#5b6b7b" font-size="11" font-family="sans-serif">publish = hand-off (service clones)</text>
+
+  <!-- history -->
+  <rect x="30" y="926" width="600" height="128" rx="8" fill="#fff" stroke="#b9c4ce"/>
+  <rect x="30" y="926" width="600" height="26" rx="8" fill="#f0f3f6" stroke="#b9c4ce"/>
+  <text x="42" y="944" font-weight="700">alignment_history</text>
+  <text x="618" y="944" text-anchor="end" fill="#5b6b7b" font-size="11">append-only archive · NOT discoverable</text>
+  <text x="42" y="972">businessKey (publication_id, revision) — duplicate insert = idempotent no-op ✅</text>
+  <text x="42" y="990">full column copy + final approval state · superseded_on</text>
+  <text x="42" y="1008">original_row_id → the retired row's audit trail</text>
+  <text x="42" y="1026" fill="#5b6b7b">security: delegate → program (same trimming as live metadata);</text>
+  <text x="42" y="1044" fill="#5b6b7b">old frozen copies keep their grants — "open v3 from last year" just works</text>
+
+  <!-- edges -->
+  <line x1="145" y1="268" x2="145" y2="212" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr2)"/>
+  <text x="152" y="244" fill="#5b6b7b" font-size="11" font-family="sans-serif">N:1</text>
+
+  <line x1="388" y1="65" x2="324" y2="65" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr2)"/>
+  <line x1="515" y1="100" x2="515" y2="136" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr2)"/>
+
+  <line x1="300" y1="438" x2="300" y2="214" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr2)"/>
+  <text x="307" y="330" fill="#5b6b7b" font-size="11" font-family="sans-serif">delegate · N:1</text>
+
+  <line x1="140" y1="438" x2="140" y2="384" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr2)"/>
+  <text x="147" y="414" fill="#5b6b7b" font-size="11" font-family="sans-serif">0..1</text>
+
+  <line x1="322" y1="116" x2="706" y2="116" stroke="#5b6b7b" stroke-width="1.4"
+        stroke-dasharray="5 4" marker-end="url(#arr2)"/>
+  <text x="480" y="110" fill="#5b6b7b" font-size="11" font-family="sans-serif">group refs</text>
+
+  <polyline points="630,672 670,672 670,184 648,184" fill="none" stroke="#5b6b7b"
+        stroke-width="1.4" marker-end="url(#arr2)"/>
+  <text x="676" y="392" fill="#5b6b7b" font-size="11" font-family="sans-serif">M:N</text>
+
+  <polyline points="632,582 678,582 678,646 706,646" fill="none" stroke="#5b6b7b"
+        stroke-width="1.4" marker-end="url(#arr2)"/>
+  <polyline points="632,600 694,600 694,505 706,505" fill="none" stroke="#5b6b7b"
+        stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr2)"/>
+
+  <line x1="330" y1="892" x2="330" y2="924" stroke="#5b6b7b" stroke-width="1.4" marker-end="url(#arr2)"/>
+  <text x="342" y="912" fill="#5b6b7b" font-size="11" font-family="sans-serif">on approval of the replacement: copy old approved row → history · soft-delete it</text>
+
+  <text x="30" y="1074" fill="#5b6b7b" font-family="sans-serif" font-size="12">Discovery surfaces query only:
+    <tspan font-family="ui-monospace, Consolas, monospace">alignment WHERE status = 'approved'</tspan>
+    — one row per publication, nothing unapproved, no history. Correct by construction.</text>
+</g>
+</svg></div>
+
+  <h2>Publish &amp; republish flow (catalog service, service identity)</h2>
+  <ol class="tasks">
+    <li>Clone the author's working copy → new <b>frozen copy</b> (service-owned; audience gets View).</li>
+    <li><b>First publish</b>: mint <code>publication_id</code>, insert the version-1 row.
+      <b>Republish</b> (same <code>(program, study, name)</code> → same <code>publication_id</code>):
+      insert the new row with <code>revision + 1</code> <i>alongside</i> the live approved row; if an
+      older in-review row is still live (a rejected or superseded draft), archive it to
+      <code>alignment_history</code> first. Curation values (tags, path) are copied forward from the
+      latest version.</li>
+    <li>The new row's <code>status</code> lands <code>'pending'</code> by server default — approval
+      can never carry over between versions because versions never share a row. The previous approved
+      version stays live and discoverable while the new one is in review; a rejection leaves it
+      untouched.</li>
+    <li><b>Approval</b> (by an approver, or by the service in the same breath when the gate is off
+      for the artifact's type — same audit trail): copy the previously approved row into
+      <code>alignment_history</code>, soft-delete it, then set the new row to <code>approved</code>.
+      Gated ⇒ notify the approvers group explicitly at publish time.</li>
+  </ol>
+  <p class="legend">The steps are not one transaction; every partial-failure window is detectable and
+  idempotently repairable — all verified: a duplicate insert against the live-row business key fails
+  with a typed unique-violation error, and so does an update that would create a second approved live
+  row (the flip guard); re-inserting after the soft-delete succeeds; a duplicate history insert
+  against the <code>(publication_id, revision)</code> business key is a graceful no-op
+  (<code>created: false, status: 'duplicate'</code>); the archive-then-approve pair in step 4 is the
+  only window where a publication briefly has no approved row, and an interrupted flip — like a
+  publication left with no live row at all — is reconstructable from history (a republish resumes
+  the publication's identity and numbering); the drift check scans for both.</p>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li><b>Viewers</b> — View on each approved frozen copy (granted by the service) + alignment
+      metadata visibility via the program delegate chain.</li>
+    <li><b>Contributors</b> — may create version rows (see the write-coupling decision below), and
+      hold Edit on the <code>curation</code> column group (tags, path) to organize published
+      artifacts after the fact.</li>
+    <li><b>Approvers</b> — Edit on the <code>approval</code> column group; only they can set
+      <code>status</code> <span class="ok">✅</span> (typed denial for everyone else; authors cannot
+      self-approve). <b>View must be granted separately from Edit</b> on a property schema
+      <span class="ok">✅</span> — grant View broadly so everyone can filter on status.</li>
+    <li><b>Restricted scopes</b> — audiences are exact per-artifact grants. Blinded-study metadata:
+      publish-on-unblind by default (version rows delegate to the program, so their existence is
+      visible to program viewers).</li>
+  </ul>
+
+  <h2>Known design gap: write coupling (accepted for v1)</h2>
+  <div class="card">
+    <p>Verified platform behavior: master mode routes writes through the delegate — inserting a
+    version row requires Edit on the <code>program</code> row, so "can publish to Alpha" implies
+    "can edit Alpha's registry row". <b>v1 accepts this</b> as the trivial path: contributors are
+    granted Edit on the program table; registry edits by non-stewards are audited, detected by the
+    drift check, and overwritten by master-data sync where one runs.</p>
+    <p><b>Marked as a design gap to be addressed</b> — publishing rights should not expose the
+    program registry row for editing.</p></div>
+
+  <h2>Verified mechanics</h2>
+  <table>
+    <tr><th>Mechanism</th><th>Result</th></tr>
+    <tr><td>Fixture deploy (row/master modes, group/user/ref/choices columns, delegate)</td><td class="ok">✅</td></tr>
+    <tr><td>Insert without status → server default 'pending'</td><td class="ok">✅</td></tr>
+    <tr><td>Unique among live rows via composite <code>businessKey</code>: duplicate insert blocked (typed error), and an update into an occupied key slot blocked too (the approve-flip guard); insert succeeds after soft-delete; old version invisible to queries</td><td class="ok">✅</td></tr>
+    <tr><td>Flattened M:N reads (queryDf / Open in Table View) carry the multi-value separator + chips renderer — the standard per-value filter widgets work with no code</td><td class="ok">✅</td></tr>
+    <tr><td><code>string_list</code> columns are unusable for tag semantics: array writes rejected outside <code>batch</code>, reads return PG array literals, facets count whole arrays — multi-value fields need an M:N relation</td><td>⚠️</td></tr>
+    <tr><td>Composite <code>businessKey</code> on a regular table; duplicate insert = idempotent no-op (<code>status: 'duplicate'</code>)</td><td class="ok">✅</td></tr>
+    <tr><td><code>onDelete: restrict</code> → typed <code>DomainRestrictError</code> ("live rows reference this row")</td><td class="ok">✅</td></tr>
+    <tr><td>Reserved system column names (<code>version</code>, etc.) rejected by manifest validation; <code>filters</code> section accepted</td><td class="ok">✅</td></tr>
+    <tr><td>Batch entity resolution of artifact ids (id → entity, caller ACL applied)</td><td class="ok">✅</td></tr>
+    <tr><td>Choices validated server-side (typed validation error)</td><td class="ok">✅</td></tr>
+    <tr><td>Non-approver writing status (insert &amp; update)</td><td class="ok">✅ typed denial "Column not writable"</td></tr>
+    <tr><td>Approver (Edit on property schema via group) sets status</td><td class="ok">✅</td></tr>
+    <tr><td>Edit ⊅ View on property schemas — View granted separately</td><td class="ok">✅</td></tr>
+    <tr><td>Property-schema grants via the domains grants REST route</td><td class="ok">✅ (no typed JS surface)</td></tr>
+    <tr><td>Approval audit: before/after diffs, actor, transaction-grouped</td><td class="ok">✅</td></tr>
+    <tr><td>M:N relation added to a live schema without migration</td><td class="ok">✅</td></tr>
+    <tr><td><code>compounds.registration_code = "GRK-1234" and status = "approved"</code></td><td class="ok">✅</td></tr>
+    <tr><td>Dotted FK path <code>program.code</code>; set-level <code>compounds.id = null</code>; expand</td><td class="ok">✅</td></tr>
+    <tr><td>Immutability by ownership: View-grantee (incl. author) cannot modify/delete a service-owned entity</td><td class="ok">✅</td></tr>
+    <tr><td>Group provisioning; transitive current-user membership check</td><td class="ok">✅</td></tr>
+    <tr><td>Platform log records classic share events</td><td class="ok">✅</td></tr>
+  </table>
+
+  <h2>Service responsibilities (beyond the publish flow)</h2>
+  <ul class="tasks">
+    <li>Group provisioning per program; batch audience backfills when a program's groups change.</li>
+    <li>Drift check: intended (registry) vs. actual (entity ACL) grants; history/live-row invariants;
+      "approval only ever set by the approvers group or the service" scan over the audit trail.</li>
+    <li>Exclude version rows whose frozen copy was admin-deleted; scheduled registry export.</li>
+    <li>Per-type clone mechanics: queries/scripts are content strings (trivial); projects/dashboards
+      via the platform clone; model runs are already immutable records.</li>
+    <li>Grant reconciliation is post-hoc by platform necessity (no cancellable pre-commit hooks
+      exist) — retries required; partial failures are repairable, see the flow note above.</li>
+  </ul>
+
+  <h2>Storage &amp; ops</h2>
+  <p>Domain tables live in the main platform Postgres. Non-Postgres surfaces needing backup:
+  platform file storage — domain file uploads and published dataframe blobs. No documented on-prem
+  backup procedure exists today (cloud file-storage backup is documented); this is an explicit ops
+  prerequisite for production.</p>
+</section>
+
+<!-- ============================ UI ============================ -->
+<section class="tab" id="tab-ui">
+  <h2>Entity dialog overrides — save / share / load</h2>
+  <ul class="tasks">
+    <li><b>Save/share</b>: inject a "publish to program" step — program pre-filled from context,
+      optional study / compounds (auto-suggested from the artifact's data via semantic types) /
+      workstream, and <b>Name</b> — pre-filled from the working copy. The republish key is
+      <code>(program, study, name)</code>: a match publishes the next version of that publication; a
+      different name — or the same name under a different program or study — creates a new
+      publication (exactly the file-save-dialog semantic). <i>Requires a core dialog-extension point (the platform share dialog is closed to
+      packages — verified); until it lands, the same dialog ships as a context-menu / Actions-pane
+      action.</i></li>
+  </ul>
+
+  <div class="dgm" style="max-width:520px">
+    <div class="dgm-title">Publish to program <span class="dgm-x">✕</span></div>
+    <div class="dgm-body">
+      <div class="dgm-row"><span class="dgm-label">Name</span>
+        <span class="dgm-input">PK Overview</span></div>
+      <div class="dgm-row"><span class="dgm-label">Program</span>
+        <span class="dgm-input">Alpha<span class="dgm-caret">▾</span></span></div>
+      <div class="dgm-row"><span class="dgm-label">Study</span>
+        <span class="dgm-input">ABC-201 · Phase II<span class="dgm-caret">▾</span></span></div>
+      <div class="dgm-row"><span class="dgm-label">Molecules</span>
+        <span class="dgm-input"><span class="dgm-chip">GRK-1234 ✕</span><span class="dgm-chip">GRK-1301 ✕</span>+</span></div>
+      <div class="dgm-row"><span class="dgm-label">Workstream</span>
+        <span class="dgm-input">Clinical<span class="dgm-caret">▾</span></span></div>
+      <div class="dgm-row"><span class="dgm-label">Description</span>
+        <span class="dgm-input dgm-placeholder">optional…</span></div>
+      <div class="dgm-hint">A publication named <b>PK Overview</b> exists in Alpha / ABC-201 — this
+        publishes <b>version 4</b>; the current version stays visible until this one is approved.
+        Change the name (or study) to create a new publication. Publishing creates an immutable
+        snapshot, visible to Alpha viewers once approved (auto-approved for dashboards).</div>
+    </div>
+    <div class="dgm-footer"><span class="dgm-btn">CANCEL</span><span class="dgm-btn">PUBLISH</span></div>
+  </div>
+
+  <ul class="tasks">
+    <li><b>Load/open</b>: catalog picker — open-from-program browsing filtered by program / molecule /
+      study, reusing the shipped domain filter facets.</li>
+  </ul>
+
+  <div class="dgm" style="max-width:640px">
+    <div class="dgm-title">Open from program <span class="dgm-x">✕</span></div>
+    <div class="dgm-split">
+      <div class="dgm-side">
+        <div class="dgm-facet-h">Status</div>
+        <div class="dgm-facet">☑ approved <span class="dgm-count">27</span></div>
+        <div class="dgm-facet-h">Molecule</div>
+        <div class="dgm-facet">☑ GRK-1234 <span class="dgm-count">12</span></div>
+        <div class="dgm-facet">☐ GRK-2001 <span class="dgm-count">5</span></div>
+        <div class="dgm-facet-h">Workstream</div>
+        <div class="dgm-facet">☑ clinical <span class="dgm-count">8</span></div>
+        <div class="dgm-facet">☐ cmc <span class="dgm-count">3</span></div>
+      </div>
+      <div class="dgm-main">
+        <div class="dgm-search">🔍 pk model…</div>
+        <div class="dgm-item"><span class="dgm-ico">▦</span> PK Overview
+          <span class="dgm-badge">endorsed</span><span class="dgm-meta">dashboard · v4 · ABC-201</span></div>
+        <div class="dgm-item"><span class="dgm-ico">ƒ</span> PopPK model run 2026-08
+          <span class="dgm-badge">endorsed</span><span class="dgm-meta">model run · v1 · ABC-201</span></div>
+        <div class="dgm-item"><span class="dgm-ico">▤</span> Exposure query
+          <span class="dgm-meta">query · v2 · ABC-201</span></div>
+      </div>
+    </div>
+    <div class="dgm-footer"><span class="dgm-btn">CANCEL</span><span class="dgm-btn">OPEN</span></div>
+  </div>
+
+  <h2>Main page (Browse app)</h2>
+  <ul class="tasks">
+    <li>Program landing: everything approved, grouped by study/workstream; endorsement badges (they
+      pin content — published copies are immutable); foreign info (stage etc.) as informational state;
+      links to authors' working copies where the viewer has access.</li>
+    <li>Faceted search over the latest-approved slice of the alignment table — facets with live
+      security-trimmed counts (including curation tags and path), related filters, saved shareable
+      presets, search grammar (all shipped platform UI) — plus parameterized dashboards with URL
+      deep links.</li>
+    <li><b>Durable publication URLs</b>: the app routes by <code>publication_id</code>, so bookmarks
+      and cross-references survive republishing.</li>
+  </ul>
+
+  <div class="dgm" style="max-width:980px">
+    <div class="dgm-title">Portfolio <span class="dgm-crumbs">Programs ▸ <b>Alpha</b></span></div>
+    <div class="dgm-app">
+      <div class="dgm-nav">
+        <div class="dgm-nav-i dgm-sel">▾ Programs</div>
+        <div class="dgm-nav-i dgm-ind dgm-sel">Alpha</div>
+        <div class="dgm-nav-i dgm-ind">Beta</div>
+        <div class="dgm-nav-i dgm-ind">Gamma</div>
+        <div class="dgm-nav-i">My publications <span class="dgm-count">3</span></div>
+        <div class="dgm-nav-i">Review queue <span class="dgm-count">2</span></div>
+        <div class="dgm-hint2">review queue shown to approvers only</div>
+      </div>
+      <div class="dgm-side">
+        <div class="dgm-search">🔍 search in Alpha…</div>
+        <div class="dgm-facet-h">Status</div>
+        <div class="dgm-facet">☑ approved <span class="dgm-count">24</span></div>
+        <div class="dgm-facet">☐ in re-review <span class="dgm-count">2</span></div>
+        <div class="dgm-facet-h">Study</div>
+        <div class="dgm-facet">☐ ABC-101 · Ph I <span class="dgm-count">4</span></div>
+        <div class="dgm-facet">☐ ABC-201 · Ph II <span class="dgm-count">13</span></div>
+        <div class="dgm-facet-h">Workstream</div>
+        <div class="dgm-facet">☐ clinical <span class="dgm-count">8</span></div>
+        <div class="dgm-facet">☐ modeling <span class="dgm-count">6</span></div>
+        <div class="dgm-facet">☐ discovery <span class="dgm-count">10</span></div>
+        <div class="dgm-facet-h">Molecule</div>
+        <div class="dgm-facet">☐ GRK-1234 <span class="dgm-count">12</span></div>
+        <div class="dgm-facet">☐ GRK-1301 <span class="dgm-count">3</span></div>
+        <div class="dgm-facet-h">Type</div>
+        <div class="dgm-facet">☐ dashboard <span class="dgm-count">9</span></div>
+        <div class="dgm-facet">☐ query <span class="dgm-count">7</span></div>
+        <div class="dgm-facet">☐ model run <span class="dgm-count">8</span></div>
+        <div class="dgm-facet-h">Path</div>
+        <div class="dgm-facet">☐ PK/exposure <span class="dgm-count">5</span></div>
+        <div class="dgm-facet">☐ PK/poppk <span class="dgm-count">4</span></div>
+        <div class="dgm-facet-h">Tags</div>
+        <div class="dgm-facet">☐ interim-analysis <span class="dgm-count">3</span></div>
+      </div>
+      <div class="dgm-main">
+        <div class="dgm-h1">Alpha <span class="dgm-stage">Phase II · from portfolio system</span></div>
+        <div class="dgm-sub">indication: type 2 diabetes · lead molecule GRK-1234 · 24 publications · <span class="dgm-link">program documents ↗</span></div>
+        <div class="dgm-toolbar">group by: <b>workstream</b> ▾ &nbsp;·&nbsp; sort: <b>recent first</b> ▾ &nbsp;·&nbsp; view: list ▾</div>
+        <div class="dgm-group">Clinical · 8</div>
+        <div class="dgm-item"><span class="dgm-ico">▦</span> PK Overview
+          <span class="dgm-badge">endorsed</span><span class="dgm-meta">v4 · J. Doe · Aug 2026</span></div>
+        <div class="dgm-item"><span class="dgm-ico">▤</span> Exposure query
+          <span class="dgm-meta">v2 · L. Park · Jul 2026</span></div>
+        <div class="dgm-group">Modeling · 6</div>
+        <div class="dgm-item"><span class="dgm-ico">ƒ</span> PopPK model run 2026-08
+          <span class="dgm-badge">endorsed</span><span class="dgm-meta">v1 · M. Chen · Aug 2026</span></div>
+        <div class="dgm-mut">v2 in re-review — v1 stays live; the update is visible only to you (author) and approvers</div>
+        <div class="dgm-group">Discovery · 10</div>
+        <div class="dgm-item"><span class="dgm-ico">▦</span> SAR dashboard (2023, killed predecessor program)
+          <span class="dgm-meta">v1 · still discoverable</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="tasks">
+    <li><b>Default state</b>: the selected program, <b>approved only</b> (the "in re-review" facet is
+      off; enabling it shows only rows the viewer may see — their own and, for approvers, the queue),
+      grouped by workstream, most recent first.</li>
+    <li><b>Left rail</b> is the app's navigation (programs, my publications, the approvers' review
+      queue); the <b>filter panel</b> next to it carries the facets with live counts — both always
+      visible, no hidden state.</li>
+    <li>Clicking an item opens the frozen copy; its context panel shows alignment metadata, the
+      endorsement, the curation fields (tags, path — editable in place by contributors), and the
+      History pane.</li>
+  </ul>
+
+  <ul class="tasks">
+    <li><b>History pane</b> per publication: version list from <code>alignment_history</code> with
+      final approval state and dates; old frozen copies open directly ("open v3 from last year").
+      History is reachable only from here — it never appears in search or facets.</li>
+  </ul>
+
+  <div class="dgm" style="max-width:520px">
+    <div class="dgm-title">PK Overview — history</div>
+    <div class="dgm-body">
+      <div class="dgm-item"><b>v4</b><span class="dgm-badge">current · endorsed</span>
+        <span class="dgm-meta">M. Chen · 2026-08-12</span><span class="dgm-link">open</span></div>
+      <div class="dgm-item"><b>v3</b><span class="dgm-meta">archived · was endorsed · 2026-05-02</span>
+        <span class="dgm-link">open</span></div>
+      <div class="dgm-item"><b>v2</b><span class="dgm-meta">archived · rejected: "wrong cohort" · 2026-04-18</span>
+        <span class="dgm-link">open</span></div>
+      <div class="dgm-item"><b>v1</b><span class="dgm-meta">archived · 2026-02-11</span>
+        <span class="dgm-link">open</span></div>
+    </div>
+  </div>
+
+  <ul class="tasks">
+    <li>Global-search patterns: compound codes (e.g. <code>GRK-1234</code>) and program codes jump
+      straight to the compound/program page.</li>
+    <li>Render <code>artifact_id</code> / <code>source_artifact_id</code> as clickable entity links
+      (semantic type + handler) — otherwise domain grids dead-end at a string.</li>
+  </ul>
+
+  <h2>End-user filtering, no code required</h2>
+  <p>The shipped domain UI provides: gallery views with a search bar (plain text or condition
+  grammar), an auto-built filter panel (checkbox facets with live row counts that respect row-level
+  access, histograms, date ranges), related filters following references up to three hops, an
+  auto-generated facet per M:N relation (molecules as checkboxes), and saved filter presets that are
+  shareable entities. "Open in Table View" turns any filtered subset into a full analytical table,
+  recorded as a re-runnable query that respects the opener's permissions.</p>
+</section>
+
+<!-- ============================ CORE TASKS ============================ -->
+<section class="tab" id="tab-core">
+  <h2>Platform (core) tasks</h2>
+  <p class="legend">Asks on the Datagrok core, separate from plugin work. Each is backed by live
+  verification, not speculation.</p>
+
+  <h3>Blockers</h3>
+  <ol class="tasks">
+    <li><b>Entity dialog extension points (save / share / load).</b> The share dialog is closed to
+      packages (verified: no API, no cancellable pre-save/share event — only post-hoc share
+      notifications). Needed for the publish step to live where users already are; the only hard
+      blocker for the ideal UX. Interim: context-menu / Actions-pane action.</li>
+  </ol>
+
+  <h3>Important</h3>
+  <ol class="tasks">
+    <li><b>Typed JS API for property-schema grants.</b> Per-column schemas do have a typed surface —
+      <code>shareColumn(column, group, permission)</code> restricts a column and grants View/Edit per
+      group (verified; the shape this design's approval/curation columns use). Manifest-declared
+      (multi-column) property schemas still have only the REST route — grant/revoke/list is
+      missing.</li>
+    <li><b>Audit domain grant/revoke.</b> Verified: a grant+revoke round-trip adds zero audit entries
+      at both the domain layer and the platform log. Table stakes for regulated-adjacent customers.</li>
+    <li><b>Working notification channel for domain table watch.</b> Subscription confirms but nothing
+      observable arrives in the user notification feed after another user's change (timed test on a
+      stock deployment). Approver notifications and review-queue SLA/escalation both depend on it;
+      interim: explicit notifications from the service.</li>
+    <li><b>Schema evolution hardening.</b> The destructive-migration manifest key is free-form,
+      undocumented, and unused anywhere; there is no rename operation (renames are drop+add). Provide
+      a worked example, a sub-schema, and ideally a rename op — needed before the registry's first
+      breaking change.</li>
+  </ol>
+
+  <h3>Normal</h3>
+  <ol class="tasks">
+    <li><b>Declarative column immutability.</b> An <code>immutable</code> manifest flag — today
+      immutable columns are app-layer convention plus audit-based detection.</li>
+    <li><b>Grants export / access-review reporting.</b> Grants are listable per object only; a
+      platform-level export across all domain schemas/tables/property schemas would provide
+      access-review evidence (see the compliance table).</li>
+    <li><b>Documented backup/DR for on-prem.</b> Postgres + platform file storage (uploads, published
+      dataframes) restore runbook; only cloud file-storage backup is documented today.</li>
+    <li><b>Classic grant API parity.</b> Entity permission granting is binary View/Edit while
+      Share/Delete are checkable but not grantable — limits revocation tooling and delegation.
+      Verified additionally: <code>grok.dapi.permissions.grant</code> refuses promoted domain rows
+      ("no permission to share"); the public shares route works on them, but addresses groups by
+      name only — promoted-row grants need a typed, id-addressed surface.</li>
+    <li><b>Value-conditional column security.</b> Transition rules like "block approved→pending" and
+      "author may not approve own row" are inexpressible; the design dodges the former by keeping
+      authors off <code>status</code> entirely, and covers the latter only as a service-side
+      check.</li>
+    <li><b>Awaitable registry-ready signal for JS apps.</b> Verified: <code>DomainView.create</code>
+      called from an app function during client boot intermittently fails with a NullError in
+      refreshGrid — the view's column set draws on entity-type/property-schema meta still loading,
+      and a not-yet-loaded column comes through as null. The platform's own <code>/domains</code>
+      routes are sequenced after that load; a JS app has nothing to await (REST warm-ups do not
+      populate the Dart-side cache), leaving verify-and-recreate as the only workaround.</li>
+  </ol>
+
+</section>
+
+</main>
+<script>
+  const tabs = document.querySelectorAll('#tabs button');
+  const sections = document.querySelectorAll('section.tab');
+  function activate(name) {
+    tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    sections.forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
+    history.replaceState(null, '', '#' + name);
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(b => b.addEventListener('click', () => activate(b.dataset.tab)));
+  const initial = location.hash.slice(1);
+  if (['overview','business','schema','ui','core'].includes(initial)) activate(initial);
+</script>
+</body>
+</html>
