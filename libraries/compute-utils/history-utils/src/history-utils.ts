@@ -130,15 +130,17 @@ export namespace historyUtils {
    * Saved given FuncCall.
    * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
    * @param callToSave FuncCall to save
+   * @param options audience: the group granted View on the uploaded dataframes (default: All users)
    * @returns Saved FuncCall
    */
-  export async function saveRun(callToSave: DG.FuncCall) {
+  export async function saveRun(callToSave: DG.FuncCall, options?: {audience?: DG.Group}) {
     let allGroup = groupsCache.get('All users');
 
     if (!allGroup) {
       allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
       groupsCache.set('All users', allGroup);
     }
+    const audience = options?.audience ?? allGroup;
 
     const callCopy = deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
@@ -172,7 +174,7 @@ export namespace historyUtils {
     await Promise.all(dfOutputs
       .map(async (output) => {
         await grok.dapi.tables.uploadDataFrame(callCopy.outputs[output.name]);
-        await grok.dapi.permissions.grant(callCopy.outputs[output.name].getTableInfo(), allGroup, false);
+        await grok.dapi.permissions.grant(callCopy.outputs[output.name].getTableInfo(), audience, false);
       }));
 
     const dfInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
@@ -184,7 +186,7 @@ export namespace historyUtils {
     await Promise.all(dfInputs
       .map(async (input) => {
         await grok.dapi.tables.uploadDataFrame(callCopy.inputs[input.name]);
-        await grok.dapi.permissions.grant(callCopy.inputs[input.name].getTableInfo(), allGroup, false);
+        await grok.dapi.permissions.grant(callCopy.inputs[input.name].getTableInfo(), audience, false);
       }));
 
     const fc = await grok.dapi.functions.calls.allPackageVersions().save(callCopy);
