@@ -13,10 +13,14 @@
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.Draw import SimilarityMaps
+from rdkit.Chem.Draw import SimilarityMaps, rdMolDraw2D
+from IPython.display import Image, display
 
 mol = Chem.MolFromMolBlock(mol) if ("M  END" in mol) else Chem.MolFromSmiles(mol)
 if mol is not None:
     AllChem.ComputeGasteigerCharges(mol)
     contribs = [float(mol.GetAtomWithIdx(i).GetProp('_GasteigerCharge')) for i in range(mol.GetNumAtoms())]
-    charges = SimilarityMaps.GetSimilarityMapFromWeights(mol, contribs, contourLines=contours)
+    drawer = rdMolDraw2D.MolDraw2DCairo(400, 400)
+    SimilarityMaps.GetSimilarityMapFromWeights(mol, contribs, draw2d=drawer, contourLines=contours)
+    drawer.FinishDrawing()
+    display(Image(data=drawer.GetDrawingText()))
