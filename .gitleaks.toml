@@ -1,0 +1,39 @@
+# Datagrok gitleaks configuration (public repo: datagrok-ai/public).
+#
+# Extends the upstream default ruleset (every built-in secret detector) and adds
+# a Datagrok allowlist so data fixtures and clearly-fake placeholder values do
+# not produce noise. Real credentials must never live in the repo.
+#
+# Used by: the gitleaks pre-commit hook (.pre-commit-config.yaml) and the
+# "Secret scan (gitleaks)" GitHub Actions workflow (.github/workflows/gitleaks.yaml).
+
+title = "Datagrok gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Datagrok data fixtures and placeholder values"
+
+# Data/sample assets — never a home for real secrets, high false-positive rate.
+paths = [
+  '''.*\.(csv|tsv|d42|parquet)$''',
+  '''(^|/)ApiSamples/''',
+  '''(^|/)ApiTests/''',
+  '''.*\.(test|spec)\.(ts|js)$''',
+]
+
+# A finding is ignored when the detected secret contains one of these tokens —
+# i.e. obvious non-secrets. Keep this list tight; do NOT add real-looking words.
+stopwords = [
+  "test",
+  "dummy",
+  "fake",
+  "sample",
+  "example",
+  "placeholder",
+  "redacted",
+  "changeme",
+  "replace_me",
+  "your-",
+]
