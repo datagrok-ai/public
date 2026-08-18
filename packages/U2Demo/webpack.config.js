@@ -14,6 +14,9 @@ module.exports = {
   resolve: {
     symlinks: false,
     extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
+    // build against the library itself, not the copy `file:` deps leave in node_modules
+    // (that copy goes stale on every u2 change until a reinstall)
+    alias: {'@datagrok-libraries/u2': path.resolve(__dirname, '../../libraries/u2')},
   },
   module: {
     rules: [

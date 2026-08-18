@@ -28,6 +28,7 @@
     "debug-u2demo": "webpack && grok publish",
     "release-u2demo": "webpack && grok publish --release",
     "build-u2demo": "webpack",
+    "watch": "webpack --watch",
     "build": "grok api && grok check --soft && webpack",
     "test": "grok test",
     "debug-u2demo-dev": "webpack && grok publish dev",
