@@ -48,6 +48,7 @@ const micTooltips = {
   default: 'Voice Input',
   accessDenied: 'Microphone access denied. Please enable microphone permissions.',
   noDevice: 'No microphone found or access denied',
+  notSupported: 'Voice input is not supported in this browser',
 } as const;
 
 export type UIMessageOptions = {
@@ -241,7 +242,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory());
     this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), micTooltips.default);
-    this.checkMicPermission();
+    if (typeof SpeechRecognition === 'undefined')
+      this.setMicDisabled(micTooltips.notSupported);
+    else
+      this.checkMicPermission();
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -1231,9 +1235,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private applyMicPermissionStatus(state: PermissionState): void {
-    this.micAccessDenied = state === 'denied';
-    ui.setDisabled(this.micButton, this.micAccessDenied,
-      this.micAccessDenied ? micTooltips.accessDenied : micTooltips.default);
+    this.setMicDisabled(state === 'denied' ? micTooltips.accessDenied : null);
+  }
+
+  private setMicDisabled(reason: string | null): void {
+    this.micAccessDenied = reason != null;
+    ui.setDisabled(this.micButton, this.micAccessDenied, reason ?? micTooltips.default);
   }
 
   private startRecognition() {
@@ -1287,13 +1294,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         switch (event.error) {
         case 'audio-capture':
           errorMessage = micTooltips.noDevice;
-          this.micAccessDenied = true;
-          ui.setDisabled(this.micButton, true, micTooltips.noDevice);
+          this.setMicDisabled(micTooltips.noDevice);
           break;
         case 'not-allowed':
           errorMessage = micTooltips.accessDenied;
-          this.micAccessDenied = true;
-          ui.setDisabled(this.micButton, true, micTooltips.accessDenied);
+          this.setMicDisabled(micTooltips.accessDenied);
           break;
         case 'network':
           errorMessage = 'Network error during speech recognition';

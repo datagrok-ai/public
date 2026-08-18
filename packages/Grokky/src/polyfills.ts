@@ -100,4 +100,9 @@
         this.parentNode.replaceChild(frag, this);
       };
   }
+
+  // SpeechRecognition — Chrome (all versions incl. Dartium) ships only webkitSpeechRecognition
+  const W: any = (typeof window !== 'undefined') ? window : undefined;
+  if (W && !W.SpeechRecognition && W.webkitSpeechRecognition)
+    W.SpeechRecognition = W.webkitSpeechRecognition;
 })();
