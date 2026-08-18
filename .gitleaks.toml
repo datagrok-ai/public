@@ -15,12 +15,27 @@ useDefault = true
 [allowlist]
 description = "Datagrok data fixtures and placeholder values"
 
-# Data/sample assets — never a home for real secrets, high false-positive rate.
+# Structural non-secret classes — data fixtures, test code, minified vendor JS,
+# local-dev test config, and personal scratch dirs. Never a home for real
+# secrets (Datagrok policy forbids secrets in fixtures), high false-positive rate.
 paths = [
   '''.*\.(csv|tsv|d42|parquet)$''',
+  '''.*\.min\.js$''',
   '''(^|/)ApiSamples/''',
   '''(^|/)ApiTests/''',
+  '''(^|/)test/''',
+  '''.*_test\.dart$''',
   '''.*\.(test|spec)\.(ts|js)$''',
+  '''(^|/)cfg/local2/''',
+  '''(^|/)users/''',
+  # Browser-facing client code — anything here ships to the browser by design
+  # (OAuth client IDs, a restricted client-side Google Custom Search key), so it
+  # is public, not a secret. Do NOT put server secrets in these files.
+  '''(^|/)connectors/oauth\.dart$''',
+  '''(^|/)google_search/''',
+  # Documentation prose / placeholder examples (verified non-secret).
+  '''(^|/)ENCRYPTION\.MD$''',
+  '''(^|/)onboard-employee\.md$''',
 ]
 
 # A finding is ignored when the detected secret contains one of these tokens —
