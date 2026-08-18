@@ -11,6 +11,7 @@
     "@floating-ui/utils":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs",
     "@floating-ui/utils/dom":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs"}}</script>
   <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/theme-dark.css">
   <style>
     body {
       margin: 0;
@@ -154,12 +155,28 @@
     <a href="#badges" data-page="badges">Badges & progress</a>
     <a href="#table" data-page="table">Table</a>
     <a href="#multiselect" data-page="multiselect">Multi-select</a>
+    <label style="display: flex; align-items: center; gap: 6px; padding: 8px 12px;">theme
+      <select id="theme">
+        <option value="">default</option>
+        <option value="dark">dark (parked draft)</option>
+      </select>
+    </label>
     <div class="u2-gallery-status" id="status" style="padding: 8px 12px;">Loading…</div>
   </nav>
   <main class="u2-gallery-main" id="main"></main>
   <script type="module">
     // the gallery is a standalone host: enables the vendored-FA icon shim (css/icons.css)
     document.documentElement.classList.add('u2-standalone');
+    const themeSelect = document.getElementById('theme');
+    const applyTheme = (t) => t ? document.documentElement.setAttribute('data-dg-theme', t)
+                                : document.documentElement.removeAttribute('data-dg-theme');
+    const storedTheme = localStorage.getItem('u2-gallery-theme');
+    themeSelect.value = storedTheme === 'dark' ? 'dark' : '';
+    applyTheme(themeSelect.value);
+    themeSelect.addEventListener('change', () => {
+      localStorage.setItem('u2-gallery-theme', themeSelect.value);
+      applyTheme(themeSelect.value);
+    });
     const status = document.getElementById('status');
     const main = document.getElementById('main');
     const links = [...document.querySelectorAll('.u2-gallery-nav a[data-page]')];

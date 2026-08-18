@@ -76,8 +76,8 @@
 }
 
 .u2-propgrid-category:focus-visible {
-  outline: var(--dg-border-width) solid var(--dg-focus);
-  outline-offset: calc(-2 * var(--dg-border-width));
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width) - var(--dg-border-width));
 }
 
 .u2-propgrid-chevron {

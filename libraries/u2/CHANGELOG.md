@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Tokens: added semantic selection (--dg-selection-bg/text), elevation scale (--dg-shadow-1/2/3), focus ring (--dg-focus-ring), and overlay radius (--dg-radius-l) tokens; component CSS converted
+* Tokens: adopted the P7 designer-pass values as defaults — layered elevation shadows, 4px/6px radii, accent-tinted selection, 2px focus ring, calibrated success/failure colors, 16/14px heading hierarchy
+* Added theme-dark.css (parked draft, [data-dg-theme='dark']); gallery gained a theme toggle
+
 * Added item actions (list-item-rendering recipe): the Action type, rowActions() hover/focus-revealed icon block (opacity-hidden so buttons keep their space and stay tabbable), actionsMenu(), and VirtualList contextActions — right-click selects the row and opens the full action list at the cursor
 * Added timestamp() element factory: locale short date (year only when not current), full date-time in the tooltip; accepts Date, numbers, strings, or anything with toDate()
 * Added css/adaptive.css: u2-adaptive container + u2-p1/u2-p2 priority classes — secondary row content hides as the pane narrows (container queries, fixed 420/340px defaults)
