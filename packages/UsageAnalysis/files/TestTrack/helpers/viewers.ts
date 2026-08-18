@@ -808,6 +808,56 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
   expect(final).toBe(lowerHex);
 }
 
+export async function drivePanelMenuLeaf(
+  page: Page, viewerName: string, group: string | null, leaf: string,
+): Promise<void> {
+  await page.evaluate((vn: string) => {
+    const root = document.querySelector(`[name="viewer-${vn}"]`);
+    const titlebar = root?.closest('.panel-base')?.querySelector('.panel-titlebar');
+    const burger = titlebar?.querySelector('[name="icon-font-icon-menu"]') as HTMLElement | null;
+    if (!burger)
+      throw new Error(`no [name="icon-font-icon-menu"] in the .panel-titlebar of viewer-${vn}`);
+    burger.click();
+  }, viewerName);
+  await page.locator('.d4-menu-popup').last().waitFor({timeout: 15_000});
+
+  // The view's top menu carries identically-labelled items and precedes every popup in document
+  // order, so both segments are looked up inside the panel's own popup only. The panel menu is a
+  // SINGLE popup — hovering a group appends no second container, the level lives in the element
+  // name — so the same scope serves group leaves and top-level ones alike.
+  await page.evaluate(async ({g, l}: {g: string | null; l: string}) => {
+    const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+    const labels = () => {
+      const popup = [...document.querySelectorAll('.d4-menu-popup')].pop();
+      return [...(popup?.querySelectorAll('.d4-menu-item-label') ?? [])];
+    };
+    const visible = () => labels().map((i) => (i.textContent ?? '').trim()).join(' | ');
+    const find = (text: string) =>
+      labels().find((i) => norm(i.textContent) === norm(text))?.closest('.d4-menu-item') ?? null;
+    const waitFor = async (text: string) => {
+      const deadline = Date.now() + 5000;
+      let item = find(text);
+      while (!item && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 100));
+        item = find(text);
+      }
+      return item;
+    };
+    if (g !== null) {
+      const groupItem = await waitFor(g);
+      if (!groupItem)
+        throw new Error(`panel menu: group "${g}" not found in the panel popup; visible: ${visible()}`);
+      const b = groupItem.getBoundingClientRect();
+      for (const type of ['mouseover', 'mousemove'])
+        groupItem.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
+    }
+    const leafItem = await waitFor(l);
+    if (!leafItem)
+      throw new Error(`panel menu: leaf "${l}" not found in the ${g === null ? 'panel popup' : `"${g}" submenu popup`}; visible: ${visible()}`);
+    (leafItem as HTMLElement).click();
+  }, {g: group, l: leaf});
+}
+
 const BAR_POSITIONS = (w: number, h: number, nCats: number) => [
   {x: w * 0.5, y: h * 0.2},
   {x: w * 0.5, y: h * 0.4},
