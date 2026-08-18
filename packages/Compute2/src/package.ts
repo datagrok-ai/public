@@ -11,7 +11,7 @@ import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
-import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
 import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -188,7 +188,8 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
-    const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
+    const app = Vue.createApp(RFVApp,
+      {funcCall: Vue.markRaw(call), view: Vue.markRaw(view), initialRunId: call.aux.initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
@@ -226,9 +227,9 @@ export class PackageFunctions {
     if (instanceConfig)
       instanceConfig = Vue.markRaw(instanceConfig);
 
-    const {resolve} = call.aux;
+    const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
+    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId, view: Vue.markRaw(view)});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
@@ -269,6 +270,19 @@ export class PackageFunctions {
     call.aux.resolve = resolve;
     call.edit();
     return promise;
+  }
+
+
+  @grok.decorators.func({
+    name: 'OpenWorkflowRun',
+    description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
+  })
+  static async OpenWorkflowRun(
+    @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
+    const metaCall = await historyUtils.loadRun(id);
+    const call = metaCall.func.prepare({});
+    call.aux.initialRunId = id;
+    call.edit();
   }
 
 

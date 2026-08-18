@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Added optional "Publish to program" actions (workflow, RFV model run, and per-step when the step has enableHistory), gated by the ArtifactAlignment package and the enableArtifactPublishing setting
+* Added OpenWorkflowRun for opening a saved workflow or function run by its FuncCall id
 * Fixed view pinning failing depending on the platform's js-api version (pin vs isPinned)
 * Run compare: Fixed Save & Share failing to save and producing projects that crash on open
 

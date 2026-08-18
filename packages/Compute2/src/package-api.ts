@@ -44,6 +44,13 @@ export namespace funcs {
   }
 
   /**
+  Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
+  */
+  export async function openWorkflowRun(id: string ): Promise<void> {
+    return await grok.functions.call('Compute2:OpenWorkflowRun', { id });
+  }
+
+  /**
   Run parameter optimization (fitting) for a model and return the resulting function calls.
   */
   export async function runOptimizer(params: any ): Promise<any> {

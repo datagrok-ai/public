@@ -63,6 +63,12 @@ export async function StartWorkflow(nqName: string, version: string, instanceCon
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
+//description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
+//input: string id { description: Meta FuncCall id of the saved workflow run }
+export async function OpenWorkflowRun(id: string) : Promise<void> {
+  await PackageFunctions.OpenWorkflowRun(id);
+}
+
 //name: Run Optimizer
 //description: Run parameter optimization (fitting) for a model and return the resulting function calls.
 //input: object params { description: Optimizer parameters: target function, variables, and objective }

@@ -13,6 +13,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
+import {_package} from '../package-instance';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -23,6 +24,10 @@ export const RFVApp = Vue.defineComponent({
     funcCall: {
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
+    },
+    initialRunId: {
+      type: String,
+      required: false,
     },
     view: {
       type: DG.View,
@@ -129,7 +134,18 @@ export const RFVApp = Vue.defineComponent({
       clearUrlInputs();
     };
 
+    let initialRunHandled = false;
+
     Vue.watch(currentFuncCall, async () => {
+      // Programmatic open (OpenWorkflowRun): the id arrives via call.aux, not the URL.
+      if (props.initialRunId && !initialRunHandled) {
+        initialRunHandled = true;
+        globalThis.initialURLHandled = true;
+        const fc = await historyUtils.loadRun(props.initialRunId);
+        currentFuncCall.value = Vue.markRaw(fc);
+        return;
+      }
+
       if (globalThis.initialURLHandled)
         return;
 
@@ -225,6 +241,26 @@ export const RFVApp = Vue.defineComponent({
         runRequests$.next(true);
     };
 
+    // Optional artifact publishing, double-gated: the ArtifactAlignment package must be
+    // installed (its dialog function resolves) AND the enableArtifactPublishing package
+    // setting must be on.
+    const publishFunc = _package.settings?.['enableArtifactPublishing'] === true ?
+      (DG.Func.find({name: 'publishWorkflowRunDialog'})[0] ?? null) : null;
+
+    const publishRun = async () => {
+      if (!canUseResults(currentCallState.value, 'publishing'))
+        return;
+      const fc = currentFuncCall.value;
+      if (!searchParams.id || searchParams.id !== fc.id) {
+        grok.shell.warning('Publishing works on a saved run — save it to history first');
+        return;
+      }
+      await publishFunc!.prepare({
+        sourceMetaCallId: fc.id,
+        defaultName: fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name,
+      }).call();
+    };
+
     Vue.onUnmounted(() => {
       sub.unsubscribe();
     });
@@ -251,6 +287,8 @@ export const RFVApp = Vue.defineComponent({
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
           onSaveToHistory={() => saveRun()}
+          showPublish={publishFunc != null}
+          onPublishRun={() => publishRun()}
           historyEnabled={true}
           localValidation={true}
           skipInit={false}

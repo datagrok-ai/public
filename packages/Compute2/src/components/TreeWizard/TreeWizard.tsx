@@ -38,6 +38,7 @@ import {createCompositorOverlayService} from '../../composables/use-compositor-o
 import {compositorOverlay} from '../../directives/compositor-overlay';
 import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {_package} from '../../package-instance';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {BehaviorSubject} from 'rxjs';
 
@@ -55,6 +56,10 @@ export const TreeWizard = Vue.defineComponent({
     },
     instanceConfig: {
       type: Object as Vue.PropType<PipelineInstanceConfig>,
+      required: false,
+    },
+    initialRunId: {
+      type: String,
       required: false,
     },
     showReturn: {
@@ -323,6 +328,7 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     let pendingStepPath: string | null = null;
+    let initialRunHandled = false;
 
     Vue.watch(treeState, (treeState) => {
       if (!treeState)
@@ -331,6 +337,12 @@ export const TreeWizard = Vue.defineComponent({
       if (pendingStepPath) {
         setCurrentStepByPath(pendingStepPath, treeState);
         pendingStepPath = null;
+        return;
+      }
+
+      if (props.initialRunId && !initialRunHandled) {
+        initialRunHandled = true;
+        loadPipeline(props.initialRunId);
         return;
       }
 
@@ -483,6 +495,46 @@ export const TreeWizard = Vue.defineComponent({
         }
       });
       dialog.show({center: true, width: 500});
+    };
+
+    // Optional artifact publishing, double-gated: the ArtifactAlignment package must be
+    // installed (its dialog function resolves) AND the enableArtifactPublishing package
+    // setting must be on. With either gate closed the ribbon renders as before.
+    const publishFunc = _package.settings?.['enableArtifactPublishing'] === true ?
+      (DG.Func.find({name: 'publishWorkflowRunDialog'})[0] ?? null) : null;
+
+    // Per-step publish (steps with enableHistory): save the step to history first —
+    // the frozen copy must match what the user is looking at — then publish that id.
+    const publishStepRun = (fc: DG.FuncCall) => {
+      const dialog = makeNodeMetadataDialog(chosenStepUuid.value);
+      dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
+        if (editOptions.title) fc.options['title'] = editOptions.title;
+        if (editOptions.description) fc.options['description'] = editOptions.description;
+        if (editOptions.tags) fc.options['tags'] = editOptions.tags;
+        fc.options[STEP_HISTORY_OPTION] = 'true';
+        try {
+          const saved = await historyUtils.saveRun(fc);
+          await publishFunc!.prepare({
+            sourceMetaCallId: saved.id,
+            defaultName: editOptions.title ?? chosenStepState.value?.friendlyName ?? fc.func?.friendlyName,
+          }).call();
+        } catch (e: any) {
+          grok.shell.error(e);
+        }
+      });
+      dialog.show({center: true, width: 500});
+    };
+
+    const publishCurrentRun = async () => {
+      const meta = currentMetaCallData.value;
+      if (!meta?.id || hasNotSavedEdits.value) {
+        grok.shell.warning('Publishing works on a saved run — save the workflow first');
+        return;
+      }
+      await publishFunc!.prepare({
+        sourceMetaCallId: meta.id,
+        defaultName: meta.title ?? props.modelName,
+      }).call();
     };
 
     const isRunDisabled = Vue.computed(() => {
@@ -667,6 +719,12 @@ export const TreeWizard = Vue.defineComponent({
             style={{'padding-right': '3px'}}
             onClick={() => guardTreeAction('saving', saveEntireModelState)}
           /> }
+          {isTreeLoaded.value && publishFunc != null && <IconFA
+            name='cloud-upload-alt'
+            tooltip={'Publish to program'}
+            style={{'padding-right': '3px'}}
+            onClick={() => publishCurrentRun()}
+          /> }
           {isTreeLoaded.value && showReturn.value && <IconFA
             name='check'
             tooltip={'Confirm data'}
@@ -818,8 +876,10 @@ export const TreeWizard = Vue.defineComponent({
                 isBlocked={treeMutationsLocked.value || isGlobalLocked.value}
                 skipInit={true}
                 stepHistory={currentStepHistoryEnabled.value}
+                showPublish={publishFunc != null && currentStepHistoryEnabled.value}
                 onUpdate:funcCall={onFuncCallChange}
                 onSaveToHistory={saveStepToHistory}
+                onPublishRun={publishStepRun}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'

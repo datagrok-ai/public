@@ -81,6 +81,13 @@
       "defaultValue": false,
       "nullable": false,
       "description": "Use the faster role-only model filter (drops the legacy #model tag branch)"
+    },
+    {
+      "name": "enableArtifactPublishing",
+      "propertyType": "bool",
+      "defaultValue": false,
+      "nullable": false,
+      "description": "Show the \"Publish to program\" action in the Tree Wizard (requires the ArtifactAlignment package)"
     }
   ],
   "canEdit": [
