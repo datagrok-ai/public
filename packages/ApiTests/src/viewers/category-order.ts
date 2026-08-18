@@ -42,8 +42,9 @@ category('Viewers: category order', () => {
       // the keys arrive asynchronously, and the calculator only ever sees the distinct categories
       for (let i = 0; i < 50 && calls.length === 0; i++)
         await delay(100);
-      expect(calls.length, 1, 'calculator calls');
-      expect(calls[0], 3, 'distinct categories, not rows');
+      expect(calls.length > 0, true, 'calculator was called');
+      // a recompute (filter, data change) may repeat the call - every one of them sees the categories
+      expect(calls.every((n) => n === 3), true, `distinct categories, not rows: [${calls}]`);
     } finally {
       view.close();
       grok.shell.closeTable(df);
