@@ -82,7 +82,6 @@ export class ClaudeRuntimeClient {
         this.mcpServerUrl = mcpContainers[0] ?
           `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
           null;
-        grok.shell.info(this.containerId);
         return this.containerId !== null;
       })().catch((e) => {
         console.warn('Grokky: container discovery failed:', e);
