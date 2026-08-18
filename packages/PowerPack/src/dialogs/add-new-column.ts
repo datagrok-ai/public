@@ -1173,7 +1173,7 @@ export class AddNewColumnDialog {
     this.columnsDf = this.widgetColumns!.dfColumns;
     this.columnsDf?.onCurrentRowChanged.subscribe(() => {
       if (this.columnsDf && this.columnsDf!.currentRowIdx !== -1) {
-        const colName = this.columnsDf!.get('name', this.columnsDf!.currentRowIdx);
+        const colName = this.widgetColumns!.nameCol.get(this.columnsDf!.currentRowIdx);
         if (this.sourceDf) {
           this.selectedColumn = this.sourceDf.col(colName);
           this.widgetFunctions!.props.sortByColType = this.selectedColumn;
