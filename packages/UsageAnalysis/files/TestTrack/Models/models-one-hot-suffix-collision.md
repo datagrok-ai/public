@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: [train_and_save_model, apply_model_on_table, delete_model]
-realizes: [views.models]
+realizes: [views.models, eda.model.linear-regression, ml.menu.models.train-model, ml.menu.models.apply-model]
 realized_as:
   - models-one-hot-suffix-collision-spec.ts
 related_bugs: [GROK-846]

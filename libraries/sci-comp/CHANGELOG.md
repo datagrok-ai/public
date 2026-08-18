@@ -1,5 +1,17 @@
 # sci-comp changelog
 
+## 0.10.0 (2026-08-11)
+
+Non-Compartmental Analysis — terminal-phase span ratio (PKNCA `span.ratio`):
+
+* `LambdaZResult.spanRatio` — `(tEnd − tStart) / halfLife`, always reported.
+* `LambdaZStrategy.minSpanRatio?` — opt-in threshold for a new `LAMBDAZ_LOW_SPAN`
+  warning. Defaults to `undefined`, not PKNCA's 2.
+* **Diagnostic only — no computed value changes.** Window selection, λz and every
+  derived parameter are unaffected; the threshold never discards a candidate.
+* Fixtures regenerated against PKNCA 0.12.1 to carry its own `span.ratio` as the
+  oracle. No previously committed value changed.
+
 ## 0.9.1 (2026-07-16)
 
 Non-Compartmental Analysis — λz best-fit window-selection fix (VAL-01-LZ-R019):

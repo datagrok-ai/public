@@ -20,42 +20,44 @@ data connectors are open-sourced and can be found on
 [GitHub](https://github.com/datagrok-ai/public/tree/master/connectors) (MIT
 license). The supported connectors with their specific parameters are:
 
-| Data Source                      |  Server | Port | DB  | Browse Schema | Cache Schema | Cache Results | SSL | Connection String | Login | Password | Other Parameters                                       |
-|----------------------------------|-------|------|-----|---------------|--------------|---------------|-----|-------------------|-------|----------|--------------------------------------------------------|
-| [Access](./access.md)            |         |      | ✓   | ✓             | ✓            |               |     | ✓                 | ✓     | ✓        |                                                        |
-| [Athena](./athena.md)            |  ✓      | ✓    | ✓   | ✓             | ✓            |               |     | ✓                 |       |          | [See the list](./athena.md)                            |
-| [BigQuery](./bigquery.md)        |         |      |     |               |              |               |     | ✓                 | ✓     | ✓        | [See the list](./bigquery.md#connection-parameters)    |
-| [Cassandra](./cassandra.md)      |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [ClickHouse](./clickhouse.md)    |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [DB2](./db2.md)                  |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Databricks](./databricks.md)            |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 |      |         |                                                        |
-| [Denodo](./denodo.md)            |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Firebird](./firebird.md)        |  ✓      | ✓    | ✓   |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        |                                                        |
-| [HBase](./hbase.md)              |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Hive](./hive.md)                |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Hive2](./hive2.md)              |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Impala](./impala.md)            |  ✓      | ✓    | ✓   | ✓             |              |               |     | ✓                 | ✓     | ✓        | [See the list](./impala.md#connection-parameters)      |
-| [MariaDB](./mariadb.md)          |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [MongoDB](./mongodb.md)          |  ✓      | ✓    | ✓   |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        ||
-| [MS SQL](./mssql.md)             |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        ||
-| [MySql](./mysql.md)              |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Neo4j](./neo4j.md)              |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Neptune](./neptune.md)          |  ✓      | ✓    |     |               | ✓            | ✓             |     | ✓                 |       |          | [See the list](./neptune.md#connection-parameters)     |
-| [OData](./odata.md)                |        |      |     |               |              |               |     |                   |       |          | [See the list](./odata.md#connection-parameters)       |
-| [Oracle](./oracle.md)            |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [PI](./pi.md)                    |  ✓      |      | ✓   |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        | [See the list](./pi.md#connection-parameters)          |
-| [Postgres](./postgres.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [PostgresDart](./postgres.md)    |  ✓      |      | ✓   | ✓             |              | ✓             | ✓   |                   | ✓     | ✓        |                                                        |
-| [Redshift](./redshift.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [SAP HANA](./sap-hana.md)        |  ✓      | ✓    | ✓   | ✓             |              |               |     |                   | ✓     | ✓        | [See the list](./sap-hana.md#connection-parameters)    |
-| [Snowflake](./snowflake.md)      |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Sparql](./sparql.md)            |          |      |     |               |              |               |     |                   |       |          | [See the list](./sparql.md#connection-parameters)      |
-| [SQLite](./sqlite.md)            |         |      | ✓   | ✓             | ✓            |               |     | ✓                 | ✓     | ✓        |                                                        |
-| [Teradata](./teradata.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Twitter](./twitter.md)           |        |      |     |               |              |               |     |                   |       |          | [See the list](./twitter.md#connection-parameters)     |
-| [Vertica](./vertica.md)          |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Virtuoso](./virtuoso.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Web](./web.md)                    |        |      |     |               |              |               |     |                   |       |          | [See the list](./web.md#connection-parameters)         |
+| Data Source                   | Server | Port | DB | Browse Schema | Cache Schema | Cache Results | SSL | Connection String | Login | Password | Other Parameters                                    |
+|-------------------------------|--------|------|----|---------------|--------------|---------------|-----|-------------------|-------|----------|-----------------------------------------------------|
+| [Access](./access.md)         |        |      | ✓  | ✓             | ✓            |               |     | ✓                 | ✓     | ✓        |                                                     |
+| [Athena](./athena.md)         | ✓      | ✓    | ✓  | ✓             | ✓            |               |     | ✓                 |       |          | [See the list](./athena.md)                         |
+| [BigQuery](./bigquery.md)     |        |      |    |               |              |               |     | ✓                 | ✓     | ✓        | [See the list](./bigquery.md#connection-parameters) |
+| [Cassandra](./cassandra.md)   | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [ClickHouse](./clickhouse.md) | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [DB2](./db2.md)               | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Databricks](./databricks.md) | ✓      | ✓    | ✓  |               | ✓            | ✓             | ✓   | ✓                 |       |          |                                                     |
+| [Denodo](./denodo.md)         | ✓      | ✓    | ✓  |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Firebird](./firebird.md)     | ✓      | ✓    | ✓  |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        |                                                     |
+| [HBase](./hbase.md)           | ✓      | ✓    | ✓  |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Hive](./hive.md)             | ✓      | ✓    | ✓  |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Hive2](./hive2.md)           | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Impala](./impala.md)*        | ✓      | ✓    | ✓  | ✓             |              |               |     | ✓                 | ✓     | ✓        | [See the list](./impala.md#connection-parameters)   |
+| [MariaDB](./mariadb.md)       | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [MongoDB](./mongodb.md)       | ✓      | ✓    | ✓  |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        |                                                     |
+| [MS SQL](./mssql.md)          | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [MySql](./mysql.md)           | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Neo4j](./neo4j.md)           | ✓      | ✓    | ✓  |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Neptune](./neptune.md)*      | ✓      | ✓    |    |               | ✓            | ✓             |     | ✓                 |       |          | [See the list](./neptune.md#connection-parameters)  |
+| [OData](./odata.md)           |        |      |    |               |              |               |     |                   |       |          | [See the list](./odata.md#connection-parameters)    |
+| [Oracle](./oracle.md)         | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [PI](./pi.md)                 | ✓      |      | ✓  |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        | [See the list](./pi.md#connection-parameters)       |
+| [Postgres](./postgres.md)     | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [PostgresDart](./postgres.md) | ✓      |      | ✓  | ✓             |              | ✓             | ✓   |                   | ✓     | ✓        |                                                     |
+| [Redshift](./redshift.md)     | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [SAP HANA](./sap-hana.md)     | ✓      | ✓    | ✓  | ✓             |              |               |     |                   | ✓     | ✓        | [See the list](./sap-hana.md#connection-parameters) |
+| [Snowflake](./snowflake.md)   | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Sparql](./sparql.md)         |        |      |    |               |              |               |     |                   |       |          | [See the list](./sparql.md#connection-parameters)   |
+| [SQLite](./sqlite.md)         |        |      | ✓  | ✓             | ✓            |               |     | ✓                 | ✓     | ✓        |                                                     |
+| [Teradata](./teradata.md)     | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Twitter](./twitter.md)       |        |      |    |               |              |               |     |                   |       |          | [See the list](./twitter.md#connection-parameters)  |
+| [Vertica](./vertica.md)       | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Virtuoso](./virtuoso.md)     | ✓      | ✓    | ✓  | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                     |
+| [Web](./web.md)               |        |      |    |               |              |               |     |                   |       |          | [See the list](./web.md#connection-parameters)      |
+
+\* Served by the optional `grok_connect_extended` service — ask your administrator to enable it if the connector is missing.
 
 See also:
 

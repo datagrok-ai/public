@@ -5,18 +5,17 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
-import {buildWorkspaceContext} from '../claude/exec-blocks';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard} from '../utils';
+import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, ChoiceOption} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, Block, ChoiceOption} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
 type AIPanelInputs = {
     prompt: string,
 }
-
 
 
 export interface AskUserOption {
@@ -45,6 +44,12 @@ const actionButtionValues = {
   stop: 'Stop AI Generation',
 } as const;
 
+const micTooltips = {
+  default: 'Voice Input',
+  accessDenied: 'Microphone access denied. Please enable microphone permissions.',
+  noDevice: 'No microphone found or access denied',
+} as const;
+
 export type UIMessageOptions = {
   /** if set, will add feedback buttons to the message*/
   finalResult?: string,
@@ -61,7 +66,17 @@ export interface UIMessage {
   text: string;
   title?: string;
   messageOptions?: UIMessageOptions;
+  execCode?: string[];
 }
+
+type ExecInfo = {codes: string[], ranThisSession: boolean, view?: DG.ViewBase};
+const ExecState = {idle: 'idle', ran: 'ran', error: 'error'} as const;
+type ExecState = typeof ExecState[keyof typeof ExecState];
+const EXEC_TOOLTIPS: Record<ExecState, string> = {
+  idle: 'Show code — not run this session',
+  ran: 'Show code — already executed',
+  error: 'Show code — last re-run failed',
+};
 
 export type PanelMessageRet = {
   confirmPromise: Promise<boolean>,
@@ -90,12 +105,17 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string, loader: HTMLElement): void;
-  finalizeStreaming(displayContent: string, execContent: string, view: DG.ViewBase): Promise<void>;
+  finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void>;
   appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
+  /** Shows the turn's loader again (e.g. right after the user answers an input request),
+   * so the wait for the assistant's next move is visibly "working", not dead air. */
+  showWaitingIndicator(loader: HTMLElement): void;
+  /** One-shot transcript of a history-restored conversation the runtime has never seen. */
+  flushRestoredContext(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
   enableNoPrompt(): void;
@@ -126,6 +146,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private isRecognizing: boolean = false;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
+  private micAccessDenied: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   protected _messages: T[] = [];
   protected _uiMessages: UIMessage[] = [];
@@ -209,7 +230,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
-    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), 'Voice Input');
+    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), micTooltips.default);
+    this.checkMicPermission();
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -396,7 +418,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._lastUserPromptContainer.insertBefore(this.createHandledNativelyIcon(), this._lastUserPromptContainer.firstChild);
   }
 
-  protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void): void {
+  protected appendFeedbackButtons(markDown: HTMLElement, onFeedback?: (helpful: boolean) => void, exec?: ExecInfo): void {
     const feedbackDiv = ui.divH([], 'd4-ai-panel-feedback-div');
     const thumbsUp = ui.iconFA('thumbs-up', () => {
       grok.shell.info('Thanks for your feedback!');
@@ -416,16 +438,53 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       (helpful ? thumbsUp : thumbsDown).style.backgroundColor = helpful ? 'rgba(0, 150, 30, 0.2)' : 'rgba(200, 0, 0, 0.2)';
       onFeedback?.(helpful);
     }
-    feedbackDiv.appendChild(copyMsg);
-    feedbackDiv.appendChild(thumbsUp);
-    feedbackDiv.appendChild(thumbsDown);
+    const execIcons = exec?.codes.length ? this.buildExecIcons(markDown, exec) : [];
+    feedbackDiv.append(copyMsg, thumbsUp, thumbsDown, ...execIcons);
     dartLike(feedbackDiv.style).set('alignItems', 'center').set('width', '100%').set('paddingBottom', '8px').set('paddingLeft', '4px');
     markDown.appendChild(feedbackDiv);
   }
 
+  private buildExecIcons(markDown: HTMLElement, {codes, ranThisSession, view = this.view}: ExecInfo): HTMLElement[] {
+    const codeBlock = ui.divText(codes.map((c) => c.trim()).join('\n\n'), 'grokky-exec-code grokky-hidden');
+    markDown.appendChild(codeBlock);
+
+    let state: ExecState = ranThisSession ? ExecState.ran : ExecState.idle;
+    const setState = (next: ExecState) => {
+      state = next;
+      codeToggle.classList.remove('grokky-exec-ran', 'grokky-exec-error');
+      if (next !== ExecState.idle)
+        codeToggle.classList.add(`grokky-exec-${next}`);
+    };
+    const codeToggle = ui.iconFA('code', () => codeBlock.classList.toggle('grokky-hidden'), null);
+    codeToggle.classList.add('grokky-exec-icon');
+    ui.tooltip.bind(codeToggle, () => EXEC_TOOLTIPS[state]);
+    setState(state);
+
+    let rerunning = false;
+    const rerunIcon = ui.iconFA('redo', async () => {
+      if (rerunning) return;
+      rerunning = true;
+      rerunIcon.classList.add('fa-spin');
+      let rerunFailed = false;
+      for (const code of codes) {
+        const {error} = await executeSingleBlock(code, grok.shell.v ?? view, 0);
+        if (error) {
+          rerunFailed = true;
+          break;
+        }
+      }
+      setState(rerunFailed ? ExecState.error : ExecState.ran);
+      rerunIcon.classList.remove('fa-spin');
+      rerunning = false;
+    }, 'Re-run this code');
+    for (const el of [codeToggle, rerunIcon])
+      dartLike(el.style).set('padding', '2px').set('borderRadius', '6px');
+    return [ui.div([], 'grokky-exec-sep'), codeToggle, rerunIcon];
+  }
+
   protected appendMessage(
     aiMessage: T, uiMessage: {
-      title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions
+      title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions, execCode?: string[]
     }, loader?: HTMLElement
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
@@ -440,7 +499,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     if (uiMessage.onlyAddToMessages)
       return;
     // from this point we know that message is also in the ui.
-    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions});
+    this._uiMessages.push({fromUser: !!uiMessage.fromUser, text: uiMessage.content, title: uiMessage.title, messageOptions: uiMessage.messageOptions, execCode: uiMessage.execCode});
     if (uiMessage.fromUser) {
       const promptText = ui.divText(uiMessage.content, 'd4-ai-user-prompt-divtext');
       const userDiv = ui.div(
@@ -474,7 +533,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
             this.contextId,
             helpful
           );
-        });
+        }, uiMessage.execCode?.length ? {codes: uiMessage.execCode, ranThisSession: false} : undefined);
       }
 
       if (uiMessage?.messageOptions?.confirm && !uiMessage.fromUser) {
@@ -622,6 +681,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._pendingNativeContext.push(prompt);
   }
 
+  /** Set when a conversation is loaded from history: the runtime's session is fresh (or belongs
+   * to another conversation), so the first prompt after a load carries this transcript. */
+  private _restoredContext: string | null = null;
+
+  flushRestoredContext(): string {
+    const ctx = this._restoredContext;
+    this._restoredContext = null;
+    return ctx ?? '';
+  }
+
+  /** Serializes the restored messages into a compact transcript the model can act on
+   * ("reproduce what we did") — includes executed code blocks recorded as engine messages. */
+  private buildRestoredTranscript(): string {
+    const parts: string[] = [];
+    for (const m of this._messages) {
+      const c: any = (m as any).content;
+      const text = typeof c === 'string' ? c :
+        Array.isArray(c) ? c.map((x: any) => x?.text ?? '').filter((x: string) => x).join('\n') : '';
+      if (!text.trim())
+        continue;
+      const role = (m as any).role === 'user' ? 'USER' : 'ASSISTANT';
+      parts.push(`${role}: ${text.length > 1500 ? text.slice(0, 1500) + ' …[truncated]' : text}`);
+    }
+    let out = parts.join('\n');
+    if (out.length > 9000)
+      out = out.slice(0, 4500) + '\n[... middle of the conversation truncated ...]\n' + out.slice(-4500);
+    return out;
+  }
+
   flushNativeContext(): string {
     if (this._pendingNativeContext.length === 0)
       return '';
@@ -687,15 +775,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }
   }
 
-  async finalizeStreaming(displayContent: string, _execContent: string, _view: DG.ViewBase): Promise<void> {
+  async finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void> {
     this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-      this._uiMessages.push({fromUser: false, text: displayContent, messageOptions: {finalResult: displayContent}});
+      this._uiMessages.push({fromUser: false, text: displayContent, execCode: execCodes.length ? execCodes : undefined, messageOptions: {finalResult: displayContent}});
       return;
     }
-    this.renderFinalContent(displayContent);
+    this.renderFinalContent(displayContent, execCodes, view);
   }
 
   public appendStreamedElement(el: HTMLElement): void {
@@ -709,21 +797,22 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.appendMessage('' as any, {title: '', fromUser: false, uiOnly: true, content, messageOptions: {system: true}});
   }
 
-  protected renderFinalContent(content: string): void {
+  protected renderFinalContent(content: string, execCodes: string[], view: DG.ViewBase): void {
     this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
-    this.appendFeedbackButtons(markDown);
+    this.appendFeedbackButtons(markDown, undefined,
+      execCodes.length ? {codes: execCodes, ranThisSession: true, view} : undefined);
 
     if (this._streamingMarkdownEl) {
       this._streamingMarkdownEl.replaceWith(markDown);
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-    } else if (content) {
+    } else if (content || execCodes.length) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
     }
 
-    this._uiMessages.push({fromUser: false, text: content, messageOptions: {finalResult: content}});
+    this._uiMessages.push({fromUser: false, text: content, execCode: execCodes.length ? execCodes : undefined, messageOptions: {finalResult: content}});
   }
 
   clearStreaming(): void {
@@ -745,6 +834,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
 
     return new Promise<AskUserResponse | null>((resolve) => {
+      const submitButton = ui.button('Submit', () => {
+        const answers: Record<string, string> = {};
+        for (let i = 0; i < questions.length; i++)
+          answers[questions[i].question] = choiceInputs[i].value!;
+        doResolve({questions, answers});
+      }) as HTMLButtonElement;
+
       const doResolve = (value: AskUserResponse | null) => {
         if (resolved)
           return;
@@ -752,15 +848,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this._pendingInputResolve = null;
         for (const inp of choiceInputs)
           (inp.input as HTMLSelectElement).disabled = true;
+        // Instant feedback on click — the assistant's next event can be seconds away.
+        submitButton.disabled = true;
+        if (value)
+          submitButton.textContent = 'Submitted';
         resolve(value);
       };
 
-      form.appendChild(ui.button('Submit', () => {
-        const answers: Record<string, string> = {};
-        for (let i = 0; i < questions.length; i++)
-          answers[questions[i].question] = choiceInputs[i].value!;
-        doResolve({questions, answers});
-      }));
+      form.appendChild(submitButton);
 
       this._pendingInputResolve = doResolve;
       this.ensureResponseBlock();
@@ -775,6 +870,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._pendingInputResolve(null);
       this._pendingInputResolve = null;
     }
+  }
+
+  showWaitingIndicator(loader: HTMLElement): void {
+    this.clearStreamingLoaderTimer();
+    loader.style.display = '';
+    this.outputArea.appendChild(loader);
+    this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
   private tryAgain() {
@@ -897,6 +999,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._messages = [];
     this._uiMessages = [];
     this._pendingNativeContext = [];
+    this._restoredContext = null;
     this._promptHistoryIndex = null;
     this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';
@@ -950,23 +1053,32 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       return;
     removeExisting();
 
-    const blocks = scopes.map((s) => {
-      const icon = ui.iconFA(s.icon ?? 'circle');
-      icon.classList.add('grokky-scope-icon');
-      if (s.key)
-        icon.classList.add(`grokky-scope-${s.key}`);
-      const header = ui.h3(ui.span([icon, s.label]));
-      const cards = s.suggestions.slice(0, 2).map((sg) => {
-        const card = ui.card(ui.divText(sg.label ?? sg.prompt ?? ''));
-        card.onclick = () => this.runSuggestion(sg);
-        return card;
-      });
-      return ui.divV([header, ui.divH(cards)]);
-    });
+    const accordion = ui.accordion();
+    const defaultOpenCategories = 1;
+    scopes.forEach((s, i) => this.addSuggestionCategory(accordion, s, i < defaultOpenCategories));
 
-    const root = ui.panel([ui.h2('What can I help you with?'), ...blocks], 'grokky-empty-state');
+    const root = ui.panel([ui.h2('I\'m Grokky, your AI assistant. What can I help you with?'), accordion.root], 'grokky-empty-state');
     this.outputArea.appendChild(root);
     this.setWandVisible(false);
+  }
+
+  private addSuggestionCategory(accordion: DG.Accordion, s: Block, expanded: boolean): void {
+    const pane = accordion.addPane(s.label, () => {
+      const rows = s.suggestions.map((sg) => {
+        const row = ui.divText(sg.label ?? sg.prompt ?? '', 'grokky-suggestion-item');
+        row.onclick = () => this.runSuggestion(sg);
+        if (!sg.immediateResponse && sg.prompt && sg.label && sg.label !== sg.prompt)
+          ui.tooltip.bind(row, () => sg.prompt ?? '');
+        return row;
+      });
+      return ui.divV(rows);
+    }, expanded);
+
+    const icon = ui.iconFA(s.icon ?? 'circle');
+    icon.classList.add('grokky-scope-icon');
+    if (s.color)
+      icon.style.color = s.color;
+    pane.root.querySelector('.d4-accordion-pane-header')?.prepend(icon);
   }
 
   private async showHistory() {
@@ -1001,6 +1113,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ui.dialog('Delete all conversation history').add(ui.divText('This action will permanently delete all saved conversations. Are you sure you want to proceed?'))
           .onOK(async () => {
             await ConversationStorage.clearAll();
+            this.currentConversationId = null;
             grok.shell.info('History cleared');
           }).show();
       });
@@ -1028,8 +1141,18 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._promptHistoryIndex = null;
       this._lastUserPromptContainer = null;
       conv.uiMessages.forEach((msg) => {
-        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
+        this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions, execCode: msg.execCode}); // no loader
       });
+      // The runtime never saw this conversation (page reloads drop its session; a live session
+      // holds a DIFFERENT conversation). Start a fresh session and hand the transcript to the
+      // first prompt so follow-ups ("reproduce this", "continue") have the actual history.
+      this.resetSession();
+      const transcript = this.buildRestoredTranscript();
+      this._restoredContext = transcript ?
+        '[Conversation restored from saved history — you have no memory of it. ' +
+        'The transcript below is what happened earlier; treat it as this conversation\'s history. ' +
+        'ASSISTANT entries starting with "[executed datagrok_exec]" are code that actually ran.]\n' +
+        transcript : null;
       this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
@@ -1063,6 +1186,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private toggleSpeechRecognition() {
+    if (this.micAccessDenied)
+      return;
     if (this.isRecognizing)
       this.stopRecognition();
     else
@@ -1073,6 +1198,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private syncVoiceCancelHint() {
     if (this._voiceCancelHint)
       this._voiceCancelHint.style.display = this.isRecognizing ? '' : 'none';
+  }
+
+  private async checkMicPermission(): Promise<void> {
+    if (!navigator.permissions?.query)
+      return;
+
+    try {
+      const status = await navigator.permissions.query({name: 'microphone' as PermissionName});
+      this.applyMicPermissionStatus(status.state);
+      status.onchange = () => this.applyMicPermissionStatus(status.state);
+    } catch (error) {
+      console.error('Failed to query microphone permission:', error);
+    }
+  }
+
+  private applyMicPermissionStatus(state: PermissionState): void {
+    this.micAccessDenied = state === 'denied';
+    ui.setDisabled(this.micButton, this.micAccessDenied,
+      this.micAccessDenied ? micTooltips.accessDenied : micTooltips.default);
   }
 
   private startRecognition() {
@@ -1125,10 +1269,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         let errorMessage = 'Speech recognition error';
         switch (event.error) {
         case 'audio-capture':
-          errorMessage = 'No microphone found or access denied';
+          errorMessage = micTooltips.noDevice;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.noDevice);
           break;
         case 'not-allowed':
-          errorMessage = 'Microphone access denied. Please enable microphone permissions.';
+          errorMessage = micTooltips.accessDenied;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.accessDenied);
           break;
         case 'network':
           errorMessage = 'Network error during speech recognition';

@@ -37,10 +37,15 @@ async function closeDialog(page: import('@playwright/test').Page): Promise<void>
 
 // Switch the sketcher backend through the dialog's hamburger menu.
 async function switchBackendInDialog(page: import('@playwright/test').Page, name: string): Promise<void> {
-  await page.locator('.d4-dialog .fa-bars').first().click();
-  await page.waitForTimeout(800);
-  await page.locator('.d4-menu-item-label').filter({hasText: new RegExp(`^${name}$`)}).first().click();
+  const hamburger = page.locator('.d4-dialog .fa-bars').first();
+  await hamburger.waitFor({state: 'visible', timeout: 30_000});
+  await hamburger.click();
+  const item = page.locator('.d4-menu-item-label').filter({hasText: new RegExp(`^${name}$`)}).first();
+  await item.waitFor({state: 'visible', timeout: 15_000});
+  await item.click();
   await page.waitForFunction((b) => (window as any).DG?.chem?.currentSketcherType === b, name, {timeout: 60000});
+  // Deliberately a settle, not a DOM gate: the outgoing backend's canvas is still mounted while the
+  // new one builds, so "a canvas exists" is true immediately and lets the spec act too early.
   await page.waitForTimeout(2500);
 }
 

@@ -3,7 +3,7 @@
  * @module dataframe/column
  */
 
-import {TYPE, FLOAT_NULL, ColumnType, SemType, ColumnAggregationType, TAGS} from "../const";
+import {TYPE, FLOAT_NULL, ColumnType, ColumnTypeFilter, SemType, ColumnAggregationType, TAGS} from "../const";
 import {toDart, toJs} from "../wrappers";
 import {MapProxy} from "../proxies";
 import dayjs from "dayjs";
@@ -425,8 +425,8 @@ export class Column<T = any, TInit = T> {
 
   /** Checks whether the column passes the specified [filter].
    * [filter] can be either specific data [type] such as 'int' or 'string',
-   * more broadly - 'numerical', or 'categorical', or null for any columns. */
-  matches(filter: ColumnType | 'numerical' | 'categorical' | null): boolean {
+   * more broadly - 'numerical', 'numerical_no_datetime', or 'categorical', or null for any columns. */
+  matches(filter: ColumnTypeFilter | null): boolean {
     return api.grok_Column_Matches(this.dart, filter);
   }
 

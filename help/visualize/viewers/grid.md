@@ -53,8 +53,8 @@ and built to support interactive exploration of vast amounts of scientific data.
 | Copy cell value                        | Ctrl+C                          |
 | Paste into cell                        | Ctrl+V                          |
 | Add a row (requires `Allow Edit` set to `true`) | Enter or click the **plus** **(+)** icon in the bottom row |
-| Undo                                   | Ctrl+Z                          |
-| Redo                                   | Ctrl+Shift+Z                    |
+| [Undo](../../datagrok/navigation/undo.md)  | Ctrl+Z                      |
+| [Redo](../../datagrok/navigation/undo.md)  | Ctrl+Shift+Z, Ctrl+Y        |
 | Delete selected rows and/or columns    | Shift+Del                       |
 |<h4>**Resize and reorder**</h4>||
 | Reorder columns   | Drag the column header.<br/>Selected columns are repositioned simultaneously next to each other   |

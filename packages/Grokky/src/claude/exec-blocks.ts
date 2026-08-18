@@ -33,16 +33,37 @@ export interface VerificationResult {
   error: string | null;
 }
 
+/** Models routinely write assertions as bare expressions ("view.viewers.length >= 5"); inside the
+ * async IIFE that evaluates to undefined, and a successful action then reads as a failed verify —
+ * which sends the model into a redo loop that duplicates the action. Wrap single-expression
+ * assertions in a return; multi-statement code is left as written. */
+function wrapAssertion(assertion: string): string {
+  if (/\breturn\b/.test(assertion))
+    return assertion;
+  try {
+    new Function('return (' + assertion + '\n)');
+    return 'return (' + assertion + '\n)';
+  } catch (_) {
+    return assertion;
+  }
+}
+
 export async function runVerification(
   assertion: string, view: DG.ViewBase,
 ): Promise<VerificationResult> {
   const liveView = grok.shell.v ?? view;
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), VERIFY_TIMEOUT_MS));
-  const res = await Promise.race([executeSingleBlock(assertion, liveView, 0), timeout]);
+  const res = await Promise.race([executeSingleBlock(wrapAssertion(assertion), liveView, 0), timeout]);
   if (res === null)
     return {passed: false, observed: undefined, error: `Verification timed out after ${VERIFY_TIMEOUT_MS / 1000}s`};
   if (res.element)
     return {passed: false, observed: undefined, error: 'Assertion must return the observed value, not a DOM element'};
+  if (res.error == null && res.value === undefined) {
+    return {passed: false, observed: undefined,
+      error: 'assertion returned undefined — it must `return` the observed value. ' +
+        'This says nothing about the action itself, which may well have succeeded: ' +
+        're-read the live state with a corrected read-only assertion before redoing anything.'};
+  }
   return {passed: res.error == null && !!res.value, observed: res.value, error: res.error?.error ?? null};
 }
 

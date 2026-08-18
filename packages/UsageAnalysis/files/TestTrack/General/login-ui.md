@@ -5,6 +5,7 @@ coverage_type: regression
 produced_from: split
 original_path: public/packages/UsageAnalysis/files/TestTrack/General/login.md
 split_date: 2026-06-16
+realizes: []
 related_bugs: []
 manual_only_reason: |
   Third-party OAuth (Login with Google) redirects to an external Google-owned

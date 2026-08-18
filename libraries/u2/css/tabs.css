@@ -1,0 +1,193 @@
+/* Tab strip skin. Tokens only — css/tokens.css must be loaded alongside. */
+.u2-tabs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.u2-tabs-header {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: stretch;
+  height: var(--dg-button-height);
+  background: var(--dg-bg-secondary);
+  box-shadow: inset 0 calc(-1 * var(--dg-border-width)) 0 var(--dg-border);
+}
+
+.u2-tabs-scroller {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.u2-tabs-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.u2-tabs-tab {
+  display: flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--dg-space-s);
+  max-width: 180px;
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color-light);
+  background: var(--dg-bg-secondary);
+  border-top: 2px solid transparent;
+  border-right: var(--dg-border-width) solid var(--dg-border);
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.u2-tabs-tab:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-tabs-tab-active {
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border-top-color: var(--dg-accent);
+  border-bottom-color: var(--dg-bg);
+}
+
+.u2-tabs-tab:focus-visible {
+  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline-offset: calc(-2 * var(--dg-border-width));
+}
+
+.u2-tabs-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-tabs-close,
+.u2-tabs-mark {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+  border-radius: var(--dg-radius);
+}
+
+.u2-tabs-mark:not(.u2-tabs-dirty) {
+  display: none;
+}
+
+.u2-tabs-close::before {
+  content: '✕';
+  visibility: hidden;
+}
+
+.u2-tabs-tab:hover .u2-tabs-close::before,
+.u2-tabs-tab-active .u2-tabs-close::before {
+  visibility: visible;
+}
+
+.u2-tabs-close:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover);
+}
+
+.u2-tabs-close.u2-tabs-dirty::before,
+.u2-tabs-mark.u2-tabs-dirty::before {
+  content: '●';
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-accent);
+  visibility: visible;
+}
+
+.u2-tabs-tab:hover .u2-tabs-close.u2-tabs-dirty::before {
+  content: '✕';
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+}
+
+.u2-tabs-overflow {
+  display: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-button-height);
+  padding: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color-light);
+  background: var(--dg-bg-secondary);
+  border: none;
+  border-left: var(--dg-border-width) solid var(--dg-border);
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+  cursor: pointer;
+}
+
+.u2-tabs-overflow-visible {
+  display: flex;
+}
+
+.u2-tabs-overflow:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover);
+}
+
+.u2-tabs-overflow-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: var(--dg-z-overlay);
+  display: none;
+  box-sizing: border-box;
+  min-width: 160px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius);
+  box-shadow: var(--dg-shadow-overlay);
+}
+
+.u2-tabs-overflow-menu-open {
+  display: block;
+}
+
+.u2-tabs-overflow-item {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.u2-tabs-overflow-item:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-tabs-overflow-item-active {
+  color: var(--dg-accent);
+  background: var(--dg-steel-1);
+}
+
+.u2-tabs-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--dg-space-m);
+  background: var(--dg-bg);
+}

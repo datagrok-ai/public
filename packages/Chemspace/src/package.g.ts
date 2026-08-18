@@ -37,7 +37,7 @@ export function getShipToCountries() : string[] {
 //name: Get Chemspace Ids
 //description: Adds a column of Chemspace compound ids matched by exact structure for each molecule.
 //input: column<string> molColumn { semType: Molecule; nullable: false }
-//input: string shipToCountry { caption: Ship to; nullable: false; choices: Chemspace:getShipToCountries(); description: Destination country for pricing and availability }
+//input: string shipToCountry = 'United States' { caption: Ship to; nullable: false; choices: Chemspace:getShipToCountries(); description: Destination country for pricing and availability }
 //output: column result
 //meta.vectorFunc: true
 export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: string) : Promise<any> {
@@ -48,7 +48,7 @@ export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: strin
 //description: Looks up vendor, pack size and price for each Chemspace id and joins the result back into the table.
 //input: dataframe data { nullable: false }
 //input: column<string> idsColumn { semType: chemspace-id; nullable: false; description: Column of Chemspace compound ids to price }
-//input: string shipToCountry { caption: Ship to; nullable: false; choices: Chemspace:getShipToCountries(); description: Destination country for pricing and availability }
+//input: string shipToCountry = 'United States' { caption: Ship to; nullable: false; choices: Chemspace:getShipToCountries(); description: Destination country for pricing and availability }
 //output: dataframe res { action: join(data) }
 export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Column, shipToCountry: string) : Promise<any> {
   return await PackageFunctions.getChemspacePrices(data, idsColumn, shipToCountry);

@@ -5,7 +5,7 @@ pyramid_layer: bug-focused
 coverage_type: edge
 priority: p1
 realizes_atlas: [GROK-16870]
-realizes: []
+realizes: [viewers.box-plot, chem.cell.molecule]
 realized_as:
   - chem-grok-16870-spec.ts
 produced_from: atlas-driven

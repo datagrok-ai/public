@@ -6,6 +6,7 @@ produced_from: decomposed
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
 migration_date: 2026-05-11
 related_bugs: []
+realizes: [chem.panel.chemistry.highlight, chem.cell.molecule]
 ---
 
 # Chem | Sketcher — Stereochemistry preserved on SMILES Highlight (ui-only)

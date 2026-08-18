@@ -5,11 +5,11 @@
 #tags: Transform
 #top-menu: Data | Curves | Calculate MSR...
 #input: dataframe table [Input data table]
-#input: column ic50Column [IC50 column]
-#input: column compoundIdColumn [Compound ID column]
-#input: column runDateColumn [Run date column]
-#input: column assayNameColumn [Assay name column]
-#input: column targetEntityColumn [Target entity column]
+#input: column ic50Column {type: numerical; caption: IC50} [IC50 values, one row per measurement]
+#input: column compoundIdColumn {type: categorical; caption: Compound ID} [Compound identifier the measurements are grouped by]
+#input: column runDateColumn {caption: Run date} [Date of the run; used as the repeat axis]
+#input: column assayNameColumn {type: categorical; caption: Assay} [Assay name]
+#input: column targetEntityColumn {type: categorical; caption: Target entity} [Target entity]
 #output: dataframe res {action:join(table)}
 
 import pandas as pd
@@ -332,8 +332,17 @@ odf = table
 # assayNameColumn = 'assay_name'
 # targetEntityColumn = 'cell_line'
 # ic50Column = 'reported_ic50'
-sufficient_compounds = get_compounds_for_msr(odf, compound_col=compoundIdColumn, run_date_col=runDateColumn, assay_col=assayNameColumn, target_col=targetEntityColumn)
-msr_results = calculate_compound_database_msr(odf, min_runs=2, min_measurements=2, ic50_col=ic50Column, compound_col=compoundIdColumn, run_date_col=runDateColumn, assay_col=assayNameColumn, target_col=targetEntityColumn)
+
+work_df = pd.DataFrame({
+    'ic50': odf[ic50Column],
+    'compound_id': odf[compoundIdColumn],
+    'run_date': odf[runDateColumn],
+    'assay_name': odf[assayNameColumn],
+    'target_entity': odf[targetEntityColumn],
+})
+
+sufficient_compounds = get_compounds_for_msr(work_df, compound_col='compound_id', run_date_col='run_date', assay_col='assay_name', target_col='target_entity')
+msr_results = calculate_compound_database_msr(work_df, min_runs=2, min_measurements=2, ic50_col='ic50', compound_col='compound_id', run_date_col='run_date', assay_col='assay_name', target_col='target_entity')
 
 # generate a dataset which is the same length as the input data, and for each corresponding row, have the results from the msr_results dataset except the compound_id, assay_name and target_entity. use these three for matching between the two
 # res = msr_results

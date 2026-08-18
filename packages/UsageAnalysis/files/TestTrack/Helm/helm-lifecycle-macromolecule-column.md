@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [macromolecule_helm_column]
-realizes: []
+realizes: [helm.cell.helm, helm.cell-editor.molecule, helm.panel.properties]
 realized_as:
   - helm-lifecycle-macromolecule-column-spec.ts
 related_bugs: []

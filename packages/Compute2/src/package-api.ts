@@ -132,4 +132,20 @@ export namespace funcs {
   export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
   }
+
+  export async function testUrlInputsFixture(a: number , b: number , flag: boolean , s: string , when: any , df: DG.DataFrame , opt: number | undefined, nul: number | null): Promise<number> {
+    return await grok.functions.call('Compute2:TestUrlInputsFixture', { a, b, flag, s, when, df, opt, nul });
+  }
+
+  export async function testProjectExportSingleOut(x: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Compute2:TestProjectExportSingleOut', { x });
+  }
+
+  export async function testProjectExportMultiOut(df: DG.DataFrame , x: number ): Promise<{res1: DG.DataFrame, res2: DG.DataFrame}> {
+    return await grok.functions.call('Compute2:TestProjectExportMultiOut', { df, x });
+  }
+
+  export async function testProjectExportFileIn(file: DG.FileInfo | undefined| null, x: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Compute2:TestProjectExportFileIn', { file, x });
+  }
 }

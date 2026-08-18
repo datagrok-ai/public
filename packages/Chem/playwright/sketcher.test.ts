@@ -105,6 +105,15 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
     });
     await page.locator('.d4-dialog').waitFor({timeout: 10_000});
     await smilesInput.waitFor({timeout: 30_000});
+    // The sketcher backend mounts lazily (Ketcher renders its toolbars ~8s in); keystrokes that
+    // land before that are dropped, so the molecule never becomes "current" and Add to Favorites
+    // persists an empty molfile.
+    await page.waitForFunction(() => {
+      const d = document.querySelector('.d4-dialog');
+      if (!d) return false;
+      return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
+        || !!d.querySelector('canvas');
+    }, null, {timeout: 60_000});
   });
 
   await softStep('Step 3: Hamburger menu exposes Favorites + Recent + Copy as SMILES/MOLBLOCK', async () => {

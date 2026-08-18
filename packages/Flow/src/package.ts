@@ -8,9 +8,9 @@ export * from './package.g';
 import {FuncFlowView} from './funcflow-view';
 import {FlowEntityHandler} from './entity/flow-entity-handler';
 import {parseFlowBody, FLOW_LANGUAGE} from './serialization/flow-script-format';
-import { getFilesBrowser } from './utils/files-browser-tree';
 import {readUploadedFileBytes, parseFileToDataFrame, syncFlowFilePermissions} from './utils/uploaded-files';
 import * as aiTools from './ai-tools';
+import * as dataOps from './ops/data-ops';
 
 export const _package = new DG.Package();
 
@@ -19,12 +19,8 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-/* The 'flow' script-language handler: core wraps this into a
- * PackageScriptHandler at func sync, so flow scripts run like any script
- * (grok.functions.call, Run pane, funccall dialog). Registered via plain
- * annotations (not decorators) because the templateScript meta value —
- * which itself contains '//' header lines — does not survive the decorator
- * code generator. */
+/* Plain annotations, not decorators: the templateScript meta value contains
+ * '//' header lines that don't survive the decorator code generator. */
 //name: flowScriptHandler
 //input: funccall scriptCall
 //meta.role: scriptHandler
@@ -40,10 +36,6 @@ export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> 
   await FlowEntityHandler.instance.run(scriptCall);
 }
 
-/* The node behind local-file uploads: dropping a file onto the canvas stores
- * its bytes (in memory until the flow is saved, then in the server's
- * GUID-addressed file store) and adds this function as a node, so the flow
- * replays and shares like any other. See utils/uploaded-files.ts. */
 //name: readUploadedFile
 //friendlyName: Uploaded File
 //description: Reads a file uploaded into a flow and parses it into a table
@@ -57,9 +49,6 @@ export async function readUploadedFile(fileId: string, fileName: string): Promis
   return parseFileToDataFrame(fileName, bytes);
 }
 
-/* Runs at platform startup (not just when a Flow view is open): sharing a flow
- * script from anywhere — Browse, a link, the context panel — must extend read
- * access to the uploaded-file blobs its nodes reference. */
 //name: flowShareSync
 //tags: autostart
 //description: Keeps uploaded-file permissions in sync when a flow script is shared
@@ -91,15 +80,11 @@ export class PackageFunctions {
   @grok.decorators.fileViewer({fileViewer: 'flow'})
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
-    // A .flow file is either the annotated script body (header + JSON) or the
-    // bare JSON document — loadFromJson handles both.
-    file.readAsString().then((json) => view.loadFromJson(json));
+    file.readAsString().then((json) => view.loadFromJson(json))
+      .catch((e) => grok.shell.error(`Cannot open ${file.name}: ${e instanceof Error ? e.message : e}`));
     return view;
   }
 
-  /** Builds a flow from a table-creation script (the function-call cascade
-   *  Datagrok records for reproducibly-created tables, used by data sync)
-   *  and opens it in the Flow editor. */
   @grok.decorators.func({
     name: 'flowFromCreationScript',
     description: 'Builds a flow diagram from a table creation script and opens it in the Flow editor',
@@ -112,20 +97,13 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'openCreationScriptFlowDialog',
-    // includeInFlow: Flow-internal dialog opener — hide it from Flow's own toolbox.
     meta: {role: 'creationScriptEditor', includeInFlow: 'false'},
   })
   static async openCreationScriptFlowDialog(script: string, tableIds: string[], show: boolean = true): Promise<DG.Dialog> {
-    // Load the tables being edited so the view can split the flow back into a
-    // creation script per table and save each via TableInfo.saveCreationScript.
     const loaded = await Promise.all((tableIds ?? []).map((id) => grok.dapi.tables.find(id)));
     const tableInfos = loaded.filter((t): t is DG.TableInfo => t != null);
-    // No output panel inside the dialog — run results belong to the real
-    // editor view only; it is re-enabled below when promoted via Open In Editor.
     const view = new FuncFlowView(tableInfos, {outputPanel: false});
     view.name = `Creation Script`;
-    // Inside the cramped dialog the overview adds clutter — start it minimized;
-    // expand it once the flow is opened in the full editor.
     view.setMinimapCollapsed(true);
     try {
       await view.loadFromCreationScript(script);
@@ -133,31 +111,27 @@ export class PackageFunctions {
       grok.shell.error(`Failed to load flow from creation script`);
       console.error(e);
     }
+    let promoted = false;
     const d = ui.dialog({title: 'Creation Script Flow'})
       .add(view.root)
       .addButton('Open In Editor', () => {
         view.setMinimapCollapsed(false);
         view.enableOutputPanel();
+        promoted = true;
         grok.shell.addView(view);
         setTimeout(() => view.fitToScreen(), 100);
         d.close();
       });
+    // A dialog-hosted view is never detached by the shell — release it on close.
+    d.onClose.subscribe(() => {
+      if (!promoted) view.detach();
+    });
     if (show)
       d.show({resizable: true, width: 800, height: 600});
     return d;
   }
 
-  @grok.decorators.func()
-  static testDialog() {
-    ui.dialog().add(getFilesBrowser((n) => {console.log(n.name)}, (n) => {console.log('dblclick', n.name)}, 'test-dialog-files').root).show();
-  }
-
-  // ---------- first-class Flow entity (Script with language 'flow') ----------
-  // (the scriptHandler function itself is annotation-registered above,
-  //  next to `info` — see the note there)
-
-  /** The visual editor for a flow script entity — consumed by core through the
-   *  `scriptHandler.editorFunction` seam (double-click, Edit, /script/<id>). */
+  /** Consumed by core through the `scriptHandler.editorFunction` seam. */
   @grok.decorators.func({
     name: 'flowScriptEditor',
     description: 'Opens the visual Flow editor for a flow script entity',
@@ -168,7 +142,6 @@ export class PackageFunctions {
     return FlowEntityHandler.instance.editorView(script);
   }
 
-  /** Browse-preview view for a flow script entity (FlowScriptMeta.renderPreview). */
   @grok.decorators.func({
     name: 'flowScriptPreview',
     meta: {includeInFlow: 'false'},
@@ -178,7 +151,6 @@ export class PackageFunctions {
     return FlowEntityHandler.instance.previewView(script);
   }
 
-  /** Context-panel pane content for a flow script entity (FlowScriptMeta). */
   @grok.decorators.func({
     name: 'flowScriptWidget',
     meta: {includeInFlow: 'false'},
@@ -188,11 +160,7 @@ export class PackageFunctions {
     return FlowEntityHandler.instance.widget(script);
   }
 
-  // ---------- Flow view functions (AI) ----------
-  // Returned by FuncFlowView.getFunctions() (found by the 'flowViewFunction' tag) so the
-  // AI assistant can act on the open editor. Each takes the generic current view and
-  // reaches the FuncFlowView instance through `view.jsView`; `includeInFlow: false`
-  // keeps them out of Flow's own node catalog.
+  // 'flowViewFunction'-tagged: the AI assistant acts on the open editor through these.
 
   @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
     description: 'List the current flow graph: all nodes (id, label, type, status, set input values) and connections. Call this first to understand what is on the canvas'})
@@ -270,7 +238,157 @@ export class PackageFunctions {
     return aiTools.runFlow(view);
   }
 
-  /** `.flow` exports sitting in file shares open in the editor too. */
+  // Flow-native data operations (bodies in ops/data-ops.ts). Declared HERE because the
+  // server scans only a fixed file list for annotations — a separate module registers
+  // nothing. No friendlyName: it doesn't survive publishing, so names are verbs the
+  // humanizer titles well (`filterRows` → `Filter Rows`).
+
+  @grok.decorators.func({
+    name: 'filterRows',
+    description: 'Keeps the rows matching a condition, as a new table',
+    meta: {includeInFlow: 'true'},
+  })
+  static filterRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
+  ): Promise<DG.DataFrame> {
+    return dataOps.filterRows(table, condition);
+  }
+
+  @grok.decorators.func({
+    name: 'deleteRows',
+    description: 'Removes the rows matching a condition, as a new table',
+    meta: {includeInFlow: 'true'},
+  })
+  static deleteRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression selecting the rows to drop'}}) condition: string,
+  ): Promise<DG.DataFrame> {
+    return dataOps.deleteRows(table, condition);
+  }
+
+  @grok.decorators.func({
+    name: 'extractRows',
+    description: 'Rows matching a condition, keeping only the chosen columns',
+    meta: {includeInFlow: 'true'},
+  })
+  static extractRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to keep. Leave empty to keep all of them'}}) columns?: DG.Column[],
+  ): Promise<DG.DataFrame> {
+    return dataOps.extractRows(table, condition, columns);
+  }
+
+  @grok.decorators.func({
+    name: 'selectRows',
+    description: 'Selects the rows matching a condition and passes the table on',
+    meta: {includeInFlow: 'true'},
+  })
+  static selectRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Boolean expression over the table columns'}}) condition: string,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Drop the previous selection instead of adding to it'}}) clearSelection: boolean,
+  ): Promise<DG.DataFrame> {
+    return dataOps.selectRows(table, condition, clearSelection);
+  }
+
+  @grok.decorators.func({
+    name: 'filterRandomRows',
+    description: 'A reproducible random sample of rows, as a new table',
+    meta: {includeInFlow: 'true'},
+  })
+  static filterRandomRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'int', options: {nullable: false, min: '1', description: 'How many rows to keep'}}) count: number,
+    @grok.decorators.param({type: 'int', options: {initialValue: '42', description: 'Random seed. The same seed always draws the same rows'}}) seed: number,
+  ): DG.DataFrame {
+    return dataOps.filterRandomRows(table, count, seed);
+  }
+
+  @grok.decorators.func({
+    name: 'selectRandomRows',
+    description: 'Selects a reproducible random sample of rows and passes the table on',
+    meta: {includeInFlow: 'true'},
+  })
+  static selectRandomRows(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'int', options: {nullable: false, min: '1', description: 'How many rows to select'}}) count: number,
+    @grok.decorators.param({type: 'int', options: {initialValue: '42', description: 'Random seed. The same seed always draws the same rows'}}) seed: number,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Drop the previous selection instead of adding to it'}}) clearSelection: boolean,
+  ): DG.DataFrame {
+    return dataOps.selectRandomRows(table, count, seed, clearSelection);
+  }
+
+  @grok.decorators.func({
+    name: 'deleteColumns',
+    description: 'A copy of the table without the chosen columns. Removes selected columns',
+    meta: {includeInFlow: 'true'},
+  })
+  static deleteColumns(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to remove'}}) columns: DG.Column[],
+  ): DG.DataFrame {
+    return dataOps.deleteColumns(table, columns);
+  }
+
+  @grok.decorators.func({
+    name: 'tagColumns',
+    description: 'Sets a tag on the chosen columns and passes the table on',
+    meta: {includeInFlow: 'true'},
+  })
+  static tagColumns(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns to tag'}}) columns: DG.Column[],
+    @grok.decorators.param({options: {nullable: false, description: 'Tag name, for example units or .formula'}}) tag: string,
+    @grok.decorators.param({options: {nullable: true, description: 'Tag value'}}) value: string,
+  ): DG.DataFrame {
+    return dataOps.tagColumns(table, columns, tag, value);
+  }
+
+  @grok.decorators.func({
+    name: 'expressionToColumn',
+    description: 'Computes an expression into a new column of the table',
+    meta: {includeInFlow: 'true'},
+  })
+  static expressionToColumn(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: 'Formula over the table columns'}}) expression: string,
+    @grok.decorators.param({options: {nullable: false, description: 'Name of the resulting column'}}) name: string,
+    @grok.decorators.param({options: {choices: ['auto', 'string', 'int', 'double', 'bool', 'datetime', 'qnum'], initialValue: 'auto', description: 'Column type. auto infers it from the expression'}}) type: string,
+  ): Promise<DG.Column> {
+    return dataOps.expressionToColumn(table, expression, name, type);
+  }
+
+  @grok.decorators.func({
+    name: 'aggregate',
+    description: 'Groups rows and aggregates columns. Add a pivot column to build a pivot table',
+    meta: {includeInFlow: 'true'},
+  })
+  static aggregate(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns to group by. Leave empty to aggregate the whole table into one row'}}) groupByColumns: DG.Column[],
+    @grok.decorators.param({options: {nullable: false, description: 'Aggregations to compute, as a list of column and function pairs'}}) aggregations: string,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns whose values become result columns'}}) pivotColumns?: DG.Column[],
+  ): DG.DataFrame {
+    return dataOps.aggregate(table, groupByColumns, aggregations, pivotColumns);
+  }
+
+  @grok.decorators.func({
+    name: 'unpivot',
+    description: 'Wide to long. Each merged column becomes a category and value row pair',
+    meta: {includeInFlow: 'true'},
+  })
+  static unpivot(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column_list', options: {nullable: true, description: 'Columns repeated alongside every produced row'}}) copyColumns: DG.Column[],
+    @grok.decorators.param({type: 'column_list', options: {nullable: false, description: 'Columns folded into the category and value pair'}}) mergeColumns: DG.Column[],
+    @grok.decorators.param({options: {initialValue: 'Category', description: 'Name of the column holding the source column names'}}) categoryColumnName: string,
+    @grok.decorators.param({options: {initialValue: 'Value', description: 'Name of the column holding the values'}}) valueColumnName: string,
+  ): Promise<DG.DataFrame> {
+    return dataOps.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
+  }
+
   @grok.decorators.fileViewer({fileViewer: 'flow'})
   static viewFlowFile(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();

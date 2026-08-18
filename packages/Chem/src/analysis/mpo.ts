@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {
   DesirabilityProfile,
+  getMpoScoreColumnName,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -105,9 +106,9 @@ export class MpoProfileDialog {
         if (this.currentProfile)
           this.currentProfile.name = newName;
         if (oldName && newName && oldName !== newName) {
-          const oldCol = this.dataFrame.col(oldName);
-          if (oldCol && !this.dataFrame.col(newName))
-            oldCol.name = newName;
+          const oldCol = this.dataFrame.col(getMpoScoreColumnName(oldName));
+          if (oldCol && !this.dataFrame.col(getMpoScoreColumnName(newName)))
+            oldCol.name = getMpoScoreColumnName(newName);
         }
         this.updateOkButtonState();
       },
@@ -379,7 +380,7 @@ export class MpoProfileDialog {
     try {
       const radarRequested = this.addRadarInCell.value;
       const profile = this.currentProfile!;
-      const profileName = profile.name || 'MPO';
+      const profileName = getMpoScoreColumnName(profile.name);
       const scoreColumnNames = await computeMpo(
         this.dataFrame,
         profile,
@@ -411,7 +412,7 @@ export class MpoProfileDialog {
       return;
     }
     const gc = view.grid.columns.add({
-      gridColumnName: `MPO (${this.currentProfile!.name})`,
+      gridColumnName: getMpoScoreColumnName(this.currentProfile!.name),
       cellType: 'radar',
     });
     gc.settings = {columnNames: desirabilityColumnNames};

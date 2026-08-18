@@ -4,12 +4,15 @@ sub_features_covered: [bio.api.get-monomer-lib-helper, bio.lifecycle.init, bio.m
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {acquireMonomerLibLock, releaseMonomerLibLock} from './helpers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
 } from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
+test.beforeEach(async () => { await acquireMonomerLibLock(); });
+test.afterEach(() => releaseMonomerLibLock());
 test('Bio monomer_collection source-class lifecycle: write collection → reload via app → save project (collection FileShare entry survives) → reopen and verify', async ({page}) => {
   test.setTimeout(180_000);
   stepErrors.length = 0;

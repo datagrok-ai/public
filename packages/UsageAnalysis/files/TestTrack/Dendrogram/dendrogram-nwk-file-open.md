@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [dendrogram.cp.newick-file-open-via-files-browser]
-realizes: [dendrogram]
+realizes: [dendrogram.import.nwk, dendrogram.preview.newick, phylotreeviewer.viewer.phylocanvas-gl]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

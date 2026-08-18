@@ -31,16 +31,10 @@ import type {BlqRule, BlqStrategy, BlqProcessingResult} from './types';
  * - `missing`       — concentration replaced with `NaN`; downstream
  *                     functions skip `NaN` entries.
  *
- * @param conc - Original concentrations. Not mutated.
- * @param blqMask - Same length as `conc`; `1` = below LOQ, `0` = measurable.
- * @param lloq - Per-row LLOQ array (same length as `conc`) or a scalar
- *               applied to all rows. Used only by `set-half-lloq`.
- * @param _cmaxIdx - Currently unused. Reserved for future Cmax-relative
- *                   phasing. Pass any value (typically the index of the
- *                   first measurable point or `findCmax` result).
- * @param strategy - The BLQ rule for each of the four phases.
- * @returns The processed concentration array and the list of excluded
- *          indices.
+ * `blqMask` marks below-LOQ points with `1`. `lloq` is a per-row array or a
+ * scalar applied to all rows, and is read only by `set-half-lloq`.
+ *
+ * @param _cmaxIdx - Unused; kept for signature stability. Pass `0`.
  */
 export function applyBlqStrategy(
   conc: Float64Array,

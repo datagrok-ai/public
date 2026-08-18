@@ -19,7 +19,8 @@ public class OracleTimestampTZTypeConverter implements Converter<Date> {
     public Date convert(Object value) {
         LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
-        return Date.from(offsetDateTime.toInstant());
+        // Timestamp keeps the sub-ms fraction (Date.from would truncate to ms)
+        return java.sql.Timestamp.from(offsetDateTime.toInstant());
     }
 
     private OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {

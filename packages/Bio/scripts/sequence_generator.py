@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-# name: Sequence generator
+# name: Generate Sequences
 # description: Create the model peptides/DNA sequences with peptides data
+# NB the name must not camelize to `SequenceGenerator`: the sibling
+# sequence_generator.md registers under exactly that name (a script name falls
+# back to the filename), and the collision pushed this script to the
+# server-assigned `SequenceGenerator_1`, leaving the parameterless doc entity
+# holding the name every caller reaches for.
 # language: python
 # tags: template, demo
 # input: int clusters = 5 { caption: Clusters; category: Clusters } [Number of clusters]

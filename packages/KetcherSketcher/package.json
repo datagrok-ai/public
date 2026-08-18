@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ketcher-sketcher",
   "friendlyName": "Ketcher Sketcher",
-  "version": "2.4.7",
+  "version": "2.4.8",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -15,12 +15,12 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
     "@types/react-dom": "^18.2.0",
-    "datagrok-api": "^1.27.0",
+    "datagrok-api": "^1.27.1",
     "file-loader": "^6.2.0",
-    "ketcher-core": "^3.12.0",
-    "ketcher-react": "^3.12.0",
-    "ketcher-standalone": "^3.12.0",
-    "ketcher-macromolecules": "^3.12.0",
+    "ketcher-core": "^3.17.2",
+    "ketcher-react": "^3.17.2",
+    "ketcher-standalone": "^3.17.2",
+    "ketcher-macromolecules": "^3.17.2",
     "@datagrok-libraries/test": "^1.1.0"
   },
   "devDependencies": {

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [eda.cp.train-predictive-model]
-realizes: [eda.linear-regression, eda.softmax, eda.xgboost, eda.pls-regression]
+realizes: [eda.model.xg-boost, ml.menu.models.train-model]
 realized_as:
   - xgboost1-spec.ts
 related_bugs: []

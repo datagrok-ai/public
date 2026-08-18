@@ -20,6 +20,7 @@ import {
   UserSession,
   Property,
   FileInfo, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo, UserNotification,
+  DomainSchema,
 } from './entities';
 import { DockerImage } from "./api/grok_shared.api.g";
 import {toJs, toDart} from "./wrappers";
@@ -30,6 +31,44 @@ import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
 import dayjs from 'dayjs';
 import {DbInfo} from "./data";
+import {
+  DOMAIN_SYSTEM_COLUMNS,
+  DomainAggregateRow,
+  DomainAggregateSpec,
+  DomainAuditEntry,
+  DomainBatchOptions,
+  DomainBatchReport,
+  DomainDatetimeColumns,
+  DomainDeleteReport,
+  DomainError,
+  DomainFacetKind,
+  DomainFacetResultOf,
+  DomainFacetsSpec,
+  DomainFilter,
+  DomainGrant,
+  DomainInsertResult,
+  DomainNotFoundError,
+  DomainOpResult,
+  DomainOpResultFor,
+  DomainPermission,
+  DomainQueryBuilder,
+  DomainQuerySpec,
+  DomainRestrictError,
+  DomainRowInsert,
+  DomainSavedFilterInfo,
+  DomainTableCapabilities,
+  DomainTableClientOptions,
+  DomainTableInfo,
+  DomainTransactionOp,
+  DomainUpdateResult,
+  DomainValidationError,
+  DomainVersionConflictError,
+  domainCall,
+  retryOnVersionConflict,
+  splitDomainTable,
+} from './domains';
+// Referenced from TSDoc only ({@link} on the relation expand/write docs below).
+import type {DomainRelationLink} from './domains';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -162,6 +201,12 @@ export class Dapi {
 
   get spaces(): SpacesDataSource {
     return new SpacesDataSource(api.grok_Dapi_Spaces());
+  }
+
+  /** Domain tables API: generic row CRUD over entity-mapped domain schemas
+   * declared by plugin manifests (databases/&lt;schema&gt;/schema.json). */
+  get domains(): DomainsDataSource {
+    return new DomainsDataSource(api.grok_Dapi_Domains());
   }
 
   /**
@@ -1044,6 +1089,649 @@ export class SpaceFilesClient {
   /** Deletes a file or directory */
   delete(file: FileInfo | string): Promise<void> {
     return api.grok_SpaceFilesClient_Delete(this.dart, file instanceof FileInfo ? file.dart : file);
+  }
+}
+
+/**
+ * Generic client for domain tables — entity-mapped PostgreSQL schemas that plugins
+ * declare via `databases/<schema>/schema.json` manifests. Rows are plain JSON objects;
+ * column metadata and security come from the server-side schema registry. */
+export class DomainsDataSource {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Registered domain schemas; use `.include('tables')` to populate their tables. */
+  get schemas(): HttpDataSource<DomainSchema> {
+    return new HttpDataSource(api.grok_Dapi_Domains_Schemas(this.dart));
+  }
+
+  /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`.
+   * Pass a row interface for a typed client: `grok.dapi.domains.table<PlateRow>('plates.plate')`;
+   * pass an insert interface as the second generic to also gate {@link DomainTableClient.insert},
+   * a column-name union as the third to compile-check filters/columns/sorts, an expand map
+   * as the fourth to compile-check expand keys, and an update payload as the fifth when the
+   * table declares relations (`grok api`-generated clients pass them all). */
+  table<TRow = any, TInsert = DomainRowInsert<TRow>, TColumn extends string = string,
+      TExpand extends {[key: string]: {}} = {[key: string]: {}}, TUpdate = Partial<TRow>>(
+    name: string, options?: DomainTableClientOptions): DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate> {
+    const [schema, table] = splitDomainTable(name);
+    return new DomainTableClient<TRow, TInsert, TColumn, TExpand, TUpdate>(this.dart, schema, table, options);
+  }
+
+  /** Executes ordered [ops] (≤1000) atomically within domain schema [schema]; any failure rolls the
+   * whole transaction back (the error carries `opIndex`). Resolves to ordered per-op results
+   * shaped like the corresponding single-op endpoints — a tuple ops literal gets per-op
+   * result types (`[{op: 'update', ...}, {op: 'insert', ...}]` →
+   * `[DomainUpdateResult, DomainInsertResult]`, no positional casts). */
+  transaction<T extends DomainTransactionOp[]>(schema: string, ops: [...T]):
+      Promise<{[K in keyof T]: DomainOpResultFor<T[K]>}> {
+    return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
+  }
+
+  /** Creates an empty user-managed domain schema (physical PG schema 'usr_<name>');
+   * requires the CreateDomainSchema privilege. Add tables via schema(name).apply(). */
+  createSchema(name: string, options?: {friendlyName?: string; description?: string}): Promise<{[key: string]: any}> {
+    return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,
+      options?.friendlyName ?? null, options?.description ?? null));
+  }
+
+  /** Lifecycle handle for a registered domain schema (mirrors table()). */
+  schema(name: string): DomainSchemaClient {
+    return new DomainSchemaClient(this.dart, name);
+  }
+
+  /** Reflection over the domain registry: the runtime {@link Property} metadata,
+   * table info with FK-inverted child tables, and batched display-name resolution —
+   * what reflective UI components consume to work on any table without codegen. */
+  get registry(): DomainRegistryClient {
+    return new DomainRegistryClient();
+  }
+
+  /** Drops the client-side domain UI caches (table capabilities, row permissions,
+   * writable columns, resolved display names) so the next read re-probes server
+   * truth. Grant changes made through this client invalidate automatically; call
+   * this after out-of-band grant changes (another session, `grok s`, server-side). */
+  invalidateUiCaches(): void {
+    api.grok_Domains_InvalidateUiCaches();
+  }
+}
+
+/**
+ * Reflection over the client-side domain registry (see {@link DomainsDataSource.registry}):
+ * schemas → tables → columns → {@link Property} metadata, loaded once per session and
+ * shared with the built-in domain UI. Tables are addressed as `'<schema>.<table>'`. */
+export class DomainRegistryClient {
+  /** {@link Property} objects describing the table's declared columns — the same
+   * runtime metadata (type, semType, choices, min/max, nullable, defaultValue) that
+   * drives the built-in row editor and server-side validation, get/set-bound to
+   * {@link DomainRow} values. `friendlyName` carries the label the platform renders
+   * ('Project' for a `project_id` reference), so reflective forms label fields like
+   * the built-in surfaces do. Treat the objects as read-only — they are shared with
+   * the client-side registry. Rejects with a {@link DomainValidationError} for
+   * unknown tables. */
+  async rowProperties(table: string): Promise<Property[]> {
+    splitDomainTable(table);
+    return toJs(await domainCall(api.grok_DomainRegistry_RowProperties(table)));
+  }
+
+  /** Registry metadata of one table: display identity (nameColumn, businessKey,
+   * singular/plural names), the schema.json description, security mode, audit flag,
+   * and the FK-inverted {@link DomainChildTableRef} list that drives detail-table
+   * links. */
+  tableInfo(table: string): Promise<DomainTableInfo> {
+    const [schema, t] = splitDomainTable(table);
+    return domainCall(api.grok_DomainRegistry_TableInfo(schema, t));
+  }
+
+  /** Batched display-name resolution for row [ids] of [table] (the standard display
+   * identity: name-column value → dash-joined business key → id). Requests coalesce
+   * client-side into one narrow fetch per table, and every id is cached afterwards —
+   * cheap to call per cell/render. EVERY requested id is present as a key; the
+   * unresolvable ones (invisible, unknown, nameless) map to `null` rather than being
+   * omitted, so `ids.map((id) => names[id])` is always aligned. */
+  resolveNames(table: string, ids: string[]): Promise<{[id: string]: string | null}> {
+    const [schema, t] = splitDomainTable(table);
+    return domainCall(api.grok_Domains_ResolveNames(schema, t, ids));
+  }
+}
+
+/**
+ * Lifecycle handle for one registered domain schema (see {@link DomainsDataSource.schema}):
+ * manifest export, partial applies with dry-run change plans, whole-schema audit, and full
+ * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish). */
+export class DomainSchemaClient {
+  dart: any;
+
+  constructor(dart: any, public readonly name: string) {
+    this.dart = dart;
+  }
+
+  /** Full manifest reconstructed from the registry (feeds editors; doubles as export). */
+  manifest(): Promise<{[key: string]: any}> {
+    return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
+  }
+
+  /** Applies a partial manifest; dryRun returns the change plan. Named tables replace
+   * their current definition wholesale — everything omitted comes from the registry.
+   * Destructive plans require confirmDestructive; stale ifVersion → DomainVersionConflictError;
+   * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
+   * (the plan rides in error.body.plan).
+   *
+   * On a USER-managed schema this requires Edit and `ifVersion` tracks the schema's apply
+   * counter. On a PACKAGE-managed schema it is the user-extension path: it requires
+   * 'Extend' on the schema entity, `ifVersion` tracks `ext_version` (the plan echoes it as
+   * `extVersion`) while the plugin's own version stays frozen, and the writable surface is
+   * limited to objects you own — your own tables through `tables` (needs the schema's
+   * `extensible.tables` opt-in) and your own columns on plugin tables through `extend`
+   * (needs that table's `extensible` opt-in). `extend` is full state for YOUR columns of
+   * that table: omitting one you added proposes its drop. Plugin objects are immutable —
+   * touching them is a 400 ('plugin-table-not-editable', 'not-extensible',
+   * 'schema-not-extensible', 'invalid-extend', 'plugin-schema-not-editable'), and columns
+   * you add to a plugin table must stay nullable, non-unique, non-display, and must not
+   * cascade deletes. Physical names of extension columns are prefixed server-side; every
+   * API surface — reads, writes, filters, and the audit trail — keeps using the logical name,
+   * with the exception of raw PostgreSQL error text that quotes an identifier verbatim
+   * (a constraint violation naming `fk_<table>_x_<column>`, say). */
+  apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
+               propertySchemas?: object; dropTables?: string[];
+               ifVersion?: string; confirmDestructive?: boolean},
+        options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
+    return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));
+  }
+
+  /** Whole-schema history: all tables' events + 'ddl' registry events, newest first. */
+  audit(options?: {limit?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_SchemaAudit(this.dart, this.name, options?.limit ?? null));
+  }
+
+  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions. */
+  delete(): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
+  }
+
+  /** Direct permission rows on this schema's registry entity (schema-level operation
+   * rights, not row-data access — see {@link grant}). Requires Share. */
+  grants(): Promise<DomainGrant[]> {
+    return domainCall(api.grok_Dapi_Domains_SchemaGrants(this.dart, this.name));
+  }
+
+  /** Idempotently grants [permission] on this schema's registry entity to [group] (a group
+   * id). Schema grants gate schema-level operations (apply requires Edit, delete requires
+   * Delete, sharing requires Share, extending a package schema requires Extend). They do
+   * NOT grant access to row data — use `table('s.t').grant()` per table for that.
+   * 'Extend' is meaningful on schema entities only: granting it on a table or column
+   * schema is a 400. Requires Share. */
+  async grant(group: string, permission: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_SchemaGrant(this.dart, this.name, group, permission));
+    api.grok_Domains_InvalidateUiCaches();
+  }
+
+  /** Revokes [permission] (or every schema permission when omitted) from [group].
+   * Requires Share. */
+  async revoke(group: string, permission?: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_SchemaRevoke(this.dart, this.name, group, permission ?? null));
+    api.grok_Domains_InvalidateUiCaches();
+  }
+}
+
+/**
+ * Row CRUD for one domain table. Reads return only rows and columns the current
+ * user can see; writes are validated, permission-checked, and audited server-side.
+ * Pass a row interface as `TRow` for typed reads/writes, and an insert interface
+ * as `TInsert` so {@link insert} enforces required columns (`grok api`-generated
+ * clients pass both; see {@link DomainsDataSource.table}). */
+export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
+    TColumn extends string = string,
+    TExpand extends {[key: string]: {}} = {[key: string]: {}},
+    TUpdate = Partial<TRow>> {
+  dart: any;
+  private readonly _datetimeOverride: DomainDatetimeColumns | null;
+
+  /** Registry-resolved datetime columns per `'<schema>.<table>'`, shared across client
+   * instances (the generated client map creates a fresh client per property access).
+   * Holds promises so concurrent resolutions coalesce; failures are not cached. */
+  private static _datetimeCache = new Map<string, Promise<DomainDatetimeColumns>>();
+
+  constructor(dart: any, public readonly schema: string, public readonly table: string,
+              options?: DomainTableClientOptions) {
+    this.dart = dart;
+    this._datetimeOverride = options?.datetimeColumns != null || options?.detailDatetimeColumns != null
+      ? {own: options.datetimeColumns ?? [], details: options.detailDatetimeColumns ?? {}} : null;
+  }
+
+  /**
+   * Datetime columns of this table and of its `'details:'` child tables — what JSON
+   * reads materialize as dayjs. Resolved from the domain registry (the same column
+   * metadata that types them in the first place) and cached per table for the session;
+   * explicit {@link DomainTableClientOptions} act as an override and skip the registry.
+   * A failed resolution (unregistered table, no session) leaves that read unconverted
+   * and is retried on the next one.
+   */
+  private _datetimes(): Promise<DomainDatetimeColumns> {
+    if (this._datetimeOverride != null)
+      return Promise.resolve(this._datetimeOverride);
+    const address = `${this.schema}.${this.table}`;
+    let cached = DomainTableClient._datetimeCache.get(address);
+    if (cached == null) {
+      cached = (async () => {
+        const registry = new DomainRegistryClient();
+        // The registry describes DECLARED columns only; the system datetimes exist
+        // on every domain table and are prepended by hand.
+        const system = ['created_on', 'updated_on'];
+        const datetimeNames = (props: Property[]) =>
+          props.filter((p) => p.propertyType === 'datetime').map((p) => p.name);
+        const props = await registry.rowProperties(address);
+        const own = [...system, ...datetimeNames(props)];
+        // Master-expand fields ('<fk_column>.<column>') of declared datetime columns:
+        // a ref column's semType is its target's '<schema>.<table>' address.
+        for (const p of props)
+          if (/^\w+\.\w+$/.test(p.semType ?? '')) {
+            try {
+              for (const c of datetimeNames(await registry.rowProperties(p.semType)))
+                own.push(`${p.name}.${c}`);
+            } catch (_) { /* an unreadable target leaves its fields unconverted */ }
+          }
+        const details: {[detailField: string]: string[]} = {};
+        for (const child of (await registry.tableInfo(address)).childTables ?? []) {
+          try {
+            details[child.table] =
+              [...system, ...datetimeNames(await registry.rowProperties(`${this.schema}.${child.table}`))];
+          } catch (_) { /* an unreadable child leaves its rows unconverted */ }
+        }
+        return {own, details};
+      })();
+      DomainTableClient._datetimeCache.set(address, cached);
+      cached.catch(() => DomainTableClient._datetimeCache.delete(address));
+    }
+    return cached.catch(() => ({own: [], details: {}}));
+  }
+
+  /** Materializes [datetimes] as dayjs on one JSON row, recursing into the
+   * `'details:'` child arrays. */
+  private _fromWire(row: any, datetimes: DomainDatetimeColumns): any {
+    if (row == null)
+      return row;
+    for (const c of datetimes.own)
+      if (typeof row[c] === 'string')
+        row[c] = dayjs(row[c]);
+    for (const field of Object.keys(datetimes.details)) {
+      const children = row[field];
+      if (Array.isArray(children))
+        for (const child of children)
+          for (const c of datetimes.details[field])
+            if (child != null && typeof child[c] === 'string')
+              child[c] = dayjs(child[c]);
+    }
+    return row;
+  }
+
+  /** Bare `query()` returns an awaitable {@link DomainQueryBuilder} (it used to resolve
+   * all-defaults rows — `await table.query()` behaves identically, and everything chains:
+   * `await table.query().where('sku', '=', key).orderBy('created_on', true).top(5)`).
+   * Prefer the builder's condition forms and the `cond`/`and`/`or` helpers over
+   * template-built filter strings — condition values are bound server-side, so any string
+   * value is safe (apostrophes included). */
+  query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
+  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap).
+   * A declared many-to-many relation expands under its own name into a
+   * {@link DomainRelationLink}`[]` (`expand: ['labels']` → `row.labels = [{id, name}, ...]`,
+   * capped at 100, ordered by display name, `[]` when there are no visible links). */
+  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
+  query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
+    if (spec === undefined)
+      return new DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>(this);
+    const datetimes = this._datetimes();
+    return domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec))
+      .then(async (rows: any) => {
+        const dt = await datetimes;
+        return rows.map((r: any) => this._fromWire(r, dt));
+      });
+  }
+
+  /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
+   * 10M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
+   * `.choices`, and semantic types; system columns are untagged. `'details:'` expand is
+   * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns.
+   * A relation expand yields TWO columns: `'<relation>'` with the display names joined by
+   * `', '` (tagged so the grid draws chips) and the hidden companion `'~<relation>.id'` with
+   * the ids in the same order — the ids are the source of truth (see
+   * {@link DomainRelationLink}). */
+  queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
+    return domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
+  }
+
+  /** Grouped aggregation over the rows and columns visible to the caller (10k row cap);
+   * resolves to result rows named by group column / measure alias. Alias measures with `as`
+   * (and pass literal groupBy) to get typed result keys; without them, cast or use `aggregateDf`. */
+  aggregate<TGroup extends string = never, TAlias extends string = never>(
+    spec: DomainAggregateSpec<TColumn, TGroup, TAlias>): Promise<DomainAggregateRow<TGroup | TAlias>[]> {
+    return domainCall(api.grok_Dapi_Domains_Aggregate(this.dart, this.schema, this.table, spec));
+  }
+
+  /** Fetches one row by id; resolves to null if the row does not exist or is not visible
+   * (typed `TRow` for backward compatibility — guard against null, or use `first`). */
+  async get(id: string): Promise<TRow> {
+    const datetimes = this._datetimes();
+    const row = await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id));
+    return this._fromWire(row, await datetimes);
+  }
+
+  /** Inserts a single row or a small array of rows; resolves to per-row reports
+   * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match —
+   * pass `options.errorOnDuplicate` to reject duplicates with a
+   * {@link DomainValidationError} instead, its `isDuplicate` set).
+   * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
+   * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`.
+   *
+   * A payload may carry declared many-to-many relations as lists of target row ids
+   * (`{title: 'Crash', labels: [id1, id2]}`); the junction rows are written in the same
+   * transaction as the row, so a target that is missing or invisible fails the WHOLE row
+   * with `code: 'not-visible-or-missing'`. A row that dedups to an existing one
+   * (`status: 'duplicate'` / `'idempotent-replay'`) IGNORES its relation values — a replay
+   * never mutates the existing row's links. Creating the target and linking it in one shot
+   * is a {@link DomainsDataSource.transaction} with `'$ref'` placeholders inside the list.
+   * `batch` does NOT accept relation keys — use insert/update. */
+  insert(rows: TInsert | TInsert[], options?: {errorOnDuplicate?: boolean}): Promise<DomainInsertResult[]> {
+    return domainCall(api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows,
+      options?.errorOnDuplicate ?? false));
+  }
+
+  /** Partially updates a row; pass `options.version` (the version the client last read) for
+   * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
+   * row has changed since. Resolves to `{id, version}` (version increments on every update).
+   *
+   * `values` may also carry declared many-to-many relations as lists of target row ids, with
+   * **SET-REPLACE semantics over the links you can SEE**: the list becomes the visible link
+   * set, `[]` clears it, and an ABSENT relation key leaves the relation untouched. Links whose
+   * junction row or target row the caller cannot view are never diffed and therefore never
+   * removed — a replace can only destroy links its author knows about, so "the replace didn't
+   * remove that label" is the design, not a bug. A relations-only update still bumps the row
+   * version, so `options.version` covers the links too. `grok api`-generated clients name the
+   * relations in their `<Table>Update` type and pass it as the client's fifth generic;
+   * untyped callers keep `Partial<TRow>`. */
+  update(id: string, values: TUpdate, options?: {version?: number}): Promise<DomainUpdateResult> {
+    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
+  }
+
+  /** Bulk upload: a DataFrame (sent as d42), a CSV string, an array of row objects, or raw
+   * bytes (`options.format`: `'d42'` default, `'parquet'` converted via the Arrow package).
+   * `options.mode: 'upsert'` merges by the table's business key. Resolves to the batch report;
+   * a failure that carries the per-row report (e.g. an allOrNothing abort) resolves with
+   * `error` set, report-less failures reject. Declared many-to-many relations are REJECTED
+   * here (the set diff is per row and would defeat the set-based load) — link with
+   * {@link insert} / {@link update}. */
+  batch(data: DataFrame | string | object[] | Uint8Array, options: DomainBatchOptions = {}): Promise<DomainBatchReport> {
+    const format = data instanceof DataFrame ? 'df' : typeof data === 'string' ? 'csv' :
+      data instanceof Uint8Array ? (options.format ?? 'd42') : 'json';
+    return domainCall(api.grok_Dapi_Domains_Batch(this.dart, this.schema, this.table,
+      data instanceof DataFrame ? data.dart : data, format, options));
+  }
+
+  /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations;
+   * a restrict reference rejects with a {@link DomainRestrictError}). */
+  delete(id: string): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));
+  }
+
+  /** Soft-deletes up to `options.limit` (≤1000, default 1000) matching rows you may delete,
+   * oldest first, in ONE transaction; referential actions apply per row and a restrict
+   * reference rejects the whole call ({@link DomainRestrictError} — nothing is deleted).
+   * The filter is required — an empty one rejects with a {@link DomainValidationError}.
+   * Each row runs through the per-row engine (cascade fan-out, audit), so this is not a
+   * free bulk sweep: prefer a narrow filter and a modest limit, and loop while `hasMore`
+   * for larger sets. A row already gone by its turn (deleted concurrently, or eaten by an
+   * earlier row's cascade) is skipped, not an error. */
+  deleteWhere(filter: DomainFilter<TColumn>, options?: {limit?: number}): Promise<DomainDeleteReport> {
+    return domainCall(api.grok_Dapi_Domains_DeleteWhere(this.dart, this.schema, this.table,
+      filter, options?.limit ?? null));
+  }
+
+  /** Creates the entities row for a domain row so it can be individually shared. */
+  promote(id: string): Promise<{id: string; promoted: boolean}> {
+    return domainCall(api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id));
+  }
+
+  /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
+  audit(id: string): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id));
+  }
+
+  /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,
+   * and column profiling in one round trip — counts under all other filters, bounds under the row
+   * predicate only (the stable-axis exception; see {@link DomainFacetsSpec}). All results respect
+   * the row predicate and column security. Resolves to `{facets: {<id>: <result>}}` —
+   * `'categories'` results as `{categories: DomainFacetCategory[], hasMore}`, `'histogram'` as
+   * `{min, max, buckets, totalBuckets, nulls}` — `buckets` counted under the other filters,
+   * `totalBuckets` under the row predicate only (datetime bounds are ISO-8601 strings), `'minMax'` as
+   * `{min, max}`, `'count'` as `{count}`, `'plan'` as `{columns: [{name, distinct, min?, max?}]}`. */
+  facets<TId extends string = string, TKind extends DomainFacetKind = DomainFacetKind>(
+    spec: DomainFacetsSpec<TColumn, TId, TKind>): Promise<{facets: {[K in TId]: DomainFacetResultOf<TKind>}}> {
+    return domainCall(api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec));
+  }
+
+  /** Row count under [filter] (condition tree or smart string; omit for the whole table). */
+  count(filter?: DomainFilter<TColumn>): Promise<number> {
+    return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
+  }
+
+  /** True when at least one visible row matches [filter]. */
+  async exists(filter?: DomainFilter<TColumn>): Promise<boolean> {
+    return (await this.count(filter)) > 0;
+  }
+
+  /** First matching row or null; shorthand for query({...spec, limit: 1}). */
+  async first(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow | null> {
+    const rows = await this.query({...spec, limit: 1});
+    return rows.length === 0 ? null : rows[0];
+  }
+
+  /** Business-key (or any equality-set) lookup; ambiguous or absent → null. */
+  async getByKey(keyValues: Partial<TRow>): Promise<TRow | null> {
+    const datetimes = this._datetimes();
+    const row = await domainCall(api.grok_Dapi_Domains_GetByKey(this.dart, this.schema, this.table, keyValues));
+    return this._fromWire(row, await datetimes);
+  }
+
+  /** Rows for [ids] as a typed DataFrame: the 'id' column plus [fields] (default: all
+   * visible columns). Chunked client-side at 100k ids; row predicate + column security
+   * apply (missing/invisible ids are absent rows). An empty [ids] list short-circuits to
+   * an empty ZERO-COLUMN frame — even when [fields] are requested. */
+  fetchFields(ids: string[], fields?: TColumn[]): Promise<DataFrame> {
+    return domainCall(api.grok_Dapi_Domains_FetchFields(this.dart, this.schema, this.table, ids, fields ?? null));
+  }
+
+  /** {@link aggregate} returning a typed d42 DataFrame (10k row cap, both formats). */
+  aggregateDf(spec: DomainAggregateSpec<TColumn>): Promise<DataFrame> {
+    return domainCall(api.grok_Dapi_Domains_AggregateDf(this.dart, this.schema, this.table, spec));
+  }
+
+  /** Inserts or merges ONE row by the table's business key (requires businessKey).
+   * Rides the batch engine in upsert mode; failures (invalid values, missing
+   * business-key column) reject with a {@link DomainValidationError}. */
+  upsert(row: TInsert): Promise<{id: string; status: 'inserted' | 'updated'}> {
+    return domainCall(api.grok_Dapi_Domains_Upsert(this.dart, this.schema, this.table, row));
+  }
+
+  /** Table-wide audit trail, newest first; limit clamps to [1, 1000]. */
+  auditLog(options?: {limit?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_TableAudit(this.dart, this.schema, this.table, options?.limit ?? null));
+  }
+
+  /** Subscribes the current user to change notifications for the table (or one row when
+   * [id] is given; row watch requires the table's audit trail). Resolves to whether the
+   * server confirmed the subscription. */
+  watch(id?: string): Promise<boolean> {
+    return domainCall(api.grok_Dapi_Domains_Watch(this.dart, this.schema, this.table, id ?? null));
+  }
+
+  /** Removes the table (or row, when [id] is given) subscription; resolves to whether the
+   * server confirmed the removal. */
+  unwatch(id?: string): Promise<boolean> {
+    return domainCall(api.grok_Dapi_Domains_Unwatch(this.dart, this.schema, this.table, id ?? null));
+  }
+
+  /** Whether the current user watches the table (or row, when [id] is given). */
+  isWatching(id?: string): Promise<boolean> {
+    return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
+  }
+
+  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table:
+   * server-truth permission probes on the final securing entity plus the writable-column
+   * mirror of column security. Cached per registry generation + user; grant changes made
+   * through this client drop the cache automatically, out-of-band changes require
+   * {@link DomainsDataSource.invalidateUiCaches}. Rejects with a
+   * {@link DomainValidationError} for unknown tables. */
+  capabilities(): Promise<DomainTableCapabilities> {
+    return domainCall(api.grok_Domains_TableCapabilities(this.schema, this.table));
+  }
+
+  /** Direct permission rows on this table's registry entity. Requires Share. */
+  grants(): Promise<DomainGrant[]> {
+    return domainCall(api.grok_Dapi_Domains_TableGrants(this.dart, this.schema, this.table));
+  }
+
+  /** Idempotently grants [permission] on this table to [group] (a group id). Requires Share. */
+  async grant(group: string, permission: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_TableGrant(this.dart, this.schema, this.table, group, permission));
+    api.grok_Domains_InvalidateUiCaches();
+  }
+
+  /** Revokes [permission] (or all four when omitted) from [group]. Requires Share. */
+  async revoke(group: string, permission?: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_TableRevoke(this.dart, this.schema, this.table,
+      group, permission ?? null));
+    api.grok_Domains_InvalidateUiCaches();
+  }
+
+  /** Restricts [column] to its own single-column property schema and grants [group] View on
+   * it — afterwards only grantees (and admins) see the column. Returns the per-column
+   * schema {id, name} (a further grants target). Requires Share on the core schema;
+   * jsonb columns are managed via their property schema (DomainError). Out of scope on
+   * this surface: listing a per-column schema's own grants (keep the returned id), and
+   * property-schema grants in general (server-supported; no JS surface yet). */
+  async shareColumn(column: TColumn, group: string, permission?: DomainPermission): Promise<{id: string; name: string}> {
+    const res = await domainCall(api.grok_Dapi_Domains_ShareColumn(this.dart, this.schema, this.table,
+      column, group, permission ?? 'View'));
+    api.grok_Domains_InvalidateUiCaches();
+    return res;
+  }
+
+  /** Restricts [column] without granting anyone (inverse: {@link restoreColumnVisibility}). */
+  async restrictColumn(column: TColumn): Promise<{id: string; name: string}> {
+    const res = await domainCall(api.grok_Dapi_Domains_RestrictColumn(this.dart, this.schema, this.table, column));
+    api.grok_Domains_InvalidateUiCaches();
+    return res;
+  }
+
+  /** Deletes the per-column schema with its grants; the column rejoins the
+   * everyone-visible core schema. */
+  async restoreColumnVisibility(column: TColumn): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_RestoreColumnVisibility(this.dart, this.schema, this.table, column));
+    api.grok_Domains_InvalidateUiCaches();
+  }
+
+  /** Insert-or-update by row identity: no id → insert; id → version-checked partial update
+   * (uses row.version when present). System columns other than the addressing id/version are
+   * stripped from the payload, so spreading a read row is safe. Resolves to the row merged
+   * with the new id/version — NB: re-saving an OLD object after a successful save carries its
+   * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
+   * row. An id-less save whose business key matches an existing row is a TRUE
+   * insert-or-update: the values are applied to the existing row as a versioned update
+   * (retried on conflict), so save() never resolves a version-less row. An idempotency-key
+   * replay applies nothing — the original insert already did — and resolves the existing
+   * row's fresh version (rejects {@link DomainNotFoundError} when that row is no longer
+   * visible). The unversioned
+   * (last-write-wins) update remains available ONLY by deliberately constructing
+   * `{id}` without a version — never as a side effect of a duplicate. */
+  async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
+    const values: any = {};
+    for (const k of Object.keys(row))
+      if (!(DOMAIN_SYSTEM_COLUMNS as readonly string[]).includes(k))
+        values[k] = (row as any)[k];
+    if (row.id == null) {
+      const [res] = await this.insert(values);
+      if (res.status === 'duplicate') {
+        // The duplicate insert wrote NOTHING — land the caller's values on the
+        // existing row under the optimistic check (fresh read + retry).
+        const upd = await this.updateWithRetry(res.id, () => values);
+        return {...(row as any), id: res.id, version: upd!.version};
+      }
+      if (res.status === 'idempotent-replay') {
+        // The ORIGINAL insert already applied these values; report its state.
+        const fresh = await this.get(res.id);
+        if (fresh == null)
+          throw new DomainNotFoundError(`Row "${res.id}" not found in ${this.schema}.${this.table}`,
+            404, {error: 'not-found', id: res.id});
+        return {...(row as any), id: res.id, version: (fresh as any).version};
+      }
+      return {...(row as any), id: res.id, version: res.version};
+    }
+    const res = await this.update(row.id, values, row.version != null ? {version: row.version} : undefined);
+    return {...(row as any), id: res.id, version: res.version};
+  }
+
+  /** Read-modify-write with optimistic retry: fetches the fresh row, applies [mutate], writes
+   * with the fresh version; retries on DomainVersionConflictError (`maxRetries` counts
+   * retries after the initial attempt — default 5 retries = up to 6 attempts, no backoff).
+   * [mutate] returning null skips the write (resolves null). Rejects
+   * {@link DomainNotFoundError} when the row is invisible/absent, and {@link DomainError}
+   * (code 'no-version') when the fresh row carries no version — the write never silently
+   * degrades to an unversioned (last-write-wins) update. For multi-op flows
+   * (e.g. a guarded transaction), use `DG.retryOnVersionConflict` directly with the fresh
+   * read inside the action. */
+  updateWithRetry(id: string, mutate: (fresh: TRow) => TUpdate | null,
+      options?: {maxRetries?: number}): Promise<DomainUpdateResult | null> {
+    return retryOnVersionConflict(async () => {
+      const fresh = await this.get(id);
+      if (fresh == null)
+        throw new DomainNotFoundError(`Row "${id}" not found in ${this.schema}.${this.table}`,
+          404, {error: 'not-found', id: id});
+      const version = (fresh as any).version;
+      if (version == null)
+        throw new DomainError(`updateWithRetry: row "${id}" carries no version — cannot update optimistically`,
+          0, {error: 'no-version'});
+      const values = mutate(fresh);
+      if (values == null)
+        return null;
+      return await this.update(id, values, {version});
+    }, options);
+  }
+
+  /** Saved filter presets of this table — shareable entities carrying filter panel states. */
+  get filters(): DomainSavedFiltersClient {
+    return new DomainSavedFiltersClient(this.dart, this.schema, this.table);
+  }
+}
+
+/**
+ * Saved filter presets of one domain table (see {@link DomainTableClient.filters}): small
+ * shareable entities carrying the filter panel's state maps. Sharing uses the standard entity
+ * permission machinery ({@link Dapi.permissions}); the server scopes {@link list} to what the
+ * caller can see. */
+export class DomainSavedFiltersClient {
+  dart: any;
+
+  constructor(dart: any, public readonly schema: string, public readonly table: string) {
+    this.dart = dart;
+  }
+
+  /** Presets of this table visible to the current user, ordered by name. */
+  list(): Promise<DomainSavedFilterInfo[]> {
+    return domainCall(api.grok_Dapi_Domains_ListFilters(this.dart, this.schema, this.table));
+  }
+
+  /** Saves a preset for the caller; pass `options.id` to update an existing preset in place
+   * (the original author is preserved). Resolves to the saved preset. */
+  save(name: string, states: {[column: string]: any}, options?: {id?: string}): Promise<DomainSavedFilterInfo> {
+    return domainCall(api.grok_Dapi_Domains_SaveFilter(this.dart, this.schema, this.table, name, states, options?.id));
+  }
+
+  /** Deletes a preset (requires the entity Delete permission). */
+  delete(id: string): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_DeleteFilter(this.dart, id));
   }
 }
 

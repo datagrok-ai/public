@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {desirabilityScore, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {desirabilityScore, isNumerical, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {
   createBaseInputs,
@@ -24,9 +24,11 @@ enum PieChartStyle {
   Vlaaivis = 'VlaaiVis'
 }
 
-export interface Subsector extends PropertyDesirability {
+// PropertyDesirability is a union (numerical | categorical), and an interface cannot extend
+// one — an intersection distributes over it and keeps every member's shape.
+export type Subsector = PropertyDesirability & {
   name: string;
-}
+};
 
 export interface Sector {
   name: string;
@@ -67,7 +69,7 @@ function getColumnsSum(cols: DG.Column[], row: number) {
 }
 
 function normalizeValue(value: number, subsector: Subsector): number {
-  if (!subsector.line) return 0;
+  if (!isNumerical(subsector) || !subsector.line) return 0;
   return desirabilityScore(value, subsector.line);
 }
 

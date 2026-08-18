@@ -91,13 +91,32 @@ test('a passing datagrok_verify clears everything pending', async () => {
   assert.ok(!blocked(await v.stop(stop())), 'one passing verify covers all pending actions in the turn');
 });
 
-test('a failing verify blocks with the stronger "did NOT take effect" reason', async () => {
+// Regression: an earlier unverified exec used to keep pendingActions > 0 through a later
+// self-verified exec, so the turn paid a hidden revision + verify round-trip for nothing.
+test('a self-verified exec pass clears earlier pending actions like a datagrok_verify pass', async () => {
+  const v = new Verifier();
+  await v.postToolUse(post(EXEC, mcpResult({success: true, verified: {passed: false}})));
+  await v.postToolUse(post(EXEC, mcpResult({success: true, verified: {passed: true, observed: 4}})));
+  assert.ok(!blocked(await v.stop(stop())), 'the passing self-verify covers the turn');
+});
+
+test('a failing verify blocks with a reason that forbids redoing the action', async () => {
   const v = new Verifier();
   await v.postToolUse(post(EXEC, mcpResult({success: true})));
   await v.postToolUse(post(VERIFY, mcpResult({passed: false})));
   const r = await v.stop(stop());
   assert.ok(blocked(r));
-  assert.match(r.reason, /did NOT take effect/);
+  assert.match(r.reason, /Verification has failed/);
+  assert.match(r.reason, /NEVER redo a state-changing action/);
+  assert.match(r.reason, /assertion itself was faulty/);
+});
+
+test('the first (no-failure) block also forbids redoing the actions', async () => {
+  const v = new Verifier();
+  await v.postToolUse(post(EXEC, mcpResult({success: true})));
+  const r = await v.stop(stop());
+  assert.ok(blocked(r));
+  assert.match(r.reason, /Do NOT redo the actions/);
 });
 
 test('block reasons are framed as internal feedback the model must not quote', async () => {

@@ -2,6 +2,7 @@
  *  section-expanded) and content integrity of the tutorials/questions. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   poll, waitForClick, isAborted, untilSectionExpanded, computePlacement,
@@ -18,7 +19,6 @@ import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNo
 import {PropertyPanel} from '../panel/property-panel';
 import {makeEditor, destroyEditor, until} from './test-utils';
 
-/** Build a PlaceRect from x/y/w/h. */
 function rect(x: number, y: number, w: number, h: number) {
   return {left: x, top: y, right: x + w, bottom: y + h, width: w, height: h};
 }
@@ -33,7 +33,7 @@ category('Flow: guide', () => {
     const ac = new AbortController();
     let flag = false;
     setTimeout(() => {flag = true;}, 40);
-    await poll(() => flag, ac.signal, 15); // resolves or the test times out
+    await poll(() => flag, ac.signal, 15);
     expect(flag, true);
   });
 
@@ -73,7 +73,6 @@ category('Flow: guide', () => {
     document.body.appendChild(input);
     try {
       const p = untilValueMatches('[data-testid="tmp-search"]', 'openfile')(ctx);
-      // The user types the spaced, mixed-case form — still satisfies it.
       setTimeout(() => {input.value = 'Open File';}, 30);
       await p;
       expect(true, true, 'resolved on "Open File" for needle "openfile"');
@@ -91,8 +90,8 @@ category('Flow: guide', () => {
     document.body.appendChild(input);
     try {
       const p = untilColumnCountAtLeast('input[data-param="values1"]', 3)(ctx);
-      input.value = 'a, b';                       // 2 — not yet
-      setTimeout(() => {input.value = 'a, b, c';}, 30); // 3 — satisfies
+      input.value = 'a, b';
+      setTimeout(() => {input.value = 'a, b, c';}, 30);
       await p;
       expect(true, true, 'resolved at 3 columns');
     } finally {
@@ -106,18 +105,15 @@ category('Flow: guide', () => {
     fallback.id = 'fallback-target';
     const resolver = (): HTMLElement => fallback;
     const ctx: GuideContext = {host: fakeHost(), signal: new AbortController().signal};
-    // No dialog → falls back to the resolver's element.
     expect(openDialogEl(), null, 'no dialog initially');
     expect(preferDialog(resolver)(ctx), fallback, 'falls back without a dialog');
-    // Simulate an open Datagrok dialog.
-    const dlg = document.createElement('div');
-    dlg.className = 'd4-dialog';
-    document.body.appendChild(dlg);
+    // openDialogEl resolves through DG.Dialog.getOpenDialogs() — a bare .d4-dialog div doesn't count
+    const dlg = ui.dialog('Guide test').show();
     try {
-      expect(openDialogEl(), dlg, 'finds the open dialog');
-      expect(preferDialog(resolver)(ctx), dlg, 'prefers the dialog over the fallback');
+      expect(openDialogEl(), dlg.root, 'finds the open dialog');
+      expect(preferDialog(resolver)(ctx), dlg.root, 'prefers the dialog over the fallback');
     } finally {
-      dlg.remove();
+      dlg.close();
     }
   });
 
@@ -143,8 +139,6 @@ category('Flow: guide', () => {
   });
 
   test('a step that resolves instantly leaves no lingering highlight', async () => {
-    // Regression: when `until` is already true, the step's cleanup raced a queued
-    // frame that re-applied the highlight, leaving the orange tint/dot forever.
     const runner = new GuideRunner();
     const target = document.createElement('div');
     target.style.cssText = 'position:fixed;left:10px;top:10px;width:40px;height:20px;';
@@ -155,7 +149,7 @@ category('Flow: guide', () => {
     };
     try {
       await runner.run(guide, fakeHost());
-      // Let any queued frame / interval fire — the fix must keep them inert.
+      // let any queued frame / interval fire
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => setTimeout(r, 30));
       expect(document.querySelectorAll('.ff-guide-target').length, 0, 'no lingering target highlight');
@@ -168,7 +162,6 @@ category('Flow: guide', () => {
   });
 
   test('a prerequisite step whose skipIf is satisfied is skipped (no hang)', async () => {
-    // The prereq's `until` never resolves; only skipIf lets the guide proceed.
     const runner = new GuideRunner();
     const guide: Guide = {
       id: 'sk', kind: 'question', title: 'Q', summary: 's',
@@ -193,7 +186,6 @@ category('Flow: guide', () => {
   test('untilSectionExpanded reacts to the accordion expanded class', async () => {
     const ac = new AbortController();
     const ctx: GuideContext = {host: fakeHost(), signal: ac.signal};
-    // Sections are DG.Accordion panes; an expanded pane's header gets 'expanded'.
     const header = document.createElement('div');
     header.className = 'd4-accordion-pane-header';
     header.dataset.section = 'Inputs';
@@ -215,14 +207,12 @@ category('Flow: guide', () => {
   });
 
   test('placement: target hugging the left edge → popup goes right', async () => {
-    // A toolbar icon at the far left: 'left' can't fit, 'right' can.
     const p = computePlacement(rect(4, 60, 30, 30), 300, 160, 1200, 800, 'left');
     expect(p.side, 'right');
     expect(p.x >= 10, true);
   });
 
   test('placement: target low on screen → popup flips above, stays on screen', async () => {
-    // A node near the bottom; 'bottom' would overflow, so flip to 'top'.
     const vh = 800;
     const p = computePlacement(rect(500, 760, 120, 30), 300, 200, 1200, vh, 'bottom');
     expect(p.side, 'top');
@@ -257,22 +247,15 @@ category('Flow: guide', () => {
       for (const s of g.steps)
         expect(!!s.title && !!s.text, true, `${g.id} step "${s.title}" has title + text`);
     }
-    // Tutorials are multi-step; questions are single-answer.
     for (const t of TUTORIALS) expect(t.steps.length >= 3, true, `${t.id} is multi-step`);
-    // The Start-panel tour launches the first tutorial: keep it the hands-on one.
+    // the Start-panel tour launches the first tutorial — keep it the hands-on one
     expect(TUTORIALS[0].id, 'load-data-add-column');
 
-    // Feature coverage added after the initial guide set — autorun, precise
-    // invalidation, the function-editor dialog, platform save + Workflows
-    // reuse, single-node rerun, output view tabs, layout persistence, and
-    // dashboard publishing. Each must keep a how-to answer.
+    // post-launch features must each keep a how-to answer
     for (const id of ['how-autorun', 'how-out-of-date', 'how-func-editor', 'how-reuse-flow', 'how-rerun-node',
       'how-open-result', 'how-table-layouts', 'how-publish-dashboard', 'how-update-dashboard'])
       expect(QUESTIONS.some((g) => g.id === id), true, `question ${id} exists`);
-    // Dashboard publishing has a dedicated end-to-end tutorial.
     expect(TUTORIALS.some((t) => t.id === 'publish-dashboard'), true, 'dashboard tutorial exists');
-    // The interface tour walks the ribbon — it must include the autorun toggle,
-    // the output panel, and the result tabs among its stops.
     const tour = TUTORIALS.find((t) => t.id === 'interface-tour')!;
     expect(tour.steps.some((s) => s.title === 'Autorun'), true, 'tour covers the autorun toggle');
     expect(tour.steps.some((s) => s.title === 'The output panel'), true, 'tour covers the output panel');
@@ -280,8 +263,8 @@ category('Flow: guide', () => {
   });
 });
 
-/** Drive the flagship tutorial's core against a live editor + property panel:
- *  the same DOM the guide resolvers query at runtime. */
+/** Drive the flagship tutorial's core against a live editor — the same DOM the
+ *  guide resolvers query at runtime. */
 category('Flow: guide playthrough', () => {
   before(async () => {
     registerBuiltinNodes();
@@ -302,16 +285,13 @@ category('Flow: guide playthrough', () => {
     try {
       const node = createNode(reg.nodeTypeName)!;
       await e.flow.addNodeAt(node, 0, 0);
-      // byNodeFunc('OpenFile') finds the rendered canvas node.
       const ok = await until(() => byNodeFunc('OpenFile')(ctx) !== null, 2000);
       expect(ok, true, 'OpenFile node renders and is targetable by data-func');
       const nodeEl = byNodeFunc('OpenFile')(ctx)!;
       expect(nodeEl.dataset.func, 'OpenFile');
 
-      // Property panel: the fullPath row is targetable, and its editable field
-      // is reachable via paramFieldSelector. Mount the panel root in the
-      // document (in the app it's grok.shell.o) so the document-wide resolvers
-      // can find it.
+      // mount the panel root in the document (in the app it's grok.shell.o)
+      // so the document-wide resolvers can find it
       const panel = new PropertyPanel(e.flow);
       panel.root.style.cssText = 'position:absolute;left:-10000px;';
       document.body.appendChild(panel.root);
@@ -321,7 +301,6 @@ category('Flow: guide playthrough', () => {
       const field = document.querySelector(paramFieldSelector('fullPath')) as HTMLTextAreaElement | null;
       expect(!!field, true, 'fullPath editable field found');
 
-      // Simulate the paste and confirm the guide's "until value contains" resolves.
       field!.value = 'System:DemoFiles/demog.csv';
       field!.dispatchEvent(new Event('input', {bubbles: true}));
       await untilValueContains(paramFieldSelector('fullPath'), 'demog.csv')(ctx);
@@ -347,22 +326,18 @@ category('Flow: guide playthrough', () => {
       getFlow: () => e.flow, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: e.container};
     const ctx: GuideContext = {host, signal: ac.signal};
     try {
-      // The Demo connection row is resolvable by the guide helper.
       const demoOk = await until(() => byFileTreeConn('Demo')(ctx) !== null, 8000);
       expect(demoOk, true, 'Demo connection resolvable by byFileTreeConn');
 
-      // Expanding it loads its files; the "connection expanded" gate then fires.
       const demoGroup = tree.children.find((c): c is DG.TreeViewGroup =>
         c instanceof DG.TreeViewGroup && (c.root as HTMLElement).dataset.conn === 'Demo')!;
       demoGroup.expanded = true;
       await untilFileTreeConnExpanded('Demo')(ctx);
       expect(true, true, 'untilFileTreeConnExpanded resolved');
 
-      // demog.csv becomes targetable by byFileTreeFile.
       const fileOk = await until(() => byFileTreeFile('demog.csv')(ctx) !== null, 8000);
       expect(fileOk, true, 'demog.csv resolvable by byFileTreeFile');
 
-      // Adding an OpenFile node carrying that path satisfies the node-with-input gate.
       const node = createNode(reg.nodeTypeName)!;
       node.inputValues['fullPath'] = 'System:DemoFiles/demog.csv';
       await e.flow.addNodeAt(node, 0, 0);

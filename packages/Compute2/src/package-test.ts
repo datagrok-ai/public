@@ -7,8 +7,13 @@ import './test/rfv';
 import './test/navigation';
 import './test/float-display';
 import './test/custom-export';
-import './test/run-comparison-core';
-import './test/run-comparison-df';
+import './test/url-inputs';
+import './test/project-export-data';
+import './test/run-comparison-extraction';
+import './test/run-comparison-matching';
+import './test/run-comparison-selection';
+import './test/run-comparison-builders';
+import './test/viewer-look-swap-probe';
 
 export const _package = new DG.Package();
 export {tests};

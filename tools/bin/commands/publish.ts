@@ -85,6 +85,26 @@ function discoverDockerfiles(packageName: string, version: string, debug: boolea
   return results;
 }
 
+// Folders that name a published image in container.json instead of shipping a Dockerfile.
+// Nothing is built or pushed for them; the server resolves the reference on deploy.
+function referencedImageDirs(): {name: string, image: string}[] {
+  const dockerfilesDir = path.join(curDir, 'dockerfiles');
+  if (!fs.existsSync(dockerfilesDir))
+    return [];
+  const results: {name: string, image: string}[] = [];
+  for (const entry of fs.readdirSync(dockerfilesDir, {withFileTypes: true})) {
+    if (!entry.isDirectory() || fs.existsSync(path.join(dockerfilesDir, entry.name, 'Dockerfile')))
+      continue;
+    const configPath = path.join(dockerfilesDir, entry.name, 'container.json');
+    if (!fs.existsSync(configPath))
+      continue;
+    const image = JSON.parse(fs.readFileSync(configPath, 'utf-8')).image;
+    if (image)
+      results.push({name: entry.name, image});
+  }
+  return results;
+}
+
 function dockerCommand(args: string): string {
   return execSync(`docker ${args}`, {encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe']}).trim();
 }
@@ -301,6 +321,9 @@ async function processDockerImages(
   skipDockerRebuild: boolean = false,
   generatedDirs: string[] = [],
 ): Promise<void> {
+  for (const dir of referencedImageDirs())
+    color.log(`dockerfiles/${dir.name} runs ${dir.image} — nothing to build`);
+
   const dockerImages = discoverDockerfiles(packageName, version, debug);
   if (dockerImages.length === 0)
     return;

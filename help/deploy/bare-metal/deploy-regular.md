@@ -46,12 +46,18 @@ hosts without an orchestrator.
 
 ## Install
 
-1. Clone the public repository on the host (it ships the canonical compose file):
+1. Clone the public repository on the host, checking out the branch for the release you
+   are deploying (it ships the canonical compose file):
 
     ```bash
-    git clone https://github.com/datagrok-ai/public.git
+    git clone --branch release/1.27.7 https://github.com/datagrok-ai/public.git
     cd public/docker
     ```
+
+   Deploy from a release branch, not `master`. The compose file and the images it starts
+   are versioned together, and `master`'s file is bound to `bleeding-edge` — see
+   [configuration is versioned with the image](../images.md#release-binding). Pick a
+   published version from the [release history](../releases/release-history.md).
 
 2. Open `localhost.docker-compose.yaml` and edit the `GROK_PARAMETERS` JSON on the
    `datagrok` service. Replace the values inline with your database and storage details

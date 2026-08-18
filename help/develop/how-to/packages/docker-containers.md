@@ -75,6 +75,29 @@ Example of such
  [Dockerfile](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/dockerfiles/Dockerfile)
  is located in Admetica package.
 
+### Running an already published image
+
+If the image is already published to Docker Hub or to your registry, name it in
+`container.json` and omit the Dockerfile entirely:
+
+```json
+{
+  "image": "datagrok/jkg_python:bleeding-edge",
+  "port": 8888,
+  "on_demand": true
+}
+```
+
+`grok publish` then builds and pushes nothing — the server resolves the reference when
+the package is deployed, and the container runs that image. Use this when the image is
+built elsewhere (a CI pipeline, another repository) or is a stock third-party image.
+
+Since there is no Dockerfile to read `EXPOSE` from, set `port` yourself if plugin code
+needs to reach the container over HTTP.
+
+A folder that has both a Dockerfile and an `image` in `container.json` is built from the
+Dockerfile — `image` is ignored.
+
 ## 2. Container configuration
 
 Each container can be configured using a `container.json` file, which must be placed in the same directory 

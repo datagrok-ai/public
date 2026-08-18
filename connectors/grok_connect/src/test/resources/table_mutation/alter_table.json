@@ -1,0 +1,14 @@
+{
+  "#type": "AlterTable",
+  "name": "alter orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": true,
+  "action": "changeType",
+  "columnName": "qty",
+  "newName": "quantity",
+  "column": {"name": "qty", "type": "int", "nullable": true, "defaultValue": "0"},
+  "newType": "bigint",
+  "nullable": true
+}

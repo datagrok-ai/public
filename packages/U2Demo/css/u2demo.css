@@ -1,0 +1,116 @@
+.u2demo-root {
+  height: 100%;
+  gap: 0;
+}
+
+.u2demo-tabs {
+  flex: 1;
+  min-height: 0;
+}
+
+.u2demo-page {
+  padding: var(--dg-space-l);
+  gap: var(--dg-space-m);
+  overflow: auto;
+  max-width: 640px;
+}
+
+.u2demo-row {
+  align-items: center;
+  gap: var(--dg-space-m);
+  flex-wrap: wrap;
+}
+
+.u2demo-status {
+  gap: var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2demo-hint {
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-dim {
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-card {
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  padding: var(--dg-space-m);
+}
+
+.u2demo-list {
+  height: 220px;
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-split {
+  height: 180px;
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-report-split {
+  flex: 1;
+  min-height: 0;
+  border-top: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-report-list {
+  height: 100%;
+  gap: 0;
+}
+
+.u2demo-report-list .u2-list {
+  flex: 1;
+  min-height: 0;
+  border: none;
+}
+
+.u2demo-report {
+  flex: 1;
+  min-width: 0;
+  gap: 0;
+}
+
+.u2demo-report-line {
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--dg-space-m);
+  min-width: 0;
+}
+
+.u2demo-report-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.u2demo-report-status {
+  min-height: var(--dg-control-height);
+  justify-content: center;
+  padding: 0 var(--dg-space-m);
+  border-top: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-report-details {
+  height: 100%;
+  overflow: auto;
+  padding: var(--dg-space-l);
+}
+
+.u2demo-statusbar {
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-s) var(--dg-space-m);
+  border-top: var(--dg-border-width) solid var(--dg-border);
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-mol-row {
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+

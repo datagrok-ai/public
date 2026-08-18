@@ -1,3 +1,7 @@
+---
+realizes: [import.csv, import.edf, bio.import.fasta, arrow.import.feather, gis.import.geo-json, gis.preview.geo-json, import.gz, import.h5, import.html, import.ipynb, diffstudio.import.ivp, diffstudio.preview.ivp, import.json, gis.import.kml, gis.import.kmz, gis.preview.kmz-and-kml, import.mat, powerpack.preview.markdown, import.nc, arrow.import.parquet, fileeditors.import.pdf, fileeditors.preview.pdf, import.rda, import.rds, import.sas, chem.import.sdf, sqlite.import.sq-lite, import.tar, powerpack.import.xlsx, import.xml, import.zip]
+---
+
 Verify that Datagrok previews and opens every file in Browse > Files > My Files > all_formats.
 
 **Prerequisite**: folder `My Files / all_formats` contains one file per format —

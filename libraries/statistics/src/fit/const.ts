@@ -6,7 +6,13 @@ export class FitConstants {
   static TAG_CURVE_FORMAT = '.%curve-format';
   static FIT_SEM_TYPE = 'fit';
   static FIT_CELL_TYPE = 'fit';
-  static TAG_FIT = '.fit';
+  // the '.%' prefix is what makes a layout carry the tag, so column and dataframe level options
+  // survive reopening a project whose table is refetched. '.fit' is only read, never written
+  static TAG_FIT = '.%fit';
+  static TAG_FIT_LEGACY = '.fit';
+
+  // plot-level labels describe the cell, not any one curve, so they take a neutral colour
+  static PLOT_LABEL_COLOR = '#4A4A4A';
 
   static CELL_DEFAULT_WIDTH = 230;
   static CELL_DEFAULT_HEIGHT = 160;
@@ -22,6 +28,8 @@ export class FitConstants {
   static MIN_Y_AXIS_NAME_VISIBILITY_PX_HEIGHT = 140;
   static MIN_LEGEND_PX_WIDTH = 325;
   static MIN_LEGEND_PX_HEIGHT = 275;
+  static MIN_DROPLINE_LABELS_PX_WIDTH = 250;
+  static MIN_DROPLINE_LABELS_PX_HEIGHT = 200;
   static MIN_DROPLINES_VISIBILITY_PX_WIDTH = 120;
   static MIN_DROPLINES_VISIBILITY_PX_HEIGHT = 110;
   static AXES_LEFT_PX_MARGIN = 38;

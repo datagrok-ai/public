@@ -46,6 +46,12 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
         Converter<Date> converter = converterMap
                 .getOrDefault(aClass, DEFAULT_CONVERTER);
         Date date =  converter.convert(value);
+        if (date instanceof Timestamp) {
+            // Date.getTime() is ms-only; a Timestamp carries the full fraction in nanos — keep the µs
+            // (the d42 datetime column is epoch-µs). Floor math keeps pre-1970 values exact.
+            Timestamp ts = (Timestamp) date;
+            return (double) (Math.floorDiv(ts.getTime(), 1000L) * 1_000_000L + ts.getNanos() / 1000L);
+        }
         return date.getTime() * DEFAULT_MULTIPLIER;
     }
 

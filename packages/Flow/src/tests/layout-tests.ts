@@ -30,7 +30,6 @@ category('Flow: layout', () => {
     const b = createNode('Utilities/ToString')!;
     const c = createNode('Utilities/ToString')!;
     const d = createNode('Outputs/Value Output')!;
-    // a → b → c → d, plus a short-circuit a → d: d must land at the longest path (3).
     const edges = [
       {source: a, target: b}, {source: b, target: c},
       {source: c, target: d}, {source: a, target: d},
@@ -53,7 +52,6 @@ category('Flow: layout', () => {
   test('autoLayout arranges a scrambled graph left-to-right with no overlap', async () => {
     const e = makeEditor();
     try {
-      // Positions are deliberately scrambled — autoLayout must fix them.
       const c = await addNode(e.flow, 'Constants/String', 900, 700);
       const t1 = await addNode(e.flow, 'Utilities/ToString', 10, 10);
       const t2 = await addNode(e.flow, 'Utilities/ToString', 400, 999);
@@ -62,7 +60,6 @@ category('Flow: layout', () => {
 
       await e.flow.autoLayout();
 
-      // Every edge points strictly rightward.
       for (const conn of e.flow.getConnections()) {
         const s = e.flow.getNodeById(conn.source)!;
         const t = e.flow.getNodeById(conn.target)!;
@@ -77,11 +74,6 @@ category('Flow: layout', () => {
   test('autoLayout places an order-edge producer upstream (left) of the consumer', async () => {
     const e = makeEditor();
     try {
-      // Join (defined first) reads "Second" via a Select Table; the importer
-      // adds an order edge SetVar(Second) → Select Table("Second"). autoLayout
-      // includes order edges in computeLayers, so the producer chain flows
-      // left-to-right INTO the consumer — the producer sits left of the join,
-      // and the order edge points rightward like any other dependency.
       const g = buildCreationScriptGraph([
         'Joined = JoinTables("First", "Second", ["Id"], ["Id"], ["Id"], ["Id"])',
         'Second = OpenFile("s.csv")',
@@ -100,7 +92,6 @@ category('Flow: layout', () => {
       expect(openSecond.pos.x < join.pos.x, true, 'producer OpenFile upstream (left) of the join');
       expect(setSecond.pos.x < join.pos.x, true, 'producer SetVar upstream (left) of the join');
 
-      // Every edge — data and order — points strictly rightward.
       for (const conn of e.flow.getConnections()) {
         const s = e.flow.getNodeById(conn.source)!;
         const t = e.flow.getNodeById(conn.target)!;

@@ -13,7 +13,10 @@ category('Celery: datagrok-celery-task', () => {
       expect(await grok.functions.call(`CVMTests:${func}`, {x: value}), value);
     const big = '9007199254740993'; // 2^53 + 1 — survives only as a string
     expect(String(await grok.functions.call('CVMTests:cvmBigInt', {x: big})), big);
-  }, {timeout: 120000, node: true /* long timeout: first call starts the worker container */});
+    // First call pays the worker container cold start, which datlas bounds at
+    // containerStatusTimeout (5 min) — anything shorter reports EXECUTION TIMEOUT
+    // for a start still legitimately in progress.
+  }, {timeout: 300000, node: true});
 
   test('String escaping', async () => {
     for (const s of escapingTestStrings)

@@ -116,29 +116,27 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     });
     expect(sketcherOpened, 'Sketcher dialog did not open via Structure filter sketch-link').toBe(true);
 
-    // Fill SMILES input via DOM event sequence — native fill() may not reach Dart-side state.
-    // Then poll for the OK button becoming clickable (replaces a fixed parse-wait) and click it.
-    await page.evaluate(async () => {
-      const smilesInput = Array.from(document.querySelectorAll('.d4-dialog input'))
-        .find((i: any) => /smiles/i.test(i.placeholder || '')) as HTMLInputElement | undefined;
-      if (!smilesInput) throw new Error('SMILES input not found in sketcher dialog');
-      smilesInput.focus();
-      smilesInput.value = 'c1ccccc1';
-      smilesInput.dispatchEvent(new Event('input', {bubbles: true}));
-      smilesInput.dispatchEvent(new Event('change', {bubbles: true}));
-      smilesInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
-      for (let i = 0; i < 40; i++) {
-        const okBtn = document.querySelector('.d4-dialog [name="button-OK"]') as HTMLElement | null;
-        if (okBtn && !okBtn.classList.contains('disabled')) { okBtn.click(); return; }
-        await new Promise(r => setTimeout(r, 250));
-      }
-      throw new Error('OK button never became clickable in sketcher dialog');
-    });
+    // The sketcher backend mounts lazily (Ketcher renders its toolbars ~8s in): keystrokes that land
+    // before that are dropped and OK then applies an empty query. OK is never `disabled`, so it is
+    // not a readiness signal. Accept either backend — the stand decides which one is default.
+    await page.waitForFunction(() => {
+      const d = document.querySelector('.d4-dialog');
+      if (!d) return false;
+      return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
+        || !!d.querySelector('canvas');
+    }, null, {timeout: 60_000});
+    const smilesInput = page.locator('.d4-dialog input[placeholder*="SMILES" i]').first();
+    await smilesInput.click();
+    await page.keyboard.type('c1ccccc1', {delay: 30});
+    await page.keyboard.press('Enter');
+    // The structure filter applies live as the sketcher parses the input; clicking OK before that
+    // closes the dialog with an empty query. Assert the live apply, then dismiss.
     const total = await page.evaluate(() => grok.shell.t.rowCount);
     await expect.poll(
       () => page.evaluate(() => grok.shell.t.filter.trueCount),
       {timeout: 30000, message: 'benzene substructure filter never reduced the visible row count'},
     ).toBeLessThan(total);
+    await page.locator('.d4-dialog [name="button-OK"]').first().click();
     const filterApplied = await page.evaluate(() => ({
       filtered: grok.shell.t.filter.trueCount,
       total: grok.shell.t.rowCount,

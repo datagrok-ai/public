@@ -11,9 +11,9 @@ module.exports = {
   mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
-    // The sci-comp-ml wasm binary is listed so webpack emits it to dist/
-    // (via the .wasm file-loader rule below) for the runtime init URL.
-    package: ['./wasm/sci_comp_ml_bg.wasm', './src/package.ts']
+    // The wasm binaries are listed so webpack emits them to dist/
+    // (via the .wasm file-loader rule below) for the runtime init URLs.
+    package: ['./wasm/sci_comp_ml_bg.wasm', './wasm/XGBoostAPI.wasm', './src/package.ts']
   },
   experiments: {
     asyncWebAssembly: true,

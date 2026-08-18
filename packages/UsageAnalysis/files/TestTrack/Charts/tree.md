@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel]
-realizes: [charts.tree]
+realizes: [charts.viewer.tree, viewers.filters.categorical]
 realized_as:
   - tree-spec.ts
 produced_from: migrated

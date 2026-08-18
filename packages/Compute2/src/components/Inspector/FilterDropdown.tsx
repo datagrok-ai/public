@@ -1,4 +1,5 @@
 import * as Vue from 'vue';
+import {onClickOutside} from '@vueuse/core';
 
 export interface FilterOption {
   value: string;
@@ -47,12 +48,7 @@ export const FilterDropdown = Vue.defineComponent({
         emit('update:modelValue', [...selected, value]);
     };
 
-    const onClickOutside = (e: MouseEvent) => {
-      if (rootRef.value && !rootRef.value.contains(e.target as Node))
-        open.value = false;
-    };
-    Vue.onMounted(() => document.addEventListener('mousedown', onClickOutside));
-    Vue.onUnmounted(() => document.removeEventListener('mousedown', onClickOutside));
+    onClickOutside(rootRef, () => open.value = false);
 
     const triggerLabel = Vue.computed(() => {
       const n = props.modelValue.length;

@@ -21,7 +21,6 @@ category('Flow: order edges', () => {
     expect(areTypesCompatible('order', 'order'), true);
     expect(areTypesCompatible('order', 'dataframe'), false);
     expect(areTypesCompatible('dataframe', 'order'), false);
-    // The dynamic/object wildcards must NOT swallow order ports.
     expect(areTypesCompatible('order', 'dynamic'), false);
     expect(areTypesCompatible('dynamic', 'order'), false);
     expect(areTypesCompatible('order', 'object'), false);
@@ -45,12 +44,7 @@ category('Flow: order edges', () => {
       const row = (id: string): HTMLElement | null =>
         e.container.querySelector(`.ff-node[data-node-id="${id}"] .ff-node-exec-row`);
       await until(() => row(a.id) != null && row(b.id) != null);
-      // Unwired → the row is marked not-wired (CSS keeps it invisible except
-      // on node hover / during an order drag).
       expect(row(a.id)!.dataset.wired, 'false', 'unwired row hidden by default');
-      // The tooltip explains the port in plain words, not just "order" — and
-      // the inner socket dot must NOT carry its own title (a nested title
-      // would shadow the wrapper's explanation with the bare type name).
       const port = e.container.querySelector(`.ff-node[data-node-id="${a.id}"] .ff-exec-out`);
       expect((port?.getAttribute('title') ?? '').includes('Run order'), true, 'plain-language tooltip');
       expect(port?.querySelector('.ff-socket')?.hasAttribute('title'), false, 'order dot has no shadowing title');
@@ -98,8 +92,6 @@ category('Flow: order edges', () => {
   test('an order edge overrides vertical position in the topological sort', async () => {
     const e = makeEditor();
     try {
-      // `first` is placed LOW on the canvas, `second` HIGH — without an edge the
-      // sort would run the higher (second) node first. The order edge flips it.
       const first = await addNode(e.flow, 'Utilities/Info', 0, 500);
       const second = await addNode(e.flow, 'Utilities/Info', 0, 10);
 
@@ -117,7 +109,6 @@ category('Flow: order edges', () => {
   test('order edges sequence the emitted script but add no data / variables', async () => {
     const e = makeEditor();
     try {
-      // Two Log nodes, distinguishable by label, with `b` positioned ABOVE `a`.
       const a = await addNode(e.flow, 'Utilities/Log', 0, 400);
       a.properties['label'] = 'AAA';
       const b = await addNode(e.flow, 'Utilities/Log', 0, 20);
@@ -125,11 +116,10 @@ category('Flow: order edges', () => {
       await e.flow.addConnectionByKeys(a.id, EXEC_OUT_KEY, b.id, EXEC_IN_KEY);
 
       const script = emitScript(e.flow, SETTINGS);
-      // The ordering edge is invisible in the output — no exec ports leak in.
       expect(script.includes('__exec'), false, 'no exec port keys in generated code');
-      // ...but the run order is enforced: AAA logged before BBB.
-      const iA = script.indexOf(`'AAA:'`);
-      const iB = script.indexOf(`'BBB:'`);
+      // Labels are JSON-escaped into the script, hence the stringify lookups.
+      const iA = script.indexOf(JSON.stringify('AAA:'));
+      const iB = script.indexOf(JSON.stringify('BBB:'));
       expect(iA >= 0 && iB >= 0, true, 'both Log steps present');
       expect(iA < iB, true, 'order edge sequenced AAA before BBB');
     } finally {
@@ -140,8 +130,6 @@ category('Flow: order edges', () => {
   test('an order edge does not feed data into the target', async () => {
     const e = makeEditor();
     try {
-      // A constant ordered before a Value Output via exec ports only — the
-      // output has no data input, so it must emit nothing for its value.
       const c = await addNode(e.flow, 'Constants/String', 0, 0);
       c.properties['value'] = 'hello';
       const out = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
@@ -149,7 +137,6 @@ category('Flow: order edges', () => {
       await e.flow.addConnectionByKeys(c.id, EXEC_OUT_KEY, out.id, EXEC_IN_KEY);
 
       const script = emitScript(e.flow, SETTINGS);
-      // The order edge must NOT be mistaken for the output's value.
       expect(/result\s*=/.test(script), false, 'order edge is not wired as the output value');
       expect(script.includes('__exec'), false);
     } finally {

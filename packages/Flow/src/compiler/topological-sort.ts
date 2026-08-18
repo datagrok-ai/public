@@ -1,20 +1,10 @@
-/** Kahn's algorithm topological sort over a Rete `NodeEditor`'s connections.
- *
- * Deterministic and layout-aware:
- *  - **Disjoint subgraphs** (weakly connected components) execute one after
- *    another, ordered by their topmost node on the canvas — a path placed
- *    above another finishes completely before the lower one starts. Data can
- *    flow between components implicitly (e.g. a Select Table node reading a
- *    table that an upper path opened), so this order is part of the contract,
- *    not just cosmetics.
- *  - **Within a component**, ready nodes are processed top-to-bottom
- *    (y, then x, then insertion order), so the emitted script is stable
- *    across runs and follows the visual reading order. */
+/** Deterministic, layout-aware Kahn's sort: disjoint components run one after
+ *  another by topmost node — data can flow between them implicitly (Select Table). */
 
 import {FlowEditor} from '../rete/flow-editor';
 
-/** The minimal node/edge shape the sort needs — so it can run on the live editor
- *  *and* on plain lists (e.g. the flow summary), guaranteeing one canonical order. */
+/** The minimal node/edge shape the sort needs — runs on the live editor and on
+ *  plain lists alike. */
 export interface SortNode {
   id: string;
   pos?: {x: number; y: number};
@@ -37,9 +27,8 @@ export function topologicalSort(flow: FlowEditor): string[] {
   return sorted;
 }
 
-/** Pure core: the same deterministic, layout-aware ordering on plain node/edge
- *  lists. On a cycle it returns the acyclic prefix (shorter than `nodes`) rather
- *  than throwing — callers choose strict vs lenient handling. */
+/** Pure core; on a cycle it returns the acyclic prefix (shorter than `nodes`)
+ *  rather than throwing. */
 export function topologicalSortNodes(nodes: SortNode[], connections: SortEdge[]): string[] {
   if (nodes.length === 0) return [];
 
@@ -49,7 +38,6 @@ export function topologicalSortNodes(nodes: SortNode[], connections: SortEdge[])
   const insertionIndex = new Map<string, number>();
   nodes.forEach((n, i) => insertionIndex.set(n.id, i));
 
-  // ---- weakly connected components, ranked by their topmost node ----
   const adjacency = new Map<string, string[]>();
   for (const n of nodes) adjacency.set(n.id, []);
   for (const c of connections) {
@@ -93,10 +81,8 @@ export function topologicalSortNodes(nodes: SortNode[], connections: SortEdge[])
       componentRank[component] = rank;
     });
 
-  // ---- Kahn's with a (componentRank, y, x, insertion) priority pick ----
-  // A DAG component always has a ready node while it has unprocessed nodes,
-  // so preferring the lowest component rank drains each component fully
-  // before the next one starts.
+  // A DAG component always has a ready node while it has unprocessed nodes, so
+  // preferring the lowest component rank drains each component fully first.
   const inDegree = new Map<string, number>();
   const outEdges = new Map<string, string[]>();
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -140,8 +126,5 @@ export function topologicalSortNodes(nodes: SortNode[], connections: SortEdge[])
     }
   }
 
-  // Lenient: on a cycle, `sorted` is the acyclic prefix. The strict wrapper
-  // (topologicalSort) turns that into a thrown error; the summary appends the
-  // remainder instead.
   return sorted;
 }

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>u2 gallery</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{
+    "@floating-ui/dom":"../node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs",
+    "@floating-ui/core":"../node_modules/@floating-ui/core/dist/floating-ui.core.mjs",
+    "@floating-ui/utils":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs",
+    "@floating-ui/utils/dom":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs"}}</script>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: var(--dg-font-family);
+      font-size: var(--dg-font-size);
+      line-height: var(--dg-line-height);
+      color: var(--dg-text-color);
+      background: var(--dg-bg);
+      display: flex;
+      height: 100vh;
+    }
+    h1 { font-size: var(--dg-font-size-h1); margin: 0 0 12px 0; }
+    h2 { font-size: var(--dg-font-size-h2); font-weight: var(--dg-font-weight-bold); margin: 24px 0 8px; }
+    input, button {
+      font: inherit;
+      color: var(--dg-text-color);
+    }
+    input {
+      border: none;
+      border-bottom: var(--dg-input-border);
+      outline: none;
+      background: var(--dg-bg);
+      height: var(--dg-control-height);
+      box-sizing: border-box;
+    }
+    input:focus { border-bottom: var(--dg-input-border-focus); }
+    button {
+      height: var(--dg-button-height);
+      border: var(--dg-border-width) solid var(--dg-border);
+      border-radius: var(--dg-radius);
+      background: var(--dg-bg-secondary);
+      padding: 0 var(--dg-space-l);
+      cursor: pointer;
+    }
+    button:hover { background: var(--dg-hover); }
+    .u2-gallery-nav {
+      width: 220px;
+      flex-shrink: 0;
+      border-right: var(--dg-border-width) solid var(--dg-border);
+      background: var(--dg-bg-secondary);
+      padding: var(--dg-space-m) 0;
+      overflow-y: auto;
+    }
+    .u2-gallery-nav .u2-gallery-title {
+      font-weight: var(--dg-font-weight-bold);
+      padding: var(--dg-space-s) var(--dg-space-l) var(--dg-space-m);
+    }
+    .u2-gallery-nav a {
+      display: block;
+      padding: var(--dg-space-s) var(--dg-space-l);
+      color: var(--dg-text-color);
+      text-decoration: none;
+    }
+    .u2-gallery-nav a:hover { background: var(--dg-hover); }
+    .u2-gallery-nav a.current { background: var(--dg-steel-1); color: var(--dg-accent); }
+    .u2-gallery-main {
+      flex: 1;
+      padding: var(--dg-space-xl) var(--dg-space-xxl);
+      overflow-y: auto;
+    }
+    .u2-gallery-status { color: var(--dg-text-color-light); font-size: var(--dg-font-size-small); }
+    .u2-density-toggle { display: block; margin: 0 0 8px; }
+    .u2-token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: var(--dg-space-s);
+    }
+    .u2-token-swatch {
+      display: flex;
+      align-items: center;
+      gap: var(--dg-space-m);
+      padding: var(--dg-space-s);
+      border: var(--dg-border-width) solid var(--dg-border-subtle);
+      border-radius: var(--dg-radius);
+    }
+    .u2-token-swatch .chip {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: var(--dg-radius);
+      border: var(--dg-border-width) solid var(--dg-border);
+    }
+    .u2-token-swatch .name { font-family: var(--dg-font-family-mono); font-size: var(--dg-font-size-small); }
+    .u2-token-swatch .value { color: var(--dg-text-color-light); font-size: var(--dg-font-size-xs); }
+    .u2-token-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--dg-space-l);
+      padding: var(--dg-space-xs) 0;
+    }
+    .u2-token-row .name {
+      font-family: var(--dg-font-family-mono);
+      font-size: var(--dg-font-size-small);
+      width: 240px;
+      flex-shrink: 0;
+    }
+    .u2-token-bar { background: var(--dg-blue-2); height: 12px; }
+    .u2-metric-demo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--dg-border-width) solid var(--dg-border);
+      border-radius: var(--dg-radius);
+      padding: 0 var(--dg-space-l);
+      color: var(--dg-text-color-light);
+      font-size: var(--dg-font-size-small);
+    }
+  </style>
+</head>
+<body>
+  <nav class="u2-gallery-nav">
+    <div class="u2-gallery-title">u2 gallery</div>
+    <a href="#tokens" data-page="tokens">Design tokens</a>
+    <a href="#signals" data-page="signals">Signals & lifecycle</a>
+    <a href="#list" data-page="list">Virtual list</a>
+    <a href="#combobox" data-page="combobox">Combobox</a>
+    <a href="#inputs" data-page="inputs">Inputs & primitives</a>
+    <a href="#tooltip" data-page="tooltip">Tooltip</a>
+    <a href="#splitter" data-page="splitter">Splitter</a>
+    <a href="#tabs" data-page="tabs">Tabs</a>
+    <a href="#menu" data-page="menu">Menu</a>
+    <a href="#tree" data-page="tree">Tree</a>
+    <a href="#select" data-page="select">Choice inputs</a>
+    <a href="#number" data-page="number">Number input</a>
+    <a href="#date" data-page="date">Date & time</a>
+    <a href="#dialog" data-page="dialog">Dialog</a>
+    <a href="#accordion" data-page="accordion">Accordion</a>
+    <a href="#breadcrumbs" data-page="breadcrumbs">Breadcrumbs</a>
+    <a href="#toolbar" data-page="toolbar">Toolbar</a>
+    <a href="#form" data-page="form">Form</a>
+    <a href="#propgrid" data-page="propgrid">Property grid</a>
+    <a href="#async" data-page="async">Async states</a>
+    <a href="#perf" data-page="perf">Performance</a>
+    <a href="#spec" data-page="spec">Spec (dg-ui/1)</a>
+    <a href="#wizard" data-page="wizard">Wizard</a>
+    <a href="#typeahead" data-page="typeahead">Type-ahead</a>
+    <a href="#entities" data-page="entities">Object renderers</a>
+    <a href="#pager" data-page="pager">Async pager</a>
+    <a href="#icons" data-page="icons">Icons</a>
+    <a href="#buttons" data-page="buttons">Buttons & groups</a>
+    <a href="#badges" data-page="badges">Badges & progress</a>
+    <a href="#table" data-page="table">Table</a>
+    <a href="#multiselect" data-page="multiselect">Multi-select</a>
+    <div class="u2-gallery-status" id="status" style="padding: 8px 12px;">Loading…</div>
+  </nav>
+  <main class="u2-gallery-main" id="main"></main>
+  <script type="module">
+    // the gallery is a standalone host: enables the vendored-FA icon shim (css/icons.css)
+    document.documentElement.classList.add('u2-standalone');
+    const status = document.getElementById('status');
+    const main = document.getElementById('main');
+    const links = [...document.querySelectorAll('.u2-gallery-nav a[data-page]')];
+
+    let pageScope = null;
+    async function route() {
+      const page = location.hash.slice(1) || 'tokens';
+      for (const l of links)
+        l.classList.toggle('current', l.dataset.page === page);
+      if (pageScope) pageScope.dispose();
+      main.textContent = '';
+      try {
+        const {Scope} = await import('../src/index.js');
+        pageScope = new Scope();
+        const mod = await import(`./pages/${page}.js`);
+        // components built synchronously inside render() are adopted by the page scope
+        // and disposed on navigation; the page's own dispose demos stay idempotent
+        await Scope.runWith(pageScope, () => mod.render(main));
+      }
+      catch (e) {
+        main.textContent = `Failed to render "${page}": ${e.message}`;
+      }
+    }
+
+    window.addEventListener('hashchange', route);
+    try {
+      const u2 = await import('../src/index.js');
+      status.textContent = `u2 v${u2.VERSION}, platform-free`;
+    }
+    catch (e) {
+      status.textContent = `Library failed to load: ${e.message} — run "npm run build" and serve via "npm run gallery".`;
+    }
+    await route();
+  </script>
+</body>
+</html>

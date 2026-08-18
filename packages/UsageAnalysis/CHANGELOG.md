@@ -2,7 +2,9 @@
 
 ## v.next
 
+* GROK-6166: Query viewers: Surface query-load failures in the UI — missing/failing queries now clear the loader spinner and show an inline error message instead of silently swallowing the rejection
 * GROK-20479: Set the Reports DataFrame name so it is not listed as "null" in the Table selector
+* Release: Fixed the Tickets tab counting every "Won't fix" ticket as open — Jira spells the status with a lowercase f and `isActionable` compared case-sensitively against "Won't Fix", while resolution is null on those tickets. Overstated 1.28.0 open tickets by 20 (229 vs 209).
 
 ## 2.7.1 (2026-07-23)
 

@@ -1,0 +1,9 @@
+/* Placeholder rendered in place of a spec node that could not be built (unknown tag, failed
+   create, bad prop type). Tokens only; css/tokens.css must be loaded alongside. */
+.u2-spec-error {
+  background: var(--dg-red-1);
+  color: var(--dg-red-4);
+  border-radius: var(--dg-radius);
+  padding: var(--dg-space-s) var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+}

@@ -7,6 +7,9 @@ import './tests/compiler-tests';
 import './tests/serializer-tests';
 import './tests/creation-script-import-tests';
 import './tests/panel-tests';
+import './tests/chem-phase-tests';
+import './tests/bio-curves-phase-tests';
+import './tests/data-ops-tests';
 import './tests/layout-tests';
 import './tests/order-edge-tests';
 import './tests/minimap-tests';
@@ -37,6 +40,7 @@ import './tests/output-views-tests';
 import './tests/uploaded-file-tests';
 import './tests/toolbox-tabs-tests';
 import './tests/input-value-tests';
+import './tests/slot-visibility-tests';
 
 export let _package = new DG.Package();
 export { tests };

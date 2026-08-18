@@ -41,7 +41,9 @@ category('Viewers: Line Chart', () => {
   });
 
   test('lineChart.api', async () => {
-    const lineChart = v.lineChart({
+    // Fresh view: viewers added to a non-active one are queued, not docked, so they never render.
+    const view = grok.shell.addTableView(demog);
+    const lineChart = view.lineChart({
       xColumnName: 'age',
       yColumnNames: ['height', 'weight'],
       yAggrTypes: ['avg', 'min'],

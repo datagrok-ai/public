@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.cp.msa-pepsea]
-realizes: [bio.analyze.msa]
+realizes: [bio.menu.analyze.msa]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/pepsea.md
 migration_date: 2026-05-31

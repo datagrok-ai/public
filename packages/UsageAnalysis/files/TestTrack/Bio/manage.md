@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [bio.cp.manage-monomer-libraries]
-realizes: [bio.manage.monomer-libraries]
+realizes: [bio.menu.manage.monomer-libraries]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/manage.md
 migration_date: 2026-05-31

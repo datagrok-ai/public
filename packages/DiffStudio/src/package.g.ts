@@ -12,14 +12,18 @@ export function dock() : void {
   PackageFunctions.dock();
 }
 
-//input: object problem 
+//name: Solve ODEs
+//description: Solve a system of ordinary differential equations using default solver settings.
+//input: object problem { description: ODE system to solve (equations, initial values, argument range) }
 //output: dataframe result
 export function solve(problem: any) : any {
   return PackageFunctions.solve(problem);
 }
 
-//input: object problem 
-//input: object options 
+//name: Solve ODEs with Options
+//description: Solve a system of ordinary differential equations with a custom method and solver options.
+//input: object problem { description: ODE system to solve (equations, initial values, argument range) }
+//input: object options { description: Solver options: numerical method, tolerances, iteration and time limits }
 //output: dataframe result
 export function solveEquations(problem: any, options: any) : any {
   return PackageFunctions.solveEquations(problem, options);
@@ -71,8 +75,8 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.runDiffStudioTreeBrowser(treeNode);
 }
 
-//name: Ball flight
-//description: Ball flight simulation
+//name: Ball Flight Simulation
+//description: Simulate the trajectory of a thrown ball, accounting for air drag.
 //input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3; minFormula: roB / 20000; maxFormula: roB / 4000 }
 //input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
 //input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
@@ -106,8 +110,9 @@ export function odesToCode(serialization: any) : string {
   return PackageFunctions.odesToCode(serialization);
 }
 
+//name: Solve ODE
 //description: Solve initial value problem for ordinary differential equations
-//input: string problem 
+//input: string problem { description: Initial value problem in Diff Studio .ivp format }
 //output: dataframe result
 export async function solveODE(problem: string) : Promise<any> {
   return await PackageFunctions.solveODE(problem);
@@ -269,7 +274,7 @@ export async function ivpModel_Pollution(_t0: number, _t1: number, _h: number, y
 //input: double T = 300 {nullable: false; units: K;     caption: Temperature; category: Parameters;  min: 250; max: 350}            [Reactor temperature (K). 300 K ≈ 27 °C]
 //input: double P = 1 {nullable: false; units: atm;   caption: Pressure;    category: Parameters;  min: 1;   max: 2}              [Total headspace pressure]
 //input: double switchTime = 135 {nullable: false; units: min;   caption: Switch;   category: Duration;        min: 70;  max: 180; step: 10}  [Transition from UF concentration (VL falls) to diafiltration (VL constant)]
-//output: dataframe df {caption: Bioreactor; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
+//output: dataframe df {caption: Bioreactor; comparison: {"index": "t"}; viewer: Grid(block: 100) | Line chart(block: 100, multiAxis: "true", segmentColumnName: "_Stage", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | DiffStudio Facet(block: 100, segmentColumnName: "_Stage")}
 export async function ivpModel_Bioreactor(mode: string, _t0: number, _t1: number, _h: number, FFox: number, KKox: number, FFred: number, KKred: number, Ffree: number, Kfree: number, FKred: number, FKox: number, MEAthiol: number, DO2: number, yO2P: number, CYST: number, VL: number, filtration: number, qin: number, yO2in: number, T: number, P: number, switchTime: number): Promise<DG.DataFrame> {
   return await runDiffStudioModel('System:AppData/DiffStudio/models/bioreactor.ivp', {_t0, _t1, _h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, DO2, yO2P, CYST, VL, filtration, qin, yO2in, T, P, switchTime});
 }

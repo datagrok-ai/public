@@ -397,6 +397,8 @@ async function streamOnce(
     let segmentStart = 0;
     let toolStatus = '';
     let nextBlockIndex = 0;
+    const execCodes: string[] = [];
+    let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
 
@@ -418,7 +420,12 @@ async function streamOnce(
     try {
       const client = ClaudeRuntimeClient.getInstance();
       const nativeCtx = panel.flushNativeContext();
-      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
+      // A conversation restored from history exists only in the browser — the runtime session is
+      // fresh — so the first prompt after a load carries the transcript (one-shot; the SDK session
+      // remembers it from then on).
+      const restoredCtx = panel.flushRestoredContext();
+      const enrichedUserPrompt = (restoredCtx ? restoredCtx + '\n---\n\n' : '') +
+        (nativeCtx ? nativeCtx + userPrompt : userPrompt);
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       // Three static meta-tools let Claude search and invoke the current view's functions
@@ -461,6 +468,7 @@ async function streamOnce(
           toolStatus = '\n\n---\n*Revising…*';
           panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
         }, 1200);
+        preRevisionExecCodes = [...execCodes];
       });
 
 
@@ -487,7 +495,8 @@ async function streamOnce(
         }
         const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-        await panel.finalizeStreaming(segmentContent, fullContent, view);
+        const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
+        await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
         if (evt.unverified) {
           const warn = 'Not verified — the assistant could not confirm this action took effect.';
           panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
@@ -519,7 +528,13 @@ async function streamOnce(
       forSession(client.onInputRequest, async (evt) => {
         // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
         if (evt.toolName === 'datagrok_exec') {
+          // Record the code that actually ran — this is what makes a history-restored
+          // conversation reproducible ("do that again") instead of a text-only memory.
+          chatSession.session.addEngineMessage({role: 'assistant',
+            content: [{type: 'text', text: `[executed datagrok_exec]\n${(evt.input.code ?? '').slice(0, 1500)}`}]});
           const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
+          if (evt.input.code && !error)
+            execCodes.push(evt.input.code);
           if (element) {
             panel.appendStreamedElement(element);
             segmentStart = accumulated.length;
@@ -571,11 +586,16 @@ async function streamOnce(
         segmentStart = 0;
         toolStatus = '';
         panel.clearStreaming();
+        // The ball is in the user's court — a spinning loader would read as "still working".
+        chatSession.loader.style.display = 'none';
         const response = await panel.showInputRequest(evt.input);
         if (response) {
           client.respondToInput(sessionId, evt.requestId, response);
           const answerText = Object.values(response.answers).join(', ');
           chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+          // And back to us: show the loader immediately — the next runtime event (thinking,
+          // tool call) can be many seconds away, and dead air here reads as "nothing happened".
+          panel.showWaitingIndicator(chatSession.loader);
         }
       });
 
@@ -660,8 +680,13 @@ export async function setupScriptsAIPanelUI() {
   };
 
   grok.events.onViewAdded.subscribe((view) => {
-    if (view.type === 'ScriptView')
-      setTimeout(() => handleView(view as DG.ScriptView), 500);
+    if (view.type === 'ScriptView') {
+      const scriptView = view as DG.ScriptView;
+      setTimeout(() => {
+        handleView(scriptView);
+        scriptView.subs.push(scriptView.tabs.onTabChanged.subscribe(() => handleView(scriptView)));
+      }, 500);
+    }
   });
 }
 

@@ -28,14 +28,29 @@ Step 1 (`regen-fixtures.R`):
   error (> ~1e-9) means the PKNCA configuration here no longer reproduces the
   original run, so the **new** moment/lag values would not be trustworthy.
   Investigate before trusting the output. Current reproduction: **< 3e-11**.
-- writes `fixtures/_new_params.json` — the 6 moment/lag fields per subject
-  (a transient intermediate; not itself an asset).
+- writes `fixtures/_new_params.json` — the 6 moment/lag fields **plus
+  `span_ratio`** per subject (a transient intermediate; not itself an asset —
+  do not commit it).
 - writes `datasets/04_iv_infusion.csv` + `fixtures/04_iv_infusion.json` — the
   new IV-infusion fixture (see below).
 
 Step 2 (`merge-fixtures.mjs`) injects `aumclast, aumcinf_obs, mrt, vss, tlag,
-pct_aumcextrap` into `fixtures/0{1,2,3}.json`, **preserving every existing
-value exactly** (it never recomputes the original 8).
+pct_aumcextrap` into each profile's `parameters`, and `span_ratio` into its
+`provenance`, in `fixtures/0{1,2,3}.json` — **preserving every existing value
+exactly** (it never recomputes the original 8).
+
+### `span_ratio` (terminal-phase span, PKNCA `span.ratio`)
+
+Lives in `provenance`, beside the other `lambda_z_*` fields, because it is a fit
+diagnostic rather than a reported PK parameter. It is requested from PKNCA
+directly (`span.ratio` is a real interval column) rather than derived from
+`lambda_z_time_first/last` + `half_life`, so the fixture carries the number PKNCA
+itself reports — the rule-18 oracle for `LambdaZResult.spanRatio`.
+
+`reference-suite.test.ts` asserts every theoph and indometh subject against it,
+and pins the corpus incidence the diagnostic exists for: **4 of 18 profiles sit
+below the conventional 2**, worst `02_indometh` subject 1 at 0.685 with adjusted
+R² 0.994.
 
 ## PKNCA configuration (matches each fixture's `config` block)
 

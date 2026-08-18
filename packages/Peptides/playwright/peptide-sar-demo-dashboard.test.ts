@@ -192,9 +192,18 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           grok.shell.closeAll();
           await new Promise((r) => setTimeout(r, 3000));
 
-          const appsList = DG.Func.find({tags: ['app']})
-            .map((f) => `${f.package?.name}:${f.name}`);
-          const peptidesInAppsList = appsList.some((s) => /^Peptides:/i.test(s));
+          // Browse > Apps groups its entries into folders by each app's browsePath
+          // (browse_panel_tree.dart:52). The "Peptides" folder is therefore built by apps
+          // shipped by Bio / HitTriage / SequenceTranslator — this package registers no app
+          // of its own. What an installed Peptides must provide is its AppData folder, the
+          // browse group its ecosystem hangs under, and a callable landing view.
+          const packageInstalled = (await grok.dapi.packages.list())
+            .some((p: any) => /^Peptides$/i.test(p.name));
+          const browseGroups = DG.Func.find({meta: {role: 'app'}})
+            .map((f: any) => String(f.options?.browsePath ?? ''))
+            .filter((p: string) => p.length > 0);
+          const peptidesBrowseGroup = browseGroups.some((p: string) => /^Peptides(\s*\||$)/i.test(p));
+          const appDataEntries = (await grok.dapi.files.list('System:AppData/Peptides', true)).length;
 
           const view = await grok.functions.call('Peptides:Peptides');
           grok.shell.addView(view);
@@ -207,7 +216,10 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
             : [];
 
           return {
-            peptidesInAppsList,
+            packageInstalled,
+            peptidesBrowseGroup,
+            browseGroups,
+            appDataEntries,
             viewName: view?.name ?? null,
             buttonLabels,
             // The three window-flag assertions (package.ts L107-L110).
@@ -219,12 +231,12 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           };
         });
 
-        if (result.peptidesInAppsList) {
-          console.log('[note] Peptides:Peptides IS in apps-browser app-list on this build.');
-        } else {
-          console.log('[note] Peptides:Peptides is NOT in apps-browser app-list on this build ' +
-            '(scenario framing drift; spec drives the View-function path instead).');
-        }
+        expect(result.packageInstalled, 'the Peptides package is not installed on this instance').toBe(true);
+        expect(result.appDataEntries,
+          'System:AppData/Peptides is empty — the installed package published no files').toBeGreaterThan(0);
+        expect(result.peptidesBrowseGroup,
+          `Browse > Apps has no "Peptides" group — no app declares that browsePath. Declared groups: ` +
+          `${result.browseGroups.join(', ')}`).toBe(true);
         expect(result.viewName, 'landing view must be named "Peptides"').toBe('Peptides');
         expect(result.buttonLabels, 'landing view must show exactly three demo buttons')
           .toEqual(['Simple demo', 'Complex demo', 'HELM demo']);

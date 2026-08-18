@@ -90,7 +90,6 @@ export class SubstructureFilter extends DG.Filter {
   currentMolecule: string = '';
   modifiedRows = new Set<number>(); // edited row indexes (received from chem-searches via event), awaiting re-check
   initListeners = false;
-  //searchTypeLink: HTMLButtonElement;
   searchType: SubstructureSearchType = SubstructureSearchType.CONTAINS;
   similarityCutOff = 0.8;
   fp: Fingerprint = Fingerprint.Morgan;
@@ -233,18 +232,6 @@ export class SubstructureFilter extends DG.Filter {
     this.root.classList.add('chem-filter');
   }
 
-  get _debounceTime(): number {
-    if (this.column == null)
-      return 1000;
-    const length = this.column.length;
-    const minLength = 500;
-    const maxLength = 10000;
-    const msecMax = 1000;
-    if (length < minLength) return 0;
-    if (length > maxLength) return msecMax;
-    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
-  }
-
   attach(dataFrame: DG.DataFrame): void {
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
       ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
@@ -272,7 +259,7 @@ export class SubstructureFilter extends DG.Filter {
         this.updateFilterUiOnSketcherChanged(this.currentMolecule);
     });
     super.attach(dataFrame);
-    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.resolveColumn();
     this.columnName ??= this.column?.name ?? '';
     this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
@@ -283,7 +270,7 @@ export class SubstructureFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_: any) => {
         delete this.column!.temp[FILTER_SCAFFOLD_TAG];
-        //in case filter filter is disabled during active search, we finish current search
+        //in case filter is disabled during active search, we finish current search
         if (this.batchResultObservable && !this.batchResultObservable?.closed) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.terminatePreviousSearch();
@@ -372,12 +359,13 @@ export class SubstructureFilter extends DG.Filter {
     }
 
     const onChangedEvent: any = this.sketcher.onChanged;
-    //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
       if (this.syncEvent === true)
         this.syncEvent = false;
-      else
+      // when 'Filter as you draw' is off, sketching in the dialog defers filtering until OK
+      // (the sketcher re-fires onChanged after the dialog closes). temporary as any cast before 1.28 release. remove after
+      else if (!this.sketcher.sketcherDialogOpened || ((this.sketcher as any).filterOnChange ?? true))
         await this._onSketchChanged();
     }));
     this.onSketcherChangedSubs?.push(this.sketcher.onAlignedChanged.subscribe(async (_: any) => {
@@ -501,6 +489,17 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Override to load filter state. */
   applyState(state: any): void {
+    // The platform calls applyState() twice per mount for a filter constructed with a pre-specified
+    // column — once with the legacy `columnName` field populated, again with the `column` field but
+    // no `columnName`. Base Filter.applyState() only reads `state.columnName`, so without this the
+    // second call would silently overwrite a correctly-resolved column back to undefined, leaving a
+    // sketched substructure query filtering nothing with no error shown.
+    if (!state.columnName && state.column) {
+      if (typeof state.column === 'string')
+        state.columnName ??= state.column;
+      else if (state.column instanceof DG.Column)
+        state.columnName = state.column.name;
+    }
     super.applyState(state);
     _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
 
@@ -578,6 +577,9 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
+    // See resolveColumn()'s comment — this is the entry point for every user-driven sketch edit, and
+    // the rest of this method (both branches below) dereferences `this.column!` repeatedly.
+    this.resolveColumn();
     const newMolecule = this.getSketcherMolecule();
     _package.logger.debug(`newMolfile ${newMolecule} , ${this.filterId}`);
     const newSmarts = this.moleculeToSmarts(newMolecule);
@@ -679,12 +681,23 @@ export class SubstructureFilter extends DG.Filter {
 
   async getFilterBitset(): Promise<BitArray> {
     const smarts = this.moleculeToSmarts(this.currentMolecule);
-    return await chemSubstructureSearchLibrary(this.column!, this.currentMolecule, smarts!, FILTER_TYPES.substructure,
+    return await chemSubstructureSearchLibrary(this.resolveColumn()!, this.currentMolecule, smarts!, FILTER_TYPES.substructure,
       false, false, this.searchType, this.similarityCutOff, this.fp);
   }
 
+  // `this.column` can end up null here even after attach() ran, if applyState() fired with
+  // `this.dataFrame` not yet set (a mount-timing race) — trusting that stale null reference would
+  // make sketching a query silently no-op instead of filtering, since `this.column!.temp` throws
+  // under the hood. Re-resolve by name instead — null (not some other molecule column found by
+  // semtype) is the correct result when the configured column no longer exists.
+  private resolveColumn(): DG.Column | null {
+    this.column ??= this.dataFrame && this.columnName ? this.dataFrame.col(this.columnName) : null;
+    return this.column;
+  }
+
   isFilteringBySameStructure(molecule: string): boolean {
-    return this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].summary === this.getFilterSummary(molecule);
+    const col = this.resolveColumn();
+    return !!col && !!col.temp[CHEM_APPLY_FILTER_SYNC] && col.temp[CHEM_APPLY_FILTER_SYNC].summary === this.getFilterSummary(molecule);
   }
 
   updateExternalSketcher() {
@@ -763,8 +776,9 @@ export class SubstructureFilter extends DG.Filter {
     const finish = () => {
       _package.logger.debug(`in finish function ${queryMolAndType}, ${this.filterId}`);
       if (this.currentSearches.size === 0) {
-        if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] &&
-          this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
+        const col = this.resolveColumn();
+        if (col && col.temp[CHEM_APPLY_FILTER_SYNC] &&
+          col.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
           //synchronize the results with other substructure filters on the same column
           grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
             bitset: this.bitset,

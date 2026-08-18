@@ -1,8 +1,4 @@
-/** Duplicate / copy / paste: `duplicateNodes` copies a node set WITH the
- *  connections among it and makes the copies the selection; Ctrl+C snapshots
- *  the selection into the editor clipboard, Ctrl+V materializes it (repeat
- *  pastes fan out); Escape clears the selection. Output paramNames get a
- *  unique suffix on copy so the graph never lands in a duplicate-name error. */
+/** Duplicate / copy / paste: node sets copy with their internal connections. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
@@ -126,9 +122,6 @@ category('Flow: clipboard', () => {
   });
 
   test('right-click on a selected node keeps the multi-selection', async () => {
-    // A right-click bubbling past the node used to reach the area plugin's
-    // background-pointerdown path and unselect all — so the context menu's
-    // "Duplicate" only ever saw one node.
     const e = makeEditor();
     try {
       const a = await addNode(e.flow, 'Inputs/String Input', 0, 0);

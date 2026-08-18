@@ -9,13 +9,15 @@ test.describe.configure({ mode: 'serial' });
 test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ page }) => {
   test.setTimeout(300_000);
 
+  // Prefix is this file's own — see apiDeleteAllTestSchemas.
+  const PREFIX = 'PW_SM2_';
   const suffix = H.uniqueSuffix();
-  const schemaName = `PW_SM_Schema_${suffix}`;
+  const schemaName = `${PREFIX}Schema_${suffix}`;
 
   try {
     await H.gotoHome(page);
     await H.setupEnv(page);
-    await H.apiDeleteAllTestSchemas(page); // defensive: no leftover molecule schema from a crashed run
+    await H.apiDeleteAllTestSchemas(page, PREFIX); // defensive: no leftover schema from a crashed run
     await H.apiCreateSchema(page, schemaName, [
       { name: 'rating', type: 'int' },
       { name: 'notes', type: 'string' },
@@ -110,18 +112,24 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     await page.waitForTimeout(1500);
 
     // Click "add all properties as columns" inside our schema's section (scoped by header text).
-    await page.evaluate((schemaName) => {
+    // The pane fills in asynchronously after `shell.o` is set, and the optional chaining below
+    // used to swallow a miss — the click did nothing and the column poll timed out with nothing
+    // to point at. Retry until the section and its button are actually there.
+    await expect.poll(async () => page.evaluate((schemaName) => {
       const section = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'))
         .find((s) => s.querySelector('.d4-flex-row')?.textContent?.trim() === schemaName);
-      (section?.querySelector('[name$="-properties-as-columns"]') as HTMLElement | null)?.click();
-    }, schemaName);
+      const button = section?.querySelector('[name$="-properties-as-columns"]') as HTMLElement | null;
+      if (!button) return false;
+      button.click();
+      return true;
+    }, schemaName), { timeout: 30_000, intervals: [1000] }).toBe(true);
 
     // Schema matching is async — poll for the four sticky columns to appear.
     await expect.poll(async () =>
       page.evaluate(() => {
         const names = (window as any).grok.shell.t.columns.names();
         return ['rating', 'notes', 'verified', 'review_date'].every((n) => names.includes(n));
-      }), { timeout: 20_000, intervals: [500] }).toBe(true);
+      }), { timeout: 45_000, intervals: [500] }).toBe(true);
 
     // Sort ascending by the rating sticky column.
     // SCOPE NOTE: the grid is canvas-rendered with no stable DOM handle for the column header sort
@@ -140,14 +148,18 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     });
     expect(await page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating'))).toBe(false);
 
-    await page.evaluate((schemaName) => {
+    // Same silent-miss hazard as the add-all click above.
+    await expect.poll(async () => page.evaluate((schemaName) => {
       const section = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'))
         .find((s) => s.querySelector('.d4-flex-row')?.textContent?.trim() === schemaName);
-      (section?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null)?.click();
-    }, schemaName);
+      const button = section?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null;
+      if (!button) return false;
+      button.click();
+      return true;
+    }, schemaName), { timeout: 30_000, intervals: [1000] }).toBe(true);
     await expect.poll(async () =>
       page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating')),
-      { timeout: 20_000, intervals: [500] }).toBe(true);
+      { timeout: 45_000, intervals: [500] }).toBe(true);
 
     // The cell edited in 2.1 (row 0) still carries rating = 5 after remove + re-add.
     const ratingRow0 = await page.evaluate(() => (window as any).grok.shell.t.col('rating').get(0));

@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
+import * as DG from 'datagrok-api/dg';
 import {RDModule, RDMol, RDReaction, MolList} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {BRANCH_DELIMITER} from '../../rendering/rdkit-reaction-renderer';
 import {EnumeratorConfig} from './config';
@@ -9,6 +10,12 @@ export interface TemplateInput {
   smarts: string;
   blockingSmartsList: string[];
   reactionName: string;
+}
+
+// Template rows commonly share one reaction SMARTS across different blocking-group variants, so a
+// per-round override needs the full triple to identify a row.
+function templateOverrideKey(t: {smarts: string; blockingSmartsList: string[]; reactionName: string}): string {
+  return `${t.smarts} ${t.blockingSmartsList.join(' ')} ${t.reactionName}`;
 }
 
 export interface RouteStep {
@@ -24,6 +31,8 @@ export interface ProductRecord {
   smiles: string;
   routes: Route[];
   firstRound: number;
+  /** Also one of the original input building blocks, independent of whether it has routes. */
+  isOriginalBB?: boolean;
 }
 
 export interface EnumerationResult {
@@ -41,18 +50,27 @@ export interface EnumerationProgress {
   combosTotal?: number;
 }
 
+/** Per-round narrowing of the global pools, indexed by round-1. An undefined (or empty, or
+ * non-matching) field falls back to the global list for that round rather than zeroing it. */
+export interface PerRoundOverride {
+  templates?: TemplateInput[];
+  buildingBlocks?: string[];
+  reagents?: string[];
+}
+
 export interface EnumerateOptions {
   rdkit: RDModule;
   config: EnumeratorConfig;
   templates: TemplateInput[];
   buildingBlocks: string[];
   exclusionSmarts: string[];
-  // Optional library of "reagents". When non-empty, switches to reagents mode: every step uses
-  // EXACTLY ONE reactant from the main pool (BBs in round 1, round-(R-1) products in round R > 1)
-  // and fills every remaining slot from this reagents library. Used to grow derivatives of each
-  // BB across rounds (P1 = BB + reagents, P2 = P1 + reagents, …). Overrides depth_first /
-  // breadth_first slot logic when present.
+  /** When non-empty, switches to reagents mode: every step uses EXACTLY ONE reactant from the main
+   * pool (BBs in round 1, round-(R-1) products after) and fills every other slot from here, growing
+   * derivatives of each BB across rounds. Overrides the depth/breadth-first slot logic. */
   reagents?: string[];
+  // The mode itself stays global (driven by `reagents` above); a per-round reagents list only
+  // narrows the pool for that round.
+  perRoundOverrides?: PerRoundOverride[];
   onProgress?: (p: EnumerationProgress) => void;
   isCancelled?: () => boolean;
 }
@@ -110,7 +128,7 @@ function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
   }
 }
 
-function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
+export function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
   try {
     const r = rdkit.get_rxn(smarts);
     return r ?? null;
@@ -128,6 +146,8 @@ interface ParsedTemplate {
   // A BB matches a slot only if it matches every fragment.
   reactantQmols: RDMol[][];
   blockingQmols: RDMol[];
+  // Kept raw as well as compiled, so templateOverrideKey() can be recomputed against an override.
+  blockingSmartsList: string[];
   numReactants: number;
 }
 
@@ -179,7 +199,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
     if (q) blockingQmols.push(q);
   }
   return {
-    index: idx, smarts: t.smarts, reactionName: t.reactionName,
+    index: idx, smarts: t.smarts, reactionName: t.reactionName, blockingSmartsList: t.blockingSmartsList,
     rxn, reactantQmols, blockingQmols, numReactants: slotSmarts.length,
   };
 }
@@ -274,21 +294,25 @@ function* cartesian<T>(slots: T[][]): Generator<T[]> {
   }
 }
 
-// Format a route as a single multi-step reaction string parseable by the Chem package's
-// reaction renderer (parseMultiStepReaction in rdkit-reaction-renderer.ts).
-//
-// Each step is emitted as its own self-contained `reactants>>product` segment, joined by the
-// renderer's BRANCH_DELIMITER (`--**--`). The renderer splits on the delimiter so each step is
-// recovered exactly as it was, with no fake "prev_product → next_reactants" intermediates at
-// the seams. If a step uses a product from a previous step (linear chain, depth-first), that
-// product simply appears in this step's reactants list — no elision.
-//
-// Example route:   bb1+bb2→p1, bb3+bb4→p2, p2+bb5→p3, p3+p1→p4
-//   formatted:     "bb1.bb2>>p1--**--bb3.bb4>>p2--**--p2.bb5>>p3--**--p3.p1>>p4"
-//   renderer sees: 4 real steps in order, no fake seams.
+/** Formats a route for the Chem reaction renderer's parseMultiStepReaction. Each step is its own
+ * self-contained `reactants>>product` segment joined by BRANCH_DELIMITER, so a product consumed by
+ * a later step simply reappears in that step's reactants — no synthetic seam intermediates.
+ *
+ *   bb1+bb2→p1, bb3+bb4→p2, p2+bb5→p3  =>  "bb1.bb2>>p1--**--bb3.bb4>>p2--**--p2.bb5>>p3" */
 export function formatRoute(route: Route): string {
   if (route.length === 0) return '';
   return route.map((s) => `${s.reactants.join('.')}>>${s.product}`).join(BRANCH_DELIMITER);
+}
+
+/** One synthesis can be rediscovered several times — breadth-first keeps retrying earlier BB
+ * combos, and a single combo can match a template's slots in more than one way. Comparing formatted
+ * route strings (not object identity) catches both. Returns false once `cap` is reached, so callers
+ * can stop iterating. */
+function addRouteIfNew(rec: ProductRecord, route: Route, cap: number): boolean {
+  if (cap >= 0 && rec.routes.length >= cap) return false;
+  const key = formatRoute(route);
+  if (!rec.routes.some((r) => formatRoute(r) === key)) rec.routes.push(route);
+  return true;
 }
 
 export interface OutputRow {
@@ -301,8 +325,33 @@ export interface OutputRow {
 }
 
 export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
-  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents, onProgress, isCancelled} = opts;
+  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents,
+    perRoundOverrides, onProgress, isCancelled} = opts;
   const warnings: string[] = [];
+
+  // Shared canonicalize + dedup for the global BB/reagent pools and every per-round override, so an
+  // override list matches the canonical SMILES in the product pools. Cached across calls: a
+  // per-round override typically re-lists most of the global pool, and re-parsing it once per round
+  // is a synchronous RDKit cost paid before the first yield. Warnings are deduped per SMILES for
+  // the same reason.
+  const canonCache = new DG.LruCache<string, string | null>(1000);
+  const warnedInvalid = new Set<string>();
+  const canonUnique = (list: string[], label: string): string[] => {
+    const out: string[] = [];
+    for (const s of list) {
+      let c = canonCache.get(s);
+      if (c === undefined) {
+        c = canonicalize(rdkit, s);
+        canonCache.set(s, c);
+      }
+      if (c) out.push(c);
+      else if (!warnedInvalid.has(s)) {
+        warnedInvalid.add(s);
+        warnings.push(`Skipped invalid ${label} SMILES: ${s}`);
+      }
+    }
+    return Array.from(new Set(out));
+  };
 
   const parsedTemplates: ParsedTemplate[] = [];
   for (let i = 0; i < templates.length; i++) {
@@ -314,53 +363,75 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     return {rows: [], warnings};
   }
 
+  // The round loop silently skips over-arity templates; warn once here rather than every round.
+  const overArityCount = parsedTemplates.filter((t) => t.numReactants > config.max_num_components).length;
+  if (overArityCount > 0) {
+    warnings.push(`${overArityCount} template(s) need more reactants than Max # components ` +
+      `(${config.max_num_components}) allows and will be skipped in every round.`);
+  }
+
   const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
 
-  const canonBBs: string[] = [];
-  for (const s of buildingBlocks) {
-    const c = canonicalize(rdkit, s);
-    if (c) canonBBs.push(c);
-    else warnings.push(`Skipped invalid BB SMILES: ${s}`);
-  }
-  const uniqueBBs = Array.from(new Set(canonBBs));
+  const uniqueBBs = canonUnique(buildingBlocks, 'BB');
 
   const reagentsMode = !!(reagents && reagents.length > 0);
-  const uniqueReagents: string[] = [];
-  if (reagentsMode) {
-    const canonReagents: string[] = [];
-    for (const s of reagents!) {
-      const c = canonicalize(rdkit, s);
-      if (c) canonReagents.push(c);
-      else warnings.push(`Skipped invalid reagent SMILES: ${s}`);
-    }
-    uniqueReagents.push(...new Set(canonReagents));
-    if (uniqueReagents.length === 0)
-      warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
-  }
+  const uniqueReagents: string[] = reagentsMode ? canonUnique(reagents!, 'reagent') : [];
+  if (reagentsMode && uniqueReagents.length === 0)
+    warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
   const useReagents = reagentsMode && uniqueReagents.length > 0;
+
+  const roundAllowedTemplateKeys: (Set<string> | null)[] = [];
+  const roundBBs: (string[] | null)[] = [];
+  const roundReagents: (string[] | null)[] = [];
+  for (let r = 0; r < config.enumeration.num_rounds; r++) {
+    const o = perRoundOverrides?.[r];
+    if (o?.templates && o.templates.length > 0) {
+      const allowed = new Set(o.templates.map(templateOverrideKey));
+      const intersects = parsedTemplates.some((t) => allowed.has(templateOverrideKey(t)));
+      if (intersects)
+        roundAllowedTemplateKeys.push(allowed);
+      else {
+        warnings.push(`Round ${r + 1}: template override matches none of the global reaction templates; ` +
+          `using the global template set instead.`);
+        roundAllowedTemplateKeys.push(null);
+      }
+    } else {
+      if (o?.templates) warnings.push(`Round ${r + 1}: empty template override; using the global template set instead.`);
+      roundAllowedTemplateKeys.push(null);
+    }
+    const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'round BB') : null;
+    if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
+      warnings.push(`Round ${r + 1}: building-block override has no valid SMILES after ` +
+        `canonicalization; using the global building-block pool instead.`);
+    }
+    roundBBs.push(bbs && bbs.length > 0 ? bbs : null);
+    const rgs = o?.reagents ? canonUnique(o.reagents, 'round reagent') : null;
+    if (o?.reagents && (!rgs || rgs.length === 0)) {
+      warnings.push(`Round ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
+        `using the global reagent pool instead.`);
+    }
+    roundReagents.push(rgs && rgs.length > 0 ? rgs : null);
+  }
 
   const molCache = new MolCache(rdkit);
 
+  // Round 0 ("keep building blocks") mirrors round 1's active BB pool, but only where a round-1
+  // override actually narrows it. In breadth-first the override is a no-op, so seeding round 0 from
+  // it would both misreport the output and leak into round 1 via allPriorPool.
+  const round1OverrideActive = useReagents || config.enumeration.depth_first;
   const productPools: ProductRecord[][] = [];
-  productPools.push(uniqueBBs.map((s) => ({smiles: s, routes: [], firstRound: 0})));
+  productPools.push((round1OverrideActive ? (roundBBs[0] ?? uniqueBBs) : uniqueBBs)
+    .map((s) => ({smiles: s, routes: [], firstRound: 0})));
 
-  const productByRoundProducts = new Map<string, ProductRecord>();
-  uniqueBBs.forEach((s) => {
-    productByRoundProducts.set(s, {smiles: s, routes: [], firstRound: 0});
-  });
-
-  const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound,
-    max_num_routes_per_compound: _maxRoutes} = config;
-  void _maxRoutes;
+  const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound} = config;
 
   const buildBlockingFilter = (mol: RDMol, blocking: RDMol[]): boolean => {
     for (const q of blocking) if (hasMatch(mol, q)) return true;
     return false;
   };
 
-  // Time-based yield: surrender to the event loop (and paint) when we've been computing
-  // continuously for more than YIELD_INTERVAL_MS. requestAnimationFrame lets the browser
-  // render between chunks; setTimeout(0) is a fallback for non-browser hosts.
+  // setTimeout(0), not requestAnimationFrame: RAF is fully suspended in a backgrounded tab, which
+  // would hang the run and Cancel with it.
   const YIELD_INTERVAL_MS = 50;
   let lastYield = performance.now();
   type ProgressCtx = {round: number; ti: number; total: number; combosTotal: number; combosDone: number; productsSoFar: number};
@@ -377,10 +448,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         combosDone: progressContext.combosDone, combosTotal: progressContext.combosTotal,
       });
     }
-    await new Promise<void>((resolve) => {
-      if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(() => resolve());
-      else setTimeout(resolve, 0);
-    });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     lastYield = performance.now();
   };
 
@@ -393,6 +461,10 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       const allPriorPool = new Set<string>();
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
 
+      const allowedTemplateKeys = roundAllowedTemplateKeys[round - 1];
+      const activeBBs = roundBBs[round - 1] ?? uniqueBBs;
+      const activeReagents = roundReagents[round - 1] ?? uniqueReagents;
+
       // Pool of SMILES that can fill any reactant slot this round.
       // - depth_first round 1: only original BBs (BBs combine with BBs).
       // - depth_first round R > 1: BBs ∪ R(R-1) products. The combo filter below then enforces
@@ -402,13 +474,24 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       //   from the reagents library and the depth-first combo filter is skipped (the slot pools
       //   already enforce "exactly one from main, rest from reagents").
       const eligibleSmiles = useReagents || config.enumeration.depth_first ?
-        (round === 1 ? uniqueBBs : Array.from(new Set([...uniqueBBs, ...prevRoundProducts]))) :
+        (round === 1 ? activeBBs : Array.from(new Set([...activeBBs, ...prevRoundProducts]))) :
         Array.from(allPriorPool);
+      // eligibleSmiles never reads activeBBs in breadth-first, nor activeReagents outside reagents
+      // mode; these two warnings are the only thing surfacing an otherwise silent no-op.
+      if (!useReagents && !config.enumeration.depth_first && roundBBs[round - 1] != null) {
+        warnings.push(`Round ${round}: building-block override has no effect in breadth-first ` +
+          `mode — a round draws from all earlier products regardless of the per-step BB subset.`);
+      }
+      if (!useReagents && roundReagents[round - 1] != null) {
+        warnings.push(`Round ${round}: reagent override has no effect outside reagents mode — a ` +
+          `round only draws from the reagents library when a reagents file is active.`);
+      }
 
       for (let ti = 0; ti < parsedTemplates.length; ti++) {
         if (isCancelled?.()) break;
         const t = parsedTemplates[ti];
         if (t.numReactants > max_num_components) continue;
+        if (allowedTemplateKeys && !allowedTemplateKeys.has(templateOverrideKey(t))) continue;
 
         progressContext = {
           round, ti, total: parsedTemplates.length,
@@ -419,14 +502,11 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           templateIndex: ti, numTemplates: parsedTemplates.length,
           productsSoFar: newPool.size});
 
-        // Build one or more slot configurations to enumerate. Each configuration is a
-        // slots[i] = SMILES candidates for reactant slot i; cartesian(slots) generates combos.
-        //
-        // - Standard mode: a single configuration where every slot draws from eligibleSmiles.
-        // - Reagents mode: one configuration per "main slot" index. For each i in 0..N-1,
-        //   slot i draws from eligibleSmiles (BBs ∪ round-(R-1) products) and every other
-        //   slot draws from the reagents library. Different "main slot" choices can produce
-        //   duplicate combos for symmetric templates; the product-pool dedup handles that.
+        // slots[i] = SMILES candidates for reactant slot i; cartesian(slots) generates the combos.
+        // Standard mode uses one configuration with every slot drawing from eligibleSmiles.
+        // Reagents mode builds one per "main slot" index: that slot draws from eligibleSmiles and
+        // every other from the reagents library. Symmetric templates can yield duplicate combos
+        // across main-slot choices, which the product-pool dedup absorbs.
         const slotConfigs: string[][][] = [];
 
         if (useReagents) {
@@ -449,7 +529,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             let otherSlotsOk = true;
             for (let i = 0; i < t.numReactants; i++) {
               if (i === mainSlot) continue;
-              for (const smi of uniqueReagents) {
+              for (const smi of activeReagents) {
                 if (isCancelled?.()) break;
                 await yieldIfNeeded();
                 const mol = molCache.get(smi);
@@ -502,15 +582,13 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             progressContext.productsSoFar = newPool.size;
             await yieldIfNeeded();
 
-            // In reagents mode the slot pools already enforce "exactly one main + reagents
-            // elsewhere", so skip the depth-first combo filter (it would reject everything
-            // because reagents aren't in the BB or prev-round sets).
+            // Strict depth-first is linear chain extension: exactly one round-(R-1) product
+            // reacted with original BBs, never two complex products merged. Skipped in reagents
+            // mode, where the slot pools already enforce their own shape and this would reject
+            // everything (reagents are in neither the BB nor the prev-round set).
             if (!useReagents && config.enumeration.depth_first && round > 1) {
-            // Strict depth-first = linear chain extension. Each step takes EXACTLY ONE
-            // round-(R-1) product and reacts it with original BBs only — no merging two
-            // complex products in a single step (that would be convergent/breadth-first).
               const prevSet = new Set(prevRoundProducts);
-              const bbSet = new Set(uniqueBBs);
+              const bbSet = new Set(activeBBs);
               let prevCount = 0;
               let bbCount = 0;
               for (const c of combo) {
@@ -522,11 +600,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
             let molList: MolList | null = null;
             let result: ReturnType<RDReaction['run_reactants']> | null = null;
-            // Always create fresh mols from SMILES for the MolList — never share with the BB cache.
-            // copy() appears to be shallow at the WASM level: a copy still aliases the original's
-            // managed memory, and molList.delete() reaches into both, corrupting the heap and
-            // surfacing as "null function" errors during dispose. Fresh-parse-per-combo matches the
-            // Chem package's reactions.ts pattern.
+            // Fresh mols per combo, never shared with the BB cache: copy() is shallow at the WASM
+            // level, so a copy still aliases the original's memory and molList.delete() reaches
+            // into both, corrupting the heap. Matches the pattern in reactions.ts.
             const inputMols: RDMol[] = [];
             try {
               molList = new rdkit.MolList();
@@ -540,8 +616,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               if (!allValid) continue;
 
               try {
-              // FIX 1: Changed cap from 1 → 0 (unlimited) so reactions that fire at
-              // multiple sites return all products instead of only the first one.
+                // Cap 0 = unlimited, so a reaction firing at several sites returns every product.
                 result = t.rxn.run_reactants(molList, 0);
               } catch (e) {
                 warnings.push(`run_reactants failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
@@ -549,10 +624,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               }
               if (!result || result.size() === 0) continue;
 
-              // Match the example in rdkit-api.ts exactly: result.get(i).next() once, no reset/at_end.
-              // Calling reset() or at_end() before next() can leave the iterator in a corrupt state.
-              // FIX 2: Was result.get(0) — only the first product set was ever processed.
-              // Now loop over ALL result sets so every reaction site's product is collected.
+              // One result.get(i).next() per set, as in rdkit-api.ts — calling reset() or at_end()
+              // beforehand can leave the iterator corrupt.
               const producedSmilesSet = new Set<string>();
               for (let ri = 0; ri < result.size(); ri++) {
                 const productSet = result.get(ri);
@@ -573,9 +646,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       continue;
                     producedSmilesSet.add(productSmiles);
 
-                    // Always evaluate against a fresh mol parsed from the canonical SMILES — never touch
-                    // productMol directly (it can be in a fragile post-reaction state, and downstream
-                    // ops like get_substruct_match on it appear to corrupt the WASM heap).
+                    // Evaluate a fresh mol parsed from the canonical SMILES, never productMol
+                    // itself: get_substruct_match on a post-reaction mol corrupts the WASM heap.
                     const evalMol = tryGetMol(rdkit, productSmiles);
                     if (!evalMol) continue;
                     try {
@@ -599,16 +671,10 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       reactionName: t.reactionName,
                     };
 
-                    // Build the base route(s) — the synthesis history that must precede this step.
-                    // For each combo component that's a previously-synthesized product (from ANY
-                    // earlier round, not just round-(r-1)), splice in its known route. BBs and any
-                    // unknown reactant are treated as starting materials with no prior history.
-                    //
-                    // Looking only at round-(r-1) was the original behavior, but it dropped the
-                    // synthesis steps of round-(r-2) (or earlier) products that appear in the combo.
-                    // In breadth-first mode (or whenever a step legitimately consumes products from
-                    // multiple earlier rounds), the resulting route would look like it started from
-                    // pre-formed peptides instead of bare BBs. Now we look across all prior rounds.
+                    // The synthesis history preceding this step: for each combo component that is
+                    // itself a product of ANY earlier round, splice in its known route. Restricting
+                    // this to round-(r-1) would drop the history of older products a step legitimately
+                    // consumes, making the route look like it started from pre-formed intermediates.
                     let baseRoutes: Route[];
                     if (round === 1)
                       baseRoutes = [[]];
@@ -641,17 +707,15 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       rec = {smiles: productSmiles, routes: [], firstRound: round};
                       newPool.set(productSmiles, rec);
                     }
-                    for (const base of baseRoutes) {
-                      if (max_num_routes_per_compound >= 0 && rec.routes.length >= max_num_routes_per_compound) break;
-                      rec.routes.push([...base, step]);
-                    }
+                    for (const base of baseRoutes)
+                      if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound)) break;
                   } finally {
                     try {productMol?.delete();} catch {/* ignore */}
                   }
                 } finally {
                   try {productSet.delete();} catch {/* ignore */}
                 }
-              } // end FIX 2: for ri (product sets)
+              }
             } catch (e) {
               warnings.push(`Combo execution failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
             } finally {
@@ -676,13 +740,22 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     molCache.dispose();
   }
 
+  // The route cap is re-applied here: each round capped its own routes, but a product's combined
+  // total across rounds can still exceed it. Round 0 (raw BBs, no routes) merges LAST so a BB that
+  // a reaction also produces keeps the firstRound that actually synthesized it.
   const finalProducts = new Map<string, ProductRecord>();
-  const startRound = config.keep_building_blocks_in_final_output ? 0 : 1;
-  for (let r = startRound; r < productPools.length; r++) {
+  const roundOrder: number[] = [];
+  for (let r = 1; r < productPools.length; r++) roundOrder.push(r);
+  if (config.keep_building_blocks_in_final_output) roundOrder.push(0);
+  for (const r of roundOrder) {
     for (const p of productPools[r]) {
       const ex = finalProducts.get(p.smiles);
-      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice()});
-      else for (const route of p.routes) ex.routes.push(route);
+      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice(), isOriginalBB: r === 0});
+      else {
+        if (r === 0) ex.isOriginalBB = true;
+        for (const route of p.routes)
+          if (!addRouteIfNew(ex, route, max_num_routes_per_compound)) break;
+      }
     }
   }
 
@@ -692,9 +765,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
         round: rec.firstRound, n_routes: 0});
     } else {
-      const cap = max_num_routes_per_compound;
-      const limited = cap >= 0 ? rec.routes.slice(0, cap) : rec.routes;
-      for (const route of limited) {
+      for (const route of rec.routes) {
         const last = route[route.length - 1];
         rows.push({
           product: rec.smiles,
@@ -705,8 +776,16 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           n_routes: rec.routes.length,
         });
       }
+      if (rec.isOriginalBB) {
+        rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
+          round: 0, n_routes: 0});
+      }
     }
   }
+
+  // A product that's also an original BB emits its round-0 row alongside its synthesis rows, so
+  // group every round-0 row at the end. Stable, leaving all other relative order untouched.
+  rows.sort((a, b) => (a.round === 0 ? 1 : 0) - (b.round === 0 ? 1 : 0));
 
   return {rows, warnings};
 }

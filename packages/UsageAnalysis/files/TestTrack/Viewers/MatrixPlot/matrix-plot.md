@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.matrix-plot, entities.viewer.action.clone-viewer, viewers.filters.categorical]
 realized_as:
   - matrix-plot-spec.ts
 related_bugs: []

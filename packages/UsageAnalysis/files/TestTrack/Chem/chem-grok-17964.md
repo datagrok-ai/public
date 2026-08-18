@@ -5,7 +5,7 @@ pyramid_layer: bug-focused
 coverage_type: edge
 priority: p1
 realizes_atlas: [GROK-17964]
-realizes: []
+realizes: [chem.action.convert-notation]
 realized_as:
   - chem-grok-17964-spec.ts
 produced_from: atlas-driven

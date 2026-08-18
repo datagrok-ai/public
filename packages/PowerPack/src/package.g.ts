@@ -69,6 +69,14 @@ export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
 }
 
+//description: Formula editor bound to a table, editing an expression as a value
+//input: funccall call 
+//output: widget result
+//meta.includeInFlow: false
+export function expressionEditorWidget(call: DG.FuncCall) : any {
+  return PackageFunctions.expressionEditorWidget(call);
+}
+
 //input: dynamic func 
 //input: dynamic inputParams 
 //output: widget result

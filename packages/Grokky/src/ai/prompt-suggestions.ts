@@ -26,6 +26,7 @@ export interface Block {
   match?: {semType?: string; type?: string};
   label: string;
   icon?: string;
+  color?: string;
   suggestions: Suggestion[];
 }
 

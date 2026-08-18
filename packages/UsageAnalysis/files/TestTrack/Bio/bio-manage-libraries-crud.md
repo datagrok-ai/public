@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.cp.manage-monomer-libraries]
-realizes: [bio.manage.monomer-libraries, bio.manage.monomers, bio.manage.match-with-monomer-library]
+realizes: [bio.menu.manage.monomers, bio.menu.manage.match-with-monomer-library, bio.app.manage-monomer-libraries]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

@@ -22,3 +22,8 @@
 - User remains logged in after tab reloading.
 - No extraneous data or other users’ artifacts are visible.
 - Demo/tutorial resources open without issues.
+
+---
+{
+"realizes": ["views.space", "views.files"]
+}

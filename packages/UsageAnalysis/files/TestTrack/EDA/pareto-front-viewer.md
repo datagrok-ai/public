@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p2
 realizes_atlas: [eda.cp.pareto-front, eda.int.pareto-front-view]
-realizes: [ml.pareto-front, eda.pareto-front]
+realizes: [eda.viewer.pareto-front]
 realized_as:
   - pareto-front-viewer-spec.ts
 related_bugs: []

@@ -145,8 +145,13 @@ users, groups, roles, projects, connections, queries, dockers, packages, files, 
 `refreshItems` from the base class, plus per-view extras.
 
 Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
-always briefed with their title) expose `getDialogInfo` / `setInput` / `clickButton` plus the
-legacy per-button funcs, **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
+always briefed with their title) expose `getDialogInfo` (incl. the dialog body text) / `setInput` /
+`clickButton` plus the legacy per-button funcs, and complex dialogs add their own functions via
+`Modal.aiFunctions` — the **Save Project dialog** ships `getProjectSaveInfo` / `setProjectName` /
+`setProjectDescription` / `setSaveMode` / `setPresentationMode` with its entity-list child widget
+(`ProjectEntityMoveWidget`) exposing `listEntities` / `setEntityAction` / `setDataSync`, and the
+**Share dialog** ships `getShareInfo` / `addShareGrantee` / `setShareAccess` / `setShareMessage`
+(the `datagrok-projects` skill drives both), **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
 `expandPane`, **column selectors** (`ColumnComboBox`) `setColumn`, **range sliders** `getRange` /
 `setRange`, **viewer legends** `listCategories` / `selectCategory`, **property grids** (`PropGrid`)
 `getProperties` / `setProperty`, **per-column filters** (`GridFilterBase`) `resetFilter`,

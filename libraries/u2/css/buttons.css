@@ -1,0 +1,214 @@
+/* Icon buttons and the segmented button group (see src/components/buttons.ts, button-group.ts).
+   Tokens only; css/tokens.css, css/elements.css and css/icons.css must be loaded alongside. */
+
+/* An icon in a core button: a fixed 12px box against the 10px uppercase label, both with
+   line-height 1, so the flex centering of .u2-btn lines up glyph and caps instead of the two
+   different natural line boxes. .u2-btn already carries the gap; `display` is left to icons.css. */
+.u2-btn .u2-icon {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+
+.u2-btn .u2-btn-label {
+  line-height: 1;
+}
+
+.u2-btn.u2-icon-btn {
+  width: var(--dg-button-height);
+  min-width: var(--dg-button-height);
+  padding: 0;
+  color: var(--dg-text-color);
+  border: var(--dg-border-width) solid transparent;
+}
+
+.u2-btn.u2-icon-btn:hover:not(:disabled) {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-btn.u2-icon-btn:active:not(:disabled),
+.u2-btn.u2-icon-btn-pressed {
+  color: var(--dg-accent);
+  background: var(--dg-steel-1);
+  border-color: var(--dg-border);
+}
+
+.u2-btn.u2-icon-btn:focus-visible {
+  border-color: var(--dg-focus);
+  outline: none;
+}
+
+/* toolbars and ribbons run one metric tighter than forms */
+.u2-toolbar .u2-btn.u2-icon-btn {
+  width: var(--dg-inline-control-height);
+  min-width: var(--dg-inline-control-height);
+  height: var(--dg-inline-control-height);
+}
+
+.u2-btn-group {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.u2-btn-group-item {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dg-space-s);
+  height: var(--dg-button-height);
+  margin: 0;
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color);
+  white-space: nowrap;
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: 0;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.u2-btn-group-item .u2-icon {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+
+/* neighbours share one border, and only the ends of the strip are rounded */
+.u2-btn-group-item + .u2-btn-group-item {
+  margin-left: calc(-1 * var(--dg-border-width));
+}
+
+.u2-btn-group-item:first-child {
+  border-top-left-radius: var(--dg-radius);
+  border-bottom-left-radius: var(--dg-radius);
+}
+
+.u2-btn-group-item:last-child {
+  border-top-right-radius: var(--dg-radius);
+  border-bottom-right-radius: var(--dg-radius);
+}
+
+.u2-btn-group-item:hover:not(:disabled) {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-btn-group-item:active:not(:disabled) {
+  background: var(--dg-steel-1);
+}
+
+/* the selected cell owns the shared borders it touches */
+.u2-btn-group-item.u2-btn-group-selected {
+  position: relative;
+  z-index: 1;
+  color: var(--dg-accent);
+  background: var(--dg-steel-1);
+  border-color: var(--dg-steel-3);
+}
+
+.u2-btn-group-item:focus-visible {
+  position: relative;
+  z-index: 2;
+  border-color: var(--dg-focus);
+}
+
+.u2-btn-group-item:disabled {
+  color: var(--dg-text-color-disabled);
+  background: var(--dg-bg);
+  cursor: default;
+}
+
+.u2-btn-group-icons .u2-btn-group-item {
+  width: var(--dg-button-height);
+  padding: 0;
+}
+
+/* flat densities: no frame until the group is hovered, only a hairline between the cells */
+.u2-btn-group-toolbar .u2-btn-group-item,
+.u2-btn-group-ribbon .u2-btn-group-item {
+  height: var(--dg-inline-control-height);
+  background: none;
+  border-color: transparent;
+}
+
+.u2-btn-group-toolbar .u2-btn-group-item + .u2-btn-group-item,
+.u2-btn-group-ribbon .u2-btn-group-item + .u2-btn-group-item {
+  border-left-color: var(--dg-border-subtle);
+}
+
+.u2-btn-group-toolbar:hover .u2-btn-group-item,
+.u2-btn-group-ribbon:hover .u2-btn-group-item {
+  border-color: var(--dg-border);
+}
+
+.u2-btn-group-toolbar.u2-btn-group-icons .u2-btn-group-item,
+.u2-btn-group-ribbon.u2-btn-group-icons .u2-btn-group-item {
+  width: var(--dg-inline-control-height);
+}
+
+.u2-btn-group-toolbar .u2-btn-group-item.u2-btn-group-selected,
+.u2-btn-group-ribbon .u2-btn-group-item.u2-btn-group-selected {
+  background: var(--dg-steel-1);
+  border-color: var(--dg-border);
+}
+
+.u2-btn-group-ribbon .u2-btn-group-item {
+  gap: var(--dg-space-xs);
+  padding: 0 var(--dg-space-s);
+}
+
+/* Drop-down buttons (dropDownButton in src/components/buttons.ts). The chevron rides the label at
+   the button gap; the split control attaches an arrow segment to the main action, seamless like a
+   button group — one hairline between the two, radius only on the outer ends. */
+.u2-btn .u2-dropdown-chevron {
+  width: 10px;
+  height: 10px;
+  font-size: 10px;
+  color: var(--dg-text-color-light);
+}
+
+.u2-btn-primary .u2-dropdown-chevron {
+  color: inherit;
+}
+
+.u2-dropdown-split {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.u2-dropdown-split .u2-btn {
+  border-radius: 0;
+}
+
+.u2-dropdown-split .u2-btn:first-child {
+  border-top-left-radius: var(--dg-radius);
+  border-bottom-left-radius: var(--dg-radius);
+}
+
+.u2-dropdown-split .u2-btn:last-child {
+  border-top-right-radius: var(--dg-radius);
+  border-bottom-right-radius: var(--dg-radius);
+}
+
+.u2-dropdown-arrow {
+  padding: 0 var(--dg-space-s);
+  border-left: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-dropdown-arrow.u2-btn-primary {
+  border-left-color: var(--dg-accent);
+}

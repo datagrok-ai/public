@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [helm-cell-edit-roundtrip]
-realizes: []
+realizes: [helm.cell.helm, helm.action.edit-helm, helm.cell-editor.molecule, helm.panel.properties]
 realized_as:
   - helm-editor-and-panels-spec.ts
 related_bugs: []

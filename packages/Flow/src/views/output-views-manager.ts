@@ -1,17 +1,5 @@
-/** OutputViewsManager — Spotfire-style internal tabs of a Flow view.
- *
- * One tab per **table output** of the flow (Table Output / dataframe-typed
- * Value Output / SetVar terminals carrying a table), switched from the bottom
- * status bar. Each tab hosts a real detached `DG.TableView` of that output's
- * DataFrame — created lazily on first activation, when the pane is visible and
- * laid out (so `_onAdded()` never runs against a zero-size root, the
- * GROK-13828 dock-corruption trap). The hosting view swaps its ribbon/toolbox
- * via the `onActiveTabChanged` callback (the `DG.MultiView.currentView`
- * pattern); this manager never reaches into the view.
- *
- * Runtime identity is the output node id; persisted layouts key by the
- * output's `paramName` (node ids are remapped on every load).
- * See docs/OUTPUT-VIEWS-PLAN.md for the full design. */
+/** Spotfire-style output tabs: one lazily-created detached TableView per table output, switched from
+ *  the status bar. Runtime identity is the output node id; layouts persist by `paramName`. */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -19,7 +7,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {setTid} from '../utils/test-ids';
 
-/** What the view knows about one table output of the flow. */
 export interface OutputTabInfo {
   nodeId: string;
   paramName: string;
@@ -27,53 +14,36 @@ export interface OutputTabInfo {
 
 export interface OutputTab {
   nodeId: string;
-  /** Persistence key; refreshed on rename (the tv and layout carry over). */
   paramName: string;
-  /** The status-bar tab element. Updated in place, never rebuilt on click. */
+  /** Updated in place, never rebuilt — rebuilding the pressed chip would swallow its click. */
   chip: HTMLElement;
   chipLabel: HTMLElement;
-  /** Display-toggled host inside the view's content area; never unmounted
-   *  while the tab exists (the TableView DOM must persist). */
+  /** Display-toggled; never unmounted while the tab exists — the TableView DOM must persist. */
   pane: HTMLElement;
-  /** Centered "run the flow" message + Run button, shown until a value lands. */
   emptyEl: HTMLElement;
-  /** Created lazily on first activation WITH a value; `detach()`ed on destroy. */
   tv: DG.TableView | null;
-  /** Latest value snapshot (the run's `ValueSummary.clone`). */
   df: DG.DataFrame | null;
   stale: boolean;
-  /** viewState from the loaded .flow, applied once after the tv exists and
-   *  the pane is visible (applying to a hidden view defers forever). */
+  /** Applied once after the tv exists and the pane is visible (a hidden view defers forever). */
   pendingLayout: string | null;
-  /** `PowerPack:ConfigViewerGallery` ran for this tv (once per creation). */
   galleryConfigured: boolean;
-  /** The tv's ribbon content, captured ONCE as the inner (unwrapped) elements.
-   *  `setRibbonPanels` moves elements between wrappers, so a second
-   *  `tv.getRibbonPanels()` after a swap-and-restore returns empty husks —
-   *  these stable references are what every swap re-sets. */
+  /** Captured ONCE, unwrapped — `setRibbonPanels` moves elements, so re-reading after a swap returns empty husks. */
   ribbonPanels?: HTMLElement[][];
-  /** Re-entrancy guard for the async tv creation. */
   creating?: boolean;
 }
 
 export interface OutputViewsCallbacks {
-  /** Fired on tab switches AND when the active tab's tv appears (a value
-   *  landed / finished creating). `null` = the Canvas tab — the view restores
-   *  its own ribbon/toolbox; a tab with a tv offers that tv's. */
+  /** Fired on tab switches and when the active tab's tv appears; `null` = the Canvas tab. */
   onActiveTabChanged: (tab: OutputTab | null) => void;
-  /** The Run button in the empty state. */
   runFlow: () => void;
 }
 
 export const CANVAS_TAB = 'canvas';
 
 export class OutputViewsManager {
-  /** Runtime map, keyed by output node id. */
   private readonly tabs = new Map<string, OutputTab>();
   private active: string = CANVAS_TAB;
   private readonly canvasChip: HTMLElement;
-  /** Layouts loaded from the document for tabs not (yet) materialized,
-   *  keyed by paramName. */
   private pendingByParam: Record<string, string> = {};
   private destroyed = false;
 
@@ -95,9 +65,6 @@ export class OutputViewsManager {
   getTab(nodeId: string): OutputTab | undefined {return this.tabs.get(nodeId);}
   getTabs(): OutputTab[] {return [...this.tabs.values()];}
 
-  /** Reconcile the tab set against the flow's current table outputs:
-   *  add new, drop removed (detaching their tvs), pick up renames. Chips are
-   *  updated in place — the pressed chip element is never rebuilt mid-click. */
   syncTabs(infos: OutputTabInfo[]): void {
     if (this.destroyed) return;
     const seen = new Set<string>();
@@ -120,11 +87,13 @@ export class OutputViewsManager {
     for (const [id, tab] of [...this.tabs]) {
       if (!seen.has(id)) this.destroyTab(id, tab);
     }
+    // Only touch the DOM when the order differs — moving the pressed chip mid-click would swallow its click.
+    const want = infos.map((i) => this.tabs.get(i.nodeId)?.chip).filter((c): c is HTMLElement => c != null);
+    const have = Array.from(this.tabStripHost.children).filter((c) => c !== this.canvasChip);
+    if (want.some((c, i) => c !== have[i]))
+      for (const chip of want) this.tabStripHost.appendChild(chip);
   }
 
-  /** An output node completed with a table: remember the snapshot, refresh an
-   *  existing tv in place (`dataFrame` rebind — viewers survive by column
-   *  matching), or create the tv now if this tab is the active one. */
   setValue(nodeId: string, df: DG.DataFrame): void {
     const tab = this.tabs.get(nodeId);
     if (!tab) return;
@@ -146,7 +115,6 @@ export class OutputViewsManager {
     this.refreshChip(tab);
   }
 
-  /** Upstream invalidated — keep showing the last table, mark the tab amber. */
   markStale(nodeId: string): void {
     const tab = this.tabs.get(nodeId);
     if (!tab) return;
@@ -154,8 +122,6 @@ export class OutputViewsManager {
     this.refreshChip(tab);
   }
 
-  /** Run state was fully reset ("Clear run highlights"): the captured values
-   *  are gone, but the last tables stay visible (Q3 semantics) — just stale. */
   clearValues(): void {
     for (const tab of this.tabs.values()) {
       if (tab.df != null) tab.stale = true;
@@ -163,9 +129,6 @@ export class OutputViewsManager {
     }
   }
 
-  /** Switch to a tab (`CANVAS_TAB` or an output node id). Toggles pane
-   *  visibility, lazily creates the TableView for a value-bearing tab, then
-   *  notifies the view so it can swap ribbon/toolbox. */
   activate(key: string): void {
     if (this.destroyed) return;
     if (key !== CANVAS_TAB && !this.tabs.has(key)) return;
@@ -186,9 +149,7 @@ export class OutputViewsManager {
     });
   }
 
-  /** Current layouts for persistence, keyed by paramName: a live tv saves its
-   *  real state; a never-materialized tab keeps whatever the document loaded
-   *  (the user not opening a tab this session must not lose its layout). */
+  /** A live tv saves its real state; a never-opened tab keeps its loaded layout (must not lose it). */
   captureLayouts(): Record<string, string> {
     const res: Record<string, string> = {};
     for (const tab of this.tabs.values()) {
@@ -206,8 +167,6 @@ export class OutputViewsManager {
     return res;
   }
 
-  /** Layouts from a loaded document. Applied once per tab, after its tv exists
-   *  and while the pane is visible. */
   setPendingLayouts(byParamName: Record<string, string>): void {
     this.pendingByParam = {...byParamName};
     for (const tab of this.tabs.values()) {
@@ -228,8 +187,6 @@ export class OutputViewsManager {
     this.tabs.clear();
     this.canvasChip.remove();
   }
-
-  // ---------- internals ----------
 
   private buildTab(info: OutputTabInfo): OutputTab {
     const runBtn = ui.bigButton('Run', () => this.cb.runFlow());
@@ -285,7 +242,6 @@ export class OutputViewsManager {
       `Flow output "${tab.paramName}" — ${dims}`;
   }
 
-  /** In-place chip update (label / state) — see the click-survival rule. */
   private refreshChip(tab: OutputTab): void {
     tab.chipLabel.textContent = tab.df?.name || tab.paramName;
     tab.chip.dataset.state = tab.df == null ? 'empty' : (tab.stale ? 'stale' : 'ready');
@@ -303,9 +259,7 @@ export class OutputViewsManager {
     if (this.active === id) this.activate(CANVAS_TAB);
   }
 
-  /** Make the tab's TableView exist/current. Called only while the pane is
-   *  visible (activation) or when a value lands on the active tab — so
-   *  `_onAdded()` always runs against a live, laid-out root. */
+  /** Called only while the pane is visible and laid out — `_onAdded()` against a zero-size root corrupts docks. */
   private async ensureView(tab: OutputTab): Promise<void> {
     if (tab.df == null) return;
     if (tab.tv == null) {
@@ -323,8 +277,6 @@ export class OutputViewsManager {
     this.nudgeResize(tab.tv);
   }
 
-  /** The exact creation sequence (plan §2.5): semtypes → detached create →
-   *  mount → `_onAdded` → gallery (before the first ribbon copy) → layout. */
   private async createView(tab: OutputTab): Promise<void> {
     const df = tab.df!;
     try {
@@ -332,7 +284,8 @@ export class OutputViewsManager {
     } catch (e) {
       console.warn('Flow: semantic type detection failed', e);
     }
-    if (this.destroyed || tab.df !== df) return;
+    // The tab may have been destroyed while awaiting — mounting into its detached pane would leak the view.
+    if (this.destroyed || tab.df !== df || this.tabs.get(tab.nodeId) !== tab) return;
     if (!df.name) df.name = tab.paramName;
     const tv = DG.TableView.create(df, false); // detached — no workspace pollution
     tv.name = df.name;
@@ -372,9 +325,7 @@ export class OutputViewsManager {
     }
   }
 
-  /** Viewers added while a pane was hidden flush on resize (V1): the js resize
-   *  seam exists on DockView only, so nudge guardedly, then fall back to a
-   *  window resize event. */
+  /** Viewers added while hidden flush on resize; the js resize seam exists on DockView only. */
   private nudgeResize(tv: DG.TableView): void {
     const handle = (tv as unknown as {_handleResize?: () => void})._handleResize;
     if (typeof handle === 'function') {

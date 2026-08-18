@@ -5,6 +5,7 @@ coverage_type: regression
 produced_from: split
 original_path: public/packages/UsageAnalysis/files/TestTrack/General/profile-settings.md
 split_date: 2026-06-16
+realizes: []
 related_bugs: []
 manual_only_reason: |
   Profile-photo upload goes through the Dart-only path user.setPicture() (image

@@ -1,12 +1,4 @@
-/** All JS-side behavior behind the first-class Flow entity — a Datagrok
- *  `Script` with `language: 'flow'` whose body is an annotation header plus
- *  the flow JSON document (see serialization/flow-script-format.ts).
- *
- *  One class so the package surface stays a handful of thin registered
- *  wrappers (see PackageFunctions): core reaches execution through the
- *  `scriptHandler`-role function, and the editor / preview / context-panel
- *  widget through `Flow:flowScriptEditor` / `flowScriptPreview` /
- *  `flowScriptWidget`, guarded by function-presence checks on the Dart side. */
+/** JS-side behavior behind the Flow entity — a Script (language 'flow') holding the flow JSON document. */
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -32,8 +24,7 @@ function settingsOf(doc: FuncFlowDocument): ScriptSettings {
 export class FlowEntityHandler {
   static readonly instance = new FlowEntityHandler();
 
-  /** Run `fn` against a graph deserialized into an off-screen editor.
-   *  The editor is destroyed afterwards regardless of the outcome. */
+  /** Runs `fn` against a graph deserialized into an off-screen editor; destroyed afterwards. */
   async withDetachedEditor<T>(doc: FuncFlowDocument, fn: (flow: FlowEditor) => T | Promise<T>): Promise<T> {
     ensureFunctionsRegistered();
     const container = ui.div([], {
@@ -53,17 +44,11 @@ export class FlowEntityHandler {
     }
   }
 
-  /** Compile a flow document to the clean (non-instrumented) JS script. */
   compileToJs(doc: FuncFlowDocument): Promise<string> {
     return this.withDetachedEditor(doc, (flow) => emitScript(flow, settingsOf(doc)));
   }
 
-  /** Execute a flow-script call: deserialize the entity body, compile it to
-   *  the JS twin, run that with the call's input values, and copy the outputs
-   *  back onto the call (the JS `DG.FuncCall` wraps the same Dart call, so
-   *  `setParamValue` propagates — same contract as the Pyodide handler).
-   *  Input/output names match by construction: both the entity header and the
-   *  emitted JS derive them from the same Input/Output nodes. */
+  /** Executes a flow-script call: compile to the JS twin, run it, copy the outputs back onto the call. */
   async run(scriptCall: DG.FuncCall): Promise<void> {
     const script = scriptCall.func as DG.Script;
     const {doc} = parseFlowBody(script.script);
@@ -77,18 +62,14 @@ export class FlowEntityHandler {
       scriptCall.setParamValue(name, jsCall.outputs[name]);
   }
 
-  /** The visual editor bound to the entity (Save writes back to the server). */
   editorView(script: DG.Script): DG.ViewBase {
     return FuncFlowView.forScript(script);
   }
 
-  /** Browse-preview view. For now the live editor; a dedicated read-only mode
-   *  is a later polish item. */
   previewView(script: DG.Script): DG.ViewBase {
     return FuncFlowView.forScript(script);
   }
 
-  /** Context-panel widget: what the flow does at a glance, plus actions. */
   widget(script: DG.Script): DG.Widget {
     const host = ui.divV([], 'ff-entity-widget');
     try {

@@ -7,6 +7,9 @@ import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.QueryCancelledByUser;
 import grok_connect.utils.QueryChunkNotSent;
 import grok_connect.utils.QueryManager;
+import grok_connect.table_mutation.MutationManager;
+import grok_connect.table_mutation.MutationResult;
+import grok_connect.table_mutation.MutationValidationException;
 import org.eclipse.jetty.websocket.api.Session;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -30,6 +33,11 @@ public class SessionHandler {
     private static final String OK_RESPONSE = "PART OK";
     private static final String END_MESSAGE = "EOF";
     private static final String SIZE_RECEIVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
+    private static final String MUTATION_START = "MUTATION ";
+    private static final String MUTATION_EOF = "MUTATION EOF";
+    private static final String MUTATION_READY = "MUTATION READY";
+    private static final long MUTATION_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+    private static final String RESULT_PREFIX = "RESULT ";
     private final Session session;
     private final boolean skipLogging;
     private CompletableFuture<DataFrame> completableFuture;
@@ -39,6 +47,8 @@ public class SessionHandler {
     private int dfNumber = 1;
     private byte[] bytes;
     private QueryManager queryManager;
+    private MutationManager mutationManager;
+    private boolean completedOk = false;
 
     SessionHandler(Session session, boolean skipLog) {
         this.session = session;
@@ -78,8 +88,49 @@ public class SessionHandler {
         }
     }
 
+    public void onBinary(byte[] payload, int offset, int len) throws Throwable {
+        try {
+            if (mutationManager == null)
+                throw new MutationValidationException("Received a binary frame outside a mutation session");
+            // Jetty reuses the frame buffer after this call returns — copy before handing to the loader.
+            byte[] chunk = Arrays.copyOfRange(payload, offset, offset + len);
+            mutationManager.feed(chunk);
+            session.getRemote().sendStringByFuture(OK_RESPONSE);
+        } catch (Throwable t) {
+            closeQueryManagerQuietly();
+            throw t;
+        }
+    }
+
     private void onMessageInternal(String message) throws Throwable {
+        if (message.equals(MUTATION_EOF)) {
+            if (mutationManager == null)
+                throw new MutationValidationException("No mutation session to finish");
+            MutationResult result = mutationManager.finish();
+            session.getRemote().sendStringByFuture(RESULT_PREFIX + GrokConnect.gson.toJson(result));
+            session.close();
+            return;
+        }
+        if (message.startsWith(MUTATION_START)) {
+            if (queryManager != null)
+                throw new MutationValidationException("Query session cannot process mutation messages");
+            if (mutationManager != null)
+                throw new MutationValidationException("Mutation already started for this session");
+            LOGGER.debug("Received bulk mutation header from the server");
+            // Queries keep the connect-time idle timeout of 0 (a long-running statement legitimately
+            // produces no WS traffic), but a mutation session receives chunks continuously — prolonged
+            // silence means the sender died. Without a timeout a half-open socket would hold the open
+            // transaction (and its pooled connection) forever; on timeout Jetty fires onError/onClose,
+            // which reach mutationManager.abort() -> rollback before the connection returns to the pool.
+            session.setIdleTimeout(MUTATION_IDLE_TIMEOUT_MS);
+            mutationManager = new MutationManager(message.substring(MUTATION_START.length()));
+            mutationManager.start();
+            session.getRemote().sendStringByFuture(MUTATION_READY);
+            return;
+        }
         if (message.startsWith(MESSAGE_START)) {
+            if (mutationManager != null)
+                throw new MutationValidationException("Mutation session cannot process query messages");
             LOGGER.debug("Received message with json call from the server");
             message = message.substring(6);
             queryManager = new QueryManager(message);
@@ -115,6 +166,7 @@ public class SessionHandler {
             return;
         }
         else if (message.startsWith(COMPLETED_OK)) {
+            completedOk = true;
             session.getRemote().sendStringByFuture(END_MESSAGE);
             session.close();
             return;
@@ -153,13 +205,25 @@ public class SessionHandler {
             session.getRemote().sendStringByFuture(String.format("DATAFRAME PART SIZE: %d", bytes.length));
         }
         else {
-            session.getRemote().sendStringByFuture(String.format("COMPLETED %s", dfNumber));
+            // Commit BEFORE the COMPLETED token: Datlas resolves the caller's future on it, and WS
+            // frames are FIFO — commit-before-send is the happens-before edge that closes the
+            // commit-visibility race. Safe only here: the state machine reaches this branch with a
+            // fully-drained resultset. A failed commit propagates as a query ERROR instead of being
+            // swallowed post-success in onClose.
+            if (queryManager != null)
+                queryManager.commitPending();
+            // The RAW_WRITE token carries the §6.2 post-hoc raw-write detection (WO-B13) to Datlas,
+            // which audit-logs it; older servers only read the chunk-count token and ignore the rest.
+            String rawWrite = queryManager != null && queryManager.isRawWriteDetected() ? " RAW_WRITE" : "";
+            session.getRemote().sendStringByFuture(String.format("COMPLETED %s%s", dfNumber, rawWrite));
         }
     }
 
     public void onClose() throws SQLException {
         if (queryManager != null)
-            queryManager.close();
+            queryManager.close(completedOk);
+        if (mutationManager != null)
+            mutationManager.abort(); // no-op if finish() already committed and closed
     }
 
     private void closeQueryManagerQuietly() {
@@ -168,9 +232,16 @@ public class SessionHandler {
         }
         if (queryManager != null) {
             try {
-                queryManager.close();
+                queryManager.close(false);
             } catch (Throwable t) {
                 LOGGER.warn("Failed to close QueryManager during cleanup", t);
+            }
+        }
+        if (mutationManager != null) {
+            try {
+                mutationManager.abort();
+            } catch (Throwable t) {
+                LOGGER.warn("Failed to abort MutationManager during cleanup", t);
             }
         }
     }

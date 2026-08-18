@@ -21,6 +21,14 @@ import {Subject} from 'rxjs';
 
 const SYNTAX_ERROR = 'Possible syntax error';
 
+/** The expression-editor host contract (see `publishValidity`). Exported as
+ *  plain strings because the hosts live in other packages: a widget arrives
+ *  there as a fresh JS wrapper around the same Dart handle, so its DOM root is
+ *  the only channel that survives the crossing. The attribute carries the
+ *  current verdict (absent = valid); the event announces each change. */
+export const EXPRESSION_ERROR_ATTR = 'data-expression-error';
+export const EXPRESSION_VALIDATED_EVENT = 'expression-validated';
+
 type PropInfo = {
   propName: string,
   propType: string
@@ -79,6 +87,11 @@ const RESERVED_FUNC_NAMES_AND_TYPES: {[key: string]: string} = {
 
 const DEFAULT_HINT = `Type '$' to select a column or press 'Ctrl + Space' to select a function`;
 const FUNC_OUTPUT_TYPE = 'output';
+
+/** How long typing settles before the expression is published back onto the
+ *  call. Shorter than the preview debounce — the host is storing a value, not
+ *  recomputing a grid. */
+const EXPRESSION_PUBLISH_DEBOUNCE_MS = 500;
 
 const isNumerical = (type: string) => type == DG.TYPE.INT || type == DG.TYPE.FLOAT ||
   type == DG.TYPE.NUM || type == DG.TYPE.QNUM || type == DG.TYPE.BIG_INT;
@@ -171,14 +184,43 @@ export class AddNewColumnDialog {
     return this.call.aux['filterFormulaEditor'] == true;
   }
 
+  /** Widget mode with no column at the end of it: the expression itself is the
+   *  result, so there is nothing to apply and nothing to preview. Set by hosts
+   *  that edit a formula as a *value* — a pipeline node's filter condition, a
+   *  viewer's filter property. They read the text back by subscribing to
+   *  `call.inputParams['expression'].onChanged`, which the debounced publish
+   *  below feeds. */
+  private get isExpressionEditor(): boolean {
+    return this.call.aux['expressionEditorOnly'] == true;
+  }
+
+  /** Expression mode AS THE HOSTED WIDGET. "Edit in dialog" opens a second
+   *  editor on the SAME call, so the dialog sees `expressionEditorOnly` too —
+   *  but a dialog has a preview grid and must build it. Without this
+   *  distinction the dialog silently took the widget's no-preview path: its
+   *  grid never updated, and it republished the formula on every keystroke,
+   *  which made the host rebuild the panel and pull focus out of the dialog
+   *  mid-word. */
+  private get isWidgetExpressionEditor(): boolean {
+    return this.widget != null && this.isExpressionEditor;
+  }
+
   constructor(call: DG.FuncCall, widget?: DG.Widget) {
-    this.codeMirrorDiv.classList.add(this.widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
+    // `widget`, not `this.widget` — the field is assigned below, so this always
+    // read undefined and every widget-hosted editor got the tall dialog height.
+    this.codeMirrorDiv.classList.add(widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
     this.call = call;
     const table = call.getParamValue('table');
 
-    DG.debounce(this.updatePreviewEvent, 1000).subscribe(async (params: UpdatePreviewParams) => {
-      await this.updatePreview(params.expression, params.changeName);
-    });
+    DG.debounce(this.updatePreviewEvent, this.isExpressionEditor ? EXPRESSION_PUBLISH_DEBOUNCE_MS : 1000)
+      .subscribe(async (params: UpdatePreviewParams) => {
+        if (this.isWidgetExpressionEditor) {
+          this.call.setParamValue('expression', params.expression);
+          await this.validateExpressionOnly(params.expression);
+          return;
+        }
+        await this.updatePreview(params.expression, params.changeName);
+      });
 
     if (table) {
       this.sourceDf = table;
@@ -189,7 +231,7 @@ export class AddNewColumnDialog {
     if (widget)
       this.widget = widget;
     else {
-      this.dialogTitle = this.isFilterFormulaEditor ?
+      this.dialogTitle = this.isFilterFormulaEditor || this.isExpressionEditor ?
         'Edit Formula' : (this.edit ? this.editColumnTitle : this.addColumnTitle);
       this.uiDialog = ui.dialog({title: this.dialogTitle, helpUrl: this.helpUrl});
       this.uiDialog.root.classList.add('add-new-column-dialog-root');
@@ -229,6 +271,13 @@ export class AddNewColumnDialog {
         this.inputType!.root.style.display = 'none';
         this.inputName!.value = 'Filter Formula'; // does not matter, not used anywhere
         this.inputType!.value = DG.COLUMN_TYPE.BOOL; // needs to be bool only to assist with validation
+      } else if (this.isExpressionEditor) {
+        // Opened from an expression editor: the formula is the whole result, so
+        // there is no column to name or type — the host's own parameters decide
+        // that. Preview and validation still run, against the call's type.
+        this.inputName!.root.style.display = 'none';
+        this.inputType!.root.style.display = 'none';
+        this.inputName!.value = this.call.getParamValue('name') || 'Formula';
       }
 
       this.uiDialog!
@@ -251,23 +300,37 @@ export class AddNewColumnDialog {
     } else {
       const editButton = ui.button('Edit in dialog', () => {
         this.call.setParamValue('expression', this.codeMirror!.state.doc.toString());
-        this.applyFormulaButton!.disabled = true;
+        if (this.applyFormulaButton) this.applyFormulaButton.disabled = true;
         editButton.disabled = true;
         const editDlg = new AddNewColumnDialog(this.call);
         editDlg.uiDialog?.onCancel(() => {
-          this.applyFormulaButton!.disabled = false;
+          if (this.applyFormulaButton) this.applyFormulaButton.disabled = false;
           editButton.disabled = false;
         });
+        // Both editors are open on one call, and only the dialog's CodeMirror
+        // knows what was accepted — pull it back so the widget doesn't keep
+        // showing the pre-edit formula (and re-publish it as if nothing changed).
+        editDlg.uiDialog?.onClose.subscribe(() => {
+          if (this.applyFormulaButton) this.applyFormulaButton.disabled = false;
+          editButton.disabled = false;
+          this.setExpressionText(this.call.getParamValue('expression') ?? '');
+        });
       }, 'Edit with preview');
-      this.applyFormulaButton = ui.button('Apply', async () => {
-        this.applyFormulaButton!.disabled = true;
-        await this.addNewColumnAction();
-        this.applyFormulaButton!.disabled = false;
-      }, 'Apply to the column');
+      // No Apply in expression mode — the host owns the value, and a button that
+      // silently appended a column to the user's table would be a trap.
+      if (!this.isWidgetExpressionEditor) {
+        this.applyFormulaButton = ui.button('Apply', async () => {
+          this.applyFormulaButton!.disabled = true;
+          await this.addNewColumnAction();
+          this.applyFormulaButton!.disabled = false;
+        }, 'Apply to the column');
+      }
+      const buttons: HTMLElement[] = [editButton];
+      if (this.applyFormulaButton) buttons.push(this.applyFormulaButton);
       this.widget.root.append(ui.divV([
         this.codeMirrorDiv!,
         this.errorDiv,
-        ui.divH([editButton, this.applyFormulaButton], {style: {justifyContent: 'right'}}),
+        ui.divH(buttons, {style: {justifyContent: 'right'}}),
       ], {style: {maxWidth: '400px'}}));
       this.widget.detach = () => {
         this.mutationObserver?.disconnect();
@@ -294,13 +357,20 @@ export class AddNewColumnDialog {
       }
     });
     //set initial focus on code mirror
-    ui.tools.waitForElementInDom(this.codeMirrorDiv).then(() => setTimeout(() => this.codeMirror?.focus(), 50));
+    // Dialogs only. A hosted widget is mounted by whatever renders the panel it
+    // lives in, and grabbing focus 50ms later steals it from wherever the user
+    // actually is — including a dialog this very widget opened.
+    if (!this.widget)
+      ui.tools.waitForElementInDom(this.codeMirrorDiv).then(() => setTimeout(() => this.codeMirror?.focus(), 50));
 
     if (!this.call.getParamValue('expression')) {
       const columnsAndSelections = this.getColumnNamesAndSelections(this.codeMirror!.state.doc.toString());
       this.error = this.validateFormula(this.codeMirror!.state.doc.toString(), columnsAndSelections.columnNames,
         columnsAndSelections.isSingleCol);
-      await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
+      if (this.isWidgetExpressionEditor)
+        await this.validateExpressionOnly(this.codeMirror!.state.doc.toString());
+      else
+        await this.updatePreview(this.codeMirror!.state.doc.toString(), false);
     }
     this.prepareFunctionsListForAutocomplete();
   }
@@ -702,8 +772,11 @@ export class AddNewColumnDialog {
     ui.empty(this.errorDiv);
     if (this.error)
       this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
+    // Expression mode has no button to gate — the error text is the whole
+    // feedback, and the host stores whatever the user typed either way.
     const buttonToDisable = this.widget ? this.applyFormulaButton : this.uiDialog!.getButton('OK');
-    buttonToDisable!.disabled = !!this.error && this.error !== SYNTAX_ERROR;
+    if (buttonToDisable)
+      buttonToDisable.disabled = !!this.error && this.error !== SYNTAX_ERROR;
   }
 
   setCodeMirrorFocus(cm: EditorView) {
@@ -984,12 +1057,14 @@ export class AddNewColumnDialog {
     if (start == pos && side < 0 || end == pos && side > 0)
       return null;
     const funcName = text.slice(start - from, end - from);
-    if (!packageFunctionsParams[funcName] && !coreFunctionsParams[funcName])
+    const hasPackageParams = Object.prototype.hasOwnProperty.call(packageFunctionsParams, funcName);
+    const hasCoreParams = Object.prototype.hasOwnProperty.call(coreFunctionsParams, funcName);
+    if (!hasPackageParams && !hasCoreParams)
       return {funcName: funcName, start: start, end: end};
     if (withoutSignature)
       return {funcName: funcName, start: start, end: end};
     const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
-    if (!funcParams)
+    if (!funcParams || !funcParams.params)
       return {funcName: funcName, start: start, end: end};
     const funcInputs = funcParams.params.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
     const funcOutputs = funcParams.params.filter((it) => it.propName === FUNC_OUTPUT_TYPE);
@@ -1266,6 +1341,81 @@ export class AddNewColumnDialog {
       await this.updatePreview(expression, true);
   }
 
+  /** Show `text` in this editor, unless it is already what is shown (a no-op
+   *  dispatch would still fire the update listener and republish it). */
+  private setExpressionText(text: string): void {
+    const cm = this.codeMirror;
+    if (!cm || cm.state.doc.toString() === text) return;
+    try {
+      cm.dispatch({changes: {from: 0, to: cm.state.doc.length, insert: text}});
+    } catch {
+      // The host may have rebuilt its panel on the accepted value already,
+      // which destroys this editor — it has the new text either way.
+    }
+  }
+
+  /** Expression mode: the formula IS the result, so there is no preview grid to
+   *  build — but it still has to be VALIDATED, and the decisive check (does it
+   *  evaluate to the required type?) is a real computation, since the platform
+   *  infers a formula's type by evaluating it. This runs the dialog's own
+   *  preview path over the same small preview frame, so a condition is refused
+   *  here for exactly the reasons it would fail later, and the user's table is
+   *  never touched.
+   *
+   *  A blank expression is not an error — whether the parameter is required is
+   *  the host's business, not the editor's. */
+  private async validateExpressionOnly(expression: string): Promise<void> {
+    // Nothing typed yet is not a mistake — but the syntax check upstream parses
+    // the empty string and reports `: "(" expected]`, which a freshly opened
+    // editor would then show (and publish) as its verdict.
+    if (expression.trim() === '')
+      this.error = '';
+    else if (this.previwDf && (!this.error || this.error === SYNTAX_ERROR)) {
+      const added: string[] = [];
+      try {
+        await this.getPreviewResults(this.call.getParamValue('name') || 'Formula',
+          this.call.getParamValue('type') ?? 'auto', expression, added);
+      } catch (e: any) {
+        this.error = this.getErrorMessage(e?.message ?? String(e));
+      }
+      // The check computes a real column into the preview frame — drop it, or
+      // every keystroke leaves another one behind.
+      for (const name of added) this.previwDf.columns.remove(name);
+    }
+    this.updateError();
+    this.publishValidity(expression);
+  }
+
+  /** Tell the host whether the current formula is usable.
+   *
+   *  A widget crosses a package boundary as a NEW JS wrapper around the same
+   *  Dart handle, so a field set here would not survive the trip — the DOM
+   *  does. The root carries the current verdict and fires an event whenever it
+   *  changes, which is how a caller can gate on a formula it did not compute
+   *  itself. `SYNTAX_ERROR` is deliberately not fatal: string-interpolation
+   *  expressions parse as syntax errors and still work. */
+  private publishValidity(expression: string): void {
+    const root = this.widget?.root;
+    if (!root) return;
+    const error = this.error === SYNTAX_ERROR ? '' : this.error;
+    if (error) root.setAttribute(EXPRESSION_ERROR_ATTR, error);
+    else root.removeAttribute(EXPRESSION_ERROR_ATTR);
+    // Bubbles: the host mounts this widget somewhere inside its own element and
+    // listens there, so it never has to hold on to the root itself.
+    root.dispatchEvent(new CustomEvent(EXPRESSION_VALIDATED_EVENT,
+      {detail: {expression, error}, bubbles: true}));
+  }
+
+  /** A filter/condition editor has no type input to change — the formula itself
+   *  has to be a comparison, so say that instead of pointing at a control that
+   *  is hidden (the viewer filter dialog) or absent (a hosted editor). */
+  private typeMismatchError(actual: string, expected: string): string {
+    if (this.isFilterFormulaEditor)
+      return `The formula is ${actual}, not a true/false condition. Compare something, e.g. \${age} > 30`;
+    return `Result column type (${actual}) doesn't match with current column type (${expected}).
+          Change column type ${this.widget ? 'using \'Edit in dialog\'' : ''} or modify formula.`;
+  }
+
   async getPreviewResults(colName: string, colType: string, expression: string, potentialColIds: string[]):
     Promise<void> {
     const call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!,
@@ -1275,8 +1425,7 @@ export class AddNewColumnDialog {
       const mappedTypes = VALIDATION_TYPES_MAPPING[colType] ?? [];
       this.error = colType !== 'auto' &&
        args.columns[0].type !== colType && !mappedTypes.includes(args.columns[0].type) ?
-        `Result column type (${args.columns[0].type}) doesn't match with current column type (${colType}).
-          Change column type ${this.widget ? 'using \'Edit in dialog\'' : ''} or modify formula.` : '';
+        this.typeMismatchError(args.columns[0].type, colType) : '';
     });
     await call.call(false, undefined, {processed: true, report: false});
     /*    await this.previwDf!.columns.addNewCalculated(
@@ -1446,6 +1595,13 @@ export class AddNewColumnDialog {
 
   /** Adds a New Column to the source table or edit formula for an existing column. */
   async addNewColumnAction(): Promise<void> {
+    // Expression mode: publishing the formula onto the call IS the action. The
+    // host is storing a value — running AddNewColumn here would append a column
+    // to a table it merely captured to autocomplete against.
+    if (this.isExpressionEditor) {
+      this.call.setParamValue('expression', this.codeMirror!.state.doc.toString());
+      return;
+    }
     if (this.edit) {
       const colToUpdate = this.sourceDf?.col(this.call!.getParamValue('name'));
       if (colToUpdate) {

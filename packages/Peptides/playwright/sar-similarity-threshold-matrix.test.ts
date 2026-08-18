@@ -4,8 +4,10 @@ sub_features_covered: [peptides.compute.calculate-monomer-position-statistics, p
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {waitForViewers} from './helpers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
+const EXPECTED_VIEWERS = ['Sequence Variability Map', 'Most Potent Residues', 'MCL', 'Logo Summary Table'];
 async function openPeptidesTable(page: import('@playwright/test').Page) {
   const result = await page.evaluate(async (path) => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
@@ -82,8 +84,9 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
   await page.waitForFunction(() => {
     return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
   }, {timeout: 90000});
-  // Let the MCL clustering + sequence-space embedding settle.
-  await page.waitForTimeout(8000);
+  // MCL clustering finishes after the model attaches, and Logo Summary Table only exists
+  // once it produced a clusters column — so wait for the viewer set, not for a fixed delay.
+  await waitForViewers(page, EXPECTED_VIEWERS);
   return await page.evaluate(() => {
     const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
     const model = tv.dataFrame.temp['peptidesModel'] as any;
@@ -153,15 +156,8 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
       expect(out.appliedThreshold,
         `Similarity=${threshold} did not propagate to the model mclSettings.threshold`).toBe(threshold);
       expect(out.modelPresent, `PeptidesModel did not attach after SAR at Similarity=${threshold}`).toBe(true);
-      expect(out.viewers, `Sequence Variability Map must attach at Similarity=${threshold}`)
-        .toContain('Sequence Variability Map');
-      expect(out.viewers, `Most Potent Residues must attach at Similarity=${threshold}`)
-        .toContain('Most Potent Residues');
-      expect(out.viewers, `MCL clustering viewer must attach at Similarity=${threshold}`)
-        .toContain('MCL');
-      // Logo Summary Table is cluster-result-dependent — record without failing.
-      if (!out.viewers.includes('Logo Summary Table'))
-        console.log(`[note] Logo Summary Table not attached at Similarity=${threshold} (cluster-result-dependent).`);
+      for (const type of EXPECTED_VIEWERS)
+        expect(out.viewers, `${type} must attach at Similarity=${threshold}`).toContain(type);
       expect(out.positionsWithStats,
         `MonomerPositionStats is empty at Similarity=${threshold} (WebLogo would render blank)`)
         .toBeGreaterThan(0);

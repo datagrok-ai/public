@@ -1,7 +1,7 @@
 ---
 feature: legend
 realizes_atlas: []
-realizes: []
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot, viewers.filters.histogram, viewers.filters.categorical, chem.filter.substructure-filter]
 realized_as:
   - filtering-spec.ts
 target_layer: playwright

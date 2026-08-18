@@ -1,30 +1,17 @@
-/** Data model + condition/target helpers for the in-app guide system
- *  (interactive tutorials and how-to answers).
- *
- *  A `Guide` is an ordered list of `GuideStep`s. Each step highlights a UI
- *  element (via `ui.hints`) and waits for the user to actually perform an
- *  action — click something, type a value, add/connect a node — before
- *  advancing. Targets are addressed by the `data-testid` / `data-*` attributes
- *  stamped across the UI (see utils/test-ids.ts), which is what makes the
- *  highlight-and-wait approach reliable.
- *
- *  This file is DOM-light and side-effect-free except for the poll/listen
- *  helpers, so the conditions can be unit-tested. */
+/** Data model + condition/target helpers for the in-app guide system.
+ *  DOM-light and side-effect-free except the poll/listen helpers, so conditions are unit-testable. */
 
+import * as DG from 'datagrok-api/dg';
 import {tid} from '../utils/test-ids';
 import type {FlowEditor} from '../rete/flow-editor';
 
 /** What the guide runner needs from its host view. */
 export interface GuideHost {
-  /** The live editor (may be undefined very early during view init). */
+  /** May be undefined very early during view init. */
   getFlow(): FlowEditor | undefined;
-  /** Ensure the function browser (toolbox) is visible. */
   showFunctionBrowser(): void;
-  /** Activate one of the toolbox top tabs (Files / Spaces / Queries / Workflows / Favorites). */
   showToolboxTab(name: 'Files' | 'Spaces' | 'Queries' | 'Workflows' | 'Favorites'): void;
-  /** Hide the "Start a flow" overlay while a guide runs — it competes with the
-   *  instruction cards and covers the canvas the steps point at. Optional so
-   *  bare test hosts don't need it. */
+  /** Optional so bare test hosts don't need it. */
   hideStartPanel?(): void;
   /** An always-present element intro/outro popups can anchor to (the help button). */
   readonly anchorEl: HTMLElement;
@@ -39,26 +26,18 @@ export interface GuideContext {
 export type GuideKind = 'tutorial' | 'question';
 
 export interface GuideStep {
-  /** Short heading shown in the instruction popup. */
   title: string;
-  /** Instruction body (plain text). */
   text: string;
-  /** The element the popup anchors to (and, by default, the one highlighted).
-   *  Re-resolved continuously; return null to center the popup. */
+  /** Re-resolved continuously; return null to center the popup. */
   target?: (ctx: GuideContext) => HTMLElement | null;
-  /** Elements to highlight (pulse + tint). Defaults to `[target]`. Use this to
-   *  highlight more than one thing — e.g. both pins the user must connect. */
+  /** Defaults to `[target]` — set to highlight several things (e.g. both pins to connect). */
   highlights?: (ctx: GuideContext) => Array<HTMLElement | null>;
-  /** Extra elements the instruction card must not cover (highlights are
-   *  avoided automatically) — e.g. the node whose tiny detail is the target. */
+  /** Extra elements the card must not cover (highlights are avoided automatically). */
   avoid?: (ctx: GuideContext) => Array<HTMLElement | null>;
-  /** Where the popup appears relative to the target. Default 'right'. */
+  /** Default 'right'. */
   position?: 'top' | 'bottom' | 'left' | 'right';
-  /** Optional setup run before the step shows (e.g. open the toolbox). */
   setup?: (ctx: GuideContext) => void | Promise<void>;
-  /** If true at step start, the step is skipped entirely (no card, no setup).
-   *  Used for prerequisite steps that are only shown when their condition isn't
-   *  already satisfied. */
+  /** Skipped entirely at step start when true — for already-satisfied prerequisites. */
   skipIf?: (ctx: GuideContext) => boolean;
   /** Resolves when the step's action is done. Omit for a manual "Next" step. */
   until?: (ctx: GuideContext) => Promise<void>;
@@ -73,73 +52,61 @@ export interface Guide {
   steps: GuideStep[];
 }
 
-// ---------- target resolvers ----------
-
-/** Find an element by raw CSS selector (document-wide). */
 export function el(selector: string): HTMLElement | null {
   return document.querySelector(selector);
 }
 
-/** Target by data-testid value (already ff-namespaced — pass the parts). */
+/** Target by data-testid value — pass the parts, `tid` namespaces them. */
 export function byTid(...parts: Array<string | number>): (ctx: GuideContext) => HTMLElement | null {
   const sel = `[data-testid="${tid(...parts)}"]`;
   return () => el(sel);
 }
 
-/** Target by an arbitrary selector. */
 export function bySel(selector: string): (ctx: GuideContext) => HTMLElement | null {
   return () => el(selector);
 }
 
-/** Target a canvas node by the DG function it runs (e.g. 'OpenFile'). Matches on
- *  the node's `data-func` attribute. */
+/** Target a canvas node by its `data-func` (e.g. 'OpenFile'). */
 export function byNodeFunc(funcName: string): (ctx: GuideContext) => HTMLElement | null {
   const lc = funcName.toLowerCase();
   return () => (Array.from(document.querySelectorAll('.ff-node')) as HTMLElement[])
     .find((n) => (n.dataset.func ?? '').toLowerCase() === lc) ?? null;
 }
 
-/** Target a canvas node by its registered type name (`data-node-type-name`,
- *  e.g. 'Outputs/Table Output' — for built-ins that have no `data-func`). */
+/** Target a canvas node by its registered type name — for built-ins with no `data-func`. */
 export function byNodeType(typeName: string): (ctx: GuideContext) => HTMLElement | null {
   return () => (Array.from(document.querySelectorAll('.ff-node')) as HTMLElement[])
     .find((n) => n.dataset.nodeTypeName === typeName) ?? null;
 }
 
-/** Target the `index`-th canvas node running a given DG function (DOM order ≈
- *  creation order). Used to disambiguate two identical nodes — e.g. two demog
- *  Open File nodes feeding `table1` / `table2` of a join. */
+/** The `index`-th node running a function (DOM order ≈ creation order) — disambiguates identical nodes. */
 export function byNodeFuncNth(funcName: string, index: number): (ctx: GuideContext) => HTMLElement | null {
   const lc = funcName.toLowerCase();
   return () => (Array.from(document.querySelectorAll('.ff-node')) as HTMLElement[])
     .filter((n) => (n.dataset.func ?? '').toLowerCase() === lc)[index] ?? null;
 }
 
-/** The top-most open Datagrok dialog (`.d4-dialog`), or null. The guide card
- *  sits above dialogs (z-index 5000 vs 3000), so a step whose action opens a
- *  dialog must re-anchor to it — otherwise the dialog is hidden behind the card. */
+/** Top-most open dialog — the card sits above dialogs, so a step opening one must re-anchor to it. */
 export function openDialogEl(): HTMLElement | null {
-  const dialogs = Array.from(document.querySelectorAll('.d4-dialog')) as HTMLElement[];
-  return dialogs.length ? dialogs[dialogs.length - 1] : null;
+  const dialogs = DG.Dialog.getOpenDialogs();
+  return dialogs.length ? dialogs[dialogs.length - 1].root : null;
 }
 
-/** Wrap a target resolver so the card anchors to an open dialog when there is
- *  one (keeping it beside the dialog, not on top of it), else to `resolver`. */
+/** Anchors to an open dialog when there is one, else to `resolver`. */
 export function preferDialog(
   resolver: (ctx: GuideContext) => HTMLElement | null,
 ): (ctx: GuideContext) => HTMLElement | null {
   return (ctx) => openDialogEl() ?? resolver(ctx);
 }
 
-/** Target a function-browser item by the DG function it adds (`data-func`). */
+/** Target a function-browser item by its `data-func`. */
 export function byBrowserFunc(funcName: string): (ctx: GuideContext) => HTMLElement | null {
   const lc = funcName.toLowerCase();
   return () => (Array.from(document.querySelectorAll('[data-testid^="ff-browser-item"]')) as HTMLElement[])
     .find((it) => (it.dataset.func ?? '').toLowerCase() === lc) ?? null;
 }
 
-/** Target a specific socket dot inside the node found by `nodeResolver`.
- *  `key` is the raw socket key (e.g. 'result', 'table', 'table__pt'). */
+/** A socket dot inside the resolved node; `key` is the raw socket key (e.g. 'table__pt'). */
 export function socketOf(
   nodeResolver: (ctx: GuideContext) => HTMLElement | null, side: 'input' | 'output', key: string,
 ): (ctx: GuideContext) => HTMLElement | null {
@@ -151,8 +118,7 @@ export function socketOf(
   };
 }
 
-/** Target a specific property-panel input row by its raw parameter name
- *  (`data-param`, e.g. 'fullPath', 'expression', 'name'). */
+/** A property-panel input row by its raw parameter name (`data-param`). */
 export function byParam(paramName: string): (ctx: GuideContext) => HTMLElement | null {
   return () => el(`[data-param="${cssEscape(paramName)}"]`);
 }
@@ -162,26 +128,13 @@ export function paramFieldSelector(paramName: string): string {
   return `[data-param="${cssEscape(paramName)}"] textarea, [data-param="${cssEscape(paramName)}"] input`;
 }
 
-// ---------- Files tree (KNIME-style browser) resolvers ----------
-
-/** The connection row in the Files tree (e.g. 'Demo'), addressed by its test-id. */
 export function byFileTreeConn(connName: string): (ctx: GuideContext) => HTMLElement | null {
   return byTid('files-conn', connName);
 }
 
-/** The expand triangle inside a connection row — what the user clicks (or
- *  double-clicks the row) to open it. */
-export function byFileTreeConnTri(connName: string): (ctx: GuideContext) => HTMLElement | null {
-  const sel = `[data-testid="${tid('files-conn', connName)}"] .d4-tree-view-tri`;
-  return () => el(sel);
-}
-
-/** A file row in the Files tree (e.g. 'demog.csv'), addressed by its test-id. */
 export function byFileTreeFile(fileName: string): (ctx: GuideContext) => HTMLElement | null {
   return byTid('files-file', fileName);
 }
-
-// ---------- low-level waits ----------
 
 class AbortedError extends Error {
   constructor() {
@@ -193,8 +146,7 @@ export function isAborted(e: unknown): boolean {
   return e instanceof AbortedError;
 }
 
-/** Resolve when `pred()` becomes true; reject (AbortedError) if the signal fires.
- *  Polls on a timer — robust for state that has no dedicated event. */
+/** Polls on a timer — robust for state that has no dedicated event. */
 export function poll(pred: () => boolean, signal: AbortSignal, intervalMs = 300): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     if (signal.aborted) return reject(new AbortedError());
@@ -220,8 +172,7 @@ export function poll(pred: () => boolean, signal: AbortSignal, intervalMs = 300)
   });
 }
 
-/** Resolve on the next click of the element returned by `getEl` (waiting for it
- *  to appear first if necessary). */
+/** Resolves on the next click of the element, waiting for it to appear first if necessary. */
 export function waitForClick(
   getEl: (ctx: GuideContext) => HTMLElement | null, ctx: GuideContext,
 ): Promise<void> {
@@ -256,21 +207,15 @@ export function waitForClick(
   });
 }
 
-// ---------- high-level conditions (compose into `until`) ----------
-
-/** Wait for the user to click the step's highlighted target. */
 export function untilClick(getEl: (ctx: GuideContext) => HTMLElement | null) {
   return (ctx: GuideContext): Promise<void> => waitForClick(getEl, ctx);
 }
 
-/** Wait until a node of the given registered type name (e.g. 'Inputs/Table Input')
- *  exists on the canvas. */
 export function untilNodeType(typeName: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => (ctx.host.getFlow()?.getNodes() ?? []).some((n) => n.dgTypeName === typeName), ctx.signal);
 }
 
-/** Wait until a node whose underlying DG function name matches exists. */
 export function untilFuncNode(funcName: string) {
   const lc = funcName.toLowerCase();
   return (ctx: GuideContext): Promise<void> =>
@@ -278,7 +223,6 @@ export function untilFuncNode(funcName: string) {
       .some((n) => (n.dgFuncName ?? '').toLowerCase().includes(lc)), ctx.signal);
 }
 
-/** Wait until the node count grows beyond its value when the step started. */
 export function untilMoreNodes() {
   return (ctx: GuideContext): Promise<void> => {
     const base = ctx.host.getFlow()?.getNodeCount() ?? 0;
@@ -286,7 +230,6 @@ export function untilMoreNodes() {
   };
 }
 
-/** Wait until at least one more connection exists than when the step started. */
 export function untilMoreConnections() {
   return (ctx: GuideContext): Promise<void> => {
     const base = ctx.host.getFlow()?.getConnectionCount() ?? 0;
@@ -294,13 +237,6 @@ export function untilMoreConnections() {
   };
 }
 
-/** Wait until the canvas has at least `n` nodes (absolute threshold). */
-export function untilNodeCountAtLeast(n: number) {
-  return (ctx: GuideContext): Promise<void> =>
-    poll(() => (ctx.host.getFlow()?.getNodeCount() ?? 0) >= n, ctx.signal);
-}
-
-/** Wait until fewer nodes than at step start (a delete happened). */
 export function untilFewerNodes() {
   return (ctx: GuideContext): Promise<void> => {
     const base = ctx.host.getFlow()?.getNodeCount() ?? 0;
@@ -308,9 +244,7 @@ export function untilFewerNodes() {
   };
 }
 
-/** Wait until a browser section (by its `data-section`) is expanded. Sections
- *  are platform accordion panes — an expanded pane's header carries the
- *  `expanded` class (set by DG.AccordionPane). */
+/** An expanded accordion pane's header carries the `expanded` class (set by DG.AccordionPane). */
 export function untilSectionExpanded(title: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => {
@@ -319,12 +253,10 @@ export function untilSectionExpanded(title: string) {
     }, ctx.signal);
 }
 
-/** Wait until an element matching the selector appears in the DOM. */
 export function untilExists(selector: string) {
   return (ctx: GuideContext): Promise<void> => poll(() => !!el(selector), ctx.signal);
 }
 
-/** Wait until the input/select matching `selector` contains `substr` (case-insensitive). */
 export function untilValueContains(selector: string, substr: string) {
   const needle = substr.toLowerCase();
   return (ctx: GuideContext): Promise<void> =>
@@ -334,31 +266,20 @@ export function untilValueContains(selector: string, substr: string) {
     }, ctx.signal);
 }
 
-/** Wait until a node is selected (the property panel shows a node's title row).
- *  NOTE: satisfied by a panel left over from a previous selection — prefer
- *  {@link untilNodeOfTypeSelected} / {@link untilNodeSelectedOfFunc}, which
- *  wait for the RIGHT node to carry the selection. */
+/** NOTE: satisfied by a stale panel — prefer untilNodeOfTypeSelected / untilNodeSelectedOfFunc. */
 export function untilNodeSelected() {
   return (ctx: GuideContext): Promise<void> =>
     untilExists(`[data-testid="${tid('property-title-row')}"]`)(ctx);
 }
 
-/** Wait until a node of the given registered type name is selected on the
- *  canvas (its `data-selected` flips) — immune to a stale property panel. */
+/** Keys off the canvas node's `data-selected` — immune to a stale property panel. */
 export function untilNodeOfTypeSelected(typeName: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => (Array.from(document.querySelectorAll('.ff-node[data-selected="true"]')) as HTMLElement[])
       .some((n) => n.dataset.nodeTypeName === typeName), ctx.signal);
 }
 
-/** Wait until a node on the canvas is collapsed. */
-export function untilNodeCollapsed() {
-  return (ctx: GuideContext): Promise<void> =>
-    poll(() => !!el('.ff-node.ff-node-collapsed'), ctx.signal);
-}
-
-/** Wait until *another* node becomes collapsed than were at step start — so it
- *  detects the user's collapse action, not a node that was already collapsed. */
+/** Detects the user's collapse action, not a node already collapsed at step start. */
 export function untilMoreCollapsed() {
   return (ctx: GuideContext): Promise<void> => {
     const base = document.querySelectorAll('.ff-node.ff-node-collapsed').length;
@@ -366,27 +287,20 @@ export function untilMoreCollapsed() {
   };
 }
 
-// ---------- boolean predicates (for `skipIf` prerequisites) ----------
-
-/** Number of nodes currently on the canvas. */
 export function nodeCount(ctx: GuideContext): number {
   return ctx.host.getFlow()?.getNodeCount() ?? 0;
 }
 
-/** Whether a node running the given DG function (substring, case-insensitive) exists. */
 export function hasFuncNode(funcName: string): (ctx: GuideContext) => boolean {
   const lc = funcName.toLowerCase();
   return (ctx) => (ctx.host.getFlow()?.getNodes() ?? [])
     .some((n) => (n.dgFuncName ?? '').toLowerCase().includes(lc));
 }
 
-/** Whether a node of the given registered type name exists. */
 export function hasNodeType(typeName: string): (ctx: GuideContext) => boolean {
   return (ctx) => (ctx.host.getFlow()?.getNodes() ?? []).some((n) => n.dgTypeName === typeName);
 }
 
-/** Wait until a node running the given DG function is selected (its settings
- *  panel opens). Keys off the node's `data-selected`/`data-func` attributes. */
 export function untilNodeSelectedOfFunc(funcName: string) {
   const lc = funcName.toLowerCase();
   return (ctx: GuideContext): Promise<void> =>
@@ -394,9 +308,7 @@ export function untilNodeSelectedOfFunc(funcName: string) {
       .some((n) => (n.dataset.func ?? '').toLowerCase().includes(lc)), ctx.signal);
 }
 
-/** Wait until the input matching `selector` contains `term`, ignoring case AND
- *  whitespace — so "Open File", "open file", and "openfile" all satisfy
- *  `untilValueMatches(sel, 'openfile')`. */
+/** Ignores case AND whitespace — "Open File" satisfies `untilValueMatches(sel, 'openfile')`. */
 export function untilValueMatches(selector: string, term: string) {
   const needle = term.toLowerCase().replace(/\s+/g, '');
   return (ctx: GuideContext): Promise<void> =>
@@ -406,9 +318,7 @@ export function untilValueMatches(selector: string, term: string) {
     }, ctx.signal);
 }
 
-/** True when the node found by `rightResolver` sits at least `minDx` screen-px
- *  to the right of the node found by `leftResolver`. Doubles as a `skipIf` so
- *  "drag it clear" steps skip silently when the node already sits clear. */
+/** Doubles as a `skipIf` so "drag it clear" steps skip when the node already sits clear. */
 export function nodeIsRightOf(
   rightResolver: (ctx: GuideContext) => HTMLElement | null,
   leftResolver: (ctx: GuideContext) => HTMLElement | null,
@@ -422,8 +332,6 @@ export function nodeIsRightOf(
   };
 }
 
-/** Wait until the node found by `rightResolver` sits at least `minDx` screen-px
- *  to the right of the node found by `leftResolver` (user dragged it clear). */
 export function untilNodeRightOf(
   rightResolver: (ctx: GuideContext) => HTMLElement | null,
   leftResolver: (ctx: GuideContext) => HTMLElement | null,
@@ -433,10 +341,7 @@ export function untilNodeRightOf(
     poll(() => nodeIsRightOf(rightResolver, leftResolver, minDx)(ctx), ctx.signal);
 }
 
-/** True when the node found by `resolver` overlaps no other canvas node (with
- *  a small margin) — i.e. all its sockets are grabbable. Freshly added nodes
- *  land half-overlapping the previous one, hiding the very dots a "connect"
- *  step highlights; "drag it clear" steps gate on this. */
+/** Freshly added nodes can land half-overlapping, hiding the dots a "connect" step highlights. */
 export function nodeIsApart(
   resolver: (ctx: GuideContext) => HTMLElement | null, margin = 8,
 ): (ctx: GuideContext) => boolean {
@@ -457,7 +362,6 @@ export function nodeIsApart(
   };
 }
 
-/** Wait until the node found by `resolver` no longer overlaps any other node. */
 export function untilNodeApart(
   resolver: (ctx: GuideContext) => HTMLElement | null, margin = 8,
 ) {
@@ -465,8 +369,6 @@ export function untilNodeApart(
     poll(() => nodeIsApart(resolver, margin)(ctx), ctx.signal);
 }
 
-/** Wait until the node found by `resolver` moved at least `minPx` screen-px
- *  from where it was when the step started — a pure "try dragging it" gate. */
 export function untilNodeMovedBy(
   resolver: (ctx: GuideContext) => HTMLElement | null, minPx = 60,
 ) {
@@ -481,9 +383,7 @@ export function untilNodeMovedBy(
   };
 }
 
-/** Wait until ANY element matching `selector` is VISIBLE in the layout
- *  (exists and has a box) — `untilExists` alone is fooled by permanently-
- *  present-but-hidden hosts. */
+/** `untilExists` alone is fooled by present-but-hidden hosts. */
 export function untilVisible(selector: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => Array.from(document.querySelectorAll(selector)).some((node) => {
@@ -492,16 +392,11 @@ export function untilVisible(selector: string) {
     }), ctx.signal);
 }
 
-/** Wait until a connection row in the Files tree is expanded (its triangle has
- *  the `d4-tree-view-tri-expanded` class). */
 export function untilFileTreeConnExpanded(connName: string) {
   const sel = `[data-testid="${tid('files-conn', connName)}"] .d4-tree-view-tri-expanded`;
   return (ctx: GuideContext): Promise<void> => poll(() => !!el(sel), ctx.signal);
 }
 
-/** True when `node` is currently scrolled into view within its nearest vertical
- *  scroll container (and on-screen). Used to gate a "scroll until X is visible"
- *  step. */
 export function isScrolledIntoView(node: HTMLElement): boolean {
   const r = node.getBoundingClientRect();
   if (r.height === 0 || r.bottom <= 0 || r.top >= window.innerHeight) return false;
@@ -517,7 +412,6 @@ export function isScrolledIntoView(node: HTMLElement): boolean {
   return true; // no scroll container — viewport visibility already checked
 }
 
-/** Wait until the element matching `selector` exists AND is scrolled into view. */
 export function untilScrolledIntoView(selector: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => {
@@ -526,9 +420,6 @@ export function untilScrolledIntoView(selector: string) {
     }, ctx.signal);
 }
 
-/** Wait until a node running `funcName` has its `inputKey` input value set to a
- *  string containing `substr` (case-insensitive) — e.g. an OpenFile node whose
- *  `fullPath` now points at demog.csv. */
 export function untilFuncNodeWithInput(funcName: string, inputKey: string, substr: string) {
   const lcFn = funcName.toLowerCase();
   const lcSub = substr.toLowerCase();
@@ -538,8 +429,7 @@ export function untilFuncNodeWithInput(funcName: string, inputKey: string, subst
       String((n.inputValues ?? {})[inputKey] ?? '').toLowerCase().includes(lcSub)), ctx.signal);
 }
 
-/** Wait until the comma-separated value of `selector` lists at least `n`
- *  entries — i.e. the user picked at least `n` columns (a `column_list` field). */
+/** The user picked at least `n` columns (a comma-separated `column_list` field). */
 export function untilColumnCountAtLeast(selector: string, n: number) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => {
@@ -550,7 +440,6 @@ export function untilColumnCountAtLeast(selector: string, n: number) {
     }, ctx.signal);
 }
 
-/** Wait until the input/textarea matching `selector` has a non-empty value. */
 export function untilValueNonEmpty(selector: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => {
@@ -559,9 +448,7 @@ export function untilValueNonEmpty(selector: string) {
     }, ctx.signal);
 }
 
-/** Best-effort copy to the clipboard so a step can say "paste it". Returns
- *  whether it succeeded — callers should still show the literal text as a
- *  fallback for when clipboard access is denied. */
+/** Returns whether it succeeded — callers should show the literal text as a fallback. */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -571,8 +458,6 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** Prefill the function-browser search box (and fire its filter) so a single
- *  named function is shown, ready to double-click. DOM-only — no host API. */
 export function prefillSearch(text: string): void {
   const input = el('[data-testid="ff-browser-search"]') as HTMLInputElement | null;
   if (!input) return;
@@ -585,21 +470,14 @@ function cssEscape(s: string): string {
   return s.replace(/["\\]/g, '\\$&');
 }
 
-// ---------- popup placement (pure, unit-tested) ----------
-
 export type Side = 'top' | 'bottom' | 'left' | 'right';
 export interface PlaceRect {left: number; top: number; right: number; bottom: number; width: number; height: number}
 export interface Placement {side: Side | 'center'; x: number; y: number}
 
 const OPPOSITE: Record<Side, Side> = {right: 'left', left: 'right', top: 'bottom', bottom: 'top'};
 
-/** Choose where a popup of size pw×ph goes next to `target` within a vw×vh
- *  viewport: honor `preferred` if it fits, else its opposite, else
- *  right→left→bottom→top; then clamp fully on screen. Among the sides that
- *  fit, one whose (clamped) popup does NOT cover any `avoid` rect wins — so
- *  the card never sits on the very element the step highlights (e.g. the
- *  second socket of a connect step). With no target, center horizontally /
- *  upper-third vertically. Pure so it can be unit-tested. */
+/** Picks the best side (preferred → opposite → right/left/bottom/top), clamps on-screen,
+ *  and prefers sides whose popup covers no `avoid` rect. Pure — unit-tested. */
 export function computePlacement(
   target: PlaceRect | null, pw: number, ph: number, vw: number, vh: number,
   preferred?: Side, gap = 14, margin = 10, avoid: PlaceRect[] = [],

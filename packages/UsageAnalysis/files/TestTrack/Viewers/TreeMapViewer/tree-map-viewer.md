@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.tree-map]
 realized_as:
   - tree-map-viewer-spec.ts
 related_bugs: []

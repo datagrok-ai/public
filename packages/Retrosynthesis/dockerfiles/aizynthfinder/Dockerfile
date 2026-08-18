@@ -33,6 +33,8 @@ WORKDIR /app
 
 COPY --from=builder /install/lib /usr/local/lib
 COPY --from=builder /install/bin /usr/local/bin
+
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN patchelf --clear-execstack /usr/local/lib/python3.10/site-packages/onnxruntime/capi/onnxruntime_pybind11_state.cpython-310-x86_64-linux-gnu.so
 RUN mkdir -p /app/configs/default && \
     python -c "import sys; import aizynthfinder; from aizynthfinder.tools.download_public_data import main; sys.argv = ['download_public_data', '/app/configs/default']; main()"

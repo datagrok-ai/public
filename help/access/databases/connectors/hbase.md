@@ -13,6 +13,11 @@ keywords:
 Provides access to [Apache HBase](https://hbase.apache.org/) NoSQL database
 using SQL queries via a JDBC driver.
 
+:::warning
+The HBase connector is currently unavailable: the platform does not ship its JDBC (Phoenix
+query server) driver, so the connector is not advertised. Contact Datagrok if you need it.
+:::
+
 ## Connection parameters
 
 ```json

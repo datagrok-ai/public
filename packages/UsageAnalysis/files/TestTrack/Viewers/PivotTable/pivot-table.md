@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.pivot-viewer]
 realized_as:
   - pivot-table-spec.ts
 related_bugs: []

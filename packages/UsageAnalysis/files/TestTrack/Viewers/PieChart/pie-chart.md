@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.pie-chart]
 realized_as:
   - pie-chart-spec.ts
 related_bugs: []

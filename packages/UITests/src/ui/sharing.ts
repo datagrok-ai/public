@@ -93,15 +93,20 @@ category('UI: Sharing', () => {
         (treeGroupToClick as DG.TreeViewGroup).getOrCreateGroup(name);
     }
     treeGroupToClick.root.click();
-    await awaitCheck(() => (document.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
+    // Scope to the opened view: document.querySelector can return another view's gallery.
+    await awaitCheck(() => (grok.shell.v?.root?.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
       'cannot load gallery grid', 3000);
     v = grok.shell.v;
     const gallery = v.root;
     const search = gallery.querySelector('.ui-input-editor') as HTMLInputElement;
     search.value = entityName;
     search.dispatchEvent(new MouseEvent('input'));
-    await awaitCheck(() => document.querySelector('.grok-gallery-grid')?.children?.length === 1,
-      'more than one testing entity present', 3000);
+    // The Scripts gallery lists every platform script, so narrowing it to one takes longer
+    // than the small Dashboards/Databases galleries — 3s was enough for those and not for
+    // scripts.ui on the CI stand, where it read as "more than one entity" while the search
+    // had simply not applied yet.
+    await awaitCheck(() => gallery.querySelector('.grok-gallery-grid')?.children?.length === 1,
+      'search did not narrow the gallery to the test entity', 15000);
     await delay(2000);
     let entity = gallery.querySelector('.grok-gallery-grid')!.children[0];
     if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector) ?? entity;

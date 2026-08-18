@@ -7,7 +7,9 @@ import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
 import {emitCreationScript} from '../compiler/creation-script-emitter';
 import {validateGraph} from '../compiler/validator';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {ExecutionController} from '../execution/execution-controller';
+import {NodeExecStatus} from '../execution/execution-state';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 const SETTINGS = {name: 'TestFlow', description: 'test', tags: ['funcflow']};
 
@@ -60,8 +62,6 @@ category('Flow: topological sort', () => {
 
       const sorted = topologicalSort(e.flow);
       const at = (id: string): number => sorted.indexOf(id);
-      // The whole top component drains before the bottom one starts —
-      // lower disjoint paths may implicitly consume what upper ones produced.
       expect(Math.max(at(topIn.id), at(topOut.id)) < Math.min(at(bottomIn.id), at(bottomOut.id)), true,
         'top chain must fully precede the bottom chain');
     } finally {
@@ -72,8 +72,7 @@ category('Flow: topological sort', () => {
   test('within a component, ready nodes process top-to-bottom', async () => {
     const e = makeEditor();
     try {
-      // Two independent sources merging into one sink; the lower source was
-      // created first, but the upper one must come first in the order.
+      // the lower source is created first — order must come from position, not creation
       const lower = await addNode(e.flow, 'Constants/String', 0, 400);
       const upper = await addNode(e.flow, 'Constants/String', 0, 100);
       const sink = await addNode(e.flow, 'Comparisons/Equals (==)', 300, 250);
@@ -138,16 +137,13 @@ category('Flow: script emitter', () => {
     try {
       const c = await addNode(e.flow, 'Constants/String');
       c.properties['value'] = 'hello';
-      // Constant nodes title themselves after their value — emission must
-      // dispatch on the registered type, not the (user-editable) label.
+      // emission must dispatch on the registered type, not the user-editable label
       c.label = 'const: hello';
       const out = await addNode(e.flow, 'Outputs/Value Output');
       out.properties['paramName'] = 'greeting';
       await e.flow.addConnectionByKeys(c.id, 'value', out.id, 'value');
 
       const script = emitScript(e.flow, SETTINGS);
-      // The constant is declared as its own variable and the output references it:
-      //   let constHello = "hello";  …  greeting = constHello;
       expect(script.includes('"hello"'), true, 'string literal present');
       expect(/greeting\s*=\s*\w+;/.test(script), true, 'output assigned from upstream variable');
     } finally {
@@ -170,10 +166,68 @@ category('Flow: script emitter', () => {
     }
   });
 
+  test('OpenFile: sheetName stays out of the call unless the path is xlsx', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.sdf';
+      let script = emitScript(e.flow, SETTINGS);
+      // OpenFile forwards any non-null sheetName as a second importer argument — the sdf importer takes one
+      expect(/grok\.functions\.call\('OpenFile', \{fullPath: "[^"]+"\}\)/.test(script), true,
+        `sdf call carries only the path (script: ${script})`);
+      expect(script.includes('sheetName'), false, 'no sheetName for a non-xlsx path');
+
+      node.inputValues['sheetName'] = 'Sheet1';
+      script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName'), false, 'a typed sheet name is still dropped for sdf');
+
+      node.inputValues['fullPath'] = 'System:AppData/Demo/book.xlsx';
+      script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName: "Sheet1"'), true, `xlsx keeps the sheet name (script: ${script})`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an untouched optional scalar is omitted so the function default applies', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'a.csv';
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('sheetName'), false, 'blank optional omitted');
+      expect(script.includes('fullPath: "a.csv"'), true, 'filled value kept');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an Open File node pointed at an sdf runs end-to-end', async () => {
+    const info = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (!info) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, info.nodeTypeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.sdf';
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runAutorun(new Set(), SETTINGS), 'started', 'run starts');
+      const done = (): boolean => {
+        const s = ctrl.state.getNodeState(node.id)?.status;
+        return s === NodeExecStatus.completed || s === NodeExecStatus.errored;
+      };
+      expect(await until(done, 30000), true, 'run finished');
+      const st = ctrl.state.getNodeState(node.id);
+      expect(st?.status, NodeExecStatus.completed, `sdf opened via the emitted call (${st?.error ?? ''})`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('side-effect-only utilities (Log) emit no output summary when instrumented', async () => {
-    // Log/Info/Warning declare no variable — the instrumented wrapper used to
-    // emit `__ff_summarize(log)` anyway, so any flow with a Log node failed
-    // at run time with "log is not defined" (ReferenceError).
     const e = makeEditor();
     try {
       const c = await addNode(e.flow, 'Constants/String');
@@ -190,9 +244,7 @@ category('Flow: script emitter', () => {
         'no stash of an undeclared variable (the compiler gives Log no phantom output)');
       expect(script.includes(`__ff_emit('node-complete', '${log.id}');`), true,
         'the Log node completes with no outputs payload');
-      // A value-producing utility on the same canvas still summarizes normally.
-      // In instrumented mode the `let` is hoisted out of the try block, so the
-      // body line is a bare assignment.
+      // instrumented `let` is hoisted out of the try block, so the body line is a bare assignment
       const toStringVar = script.match(/(\w+) = \(.*\)\.toString\(\);/)?.[1];
       expect(!!toStringVar, true, 'the ToString step declares its variable');
       expect(script.includes(`__ff_summarize(${toStringVar})`), true, 'ToString keeps its output summary');
@@ -214,7 +266,6 @@ category('Flow: script emitter', () => {
       expect(script.includes('grok.shell.tableByName("My Table")'), true, 'name lookup emitted');
       expect(script.includes('throw new Error("Select Table: no open table or variable named'), true,
         'a null table throws with the table name instead of failing downstream');
-      // Instrumented mode keeps the guard inside the node's try/catch → node-error.
       const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-sel'});
       expect(inst.includes('throw new Error("Select Table: no open table or variable named'), true,
         'the guard survives instrumentation');
@@ -241,11 +292,9 @@ category('Flow: script emitter', () => {
       await e.flow.addConnectionByKeys(input.id, 'table', setVar.id, 'value');
 
       const script = emitScript(e.flow, SETTINGS);
-      // The Output node also registers its value in the run context (SetVar)…
       expect(script.includes(
         `await grok.functions.call('SetVar', {variableName: "res", value: myTable});`), true,
       'an Output node doubles as a SetVar registration');
-      // …and the SetVar node also declares a script output, typed from its connection.
       expect(script.includes('//output: dataframe MyResult'), true,
         'a SetVar node declares an output header with the connection-inferred type');
       expect(script.includes('MyResult = myTable;'), true,
@@ -256,9 +305,6 @@ category('Flow: script emitter', () => {
   });
 
   test('a no-output mutator with two table inputs captures both modified tables', async () => {
-    // A node that transforms tables in place and declares no output: the
-    // instrumented run captures every connected dataframe input as a
-    // "<input> (modified)" summary, so the preview can show both.
     const script = DG.Script.create([
       '//name: TwoTableMutator',
       '//language: javascript',
@@ -288,9 +334,6 @@ category('Flow: script emitter', () => {
   });
 
   test('dataframe pass-throughs get dims-only summaries; utility summaries are slot-keyed', async () => {
-    // A func that threads a table through (real output is an int): its
-    // `t__pt` pass-through must appear in the node-complete outputs as a cheap
-    // __ff_dims entry, so the outgoing pass-through wire gets its "N × K" label.
     const script = DG.Script.create([
       '//name: TableThreader',
       '//language: javascript',
@@ -309,8 +352,6 @@ category('Flow: script emitter', () => {
       expect(inst.includes('function __ff_dims'), true, 'dims helper in the preamble');
       expect(inst.includes('"t__pt": __ff_dims('), true, 'pass-through summarized (dims-only)');
 
-      // A utility step's summary is keyed by its output SLOT key (what the
-      // edge-count and port-preview lookups use), not by its variable name.
       const sel = await addNode(e.flow, 'Utilities/Select Table', 0, 200);
       sel.properties['tableName'] = 'demog';
       const inst2 = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r2'});
@@ -330,12 +371,7 @@ category('Flow: multi-output funcs', () => {
   });
 
   test('reads outputs off the call object; variable names are valid identifiers', async () => {
-    // A func whose NAME starts with a digit and declares TWO outputs — both bugs
-    // at once: an illegal variable name (`let 2InputsFlow… ` is a syntax error),
-    // and downstream references to per-output variables that `grok.functions.call`
-    // never declares. It returns the value directly for a single output but an
-    // object keyed by the output names when there are several — so the outputs
-    // must be read as `<call>.result1` / `<call>.result2`.
+    // the name starts with a digit and declares two outputs — both failure modes at once
     const script = DG.Script.create([
       '//name: 2InputsFlow',
       '//language: javascript',
@@ -361,23 +397,18 @@ category('Flow: multi-output funcs', () => {
 
       const clean = emitScript(e.flow, SETTINGS);
 
-      // 1. No emitted variable declaration starts with a digit.
       expect(/\blet\s+[0-9]/.test(clean), false, 'no variable name starts with a digit');
       const m = clean.match(/let\s+(\w+)\s*=\s*await grok\.functions\.call\(/);
       expect(m != null, true, 'the func call is assigned to a variable');
       const callVar = m![1];
       expect(/^[0-9]/.test(callVar), false, `call var "${callVar}" must not start with a digit`);
 
-      // 2. Downstream reads a PROPERTY off the call object, not a phantom variable.
       expect(clean.includes(`Result = ${callVar}.result1;`), true, 'Result assigned from the result1 property');
       expect(clean.includes(`Result2 = ${callVar}.result2;`), true, 'Result2 assigned from the result2 property');
       expect(clean.includes(`${callVar}_result1`), false, 'no reference to an undeclared per-output variable');
-      // detectSemanticTypes on each dataframe output uses the property expression.
       expect(clean.includes(`if (${callVar}.result1 != null) await ${callVar}.result1.meta.detectSemanticTypes();`),
         true, 'semantic detection runs on the property expression');
 
-      // 3. Instrumented summary is keyed by the slot key (a valid object key), and
-      // its value is the property expression.
       const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
       expect(inst.includes(`"result1": __ff_summarize(${callVar}.result1`), true,
         'summary keyed by slot key, value reads the property');
@@ -445,8 +476,6 @@ category('Flow: validator', () => {
         r.severity === 'error' && r.message.includes(`Duplicate variable name 'res'`);
       expect(validateGraph(e.flow).some(isDup), true, 'two outputs sharing a name is an error');
 
-      // Rename one output; a SetVar registering the SAME name still collides —
-      // SetVar and Output share one namespace (they compile to the same thing).
       out2.properties['paramName'] = 'other';
       expect(validateGraph(e.flow).some(isDup), false, 'distinct output names pass');
 

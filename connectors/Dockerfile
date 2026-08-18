@@ -36,6 +36,23 @@ RUN set -ex ; \
     apt-get clean ; \
     rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/*
 
+# main: every driver except the CVE-quarantined ones; extended: only those.
+# A separate layer so the expensive maven layer above is FLAVOR-independent.
+# providers.conf bakes the /conn allowlist into the image (empty = all with a present
+# driver) — ProviderManager reads the file, not an env var, so the partition is
+# fixed at build time.
+ARG FLAVOR=main
+ARG GROK_CONNECT_PROVIDERS=""
+RUN set -ex ; \
+    EXTENDED_JARS="amazon-neptune-jdbc-driver-3.0.3-all.jar ImpalaJDBC42.jar" ; \
+    printf '%s\n' "${GROK_CONNECT_PROVIDERS}" > ${GROK_CONNECT_DIR}/providers.conf ; \
+    cd ${GROK_CONNECT_DIR}/lib ; \
+    if [ "$FLAVOR" = "extended" ] ; then \
+      for f in * ; do case " $EXTENDED_JARS " in *" $f "*) ;; *) rm -f "$f" ;; esac ; done ; \
+    else \
+      rm -f $EXTENDED_JARS ; \
+    fi
+
 FROM datagrok/openjdk:8 as main
 
 # Java 8 derives its default charset from the locale; in a minimal image that is

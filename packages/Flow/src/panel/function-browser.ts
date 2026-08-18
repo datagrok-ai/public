@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   FuncInfo, getRegisteredFuncs, isWorkflowFunc, ensureFuncNodeType, loadQueryFuncs, VIEWER_NODE_TYPES,
 } from '../rete/node-factory';
+import {BUILTIN_SECTIONS} from '../rete/builtin-catalog';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
 import {SpacePicker} from '../ui/space-picker';
@@ -11,7 +12,6 @@ import {categorizeBySignature, domainCategory} from '../types/type-map';
 import {getFavorites, isFavorite, toggleFavorite, onFavoritesChanged} from './favorites';
 import {supportedUploadExtensions} from '../utils/uploaded-files';
 
-/** Whether a function's output is a widget (→ the Widgets pane, not a category). */
 export function funcOutputsWidget(f: FuncInfo): boolean {
   try {
     return f.func.outputs.some((o) => String(o.propertyType) === 'widget');
@@ -22,9 +22,7 @@ export function funcOutputsWidget(f: FuncInfo): boolean {
 
 export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
 
-/** The task-oriented categories, in the order a scientist meets a pipeline:
- *  get data in → combine → reshape → derive columns → compute values →
- *  visualize → everything else. Used both to bucket and to order the tree. */
+/** Task categories in pipeline order — used both to bucket and to order the tree. */
 export const FUNC_CATEGORIES = [
   'Data Sources',
   'Workflows',
@@ -39,24 +37,7 @@ export const FUNC_CATEGORIES = [
 ] as const;
 export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
 
-/** Bucket a function by **what it does**, derived from its input/output
- *  signature (and role for viewers) — delegates to the shared
- *  `categorizeBySignature` (the same logic that colors node title bars). The
- *  key distinctions, validated against the live catalog:
- *  - **Data Sources** produce a table from *no* table input (OpenFile, DB
- *    queries, generators). A join is NOT a data source — it consumes tables.
- *  - **Combine Tables** take ≥2 tables (join / union / link / react).
- *  - **Transform Tables** take exactly one table and return a table or mutate
- *    it in place (filter, aggregate, pivot, sort, …).
- *  - **Column Operations** emit a column / column list (AddNewColumn, descriptors).
- *  - **Compute Values** emit a scalar (statistics, math, text, predicates).
- *  - **Visualize** emit a viewer / view / widget / graphics.
- *  - **Cheminformatics** / **Bioinformatics** — grouped by source package
- *    (domain wins over the signature category), so a scientist finds all
- *    chem/bio steps together regardless of what they do.
- *  - **Workflows** — saved flows (`DG.Script`, language `flow`); checked
- *    before everything else since their signature reads as a data source.
- *  - **Other** — expression/filter builders and dynamic helpers. */
+/** Bucket a function by what it does — domain package wins over the signature category. */
 export function categorizeFunc(func: DG.Func, role: string | null, packageName?: string): FuncCategory {
   if (isWorkflowFunc(func)) return 'Workflows';
   const inputTypes = func.inputs.map((i) => String(i.propertyType));
@@ -68,17 +49,13 @@ export function categorizeFunc(func: DG.Func, role: string | null, packageName?:
     role) as FuncCategory;
 }
 
-/** For each domain section, the flagship package whose functions lead the list
- *  (the rest of that domain's packages follow). */
+/** Flagship package whose functions lead each domain section. */
 export const DOMAIN_PRIMARY_PACKAGE: Record<string, string> = {
   Cheminformatics: 'Chem',
   Bioinformatics: 'Bio',
 };
 
-/** The "most-used" operations a scientist reaches for first inside a domain
- *  section — matched as lowercased substrings against the function name (lower
- *  index = higher up). Everything unlisted sorts after these, alphabetically —
- *  so descriptors / properties / similarity lead each domain list. */
+/** Lowercased substring matches against the function name; lower index sorts higher, unlisted last. */
 export const DOMAIN_PRIORITY_KEYWORDS: Record<string, string[]> = {
   Cheminformatics: [
     'descriptor', 'propert', 'fingerprint', 'similar', 'substructure',
@@ -91,10 +68,6 @@ export const DOMAIN_PRIORITY_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
-/** Order a domain section's items: flagship-package functions first (Chem under
- *  Cheminformatics, Bio under Bioinformatics), then the rest; within each group
- *  the curated "most-used" operations (descriptors, properties, …) lead, then
- *  alphabetical by package, then by display name. Pure — returns a new array. */
 export function orderDomainSection(items: FuncInfo[], category: string): FuncInfo[] {
   const primary = DOMAIN_PRIMARY_PACKAGE[category];
   const keywords = DOMAIN_PRIORITY_KEYWORDS[category] ?? [];
@@ -116,24 +89,17 @@ export function orderDomainSection(items: FuncInfo[], category: string): FuncInf
   });
 }
 
-/** MIME-ish key used to carry a node type name through HTML5 drag/drop.
- *  The canvas drop handler reads this and adds the corresponding node at
- *  the drop point. */
+/** Drag-payload key carrying a node type name through HTML5 drag/drop. */
 export const FF_DRAG_MIME = 'application/x-funcflow-node';
 
 export interface FunctionBrowserCallbacks {
   onFunctionDoubleClick: (funcInfo: FuncInfo) => void;
   onBuiltinNodeDoubleClick: (nodeTypeName: string) => void;
-  /** Double-click (or Enter) on a file in the Files tree → add an OpenFile node. */
   onFileDoubleClick: (file: DG.FileInfo) => void;
-  /** Files chosen via the Files-tab Upload button → add Uploaded File nodes. */
   onLocalFilesPicked: (files: File[]) => void;
 }
 
-/** Connection display name for a query func — the Queries-pane grouping key.
- *  The connection's `friendlyName` wins, falling back to its `name`. Empty
- *  when the query carries no connection object — such queries are skipped
- *  entirely (there is nothing to group them under). */
+/** Queries-pane grouping key; empty when the query carries no connection (such queries are skipped). */
 export function queryConnectionName(f: FuncInfo): string {
   if (!(f.func instanceof DG.DataQuery)) return '';
   try {
@@ -144,28 +110,18 @@ export function queryConnectionName(f: FuncInfo): string {
   }
 }
 
-/** Persisted UI state for the browser (the group-by mode). Section
- *  expand/collapse state is NOT kept here — the platform accordion
- *  (`ui.accordion(key)`) persists it itself in `localStorage['Accordion:<key>']`,
- *  keyed by pane name. */
+/** Only the group-by mode — pane expand state is persisted by the keyed accordion itself. */
 interface BrowserState {
   groupBy: GroupByMode;
 }
 const LS_KEY = 'funcflow.browser.v1';
-/** Persistence key of the toolbox accordion; the nested per-connection
- *  accordion inside the Queries pane uses `<key>.queries`. */
+/** Persistence key of the toolbox accordion; the Queries pane nests `<key>.queries`. */
 export const TOOLBOX_ACCORDION_KEY = 'funcflow.toolbox';
-/** Persistence key of the top tab strip (Files / Spaces / Queries / Workflows /
- *  Favorites) — DG.TabControl remembers the selected tab itself. */
+/** Persistence key of the top tab strip — DG.TabControl remembers the selected tab itself. */
 export const TOOLBOX_TABS_KEY = 'funcflow.toolbox.tab';
-/** The top-strip tab names, in order. */
 export const TOOLBOX_TABS = ['Files', 'Spaces', 'Queries', 'Workflows', 'Favorites'] as const;
 
-/** FA5 icon per top tab — the SAME glyphs the platform's Browse tree uses for
- *  these concepts (Files/Databases/Flows/Favorites/Spaces in
- *  browse_panel_tree.dart), so the vocabulary carries over. Headers are
- *  icon-only (the tooltip names the tab); this is what frees the strip up for
- *  five tabs in the ~250px toolbox. */
+/** Same glyphs the platform Browse tree uses for these concepts (browse_panel_tree.dart). */
 export const TOOLBOX_TAB_ICONS: Record<(typeof TOOLBOX_TABS)[number], string> = {
   'Files': 'folder',
   'Spaces': 'brackets-curly',
@@ -175,8 +131,7 @@ export const TOOLBOX_TAB_ICONS: Record<(typeof TOOLBOX_TABS)[number], string> = 
 };
 const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
 
-/** Case- AND whitespace-insensitive substring match — so "openfile" matches
- *  "Open File" and "table output" matches "TableOutput". */
+/** Case- and whitespace-insensitive substring match. */
 export function nameMatchesQuery(text: string, query: string): boolean {
   if (!query) return true;
   const t = (text || '').toLowerCase();
@@ -184,10 +139,6 @@ export function nameMatchesQuery(text: string, query: string): boolean {
   return t.includes(q) || t.replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
 }
 
-/** Whether a function matches a search query. Matches the display name AND the
- *  raw function name / friendlyName — the toolbox shows the friendly name (e.g.
- *  "Open File") but users search by the name they know (e.g. "OpenFile"), and
- *  vice versa — all whitespace-insensitive; plus description, tags, role, pkg. */
 export function funcMatchesSearch(f: FuncInfo, query: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();
@@ -200,8 +151,6 @@ export function funcMatchesSearch(f: FuncInfo, query: string): boolean {
     f.packageName.toLowerCase().includes(q);
 }
 
-/** Left sidebar: searchable, groupable function catalog */
-/** Display labels for the group-by modes (the "by: …" catalog-header button). */
 const GROUP_BY_LABELS: Record<GroupByMode, string> = {
   category: 'what it does',
   role: 'role',
@@ -209,9 +158,6 @@ const GROUP_BY_LABELS: Record<GroupByMode, string> = {
   package: 'package',
 };
 
-/** FA5 icon per toolbox section header (muted grey — recognition, not decor).
- *  Covers the "what it does" categories and the fixed panes; other group-by
- *  modes produce keys outside this map and simply render without an icon. */
 const SECTION_ICONS: Record<string, string> = {
   'Cheminformatics': 'flask',
   'Bioinformatics': 'dna',
@@ -231,8 +177,7 @@ const SECTION_ICONS: Record<string, string> = {
   'Debug': 'bug',
 };
 
-/** A muted section-header icon (fixed 16px box so labels align). `name` is a
- *  bare FA5 name (light weight) or a full `fas fa-…` override. */
+/** `name` is a bare FA5 name (light weight) or a full `fas fa-…` override. */
 function sectionIcon(name: string): HTMLElement {
   const i = document.createElement('i');
   const cls = name.includes(' ') ? name : `fal fa-${name}`;
@@ -246,29 +191,18 @@ export class FunctionBrowser {
   private groupByBtn!: HTMLElement;
   private treeContainer!: HTMLElement;
   private groupBy: GroupByMode = 'category';
-  /** The toolbox accordion, rebuilt on every render. A keyed `ui.accordion`
-   *  restores pane states from localStorage at construction and persists them
-   *  on header clicks — no manual bookkeeping. Exposed for tests. */
+  /** Rebuilt on every render; a keyed accordion persists pane states itself. */
   accordion: DG.Accordion | null = null;
-  /** The nested per-connection accordion inside the Queries pane (built lazily
-   *  when that pane first expands). Exposed for tests. */
   queriesAccordion: DG.Accordion | null = null;
   private callbacks: FunctionBrowserCallbacks;
-  /** The Files tree (KNIME-style file browser). Built lazily once and reused
-   *  across renders so its expanded state and scroll position survive a search. */
   private filesTreeRoot?: HTMLElement;
-  /** The top tab strip (Files / Spaces / Queries / Workflows / Favorites). Exposed for tests. */
   topTabs: DG.TabControl | null = null;
   private queriesTabContent!: HTMLElement;
   private workflowsTabContent!: HTMLElement;
   private favoritesTabContent!: HTMLElement;
   private spacesTabContent!: HTMLElement;
-  /** The Spaces browser (SpacePicker in content mode). Built lazily once and
-   *  reused across renders so expanded spaces survive a search keystroke. */
   spacePicker: SpacePicker | null = null;
   private favoritesUnsub: (() => void) | null = null;
-  /** The Queries-pane catalog — the authoritative server list
-   *  (`loadQueryFuncs`, async), null until the first load resolves. */
   private queryFuncs: FuncInfo[] | null = null;
   private queryFuncsRequested = false;
 
@@ -276,21 +210,17 @@ export class FunctionBrowser {
     this.callbacks = callbacks;
     this.loadState();
     this.root = this.buildUI();
-    // A star toggled anywhere updates every visible star and the Favorites tab
-    // in place — no full re-render, so tree scroll positions survive.
+    // Stars update in place — no full re-render, so tree scroll positions survive.
     this.favoritesUnsub = onFavoritesChanged(() => {
       this.syncStars();
       this.renderFavoritesTab();
     });
   }
 
-  /** Unhooks the global favorites listener. Call when the hosting view closes. */
   destroy(): void {
     this.favoritesUnsub?.();
     this.favoritesUnsub = null;
   }
-
-  // ---------- persistence (localStorage) ----------
 
   private loadState(): void {
     try {
@@ -309,8 +239,6 @@ export class FunctionBrowser {
   }
 
   private buildUI(): HTMLElement {
-    // Search bar — filters everything below it: the collection tabs
-    // (queries / workflows / favorites, with match counts) AND the catalog.
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'text';
     this.searchInput.placeholder = 'Search functions, queries, flows…';
@@ -318,8 +246,6 @@ export class FunctionBrowser {
     setTid(this.searchInput, 'browser-search');
     this.searchInput.addEventListener('input', () => this.render());
 
-    // Clear (✕) affordance at the right edge of the search box — shown only
-    // while there's text to clear.
     const clearBtn = document.createElement('span');
     clearBtn.className = 'funcflow-search-clear';
     clearBtn.innerHTML = '&times;';
@@ -336,9 +262,6 @@ export class FunctionBrowser {
     syncClear();
     const searchWrap = ui.div([this.searchInput, clearBtn], 'funcflow-search-wrap');
 
-    // Group-by: a compact "by: <mode> ▾" text-button in the catalog zone
-    // header — it scopes ONLY the categories accordion, so it sits on that
-    // zone rather than next to the global search. Opens a popup menu.
     this.groupByBtn = setTid(ui.div([], 'funcflow-groupby-btn'), 'browser-groupby');
     this.syncGroupByLabel();
     ui.tooltip.bind(this.groupByBtn, 'How the function list below is organized');
@@ -358,8 +281,6 @@ export class FunctionBrowser {
 
     this.treeContainer = setTid(ui.div([], 'funcflow-tree-container'), 'browser-tree');
 
-    // Zones top-to-bottom: global search, the collection tabs, the labeled
-    // function catalog, and (appended by the view) the Suggestions strip.
     const container = ui.divV([
       searchWrap,
       this.buildTopTabs(),
@@ -370,7 +291,6 @@ export class FunctionBrowser {
     return setTid(container, 'browser');
   }
 
-  /** Switches the accordion grouping mode (the popup menu + tests use this). */
   setGroupBy(mode: GroupByMode): void {
     this.groupBy = mode;
     this.saveState();
@@ -382,12 +302,6 @@ export class FunctionBrowser {
     this.groupByBtn.textContent = `by: ${GROUP_BY_LABELS[this.groupBy]} ▾`;
   }
 
-  /** The top strip: a platform tab control with the item *collections* — Files,
-   *  Spaces, Queries, Workflows (saved flows), and Favorites (starred nodes) —
-   *  leaving the accordion below to the function categories. Headers are
-   *  icon-only (the Browse tree's glyphs; tooltips carry the names) so five
-   *  tabs fit the ~250px toolbox. The selected tab persists via the TabControl
-   *  key; the Files tree and the Spaces browser build lazily on first show. */
   private buildTopTabs(): HTMLElement {
     const tabs = DG.TabControl.create(false, TOOLBOX_TABS_KEY);
     this.topTabs = tabs;
@@ -403,8 +317,6 @@ export class FunctionBrowser {
           if (filesContent.childElementCount === 0) {
             const text = document.createElement('span');
             text.className = 'funcflow-tab-hint-text';
-            // Ends by pointing at the open-local-file button beside it; short
-            // enough to share the row with it in two lines.
             text.textContent = 'Double-click or drag a file to load it — or open a local one:';
             const hint = ui.div([text, this.buildUploadButton()], 'funcflow-tab-hint');
             filesContent.appendChild(hint);
@@ -427,9 +339,7 @@ export class FunctionBrowser {
       const pane = tabs.addPane(p.name, p.content);
       setTid(pane.header, 'browser-tab', p.name);
       pane.header.dataset.tab = p.name;
-      // Icon-only header: the Browse-tree glyph replaces the text (which stays
-      // available as the pane name / aria-label / tooltip). The label span is
-      // kept so the search badge appended after it never clips.
+      // The label span is kept so the search badge appended after it never clips.
       const label = document.createElement('span');
       label.className = 'funcflow-tab-label';
       while (pane.header.firstChild) pane.header.firstChild.remove();
@@ -445,8 +355,7 @@ export class FunctionBrowser {
     return setTid(host, 'browser-tabs');
   }
 
-  /** The Spaces tab: a SpacePicker in content mode — spaces + their content
-   *  (flows, scripts, queries, files), built once on first activation. */
+  /** Built once on first activation and reused so expanded spaces survive a search. */
   private getSpacesTabContent(): HTMLElement {
     if (this.spacesTabContent.childElementCount === 0) {
       const hint = ui.div([], 'funcflow-tab-hint');
@@ -465,10 +374,6 @@ export class FunctionBrowser {
     return this.spacesTabContent;
   }
 
-  /** Routes a double-clicked space content row onto the canvas: files become
-   *  Open File nodes; functions (flows, queries, scripts) become their node —
-   *  registered on the fly when the catalog doesn't carry them (content the
-   *  user filed into a space is explicit intent, like an imported script). */
   private activateSpaceEntity(e: DG.Entity): void {
     if (e instanceof DG.FileInfo) {
       if (e.isFile) this.callbacks.onFileDoubleClick(e);
@@ -482,30 +387,20 @@ export class FunctionBrowser {
       this.callbacks.onBuiltinNodeDoubleClick(ensureFuncNodeType(e));
   }
 
-  /** Programmatically activates one of the top tabs (used by the guide). */
   showTab(name: (typeof TOOLBOX_TABS)[number]): void {
     if (this.topTabs) this.topTabs.currentPane = this.topTabs.getPane(name);
   }
 
-  /** Domain sections floated to the very top of the function list (right after
-   *  the Queries pane) — the science a chemist/biologist reaches for first. */
   private static readonly DOMAIN_CATEGORIES = ['Cheminformatics', 'Bioinformatics'];
 
   render(): void {
-    // While a query is active the Suggestions strip (canvas-contextual, not
-    // search results) mutes via CSS so its items aren't mistaken for matches.
     this.root.dataset.searching = String(!!this.searchInput.value);
     this.treeContainer.innerHTML = '';
-    // The platform accordion: a keyed one restores/persists pane states itself.
-    // While a search is active every matching section is forced open — build an
-    // UNKEYED accordion then, so the forced states don't overwrite the user's.
+    // Search forces matching panes open — build an UNKEYED accordion then, so forced states never overwrite the user's.
     const acc = ui.accordion(this.searchInput.value ? null : TOOLBOX_ACCORDION_KEY);
     this.accordion = acc;
     this.queriesAccordion = null;
 
-    // DG function nodes — queries, workflows, widget-producers, and (already-
-    // excluded) viewer functions don't appear here; queries and workflows live
-    // in the top tabs, widgets/viewers in their dedicated panes.
     const funcs = this.filterBySearch(getRegisteredFuncs()
       .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f) && !isWorkflowFunc(f.func)));
     const grouped = this.groupFunctions(funcs);
@@ -521,12 +416,6 @@ export class FunctionBrowser {
       }, {count: items.length});
     };
 
-    // Section order: the Cheminformatics / Bioinformatics domain sections (the
-    // science a chemist/biologist reaches for first), the task categories
-    // (Data Sources → … → Compute Values), Viewers, Widgets, the
-    // building-block built-ins (Inputs / Outputs / Constants / Utilities),
-    // then the Other catch-all, and Debug last. Files, Queries, and Workflows
-    // live in the top tabs, not here.
     for (const domain of FunctionBrowser.DOMAIN_CATEGORIES) renderCategory(domain);
 
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped))
@@ -544,8 +433,6 @@ export class FunctionBrowser {
     this.renderTabs();
   }
 
-  /** Refreshes the search-dependent top-tab contents (Files is a persistent
-   *  tree and refreshes itself). */
   private renderTabs(): void {
     this.renderQueriesTab();
     this.renderWorkflowsTab();
@@ -553,15 +440,10 @@ export class FunctionBrowser {
     this.updateTabBadges();
   }
 
-  /** During a search each tab header shows how many of its rows match (blue
-   *  count badge; a 0-match tab dims) — matches hiding behind an inactive tab
-   *  stay discoverable without auto-switching tabs. Files isn't part of the
-   *  search and stays neutral. Cleared when the query clears. */
   private updateTabBadges(): void {
     if (!this.topTabs) return;
     const query = this.searchInput.value.toLowerCase();
     const counts: Record<string, number> = {
-      // Queries count from the server-loaded catalog (0 until it resolves).
       'Queries': (this.queryFuncs ?? []).filter((f) => funcMatchesSearch(f, query)).length,
       'Workflows': getRegisteredFuncs()
         .filter((f) => isWorkflowFunc(f.func) && funcMatchesSearch(f, query)).length,
@@ -574,7 +456,6 @@ export class FunctionBrowser {
       } catch {/* pane missing — nothing to badge */}
       if (!header) continue;
       let badge = header.querySelector<HTMLElement>('.funcflow-tab-badge');
-      // A 0-match tab just dims — a "0" badge adds noise and crowds the strip.
       if (!query || counts[name] === 0) {
         badge?.remove();
         header.classList.toggle('funcflow-tab-dim', !!query && counts[name] === 0);
@@ -590,12 +471,7 @@ export class FunctionBrowser {
     }
   }
 
-  /** Adds one toolbox section as an accordion pane. Content builds lazily on
-   *  first expand; on a keyed accordion the remembered state wins over the
-   *  `expanded` default. While a search is active the pane is forced open (the
-   *  accordion is unkeyed then, so nothing persists). Pane headers keep the
-   *  `data-section` attribute and `ff-browser-section-<title>` test id the
-   *  guide and tests address sections by. */
+  /** One toolbox section pane; content builds lazily on first expand, and an active search forces it open. */
   private addSection(acc: DG.Accordion, title: string, getContent: () => HTMLElement, opts: {
     expanded?: boolean; count?: number; tooltip?: string; tidParts?: Array<string | number>;
   } = {}): DG.AccordionPane {
@@ -614,8 +490,6 @@ export class FunctionBrowser {
     return pane;
   }
 
-  /** In "what it does" mode, order groups by the curated task sequence
-   *  (Data Sources first); in every other mode fall back to alphabetical. */
   private orderGroupKeys(keys: string[]): string[] {
     if (this.groupBy !== 'category') return keys.sort();
     const idx = (k: string): number => {
@@ -625,8 +499,7 @@ export class FunctionBrowser {
     return keys.sort((a, b) => idx(a) - idx(b) || a.localeCompare(b));
   }
 
-  /** The KNIME-style Files browser — built once, reused across renders so its
-   *  expanded folders and scroll position survive a search keystroke. */
+  /** Built once and reused so expanded folders and scroll survive a search keystroke. */
   private getFilesTreeRoot(): HTMLElement {
     if (!this.filesTreeRoot) {
       const tree = getFilesBrowser(
@@ -640,11 +513,6 @@ export class FunctionBrowser {
     return this.filesTreeRoot;
   }
 
-  /** The Files-tab "Upload" chip: opens the OS file picker (filtered to the
-   *  table formats the platform can read) and hands the picked files to the
-   *  view, which registers the bytes and adds an Uploaded File node per file —
-   *  the same pipeline as dropping files onto the canvas. Lives inside the
-   *  hint row, so it costs no extra vertical space. */
   private buildUploadButton(): HTMLElement {
     const input = document.createElement('input');
     input.type = 'file';
@@ -657,8 +525,6 @@ export class FunctionBrowser {
     });
     // input.click() bubbles back up to the chip — don't re-trigger the picker.
     input.addEventListener('click', (ev) => ev.stopPropagation());
-    // The platform's "Open local file" affordance is a folder icon — reuse
-    // that vocabulary here, icon-only (the tooltip carries the explanation).
     const icon = document.createElement('i');
     icon.className = 'grok-icon fal fa-folder-open';
     const btn = ui.div([icon, input], 'funcflow-upload-btn');
@@ -672,7 +538,6 @@ export class FunctionBrowser {
     return setTid(btn, 'browser-upload');
   }
 
-  /** A muted hint shown when a top tab has nothing to list. */
   private static emptyNote(text: string): HTMLElement {
     const el = ui.div([], 'funcflow-tab-empty');
     el.textContent = text;
@@ -680,10 +545,7 @@ export class FunctionBrowser {
   }
 
   private renderQueriesTab(): void {
-    // The query list comes from the server (`loadQueryFuncs` →
-    // grok.dapi.queries.list — the registry's DG.Func.find scan misses
-    // queries): kicked off on the first render, a loader shows until it
-    // resolves, then the tab re-renders itself from the cached catalog.
+    // The query list comes from the server (loadQueryFuncs) — the registry's DG.Func.find scan misses queries.
     if (this.queryFuncs === null) {
       this.queriesTabContent.innerHTML = '';
       this.queriesAccordion = null;
@@ -701,7 +563,6 @@ export class FunctionBrowser {
       }
       return;
     }
-    // Group every query by its connection (friendlyName ?? name).
     const query = this.searchInput.value.toLowerCase();
     const matching = query ? this.queryFuncs.filter((f) => funcMatchesSearch(f, query)) : this.queryFuncs;
     this.queriesTabContent.innerHTML = '';
@@ -752,8 +613,6 @@ export class FunctionBrowser {
     }
     const content = ui.div([], 'funcflow-section-content');
     for (const e of favs) {
-      // A favorite may be a DG function (rich FuncInfo available) or a
-      // builtin/viewer type — either way the type name alone creates the node.
       const info = getRegisteredFuncs().find((f) => f.nodeTypeName === e.type);
       const item = this.makeToolboxItem(e.label, e.type);
       item.dataset.testid = tid('browser-fav-item', e.type);
@@ -769,8 +628,6 @@ export class FunctionBrowser {
     this.favoritesTabContent.appendChild(content);
   }
 
-  /** The Queries pane content: a nested accordion with one pane per connection
-   *  (its own persistence key — pane names are the connection names). */
   private buildQueriesContent(byConn: Map<string, FuncInfo[]>): HTMLElement {
     const hasSearch = !!this.searchInput.value;
     const inner = ui.accordion(hasSearch ? null : `${TOOLBOX_ACCORDION_KEY}.queries`);
@@ -789,9 +646,6 @@ export class FunctionBrowser {
       setTid(pane.root, 'browser-query-conn', conn);
       const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
       if (header) {
-        // A uniform glyph down the list says "these are all connections" —
-        // together with the tray background it keeps the Queries tab from
-        // reading as more function categories.
         header.insertBefore(sectionIcon('database'), header.firstChild);
         ui.tooltip.bind(header, `Queries from the “${conn}” connection`);
       }
@@ -800,12 +654,8 @@ export class FunctionBrowser {
     return ui.div([inner.root], 'funcflow-section-content funcflow-subsections');
   }
 
-  /** The Viewers pane — manually-built viewer nodes (core charts first, then
-   *  discovered package viewers). Each adds a `Viewers/<label>` node. */
   private renderViewersSection(acc: DG.Accordion): void {
     const query = this.searchInput.value.toLowerCase();
-    // "chart"/"plot"/"graph" are what a scientist actually types when hunting
-    // for a visualization — any of them surfaces the whole Viewers pane.
     const synonymHit = query.length >= 3 &&
       ['chart', 'charts', 'plot', 'plots', 'graph', 'graphs', 'viewer', 'viewers']
         .some((w) => w.startsWith(query) || query.startsWith(w));
@@ -831,8 +681,6 @@ export class FunctionBrowser {
     });
   }
 
-  /** The Widgets pane — functions that produce a widget (info panels, search
-   *  widgets, …), kept out of the categories. */
   private renderWidgetsSection(acc: DG.Accordion): void {
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
     const query = this.searchInput.value.toLowerCase();
@@ -852,67 +700,10 @@ export class FunctionBrowser {
     });
   }
 
-  /** Renders the built-in node sections named in `titles` (lets the caller
-   *  interleave them with other panes — Debug goes last in the toolbox). */
   private renderBuiltinNodes(acc: DG.Accordion, titles: string[]): void {
     const query = this.searchInput.value.toLowerCase();
 
-    // Input nodes
-    const inputNodes = [
-      {name: 'Table Input', type: 'Inputs/Table Input', desc: 'Dataframe input parameter'},
-      {name: 'Column Input', type: 'Inputs/Column Input', desc: 'Single column from a table'},
-      {name: 'Column List Input', type: 'Inputs/Column List Input', desc: 'Multiple columns from a table'},
-      {name: 'String Input', type: 'Inputs/String Input', desc: 'Text input parameter'},
-      {name: 'Sketcher Input', type: 'Inputs/Sketcher Input', desc: 'A molecule, sketched — a string parameter tagged semType: Molecule'},
-      {name: 'Number Input', type: 'Inputs/Number Input', desc: 'Floating-point number input'},
-      {name: 'Int Input', type: 'Inputs/Int Input', desc: 'Integer number input'},
-      {name: 'Boolean Input', type: 'Inputs/Boolean Input', desc: 'True/false toggle input'},
-      {name: 'DateTime Input', type: 'Inputs/DateTime Input', desc: 'Date and time input'},
-      {name: 'File Input', type: 'Inputs/File Input', desc: 'File upload input'},
-      {name: 'Map Input', type: 'Inputs/Map Input', desc: 'Key-value map input'},
-      {name: 'Dynamic Input', type: 'Inputs/Dynamic Input', desc: 'Dynamically-typed input'},
-      {name: 'String List Input', type: 'Inputs/String List Input', desc: 'List of strings input'},
-      {name: 'Blob Input', type: 'Inputs/Blob Input', desc: 'Binary data input'},
-    ];
-    const outputNodes = [
-      {name: 'Table Output', type: 'Outputs/Table Output', desc: 'Marks a dataframe as script output'},
-      {name: 'Value Output', type: 'Outputs/Value Output', desc: 'Marks a value as script output (configurable type)'},
-    ];
-    const utilityNodes = [
-      {name: 'Select Column', type: 'Utilities/Select Column', desc: 'Gets a column from a table by name'},
-      {name: 'Select Columns', type: 'Utilities/Select Columns', desc: 'Gets multiple columns by names (comma-separated)'},
-      {name: 'Select Table', type: 'Utilities/Select Table', desc: 'Gets an open table by name via grok.shell.tableByName()'},
-      {name: 'Add Table View', type: 'Utilities/Add Table View', desc: 'Opens a table in a new view via grok.shell.addTableView()'},
-      {name: 'Log', type: 'Utilities/Log', desc: 'Logs a value to the browser console'},
-      {name: 'Info', type: 'Utilities/Info', desc: 'Shows an info balloon via grok.shell.info()'},
-      {name: 'Warning', type: 'Utilities/Warning', desc: 'Shows a warning balloon via grok.shell.warning()'},
-      {name: 'ToString', type: 'Utilities/ToString', desc: 'Converts any value to a string'},
-      {name: 'FromJSON', type: 'Utilities/FromJSON', desc: 'Parses a JSON string into an object'},
-      {name: 'ToJSON', type: 'Utilities/ToJSON', desc: 'Serializes a value to a JSON string'},
-    ];
-    const constantNodes = [
-      {name: 'String', type: 'Constants/String', desc: 'A constant text value'},
-      {name: 'Int', type: 'Constants/Int', desc: 'A constant integer value'},
-      {name: 'Double', type: 'Constants/Double', desc: 'A constant floating-point value'},
-      {name: 'Boolean', type: 'Constants/Boolean', desc: 'A constant true/false value'},
-      {name: 'List', type: 'Constants/List', desc: 'A constant list of comma-separated values'},
-    ];
-    const debugNodes = [
-      {name: 'Breakpoint', type: 'Debug/Breakpoint', desc: 'Pauses execution in debug mode until Continue is clicked'},
-    ];
-
-    // All built-in sections start collapsed: they are building-blocks a scientist
-    // reaches for deliberately, not the first thing to scan. The data-function
-    // categories below (Data Sources first) are what's expanded-ready instead.
-    const sections: {title: string; nodes: {name: string; type: string; desc?: string}[]; tip?: string}[] = [
-      {title: 'Inputs', nodes: inputNodes, tip: 'Script input parameters (become //input: lines)'},
-      {title: 'Outputs', nodes: outputNodes, tip: 'Script output parameters (become //output: lines)'},
-      {title: 'Constants', nodes: constantNodes, tip: 'Constant literal values'},
-      {title: 'Utilities', nodes: utilityNodes, tip: 'Helper operations (logging, type conversion, etc.)'},
-      {title: 'Debug', nodes: debugNodes, tip: 'Debugging and execution control nodes'},
-    ];
-
-    for (const section of sections.filter((s) => titles.includes(s.title))) {
+    for (const section of BUILTIN_SECTIONS.filter((s) => titles.includes(s.title))) {
       const filtered = query ?
         section.nodes.filter((n) => nameMatchesQuery(n.name, query)) :
         section.nodes;
@@ -938,15 +729,11 @@ export class FunctionBrowser {
     }
   }
 
-  /** Sets a star icon's visual state (outline vs. filled gold). */
   private static applyStarState(star: HTMLElement, fav: boolean): void {
     star.className = `funcflow-item-star grok-icon ${fav ? 'fas' : 'fal'} fa-star` +
       (fav ? ' funcflow-item-star-active' : '');
   }
 
-  /** The base toolbox row every catalog item shares: an ellipsized label plus a
-   *  trailing ★ that stars the node type into the Favorites tab. Sets
-   *  `data-node-type-name` (used by node creation, drag, and star sync). */
   private makeToolboxItem(label: string, typeName: string): HTMLElement {
     const labelEl = ui.div([], 'funcflow-item-label');
     labelEl.textContent = label;
@@ -964,7 +751,6 @@ export class FunctionBrowser {
     return item;
   }
 
-  /** Repaints every visible star after a favorites change. */
   private syncStars(): void {
     for (const item of Array.from(this.root.querySelectorAll<HTMLElement>('.funcflow-func-item[data-node-type-name]'))) {
       const star = item.querySelector<HTMLElement>('.funcflow-item-star');
@@ -972,12 +758,10 @@ export class FunctionBrowser {
     }
   }
 
-  /** One draggable, double-clickable catalog row for a DG function. Shared by
-   *  the category sections and the Queries pane. */
   private createFuncItem(info: FuncInfo): HTMLElement {
     const item = this.makeToolboxItem(info.name, info.nodeTypeName);
     item.dataset.testid = tid('browser-item', info.nodeTypeName);
-    item.dataset.func = info.func.name;                // the DG function it adds
+    item.dataset.func = info.func.name;
     if (info.packageName) item.dataset.package = info.packageName;
     let tip = info.func.description || info.name;
     if (info.packageName)
@@ -990,8 +774,6 @@ export class FunctionBrowser {
     return item;
   }
 
-  /** Wire HTML5 drag on a browser item so dropping it on the canvas creates
-   *  the matching node at the drop point. */
   private makeItemDraggable(item: HTMLElement, typeName: string): void {
     item.draggable = true;
     item.addEventListener('dragstart', (ev) => {
@@ -1017,9 +799,7 @@ export class FunctionBrowser {
 
     for (const f of funcs) {
       let keys: string[];
-      // Saved flows get their own 'Workflows' section in EVERY grouping — their
-      // role/tags/package say nothing useful (a script from whatever package
-      // the user happened to save it in).
+      // Saved flows get their own 'Workflows' section in EVERY grouping — their role/tags/package say nothing useful.
       if (isWorkflowFunc(f.func))
         keys = ['Workflows'];
       else {

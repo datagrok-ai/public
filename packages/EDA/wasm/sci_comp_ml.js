@@ -241,7 +241,9 @@ if (Symbol.dispose) WasmPca.prototype[Symbol.dispose] = WasmPca.prototype.free;
  * Stateful PLS1 wrapper. The EDA `_partialLeastSquareRegression…`
  * adapter assembles the `WASM_OUTPUT_IDX` array (prediction,
  * regr_coeffs, T, U, P, q) from these getters; `regression_coefficients`
- * are already in raw space when stats are set.
+ * are already in raw space when stats are set. `weights`, `vip`,
+ * `explained_variance` and `x_explained_variance` are additional
+ * projection diagnostics, outside that array.
  */
 export class WasmPls {
     __destroy_into_raw() {
@@ -366,6 +368,45 @@ export class WasmPls {
      */
     uScores() {
         const ret = wasm.wasmpls_uScores(this.__wbg_ptr);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+        return v1;
+    }
+    /**
+     * Variable importance in projection, length `m`.
+     * @returns {Float64Array}
+     */
+    vip() {
+        const ret = wasm.wasmpls_vip(this.__wbg_ptr);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+        return v1;
+    }
+    /**
+     * Weights `W`, flat `A × m`.
+     * @returns {Float64Array}
+     */
+    weights() {
+        const ret = wasm.wasmpls_weights(this.__wbg_ptr);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+        return v1;
+    }
+    /**
+     * Cumulative explained variance of `X` per feature, flat `A × m`.
+     * @returns {Float64Array}
+     */
+    xExplainedVariance() {
+        const ret = wasm.wasmpls_xExplainedVariance(this.__wbg_ptr);
         if (ret[3]) {
             throw takeFromExternrefTable0(ret[2]);
         }

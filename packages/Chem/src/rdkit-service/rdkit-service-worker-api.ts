@@ -4,6 +4,7 @@ export enum WORKER_CALL {
   GET_FINGERPRINTS = 'getFingerprints',
   SEARCH_SUBSTRUCTURE = 'searchSubstructure',
   CONVERT_MOL_NOTATION = 'convertMolNotation',
+  FLATTEN_MOLECULES = 'flattenMolecules',
   GET_INCHIS = 'getInchis',
   GET_STRUCTURAL_ALERTS = 'getStructuralAlerts',
   INVALIDATE_CACHE = 'invalidateCache',

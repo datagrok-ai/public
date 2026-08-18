@@ -8,9 +8,13 @@ import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.*;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.AlterTable;
+import grok_connect.table_mutation.DropIndex;
+import grok_connect.table_mutation.MutationValidationException;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -29,6 +33,17 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "`";
         descriptor.commentStart = "-- ";
+        descriptor.supportsUpsert = true;
+        descriptor.supportsGeneratedKeys = true;
+        descriptor.supportsDdl = true; // supportsTransactionalDdl stays false — implicit DDL commit
+        descriptor.dgToNativeType = new HashMap<String, String>() {{
+            put("string", "text"); // no PK/unique without a prefix length — the DB's own error surfaces (§3.3 lossy policy)
+            put("int", "int");
+            put("bigint", "bigint");
+            put("float", "double");
+            put("bool", "boolean");
+            put("datetime", "datetime(6)"); // bare datetime truncates µs
+        }};
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("bool", Types.BOOL);
@@ -56,6 +71,66 @@ public class MySqlDataProvider extends JdbcDataProvider {
             put("json", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "std(#)", Types.dataFrameNumericTypes));
+    }
+
+    /**
+     * INSERT ... ON DUPLICATE KEY UPDATE. Caveat: MySQL matches against <b>any</b> unique key, not
+     * specifically {@code matchKeys} — if the table has no unique index the statement silently inserts
+     * duplicates instead of updating. {@code matchKeys} is still validated/required so the intent is
+     * explicit and the emitted UPDATE targets the non-key columns.
+     */
+    @Override
+    public String upsertSql(grok_connect.table_mutation.UpsertRows m, int rowCount) {
+        validateUpsertColumns(m);
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        String tuple = "(" + String.join(", ", Collections.nCopies(m.columns.size(), "?")) + ")";
+        String values = String.join(", ", Collections.nCopies(rowCount, tuple));
+        List<String> nonKey = upsertNonKeyColumns(m);
+        String updates = nonKey.isEmpty()
+                ? addBrackets(m.columns.get(0)) + " = " + addBrackets(m.columns.get(0)) // no-op keeps the clause valid
+                : nonKey.stream().map((c) -> addBrackets(c) + " = VALUES(" + addBrackets(c) + ")")
+                        .collect(Collectors.joining(", "));
+        return "INSERT INTO " + mutationTableName(m) + " (" + colList + ") VALUES " + values
+                + " ON DUPLICATE KEY UPDATE " + updates;
+    }
+
+    // DDL dialect notes (WO-B6): the base RENAME COLUMN emission requires MySQL 8+ / MariaDB 10.5+ —
+    // older servers surface the DB's own syntax error.
+
+    /** MySQL treats backslash as an escape character in string literals by default — double it too. */
+    @Override
+    protected String stringLiteralEscape(String value) {
+        return value.replace("\\", "\\\\").replace("'", "''");
+    }
+
+    /**
+     * MySQL has no ALTER COLUMN ... TYPE — MODIFY restates the full column definition, so omitting
+     * nullability would silently turn a NOT NULL column nullable. Hence changeType requires an
+     * explicit {@code nullable} and restates it.
+     */
+    @Override
+    protected String alterChangeTypeSql(AlterTable m, String table) {
+        if (m.nullable == null)
+            throw new MutationValidationException("AlterTable changeType on " + descriptor.type
+                    + " requires an explicit nullable value — MODIFY restates the column definition");
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType)
+                + (m.nullable ? " NULL" : " NOT NULL");
+    }
+
+    /** MODIFY restates the full column type, so setNullable needs {@code newType} in the payload. */
+    @Override
+    protected String alterSetNullableSql(AlterTable m, String table) {
+        if (GrokConnectUtil.isEmpty(m.newType))
+            throw new MutationValidationException("AlterTable setNullable on " + descriptor.type
+                    + " requires newType — MODIFY restates the column type");
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType)
+                + (m.nullable ? " NULL" : " NOT NULL");
+    }
+
+    @Override
+    public String dropIndexSql(DropIndex m) {
+        validateMutationIdentifier(m.indexName);
+        return "DROP INDEX " + addBrackets(m.indexName) + " ON " + mutationTableName(m);
     }
 
     @Override

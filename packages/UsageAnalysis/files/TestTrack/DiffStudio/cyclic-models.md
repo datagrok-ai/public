@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p1
 realizes_atlas: [load-library-ivp-run]
-realizes: [diffstudio]
+realizes: [diffstudio.app.diff-studio, diffstudio.model.pk-pd]
 realized_as:
   - cyclic-models.test.ts
 related_bugs: []

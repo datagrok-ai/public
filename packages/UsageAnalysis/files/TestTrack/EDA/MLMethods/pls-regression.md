@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [eda.cp.train-predictive-model, eda.int.train-then-visualize-pls-regression]
-realizes: [eda.linear-regression, eda.softmax, eda.xgboost, eda.pls-regression]
+realizes: [eda.model.pls-regression, ml.menu.models.train-model]
 realized_as:
   - pls-regression-spec.ts
 related_bugs: []

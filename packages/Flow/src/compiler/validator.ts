@@ -42,7 +42,6 @@ export function validateGraph(flow: FlowEditor): ValidationResult[] {
       });
     }
 
-    // Disconnected-node warning (skip pure inputs).
     if (node.dgNodeType !== 'input' && isDisconnected(node, flow))
       results.push({
         severity: 'warning',
@@ -66,10 +65,8 @@ export function validateGraph(flow: FlowEditor): ValidationResult[] {
     }
   }
 
-  // Duplicate input/output param names — SetVar variable names participate too:
-  // a SetVar doubles as an output (same script namespace and the same run-context
-  // registration), so two SetVars, two outputs, or a SetVar + an output sharing a
-  // name silently overwrite each other.
+  // SetVar variable names participate too — a SetVar doubles as an output, so
+  // shared names silently overwrite each other.
   const seen = new Map<string, string>();
   for (const node of nodes) {
     let name: string;

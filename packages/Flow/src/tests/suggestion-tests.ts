@@ -1,7 +1,5 @@
-/** Suggestion engine + toolbox pane: context-driven ranking (semType columns
- *  → domain ops, clicked Molecule cell → prefilled searches, two selected
- *  tables → auto-wired Join), suppression of already-wired steps, the ≤10 cap,
- *  and the end-to-end pane flow (render → accept → node created and wired). */
+/** Suggestion engine + toolbox pane: context-driven ranking, suppression of
+ *  already-wired steps, the ≤10 cap, and the end-to-end pane flow. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 
@@ -53,8 +51,7 @@ category('Flow: suggestions', () => {
   });
 
   test('a Molecule column drives chem suggestions, wired and prefilled', async () => {
-    // Data-driven guard: the rule only exists if the catalog has functions
-    // declaring a Molecule-qualified column input (Chem installed).
+    // The rule only exists if the catalog declares Molecule-qualified column inputs (Chem installed).
     const molFunc = findFunc((f) =>
       f.func.inputs.some((p) => String(p.propertyType) === 'column' && String(p.semType ?? '') === 'Molecule') &&
       f.func.inputs.some((p) => String(p.propertyType) === 'dataframe'));
@@ -102,9 +99,6 @@ category('Flow: suggestions', () => {
     expect(s!.wire[1].fromNodeId, 'b');
     expect(s!.wire[0].toInput !== s!.wire[1].toInput, true, 'distinct dataframe inputs');
 
-    // A wrapped func (FUNC_WRAPPERS) counts as a combiner by what its node
-    // exposes: AppendTables takes one dataframe_list, but its node exposes
-    // table1/table2 — so it joins the two-table suggestions, auto-wired.
     const append = byName('AppendTables');
     if (append) {
       const ap = items.find((x) => x.typeName === append.nodeTypeName);
@@ -114,8 +108,6 @@ category('Flow: suggestions', () => {
         'wired to the wrapper-exposed sockets');
     }
 
-    // Selecting two tables is the intent — combiners outrank every per-table
-    // match, even a Molecule semType hit with all its bonuses.
     const withMol = computeSuggestions(ctxOf({
       nodeCount: 2, selectedCount: 2,
       tables: [
@@ -187,14 +179,12 @@ category('Flow: suggestions', () => {
       const out = await addNode(e.flow, 'Outputs/Table Output', 600, 0);
       await e.flow.addConnectionByKeys(a.id, 'table', out.id, 'table');
 
-      // Nothing selected → canvas-wide fallback: both tables, none marked selected.
       let ctx = await collectSuggestContext(e.flow, null, null, null);
       expect(ctx.nodeCount, 3);
       expect(ctx.tables.length, 2, 'both table-bearing nodes scanned');
       expect(ctx.tables.every((t) => !t.selected), true);
       expect(ctx.wiredTargets.has(`${a.id}|Outputs/Table Output`), true, 'existing wiring indexed');
 
-      // Selection: only selected nodes enter, focus first.
       await e.flow.selectNode(b.id);
       await e.flow.selectNode(a.id, true);
       ctx = await collectSuggestContext(e.flow, null, a.id, null);
@@ -226,7 +216,6 @@ category('Flow: suggestions', () => {
       const list = view.suggestionPane.root.querySelector('[data-testid="ff-suggest-pane-list"]')!;
       expect(list.children.length > 0, true, 'items rendered');
 
-      // Double-click the Join item — same gesture as the toolbox catalog.
       const idx = view.suggestionPane.suggestions.findIndex((x) => x.typeName === join.nodeTypeName);
       expect(idx >= 0, true, 'Join Tables suggested for the two selected tables');
       const joinItem = list.children[idx] as HTMLElement;
@@ -235,8 +224,6 @@ category('Flow: suggestions', () => {
       expect(await until(() => flow.getNodeCount() === 3), true, 'double-click created the join node');
       expect(await until(() => flow.getConnectionCount() === 2), true, 'both tables auto-connected');
 
-      // Drag-drop: a suggestion travels as JSON under FF_SUGGEST_MIME; the drop
-      // applies it (wiring included) at the drop point.
       const canvas = (view as never as {canvasContainer: HTMLElement}).canvasContainer;
       const r = canvas.getBoundingClientRect();
       const dt = new DataTransfer();
@@ -250,20 +237,67 @@ category('Flow: suggestions', () => {
       }));
       expect(await until(() => flow.getNodeCount() === 4), true, 'drop created the node');
       expect(await until(() => flow.getConnectionCount() === 3), true, 'drop applied the suggested wiring');
-      // An output node never lands at the drop point — the Outputs strip owns
-      // it and renders it as a docked compact row (geometry is asserted in
-      // output-strip-tests; this view is detached, so rects are all zero here).
+      // This view is detached (rects are all zero), so only the strip-row presence is asserted.
       const dropped = flow.getNodes().find((n) => n.dgTypeName === 'Outputs/Table Output')!;
       const asRow = await until(() =>
         canvas.querySelector(`.ff-output-row[data-node-id="${dropped.id}"]`) != null);
       expect(asRow, true, 'dropped output node renders as an Outputs-strip row');
 
-      // Collapse via caret: list hidden, state persisted.
       const caret = view.suggestionPane.root.querySelector<HTMLElement>('[data-testid="ff-suggest-pane-caret"]')!;
       caret.click();
       expect(view.suggestionPane.root.getAttribute('data-collapsed'), 'true');
       caret.click();
       expect(view.suggestionPane.root.getAttribute('data-collapsed'), 'false');
+    } finally {
+      ((view as never as {flow?: {destroy?: () => void}}).flow)?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 60000});
+
+  test('drag-out menu leads with the pane\'s picks and searches descriptions', async () => {
+    const view = new FuncFlowView();
+    try {
+      await until(() => (view as never as {flow?: unknown}).flow != null);
+      const flow = (view as never as {flow: import('../rete/flow-editor').FlowEditor}).flow;
+      const a = await addNode(flow, 'Inputs/Table Input', 0, 0);
+
+      const expected = computeSuggestions(await collectSuggestContext(flow, null, a.id, null))
+        .filter((s) => s.wire.some((w) => w.fromNodeId === a.id));
+      expect(expected.length > 0, true, 'the engine has picks for a table node');
+
+      const openMenu = (flow as never as {openSuggestionMenu: (
+        x: number, y: number, src: {nodeId: string; outputKey: string; dgType: string}) => Promise<void>})
+        .openSuggestionMenu.bind(flow);
+      const menuDone = openMenu(200, 200, {nodeId: a.id, outputKey: 'table', dgType: 'dataframe'});
+
+      expect(await until(() => document.querySelector('.ff-suggest-popup') != null), true, 'popup opened');
+      const popup = document.querySelector('.ff-suggest-popup')!;
+      const rows = (): HTMLElement[] => Array.from(popup.querySelectorAll('.ff-suggest-item'));
+
+      const first = rows()[0];
+      expect(first.classList.contains('ff-suggest-item-suggested'), true, 'first row is an engine pick');
+      expect(first.dataset.nodeTypeName, expected[0].typeName, 'same top pick as the Suggestions pane');
+      const reason = first.querySelector('.ff-suggest-item-reason');
+      expect(reason?.textContent, expected[0].reason, 'the pane\'s reason shows inline');
+      for (let i = 0; i < expected.length && i < rows().length; i++) {
+        expect(rows()[i].dataset.nodeTypeName, expected[i].typeName,
+          `engine pick #${i} leads the menu in engine order`);
+      }
+
+      // "marks a dataframe" is Table Output's description — its name says nothing of the sort.
+      const search = popup.querySelector<HTMLInputElement>('.ff-suggest-search')!;
+      search.value = 'marks a dataframe';
+      search.dispatchEvent(new Event('input', {bubbles: true}));
+      expect(await until(() =>
+        rows().length > 0 && rows().every((r) => r.dataset.nodeTypeName === 'Outputs/Table Output')),
+      true, 'description-only query narrows to Table Output');
+
+      rows()[0].dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, button: 0}));
+      await menuDone;
+      expect(flow.getNodeCount(), 2, 'chosen node created');
+      const conn = flow.getConnections().find((c) => c.source === a.id && String(c.sourceOutput) === 'table');
+      expect(conn != null, true, 'dragged output auto-connected to the chosen node');
+      expect(document.querySelector('.ff-suggest-popup'), null, 'popup closed');
     } finally {
       ((view as never as {flow?: {destroy?: () => void}}).flow)?.destroy?.();
       view.root.remove();

@@ -1,7 +1,7 @@
 ---
 feature: legend
 realizes_atlas: []
-realizes: []
+realizes: [viewers.scatter-plot, viewers.box-plot, viewers.pc-plot]
 realized_as:
   - scatterplot-spec.ts
 target_layer: playwright

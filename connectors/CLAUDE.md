@@ -44,8 +44,11 @@ Use `/test-connectors` to run tests.
 ### Docker
 
 ```bash
-# Build image
+# Build the main image (all providers on lean/patched drivers)
 docker build -t grok_connect .
+
+# Build the extended image (CVE-quarantined drivers: Neptune, Impala)
+docker build --build-arg FLAVOR=extended --build-arg GROK_CONNECT_PROVIDERS="Neptune,Impala" -t grok_connect_extended .
 
 # Run container
 docker run -p 1234:1234 grok_connect
@@ -91,11 +94,13 @@ connectors/
 │   ├── lib/                             # Pre-built JDBC drivers
 │   └── pom.xml
 │
-├── serialization/      # Binary data serialization module
+├── serialization/      # Binary (d42) DataFrame serialization module: read + write
 │   ├── src/main/java/serialization/
-│   │   ├── DataFrame.java               # Columnar data container
-│   │   ├── Column.java                  # Typed column with data
+│   │   ├── DataFrame.java               # Columnar container; toByteArray() writes, fromByteArray() reads
+│   │   ├── Column.java                  # Typed column: encode() writes, decode() reads
+│   │   ├── BufferAccessor.java          # d42 primitives — write* and read* halves
 │   │   ├── Types.java                   # Type constants
+│   │   ├── codecs/                      # decode-only ports (BitIntList, FloatFcp, StringSquash, ...)
 │   │   └── BigIntColumn.java, etc.      # Type-specific columns
 │   └── pom.xml
 │
@@ -308,71 +313,70 @@ grok_connect/src/main/java/grok_connect/
 
 ## Key Technologies
 
-| Category | Technology      | Version |
-|----------|-----------------|---------|
-| Language | Java            | 8       |
-| Language | Kotlin          | 1.6.21  |
-| Build    | Maven           | 3+      |
-| REST     | Spark Java      | 2.9.4   |
-| HTTP     | Jetty           | 9.4.x   |
-| JSON     | Gson            | 2.11.0  |
-| Testing  | JUnit 5         | 5.9.2   |
-| Testing  | TestContainers  | 1.17.6  |
-| Logging  | SLF4J + Logback | 1.2.13  |
-| AWS      | AWS SDK         | 2.20.52 |
+| Category | Technology      | Version         |
+|----------|-----------------|-----------------|
+| Language | Java            | 8               |
+| Language | Kotlin          | 1.6.21          |
+| Build    | Maven           | 3+              |
+| REST     | Spark Java      | 2.9.4           |
+| HTTP     | Jetty           | 9.4.x           |
+| JSON     | Gson            | 2.11.0          |
+| Testing  | JUnit 5         | 5.9.2           |
+| Testing  | TestContainers  | 1.17.6          |
+| Logging  | SLF4J + Logback | 2.0.17 / 1.3.16 |
+| AWS      | AWS SDK         | 2.52.0 (bom)    |
 
 ## Adding a New Database Provider
 
 1. **Create provider class** in `providers/`:
 
-```java
-public class MyDbDataProvider extends JdbcDataProvider {
-    public DataSource descriptor = new DataSource(
-        "MyDB",                          // Display name
-        "jdbc:mydb://{server}:{port}/{db}", // Connection template
-        MyDbDataProvider.class
-    );
-
-    public MyDbDataProvider() {
-        descriptor.type = "MyDB";
-        descriptor.defaultSchema = "public";
-
-        // Define connection parameters
-        descriptor.connectionProperties = Arrays.asList(
-            new Property("server", Property.STRING_TYPE),
-            new Property("port", Property.INT_TYPE, "3306"),
-            new Property("db", Property.STRING_TYPE)
+    ```java
+    public class MyDbDataProvider extends JdbcDataProvider {
+        public DataSource descriptor = new DataSource(
+            "MyDB",                          // Display name
+            "jdbc:mydb://{server}:{port}/{db}", // Connection template
+            MyDbDataProvider.class
         );
+
+        public MyDbDataProvider() {
+            descriptor.type = "MyDB";
+            descriptor.defaultSchema = "public";
+
+            // Define connection parameters
+            descriptor.connectionProperties = Arrays.asList(
+                new Property("server", Property.STRING_TYPE),
+                new Property("port", Property.INT_TYPE, "3306"),
+                new Property("db", Property.STRING_TYPE)
+            );
+        }
+
+        @Override
+        public String getConnectionString(DataConnection conn) {
+            return "jdbc:mydb://" + conn.getServer() + ":" + conn.getPort() + "/" + conn.getDb();
+        }
+
+        // Override methods as needed for provider-specific behavior
     }
+    ```
 
-    @Override
-    public String getConnectionString(DataConnection conn) {
-        return "jdbc:mydb://" + conn.getServer() + ":" + conn.getPort() + "/" + conn.getDb();
-    }
+2. **Add JDBC driver** to `lib/` directory (or as a Maven dependency)
 
-    // Override methods as needed for provider-specific behavior
-}
-```
-
-2. **Add JDBC driver** to `lib/` directory
-
-3. **Register provider** in `ProviderManager.java`:
-
-```java
-register(new MyDbDataProvider());
-```
+3. **Register provider** in `ProviderManager.java` — add its fully-qualified class name to the
+   `PROVIDER_CLASSES` array. Registration is reflective: the provider is advertised on `/conn`
+   only when its driver class is present and it passes the `providers.conf` allowlist baked
+   into the image at build time (from the `GROK_CONNECT_PROVIDERS` build arg).
 
 4. **Add tests** in `src/test/java/`:
 
-```java
-public class MyDbDataProviderTest extends DataProviderTest {
-    @Container
-    public static GenericContainer<?> myDb = new GenericContainer<>("mydb:latest")
-        .withExposedPorts(3306);
+    ```java
+    public class MyDbDataProviderTest extends DataProviderTest {
+        @Container
+        public static GenericContainer<?> myDb = new GenericContainer<>("mydb:latest")
+            .withExposedPorts(3306);
 
-    // Test methods
-}
-```
+        // Test methods
+    }
+    ```
 
 5. **Update CHANGELOG.md**
 
@@ -456,6 +460,13 @@ Default settings (can be overridden):
 ## Notes
 
 - Java 8 is required (some JDBC drivers don't support newer versions)
+- Two image flavors from one codebase: `datagrok/grok_connect` (main) and `datagrok/grok_connect_extended`
+  (opt-in; ships only the CVE-quarantined drivers — Amazon Neptune 3.0.3, Cloudera Impala). The `FLAVOR`
+  build arg prunes `lib/`, and the `GROK_CONNECT_PROVIDERS` build arg (comma-separated `descriptor.type`
+  values, empty = all) is baked into the image as `providers.conf` next to the jar — the allowlist is
+  fixed at build time and cannot be changed with a runtime env var. ProviderManager also probes each
+  provider's driver class and skips providers whose driver jar is absent, so `/conn` never advertises
+  a provider that cannot connect.
 - JDBC drivers in `lib/` are not managed by Maven (pre-built)
 - Kotlin is used only for SAP HANA provider and utilities
 - TestContainers tests require Docker to be running

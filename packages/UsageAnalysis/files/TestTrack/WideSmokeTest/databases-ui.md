@@ -16,3 +16,8 @@
 - Following databases are visible: Chembl, Northwind, Starbucks, World, SureCHEMBL (if present, should be properly named).
 - No test databases (e.g., Athena, other disconnected or experimental databases) are shown.
 
+---
+{
+"realizes": ["views.databases"]
+}
+

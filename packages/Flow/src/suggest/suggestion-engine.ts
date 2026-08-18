@@ -1,23 +1,5 @@
-/** Context-aware suggestion engine — powers the toolbox Suggestions pane.
- *
- *  Reads EVERYTHING the canvas knows right now — the selection, the focused
- *  (last-clicked) node, the *data* captured inside nodes (live dataframes →
- *  columns → semantic types), the cell last clicked in the output preview,
- *  and what is already on the canvas — and ranks the ≤10 next steps a user
- *  most likely wants.
- *
- *  Two halves:
- *  - `collectSuggestContext` (async) — reads the live editor + execution
- *    controller into a plain {@link SuggestContext};
- *  - `computeSuggestions` (pure) — rule pipeline over the context and the
- *    function catalog. Testable with hand-built contexts.
- *
- *  The rules are DATA-DRIVEN from the catalog signatures, not per-package
- *  lists: a function declaring `column {semType: Molecule}` is a Molecule
- *  suggestion wherever a Molecule column is detected; `string {semType:
- *  Molecule}` functions fire on a clicked molecule cell; functions with two
- *  dataframe inputs fire on a two-table selection (and get auto-wired).
- *  See docs/func-catalog-snapshot.md + the audit behind this design. */
+/** Suggestion engine behind the toolbox Suggestions pane: `collectSuggestContext` (async) reads the
+ *  live editor into a plain context; `computeSuggestions` (pure) ranks over it — testable standalone. */
 
 import * as DG from 'datagrok-api/dg';
 
@@ -30,22 +12,18 @@ import {domainSection} from '../types/type-map';
 import {getPackageName} from '../utils/dart-proxy-utils';
 import {funcWrapperOf} from '../utils/func-input-overrides';
 
-// ---------- context model ----------
-
 export interface ColumnSignal {
   name: string;
   type: string;
   semType: string | null;
 }
 
-/** A dataframe-carrying output of a node on the canvas — the raw material of
- *  most suggestions. `columns` is empty until the value is captured by a run. */
+/** A dataframe-carrying output on the canvas. `columns` is empty until captured by a run. */
 export interface TableSignal {
   nodeId: string;
   nodeLabel: string;
   outputKey: string;
-  /** True when the output is a `__pt` pass-through (used only when the node
-   *  has no real dataframe output). */
+  /** True for a `__pt` pass-through (used only when the node has no real dataframe output). */
   passthrough: boolean;
   /** From the currently selected node set (vs a canvas-wide fallback scan). */
   selected: boolean;
@@ -68,8 +46,7 @@ export interface ScalarSignal {
 export interface SuggestContext {
   nodeCount: number;
   selectedCount: number;
-  /** Focus-first: tables of the focused node, then other selected nodes, then
-   *  (when nothing is selected) every canvas node with a dataframe output. */
+  /** Focus-first: focused node, then other selected, then (nothing selected) every canvas node. */
   tables: TableSignal[];
   scalars: ScalarSignal[];
   cell: CellSignal | null;
@@ -77,42 +54,34 @@ export interface SuggestContext {
   canvasFuncNames: Set<string>;
   /** Domain sections present on the canvas ('Cheminformatics' / 'Bioinformatics'). */
   canvasDomains: Set<string>;
-  /** `${nodeId}|${typeName}` pairs that are ALREADY wired — a suggestion whose
-   *  every source already feeds a node of that type is dropped (done that). */
+  /** `${nodeId}|${typeName}` pairs already wired — such suggestions are dropped. */
   wiredTargets: Set<string>;
 }
-
-// ---------- suggestion model ----------
 
 export interface SuggestionWire {
   fromNodeId: string;
   fromOutputKey: string;
-  /** Input name on the new node; resolved to the Nth dataframe input at apply
-   *  time when omitted. */
+  /** Resolved to the Nth dataframe input at apply time when omitted. */
   toInput?: string;
 }
 
 export interface Suggestion {
   typeName: string;
   label: string;
-  /** Short human explanation shown under the label ("Molecule column 'smiles'"). */
+  /** Short human explanation shown under the label. */
   reason: string;
   score: number;
   wire: SuggestionWire[];
-  /** `inputValues` to prefill on the created node (column names, a clicked
-   *  molecule string, …). Reported via `notifyNodeParamsChanged` on apply. */
+  /** `inputValues` to prefill on the created node. */
   prefill?: Record<string, unknown>;
 }
-
-// ---------- catalog signature index ----------
 
 interface FuncSlots {
   info: FuncInfo;
   /** Dataframe input names, declaration order. */
   dfInputs: string[];
-  /** Column / column_list inputs with their semType qualifier. */
   colInputs: Array<{name: string; semType: string | null; isList: boolean}>;
-  /** Scalar (non-column) inputs carrying a semType (e.g. `string {semType: Molecule}`). */
+  /** Scalar inputs carrying a semType (e.g. `string {semType: Molecule}`). */
   semScalarInputs: Array<{name: string; type: string; semType: string}>;
   inputCount: number;
 }
@@ -124,9 +93,7 @@ function slotsFor(info: FuncInfo): FuncSlots {
   if (cached) return cached;
   const slots: FuncSlots = {info, dfInputs: [], colInputs: [], semScalarInputs: [], inputCount: 0};
   try {
-    // A wrapped func (FUNC_WRAPPERS) is matched and auto-wired by what its
-    // NODE exposes, not its raw signature — AppendTables reads as a two-table
-    // combiner even though the function itself takes one dataframe_list.
+    // A wrapped func (FUNC_WRAPPERS) is matched by what its NODE exposes, not its raw signature.
     const wrapper = funcWrapperOf(info.func);
     const params: Array<{name: string; type: string; semType: string | null}> = wrapper ?
       wrapper.inputs.map((s) => ({name: s.name, type: String(s.type), semType: null})) :
@@ -152,8 +119,7 @@ function slotsFor(info: FuncInfo): FuncSlots {
   return cached;
 }
 
-/** Featured "everyone reaches for these" operations, floated above their
- *  semType siblings (simple func name, lower-cased). Editable. */
+/** Featured operations floated above their semType siblings (simple func name, lower-cased). */
 export const FEATURED_FUNCS = new Set([
   'descriptors', 'addchempropertiescolumns', 'addchemriskscolumns', 'getinchis', 'curate',
   'chemicalspaceusingumap', 'runelementalanalysis',
@@ -168,16 +134,12 @@ function simpleName(info: FuncInfo): string {
   }
 }
 
-// ---------- scores (exported for tests / tuning) ----------
-
 export const SCORE = {
   semTypeColumn: 100,
-  /** A clicked preview cell is a more direct signal than the column it sits
-   *  in — but still below {@link SCORE.twoTables} even fully boosted (105 + 6 + 2). */
+  /** Below {@link SCORE.twoTables} even fully boosted (105 + 6 + 2). */
   cellValue: 105,
-  /** Selecting two tables is the most explicit intent signal there is — the
-   *  combiners (Join, Append, Compare, …) must outrank every per-table match,
-   *  including a semType hit with all its bonuses (100 + 6 + 2 + 3 = 111). */
+  /** Two selected tables is the most explicit intent — combiners must outrank
+   *  every per-table match, including a full-bonus semType hit (100 + 6 + 2 + 3 = 111). */
   twoTables: 115,
   commonNext: 60,
   viewer: 55,
@@ -191,19 +153,15 @@ export const SCORE = {
   tableDecay: 4,
 } as const;
 
-/** Cap of same-rule items per context table, so one Molecule column doesn't
- *  fill all ten slots. */
+/** So one Molecule column doesn't fill all ten slots. */
 const PER_TABLE_SEMTYPE_CAP = 6;
 export const MAX_SUGGESTIONS = 10;
 
-/** The single-table next steps offered, most-likely first; only the first
- *  {@link COMMON_NEXT_CAP} found in the catalog make it in. */
+/** Single-table next steps, most-likely first; only the first COMMON_NEXT_CAP found make it in. */
 const COMMON_NEXT_ORDER = [
   'addnewcolumn', 'aggregate', 'filterrows', 'jointables', 'extractcolumns', 'pivot', 'unpivot',
 ];
 const COMMON_NEXT_CAP = 4;
-
-// ---------- the engine ----------
 
 export function computeSuggestions(
   ctx: SuggestContext,
@@ -212,8 +170,7 @@ export function computeSuggestions(
 ): Suggestion[] {
   const out = new Map<string, Suggestion>();
   const add = (s: Suggestion): void => {
-    // A suggestion whose every wire source already feeds a node of this type
-    // was already taken — don't nag.
+    // Every wire source already feeds a node of this type — don't nag.
     if (s.wire.length > 0 && s.wire.every((w) => ctx.wiredTargets.has(`${w.fromNodeId}|${s.typeName}`)))
       return;
     const prev = out.get(s.typeName);
@@ -236,8 +193,7 @@ export function computeSuggestions(
     return rank(out, limit);
   }
 
-  // R1 — semantic-type column rules (Molecule → Chem ops, Macromolecule → Bio
-  // ops, PDB_ID → structure fetch, …), fully data-driven from the catalog.
+  // R1 — semantic-type column rules, data-driven from the catalog.
   ctx.tables.forEach((table, ti) => {
     const semCols = table.columns.filter((c) => c.semType);
     if (semCols.length === 0) return;
@@ -271,8 +227,7 @@ export function computeSuggestions(
     }
   });
 
-  // R2 — the cell clicked in the output preview: a Molecule/CHEMBL_ID/… value
-  // feeds functions declaring a semType-qualified scalar input, prefilled.
+  // R2 — the clicked preview cell feeds functions with a semType-qualified scalar input.
   if (ctx.cell?.semType) {
     for (const info of catalog) {
       const slots = slotsFor(info);
@@ -316,9 +271,7 @@ export function computeSuggestions(
   const table = ctx.tables[0];
   if (table) {
     const wire = [{fromNodeId: table.nodeId, fromOutputKey: table.outputKey}];
-    // The full COMMON_NEXT set would swamp the 10-slot cap with equal-scored
-    // plumbing — take the top few in likelihood order and leave room for
-    // viewers, outputs, and the semType rules.
+    // The full COMMON_NEXT set would swamp the 10-slot cap — take the top few.
     let commonBudget = COMMON_NEXT_CAP;
     for (const name of COMMON_NEXT_ORDER) {
       if (commonBudget === 0) break;
@@ -336,8 +289,7 @@ export function computeSuggestions(
       });
     }
 
-    // Viewers chosen by what the columns can show. Without captured columns,
-    // Grid is always a sane default.
+    // Viewers chosen by what the columns can show; Grid is always a sane default.
     const numeric = table.columns.filter((c) => c.type === 'int' || c.type === 'double' || c.type === 'float').length;
     const categorical = table.columns.filter((c) => c.type === 'string' && !c.semType).length;
     const viewers: Array<[string, number, string]> = [];
@@ -383,10 +335,7 @@ function rank(out: Map<string, Suggestion>, limit: number): Suggestion[] {
     .slice(0, limit);
 }
 
-// ---------- context collection (live editor + execution state) ----------
-
-/** Dataframe-carrying output keys of a node: real dataframe outputs, else (the
- *  user rule) its dataframe pass-throughs. */
+/** Real dataframe outputs, else the first dataframe pass-through. */
 export function dataframeOutputKeys(node: FlowNode): {key: string; passthrough: boolean} | null {
   let firstPt: string | null = null;
   for (const [key, out] of Object.entries(node.outputs as Record<string, {socket: TypedSocket} | undefined>)) {
@@ -413,8 +362,7 @@ function scalarOutputKeys(node: FlowNode): ScalarSignal[] {
 
 async function columnsOf(df: DG.DataFrame): Promise<ColumnSignal[]> {
   try {
-    // Captured clones may predate semantic-type detection — run it once, so a
-    // freshly opened SDF/CSV suggests chem ops without any manual step.
+    // Captured clones may predate semantic-type detection — run it once.
     if (!df.columns.toList().some((c) => c.semType))
       await df.meta.detectSemanticTypes();
     return df.columns.toList().map((c) => ({
@@ -425,9 +373,7 @@ async function columnsOf(df: DG.DataFrame): Promise<ColumnSignal[]> {
   }
 }
 
-/** Read the live canvas into a plain context. `focusNodeId` — the node the
- *  user last clicked (property-panel node); `cell` — the preview cell last
- *  clicked. Selection is read fresh from the editor. */
+/** `focusNodeId` — the node last clicked; `cell` — the preview cell last clicked. */
 export async function collectSuggestContext(
   flow: FlowEditor,
   exec: ExecutionController | null,
@@ -438,8 +384,6 @@ export async function collectSuggestContext(
   const selectedIds = new Set(flow.getSelectedNodeIds());
   if (focusNodeId && !nodes.some((n) => n.id === focusNodeId)) focusNodeId = null;
 
-  // Focus-first candidate order: focus node, other selected, then — only when
-  // nothing is selected — every other node (canvas-wide fallback scan).
   const ordered: FlowNode[] = [];
   const push = (n: FlowNode): void => {
     if (!ordered.includes(n)) ordered.push(n);

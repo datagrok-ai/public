@@ -1,0 +1,62 @@
+/* Choice input skin — native select with the platform dropdown affordance (ui.css
+   select.ui-input-editor) plus the compact multi-choice list.
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+select.u2-input-editor {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-width: 100px;
+  padding-right: var(--dg-space-xl);
+  border-bottom: var(--dg-input-border);
+  cursor: pointer;
+  /* Chevron drawn from two gradients rather than a data-URI icon: a mask would hide the
+     select's own text, pseudo-elements don't render on <select>, and an inline SVG can't be
+     tinted from a token. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dg-text-color-light) 50%),
+    linear-gradient(135deg, var(--dg-text-color-light) 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-position: right 9px center, right 4px center;
+  background-size: 5px 5px, 5px 5px;
+}
+
+select.u2-input-editor:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+select.u2-input-editor.u2-invalid,
+select.u2-input-editor.u2-invalid:focus {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+.u2-input-disabled select.u2-input-editor {
+  background-image: none;
+}
+
+/* multi choice */
+.u2-input-root[data-u2='multi-choice-input'] {
+  align-items: flex-start;
+}
+
+div.u2-input-editor.u2-multi-choice {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  padding: var(--dg-space-xs) 0;
+  border: var(--dg-input-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-multi-choice-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-s);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.u2-multi-choice-item:hover {
+  background: var(--dg-hover-subtle);
+}

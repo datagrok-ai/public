@@ -1,5 +1,6 @@
 ---
 feature: projects
+realizes: [views.projects]
 companion_to: projects-copy-clone.md
 companion_spec: projects-copy-clone-spec.ts
 ui_only: true

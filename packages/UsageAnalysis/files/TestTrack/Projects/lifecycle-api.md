@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p0
 realizes_atlas: [search-list-recent]
-realizes: [views.projects]
+realizes: []
 realized_as:
   - lifecycle-api-spec.ts
 pyramid_layer: integration

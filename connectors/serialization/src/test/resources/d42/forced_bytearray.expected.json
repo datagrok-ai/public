@@ -1,0 +1,29 @@
+{
+  "frame": "forced_bytearray",
+  "rowCount": 5,
+  "columns": [
+    {
+      "name": "ba",
+      "dgType": "byte_array",
+      "valueEncoding": "byteArray",
+      "encoderId": 1,
+      "values": [
+        [
+          1,
+          2,
+          3
+        ],
+        null,
+        [
+          255,
+          0,
+          128
+        ],
+        [],
+        [
+          10
+        ]
+      ]
+    }
+  ]
+}

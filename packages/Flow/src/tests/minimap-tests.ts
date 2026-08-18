@@ -36,7 +36,6 @@ category('Flow: minimap', () => {
       expect(mm.dataset.collapsed, 'true');
       e.flow.setMinimapCollapsed(false);
       expect(mm.dataset.collapsed, 'false');
-      // Collapse only minimizes to the header bar — it does not hide outright.
       await until(() => mm.style.display !== 'none');
       expect(mm.style.display !== 'none', true, 'present while the canvas has nodes');
     } finally {
@@ -48,10 +47,8 @@ category('Flow: minimap', () => {
     const e = makeEditor();
     try {
       const mm = e.container.querySelector('.ff-minimap') as HTMLElement;
-      // Empty canvas: nothing to overview → hidden.
       const hidden = await until(() => mm.style.display === 'none');
       expect(hidden, true, 'hidden while empty');
-      // First node lands → it reappears.
       await addNode(e.flow, 'Constants/String', 0, 0);
       const shown = await until(() => mm.style.display !== 'none');
       expect(shown, true, 'shown once a node exists');
@@ -61,10 +58,6 @@ category('Flow: minimap', () => {
   });
 
   test('clicking a spot on the minimap centers the viewport on that graph point', async () => {
-    // The inverse of the draw transform: offsetX/offsetY already fold in
-    // `-min * scale`, so the nav mapping must NOT add min again — that shifted
-    // every pan target down/right by the graph origin (the "click the preview,
-    // land far below" bug, worst for graphs placed away from (0,0)).
     const e = makeEditor();
     try {
       // Deliberately far from the origin so a double-counted min is loud.
@@ -78,7 +71,6 @@ category('Flow: minimap', () => {
         offsetX: parseFloat(svg.dataset.offsetX!),
         offsetY: parseFloat(svg.dataset.offsetY!),
       };
-      // Click the minimap pixel where node A's top-left is drawn.
       const target = {x: a.pos.x, y: a.pos.y};
       const rect = svg.getBoundingClientRect();
       const body = e.container.querySelector('.ff-minimap-body') as HTMLElement;
@@ -89,7 +81,6 @@ category('Flow: minimap', () => {
       }));
       body.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, cancelable: true, button: 0}));
 
-      // The pan centers the clicked graph point in the container.
       const cont = e.container.getBoundingClientRect();
       const area = (e.flow as unknown as {area: {area: {transform: {x: number; y: number; k: number}}}}).area;
       const ok = await until(() => {

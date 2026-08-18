@@ -3,19 +3,15 @@
 
 import * as DG from 'datagrok-api/dg';
 
-// ---- node & socket identity colors come from the platform's categorical palette ----
-
-/** Core's Standard palette (`Color.category20` in d4's color.dart) — the
- *  compile-time fallback when `DG.Color.categoricalPalette` is unreachable.
- *  Order matters: `CAT` below names entries by index. */
+/** Core's Standard palette — the fallback when `DG.Color.categoricalPalette` is unreachable.
+ *  Order matters: `CAT` names entries by index. */
 const STANDARD_PALETTE = [
   '#1f77b4', '#ffbb78', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
   '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#98df8a', '#ff9896',
   '#c5b0d5', '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5',
 ];
 
-/** Hue names → index in the Standard palette. Identity colors are picked by
- *  index at runtime, so a user-customized platform palette carries into Flow. */
+/** Hue names → index in the Standard palette. */
 export const CAT = {
   blue: 0, orange: 1, green: 2, red: 3, purple: 4, brown: 5, pink: 6, gray: 7,
   olive: 8, cyan: 9, lightGreen: 10, lightRed: 11, lightPurple: 12,
@@ -24,9 +20,7 @@ export const CAT = {
 
 let _palette: string[] | null = null;
 
-/** The i-th color of the platform's categorical palette
- *  (`DG.Color.categoricalPalette` — what users see on every categorical
- *  coloring across Datagrok), looping like `getCategoricalColor`. */
+/** The i-th color of the platform's categorical palette, looping. */
 export function categoricalColor(i: number): string {
   if (_palette == null) {
     try {
@@ -42,10 +36,8 @@ export function categoricalColor(i: number): string {
 
 const white = (color: string): {color: string; bgcolor: string} => ({color, bgcolor: '#ffffff'});
 
-/** Column-data socket types wear core's `Color.typeColors` — the categorical
- *  palette indexed by `[bool, string, int, bigint, qnum, datetime, float]`
- *  (color.dart:336) — so a socket's letter+color pair matches what users see
- *  in the Column Manager and grid column headers. */
+/** Column-data socket types wear core's `Color.typeColors` so a socket's letter+color
+ *  pair matches the Column Manager. */
 export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'dataframe': {slotType: 'dataframe', color: '#E67E22'},
   'column': {slotType: 'column', color: '#3498DB'},
@@ -71,13 +63,11 @@ export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'graphics': {slotType: 'graphics', color: '#66BB6A'},
   'blob': {slotType: 'byte_array', color: '#607D8B'},
   'view': {slotType: 'view', color: '#5C6BC0'},
-  // Execution-ordering ports (control flow, not data). Gray, and deliberately
-  // isolated from every other type (see areTypesCompatible).
+  // Execution-ordering ports: gray, deliberately isolated from every other type.
   'order': {slotType: 'order', color: '#9E9E9E'},
 };
 
-/** Role → title-bar color (white body). Looked up by `FuncNode` from
- *  `func.options.role`. */
+/** Role → title-bar color (white body). */
 export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
   'app': white(categoricalColor(CAT.blue)),
   'panel': white(categoricalColor(CAT.purple)),
@@ -99,14 +89,11 @@ export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
 export const DEFAULT_NODE_COLOR = categoricalColor(CAT.lightGray);
 export const DEFAULT_NODE_BGCOLOR = '#ffffff';
 
-/** How much white is mixed into a node's identity color for the on-canvas
- *  title bar (see `pastelize`). One knob for the whole palette. */
+/** White ratio mixed into a node's identity color for the title bar — one knob for the whole palette. */
 export const TITLE_WHITE_RATIO = 0.6;
 
-/** Soften an identity color by mixing it with white — same hue, much lighter,
- *  so title bars blend with the canvas. The vivid original stays canonical
- *  (`node.color`: minimap, tests, future legends); only the rendered title bar
- *  uses the pastel. Non-`#rrggbb` inputs are returned unchanged. */
+/** Mix an identity color with white. The vivid original stays canonical (`node.color`) —
+ *  only the rendered title bar uses the pastel. Non-`#rrggbb` inputs return unchanged. */
 export function pastelize(hex: string, whiteRatio: number = TITLE_WHITE_RATIO): string {
   const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return hex;
@@ -116,30 +103,21 @@ export function pastelize(hex: string, whiteRatio: number = TITLE_WHITE_RATIO): 
   return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
 
-// ---- domain sections (cheminformatics / bioinformatics) ----
-
-/** Packages whose functions are grouped under **Cheminformatics** (small
- *  molecules: structures, descriptors, similarity/substructure, ADMET, docking,
- *  reactions, chemical DBs). Membership is by source package — a domain a
- *  scientist recognizes at a glance, orthogonal to the signature-based task
- *  categories used for everything else. */
+/** Packages whose functions are grouped under Cheminformatics. */
 export const CHEMINFORMATICS_PACKAGES = new Set<string>([
   'Chem', 'Chembl', 'ChemblApi', 'PubchemApi', 'Chemspace', 'Surechembl',
   'Admetica', 'Docking', 'Retrosynthesis', 'Marvin', 'ChemDrawSketcher',
   'KetcherSketcher', 'HitTriage', 'Datagrokdsmf', 'Curves',
 ]);
 
-/** Packages whose functions are grouped under **Bioinformatics** (sequences,
- *  peptides, macromolecules, structures, oligos). */
+/** Packages whose functions are grouped under Bioinformatics. */
 export const BIOINFORMATICS_PACKAGES = new Set<string>([
   'Bio', 'SequenceTranslator', 'Helm', 'Proteomics', 'Bionemo', 'Biologics',
   'OligoBatchCalculator', 'Parabilisseq', 'Sequenceutils', 'BiostructureViewer',
   'PhyloTreeViewer', 'Peptides',
 ]);
 
-/** The domain section a function belongs to based on its source package, or
- *  `null` for general (task-categorized) functions. Chem wins over Bio for the
- *  (currently empty) intersection. */
+/** The domain section by source package, or null; Chem wins over Bio for the intersection. */
 export function domainSection(packageName: string | null | undefined): 'Cheminformatics' | 'Bioinformatics' | null {
   if (!packageName) return null;
   if (CHEMINFORMATICS_PACKAGES.has(packageName)) return 'Cheminformatics';
@@ -147,33 +125,24 @@ export function domainSection(packageName: string | null | undefined): 'Cheminfo
   return null;
 }
 
-/** Whether a function *operates on data it is given* — i.e. takes a dataframe or
- *  column input. The domain sections hold only such operations; a chem/bio
- *  function that merely *produces* a table from scalars (a DB query, fetch, or
- *  generator) is a data source, not an operation, and is left to its signature
- *  category (Data Sources) so "Cheminformatics"/"Bioinformatics" stay about
- *  doing something to the scientist's table — never queries. */
+/** Whether a function operates on data it is given. The domain sections hold only such
+ *  operations — a chem/bio source (table from scalars) stays with its signature category. */
 export function isDomainOperation(inputTypes: string[]): boolean {
   return inputTypes.some((t) => t === 'dataframe' || t === 'column' || t === 'column_list');
 }
 
-/** The domain section for a function only when it's an operation on data (see
- *  `isDomainOperation`); otherwise `null` (fall back to the task category). */
+/** The domain section only for operations on data, else null. */
 export function domainCategory(
   packageName: string | null | undefined, inputTypes: string[]): 'Cheminformatics' | 'Bioinformatics' | null {
   const section = domainSection(packageName);
   return section && isDomainOperation(inputTypes) ? section : null;
 }
 
-// ---- categorize a function by what it does (shared by the browser + coloring) ----
-
 const VIS_TYPES = ['viewer', 'view', 'widget', 'graphics'];
 const SCALAR_TYPES = ['string', 'int', 'double', 'bool', 'datetime', 'num', 'bigint', 'qnum'];
 const COL_TYPES = ['column', 'column_list'];
 
-/** Bucket a function by its input/output signature (and viewer role). Pure —
- *  operates on the lists of DG property-type strings, so it's shared by the
- *  function browser's grouping AND the node title-bar coloring. */
+/** Bucket a function by its input/output signature; pure — shared by the browser grouping and node coloring. */
 export function categorizeBySignature(ins: string[], outs: string[], role: string | null): string {
   const has = (arr: string[], set: string[]): boolean => arr.some((t) => set.includes(t));
   const dfIn = ins.filter((t) => t === 'dataframe').length;
@@ -190,32 +159,27 @@ export function categorizeBySignature(ins: string[], outs: string[], role: strin
   return 'Other';
 }
 
-/** Title-bar color per task category — so a function with no role (most of them:
- *  JoinTables, AddNewColumn, chem properties, …) still reads its job from color
- *  instead of all being gray. */
+/** Title-bar color per task category — the fallback that keeps role-less functions from all being gray. */
 export const CATEGORY_COLORS: Record<string, {color: string; bgcolor: string}> = {
-  'Data Sources': white(categoricalColor(CAT.orange)),         // orange — bring data in
-  'Combine Tables': white(categoricalColor(CAT.purple)),       // purple — join/union
-  'Transform Tables': white(categoricalColor(CAT.cyan)),       // cyan — reshape
-  'Column Operations': white(categoricalColor(CAT.blue)),      // blue — derive columns
-  'Compute Values': white(categoricalColor(CAT.lightGreen)),   // green — scalars
-  'Visualize': white(categoricalColor(CAT.lightCyan)),         // cyan — viewers
-  'Cheminformatics': white(categoricalColor(CAT.pink)),        // pink — small molecules
-  'Bioinformatics': white(categoricalColor(CAT.lightPurple)),  // purple — sequences
-  'Other': white(categoricalColor(CAT.lightGray)),             // gray — the rest
+  'Data Sources': white(categoricalColor(CAT.orange)),
+  'Combine Tables': white(categoricalColor(CAT.purple)),
+  'Transform Tables': white(categoricalColor(CAT.cyan)),
+  'Column Operations': white(categoricalColor(CAT.blue)),
+  'Compute Values': white(categoricalColor(CAT.lightGreen)),
+  'Visualize': white(categoricalColor(CAT.lightCyan)),
+  'Cheminformatics': white(categoricalColor(CAT.pink)),
+  'Bioinformatics': white(categoricalColor(CAT.lightPurple)),
+  'Other': white(categoricalColor(CAT.lightGray)),
 };
 
-/** Per-function title-bar colors, keyed by simple function name
- *  (case-insensitive). Checked before role-based coloring, so specific
- *  functions can be visually pinned regardless of their role. Add an entry to
- *  give any function a fixed color. */
+/** Per-function title-bar colors by lower-cased simple name, checked before role-based coloring. */
 export const FUNC_NAME_COLORS: Record<string, {color: string; bgcolor: string}> = {
-  'setvar': white(categoricalColor(CAT.red)),      // red — variable assignment
-  'getvar': white(categoricalColor(CAT.lightRed)), // light red — variable read
+  'setvar': white(categoricalColor(CAT.red)),
+  'getvar': white(categoricalColor(CAT.lightRed)),
 };
 
-/** Symmetric compat map: an output of type K can connect to an input of any
- *  type listed in `COMPATIBLE_TYPES[K]`, and vice-versa. `'*'` is a wildcard. */
+/** Symmetric compat map: an output of type K can connect to an input of any listed type,
+ *  and vice-versa; `'*'` is a wildcard. */
 const COMPATIBLE_TYPES: Record<string, string[]> = {
   'double': ['int', 'num'],
   'tableview': ['view'],
@@ -228,8 +192,7 @@ const COMPATIBLE_TYPES: Record<string, string[]> = {
 
 export function areTypesCompatible(outputType: string, inputType: string): boolean {
   if (outputType === inputType) return true;
-  // Execution-ordering ports connect ONLY to each other — checked before the
-  // dynamic/object wildcards so a data port can never plug into an exec port.
+  // Exec ports connect only to each other — checked before the dynamic/object wildcards.
   if (outputType === 'order' || inputType === 'order') return false;
   if (outputType === 'dynamic' || inputType === 'dynamic') return true;
   if (outputType === 'object' || inputType === 'object') return true;
@@ -241,24 +204,26 @@ export function areTypesCompatible(outputType: string, inputType: string): boole
 }
 
 export function dgTypeToSlotType(dgType: string): string {
-  // `list<string>` is just the parametrized spelling of `string_list` — fold it
-  // so the socket type (and everything keyed off it) is the same.
+  // `list<string>` is the parametrized spelling of `string_list` — fold it.
   if (dgType === 'list<string>') return 'string_list';
   const mapped = DG_TYPE_MAP[dgType];
   return mapped ? mapped.slotType : dgType;
 }
 
-/** A comma-separated string-list input — editable inline like a column-list
- *  (the value is a comma-separated string; the compiler turns it into a JS
- *  array of trimmed, non-empty strings). `list<string>` is the same as
- *  `string_list`; plain `list` (which may hold non-strings) is intentionally
- *  excluded. Matches either a raw DG `propertyType` or a resolved slot type. */
+/** Scalar types whose input rows are hidden on the node card by default — edited in the panel. */
+const PRIMITIVE_SLOT_TYPES = new Set(['string', 'int', 'double', 'num', 'bool', 'datetime', 'bigint', 'qnum']);
+
+export function isPrimitiveSlotType(dgType: string): boolean {
+  return PRIMITIVE_SLOT_TYPES.has(dgTypeToSlotType(dgType));
+}
+
+/** A comma-separated string-list input; plain `list` (which may hold non-strings) is
+ *  intentionally excluded. */
 export function isStringListType(dgType: string): boolean {
   return dgType === 'string_list' || dgType === 'list<string>';
 }
 
-/** Comma-separated string → JS array literal of trimmed, non-empty strings
- *  (`"a, b ,c"` → `["a", "b", "c"]`, empty → `[]`). Shared by the compilers. */
+/** Comma-separated string → JS array literal of trimmed, non-empty strings. */
 export function stringListToArrayLiteral(value: unknown): string {
   const items = String(value ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
   return `[${items.map((s) => JSON.stringify(s)).join(', ')}]`;
@@ -276,10 +241,7 @@ const SLOT_LETTERS: Record<string, string> = {
   'object': '?',    // wildcard
 };
 
-/** Single-letter type abbreviation shown inside a socket chip — mirroring the
- *  Column Manager, which renders `col.type.substring(0, 1)` colored by
- *  `Color.typeColors` (column_grid.dart:892). Unknown types get their first
- *  letter too (and a gray chip via `getSlotColor`'s fallback). */
+/** Single-letter type abbreviation in a socket chip — mirrors the Column Manager. */
 export function getSlotLetter(dgType: string): string {
   const slot = dgTypeToSlotType(dgType);
   const letter = SLOT_LETTERS[slot] ?? slot.trim().charAt(0).toLowerCase();
@@ -294,8 +256,6 @@ export function getNodeColors(
     if (override) return override;
   }
   if (role && ROLE_COLORS[role]) return ROLE_COLORS[role];
-  // Fall back to the task category — gives role-less functions (the gray
-  // majority) a color that reflects what they do.
   if (category && CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
   return {color: DEFAULT_NODE_COLOR, bgcolor: DEFAULT_NODE_BGCOLOR};
 }

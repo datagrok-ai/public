@@ -1,15 +1,11 @@
-/** Annotation carry: dragging an annotation moves whatever sits inside it —
- *  nodes whose center is within the frame, annotations fully contained in it,
- *  and the waypoints of connections between carried nodes. The cargo is
- *  captured at drag START (stateless): a node dragged out of the frame simply
- *  isn't inside at the next grab. Strip-pinned output rows are never carried. */
+/** Annotation carry: dragging an annotation moves the nodes, contained annotations,
+ *  and waypoints inside it; the cargo is captured at drag start. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
-/** Simulate a body drag on an annotation element (down → move → up). The drag
- *  handler only reads client deltas, so absolute coords are arbitrary. */
+/** The drag handler only reads client deltas, so absolute coords are arbitrary. */
 function drag(el: HTMLElement, dx: number, dy: number): void {
   const at = (x: number, y: number): PointerEventInit =>
     ({bubbles: true, cancelable: true, button: 0, clientX: 500 + x, clientY: 500 + y});
@@ -51,7 +47,7 @@ category('Flow: annotations', () => {
       drag(ann.element, 40, 0);
       expect(await until(() => node.pos.x === 60), true, 'carried while inside');
 
-      await e.flow.translate(node.id, 2000, 2000); // user drags the node out
+      await e.flow.translate(node.id, 2000, 2000);
       drag(ann.element, 40, 0);
       await new Promise((r) => setTimeout(r, 100));
       expect(node.pos.x, 2000, 'a node outside the frame is no longer carried');
@@ -90,6 +86,48 @@ category('Flow: annotations', () => {
       drag(ann.element, 25, 35);
       expect(await until(() => conn.waypoints?.[0].x === 175), true, 'waypoint x carried');
       expect(conn.waypoints![0].y, 135, 'waypoint y carried');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('Delete removes the last-clicked annotation; clicking elsewhere disarms', async () => {
+    const e = makeEditor();
+    try {
+      const ann = e.flow.addAnnotation({pos: {x: 10, y: 10}, size: {w: 200, h: 120}, text: 'doomed'});
+      const down: PointerEventInit = {bubbles: true, cancelable: true, button: 0, clientX: 0, clientY: 0};
+      ann.element.dispatchEvent(new PointerEvent('pointerdown', down));
+      ann.element.dispatchEvent(new PointerEvent('pointerup', down));
+      expect(ann.element.classList.contains('ff-annotation-active'), true, 'clicked → armed and marked');
+
+      e.container.querySelector('.ff-canvas')!.dispatchEvent(new PointerEvent('pointerdown', down));
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
+      await new Promise((r) => setTimeout(r, 50));
+      expect(e.flow.getAnnotations().length, 1, 'a disarmed annotation survives Delete');
+      expect(ann.element.classList.contains('ff-annotation-active'), false, 'the mark is gone');
+
+      ann.element.dispatchEvent(new PointerEvent('pointerdown', down));
+      ann.element.dispatchEvent(new PointerEvent('pointerup', down));
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
+      expect(await until(() => e.flow.getAnnotations().length === 0), true,
+        'Delete removed the clicked annotation');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('with nodes selected, Delete removes the nodes, not the armed annotation', async () => {
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, 'Inputs/String Input', 600, 20);
+      const ann = e.flow.addAnnotation({pos: {x: 10, y: 10}, size: {w: 100, h: 80}});
+      const down: PointerEventInit = {bubbles: true, cancelable: true, button: 0, clientX: 0, clientY: 0};
+      ann.element.dispatchEvent(new PointerEvent('pointerdown', down));
+      ann.element.dispatchEvent(new PointerEvent('pointerup', down));
+      await e.flow.selectNode(node.id);
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
+      expect(await until(() => e.flow.getNodes().length === 0), true, 'the selected node went');
+      expect(e.flow.getAnnotations().length, 1, 'the annotation stayed — selection wins');
     } finally {
       destroyEditor(e);
     }
