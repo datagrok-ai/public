@@ -90,16 +90,12 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Current Line Color | number |  |
 | Show Top Panel | boolean | Shows top panel with the Split by selector |
 | Show Close Link | boolean | Show the x close icon for each chart |
-| X Axis Custom Tickmarks | list |  |
-| Y Axis Custom Tickmarks | list |  |
 | Inner Chart Margin Top | number |  |
 | Inner Chart Margin Bottom | number |  |
 | Outer Chart Margin Left | number |  |
 | Outer Chart Margin Top | number |  |
 | Outer Chart Margin Right | number |  |
 | Outer Chart Margin Bottom | number |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
@@ -108,7 +104,7 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **X** | | |
+| **X Axis** | | |
 | X Column Name | string | Column to be used on the X axis |
 | X Map | string | Time unit map function for x column (applicable to dates only). |
 | X Axis Type | string |  |
@@ -119,10 +115,15 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Vertical Grid Lines | boolean |  |
 | X Axis Label Orientation | string |  |
 | X Axis Tickmarks Mode | axistickmarksmode |  |
+| X Min | number |  |
+| X Max | number |  |
+| X Axis Custom Tickmarks | list |  |
 | X Sort By Column Name | string | Sorts the X categories by this column; anything but a numerical or semantic one is ignored. |
 | X Sort By Aggr | string | Aggregation used to compute the per-category sort key for the X axis. |
 | X Sort Order | string | Whether the X axis categories are sorted in ascending or descending order. |
-| **Y** | | |
+| **Y Axis** | | |
+| Y Min | number |  |
+| Y Max | number |  |
 | Y Column Names | list | Numerical columns to be used on Y axes. Depending on the * |
 | Y Axis Type | string |  |
 | Show Y Axis | boolean |  |
@@ -136,6 +137,11 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Split Selector | boolean |  |
 | Interpolation | lineinterpolationmode |  |
 | Spline Tension | number |  |
+| Y Axis Custom Tickmarks | list |  |
+| **Size** | | |
+| Markers Size Column Name | string |  |
+| Markers Size Aggr Type | string |  |
+| Marker Size Scaling | string | Linear or logarithmic scale for the marker *Size* column. |
 | **Marker** | | |
 | Markers Column Name | string | A categorical column that determines the shape of the markers. |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
@@ -143,15 +149,23 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Marker Size | number |  |
 | Marker Opacity | number |  |
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
-| Markers Size Column Name | string |  |
-| Markers Size Aggr Type | string |  |
-| Markers Size Axis Type | string | Linear or logarithmic scale for the marker *Size* column. |
 | Markers Visibility Column Name | string |  |
-| **Selection** | | |
-| Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |
-| Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
-| Show Selected Rows | boolean | When checked, selected points and line segments are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
-| Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
+| **Lines** | | |
+| Line Width | number |  |
+| Line Transparency | number |  |
+| Line Coloring Type | string |  |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **SPC** | | |
 | Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
@@ -167,6 +181,11 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Medium Shift | boolean | Rule 5:Two (or three) out of the three points in a row are more than 2 standard deviations from the mean in the same direction. There is a medium tendency for samples to be mediumly out of control. The side of the mean for the third point is unspecified. |
 | Show Sustained Shift | boolean | Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean in the same direction. There is strong tendency for samples to be slightly out of control. The side of the mean for the fifth point is unspecified. |
 | Show Suppressed Variation | boolean | Rule 7: Fifteen points in a row are all within 1 standard deviation of the mean on either side of the mean. With 1 standard deviation, greater variation would be expected. |
+| **Selection** | | |
+| Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |
+| Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
+| Show Selected Rows | boolean | When checked, selected points and line segments are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
+| Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
 | **Misc** | | |
 | Axes Use Column Format | boolean | Use column format for axis labels, where possible |
 | Show Aggr Type Selector | boolean |  |
@@ -174,14 +193,11 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Segments Font | string |  |
-| Line Width | number |  |
 | Whisker Width | number |  |
-| Line Transparency | number |  |
 | Overview Height | number | Height of the overview chart |
 | Histogram Width | number |  |
 | Auto Axis Size | boolean | If true, *X Axis Height* is calculated automatically to fit the required precision. If false, the specified *X Axis Height* |
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
-| Line Coloring Type | string |  |
 | Axis Font | string |  |
 | Grid Line Color | number |  |
 | Selected Rows Color | number |  |
@@ -202,6 +218,8 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Row Group Tooltip | string |  |
 | **Legend** | | |
 | Add Y Columns To Legend | boolean | When selected, column names are added to the legend. Requires *Multi Axis* to be enabled. |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Annotations** | | |
 | Lasso Tool | boolean | Enables lasso region drawing mode (instead of polygon drawing default one). |
 | Show Viewer Annotation Regions | boolean |  |
@@ -210,19 +228,6 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Description** | | |
 | Show Title | boolean |  |
-| **Lines** | | |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
-| Show Regression Line Equation | boolean |  |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
-| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
-| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
-| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis. |
-| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
-| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 
 See also:
 
