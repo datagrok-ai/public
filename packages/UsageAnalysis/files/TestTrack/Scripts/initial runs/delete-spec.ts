@@ -37,7 +37,7 @@ test("Scripts Delete — testRscript", async ({ page }) => {
   );
 
   await softStep("2. Find the script via search", async () => {
-    // Seed testRscript if missing, then route round-trip to refresh the gallery.
+
     await page.evaluate(async () => {
       const existing = await grok.dapi.scripts
         .filter('name = "testRscript"')
@@ -90,8 +90,7 @@ test("Scripts Delete — testRscript", async ({ page }) => {
   });
 
   await softStep("4. Click YES in the confirmation dialog", async () => {
-    // .d4-dialog is position:fixed → offsetParent is always null even when
-    // visible. Use bounding rect + computed style instead.
+
     const dialogHandled = await page.evaluate(async () => {
       const isVisible = (el: Element) => {
         const cs = getComputedStyle(el as HTMLElement);

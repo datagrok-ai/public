@@ -50,7 +50,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
   });
 
   await softStep('Tooltip section: Row Tooltip is disabled, Show Tooltip has 3 options', async () => {
-    // Open scatter plot settings via panel-base gear
+
     await page.evaluate(() => {
       const v = document.querySelector('[name="viewer-Scatter-plot"]') as HTMLElement;
       let node: HTMLElement | null = v;
@@ -60,7 +60,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       settings.click();
     });
     await page.waitForTimeout(600);
-    // Expand Tooltip category
+
     await page.evaluate(() => {
       const cat = document.querySelector('[name="prop-category-tooltip"]') as HTMLElement | null;
       cat?.click();
@@ -73,7 +73,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       const rowInput = rowRow?.querySelector('input.property-grid-ellipsis-editor-input') as HTMLInputElement | null;
       const rowValue = rowInput ? rowInput.value : null;
       const showLabel = showRow?.querySelector('[name="prop-view-show-tooltip"]') as HTMLElement | null;
-      // Click view label to render the select
+
       showLabel?.click();
       const select = document.querySelector('[name="prop-show-tooltip"] select') as HTMLSelectElement | null;
       const options = select ? Array.from(select.options).map((o) => o.value) : [];
@@ -87,12 +87,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
   });
 
   await softStep('Set Show Tooltip = show custom tooltip on scatter plot and box plot; enable Show Visible Columns In Tooltip on grid', async () => {
-    // UI-first attempt set the value via the inline <select>; in Playwright the change
-    // event was not always picked up by the Dart property setter (a flake-prone path).
-    // Fall back to setting properties via the JS API after opening the settings panel
-    // so the demonstration of "find the property in the Tooltip section" still happens.
-    // Set the properties and verify in the same evaluate to avoid Playwright's
-    // page.evaluate re-entry quirk where intermediate UI clicks reset the props.
+
     const result = await page.evaluate(async () => {
       const tv: any = (grok as any).shell.tv;
       let sp: any = null;
@@ -130,14 +125,6 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
     expect(modes.sp1Mode).toBe('show custom tooltip');
     expect(modes.sp2Mode).toBe('inherit from table');
 
-    // Hover with the real Playwright mouse (synthetic events are flake-prone for the d4 canvas
-    // tooltip pipeline). The scenario expects both viewers' tooltips to use the same columns —
-    // assert only the weakest reasonable invariant matching scenario intent: both tooltips
-    // render and both include the X/Y axes columns. Exact column-set identity is intentionally
-    // NOT asserted; see -run.md for the observed heuristic difference.
-    // DOM order of [name="viewer-Scatter-plot"] elements is REVERSED from `tv.viewers` order
-    // after the dock manager re-tiles. Hover both via DOM order — the axes-in-both assertion
-    // is symmetric so the naming doesn't affect correctness.
     async function readTooltipByDomIndex(viewerName: string, domIndex: number): Promise<string> {
       const locator = page.locator(`[name="${viewerName}"]`).nth(domIndex).locator('canvas').first();
       const box = await locator.boundingBox();
@@ -164,7 +151,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
   await softStep('Tooltip > Hide on the custom scatter plot toggles the submenu to Show Custom', async () => {
     const after = await page.evaluate(async () => {
       const sps = Array.from((grok as any).shell.tv.viewers).filter((v: any) => v.type === 'Scatter plot') as any[];
-      const sp1 = sps[0]; // custom
+      const sp1 = sps[0]; 
       const canvas = sp1.root.querySelector('canvas') as HTMLCanvasElement;
       const r = canvas.getBoundingClientRect();
       const x = r.left + r.width / 2;
@@ -180,7 +167,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       await new Promise<void>((r) => setTimeout(r, 400));
       (document.querySelector('[name="div-Tooltip---Hide"]') as HTMLElement).click();
       await new Promise<void>((r) => setTimeout(r, 500));
-      // Right-click again to inspect submenu after hiding
+
       for (const t of ['mousedown', 'mouseup', 'contextmenu']) {
         canvas.dispatchEvent(new MouseEvent(t, {bubbles: true, cancelable: true, button: 2, buttons: 2, clientX: x, clientY: y}));
       }
@@ -194,7 +181,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
       document.body.click();
       await new Promise<void>((r) => setTimeout(r, 300));
-      // Inspect sp2 menu (should still have Hide — its tooltip path is unaffected)
+
       const sp2 = sps[1];
       const c2 = sp2.root.querySelector('canvas') as HTMLCanvasElement;
       const rr = c2.getBoundingClientRect();
@@ -237,7 +224,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       await new Promise<void>((r) => setTimeout(r, 400));
       (document.querySelector('[name="div-Tooltip---Show-Custom"]') as HTMLElement).click();
       await new Promise<void>((r) => setTimeout(r, 500));
-      // Verify by re-opening the submenu
+
       for (const t of ['mousedown', 'mouseup', 'contextmenu']) {
         canvas.dispatchEvent(new MouseEvent(t, {bubbles: true, cancelable: true, button: 2, buttons: 2, clientX: x, clientY: y}));
       }
@@ -257,8 +244,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
   });
 
   await softStep('Properties panel toggle: switch show custom tooltip → do not show on scatter plot', async () => {
-    // Demonstrate opening the properties panel; set the value via JS API for reliability
-    // (the inline <select> change event is flaky in Playwright — see notes in -run.md).
+
     await page.evaluate(async () => {
       const sps = Array.from((grok as any).shell.tv.viewers).filter((v: any) => v.type === 'Scatter plot') as any[];
       const sp1 = sps[0];
@@ -281,7 +267,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
   });
 
   await softStep('Hide default tooltip via reference viewer: hides for all "inherit from table" viewers; custom viewers unaffected', async () => {
-    // Setup: sp1 = custom, sp2 = inherit, bp = inherit, grid = custom
+
     await page.evaluate(() => {
       const sps = Array.from((grok as any).shell.tv.viewers).filter((v: any) => v.type === 'Scatter plot') as any[];
       const bp = Array.from((grok as any).shell.tv.viewers).find((v: any) => v.type === 'Box plot') as any;
@@ -292,7 +278,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
     const after = await page.evaluate(async () => {
       const sps = Array.from((grok as any).shell.tv.viewers).filter((v: any) => v.type === 'Scatter plot') as any[];
       const bp = Array.from((grok as any).shell.tv.viewers).find((v: any) => v.type === 'Box plot') as any;
-      // Right-click sp2 (reference) → Tooltip > Hide
+
       const sp2 = sps[1];
       const c = sp2.root.querySelector('canvas') as HTMLCanvasElement;
       const r = c.getBoundingClientRect();
@@ -311,7 +297,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
       document.body.click();
       await new Promise<void>((r) => setTimeout(r, 200));
-      // Inspect submenus on sp1 (custom), sp2 (default, just hidden), bp (default), grid (custom)
+
       async function inspect(viewerRoot: HTMLElement) {
         const c2 = viewerRoot.querySelector('canvas') as HTMLCanvasElement;
         const rr = c2.getBoundingClientRect();
@@ -337,10 +323,10 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
       const bpItems = await inspect(bp.root);
       return {sp1Items, sp2Items, bpItems};
     });
-    // Custom (sp1) unaffected — still shows Hide
+
     expect(after.sp1Items).toContain('div-Tooltip---Hide');
     expect(after.sp1Items).not.toContain('div-Tooltip---Show-Custom');
-    // sp2 (target of Hide) and bp (same default tooltip path) now show Show Custom
+
     expect(after.sp2Items).toContain('div-Tooltip---Show-Custom');
     expect(after.bpItems).toContain('div-Tooltip---Show-Custom');
   });

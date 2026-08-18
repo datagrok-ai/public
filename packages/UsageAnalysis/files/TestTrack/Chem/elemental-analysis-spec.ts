@@ -101,7 +101,7 @@ test('Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)'
     await softStep(`${v.id}: click OK and verify column-append OR error-balloon`, async () => {
       const preCount = await page.evaluate(() => (window as any).__ea_preCount as number);
       await page.locator('.d4-dialog [name="button-OK"]').click();
-      // Wait up to 30s for column append or balloon-error to surface
+
       const outcome = await page.waitForFunction((preCount: number) => {
         const df = (window as any).__ea_df;
         if (df.columns.length > preCount) return {appended: df.columns.length - preCount, balloon: null};
@@ -111,7 +111,7 @@ test('Chem: Elemental Analysis multi-format walk (smiles / molV2000 / molV3000)'
         return false;
       }, preCount, {timeout: 30000}).then(jsh => jsh.jsonValue()).catch(() => null) as {appended: number; balloon: string | null} | null;
       expect(outcome, `${v.id}: neither column-append nor error balloon within 30s — silent failure not allowed`).toBeTruthy();
-      // Valid outcome = appended columns OR a visible error balloon, never silent.
+
       const ok = (outcome!.appended > 0) || !!outcome!.balloon;
       expect(ok, `${v.id}: outcome=${JSON.stringify(outcome)}`).toBe(true);
     });

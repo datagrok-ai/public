@@ -37,8 +37,7 @@ async function openShareDialogViaPane(page: Page, projId: string) {
 }
 
 test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced editor', async ({page}) => {
-  // Single-actor UI lifecycle: project save + share dialog / context panel / advanced
-  // editor render checks. No login switches; 180s is ample.
+
   test.setTimeout(180_000);
   stepErrors.length = 0;
 
@@ -50,10 +49,7 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
   let projId: string | null = null;
 
   try {
-    
-    
-    
-    
+
     await softStep('Setup: create an owned, persisted project to share', async () => {
       const created = await evalJs(page, `(async () => {
         const g = window.grok, DG = window.DG;
@@ -85,9 +81,6 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       console.log(`[sharing-smoke] Setup: project '${projectName}' (${projId}) created`);
     });
 
-    
-    
-    
     await softStep('Scenario 3: Context Panel Sharing pane renders grant list + SHARE... button', async () => {
       await evalJs(page, `(async () => {
         const g = window.grok;
@@ -98,7 +91,6 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       const sharingHeader = page.locator('[name="div-section--Sharing"]');
       await expect(sharingHeader, 'Sharing context-panel pane must be present for the owned project').toBeAttached({timeout: 20_000});
 
-      
       const shareBtn = page.locator('[name="button-Share..."]');
       const laidOut = await shareBtn.evaluate((el: any) => el && el.offsetParent !== null).catch(() => false);
       if (!laidOut) {
@@ -106,9 +98,7 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
         await page.waitForTimeout(800);
       }
       await expect(shareBtn, 'SHARE... button must render in the Sharing pane').toBeAttached({timeout: 10_000});
-      
-      // Calculate-permissions button is entity/state-dependent — record as a remark; the pane render
-      // is already hard-asserted via the Sharing header + SHARE... button above.
+
       const calcPresent = await page.locator(
         '[name="button-Calculate-resulting-permissions-for-this-entity"]').count();
       test.info().annotations.push({type: 'remark',
@@ -116,57 +106,46 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       console.log('[sharing-smoke] Scenario 3: Sharing pane + SHARE... present (DOM-driven, class-1)');
     });
 
-    
     await softStep('Scenario 3 (cont.): SHARE... button opens the Share dialog modal', async () => {
       await page.locator('[name="button-Share..."]').click();
       const dlg = page.locator('.d4-dialog');
       await expect(dlg, 'Share dialog modal must open from the Sharing pane SHARE... button').toBeVisible({timeout: 15_000});
       await expect(page.locator('.d4-dialog .d4-dialog-title'),
         'dialog title must read "Share <EntityName>"').toContainText('Share', {timeout: 5_000});
-      
+
       await page.locator('[name="button-CANCEL"]').click();
       await expect(dlg, 'dialog must close on CANCEL').toBeHidden({timeout: 10_000});
       console.log('[sharing-smoke] Scenario 3 (cont.): SHARE... opened Share dialog; CANCEL closed it');
     });
 
-    
-    
-    
     await softStep('Scenario 1: Share dialog hosts the full PermissionsEditor widget', async () => {
       await openShareDialogViaPane(page, projId!);
       const dlg = page.locator('.d4-dialog');
-      
+
       await expect(dlg.locator('input[placeholder="User, group, or email"]'),
         'recipient autocomplete input must be present').toBeVisible({timeout: 10_000});
-      
+
       await expect(dlg.locator('[name="div-share-selector"]'),
         'access-level dropdown (View and use / Full access) must be present').toBeAttached({timeout: 10_000});
-      
+
       await expect(dlg.locator('[name="label-Advanced-editor..."]'),
         'Advanced editor... link must be present').toBeAttached({timeout: 10_000});
-      
-      
-      
-      
+
       await expect(dlg.locator('textarea[placeholder="Type in message here"]'),
         'notification message textarea must be present').toBeAttached({timeout: 10_000});
       await expect(dlg.locator('[name="input-Send-notifications"]'),
         'Send notifications checkbox must be present').toBeAttached({timeout: 10_000});
-      
+
       await expect(dlg.locator('[name="button-OK"]'), 'OK button must be present').toBeAttached({timeout: 10_000});
       await expect(dlg.locator('[name="button-CANCEL"]'), 'CANCEL button must be present').toBeAttached({timeout: 10_000});
       console.log('[sharing-smoke] Scenario 1: PermissionsEditor widget fully rendered (input, dropdown, advanced link, notify, OK/CANCEL)');
-      
+
     });
 
-    
-    
-    
     await softStep('Scenario 2: type into autocomplete, see suggestions, CANCEL applies no change', async () => {
       const dlg = page.locator('.d4-dialog');
       await expect(dlg, 'Share dialog must still be open from Scenario 1').toBeVisible({timeout: 5_000});
 
-      
       const before = await evalJs(page, `(async () => {
         const g = window.grok;
         const p = await g.dapi.projects.find('${projId}');
@@ -174,24 +153,20 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
         return {groupCount: [...(perms.view||[]), ...(perms.edit||[])].length};
       })()`);
 
-      
       const input = dlg.locator('input[placeholder="User, group, or email"]');
       await input.click();
       await input.fill('');
       await page.keyboard.type('adm', {delay: 60});
-      
-      
+
       const popup = page.locator('.d4-tags-selector-drop-down.d4-user-selector-drop-down');
       await expect(popup, 'autocomplete suggestion popup must appear after typing').toBeVisible({timeout: 10_000});
       const suggestionCount = await page.locator('span.d4-user-selector-user-name').count();
       expect(suggestionCount, 'at least one user/group suggestion must be listed').toBeGreaterThan(0);
       console.log(`[sharing-smoke] Scenario 2: autocomplete popup visible with ${suggestionCount} suggestion(s)`);
 
-      
       await dlg.locator('[name="button-CANCEL"]').click();
       await expect(dlg, 'dialog must close on CANCEL').toBeHidden({timeout: 10_000});
 
-      
       const after = await evalJs(page, `(async () => {
         const g = window.grok;
         const p = await g.dapi.projects.find('${projId}');
@@ -202,21 +177,13 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       console.log(`[sharing-smoke] Scenario 2: CANCEL applied no change (grants before=${before.groupCount}, after=${after.groupCount})`);
     });
 
-    
-    
-    
-    
-    
-    
     await softStep('Scenario 4: Advanced editor... opens the PermissionsView matrix', async () => {
       await openShareDialogViaPane(page, projId!);
       const dlg = page.locator('.d4-dialog');
       const advLabel = dlg.locator('[name="label-Advanced-editor..."]');
       await expect(advLabel, 'Advanced editor... link must be present').toBeAttached({timeout: 10_000});
       await advLabel.click();
-      
-      
-      
+
       const loaded = page.locator(
         '[name="button-Calculate-resulting-permissions-for-this-entity"], ' +
         'input[placeholder="Type in user, role or group to add..."], ' +
@@ -225,7 +192,6 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       await expect(loaded, 'PermissionsView (Advanced editor) must load with its matrix surface').toBeVisible({timeout: 25_000});
       console.log('[sharing-smoke] Scenario 4: Advanced editor PermissionsView loaded (DOM signal, class-1)');
 
-      
       await evalJs(page, `(async () => { try { window.grok.shell.closeAll(); } catch(_){} })()`).catch(() => {});
       await page.waitForTimeout(500);
       const after = await evalJs(page, `(async () => {
@@ -239,7 +205,7 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, advanced
       console.log('[sharing-smoke] Scenario 4: left Advanced editor without SAVE; permissions unchanged');
     });
   } finally {
-    
+
     await evalJs(page, `(async () => {
       const g = window.grok;
       try {

@@ -1,12 +1,3 @@
-// Add New Column dialog smoke + autofill from Recent Activities (demog).
-//
-// Autocomplete-Enter-fires-OK hazard: the dialog only stops Enter-propagation when CM6's
-// activateOnCompletion callback fired (real Enter/mouseDOWN on the tooltip). Synthetic mouse events bypass
-// it, so a following keyboard Enter propagates to the dialog OK handler and closes it mid-test. Step 4b
-// therefore dismisses the tooltip with Escape (stopPropagation'd on the cm-div) and relies on the
-// keyboard-typed canonical formula in Step 4c. History-entry selection MUST use a real CDP click
-// (locator.click), not dispatchEvent — applyInput is wired to native click only.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -35,7 +26,6 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
   await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
   await page.waitForTimeout(1000);
 
-  // Sanity: HEIGHT/WEIGHT present (the formula composition depends on them).
   const cols = await page.evaluate(() => {
     const df = (window as any).grok.shell.tv?.dataFrame;
     return df ? df.columns.names() : [];
@@ -54,8 +44,6 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
 
   const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
 
-  // Step 2: dialog UI sanity. Failure mode is the dialog root spilling beyond the viewport; internal
-  // ColumnGrid scroll is acceptable, so check root containment, not contents.scrollWidth.
   await softStep('Step 2: verify dialog UI sanity (root contained, tooltips attached)', async () => {
     const sanity = await page.evaluate(() => {
       const dialog = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -83,8 +71,6 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     expect(sanity.rootContained).toBe(true);
   });
 
-  // Step 3: resize the dialog root via inline style (synthetic pointer events on resize handles don't fire
-  // Dart's resize handler) and verify the root stays viewport-contained at both extremes.
   await softStep('Step 3: dialog resizes larger then smaller; root stays viewport-contained', async () => {
     const checkRootContained = async () => await page.evaluate(() => {
       const d = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -108,11 +94,10 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     expect(await checkRootContained()).toBe(true);
   });
 
-  // Step 4: name = "New", formula = Round(${HEIGHT} + ${WEIGHT}).
   await softStep('Step 4a: enter column name "New"', async () => {
     const nameInput = dlg.locator('[name="input-Add-New-Column---Name"]').first();
     await nameInput.waitFor({timeout: 15_000, state: 'visible'});
-    // Native setter + input/change events (Dart InputBase listens on these).
+
     await page.evaluate(() => {
       const input = document.querySelector('[name="input-Add-New-Column---Name"]') as HTMLInputElement | null;
       if (!input) throw new Error('Name input not found by [name="input-Add-New-Column---Name"]');
@@ -137,7 +122,7 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     await page.keyboard.type('Rou', {delay: 60});
     const tooltipAppeared = await page.locator('.cm-tooltip-autocomplete')
       .first().waitFor({timeout: 3_000, state: 'visible'}).then(() => true).catch(() => false);
-    // Dismiss with Escape (NOT synthetic-accept or Enter — see Autocomplete-Enter-fires-OK hazard in header).
+
     if (tooltipAppeared) {
       await page.keyboard.press('Escape').catch(() => {});
       await page.waitForTimeout(200);
@@ -145,8 +130,7 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
   });
 
   await softStep('Step 4c: best-effort drag-n-drop HEIGHT/WEIGHT; guarantee keyboard-typed formula', async () => {
-    // Phase 1 exercises drag-n-drop (best-effort, may not land); Phase 2 keyboard-types the canonical formula
-    // for the deterministic end-state. Fail fast if the dialog closed (misrouted Enter) before continuing.
+
     const dialogStillOpen = await page.locator('.d4-dialog')
       .filter({hasText: 'Add New Column'}).first()
       .isVisible({timeout: 1_000}).catch(() => false);
@@ -171,7 +155,7 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
           cmDiv.dispatchEvent(new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt}));
           cmDiv.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}));
           label.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true, dataTransfer: dt}));
-        } catch { /* best effort */ }
+        } catch {  }
       };
       const heightLabel = labelNodes.find((el) => el.textContent?.trim() === 'HEIGHT');
       const weightLabel = labelNodes.find((el) => el.textContent?.trim() === 'WEIGHT');
@@ -179,7 +163,7 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
       if (weightLabel) fireDrop(weightLabel, 'WEIGHT');
     }).catch(() => {});
     await page.waitForTimeout(200);
-    // Phase 2: deterministic keyboard-typed end-state.
+
     const cm = dlg.locator('.add-new-column-dialog-cm-div .cm-content').first();
     await cm.click();
     await page.waitForTimeout(150);
@@ -237,8 +221,6 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     await expect(dlg2).toBeVisible();
   });
 
-  // Step 7: history icon + select most recent entry. Use real locator.click (CDP) on both — applyInput is
-  // wired to native click only; dispatchEvent leaves the form unfilled.
   await softStep('Step 7: click history icon, select most recent entry', async () => {
     const dlg2 = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
     await dlg2.waitFor({timeout: 10_000});
@@ -268,7 +250,6 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     expect(normalized).toContain('${WEIGHT})');
   });
 
-  // Cleanup: cancel any open dialog, remove the "New" column.
   await page.evaluate(() => {
     const dlg = document.querySelector('.d4-dialog [name="button-Add-New-Column---CANCEL"]') as HTMLElement | null;
     if (dlg) dlg.click();
@@ -280,7 +261,7 @@ test('PowerPack: Add new column (Demog smoke - dialog + autofill from Recent Act
     try {
       const df = grok.shell.tv?.dataFrame;
       if (df && df.columns.names().includes('New')) df.columns.remove('New');
-    } catch (_) { /* best effort */ }
+    } catch (_) {  }
     try { grok.shell.closeAll(); } catch (_) {}
   }).catch(() => {});
 

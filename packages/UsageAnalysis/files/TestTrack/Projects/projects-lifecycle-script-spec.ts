@@ -1,4 +1,3 @@
-// Script-source lifecycle on a provisioned dataframe-output script (wraps grok.data.getDemoTable('demog.csv')).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -68,8 +67,6 @@ test('Projects / Lifecycle Script: provisioned df-output script source', async (
       expect(result.reopenedScript).toMatch(new RegExp(provisioned.resolvedName));
     });
 
-    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
-    // GROK-19403 recipient re-auth wired via shareWithSecondUserAndVerify (asserted when DATAGROK_AUTH_TOKEN_2 set).
     await softStep('Step 4: GROK-19403 — share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName}, {full: true});

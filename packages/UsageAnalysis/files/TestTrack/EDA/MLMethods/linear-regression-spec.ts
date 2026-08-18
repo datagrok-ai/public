@@ -18,7 +18,6 @@ test('Linear Regression: Train on cars.csv', async () => {
     }, {timeout: 45000});
   }
 
-  // Step 1: Open cars.csv
   await softStep('Open cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -38,7 +37,6 @@ test('Linear Regression: Train on cars.csv', async () => {
     expect(result.cols).toBe(17);
   });
 
-  // Step 2: Open Train Model dialog via ML > Models > Train Model
   await softStep('Open Train Model via menu', async () => {
     await page!.evaluate(async () => {
       const ml = document.querySelector('[name="div-ML"]') as HTMLElement;
@@ -58,7 +56,6 @@ test('Linear Regression: Train on cars.csv', async () => {
     expect(view).toBe(true);
   });
 
-  // Step 3: Set Predict = price via UI column selector
   await softStep('Set Predict to price', async () => {
     await page!.evaluate(async () => {
       const editor = document.querySelector('[name="input-host-Predict"] .ui-input-editor') as HTMLElement;
@@ -75,13 +72,11 @@ test('Linear Regression: Train on cars.csv', async () => {
     expect(predictText).toContain('price');
   });
 
-  // Step 4: Set Features (all except price and model) — JS API fallback
-  // Canvas-based column grid checkboxes cannot be toggled via DOM events
   await softStep('Set Features and select Model Engine (JS API fallback)', async () => {
     const result = await page!.evaluate(async () => {
-      // Close the PredictiveModel view — canvas-based Features selector cannot be automated
+
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());
-      // Train directly via eda:trainLinearRegression
+
       const df = grok.shell.tv.dataFrame;
       const result = await grok.functions.call('eda:trainLinearRegression', {
         df: df, predictColumn: df.col('price')

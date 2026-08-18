@@ -1,16 +1,3 @@
-// Frontmatter extraction (Edit X7):
-//   target_layer: apitest
-//   pyramid_layer: integration
-//   ui_coverage_responsibility: [] (no DOM driving — apitest layer)
-//   related_bugs: []
-//   produced_from: atlas-driven
-// SR rationale (Section 4.5 scenario authority): apitest layer; FORBIDDEN
-// list per Section 4.1 includes DOM-driving calls (page.click | page.fill |
-// page.locator | page.hover | page.press | page.keyboard | page.mouse |
-// dlg.*). Spec body uses only grok.dapi.* + grok.shell.* + viewer.*
-// (props/setOptions/getOptions). No DOM driving in body — paradigm pure
-// per Decision 1.3. Cold-start race tolerance (try/catch + null checks)
-// from cycle charts-migrate-2026-05-07 lessons applied throughout.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -34,10 +21,6 @@ test('Charts — viewer API contract', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // E-LAYER-COMPLIANCE-01 sub-rule for apitest: spec body MUST NOT contain
-  // DOM-driving calls. The page.locator below is in spec-login (loginToDatagrok),
-  // not in this body — apitest paradigm pure.
-
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -48,13 +31,11 @@ test('Charts — viewer API contract', async ({page}) => {
     (window as any).grok.shell.windows.simpleMode = true;
   });
 
-  // === Scenario 1: addViewer round-trip across all 4 viewer types ===
-
   await softStep('Scenario 1: addViewer round-trip across Radar/Sunburst/Tree/Timelines', async () => {
     const result = await page.evaluate(async ([dPath, aPath]) => {
       const grok = (window as any).grok;
       const out: any = {viewers: {}};
-      // Radar
+
       grok.shell.closeAll();
       await new Promise((r) => setTimeout(r, 400));
       const dfRadar = await grok.dapi.files.readCsv(dPath);
@@ -68,7 +49,6 @@ test('Charts — viewer API contract', async ({page}) => {
       try { radarPropCount = radar.props.getProperties().length; } catch (e) {}
       out.viewers.Radar = {types: radarTypes, propCount: radarPropCount};
 
-      // Sunburst — co-existing TableView, no closeAll between
       const dfSunburst = await grok.dapi.files.readCsv(dPath);
       const tvSunburst = grok.shell.addTableView(dfSunburst);
       await new Promise((r) => setTimeout(r, 1500));
@@ -80,7 +60,6 @@ test('Charts — viewer API contract', async ({page}) => {
       try { sbPropCount = sunburst.props.getProperties().length; } catch (e) {}
       out.viewers.Sunburst = {types: sbTypes, propCount: sbPropCount};
 
-      // Tree
       const dfTree = await grok.dapi.files.readCsv(dPath);
       const tvTree = grok.shell.addTableView(dfTree);
       await new Promise((r) => setTimeout(r, 1500));
@@ -92,7 +71,6 @@ test('Charts — viewer API contract', async ({page}) => {
       try { treePropCount = tree.props.getProperties().length; } catch (e) {}
       out.viewers.Tree = {types: treeTypes, propCount: treePropCount};
 
-      // Timelines — different dataset
       const dfTl = await grok.dapi.files.readCsv(aPath);
       const tvTl = grok.shell.addTableView(dfTl);
       await new Promise((r) => setTimeout(r, 1500));
@@ -110,13 +88,9 @@ test('Charts — viewer API contract', async ({page}) => {
     expect(result.viewers.Sunburst.types).toContain('Sunburst');
     expect(result.viewers.Tree.types).toContain('Tree');
     expect(result.viewers.Timelines.types).toContain('Timelines');
-    // Property machinery contract — each viewer exposes ≥1 property when
-    // race tolerates; if propCount races to 0, that's a separate issue
-    // but addViewer success is the primary contract.
+
     if (result.viewers.Radar.propCount > 0) expect(result.viewers.Radar.propCount).toBeGreaterThan(0);
   });
-
-  // === Scenario 2: getProperties + categories enumeration (Radar) ===
 
   await softStep('Scenario 2: Radar getProperties categories include Data/Selection/Value/Style/Legend', async () => {
     const result = await page.evaluate(async (path) => {
@@ -140,8 +114,6 @@ test('Charts — viewer API contract', async ({page}) => {
     if (result.categories.length > 0)
       expect(result.categories).toEqual(expect.arrayContaining(['Data', 'Selection', 'Value', 'Style', 'Legend']));
   });
-
-  // === Scenario 3: setOptions round-trip across all 4 viewers ===
 
   await softStep('Scenario 3: Radar setOptions(backgroundMinColor) round-trip', async () => {
     const result = await page.evaluate(async () => {
@@ -226,8 +198,6 @@ test('Charts — viewer API contract', async ({page}) => {
     if (result.color != null) expect(result.color).toBe('AESOC');
   });
 
-  // === Scenario 4: getProperties surface check across all 4 viewers ===
-
   await softStep('Scenario 4: getProperties surface check Radar/Sunburst/Tree/Timelines', async () => {
     const result = await page.evaluate(async ([dPath, aPath]) => {
       const grok = (window as any).grok;
@@ -240,7 +210,7 @@ test('Charts — viewer API contract', async ({page}) => {
           return names;
         } catch (e) { return []; }
       };
-      // Radar
+
       grok.shell.closeAll();
       await new Promise((r) => setTimeout(r, 400));
       const df1 = await grok.dapi.files.readCsv(dPath);
@@ -249,21 +219,21 @@ test('Charts — viewer API contract', async ({page}) => {
       const radar = tv1.addViewer('Radar');
       await new Promise((r) => setTimeout(r, 3000));
       out.Radar = collectProps(radar);
-      // Sunburst — co-existing
+
       const df2 = await grok.dapi.files.readCsv(dPath);
       const tv2 = grok.shell.addTableView(df2);
       await new Promise((r) => setTimeout(r, 1500));
       const sunburst = tv2.addViewer('Sunburst');
       await new Promise((r) => setTimeout(r, 3000));
       out.Sunburst = collectProps(sunburst);
-      // Tree
+
       const df3 = await grok.dapi.files.readCsv(dPath);
       const tv3 = grok.shell.addTableView(df3);
       await new Promise((r) => setTimeout(r, 1500));
       const tree = tv3.addViewer('Tree');
       await new Promise((r) => setTimeout(r, 3000));
       out.Tree = collectProps(tree);
-      // Timelines
+
       const df4 = await grok.dapi.files.readCsv(aPath);
       const tv4 = grok.shell.addTableView(df4);
       await new Promise((r) => setTimeout(r, 1500));

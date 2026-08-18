@@ -36,21 +36,18 @@ import {
   sweepGroupsByPrefix,
 } from './helpers';
 
-// All roles created by this suite share this prefix; used for the pre/post-run cleanup sweeps.
 const ROLE_PREFIX = 'qa_autotest_r_';
 
-// Roles can be created and deleted freely on dev. Unique names per run; deleted in cleanup.
 const STAMP = Date.now();
 const ROLE = `qa_autotest_r_${STAMP}`;
 const ROLE_RENAMED = `${ROLE}_renamed`;
-// Partitioned per file (see users.test.ts) so files can run on separate workers in parallel:
-// this file owns opavlenko656.
-const ASSIGNEE_USER = 'opavlenko656';  // existing user to assign the role to
+
+const ASSIGNEE_USER = 'opavlenko656';  
 
 test.describe.configure({ mode: 'serial' });
 
 test.describe('Roles View (Roles-*)', () => {
-  // Remove any leftover autotest roles from earlier (possibly crashed) runs before/after this file.
+
   test.beforeAll(async ({ browser }) => {
     await sweepGroupsByPrefix(browser, ROLE_PREFIX);
   });
@@ -62,7 +59,6 @@ test.describe('Roles View (Roles-*)', () => {
     await openPlatformView(page, 'Roles');
   });
 
-  // Roles-01 + Roles-02 + Roles-07: open from tree, layout, view modes.
   test('Roles-01/02/07 — open view: gallery, count, toolbar, view modes', async ({ page }) => {
     const sink = watchErrors(page);
 
@@ -84,10 +80,9 @@ test.describe('Roles View (Roles-*)', () => {
     await expectNoErrors(page, sink);
   });
 
-  // Roles-03 + Roles-04 + Roles-09 + Roles-15: full CRUD lifecycle.
   test('Roles-03/04/09/15 — role lifecycle: create dialog, create, rename, delete', async ({ page }) => {
     try {
-      // Dialog fields + cancel (no creation).
+
       await ribbonButtonByText(page, 'New Role').click();
       await expect(page.locator(DIALOG_TITLE)).toHaveText(/Create New Role/i);
       await expect(dialogInput(page, 'Name')).toBeVisible();
@@ -95,12 +90,10 @@ test.describe('Roles View (Roles-*)', () => {
       await dialogButton(page, 'CANCEL').click();
       await expect(page.locator(DIALOG)).toHaveCount(0);
 
-      // Create.
       await createRole(page, ROLE, 'created by autotest');
       await openPlatformView(page, 'Roles');
       await searchAndWaitCard(page, 'roles', ROLE);
 
-      // Rename via Properties...
       await openCardContextMenu(page, ROLE);
       await contextMenuItemByName(page, 'Properties...').click();
       await expect(page.locator(DIALOG_TITLE)).toContainText(/Properties/i);
@@ -110,14 +103,12 @@ test.describe('Roles View (Roles-*)', () => {
       await openPlatformView(page, 'Roles');
       await searchAndWaitCard(page, 'roles', ROLE_RENAMED);
 
-      // Delete.
       await deleteEntityViaContextMenu(page, ROLE_RENAMED);
       await openPlatformView(page, 'Roles');
       await searchGallery(page, 'roles', ROLE_RENAMED);
       await expect(galleryCardByName(page, ROLE_RENAMED), 'deleted role should be gone').toHaveCount(0);
     } finally {
-      // Safety net: delete the role under either name (`ROLE` is a prefix of `ROLE_RENAMED`)
-      // if the test failed before its own UI delete ran.
+
       await apiDeleteGroupsByPrefix(page, ROLE);
     }
   });
@@ -131,9 +122,8 @@ test.describe('Roles View (Roles-*)', () => {
     expect((await readGalleryCount(page)).shown).toBe(before.total);
   });
 
-  // Roles-08 + Roles-10: context menu items and context-panel info panes.
   test('Roles-08/10 — role context menu items and Context Panel info panes', async ({ page }) => {
-    // Act on a freshly created custom role so Delete is available and we don't touch built-ins.
+
     await createRole(page, ROLE, 'menu test');
     try {
       await openPlatformView(page, 'Roles');
@@ -156,7 +146,6 @@ test.describe('Roles View (Roles-*)', () => {
     }
   });
 
-  // Roles-11 + Roles-12 + Roles-13: assign a role to a user, toggle "Can assign", remove.
   test('Roles-11/12/13 — assign role to a user, Can-assign toggle, remove', async ({ page }) => {
     await createRole(page, ROLE, 'assignment test');
     try {
@@ -164,18 +153,15 @@ test.describe('Roles View (Roles-*)', () => {
       await searchAndWaitCard(page, 'roles', ROLE);
       await selectCard(page, ROLE);
 
-      // Assign a user and grant "Can assign".
       await openManageFromPane(page, 'Assigned to');
       await addMembershipBySearch(page, ASSIGNEE_USER);
       await setMemberRowToggle(page, ASSIGNEE_USER, true);
       await saveDialog(page);
 
-      // Verify the assignment persisted.
       await selectCard(page, ROLE);
       await openManageFromPane(page, 'Assigned to');
       await expect(page.locator('.d4-dialog .membership-row', { hasText: ASSIGNEE_USER })).toBeVisible({ timeout: 5_000 });
 
-      // Remove the assignment.
       await removeMembershipRow(page, ASSIGNEE_USER);
       await saveDialog(page);
       await selectCard(page, ROLE);
@@ -190,7 +176,4 @@ test.describe('Roles View (Roles-*)', () => {
     }
   });
 
-  // Roles-14 (edit a role's permissions via the Global Permissions / Permissions panes) is NOT
-  // automated yet: the editing control in those panes rendered lazily during recon and its exact
-  // mechanism is unconfirmed. To be added once the control is verified on a first manual pass.
 });

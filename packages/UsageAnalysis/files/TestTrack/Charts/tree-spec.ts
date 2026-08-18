@@ -12,7 +12,6 @@ test('Tree viewer (Charts package)', async ({page}) => {
   await loginToDatagrok(page);
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
-  // Baseline environment setup (JS API only)
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -25,7 +24,7 @@ test('Tree viewer (Charts package)', async ({page}) => {
   });
 
   await softStep('Setup: Open demog.csv; add Tree via gallery; set Hierarchy CONTROL/SEX/RACE', async () => {
-    // 1) Open dataset + table view (JS API)
+
     const open = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
       const df = await grok.dapi.files.readCsv(path);
@@ -38,7 +37,6 @@ test('Tree viewer (Charts package)', async ({page}) => {
     }, demogPath);
     expect(open.rowCount).toBe(5850);
 
-    // 2) Add Viewer ribbon icon — page.locator(...).click()
     let dialogOpened = false;
     let fallbackUsed = false;
     try {
@@ -48,7 +46,7 @@ test('Tree viewer (Charts package)', async ({page}) => {
         await dlg.waitFor({state: 'visible', timeout: 3000});
         dialogOpened = true;
       } catch (e) {
-        // Retry — headless Chromium can mouseup-on-overlay.
+
         await page.locator('i.svg-add-viewer').first().click({timeout: 3000});
         try {
           await dlg.waitFor({state: 'visible', timeout: 3000});
@@ -62,21 +60,19 @@ test('Tree viewer (Charts package)', async ({page}) => {
     }
 
     if (dialogOpened) {
-      // 3) Click the Tree tile via page.locator. Exact-text match — a plain
-      // 'Tree' substring also matches the 'Tree map' and 'Scaffold Tree' tiles
-      // (and 'Tree map' sorts first), which would add the wrong viewer.
+
       await page.locator('[name="dialog-Add-Viewer"] .d4-item-card.viewer-gallery')
         .filter({hasText: /^\s*Tree\s*$/}).first().click({timeout: 5000});
-      // Charts package webpack-lazy-loads — wait before probing.
+
       await page.waitForTimeout(4500);
-      // Close any residual gallery dialog
+
       const close = page.locator('[name="dialog-Add-Viewer"] [name="icon-font-icon-close"]');
       const closeCount = await close.count();
       if (closeCount > 0) {
         await close.first().click({timeout: 2000}).catch(() => {});
       }
     } else {
-      // JS API fallback: preserves Validator B PASS when DOM gallery flow misses.
+
       console.warn('[tree Setup]', 'Add Viewer gallery did not open via page.locator; falling back to tv.addViewer JS API');
       await page.evaluate(async () => {
         const grok = (window as any).grok;
@@ -87,17 +83,14 @@ test('Tree viewer (Charts package)', async ({page}) => {
       fallbackUsed = true;
     }
 
-    // 4) Verify Tree viewer attached. 30s timeout — Tree DOM attach can take 15+ s on cold start.
     await page.locator('[name="viewer-Tree"]').waitFor({timeout: 30_000});
 
-    // 5) Open Gear icon — page.locator chain (panel-base ancestor → titlebar settings)
     await page.locator('[name="viewer-Tree"]')
       .locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")]')
       .locator('.panel-titlebar [name="icon-font-icon-settings"]')
       .first().click({timeout: 5000});
     await page.locator('.grok-prop-panel').waitFor({timeout: 5000});
 
-    // 6) Open Select Columns dialog via Hierarchy row "..." button (page.locator)
     let selectColsOpened = false;
     try {
       await page.locator('.grok-prop-panel [name="prop-hierarchy"] button').first().click({timeout: 5000});
@@ -107,14 +100,12 @@ test('Tree viewer (Charts package)', async ({page}) => {
       selectColsOpened = false;
     }
 
-    // 7) Cancel Select Columns dialog (canvas inner grid → JS API column setting)
     if (selectColsOpened) {
       await page.locator('[name="dialog-Select-columns..."] [name="button-CANCEL"]').first()
         .click({timeout: 3000}).catch(() => {});
       await page.waitForTimeout(300);
     }
 
-    // 8) Set hierarchy via JS API (Charts package "Select Columns" inner grid is canvas)
     const setup = await page.evaluate(async () => {
       const grok = (window as any).grok;
       const tv = grok.shell.tv;
@@ -125,7 +116,7 @@ test('Tree viewer (Charts package)', async ({page}) => {
       await new Promise((r) => setTimeout(r, 1500));
       const viewerTypes: string[] = [];
       for (const v of tv.viewers) viewerTypes.push(v.type);
-      // Wrap props.get in try/catch — Tree props can race cold-start init.
+
       let hierarchy = null;
       try { hierarchy = tree.props.get('hierarchyColumnNames'); } catch (e) {}
       return {viewerTypes, hierarchy, ok: true};
@@ -136,10 +127,6 @@ test('Tree viewer (Charts package)', async ({page}) => {
     console.log(`[Setup] fallbackUsed=${fallbackUsed}, selectColsDialogOpened=${selectColsOpened}`);
   });
 
-  // Steps 1/3/4 (canvas Shift+Click selection) moved to charts-ui.md (manual). This spec now covers
-  // Filter Panel control flow + filter cardinality only.
-
-  // Step 1: open Filter Panel via toolbox section header (ribbon icon fallback); apply CONTROL=true via JS API.
   await softStep('Step 1: Open Filter Panel (page.locator); apply CONTROL=true filter; verify cardinality = 39', async () => {
     let panelOpened = false;
     let panelOpenedVia = 'none';
@@ -169,7 +156,6 @@ test('Tree viewer (Charts package)', async ({page}) => {
       }
     }
 
-    // Apply categorical filter via JS API (canvas-rendered checkboxes per filters.md)
     const result = await page.evaluate(async () => {
       const grok = (window as any).grok;
       const df = grok.shell.tv.dataFrame;
@@ -197,7 +183,7 @@ test('Tree viewer (Charts package)', async ({page}) => {
     });
     console.log(`[Step 2] filtered=${result.filtered}, selected=${result.selected}`);
     expect(result.filtered).toBe(5850);
-    // selection cardinality no longer asserted — canvas Shift+Click setup moved to charts-ui.md.
+
   });
 
   await v.cleanupShell(page);

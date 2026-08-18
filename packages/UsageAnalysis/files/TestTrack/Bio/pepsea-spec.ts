@@ -317,7 +317,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         msaCol.setTag('alphabet', 'UN');
         msaCol.setTag('.alphabetIsMultichar', 'true');
         df.columns.add(msaCol);
-        // detectSemanticTypes binds the Macromolecule cell renderer (mirrors the dialog OK path).
+
         await grok.data.detectSemanticTypes(df);
       });
       await page.waitForFunction(() => {
@@ -329,7 +329,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         return gridCol?.cellType === 'sequence' || gridCol?.cellType === 'helm';
       }, null, {timeout: 60_000});
     } else {
-      // Happy path — dialog produced the column; poll for the renderer to bind.
+
       await page.waitForFunction(() => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -346,7 +346,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
       const clusters: any = df.col('Clusters');
       const gridCol = (grok.shell.tv as any).grid?.col?.(msa.name);
       let separatorTag = '.';
-      try { separatorTag = msa.getTag('separator') || '.'; } catch { /* ignore */ }
+      try { separatorTag = msa.getTag('separator') || '.'; } catch {  }
       const units = msa?.meta?.units ?? '';
       const countByCluster: Record<string, Set<number>> = {};
       for (let i = 0; i < df.rowCount; i++) {
@@ -363,7 +363,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
       }
       const allEqualPerCluster = Object.values(countByCluster).every((s) => s.size === 1);
       let alignedTag: string | null = null;
-      try { alignedTag = msa.getTag('aligned') ?? null; } catch { /* ignore */ }
+      try { alignedTag = msa.getTag('aligned') ?? null; } catch {  }
       return {
         msaName: msa?.name,
         semType: msa?.semType,

@@ -90,7 +90,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   });
 
   await softStep('Step 6: SR-DEFERRED close+reopen cycle — ui.dialog wrapper has no OK/CANCEL', async () => {
-    // SR-DEFERRED: ui.dialog-wrapped sketcher has no OK/CANCEL button, so close-and-reopen (steps 6-7) can't be driven.
+
   });
 
   await softStep('Step 8-9: Click Copy as SMILES/MOLBLOCK on still-open dialog (best-effort)', async () => {
@@ -113,12 +113,11 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
       await new Promise(r => setTimeout(r, 600));
       return {ok: true, copyAsSmilesFound: !!smilesItem, copyAsMolFound: !!molItem};
     });
-    // If the ui.dialog-wrapped sketcher closed after Step 5 (no OK/CANCEL to keep it open), this
-    // leg can't be driven — a documented soft-skip, not a pass-on-broken.
+
     if ((result as any).ok === 'soft-skip') {
       console.log(`[sketcher] Copy-as step skipped: ${JSON.stringify(result)}`);
     } else {
-      // Dialog still open: the Copy as SMILES / MOLBLOCK menu items must actually be present.
+
       expect((result as any).copyAsSmilesFound,
         `Copy as SMILES menu item not found: ${JSON.stringify(result)}`).toBe(true);
       expect((result as any).copyAsMolFound,

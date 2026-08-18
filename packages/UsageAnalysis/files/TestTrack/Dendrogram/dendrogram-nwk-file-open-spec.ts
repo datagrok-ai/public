@@ -1,14 +1,9 @@
-// The registered fileHandler function is Dendrogram:importNewick (the @fileHandler `name:`
-// importNwk is only the extension key); it returns [] because DendrogramApp opens its own
-// TableView via grok.shell.addTableView. previewNewick needs a server-resident FileInfo from
-// dapi.files.list — a path-string-only synthetic fails with FileSystemException.
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-// Canonical 4-leaf newick fixture, matching the scenario .md Setup.
 const NEWICK = '((a:1,b:1):1,(c:1,d:1):1);';
 const EXPECTED_LEAVES: ReadonlyArray<string> = ['a', 'b', 'c', 'd'];
 const FIXTURE_PATH = 'System:AppData/Dendrogram/sample.nwk';
@@ -34,7 +29,7 @@ interface ImportNewickWitness {
 async function runImportNewick(page: Page, newick: string): Promise<ImportNewickWitness> {
   return await page.evaluate(async (nwk: string) => {
     const ret: any = await grok.functions.call('Dendrogram:importNewick', {fileContent: nwk});
-    // Wait for DendrogramApp.buildView (addTableView + dock) to settle.
+
     await new Promise(r => setTimeout(r, 3500));
     const tv: any = grok.shell.tv;
     const df: any = tv?.dataFrame;
@@ -74,7 +69,7 @@ interface PreviewNewickWitness {
   callErr: string | null;
   returnedViewType: string | null;
   returnedRootClass: string | null;
-  // After grok.shell.addView(view) the active view root carries the canvas:
+
   activeViewRootCanvases: number;
   activeViewCanvasBoundingW: number;
   activeViewCanvasBoundingH: number;
@@ -83,7 +78,7 @@ interface PreviewNewickWitness {
 
 async function runPreviewNewick(page: Page, filePath: string): Promise<PreviewNewickWitness> {
   return await page.evaluate(async (path: string) => {
-    // Resolve a real FileInfo via dapi.files.list — path strings fail server-side.
+
     const folder = path.replace(/\/[^/]+$/, '');
     const baseName = path.split('/').pop() ?? '';
     const arr = await grok.dapi.files.list(folder);
@@ -103,7 +98,7 @@ async function runPreviewNewick(page: Page, filePath: string): Promise<PreviewNe
     if (ret) {
       returnedViewType = ret.type ?? null;
       returnedRootClass = ret.root?.className ?? null;
-      // Mount the returned DG.View into the shell so the canvas lays out.
+
       try { grok.shell.addView(ret); } catch (e) { callErr = (callErr || '') + ' | addView: ' + String(e).slice(0,200); }
     }
     await new Promise(r => setTimeout(r, 2500));
@@ -144,20 +139,17 @@ test('Dendrogram: Open .nwk via importNewick (DendrogramApp) + preview via previ
 
   await loginToDatagrok(page);
 
-  // Setup — write the 4-leaf newick fixture so previewNewick has a server-resident file.
   await page.evaluate(async (args: {path: string; newick: string}) => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
     try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
     await new Promise(r => setTimeout(r, 800));
-    try { await grok.dapi.files.delete(args.path); } catch (e) { /* tolerate */ }
+    try { await grok.dapi.files.delete(args.path); } catch (e) {  }
     await grok.dapi.files.writeAsText(args.path, args.newick);
     const exists = await grok.dapi.files.exists(args.path);
     if (!exists) throw new Error(`Fixture not written: ${args.path}`);
   }, {path: FIXTURE_PATH, newick: NEWICK});
-
-  // ── Scenario 1 — importNewick opens DendrogramApp on the parsed tree ────
 
   await softStep('1.1 Fixture sample.nwk is present in System:AppData/Dendrogram', async () => {
     const present = await page.evaluate(async (path: string) => {
@@ -184,7 +176,7 @@ test('Dendrogram: Open .nwk via importNewick (DendrogramApp) + preview via previ
 
   await softStep('1.3 The active view\'s DataFrame is the parsed tree DataFrame (7 rows, [node,parent,leaf,distance])', async () => {
     const w = await runImportNewick(page, NEWICK);
-    // 4 leaves + 3 internal nodes for a balanced binary 4-leaf newick.
+
     expect(w.rowCount, 'parsed tree DataFrame row count').toBe(7);
     expect(w.colNames, 'parsed tree DataFrame columns').toEqual(
       expect.arrayContaining(['node', 'parent', 'leaf', 'distance']),
@@ -208,13 +200,11 @@ test('Dendrogram: Open .nwk via importNewick (DendrogramApp) + preview via previ
     expect(w.canvasBoundingH, 'canvas bounding rect height > 0').toBeGreaterThan(0);
   });
 
-  // ── Scenario 2 — previewNewick renders a PhylocanvasGL preview view ─────
-
   await softStep('2.1 Close the importNewick view; ensure fixture is still on disk before preview', async () => {
     await page.evaluate(async (path: string) => {
       grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 800));
-      // Re-write the fixture defensively in case cleanup ran between scenarios.
+
       const exists = await grok.dapi.files.exists(path);
       if (!exists)
         await grok.dapi.files.writeAsText(path, '((a:1,b:1):1,(c:1,d:1):1);');
@@ -232,8 +222,7 @@ test('Dendrogram: Open .nwk via importNewick (DendrogramApp) + preview via previ
   });
 
   await softStep('2.3 Preview parse contract: TreeHelper.newickToDf produces the same leaf set as Scenario 1', async () => {
-    // PhylocanvasGL preview exposes no [name="viewer-*"] anchor; verify the leaf set via the
-    // same TreeHelper.newickToDf parse contract the previewNewick handler walks.
+
     const leaves = await leafSetViaTreeHelper(page, NEWICK);
     expect(leaves, 'TreeHelper.newickToDf leaf set on preview bytes').toEqual([...EXPECTED_LEAVES]);
   });
@@ -254,9 +243,8 @@ test('Dendrogram: Open .nwk via importNewick (DendrogramApp) + preview via previ
     expect(after.stillThere, 'sample.nwk removed from AppData/Dendrogram').toBe(false);
   });
 
-  // Final cleanup — best-effort fixture delete (assertion lives in 2.4).
   await page.evaluate(async (path: string) => {
-    try { await grok.dapi.files.delete(path); } catch (e) { /* tolerate */ }
+    try { await grok.dapi.files.delete(path); } catch (e) {  }
     try { grok.shell.closeAll(); } catch (e) {}
   }, FIXTURE_PATH);
 

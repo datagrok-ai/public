@@ -1,15 +1,3 @@
-// Add New Column functions-panel sorting: by type (column select), by name, sticky-sort.
-//
-// Load-bearing facts:
-//   - The columns widget is a popup-mode DG.ColumnGrid whose columnsDf is NOT reachable via JS-API
-//     (not in grok.shell.tables; DG.Grid.fromRoot dataFrame is null; the captured dialog wrapper has no
-//     columnsDf). The working trigger is a canvas MouseEvent triple (mousedown+mouseup+click) on the
-//     top-most canvas in .add-new-column-columns-grid at the computed (cx,cy) for a row index.
-//   - The canvas row → source-df column index mapping is NOT linear (rows are grouped by inferred input
-//     family), so Steps 3/4 PROBE rows for distinct sort outcomes rather than mapping name → row.
-//   - SR-02: the function panel re-sorts on column change, but the scenario-cited example families don't
-//     land on top, so sort-by-type is asserted at the order-changed level (top-5 differs), not by family.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -17,7 +5,7 @@ import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
 
 test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by name, sticky)', async ({page}) => {
-  // 540_000 keeps a single attempt under the 600s wrapper bound (retries=1 × 300s would compound past it).
+
   test.setTimeout(540_000);
   stepErrors.length = 0;
 
@@ -28,8 +16,8 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
     grok.shell.windows.simpleMode = true;
-    try { grok.shell.closeAll(); } catch (_) { /* best-effort */ }
-    // Try the chem-subdir path first; fall back to demo-root SPGI.csv.
+    try { grok.shell.closeAll(); } catch (_) {  }
+
     let df: any = null;
     try {
       df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
@@ -37,7 +25,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     }
     grok.shell.addTableView(df);
-    // Poll for Structure.semType='Molecule' (or any Molecule col); the onSemanticTypeDetected event is racy.
+
     let detected = false;
     for (let i = 0; i < 75; i++) {
       const structureCol = df.col('Structure');
@@ -47,7 +35,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       if (anyMolecule) { detected = true; break; }
       await new Promise((r) => setTimeout(r, 200));
     }
-    // Chem datasets: wait for cell rendering + filter registration after semType detection.
+
     const hasMolecule = detected || Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
       .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
     if (hasMolecule) {
@@ -61,7 +49,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
   await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
   await page.waitForTimeout(300);
 
-  // Sanity: SPGI grid renders with chem Structure (Molecule) plus numeric/string columns.
   let cols: {names: string[]; semTypes: Record<string, string>} = {names: [], semTypes: {}};
   const semTypeStart = Date.now();
   while (Date.now() - semTypeStart < 10_000) {
@@ -80,13 +67,12 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
   expect(cols.semTypes['Structure']).toBe('Molecule');
   expect(cols.names.length).toBeGreaterThan(2);
 
-  // Best-effort capture of the AddNewColumnDialog via onDialogShown (columnsDf is not reachable — see header).
   await page.evaluate(() => {
     const grok = (window as any).grok;
     (window as any).__addNewColumnDialog = null;
     (window as any).__addNewColumnColumnsDf = null;
     if ((window as any).__addNewColumnSub) {
-      try { (window as any).__addNewColumnSub.unsubscribe(); } catch (_) { /* best-effort */ }
+      try { (window as any).__addNewColumnSub.unsubscribe(); } catch (_) {  }
     }
     const sub = grok.events.onDialogShown.subscribe((dlg: any) => {
       try {
@@ -114,12 +100,12 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
               try {
                 const grid = DG.Grid.fromRoot(gridRoot);
                 if (grid && grid.dataFrame) columnsDf = grid.dataFrame;
-              } catch (_) { /* fromRoot may not exist on all builds */ }
+              } catch (_) {  }
             }
             if (columnsDf) (window as any).__addNewColumnColumnsDf = columnsDf;
           }, 500);
         }
-      } catch (_) { /* best-effort capture */ }
+      } catch (_) {  }
     });
     (window as any).__addNewColumnSub = sub;
   });
@@ -131,17 +117,16 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
     await dlg.waitFor({timeout: 30_000});
     await expect(dlg).toBeVisible();
-    // Step 2 verify: columns widget, functions widget, formula editor all present.
+
     await expect(dlg.locator('.ui-widget-addnewcolumn-columns')).toBeVisible();
     await expect(dlg.locator('.ui-widget-addnewcolumn-functions')).toBeVisible();
     await expect(dlg.locator('.add-new-column-dialog-cm-div').first()).toBeVisible();
   });
 
-  await page.waitForTimeout(300); // let the dialog finish its initial render
+  await page.waitForTimeout(300); 
 
   const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
 
-  // Read the visible function-name order from the functions panel (name="span-<Funcname>").
   const readFunctionOrder = async (limit: number = 30): Promise<string[]> => {
     return page.evaluate((lim) => {
       const dlg = document.querySelector('.d4-dialog');
@@ -151,7 +136,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       const spans = Array.from(funcsRoot.querySelectorAll('span[name^="span-"]')) as HTMLElement[];
       const names: string[] = [];
       for (const s of spans) {
-        // Read name= (render-stable) not textContent (momentarily empty mid-render breaks Step 6 byte-compare).
+
         const nm = s.getAttribute('name') || '';
         const m = nm.match(/^span-(.+)$/);
         if (m) names.push(m[1]);
@@ -165,8 +150,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     }, limit);
   };
 
-  // Column-selection trigger helpers (canvas-driven). selectColumn is legacy/unused (name→row mapping is
-  // unreliable for the popup-mode ColumnGrid); kept for diff-reviewability, stripped by esbuild as unused.
   const selectColumn = async (columnName: string): Promise<number> => {
     const idx = await page.evaluate((cn: string) => {
       const grok = (window as any).grok;
@@ -192,16 +175,15 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
                 columnsDf = tbl;
                 break;
               }
-            } catch (_) { /* try next */ }
+            } catch (_) {  }
           }
-        } catch (_) { /* fall through */ }
+        } catch (_) {  }
       }
       if (!columnsDf) {
         const dlg = (window as any).__addNewColumnDialog;
         if (dlg && dlg.columnsDf) columnsDf = dlg.columnsDf;
       }
 
-      // Setting currentRowIdx fires onCurrentRowChanged → functions-list re-sort.
       if (columnsDf) {
         try {
           columnsDf.currentRowIdx = rowIdx;
@@ -216,7 +198,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
         }
       }
 
-      // Last resort: canvas-click fallback.
       const dlgEl = document.querySelector('.d4-dialog');
       if (!dlgEl) return {ok: false, path: 'no-js-api-no-dom', why: 'dialog-not-found'};
       const gridRoot = dlgEl.querySelector('.add-new-column-columns-grid') as HTMLElement | null;
@@ -239,7 +220,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       canvas.dispatchEvent(mkEv('mousedown'));
       canvas.dispatchEvent(mkEv('mouseup'));
       canvas.dispatchEvent(mkEv('click'));
-      await wait(100); // caller polls via waitForOrderChange
+      await wait(100); 
       return {ok: true, path: 'canvas-fallback', geom: {rectW: rect.width, rectH: rect.height,
         headerH, rowH, visibleRows, cx, cy}};
     }, idx);
@@ -249,7 +230,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     return idx;
   };
 
-  // Click a canvas row in the columns-grid by raw row index (no name lookup; row→column mapping is non-linear).
   const clickColumnRowByIdx = async (rowIdx: number): Promise<boolean> => {
     const ok = await page.evaluate(async (rIdx: number) => {
       const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -281,8 +261,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     return ok as boolean;
   };
 
-  // Probe canvas rows, returning the first whose function-list top-5 differs from every excludedOrder.
-  // The row→family map is dataset-dependent, so sweep rather than hardcode; maxRows=14 = visible-row count.
   const findRowProducingDistinctOrder = async (
     excludedOrders: string[][],
     excludedRows: number[],
@@ -294,7 +272,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       if (excludedRows.indexOf(r) >= 0) continue;
       const clicked = await clickColumnRowByIdx(r);
       if (!clicked) continue;
-      // Poll for re-sort: short-circuit on a distinct top-5, or on a stable non-distinct top-5 (3 reads).
+
       const start = Date.now();
       let latest: string[] = [];
       let lastTop5 = '';
@@ -306,7 +284,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
           return {rowIdx: r, order: latest};
         if (top5 === lastTop5 && top5.length > 0 && excludedTops.indexOf(top5) >= 0) {
           stableConsecutive++;
-          if (stableConsecutive >= 3) break; // settled to a non-distinct value
+          if (stableConsecutive >= 3) break; 
         } else {
           stableConsecutive = 0;
           lastTop5 = top5;
@@ -329,11 +307,9 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     return latest;
   };
 
-  // Initial function order ("By relevance" default mode).
   const initialOrder = await readFunctionOrder(30);
   expect(initialOrder.length).toBeGreaterThan(0);
 
-  // Pick the FIRST numeric + FIRST non-Molecule string column (guaranteed visible in the popup window).
   const pickColumnsBySemType = async () => {
     return page.evaluate(() => {
       const grok = (window as any).grok;
@@ -355,8 +331,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
   const numericColumn = fallbacks.numericCol;
   const stringColumn = fallbacks.stringCol;
 
-  // Steps 3 & 4: sort-by-type. Probe canvas rows for distinct orderings (row→family map is non-linear);
-  // assert at the order-changed level (top-5 differs), family-on-top is log-only (SR-02).
   let step3RowIdx = -1;
   let step4RowIdx = -1;
   let postStructureOrder: string[] = [];
@@ -384,10 +358,9 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       `${postNumericOrder.slice(0, 5).join(', ')}`);
   });
 
-  // Step 5: click sort icon → "By name" → alphabetical (pure DOM, no canvas constraint).
   let postByNameOrder: string[] = [];
   await softStep('Step 5: click sort icon, verify popup menu, select "By name", verify alphabetical', async () => {
-    // Scope to the dialog's functions widget (other sort-alt icons may exist on the page).
+
     const sortIcon = dlg.locator('.grok-functions-widget-sort-icon').first();
     const sortIconByName = dlg.locator('[name="icon-sort-alt"]').first();
     const visible = await sortIcon.isVisible({timeout: 5_000}).catch(() => false);
@@ -408,8 +381,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       const byNameByText = popup.locator('.d4-menu-item').filter({hasText: 'By name'}).first();
       await byNameByText.click({timeout: 5_000});
     }
-    // Capture the SETTLED order by polling for two identical consecutive reads (Step 6 diffs it byte-for-byte;
-    // a top-2 change-detector fails here because the numeric-input top-2 == alphabetical top-2).
+
     const settleStart = Date.now();
     let prevRead = '';
     postByNameOrder = await readFunctionOrder(30);
@@ -422,7 +394,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       postByNameOrder = cur;
     }
     expect(postByNameOrder.length).toBeGreaterThan(0);
-    // Top-10 must be alphabetically ordered (Dart compareTo = codepoint order; ASCII == case-sensitive alpha).
+
     const topTen = postByNameOrder.slice(0, 10);
     let isSorted = true;
     for (let i = 1; i < topTen.length; i++) {
@@ -435,7 +407,6 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     expect(/^[AaBb]/.test(topTen[0])).toBe(true);
   });
 
-  // Step 6: sticky-sort — with "By name" active, clicking the Step 3/4 rows must not re-order (byte-for-byte).
   await softStep('Step 6: with "By name" active, column clicks do not re-order (sticky-sort)', async () => {
     const baseline = postByNameOrder.slice(0, 15).join('|');
     const rowsToClick = [step3RowIdx, step4RowIdx].filter((r) => r >= 0);
@@ -455,23 +426,22 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
       `order remained the Step-5 alphabetical baseline.`);
   });
 
-  // Cleanup: dismiss the dialog via CANCEL (no column added), then close views.
   await page.evaluate(() => {
     const cancel = document.querySelector('.d4-dialog [name="button-Add-New-Column---CANCEL"]') as HTMLElement | null;
     if (cancel) cancel.click();
     const anyCancel = document.querySelector('.d4-dialog [name="button-CANCEL"]') as HTMLElement | null;
     if (anyCancel) anyCancel.click();
-  }).catch(() => { /* best-effort dialog close */ });
+  }).catch(() => {  });
   await page.evaluate(() => {
-    try { (window as any).grok.shell.closeAll(); } catch (_) { /* best-effort */ }
+    try { (window as any).grok.shell.closeAll(); } catch (_) {  }
     try {
       const sub = (window as any).__addNewColumnSub;
       if (sub) sub.unsubscribe();
-    } catch (_) { /* best-effort */ }
+    } catch (_) {  }
     (window as any).__addNewColumnSub = null;
     (window as any).__addNewColumnDialog = null;
     (window as any).__addNewColumnColumnsDf = null;
-  }).catch(() => { /* best-effort */ });
+  }).catch(() => {  });
 
   finishSpec();
 });

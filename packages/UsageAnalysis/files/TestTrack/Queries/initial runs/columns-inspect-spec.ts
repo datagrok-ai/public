@@ -8,14 +8,6 @@ import {
 
 test.use(specTestOptions);
 
-/**
- * Walks Browse → Databases → {Provider} → {Connection} → Schemas → public,
- * expands every public table, clicks every column, and asserts that no error
- * balloons appear and the Context Panel accordion has no error indicators.
- *
- * The Schemas/public/table group nodes have no `name=` attributes, so they
- * must be located by label text scoped under the parent's children host.
- */
 test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres Northwind", async ({
   page,
 }) => {
@@ -91,13 +83,11 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
           return null;
         };
 
-        // Make sure Databases group is expanded.
         const dbGroup = document.querySelector('[name="tree-Databases"]');
         expandIfNeeded(dbGroup);
         await wait(700);
         stages.push("Databases");
 
-        // Expand provider node and wait for the connection child to materialize.
         const providerNode = await waitForSelector(
           `[name="tree-Databases---${provider}"]`,
         );
@@ -105,7 +95,6 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
         expandIfNeeded(providerNode);
         stages.push(provider);
 
-        // The connection child appears asynchronously after provider expands.
         const connNode = await waitForSelector(
           `[name="tree-Databases---${provider}---${connection}"]`,
         );
@@ -114,7 +103,6 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
         await wait(2500);
         stages.push(connection);
 
-        // Find Schemas under the connection's host.
         const connGroup = connNode.closest(".d4-tree-view-group");
         const connHost = connGroup?.querySelector(
           ":scope > .d4-tree-view-group-host",
@@ -125,7 +113,6 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
         expandIfNeeded(schemasLabel.closest(".d4-tree-view-node"));
         await wait(2500);
 
-        // Find public under Schemas' host.
         const schemasGroup = schemasLabel.closest(".d4-tree-view-group");
         const schemasHost = schemasGroup?.querySelector(
           ":scope > .d4-tree-view-group-host",
@@ -147,7 +134,6 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
           : [];
         stages.push(`tables:${tableGroups.length}`);
 
-        // Expand each table, click each column, then collapse.
         for (const tg of tableGroups) {
           const label = tg
             .querySelector(
@@ -209,7 +195,6 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
     );
   };
 
-  // ---------- Part 1: PostgresDart → NorthwindTest ----------
   let part1: any;
   await softStep(
     "Browse → Databases → PostgresDart → NorthwindTest → Schemas → public",
@@ -230,8 +215,6 @@ test("Queries — columns inspection on PostgresDart NorthwindTest and Postgres 
     },
   );
 
-  // ---------- Part 2: Postgres → Northwind ----------
-  // Collapse Part 1 connection to keep the DOM small.
   await page.evaluate(() => {
     const node = document.querySelector(
       '[name="tree-Databases---PostgresDart---NorthwindTest"]',

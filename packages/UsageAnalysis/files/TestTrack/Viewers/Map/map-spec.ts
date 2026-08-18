@@ -6,12 +6,8 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/geo/earthquakes.csv';
 
-// Layers-panel rows are drawn on the mini-grid canvas, so a layer's visibility
-// checkbox has no DOM node — it is hit by geometry: 24px rows, checkbox column
-// at the panel's left edge. Row order matches the OpenLayers layer stack.
 const LAYER_ROW = {'Bing sat': 0, 'BaseLayer': 1, 'Heatmap': 2, 'Markers GL': 3, 'Markers GL Selection': 4};
 
-/** Visibility of every OpenLayers layer, keyed by the name shown in the layers panel. */
 async function layerVisibility(page: Page): Promise<Record<string, boolean>> {
   return page.evaluate(() => {
     const mv = Array.from((window as any).grok.shell.tv.viewers).find((x: any) => x.type === 'Map') as any;
@@ -53,12 +49,10 @@ test('Map viewer', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 5000});
 
-  // #### Add the viewer and auto-detect the geo columns
   await softStep('Add Map viewer from the Viewers toolbox', async () => {
     await page.locator('[name="icon-Map"]').first().click();
     await page.locator('[name="viewer-Map"]').waitFor({timeout: 30_000});
 
-    // The geo columns are detected asynchronously once the map is up.
     await v.waitForPropertyValue(page, 'latitude', 'Latitude', undefined, 30_000);
     expect(await shownValue(page, 'longitude')).toBe('Longitude');
 
@@ -67,7 +61,6 @@ test('Map viewer', async ({page}) => {
     expect(layers['Heatmap']).toBe(false);
   });
 
-  // #### Color and size coding through the Context Panel column selectors
   await softStep('Color by Magnitude', async () => {
     const before = await mapSignature(page);
     await v.pickColumnViaSelectorTrusted(page, {
@@ -88,7 +81,6 @@ test('Map viewer', async ({page}) => {
     await mapRepaints(page, before);
   });
 
-  // #### Marker sizing through the property-grid editor
   await softStep('Marker Min Size redraws the markers', async () => {
     await ensureCategory(page, 'markers', 'marker-min-size');
     const before = await mapSignature(page);
@@ -98,7 +90,6 @@ test('Map viewer', async ({page}) => {
     await editProperty(page, 'marker-min-size', '2');
   });
 
-  // #### Layers panel — the checkbox drives the OpenLayers stack
   await softStep('Layers panel toggles Heatmap and Markers GL', async () => {
     await openLayersPanel(page);
 
@@ -107,9 +98,6 @@ test('Map viewer', async ({page}) => {
     expect((await layerVisibility(page))['Heatmap']).toBe(true);
     await mapRepaints(page, beforeHeatmap);
 
-    // Toggling Markers GL used to freeze the page (exponential re-subscription
-    // of onCurrentCellChanged). The click must return and the next UI
-    // interaction must still be served.
     await toggleLayer(page, 'Markers GL');
     expect((await layerVisibility(page))['Markers GL']).toBe(false);
     await page.locator('[name="button-Map-layers"]').click({timeout: 5000});
@@ -124,7 +112,6 @@ test('Map viewer', async ({page}) => {
     await page.locator('[name="button-Map-layers"]').click();
   });
 
-  // #### Render type
   await softStep('Render Type cycles markers / heatmap / both', async () => {
     await ensureCategory(page, 'misc', 'render-type');
     const signatures: Record<string, string> = {};
@@ -139,7 +126,6 @@ test('Map viewer', async ({page}) => {
     expect(signatures['both']).not.toBe(signatures['markers']);
   });
 
-  // #### Zoom controls
   await softStep('Zoom in and out with the map buttons', async () => {
     const zoom = () => page.evaluate(() => {
       const mv = Array.from((window as any).grok.shell.tv.viewers).find((x: any) => x.type === 'Map') as any;
@@ -156,7 +142,6 @@ test('Map viewer', async ({page}) => {
     await expect.poll(zoom, {timeout: 10_000}).toBeCloseTo(start, 2);
   });
 
-  // #### Selection with Ctrl + drag, cleared with Escape
   await softStep('Ctrl+drag selects points, Escape clears', async () => {
     const box = (await page.locator('[name="viewer-Map"]').boundingBox())!;
     const before = await mapSignature(page);
@@ -177,7 +162,6 @@ test('Map viewer', async ({page}) => {
     await expect.poll(selected, {timeout: 10_000}).toBe(0);
   });
 
-  // #### Only filtered rows stay on the map
   await softStep('Filtering the table narrows the map', async () => {
     const before = await mapSignature(page);
     const {filteredCount} = await v.applyCategoricalFilter(page, 'MagType', ['Mw']);
@@ -189,14 +173,10 @@ test('Map viewer', async ({page}) => {
     await v.resetFilters(page);
   });
 
-  // #### Tooltip
   await softStep('Show Tooltip reveals a tooltip over a point', async () => {
     await ensureCategory(page, 'misc', 'show-tooltip');
     await page.locator('[name="prop-view-show-tooltip"]').click();
 
-    // The tooltip only fires when the pointer is over a rendered marker, so the
-    // hover targets come from the features themselves — screen coordinates of
-    // markers that currently fall inside the viewport.
     const targets = await page.evaluate(() => {
       const mv = Array.from((window as any).grok.shell.tv.viewers).find((x: any) => x.type === 'Map') as any;
       const r = (mv.root as HTMLElement).getBoundingClientRect();
@@ -229,7 +209,6 @@ test('Map viewer', async ({page}) => {
     expect(tooltip.text).toContain('Magnitude');
   });
 
-  // #### Closing the viewer must not raise
   await softStep('Close the viewer after moving the pointer over it', async () => {
     const box = (await page.locator('[name="viewer-Map"]').boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -238,7 +217,6 @@ test('Map viewer', async ({page}) => {
     await v.clickViewerTitlebarIcon(page, 'Map', 'Close');
     await expect(page.locator('[name="viewer-Map"]')).toHaveCount(0);
 
-    // Pointer events arriving after disposal used to crash the viewer.
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 40);
     await page.waitForTimeout(700);
     expect(pageErrors.join('\n')).toBe('');

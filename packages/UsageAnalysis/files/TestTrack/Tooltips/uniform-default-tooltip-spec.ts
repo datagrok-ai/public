@@ -46,7 +46,7 @@ async function captureViewerTooltipBySweep(
 
 async function captureScatterPlotTooltip(page: import('@playwright/test').Page): Promise<TooltipSnapshot> {
   const sweep = [
-    {dx: 287, dy: 222},   // approx center; scatter plots are dense at center
+    {dx: 287, dy: 222},   
     {dx: 250, dy: 200},
     {dx: 320, dy: 250},
     {dx: 200, dy: 180},
@@ -56,7 +56,7 @@ async function captureScatterPlotTooltip(page: import('@playwright/test').Page):
 }
 
 async function captureBoxPlotTooltip(page: import('@playwright/test').Page): Promise<TooltipSnapshot> {
-  // Sweep the first category column where markers cluster
+
   const sweep: {dx: number; dy: number}[] = [];
   for (let dx = 90; dx <= 180; dx += 12)
     for (let dy = 80; dy <= 320; dy += 18)
@@ -117,18 +117,16 @@ test('Viewers: uniform default tooltip', async ({page}) => {
     expect(bpTip.cols.length).toBeGreaterThan(0);
 
     const gridTip = await captureGridTooltip(page);
-    // Scenario expects the grid to also produce a tooltip with the same columns
+
     expect(gridTip.display).toBe('block');
     expect(gridTip.cols.length).toBeGreaterThan(0);
 
-    // Same set of columns
     const spSet = [...spTip.cols].sort();
     const bpSet = [...bpTip.cols].sort();
     const gridSet = [...gridTip.cols].sort();
     expect(bpSet).toEqual(spSet);
     expect(gridSet).toEqual(spSet);
 
-    // Same order
     expect(bpTip.cols).toEqual(spTip.cols);
     expect(gridTip.cols).toEqual(spTip.cols);
   });

@@ -16,7 +16,6 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
 
   await loginToDatagrok(page);
 
-  // ---- Setup ----
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -41,14 +40,8 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     expect(s.formDesigned).toBe(false);
   });
 
-  // Row identity captured before the RACE filter is applied (Step 5), read back in
-  // Step 7 to prove the FILTERED row set — not just a non-empty window — is shown.
   let filterProbe: {caucRow: number; blackRow: number; usubCauc: string; usubBlack: string; blackCount: number} =
     {caucRow: -1, blackRow: -1, usubCauc: '', usubBlack: '', blackCount: 0};
-
-  // ===================================================================
-  // Scenario 1: Lanes ladder — structure accumulates through the steps
-  // ===================================================================
 
   await softStep('Scenario 1 Step 2: single-lane baseline carries .d4-tile-viewer-lane-single', async () => {
     const r = await page.evaluate(() => {
@@ -73,8 +66,12 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     const r = await page.evaluate(async () => {
       const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
       const raceCats = grok.shell.tv.dataFrame.col('RACE').categories;
-      viewer.props.lanesColumnName = 'RACE';
-      await new Promise((res) => setTimeout(res, 1200));
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        viewer.props.lanesColumnName = 'RACE';
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1200);
+      });
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       return {
         lanes: root.querySelectorAll('.d4-tile-viewer-lane').length,
@@ -92,12 +89,15 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
   });
 
   await softStep('Scenario 1 Step 4: explicit lanes list ["Black","Asian"] renders exactly those two lanes in order', async () => {
-    // The explicit lane list has no UI surface (no prop-grid row, no menu item);
-    // set via JS API and asserted through the lane DOM order.
+
     const r = await page.evaluate(async () => {
       const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      viewer.props.lanes = ['Black', 'Asian'];
-      await new Promise((res) => setTimeout(res, 1200));
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        viewer.props.lanes = ['Black', 'Asian'];
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1200);
+      });
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       return {
         lanes: root.querySelectorAll('.d4-tile-viewer-lane').length,
@@ -109,8 +109,7 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
   });
 
   await softStep('Scenario 1 Step 5: filter RACE to Black keeps both listed lanes; Asian lane holds zero tiles', async () => {
-    // Capture a Caucasian and a Black row identity BEFORE filtering — Step 7 uses
-    // them to prove the single lane holds exactly the filtered (Black) row set.
+
     const ids = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const race = df.col('RACE'); const usub = df.col('USUBJID');
@@ -124,12 +123,9 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     });
     filterProbe = {...filterProbe, caucRow: ids.caucRow, blackRow: ids.blackRow, usubCauc: ids.usubCauc, usubBlack: ids.usubBlack};
 
-    // Sentinel guard: an unfound Caucasian row leaves the -1/'' seed, making Step 7's
-    // caucAbsent/caucBit pass vacuously. Assert the capture is real before any comparison.
     expect(filterProbe.caucRow).toBeGreaterThanOrEqual(0);
     expect(filterProbe.usubCauc).toBeTruthy();
 
-    // RACE categorical filter via the section-sanctioned Filter Panel helper.
     const {filteredCount} = await v.applyCategoricalFilter(page, 'RACE', ['Black']);
     filterProbe.blackCount = filteredCount;
 
@@ -151,16 +147,20 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     expect(black.tiles).toBeGreaterThan(0);
     expect(asian.tiles).toBe(0);
     expect(filteredCount).toBeGreaterThan(0);
-    expect(filteredCount).toBeLessThan(ids.rowCount);       // the filter is actually active
+    expect(filteredCount).toBeLessThan(ids.rowCount);       
   });
 
   await softStep('Scenario 1 Step 6: Show Empty Lanes off drops the empty Asian lane; on restores it in order (GROK-20096)', async () => {
-    // Driven through the REAL property-grid checkbox, not a props write.
+
     await v.openViewerGear(page, 'Tile Viewer');
     await v.ensurePropertyCategory(page, 'Tile Viewer', 'data', 'show-empty-lanes');
     await v.setPropertyGridCheckbox(page, 'show-empty-lanes', false, 'data');
-    const off = await page.evaluate(async () => {
-      await new Promise((res) => setTimeout(res, 900));
+
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[name="viewer-Tile-Viewer"]');
+      return !!root && root.querySelectorAll('.d4-tile-viewer-lane').length === 1;
+    }, null, {timeout: 15_000});
+    const off = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       return {
         laneCount: root.querySelectorAll('.d4-tile-viewer-lane').length,
@@ -171,8 +171,12 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     expect(off.headers).toEqual(['Black']);
 
     await v.setPropertyGridCheckbox(page, 'show-empty-lanes', true, 'data');
-    const on = await page.evaluate(async () => {
-      await new Promise((res) => setTimeout(res, 900));
+
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[name="viewer-Tile-Viewer"]');
+      return !!root && root.querySelectorAll('.d4-tile-viewer-lane').length === 2;
+    }, null, {timeout: 15_000});
+    const on = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       return {
         laneCount: root.querySelectorAll('.d4-tile-viewer-lane').length,
@@ -184,14 +188,17 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
   });
 
   await softStep('Scenario 1 Step 7: clear lanesColumnName returns to a single lane holding the FILTERED (Black) row set', async () => {
-    // The RACE=Black filter is still applied: assert the single lane holds only filtered
-    // rows (allBlack, Caucasian absent), cross-checked against df.filter; removed after as cleanup.
+
     const r = await page.evaluate(async (probe) => {
       const tv = grok.shell.tv;
       const viewer = tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      viewer.props.lanesColumnName = null;
-      viewer.props.lanes = null;
-      await new Promise((res) => setTimeout(res, 1500));
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        viewer.props.lanesColumnName = null;
+        viewer.props.lanes = null;
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1500);
+      });
       const df = tv.dataFrame;
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const lanes = Array.from(root.querySelectorAll('.d4-tile-viewer-lane'));
@@ -213,26 +220,17 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
       expect(r.laneCount).toBe(1);
       expect(r.single).toBe(1);
       expect(r.tileCount).toBeGreaterThan(0);
-      expect(r.allBlack).toBe(true);                        // filtered row set shown in the single lane
-      expect(r.caucAbsent).toBe(true);                      // the filtered-out Caucasian row is absent
+      expect(r.allBlack).toBe(true);                        
+      expect(r.caucAbsent).toBe(true);                      
       expect(r.caucBit).toBe(false);
-      expect(r.trueCount).toBe(filterProbe.blackCount);     // lane content agrees with the dataframe filter
+      expect(r.trueCount).toBe(filterProbe.blackCount);     
       expect(r.trueCount).toBeLessThan(r.rowCount);
     } finally {
-      // Drop the RACE filter regardless of assert outcome — a failing expect above
-      // would otherwise abort the callback and leak the filter into Scenario 2.
+
       await v.resetFilters(page);
     }
   });
 
-  // ===================================================================
-  // Scenario 2: Drag between lanes writes the DataFrame cell
-  // Real mouse gestures only — synthetic dispatchEvent does not reach the
-  // Dart drag handler. Tiles are clipped to their lane's content box, so a
-  // point inside the target lane's hittable x-zone unambiguously targets it.
-  // ===================================================================
-
-  // Drop point inside a lane: a tile hittable via elementFromPoint near the lane top.
   async function laneDropPoint(header: string, tileNth = 0): Promise<{x: number; y: number; usub: string} | null> {
     return page.evaluate(({h, nth}) => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
@@ -245,11 +243,11 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
       const tile = tiles[nth] as HTMLElement | undefined;
       if (!tile) return null;
       const tr = tile.getBoundingClientRect();
-      // x centered in the lane's (narrow) content box; y near the tile's top.
+
       const x = Math.round(cr.x + cr.width / 2);
       const y = Math.round(tr.y + 30);
       const usub = (tile.querySelector('input[name="input-USUBJID"]') as HTMLInputElement)?.value;
-      // confirm the point actually resolves to a tile in THIS lane
+
       const hit = document.elementFromPoint(x, y)?.closest('.d4-tile-viewer-lane');
       const hitHeader = hit?.querySelector('.d4-tile-viewer-lane-header')?.textContent;
       if (hitHeader !== h) return null;
@@ -270,8 +268,12 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     const r = await page.evaluate(async () => {
       const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
       viewer.props.allowDragBetweenLanes = true;
-      viewer.props.lanesColumnName = 'RACE';
-      await new Promise((res) => setTimeout(res, 1500));
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        viewer.props.lanesColumnName = 'RACE';
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1500);
+      });
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const lanes = Array.from(root.querySelectorAll('.d4-tile-viewer-lane'));
       return {laneCount: lanes.length, allWithTiles: lanes.every((l) => l.querySelectorAll('.d4-tile-viewer-form').length > 0)};
@@ -281,8 +283,7 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
   });
 
   await softStep('Scenario 2 Step 2: drag a tile from Asian to Black writes the RACE cell and relocates the tile', async () => {
-    // Real mouse drag onto a TILE of the Black lane — the lane header is not a
-    // drop target (refdoc tile.md drop section).
+
     const src = await laneDropPoint('Asian', 0);
     const dst = await laneDropPoint('Black', 0);
     expect(src).not.toBeNull();
@@ -298,7 +299,9 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     await page.mouse.move((src!.x + dst!.x) / 2, (src!.y + dst!.y) / 2, {steps: 8});
     await page.mouse.move(dst!.x, dst!.y, {steps: 8});
     await page.mouse.up();
-    await page.waitForTimeout(1000);
+
+    await page.waitForFunction((i) =>
+      grok.shell.tv.dataFrame.col('RACE').get(i) === 'Black', rowIdx, {timeout: 15_000}).catch(() => {});
 
     const r = await page.evaluate((i) => {
       const df = grok.shell.tv.dataFrame;
@@ -320,8 +323,7 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     expect(r.race).toBe('Black');
     expect(r.currentRowIdx).toBe(rowIdx);
     expect(r.inBlack).toBe(true);
-    // Guard the negative half: the Asian lane must still render tiles, else the
-    // dragged row's absence from it would be vacuously true on an empty lane.
+
     expect(r.asianTiles).toBeGreaterThan(0);
     expect(r.inAsian).toBe(false);
   });
@@ -339,6 +341,7 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     await page.mouse.down();
     await page.mouse.move(dst!.x, dst!.y, {steps: 8});
     await page.mouse.up();
+
     await page.waitForTimeout(800);
 
     const after = await page.evaluate((i) => grok.shell.tv.dataFrame.col('RACE').get(i), rowIdx);
@@ -346,13 +349,11 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
   });
 
   await softStep('Scenario 2 Step 4: with allowDragBetweenLanes=false the drag leaves the RACE cell unchanged', async () => {
-    // Driven through the REAL property-grid checkbox under the Misc category.
+
     await v.openViewerGear(page, 'Tile Viewer');
     await v.ensurePropertyCategory(page, 'Tile Viewer', 'misc', 'allow-drag-between-lanes');
     await v.setPropertyGridCheckbox(page, 'allow-drag-between-lanes', false, 'misc');
 
-    // Read back that the checkbox gesture drove the property to false — written by the
-    // gesture, not the test, so it's not a prop echo and the "drag has no effect" assert is non-vacuous.
     const dragDisabled = await page.evaluate(() =>
       grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer').props.allowDragBetweenLanes);
     expect(dragDisabled).toBe(false);
@@ -369,6 +370,7 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     await page.mouse.down();
     await page.mouse.move(dst!.x, dst!.y, {steps: 8});
     await page.mouse.up();
+
     await page.waitForTimeout(800);
 
     const after = await page.evaluate((i) => grok.shell.tv.dataFrame.col('RACE').get(i), rowIdx);
@@ -379,25 +381,25 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     await v.setPropertyGridCheckbox(page, 'allow-drag-between-lanes', true, 'misc');
     await page.evaluate(async () => {
       const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-      viewer.props.lanesColumnName = null;
-      await new Promise((res) => setTimeout(res, 1000));
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        viewer.props.lanesColumnName = null;
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1000);
+      });
     });
   });
-
-  // ===================================================================
-  // Scenario 3: Tile content mirrors the DataFrame
-  // Read channel: input[name="input-<COLUMN>"].value vs grid.cell().cell.valueString.
-  // valueString resolves through the SAME Dart cell-format path as col.getString(row),
-  // so the grid comparison is that formatting channel renamed, not a stronger one. The
-  // GROK-20376 raw-vs-formatted check is carried by expect(tileComputed).not.toBe(raw)
-  // in Step 4, not by tile-vs-grid equality.
-  // ===================================================================
 
   await softStep('Scenario 3 Step 1: record the row-0 AGE tile value baseline', async () => {
     const r = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      df.currentRowIdx = 0;
-      await new Promise((res) => setTimeout(res, 400));
+      const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        df.currentRowIdx = 0;
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 400);
+      });
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const tile = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
       let gridText: string | null = null;
@@ -407,17 +409,22 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
         gridText,
       };
     });
-    expect(r.tileAge).toBeTruthy();          // guard both ends: '' === '' would pass vacuously
+    expect(r.tileAge).toBeTruthy();          
     expect(r.tileAge).toBe(r.gridText);
   });
 
   await softStep('Scenario 3 Step 2: editing the AGE grid cell updates the tile value without reopening Edit Form (GROK-17775)', async () => {
-    // The edit is written via df.set (grid cells are canvas, no DOM cell editor —
-    // see Automation notes); it reaches the same debounced onValuesChanged path.
+
     const r = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      df.set('AGE', 0, 99);
-      await new Promise((res) => setTimeout(res, 1200));
+      const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
+
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        df.set('AGE', 0, 99);
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1200);
+      });
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const tile = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
       let gridText: string | null = null;
@@ -427,15 +434,13 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
         gridText,
       };
     });
-    expect(r.tileAge).toBeTruthy();          // guard both ends: '' === '' would pass vacuously
-    expect(r.tileAge).toBe(r.gridText);      // tile mirrors the grid cell's formatted text (same format channel)
+    expect(r.tileAge).toBeTruthy();          
+    expect(r.tileAge).toBe(r.gridText);      
     expect(r.tileAge).toBe('99');
   });
 
   await softStep('Scenario 3 Step 3: renaming AGE→AGE_YRS updates the tile label, value selector, and host; an unrenamed column is untouched (GROK-20207)', async () => {
-    // The rename is actuated via df.columns.byName().name — the same
-    // onColumnNameChanged path the grid header rename uses
-    // (refdoc: "Column rename follows the DOM").
+
     const r = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const heightBefore = (() => {
@@ -443,8 +448,13 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
         const t = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
         return (t.querySelector('input[name="input-HEIGHT"]') as HTMLInputElement)?.value;
       })();
-      df.columns.byName('AGE').name = 'AGE_YRS';
-      await new Promise((res) => setTimeout(res, 1200));
+      const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        df.columns.byName('AGE').name = 'AGE_YRS';
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1200);
+      });
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const tile = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
       const label = Array.from(tile.querySelectorAll('.d4-host[name="div-AGE-YRS"] input.d4-sketch-column-name'))
@@ -463,29 +473,29 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     });
     expect(r.hostPresent).toBe(true);
     expect(r.label).toBe('AGE_YRS');
-    expect(r.newValue).toBeTruthy();         // guard both ends: '' === '' would pass vacuously
+    expect(r.newValue).toBeTruthy();         
     expect(r.newValue).toBe(r.gridText);
     expect(r.oldGone).toBe(true);
-    // The unrenamed HEIGHT tile is unchanged — but only meaningful if HEIGHT is on
-    // the tile at all (10-field cap): guard non-empty on BOTH ends before comparing.
+
     expect(r.heightBefore).toBeTruthy();
     expect(r.heightAfter).toBeTruthy();
     expect(r.heightAfter).toBe(r.heightBefore);
 
-    // rename back and restore the edited value for a clean state
     await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      df.columns.byName('AGE_YRS').name = 'AGE';
-      df.set('AGE', 0, 53);
-      await new Promise((res) => setTimeout(res, 600));
+      const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
+      await new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        df.columns.byName('AGE_YRS').name = 'AGE';
+        df.set('AGE', 0, 53);
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 600);
+      });
     });
   });
 
   await softStep('Scenario 3 Step 4: a promoted calculated float column mirrors the grid cell text, not the raw value (GROK-20376)', async () => {
-    // The card is capped at 10 fields and demog fills it, so a new column shows only once
-    // a slot is freed. Live recon [DOM 2026-08-12]: regeneration drops the LAST-added
-    // column, so adding COMPUTED_H then removing two columns frees the two slots to promote
-    // it. The name slug turns COMPUTED_H into input-COMPUTED-H.
+
     const before = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const t = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
@@ -494,14 +504,19 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
 
     const r = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
+      const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
       df.currentRowIdx = 0;
-      df.columns.addNewCalculated('COMPUTED_H', '${HEIGHT} * 1.0');
-      await new Promise((res) => setTimeout(res, 1200));
-      // free two slots so the frame is at the 10-field cap and COMPUTED_H is promoted
-      df.columns.remove('DEMOG');
-      await new Promise((res) => setTimeout(res, 800));
-      df.columns.remove('SEVERITY');
-      await new Promise((res) => setTimeout(res, 1500));
+
+      const settle = (act: () => void, capMs: number) => new Promise<void>((resolve) => {
+        let sub: any = null;
+        try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+        act();
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, capMs);
+      });
+      await settle(() => df.columns.addNewCalculated('COMPUTED_H', '${HEIGHT} * 1.0'), 1200);
+
+      await settle(() => df.columns.remove('DEMOG'), 800);
+      await settle(() => df.columns.remove('SEVERITY'), 1500);
       const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
       const tile = root.querySelector('.d4-tile-viewer-form.d4-current') || root.querySelector('.d4-tile-viewer-form')!;
       const after = Array.from(tile.querySelectorAll('input[name^="input-"]')).map((i) => i.getAttribute('name'));
@@ -516,28 +531,22 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     });
 
     try {
-      // (a) the field set shown on the tile changed
+
       expect(before).not.toContain('input-COMPUTED-H');
       expect(r.after).toContain('input-COMPUTED-H');
       expect(r.after).not.toEqual(before);
-      // (b) the promoted float column mirrors the GRID cell text, not the raw value
+
       expect(r.tileComputed).toBeTruthy();
       expect(r.tileComputed).toBe(r.gridText);
       expect(r.tileComputed).not.toBe(r.raw);
     } finally {
-      // teardown: drop the calculated column regardless of assert outcome so it
-      // cannot leak into Scenario 4 on a red run.
-      await page.evaluate(async () => {
+
+      await page.evaluate(() => {
         const df = grok.shell.tv.dataFrame;
-        try { df.columns.remove('COMPUTED_H'); } catch (_) { /* best effort */ }
-        await new Promise((res) => setTimeout(res, 300));
+        try { df.columns.remove('COMPUTED_H'); } catch (_) {  }
       });
     }
   });
-
-  // ===================================================================
-  // Scenario 4: Peak configuration persists through layout + project save
-  // ===================================================================
 
   let probeLayoutId = '';
   const probeProject: {name?: string; id?: string} = {};
@@ -546,8 +555,12 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
       const r = await page.evaluate(async () => {
         const viewer = grok.shell.tv.viewers.find((x: any) => x.type === 'Tile Viewer');
         viewer.props.lanesColumnName = 'RACE';
-        viewer.props.lanes = ['Black', 'Asian', 'Caucasian'];
-        await new Promise((res) => setTimeout(res, 1200));
+        await new Promise<void>((resolve) => {
+          let sub: any = null;
+          try { sub = viewer.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+          viewer.props.lanes = ['Black', 'Asian', 'Caucasian'];
+          setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 1200);
+        });
         const root = document.querySelector('[name="viewer-Tile-Viewer"]')!;
         return {
           laneCount: root.querySelectorAll('.d4-tile-viewer-lane').length,
@@ -557,18 +570,15 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
       });
       expect(r.laneCount).toBe(3);
       expect(r.headers).toEqual(['Black', 'Asian', 'Caucasian']);
-      // Confirm Show Empty Lanes is on by READING, not writing: it's true by construction
-      // (Scenario 1 Step 6 left it on); a props write would silently repair a lost setting.
+
       expect(r.showEmptyLanes).toBe(true);
     });
 
     await softStep('Scenario 4 Step 2: save the current view layout via View | Layout | Save to Gallery', async () => {
-      // Record the applicable-layout ids present before the save so the freshly-
-      // saved one can be found deterministically (the gallery save is silent).
+
       const beforeIds = await page.evaluate(async () =>
         (await grok.dapi.layouts.getApplicable(grok.shell.tv.dataFrame)).map((l: any) => String(l.id)));
 
-      // Drive the REAL menu leaf — no programmatic grok.dapi.layouts.save fallback.
       expect(await v.driveTopMenuLeaf(page, ['View', 'Layout', 'Save to Gallery'])).toBe(true);
 
       let layoutId = '';
@@ -586,32 +596,47 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     });
 
     await softStep('Scenario 4 Step 3: modify the view — close the Tile Viewer and add a Grid', async () => {
-      const r = await page.evaluate(async () => {
+      await page.evaluate(() => {
         const tv = grok.shell.tv;
-        const viewer = tv.viewers.find((x: any) => x.type === 'Tile Viewer');
-        viewer.close();
-        await new Promise((res) => setTimeout(res, 500));
+        tv.viewers.find((x: any) => x.type === 'Tile Viewer').close();
         tv.addViewer('Grid');
-        await new Promise((res) => setTimeout(res, 800));
-        return {tileViewers: tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length};
       });
+
+      await page.waitForFunction(() =>
+        grok.shell.tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length === 0,
+        null, {timeout: 15_000});
+      const r = await page.evaluate(() =>
+        ({tileViewers: grok.shell.tv.viewers.filter((x: any) => x.type === 'Tile Viewer').length}));
       expect(r.tileViewers).toBe(0);
     });
 
     await softStep('Scenario 4 Step 4: re-applying the saved layout restores the lanes with a clean console (GROK-18230)', async () => {
-      // GROK-18230/GROK-18037 guard: the layout-apply crash emits "method not found"/"aPa
-      // on null" — match only those signatures so ambient console noise doesn't false-FAIL.
-      // The APPLY leg is JS-API (a gallery layout has no captured selector); the SAVE leg used the real menu.
+
       const errors: string[] = [];
       const isLayoutCrash = (t: string) => /method not found|aPa/i.test(t);
       page.on('console', (m) => { if (m.type() === 'error' && isLayoutCrash(m.text())) errors.push(m.text()); });
       page.on('pageerror', (e) => { if (isLayoutCrash(String(e))) errors.push(String(e)); });
 
-      const r = await page.evaluate(async (id) => {
+      await page.evaluate(async (id) => {
         const tv = grok.shell.tv;
         const saved = await grok.dapi.layouts.find(id);
-        tv.loadLayout(saved);
-        await new Promise((res) => setTimeout(res, 3000));
+
+        await new Promise<void>((resolve) => {
+          let sub: any = null;
+          try { sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); resolve(); }); } catch (_) {}
+          tv.loadLayout(saved);
+          setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 3000);
+        });
+      }, probeLayoutId);
+
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[name="viewer-Tile-Viewer"]');
+        if (!root) return false;
+        const h = Array.from(root.querySelectorAll('.d4-tile-viewer-lane-header')).map((x) => x.textContent);
+        return h.length === 3;
+      }, null, {timeout: 20_000}).catch(() => {});
+      const r = await page.evaluate(() => {
+        const tv = grok.shell.tv;
         const root = document.querySelector('[name="viewer-Tile-Viewer"]');
         const viewer = tv.viewers.find((x: any) => x.type === 'Tile Viewer');
         return {
@@ -619,7 +644,7 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
           lanesColumnName: viewer?.props.lanesColumnName ?? null,
           headers: root ? Array.from(root.querySelectorAll('.d4-tile-viewer-lane-header')).map((h) => h.textContent) : [],
         };
-      }, probeLayoutId);
+      });
       expect(r.tilePresent).toBe(true);
       expect(r.lanesColumnName).toBe('RACE');
       expect(r.headers).toEqual(['Black', 'Asian', 'Caucasian']);
@@ -627,21 +652,25 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
     });
 
     await softStep('Scenario 4 Step 6: save the project, reopen, and spot-check a restored tile value', async () => {
-      // Set the name BEFORE the save so the finally block can find the entity even
-      // if saveProjectViaUI throws after the server committed it (leak window).
+
       probeProject.name = `TileLanesPersist_${Date.now()}`;
       const saved = await saveProjectViaUI(page, probeProject.name);
       probeProject.id = saved.projectId;
 
-      await page.evaluate(() => grok.shell.closeAll());
-      await page.waitForTimeout(1000);
+      await v.closeAllAndWait(page);
 
       await page.evaluate(async (id) => {
         const p = await grok.dapi.projects.find(id);
         await p.open();
       }, saved.projectId);
       await page.locator('[name="viewer-Tile-Viewer"]').waitFor({timeout: 30000});
-      await page.waitForTimeout(2000);
+
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[name="viewer-Tile-Viewer"]');
+        const tile = root?.querySelector('.d4-tile-viewer-form.d4-current') || root?.querySelector('.d4-tile-viewer-form');
+        const inp = tile?.querySelector('input[name="input-HEIGHT"]') as HTMLInputElement | null;
+        return !!inp && !!inp.value;
+      }, null, {timeout: 20_000}).catch(() => {});
 
       const r = await page.evaluate(() => {
         const tv = grok.shell.tv;
@@ -662,15 +691,14 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
       });
       expect(r.lanesColumnName).toBe('RACE');
       expect(r.headers).toEqual(['Black', 'Asian', 'Caucasian']);
-      expect(r.tileHeight).toBeTruthy();     // guard both ends: '' === '' would pass vacuously
+      expect(r.tileHeight).toBeTruthy();     
       expect(r.tileHeight).toBe(r.gridText);
     });
   } finally {
-    // Cleanup lives in finally (a softStep swallows failures, so a probe-delete
-    // step inside the try can leak on an earlier failure).
+
     if (probeLayoutId) {
       await page.evaluate(async (id) => {
-        try { const l = await grok.dapi.layouts.find(id); if (l) await grok.dapi.layouts.delete(l); } catch (_) { /* best effort */ }
+        try { const l = await grok.dapi.layouts.find(id); if (l) await grok.dapi.layouts.delete(l); } catch (_) {  }
       }, probeLayoutId).catch(() => {});
     }
     if (probeProject.id)
@@ -680,13 +708,13 @@ test('Tile Viewer — lanes ladder, tile-content mirroring, and persistence', as
         const g = (window as any).grok;
         try {
           let p = null;
-          try { p = await g.dapi.projects.filter(`name = "${name}"`).first(); } catch (_) { /* index lag */ }
+          try { p = await g.dapi.projects.filter(`name = "${name}"`).first(); } catch (_) {  }
           if (!p) {
             const recent = await g.dapi.projects.list({pageSize: 50}).catch(() => []);
             p = (recent || []).find((x: any) => x && (x.friendlyName === name || x.name === name)) || null;
           }
           if (p) await g.dapi.projects.delete(p);
-        } catch (_) { /* best effort */ }
+        } catch (_) {  }
       }, probeProject.name).catch(() => {});
   }
 

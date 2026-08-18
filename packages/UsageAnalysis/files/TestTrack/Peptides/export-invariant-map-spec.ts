@@ -234,7 +234,7 @@ test('Peptides — Export Invariant Map to a new TableView (SARViewer-base contr
       .toBe(true);
     expect(triggered.threw, `Export Invariant Map click threw from the MPR entry point: ${triggered.threw}`)
       .toBeNull();
-    // Step 4-5: the exported `Invariant Map` TableView has the same documented shape.
+
     await page.waitForTimeout(3000);
     const result = await page.evaluate((args) => {
       const {monomerCol, expectedPosCols} = args;
@@ -256,11 +256,11 @@ test('Peptides — Export Invariant Map to a new TableView (SARViewer-base contr
       };
     }, {monomerCol: MONOMER_COL, expectedPosCols: originalPositionColCount});
     page.off('console', onConsole);
-    // Step 4: a new TableView opened (and became active).
+
     expect(result.found, 'Most Potent Residues export did not open a new `Invariant Map` TableView').toBe(true);
     expect(result.activeViewName, 'the MPR-exported `Invariant Map` view did not become active')
       .toBe('Invariant Map');
-    // Step 5: same shape as Scenario 1 — leading `AAR` column + one INT column per position.
+
     expect(result.leadingCol, 'MPR-exported grid is missing its leading monomer column').toBe(MONOMER_COL);
     expect(result.leadingColType, 'the MPR-exported leading monomer column must be a string column')
       .toBe('string');
@@ -270,7 +270,7 @@ test('Peptides — Export Invariant Map to a new TableView (SARViewer-base contr
     expect(result.allPositionColsInt,
       'every MPR-exported per-position column must be an integer (sequence-count) column').toBe(true);
     expect(result.rows, 'MPR-exported invariant-map grid has no monomer rows').toBeGreaterThan(0);
-    // Step 6: no `Cannot read ... on null`-class console error during the MPR Export action.
+
     const nullRefErrors = consoleErrors.filter((e) => /Cannot read .* (of|on) null/i.test(e));
     expect(nullRefErrors,
       `MPR Export raised a null-reference console error (SARViewer-base contract violated): ${JSON.stringify(nullRefErrors)}`)

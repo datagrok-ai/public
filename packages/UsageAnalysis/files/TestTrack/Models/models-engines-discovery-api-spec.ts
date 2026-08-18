@@ -65,15 +65,12 @@ test('Models — Engine-discovery JS API (initEngines / getEngine / getAll)', as
       };
     });
 
-    
     expect(r.trainCount).toBeGreaterThan(0);
     expect(r.pairedCount).toBeGreaterThan(0);
 
-    
     expect(r.trainPackagesObserved.length).toBeGreaterThan(0);
   });
 
-  
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

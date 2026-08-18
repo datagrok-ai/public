@@ -1,8 +1,3 @@
-// Context-panel widgets: 3D Structure / PDB Information (Molecule3D + PDB_ID) / ProLIF (3 gated
-// registrations) / Link With Molecule Column. Panes are surfaced via grok.shell.o =
-// SemanticValue.fromTableCell(cell); accordion headers ([name="div-section--..."]) expand on click.
-// WebGL canvas pixels are not asserted (CI WebGL is unreliable) — widget mount + data-source + text
-// content are. 1bdq.pdb: hasNonWaterHetatm=true, isAutoDockPose=false (Docking ProLIF path deferred).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -19,7 +14,6 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -33,7 +27,6 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
-  // Shared fixture DataFrame: columns semType-tagged Molecule3D / PDB_ID / Molecule. Reused by all.
   await page.evaluate(async (pdbPath) => {
     grok.shell.closeAll();
     await new Promise((r) => setTimeout(r, 1500));
@@ -44,16 +37,16 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       DG.Column.fromStrings('pdb_id', ['1QBS', '1BNA', '2J1X']),
       DG.Column.fromStrings('ligand', ['CCO', 'CCC', 'CCN']),
     ]);
-    try { df.col('structure').semType = 'Molecule3D'; } catch (_e) { /* best-effort */ }
-    try { df.col('pdb_id').semType = 'PDB_ID'; } catch (_e) { /* best-effort */ }
-    try { df.col('ligand').semType = 'Molecule'; } catch (_e) { /* best-effort */ }
+    try { df.col('structure').semType = 'Molecule3D'; } catch (_e) {  }
+    try { df.col('pdb_id').semType = 'PDB_ID'; } catch (_e) {  }
+    try { df.col('ligand').semType = 'Molecule'; } catch (_e) {  }
     df.name = 'context-panel-fixture';
     grok.shell.addTableView(df);
     await new Promise((r) => setTimeout(r, 2500));
   }, samplePdbPath);
 
   try {
-    // SCENARIO 1 — 3D Structure pane for a Molecule3D cell; assert mount via .bsv-container-info-panel.
+
     await softStep('Scenario 1 — 3D Structure pane mounts for Molecule3D cell; container class .bsv-container-info-panel present', async () => {
       const res = await page.evaluate(async () => {
         const tv = grok.shell.tv;
@@ -72,12 +65,11 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
       expect(res.pane3DPresent).toBe(true);
       expect(res.header3DPresent).toBe(true);
-      // Collapsed by default.
+
       expect(res.header3DAriaBefore).toBe('false');
 
-      // Expand the accordion section header.
       await page.locator('[name="div-section--3D-Structure"]').click({timeout: 10_000});
-      await page.waitForTimeout(5000); // allow widget mount + Mol* engine attempt.
+      await page.waitForTimeout(5000); 
 
       const after = await page.evaluate(() => {
         const pane3D = document.querySelector('[name="pane-3D-Structure"]');
@@ -92,13 +84,13 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
       expect(after.header3DAriaAfter).toBe('true');
       expect(after.contentChildren).toBeGreaterThan(0);
-      // structure3D() adds .bsv-container-info-panel after render — the mount-success marker.
+
       expect(after.hasBsvContainer).toBe(true);
       expect(after.dataSource).toBe('Biostructure Viewer:3D Structure');
     });
 
     await softStep('Scenario 1 — re-mount: structure3D(SemanticValue) yields a fresh DG.Widget for a different cell value (SR-03)', async () => {
-      // Re-mount asserted at the function-contract level (live DOM re-render is WebGL-uncertain).
+
       const res = await page.evaluate(async () => {
         const tv = grok.shell.tv;
         const df = tv.dataFrame;
@@ -122,7 +114,6 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       expect(res.rootsDistinct).toBe(true);
     });
 
-    // SCENARIO 2 — PDB Information pane on a Molecule3D cell (file-info from the PDB string).
     await softStep('Scenario 2 — PDB Information pane (Molecule3D) renders pdbFileInfoWidget content', async () => {
       const surface = await page.evaluate(async () => {
         const tv = grok.shell.tv;
@@ -155,12 +146,11 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
       expect(after.ariaAfter).toBe('true');
       expect(after.textLen).toBeGreaterThan(50);
-      // pdb-file-info derives from the PDB string: "Atom Count" + "Chains" are the deterministic markers.
+
       expect(after.hasGeneralAtomCount).toBe(true);
       expect(after.hasChains).toBe(true);
     });
 
-    // SCENARIO 3 — PDB Information pane on a PDB_ID cell (async pdbInfoWidget assembling RCSB metadata).
     await softStep('Scenario 3 — PDB Information pane (PDB_ID) renders async pdbInfoWidget metadata', async () => {
       const surface = await page.evaluate(async () => {
         const tv = grok.shell.tv;
@@ -174,12 +164,11 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
         };
       });
 
-      // Both panes register on a PDB_ID SemanticValue.
       expect(surface.panePdbInfoIdPresent).toBe(true);
       expect(surface.panePdbIdViewerPresent).toBe(true);
 
       await page.locator('[name="div-section--PDB-Information"]').click({timeout: 10_000});
-      // Bounded wait for the async pdbInfoWidget body (RCSB metadata assembly).
+
       await page.waitForTimeout(8000);
 
       const after = await page.evaluate(() => {
@@ -203,9 +192,6 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       expect(after.noFetchError).toBe(true);
     });
 
-    // SCENARIO 4 — Protein-Ligand Interactions (ProLIF): three condition-gated registrations.
-    //   Path A: Molecule3D + hasNonWaterHetatm; Path B: isAutoDockPose (deferred, registry probe);
-    //   Path C: PDB_ID via RCSB fetchProxy.
     await softStep('Scenario 4 Path A — ProLIF panel (Molecule3D + hasNonWaterHetatm) renders pdbInteractionsWidget LigNetwork', async () => {
       const surface = await page.evaluate(async () => {
         const tv = grok.shell.tv;
@@ -213,7 +199,7 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
         const cell = df.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
         await new Promise((r) => setTimeout(r, 3000));
-        // Live-confirm the gating predicate on the fixture.
+
         const pdbContent = await grok.dapi.files.readAsText('System:AppData/BiostructureViewer/samples/1bdq.pdb');
         const hasHet = await grok.functions.call('BiostructureViewer:hasNonWaterHetatm', {molecule: pdbContent});
         const isAuto = await grok.functions.call('BiostructureViewer:isAutoDockPose', {molecule: pdbContent});
@@ -224,13 +210,12 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
         };
       });
 
-      // Path A is the resolution path for this fixture (hasNonWaterHetatm=true; isAutoDockPose=false).
       expect(surface.paneProlifPresent).toBe(true);
       expect(surface.hasNonWaterHetatm).toBe(true);
       expect(surface.isAutoDockPose).toBe(false);
 
       await page.locator('[name="div-section--Protein-Ligand-Interactions"]').click({timeout: 10_000});
-      // Bounded wait for the async LigNetwork assembly.
+
       await page.waitForTimeout(8000);
 
       const after = await page.evaluate(() => {
@@ -250,14 +235,13 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       expect(after.ariaAfter).toBe('true');
       expect(after.textLen).toBeGreaterThan(50);
       expect(after.hasLigandsFound).toBe(true);
-      // 1bdq's ligand IM1 — fixture-specific marker.
+
       expect(after.hasIM1).toBe(true);
       expect(after.dataSource).toBe('Biostructure Viewer:Protein-Ligand Interactions');
     });
 
     await softStep('Scenario 4 Path B — DG.Func registration probe for dockingInteractionsWidget (SR-02: AutoDock pose fixture not available)', async () => {
-      // Docking-flavour ProLIF asserted at the registry level: role=panel, friendlyName, and the
-      // isAutoDockPose condition predicate (no AutoDock pose fixture available).
+
       const res = await page.evaluate(() => {
         const fns = DG.Func.find({name: 'dockingInteractionsWidget', package: 'BiostructureViewer'});
         const fn = fns && fns[0];
@@ -275,9 +259,7 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
           registered: !!fn,
           inputCount: inputs.length,
           inputSemTypes: inputs.map((i: any) => i.semType),
-          // Panel role exposed via fn.options.role (canonical) OR fn.tags
-          // (legacy fallback). The two-source disjunction makes the probe
-          // robust to API surface evolution.
+
           isPanel: optionsRole === 'panel' || tagsArr.includes('panel'),
           optionsRole,
           friendlyName,
@@ -290,7 +272,7 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       expect(res.inputSemTypes).toContain('Molecule3D');
       expect(res.isPanel).toBe(true);
       expect(res.friendlyName).toBe('Protein-Ligand Interactions');
-      // The condition predicate differentiates the three same-named registrations.
+
       expect(res.condition).toBe('BiostructureViewer:isAutoDockPose(molecule)');
     });
 
@@ -308,7 +290,6 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
       expect(surface.paneProlifPresent).toBe(true);
 
-      // Expand the PDB_ID-flavour ProLIF pane; fetchProxy to files.rcsb.org needs a 15s window.
       await page.locator('[name="div-section--Protein-Ligand-Interactions"]').click({timeout: 10_000});
       await page.waitForTimeout(15000);
 
@@ -330,14 +311,12 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       expect(after.ariaAfter).toBe('true');
       expect(after.textLen).toBeGreaterThan(20);
       expect(after.hasLigandsFound).toBe(true);
-      // 1QBS's known ligand DMP — proves the RCSB fetch succeeded.
+
       expect(after.hasDmp).toBe(true);
       expect(after.dataSource).toBe('Biostructure Viewer:Protein-Ligand Interactions');
       expect(after.noFetchError).toBe(true);
     });
 
-    // SCENARIO 5 — Link With Molecule Column: mol3dAtomPickerLinkWidget returns a DG.Widget with the
-    //   SMILES-column ChoiceInput (asserted via the direct JS-API call surface).
     await softStep('Scenario 5 — mol3dAtomPickerLinkWidget(mol3DCol) returns DG.Widget with SMILES-column ChoiceInput', async () => {
       const res = await page.evaluate(async () => {
         const tv = grok.shell.tv;
@@ -366,7 +345,6 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
           }
         } catch (e: any) { callErr = String(e?.message ?? e); }
 
-        // Function-registry contract check.
         const fns = DG.Func.find({name: 'mol3dAtomPickerLinkWidget', package: 'BiostructureViewer'});
         const fn = fns && fns[0];
         const inputs = (fn && fn.inputs) ? fn.inputs.map((i: any) => ({
@@ -400,12 +378,10 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
 
       expect(res.widgetDataSource).toBe('Biostructure Viewer:Link With Molecule Column');
 
-      // SMILES-column picker scoped to Molecule semType columns (options include 'ligand').
       expect(res.smilesPickerPresent).toBe(true);
       expect(res.smilesPickerOptions).not.toBe(null);
       expect((res.smilesPickerOptions || []).includes('ligand')).toBe(true);
 
-      // Function-registry contract.
       expect(res.fnRegistered).toBe(true);
       expect(res.fnFriendlyName).toBe('Link With Molecule Column');
       expect(res.inputCount).toBe(1);
@@ -414,7 +390,7 @@ test('BiostructureViewer — context-panel widgets extension (3D Structure / PDB
       expect(res.outputs).toEqual([{name: 'result', type: 'widget'}]);
     });
   } finally {
-    // Cleanup.
+
     await page.evaluate(() => { grok.shell.closeAll(); });
   }
 

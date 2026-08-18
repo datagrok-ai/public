@@ -159,12 +159,12 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(balloonAfter.err - balloonBefore1.err,
         `error balloon count increased by ${balloonAfter.err - balloonBefore1.err} during Scenario 1`).toBe(0);
     });
-    // Scenario 2 — Bio | Manage | Monomers view open
+
     const balloonBefore2 = await page.evaluate(() => ({
       err: (window as any).__balloonErrors || 0,
       warn: (window as any).__balloonWarnings || 0,
     }));
-    // Bring the HELM TableView forward — the Bio top-menu vanishes while the app view holds focus.
+
     await page.evaluate(async () => {
       const tvs: any[] = Array.from((grok.shell as any).tableViews || []);
       const helm: any = tvs.find((tv: any) => {
@@ -174,7 +174,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm) {
-        try { (grok.shell as any).v = helm; } catch (_) { /* read-only on some builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
         await new Promise((r) => setTimeout(r, 500));
       }
     });
@@ -216,7 +216,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
               hasChildElement = root.children && root.children.length > 0;
               if (hasChildElement) firstChildTag = root.children[0].tagName.toLowerCase();
             }
-          } catch (_) { /* leave defaults */ }
+          } catch (_) {  }
         }
         return {
           viewName: v?.name || null,
@@ -234,7 +234,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(result.hasChildElement,
         `expected ≥1 child element under the Manage Monomers view root; firstChildTag=${result.firstChildTag}`).toBe(true);
     });
-    // Scenario 2 Expected: no error balloon raised.
+
     await softStep('S2.4: no error balloon raised during Scenario 2', async () => {
       const balloonAfter = await page.evaluate(() => ({
         err: (window as any).__balloonErrors || 0,
@@ -243,7 +243,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       expect(balloonAfter.err - balloonBefore2.err,
         `error balloon count increased by ${balloonAfter.err - balloonBefore2.err} during Scenario 2`).toBe(0);
     });
-    // Scenario 3 — Match with Monomer Library dispatch + standardiseMonomerLibrary normalization
+
     const balloonBefore3 = await page.evaluate(() => ({
       err: (window as any).__balloonErrors || 0,
       warn: (window as any).__balloonWarnings || 0,
@@ -257,7 +257,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm) {
-        try { (grok.shell as any).v = helm; } catch (_) { /* read-only on some builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
         await new Promise((r) => setTimeout(r, 500));
       }
     });
@@ -374,7 +374,7 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         `error balloon count increased by ${balloonAfter.err - balloonBefore3.err} during Scenario 3`).toBe(0);
     });
   } finally {
-    // Cleanup — close any open dialogs / manage views (best-effort).
+
     await page.evaluate(async () => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
       for (const d of dialogs)
@@ -387,10 +387,10 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
           const lower = n.toLowerCase();
           if ((lower.includes('manage') && lower.includes('monomer')) ||
               lower === 'manage monomers') {
-            try { (v as any).close?.(); } catch (_) { /* best effort */ }
+            try { (v as any).close?.(); } catch (_) {  }
           }
         }
-      } catch (_) { /* best effort */ }
+      } catch (_) {  }
     }).catch(() => {});
   }
   finishSpec();

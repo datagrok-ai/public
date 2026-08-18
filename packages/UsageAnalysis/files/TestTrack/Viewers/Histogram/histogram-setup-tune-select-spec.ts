@@ -5,9 +5,6 @@ import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
-// The in-plot bin selector is an unnamed input[type="range"] (min=1 max=200) inside
-// the viewer root; its .value mirrors props.bins.
-
 declare const grok: any;
 
 test.use(specTestOptions);
@@ -22,8 +19,6 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
-  // grok.shell.warnings is not exposed to JS here, so uncaught page errors and
-  // console errors are the no-throw floor for the canvas-only steps.
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(m.text()); });
@@ -44,33 +39,37 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
 
   await softStep('S1: in-plot bins=50 propagates to panel (GROK-18223, github-2296)', async () => {
     const errsBefore = pageErrors.length;
-    const propBins = await page.evaluate(async () => {
+    await page.evaluate(async () => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
       const root = h.root as HTMLElement;
       root.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       root.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 300));
-      const slider = root.querySelector('input[type="range"]') as HTMLInputElement;
+      let slider = root.querySelector('input[type="range"]') as HTMLInputElement | null;
+      for (let i = 0; i < 6 && !slider; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+        slider = root.querySelector('input[type="range"]') as HTMLInputElement | null;
+      }
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
       setter.call(slider, '50');
-      slider.dispatchEvent(new Event('input', {bubbles: true}));
-      slider.dispatchEvent(new Event('change', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 500));
-      return h.props.bins;
+      slider!.dispatchEvent(new Event('input', {bubbles: true}));
+      slider!.dispatchEvent(new Event('change', {bubbles: true}));
     });
-    expect(propBins).toBe(50); // github-2296: in-plot → panel sync
-    expect(pageErrors.slice(errsBefore)).toEqual([]); // GROK-18223: no crash on bins=50
+    const propBins = await v.pollValue(() => page.evaluate(() => {
+      const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
+      return h.props.bins;
+    }), (b) => b === 50, 500, 50);
+    expect(propBins).toBe(50); 
+    expect(pageErrors.slice(errsBefore)).toEqual([]); 
   });
 
   await softStep('S1: panel bins=30 propagates in-plot (github-2296)', async () => {
-    const sliderVal = await page.evaluate(async () => {
+    await v.setViewerProps(page, 'Histogram', [{set: {bins: 30}, wait: 500}]);
+    const sliderVal = await v.pollValue(() => page.evaluate(() => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
-      h.props.bins = 30;
-      await new Promise((r) => setTimeout(r, 500));
       const slider = h.root.querySelector('input[type="range"]') as HTMLInputElement;
       return slider.value;
-    });
-    expect(sliderVal).toBe('30'); // github-2296: panel → in-plot sync
+    }), (s) => s === '30', 500, 50);
+    expect(sliderVal).toBe('30'); 
   });
 
   await softStep('S1: in-plot value=HEIGHT propagates to panel (github-2296)', async () => {
@@ -85,24 +84,21 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
       return h.props.valueColumnName;
     });
-    // The real UI-path guard is the prop assert below (fallback is off, so only
-    // the in-plot flow can set it); usedFallback only protects against a future
-    // allowFallback-default change in the helper.
+
     expect(usedFallback).toBe(false);
     expect(prop).toBe('HEIGHT');
   });
 
   await softStep('S1: panel value=WEIGHT propagates in-plot (github-2296, GROK-19759)', async () => {
     const errsBefore = pageErrors.length;
-    const comboText = await page.evaluate(async () => {
+    await v.setViewerProps(page, 'Histogram', [{set: {valueColumnName: 'WEIGHT'}, wait: 400}]);
+    const comboText = await v.pollValue(() => page.evaluate(() => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
-      h.props.valueColumnName = 'WEIGHT';
-      await new Promise((r) => setTimeout(r, 400));
       const combo = h.root.querySelector('[name="div-column-combobox-value"]') as HTMLElement;
       return combo.textContent!.trim();
-    });
-    expect(comboText).toBe('WEIGHT'); // github-2296: panel → in-plot sync
-    expect(pageErrors.slice(errsBefore)).toEqual([]); // GROK-19759: Show Values re-render on column change
+    }), (t) => t === 'WEIGHT', 400, 50);
+    expect(comboText).toBe('WEIGHT'); 
+    expect(pageErrors.slice(errsBefore)).toEqual([]); 
   });
 
   await softStep('S1: click bin selects its rows', async () => {
@@ -114,10 +110,9 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
     expect(before).toBe(0);
     await page.locator('[name="viewer-Histogram"] canvas').first()
       .click({position: {x: 166, y: 612}});
-    await page.waitForTimeout(700);
-    // "Selected count equal to the bin height" — derive the clicked bin from the
-    // selected rows themselves (geometry-independent): every selected row must
-    // land in one bin, and the selection must equal that bin's full membership.
+    await v.pollValue(() => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount),
+      (n) => n > 0, 700, 50);
+
     const {selCount, binCount, selEqualsBin} = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
@@ -141,21 +136,17 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
         }
       return {selCount: sel.trueCount, binCount: binIdx.size, selEqualsBin: only >= 0 && sel.trueCount === inBinTotal};
     });
-    expect(selCount).toBeGreaterThan(0); // bin click → non-zero selection
-    expect(binCount).toBe(1); // all selected rows fall in a single bin
-    expect(selEqualsBin).toBe(true); // selection == that bin's full height
+    expect(selCount).toBeGreaterThan(0); 
+    expect(binCount).toBe(1); 
+    expect(selEqualsBin).toBe(true); 
   });
 
   await softStep('S1: current-row indicator is functional; hovering a bin raises no error', async () => {
     const errsBefore = pageErrors.length;
     await page.locator('[name="viewer-Histogram"] canvas').first().hover({position: {x: 166, y: 612}});
+
     await page.waitForTimeout(400);
-    // Neither the current-row nor the mouse-over indicator is driven by a
-    // headless canvas hover (df.mouseOverRowIdx stays -1, df.currentRowIdx is
-    // not moved by the hover). So the hover is a no-error floor, and the
-    // current-row indicator is exercised through its own set/read path: clearing
-    // then setting it must round-trip to a real row whose value sits in the
-    // column range (a broken indicator fails this).
+
     const {clearedCur, setCur, valInRange} = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
@@ -167,10 +158,10 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
       const val = col.get(setCur);
       return {clearedCur, setCur, valInRange: val !== null && val >= col.min && val <= col.max};
     });
-    expect(clearedCur).toBe(-1);  // indicator clears
-    expect(setCur).toBe(7);       // and points where set
+    expect(clearedCur).toBe(-1);  
+    expect(setCur).toBe(7);       
     expect(valInRange).toBe(true);
-    expect(pageErrors.slice(errsBefore)).toEqual([]); // hover raised no error
+    expect(pageErrors.slice(errsBefore)).toEqual([]); 
   });
 
   await softStep('S2: set value AGE', async () => {
@@ -190,13 +181,12 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
   });
 
   await softStep('S2: bins revert to 20 in panel and in-plot', async () => {
-    const {propBins, sliderVal} = await page.evaluate(async () => {
+    await v.setViewerProps(page, 'Histogram', [{set: {bins: 20}, wait: 500}]);
+    const {propBins, sliderVal} = await v.pollValue(() => page.evaluate(() => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
-      h.props.bins = 20;
-      await new Promise((r) => setTimeout(r, 500));
       const slider = h.root.querySelector('input[type="range"]') as HTMLInputElement;
       return {propBins: h.props.bins, sliderVal: slider.value};
-    });
+    }), (r) => r.propBins === 20 && r.sliderVal === '20', 500, 50);
     expect(propBins).toBe(20);
     expect(sliderVal).toBe('20');
   });

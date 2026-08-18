@@ -58,7 +58,7 @@ async function clickOkAndWaitForEmbedding(page: Page, label: string, minSuffix: 
         if (embedCols.length > 0 && hasScatter) {
           const maxSuffix = Math.max(...embedCols.map((c: any) => parseInt(c.name.match(/^Embed_X_(\d+)$/)![1])));
           if (maxSuffix > lastSuffix) {
-            // Tag is set asynchronously ~5-8s after column creation; poll up to 20s.
+
             let hasTag = false;
             for (let j = 0; j < 10; j++) {
               const newCol = grok.shell.tv?.dataFrame?.col(`Embed_X_${maxSuffix}`);
@@ -113,7 +113,7 @@ async function runChemicalSpaceWalk(page: Page, label: string, datasetPath: stri
 }
 
 test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)', async ({page}) => {
-  test.setTimeout(900_000); // 15 min for 3 × 7-step walks on cold session
+  test.setTimeout(900_000); 
 
   await loginToDatagrok(page);
   await page.waitForTimeout(3000);

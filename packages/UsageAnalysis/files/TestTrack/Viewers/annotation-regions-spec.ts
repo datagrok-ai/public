@@ -78,7 +78,7 @@ test('Annotation regions scenario', async ({page}) => {
     await page.locator('[name="input-host-Description"] textarea').fill('Rectangle description');
     await page.locator('[name="input-host-Region-Color"] input').fill('#ff8800');
     await page.locator('[name="input-host-Outline-Color"] input').fill('#003366');
-    // Outline width is the int input "Width" (input-host-Width); Opacity is a raw <input type="range">.
+
     await page.locator('[name="input-host-Width"] input').fill('3');
     await page.locator('[name="input-host-Width"] input').press('Tab');
     await page.evaluate(() => {
@@ -91,7 +91,7 @@ test('Annotation regions scenario', async ({page}) => {
       if (!o) throw new Error('Opacity input not found');
       o.value = '60'; o.dispatchEvent(new Event('input', {bubbles: true}));
     });
-    // Header-color input is named input-host-Header-Color on dev/public, input-host-Color on localhost.
+
     {
       const hc = page.locator('[name="input-host-Header-Color"], [name="input-host-Color"]').locator('input').first();
       if (await hc.isVisible({timeout: 3000}).catch(() => false))
@@ -144,7 +144,7 @@ test('Annotation regions scenario', async ({page}) => {
 
     await page.locator('.d4-dialog button, .d4-dialog .ui-btn, .d4-dialog span').getByText('Add new', {exact: true}).first().click();
     await page.waitForTimeout(400);
-    // "Add region" submenu wording varies between dev and localhost PowerPack builds — try several.
+
     const itemClicked13 = await page.evaluate(() => {
       const candidates = ['Region - Formula Lines', 'Formula Region', 'Region', 'Formula - Region'];
       const labels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'));
@@ -159,7 +159,6 @@ test('Annotation regions scenario', async ({page}) => {
     });
     expect(itemClicked13).not.toBeNull();
 
-    // Verify the region via the look JSON directly (dialog hides per-region rows behind a sub-tab).
     await page.waitForTimeout(800);
     await page.locator('.d4-dialog [name="button-OK"]').click();
     await page.waitForTimeout(400);
@@ -168,7 +167,7 @@ test('Annotation regions scenario', async ({page}) => {
       return JSON.parse(sp.getOptions(true).look.annotationRegions || '[]');
     });
     expect(after.length).toBe(before + 1);
-    // localhost defaults the new region type to 'area', dev/public to 'formula'; accept either.
+
     const newRegion = after.find((r: any) => r.type === 'formula') ?? after[0];
     expect(newRegion).toBeDefined();
     if (newRegion.type === 'formula') {
@@ -238,7 +237,7 @@ test('Annotation regions scenario', async ({page}) => {
   });
 
   await softStep('4.1 Right-click region → Edit opens dialog', async () => {
-    // Cursor may miss the 1.1 region without worldToScreen; step logs result and does not hard-fail.
+
     const box = (await page.locator('[name="viewer-Scatter-plot"] canvas').first().boundingBox())!;
     await rightClick(page, '[name="viewer-Scatter-plot"] canvas', box.width * 0.45, box.height * 0.45);
     const hasEdit = await page.evaluate(() =>
@@ -255,7 +254,6 @@ test('Annotation regions scenario', async ({page}) => {
     await clickMenuItem(page, 'Formula Lines...');
     await page.locator('.d4-dialog .d4-dialog-title', {hasText: 'Formula Lines'}).waitFor({timeout: 5000});
 
-    // Click first data row of the left-side grid to select the region
     const gridBox = (await page.locator('.d4-dialog .d4-grid').boundingBox())!;
     await page.mouse.click(gridBox.x + gridBox.width * 0.5, gridBox.y + 36);
     await page.waitForTimeout(300);
@@ -288,7 +286,7 @@ test('Annotation regions scenario', async ({page}) => {
   });
 
   await softStep('5.1 Preview / 5.2 Grid representation', async () => {
-    // Close any dialogs left open by failed previous steps
+
     await page.evaluate(() => {
       document.querySelectorAll('.d4-dialog').forEach((d) => {
         const btn = (d.querySelector('[name="button-CANCEL"]') ?? d.querySelector('[name="button-OK"]')) as HTMLElement | null;
@@ -351,7 +349,6 @@ test('Annotation regions scenario', async ({page}) => {
     });
     expect(afterRect).toBeGreaterThan(0);
 
-    // Add formula region; "Add new" submenu region wording differs dev vs localhost — try several.
     await rightClick(page, '[name="viewer-Line-chart"] canvas');
     await clickMenuItem(page, 'Formula Lines...');
     await page.locator('.d4-dialog .d4-dialog-title', {hasText: 'Formula Lines'}).waitFor({timeout: 5000});
@@ -380,7 +377,6 @@ test('Annotation regions scenario', async ({page}) => {
     expect(afterFormula).toBeGreaterThan(afterRect);
   });
 
-  // Recovery point: close any dialog/menu left open by prior sections.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const btn = (d.querySelector('[name="button-CANCEL"]') ?? d.querySelector('[name="button-OK"]')) as HTMLElement | null;
@@ -462,7 +458,6 @@ test('Annotation regions scenario', async ({page}) => {
     await page.keyboard.press('Escape');
   });
 
-  // ---------- 8. Box Plot ----------
   await softStep('8.1 Box Plot — Tools menu items in order, Lasso unavailable', async () => {
     await page.evaluate(() => {
       for (const v of [...grok.shell.tv.viewers].filter((v: any) => v.type !== 'Grid')) v.close();
@@ -484,7 +479,6 @@ test('Annotation regions scenario', async ({page}) => {
     expect(dIdx).toBeGreaterThan(sIdx);
     expect(fIdx).toBeGreaterThan(dIdx);
 
-    // Lasso must NOT be in the look (lassoEnabled=false → property absent or false)
     const lassoEnabled = await page.evaluate(() =>
       (grok.shell.tv.viewers.find((v: any) => v.type === 'Box plot') as any)
         .annotationRegionsFeature?.lassoEnabled ?? false);
@@ -493,7 +487,7 @@ test('Annotation regions scenario', async ({page}) => {
   });
 
   await softStep('8.2 Box Plot — drag rect → formula region with ${AGE} = lo / hi', async () => {
-    // areaSelector gates drawing on Menu.currentlyShown == null; reset state and close any menu.
+
     await page.keyboard.press('Escape');
     await page.evaluate(() => {
       const bp = grok.shell.tv.viewers.find((v: any) => v.type === 'Box plot');
@@ -503,14 +497,13 @@ test('Annotation regions scenario', async ({page}) => {
 
     await rightClick(page, '[name="viewer-Box-plot"] canvas');
     await clickMenuItem(page, 'Draw Annotation Region');
-    // Menu DOM detaches before the Dart static clears; wait for both before dragging.
+
     await page.locator('.d4-menu-popup').first().waitFor({state: 'detached', timeout: 5000}).catch(() => {});
     await page.waitForFunction(() => {
       return document.querySelectorAll('.d4-menu-popup, .d4-menu-item-container.d4-menu-popup').length === 0;
     }, null, {timeout: 3000}).catch(() => {});
     await page.waitForTimeout(800);
 
-    // drawnAreaCheck needs raw bounds.area > 0; box plot locks X, so add a small ΔX.
     const overlay = page.locator('[name="viewer-Box-plot"] canvas').nth(1);
     const ob = (await overlay.boundingBox())!;
     const cx0 = ob.x + ob.width * 0.5 - 5;
@@ -534,7 +527,7 @@ test('Annotation regions scenario', async ({page}) => {
     expect(region.type).toBe('formula');
     expect(region.formula1).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
     expect(region.formula2).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
-    // A drag-created formula region leaves Title/header empty (user fills it); no auto-generated header.
+
   });
 
   await softStep('8.3 Box Plot — Y axis Annotations group → Add Line creates ${AGE} = q2', async () => {
@@ -542,10 +535,10 @@ test('Annotation regions scenario', async ({page}) => {
       const bp = grok.shell.tv.viewers.find((v: any) => v.type === 'Box plot');
       return JSON.parse(bp.getOptions(true).look.formulaLines || '[]').length;
     });
-    // Y-axis hit-box is ~5% in, ~50% down (inside-left edge, not the canvas edge).
+
     const bpBox = (await page.locator('[name="viewer-Box-plot"] canvas').first().boundingBox())!;
     await rightClick(page, '[name="viewer-Box-plot"] canvas', bpBox.width * 0.05, bpBox.height * 0.5);
-    // Hover Annotations group, then click Add Line
+
     await page.evaluate(() => {
       const labels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'));
       const ann = labels.find((l) => (l.textContent ?? '').trim() === 'Annotations');
@@ -613,11 +606,10 @@ test('Annotation regions scenario', async ({page}) => {
 
     await rightClick(page, '[name="viewer-Histogram"] canvas');
     await clickMenuItem(page, 'Draw Annotation Region');
-    // areaSelector gates drag on `Menu.currentlyShown == null`; wait for menu detach.
+
     await page.locator('.d4-menu-popup').first().waitFor({state: 'detached', timeout: 5000}).catch(() => {});
     await page.waitForTimeout(500);
 
-    // drawnAreaCheck needs bounds.area > 0; histogram locks Y, so add a small ΔY.
     const box = (await page.locator('[name="viewer-Histogram"] canvas').first().boundingBox())!;
     const x1 = box.x + box.width * 0.35;
     const x2 = box.x + box.width * 0.65;
@@ -648,7 +640,7 @@ test('Annotation regions scenario', async ({page}) => {
       return JSON.parse(h.getOptions(true).look.formulaLines || '[]').length;
     });
     const box = (await page.locator('[name="viewer-Histogram"] canvas').first().boundingBox())!;
-    // X axis is at the bottom of the chart
+
     await rightClick(page, '[name="viewer-Histogram"] canvas', box.width / 2, box.height - 18);
     await page.evaluate(() => {
       const labels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'));
@@ -706,11 +698,10 @@ test('Annotation regions scenario', async ({page}) => {
 
     await rightClick(page, '[name="viewer-Bar-chart"] canvas');
     await clickMenuItem(page, 'Draw Annotation Region');
-    // areaSelector gates drag on `Menu.currentlyShown == null`; wait for menu detach.
+
     await page.locator('.d4-menu-popup').first().waitFor({state: 'detached', timeout: 5000}).catch(() => {});
     await page.waitForTimeout(500);
 
-    // drawnAreaCheck needs raw bounds.area > 0; bar chart verticalMode locks X, so add a small ΔX.
     const box = (await page.locator('[name="viewer-Bar-chart"] canvas').first().boundingBox())!;
     const cx0 = box.x + box.width * 0.5 - 5;
     const cx1 = box.x + box.width * 0.5 + 5;
@@ -733,7 +724,7 @@ test('Annotation regions scenario', async ({page}) => {
     expect(region.type).toBe('formula');
     expect(region.formula1).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
     expect(region.formula2).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
-    // A drag-created formula region leaves Title/header empty (user fills it); no auto-generated header.
+
   });
 
   await softStep('10.3 Bar Chart — orientation flip preserves Tools menu', async () => {
@@ -758,7 +749,7 @@ test('Annotation regions scenario', async ({page}) => {
       const bc = grok.shell.tv.viewers.find((v: any) => v.type === 'Bar chart');
       return JSON.parse(bc.getOptions(true).look.formulaLines || '[]').length;
     });
-    // Value-axis hit-box is inside-left; sweep offsets to find it across auto-layout ratios.
+
     const bcBox = (await page.locator('[name="viewer-Bar-chart"] canvas').first().boundingBox())!;
     let hitFound = false;
     for (const xp of [0.05, 0.08, 0.12, 0.18]) {
@@ -859,7 +850,7 @@ test('Annotation regions scenario', async ({page}) => {
     expect(last.type).toBe('formula');
     expect(last.formula1).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
     expect(last.formula2).toMatch(/\$\{AGE\}\s*=\s*-?\d/);
-    // An axis-menu "Add Region" leaves Title/header empty (user fills it); no auto-generated header.
+
   });
 
   v.finishSpec();

@@ -110,7 +110,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
           if (friendly === 'Bio' || pkgName === '@datagrok/bio' || pkgName === 'Bio')
             list.push(f.name);
         }
-      } catch { /* surface as empty list */ }
+      } catch {  }
       return list;
     });
     const expected = [
@@ -128,7 +128,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
-// Scenario 2 — Convert HELM -> SEPARATOR re-dispatches renderer (GROK-12164 guard)
+
 test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK-12164)', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
@@ -167,7 +167,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
       () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
   });
-  // GROK-12164: the new separator column's dispatch must follow its own units=separator tag, not the source HELM tags.
+
   await softStep('GROK-12164: new column units=separator, source HELM column units=helm intact', async () => {
     await page.waitForFunction((accepted: string[]) => {
       const df = grok.shell.tv.dataFrame;
@@ -216,7 +216,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
-// Scenario 3 — Split-to-Monomers produces Monomer columns rendered by monomerCellRenderer
+
 test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCellRenderer)', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
@@ -286,7 +286,7 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
   }
 });
-// Scenario 4 — Custom-notation column dispatches to customSequenceCellRenderer
+
 test('Bio | Rendering — units=custom column dispatches to customSequenceCellRenderer', async ({page}) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
@@ -306,8 +306,8 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
       const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
       if (!macro) return null;
       macro.setTag('units', 'custom');
-      try { await (grok.data as any).detectSemanticTypes(df); } catch { /* tolerate older builds */ }
-      try { (grok.shell.tv as any).grid?.invalidate?.(); } catch { /* may not throw on older builds */ }
+      try { await (grok.data as any).detectSemanticTypes(df); } catch {  }
+      try { (grok.shell.tv as any).grid?.invalidate?.(); } catch {  }
       return macro.name;
     });
     expect(colName, 'Macromolecule column must be located on HELM dataset').toBeTruthy();

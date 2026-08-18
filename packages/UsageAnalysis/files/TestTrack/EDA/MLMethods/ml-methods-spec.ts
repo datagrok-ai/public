@@ -18,14 +18,13 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async () => {
     }, {timeout: 45000});
   }
 
-  // Scenario 1: Linear Regression (cars.csv, predict=price)
   await softStep('Linear Regression: Train on cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
         const cancel = d.querySelector('[name="button-CANCEL"]');
         if (cancel) (cancel as HTMLElement).click();
       });
-      // Close PredictiveModel views
+
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());
       grok.shell.closeAll();
       const df = await grok.dapi.files.readCsv('System:DemoFiles/cars.csv');
@@ -39,7 +38,6 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async () => {
     expect(result.success).toBe(true);
   });
 
-  // Scenario 2: PLS Regression (cars.csv, predict=price)
   await softStep('PLS Regression: Train on cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
@@ -60,7 +58,6 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async () => {
     expect(result.success).toBe(true);
   });
 
-  // Scenario 3: Softmax (iris.csv, predict=Species) — known FAIL
   await softStep('Softmax: Train on iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
@@ -77,12 +74,10 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async () => {
         return { success: false, error: e.message };
       }
     });
-    // Known failure: trainSoftmax has a bug with feature type detection
-    // We record the failure but don't fail the whole suite
+
     console.log('Softmax result:', result);
   });
 
-  // Scenario 4: XGBoost 1 (iris.csv, predict=Species)
   await softStep('XGBoost Classification: Train on iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();
@@ -98,7 +93,6 @@ test('ML Methods - Linear Regression, PLS, Softmax, XGBoost', async () => {
     expect(result.success).toBe(true);
   });
 
-  // Scenario 5: XGBoost 2 (cars.csv, predict=price)
   await softStep('XGBoost Regression: Train on cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       grok.shell.closeAll();

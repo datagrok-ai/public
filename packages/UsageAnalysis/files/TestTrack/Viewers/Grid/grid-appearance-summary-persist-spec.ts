@@ -8,9 +8,6 @@ import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects
 
 declare const grok: any;
 
-// The ribbon Save's publish chain (an offscreen-iframe clone of the view) emits a clone-iframe
-// message plus a Dart NullError whose minified symbol drifts per build, hence the LETTER-AGNOSTIC
-// pattern. Apply ONLY inside the save window — the same class outside it is a regression signal.
 const isBenignSaveWindowError = (text: string): boolean =>
   /Unable to find element in cloned iframe/.test(text) ||
   /Stack trace [A-Za-z]+/.test(text) ||
@@ -18,7 +15,6 @@ const isBenignSaveWindowError = (text: string): boolean =>
 
 test.use(specTestOptions);
 
-// Page-coordinate center of a column header from the grid geometry.
 async function headerCenter(page: Page, col: string): Promise<{x: number; y: number}> {
   return page.evaluate((c) => {
     const grid = grok.shell.tv.grid;
@@ -31,9 +27,6 @@ async function headerCenter(page: Page, col: string): Promise<{x: number; y: num
   }, col);
 }
 
-// Rendered rect (page coords) of the laid-out copy of a menu element, or null. A d4 nested
-// submenu also keeps a detached zero-rect TEMPLATE copy of every leaf, which a query by name hits
-// first — hence the filter on a non-null offsetParent plus a real bounding box.
 async function laidOutRect(
   page: Page, name: string,
 ): Promise<{x: number; y: number; w: number; h: number} | null> {
@@ -48,9 +41,6 @@ async function laidOutRect(
   }, name);
 }
 
-// Open a grid context menu at (clientX, clientY) on the overlay canvas, walk a chain of nested
-// menu groups to a leaf and click it. Slope-based hover protection keeps a leaf a zero-rect
-// template until its parent gets TRUSTED movement; only the ROOT menu opens on synthetic events.
 async function clickMenuLeaf(
   page: Page, at: {x: number; y: number}, groupNames: string[], leafName: string,
 ): Promise<boolean> {
@@ -64,8 +54,6 @@ async function clickMenuLeaf(
     }, {x: at.x, y: at.y});
     await page.waitForTimeout(550);
 
-    // Approach each group from its left edge inward — that trajectory is what the slope
-    // tracker reads.
     let ok = true;
     for (const g of groupNames) {
       const gr = await laidOutRect(page, g);
@@ -78,7 +66,7 @@ async function clickMenuLeaf(
 
     const leaf = ok ? await laidOutRect(page, leafName) : null;
     if (!leaf) {
-      // Dismiss and retry from a clean state.
+
       await page.evaluate(() => (document.body as HTMLElement).click());
       await page.waitForTimeout(250);
       continue;
@@ -91,14 +79,11 @@ async function clickMenuLeaf(
   return false;
 }
 
-// Open the grid's property panel and wait for its rows to exist. The gear's CSS visibility
-// flickers with viewer hover/focus, so four real gestures are tried in order and the first that
-// reveals the rows wins.
 async function openGridSettings(page: Page): Promise<boolean> {
   const rows = page.locator('[name="prop-row-height"]');
   if (await rows.count() > 0) return true;
   const gestures: Array<() => Promise<void>> = [
-    // Trusted pointer first: a real hover is what reveals the gear.
+
     async () => {
       const box = await page.evaluate(() => {
         const gear = document.querySelector('.d4-grid-settings-icon') as HTMLElement | null;
@@ -125,7 +110,7 @@ async function openGridSettings(page: Page): Promise<boolean> {
           gear.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 0}));
       });
     },
-    // The registered helper, scoped to the Grid panel so multiple viewers cannot be confused.
+
     async () => { await v.openViewerGear(page, 'Grid'); },
     async () => {
       await page.locator('[name="viewer-Grid"] canvas[name="overlay"]').first().click({position: {x: 60, y: 60}, force: true});
@@ -139,12 +124,11 @@ async function openGridSettings(page: Page): Promise<boolean> {
       continue;
     }
     try {
-      // 'attached', not 'visible': the panel can be rendered while the Context Panel is
-      // collapsed or scrolled out of the headless viewport, and its rows are still drivable.
+
       await rows.first().waitFor({state: 'attached', timeout: 6000});
       return true;
     } catch {
-      // panel did not appear — fall through to the next gesture
+
     }
   }
   return false;
@@ -156,8 +140,6 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
   await loginToDatagrok(page);
   await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
-  // Setup: identify a null cell for the missing-value-color read (HEIGHT has many nulls in
-  // demog). grid.cell(col, tableRowIdx).color resolves the rendered colour without scrolling.
   const setup = await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const grid = grok.shell.tv.grid;
@@ -176,22 +158,17 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       nullHeightRow,
       minAgeRow, maxAgeRow, minV, maxV,
       defaultRowHeight: grid.props.rowHeight,
-      defaultBg: grid.cell('AGE', 0).color, // white background (no colour coding yet)
+      defaultBg: grid.cell('AGE', 0).color, 
     };
   });
-  expect(setup.nullHeightRow).toBeGreaterThanOrEqual(0); // a null HEIGHT cell exists
-  expect(setup.minAgeRow).not.toBe(setup.maxAgeRow); // distinct min/max AGE rows
+  expect(setup.nullHeightRow).toBeGreaterThanOrEqual(0); 
+  expect(setup.minAgeRow).not.toBe(setup.maxAgeRow); 
 
-  // --- Scenario 1: Linear color coding on AGE --------------------------------
-
-  // These four steps own the GRID's actuation path — applying each type through the column
-  // header menu — while the per-type color VALUES belong to the flat Viewers/color-coding
-  // section. The full color battery still runs once, in the persistence tail.
   await softStep('Step 4 — Linear colour coding on AGE: min/max cells differ, both differ from background', async () => {
     const c = await headerCenter(page, 'AGE');
     const applied = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Linear');
-    expect(applied).toBe(true); // the Linear leaf was reached and clicked via the header menu
-    await page.waitForTimeout(600);
+    expect(applied).toBe(true); 
+    await page.waitForTimeout(600); 
     const r = await page.evaluate((s) => {
       const df = grok.shell.tv.dataFrame;
       const grid = grok.shell.tv.grid;
@@ -199,36 +176,32 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         ccType: df.col('AGE').getTag('.color-coding-type'),
         minColor: grid.cell('AGE', s.minAgeRow).color,
         maxColor: grid.cell('AGE', s.maxAgeRow).color,
-        // an uncolored column's cell on the same rows = plain background
+
         bgMinRow: grid.cell('DEMOG', s.minAgeRow).color,
         bgMaxRow: grid.cell('DEMOG', s.maxAgeRow).color,
       };
     }, setup);
-    expect(r.ccType).toBe('Linear'); // Linear color coding is active on AGE
-    // Min-AGE and max-AGE cells differ from each other and both from a plain cell.
+    expect(r.ccType).toBe('Linear'); 
+
     expect(r.minColor).not.toBe(r.maxColor);
     expect(r.minColor).not.toBe(r.bgMinRow);
     expect(r.maxColor).not.toBe(r.bgMaxRow);
   });
 
-  // --- Scenario 2: Conditional color coding on HEIGHT ------------------------
-  // Conditional mode is turned on through the real header menu; the ranges go through
-  // meta.colors.setConditional — the call the Edit dialog's undocumented range editor makes.
   const condRanges = {'<160': '#0000FF', '>180': '#FF0000'};
 
   await softStep('Step 5 — Conditional colour coding on HEIGHT: each in-range cell resolves its configured colour', async () => {
     const c = await headerCenter(page, 'HEIGHT');
     const applied = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Conditional');
-    expect(applied).toBe(true); // the Conditional leaf was reached and clicked
-    await page.waitForTimeout(600);
+    expect(applied).toBe(true); 
+    await page.waitForTimeout(600); 
     const r = await page.evaluate((ranges) => {
       const df = grok.shell.tv.dataFrame;
       const grid = grok.shell.tv.grid;
       const hc = df.col('HEIGHT');
       hc.meta.colors.setConditional(ranges);
       grid.invalidate();
-      // The mid-range (160..180) sample is the non-round-trip witness: the renderer maps each
-      // value THROUGH the range logic, so a cell in neither band resolves the plain background.
+
       let lowRow = -1; let highRow = -1; let midRow = -1;
       for (let i = 0; i < df.rowCount; i++) {
         if (hc.isNone(i)) continue;
@@ -248,24 +221,22 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         bg: grid.cell('DEMOG', midRow >= 0 ? midRow : lowRow).color >>> 0,
       };
     }, condRanges);
-    expect(r.ccType).toBe('Conditional'); // Conditional colour coding is active on HEIGHT
-    expect(r.cond).toBe(JSON.stringify(condRanges)); // the explicit named ranges are configured
-    expect(r.lowColor).toBe(0xff0000ff); // below-160 cell resolves the configured blue
-    expect(r.highColor).toBe(0xffff0000); // above-180 cell resolves the configured red
-    expect(r.lowColor).not.toBe(r.highColor); // different ranges report different colours
+    expect(r.ccType).toBe('Conditional'); 
+    expect(r.cond).toBe(JSON.stringify(condRanges)); 
+    expect(r.lowColor).toBe(0xff0000ff); 
+    expect(r.highColor).toBe(0xffff0000); 
+    expect(r.lowColor).not.toBe(r.highColor); 
     if (r.midRow >= 0) {
-      expect(r.midColor).not.toBe(r.lowColor); // an in-neither cell matches no configured colour
+      expect(r.midColor).not.toBe(r.lowColor); 
       expect(r.midColor).not.toBe(r.highColor);
     }
   });
 
-  // --- Scenario 3: Categorical colour coding on SEX ---------------------------
-
   await softStep('Step 6 — Categorical colour coding on SEX: distinct SEX values get distinct colours', async () => {
     const c = await headerCenter(page, 'SEX');
     const applied = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Categorical');
-    expect(applied).toBe(true); // the Categorical leaf was reached and clicked
-    await page.waitForTimeout(600);
+    expect(applied).toBe(true); 
+    await page.waitForTimeout(600); 
     const r = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const grid = grok.shell.tv.grid;
@@ -282,21 +253,17 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         fColor: grid.cell('SEX', fRow).color,
       };
     });
-    expect(r.ccType).toBe('Categorical'); // Categorical colour coding is active on SEX
-    expect(r.mColor).not.toBe(r.fColor); // the M row and the F row get distinct colours
+    expect(r.ccType).toBe('Categorical'); 
+    expect(r.mColor).not.toBe(r.fColor); 
   });
-
-  // --- Scenario 4: Linked colour coding on WEIGHT with source SEX -------------
-  // Categorical on SEX (Step 6) is the precondition source. The source column is committed
-  // through the Edit... dialog's d4-column-selector popup, which only takes real keystrokes.
 
   await softStep('Step 7 — Linked colour coding on WEIGHT (source SEX): WEIGHT cell colour equals SEX cell colour', async () => {
     const c = await headerCenter(page, 'WEIGHT');
-    // Open the Color-coding Edit dialog for WEIGHT.
+
     const opened = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Edit...');
-    expect(opened).toBe(true); // the Edit... leaf was reached and clicked
+    expect(opened).toBe(true); 
     await page.locator('.d4-dialog[name="dialog-Color-coding--WEIGHT"]').waitFor({timeout: 8000});
-    // Set Type = Linked (reveals the Source-column selector).
+
     await page.evaluate(() => {
       const dlg = document.querySelector('.d4-dialog[name="dialog-Color-coding--WEIGHT"]') as HTMLElement;
       const typeSel = dlg.querySelector('[name="input-Type"]') as HTMLSelectElement;
@@ -321,7 +288,7 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
-    // Close the dialog (applies live via CLOSE).
+
     await page.locator('.d4-dialog[name="dialog-Color-coding--WEIGHT"] [name="button-CLOSE"]')
       .first().click({timeout: 5000}).catch(() => {});
     await page.waitForTimeout(700);
@@ -329,7 +296,7 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       const df = grok.shell.tv.dataFrame;
       const grid = grok.shell.tv.grid;
       const sc = df.col('SEX');
-      // two rows with different SEX values
+
       let mRow = -1; let fRow = -1;
       for (let i = 0; i < df.rowCount && (mRow < 0 || fRow < 0); i++) {
         const val = sc.get(i);
@@ -343,14 +310,12 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         fWeight: grid.cell('WEIGHT', fRow).color, fSex: grid.cell('SEX', fRow).color,
       };
     });
-    expect(r.ccType).toBe('Linked'); // Linked colour coding is active on WEIGHT
-    expect(r.src).toBe('SEX'); // the linked source column is SEX
-    expect(r.mWeight).toBe(r.mSex); // WEIGHT cell colour equals SEX cell colour (M row)
-    expect(r.fWeight).toBe(r.fSex); // WEIGHT cell colour equals SEX cell colour (F row)
-    expect(r.mWeight).not.toBe(r.fWeight); // holds across two rows with different SEX
+    expect(r.ccType).toBe('Linked'); 
+    expect(r.src).toBe('SEX'); 
+    expect(r.mWeight).toBe(r.mSex); 
+    expect(r.fWeight).toBe(r.fSex); 
+    expect(r.mWeight).not.toBe(r.fWeight); 
   });
-
-  // --- Scenario 5: Style settings via the gear panel --------------------------
 
   await softStep('Step 9 — Row height via the gear panel: cell bounds height reflects the new value', async () => {
     const before = await page.evaluate(() => grok.shell.tv.grid.cell('AGE', 0).bounds.height);
@@ -363,10 +328,10 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       rh.dispatchEvent(new Event('change', {bubbles: true}));
       rh.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Enter'}));
     });
-    await page.waitForTimeout(800);
+    await v.waitForViewerRendered(page, 'Grid', 800);
     const after = await page.evaluate(() => grok.shell.tv.grid.cell('AGE', 0).bounds.height);
-    expect(after).not.toBe(before); // cell bounds height changed from the default
-    expect(after).toBe(48); // and reflects the new row height
+    expect(after).not.toBe(before); 
+    expect(after).toBe(48); 
   });
 
   await softStep('Step 10 — Missing value colour via the gear panel: a null cell resolves the configured colour', async () => {
@@ -374,8 +339,7 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       grok.shell.tv.grid.cell('HEIGHT', s.nullHeightRow).color, setup);
     expect(await openGridSettings(page)).toBe(true);
     await page.locator('[name="prop-missing-value-color"]').waitFor({state: 'attached', timeout: 8000});
-    // The panel row can be attached with a zero box, which force:true still refuses, so the
-    // click is dispatched on the node itself — the same handler a user hits.
+
     await page.evaluate(() => {
       const view = document.querySelector('[name="prop-view-missing-value-color"]') as HTMLElement | null;
       if (!view) return;
@@ -393,6 +357,7 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       hex.dispatchEvent(new Event('input', {bubbles: true}));
       hex.dispatchEvent(new Event('change', {bubbles: true}));
     });
+
     await page.waitForTimeout(800);
     const r = await page.evaluate((s) => {
       const grid = grok.shell.tv.grid;
@@ -401,12 +366,10 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         configured: grid.props.missingValueColor,
       };
     }, setup);
-    expect(r.nullColor).toBe(r.configured); // the null cell resolves the configured missing-value colour
-    expect(r.nullColor >>> 0).toBe(0xffffaaaa); // which is the #FFAAAA that was set
-    expect(r.nullColor).not.toBe(defaultNullColor); // and differs from the default background
+    expect(r.nullColor).toBe(r.configured); 
+    expect(r.nullColor >>> 0).toBe(0xffffaaaa); 
+    expect(r.nullColor).not.toBe(defaultNullColor); 
   });
-
-  // --- Scenario 6: Summary columns — all one-click types ----------------------
 
   const summaryTypes: {leaf: string; cellType: string}[] = [
     {leaf: 'Sparklines', cellType: 'sparkline'},
@@ -439,43 +402,38 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       if (added && state.len === count + 1) count = state.len;
     }
     colsAfterSummary = count;
-    // Every type added, incrementing the count and matching its cellType.
+
     for (let i = 0; i < summaryTypes.length; i++) {
-      expect(results[i].added).toBe(true); // the leaf was clicked
-      expect(results[i].cellType).toBe(summaryTypes[i].cellType); // and the new column's cellType matches
+      expect(results[i].added).toBe(true); 
+      expect(results[i].cellType).toBe(summaryTypes[i].cellType); 
     }
-    expect(colsAfterSummary).toBe(before + summaryTypes.length); // count grew by the number of types added
+    expect(colsAfterSummary).toBe(before + summaryTypes.length); 
   });
 
-  // --- Scenario 7: Stats rows — no-error floor (GROK-19809) -------------------
-
   await softStep('Step 13 — Stats rows: add min and max; summary columns survive and no console error (GROK-19809)', async () => {
-    // No save happens here, so nothing is benign and the channel is not narrowed to a /grid/
-    // token — that would silently drop a regression logged without one.
+
     const consoleErrors: string[] = [];
     const onErr = (msg: any) => {
       if (msg.type() === 'error' && !isBenignSaveWindowError(msg.text())) consoleErrors.push(msg.text());
     };
     page.on('console', onErr);
     for (const stat of ['min', 'max']) {
-      // Column Stats live under the Add group of the CELL menu — the header menu has no Add group.
+
       const cellCoord = await page.evaluate(() => {
         const db = grok.shell.tv.grid.cell('AGE', 0).documentBounds;
         return {x: db.x + db.width / 2, y: db.y + db.height / 2};
       });
       const added = await clickMenuLeaf(page, cellCoord, ['div-Add', 'div-Add---Column-Stats'],
         `div-Add---Column-Stats---${stat}`);
-      expect(added).toBe(true); // the stats-row leaf was reached and clicked
+      expect(added).toBe(true); 
       await page.waitForTimeout(500);
     }
     page.off('console', onErr);
     const colsAfter = await page.evaluate(() => grok.shell.tv.grid.columns.length);
-    // GROK-19809: adding stats rows must NOT drop the summary (virtual) columns.
-    expect(colsAfter).toBe(colsAfterSummary); // every summary column from Step 12 stays in place
-    expect(consoleErrors).toEqual([]); // adding stats rows raises no console error (unfiltered channel)
-  });
 
-  // --- Scenario 8: The arrangement survives a layout and a project round-trip -
+    expect(colsAfter).toBe(colsAfterSummary); 
+    expect(consoleErrors).toEqual([]); 
+  });
 
   await softStep('Step 15 — Persistence: save layout, add a foreign viewer, re-apply the layout (GROK-19769)', async () => {
     const r = await page.evaluate(async (s) => {
@@ -509,18 +467,18 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         return {lowRow, highRow, midRow, minAgeRow, maxAgeRow, mRow, fRow};
       })();
       const battery = (g: any) => ({
-        // AGE gradient: min endpoint, max endpoint, and a plain (uncolored) cell.
+
         ageMinColor: g.cell('AGE', rows.minAgeRow).color >>> 0,
         ageMaxColor: g.cell('AGE', rows.maxAgeRow).color >>> 0,
         agePlainColor: g.cell('DEMOG', rows.minAgeRow).color >>> 0,
-        // HEIGHT conditional: in-range low, in-range high, out-of-range (plain).
+
         heightLowColor: g.cell('HEIGHT', rows.lowRow).color >>> 0,
         heightHighColor: g.cell('HEIGHT', rows.highRow).color >>> 0,
         heightMidColor: rows.midRow >= 0 ? g.cell('HEIGHT', rows.midRow).color >>> 0 : -1,
-        // SEX categorical: an M row and an F row (distinct categories).
+
         sexMColor: g.cell('SEX', rows.mRow).color >>> 0,
         sexFColor: g.cell('SEX', rows.fRow).color >>> 0,
-        // WEIGHT linked: each cell matches the SEX cell of its own row.
+
         weightMEqualsSexM: g.cell('WEIGHT', rows.mRow).color === g.cell('SEX', rows.mRow).color,
         weightFEqualsSexF: g.cell('WEIGHT', rows.fRow).color === g.cell('SEX', rows.fRow).color,
       });
@@ -563,60 +521,56 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       await grok.dapi.layouts.delete(layout);
       return {before, after, hadScatter};
     }, setup);
-    expect(r.hadScatter).toBe(true); // the foreign viewer was actually added
-    expect(r.after.scatterGone).toBe(true); // gone after re-apply
-    // The battery reads colours through the renderer (grid.cell.color), not just the types.
+    expect(r.hadScatter).toBe(true); 
+    expect(r.after.scatterGone).toBe(true); 
+
     expect(r.after.ageCC).toBe('Linear');
     expect(r.after.battery.ageMinColor).not.toBe(r.after.battery.ageMaxColor);
     expect(r.after.battery.ageMinColor).not.toBe(r.after.battery.agePlainColor);
     expect(r.after.battery.ageMaxColor).not.toBe(r.after.battery.agePlainColor);
     expect(r.after.heightCC).toBe('Conditional');
-    expect(r.after.heightCond).toBe(r.before.heightCond); // the configured conditional ranges survive
-    expect(r.after.battery.heightLowColor).toBe(0xff0000ff); // below-160 cell still resolves the configured blue
-    expect(r.after.battery.heightHighColor).toBe(0xffff0000); // above-180 cell still resolves the configured red
-    // Out-of-range (160..180) cell stays plain — the renderer maps through the ranges.
+    expect(r.after.heightCond).toBe(r.before.heightCond); 
+    expect(r.after.battery.heightLowColor).toBe(0xff0000ff); 
+    expect(r.after.battery.heightHighColor).toBe(0xffff0000); 
+
     expect(r.after.battery.heightMidColor).not.toBe(0xff0000ff);
     expect(r.after.battery.heightMidColor).not.toBe(0xffff0000);
     expect(r.after.sexCC).toBe('Categorical');
-    // Two different SEX values give two different colours.
+
     expect(r.after.battery.sexMColor).not.toBe(r.after.battery.sexFColor);
     expect(r.after.weightCC).toBe('Linked');
     expect(r.after.weightSrc).toBe('SEX');
-    // Each WEIGHT cell matches the SEX cell of its own row (both an M row and an F row).
+
     expect(r.after.battery.weightMEqualsSexM).toBe(true);
     expect(r.after.battery.weightFEqualsSexF).toBe(true);
-    expect(r.after.ageBounds).toBe(r.before.ageBounds); // cell bounds height restored
-    expect(r.after.nullColor).toBe(r.before.nullColor); // missing-value cell colour restored
-    // GROK-19769: a layout carrying summary columns re-applies without dropping them.
-    expect(r.after.cols).toBe(r.before.cols); // column count matches Step 12
-    expect(r.after.cellTypes).toEqual(r.before.cellTypes); // every summary column's cellType survives
+    expect(r.after.ageBounds).toBe(r.before.ageBounds); 
+    expect(r.after.nullColor).toBe(r.before.nullColor); 
+
+    expect(r.after.cols).toBe(r.before.cols); 
+    expect(r.after.cellTypes).toEqual(r.before.cellTypes); 
   });
 
   const projectName = 'grid-appearance-summary-persist-' + Date.now();
   let savedProjectId: string | null = null;
-  // Captured right before the save: the summary columns' renderers also influence row height,
-  // so the reopen must compare against the saved state and never a hardcoded pixel value.
+
   let peakCellHeight: number | null = null;
 
   await softStep('Step 16 — Persistence: save the view as a project via the ribbon Save button', async () => {
     peakCellHeight = await page.evaluate(() => grok.shell.tv.grid.cell('AGE', 0).bounds.height);
-    // The real ribbon Save, not grok.dapi.projects.save — only this path runs the serialization
-    // a user's save goes through.
+
     const saved = await saveProjectViaUI(page, projectName);
     savedProjectId = saved.projectId;
     expect(savedProjectId).not.toBeNull();
-    // Only a NON-benign balloon may fail here. Error balloons never auto-hide, so an unfiltered
-    // save-window one would still be on screen after the reopen and be mis-read there.
+
     const saveBalloons = await page.evaluate(() =>
       Array.from(document.querySelectorAll('.d4-balloon.error, .d4-balloon-error'))
         .map((b) => (b.textContent ?? '').trim()));
     const realSaveBalloons = saveBalloons.filter((t) => !isBenignSaveWindowError(t));
-    expect(realSaveBalloons).toEqual([]); // the save raised no NON-benign error balloon
+    expect(realSaveBalloons).toEqual([]); 
   });
 
   await softStep('Step 17 — Persistence: Close All and reopen the project; the full battery holds, error delta 0', async () => {
-    // The channel stays unnarrowed: the GROK-17720 reopen regression surfaces as "Invalid
-    // argument (index): null" from the current-cell restore, which a /grid/ filter would drop.
+
     const consoleErrors: string[] = [];
     const onErr = (msg: any) => {
       if (msg.type() === 'error' && !isBenignSaveWindowError(msg.text())) consoleErrors.push(msg.text());
@@ -634,7 +588,7 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
         document.querySelectorAll('.d4-balloon.error, .d4-balloon-error'))
         .map((b) => (b.textContent ?? '').trim())
         .filter((t) => /error loading/i.test(t));
-      // Same full per-cell colour battery as Step 15, recomputed after reopen.
+
       const battery = (() => {
         if (!grid) return null;
         const hc = df.col('HEIGHT'); const ac = df.col('AGE'); const scol = df.col('SEX');
@@ -689,32 +643,31 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
       };
     }, {pid: savedProjectId, nullHeightRow: setup.nullHeightRow});
     page.off('console', onErr);
-    expect(r.reopened).toBe(true); // the project reopened with a grid
-    expect(r.loadFailureBalloons).toEqual([]); // no "Error loading" balloon
-    expect(consoleErrors).toEqual([]); // console-error delta is 0 since the reopen
+    expect(r.reopened).toBe(true); 
+    expect(r.loadFailureBalloons).toEqual([]); 
+    expect(consoleErrors).toEqual([]); 
     expect(r.ageCC).toBe('Linear');
-    expect(r.battery!.ageMinColor).not.toBe(r.battery!.ageMaxColor); // AGE gradient endpoints differ
-    expect(r.battery!.ageMinColor).not.toBe(r.battery!.agePlainColor); // and both differ from a plain cell
+    expect(r.battery!.ageMinColor).not.toBe(r.battery!.ageMaxColor); 
+    expect(r.battery!.ageMinColor).not.toBe(r.battery!.agePlainColor); 
     expect(r.battery!.ageMaxColor).not.toBe(r.battery!.agePlainColor);
     expect(r.heightCC).toBe('Conditional');
-    expect(r.battery!.heightLowColor).toBe(0xff0000ff); // below-160 cell resolves the configured blue after reopen
-    expect(r.battery!.heightHighColor).toBe(0xffff0000); // above-180 cell resolves the configured red after reopen
-    expect(r.battery!.heightMidColor).not.toBe(0xff0000ff); // out-of-range cell stays plain
+    expect(r.battery!.heightLowColor).toBe(0xff0000ff); 
+    expect(r.battery!.heightHighColor).toBe(0xffff0000); 
+    expect(r.battery!.heightMidColor).not.toBe(0xff0000ff); 
     expect(r.battery!.heightMidColor).not.toBe(0xffff0000);
     expect(r.sexCC).toBe('Categorical');
-    expect(r.battery!.sexMColor).not.toBe(r.battery!.sexFColor); // two SEX values give two colours
+    expect(r.battery!.sexMColor).not.toBe(r.battery!.sexFColor); 
     expect(r.weightCC).toBe('Linked');
     expect(r.weightSrc).toBe('SEX');
-    expect(r.battery!.weightMEqualsSexM).toBe(true); // each WEIGHT cell matches the SEX cell of its row
+    expect(r.battery!.weightMEqualsSexM).toBe(true); 
     expect(r.battery!.weightFEqualsSexF).toBe(true);
-    expect(r.ageBounds).toBe(peakCellHeight); // cell height as saved at peak
-    expect(r.nullColor >>> 0).toBe(0xffffaaaa); // missing-value cell colour restored
-    expect(r.cols).toBe(colsAfterSummary); // every summary column present
-    expect(r.cellTypes).toContain('sparkline');
-    expect(r.cellTypes).toContain('confidenceinterval');
+    expect(r.ageBounds).toBe(peakCellHeight); 
+    expect(r.nullColor >>> 0).toBe(0xffffaaaa); 
+    expect(r.cols).toBe(colsAfterSummary); 
+
+    expect(r.cellTypes).toEqual(expect.arrayContaining(summaryTypes.map((t) => t.cellType)));
   });
 
-  // Teardown: delete the probe project so nothing leaks across runs.
   await softStep('Step 18 — Teardown: delete the probe project', async () => {
     if (savedProjectId)
       await deleteProjectWithCleanup(page, {projectId: savedProjectId});

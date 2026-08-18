@@ -113,8 +113,7 @@ test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({p
       };
     }, sharedColumn);
     expect(result.ok).toBe(true);
-    // github-3412 invariant: Sunburst's hierarchy binding remains intact
-    // after Scatterplot interaction; visual stability preserved.
+
     if (result.sbHierarchyAfter != null)
       expect(result.sbHierarchyAfter).toContain(sharedColumn);
     expect(result.sbHasContent).toBe(true);
@@ -128,7 +127,7 @@ test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({p
     const result = await page.evaluate(async (col) => {
       const grok = (window as any).grok;
       const tv = grok.shell.tv;
-      // Find Sunburst, detach
+
       let sunburst: any = null;
       for (const v of tv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
       if (!sunburst) return {ok: false};

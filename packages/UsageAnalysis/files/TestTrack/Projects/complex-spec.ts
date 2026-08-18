@@ -1,4 +1,3 @@
-// Thin smoke: save + rename + share on a single file source (full scope in satellite specs).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -45,7 +44,6 @@ test('Projects / Complex (smoke): save, rename, share', async ({page}) => {
       expect(r.persistedName).toBe(renamed);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 12 equiv: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: renamed}, {full: true});

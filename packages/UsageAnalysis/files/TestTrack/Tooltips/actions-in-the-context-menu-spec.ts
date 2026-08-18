@@ -6,12 +6,11 @@ test.use(specTestOptions);
 const EXPECTED_TOOLTIP_ITEMS = ['Hide', 'Edit...', 'Use as Group Tooltip', 'Remove Group Tooltip'];
 
 async function readTooltipMenu(page: import('@playwright/test').Page, viewerSelector: string) {
-  // Close any previously-open menu first
+
   await page.keyboard.press('Escape').catch(() => {});
   await page.mouse.click(2, 2).catch(() => {});
   await page.waitForTimeout(300);
 
-  // Use a real right-click via page.mouse so Dart's full menu pipeline runs
   const v = page.locator(viewerSelector);
   await v.waitFor({timeout: 10_000});
   const canvasOrViewer = page.locator(`${viewerSelector} canvas`).first();
@@ -25,7 +24,6 @@ async function readTooltipMenu(page: import('@playwright/test').Page, viewerSele
   await page.locator('.d4-menu-popup').waitFor({timeout: 5_000}).catch(() => {});
   await page.waitForTimeout(400);
 
-  // Hover the Tooltip group so Dart mounts the submenu DOM, then read labels
   return page.evaluate(async () => {
     const popups = document.querySelectorAll('.d4-menu-popup');
     const popup = popups[popups.length - 1] as HTMLElement | undefined;
@@ -39,16 +37,14 @@ async function readTooltipMenu(page: import('@playwright/test').Page, viewerSele
       return {err: 'no Tooltip section', topGroups};
     }
 
-    // Dispatch hover events so the submenu is mounted/expanded
     tooltipGroup.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
     tooltipGroup.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
     tooltipGroup.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
     await new Promise((r) => setTimeout(r, 400));
 
-    // Match the MCP semantics: any descendant submenu container under the Tooltip group.
     const containers = tooltipGroup.querySelectorAll('.d4-menu-item-container');
     if (containers.length === 0) return {err: 'no submenu container', html: tooltipGroup.outerHTML.slice(0, 500)};
-    // The first container is the direct submenu of "Tooltip"; subsequent ones belong to nested groups.
+
     const labels = Array.from(containers[0].querySelectorAll(':scope > .d4-menu-item > .d4-menu-item-label'))
       .map((l) => (l.textContent ?? '').trim());
     return {labels};

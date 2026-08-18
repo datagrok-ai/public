@@ -25,7 +25,7 @@ async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
 
 async function clickOkAndWaitForNeighbor(page: Page): Promise<number> {
   await page.locator('[name="dialog-Hierarchical-Clustering"] [name="button-OK"]').click();
-  // Neighbor mounts when .dendrogram-assign-clusters-bttn (magic wand) appears.
+
   const foundAtMs: number = await page.evaluate(async () => {
     const start = Date.now();
     for (let i = 0; i < 60; i++) {
@@ -46,7 +46,7 @@ async function openAssignClustersViaContextMenu(page: Page): Promise<void> {
     const canvas = neighborRoot.querySelector('canvas') as HTMLCanvasElement;
     if (!canvas) throw new Error('Neighbor canvas not found');
     const rect = canvas.getBoundingClientRect();
-    // The listener is on the neighbor root (treeNb.root), not the canvas itself.
+
     const ev = new MouseEvent('contextmenu', {
       bubbles: true, cancelable: true,
       clientX: rect.left + rect.width / 2,
@@ -86,7 +86,7 @@ async function setClustersInputAndAssign(page: Page, clusters: number): Promise<
     const assignBtn = document.querySelector('[name="button-Assign"]') as HTMLButtonElement;
     if (!assignBtn) throw new Error('Assign button not found');
     assignBtn.click();
-    // Wait for dialog to close + new column to appear.
+
     for (let i = 0; i < 30; i++) {
       if (!document.querySelector('[name="dialog-Assign-Clusters"]')) break;
       await new Promise(r => setTimeout(r, 200));
@@ -104,7 +104,6 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
 
   await loginToDatagrok(page);
 
-  // Setup — open mol1K and wait for the Molecule semType + Chem package.
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -117,7 +116,7 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
       setTimeout(resolve, 4000);
     });
-    // Chem dataset: wait for Grid canvas + extra settle for Chem package warmup.
+
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
@@ -126,7 +125,6 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
 
-  // Scenario 1 — Build dendrogram via Chem | Analyze | Hierarchical Clustering on mol1K.
   await softStep('1. Open mol1K and verify molecule column rendered', async () => {
     const info = await page.evaluate(() => {
       const df = grok.shell.tv?.dataFrame;
@@ -159,7 +157,7 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
       closeBtn: !!document.querySelector('.dendrogram-close-bttn'),
       neighborHasCanvas: !!document.querySelector('.dendrogram-assign-clusters-bttn')
         ?.parentElement?.querySelector('canvas'),
-      // Neighbor is a GridNeighbor, NOT a DG.Viewer — viewers list stays ['Grid'].
+
       viewerTypes: Array.from(grok.shell.tv.viewers).map((v: any) => v.type),
     }));
     expect(state.magicWand, 'magic-wand icon present').toBe(true);
@@ -168,7 +166,6 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
     expect(state.viewerTypes, 'viewer types').toEqual(['Grid']);
   });
 
-  // Scenario 2 — Open Assign Clusters via both surfaces (context menu + magic-wand icon).
   await softStep('4. Right-click neighbor canvas → Assign Clusters opens dialog', async () => {
     await openAssignClustersViaContextMenu(page);
     const dialog = await page.evaluate(() => ({
@@ -179,7 +176,7 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
       assignBtn: !!document.querySelector('[name="button-Assign"]'),
     }));
     expect(dialog.title, 'dialog title').toBe('Assign Clusters');
-    // Don't pin exact threshold/clusters (rebuild variance + binary-search rounding); assert shape.
+
     expect(parseFloat(dialog.threshold || ''), 'threshold parses as positive').toBeGreaterThan(0);
     expect(parseInt(dialog.clusters || '0', 10), 'clusters integer ≥ 1').toBeGreaterThanOrEqual(1);
     expect(dialog.sliderPresent, 'threshold slider present').toBe(true);
@@ -197,7 +194,6 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
     expect(title, 'dialog title after magic-wand').toBe('Assign Clusters');
   });
 
-  // Scenario 3 — Two-way Threshold ↔ Clusters binding.
   await softStep('6. Move Threshold slider → Clusters count recomputes', async () => {
     const result = await page.evaluate(async () => {
       const slider = document.querySelector('[name="input-host-Threshold"] input[type="range"]') as HTMLInputElement;
@@ -205,7 +201,7 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
       const beforeClusters = parseInt(clustersInput.value, 10);
       const sliderMin = parseFloat(slider.min);
       const sliderMax = parseFloat(slider.max);
-      // Slide to a quarter of the range — empirically yields a DIFFERENT cluster count.
+
       const newVal = sliderMin + (sliderMax - sliderMin) / 4;
       slider.value = String(newVal);
       slider.dispatchEvent(new Event('input', {bubbles: true}));
@@ -228,20 +224,19 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
       await new Promise(r => setTimeout(r, 500));
       return {beforeThreshold, afterThreshold: parseFloat(thresholdInput.value), clusters: clustersInput.value};
     });
-    // Binary search maps Clusters→Threshold inexactly; assert "changed" + preserved input, not a literal.
+
     expect(result.clusters, 'Clusters input preserved at typed value').toBe('5');
     expect(result.afterThreshold, 'Threshold recalculated (changed)').not.toBe(result.beforeThreshold);
     expect(result.afterThreshold, 'Threshold > 0').toBeGreaterThan(0);
   });
 
-  // Scenario 4 — Assign creates a `Cluster (<threshold>)` column.
   await softStep('8. Click Assign with Clusters=5 → `Cluster (<n.nn>)` column appended', async () => {
     const before = await page.evaluate(() => grok.shell.tv.dataFrame.columns.names());
     const result = await setClustersInputAndAssign(page, 5);
     expect(result.newColumns.length, 'exactly one new column added').toBe(1);
     const newCol = result.newColumns[0];
     expect(newCol, 'new column name format Cluster (<n.nn>)').toMatch(/^Cluster \(\d+\.\d{2}\)$/);
-    // Cluster column shape: string, 5 categories ("1".."5"), no nulls.
+
     const colInfo = await page.evaluate((name: string) => {
       const c = grok.shell.tv.dataFrame.col(name)!;
       return {
@@ -266,7 +261,7 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
     expect(result.newColumns.length, 'exactly one new column added').toBe(1);
     const secondCol = result.newColumns[0];
     expect(secondCol, 'second column name format').toMatch(/^Cluster \(\d+\.\d{2}\)/);
-    // df.columns.getUnusedName ensures uniqueness; both columns must coexist.
+
     const colsAfter = result.allClusterColumns;
     expect(colsAfter.length, 'both cluster columns coexist').toBe(colsBefore.length + 1);
     expect(colsAfter, 'previous cluster column preserved').toEqual(expect.arrayContaining(colsBefore));
@@ -278,15 +273,13 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
     expect(colInfo.categoriesLen, 'second cluster column category count == 8').toBe(8);
   });
 
-  // Scenario 5 — Replace-on-rerun cleanup (no duplicate viewers).
   await softStep('10. Re-run Chem | Analyze | Hierarchical Clustering on same TableView — exactly one neighbor remains', async () => {
-    // Replace-on-rerun (hierarchical-clustering.ts#L104): the durable observable is the
-    // post-replace count of .dendrogram-assign-clusters-bttn (1, not 2 or 0).
+
     expect(await page.evaluate(() => document.querySelectorAll('.dendrogram-assign-clusters-bttn').length),
       'one neighbor attached before re-run').toBe(1);
     await openHierarchicalClusteringDialog(page);
     await clickOkAndWaitForNeighbor(page);
-    // Settle so the close-then-inject sequence finishes.
+
     await page.waitForTimeout(2_000);
     const counts = await page.evaluate(() => ({
       neighborCount: document.querySelectorAll('.dendrogram-assign-clusters-bttn').length,
@@ -299,7 +292,6 @@ test('Dendrogram: Assign Clusters end-to-end (column creation, two-way binding, 
     expect(counts.clusterColumnCount, 'prior Cluster columns preserved across re-run').toBeGreaterThanOrEqual(2);
   });
 
-  // Cleanup
   await page.evaluate(() => grok.shell.closeAll());
 
   finishSpec();

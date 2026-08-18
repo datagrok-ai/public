@@ -1,3 +1,6 @@
+/* ---
+realizes: []
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -15,12 +18,6 @@ const diff = (page: Page) => v.diffCanvasColors(page, VIEWER_TYPE, CONTENT_CANVA
 const content = (page: Page) =>
   v.countCanvasPixels(page, VIEWER_TYPE, {canvasSelector: CONTENT_CANVAS});
 
-/**
- * State of a context-menu entry as the user sees it: 'on' for a ticked checkbox,
- * 'off' otherwise. The state is carried by the icon's CLASS (`fa-check` vs
- * `fa-square`) — the `name` attribute keeps its original value when the item is
- * ticked, so reading `name` reports every entry as unticked.
- */
 async function menuItemState(page: Page, item: string): Promise<'on' | 'off'> {
   const cls = await page.locator(`[name="${item}"]:visible`).last()
     .locator('.d4-menu-item-check i').getAttribute('class') ?? '';
@@ -33,7 +30,6 @@ test('Statistics viewer', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add, close and add again
   await softStep('Add, close and re-add the viewer', async () => {
     await page.locator('[name="icon-statistics"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
@@ -49,13 +45,6 @@ test('Statistics viewer', async ({page}) => {
     await drawn();
   });
 
-  // #### Adding a statistic from the context menu
-  //
-  // Only ONE submenu interaction per run: the group's submenu opens on the first
-  // pointer move across it and stays shut on every later attempt in the same
-  // page — neither hover nor click reopens it (dev, 2026-08-04). The step is
-  // therefore written as a single open: read the entry, click it, and prove the
-  // effect on the canvas.
   await softStep('Statistics > sum adds a column to the viewer', async () => {
     const box = (await page.locator(VIEWER).first().boundingBox())!;
     await snapshot(page);
@@ -68,12 +57,10 @@ test('Statistics viewer', async ({page}) => {
     expect(await menuItemState(page, 'div-Statistics---sum')).toBe('off');
     await page.locator('[name="div-Statistics---sum"]:visible').last().click();
 
-    // The sum column is drawn, so the viewer's content changes.
     await v.waitForCanvasChange(page, VIEWER_TYPE,
       {minDelta: 500, canvasSelector: CONTENT_CANVAS});
   });
 
-  // #### Row source, driven from the Context Panel
   await softStep('Row Source Filtered follows the table filter', async () => {
     await v.openViewerProperties(page, VIEWER_NAME);
     await v.ensurePropertyCategory(page, VIEWER_NAME, 'data', 'row-source');
@@ -87,7 +74,6 @@ test('Statistics viewer', async ({page}) => {
     expect(filteredCount).toBeGreaterThan(0);
     expect(filteredCount).toBeLessThan(total);
 
-    // The statistics are recomputed over the filtered rows, so the numbers redraw.
     await v.waitForCanvasChange(page, VIEWER_TYPE,
       {minDelta: 500, canvasSelector: CONTENT_CANVAS});
 
@@ -114,7 +100,6 @@ test('Statistics viewer', async ({page}) => {
     expect(await v.propertyGridValue(page, 'row-source')).toBe('All');
   });
 
-  // #### Which columns are listed
   await softStep('The Columns property lists every column of the table', async () => {
     await v.ensurePropertyCategory(page, VIEWER_NAME, 'data', 'column-names');
     const columns = await v.propertyGridValue(page, 'column-names');
@@ -122,7 +107,6 @@ test('Statistics viewer', async ({page}) => {
     expect(columns).toContain(`/ ${total}`);
   });
 
-  // #### Closing the viewer
   await softStep('Close the viewer from its title bar', async () => {
     await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
     await expect(page.locator(VIEWER)).toHaveCount(0);

@@ -42,7 +42,7 @@ test('Multivariate Analysis scenario', async ({page}) => {
   });
 
   await softStep('Step 2 — Top Menu > ML > Analyze > Multivariate Analysis...; viewers display correctly', async () => {
-    // Open MVA dialog via JS API fallback (DOM click on menu item)
+
     await page.evaluate(() => {
       const el = document.querySelector('[name="div-ML---Analyze---Multivariate-Analysis..."]') as HTMLElement | null;
       if (el) el.click();
@@ -51,14 +51,9 @@ test('Multivariate Analysis scenario', async ({page}) => {
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('Multivariate Analysis');
 
-    // Leave defaults (Predict=price, Using=15 numeric cols except price, Components=2, Quadratic=false).
-    // Explicitly setting Using to "(16) All" introduces price twice and disables RUN — do NOT do that.
-
-    // Click RUN
     const runBtn = page.locator('[name="button-RUN"], [name="button-Run"]').first();
     await runBtn.click();
 
-    // Poll up to 90s for viewers to accumulate (MVA builds 5 viewers, plus the Grid = 6 total).
     const deadline = Date.now() + 90_000;
     let viewerInfo: {count: number; types: string[]} = {count: 0, types: []};
     while (Date.now() < deadline) {
@@ -76,10 +71,7 @@ test('Multivariate Analysis scenario', async ({page}) => {
   });
 
   await softStep('Step 3 — Check interactivity: grid <-> Observed/Scores scatterplots, Loadings <-> Regression bar', async () => {
-    // Canvas-level interactivity (hover/selection highlight across viewers) requires synthetic
-    // mouse events at precise pixel coordinates — not feasible to validate reliably from
-    // outside a canvas. Assert instead that the expected viewer set is present on the same
-    // DataFrame, which is what the Datagrok event bus uses to propagate hover/selection.
+
     const types = await page.evaluate(() => {
       const g: any = (window as any).grok;
       return Array.from(g.shell.tv.viewers).map((v: any) => v.type);

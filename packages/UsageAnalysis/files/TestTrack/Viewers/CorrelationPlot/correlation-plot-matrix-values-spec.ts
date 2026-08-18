@@ -15,9 +15,6 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 const TOL = 1e-3;
 const PAIRS: [string, string][] = [['AGE', 'HEIGHT'], ['AGE', 'WEIGHT'], ['HEIGHT', 'WEIGHT']];
 
-// The CP mounts three canvases; the first is a 0x0 sizing canvas (getImageData throws, so the
-// shared v.snapshotCanvasColors returns the -1 fault on it). These helpers pick the first
-// non-zero canvas; same per-color histogram diff contract as the shared helpers.
 async function cpSnapshot(page: import('@playwright/test').Page): Promise<boolean> {
   return await page.evaluate(() => {
     const w = window as any;
@@ -67,15 +64,12 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
 
   await loginToDatagrok(page);
 
-  // ## Setup — open demog, add the Correlation plot via its Toolbox icon (DOM-driven),
-  // record the baseline df.filter.trueCount for the viewer-local-filter invariant.
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'correlation-plot', 'Correlation-plot', 10000);
 
   const baselineFilterCount: number = await page.evaluate(() =>
     grok.shell.tv.dataFrame.filter.trueCount);
 
-  // ### Scenario 1: Default state and numerical-column filter
   await softStep('Scenario 1 Step 2 — off-diagonal cell values equal runtime Pearson', async () => {
     const r = await page.evaluate(({pairs, tol}) => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -100,9 +94,7 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     const r = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const df = grok.shell.tv.dataFrame;
-      // The correlation loop skips xCol == yCol (correlation_plot_core.dart:255): the diagonal
-      // renders a histogram (canvas-drawn); the readable structural signal is
-      // getCorrelation(col, col) === 1 vs a finite non-1 off-diagonal.
+
       const diag = cp.getCorrelation(df.col('AGE'), df.col('AGE'));
       const offDiag = cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'));
       return {diag, offDiag};
@@ -114,9 +106,7 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
   });
 
   await softStep('Scenario 1 Step 5 — X Columns are numerical only; SEX and RACE absent', async () => {
-    // Realizes correlationplot.int.numerical-columns-only. Right-click opens the Columns > X/Y
-    // pickers; authoritative signal: the auto()-seeded X axis is EXACTLY the numerical columns
-    // (the picker offers only isNumerical, correlation_plot_core.dart:131).
+
     const menuHasColumns = await page.evaluate(async () => {
       const viewer = document.querySelector('[name="viewer-Correlation-plot"]')!;
       const canvas = viewer.querySelector('canvas')! as HTMLElement;
@@ -125,9 +115,16 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
         bubbles: true, cancelable: true, button: 2,
         clientX: rect.left + rect.width * 0.5, clientY: rect.top + rect.height * 0.3,
       }));
-      await new Promise((r) => setTimeout(r, 600));
-      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+
+      const readLabels = () => Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .map((l) => (l.textContent ?? '').trim());
+      const menuDeadline = Date.now() + 600;
+      let labels = readLabels();
+      while (!(labels.includes('Columns') && labels.includes('X Columns') &&
+               labels.includes('Y Columns')) && Date.now() < menuDeadline) {
+        await new Promise((r) => setTimeout(r, 25));
+        labels = readLabels();
+      }
       document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
       document.body.click();
       return {
@@ -149,11 +146,11 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     });
     console.log(`[S1] menu=${JSON.stringify(menuHasColumns)} xCols=${JSON.stringify(cols.xCols)}`);
     console.log(`[S1] numerical=${JSON.stringify(cols.numerical)} nonNumerical=${JSON.stringify(cols.nonNumerical)}`);
-    // The right-click Columns > X/Y Columns pickers are present.
+
     expect(menuHasColumns.hasColumns).toBe(true);
     expect(menuHasColumns.hasXColumns).toBe(true);
     expect(menuHasColumns.hasYColumns).toBe(true);
-    // The X axis is exactly the numerical columns — SEX and RACE absent.
+
     expect(cols.xCols.length).toBeGreaterThan(0);
     expect(cols.xCols).not.toContain('SEX');
     expect(cols.xCols).not.toContain('RACE');
@@ -161,7 +158,6 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       expect(cols.numerical).toContain(xc);
   });
 
-  // ### Scenario 2: Correlation type switch, Show Pearson R, and column narrowing
   const pearsonRef: number[] = await page.evaluate(({pairs}) => {
     const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
     const df = grok.shell.tv.dataFrame;
@@ -189,17 +185,17 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       expect(Math.abs(p.cell - p.ref)).toBeLessThanOrEqual(TOL);
       if (p.diffFromPearson > TOL) anyDiffer = true;
     }
-    // The type switch is reflected in the backing values, not just the display.
+
     expect(anyDiffer).toBe(true);
   });
 
   await softStep('Scenario 2 Step 4 — Show Pearson R false: matrix repaints, backing value still readable', async () => {
-    // Settle-precheck: snapshot the current render, confirm the matrix is stable before the
-    // flip so the measured diff is attributable to showPearsonR, not to a still-settling frame.
+
     await cpSnapshot(page);
+
     await page.waitForTimeout(700);
     const settlePrecheck = await cpDiff(page);
-    // Fresh baseline snapshot immediately before the flip.
+
     await cpSnapshot(page);
     const before = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -208,8 +204,8 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       cp.props.showPearsonR = false;
       return v0;
     });
-    // Let the disable repaint settle, then measure the before/after canvas diff.
-    await page.waitForTimeout(700);
+
+    await v.waitForViewerRendered(page, 'Correlation plot', 700);
     const flipDiff = await cpDiff(page);
     const r = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -217,12 +213,10 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       return {showR: cp.props.showPearsonR, after: cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'))};
     });
     console.log(`[S2] showPearsonR=${r.showR} settlePrecheck=${settlePrecheck.deltaPx} flipDiff=${flipDiff.deltaPx} before=${before} after=${r.after}`);
-    // PRIMARY signal (render, T1): disabling Show Pearson R removes the in-cell digits and narrows
-    // the value columns (correlation_plot_core.dart:197-198). The inner ColumnGrid is not
-    // JS-exposed — the settle-gated canvas diff is the readable observable.
+
     expect(flipDiff.deltaPx).toBeGreaterThan(0);
     expect(flipDiff.deltaPx).toBeGreaterThan(settlePrecheck.deltaPx);
-    // Backing value stays readable and unchanged — the property affects DISPLAY, not the data.
+
     expect(r.showR).toBe(false);
     expect(Number.isFinite(r.after)).toBe(true);
     expect(Math.abs(r.after - before)).toBeLessThanOrEqual(TOL);
@@ -245,33 +239,30 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       return {xCols, yCols, checks};
     });
     console.log(`[S2] x=${JSON.stringify(r.xCols)} y=${JSON.stringify(r.yCols)}`);
-    // Exactly 3 X columns and 2 Y columns, in the requested order.
+
     expect(r.xCols).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
     expect(r.yCols).toEqual(['AGE', 'HEIGHT']);
     for (const c of r.checks) {
       console.log(`[S2] narrowed ${c.pair}: cell=${c.cell} ref=${c.ref}`);
       expect(Math.abs(c.cell - c.ref)).toBeLessThanOrEqual(TOL);
     }
-    // GROK-17480 regression guard (status: fixed): after narrow/reorder the axis names remain
-    // exactly the configured, visible set.
+
     expect(r.xCols).toContain('AGE');
     expect(r.xCols).toContain('HEIGHT');
     expect(r.xCols).toContain('WEIGHT');
   });
 
-  // ### Scenario 3: Row Source and viewer-local filter formula
   await softStep('Scenario 3 Step 3 — Row Source Selected recomputes over selection mask', async () => {
     const r = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const df = grok.shell.tv.dataFrame;
-      // Neutral setup: select an offset band of ~20 rows (rows 0-19). Selecting is SETUP —
-      // the tested SIGNAL is the correlation value recomputed over that mask.
+
       df.selection.setAll(false);
       df.selection.init((i: number) => i < 20);
       cp.props.rowSource = 'Selected';
       const type = cp.props.correlationType;
       const cell = cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'));
-      // Reference over ONLY the selected rows.
+
       const sub = df.clone(df.selection);
       const ss = DG.Stats.fromColumn(sub.col('AGE'));
       const ref = type === 'Spearman' ? ss.spearmanCorr(sub.col('HEIGHT')) : ss.corr(sub.col('HEIGHT'));
@@ -287,16 +278,15 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     const r = await page.evaluate(async ({baseline}) => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const df = grok.shell.tv.dataFrame;
-      // Back to Filtered so the viewer-local formula filter drives combinedFilter.
+
       df.selection.setAll(false);
       cp.props.rowSource = 'Filtered';
       cp.props.filter = '${AGE} > 40';
-      // The formula filter recomputes ASYNC (unlike correlationType/rowSource) — a synchronous
-      // getCorrelation returns the stale full-set value; settle first.
+
       await new Promise((res) => setTimeout(res, 700));
       const type = cp.props.correlationType;
       const cell = cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'));
-      // Reference over rows where AGE > 40.
+
       const mask = DG.BitSet.create(df.rowCount, (i: number) => df.col('AGE').get(i) > 40);
       const sub = df.clone(mask);
       const ss = DG.Stats.fromColumn(sub.col('AGE'));
@@ -308,17 +298,17 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     console.log(`[S3] formula AGE/HEIGHT cell=${r.cell} ref=${r.ref} | df.filter ${r.baseline}→${r.filterCountAfter}`);
     expect(Number.isFinite(r.cell)).toBe(true);
     expect(Math.abs(r.cell - r.ref)).toBeLessThanOrEqual(TOL);
-    // Anti-trap: the formula filter is VIEWER-LOCAL — df.filter must be unchanged.
+
     expect(r.filterCountAfter).toBe(r.baseline);
   });
 
-  // ### Scenario 4: defaultCellFont structural signal
   await softStep('Scenario 4 Step 3 — larger defaultCellFont repaints the matrix', async () => {
-    // Settle-precheck at the baseline render so the measured diff is font-attributable.
+
     await cpSnapshot(page);
+
     await page.waitForTimeout(700);
     const settlePrecheck = await cpDiff(page);
-    // Fresh baseline snapshot immediately before the font change.
+
     await cpSnapshot(page);
     const before = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -327,9 +317,9 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       cp.props.defaultCellFont = 'bold 16px Roboto';
       return v0;
     });
-    await page.waitForTimeout(700);
+    await v.waitForViewerRendered(page, 'Correlation plot', 700);
     const largerDiff = await cpDiff(page);
-    // Restore the default font and confirm the render returns to the baseline (diff ~0).
+
     await cpSnapshot(page);
     const r = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -339,25 +329,22 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       cp.props.defaultCellFont = 'normal normal 13px "Roboto"';
       return {applied, after};
     });
-    await page.waitForTimeout(700);
+    await v.waitForViewerRendered(page, 'Correlation plot', 700);
     const restoreDiff = await cpDiff(page);
     console.log(`[S4] defaultCellFont=${r.applied} settlePrecheck=${settlePrecheck.deltaPx} largerDiff=${largerDiff.deltaPx} restoreDiff=${restoreDiff.deltaPx} value ${before}→${r.after}`);
-    // PRIMARY signal (render, T1): the larger cell font repaints the matrix. rowHeight =
-    // parseSize×1.4 (correlation_plot_core.dart:172-173) is Dart-internal — the canvas diff is
-    // its readable observable (render-signal-index corr_font_row_height).
+
     expect(largerDiff.deltaPx).toBeGreaterThan(0);
     expect(largerDiff.deltaPx).toBeGreaterThan(settlePrecheck.deltaPx);
-    // No-error floor: the font is accepted and the matrix keeps computing (backing value stable).
+
     expect(r.applied).toBe('bold 16px Roboto');
     expect(Number.isFinite(r.after)).toBe(true);
     expect(Math.abs(r.after - before)).toBeLessThanOrEqual(TOL);
   });
 
-  // ### Scenario 5: Layout persistence — save, re-arm, re-apply
   await softStep('Scenario 5 Step 5 — saved layout restores full config + value spot-check', async () => {
     const r = await page.evaluate(async () => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
-      // Re-establish the peak config for the layout.
+
       cp.props.correlationType = 'Spearman';
       cp.props.showPearsonR = false;
       cp.props.xColumnNames = ['AGE', 'HEIGHT', 'WEIGHT'];
@@ -368,15 +355,25 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
-      await new Promise((res) => setTimeout(res, 1000));
-      // Re-arm: close the Correlation plot, add a Scatter plot.
+      await new Promise((res) => setTimeout(res, 1000)); 
+
       cp.close();
       grok.shell.tv.addViewer('Scatter plot');
-      await new Promise((res) => setTimeout(res, 1000));
-      // Re-apply the saved layout.
+      const rearmDeadline = Date.now() + 1000;
+      while (Date.now() < rearmDeadline) {
+        const types = grok.shell.tv.viewers.map((x: any) => x.type);
+        if (types.includes('Scatter plot') && !types.includes('Correlation plot')) break;
+        await new Promise((res) => setTimeout(res, 50));
+      }
+
       const saved = await grok.dapi.layouts.find(layoutId);
+      const applyDeadline = Date.now() + 3000;
       grok.shell.tv.loadLayout(saved);
-      await new Promise((res) => setTimeout(res, 3000));
+      while (Date.now() < applyDeadline) {
+        const back = grok.shell.tv?.viewers?.find((x: any) => x.type === 'Correlation plot');
+        if (back && back.props) break;
+        await new Promise((res) => setTimeout(res, 50));
+      }
       const cp2 = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const df = grok.shell.tv.dataFrame;
       let spot: number | null = null;
@@ -400,15 +397,12 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       return result;
     });
     console.log(`[S5] before=${JSON.stringify(r.viewerSetBefore)} after=${JSON.stringify(r.viewerSetAfter)} spot=${r.spot} spearmanRef=${r.ref} pearsonRef=${r.pearsonRef}`);
-    // PRIMARY persistence signals (cross-channel, T2): (a) the viewer SET is restored — the
-    // re-armed Scatter plot is gone, the Correlation plot is back; (b) the reloaded backing VALUE
-    // matches the runtime Spearman reference — the value channel, not a prop re-read.
+
     expect(r.present).toBe(true);
     expect(r.viewerSetAfter).toEqual(r.viewerSetBefore);
     expect(Number.isFinite(r.spot)).toBe(true);
     expect(Math.abs((r.spot as number) - (r.ref as number))).toBeLessThanOrEqual(TOL);
-    // Auxiliary prop re-reads corroborate the value channel; NOT the realizing assertion
-    // (see expected_results_coverage realized_by).
+
     expect(r.type).toBe('Spearman');
     expect(r.showR).toBe(false);
     expect(r.xCols).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
@@ -416,12 +410,11 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     expect(r.filter === '' || r.filter == null).toBe(true);
   });
 
-  // ### Scenario 6: Project persistence — save via ribbon, close all, reopen
   const projectName = 'zz-cp-matrix-persist-' + Date.now();
   let savedProjectId: string | null = null;
   await softStep('Scenario 6 Step 4/5 — reopened project restores config + value spot-check', async () => {
     try {
-      // Re-establish the Scenario-2 config on the current viewer, then ribbon-Save.
+
       await page.evaluate(() => {
         const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
         cp.props.correlationType = 'Spearman';
@@ -434,13 +427,17 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       const saved = await saveProjectViaUI(page, projectName);
       savedProjectId = saved.projectId;
 
-      // Close All, then reopen via find(id).open() (recon-validated reopen path).
+      await v.closeAllAndWait(page);
       const r = await page.evaluate(async ({id}) => {
-        grok.shell.closeAll();
-        await new Promise((res) => setTimeout(res, 1000));
         const proj = await grok.dapi.projects.find(id);
         await proj.open();
-        await new Promise((res) => setTimeout(res, 3000));
+
+        const openDeadline = Date.now() + 3000;
+        while (Date.now() < openDeadline) {
+          const back = grok.shell.tv?.viewers?.find((x: any) => x.type === 'Correlation plot');
+          if (back && back.props && grok.shell.tv?.dataFrame?.rowCount > 0) break;
+          await new Promise((res) => setTimeout(res, 50));
+        }
         const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
         const df = grok.shell.tv.dataFrame;
         let spot: number | null = null;
@@ -459,13 +456,11 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
         };
       }, {id: savedProjectId});
       console.log(`[S6] present=${r.present} spot=${r.spot} spearmanRef=${r.ref}`);
-      // PRIMARY persistence signal (T2): across the project save→closeAll→reopen round-trip the
-      // reloaded backing VALUE matches the runtime Spearman reference — the value channel, not a
-      // prop re-read.
+
       expect(r.present).toBe(true);
       expect(Number.isFinite(r.spot)).toBe(true);
       expect(Math.abs((r.spot as number) - (r.ref as number))).toBeLessThanOrEqual(TOL);
-      // Auxiliary prop re-reads corroborate the value channel; NOT the realizing assertion.
+
       expect(r.type).toBe('Spearman');
       expect(r.showR).toBe(false);
       expect(r.xCols).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);

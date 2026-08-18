@@ -22,13 +22,6 @@ import {
   waitForQuerySql,
 } from './helpers';
 
-// Full lifecycle for the `MS SQL / ${MS_SQL_CONNECTION}` connection,
-// mirroring the Test Track scenario `ms-sql.md` (order 5) which groups all four stages:
-//   1. Adding   — create `test_query_ms_sql`, run it, Save
-//   2. Editing  — rename to `new_test_query_ms_sql`, change body, Save
-//   3. Browse   — open connection view, search `new_test`, verify Context Panel sections
-//   4. Deleting — right-click Delete, confirm, verify gone
-
 const PROVIDER = 'MS SQL';
 const QUERY_NAME = 'test_query_ms_sql';
 const RENAMED_QUERY_NAME = 'new_test_query_ms_sql';
@@ -45,7 +38,6 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () 
     await ctx.close();
   });
 
-  // Safety net — if the delete test doesn't run, we still clean up.
   test.afterAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();
@@ -66,9 +58,7 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () 
     await page.waitForSelector('[name="input-Name"]', { timeout: 15_000 });
 
     await setQueryName(page, QUERY_NAME);
-    // UI-typing path: the canonical "first Adding" test for the MS SQL provider —
-    // exercises the real keyboard input into the CodeMirror SQL editor. The Editing
-    // test below reverts to the faster JS-API `setQuerySql`.
+
     await typeQuerySql(page, SQL_PRODUCTS);
 
     await runQueryViaPlay(page);
@@ -96,12 +86,10 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () 
     await expect(page.locator('[name="input-Name"]')).toHaveValue(QUERY_NAME);
     await waitForQuerySql(page, SQL_PRODUCTS);
 
-    // Step 1: rename and save.
     await setQueryName(page, RENAMED_QUERY_NAME);
     await saveQuery(page, RENAMED_QUERY_NAME);
     expect(await findQueryByFriendlyName(page, QUERY_NAME)).toBeNull();
 
-    // Step 2: swap the SQL body.
     await setQuerySql(page, SQL_ORDERS);
 
     await runQueryViaPlay(page);
@@ -125,7 +113,6 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () 
     await search.click();
     await page.keyboard.type('new_test');
 
-    // Filter should narrow the visible cards so our renamed query remains visible.
     await expect.poll(async () => page.evaluate((name) => {
       const cards = Array.from(document.querySelectorAll('label, span'))
         .filter((el) => el.textContent?.trim() === name)
@@ -136,8 +123,6 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () 
     await showContextPanel(page);
     await page.locator('label', { hasText: new RegExp(`^${RENAMED_QUERY_NAME}$`) }).first().click();
 
-    // Manual step 4: "On the Context Panel, check all tabs for the query" —
-    // open each accordion pane and confirm it accepts interaction.
     const expectedSections = ['Details', 'Run', 'Query', 'Transformations', 'Usage', 'Sharing'];
     for (const section of expectedSections) {
       const pane = page.locator(`[name="div-section--${section}"]`).first();
@@ -170,7 +155,6 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () 
       (await findQueryByFriendlyName(page, RENAMED_QUERY_NAME)) === null,
     { timeout: 15_000 }).toBe(true);
 
-    // Manual step 3: "Refresh Browse and check that query has been deleted and is no longer present".
     await goHome(page);
     await expandDbProvider(page, PROVIDER);
     await expandDbConnection(page, PROVIDER, MS_SQL_CONNECTION);

@@ -160,7 +160,7 @@ test("Queries — New Visual Query from the customers table", async ({
         if (!target)
           return { ok: false, missing: "New Visual Query... menu item" };
         target.click();
-        // Wait for visual query editor — Group by / Aggregate panels appear
+
         for (let i = 0; i < 80; i++) {
           await new Promise((r) => setTimeout(r, 200));
           const panels = Array.from(
@@ -489,7 +489,6 @@ test("Queries — New Visual Query from the customers table", async ({
     expect(result.rows).toBeGreaterThan(0);
   });
 
-  // Cleanup — delete the saved query
   await page.evaluate(async (n) => {
     const q = await (window as any).grok.dapi.queries
       .filter(`${n}`)

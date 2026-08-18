@@ -22,7 +22,6 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
     w.grok.shell.windows.showBrowse = true;
   });
 
-  // Land on /browse so the standard Databases tree is mounted.
   await page.goto(
     `${process.env.DATAGROK_URL ?? "http://localhost:8888"}/browse`,
   );
@@ -159,7 +158,7 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
         if (!target)
           return { ok: false, missing: "New SQL Query... menu item" };
         target.click();
-        // Wait for query editor (CodeMirror + DataQueryView)
+
         for (let i = 0; i < 80; i++) {
           await new Promise((r) => setTimeout(r, 200));
           const cm: any = document.querySelector(".CodeMirror");
@@ -193,8 +192,7 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
         const v: any = (window as any).grok.shell.v;
         const root: HTMLElement | undefined = v?.root;
         if (!root) return { ok: false, missing: "view root" };
-        // The Play button click handler is sometimes wired up after a brief delay
-        // following editor mount — re-clicking until the inline grid appears.
+
         const deadline = Date.now() + 60_000;
         let attempts = 0;
         while (Date.now() < deadline) {
@@ -237,7 +235,7 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
           await new Promise((r) => setTimeout(r, 300));
           const after = Array.from(w.grok.shell.views).length;
           if (after > before) {
-            // Wait for the result table to settle
+
             for (let j = 0; j < 30; j++) {
               await new Promise((r) => setTimeout(r, 200));
               const v = w.grok.shell.v;
@@ -263,7 +261,7 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
   );
 
   await softStep("Save the query", async () => {
-    // Switch back to the DataQueryView (the editor)
+
     await page.evaluate(() => {
       const w: any = window;
       const editor = (Array.from(w.grok.shell.views) as any[]).find(
@@ -272,7 +270,7 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
       if (editor) w.grok.shell.v = editor;
     });
     await page.waitForTimeout(800);
-    // Set unique Name in the editor's Name input
+
     await page.evaluate((name) => {
       const input = Array.from(
         document.querySelectorAll("input.ui-input-editor"),
@@ -299,7 +297,6 @@ test("Queries — New SQL Query from the products table", async ({ page }) => {
     expect(found).toBe(true);
   });
 
-  // Cleanup — delete the saved query
   await page.evaluate(async (n) => {
     const q = await (window as any).grok.dapi.queries
       .filter(`name = "${n}"`)

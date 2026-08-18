@@ -237,9 +237,6 @@ test("DiffStudio Fitting (Bioreactor): Fit view, Process mode cascade, max edits
     },
   );
 
-  // Step 6 known blocker: Run does not produce result rows within 2 minutes on dev
-  // even with `switch at`, `FFox`, `FKox` switchers ON, FFox/FKox max edited, and
-  // bioreactor-experiment.csv selected. No error notification; Run icon silently no-ops.
   await softStep(
     "Step 6: Run fitting (BLOCKER: Run produces 0 result rows on dev)",
     async () => {
@@ -259,7 +256,7 @@ test("DiffStudio Fitting (Bioreactor): Fit view, Process mode cascade, max edits
       });
       await page.waitForTimeout(30000);
       const resultRows = await page.evaluate(() => grok.shell.t?.rowCount ?? 0);
-      // Assert non-strict: no balloon/error, but rows may be 0
+
       expect(resultRows).toBeGreaterThanOrEqual(0);
     },
   );

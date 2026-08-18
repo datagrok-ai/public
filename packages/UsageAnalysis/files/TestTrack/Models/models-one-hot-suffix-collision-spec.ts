@@ -6,8 +6,7 @@ test.use(specTestOptions);
 const MODEL_NAME = 'OneHotSuffixCollision_test';
 
 test('One-hot suffix collision: namespaced <name>=<category> columns survive train + apply', async ({page}) => {
-  // Trains one small EDA Linear Regression (40-row in-memory) with one-hot encoding, then applies it.
-  // Not chemprop. Step 4 polls SAVE-enable up to 180s; 300s covers train + save + apply with margin.
+
   test.setTimeout(300_000);
 
   await loginToDatagrok(page);
@@ -19,7 +18,6 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       await g.dapi.models.delete(m);
   }, MODEL_NAME);
 
-  
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     const g: any = (window as any).grok;
@@ -46,7 +44,6 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
 
-  
   const setPredict = async (columnName: string) => {
     await page.evaluate(() => {
       const root = (window as any).grok.shell.v.root;
@@ -129,8 +126,8 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
         overlay.dispatchEvent(new MouseEvent('mouseup', opts));
         overlay.dispatchEvent(new MouseEvent('click', opts));
       };
-      click(826, 257); // featureA (row 0)
-      click(826, 285); // featureB (row 1)
+      click(826, 257); 
+      click(826, 285); 
     });
     await page.waitForFunction(() => {
       const lbl = Array.from(document.querySelectorAll('[name="dialog-Select-columns..."] label'))
@@ -142,7 +139,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       .toContainText('featureA', {timeout: 10_000});
     await expect(page.locator('[name="input-host-Features"] .ui-input-column-names'))
       .toContainText('featureB');
-    
+
     await page.waitForFunction(() => {
       const host = document.querySelector('[name="input-host-One-hot-encoding"]') as HTMLElement | null;
       return !!host && host.offsetParent !== null;
@@ -150,17 +147,17 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
   });
 
   await softStep('4. Tick One-hot encoding — train fires; SAVE enables', async () => {
-    
+
     await page.locator('[name="input-host-One-hot-encoding"] input[type="checkbox"]').click();
     await expect(page.locator('[name="input-host-One-hot-encoding"] input[type="checkbox"]'))
       .toBeChecked();
-    
+
     await page.waitForTimeout(2_000);
     await page.waitForFunction(() => {
       const btn = document.querySelector('[name="button-Save"]') as HTMLElement | null;
       return !!btn && !btn.className.includes('d4-disabled');
     }, null, {timeout: 180_000});
-    
+
     const errCount = await page.evaluate(() => {
       const w: any[] = (window as any).grok.shell.warnings ?? [];
       return w.filter((x: any) => /error|fail/i.test(JSON.stringify(x))).length;
@@ -169,7 +166,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
   });
 
   await softStep(`5. Save the model as ${MODEL_NAME}`, async () => {
-    
+
     await page.locator('[name="button-Save"]').click();
     const nameInput = page.locator('.d4-dialog [name="input-host-Name"] input');
     await nameInput.waitFor({timeout: 10_000});
@@ -185,10 +182,8 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
     }, MODEL_NAME), {timeout: 60_000}).toBeGreaterThan(0);
   });
 
-  
-
   await softStep('6. Train-side suffix-collision proof: model persisted with friendlyName + name', async () => {
-    
+
     const declared: {found: boolean; name: string | null; friendly: string | null} =
       await page.evaluate(async (wantName: string) => {
         const g: any = (window as any).grok;
@@ -206,7 +201,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
   });
 
   await softStep('7. Open a fresh copy of the dataframe in a new table view', async () => {
-    
+
     await page.evaluate(async () => {
       const g: any = (window as any).grok;
       const DG: any = (window as any).DG;
@@ -233,7 +228,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       (window as any).__applyInitialColNames = Array.from({length: df2.columns.length},
         (_: unknown, i: number) => df2.columns.byIndex(i).name);
     });
-    
+
     await page.locator('[name="div-ML"]').waitFor({timeout: 15_000});
     const info = await page.evaluate(() => {
       const g: any = (window as any).grok;
@@ -246,7 +241,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
   });
 
   await softStep('8. ML > Models > Apply Model... — select model, OK', async () => {
-    
+
     await page.locator('[name="div-ML"]').click();
     await page.evaluate(() => {
       const models = document.querySelector('[name="div-ML---Models"]') as HTMLElement | null;
@@ -262,7 +257,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
     });
     await page.locator('[name="div-ML---Models---Apply-Model..."]').click();
     await page.locator('[name="dialog-Apply-predictive-model"]').waitFor({timeout: 10_000});
-    
+
     await page.waitForFunction(() => {
       const sel = document.querySelector(
         '[name="dialog-Apply-predictive-model"] [name="input-host-Model"] select') as HTMLSelectElement | null;
@@ -273,7 +268,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
         '[name="dialog-Apply-predictive-model"] [name="input-host-Model"] select') as HTMLSelectElement | null;
       if (!sel) return {found: false, opts: [] as string[]};
       const opts = Array.from(sel.options).map((o) => o.textContent || '');
-      
+
       const tryPrefixes = [wantName, wantName.slice(0, 24), wantName.slice(0, 16)];
       let idx = -1;
       for (const p of tryPrefixes) {
@@ -291,7 +286,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       `featureA / featureB categorical shape as compatible with the trained ` +
       `per-feature <name>=<category> expansion. Options seen: ${JSON.stringify(pick.opts)}.`)
       .toBe(true);
-    
+
     await expect(page.locator(
       '[name="dialog-Apply-predictive-model"] [name="input-host-Inputs"]'))
       .toContainText('(2/2)', {timeout: 10_000});
@@ -301,7 +296,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
   });
 
   await softStep('9. Apply reconstruction — prediction column appended to OneHotSuffixApply', async () => {
-    
+
     await expect.poll(async () => await page.evaluate(() => {
       const df: any = (window as any).grok.shell.tv?.dataFrame;
       const initial: number = (window as any).__applyInitialColCount ?? 0;
@@ -326,7 +321,7 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       `If no column was appended, the apply-side columnNamesMap auto-build ` +
       `failed to reconstruct the per-feature <name>=<category> expansion ` +
       `(the suffix-collision invariant broke on the apply side).`).toBeGreaterThan(0);
-    
+
     if (result.taggedCount === 0) {
       console.warn(`Apply: ${result.newCols.length} new column(s) appended ` +
         `(${JSON.stringify(result.newCols)}) but none carry Tags.PredictiveModel.`);
@@ -338,7 +333,6 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
     expect(errCount).toBe(0);
   });
 
-  
   await softStep('10. Teardown — delete OneHotSuffixCollision_test from the server', async () => {
     const remaining = await page.evaluate(async (name: string) => {
       const g: any = (window as any).grok;

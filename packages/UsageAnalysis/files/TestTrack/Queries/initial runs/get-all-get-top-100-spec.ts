@@ -8,25 +8,13 @@ import {
 
 test.use(specTestOptions);
 
-/**
- * Walk the Browse tree top-down by labels: each path entry is the label of the
- * next tree-view-group to expand. After expanding the last node in `path`,
- * find `tableName` inside it, dispatch a contextmenu on that table's tree-view-node,
- * and click the menu item `menuLabel`. Then wait for the new table view to settle.
- *
- * Datagrok's connection-node expand triggers remote schema loads — schemas/tables
- * appear asynchronously after the tri is clicked, so per-step waits are generous.
- */
 async function expandTreeAndContextMenu(
   page: import("@playwright/test").Page,
   path: string[],
   tableName: string,
   menuLabel: "Get All" | "Get Top 100",
 ) {
-  // The Browse panel is mounted by default after login. After a table view
-  // opens, the sidebar switches to Toolbox — toggling [name="Browse"] brings
-  // it back. The toggle preserves the previously expanded tree state, so we
-  // only click when the tree isn't currently visible.
+
   await page.evaluate(async () => {
     const w: any = window;
     w.grok.shell.windows.showBrowse = true;
@@ -47,7 +35,6 @@ async function expandTreeAndContextMenu(
     async ({ path, tableName, menuLabel }) => {
       const w: any = window;
 
-      // Find a child group with the given label inside `parent` (parent = .d4-tree-view-group or document).
       const findChildGroupByLabel = (
         parent: ParentNode,
         label: string,
@@ -72,7 +59,7 @@ async function expandTreeAndContextMenu(
         ) as HTMLElement | null;
         if (tri && !tri.classList.contains("d4-tree-view-tri-expanded"))
           tri.click();
-        // Wait for either the host to populate, OR if a nextLabel is expected, until that label appears.
+
         const deadline = Date.now() + 25_000;
         while (Date.now() < deadline) {
           await new Promise((r) => setTimeout(r, 200));
@@ -89,7 +76,6 @@ async function expandTreeAndContextMenu(
         return false;
       };
 
-      // Walk path: start from the document since we look for "Databases" first.
       let scope: ParentNode = document;
       for (let i = 0; i < path.length; i++) {
         const label = path[i];
@@ -112,7 +98,6 @@ async function expandTreeAndContextMenu(
         scope = group;
       }
 
-      // Find the table at the next level
       const tableGroup = findChildGroupByLabel(scope, tableName);
       if (!tableGroup) return { error: `no table "${tableName}"` };
       const tableNode = tableGroup.querySelector(
@@ -120,7 +105,6 @@ async function expandTreeAndContextMenu(
       ) as HTMLElement | null;
       if (!tableNode) return { error: "no table node" };
 
-      // Click to select, then dispatch contextmenu on the .d4-tree-view-node
       (
         tableNode.querySelector(
           ".d4-tree-view-group-label",
@@ -135,7 +119,6 @@ async function expandTreeAndContextMenu(
         }),
       );
 
-      // Wait for the popup menu with the target item
       let target: HTMLElement | undefined;
       const menuDeadline = Date.now() + 8_000;
       while (Date.now() < menuDeadline) {
@@ -155,7 +138,6 @@ async function expandTreeAndContextMenu(
       }
       target.click();
 
-      // Wait for the new table view to appear and stabilize
       const expectAtLeast = menuLabel === "Get Top 100" ? 100 : 200;
       let last = 0;
       let stable = 0;

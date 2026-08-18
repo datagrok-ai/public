@@ -1,6 +1,3 @@
-// GROK-14552: detectors.js context-menu hook must null-guard the cell (no "reading 'semType'" on
-// whitespace right-click) while still injecting Copy/Download/Show items on populated Molecule3D cells.
-// In-package sentinel: window.$biostructureViewer.contextMenuError. Grid overlay = canvas[2] of tv.grid.root.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -15,13 +12,11 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  // pageerror capture supplementing the in-package contextMenuError sentinel.
   const pageErrors: string[] = [];
   page.on('pageerror', (err) => { pageErrors.push(err.message); });
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -35,7 +30,7 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
   try {
-    // SETUP — Build a Molecule3D-column DataFrame from 1bdq.pdb + force-call autostart to wire the hook.
+
     let setupDiag: any = null;
 
     await softStep('Setup — Stage in-memory DataFrame with Molecule3D column from 1bdq.pdb + force BiostructureViewer autostart', async () => {
@@ -46,14 +41,14 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
           DG.Column.fromStrings('id', ['1bdq', '1bdq-clone']),
           DG.Column.fromStrings('structure', [content, content]),
         ]);
-        // Stage semType + cell.renderer + units before addTableView so the hook's gate is satisfied.
+
         const col = df.col('structure');
         col.semType = DG.SEMTYPE.MOLECULE3D || 'Molecule3D';
         col.setTag('cell.renderer', 'Molecule3D');
-        try { col.meta.units = 'pdb'; } catch (_) { /* meta API variants */ }
+        try { col.meta.units = 'pdb'; } catch (_) {  }
         df.name = 'biostructure-bug-grok-14552-fixture';
         const tv = grok.shell.addTableView(df);
-        // Wait for semantic-type detection (best-effort; semType already set explicitly).
+
         await new Promise((resolve) => {
           try {
             const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -61,7 +56,7 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
           } catch (_) { resolve(undefined); }
         });
         await new Promise((r) => setTimeout(r, 3000));
-        // Force-call autostart to wire the onContextMenu hook (idempotent on a cold session).
+
         let autostartCalled = false;
         let autostartErr: string | null = null;
         try {
@@ -72,7 +67,7 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
           }
         } catch (e: any) { autostartErr = String(e && e.message ? e.message : e); }
         await new Promise((r) => setTimeout(r, 4000));
-        // Initialize the in-package error sentinel that detectors.js writes to in its outer catch.
+
         if (!w.$biostructureViewer) w.$biostructureViewer = {};
         w.$biostructureViewer.contextMenuError = null;
         const gridRoot = tv && tv.grid ? tv.grid.root : null;
@@ -108,7 +103,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
       ).toBe(true);
     });
 
-    // SETUP — Readiness poll: probe contextmenu up to 8 times until the BSV "Copy" label appears.
     let probeDiag: any = null;
 
     await softStep('Setup — Readiness poll: probe contextmenu until BSV hook injects "Copy"', async () => {
@@ -129,7 +123,7 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         const observations: any[] = [];
         let ready = false;
         for (let i = 0; i < 8; i++) {
-          // Reset sentinel + dismiss any prior menu before each probe.
+
           if (!w.$biostructureViewer) w.$biostructureViewer = {};
           w.$biostructureViewer.contextMenuError = null;
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -171,12 +165,10 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
       ).toBe(true);
     });
 
-    // SCENARIO 1 — Right-click grid whitespace (null cell) must not throw "reading 'semType'".
     let scenario1Diag: any = null;
 
     await softStep('Scenario 1 step 4 — Right-click row whitespace (past last column); hook MUST NOT throw', async () => {
-      // Reset pageErrors and the in-package sentinel just before the
-      // load-bearing dispatch.
+
       pageErrors.length = 0;
       await page.evaluate(() => {
         const w: any = window;
@@ -196,7 +188,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         const overlay = canvases[2];
         if (!overlay) return { err: 'no overlay canvas' };
 
-        // Whitespace coordinates: aim ~200px past the last column.
         const cell = tv.grid.cell('structure', 0);
         const sb = cell.bounds;
         const whitespaceX = gridRect.left + sb.x + sb.width + 200;
@@ -208,7 +199,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         });
         overlay.dispatchEvent(evt);
 
-        // Settle: the onContextMenu callback is async.
         await new Promise((r) => setTimeout(r, 2000));
 
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -223,7 +213,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         };
       });
 
-      // Assertion #1: the in-package error sentinel must be null (pre-fix it held the semType TypeError).
       expect(
         scenario1Diag.contextMenuErrorIsNull,
         'GROK-14552 grid null-cell right-click crash regressed: ' +
@@ -234,7 +223,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         'See bug-library/biostructureviewer.yaml#GROK-14552.',
       ).toBe(true);
 
-      // Assertion #2 (independent): pageerror capture must not contain the bug signature.
       const semTypeRegressionSignatures = pageErrors.filter((m) =>
         /Cannot read properties of null.*semType/i.test(m) ||
         /(null|undefined).*semType/i.test(m) ||
@@ -250,11 +238,10 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
       ).toEqual([]);
     });
 
-    // SCENARIO 2 — Right-click a populated Molecule3D cell must still inject Copy/Download/Show/Biostructure/NGL.
     let scenario2Diag: any = null;
 
     await softStep('Scenario 2 step 3 — Right-click populated Molecule3D cell; hook MUST inject menu items', async () => {
-      // Reset state before the populated-cell dispatch.
+
       pageErrors.length = 0;
       await page.evaluate(() => {
         const w: any = window;
@@ -274,13 +261,11 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         const overlay = canvases[2];
         if (!overlay) return { err: 'no overlay canvas' };
 
-        // Aim for the centre of the populated structure cell on row 0.
         const cell = tv.grid.cell('structure', 0);
         const sb = cell.bounds;
         const populatedX = gridRect.left + sb.x + Math.min(20, sb.width / 4);
         const populatedY = gridRect.top + sb.y + sb.height / 2;
 
-        // Retry up to 3 times — a single dispatch can miss the render commit.
         let menuLabels: string[] = [];
         let hasCopy = false, hasDownload = false, hasShow = false, hasBiostructure = false, hasNgl = false;
         let attemptCount = 0;
@@ -307,7 +292,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
           if (hasCopy && hasDownload && hasShow && hasBiostructure) break;
         }
 
-        // Hover the "Show" group to expand a deferred submenu if needed (usually inline).
         let showSubmenuExpanded = false;
         if (!hasBiostructure || !hasNgl) {
           const showLabelEl = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
@@ -335,7 +319,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
 
         const captured = w.$biostructureViewer && w.$biostructureViewer.contextMenuError;
 
-        // Dismiss menus before returning.
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         document.querySelectorAll('.d4-menu-popup').forEach((m) => { try { m.remove(); } catch (_) {} });
 
@@ -350,7 +333,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         };
       });
 
-      // Assertion #1: the hook sentinel must remain clean on a populated cell.
       expect(
         scenario2Diag.contextMenuErrorIsNull,
         'GROK-14552 hook threw on a POPULATED Molecule3D cell — ' +
@@ -358,7 +340,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
         `${JSON.stringify(scenario2Diag.contextMenuErrorMessage)}.`,
       ).toBe(true);
 
-      // Assertion #2 (inverse guard): the four BiostructureViewer menu entries must be injected.
       expect(
         scenario2Diag.hasCopy,
         'GROK-14552 fix over-applied: the BiostructureViewer "Copy" ' +
@@ -400,7 +381,6 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
       ).toEqual([]);
     });
 
-    // SCENARIO 2 step 4 — Joint invariant cross-check (log-only summary).
     await softStep('Scenario 2 step 4 — Joint invariant cross-check (GROK-14552)', async () => {
       const summary = {
         scenario1: {
@@ -422,12 +402,12 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
           scenario2Diag.hasShow && scenario2Diag.hasBiostructure
         ),
       };
-      // eslint-disable-next-line no-console
+
       console.log(`[GROK-14552 joint-invariant summary] ${JSON.stringify(summary)}`);
       expect(summary.jointInvariantHolds).toBe(true);
     });
   } finally {
-    // Cleanup — close menus/dialogs, reset the sentinel, close views.
+
     try {
       await page.evaluate(() => {
         const w: any = window;
@@ -438,9 +418,9 @@ test('BiostructureViewer — GROK-14552 grid null-cell right-click safety regres
           if (cancel) cancel.click();
         });
         if (w.$biostructureViewer) w.$biostructureViewer.contextMenuError = null;
-        try { w.grok.shell.closeAll(); } catch (_) { /* best-effort */ }
+        try { w.grok.shell.closeAll(); } catch (_) {  }
       });
-    } catch (e) { /* best-effort */ }
+    } catch (e) {  }
   }
 
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));

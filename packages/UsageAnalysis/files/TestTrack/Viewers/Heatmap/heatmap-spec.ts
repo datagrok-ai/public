@@ -10,8 +10,6 @@ const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
 const VIEWER_TYPE = 'Heat map';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-// The viewer hosts three canvases (a scrollbar strip, the content and an
-// overlay); the content one is the only meaningful target for pixel reads.
 const CONTENT_CANVAS = 'canvas[name="canvas"]';
 
 const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop);
@@ -23,11 +21,6 @@ const settle = (page: Page) => v.waitForCanvasQuiet(page, VIEWER_TYPE, {canvasSe
 const repaint = (page: Page, minDelta: number, timeoutMs?: number) =>
   v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta, canvasSelector: CONTENT_CANVAS, timeoutMs});
 
-/**
- * Size of the window a range slider currently shows, in slider pixels. The
- * handles move along cx on the horizontal slider and along cy on the vertical
- * one, so the span is taken from whichever coordinate differs.
- */
 async function sliderSpan(page: Page, slider: 'x' | 'y'): Promise<number> {
   return page.evaluate(({sel, s}) => {
     const root = document.querySelector(sel) as HTMLElement;
@@ -49,7 +42,6 @@ test('Heat map', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add the viewer
   await softStep('Add Heat map from the Viewers toolbox', async () => {
     await page.locator('[name="icon-heat-map"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
@@ -62,10 +54,8 @@ test('Heat map', async ({page}) => {
     expect(await shownValue(page, 'is-heatmap')).toBe('true');
   });
 
-  // #### Heatmap colouring
   await softStep('Heatmap Colors off falls back to plain cells', async () => {
-    // Settle the canvas first: the Context Panel can re-render while waiting, so
-    // the category is (re)opened immediately before the row is driven.
+
     await settle(page);
     await category(page, 'misc', 'heatmap-colors');
     expect(await shownValue(page, 'heatmap-colors')).toBe('true');
@@ -73,9 +63,6 @@ test('Heat map', async ({page}) => {
     await snapshot(page);
     expect(await v.togglePropertyGridCheckbox(page, 'heatmap-colors')).toBe(false);
 
-    // GROK-20619: with the option off the cells should stop being colour-filled.
-    // They do not — the content canvas moves by ~10 px out of 537k, which is the
-    // current-cell outline rather than a recolouring, hence the 1000 px bar.
     await knownOpenBug('GROK-20619', async () => {
       await repaint(page, 1000, 4000);
     });
@@ -94,7 +81,6 @@ test('Heat map', async ({page}) => {
     expect(String(await v.togglePropertyGridCheckbox(page, 'global-color-scaling'))).toBe(was);
   });
 
-  // #### Column labels
   await softStep('Col Labels Orientation rotates the header', async () => {
     await category(page, 'style', 'col-labels-orientation');
     expect(await shownValue(page, 'col-labels-orientation')).toBe('Auto');
@@ -105,7 +91,6 @@ test('Heat map', async ({page}) => {
     }
   });
 
-  // #### How many columns are drawn
   await softStep('Max Heatmap Columns limits the columns on screen', async () => {
     await settle(page);
     await category(page, 'columns', 'max-heatmap-columns');
@@ -120,7 +105,6 @@ test('Heat map', async ({page}) => {
     await v.waitForPropertyValue(page, 'max-heatmap-columns', '100');
   });
 
-  // #### Scrollbars
   await softStep('Show Heatmap Scrollbars hides the range sliders', async () => {
     await category(page, 'misc', 'show-heatmap-scrollbars');
     expect(await v.togglePropertyGridCheckbox(page, 'show-heatmap-scrollbars')).toBe(false);
@@ -130,7 +114,6 @@ test('Heat map', async ({page}) => {
     await expect(page.locator(`${VIEWER} [name="x-slider"]`).first()).toBeVisible();
   });
 
-  // #### Back to a grid and forward again
   await softStep('Is Heatmap off turns the viewer into a plain grid', async () => {
     await settle(page);
     await category(page, 'misc', 'is-heatmap');
@@ -145,21 +128,14 @@ test('Heat map', async ({page}) => {
     await repaint(page, 1000);
   });
 
-  // #### Row height
   await softStep('Row Height is not offered in heatmap mode', async () => {
     await v.openViewerProperties(page, VIEWER_NAME);
 
-    // GROK-20619: Row Height is a grid-only option — its tooltip says as much, and
-    // in heatmap mode the drawing does not follow it (28 → 20 leaves the canvas
-    // byte-identical). The agreed fix is to hide the property here, so the desired
-    // end state is that it has no row at all. When it goes, this step goes loud
-    // and can simply be deleted.
     await knownOpenBug('GROK-20619', async () => {
       expect(await page.locator('.property-grid tr[name="prop-row-height"]').count()).toBe(0);
     });
   });
 
-  // #### Clicking a cell
   await softStep('Clicking a cell makes its row current', async () => {
     const box = (await page.locator(VIEWER).boundingBox())!;
     const currentRow = () =>
@@ -170,7 +146,6 @@ test('Heat map', async ({page}) => {
     expect(await currentRow()).toBeGreaterThanOrEqual(0);
   });
 
-  // #### Alt+drag zoom, reset from the slider
   await softStep('Alt+drag zooms into an area and the slider follows', async () => {
     const box = (await page.locator(VIEWER).boundingBox())!;
     const before = await sliderSpan(page, 'y');
@@ -185,16 +160,13 @@ test('Heat map', async ({page}) => {
     await page.mouse.up();
     await page.keyboard.up('Alt');
 
-    // Zooming in shows fewer rows, so the slider's window shrinks.
     await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeLessThan(before);
     await repaint(page, 500);
 
-    // Double-clicking the slider resets to the full extent — wider than both.
     await page.locator(`${VIEWER} [name="y-slider"]`).first().dblclick();
     await expect.poll(() => sliderSpan(page, 'y'), {timeout: 10_000}).toBeGreaterThan(before);
   });
 
-  // #### Filtering
   await softStep('Filtering the table redraws the heat map', async () => {
     await settle(page);
     await snapshot(page);
@@ -206,7 +178,6 @@ test('Heat map', async ({page}) => {
     await v.resetFilters(page);
   });
 
-  // #### Closing the viewer
   await softStep('Close the viewer from its title bar', async () => {
     await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
     await expect(page.locator(VIEWER)).toHaveCount(0);

@@ -9,7 +9,6 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Setup + open SPGI_v2_infinity.csv
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     (grok.shell.settings as any).showFiltersIconsConstantly = true;
@@ -130,7 +129,7 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
   });
 
   await softStep('6. Scatter plot renders correctly with NaN/Infinity rows excluded', async () => {
-    // Wait for the scatter plot to fully render with its options applied
+
     await page.waitForTimeout(2000);
     const sp = await page.evaluate(() => {
       const tv = grok.shell.tv;
@@ -141,7 +140,7 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
     expect(sp!.x).toBe('height');
     expect(sp!.y).toBe('weight');
     expect(sp!.regression).toBe(true);
-    // Scatter plot canvas renders without crash
+
     const canvas = page.locator('[name="viewer-Scatter-plot"] canvas').first();
     await expect(canvas).toBeVisible();
   });
@@ -154,7 +153,7 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
       const icon = document.querySelector('[name="icon-histogram"]') as HTMLElement;
       icon?.click();
     });
-    // Wait for a new histogram to appear in the current tv
+
     await page.waitForFunction((before: number) =>
       grok.shell.tv.viewers.filter((v: any) => v.type === 'Histogram').length > before,
       histCountBefore, {timeout: 8000}
@@ -205,7 +204,6 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
     expect(demogLayoutId).toBeTruthy();
   });
 
-  // Cleanup
   await page.evaluate(async (ids: string[]) => {
     for (const id of ids) {
       try {

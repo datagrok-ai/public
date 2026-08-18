@@ -15,14 +15,14 @@ const isBenignError = (text: string) =>
   /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
   /favicon/.test(text) || /Stack trace [A-Za-z]+/.test(text);
 
-/** Shared axis tick-strip canvas width (0 when the strip is collapsed). */
 const stripWidth = (page: Page, side: 'top' | 'left') => page.evaluate((s: string) => {
   const c = document.querySelector(`[name="viewer-Matrix-plot"] .d4-layout-${s} canvas`) as HTMLCanvasElement | null;
   return c ? c.width : -1;
 }, side);
 
-/** Computed font of a matrix column-label div (re-queried — the divs are
- * re-created on a font change, so a captured reference goes stale). */
+const waitForStrip = (page: Page, side: 'top' | 'left', ok: (w: number) => boolean, capMs: number) =>
+  v.pollValue(() => stripWidth(page, side), ok, capMs, 50);
+
 const labelFont = (page: Page) => page.evaluate(() => {
   const root = document.querySelector('[name="viewer-Matrix-plot"]')!;
   const d = [...root.querySelectorAll('div')]
@@ -35,9 +35,6 @@ const readProp = (page: Page, prop: string) => page.evaluate((p: string) => {
   return mp?.props[p];
 }, prop);
 
-/** Toggle a property-grid checkbox via a synthetic `.click()` — the input is
- * custom-rendered (visually hidden) but the click routes through its onChange
- * handler, keeping the drive on the checkbox path rather than the JS-API prop. */
 async function clickCheckbox(page: Page, name: string) {
   await page.evaluate((n: string) => {
     const cb = document.querySelector(`[name="${n}"]`) as HTMLElement | null;
@@ -47,7 +44,6 @@ async function clickCheckbox(page: Page, name: string) {
   }, name);
 }
 
-/** Drive the settings Font row's size textbox and commit (GROK-18736 path). */
 async function setFontSize(page: Page, size: number) {
   await page.evaluate((n: number) => {
     const inp = document.querySelector('[name="prop-view-font"] input.d4-font-size-input') as HTMLInputElement;
@@ -58,7 +54,9 @@ async function setFontSize(page: Page, size: number) {
     inp.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Enter', keyCode: 13} as any));
     inp.dispatchEvent(new Event('change', {bubbles: true}));
   }, size);
-  await page.waitForTimeout(700);
+
+  await v.pollValue(() => labelFont(page),
+    (f) => new RegExp(`(^|\\s)${size}px`).test(f ?? ''), 700, 50);
 }
 
 test('Matrix Plot — Axes Visibility, Auto Layout, Font', async ({page}: {page: Page}) => {
@@ -72,52 +70,50 @@ test('Matrix Plot — Axes Visibility, Auto Layout, Font', async ({page}: {page:
   await v.addViewerByIcon(page, 'matrix-plot', 'Matrix-plot');
   await v.openViewerGear(page, 'Matrix plot');
 
-  // Expand the Axes category if collapsed so the real Show X/Y Axes
-  // checkboxes are interactable.
   await page.evaluate(() => {
     const cat = document.querySelector('[name="prop-category-axes"]') as HTMLElement | null;
     if (cat && cat.querySelector('.property-grid-icon-plus')) cat.click();
   });
-  await page.waitForTimeout(400);
+
+  await v.pollValue(() => page.evaluate(() => {
+    const cat = document.querySelector('[name="prop-category-axes"]');
+    return !!cat && !cat.querySelector('.property-grid-icon-plus');
+  }), (expanded) => expanded, 400, 25);
 
   await softStep('Scenario 1 — Show X Axes checkbox with Auto Layout on (GROK-19106)', async () => {
-    // GROK-19106 reproduces only under the default Auto Layout ON, driven
-    // through the real checkbox (the JS-API prop path never reproduced it).
+
     expect(await readProp(page, 'autoLayout')).toBe(true);
     const wShown = await stripWidth(page, 'top');
     expect(wShown).toBeGreaterThan(0);
     await clickCheckbox(page, 'prop-view-show-x-axes');
-    await page.waitForTimeout(700);
+    await waitForStrip(page, 'top', (w) => w === 0, 700);
     expect(await stripWidth(page, 'top')).toBe(0);
     await clickCheckbox(page, 'prop-view-show-x-axes');
-    await page.waitForTimeout(700);
+    await waitForStrip(page, 'top', (w) => w > 0, 700);
     expect(await stripWidth(page, 'top')).toBeGreaterThan(0);
   });
 
   await softStep('Scenario 2 — explicit axes flags with Auto Layout off', async () => {
     await clickCheckbox(page, 'prop-view-auto-layout');
-    await page.waitForTimeout(400);
+    await v.pollValue(() => readProp(page, 'autoLayout'), (on) => on === false, 400, 25);
     expect(await readProp(page, 'autoLayout')).toBe(false);
 
-    // X strip
     await clickCheckbox(page, 'prop-view-show-x-axes');
-    await page.waitForTimeout(700);
+    await waitForStrip(page, 'top', (w) => w === 0, 700);
     expect(await stripWidth(page, 'top')).toBe(0);
     await clickCheckbox(page, 'prop-view-show-x-axes');
-    await page.waitForTimeout(700);
+    await waitForStrip(page, 'top', (w) => w > 0, 700);
     expect(await stripWidth(page, 'top')).toBeGreaterThan(0);
 
-    // Y strip
     await clickCheckbox(page, 'prop-view-show-y-axes');
-    await page.waitForTimeout(700);
+    await waitForStrip(page, 'left', (w) => w === 0, 700);
     expect(await stripWidth(page, 'left')).toBe(0);
     await clickCheckbox(page, 'prop-view-show-y-axes');
-    await page.waitForTimeout(700);
+    await waitForStrip(page, 'left', (w) => w > 0, 700);
     expect(await stripWidth(page, 'left')).toBeGreaterThan(0);
 
-    // Round-trip Auto Layout back to the default.
     await clickCheckbox(page, 'prop-view-auto-layout');
-    await page.waitForTimeout(400);
+    await v.pollValue(() => readProp(page, 'autoLayout'), (on) => on === true, 400, 25);
     expect(await readProp(page, 'autoLayout')).toBe(true);
   });
 

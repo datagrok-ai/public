@@ -75,18 +75,18 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
   }, value);
   expect(set.inputFound, '[name="input-Similarity-Threshold"] not found in the Analyze Peptides dialog').toBe(true);
   expect(set.setVal, `Similarity input did not accept the value ${value}`).toBe(String(value));
-  // Poll for the PeptidesModel singleton attach (GROK-19145: workflow must complete even at extreme threshold).
+
   await page.waitForFunction(() => {
     return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
   }, {timeout: 90000});
-  // Let the MCL clustering + sequence-space embedding settle.
+
   await page.waitForTimeout(8000);
   return await page.evaluate(() => {
     const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
     const model = tv.dataFrame.temp['peptidesModel'] as any;
     const viewers = Array.from(tv.viewers).map((v) => v.type);
     const appliedThreshold = model?._settings?.mclSettings?.threshold ?? null;
-    // Per-position monomer stats (empty stats were the GROK-19145 empty-WebLogo failure mode).
+
     const mps = model?.monomerPositionStats ?? {};
     let positionsWithStats = 0;
     let totalMonomerEntries = 0;
@@ -99,7 +99,7 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
         totalMonomerEntries += monomers.length;
       }
     }
-    // WebLogo headers grow colHeaderHeight (~130px); sample the canvas top strip for drawn glyphs.
+
     const colHeaderHeight = tv.grid?.props?.colHeaderHeight ?? 0;
     let headerHasRender = false;
     const gridViewer = document.querySelector('[name="viewer-Grid"]');
@@ -127,7 +127,7 @@ async function launchSarWithSimilarity(page: import('@playwright/test').Page, va
     };
   });
 }
-// GROK-19145: the post-OK compute path must NOT throw a null-receiver runtime error.
+
 function assertNoNullReceiverCrash(lastError: string, threshold: number) {
   expect(/setTrue|method not found.*null|Cannot read propert.*null|reading 'getRawData'/.test(lastError),
     `GROK-19145 invariant: SAR at Similarity=${threshold} produced a null-receiver crash: ${lastError}`).toBe(false);
@@ -140,7 +140,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
     expect(result.rows, 'peptides.csv should load 647 rows').toBe(647);
     expect(result.semType, 'AlignedSequence must be a Macromolecule column').toBe('Macromolecule');
   });
-  // Scenario 1 — SAR across low/medium/high/extreme Similarity; fresh table per launch isolates state.
+
   for (const threshold of [10, 50, 75, 90]) {
     const label = threshold === 10 ? 'low' : threshold === 50 ? 'medium' : threshold === 75 ? 'high' : 'extreme';
     await softStep(`Scenario 1: SAR at Similarity=${threshold} (${label}) completes gracefully`, async () => {
@@ -156,7 +156,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
         .toContain('Most Potent Residues');
       expect(out.viewers, `MCL clustering viewer must attach at Similarity=${threshold}`)
         .toContain('MCL');
-      // Logo Summary Table is cluster-result-dependent — record without failing.
+
       if (!out.viewers.includes('Logo Summary Table'))
         console.log(`[note] Logo Summary Table not attached at Similarity=${threshold} (cluster-result-dependent).`);
       expect(out.positionsWithStats,
@@ -171,7 +171,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
       assertNoNullReceiverCrash(out.lastError, threshold);
     });
   }
-  // Scenario 2 — Similarity=90 preserves WebLogo rendering + selection backbone survives sparse stats.
+
   await softStep('Scenario 2 (steps 1-2): launch SAR at Similarity=90 (extreme), settle', async () => {
     await openPeptidesTable(page);
     const out = await launchSarWithSimilarity(page, 90);
@@ -181,7 +181,7 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
     expect(out.headerHasRender, 'WebLogo column-headers drew nothing at Similarity=90 (silently-blank regression)').toBe(true);
     assertNoNullReceiverCrash(out.lastError, 90);
   });
-  // SVM render-canvas cell click is the deterministic observable of the selection backbone.
+
   await softStep('Scenario 2 (step 5): selection backbone responds without crashing', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -189,13 +189,13 @@ test('SAR Similarity-threshold matrix — graceful across low/medium/high/extrem
       const selBefore = df.selection.trueCount;
       const svm = document.querySelector('[name="viewer-Sequence-Variability-Map"]');
       if (!svm) return {svmFound: false, selBefore, selAfter: selBefore, threw: null, lastError: ''};
-      // Largest canvas is the render surface (the tiny one is a scrollbar).
+
       const canvases = Array.from(svm.querySelectorAll('canvas')) as HTMLCanvasElement[];
       let canvas: HTMLCanvasElement | null = null, maxArea = 0;
       for (const c of canvases) { const r = c.getBoundingClientRect(); if (r.width * r.height > maxArea) { maxArea = r.width * r.height; canvas = c; } }
       if (!canvas) return {svmFound: true, canvasFound: false, selBefore, selAfter: selBefore, threw: null, lastError: ''};
       const r = canvas.getBoundingClientRect();
-      // Deterministic data-cell position past the row-header column + header strip.
+
       const opts = {bubbles: true, cancelable: true, clientX: r.x + 120, clientY: r.y + 120, button: 0, view: window};
       let threw: string | null = null;
       try {

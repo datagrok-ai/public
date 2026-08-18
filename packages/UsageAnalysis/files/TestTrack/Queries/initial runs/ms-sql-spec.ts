@@ -8,16 +8,6 @@ import {
 
 test.use(specTestOptions);
 
-/**
- * Scenario note: dev has the `MSSQLTest` connection (friendlyName `NorthwindTest`)
- * pointing at `db.datagrok.ai:14331`. MS SQL TCP is currently refused from dev,
- * so the run-query steps surface a server error instead of a rendered grid.
- * Add / edit / save / delete is exercised through the DataQueryView UI.
- *
- * Part 3 caveat: queries created in this run do not appear in the Browse tree
- * under NorthwindTest (only stale "JS postprocess query test" entries show), so
- * the right-click delete path is unreachable; JS API fallback is used.
- */
 test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
   test.setTimeout(300_000);
 
@@ -41,7 +31,6 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
   });
   expect(setupResult.cleaned).toBeGreaterThanOrEqual(0);
 
-  // The Browse tree only mounts on /browse — the Home view is shown after login.
   await page.goto(
     `${process.env.DATAGROK_URL ?? "https://dev.datagrok.ai"}/browse`,
   );
@@ -51,14 +40,13 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
   await softStep(
     "Part 1.1 — Browse → Databases → MS SQL → right-click NorthwindTest → New Query",
     async () => {
-      // The tree node may be hidden if its parent isn't expanded — drive expansion in JS until
-      // both the MS SQL parent and the NorthwindTest child are present in the DOM.
+
       await page
         .locator('[name="tree-Databases"]')
         .first()
         .waitFor({ state: "attached", timeout: 30_000 });
       await page.evaluate(async () => {
-        // Expand Databases — click the expander triangle, not the label
+
         for (let i = 0; i < 30; i++) {
           const exp = document.querySelector(
             '[name="tree-expander-Databases"]',
@@ -70,7 +58,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
           (exp ?? node)?.click();
           await new Promise((r) => setTimeout(r, 500));
         }
-        // Expand MS SQL — same approach
+
         for (let i = 0; i < 30; i++) {
           const exp = document.querySelector(
             '[name="tree-expander-Databases---MS-SQL"]',
@@ -89,7 +77,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
           await new Promise((r) => setTimeout(r, 800));
         }
       });
-      // Wait for NorthwindTest in the DOM (not visibility — node may be off-screen)
+
       await page
         .locator('[name="tree-Databases---MS-SQL---NorthwindTest"]')
         .first()
@@ -153,13 +141,10 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
   });
 
   await softStep("Part 1.4 — Run via Play button (inline)", async () => {
-    // MS SQL is unreachable from dev — assert click goes through; surface any error
-    // text without failing the suite, since the platform behavior we care about
-    // is that the run path executes, not whether MS SQL responds.
+
     await page.locator('[name="icon-play"]').first().click();
     await page.waitForTimeout(8000);
-    // Either a grid appears (success) or an error message renders. Just assert the
-    // play button is still present (i.e. the click didn't crash the editor).
+
     const editorAlive = await page.locator(".CodeMirror").first().isVisible();
     expect(editorAlive).toBe(true);
   });
@@ -180,8 +165,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
         const afterViews = Array.from((window as any).grok.shell.views).length;
         return { clicked: true, beforeViews, afterViews };
       });
-      // Run query toolbox link may not be visible if Toolbox sidebar isn't open;
-      // either way, the editor should remain alive.
+
       expect(await page.locator(".CodeMirror").first().isVisible()).toBe(true);
     },
   );
@@ -216,9 +200,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
   await softStep(
     "Part 2.1 — Refresh Browse → Edit query (open editor)",
     async () => {
-      // The Browse-tree right-click → Edit path is unreliable for newly-created queries
-      // because the connection's queries list does not refresh. Open the editor directly
-      // via /query/<id>, which is functionally equivalent to right-click → Edit.
+
       expect(savedQueryId).toBeTruthy();
       await page.goto(
         `${process.env.DATAGROK_URL ?? "https://dev.datagrok.ai"}/query/${savedQueryId}`,
@@ -303,7 +285,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
           if (document.querySelector('[name="tree-Databases"]')) break;
           await new Promise((r) => setTimeout(r, 300));
         }
-        // Click MS SQL once to expand connections
+
         const ms = document.querySelector(
           '[name="tree-Databases---MS-SQL"]',
         ) as HTMLElement | null;
@@ -311,7 +293,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
         ms?.dispatchEvent(
           new MouseEvent("dblclick", { bubbles: true, cancelable: true }),
         );
-        // Wait for NorthwindTest to mount
+
         for (let i = 0; i < 30; i++) {
           if (
             document.querySelector(
@@ -325,7 +307,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
           '[name="tree-expander-Databases---MS-SQL---NorthwindTest"]',
         ) as HTMLElement | null;
         exp?.click();
-        // Wait briefly for children to mount
+
         for (let i = 0; i < 20; i++) {
           const children = document.querySelectorAll(
             '[name^="tree-Databases---MS-SQL---NorthwindTest---"]',
@@ -349,7 +331,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
         );
         return { labels, containsNew };
       });
-      // Don't fail if the new query isn't surfaced (known platform quirk) — record it.
+
       expect(Array.isArray(result.labels)).toBe(true);
     },
   );
@@ -379,8 +361,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
   );
 
   await softStep("Part 4 — Delete query and verify removal", async () => {
-    // Tree right-click → Delete is unreachable (query absent from refreshed tree).
-    // JS API fallback: delete via dapi and confirm find returns null.
+
     expect(savedQueryId).toBeTruthy();
     const deleted = await page.evaluate(async (id) => {
       const q = await (window as any).grok.dapi.queries
@@ -394,7 +375,7 @@ test("Queries — MS SQL: Add / Edit / Browse / Delete", async ({ page }) => {
         .catch(() => null);
       return { found: true, ok: !after };
     }, savedQueryId);
-    // The query was saved in Part 1.6, so it must be present and actually deleted here.
+
     expect(
       (deleted as any).found,
       "saved query should still exist before delete",

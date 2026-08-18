@@ -18,7 +18,6 @@ const isBenignError = (text: string) =>
   /Stack trace [A-Za-z]+/.test(text) ||
   /NullError: method not found: '\w+' on null/.test(text);
 
-/** Set a property-grid <select> row: open its inline editor, set value, commit. */
 async function setPropSelect(page: Page, rowName: string, value: string) {
   await page.evaluate((args: {rowName: string; value: string}) => {
     const row = document.querySelector(`[name="${args.rowName}"]`) as HTMLElement;
@@ -27,10 +26,9 @@ async function setPropSelect(page: Page, rowName: string, value: string) {
     if (sel) { sel.value = args.value; sel.dispatchEvent(new Event('change', {bubbles: true})); }
   }, {rowName, value});
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
+  await v.waitForViewerRendered(page, 'Density plot', 300);
 }
 
-/** Drive the on-viewer bin-count range slider (bottom-left) via input+change events. */
 async function setBinsViaSlider(page: Page, bins: number) {
   await page.evaluate((n: number) => {
     const slider = document.querySelector(
@@ -41,7 +39,10 @@ async function setBinsViaSlider(page: Page, bins: number) {
       slider.dispatchEvent(new Event('change', {bubbles: true}));
     }
   }, bins);
-  await page.waitForTimeout(400);
+  await v.pollValue(() => page.evaluate(() => {
+    const d = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+    return d?.props.bins;
+  }), (b) => b === bins, 400, 100);
 }
 
 test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence', async ({page}: {page: Page}) => {
@@ -56,8 +57,6 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
   });
   const errCount = () => pageErrors.length + consoleErrors.length;
 
-  // Settle-gated canvas ink: repeat until two reads agree, so a delta between
-  // measurements is the setter's effect, not a render tail.
   const settledPx = async () => {
     let prev = (await v.countCanvasPixels(page, 'Density plot')).total;
     let cur = prev;
@@ -103,8 +102,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       propName: axis === 'x' ? 'xColumnName' : 'yColumnName',
       allowFallback: false,
     });
-    // Real UI path only (no JS-API fallback): a broken selector fails here
-    // instead of being masked. Product read is the prop plus the DOM label.
+
     await pick('x', 'WEIGHT');
     expect((await readXY()).x).toBe('WEIGHT');
     expect(await selectorLabel('x')).toBe('WEIGHT');
@@ -118,26 +116,21 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     expect(finalXY.y).toBe('HEIGHT');
     expect(await selectorLabel('x')).toBe('AGE');
     expect(await selectorLabel('y')).toBe('HEIGHT');
-    // GROK-16612: no console errors across the axis switches.
+
     expect(errCount()).toBe(errBefore);
   });
 
-  // Open the settings panel — the gear sits two parent hops above the viewer root.
   await page.evaluate(() => {
     const viewer = document.querySelector('[name="viewer-Density-plot"]') as HTMLElement;
     const gear = viewer?.parentElement?.parentElement
       ?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
     gear?.click();
   });
-  await page.waitForTimeout(1000);
+  await v.pollValue(() => page.locator('.property-grid').count(), (n) => n > 0, 1000, 100);
 
   await softStep('Scenario 2 — bin count lower boundary (bins=1), 5 vs 200 (strong repaint), and bin shape', async () => {
     const errBefore = errCount();
 
-    // Bin-count lower boundary (atlas edge "Bin-count boundary"): bins=1 collapses
-    // the plot to a single filled cell, so the ink jumps sharply above the 50-bin
-    // grid; reverting to 50 drops it back (round-trip). The bin slider clamps at
-    // min=1, so this is the true lower edge of the range.
     await setBinsViaSlider(page, 50);
     const px50ref = await settledPx();
     await setBinsViaSlider(page, 1);
@@ -146,12 +139,12 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     console.log(`DensityPlot bins=1 edge: px50ref=${px50ref} px1=${px1} delta=${px1 - px50ref}`);
     expect(bins1Prop).toBe(1);
     expect(px1).toBeGreaterThan(0);
-    // The floor keeps a ~2x margin below the smallest observed bins=1 vs bins=50 delta.
+
     expect(px1 - px50ref).toBeGreaterThan(70000);
     await setBinsViaSlider(page, 50);
     const px50back = await settledPx();
     expect(await readProp('bins')).toBe(50);
-    // Reverting to 50 bins drops the fill back sharply (round-trip).
+
     expect(px1 - px50back).toBeGreaterThan(70000);
 
     await setBinsViaSlider(page, 5);
@@ -163,15 +156,12 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     console.log(`DensityPlot bins px: px5=${px5} px200=${px200} delta=${px5 - px200}`);
     expect(bins5Prop).toBe(5);
     expect(bins200Prop).toBe(200);
-    // Bins 5 -> 200 is the strongest signal on this viewer: a few large dark
-    // bins ink far more than a fine sparse grid, so px5 dominates px200.
+
     expect(px5).toBeGreaterThan(0);
     expect(px200).toBeGreaterThan(0);
-    // The floor keeps a ~2x margin below the observed 5-vs-200-bin delta.
+
     expect(px5 - px200).toBeGreaterThan(100000);
 
-    // Bin shape hexagon -> rectangle: modest delta at high bin counts, so the
-    // switch holds an error-free floor with the prop confirmed.
     await setPropSelect(page, 'prop-bin-shape', 'rectangle');
     const shape = await readProp('binShape');
     const pxRect = await settledPx();
@@ -179,7 +169,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     expect(shape).toBe('rectangle');
     expect(pxRect).toBeGreaterThan(0);
     expect(errCount()).toBe(errBefore);
-    // Leave bins 200, rectangle (peak configuration for the persistence tail).
+
   });
 
   await softStep('Scenario 3 — Invert Color Scheme (strong repaint) and Color Transform Type', async () => {
@@ -189,17 +179,13 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       (document.querySelector(
         '[name="prop-invert-color-scheme"] input[type="checkbox"]') as HTMLInputElement)?.click();
     });
-    await page.waitForTimeout(400);
-    const invert = await readProp('invertColorScheme');
+    const invert = await v.pollValue(() => readProp('invertColorScheme'), (b) => b === true, 400, 100);
     const pxInvert = await settledPx();
     console.log(`DensityPlot invert px: pxBefore=${pxBefore} pxInvert=${pxInvert} delta=${pxInvert - pxBefore}`);
     expect(invert).toBe(true);
-    // Inverting the color scheme flips the binned-area background — a very strong
-    // repaint; the floor keeps a ~2x margin below the observed invert delta.
+
     expect(Math.abs(pxInvert - pxBefore)).toBeGreaterThan(200000);
 
-    // Color transform linear -> log -> linear -> log: modest luminance-only
-    // change, held as an error-free floor with the prop confirmed.
     await setPropSelect(page, 'prop-color-transform-type', 'logarithmic');
     let ct = await readProp('colorTransformType');
     expect(ct).toBe('logarithmic');
@@ -208,7 +194,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     ct = await readProp('colorTransformType');
     expect(ct).toBe('logarithmic');
     expect(errCount()).toBe(errBefore);
-    // Leave Invert on, transform logarithmic.
+
   });
 
   await softStep('Scenario 4 — GROK-17118 guard: X selector offers numeric columns only', async () => {
@@ -216,48 +202,46 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     expect(shape).toBe('rectangle');
     const errBefore = errCount();
     const xBefore = (await readXY()).x;
-    // Open the X selector popup (mousedown on the label opens it).
+
     await page.evaluate(() => {
       const sel = document.querySelector(
         '[name="viewer-Density-plot"] [name="div-column-combobox-x"]')!;
       (sel.querySelector('.d4-column-selector-column') || sel)
         .dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
     });
-    await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
-      null, {timeout: 3000}).catch(() => {});
-    // Type a non-numeric column name — SEX matches nothing (numeric-only filter).
+
+    const backdropCount = () => page.locator('.d4-column-selector-backdrop').count();
+    await v.pollValue(backdropCount, (n) => n > 0, 3000, 100);
+
     await page.keyboard.press('s');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(100); 
     await page.keyboard.type('ex');
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(300);
-    // Enter committed nothing — X stays AGE (the numeric-only selector IS the fix).
+    await page.waitForTimeout(300); 
+
     const xAfter = (await readXY()).x;
-    // Close the (possibly still-open) no-match popup via an outside mousedown.
+
     await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})));
-    await page.waitForTimeout(200);
+    await v.pollValue(backdropCount, (n) => n === 0, 200, 100);
     expect(xBefore).toBe('AGE');
     expect(xAfter).toBe('AGE');
     expect(errCount()).toBe(errBefore);
   });
 
   await softStep('Scenario 5 — degenerate zero-width bin range holds an error-free floor', async () => {
-    // Atlas edge "Degenerate zero-width bin range": a constant column has
-    // min == max, so its bin range has zero width — the bin-size divisor is
-    // guarded against divide-by-zero. Build a numeric constant fixture column
-    // via the JS API, assign it to X through the real on-viewer selector (a
-    // numeric column IS offered), and confirm both bin shapes render without
-    // error or freeze. The fixture column is removed in finally.
+
     const constCol = 'DP_ZW_CONST_' + Date.now();
-    await page.evaluate(async (name: string) => {
+    await page.evaluate((name: string) => {
       const df = grok.shell.tv.dataFrame;
       if (!df.columns.names().includes(name)) df.columns.addNewCalculated(name, '42');
-      await new Promise((r) => setTimeout(r, 800));
     }, constCol);
+    await v.pollValue(
+      () => page.evaluate((name: string) => grok.shell.tv.dataFrame.columns.names().includes(name), constCol),
+      (present) => present, 800, 100);
     try {
       const errBefore = errCount();
-      // Assign the constant column on X through the on-viewer selector (real UI path).
+
       await v.pickColumnViaSelector(page, {
         comboboxSuffix: 'x',
         columnName: constCol,
@@ -269,8 +253,6 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       });
       expect((await readXY()).x).toBe(constCol);
 
-      // Rectangle over the zero-width range: no error, viewer stays attached,
-      // and a settled repaint completes (degenerate strip).
       await setPropSelect(page, 'prop-bin-shape', 'rectangle');
       const pxRect = await settledPx();
       const rectAttached = await page.evaluate(() => {
@@ -282,7 +264,6 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       expect(rectAttached).toBe(true);
       expect(pxRect).toBeGreaterThan(0);
 
-      // Hexagon over the same zero-width range: same error-free floor.
       await setPropSelect(page, 'prop-bin-shape', 'hexagon');
       const pxHex = await settledPx();
       const hexAttached = await page.evaluate(() => {
@@ -294,14 +275,16 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       expect(hexAttached).toBe(true);
       expect(pxHex).toBeGreaterThan(0);
 
-      // The zero-width range neither errored nor froze either bin shape.
       expect(errCount()).toBe(errBefore);
     } finally {
-      // Restore the peak-config X column and rectangle shape, then drop the fixture.
-      await page.evaluate(async (name: string) => {
+
+      await page.evaluate(() => {
         const d = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
         if (d) { d.props.xColumnName = 'AGE'; d.props.binShape = 'rectangle'; }
-        await new Promise((r) => setTimeout(r, 400));
+      });
+
+      await v.waitForViewerRendered(page, 'Density plot', 400);
+      await page.evaluate((name: string) => {
         const df = grok.shell.tv?.dataFrame;
         if (df && df.columns.names().includes(name)) df.columns.remove(name);
       }, constCol);
@@ -309,42 +292,43 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
   });
 
   await softStep('Scenario 6a — layout round-trip restores the saved viewer set and config', async () => {
-    // Pin the peak configuration deterministically before persisting.
+
+    await v.setViewerProps(page, 'Density plot', [{
+      set: {
+        xColumnName: 'AGE', yColumnName: 'HEIGHT', bins: 200,
+        binShape: 'rectangle', invertColorScheme: true,
+      },
+      wait: 800,
+    }]);
     const layoutId = await page.evaluate(async () => {
-      const d = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
-      d.props.xColumnName = 'AGE';
-      d.props.yColumnName = 'HEIGHT';
-      d.props.bins = 200;
-      d.props.binShape = 'rectangle';
-      d.props.invertColorScheme = true;
-      await new Promise((r) => setTimeout(r, 800));
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       return layout.id as string;
     });
     try {
-      const result = await page.evaluate(async (id) => {
+      await page.waitForTimeout(1000); 
+      await page.evaluate(() => { grok.shell.tv.addViewer('Scatter plot'); });
+      await v.pollValue(
+        () => page.evaluate(() => grok.shell.tv.viewers.some((vw: any) => vw.type === 'Scatter plot')),
+        (present) => present, 600, 100);
+      await page.evaluate(async (id) => {
+        grok.shell.tv.loadLayout(await grok.dapi.layouts.find(id));
+      }, layoutId);
+      const result = await v.pollValue(() => page.evaluate(() => {
         const tv = grok.shell.tv;
-        await new Promise((r) => setTimeout(r, 1000));
-        tv.addViewer('Scatter plot');
-        await new Promise((r) => setTimeout(r, 600));
-        const saved = await grok.dapi.layouts.find(id);
-        tv.loadLayout(saved);
-        await new Promise((r) => setTimeout(r, 3000));
-        const hasScatter = tv.viewers.some((vw) => vw.type === 'Scatter plot');
-        const hasDensity = tv.viewers.some((vw) => vw.type === 'Density plot');
-        const dp = tv.viewers.find((vw) => vw.type === 'Density plot');
+        const dp = tv.viewers.find((vw: any) => vw.type === 'Density plot');
         return {
-          hasScatter, hasDensity,
+          hasScatter: tv.viewers.some((vw: any) => vw.type === 'Scatter plot'),
+          hasDensity: tv.viewers.some((vw: any) => vw.type === 'Density plot'),
           x: dp?.props.xColumnName, y: dp?.props.yColumnName,
           bins: dp?.props.bins, binShape: dp?.props.binShape,
           invert: dp?.props.invertColorScheme,
         };
-      }, layoutId);
-      // Restored set equals the SAVED set: Density present, later Scatter absent.
+      }), (r) => r.hasDensity && !r.hasScatter, 3000, 150);
+
       expect(result.hasDensity).toBe(true);
       expect(result.hasScatter).toBe(false);
-      // The restored Density Plot carries the persisted configuration.
+
       expect(result.x).toBe('AGE');
       expect(result.y).toBe('HEIGHT');
       expect(result.bins).toBe(200);
@@ -368,33 +352,28 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
       projectId = saved.projectId;
       expect(projectId).toBeTruthy();
 
-      const result = await page.evaluate(async (id) => {
-        grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+      await v.closeAllAndWait(page);
+      await page.evaluate(async (id) => {
         const full = await grok.dapi.projects.find(id);
         await full.open();
-        // Viewers re-materialize asynchronously — poll for the restored Density plot.
-        let types: string[] = [];
-        for (let t = 0; t < 20; t++) {
-          await new Promise((r) => setTimeout(r, 1000));
-          types = [];
-          for (const view of grok.shell.tableViews)
-            for (const vw of view.viewers) types.push(vw.type);
-          if (types.includes('Density plot')) break;
-        }
+      }, projectId);
+
+      const result = await v.pollValue(() => page.evaluate(() => {
+        const types: string[] = [];
         let dp: any = null;
         for (const view of grok.shell.tableViews)
-          for (const vw of view.viewers)
+          for (const vw of view.viewers) {
+            types.push(vw.type);
             if (vw.type === 'Density plot') dp = vw;
+          }
         return {
           types,
           x: dp?.props.xColumnName, y: dp?.props.yColumnName,
           bins: dp?.props.bins, binShape: dp?.props.binShape,
           invert: dp?.props.invertColorScheme,
         };
-      }, projectId);
+      }), (r) => r.types.includes('Density plot'), 20000, 1000);
 
-      // Cross-session round-trip: a Density Plot is restored with its config.
       expect(result.types).toContain('Density plot');
       expect(result.x).toBe('AGE');
       expect(result.y).toBe('HEIGHT');

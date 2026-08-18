@@ -14,7 +14,6 @@ test("Scripting — create R script with signature editor + all-language smoke t
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  // Accept native browser dialogs (JavaScript template alerts "Hello World!")
   page.on("dialog", async (d) => {
     await d.accept().catch(() => {});
   });
@@ -110,9 +109,6 @@ test("Scripting — create R script with signature editor + all-language smoke t
     expect(carsLoaded).toBe(true);
   });
 
-  // DevTools plugin contributes the Signature editor (magic-wand) and Open function
-  // editor icons. In a fresh Playwright session on dev these don't always inject in time.
-  // Wait briefly; if absent, fall back to JS API and mark steps 4-9 as ambiguous.
   const sigEditorAvailable = await page.evaluate(async () => {
     for (let i = 0; i < 50; i++) {
       const w = document.querySelector(
@@ -146,7 +142,7 @@ test("Scripting — create R script with signature editor + all-language smoke t
       });
       expect(hasSig).toBe(true);
     } else {
-      // Weakest property: CodeMirror is editable so signature can still be edited.
+
       const editable = await page.evaluate(
         () => !!document.querySelector(".CodeMirror"),
       );
@@ -163,7 +159,7 @@ test("Scripting — create R script with signature editor + all-language smoke t
       await page.keyboard.press("Tab");
       expect(await nameInput.inputValue()).toBe("testRscript");
     } else {
-      // Set #name in the script body directly — same end state.
+
       await page.evaluate(async () => {
         const cm = document.querySelector(".CodeMirror") as any;
         const cur = cm.CodeMirror.getValue();
@@ -194,7 +190,7 @@ test("Scripting — create R script with signature editor + all-language smoke t
       );
       expect(selected).toContain("PARAMETERS");
     } else {
-      expect(true).toBe(true); // signature editor unavailable; covered by direct edit
+      expect(true).toBe(true); 
     }
   });
 
@@ -225,13 +221,13 @@ test("Scripting — create R script with signature editor + all-language smoke t
       expect(after.length).toBeGreaterThan(before.length);
       expect(after).toMatch(/newParam/);
     } else {
-      // Add a new param line directly to the script body.
+
       await page.evaluate(async () => {
         const cm = document.querySelector(".CodeMirror") as any;
         const cur = cm.CodeMirror.getValue();
         if (!/newParam/.test(cur)) {
           const lines = cur.split("\n");
-          // Insert before the first blank line in the header (or after #output: int count)
+
           const idx = lines.findIndex((l: string) => l.startsWith("#output:"));
           lines.splice(idx + 1, 0, "#input: bool newParam ");
           cm.CodeMirror.setValue(lines.join("\n"));
@@ -248,9 +244,7 @@ test("Scripting — create R script with signature editor + all-language smoke t
   await softStep(
     "8. Set parameter direction=output, name=newParam, type=string",
     async () => {
-      // The canvas-based parameters grid is hard to address cell-by-cell; the most robust path
-      // (used in both UI-available and fallback flows) is to edit the body directly — Datagrok
-      // auto-syncs body to params.
+
       await page.evaluate(async () => {
         const cm = document.querySelector(".CodeMirror") as any;
         const cur = cm.CodeMirror.getValue();
@@ -351,8 +345,7 @@ test("Scripting — create R script with signature editor + all-language smoke t
         };
       });
       expect(probe.count).toBeGreaterThan(0);
-      // Step-8 closure: the saved script must actually have the new param parsed
-      // as `output: string newParam`, not just a body string that says so.
+
       expect(
         probe.outputs?.some(
           (o: any) => o.name === "newParam" && o.type === "string",
@@ -384,8 +377,6 @@ test("Scripting — create R script with signature editor + all-language smoke t
     );
     expect(closed).toBe(true);
   });
-
-  // ---- Steps 13-20: All-languages smoke test ----
 
   const runLang = async (menuLabel: string) => {
     return await page.evaluate(async (label) => {

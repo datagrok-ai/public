@@ -15,21 +15,13 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
 
   await loginToDatagrok(page);
 
-  // Setup + precondition: make sure new_test_query exists on the Postgres
-  // NorthwindTest connection. Multiple connections share friendlyName
-  // "NorthwindTest" across providers (MS SQL, Postgres, PostgresDart) —
-  // target by nqName which is unique. conn.query() defaults name to
-  // PascalCase, so set both name and friendlyName to the literal
-  // `new_test_query` we want to search by.
   const seedId = await page.evaluate(async () => {
     document.body.classList.add("selenium");
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
     (window as any).grok.shell.windows.showBrowse = true;
-    // Multiple connections share friendlyName "NorthwindTest" across providers.
-    // Smart-search returns matches across all fields; pick the Postgres one
-    // by dataSource. (Equality filter on `name` is unreliable here.)
+
     const all = await (window as any).grok.dapi.connections
       .filter("Northwind")
       .list({ pageSize: 30 });
@@ -53,9 +45,7 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
   await page.locator('[name="Browse"]').waitFor({ timeout: 30_000 });
 
   await softStep("Refresh Browse", async () => {
-    // Navigate to /browse to render the tree, then click the Refresh button
-    // in the Browse toolbar (`[name="icon-sync"]`) — same as the user clicking
-    // the refresh icon at the top of the Browse panel.
+
     await page.goto(`${process.env.DATAGROK_URL}/browse`);
     await page.locator(".d4-tree-view-root").waitFor({ timeout: 15_000 });
     await page.locator('[name="icon-sync"]').click({ timeout: 5_000 });
@@ -64,7 +54,7 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
   });
 
   await softStep("Browse → Databases → Postgres → NorthwindTest", async () => {
-    // Expand Databases (single-click the group label)
+
     const dbExpanded = await page.evaluate(async () => {
       const find = (label: string) =>
         Array.from(
@@ -85,7 +75,6 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
     });
     expect(dbExpanded.ok).toBe(true);
 
-    // Expand Postgres (double-click)
     const pgExpanded = await page.evaluate(async () => {
       const find = (label: string) =>
         Array.from(
@@ -108,7 +97,6 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
     });
     expect(pgExpanded.ok).toBe(true);
 
-    // Open NorthwindTest (double-click — opens the connection's queries view)
     await page.evaluate(async () => {
       const nw = Array.from(
         document.querySelectorAll(
@@ -127,10 +115,7 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
   });
 
   await softStep("Type new_test in search field", async () => {
-    // Verify the search input accepts input and the gallery filter applies.
-    // We deliberately do NOT assert that the seeded query appears in the
-    // visible gallery — the queries view filters by package, and a user-owned
-    // query (Admin:new_test_query) lives outside that filter.
+
     const typed = await page.evaluate(async () => {
       const input = Array.from(document.querySelectorAll("input")).find(
         (i) =>
@@ -157,13 +142,13 @@ test("Queries — browse NorthwindTest and find new_test_query", async ({
       const q = await (window as any).grok.dapi.queries.find(id);
       (window as any).grok.shell.o = q;
       await new Promise((r) => setTimeout(r, 1500));
-      // Strip any trailing count badge digits (e.g. "Activity0" → "Activity")
+
       const headers = Array.from(
         document.querySelectorAll(".d4-accordion-pane-header"),
       ).map((h) => (h.textContent ?? "").trim().replace(/\d+$/, ""));
       return [...new Set(headers)];
     }, seedId);
-    // Minimum set of query-entity Context Panel panes.
+
     for (const required of [
       "Details",
       "Run",

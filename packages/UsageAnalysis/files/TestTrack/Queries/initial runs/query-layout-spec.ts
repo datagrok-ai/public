@@ -16,9 +16,6 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
 
   await loginToDatagrok(page);
 
-  // Setup: Tabs mode + selenium class + closeAll. Resolve query/connection IDs
-  // up front. The PostgresAll query lives on connection PostgresTest
-  // (friendlyName: NorthwindTest, dataSource: Postgres, namespace: Dbtests).
   const ids = await page.evaluate(async () => {
     document.body.classList.add("selenium");
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
@@ -37,7 +34,6 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
   });
   expect(ids.queryId).toBeTruthy();
 
-  // Pre-clean any leftover project from prior runs.
   await page.evaluate(async () => {
     try {
       const list = await (window as any).grok.dapi.projects
@@ -53,9 +49,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
   await softStep(
     "Open PostgresAll editor (Browse → Databases → Postgres → NorthwindTest → Edit...)",
     async () => {
-      // Navigate to the connection's queries gallery (`browse=db`), then dispatch
-      // contextmenu on the PostgresAll card and click Edit... — same DataQueryView
-      // and Toolbox state as the Browse-tree right-click flow, but reachable via URL.
+
       await page.goto(`${baseUrl}/queries/Dbtests.PostgresTest?browse=db`);
       await page
         .locator('[name="div-PostgresAll"]')
@@ -88,9 +82,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
         }
         if (!editLabel) return { ok: false, stage: "no-edit-item" };
         (editLabel.closest(".d4-menu-item") as HTMLElement).click();
-        // Wait for editor view AND CodeMirror to mount on the Query tab — this
-        // signal indicates Dart has finished wiring the editor state. Without it,
-        // a subsequent Layout tab click renders blank in fresh contexts.
+
         for (let i = 0; i < 80; i++) {
           const v = (window as any).grok.shell.v;
           const cm = (document.querySelector(".CodeMirror") as any)?.CodeMirror;
@@ -149,7 +141,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
     "Click Run query — populate the Layout preview grid",
     async () => {
       const result = await page.evaluate(async () => {
-        // Layout tab shows a "Run query" link as label.d4-link-label
+
         let link: HTMLElement | undefined;
         for (let i = 0; i < 30; i++) {
           link = Array.from(
@@ -163,7 +155,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
           await new Promise((r) => setTimeout(r, 300));
         }
         if (!link) return { ok: false, stage: "no-run-link" };
-        // Synthesize a mouse click — labels need bubbling click event
+
         const rect = link.getBoundingClientRect();
         const eventInit: MouseEventInit = {
           bubbles: true,
@@ -238,11 +230,9 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
   await softStep(
     "Open PostgresAll preview — saved layout applied",
     async () => {
-      // Substitute for "click in Browse → preview" — `/func/<nqName>` is the
-      // direct URL that opens a query as a TableView preview with its saved
-      // layout applied (same code path as Browse-tree click).
+
       await page.goto(`${baseUrl}/func/Dbtests.PostgresAll`);
-      // Page reload — wait for grok API to remount and Browse sidebar tab to appear
+
       await page.locator('[name="Browse"]').waitFor({ timeout: 60_000 });
       await page.waitForFunction(
         () => typeof (window as any).grok?.shell?.v !== "undefined",
@@ -296,19 +286,18 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
   await softStep(
     "Run the query (open in new view) — saved layout applied",
     async () => {
-      // Substitute for "right-click PostgresAll → Run" — execute the query and
-      // add a fresh TableView, then apply the saved layout.
+
       const result = await page.evaluate(async (queryId) => {
         const q = await (window as any).grok.dapi.queries.find(queryId);
         if (!q) return { ok: false, stage: "no-query" };
         const df = await q.executeTable();
         const tv = (window as any).grok.shell.addTableView(df);
-        // Apply saved query layout
+
         const layout =
           q.layout ??
           (await (window as any).grok.dapi.layouts.getApplicable?.(df))?.[0];
         if (layout) tv.loadLayout(layout);
-        // Wait for layout viewers to mount
+
         for (let i = 0; i < 80; i++) {
           if (
             document.querySelector('[name="viewer-Histogram"]') &&
@@ -369,7 +358,6 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
       await page.locator('[name="button-Save"]').first().click();
       await page.waitForSelector(".d4-dialog", { timeout: 10_000 });
 
-      // Diagnose what dialog appeared and find the Name input
       const dialogInfo = await page.evaluate(() => {
         const dlg = document.querySelector(".d4-dialog");
         const title = dlg
@@ -386,13 +374,11 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
         return { title, inputs };
       });
 
-      // The Save Project dialog has the project name input. Find by current value
-      // matching "PostgresAll" (the query name auto-fills the project name).
       const nameInputIdx = dialogInfo.inputs.findIndex(
         (i) => i.value === "PostgresAll",
       );
       if (nameInputIdx < 0) {
-        // Diagnostic — surface dialog state on failure
+
         expect(nameInputIdx, JSON.stringify(dialogInfo)).toBeGreaterThanOrEqual(
           0,
         );
@@ -407,7 +393,6 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
 
       await page.locator('.d4-dialog [name="button-OK"]').click();
 
-      // The OK click can leave a Share dialog or other modal. Cancel any extra dialogs.
       for (let i = 0; i < 5; i++) {
         await page.waitForTimeout(800);
         const dlg = page.locator(".d4-dialog");
@@ -420,7 +405,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
 
       const lookup = await page.evaluate(async () => {
         for (let i = 0; i < 80; i++) {
-          // Try multiple name variants the server may normalize to
+
           for (const candidate of [
             "QueryLayoutTestClaude",
             "query-layout-test-claude",
@@ -434,7 +419,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
           }
           await new Promise((r) => setTimeout(r, 300));
         }
-        // Fallback: list recent projects with similar names
+
         const list = await (window as any).grok.dapi.projects
           .filter("query-layout-test-claude")
           .list()
@@ -491,10 +476,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
   });
 
   await softStep("Toolbox → Source → Refresh — layout unchanged", async () => {
-    // Try the UI-driven Refresh button first; fall back to tv.reloadData()
-    // when the Source toolbox section isn't visible (project-opened-via-JS-API
-    // case, where the sidebar may default to Browse and not expose the Source
-    // section's REFRESH button).
+
     await page
       .locator('.d4-tab-header[name="Toolbox"]')
       .first()
@@ -509,7 +491,6 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
         .map((v: any) => v.type)
         .sort();
 
-      // Expand Source section if visible
       const sourceSection = document.querySelector(
         '[name="div-section--Source"]',
       ) as HTMLElement | null;
@@ -539,7 +520,7 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
       if (refreshBtn) {
         refreshBtn.click();
       } else {
-        // Fallback: call reloadData() which is what the REFRESH button binds to
+
         refreshMethod = "tv.reloadData()";
         if (typeof tv.reloadData === "function") await tv.reloadData();
         else return { ok: false, stage: "no-refresh-btn-or-method" };
@@ -560,7 +541,6 @@ test("Queries — query layout (Layout tab, preview, project save/restore)", asy
     expect(result.unchanged, JSON.stringify(result)).toBe(true);
   });
 
-  // Cleanup: delete the project we created.
   await page.evaluate(async (id) => {
     if (!id) return;
     try {

@@ -1,10 +1,3 @@
-// Bio Hierarchical Clustering on FASTA_PT_activity.csv (99 rows, sequence col = Macromolecule).
-// The bio leaf auto-defaults Features to the sequence column; Levenshtein build path.
-// Clusters→Threshold binary search is inexact, so assert categories.length > 0 (not == requested).
-// Mount budget 120s absorbs cold-init; mount-success contract is state.magicWand === true (the
-// foundAtMs numeric is clamped to >=1 on success / -1 on timeout). Resource-load 404s on every
-// neighbor mount are non-fatal noise (see isFatalConsoleError). Centroid linkage crashes (WASM OOB
-// at hierarchical-clustering.ts:217) so this spec uses manhattan+complete on the second build.
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -32,7 +25,7 @@ async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
 
 async function clickOkAndWaitForNeighbor(page: Page, budgetMs: number = 120_000): Promise<number> {
   await page.locator('[name="dialog-Hierarchical-Clustering"] [name="button-OK"]').click();
-  // Poll for the magic-wand mount; return is clamped to >=1 on success, -1 on timeout.
+
   const iterCap = Math.max(1, Math.ceil(budgetMs / 500));
   const foundAtMs: number = await page.evaluate(async (cap: number) => {
     const start = Date.now();
@@ -53,7 +46,7 @@ async function closeDendrogramNeighbor(page: Page): Promise<void> {
     close.click();
     for (let i = 0; i < 30; i++) {
       if (!document.querySelector('.dendrogram-assign-clusters-bttn')) {
-        // Settle so the next OK click does not race the worker teardown.
+
         await new Promise(r => setTimeout(r, 500));
         return;
       }
@@ -73,7 +66,6 @@ async function setDialogSelect(page: Page, name: 'Distance' | 'Linkage', value: 
   }, [name, value]);
 }
 
-// True for fatal app errors; false for non-fatal noise (404 resource loads, ResizeObserver loop).
 function isFatalConsoleError(text: string): boolean {
   if (/Failed to load resource[\s\S]*404/i.test(text)) return false;
   if (/ResizeObserver loop/i.test(text)) return false;
@@ -85,7 +77,6 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
 
   await loginToDatagrok(page);
 
-  // Setup — open FASTA_PT_activity.csv and wait for the Macromolecule semType + Bio warmup.
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -98,21 +89,18 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
       setTimeout(resolve, 5000);
     });
-    // Bio dataset: wait for Grid canvas + extra settle for Bio package warmup
-    // (sequence renderer registration takes longer than Chem on first load).
+
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
     }
     await new Promise(r => setTimeout(r, 6000));
-    // Pre-warm the Dendrogram TreeHelper singleton so the first build skips package init.
+
     try {
       await (grok as any).functions.call('Dendrogram:getTreeHelper');
-    } catch (e) { /* best-effort pre-warm; downstream budget absorbs */ }
+    } catch (e) {  }
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
-  // --- Scenario 1 — Bio dialog opens with sequence-default Features ---
 
   await softStep('1. Open FASTA_PT_activity.csv and verify sequence column rendered as Macromolecule', async () => {
     const info = await page.evaluate(() => {
@@ -141,16 +129,14 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
       okBtn: !!document.querySelector('[name="dialog-Hierarchical-Clustering"] [name="button-OK"]'),
     }));
     expect(defaults.dialogPresent, 'Hierarchical Clustering dialog opened').toBe(true);
-    // DataFrame name from readCsv is "Table" (not "FASTA_PT_activity"); one TableView open.
+
     expect(defaults.tableOptionCount, 'Table SELECT has one option (one TableView open)').toBe(1);
-    // Bio leaf auto-defaults Features to the sole MACROMOLECULE column (sequence).
+
     expect(defaults.features, 'Features defaults to sequence (MACROMOLECULE auto-default)').toContain('sequence');
     expect(defaults.distancePresent, 'Distance input visible').toBe(true);
     expect(defaults.linkagePresent, 'Linkage input visible').toBe(true);
     expect(defaults.okBtn, 'OK button present').toBe(true);
   });
-
-  // --- Scenario 2 — Distance and Linkage dropdowns expose the canonical value sets ---
 
   await softStep('3. Distance dropdown enumerates exactly [euclidean, manhattan] (default euclidean)', async () => {
     const distance = await page.evaluate(() => {
@@ -178,16 +164,14 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
     expect(linkage.default, 'Linkage default').toBe('ward');
   });
 
-  // --- Scenario 3 — Build dendrogram from the sequence column (Levenshtein path) ---
-
   await softStep('5. OK with euclidean+ward (Features=sequence) → dendrogram neighbor injected via Levenshtein-on-encoded-sequences path, no fatal console error', async () => {
-    // Defaults are already euclidean+ward+sequence; click OK and wait for the magic-wand mount.
+
     const consoleErrors: string[] = [];
     const listener = (msg: any) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); };
     page.on('console', listener);
     try {
       const foundAtMs = await clickOkAndWaitForNeighbor(page);
-      // `>= 0` matches the clamped success return (1..budgetMs); mount contract is state.magicWand.
+
       expect(foundAtMs, 'Magic-wand mount time (ms; -1 = timeout)').toBeGreaterThanOrEqual(0);
       const state = await page.evaluate(() => ({
         magicWand: !!document.querySelector('.dendrogram-assign-clusters-bttn'),
@@ -199,7 +183,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
       expect(state.magicWand, 'magic-wand icon present').toBe(true);
       expect(state.closeBtn, 'close icon present').toBe(true);
       expect(state.neighborHasCanvas, 'neighbor canvas mounted').toBe(true);
-      // GridNeighbor is NOT a DG.Viewer.
+
       expect(state.viewerTypes, 'viewer types list (neighbor is NOT a Viewer)').toEqual(['Grid']);
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);
       expect(fatalErrors, 'no fatal console errors on euclidean+ward Levenshtein run').toEqual([]);
@@ -215,7 +199,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
     await openHierarchicalClusteringDialog(page);
     await setDialogSelect(page, 'Distance', 'manhattan');
     await setDialogSelect(page, 'Linkage', 'complete');
-    // Features defaults to sequence on the Bio leaf; no change needed.
+
     const verify = await page.evaluate(() => ({
       distance: (document.querySelector('[name="input-Distance"]') as HTMLSelectElement)?.value,
       linkage: (document.querySelector('[name="input-Linkage"]') as HTMLSelectElement)?.value,
@@ -236,11 +220,11 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
     page.on('console', listener);
     try {
       const foundAtMs = await clickOkAndWaitForNeighbor(page);
-      // `>= 0` matches the clamped success return; mount contract is state.magicWand.
+
       expect(foundAtMs, 'second dendrogram mount time (ms; -1 = timeout)').toBeGreaterThanOrEqual(0);
       const state = await page.evaluate(() => ({
         magicWand: !!document.querySelector('.dendrogram-assign-clusters-bttn'),
-        // Replace-on-rerun closes the previous neighbor before injecting the new one.
+
         neighborCount: document.querySelectorAll('.dendrogram-assign-clusters-bttn').length,
         neighborHasCanvas: !!document.querySelector('.dendrogram-assign-clusters-bttn')
           ?.parentElement?.querySelector('canvas'),
@@ -248,7 +232,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
       expect(state.magicWand, 'magic-wand icon present after manhattan+complete run').toBe(true);
       expect(state.neighborCount, 'exactly one neighbor attached').toBe(1);
       expect(state.neighborHasCanvas, 'neighbor canvas mounted on second run').toBe(true);
-      // Scenario step 6 explicit assertions:
+
       expect(unsupportedTypeErrors, 'no "Unsupported column type" error on manhattan+complete sequence run').toEqual([]);
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);
       expect(fatalErrors, 'no fatal console errors on manhattan+complete Levenshtein run').toEqual([]);
@@ -257,14 +241,12 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
     }
   });
 
-  // --- Scenario 4 — Shared post-build smoke ride-along (Assign Clusters column creation) ---
-
   await softStep('7. Click magic-wand on dendrogram neighbor → Assign Clusters dialog opens with Threshold (slider) + Clusters (int) inputs', async () => {
     const wandClicked = await page.evaluate(async () => {
       const wand = document.querySelector('.dendrogram-assign-clusters-bttn') as HTMLElement | null;
       if (!wand) return false;
       wand.click();
-      // Wait for dialog
+
       for (let i = 0; i < 30; i++) {
         if (document.querySelector('[name="dialog-Assign-Clusters"]')) return true;
         await new Promise(r => setTimeout(r, 200));
@@ -290,7 +272,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
     expect(dlgState.sliderPresent, 'Threshold slider present (range input)').toBe(true);
     expect(dlgState.assignBtnPresent, 'Assign button present').toBe(true);
     expect(dlgState.cancelBtnPresent, 'CANCEL button present').toBe(true);
-    // Initial Clusters depends on the tree topology; assert positive, not an exact value.
+
     expect(Number(dlgState.clustersInitial), 'initial Clusters value is positive').toBeGreaterThan(0);
   });
 
@@ -313,7 +295,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
         const assignBtn = dlg?.querySelector('[name="button-Assign"]') as HTMLElement | null;
         if (!assignBtn) throw new Error('Assign button not found');
         assignBtn.click();
-        // Wait for dialog to close
+
         let closed = false;
         for (let i = 0; i < 30; i++) {
           if (!document.querySelector('[name="dialog-Assign-Clusters"]')) { closed = true; break; }
@@ -326,7 +308,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
       const colsAfter: string[] = await page.evaluate(() => grok.shell.tv.dataFrame.columns.names());
       const newCols = colsAfter.filter(n => !colsBefore.includes(n));
       expect(newCols.length, 'exactly one new column appended').toBe(1);
-      // Column name format Cluster (<threshold.toFixed(2)>); match the format, not the value.
+
       expect(newCols[0], 'new column name follows Cluster (N.NN) format').toMatch(/^Cluster\s*\(\d+(\.\d{1,2})?\)$/);
 
       const colInfo = await page.evaluate((colName: string) => {
@@ -338,7 +320,7 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
         };
       }, newCols[0]);
       expect(colInfo.type, 'new column is string (categorical)').toBe('string');
-      // Clusters→Threshold binary search is inexact — assert categories.length > 0, not == requested.
+
       expect(colInfo.categoriesLength, 'cluster column has at least one category').toBeGreaterThan(0);
       expect(colInfo.rowCountMatches, 'cluster column length matches DataFrame row count').toBe(true);
 
@@ -349,7 +331,6 @@ test('Dendrogram: Hierarchical Clustering (Bio) — sequence-default dialog + Le
     }
   });
 
-  // Cleanup
   await page.evaluate(() => grok.shell.closeAll());
 
   finishSpec();

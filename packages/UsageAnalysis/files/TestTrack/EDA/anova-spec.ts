@@ -55,10 +55,9 @@ test('ANOVA scenario', async ({page}) => {
   });
 
   await softStep('Step 3 — Click Run; expect Box plot + Analysis + F-test tabs', async () => {
-    // Dialog button is named "Run" (mixed case) — NOT "button-RUN" or "button-OK".
+
     await page.locator('.d4-dialog [name="button-Run"]').last().click();
 
-    // Poll up to 30s for the Box plot viewer + tab host with Analysis/F-test tabs.
     const deadline = Date.now() + 30_000;
     let hasBoxPlot = false;
     let hasAnalysisTab = false;
@@ -97,7 +96,6 @@ test('ANOVA scenario', async ({page}) => {
     expect(hasAnalysisTab).toBe(true);
     expect(hasFTestTab).toBe(true);
 
-    // Final assertion via Playwright locator too.
     await expect(page.locator('[name="viewer-Box-plot"]')).toBeVisible({timeout: 5000});
   });
 

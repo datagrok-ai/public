@@ -11,7 +11,6 @@ const VIEWER_TYPE = 'Calendar';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const DATE_COLUMN = 'STARTED';
 
-/** Pure red, the colour the weekend day numbers are drawn in. */
 const RED: v.RgbRange = {rMin: 180, rMax: 255, gMin: 0, gMax: 90, bMin: 0, bMax: 90};
 
 const category = (page: Page, cat: string, probe: string) =>
@@ -25,11 +24,6 @@ const clearSelection = async (page: Page) => {
   await expect.poll(() => selectionCount(page), {timeout: 5000}).toBe(0);
 };
 
-/**
- * The regions the calendar hit-tests, derived from the canvas the same way the
- * viewer lays them out: a month column on the left, a day-of-week header row on
- * top of the day cells, and an optional year header above everything.
- */
 async function regions(page: Page, withHeader = true) {
   const box = await page.evaluate(() => {
     const canvas = document.querySelector('[name="viewer-Calendar"] canvas[name="canvas"]') as HTMLCanvasElement;
@@ -43,11 +37,11 @@ async function regions(page: Page, withHeader = true) {
   const dayWidth = (box.w - monthWidth) / 7;
   return {
     box, dy, monthWidth, headerH,
-    /** Centre of the day-of-week header cell of column `i` (0 = Sunday). */
+
     weekday: (i: number) => ({x: daysLeft + dayWidth * (i + 0.5), y: box.y + headerH + dy / 2}),
-    /** A point inside the month labels column, `week` day-rows down. */
+
     month: (week = 2.5) => ({x: box.x + monthWidth / 2, y: box.y + headerH + dy * (week + 1)}),
-    /** Centre of the day cell at column `col`, `week` rows down. */
+
     day: (col: number, week: number) =>
       ({x: daysLeft + dayWidth * (col + 0.5), y: box.y + headerH + dy * (week + 1.5)}),
   };
@@ -55,7 +49,6 @@ async function regions(page: Page, withHeader = true) {
 
 interface Hit { caption: string; rows: number; action: string }
 
-/** Hover a point and read the calendar's row-group tooltip. */
 async function hover(page: Page, at: {x: number; y: number}): Promise<Hit | null> {
   await page.mouse.move(at.x - 25, at.y - 25);
   await page.mouse.move(at.x, at.y, {steps: 4});
@@ -72,7 +65,6 @@ async function hover(page: Page, at: {x: number; y: number}): Promise<Hit | null
   return m ? {caption: m[1].trim(), action: m[2], rows: Number(m[3])} : null;
 }
 
-/** First day cell under the pointer that actually carries rows. */
 async function findDayCell(page: Page): Promise<{hit: Hit; at: {x: number; y: number}}> {
   const r = await regions(page);
   for (const week of [2, 3, 4, 1, 5, 6])
@@ -84,7 +76,6 @@ async function findDayCell(page: Page): Promise<{hit: Hit; at: {x: number; y: nu
   throw new Error('no day cell with rows found on the calendar');
 }
 
-/** Row counts of the date column, grouped the way the calendar groups them. */
 function dateCounts(page: Page, column: string) {
   return page.evaluate((col) => {
     const t = (window as any).grok.shell.t;
@@ -114,7 +105,6 @@ test('Calendar', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add the viewer
   await softStep('Add Calendar from the Viewers toolbox', async () => {
     await page.locator('[name="icon-calendar"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
@@ -122,12 +112,11 @@ test('Calendar', async ({page}) => {
       {timeout: 30_000}).toBeGreaterThan(1000);
   });
 
-  // #### Tooltips over the three regions
   await softStep('Day, month and weekday tooltips report the matching rows', async () => {
     const counts = await dateCounts(page, DATE_COLUMN);
 
     const {hit: day} = await findDayCell(page);
-    // The caption is the full timestamp of the day under the pointer.
+
     expect(day.caption).toMatch(/^\d{4}-\d{2}-\d{2}/);
     expect(day.rows).toBe(counts.byDay[day.caption.slice(0, 10)]);
 
@@ -146,11 +135,6 @@ test('Calendar', async ({page}) => {
       expect(weekday!.rows).toBe(counts.byWeekday[i]);
     }
 
-    // GROK-20634: Sunday is column 0, and the hit test compares the 0-based
-    // column index against Dart's `weekday`, which numbers Sunday 7 — so the
-    // header is labelled correctly and matches nothing. The label is asserted
-    // hard; only the count is the open bug. Clicking it selects nothing for the
-    // same reason, through the same predicate.
     const sunday = await hover(page, r.weekday(0));
     expect(sunday).not.toBeNull();
     expect(sunday!.caption).toBe(WEEKDAYS[0]);
@@ -159,19 +143,14 @@ test('Calendar', async ({page}) => {
     });
   });
 
-  // #### The date column the viewer picked
   await softStep('The auto-picked date column is reflected in the property grid', async () => {
-    // GROK-20636: the viewer takes the first date column on attach but never
-    // writes it into `dateColumnName`, so the Date row stays empty and picking
-    // another column there changes nothing. demog has a single date column, so
-    // only the write-back half can be asserted here.
+
     await knownOpenBug('GROK-20636', async () => {
       expect(await page.evaluate(() => (window as any).grok.shell.tv.viewers
         .find((x: any) => x.type === 'Calendar').props.dateColumnName)).toBe(DATE_COLUMN);
     });
   });
 
-  // #### Clicking selects exactly the rows the tooltip promised
   await softStep('Clicking a day, a month and a weekday selects their rows', async () => {
     await clearSelection(page);
     const {hit: day, at} = await findDayCell(page);
@@ -190,7 +169,6 @@ test('Calendar', async ({page}) => {
     await expect.poll(() => selectionCount(page), {timeout: 8000}).toBe(monday!.rows);
   });
 
-  // #### Selection modifiers
   await softStep('Shift+click extends the selection, Ctrl+click toggles it', async () => {
     await clearSelection(page);
     const r = await regions(page);
@@ -212,7 +190,6 @@ test('Calendar', async ({page}) => {
     await clearSelection(page);
   });
 
-  // #### On Click = Filter
   await softStep('On Click set to Filter makes the same click filter instead', async () => {
     await v.openViewerProperties(page, VIEWER_NAME, '[name="prop-on-click"]');
     await category(page, 'data', 'on-click');
@@ -221,7 +198,7 @@ test('Calendar', async ({page}) => {
 
     const r = await regions(page);
     const month = await hover(page, r.month());
-    // The tooltip now advertises what the click will do.
+
     expect(month!.action).toBe('filter');
 
     await page.mouse.click(r.month().x, r.month().y);
@@ -235,7 +212,6 @@ test('Calendar', async ({page}) => {
     expect(await v.propertyGridValue(page, 'on-click', 'data')).toBe('Select');
   });
 
-  // #### Red weekends
   await softStep('Red Weekends colours the weekend day numbers', async () => {
     await category(page, 'misc', 'red-weekends');
     expect((await v.countCanvasPixels(page, VIEWER_TYPE, {rgbRange: RED})).matched).toBeGreaterThan(0);
@@ -249,7 +225,6 @@ test('Calendar', async ({page}) => {
       {timeout: 10_000}).toBeGreaterThan(0);
   });
 
-  // #### The year header
   await softStep('Show Header hides the year caption and gives the days its space', async () => {
     await category(page, 'misc', 'show-header');
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
@@ -258,11 +233,10 @@ test('Calendar', async ({page}) => {
 
     await v.setPropertyGridCheckbox(page, 'show-header', false, 'misc');
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
-    // The day cells grow into the freed row, so they cover more of the canvas.
+
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     expect((await v.countCanvasPixels(page, VIEWER_TYPE)).total).toBeGreaterThan(withHeader);
 
-    // The day-of-week row moved up by the height of the header.
     const shifted = await regions(page, false);
     const weekday = await hover(page, shifted.weekday(1));
     expect(weekday!.caption).toBe('Monday');
@@ -271,7 +245,6 @@ test('Calendar', async ({page}) => {
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
   });
 
-  // #### Filtering
   await softStep('Filtering the table reshapes the calendar', async () => {
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
@@ -280,15 +253,10 @@ test('Calendar', async ({page}) => {
     expect(filteredCount).toBeLessThan(total);
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 200});
 
-    // The tooltip still counts every row behind the date, filtered or not.
     const counts = await dateCounts(page, DATE_COLUMN);
     const {hit} = await findDayCell(page);
     expect(hit.rows).toBe(counts.byDay[hit.caption.slice(0, 10)]);
 
-    // GROK-20635: with a filter in place, Show Filtered Only should decide
-    // whether the whole dataset is still drawn behind it. The property is only
-    // ever read by `CalendarCore.rowIndexes`, which nothing calls, so the canvas
-    // stays byte-identical either way.
     await category(page, 'misc', 'show-filtered-only');
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
@@ -304,7 +272,6 @@ test('Calendar', async ({page}) => {
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 200});
   });
 
-  // #### Closing the viewer
   await softStep('Close the viewer from its title bar', async () => {
     await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
     await expect(page.locator(VIEWER)).toHaveCount(0);

@@ -16,10 +16,6 @@ test("Scripts Layout — test_Layout: Layout pane viewers + project round-trip",
 
   await loginToDatagrok(page);
 
-  // Setup — Windows mode (simpleMode = false) AND the Toolbox sidebar must be visible.
-  // In a fresh Playwright context the user has no pinned toolbox; without
-  // grok.shell.windows.showToolbox=true the Toolbox tab is absent and viewer icons
-  // (icon-scatter-plot etc.) are not in the DOM at all. Both flags are required.
   await page.evaluate(async () => {
     document.body.classList.add("selenium");
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -132,16 +128,12 @@ df = DG.DataFrame.fromCsv(csv);
   await softStep(
     "4. Add Scatter Plot + Histogram via Toolbox viewer icons (Layout pane)",
     async () => {
-      // The Layout-pane TableView has no JS-side proxy (not in grok.shell.tableViews), but its
-      // grid is the active grid. With simpleMode=false the Toolbox is exposed; clicking a viewer
-      // icon adds the viewer to the layout-pane TableView.
+
       const viewerNames = await page.evaluate(async () => {
         grok.shell.windows.simpleMode = false;
         grok.shell.windows.showToolbox = true;
         await new Promise((r) => setTimeout(r, 800));
-        // Bottom sidebar tabs are span.tab-handle-text inside a clickable .tab-handle parent —
-        // NOT .d4-tab-header (which targets the Script/Layout/Debug tabs at the top of the
-        // script editor). Without showToolbox=true, none of these elements exist in the DOM.
+
         const toolboxSpan = Array.from(
           document.querySelectorAll(".tab-handle-text"),
         ).find((e) => e.textContent?.trim() === "Toolbox") as
@@ -167,17 +159,10 @@ df = DG.DataFrame.fromCsv(csv);
     },
   );
 
-  // Step 5 — coloring/style/hide-columns: same UI surface as step 4 (Toolbox + viewer
-  // context-menu Properties + grid-header context-menu "Order or Hide Columns..."). The
-  // assertion target is "the layout includes user customizations beyond Grid" — already
-  // covered by step 4. We don't repeat the broad-stroke property toggling here to keep the
-  // spec focused; the saved-layout check in step 8 verifies persistence end-to-end.
-
   await softStep(
     "6. Save script — saveScript walks layoutViews and persists the layout",
     async () => {
-      // saveScript() is async (saves the layout via dapi.layouts.save then dapi.scripting.save).
-      // Poll the script until the layout id appears in outputs[0].options, up to 15 s.
+
       const layoutOnParam = await page.evaluate(async () => {
         const save = Array.from(
           document.querySelectorAll('[name="button-Save"]'),
@@ -209,9 +194,7 @@ df = DG.DataFrame.fromCsv(csv);
   await softStep(
     "8. Re-run via editor Layout tab — saved layout reapplies (Grid+SP+Hist)",
     async () => {
-      // Note: running via grok.dapi.scripts.first().apply() + addTableView() does NOT auto-apply
-      // the layout — that path bypasses refreshLayoutView's dapi.layouts.find(...).then(loadLayout)
-      // hook. Re-routing into the editor and clicking Run script does apply it.
+
       const viewerNames = await page.evaluate(async (id) => {
         grok.shell.route(`/script/${id}`);
         for (let i = 0; i < 60; i++) {
@@ -264,8 +247,7 @@ df = DG.DataFrame.fromCsv(csv);
   await softStep(
     "9. Add new viewers via JS API on script-output TableView",
     async () => {
-      // Switch context to a regular TableView (addTableView path) so we can exercise the
-      // standard JS API surface — addViewer, saveLayout, dataFrame.
+
       const types = await page.evaluate(async () => {
         grok.shell.closeAll();
         await new Promise((r) => setTimeout(r, 1000));
@@ -315,12 +297,7 @@ df = DG.DataFrame.fromCsv(csv);
   await softStep(
     "11. Open the project — TableView and dataframe restore",
     async () => {
-      // Scenario intent: layout fully restores (Grid + Scatter plot + Histogram).
-      // Observed on dev 2026-05-05 in BOTH Tabs and Windows mode: only Grid restores even
-      // though saved layout JSON contains all three viewers. Explicit tv.loadLayout() post-open
-      // also fails to restore non-Grid viewers. Real platform bug — Blocker B in run-md.
-      // Asserting only the data-restore (rows + view name + Grid present) per the
-      // "no codified bugs" rule.
+
       const info = await page.evaluate(async (id) => {
         grok.shell.closeAll();
         await new Promise((r) => setTimeout(r, 1500));
@@ -345,26 +322,15 @@ df = DG.DataFrame.fromCsv(csv);
       expect(info.viewType).toBe("TableView");
       expect(info.rows).toBe(270);
       expect(info.viewers).toContain("Grid");
-      // Note: full layout restore (Scatter plot + Histogram) is broken on dev — not asserted.
+
     },
   );
 
-  // Step 12 — Toolbox > File > Refresh: structurally unreachable for this scenario.
-  // The "File" Toolbox pane appears only when a TableView's dataFrame has a file source
-  // bound (e.g. tables loaded via `grok.dapi.files.openTable(...)`). This scenario produces
-  // its dataFrame from a JS script that programmatically reads CSVs; the saved tableInfo
-  // carries no file binding, so after project open the Toolbox shows
-  // [Filters, Actions, Search, Viewers, Layouts, …info-panels] — no File section.
-  // To make step 12 testable, the scenario would need to either (a) load the table directly
-  // via `openTable` rather than via a script, or (b) add a "File" affordance on script-
-  // produced tables.
   await test.step.skip(
     "12. Toolbox > File > Refresh (SKIP — no File pane for script-produced TableViews)",
     async () => {},
   );
 
-  // Cleanup — order: project → layout → tableInfo → script (FK constraint
-  // view_layouts_columns_column_id_fkey requires layout deletion after project).
   await page.evaluate(
     async (ids) => {
       grok.shell.closeAll();

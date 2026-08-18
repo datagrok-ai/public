@@ -1,9 +1,3 @@
-// Chem Hierarchical Clustering on mol1K.csv (molecule col = Molecule); Features defaults to molecule.
-// SR-01: the non-monotonic tree shape is a canvas-pixel property, not Playwright-assertable; full
-// distance × linkage coverage lives in the sibling apitest. SR-03: centroid + molecule features
-// crashes (WASM "memory access out of bounds" at hierarchical-clustering.ts:217), so Step 7 uses the
-// scenario's "(or median)" alternative. DataFrame name from readCsv is "Table" (not "mol1K").
-// Resource-load 404s on every neighbor mount are non-fatal noise (see isFatalConsoleError).
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -31,7 +25,7 @@ async function openHierarchicalClusteringDialog(page: Page): Promise<void> {
 
 async function clickOkAndWaitForNeighbor(page: Page): Promise<number> {
   await page.locator('[name="dialog-Hierarchical-Clustering"] [name="button-OK"]').click();
-  // Poll for the magic-wand mount (the mounted-and-ready signal).
+
   const foundAtMs: number = await page.evaluate(async () => {
     const start = Date.now();
     for (let i = 0; i < 60; i++) {
@@ -67,7 +61,6 @@ async function setDialogSelect(page: Page, name: 'Distance' | 'Linkage', value: 
   }, [name, value]);
 }
 
-// True for fatal app errors; false for non-fatal noise (404 resource loads, ResizeObserver loop).
 function isFatalConsoleError(text: string): boolean {
   if (/Failed to load resource[\s\S]*404/i.test(text)) return false;
   if (/ResizeObserver loop/i.test(text)) return false;
@@ -79,7 +72,6 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
 
   await loginToDatagrok(page);
 
-  // Setup — open mol1K and wait for the Molecule semType + Chem package.
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -92,7 +84,7 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
       setTimeout(resolve, 4000);
     });
-    // Chem dataset: wait for Grid canvas + extra settle for Chem package warmup.
+
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise(r => setTimeout(r, 200));
@@ -100,8 +92,6 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
     await new Promise(r => setTimeout(r, 5000));
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
-  // --- Block A — Dialog exposes all Distance and Linkage values ---
 
   await softStep('1. Open mol1K and verify molecule column rendered', async () => {
     const info = await page.evaluate(() => {
@@ -125,7 +115,7 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
       okBtn: !!document.querySelector('[name="dialog-Hierarchical-Clustering"] [name="button-OK"]'),
     }));
     expect(defaults.dialogPresent, 'Hierarchical Clustering dialog opened').toBe(true);
-    // DataFrame name from readCsv is "Table" (not "mol1K"); one TableView open.
+
     expect(defaults.tableOptionCount, 'Table SELECT has one option (one TableView open)').toBe(1);
     expect(defaults.features, 'Features defaults to molecule').toContain('molecule');
     expect(defaults.distancePresent, 'Distance input visible').toBe(true);
@@ -159,10 +149,8 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
     expect(linkage.default, 'Linkage default').toBe('ward');
   });
 
-  // --- Block B — Representative end-to-end runs (spot-check) ---
-
   await softStep('5. OK with euclidean+ward (Features=molecule) → dendrogram neighbor injected, no fatal console error', async () => {
-    // Defaults are already euclidean+ward+molecule; click OK and wait for the magic-wand mount.
+
     const consoleErrors: string[] = [];
     const listener = (msg: any) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); };
     page.on('console', listener);
@@ -179,7 +167,7 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
       expect(state.magicWand, 'magic-wand icon present').toBe(true);
       expect(state.closeBtn, 'close icon present').toBe(true);
       expect(state.neighborHasCanvas, 'neighbor canvas mounted').toBe(true);
-      // GridNeighbor is NOT a DG.Viewer.
+
       expect(state.viewerTypes, 'viewer types list (neighbor is NOT a Viewer)').toEqual(['Grid']);
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);
       expect(fatalErrors, 'no fatal console errors on euclidean+ward run').toEqual([]);
@@ -193,7 +181,7 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
     await openHierarchicalClusteringDialog(page);
     await setDialogSelect(page, 'Distance', 'manhattan');
     await setDialogSelect(page, 'Linkage', 'single');
-    // Features defaults to molecule on the Chem leaf; no change needed.
+
     const verify = await page.evaluate(() => ({
       distance: (document.querySelector('[name="input-Distance"]') as HTMLSelectElement)?.value,
       linkage: (document.querySelector('[name="input-Linkage"]') as HTMLSelectElement)?.value,
@@ -217,12 +205,12 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
       expect(foundAtMs, 'second dendrogram mount time (ms; -1 = timeout)').toBeGreaterThan(0);
       const state = await page.evaluate(() => ({
         magicWand: !!document.querySelector('.dendrogram-assign-clusters-bttn'),
-        // Replace-on-rerun closes the previous neighbor before injecting the new one.
+
         neighborCount: document.querySelectorAll('.dendrogram-assign-clusters-bttn').length,
       }));
       expect(state.magicWand, 'magic-wand icon present after manhattan+single run').toBe(true);
       expect(state.neighborCount, 'exactly one neighbor attached').toBe(1);
-      // Scenario step 6 explicit assertions:
+
       expect(unsupportedTypeErrors, 'no "Unsupported column type" error').toEqual([]);
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);
       expect(fatalErrors, 'no fatal console errors on manhattan+single run').toEqual([]);
@@ -235,9 +223,9 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
     await closeDendrogramNeighbor(page);
     await openHierarchicalClusteringDialog(page);
     await setDialogSelect(page, 'Distance', 'euclidean');
-    // SR-03: centroid + molecule crashes (WASM OOB at hierarchical-clustering.ts:217); use median.
+
     await setDialogSelect(page, 'Linkage', 'median');
-    // SR-02: Features stays at default molecule (numeric-features substitution deferred to apitest).
+
     const verify = await page.evaluate(() => ({
       distance: (document.querySelector('[name="input-Distance"]') as HTMLSelectElement)?.value,
       linkage: (document.querySelector('[name="input-Linkage"]') as HTMLSelectElement)?.value,
@@ -258,7 +246,7 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
     page.on('console', listener);
     try {
       const foundAtMs = await clickOkAndWaitForNeighbor(page);
-      // SR-01: non-monotonic-tree visual property not asserted — only "builds without error".
+
       expect(foundAtMs, 'median mount time (ms; -1 = timeout)').toBeGreaterThan(0);
       const state = await page.evaluate(() => ({
         magicWand: !!document.querySelector('.dendrogram-assign-clusters-bttn'),
@@ -266,7 +254,7 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
       }));
       expect(state.magicWand, 'magic-wand icon present after median run').toBe(true);
       expect(state.neighborCount, 'exactly one neighbor attached').toBe(1);
-      // Scenario step 7 explicit assertions:
+
       expect(unsupportedTypeErrors, 'no "Unsupported column type" error on median path').toEqual([]);
       const fatalErrors = consoleErrors.filter(isFatalConsoleError);
       expect(fatalErrors, 'no fatal console errors on euclidean+median run').toEqual([]);
@@ -275,7 +263,6 @@ test('Dendrogram: Hierarchical Clustering (Chem) — dialog gateway + representa
     }
   });
 
-  // Cleanup
   await page.evaluate(() => grok.shell.closeAll());
 
   finishSpec();

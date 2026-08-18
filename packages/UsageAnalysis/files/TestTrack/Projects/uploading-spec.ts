@@ -1,6 +1,3 @@
-// Source-matrix scenario covering uploading.md cases 1-6, 8, 9 in both Sync ON and Sync OFF variants.
-// Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
-// before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.
 import {test, expect, type Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -36,7 +33,6 @@ import {
 
 test.use(projectsTestOptions);
 
-// Strip the `.script` provenance tag from every open dataframe — emulates Data Sync OFF (snapshot mode).
 async function stripProvenance(page: Page): Promise<void> {
   await evalJs(page, `(async () => {
     for (const df of grok.shell.tables) {
@@ -45,8 +41,6 @@ async function stripProvenance(page: Page): Promise<void> {
   })()`);
 }
 
-// Provision a transient root Space with a copy of demog.csv. Returns a fixture or an env-skip blocker
-// (Spaces createRootSpace may not exist on older builds — callers should test.skip on a blocker).
 async function provisionSpaceWithDemog(
   page: Page, namePrefix: string,
 ): Promise<{fixture: SpaceFixture} | {blocked: true; reason: string}> {
@@ -64,10 +58,6 @@ async function provisionSpaceWithDemog(
 function throwOnStepErrors() {
   finishSpec();
 }
-
-// ---------------------------------------------------------------------------
-// Case 1 — Files + Files (Link Tables UI delegated to projects-ui-smoke)
-// ---------------------------------------------------------------------------
 
 async function runCase1(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -123,10 +113,6 @@ test('Projects / Uploading / Case 1: Files + Files (Sync OFF)', async ({page}) =
   stepErrors.length = 0;
   await runCase1(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 2 — Query + Query (provisioned on System:Datagrok)
-// ---------------------------------------------------------------------------
 
 async function runCase2(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -190,10 +176,6 @@ test('Projects / Uploading / Case 2: Query + Query (Sync OFF)', async ({page}) =
   await runCase2(page, 'off');
 });
 
-// ---------------------------------------------------------------------------
-// Case 3 — Query + File
-// ---------------------------------------------------------------------------
-
 async function runCase3(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
   const projectName = `Test_Case3_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
@@ -253,10 +235,6 @@ test('Projects / Uploading / Case 3: Query + File (Sync OFF)', async ({page}) =>
   stepErrors.length = 0;
   await runCase3(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 4 — Spaces + Spaces (open demog.csv twice from the same Space)
-// ---------------------------------------------------------------------------
 
 async function runCase4(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -325,10 +303,6 @@ test('Projects / Uploading / Case 4: Spaces + Spaces (Sync OFF)', async ({page})
   await runCase4(page, 'off');
 });
 
-// ---------------------------------------------------------------------------
-// Case 5 — Spaces + File (demog from Space + spgi-100 from System:AppData)
-// ---------------------------------------------------------------------------
-
 async function runCase5(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
   const projectName = `Test_Case5_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
@@ -367,8 +341,7 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
 
     await softStep('reopen verifies Space + File tables re-materialize', async () => {
       if (!saved) throw new Error('no saved project');
-      // Mixed sources — both happen to be `files` pattern but reopen verifies
-      // the active TableView only; pattern check is loose.
+
       const expectedPattern = sync === 'on' ? PROVENANCE_PATTERNS.files : undefined;
       const result = await reopenAndAssertProvenance(page, saved.projectId, expectedPattern);
       expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
@@ -397,10 +370,6 @@ test('Projects / Uploading / Case 5: Spaces + File (Sync OFF)', async ({page}) =
   stepErrors.length = 0;
   await runCase5(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 6 — Spaces + Query (demog from Space + provisioned System:Datagrok query)
-// ---------------------------------------------------------------------------
 
 async function runCase6(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -446,7 +415,7 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
 
     await softStep('reopen verifies Space + Query tables re-materialize', async () => {
       if (!saved) throw new Error('no saved project');
-      // Mixed sources — pattern check skipped; verify multi-table reopen.
+
       const result = await reopenAndAssertProvenance(page, saved.projectId);
       expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
       expect(result.reopenedRowCount).toBeGreaterThan(0);
@@ -475,10 +444,6 @@ test('Projects / Uploading / Case 6: Spaces + Query (Sync OFF)', async ({page}) 
   stepErrors.length = 0;
   await runCase6(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 8 — Files + Pivot Table (Add to workspace)
-// ---------------------------------------------------------------------------
 
 async function runCase8(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -532,10 +497,6 @@ test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync OFF)', asyn
   stepErrors.length = 0;
   await runCase8(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 9 — DB table (System:Datagrok / public.groups) + Aggregate Rows
-// ---------------------------------------------------------------------------
 
 async function runCase9(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();

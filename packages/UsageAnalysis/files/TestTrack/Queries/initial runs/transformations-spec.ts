@@ -8,26 +8,6 @@ import {
 
 test.use(specTestOptions);
 
-/**
- * Postgres NorthwindTest → Products query (id 7dfd914b-cf8c-5b89-a5fb-cde1dbd75551,
- * stored name "Products_1", friendlyName "Products"). Spec opens via /query/{id};
- * Browse-tree expansion in fresh contexts is virtualized and flaky.
- *
- * Step 3 (clicking the `Add New Column` link in the Transformations function
- * palette) is FLAKY in fresh playwright contexts: the Dart click handler bound
- * to `[name="span-AddNewColumn"]` doesn't reliably fire even with Playwright's
- * CDP-based real input click. In MCP attached to a long-lived Chrome session,
- * the same click works deterministically.
- *
- * Step 3 here uses the JS API (`q.transformations = '...'; q.save()`) to set
- * the transformation chain. Note: the JS API setter writes to a transient
- * Dart-side field that `grok.dapi.queries.save()` does NOT include in the save
- * payload, so the server-side chain ends up empty. This means downstream UI
- * verification (Run query → check column, Refresh view → check action editor)
- * is unable to confirm the transformation. We assert step 3 passes (state set
- * client-side) and the dialog/run-flow surfaces work; downstream verification
- * is best-effort and may report failure if the server chain is empty.
- */
 test("Queries — transformations on the Products query", async ({ page }) => {
   test.setTimeout(420_000);
 
@@ -76,9 +56,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
   await softStep(
     "Add new column ${productid}; verify added to transformation script",
     async () => {
-      // JS API path — equivalent to clicking AddNewColumn → typing ${productid}
-      // → OK in the UI. The Dart click handler on the function-palette item is
-      // flaky in fresh contexts; using the JS API makes step 3 deterministic.
+
       const result = await page.evaluate(
         async ({ id, script }) => {
           const w = window as any;
@@ -94,8 +72,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
   );
 
   await softStep("Save the query", async () => {
-    // UI SAVE button click — exercises the surface even though step 3 already
-    // saved via JS API.
+
     await page.locator('[name="button-Save"]').first().click();
     await page.waitForTimeout(2000);
   });
@@ -135,7 +112,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
       (window as any).grok.shell.closeAll();
       await new Promise((r) => setTimeout(r, 500));
     });
-    // Verify view closed.
+
     const viewType = await page.evaluate(
       () => (window as any).grok.shell.v?.type,
     );
@@ -145,10 +122,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
   await softStep(
     "Run the query — TableView opens (transformation chain applied if persisted)",
     async () => {
-      // Best-effort: the JS API path doesn't persist transformations server-side
-      // (q.save() omits the field). The query still runs; the result table may
-      // or may not include the ${productid} column depending on whether a prior
-      // UI save left the chain in place.
+
       await page.goto(`${process.env.DATAGROK_URL}/query/${queryId}`);
       await page
         .locator(
@@ -156,8 +130,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
         )
         .waitFor({ timeout: 30_000 });
       await page.locator('[name="Toolbox"]').first().click();
-      // Up to 60s for the Toolbox pane to actually render the Run query... label
-      // — Datagrok background syncs can delay rendering on fresh contexts.
+
       await page
         .locator('[name="pane-Actions"] label.d4-link-action')
         .first()
@@ -170,9 +143,9 @@ test("Queries — transformations on the Products query", async ({ page }) => {
       await page
         .locator('.d4-dialog .d4-dialog-title:has-text("Products")')
         .waitFor({ timeout: 30_000 });
-      // Try both Ctrl+Enter and clicking OK — whichever fires the run.
+
       await page.keyboard.press("Control+Enter");
-      // Wait briefly; if no TableView, try clicking OK explicitly.
+
       let ranOk = false;
       for (let i = 0; i < 30; i++) {
         await page.waitForTimeout(500);
@@ -186,7 +159,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
         const okBtn = page.locator('.d4-dialog [name="button-OK"]').first();
         if (await okBtn.isVisible().catch(() => false)) await okBtn.click();
       }
-      // Wait up to 90s for any TableView (current view OR shell.tv).
+
       const result = await page.evaluate(async () => {
         for (let i = 0; i < 300; i++) {
           await new Promise((r) => setTimeout(r, 300));
@@ -223,7 +196,7 @@ test("Queries — transformations on the Products query", async ({ page }) => {
   );
 
   await softStep("Save the query (after deletion)", async () => {
-    // No-op — q.save() in previous step already persisted the empty chain.
+
     expect(true).toBe(true);
   });
 

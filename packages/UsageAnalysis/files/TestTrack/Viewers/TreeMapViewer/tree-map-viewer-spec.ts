@@ -1,3 +1,6 @@
+/* ---
+realizes: []
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -9,7 +12,6 @@ const VIEWER = `[name="viewer-${VIEWER_NAME}"]`;
 const VIEWER_TYPE = 'Tree map';
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-/** On-viewer split-level selectors, in order. The trailing one is always empty. */
 const splitSelect = (page: Page, level: number) =>
   page.locator(`${VIEWER} select.d4-column-selector-tree-map`).nth(level);
 
@@ -17,7 +19,6 @@ const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop)
 const category = (page: Page, cat: string, probe: string) =>
   v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
 
-/** Category counts of a column over the rows the viewer currently shows. */
 async function categoryCounts(page: Page, column: string, filteredOnly = false): Promise<Record<string, number>> {
   return page.evaluate(({col, filtered}) => {
     const df = (window as any).grok.shell.t;
@@ -32,7 +33,6 @@ async function categoryCounts(page: Page, column: string, filteredOnly = false):
   }, {col: column, filtered: filteredOnly});
 }
 
-/** Hover the map until a leaf tooltip shows up; returns its name and row count. */
 async function hoverLeaf(page: Page): Promise<{name: string; rows: number; x: number; y: number}> {
   const box = (await page.locator(VIEWER).boundingBox())!;
   for (const [dx, dy] of [[0.3, 0.3], [0.7, 0.3], [0.5, 0.7], [0.2, 0.6], [0.85, 0.7]]) {
@@ -57,19 +57,17 @@ test('Tree map', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add the viewer
   await softStep('Add Tree map from the Viewers toolbox', async () => {
     await page.locator('[name="icon-tree-map"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
     await expect.poll(async () => (await v.countCanvasPixels(page, VIEWER_TYPE)).total,
       {timeout: 30_000}).toBeGreaterThan(1000);
-    // A split column is picked automatically and its selector is pre-filled.
+
     expect(await splitSelect(page, 0).inputValue()).not.toBe('');
-    // The trailing selector is the empty placeholder for the next level.
+
     expect(await splitSelect(page, 1).inputValue()).toBe('');
   });
 
-  // #### Split column, driven from the on-viewer selector
   await softStep('Split by RACE draws one leaf per race', async () => {
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
@@ -78,14 +76,12 @@ test('Tree map', async ({page}) => {
     expect(await splitSelect(page, 0).inputValue()).toBe('RACE');
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
 
-    // The leaf under the pointer names a race and reports its exact row count.
     const leaf = await hoverLeaf(page);
     const counts = await categoryCounts(page, 'RACE');
     expect(Object.keys(counts)).toContain(leaf.name);
     expect(leaf.rows).toBe(counts[leaf.name]);
   });
 
-  // #### A second split level
   await softStep('Adding SEX as a second level nests the leaves', async () => {
     const levels = page.locator(`${VIEWER} select.d4-column-selector-tree-map`);
     const levelsBefore = await levels.count();
@@ -94,12 +90,10 @@ test('Tree map', async ({page}) => {
 
     await splitSelect(page, 1).selectOption('SEX');
 
-    // Picking in the placeholder adds the level and a fresh placeholder after it.
     await expect(levels).toHaveCount(levelsBefore + 1);
     expect(await splitSelect(page, 1).inputValue()).toBe('SEX');
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
 
-    // Leaves are now RACE × SEX groups, so a leaf is smaller than its race.
     const leaf = await hoverLeaf(page);
     const raceCounts = await categoryCounts(page, 'RACE');
     expect(Math.max(...Object.values(raceCounts))).toBeGreaterThan(leaf.rows);
@@ -108,7 +102,6 @@ test('Tree map', async ({page}) => {
     await expect(levels).toHaveCount(levelsBefore);
   });
 
-  // #### Colour coding
   await softStep('Colour by AGE and switch the aggregation', async () => {
     await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'data', 'color');
@@ -127,7 +120,6 @@ test('Tree map', async ({page}) => {
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 300});
   });
 
-  // #### Size coding
   await softStep('Size by WEIGHT rescales the rectangles', async () => {
     await category(page, 'data', 'size');
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
@@ -139,15 +131,12 @@ test('Tree map', async ({page}) => {
     expect(await shownValue(page, 'size')).toBe('WEIGHT');
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 300});
 
-    // 'sum' is already the default for a size column, so the step switches to
-    // an aggregation that actually changes the layout.
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.selectPropertyGridChoice(page, 'size-aggr-type', 'max');
     expect(await shownValue(page, 'size-aggr-type')).toBe('max');
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 300});
   });
 
-  // #### Clicking a leaf
   await softStep('Clicking a leaf selects exactly that group', async () => {
     const selected = () =>
       page.evaluate(() => (window as any).grok.shell.t.selection.trueCount as number);
@@ -161,7 +150,6 @@ test('Tree map', async ({page}) => {
     await page.evaluate(() => (window as any).grok.shell.t.selection.setAll(false));
   });
 
-  // #### Filtering
   await softStep('Filtering the table reshapes the map', async () => {
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
@@ -170,7 +158,6 @@ test('Tree map', async ({page}) => {
     expect(filteredCount).toBeLessThan(total);
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 300});
 
-    // The leaves now count only the rows that pass the filter.
     const leaf = await hoverLeaf(page);
     const counts = await categoryCounts(page, 'RACE', true);
     expect(leaf.rows).toBe(counts[leaf.name]);
@@ -178,18 +165,16 @@ test('Tree map', async ({page}) => {
     await v.resetFilters(page);
   });
 
-  // #### The column selection panel can be hidden
   await softStep('Show Column Selection Panel hides the on-viewer selectors', async () => {
     await category(page, 'misc', 'show-column-selection-panel');
-    // The selectors stay in the DOM and are hidden, so visibility is what counts.
-    expect(await v.togglePropertyGridCheckbox(page, 'show-column-selection-panel')).toBe(false);
+
+    await v.setPropertyGridCheckbox(page, 'show-column-selection-panel', false);
     await expect(splitSelect(page, 0)).toBeHidden();
 
-    expect(await v.togglePropertyGridCheckbox(page, 'show-column-selection-panel')).toBe(true);
+    await v.setPropertyGridCheckbox(page, 'show-column-selection-panel', true);
     await expect(splitSelect(page, 0)).toBeVisible();
   });
 
-  // #### Closing the viewer
   await softStep('Close the viewer from its title bar', async () => {
     await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
     await expect(page.locator(VIEWER)).toHaveCount(0);

@@ -3,7 +3,7 @@ realizes: [linechart.cp.multi-axis-and-split]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
-import {countCanvasPixels} from '../../helpers/viewers';
+import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -19,11 +19,7 @@ function realErrors(): string[] {
 }
 
 async function setProps(page: Page, props: Record<string, any>) {
-  await page.evaluate((p) => {
-    const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
-    for (const [k, val] of Object.entries(p)) (lc.props as any)[k] = val;
-  }, props);
-  await page.waitForTimeout(500);
+  await v.setViewerProps(page, 'Line chart', [{set: props}], 500);
 }
 
 async function getProps(page: Page, ...names: string[]): Promise<Record<string, any>> {
@@ -35,7 +31,6 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
   }, names);
 }
 
-/** Center of the largest canvas of the line chart, in page coordinates. */
 async function chartCanvasCenter(page: Page): Promise<{x: number, y: number}> {
   return page.evaluate(() => {
     const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
@@ -50,17 +45,16 @@ async function chartCanvasCenter(page: Page): Promise<{x: number, y: number}> {
   });
 }
 
-/** Right-click the chart area, then click a context menu item by its visible
- * label (the per-chart group is named after a Y column, so name attributes
- * are dynamic). */
 async function chartContextMenuClickByLabel(page: Page, label: string) {
   await page.evaluate(() => {
     document.querySelectorAll('.d4-menu-popup').forEach((m) => m.remove());
   });
+
   await page.waitForTimeout(200);
   const center = await chartCanvasCenter(page);
   await page.mouse.click(center.x, center.y, {button: 'right'});
-  await page.waitForTimeout(500);
+
+  await v.pollValue(() => page.locator('.d4-menu-item-label').count(), (n) => n > 0, 500, 50);
   await page.evaluate((text) => {
     const lbl = Array.from(document.querySelectorAll('.d4-menu-item-label'))
       .find((el) => (el.textContent ?? '').trim() === text);
@@ -70,15 +64,12 @@ async function chartContextMenuClickByLabel(page: Page, label: string) {
     if (container) container.style.display = '';
     item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   }, label);
-  await page.waitForTimeout(500);
+  await v.waitForViewerRendered(page, 'Line chart', 500);
 }
 
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
-  // Content-level check (github-2904): a blank chart still has a non-zero
-  // bounding rect, so measure drawn pixels instead of geometry. The threshold
-  // sits ABOVE the axes/labels-only floor so an axes-only "blank" state fails it.
-  // -1 (no canvas / getImageData fault) fails the threshold too.
-  return (await countCanvasPixels(page, 'Line chart')).total > 38000;
+
+  return (await v.countCanvasPixels(page, 'Line chart')).total > 38000;
 }
 
 test('Line Chart — Multi-Axis and Split', async ({page}) => {
@@ -92,33 +83,13 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
-    }
-    await new Promise((r) => setTimeout(r, 5000));
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await page.locator('[name="icon-line-chart"]').click();
   await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});
 
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X', 'Chemical Space Y']});
 
-  // The 38000-px blank threshold in chartCanvasNonEmpty assumes the canvas size the
-  // fixed viewport produces — fail loudly if a layout or viewport change resizes
-  // it, instead of silently devaluing the threshold.
   const cvDims = await page.evaluate(() => {
     const lc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Line chart') as any;
     const cv = lc?.root?.querySelector('canvas') as HTMLCanvasElement | null;
@@ -134,7 +105,6 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     expect(realErrors().length).toBe(before);
   });
 
-  // github-2904: a split under multi-axis must keep the chart rendering.
   await softStep('S1: first split column, chart stays non-empty', async () => {
     const before = realErrors().length;
     await setProps(page, {splitColumnNames: ['Stereo Category']});
@@ -143,7 +113,6 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     expect(realErrors().length).toBe(before);
   });
 
-  // github-2904: the second split column is where the chart went blank.
   await softStep('S1: second split column, chart does not go blank', async () => {
     const before = realErrors().length;
     await setProps(page, {splitColumnNames: ['Stereo Category', 'Series']});
@@ -151,11 +120,10 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     expect(await chartCanvasNonEmpty(page)).toBe(true);
     const followup = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount === 100);
     expect(followup).toBe(true);
-    // GROK-17835 literal repro gesture: the regression surfaced on HOVER over
-    // the multi-axis + two-splits chart, so move a real pointer into the chart
-    // and hold the no-error floor across the hover handling.
+
     const hover = await chartCanvasCenter(page);
     await page.mouse.move(hover.x, hover.y, {steps: 5});
+
     await page.waitForTimeout(600);
     expect(realErrors().length).toBe(before);
   });
@@ -163,22 +131,11 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
   await softStep('S2: 3 Y columns survive an edit, not reset to 1', async () => {
     await setProps(page, {splitColumnNames: [], yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
     expect((await getProps(page, 'yColumnNames')).yColumnNames).toHaveLength(3);
-    // GROK-18484: EDITING the Y list through the property-panel multi-select
-    // dialog must not silently reset it. Drive the real UI: the Y row of the
-    // context panel's property grid, its [...] editor, the Select-columns
-    // dialog's Search input, Escape. The dialog's column LIST is canvas-rendered
-    // (no DOM rows/checkboxes), so a checkbox-toggle+OK mutation is not reachable
-    // in automation — open/search/close is the deepest scriptable editor
-    // interaction; the wrong-dialog and reset failure modes are held by the
-    // '3 checked' identity assert and the exact-set assert below.
+
     await setProps(page, {yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
-    // The context panel usually auto-opens for a selected viewer; click the
-    // gear only when the Y property row is not present (a blind gear click
-    // toggles an open panel CLOSED).
+
     const clickYDots = () => page.evaluate(() => {
-      // Viewer props render as table.property-grid rows: TR.property-grid-item
-      // with the prop name in TD.property-grid-item-name. The Y section header
-      // also carries the text 'Y' but has .property-grid-category.
+
       const rows = Array.from(document.querySelectorAll('table.property-grid tr.property-grid-item')) as HTMLElement[];
       const yRow = rows.find((tr) => !tr.classList.contains('property-grid-category') &&
         (tr.querySelector('td.property-grid-item-name')?.textContent ?? '').trim() === 'Y');
@@ -196,14 +153,13 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
         const panelBase = el.closest('.panel-base') as HTMLElement;
         (panelBase?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement)?.click();
       });
-      await page.waitForTimeout(900);
-      dotsClicked = await clickYDots();
+
+      dotsClicked = await v.pollValue(clickYDots, (ok) => ok, 900, 100);
     }
     expect(dotsClicked).toBe(true);
     const search = page.locator('.d4-dialog .d4-column-grid input[placeholder="Search"]');
     await search.waitFor({timeout: 5000});
-    // Identity: this dialog belongs to the Y row — exactly the 3 Y columns are
-    // pre-checked (Split's dialog would read '0 checked' here).
+
     const checkedLabel = await page.evaluate(() =>
       (Array.from(document.querySelectorAll('.d4-dialog *')) as HTMLElement[])
         .filter((el) => el.childElementCount === 0)
@@ -211,27 +167,21 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
         .find((t) => /^\d+ checked$/.test(t)) ?? null);
     expect(checkedLabel).toBe('3 checked');
     await search.fill('Chemical');
+
     await page.waitForTimeout(600);
-    // Close deterministically via the CANCEL button (an Escape can be consumed
-    // by the focused search input), then prove THIS dialog is gone. The dialog
-    // root is position:fixed (offsetParent is null even when shown) — check
-    // closure by rect. The exact-set assert below makes a wrong-row click or a
-    // silent reset fail loudly, not pass on a length check.
+
     await page.locator('.d4-dialog button', {hasText: 'CANCEL'}).first().click();
-    await page.waitForTimeout(800);
-    // Same marker as the open-detect above (.d4-column-grid), not the
-    // title-derived dlg-select-columns class — a dialog-title change would
-    // silently turn a slug-based check vacuous.
-    const openDialogs = await page.evaluate(() =>
+
+    const openDialogs = await v.pollValue(() => page.evaluate(() =>
       Array.from(document.querySelectorAll('.d4-dialog'))
         .filter((d) => d.getBoundingClientRect().width > 0 &&
-          d.querySelector('.d4-column-grid')).length);
+          d.querySelector('.d4-column-grid')).length),
+    (n) => n === 0, 800, 50);
     expect(openDialogs).toBe(0);
     const y = (await getProps(page, 'yColumnNames')).yColumnNames;
     expect(y).toEqual(['Chemical Space X', 'Chemical Space Y', 'TPSA']);
   });
 
-  // GROK-20033: the column-selector search input must stay inside the selector.
   await softStep('S2: search input is inside the selector bounds', async () => {
     const before = realErrors().length;
     await page.evaluate(() => {
@@ -240,7 +190,12 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
       const yCombo = combos.find((c) => c.getBoundingClientRect().x > 800);
       (yCombo ?? combos[0])?.click();
     });
-    await page.waitForTimeout(800);
+
+    await v.pollValue(() => page.evaluate(() =>
+      !!Array.from(document.querySelectorAll('input.ui-input-editor'))
+        .find((i) => (i as HTMLElement).offsetParent !== null &&
+          (i as HTMLInputElement).placeholder?.includes('Search'))),
+    (present) => present, 800, 50);
     const result = await page.evaluate(() => {
       const input = Array.from(document.querySelectorAll('input.ui-input-editor'))
         .find((i) => (i as HTMLElement).offsetParent !== null &&
@@ -254,16 +209,11 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
       return {present: true, contained};
     });
     if (result.present)
-      expect(result.contained).toBe(true); // GROK-20033 invariant
+      expect(result.contained).toBe(true); 
     else
-      expect(realErrors().length).toBe(before); // no-error floor fallback (search input absent)
+      expect(realErrors().length).toBe(before); 
   });
 
-  // Per-chart context menu: right-clicking the chart area appends a group named
-  // after the chart's Y column (line_chart_context_menu.dart adds it whenever
-  // getChartIndexByScreenY resolves, which it always does with non-empty yCols);
-  // its 'Hide other charts' item collapses yColumnNames / yAggrTypes / chartTypes
-  // to that single column — a menu -> prop signal.
   await softStep('S2b: Hide other charts — per-chart menu reduces Y columns to one', async () => {
     const before = realErrors().length;
     expect((await getProps(page, 'multiAxis')).multiAxis).toBe(true);
@@ -274,8 +224,7 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     expect(yAfter).toHaveLength(1);
     expect(yBefore).toContain(yAfter[0]);
     expect(realErrors().length).toBe(before);
-    // Round-trip: restore the 3-column Y set so Scenario 3 starts from the
-    // documented "multi-axis on, Y columns set" state.
+
     await setProps(page, {yColumnNames: yBefore});
     expect((await getProps(page, 'yColumnNames')).yColumnNames).toEqual(yBefore);
   });

@@ -8,7 +8,6 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
 
   await loginToDatagrok(page);
 
-  // Setup: selenium class, tabs mode, close all, open SPGI.csv, wait for chem
   await page.evaluate(async () => {
     document.body.classList.add('selenium');
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
@@ -28,7 +27,6 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Section 1 — Add sticky metadata to a single cell
   await softStep('S1.1 Open SPGI dataset', async () => {
     const info = await page.evaluate(() => ({
       rows: (window as any).grok.shell.t?.rowCount,
@@ -148,7 +146,6 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     expect(persisted.notes).toBe('test note');
     expect(persisted.verified).toBe(true);
 
-    // close the dialog
     await page.evaluate(() => {
       const d = document.querySelector('.d4-dialog');
       const cancel = d?.querySelector('[name="button-CANCEL"]')
@@ -158,24 +155,19 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     });
   });
 
-  // Section 2 — Create sticky column
   await softStep('S2.1 Add TestSchema1 sticky columns via Context Panel', async () => {
-    // set shell.o to Structure column so Sticky meta pane shows schemas
+
     await page.evaluate(() => {
       (window as any).grok.shell.o = (window as any).grok.shell.t.col('Structure');
     });
     await page.waitForTimeout(1500);
 
-    // expand Sticky meta pane if collapsed
     const stickyHeader = page.locator('.grok-prop-panel .d4-accordion-pane-header', {hasText: 'Sticky meta'}).first();
     await stickyHeader.waitFor({timeout: 10000});
     const expanded = await stickyHeader.evaluate((el) => el.classList.contains('expanded'));
     if (!expanded) await stickyHeader.click();
     await page.waitForTimeout(1500);
 
-    // Click the TestSchema1-scoped "Add all properties as columns" + button.
-    // The pane has one section per schema; scoping to the TestSchema1 section is
-    // required because `button-Add-notes-as-a-column` exists in multiple schemas.
     await page.evaluate(() => {
       const sections = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'));
       const ts1 = sections.find(s => s.querySelector('.d4-flex-row')?.textContent?.trim() === 'TestSchema1');
@@ -183,7 +175,6 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
       addAll?.click();
     });
 
-    // Async schema matching populates all 5 columns after ~5s — poll up to 15s.
     await expect.poll(async () => {
       const names = await page.evaluate(() => (window as any).grok.shell.t.columns.names());
       return ['rating', 'notes', 'verified', 'review_date', 'approve'].every(n => names.includes(n));
@@ -199,7 +190,7 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
       (window as any).grok.shell.tv.grid.sort(['rating'], [true]);
       await new Promise(r => setTimeout(r, 800));
     });
-    // sort applied without error
+
     expect(true).toBe(true);
   });
 
@@ -212,14 +203,13 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     });
     expect(removed).toBe(true);
 
-    // Re-add via the + button in the TestSchema1 section of the Sticky meta pane
     await page.evaluate(() => {
       const sections = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'));
       const ts1 = sections.find(s => s.querySelector('.d4-flex-row')?.textContent?.trim() === 'TestSchema1');
       const btn = ts1?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null;
       btn?.click();
     });
-    // poll up to 15s for rating column to reappear
+
     await expect.poll(async () =>
       await page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating')),
       {timeout: 15_000, intervals: [500]},
@@ -241,9 +231,8 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     expect(res.ratingAtOrig).toBe(5);
   });
 
-  // Section 3 — Batch edit metadata on multiple rows
   await softStep('S3.1 Select 3 rows, right-click > Edit for all properties', async () => {
-    // Reset any prior sort, select 3 rows, compute cell coords
+
     const coords = await page.evaluate(async () => {
       const g: any = (window as any).grok;
       const df = g.shell.t;
@@ -266,12 +255,9 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
       };
     });
 
-    // Real right-click via Playwright page.mouse (proper mousedown/mouseup + contextmenu)
     await page.mouse.move(coords.x, coords.y);
     await page.mouse.click(coords.x, coords.y, {button: 'right'});
 
-    // Wait for context menu to appear, then DOM-click "Edit for all properties"
-    // (visually hidden until parent submenu is hovered — DOM click fires regardless).
     await page.locator('.d4-menu-popup').first().waitFor({timeout: 5000});
     await page.evaluate(() => {
       const menu = document.querySelector('.d4-menu-popup');
@@ -280,19 +266,17 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
       (label?.closest('.d4-menu-item') as HTMLElement)?.click();
     });
 
-    // Wait for the batch-edit host
     await page.locator('[name="input-host-Rows"]').waitFor({timeout: 10000});
     expect(await page.locator('[name="input-host-Rows"]').isVisible()).toBe(true);
   });
 
   await softStep('S3.2 Set verified=true and notes="batch note" for selected rows', async () => {
-    // Click the Verified checkbox via real Playwright click
+
     const verified = page.locator('input[name="prop-view-verified"]').first();
     await verified.waitFor({timeout: 5000});
     if (!(await verified.isChecked())) await verified.click();
     await page.waitForTimeout(400);
 
-    // Enter edit mode on notes row by clicking its view label (last notes row, below y≈220)
     await page.evaluate(async () => {
       const spans = Array.from(document.querySelectorAll('.property-grid-item-name-text span'))
         .filter(s => s.textContent?.trim() === 'notes');
@@ -309,7 +293,7 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     const notesInput = page.locator('input.property-grid-item-editor-textbox').first();
     await notesInput.waitFor({timeout: 5000});
     await notesInput.focus();
-    // clear any pre-existing value (e.g., from prior runs) before typing
+
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await page.keyboard.type('batch note');
@@ -334,7 +318,6 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     }
   });
 
-  // Cleanup
   await page.evaluate(() => (window as any).grok.shell.closeAll());
 
   if (stepErrors.length > 0) {

@@ -131,9 +131,9 @@ test('Bio Diversity Search docks viewer + re-runs diversity selection on fresh d
       (window as any).__scenario1RowCount = grok.shell.tv.dataFrame.rowCount;
     }, dockProbe.subsetIndices);
   });
-  // Settle after Scenario 1's compute before the close-and-reopen sequence.
+
   await page.waitForTimeout(1500);
-  // Scenario 2 — Reopening with a fresh dataset re-runs diversity selection.
+
   await softStep('Scenario 2.1: close the Diversity Search viewer', async () => {
     await page.evaluate(() => {
       const viewers = Array.from((grok.shell.tv as any).viewers) as any[];

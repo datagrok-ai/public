@@ -1,11 +1,3 @@
-// Peptide SAR demo dashboard + Peptides app landing — entry-point smokes.
-// Scenario 1 invokes the FASTA SAR demo (Peptides:macromoleculeSarFastaDemo); Scenario 2 invokes
-// the landing View (Peptides:Peptides) and clicks its three demo buttons via real DOM.
-// Notes: Peptides registers no #app, so the View is reached via grok.functions.call. Complex/HELM
-// demos ship Macromolecule columns named "MSA"/"HELM" (not "AlignedSequence"), so the shape check
-// is semType-by-name-agnostic. grok.shell.tableViews is Iterable (Array.from before .length);
-// grok.shell.lastError is a Promise (must be awaited).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -18,7 +10,6 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
 
     await loginToDatagrok(page);
 
-    // Clean shell, Windows mode, pre-warm Peptides:initPeptides (GROK-17557 cold-init race).
     await softStep('Setup: clean shell + pre-warm Peptides @init', async () => {
       const result = await page.evaluate(async () => {
         document.querySelectorAll('.d4-dialog').forEach((d) => {
@@ -37,13 +28,12 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           tableViewsBefore: Array.from(grok.shell.tableViews).length,
         };
       });
-      // initPeptides is idempotent; a non-null error is non-fatal (startAnalysis inits lazily).
+
       if (result.initError)
         console.log('[note] Peptides:initPeptides pre-warm threw (non-fatal):', result.initError);
       expect(result.tableViewsBefore, 'shell should be clean after closeAll').toBe(0);
     });
 
-    // Scenario 1 — Peptide SAR demo (dispatched via grok.functions.call; gallery card has no stable selector).
     await softStep('Scenario 1 (steps 1-3): activate Bioinformatics | Peptide SAR demo',
       async () => {
         const launched = await page.evaluate(async () => {
@@ -71,7 +61,6 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           'Peptide SAR demo invocation must not throw').toBeNull();
       });
 
-    // Poll for the full viewer set (model attaches before viewers, so gate on the viewers).
     await softStep('Scenario 1 (step 3 settle): wait for SAR dashboard viewers to attach',
       async () => {
         await page.waitForFunction(() => {
@@ -163,7 +152,7 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           const tv = Array.from(grok.shell.tableViews)
             .find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
           const viewerTypes = Array.from(tv.viewers).map((v) => v.type);
-          // grok.shell.lastError is a Promise — await it (raw String() yields "[object Promise]").
+
           let lastError = '';
           try { lastError = (await grok.shell.lastError) ?? ''; } catch (_) {}
           const hasNullCrash = /setTrue|null receiver|NoSuchMethodError|Cannot read prop|undefined is not/i
@@ -182,7 +171,6 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           .toBe(false);
       });
 
-    // Scenario 2 — Peptides landing View invoked via grok.functions.call (no #app on this build).
     await softStep('Scenario 2 (steps 1-3): open Peptides landing view + verify shape',
       async () => {
         const result = await page.evaluate(async () => {
@@ -207,7 +195,7 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
             peptidesInAppsList,
             viewName: view?.name ?? null,
             buttonLabels,
-            // The three window-flag assertions (package.ts L107-L110).
+
             flags: {
               showToolbox: grok.shell.windows.showToolbox,
               showHelp: grok.shell.windows.showHelp,
@@ -259,7 +247,6 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           'Simple demo dataset must carry >=1 Macromolecule-semType column').toBeGreaterThan(0);
       });
 
-    // Complex demo (aligned_2.csv) ships a Macromolecule column named "MSA", not "AlignedSequence".
     await softStep('Scenario 2 (step 5): return to landing view + click "Complex demo"',
       async () => {
         await page.evaluate(() => {
@@ -293,7 +280,6 @@ test('Peptide SAR demo dashboard + Peptides app landing — entry-point smokes',
           .toBeGreaterThan(0);
       });
 
-    // HELM demo (aligned_3.csv) ships a Macromolecule column named "HELM" (units:"helm").
     await softStep('Scenario 2 (step 6): return to landing view + click "HELM demo"',
       async () => {
         await page.evaluate(() => {

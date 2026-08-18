@@ -6,7 +6,7 @@ test.use(specTestOptions);
 const SIRNA_PATH = 'System:AppData/SequenceTranslator/samples/sirna-demo.csv';
 
 test('SequenceTranslator — OligoNucleotide column lifecycle: convert, combine, copy-as-helm, helm-editor, enumerate, API', async ({page}) => {
-  // One CSV load + convert/combine + helm-editor/enumerator dialogs + API calls; 4 min suffices.
+
   test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
@@ -152,7 +152,6 @@ test('SequenceTranslator — OligoNucleotide column lifecycle: convert, combine,
     expect(result.error, 'openOligoHelmEditor must not throw synchronously for OligoNucleotide SemanticValue').toBeNull();
     expect(result.success, 'openOligoHelmEditor call initiation must succeed').toBe(true);
 
-    // The editor opens asynchronously — wait for the dialog if it appears, then close it (best-effort).
     await page.locator('.d4-dialog').first().waitFor({state: 'visible', timeout: 10_000}).catch(() => {});
     await page.evaluate(async () => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
@@ -193,7 +192,6 @@ test('SequenceTranslator — OligoNucleotide column lifecycle: convert, combine,
     expect(result.error, 'getPtOligoEnumeratorDialog must not throw for OligoNucleotide DG.GridCell').toBeNull();
     expect(result.success, 'getPtOligoEnumeratorDialog call initiation must succeed').toBe(true);
 
-    // The enumerator dialog opens asynchronously — wait for it if it appears, then close it (best-effort).
     await page.locator('.d4-dialog').first().waitFor({state: 'visible', timeout: 10_000}).catch(() => {});
     await page.evaluate(async () => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));

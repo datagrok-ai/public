@@ -49,7 +49,7 @@ test('PCA scenario', async ({page}) => {
     await page.waitForTimeout(1200);
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('PCA');
-    // Expected inputs present
+
     await expect(page.locator('[name="input-host-Table"]')).toBeVisible();
     await expect(page.locator('[name="input-host-Features"]')).toBeVisible();
     await expect(page.locator('[name="input-host-Components"]')).toBeVisible();
@@ -58,18 +58,16 @@ test('PCA scenario', async ({page}) => {
   });
 
   await softStep('Step 3 — Select all Features, set Components = 3', async () => {
-    // Open "Select columns..." dialog from Features input
+
     await page.locator('[name="input-host-Features"] .ui-input-editor').first().click();
     await page.waitForTimeout(700);
-    // Click "All" label inside Select columns dialog
+
     await page.locator('[name="label-All"]').click();
     await page.waitForTimeout(200);
-    // Confirm selection — click OK in the Select columns dialog
-    // There may be two dialogs stacked; click the last (top-most) OK.
+
     await page.locator('[name="button-OK"]').last().click();
     await page.waitForTimeout(600);
 
-    // Set Components = 3 on the PCA dialog
     const compInput = page.locator('[name="input-Components"]').first();
     await compInput.click();
     await page.keyboard.press('Control+A');
@@ -85,10 +83,9 @@ test('PCA scenario', async ({page}) => {
   });
 
   await softStep('Step 4 — Click OK; expect PC1/PC2/PC3 columns added', async () => {
-    // Click PCA dialog OK
+
     await page.locator('.d4-dialog [name="button-OK"]').last().click();
 
-    // Poll up to 120s for PC1/PC2/PC3 columns to appear
     const deadline = Date.now() + 120_000;
     let found: string[] = [];
     let totalCols = 0;
@@ -114,7 +111,7 @@ test('PCA scenario', async ({page}) => {
   });
 
   await softStep('Step 5 — Repeat with Center and Scale checked', async () => {
-    // Re-open PCA dialog via menu
+
     await page.evaluate(() => {
       const el = document.querySelector('[name="div-ML---Analyze---PCA..."]') as HTMLElement | null;
       if (el) el.click();
@@ -123,7 +120,6 @@ test('PCA scenario', async ({page}) => {
     await page.locator('.d4-dialog').waitFor({timeout: 10000});
     await expect(page.locator('.d4-dialog')).toContainText('PCA');
 
-    // Features: select All
     await page.locator('[name="input-host-Features"] .ui-input-editor').first().click();
     await page.waitForTimeout(700);
     await page.locator('[name="label-All"]').click();
@@ -131,14 +127,11 @@ test('PCA scenario', async ({page}) => {
     await page.locator('[name="button-OK"]').last().click();
     await page.waitForTimeout(600);
 
-    // Components = 3
     const compInput = page.locator('[name="input-Components"]');
     await compInput.click();
     await page.keyboard.press('Control+A');
     await page.keyboard.type('3');
 
-    // Check Center and Scale checkboxes. Try direct input first; fall back to input
-    // nested inside the host container. Dispatch change to ensure Dart listener fires.
     await page.evaluate(() => {
       for (const name of ['Center', 'Scale']) {
         const host = document.querySelector(`[name="input-host-${name}"]`) as HTMLElement | null;
@@ -152,10 +145,8 @@ test('PCA scenario', async ({page}) => {
     });
     await page.waitForTimeout(200);
 
-    // Click OK
     await page.locator('.d4-dialog [name="button-OK"]').last().click();
 
-    // Poll up to 120s for a *new* PC batch to be added (PC1 (2) etc. or additional PC columns)
     const deadline = Date.now() + 120_000;
     let pcCols: string[] = [];
     let totalCols = 0;

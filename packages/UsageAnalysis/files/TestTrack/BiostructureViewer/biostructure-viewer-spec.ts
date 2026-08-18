@@ -1,7 +1,3 @@
-// BiostructureViewer happy-path smoke. File-handler routing is verified via DG.Func.find registry
-// probes (no Mol* engine init, which surfaces WebGL noise in CI). Mol*-engine-dependent assertions
-// (Reset Camera, viewport context menu) are gated on .msp-plugin / .msp-viewport being present.
-// Scenarios 4, 7, 8 make outbound RCSB calls (bounded 30-90s; absence treated as a precondition).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -18,7 +14,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -32,7 +27,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
 
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
-  // Scenario 1 — importPdb is the registered dispatch target for .mmcif/.pdb (registry probe).
   await softStep('Scenario 1 — importPdb file-handler dispatch surface registered (.mmcif/.pdb)', async () => {
     const res = await page.evaluate(() => {
       const fn = DG.Func.find({name: 'importPdb', package: 'BiostructureViewer'})[0];
@@ -50,7 +44,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(res.inputCount).toBe(1);
   });
 
-  // Scenario 2a — TableView + Biostructure viewer mount via tv.addViewer.
   let scenarioMountedViewer = false;
   await softStep('Scenario 2a/4 — Build pdb_id table; tv.addViewer mounts [name="viewer-Biostructure"]', async () => {
     const res = await page.evaluate(async () => {
@@ -61,8 +54,7 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
       const tv = grok.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
       const v = tv.addViewer('Biostructure');
-      // Cold-start readiness poll: wait up to 30s for the 'representation' descriptor to register
-      // (props.get throws "Property not found" before the lazy package chunk loads on a cold context).
+
       let defaultRep = null;
       let representationReady = false;
       let pollIters = 0;
@@ -80,7 +72,7 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
             break;
           }
         } catch (_e) {
-          // Descriptor not registered yet on cold mount; keep polling.
+
         }
       }
       return {
@@ -98,13 +90,12 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     scenarioMountedViewer = true;
   });
 
-  // Scenario 2b — Settings panel via gear icon (DOM driven).
   await softStep('Scenario 2b — Open viewer settings via gear (DOM); property panel surfaces', async () => {
     if (!scenarioMountedViewer) return;
     const opened = await page.evaluate(async () => {
       const container = document.querySelector('[name="viewer-Biostructure"]');
       if (!container) return {gearClicked: false, panelOpened: false};
-      // Gear lives in the panel-titlebar of the enclosing .panel-base, not the viewer container.
+
       const gear = container.closest('.panel-base')?.querySelector(
         '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
       if (!gear) return {gearClicked: false, panelOpened: false};
@@ -117,7 +108,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(opened.panelOpened).toBe(true);
   });
 
-  // Scenario 2b cont. — Switch representation cartoon -> ball-and-stick -> molecular-surface -> cartoon.
   await softStep('Scenario 2b — Switch representation cartoon -> ball-and-stick -> molecular-surface -> cartoon', async () => {
     if (!scenarioMountedViewer) return;
     const res = await page.evaluate(async () => {
@@ -140,7 +130,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(res.observed).toEqual(['ball-and-stick', 'molecular-surface', 'cartoon']);
   });
 
-  // Scenario 3 — Reset Camera overlay button (asserted only when .msp-plugin is built).
   await softStep('Scenario 3 — Reset Camera overlay button click (DOM, precondition .msp-plugin)', async () => {
     const result = await page.evaluate(async () => {
       const pluginPresent = !!document.querySelector('.msp-plugin');
@@ -154,7 +143,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     if (result.precondition) expect(result.clicked).toBe(true);
   });
 
-  // Scenario 4 — RCSB mmCIF data provider wiring (JS-API setOptions path).
   await softStep('Scenario 4 — Wire RCSB mmCIF provider on existing Biostructure viewer', async () => {
     if (!scenarioMountedViewer) return;
     const res = await page.evaluate(() => {
@@ -179,20 +167,18 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(res.providerRegistered).toBe(true);
   });
 
-  // Scenario 5 — Ligand + binding-site property descriptors via getProperties() (no engine init).
   await softStep('Scenario 5 — Ligand + binding-site property descriptors (no engine init)', async () => {
     const res = await page.evaluate(async () => {
       grok.shell.closeAll();
       await new Promise((r) => setTimeout(r, 1500));
-      // Lightweight df: a single 'ligand' string column (no semType) so the engine never
-      // enters the data-request pipeline.
+
       const df = DG.DataFrame.fromColumns([
         DG.Column.fromStrings('ligand', ['placeholder']),
       ]);
       const tv = grok.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
       const v = tv.addViewer('Biostructure');
-      // Cold-start readiness poll: wait up to 30s for the bindingSiteRadius descriptor to register.
+
       let props: any[] = [];
       let propsReady = false;
       let pollIters = 0;
@@ -208,7 +194,7 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
           propsReady = true;
           break;
         } catch (_e) {
-          // Property descriptors not yet registered; keep polling.
+
         }
       }
       const byName: Record<string, any> = {};
@@ -248,7 +234,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(res.bindingSiteRadiusMax).toBe(10);
   });
 
-  // Scenario 6 — Viewport context-menu Download paths (precondition: .msp-viewport rendered).
   await softStep('Scenario 6 — Viewport right-click Download (DOM, precondition .msp-viewport)', async () => {
     const rect = await page.evaluate(() => {
       const vp = document.querySelector('.msp-viewport') as HTMLElement | null;
@@ -257,7 +242,7 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
       if (r.width === 0 || r.height === 0) return null;
       return {x: r.x, y: r.y, w: r.width, h: r.height};
     });
-    if (!rect) return; // precondition (viewport rendered) not met; no DOM driving asserted here
+    if (!rect) return; 
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
     await page.mouse.click(cx, cy, {button: 'right'});
@@ -276,7 +261,7 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
         if (leaf) leaf.click();
       });
       await page.waitForTimeout(500);
-      // Re-trigger menu for As CIF.
+
       const rect2 = await page.evaluate(() => {
         const vp = document.querySelector('.msp-viewport') as HTMLElement | null;
         if (!vp) return null;
@@ -302,7 +287,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     await page.waitForTimeout(300);
   });
 
-  // Scenario 7 — Bio | Transform | Fetch PDB Sequences appends Chain N columns (outbound RCSB).
   let chainColsAfterScenario7: string[] = [];
   let scenario7DialogOk = false;
   await softStep('Scenario 7 — pdb_id.csv -> Bio | Transform | Fetch PDB Sequences (DOM driven)', async () => {
@@ -311,7 +295,7 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
       await new Promise((r) => setTimeout(r, 1500));
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
-      // Bio package menu registration: allow up to 8s.
+
       let hasBioMenu = false;
       for (let i = 0; i < 16; i++) {
         await new Promise((r) => setTimeout(r, 500));
@@ -323,7 +307,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(setup.semType).toBe('PDB_ID');
     expect(setup.hasBioMenu).toBe(true);
 
-    // DOM-driving: open Bio | Transform | Fetch PDB Sequences...
     await page.evaluate(async () => {
       (document.querySelector('[name="div-Bio"]') as HTMLElement).click();
       await new Promise((r) => setTimeout(r, 400));
@@ -339,7 +322,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     await page.locator('[name="dialog-Fetch-PDB-Sequences"] [name="button-OK"]').click();
     scenario7DialogOk = true;
 
-    // 90s ceiling — outbound RCSB GraphQL. If chains never appear, skip the rest (Scenario 8 too).
     try {
       await page.waitForFunction(
         (base) => grok.shell.tv.dataFrame.columns.length > base,
@@ -362,7 +344,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     chainColsAfterScenario7 = chainNames;
   });
 
-  // Scenario 8 — Re-running Fetch PDB Sequences is non-destructive (requires Scenario 7 chains).
   await softStep('Scenario 8 — Re-run Fetch PDB Sequences; non-conflicting Chain N (2) columns appended', async () => {
     if (!scenario7DialogOk || chainColsAfterScenario7.length === 0) return;
     const beforeCount: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
@@ -401,7 +382,6 @@ test('BiostructureViewer — happy-path smoke', async ({page}) => {
     expect(newSet.length).toBeGreaterThan(0);
   });
 
-  // Cleanup.
   await page.evaluate(() => { grok.shell.closeAll(); });
 
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));

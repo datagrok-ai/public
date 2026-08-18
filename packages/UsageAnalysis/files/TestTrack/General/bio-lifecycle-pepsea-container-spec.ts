@@ -1,11 +1,3 @@
-// NOTE: This spec was REMOVED from the playwright-public CI suite (Bio folder) and is kept here in
-// TestTrack/General for reference only. Reason for removal: it exercises the on-demand `bio` PepSeA
-// Docker container (dockerfiles/, on_demand:true). On the minimal ui_tests CI stack that container is
-// not pre-built, so PepSeA is "NOT registered on this host"; the spec already env-gates most steps, but
-// the S1.3 assertion "MSA Engine SELECT exposes PepSeA option (>=2 engines)" cannot pass because only the
-// built-in kalign engine is available without the container. Restore it to CI once the ui_tests stack
-// pre-builds/pre-warms the `bio` container (or raises the 60s docker-proxy timeout so on-demand build
-// completes before the align request times out with 504).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -26,7 +18,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
   let containerId: string | null = null;
   let preRunStatus: string | null = null;
   await loginToDatagrok(page);
-  // Setup — open HELM fixture, run Bio init probe, resolve PepSeA container
+
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -53,11 +45,11 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-  // Scenario 1 — Initial PepSeA run on HELM column
+
   await softStep('S1.1: Bio:initBio complete; Bio:getSeqHelper returns ISeqHelper singleton', async () => {
     const probe = await page.evaluate(async () => {
       let initErr: string | null = null;
@@ -111,7 +103,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       preRunStatus = (result as any).status ?? null;
       expect(containerId).toBeTruthy();
     } else {
-      // eslint-disable-next-line no-console
+
       console.warn('[S1.0] PepSeA Docker container NOT registered on this host — env-conditional skip per scenario Setup directive. PepSeA-specific assertions will short-circuit.');
     }
   });
@@ -156,7 +148,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
         const cancel = document.querySelector('[name="dialog-MSA"] [name="button-CANCEL"]') as HTMLElement | null;
         if (cancel) cancel.click();
       });
-      // eslint-disable-next-line no-console
+
       console.warn('[S1.4] PepSeA env not configured — dialog canceled; PepSeA-engine OK + alignSequences assertion skipped per Setup env-gate.');
       return;
     }
@@ -191,7 +183,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
     expect(aligned.newColName).toBeTruthy();
     expect(aligned.alignedTag).toBe('SEQ.MSA');
   });
-  // Scenario 2 — Save project with PepSeA alignment
+
   try {
     await softStep('S2.1: Save project containing the PepSeA-aligned table (JS API persistence)', async () => {
       saved = await saveAllTablesWithProvenance(page, projectName);
@@ -212,13 +204,13 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       expect((result as any).found).toBe(true);
       expect((result as any).name).toBe(projectName);
     });
-    // Scenario 3 — Reopen (container eviction skipped; host-shared resource)
+
     await softStep('S3.1: Container eviction skipped (host-shared resource per scenario Setup directive)', async () => {
       if (envHasPepsea) {
-        // eslint-disable-next-line no-console
+
         console.warn(`[S3.1] PepSeA container preRunStatus=${preRunStatus ?? 'unknown'}; eviction skipped to preserve host-shared resource state. Reopen path (S3.2-S3.3) is the assertable contract.`);
       } else {
-        // eslint-disable-next-line no-console
+
         console.warn('[S3.1] PepSeA env not configured — eviction skip is the only valid path.');
       }
       expect(true).toBe(true);
@@ -252,13 +244,13 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       } else {
         expect(post.hasSourceHelm).toBe(true);
         expect(post.sourceHelmUnits).toBe('helm');
-        // eslint-disable-next-line no-console
+
         console.warn('[S3.3] PepSeA env not configured — aligned column assertion skipped; HELM source-column survival is the reachable contract.');
       }
     });
     await softStep('S3.4: Post-reopen MSA invocation — PepSeA container resumes / auto-restarts (no crash)', async () => {
       if (!envHasPepsea) {
-        // eslint-disable-next-line no-console
+
         console.warn('[S3.4] PepSeA env not configured — post-reopen MSA invocation skipped.');
         return;
       }
@@ -279,10 +271,10 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
         if (cancel) cancel.click();
       });
     });
-    // Scenario 4 — Container lifecycle observation (read-only)
+
     await softStep('S4: Container status observable via DAPI without errors (read-only)', async () => {
       if (!envHasPepsea || !containerId) {
-        // eslint-disable-next-line no-console
+
         console.warn('[S4] PepSeA env not configured — container status observation skipped.');
         return;
       }
@@ -299,7 +291,7 @@ test('Bio pepsea_container source-class lifecycle: HELM → MSA (PepSeA engine) 
       expect((result as any).status).not.toBeNull();
     });
   } finally {
-    // Scenario 5 — Cleanup (project deletion only; PepSeA container left untouched)
+
     if (saved) {
       await deleteProjectWithCleanup(page, {
         projectId: saved.projectId,

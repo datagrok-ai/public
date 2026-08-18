@@ -35,8 +35,7 @@ async function pollRecipientView(page: Page, projId: string, want: boolean) {
 }
 
 test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-actor)', async ({page}) => {
-  // Two-actor: project save + All-users grant/revoke + remove-all-grants, plus 3 login
-  // switches (recipient/owner) each waiting on dapi-ready. 300s covers the re-auths.
+
   test.setTimeout(300_000);
   stepErrors.length = 0;
 
@@ -44,8 +43,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
   await setupSession(page);
 
   const ownerLogin = await readLogin(page);
-  
-  
+
   const recipientLogin = await getSecondUserLogin();
   console.log(`[two-actor] owner='${ownerLogin}', recipient='${recipientLogin}' (from token claim)`);
   expect(recipientLogin, 'recipient login must resolve').toBeTruthy();
@@ -58,7 +56,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
   let allUsersGroupId: string | null = null;
 
   try {
-    
+
     await softStep('Setup: create an owned project with a dataset; resolve All users group', async () => {
       const created = await evalJs(page, `(async () => {
         const g = window.grok, DG = window.DG;
@@ -96,7 +94,6 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       console.log(`[two-actor] Setup: project '${projectName}' (${projId}) created; All users=${allUsersGroupId} — STILL OWNER`);
     });
 
-    
     await softStep('Block A: owner shares the project with All users at View and use', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -115,11 +112,8 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       console.log(`[two-actor] Block A: shared View-and-use to All users — get().view=${JSON.stringify(res.viewNames)}`);
     });
 
-    
-    
-    
     await softStep('Block A (UI): owner-side Sharing context-panel pane renders the All-users grant', async () => {
-      
+
       await evalJs(page, `(async () => {
         const g = window.grok;
         const project = await g.dapi.projects.find('${projId}');
@@ -128,9 +122,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       await page.waitForTimeout(1500);
       const header = page.locator('[name="div-section--Sharing"]');
       if (await header.isVisible({timeout: 10_000}).catch(() => false)) {
-        
-        
-        
+
         const shareBtn = page.locator('[name="button-Share..."]');
         const laidOut = await shareBtn.evaluate((el: any) => el && el.offsetParent !== null).catch(() => false);
         if (!laidOut) {
@@ -140,22 +132,19 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
         await expect(shareBtn).toBeAttached({timeout: 10_000});
         console.log('[two-actor] Block A (UI): Sharing pane present; SHARE... button attached (DOM-driven, class-1)');
       } else {
-        // Tolerated environmental skip: the context-panel Sharing pane is not always
-        // surfaced for the project object headless. The All-users grant under test was
-        // already asserted via the API in Block A; this UI render is a non-blocking extra.
+
         console.warn('[two-actor] Block A (UI): Sharing context-panel pane not visible; grant state already verified via API');
       }
     });
 
-    
     await softStep('Block A (recipient): recipient reaches the entity at view-and-use; delete/re-share denied', async () => {
       await loginAsSecondUser(page);
       try {
         const live = await readLogin(page);
         expect(live).toBe(recipientLogin);
-        
+
         await pollRecipientView(page, projId!, true);
-        
+
         const neg = await evalJs(page, `(async () => {
           const g = window.grok;
           try {
@@ -178,7 +167,6 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       }
     });
 
-    
     await softStep('Block B (owner): owner removes the All users grant', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -202,7 +190,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       try {
         const live = await readLogin(page);
         expect(live).toBe(recipientLogin);
-        
+
         await pollRecipientView(page, projId!, false);
         console.log(`[two-actor] Block B (recipient): recipient lost View after All users revoke`);
       } finally {
@@ -211,12 +199,6 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       }
     });
 
-    
-    
-    
-    
-    
-    
     await softStep('Block C (UI): owner opens the Advanced editor (PermissionsView) for the project', async () => {
       const opened = await evalJs(page, `(async () => {
         try {
@@ -228,9 +210,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
         } catch (e) { return {ok: false, reason: String(e).slice(0, 200)}; }
       })()`);
       expect(opened.ok, `navigation to PermissionsView must run (${opened.reason ?? ''})`).toBe(true);
-      
-      
-      
+
       const loaded = await page.locator(
         '.grok-permissions-self, .d4-grid, [name="button-Calculate-resulting-permissions-for-this-entity"], input[placeholder="Type in user, role or group to add..."]',
       ).first().isVisible({timeout: 20_000}).catch(() => false);
@@ -238,7 +218,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
         console.log('[two-actor] Block C (UI): Advanced editor PermissionsView loaded (DOM signal, class-1)');
       else
         console.warn('[two-actor] Block C (UI): PermissionsView DOM signal not observed; owner-retention is asserted via API below');
-      
+
       await evalJs(page, `(async () => { try { window.grok.shell.closeAll(); } catch(_){} })()`).catch(() => {});
       await page.waitForTimeout(500);
     });
@@ -266,7 +246,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       })()`);
       expect(res.ok, `remove-all-grants must succeed (${res.reason ?? ''})`).toBe(true);
       expect(res.remaining, 'every grant row must be removed (matrix empty)').toBe(0);
-      
+
       expect(res.ownerView, 'owner must still have View after removing every grant').toBe(true);
       expect(res.ownerEdit, 'owner must still have Edit after removing every grant').toBe(true);
       expect(res.ownerShare, 'owner must still be able to re-share after removing every grant').toBe(true);
@@ -279,7 +259,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       try {
         const live = await readLogin(page);
         expect(live).toBe(recipientLogin);
-        
+
         await pollRecipientView(page, projId!, false);
         const res = await evalJs(page, `(async () => {
           const g = window.grok;
@@ -299,7 +279,7 @@ test('Sharing & Permissions: All users (everyone) & owner-retains-access (two-ac
       }
     });
   } finally {
-    
+
     await evalJs(page, `(async () => {
       const g = window.grok;
       try {

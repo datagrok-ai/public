@@ -1,5 +1,3 @@
-// GROK-19329 regression: XLSX opens across all 5 entry paths + optional sheetName.
-
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, loginAsSecondUser, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -7,7 +5,6 @@ import {openTableFromFile} from '../helpers/openers';
 
 test.use(specTestOptions);
 
-// Cold Playwright contexts hit the handler before pp.load() runs; trigger load + poll for registration.
 async function ensurePowerPackLoaded(page: Page): Promise<void> {
   const registered = await page.evaluate(async () => {
     const grok = (window as any).grok;
@@ -15,8 +12,8 @@ async function ensurePowerPackLoaded(page: Page): Promise<void> {
     if ((DG.Func.find({name: 'xlsxFileHandler'}) ?? []).length > 0) return true;
     try {
       const pp = await grok.dapi.packages.filter('shortName = "PowerPack"').first();
-      if (pp) { try { pp.load(); } catch (_) { /* ignore — poll below */ } }
-    } catch (_) { /* ignore — poll below */ }
+      if (pp) { try { pp.load(); } catch (_) {  } }
+    } catch (_) {  }
     for (let i = 0; i < 60; i++) {
       if ((DG.Func.find({name: 'xlsxFileHandler'}) ?? []).length > 0) return true;
       await new Promise((r) => setTimeout(r, 500));
@@ -32,7 +29,6 @@ async function ensurePowerPackLoaded(page: Page): Promise<void> {
   ).toBe(true);
 }
 
-// Outer 60s cap so a regressed (hung) xlsxFileHandler dispatch fails fast with a bug-citing message.
 async function openTableFromFileWithTimeout(
   page: Page,
   fullPath: string,
@@ -51,8 +47,6 @@ async function openTableFromFileWithTimeout(
   ]);
 }
 
-// Locate an XLSX fixture in the public test-data bucket (s3://datagrok-data/tests/excel,
-// aka data.datagrok.ai) through an anonymous S3 connection, created on first use.
 async function locatePlatformXlsxFixture(page: Page): Promise<string | null> {
   return await page.evaluate(async () => {
     const grok = (window as any).grok;
@@ -75,7 +69,7 @@ async function locatePlatformXlsxFixture(page: Page): Promise<string | null> {
     for (const path of candidates) {
       try {
         if (await grok.dapi.files.exists(path)) return path;
-      } catch (_) { /* try next */ }
+      } catch (_) {  }
     }
     try {
       const items = await grok.dapi.files.list(conn.nqName, false);
@@ -86,17 +80,16 @@ async function locatePlatformXlsxFixture(page: Page): Promise<string | null> {
           return full as string;
         }
       }
-    } catch (_) { /* ignore */ }
+    } catch (_) {  }
     return null;
   });
 }
 
-// GROK-19329 invariant: active TableView has rows and no error balloon is on-screen.
 async function verifyXlsxOpenedSuccessfully(
   page: Page,
 ): Promise<{rowCount: number; colCount: number; sheetCount: number; errorBalloons: number}> {
   await page.locator('[name="viewer-Grid"]').waitFor({timeout: 30_000, state: 'visible'});
-  await page.waitForTimeout(500); // let the grid settle
+  await page.waitForTimeout(500); 
   const obs = await page.evaluate(() => {
     const grok = (window as any).grok;
     const tv = grok.shell.tv;
@@ -111,7 +104,6 @@ async function verifyXlsxOpenedSuccessfully(
   return {...obs, errorBalloons};
 }
 
-// Reset between scenarios: close all views, dismiss balloons/toasts/menus.
 async function resetShellState(page: Page): Promise<void> {
   await page.evaluate(() => {
     const grok = (window as any).grok;
@@ -122,7 +114,6 @@ async function resetShellState(page: Page): Promise<void> {
   await page.waitForTimeout(800);
 }
 
-// Read fixture bytes via JS API; returns byte length.
 async function readXlsxBytes(page: Page, fullPath: string): Promise<number> {
   return await page.evaluate(async (p) => {
     const grok = (window as any).grok;
@@ -131,7 +122,6 @@ async function readXlsxBytes(page: Page, fullPath: string): Promise<number> {
   }, fullPath);
 }
 
-// Invoke the registered xlsxFileHandler directly with fixture bytes; returns DataFrames (one per sheet).
 async function invokeXlsxHandlerWithBytes(
   page: Page,
   fullPath: string,
@@ -158,7 +148,7 @@ async function invokeXlsxHandlerWithBytes(
       const dfs: any[] = Array.isArray(result) ? result : (result ? [result] : []);
       const first = dfs[0];
       if (first) grok.shell.addTableView(first);
-      await new Promise((r) => setTimeout(r, 300)); // grid renderer attach settle
+      await new Promise((r) => setTimeout(r, 300)); 
 
       return {
         dfCount: dfs.length,
@@ -172,7 +162,6 @@ async function invokeXlsxHandlerWithBytes(
   }, {p: fullPath, sn: sheetName});
 }
 
-// Synthesize an HTML5 drag-and-drop of the XLSX bytes onto the window's global drop handler.
 async function simulateXlsxDrop(
   page: Page,
   fullPath: string,
@@ -214,7 +203,6 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
   });
   await page.waitForTimeout(300);
 
-  // Cold-start guard: load PowerPack + wait for xlsxFileHandler registration before any scenario.
   await ensurePowerPackLoaded(page);
 
   const xlsxPath = await locatePlatformXlsxFixture(page);
@@ -239,50 +227,47 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
         try {
           const pp = await grok.dapi.packages.filter('shortName = "PowerPack"').first();
           ppPresent = !!pp?.id;
-        } catch (_) { /* ignore */ }
+        } catch (_) {  }
         let handlerRegistered = false;
         try {
           const fns = DG.Func.find({name: 'xlsxFileHandler'}) ?? [];
           handlerRegistered = fns.length > 0;
-        } catch (_) { /* ignore */ }
+        } catch (_) {  }
         return {ppPresent, handlerRegistered};
       });
       expect(setupOk.ppPresent).toBe(true);
       expect(setupOk.handlerRegistered).toBe(true);
     });
 
-    // Scenario 1: Open XLSX from Browse / My Files (Browse double-click → OpenFile → xlsxFileHandler).
     await softStep('Scenario 1: open XLSX from Browse / My Files (canonical GROK-19329 reproduction)', async () => {
       await page.locator('[name="Browse"]').waitFor({timeout: 30_000, state: 'visible'});
 
       const opened = await openTableFromFileWithTimeout(page, xlsxFullPath);
 
-      expect(opened.rowCount).toBeGreaterThan(0); // GROK-19329 invariant
-      expect(opened.colCount).toBeGreaterThan(0); // GROK-19329 invariant
+      expect(opened.rowCount).toBeGreaterThan(0); 
+      expect(opened.colCount).toBeGreaterThan(0); 
 
       const v = await verifyXlsxOpenedSuccessfully(page);
       observations['scenario-1'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
       expect(v.rowCount).toBeGreaterThan(0);
-      expect(v.errorBalloons).toBe(0); // GROK-19329 invariant: no error balloon
+      expect(v.errorBalloons).toBe(0); 
     });
 
     await resetShellState(page);
 
-    // Scenario 2: Open XLSX from Recent files (same OpenFile dispatch as Browse).
     await softStep('Scenario 2: open XLSX from Recent files (re-dispatch via recent activity)', async () => {
       const opened = await openTableFromFileWithTimeout(page, xlsxFullPath);
 
-      expect(opened.rowCount).toBeGreaterThan(0); // GROK-19329 invariant
+      expect(opened.rowCount).toBeGreaterThan(0); 
 
       const v = await verifyXlsxOpenedSuccessfully(page);
       observations['scenario-2'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
       expect(v.rowCount).toBeGreaterThan(0);
-      expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+      expect(v.errorBalloons).toBe(0); 
     });
 
     await resetShellState(page);
 
-    // Scenario 3: Open XLSX via drag-and-drop; falls back to direct handler dispatch if synthetic drop is blocked.
     await softStep('Scenario 3: open XLSX via drag-and-drop (synthetic DragEvent → handler dispatch)', async () => {
       const dropped = await simulateXlsxDrop(page, xlsxFullPath, xlsxFileName);
       let gridAppeared = await page.locator('[name="viewer-Grid"]')
@@ -291,8 +276,8 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
       if (!gridAppeared) {
         const result = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
         expect(result.error).toBeNull();
-        expect(result.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
-        expect(result.firstRowCount).toBeGreaterThan(0); // GROK-19329 invariant
+        expect(result.dfCount).toBeGreaterThan(0); 
+        expect(result.firstRowCount).toBeGreaterThan(0); 
         await page.locator('[name="viewer-Grid"]').waitFor({timeout: 30_000, state: 'visible'});
         gridAppeared = true;
       }
@@ -300,14 +285,13 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
 
       const v = await verifyXlsxOpenedSuccessfully(page);
       observations['scenario-3'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
-      expect(v.rowCount).toBeGreaterThan(0); // GROK-19329 invariant
-      expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+      expect(v.rowCount).toBeGreaterThan(0); 
+      expect(v.errorBalloons).toBe(0); 
       console.log(`Scenario 3: simulated drop dispatched=${dropped.dispatched} reason=${dropped.reason ?? 'n/a'}`);
     });
 
     await resetShellState(page);
 
-    // Scenario 4: File > Open native picker can't be Playwright-driven; exercise the same registered handler.
     await softStep('Scenario 4: open XLSX via top menu File > Open (handler-dispatch path)', async () => {
       const fileMenuFound = await page.evaluate(() => {
         const menuBars = Array.from(document.querySelectorAll('.d4-menu-bar, [name="menu-bar"]'));
@@ -324,28 +308,25 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
 
       const result = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
       expect(result.error).toBeNull();
-      expect(result.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
-      expect(result.firstRowCount).toBeGreaterThan(0); // GROK-19329 invariant
+      expect(result.dfCount).toBeGreaterThan(0); 
+      expect(result.firstRowCount).toBeGreaterThan(0); 
 
       const v = await verifyXlsxOpenedSuccessfully(page);
       observations['scenario-4'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
-      expect(v.rowCount).toBeGreaterThan(0); // GROK-19329 invariant
-      expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+      expect(v.rowCount).toBeGreaterThan(0); 
+      expect(v.errorBalloons).toBe(0); 
     });
 
     await resetShellState(page);
 
-    // Scenario 5: Open XLSX from Shared with me; real cross-user leg when token2 present, else handler-dispatch fallback.
     await softStep('Scenario 5: open XLSX from Shared with me (or handler-dispatch fallback)', async () => {
       const token2 = process.env.DATAGROK_AUTH_TOKEN_2;
       if (token2 && token2.length > 0) {
-        // Split: cross-user SETUP (login + share-grant) may legitimately fail (System fixture not
-        // shareable) and falls through. But once the second user can READ the file, the GROK-19329
-        // invariants are NOT optional — they run outside the swallow so a real regression fails loudly.
+
         let crossUserSetupOk = false;
         let setupSkipReason = '';
         try {
-          // Discover the second user's login via a token2 re-auth round-trip, then restore primary session.
+
           await loginAsSecondUser(page);
           const secondLogin: string | null = await page.evaluate(async () => {
             const grok = (window as any).grok;
@@ -355,17 +336,16 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
           if (!secondLogin)
             throw new Error('could not resolve second user login via token2 round-trip');
 
-          // As primary user: resolve the second user's group + the fixture FileInfo, grant View to the group.
           const grant = await page.evaluate(async (args: {p: string; login: string}) => {
             const grok = (window as any).grok;
             const second = await grok.dapi.users
               .filter('login = "' + args.login + '"').first()
               .catch(() => null);
-            // Permissions attach to GROUPS, never the bare User.
+
             const group = second?.group ?? null;
             if (!group)
               return {ok: false, reason: `second user "${args.login}" / group not resolvable`};
-            // files.list on a full file path lists directory contents; resolve FileInfo via parent dir + basename.
+
             const slash = args.p.lastIndexOf('/');
             const dir = slash >= 0 ? args.p.slice(0, slash + 1) : args.p;
             const base = slash >= 0 ? args.p.slice(slash + 1) : args.p;
@@ -381,34 +361,31 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
           if (!grant.ok)
             throw new Error(grant.reason ?? 'share setup failed');
 
-          // Re-auth as the second user (cross-user read context established for the invariant checks below).
           await loginAsSecondUser(page);
           await ensurePowerPackLoaded(page);
           crossUserSetupOk = true;
 
-          // Run the cross-user invariants OUTSIDE this try so they cannot be swallowed into the fallback.
           const byteLen = await readXlsxBytes(page, xlsxFullPath);
           expect(byteLen, 'cross-user READ returned no bytes — share grant did not take effect').toBeGreaterThan(0);
 
           const result = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
           expect(result.error, `cross-user XlsxFileHandler errored: ${result.error}`).toBeNull();
-          expect(result.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
-          expect(result.firstRowCount).toBeGreaterThan(0); // GROK-19329 invariant
+          expect(result.dfCount).toBeGreaterThan(0); 
+          expect(result.firstRowCount).toBeGreaterThan(0); 
           const v = await verifyXlsxOpenedSuccessfully(page);
           observations['scenario-5'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
           expect(v.rowCount).toBeGreaterThan(0);
-          expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+          expect(v.errorBalloons).toBe(0); 
           console.log(`Scenario 5: real cross-user open of shared XLSX as ${secondLogin} succeeded`);
         } catch (e: any) {
-          // Once setup succeeded, the failure IS a real regression — rethrow it. Only setup
-          // failures (sharing a System-owned fixture not feasible) are tolerated as a skip.
+
           if (crossUserSetupOk)
             throw e;
           setupSkipReason = String(e?.message ?? e);
           console.warn(`Scenario 5: real cross-user leg skipped (${setupSkipReason}); ` +
             'falling back to handler-dispatch on platform fixture.');
         } finally {
-          // Always restore the primary session so cleanup runs as the owner.
+
           await loginToDatagrok(page).catch(() => {});
           await ensurePowerPackLoaded(page).catch(() => {});
         }
@@ -416,7 +393,6 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
           return;
       }
 
-      // Probe for a shared XLSX not under System: or the current user's own home.
       const sharedPath = await page.evaluate(async () => {
         const grok = (window as any).grok;
         try {
@@ -434,41 +410,40 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
                   return full;
                 }
               }
-            } catch (_) { /* try next root */ }
+            } catch (_) {  }
           }
-        } catch (_) { /* probe failed */ }
+        } catch (_) {  }
         return null;
       });
 
       if (sharedPath) {
         const opened = await openTableFromFileWithTimeout(page, sharedPath);
-        expect(opened.rowCount).toBeGreaterThan(0); // GROK-19329 invariant
+        expect(opened.rowCount).toBeGreaterThan(0); 
         const v = await verifyXlsxOpenedSuccessfully(page);
         observations['scenario-5'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
         expect(v.rowCount).toBeGreaterThan(0);
-        expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+        expect(v.errorBalloons).toBe(0); 
         console.log(`Scenario 5: opened shared XLSX from ${sharedPath}`);
       } else {
-        // No shared XLSX reachable; exercise the same registered handler on the platform fixture.
+
         const result = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
         expect(result.error).toBeNull();
-        expect(result.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
-        expect(result.firstRowCount).toBeGreaterThan(0); // GROK-19329 invariant
+        expect(result.dfCount).toBeGreaterThan(0); 
+        expect(result.firstRowCount).toBeGreaterThan(0); 
         const v = await verifyXlsxOpenedSuccessfully(page);
         observations['scenario-5'] = {rowCount: v.rowCount, colCount: v.colCount, errorBalloons: v.errorBalloons};
         expect(v.rowCount).toBeGreaterThan(0);
-        expect(v.errorBalloons).toBe(0); // GROK-19329 invariant
+        expect(v.errorBalloons).toBe(0); 
         console.log('Scenario 5: no shared XLSX reachable in env; exercised handler-dispatch on platform fixture');
       }
     });
 
     await resetShellState(page);
 
-    // Scenario 6: sheetName param filters to one sheet; omitted returns all sheets.
     await softStep('Scenario 6: sheetName parameter selects a specific sheet', async () => {
       const allSheets = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, null);
       expect(allSheets.error).toBeNull();
-      expect(allSheets.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
+      expect(allSheets.dfCount).toBeGreaterThan(0); 
 
       if (allSheets.dfCount < 2) {
         observations['scenario-6'] = {rowCount: allSheets.firstRowCount, colCount: allSheets.firstColCount, errorBalloons: 0};
@@ -476,7 +451,6 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
         return;
       }
 
-      // Multi-sheet: discover the second sheet's name from the parsed DataFrame names.
       const secondSheetName = await page.evaluate(async (p) => {
         const grok = (window as any).grok;
         const bytes = await grok.dapi.files.readAsBytes(p);
@@ -499,7 +473,7 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
 
       const oneSheet = await invokeXlsxHandlerWithBytes(page, xlsxFullPath, secondSheetName);
       expect(oneSheet.error).toBeNull();
-      expect(oneSheet.dfCount).toBeGreaterThan(0); // GROK-19329 invariant
+      expect(oneSheet.dfCount).toBeGreaterThan(0); 
       const namedRowCount = await page.evaluate(async (args: {p: string; sn: string}) => {
         const grok = (window as any).grok;
         const bytes = await grok.dapi.files.readAsBytes(args.p);

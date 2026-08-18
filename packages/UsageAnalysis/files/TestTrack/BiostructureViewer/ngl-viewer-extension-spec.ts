@@ -1,7 +1,3 @@
-// NGL viewer extension: mount + Style/Data/Behaviour props + file-handler routing + grid context menu
-// + PDB id panel. NGL representation uses 'ball+stick' (Mol* uses 'ball-and-stick'). File-routing
-// (Scenarios 2-3) is asserted via DG.Func.find registry probes (no NGL-format fixtures on disk).
-// Canvas pixels are not asserted; mount + props round-trip + menu labels + widget roots are.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -21,7 +17,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -36,7 +31,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
   try {
-    // SCENARIO 1 — NGL viewer add via tv.addViewer('NGL') + Style/Data/Behaviour props round-trip.
+
     let scenario1Mounted = false;
 
     await softStep('Scenario 1 step 1-3 — Open Molecule3D table; tv.addViewer("NGL"); canvas mount + container DOM', async () => {
@@ -50,7 +45,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         ]);
         const col = df.col('structure');
         col.semType = 'Molecule3D';
-        try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) { /* tag set */ }
+        try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) {  }
         df.name = 'ngl-extension-fixture';
         const tv = grok.shell.addTableView(df);
         await new Promise((r) => setTimeout(r, 2000));
@@ -80,7 +75,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'NGL') as any : null;
         if (!v) return {ok: false};
-        // NGL uses 'ball+stick' (Mol* uses 'ball-and-stick').
+
         v.setOptions({representation: 'ball+stick'});
         await new Promise((r) => setTimeout(r, 1500));
         const afterRep = v.props.get('representation');
@@ -115,7 +110,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'NGL') as any : null;
         if (!v) return {ok: false};
-        // Defaults: showCurrentRowLigand=true, showMouseOverRowLigand=true.
+
         const initCurrent = v.props.get('showCurrentRowLigand');
         const initMouseOver = v.props.get('showMouseOverRowLigand');
         v.setOptions({showCurrentRowLigand: false});
@@ -148,12 +143,12 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'NGL') as any : null;
         if (!v) return {ok: false};
         const df = tv.dataFrame;
-        // Default: showSelectedRowsLigands=false.
+
         const initSelected = v.props.get('showSelectedRowsLigands');
         v.setOptions({showSelectedRowsLigands: true});
         await new Promise((r) => setTimeout(r, 1200));
         const selOn = v.props.get('showSelectedRowsLigands');
-        // 1-row fixture: assert the property round-trip + selection driver (multi-row math is GROK-17967's).
+
         df.selection.init((i: number) => i === 0);
         await new Promise((r) => setTimeout(r, 800));
         const selectedCount = df.selection.trueCount;
@@ -166,7 +161,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
       expect(res.selectedCount).toBeLessThanOrEqual(res.rowCount);
     });
 
-    // SCENARIO 2 — importWithNgl is the registered handler for Mol*-incapable extensions (registry probe).
     await softStep('Scenario 2 — importWithNgl is the registered handler for mmtf/cns/prmtop/ccp4 (registry probe)', async () => {
       const res = await page.evaluate(() => {
         const importWithNglFns = DG.Func.find({name: 'importWithNgl', package: 'BiostructureViewer'});
@@ -177,8 +171,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const importPdb = importPdbFns && importPdbFns[0];
         const importPdbqt = importPdbqtFns && importPdbqtFns[0];
         const importXYZ = importXYZFns && importXYZFns[0];
-        // Normalize the ext option (comma-separated with optional spaces) to
-        // a set of clean extensions.
+
         const extSet = (fn: any): Set<string> => {
           const raw = (fn?.options?.ext || '') as string;
           return new Set(
@@ -189,7 +182,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const pdbExt = extSet(importPdb);
         const pdbqtExt = extSet(importPdbqt);
         const xyzExt = extSet(importXYZ);
-        // Each Mol*-incapable extension must be in importWithNgl's ext set and no other importer's.
+
         const nglOnlyExts = ['mmtf', 'cns', 'top', 'prmtop', 'ply', 'obj', 'ccp4'];
         const routingResults: Record<string, {inNgl: boolean; inPdb: boolean; inPdbqt: boolean; inXyz: boolean}> = {};
         for (const ext of nglOnlyExts) {
@@ -210,13 +203,11 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         };
       });
 
-      // importWithNgl must be registered with the canonical fileHandler signature.
       expect(res.importWithNglRegistered).toBe(true);
       expect(res.importWithNglInputCount).toBe(1);
       expect(res.importWithNglFirstInputName).toBe('fileContent');
       expect(res.importWithNglFirstInputType).toBe('string');
 
-      // Each extension must route only to importWithNgl (no collision with importPdb/Pdbqt/XYZ).
       for (const ext of ['mmtf', 'cns', 'prmtop', 'ccp4']) {
         const r = res.routingResults[ext];
         expect(
@@ -238,7 +229,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
       }
     });
 
-    // SCENARIO 3 — NGL preview file-viewers (structure/surface/density) registered with expected exts.
     await softStep('Scenario 3 — NGL preview file-viewers are registered with the expected ext sets (registry probe)', async () => {
       const res = await page.evaluate(() => {
         const previewNglStructureFns = DG.Func.find({name: 'previewNglStructure', package: 'BiostructureViewer'});
@@ -248,7 +238,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const previewMolstarDensityFns = DG.Func.find({name: 'previewBiostructureDensity', package: 'BiostructureViewer'});
 
         const fn = (arr: any[]): any => arr && arr[0];
-        // The fileViewer match surface is options.fileViewer (or options.ext); probe both.
+
         const extSet = (f: any): Set<string> => {
           const raw = (f?.options?.fileViewer || f?.options?.ext || '') as string;
           return new Set(
@@ -278,12 +268,10 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
       expect(res.surfaceRegistered).toBe(true);
       expect(res.densityRegistered).toBe(true);
 
-      // Canonical NGL-only extensions: structure=mmtf, surface=ply, density=ccp4.
       expect(res.structureExt).toContain('mmtf');
       expect(res.surfaceExt).toContain('ply');
       expect(res.densityExt).toContain('ccp4');
 
-      // NGL preview extensions must not collide with the Mol*-preview ext sets.
       for (const ext of ['mmtf', 'cns', 'prmtop']) {
         expect(
           res.molstarStructureExt.includes(ext),
@@ -296,7 +284,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
       ).toBe(false);
     });
 
-    // SCENARIO 4 — Grid context menu Show -> NGL leaf on a Molecule3D cell (force-autostart + retry).
     let scenario4Mounted = false;
     let scenario4Result: any = null;
 
@@ -312,8 +299,8 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         ]);
         const col = df.col('structure');
         col.semType = DG.SEMTYPE && DG.SEMTYPE.MOLECULE3D ? DG.SEMTYPE.MOLECULE3D : 'Molecule3D';
-        try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) { /* tag set */ }
-        try { col.meta.units = 'pdb'; } catch (_) { /* meta API variants */ }
+        try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) {  }
+        try { col.meta.units = 'pdb'; } catch (_) {  }
         df.name = 'ngl-extension-context-menu-fixture';
         const tv = grok.shell.addTableView(df);
         await new Promise((resolve) => {
@@ -323,7 +310,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
           } catch (_) { resolve(undefined); }
         });
         await new Promise((r) => setTimeout(r, 3000));
-        // Force-call autostart to wire the context-menu hook.
+
         let autostartCalled = false;
         try {
           const autoFns = DG.Func.find({package: 'BiostructureViewer', name: 'autostart'});
@@ -331,7 +318,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
             await autoFns[0].apply({}, {processed: true});
             autostartCalled = true;
           }
-        } catch (_) { /* best-effort */ }
+        } catch (_) {  }
         await new Promise((r) => setTimeout(r, 4000));
         if (!w.$biostructureViewer) w.$biostructureViewer = {};
         w.$biostructureViewer.contextMenuError = null;
@@ -358,7 +345,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
 
     await softStep('Scenario 4 step 2-3 — Right-click populated Molecule3D cell; assert Show -> NGL leaf is injected', async () => {
       if (!scenario4Mounted) return;
-      // Clear page errors before the load-bearing dispatch.
+
       pageErrors.length = 0;
 
       scenario4Result = await page.evaluate(async () => {
@@ -376,7 +363,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const cx = gridRect.left + sb.x + Math.min(20, sb.width / 4);
         const cy = gridRect.top + sb.y + sb.height / 2;
 
-        // Retry up to 3 times (cold-start race).
         let menuLabels: string[] = [];
         let hasShow = false, hasNgl = false, hasBio = false;
         let attemptCount = 0;
@@ -400,7 +386,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
           if (hasShow && hasNgl && hasBio) break;
         }
 
-        // If a deferred submenu is used, hover the 'Show' group label to expand it.
         if (hasShow && (!hasNgl || !hasBio)) {
           const showLabelEl = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
             .find((el) => (el.textContent || '').trim() === 'Show');
@@ -435,7 +420,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         };
       });
 
-      // The 'NGL' leaf must be present under the 'Show' group on a populated Molecule3D cell.
       expect(
         scenario4Result.hasShow,
         `Show group missing from grid context menu. Menu items: ${JSON.stringify(scenario4Result.menuItemsSample)}.`,
@@ -447,14 +431,12 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         `Attempts: ${scenario4Result.attemptCount}.`,
       ).toBe(true);
 
-      // Coexistence: Show -> Biostructure must appear alongside Show -> NGL.
       expect(
         scenario4Result.hasBio,
         `Coexistence invariant violated: Show -> Biostructure leaf missing alongside Show -> NGL. ` +
         `Menu items: ${JSON.stringify(scenario4Result.menuItemsSample)}.`,
       ).toBe(true);
 
-      // The detectors.js hook must not throw on a populated cell (cross-check with GROK-14552).
       expect(
         scenario4Result.contextMenuErrorIsNull,
         `BSV context-menu hook threw on populated Molecule3D cell: ${JSON.stringify(scenario4Result.contextMenuErrorMessage)}.`,
@@ -469,7 +451,6 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
       ).toEqual([]);
     });
 
-    // SCENARIO 5 — PDB id context-panel widget (NGL-wrapped): pane mount + direct pdbIdNglPanelWidget apply.
     let scenario5Mounted = false;
 
     await softStep('Scenario 5 step 1-3 — Stage PDB_ID table; set current cell; right pane PDB-id-viewer surfaces', async () => {
@@ -485,7 +466,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const tv = grok.shell.addTableView(df);
         await new Promise((r) => setTimeout(r, 2500));
         df.currentRowIdx = 0;
-        try { df.currentCell = df.cell(0, 'pdb_id'); } catch (_) { /* setter variants */ }
+        try { df.currentCell = df.cell(0, 'pdb_id'); } catch (_) {  }
         await new Promise((r) => setTimeout(r, 1500));
         return {
           rowCount: df.rowCount,
@@ -540,9 +521,9 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
         const df = tv?.dataFrame;
         if (!df) return {ok: false, reason: 'no df'};
         df.currentRowIdx = 1;
-        try { df.currentCell = df.cell(1, 'pdb_id'); } catch (_) { /* setter variants */ }
+        try { df.currentCell = df.cell(1, 'pdb_id'); } catch (_) {  }
         await new Promise((r) => setTimeout(r, 1500));
-        // Re-invoke the widget func with the new PDB_ID.
+
         const fns = DG.Func.find({name: 'pdbIdNglPanelWidget', package: 'BiostructureViewer'});
         const fn = fns && fns[0];
         let widget: any = null;
@@ -569,7 +550,7 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
       ).toEqual([]);
     });
   } finally {
-    // Cleanup — no server-side state was created by this spec.
+
     try {
       await page.evaluate(() => {
         const w: any = window;
@@ -580,9 +561,9 @@ test('BiostructureViewer — NGL viewer extension (mount + props + file-routing 
           if (cancel) cancel.click();
         });
         if (w.$biostructureViewer) w.$biostructureViewer.contextMenuError = null;
-        try { w.grok.shell.closeAll(); } catch (_) { /* best-effort */ }
+        try { w.grok.shell.closeAll(); } catch (_) {  }
       });
-    } catch (e) { /* best-effort */ }
+    } catch (e) {  }
   }
 
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));

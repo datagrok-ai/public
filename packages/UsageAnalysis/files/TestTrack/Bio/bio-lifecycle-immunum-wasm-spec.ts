@@ -19,7 +19,7 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
     'numbering_detail', 'numbering_map',
   ] as const;
   await loginToDatagrok(page);
-  // Setup — open antibody fixture, await semType + Bio init readiness.
+
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -46,11 +46,11 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
-  // Scenario 1 — Trigger initBio + verify getSeqHelper resolves
+
   await softStep('S1.1: initBio completes; Bio:getSeqHelper resolves to a usable singleton', async () => {
     const info = await page.evaluate(async () => {
       let resolved = false;
@@ -101,7 +101,7 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       (document.querySelector(
         '[name="div-Bio---Annotate---Apply-Numbering-Scheme..."]') as HTMLElement).click();
     });
-    // Dialog title is "Apply Antibody Numbering" (not the menu label).
+
     await page.locator('[name="dialog-Apply-Antibody-Numbering"]').waitFor({timeout: 60_000});
     await page.locator('[name="dialog-Apply-Antibody-Numbering"] [name="button-OK"]').click();
     await page.waitForFunction(
@@ -163,7 +163,7 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       expect(info.sampleRow![expectedName]).not.toBeNull();
   });
   try {
-    // Scenario 2 — Save project with the numbering output
+
     await softStep('S2.1: Save project with numbering output (JS API path)', async () => {
       saved = await saveAllTablesWithProvenance(page, projectName);
       expect(saved.projectId).toBeTruthy();
@@ -177,7 +177,7 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
       }, saved.projectId);
       expect(ok).toBe(true);
     });
-    // Scenario 3 — Reopen project + WASM re-load + deterministic re-run.
+
     await softStep('S3.1-3.2: reopen project — antibody table + Macromolecule semType survive', async () => {
       if (!saved) throw new Error('S2.1 did not produce a saved project');
       const result = await reopenAndAssertProvenance(page, saved.projectId);
@@ -239,7 +239,7 @@ test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+
         expect(info.sampleRow![expectedName]).not.toBeNull();
     });
   } finally {
-    // Scenario 4 — Cleanup (runs regardless of earlier failures)
+
     if (saved) {
       await deleteProjectWithCleanup(page, {
         projectId: saved.projectId,

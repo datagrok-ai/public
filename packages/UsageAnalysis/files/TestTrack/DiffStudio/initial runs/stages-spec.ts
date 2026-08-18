@@ -50,7 +50,7 @@ test("DiffStudio Stages (Acid Production): Load, Multiaxis+Facet, modify input, 
         .first();
       await card.waitFor({ timeout: 15000 });
       await card.dblclick();
-      // The library card opens a view named 'GA-production' (not 'Acid Production')
+
       await page.waitForFunction(
         () =>
           grok.shell.v?.name === "GA-production" ||

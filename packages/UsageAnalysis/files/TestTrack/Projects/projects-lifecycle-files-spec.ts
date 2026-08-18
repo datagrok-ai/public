@@ -1,4 +1,3 @@
-// File-source lifecycle: open, save with provenance, reopen-verify, share, rename, delete.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -36,7 +35,7 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       expect(opened.rowCount).toBeGreaterThan(0);
       await assertProvenanceScript(page, 'files', opened.script);
-      // Accept colon-form and dot-form — openTableFromFile normalizes `:` → `.` (bug 2a workaround).
+
       expect(opened.script).toMatch(/OpenFile\("System[:.]DemoFiles\/demog\.csv"\)/);
     });
 
@@ -70,7 +69,6 @@ test('Projects / Lifecycle Files: open → save with provenance → reopen → s
       expect(r.persistedName).toBe(renamed);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 5: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: renamed}, {full: true});

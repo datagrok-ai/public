@@ -78,7 +78,7 @@ test("DiffStudio Cyclic Models (PK-PD): Load, Multiaxis+Facet, Count clickers, t
       const before = await page
         .locator('[name="input-host-count"] input.ui-input-editor')
         .inputValue();
-      // Click [name="icon-plus"] inside the count host three times
+
       for (let i = 0; i < 3; i++) {
         await page
           .locator('[name="input-host-count"] [name="icon-plus"]')

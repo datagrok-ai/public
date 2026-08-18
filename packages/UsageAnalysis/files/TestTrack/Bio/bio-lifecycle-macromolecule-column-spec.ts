@@ -16,7 +16,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
   const fastaTempPath = `System:AppData/UsageAnalysis/temp/bio-lifecycle-${stamp}.fasta`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   await loginToDatagrok(page);
-  // Scenario 1 — Detect on open + convert-notation round trip
+
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -43,7 +43,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
   await page.evaluate(async () => {
     const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
@@ -96,7 +96,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       () => document.querySelectorAll('[name="dialog-Convert-Sequence-Notation"]').length === 0,
       null, {timeout: 15_000}).catch(() => {});
   });
-  // Scenario 2 — Import FASTA → Export FASTA → re-import round trip
+
   await page.evaluate(async (path) => {
     grok.shell.closeAll();
     const df = await grok.dapi.files.readCsv(path);
@@ -168,7 +168,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       } catch (e) {
         reimportErr = String(e).slice(0, 200);
       }
-      try { await grok.dapi.files.delete(tempPath); } catch (_) { /* best effort */ }
+      try { await grok.dapi.files.delete(tempPath); } catch (_) {  }
       return {
         fastaShape: {
           startsWithHeader: fastaText.startsWith('>'),
@@ -194,7 +194,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       expect(result.fastaShape.lineCount).toBeGreaterThan(1);
     }
   });
-  // Scenario 3 — Save project with analysis + reopen restores analysis output
+
   await softStep('S3.1: Open Bio | Analyze | Sequence Space with defaults — embedding columns + ScatterPlot dock', async () => {
     const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
     await bio.openBioAnalyze(page, 'div-Bio---Analyze---Sequence-Space...');
@@ -247,7 +247,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       expect(post.hasEmbedY).toBe(true);
     });
   } finally {
-    // Scenario 4 — Cleanup (runs regardless of earlier failures)
+
     if (saved) {
       await deleteProjectWithCleanup(page, {
         projectId: saved.projectId,
@@ -255,7 +255,7 @@ test('Bio macromolecule_column source-class lifecycle: detect → convert → fa
       });
     }
     await page.evaluate(async (p) => {
-      try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
+      try { await grok.dapi.files.delete(p); } catch (_) {  }
     }, fastaTempPath).catch(() => {});
   }
   finishSpec();

@@ -18,10 +18,6 @@ const CONDITIONAL_RANGES = ['634783-634820', '634820-634885'];
 const EMPTY_PROBE_COLUMN = 'ZZ_EMPTY_PROBE';
 const NO_VALUE_LABEL = '(no value)';
 
-// Ink bounds are margins, never settled readings: each only has to clear
-// re-layout noise. The two fractions bound a collapse against the step's own
-// baseline; the panel-respect bound is an absolute floor instead, because the
-// two gaps it has to cover differ by an order of magnitude.
 const SELECTION_INK_MAX_FRACTION = 0.5;
 const PANEL_RESPECT_MARGIN_PX = 400;
 const EMPTY_SATURATED_MAX_FRACTION = 0.1;
@@ -32,9 +28,6 @@ const isAmbientError = (text: string) =>
   /powerPreference option is currently ignored/.test(text) ||
   /willReadFrequently/.test(text);
 
-// NullError / "Stack trace" / cloned-iframe messages are benign ONLY while the
-// ribbon project save is running; everywhere else — notably the legend-click
-// guards — that same Dart class is the regression signal.
 let inProjectSaveWindow = false;
 const isBenignError = (text: string) => {
   if (isAmbientError(text)) return true;
@@ -45,8 +38,6 @@ const isBenignError = (text: string) => {
   return false;
 };
 
-/** Rect of the scatter-plot data canvas, resolved on the viewer root that is
- * NOT inside a dialog (the Formula Lines dialog embeds its own preview plot). */
 const canvasRect = (page: Page) => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'))!;
@@ -54,8 +45,6 @@ const canvasRect = (page: Page) => page.evaluate(() => {
   return {x: r.x, y: r.y, width: r.width, height: r.height};
 });
 
-/** The viewer's DOM node attaches before its canvas is laid out, so readiness
- * is a drawn canvas rather than a fixed pause after the add. */
 const waitPlotCanvas = (page: Page) => page.waitForFunction(() => {
   return [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .filter((e) => !e.closest('.d4-dialog'))
@@ -65,41 +54,44 @@ const waitPlotCanvas = (page: Page) => page.waitForFunction(() => {
     });
 }, null, {timeout: 20000});
 
-// The two helpers below serve the PROPERTY-PANEL Markers row only. The shared
-// pickColumnViaSelectorTrusted covers on-viewer selectors, which it reveals by
-// hovering the plot — a panel row has nothing to hover and opens its own popup.
 async function waitBackdrop(page: Page, timeout = 5000): Promise<boolean> {
   return await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
     null, {timeout}).then(() => true).catch(() => false);
 }
 
-/** Poll a condition to a cap. The caller's own assertion, not the return
- * value, is what grades the outcome. */
 async function waitFor(page: Page, probe: () => Promise<boolean>, capMs: number): Promise<boolean> {
-  const deadline = Date.now() + capMs;
-  for (;;) {
-    if (await probe()) return true;
-    if (Date.now() >= deadline) return false;
-    await page.waitForTimeout(100);
-  }
+  return v.pollValue(probe, (ok) => ok, capMs, 100);
 }
 
-/** The popup grid is canvas-rendered, so the name goes in with real keys; the
- * first key is separated because the popup focuses its search input a tick
- * later. Enter alone commits the match, and the Marker property carries the
- * commit, so it is what the wait is anchored on. */
+const menuPopupReady = (page: Page) => page.evaluate(() => {
+  const popups = [...document.querySelectorAll('.d4-menu-popup')];
+  const last = popups[popups.length - 1];
+  if (!last) return false;
+  return [...last.querySelectorAll('[name]')].some((e) => {
+    const b = e.getBoundingClientRect();
+    return b.width > 0 && b.height > 0;
+  });
+});
+
+const menuItemSized = (page: Page, name: string) => page.evaluate((n: string) => {
+  const els = [...document.querySelectorAll(`.d4-menu-popup [name="${n}"]`)];
+  const el = els[els.length - 1];
+  if (!el) return false;
+  const b = el.getBoundingClientRect();
+  return b.width > 0 && b.height > 0;
+}, name);
+
 async function commitColumn(page: Page, column: string): Promise<void> {
   const text = column.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(150); 
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(200); 
   await page.keyboard.press('Enter');
   await waitFor(page, async () => (await viewerColumns(page)).markers === column, 4000);
   await settledLegend(page);
 }
 
-/** Pick a column through an on-viewer selector with trusted input only. */
 const pickOnViewer = (page: Page, role: string, column: string) =>
   v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 
@@ -118,9 +110,6 @@ async function pickMarkerColumn(page: Page, column: string): Promise<void> {
   await commitColumn(page, column);
 }
 
-/** Clear the Marker column: the popup's first data row is the empty entry, and
- * the grid being canvas-rendered it is reached by coordinate — one row height
- * below the popup's own header. */
 async function clearMarkerColumn(page: Page): Promise<void> {
   await v.openViewerGear(page, 'Scatter plot');
   if (!await revealPropEditor(page, MARKER_SELECTOR, 'marker'))
@@ -145,9 +134,7 @@ interface Legend {
   extra: number;
   labels: string[];
   colorLabels: string[];
-  /** Entries carrying a marker glyph: the separate `-extra` entries when Color
-   * and Marker sit on different columns, the color entries themselves when the
-   * two share a column and the legend is joint. */
+
   glyphLabels: string[];
   current: string[];
   dimmed: string[];
@@ -171,13 +158,11 @@ const readLegend = (page: Page): Promise<Legend> => page.evaluate(() => {
     colorLabels: colorItems.map(txt),
     glyphLabels: items.filter((i) => i.querySelector('i[name="legend-icon-color-picker"]')).map(txt),
     current: items.filter((i) => i.classList.contains('d4-legend-item-current')).map(txt),
-    // Dimming comes from the legend's own stylesheet, not from an inline style.
+
     dimmed: items.filter((i) => parseFloat(getComputedStyle(i).opacity) < 0.9).map(txt),
   };
 });
 
-/** The legend is rebuilt a tick after the property that drives it, so it is
- * read only once two consecutive reads agree. */
 async function settledLegend(page: Page): Promise<Legend> {
   let prev = await readLegend(page);
   for (let i = 0; i < 30; i++) {
@@ -192,13 +177,10 @@ async function settledLegend(page: Page): Promise<Legend> {
 interface Ink {
   nonWhite: number;
   saturated: number;
-  /** Near-neutral pixels painted pale — the shade empty-value markers use. */
+
   pale: number;
 }
 
-/** Ink on the plot's data canvas. Colour buckets are NOT one-to-one with
- * categories (overlap shading smears a category across neighbouring hues), so
- * the split is saturated-versus-pale rather than per-category. */
 const readInk = (page: Page): Promise<Ink> => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'))!;
@@ -218,18 +200,14 @@ const readInk = (page: Page): Promise<Ink> => page.evaluate(() => {
   return {nonWhite, saturated, pale};
 });
 
-/** Park the pointer clear of the plot: a hovered point paints its mouse-over
- * indicator into the frame and spoils the measurement. */
 async function parkPointer(page: Page): Promise<void> {
   await page.mouse.move(4, 4);
-  await page.waitForTimeout(250);
+  await v.waitForViewerRendered(page, 'Scatter plot', 250);
 }
 
 const sameInk = (a: Ink, b: Ink) =>
   a.nonWhite === b.nonWhite && a.saturated === b.saturated && a.pale === b.pale;
 
-/** The canvas does not drift at rest, so two consecutive identical reads are
- * the settle gate and no tolerance is applied. */
 async function settledInk(page: Page): Promise<Ink> {
   await parkPointer(page);
   let prev = await readInk(page);
@@ -242,11 +220,6 @@ async function settledInk(page: Page): Promise<Ink> {
   return prev;
 }
 
-/** Ink after an action that must repaint the plot. Identical reads alone would
- * settle on the frame the action has not reached yet, so the gate is the canvas
- * first leaving the frame the caller knows and only then holding still. A
- * canvas that never repaints is returned as it is, so the caller's assertion
- * fails on the real frame. */
 async function settledInkAfterChange(page: Page, from: Ink): Promise<Ink> {
   await parkPointer(page);
   let prev = await readInk(page);
@@ -259,11 +232,8 @@ async function settledInkAfterChange(page: Page, from: Ink): Promise<Ink> {
   return prev;
 }
 
-/** Which categories the legend marks as selected — the state a click flips. */
 const legendSelection = async (page: Page) => (await readLegend(page)).current.join('|');
 
-/** Real click on a legend entry, which is the only input this surface takes.
- * The wait is anchored on the selection actually flipping. */
 async function clickLegendEntry(page: Page, label: string): Promise<void> {
   const before = await legendSelection(page);
   const pt = await legendPoint(page, label);
@@ -272,8 +242,6 @@ async function clickLegendEntry(page: Page, label: string): Promise<void> {
   await waitFor(page, async () => await legendSelection(page) !== before, 4000);
 }
 
-/** Release whatever legend category is selected. Tolerant by design: it runs in
- * teardowns, where a missing entry must not mask the original failure. */
 async function clearLegendSelection(page: Page): Promise<void> {
   if (!await legendFiltering(page)) return;
   const current = (await readLegend(page)).current;
@@ -284,8 +252,6 @@ async function clearLegendSelection(page: Page): Promise<void> {
   await waitFor(page, async () => !await legendFiltering(page), 4000);
 }
 
-/** Whether the legend is in its filtering state — the class the host gains once
- * a category is selected, and the DOM support for the ink measurement. */
 const legendFiltering = (page: Page) => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'));
@@ -293,8 +259,6 @@ const legendFiltering = (page: Page) => page.evaluate(() => {
   return !!host?.classList.contains('d4-legend-filtering');
 });
 
-/** Page coordinates of a legend entry by its text. The legend only responds to
- * trusted input, so callers drive it with `page.mouse.click` on this point. */
 const legendPoint = (page: Page, label: string) => page.evaluate((l: string) => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'));
@@ -309,11 +273,6 @@ const legendPoint = (page: Page, label: string) => page.evaluate((l: string) => 
 const filterCount = (page: Page) =>
   page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount as number);
 
-/** Filtered row count where a NEW value is expected. The count lags the action
- * that changes it, so the settle gate is it LEAVING the value the caller knows
- * and only then holding still — agreeing samples on the previous value are not
- * a settled reading. A count that never moves is returned as it is, so the
- * caller's assertion fails on the real value. */
 async function settledFilterCountAfterChange(page: Page, from: number): Promise<number> {
   let prev = -1;
   let stable = 0;
@@ -331,11 +290,8 @@ async function settledFilterCountAfterChange(page: Page, from: number): Promise<
   return prev;
 }
 
-/** Filtered row count where the expectation is that it does NOT move — the
- * legend-click guards, whose whole point is that the table filter stays put.
- * "Did not change" cannot be told apart from "has not changed yet", so
- * sampling starts only after a time floor that outlasts a filter update. */
 async function settledFilterCountUnchanged(page: Page, floorMs = 2000): Promise<number> {
+
   await page.waitForTimeout(floorMs);
   let last = -1;
   let stable = 0;
@@ -358,8 +314,6 @@ const viewerColumns = (page: Page) => page.evaluate(() => {
   return {color: sp.props.colorColumnName, markers: sp.props.markersColumnName};
 });
 
-/** Count of legend hosts inside the viewer root: Legend Visibility Never
- * removes the host outright, so this is the presence signal. */
 const legendHostCount = (page: Page) => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'));
@@ -374,52 +328,39 @@ const legendVisibility = (page: Page) => page.evaluate(() => {
 const VISIBILITY_MENU = ['div-Properties...', 'div-Properties...---Legend',
   'div-Properties...---Legend---Legend-Visibility'];
 
-/** Wait for the viewer's properties in the Context Panel, clicking the gear only
- * when they are not there yet. The gear does not toggle, so the guard saves a
- * redundant click rather than preventing a close. */
 async function settingsPanelReady(page: Page): Promise<boolean> {
+  const panelUp = () => page.evaluate(() => !!document.querySelector('[name="prop-category-legend"]'));
   for (let i = 0; i < 4; i++) {
-    if (await page.evaluate(() => !!document.querySelector('[name="prop-category-legend"]'))) return true;
+    if (await panelUp()) return true;
     await v.openViewerGear(page, 'Scatter plot');
-    await page.waitForTimeout(1000);
+    await waitFor(page, panelUp, 1000);
   }
   return false;
 }
 
-/** Make a property editor reachable. A row inside a collapsed category keeps its
- * DOM node with an empty box, so readiness is measured on the editor's own
- * rectangle; the category header is a toggle, so an attempt is simply retried. */
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<boolean> {
+  const sized = () => page.evaluate((sel: string) => {
+    const el = document.querySelector(sel) as HTMLElement | null;
+    if (!el || !el.offsetParent) return false;
+    const b = el.getBoundingClientRect();
+    return b.width > 0 && b.height > 0;
+  }, editorSelector);
   for (let i = 0; i < 8; i++) {
-    const ready = await page.evaluate((sel: string) => {
-      const el = document.querySelector(sel) as HTMLElement | null;
-      if (!el || !el.offsetParent) return false;
-      const b = el.getBoundingClientRect();
-      return b.width > 0 && b.height > 0;
-    }, editorSelector);
-    if (ready) return true;
+    if (await sized()) return true;
     const header = page.locator(`[name="prop-category-${category}"]`);
     if (await header.count() > 0 && await header.isVisible()) await header.click();
-    await page.waitForTimeout(800);
+    await waitFor(page, sized, 800);
   }
   return false;
 }
 
-/** The plot's context menu only opens on a real right-click. */
 async function openPlotContextMenu(page: Page): Promise<void> {
   const r = await canvasRect(page);
   await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2, {button: 'right'});
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 8000});
-  await page.waitForTimeout(500);
+  await waitFor(page, () => menuPopupReady(page), 500);
 }
 
-/**
- * Set Legend Visibility through the real UI. Both routes — the settings-panel
- * select and the context-menu mirror — enumerate their options rather than
- * assume them, and both end in a read-back of the property, so a route that
- * silently does nothing fails here instead of letting the presence assert pass
- * vacuously.
- */
 async function setLegendVisibility(page: Page, value: string): Promise<void> {
   let driven = false;
   const editor = '[name="prop-view-legend-visibility"]';
@@ -439,22 +380,23 @@ async function setLegendVisibility(page: Page, value: string): Promise<void> {
   }
   if (!driven) {
     await openPlotContextMenu(page);
-    for (const g of VISIBILITY_MENU) {
-      await page.locator(`.d4-menu-popup [name="${g}"]`).last().hover();
-      await page.waitForTimeout(700);
+    const leafName = `${VISIBILITY_MENU[2]}---${value}`;
+    for (let i = 0; i < VISIBILITY_MENU.length; i++) {
+      await page.locator(`.d4-menu-popup [name="${VISIBILITY_MENU[i]}"]`).last().hover();
+
+      const next = i + 1 < VISIBILITY_MENU.length ? VISIBILITY_MENU[i + 1] : leafName;
+      await waitFor(page, () => menuItemSized(page, next), 700);
     }
-    const leaf = page.locator(`.d4-menu-popup [name="${VISIBILITY_MENU[2]}---${value}"]`);
+    const leaf = page.locator(`.d4-menu-popup [name="${leafName}"]`);
     expect(await leaf.count()).toBeGreaterThan(0);
     await leaf.last().click();
     await waitFor(page, async () => await legendVisibility(page) === value, 4000);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    await waitFor(page, async () => !await menuPopupReady(page), 500);
   }
   expect(await legendVisibility(page)).toBe(value);
 }
 
-/** Grid header cells are canvas-drawn, so the right-click is positioned through
- * the grid's own column geometry. */
 async function openColumnHeaderMenu(page: Page, column: string): Promise<void> {
   const pt = await page.evaluate((name: string) => {
     const grid = grok.shell.tv.grid;
@@ -464,15 +406,15 @@ async function openColumnHeaderMenu(page: Page, column: string): Promise<void> {
   }, column);
   await page.mouse.click(pt.x, pt.y, {button: 'right'});
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 8000});
-  await page.waitForTimeout(400);
+  await waitFor(page, () => menuPopupReady(page), 400);
 }
 
-/** Submenu leaves stay hidden until their parent group is hovered. */
 async function clickHeaderMenuLeaf(page: Page, group: string, leaf: string): Promise<void> {
   await page.locator(`.d4-menu-popup [name="${group}"]`).last().hover();
-  await page.waitForTimeout(600);
+  await waitFor(page, () => menuItemSized(page, leaf), 600);
   await page.locator(`.d4-menu-popup [name="${leaf}"]`).last().click();
-  await page.waitForTimeout(1200);
+
+  await waitFor(page, async () => !await menuPopupReady(page), 1200);
 }
 
 const conditionalRanges = (page: Page, column: string) => page.evaluate((c: string) => {
@@ -517,7 +459,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     expect(joint.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
     expect(joint.all).toBe(RACE_CATEGORIES.length + SEX_CATEGORIES.length);
 
-    // A numeric Color column must not take the marker glyph entries with it.
     await pickOnViewer(page, 'color', 'AGE');
     const numericColor = await readLegend(page);
     expect(numericColor.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
@@ -531,8 +472,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     expect(back.colorLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
     expect(new Set(back.labels).size).toBe(back.labels.length);
 
-    // Color and Marker on one column form a joint legend: the glyphs sit on the
-    // color entries, so both halves cover the same category set.
     await pickMarkerColumn(page, 'RACE');
     const same = await readLegend(page);
     expect(same.colorLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
@@ -554,7 +493,7 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
 
     await clearMarkerColumn(page);
     const after = await readLegend(page);
-    // Clearing a column sets the property to the empty string, not to null.
+
     expect((await viewerColumns(page)).markers).toBe('');
     expect(after.glyphLabels).toEqual([]);
     expect(after.colorLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
@@ -568,7 +507,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     const errBefore = errCount();
     await v.openFilterPanel(page);
 
-    // Marker column set AFTER the filter.
     await v.applyCategoricalFilter(page, 'RACE', ['Asian', 'Caucasian'], 600);
     const narrowed = await settledFilterCountAfterChange(page, fullRowCount);
     expect(narrowed).toBeLessThan(fullRowCount);
@@ -576,7 +514,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     const afterFilter = await readLegend(page);
     expect(afterFilter.glyphLabels.sort()).toEqual(['Asian', 'Caucasian']);
 
-    // Same subset, opposite ordering: Marker column set BEFORE the filter.
     await v.resetFilters(page);
     await settledFilterCountAfterChange(page, narrowed);
     await clearMarkerColumn(page);
@@ -610,8 +547,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       const baseCount = await settledFilterCountUnchanged(page, 500);
       expect(baseCount).toBe(fullRowCount);
 
-      // The legend filters what the viewer DRAWS, so the table's own filter has
-      // to stay where it was.
       await clickLegendEntry(page, 'Asian');
       const legendOnly = await settledInkAfterChange(page, baseline);
       expect(legendOnly.nonWhite)
@@ -622,10 +557,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       expect(marked.dimmed.length).toBeGreaterThan(0);
       expect(await settledFilterCountUnchanged(page)).toBe(baseCount);
 
-      // GROK-14940: a Filter-Panel filter on top must not bring back what the
-      // legend removed. The reference is the legend-only plot, NOT the
-      // panel-only one: dropping the other categories also drops marker
-      // overlap, so the selected category's own ink grows.
       await v.applyCategoricalFilter(page, 'SEX', ['F'], 600);
       const narrowed = await settledFilterCountAfterChange(page, fullRowCount);
       expect(narrowed).toBeLessThan(fullRowCount);
@@ -634,7 +565,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
         .toBeLessThan(legendOnly.nonWhite - PANEL_RESPECT_MARGIN_PX);
       expect((await readLegend(page)).labels).not.toContain('M');
 
-      // The same two operations in the opposite order reach the same frame.
       await clearLegendSelection(page);
       await v.resetFilters(page);
       await settledFilterCountAfterChange(page, narrowed);
@@ -662,7 +592,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
         const selected = await settledInkAfterChange(page, baseline);
         await clickLegendEntry(page, 'Asian');
 
-        // The canvas does not drift at rest, so the restore is exact.
         expect(await settledInkAfterChange(page, selected)).toEqual(baseline);
         const legend = await readLegend(page);
         expect(legend.current).toEqual([]);
@@ -679,16 +608,14 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       const errBefore = errCount();
       const baseCount = await settledFilterCountUnchanged(page, 500);
       try {
-        // The demog categorical columns carry no empty values, so the column
-        // that produces the empty-value legend entry is added here. Its markers
-        // are painted pale rather than in a category colour.
+
         await page.evaluate((name: string) => {
           const df = grok.shell.tv.dataFrame;
           const col = df.columns.addNewString(name);
           for (let i = 0; i < df.rowCount; i++)
             col.set(i, i % 3 === 0 ? null : (i % 3 === 1 ? 'alpha' : 'beta'));
         }, EMPTY_PROBE_COLUMN);
-        await page.waitForTimeout(1200);
+        await v.waitForViewerRendered(page, 'Scatter plot', 1200);
         await pickOnViewer(page, 'color', EMPTY_PROBE_COLUMN);
         expect((await settledLegend(page)).colorLabels).toContain(NO_VALUE_LABEL);
 
@@ -704,7 +631,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
         expect((await readLegend(page)).current).toContain(NO_VALUE_LABEL);
         expect(await settledFilterCountUnchanged(page)).toBe(baseCount);
 
-        // GROK-20228 respects the panel the same way a valued category does.
         await v.applyCategoricalFilter(page, 'SEX', ['F'], 600);
         expect(await settledFilterCountAfterChange(page, baseCount)).toBeLessThan(baseCount);
         const withPanel = await settledInkAfterChange(page, selected);
@@ -745,8 +671,6 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       await page.waitForFunction(() =>
         !!grok.shell.tv?.dataFrame?.col('CAST Idea ID'), null, {timeout: 30000});
 
-      // Both ranges must occur in the data — bounds outside it collapse into a
-      // single no-value entry.
       await openColumnHeaderMenu(page, 'CAST Idea ID');
       await clickHeaderMenuLeaf(page, 'div-Color-Coding', 'div-Color-Coding---Conditional');
       await openColumnHeaderMenu(page, 'CAST Idea ID');
@@ -756,8 +680,9 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       await dialog.waitFor({timeout: 10000});
       const rangeInputs = dialog.locator('input.ui-input-editor');
       for (let guard = 0; guard < 10 && await rangeInputs.count() > CONDITIONAL_RANGES.length; guard++) {
+        const before = await rangeInputs.count();
         await dialog.locator('[name="button-Remove-row"]').last().click();
-        await page.waitForTimeout(600);
+        await waitFor(page, async () => await rangeInputs.count() < before, 600);
       }
       expect(await rangeInputs.count()).toBe(CONDITIONAL_RANGES.length);
       for (let i = 0; i < CONDITIONAL_RANGES.length; i++) {
@@ -765,10 +690,10 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
         await page.keyboard.press('Control+A');
         await page.keyboard.type(CONDITIONAL_RANGES[i]);
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(800);
+        await waitFor(page, async () => await rangeInputs.nth(i).inputValue() === CONDITIONAL_RANGES[i], 800);
       }
       await dialog.locator('[name="button-CLOSE"]').click();
-      await page.waitForTimeout(1200);
+      await waitFor(page, async () => await dialog.count() === 0, 1200);
 
       const coding = await conditionalRanges(page, 'CAST Idea ID');
       expect(coding.type).toBe('Conditional');
@@ -789,19 +714,24 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       expect(legend.colorLabels).toEqual(CONDITIONAL_RANGES);
       expect(errCount()).toBe(errBefore);
     } finally {
-      // The demog view is identified by its columns rather than by a table
-      // name — the loader does not name a table after its file.
-      await page.evaluate(async () => {
-        grok.shell.v.close();
-        await new Promise((r) => setTimeout(r, 1500));
+
+      await page.evaluate(() => grok.shell.v.close());
+      await waitFor(page, () => page.evaluate(() =>
+        [...grok.shell.tableViews].some((x: any) => x.dataFrame.columns.contains('RACE'))), 1500);
+      await page.evaluate(() => {
         for (const view of grok.shell.tableViews) {
           if (view.dataFrame.columns.contains('RACE')) {
             grok.shell.v = view;
             break;
           }
         }
-        await new Promise((r) => setTimeout(r, 1500));
       });
+
+      await waitFor(page, () => page.evaluate(() => {
+        const tv = grok.shell.tv;
+        return !!tv?.dataFrame?.columns.contains('RACE') &&
+          tv.viewers.some((x: any) => x.type === 'Scatter plot');
+      }), 1500);
     }
     const peak = await viewerColumns(page);
     expect(peak.color).toBe('RACE');
@@ -835,13 +765,12 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       expect(restored.colorLabels.sort()).toEqual([...before.colorLabels].sort());
       expect(errCount()).toBe(errBefore);
     } finally {
-      // Cleanup only: the value is forced back if the UI route left it anywhere
-      // else, because the persistence tail must start from the peak setup.
+
       await page.evaluate((val: string) => {
         const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
         if (sp && sp.props.legendVisibility !== val) sp.props.legendVisibility = val;
       }, initial);
-      await page.waitForTimeout(1200);
+      await v.waitForViewerRendered(page, 'Scatter plot', 1200);
     }
   });
 
@@ -856,38 +785,47 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1500));
       return layout.id as string;
     });
+
+    await waitFor(page, () => page.evaluate(async (id: string) =>
+      !!await grok.dapi.layouts.find(id), layoutId), 1500);
     try {
-      const result = await page.evaluate(async (id: string) => {
+      await page.evaluate(() => grok.shell.tv.addViewer('Histogram'));
+      await waitFor(page, () => page.evaluate(() =>
+        grok.shell.tv.viewers.some((x: any) => x.type === 'Histogram')), 1200);
+      const [clearedColor] = await v.setViewerProps(page, 'Scatter plot',
+        [{set: {colorColumnName: ''}, wait: 1000, read: 'colorColumnName'}]);
+      await page.evaluate(async (id: string) => {
+        grok.shell.tv.loadLayout(await grok.dapi.layouts.find(id));
+      }, layoutId);
+
+      await waitFor(page, () => page.evaluate(() => {
         const tv = grok.shell.tv;
-        tv.addViewer('Histogram');
-        await new Promise((r) => setTimeout(r, 1200));
+        if (!tv) return false;
         const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
-        sp.props.colorColumnName = '';
-        await new Promise((r) => setTimeout(r, 1000));
-        const clearedColor = sp.props.colorColumnName;
-        tv.loadLayout(await grok.dapi.layouts.find(id));
-        await new Promise((r) => setTimeout(r, 4000));
+        return !!sp && sp.props.colorColumnName === 'RACE' &&
+          !tv.viewers.some((x: any) => x.type === 'Histogram');
+      }), 4000);
+      const result = await page.evaluate((cleared: string) => {
+        const tv = grok.shell.tv;
         const restored = tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
         return {
-          clearedColor,
+          clearedColor: cleared,
           hasScatter: tv.viewers.some((x: any) => x.type === 'Scatter plot'),
           hasHistogram: tv.viewers.some((x: any) => x.type === 'Histogram'),
           color: restored?.props.colorColumnName, markers: restored?.props.markersColumnName,
         };
-      }, layoutId);
+      }, clearedColor);
 
-      // The perturbation really took effect before the re-apply.
       expect(result.clearedColor).toBe('');
-      // The restored viewer set is the SAVED one, not the perturbed one.
+
       expect(result.hasScatter).toBe(true);
       expect(result.hasHistogram).toBe(false);
       expect(result.color).toBe('RACE');
       expect(result.markers).toBe('SEX');
 
-      const legend = await readLegend(page);
+      const legend = await settledLegend(page);
       expect(legend.present).toBe(true);
       expect(legend.colorLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
       expect(legend.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
@@ -896,7 +834,7 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
         try {
           const saved = await grok.dapi.layouts.find(id);
           if (saved) await grok.dapi.layouts.delete(saved);
-        } catch (_) { /* best effort */ }
+        } catch (_) {  }
       }, layoutId);
     }
   });
@@ -911,9 +849,8 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
         projectId = saved.projectId;
         expect(projectId).toBeTruthy();
 
+        await v.closeAllAndWait(page);
         const result = await page.evaluate(async (id: string) => {
-          grok.shell.closeAll();
-          await new Promise((r) => setTimeout(r, 1500));
           const full = await grok.dapi.projects.find(id);
           await full.open();
           let sp: any = null;

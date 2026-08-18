@@ -9,8 +9,6 @@ import {
 
 test.use(specTestOptions);
 
-// Prerequisite: Adding-spec.ts must have run to create test_postgres
-
 test("Connections / Edit", async ({ page }) => {
   test.setTimeout(600_000);
   stepErrors.length = 0;
@@ -48,7 +46,7 @@ test("Connections / Edit", async ({ page }) => {
     "Steps 2-4: Right-click test_postgres → Edit → rename to new_test_postgres",
     async () => {
       await page.evaluate(async () => {
-        // Locate by data-link or name to avoid ambiguity if multiple connections share friendlyName
+
         const target = (document.querySelector(
           '[data-link="/db/null.test_postgres"]',
         ) ??
@@ -83,7 +81,7 @@ test("Connections / Edit", async ({ page }) => {
       await expect(page.locator("text=Edit Connection")).toBeVisible({
         timeout: 5000,
       });
-      // Wait for the dialog form to render its inputs (rendered async)
+
       await page.waitForFunction(
         () =>
           (document.querySelector(".d4-dialog")?.querySelectorAll("input")
@@ -112,7 +110,6 @@ test("Connections / Edit", async ({ page }) => {
       });
       await page.waitForTimeout(3000);
 
-      // Verify via JS API — DOM may show duplicate friendlyName labels
       const renamed = await page.evaluate(async () => {
         const c = await (window as any).grok.dapi.connections.find(
           "af9bcf40-21a0-11f1-89e2-7b1321b80948",
@@ -194,7 +191,6 @@ test("Connections / Edit", async ({ page }) => {
       });
       await page.waitForTimeout(2500);
 
-      // Trigger Test connection via JS API on the entity (UI balloon may auto-dismiss)
       const result = await page.evaluate(async () => {
         const conn = await (window as any).grok.dapi.connections.find(
           "af9bcf40-21a0-11f1-89e2-7b1321b80948",
@@ -207,10 +203,6 @@ test("Connections / Edit", async ({ page }) => {
     },
   );
 
-  // Step 7: Restoring with correct credentials requires the real DB password
-  // (managed by DevOps). Skipped — see edit-run.md.
-
-  // Cleanup: restore friendlyName for the next run
   await page.evaluate(async () => {
     const conn = await (window as any).grok.dapi.connections.find(
       "af9bcf40-21a0-11f1-89e2-7b1321b80948",

@@ -3,8 +3,6 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-// Login tests run against a fresh (unauthenticated) browser context.
-// This overrides the global storageState set in playwright.config.ts.
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const BASE_URL = process.env.DATAGROK_URL!;
@@ -15,14 +13,10 @@ const SEL = {
   loginField: '#signup-login-fields input[placeholder="Login or Email"]',
   passwordField: '#signup-login-fields input[placeholder="Password"]',
   loginButton: '#signup-login-fields .signup-buttons button',
-  // .signup-status is always in DOM (display:block) — empty text on load, "Login failed" after error
+
   errorLabel: '#signup-login-fields .signup-status',
   ribbon: '.d4-ribbon',
 };
-
-// ---------------------------------------------------------------------------
-// Page-level helpers
-// ---------------------------------------------------------------------------
 
 async function gotoLogin(page: Page): Promise<void> {
   await page.goto(BASE_URL);
@@ -35,20 +29,14 @@ async function fillAndSubmit(page: Page, username: string, password: string): Pr
   await page.locator(SEL.loginButton).click();
 }
 
-/** Wait for ".signup-status" to show "Login failed" text (server round-trip). */
 async function expectLoginFailed(page: Page): Promise<void> {
   await expect(page.locator(SEL.errorLabel)).toHaveText(/login failed/i, { timeout: 8_000 });
 }
 
-/** Confirm the user is NOT authenticated: login form still present, ribbon absent. */
 async function expectNotLoggedIn(page: Page): Promise<void> {
   await expect(page.locator(SEL.loginField)).toBeVisible({ timeout: 5_000 });
   await expect(page.locator(SEL.ribbon)).not.toBeVisible();
 }
-
-// ---------------------------------------------------------------------------
-// Positive scenarios
-// ---------------------------------------------------------------------------
 
 test.describe('Login — Positive', () => {
   test('valid credentials show the ribbon', async ({ page }) => {
@@ -87,10 +75,6 @@ test.describe('Login — Positive', () => {
     await expect(page.locator(SEL.errorLabel)).toHaveText('');
   });
 });
-
-// ---------------------------------------------------------------------------
-// Negative: empty / blank inputs
-// ---------------------------------------------------------------------------
 
 test.describe('Login — Negative: empty and blank inputs', () => {
   test('clicking login with both fields empty shows Login failed', async ({ page }) => {
@@ -138,10 +122,6 @@ test.describe('Login — Negative: empty and blank inputs', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Negative: wrong credentials
-// ---------------------------------------------------------------------------
-
 test.describe('Login — Negative: wrong credentials', () => {
   test('wrong username and wrong password shows Login failed', async ({ page }) => {
     await gotoLogin(page);
@@ -180,10 +160,6 @@ test.describe('Login — Negative: wrong credentials', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Negative: boundary / extreme inputs
-// ---------------------------------------------------------------------------
-
 test.describe('Login — Negative: boundary inputs', () => {
   test('very long username (500 chars) shows error without crash', async ({ page }) => {
     await gotoLogin(page);
@@ -206,10 +182,6 @@ test.describe('Login — Negative: boundary inputs', () => {
     await expectNotLoggedIn(page);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Negative: special / potentially dangerous inputs
-// ---------------------------------------------------------------------------
 
 test.describe('Login — Negative: special inputs', () => {
   test('SQL injection in login field shows error without crash', async ({ page }) => {
@@ -263,7 +235,7 @@ test.describe('Login — Negative: special inputs', () => {
   test('null-byte character in login field shows error without crash', async ({ page }) => {
     await gotoLogin(page);
     await fillAndSubmit(page, 'user\u0000admin', 'password');
-    // Server may respond with "Login failed" or "Operation caused an exception" — either is acceptable
+
     await expect(page.locator(SEL.errorLabel)).not.toHaveText('', { timeout: 8_000 });
     await expectNotLoggedIn(page);
   });
@@ -275,10 +247,6 @@ test.describe('Login — Negative: special inputs', () => {
     await expectNotLoggedIn(page);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Negative: repeated / sequential failures
-// ---------------------------------------------------------------------------
 
 test.describe('Login — Negative: repeated failures', () => {
   test('three consecutive failed logins keep the form accessible', async ({ page }) => {

@@ -43,8 +43,7 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
           return {ok: false, reason: String(e).slice(0, 200)};
         }
       })()`);
-      // Legitimate skip ONLY when the API isn't shipped on this build; any other
-      // reason (a thrown move error) must fail so a real regression is caught.
+
       if (!r.ok && r.reason === 'projects.move not implemented') {
         test.skip(true, 'projects.move not implemented on this build');
         return;
@@ -70,8 +69,7 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
         }
       })()`);
       if (r.spaceId) createdSpaceId = r.spaceId;
-      // Legitimate skip ONLY when an API isn't shipped on this build; any other
-      // reason (a thrown create/move error) must fail so a real regression is caught.
+
       if (!r.ok && (r.reason === 'spaces.createRootSpace not implemented' || r.reason === 'projects.move not implemented')) {
         test.skip(true, r.reason);
         return;

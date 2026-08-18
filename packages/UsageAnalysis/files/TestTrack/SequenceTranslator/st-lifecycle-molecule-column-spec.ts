@@ -123,7 +123,7 @@ async function importRGroupsFromTable(page: Page, tableName: string, colName: st
 }
 
 test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-menu and context-menu dialog', async ({page}) => {
-  // RDKit module load + several Cartesian/Zip Markush enumerations (chem-heavy); 5 min cap.
+
   test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);

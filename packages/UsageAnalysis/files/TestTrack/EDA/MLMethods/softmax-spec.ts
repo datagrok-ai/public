@@ -18,7 +18,6 @@ test('Softmax: Train on iris.csv', async () => {
     }, {timeout: 45000});
   }
 
-  // Step 1: Open iris.csv
   await softStep('Open iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -38,7 +37,6 @@ test('Softmax: Train on iris.csv', async () => {
     expect(result.cols).toBe(6);
   });
 
-  // Step 2: Train Softmax — known FAIL
   await softStep('Train Softmax (known bug)', async () => {
     const result = await page!.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
@@ -53,8 +51,7 @@ test('Softmax: Train on iris.csv', async () => {
         return {success: false, error: e.message};
       }
     });
-    // Known failure: trainSoftmax has a bug with feature type detection
-    // Log result but don't fail the suite
+
     console.log('Softmax result:', result);
   });
 

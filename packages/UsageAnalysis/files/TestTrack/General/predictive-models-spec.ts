@@ -4,14 +4,6 @@ import {setPredict, selectFeaturesByName} from '../helpers/models-helpers';
 
 test.use(specTestOptions);
 
-// NOTE: This spec was REMOVED from the playwright-public CI suite (Models folder) and is kept here in
-// TestTrack/General for reference only. Reason for removal: on the all-numeric accelerometer.csv the
-// PredictiveModelingView never renders the `[name="input-Model-Engine"]` select, so the scenario cannot
-// choose the Eda: PLS / Linear Regression engines (works on demog.csv's categorical target, cf. the
-// passing models-testdemog-lifecycle-smoke). The Train/Apply/Delete lifecycle it covers is already green
-// via models-testdemog-lifecycle-smoke + models-lifecycle-csv-table + models-one-hot-suffix-collision;
-// only "Apply on a new (random-walk) dataset" is unique here. Restore to CI if the engine select is made
-// to render for numeric-only training tables (or drive the engine via JS API instead of the dropdown).
 test('Models / Predictive models: Train / Apply / Apply on new dataset / Delete', async ({page}) => {
   test.setTimeout(600_000);
 
@@ -71,11 +63,7 @@ test('Models / Predictive models: Train / Apply / Apply on new dataset / Delete'
   });
 
   await softStep('1.3 Set Predict=accel_x, Features=accel_y/accel_z/time_offset; tick Ignore missing', async () => {
-    // Use the robust column-picker helpers (canvas hit-zone + search-filter) rather than
-    // ad-hoc label-All/toggle clicks — the inline recipe raced the picker and left the view
-    // unconfigured. Mirror the passing testdemog flow: set Predict + Features, confirm the
-    // (3)-features count, then tick Ignore missing to advance the form. accelerometer.csv
-    // columns are accel_x / accel_y / accel_z / time_offset (all double); predict accel_x.
+
     await setPredict(page, 'accel_x');
     await selectFeaturesByName(page, ['accel_y', 'accel_z', 'time_offset']);
     await page.waitForFunction(() => {
@@ -85,8 +73,6 @@ test('Models / Predictive models: Train / Apply / Apply on new dataset / Delete'
     await page.locator('[name="input-Ignore-missing"]').click().catch(() => {});
   });
 
-  // The Model Engine select appears once the config is valid (accelerometer is all-numeric
-  // → PLS/LR regression engines). Best-effort wait; 1.4 sets it explicitly.
   await page.waitForFunction(
     () => !!document.querySelector('[name="input-Model-Engine"]'), null, {timeout: 30_000})
     .catch(() => {});

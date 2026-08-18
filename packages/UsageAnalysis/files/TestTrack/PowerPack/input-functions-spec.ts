@@ -54,7 +54,7 @@ async function getFunctionSpan(page: Page, funcName: string): Promise<Locator | 
   if ((await span.count()) === 0) return null;
   return span;
 }
-// Trusted-click the "+" icon for a function row (propagates to Dart's insertIntoCodeMirror).
+
 async function clickPlusIcon(page: Page, funcName: string): Promise<{uiClicked: boolean; reason?: string}> {
   const span = await getFunctionSpan(page, funcName);
   if (!span) return {uiClicked: false, reason: `function row "${funcName}" not present`};
@@ -64,7 +64,7 @@ async function clickPlusIcon(page: Page, funcName: string): Promise<{uiClicked: 
   try {
     await plusIcon.waitFor({timeout: 5000, state: 'visible'});
   } catch (_) {
-    // Fallback: any icon-plus in the row's TR ancestor.
+
     const rowPlus = span.locator('xpath=ancestor::tr[1]').first().locator('[name="icon-plus"]').first();
     try {
       await rowPlus.waitFor({timeout: 3000, state: 'visible'});
@@ -81,7 +81,7 @@ async function clickPlusIcon(page: Page, funcName: string): Promise<{uiClicked: 
     return {uiClicked: false, reason: `trusted click failed: ${String(e?.message ?? e)}`};
   }
 }
-// Select a column row via the synthetic-MouseEvent triple on the grid's last canvas (mirrors functions-sorting).
+
 async function clickColumnRow(page: Page, rowIdx: number): Promise<boolean> {
   return await page.evaluate(async (args: {sel: string; rowIdx: number}) => {
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -107,7 +107,7 @@ async function clickColumnRow(page: Page, rowIdx: number): Promise<boolean> {
     return true;
   }, {sel: COLS_GRID, rowIdx});
 }
-// Sweep column rows (non-linear row→column mapping) until probeFunc's plus-icon auto-binds a ${col} reference.
+
 async function probeColumnRowForAutoBind(
   page: Page,
   probeFunc: string,
@@ -131,8 +131,7 @@ async function probeColumnRowForAutoBind(
   }
   return {rowIdx: -1, boundCol: null, formula: ''};
 }
-// Function rows are not HTML5-draggable (Dart pointer-event DnD), so produce the insertIntoCodeMirror end
-// state via a whole-doc CM6 view.dispatch (same mechanism). usedFallback:true flags the UI-leg gap (SR-01).
+
 async function dragFunctionOntoEditor(
   page: Page,
   funcName: string,
@@ -148,7 +147,7 @@ async function dragFunctionOntoEditor(
     const func = DG?.Func?.find?.({name: args.fn})?.[0] ?? null;
     if (!func) return {dropped: false, doc: '', usedFallback: false};
     const inputs: any[] = (func.inputs || []) as any[];
-    // Mirror insertIntoCodeMirror: params start as semType ?? propertyType; type-match picks the auto-bind position.
+
     const params: string[] = inputs.map((it) => (it.semType ?? it.propertyType ?? '') as string);
     let colPos = -1;
     if (args.sel) {
@@ -178,7 +177,7 @@ async function dragFunctionOntoEditor(
       const finalDoc = view.state.doc.toString();
       return {dropped: finalDoc.includes(args.fn) || finalDoc === insertion, doc: finalDoc, usedFallback: true};
     }
-    // Fallback (view unreachable): execCommand on the contenteditable.
+
     cm.focus();
     document.execCommand('selectAll', false);
     document.execCommand('delete', false);
@@ -194,13 +193,13 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
   test.setTimeout(300_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
-  // Step 1: open SPGI.csv.
+
   await page.evaluate(async () => {
     const grok = (window as any).grok;
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
     grok.shell.windows.simpleMode = true;
-    try { grok.shell.closeAll(); } catch (_) { /* best-effort */ }
+    try { grok.shell.closeAll(); } catch (_) {  }
     let df: any = null;
     try { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
     catch (_) { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
@@ -257,7 +256,7 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
       semType: cols.semTypes[colName] ?? '',
     };
   };
-  // Step 3: hover Abs, click + → "Abs(num)" (no column selected, no ${...} reference).
+
   await softStep('Step 3: hover Abs, click + icon → "Abs(num)" inserted into formula editor', async () => {
     await clearEditor(page);
     const r = await clickPlusIcon(page, 'Abs');
@@ -297,7 +296,7 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     if (moleculeBoundCol) expect(doc).toContain(`\${${moleculeBoundCol}}`);
     if (r.usedFallback) console.warn('[ui-smoke] drag-drop UI leg affordance gap for getCLogP; used insertIntoCodeMirror end state — SR-01');
   });
-  // Step 7: numeric column + Abs via plus-icon then drag-drop → both "Abs(${<NumericCol>})".
+
   let numericBoundCol: string | null = null;
   await softStep('Step 7a: select a numeric column via canvas, click Abs + icon → auto-bound "Abs(${<NumericCol>})"', async () => {
     await clearEditor(page);
@@ -325,7 +324,7 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     const doc = await readEditorDoc(page);
     expect(doc).toBe('');
   });
-  // Step 9: sort "By name" so Abs is reliably found for Step 10 (sort behavior owned by functions-sorting-spec).
+
   await softStep('Step 9: click sort icon, select "By name" → functions list re-sorted alphabetically', async () => {
     const sortIcon = dlg.locator('.grok-functions-widget-sort-icon').first();
     const sortIconByName = dlg.locator('[name="icon-sort-alt"]').first();
@@ -347,9 +346,9 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     }, FUNCS_ROOT);
     expect(/^[AaBb]/.test(firstFn)).toBe(true);
   });
-  // Step 10: non-numeric column + Abs → "Abs(num)" (no auto-bind, type mismatch). Negative contract.
+
   await softStep('Step 10: select a non-numeric column, click + on Abs → "Abs(num)" (type mismatch — no auto-bind)', async () => {
-    // Sweep rows; the first that yields Abs(num) (no ${...}) selected a non-numeric column.
+
     let negativeFormula = '';
     for (let r = 0; r < 14; r++) {
       await clickColumnRow(page, r);

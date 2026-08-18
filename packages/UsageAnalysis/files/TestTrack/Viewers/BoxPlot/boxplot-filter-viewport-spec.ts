@@ -10,15 +10,10 @@ declare const DG: any;
 
 test.use(specTestOptions);
 
-// readCsv names the frame "Table" — assert the 100-row count, not the name.
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
-// The overlay canvas hosts the color scale (and hover ink); the data canvas
-// hosts boxes, markers, and axes.
 const OVERLAY = 'canvas[name="overlay"]';
 
-// bp.viewport y/height span the visible value range; height contracts as the
-// filter narrows under zoomValuesByFilter.
 async function viewportRect(page: Page): Promise<{y: number; height: number}> {
   return page.evaluate(() => {
     const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
@@ -35,15 +30,9 @@ async function bpProp(page: Page, prop: string): Promise<any> {
 }
 
 async function setBpProp(page: Page, prop: string, value: any, settleMs = 1200): Promise<void> {
-  await page.evaluate(({p, val}) => {
-    const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-    bp.props[p] = val;
-  }, {p: prop, val: value});
-  await page.waitForTimeout(settleMs);
+  await v.setViewerProps(page, 'Box plot', [{set: {[prop]: value}, wait: settleMs}]);
 }
 
-// The df.filter here is the trigger input, not the effect under test, so a
-// direct filter.init is a legitimate actuation.
 async function narrowAverageMass(page: Page, lo: number, hi: number): Promise<number> {
   return page.evaluate(({lo, hi}) => {
     const df = grok.shell.t;
@@ -55,19 +44,21 @@ async function narrowAverageMass(page: Page, lo: number, hi: number): Promise<nu
 
 async function resetFilter(page: Page): Promise<void> {
   await page.evaluate(() => grok.shell.t.filter.setAll(true));
-  await page.waitForTimeout(800);
+  await v.pollValue(
+    () => page.evaluate(() => ({n: grok.shell.t.filter.trueCount, total: grok.shell.t.rowCount})),
+    (c) => c.n === c.total, 800, 100);
 }
 
-// The Filter panel builds its cards asynchronously (the molecule column adds a
-// structure filter that re-lays-out the stack), so the histogram-card canvas
-// rect is polled until stable — a drag aimed at a still-moving card lands
-// outside it and silently selects nothing.
 async function averageMassFilterCanvas(page: Page): Promise<{x: number; y: number; w: number; h: number}> {
   await page.evaluate(() => {
     const fg = grok.shell.tv.getFiltersGroup();
     fg.updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'Average Mass'});
   });
-  await page.waitForTimeout(1500);
+  await v.pollValue(() => page.evaluate(() => {
+    const filtersRoot = document.querySelector('[name="viewer-Filters"]');
+    return Array.from(filtersRoot?.querySelectorAll('.d4-filter') ?? []).some((c) =>
+      c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'Average Mass');
+  }), (present) => present, 1500, 100);
   const readRect = () => page.evaluate(() => {
     const filtersRoot = document.querySelector('[name="viewer-Filters"]')!;
     const cards = Array.from(filtersRoot.querySelectorAll('.d4-filter'));
@@ -93,9 +84,6 @@ async function averageMassFilterCanvas(page: Page): Promise<{x: number; y: numbe
   return rect;
 }
 
-// The Filter panel's first build can be slow (the structure filter's init
-// dominates the first layout), so the open is polled under one overall budget:
-// wait for cards, close and reopen the panel when none appear.
 async function openFilterPanelWithBudget(page: Page, budgetMs = 90_000): Promise<void> {
   const deadline = Date.now() + budgetMs;
   for (let attempt = 1; ; attempt++) {
@@ -108,30 +96,29 @@ async function openFilterPanelWithBudget(page: Page, budgetMs = 90_000): Promise
       document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length);
     console.log(`Filter panel open attempt ${attempt}: ${count} filter cards`);
     if (hasCards) {
-      // Same reveal gesture as the shared open helper: hover the first card.
+
       await page.locator('[name="viewer-Filters"] .d4-filter').first().hover().catch(() => {});
       return;
     }
     if (Date.now() >= deadline)
       throw new Error(`Filter panel produced no filter cards within ${budgetMs}ms (${attempt} attempts)`);
-    // Close the empty panel so the next attempt rebuilds it from scratch.
+
     await page.evaluate(() => {
       const f = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Filters') as any;
       if (f) f.close();
     });
-    await page.waitForTimeout(1000);
+    await v.pollValue(
+      () => page.evaluate(() => Array.from(grok.shell.tv.viewers).some((x: any) => x.type === 'Filters')),
+      (present) => !present, 1000, 100);
   }
 }
 
-// The range handles are canvas-drawn and appear only while the canvas is
-// hovered; dragging the strip middle is a no-op while the range is full, so
-// the handle itself must be grabbed. The canvas cursor flips to ew-resize
-// exactly over a handle — scan the edge region until that signal appears.
 async function dragFilterHandle(
   page: Page, rect: {x: number; y: number; w: number; h: number},
   side: 'min' | 'max', targetFrac: number,
 ): Promise<boolean> {
   await page.mouse.move(rect.x + rect.w * 0.5, rect.y + rect.h * 0.5);
+
   await page.waitForTimeout(400);
   const cursorNow = () => page.evaluate(() => {
     const filtersRoot = document.querySelector('[name="viewer-Filters"]')!;
@@ -146,12 +133,14 @@ async function dragFilterHandle(
       const x = side === 'min' ? rect.x + px : rect.x + rect.w - px;
       const y = rect.y + rect.h * fy;
       await page.mouse.move(x, y);
-      await page.waitForTimeout(60);
+      await page.waitForTimeout(60); 
       if (await cursorNow() === 'ew-resize') {
+        const before = await filterTrueCount(page);
         await page.mouse.down();
         await page.mouse.move(rect.x + rect.w * targetFrac, y, {steps: 12});
         await page.mouse.up();
-        await page.waitForTimeout(1200);
+
+        await v.pollValue(() => filterTrueCount(page), (n) => n !== before, 1200, 100);
         return true;
       }
     }
@@ -163,9 +152,6 @@ async function filterTrueCount(page: Page): Promise<number> {
   return page.evaluate(() => grok.shell.t.filter.trueCount);
 }
 
-// The bottom band of the data canvas holds the category labels and stats
-// columns — a direct function of the category-slot set, so a category
-// appearing/disappearing changes it while an unrelated body repaint does not.
 async function categoryBandColors(page: Page): Promise<Record<string, number>> {
   return page.evaluate(() => {
     const root = document.querySelector('[name="viewer-Box-plot"]')!;
@@ -189,8 +175,6 @@ function bandColorsDelta(a: Record<string, number>, b: Record<string, number>): 
   return d;
 }
 
-// An all-empty-valued Series category is the precondition that makes the
-// showEmptyCategories toggle observable.
 async function hasEmptyValuedCategory(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const df = grok.shell.t;
@@ -211,8 +195,6 @@ async function hasEmptyValuedCategory(page: Page): Promise<boolean> {
 test('Box Plot filter semantics and viewport response', async ({page}) => {
   test.setTimeout(600_000);
 
-  // grok.shell.warnings is not exposed to JS — the browser console / pageerror
-  // channels are the no-error floor for the coloring step (GROK-20171).
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
@@ -221,7 +203,6 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 5000});
 
-  // #### Setup: 100-row spgi-100, Box Plot, Value=Average Mass, Category1=Series
   const rowCount = await page.evaluate(() => grok.shell.t.rowCount);
   expect(rowCount).toBe(100);
   await page.evaluate(() => {
@@ -231,22 +212,18 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     bp.props.category1ColumnName = 'Series';
   });
   await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
-  await page.waitForTimeout(1500);
+  await v.waitForViewerRendered(page, 'Box plot', 1500);
   await v.waitForCanvasQuiet(page, 'Box plot');
 
   await openFilterPanelWithBudget(page);
 
-  // ==================================================================
-  // Scenario 1: zoomValuesByFilter on — viewport follows the filter
-  // ==================================================================
   await softStep('Scenario 1 Step 4: narrowing the filter narrows the viewport; trueCount < 100; zoomValuesByFilter reads true', async () => {
     await resetFilter(page);
     await v.waitForCanvasQuiet(page, 'Box plot');
     expect(await filterTrueCount(page)).toBe(100);
     expect(await bpProp(page, 'zoomValuesByFilter')).toBe(true);
     const baseline = await viewportRect(page);
-    // Retried once against a freshly read rect in case the card stack was
-    // still settling.
+
     let tc = rowCount;
     for (let attempt = 0; attempt < 2 && tc >= rowCount; attempt++) {
       const fc = await averageMassFilterCanvas(page);
@@ -262,16 +239,13 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     expect(tc).toBeLessThan(100);
   });
 
-  // ==================================================================
-  // Scenario 2: zoomValuesByFilter false — viewport stays fixed, then follows
-  // ==================================================================
   await softStep('Scenario 2 Step 6: with zoomValuesByFilter false and an active filter the viewport is unchanged', async () => {
     await setBpProp(page, 'zoomValuesByFilter', false);
     await resetFilter(page);
     await v.waitForCanvasQuiet(page, 'Box plot');
     const baseline = await viewportRect(page);
     const tc = await narrowAverageMass(page, 300, 400);
-    await page.waitForTimeout(1400);
+    await v.waitForViewerRendered(page, 'Box plot', 1400);
     await v.waitForCanvasQuiet(page, 'Box plot');
     const after = await viewportRect(page);
     console.log('S2 zoom-off viewport height baseline/after:', baseline.height, after.height, 'trueCount:', tc);
@@ -281,7 +255,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   });
 
   await softStep('Scenario 2 Step 8: switching zoomValuesByFilter back to true narrows the viewport to the filtered range', async () => {
-    // Filter still narrowed from the previous step; capture the pre-switch (full) viewport.
+
     const before = await viewportRect(page);
     await setBpProp(page, 'zoomValuesByFilter', true);
     await v.waitForCanvasQuiet(page, 'Box plot');
@@ -290,43 +264,30 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     expect(after.height).toBeLessThan(before.height);
   });
 
-  // ==================================================================
-  // Scenario 3: viewer-local formula filter does not touch df.filter
-  // ==================================================================
   await softStep('Scenario 3 Step 5: the viewer-local formula filter leaves df.filter.trueCount unchanged; the canvas repaints', async () => {
     await resetFilter(page);
     const tcBefore = await narrowAverageMass(page, 300, 400);
-    await page.waitForTimeout(1200);
+    await v.waitForViewerRendered(page, 'Box plot', 1200);
     await v.waitForCanvasQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
-    // '> 350' drops a real subset of the 300-400-filtered rows, so the canvas
-    // change is non-vacuous.
+
     await setBpProp(page, 'filter', '${Average Mass} > 350', 1500);
     await v.waitForCanvasQuiet(page, 'Box plot');
     const tcAfter = await filterTrueCount(page);
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
     console.log('S3 trueCount before/after:', tcBefore, tcAfter, 'canvas deltaPx:', deltaPx);
     expect(tcAfter).toBe(tcBefore);
-    // Fault guard before the floor: a -1 diff sentinel passes a bare > comparison.
+
     expect(deltaPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeGreaterThan(1000);
     await setBpProp(page, 'filter', '', 800);
     await resetFilter(page);
   });
 
-  // ==================================================================
-  // Scenario 4: showEmptyCategories — structural axis re-layout
-  // ==================================================================
-  // The axis is canvas-drawn with no public axis-category-count accessor — the
-  // structural signal is a settle-gated full-canvas diff (a category slot
-  // appearing/disappearing re-spaces every box) plus the category-label band
-  // diff (the label set itself changes).
   let fixtureAdded = false;
   try {
     await softStep('Scenario 4 Step 5: disabling showEmptyCategories drops the empty-valued category (axis re-layout)', async () => {
-      // When the live dataset has no all-empty-valued Series category, a
-      // calculated fixture column nulls one category's values; the finally
-      // removes it.
+
       const fx = await page.evaluate(async () => {
         const df = grok.shell.t;
         const series = df.col('Series');
@@ -351,8 +312,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
         await setBpProp(page, 'valueColumnName', 'AverageMassFixture', 1200);
       await setBpProp(page, 'showEmptyCategories', true, 1200);
       await v.waitForCanvasQuiet(page, 'Box plot');
-      // Guard: an empty-valued category really exists for the active value
-      // column — without it the toggle is a no-op and the diffs are vacuous.
+
       expect(await hasEmptyValuedCategory(page)).toBe(true);
       await v.snapshotCanvasColors(page, 'Box plot');
       const bandBefore = await categoryBandColors(page);
@@ -362,9 +322,9 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
       const bandDelta = bandColorsDelta(bandBefore, await categoryBandColors(page));
       console.log('S4 re-layout deltaPx (off):', deltaPx, 'label-band delta:', bandDelta);
       expect(await bpProp(page, 'showEmptyCategories')).toBe(false);
-      // Dropping the category removes its axis slot: full-plot re-layout.
+
       expect(deltaPx).toBeGreaterThan(4000);
-      // The category-label band redraws with the reduced label set.
+
       expect(bandDelta).toBeGreaterThan(100);
     });
 
@@ -378,26 +338,26 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
       const bandDelta = bandColorsDelta(bandBefore, await categoryBandColors(page));
       console.log('S4 re-layout deltaPx (back on):', deltaPx, 'label-band delta:', bandDelta);
       expect(await bpProp(page, 'showEmptyCategories')).toBe(true);
-      // The restored category re-adds its axis slot — the mirror re-layout.
+
       expect(deltaPx).toBeGreaterThan(4000);
-      // The label band redraws with the restored label set.
+
       expect(bandDelta).toBeGreaterThan(100);
     });
   } finally {
     if (fixtureAdded) {
       await setBpProp(page, 'valueColumnName', 'Average Mass', 1000).catch(() => {});
       await page.evaluate(() => { try { grok.shell.t.columns.remove('AverageMassFixture'); } catch (_) {} }).catch(() => {});
-      await page.waitForTimeout(500);
+      await v.pollValue(() => page.evaluate(() => {
+        try { return grok.shell.t.columns.names().includes('AverageMassFixture'); }
+        catch (_) { return false; }
+      }), (present) => !present, 500, 100);
     }
   }
 
-  // ==================================================================
-  // Scenario 5: bin color to visible range; legend footprint (GROK-20171)
-  // ==================================================================
   await softStep('Scenario 5 Step 4: setting Marker Color to TPSA with an active filter repaints without console errors (GROK-20171 floor)', async () => {
     await resetFilter(page);
     await narrowAverageMass(page, 300, 400);
-    await page.waitForTimeout(1200);
+    await v.waitForViewerRendered(page, 'Box plot', 1200);
     await v.waitForCanvasQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     const errBefore = consoleErrors.length + pageErrors.length;
@@ -405,9 +365,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     await v.waitForCanvasQuiet(page, 'Box plot');
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
     const errAfter = consoleErrors.length + pageErrors.length;
-    // The coloring legend has no DOM — the color scale is drawn on the OVERLAY
-    // canvas, empty until a color column is set; its non-white ink is the
-    // GROK-20171 reserved-footprint signal.
+
     const scale = await v.countCanvasPixels(page, 'Box plot', {canvasSelector: OVERLAY});
     console.log('S5 color repaint deltaPx:', deltaPx, 'overlay scale px:', JSON.stringify(scale),
       'errors before/after:', errBefore, errAfter);
@@ -418,11 +376,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   });
 
   await softStep('Scenario 5 Step 5: color scale recomputes to the filtered TPSA range (overlay repaint)', async () => {
-    // The recomputed scale has no prop/DOM read (colorMin/colorMax hold only
-    // manual bounds, stay null); with the pointer parked the overlay carries
-    // only the color scale, so a settle-gated overlay diff across the filter
-    // change isolates the endpoint re-render. Guard: the visible TPSA range
-    // must differ from the full range, else the diff is vacuous.
+
     const ranges = await page.evaluate(() => {
       const df = grok.shell.t;
       const t = df.col('TPSA');
@@ -440,6 +394,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     await v.waitForCanvasQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot', OVERLAY);
     await resetFilter(page);
+
     await page.waitForTimeout(1200);
     await v.waitForCanvasQuiet(page, 'Box plot');
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot', OVERLAY);

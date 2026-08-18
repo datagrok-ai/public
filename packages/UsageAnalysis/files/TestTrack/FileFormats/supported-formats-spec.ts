@@ -1,12 +1,8 @@
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
-// Tall viewport so the folder's file list renders many items without virtual-scroll truncation.
 test.use({...specTestOptions, viewport: {width: 1280, height: 2400}});
 
-// One file per format lives in My Files / all_formats (verified on dev: 42 files cover each
-// of these 30 extensions). For each format we exercise the FIRST file whose name ends with
-// the extension, so the 12 duplicate-format files are never opened — exactly 30 are checked.
 const ALL_FORMATS = [
   '.bmp', '.csv', '.edf', '.fasta', '.feather', '.geojson', '.gz', '.h5',
   '.html', '.ipynb', '.ivp', '.json', '.kml', '.kmz', '.kxl', '.mat',
@@ -14,18 +10,13 @@ const ALL_FORMATS = [
   '.sqlite', '.tar', '.topojson', '.xlsx', '.xml', '.zip',
 ];
 
-// FORMATS_SUBSET=".csv,.ivp" runs only those — for quick smoke tests. Unset = full sweep.
 const FORMATS = process.env.FORMATS_SUBSET
   ? process.env.FORMATS_SUBSET.split(',').map((s) => s.trim()).filter(Boolean)
   : ALL_FORMATS;
 
 const FOLDER_LABEL = 'all_formats';
-const OPEN_TIMEOUT_MS = 90_000; // heavy formats (mat, h5, zip, parquet) parse slowly
+const OPEN_TIMEOUT_MS = 90_000; 
 
-// Resolve the current user's "My files" (Home) connection and the all_formats folder, then
-// map each extension to a concrete file's dapi fullPath. User-agnostic: it tries every
-// Home/My-files connection until one lists the folder (the per-user nqName is e.g.
-// "Oahadzhanian:Home", so the folder path is "<nqName>/all_formats").
 async function resolveFiles(page: Page): Promise<{folderPath: string; byExt: Record<string, string>}> {
   return page.evaluate(async (label: string) => {
     const g = (window as any).grok;
@@ -41,21 +32,18 @@ async function resolveFiles(page: Page): Promise<{folderPath: string; byExt: Rec
           for (const f of files) {
             const name: string = f.fileName ?? f.name ?? '';
             const m = name.match(/(\.[^.]+)$/);
-            // First file wins per extension (skip directories).
+
             if (m && !f.isDirectory && !(m[1].toLowerCase() in byExt))
               byExt[m[1].toLowerCase()] = f.fullPath;
           }
           return {folderPath: root, byExt};
         }
-      } catch (e) { /* try next connection */ }
+      } catch (e) {  }
     }
     return {folderPath: '', byExt: {}};
   }, FOLDER_LABEL);
 }
 
-// Navigate Browse > Files > My files > all_formats. loginToDatagrok already loaded the app
-// (preloader cleared, Browse ready), so there is NO page.goto here — a second app load
-// re-triggers the heavy SPA init, which on a busy dev intermittently exceeds 60s.
 async function openFolderUi(page: Page): Promise<void> {
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
   await page.evaluate(() => {
@@ -66,8 +54,7 @@ async function openFolderUi(page: Page): Promise<void> {
   });
   await page.waitForFunction(() => document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-item-label').length > 0,
     null, {timeout: 15_000});
-  // Expand Files, wait for "My files" to appear, expand it, wait for the all_formats label —
-  // poll for each revealed node instead of blind settle sleeps.
+
   const treeLabel = (t: string) =>
     page.waitForFunction((label: string) => {
       const sel = '.d4-tree-view-group-label, .d4-tree-view-item-label';
@@ -81,9 +68,7 @@ async function openFolderUi(page: Page): Promise<void> {
       (Array.from(document.querySelectorAll(sel)) as HTMLElement[])
         .find((e) => e.textContent?.trim() === label)?.click();
     }, t);
-  // Intermediate node-reveal polls are best-effort (a provisioned env may surface nodes via a
-  // slightly different path); the load-bearing gates are the FOLDER_LABEL dblclick below and the
-  // ">=10 file labels" wait — those fail loudly if the all_formats folder is genuinely unreachable.
+
   await treeLabel('Files').catch(() => {});
   await clickTreeLabel('Files');
   await treeLabel('My files').catch(() => {});
@@ -96,8 +81,6 @@ async function openFolderUi(page: Page): Promise<void> {
     null, {timeout: 15_000});
 }
 
-// Switch back to the "files"-type folder view (instant) and close every other view opened
-// during the sweep, keeping the persistent "datagrok" Home view. No reload, no tree re-walk.
 async function returnToFolder(page: Page): Promise<void> {
   const ok = await page.evaluate((label: string) => {
     const views = Array.from(grok.shell.views) as any[];
@@ -105,7 +88,7 @@ async function returnToFolder(page: Page): Promise<void> {
     if (!folderView) return false;
     grok.shell.v = folderView;
     for (const v of views)
-      if (v !== folderView && v.type !== 'datagrok') { try { v.close(); } catch (e) { /* ignore */ } }
+      if (v !== folderView && v.type !== 'datagrok') { try { v.close(); } catch (e) {  } }
     return true;
   }, FOLDER_LABEL);
   if (!ok) await openFolderUi(page);
@@ -117,11 +100,7 @@ async function returnToFolder(page: Page): Promise<void> {
 }
 
 test('File formats: preview and open from My Files / all_formats', async ({page}) => {
-  // Bounded global ceiling. test.setTimeout() as the FIRST body line is the form that
-  // overrides the 120s config ceiling here (test.use({timeout}) / the options arg do not).
-  // 30 formats: PHASE 1 each capped at OPEN_TIMEOUT_MS (90s, only a few heavy parsers approach
-  // it; most resolve in seconds) + a best-effort PHASE 2 preview sweep. 480s covers a realistic
-  // full run with margin without the 15m blanket that hid a runaway parse.
+
   test.setTimeout(480_000);
   stepErrors.length = 0;
 
@@ -131,11 +110,6 @@ test('File formats: preview and open from My Files / all_formats', async ({page}
   const {folderPath, byExt} = await resolveFiles(page);
   expect(folderPath.length > 0, 'Could not resolve the My Files/all_formats folder path').toBe(true);
 
-  // PHASE 1 — OPEN each format programmatically via grok.data.files.openTables(). This mirrors
-  // what double-clicking does (it routes the file through the platform's table/file handler)
-  // but WITHOUT the UI: .ivp launches the DiffStudio app, which blocks the page thread and
-  // hangs UI double-click — the API path returns cleanly (0 dataframes for non-tabular
-  // documents/apps). Success = the handler runs without throwing within the timeout.
   for (const ext of FORMATS) {
     await softStep(`Open ${ext}: platform handler parses the file without error`, async () => {
       const path = byExt[ext];
@@ -157,12 +131,6 @@ test('File formats: preview and open from My Files / all_formats', async ({page}
     });
   }
 
-  // PHASE 2 — PREVIEW via a real single-click in the Browse file list (scenario step 2). This
-  // is BEST-EFFORT / non-fatal: it is logged but never fails the run. The Browse context panel
-  // (.grok-prop-panel) is unreliable under an automated 30-click sweep — after a handful of
-  // file selections it can stop re-rendering for subsequent clicks (a platform/UI quirk, not a
-  // format issue). The authoritative "platform supports this format" check is PHASE 1 (the file
-  // handler that double-click invokes), so a flaky preview must not mask or override it.
   await returnToFolder(page);
   for (const ext of FORMATS) {
     try {

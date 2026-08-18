@@ -453,10 +453,7 @@ test('SequenceTranslator — OligoNucleotide duplex renderer, panels & cell acti
 
   await softStep('Block F step 1: double-click oligo_helm (oligo) cell -> full-screen canvas dialog opens', async () => {
     const cellCoords = await getGridCellScreenCoords(page, 'oligo_helm (oligo)', 0);
-    // Tolerated environmental skip: the full-screen view is reached only by a dblclick whose hit
-    // resolves against canvas-computed screen coordinates. Those coords are unreliable in headless
-    // mode, so the open cannot be hard-asserted here. If the dialog does open, Block F step 2 closes
-    // it and verifies no error balloon. (Documented headless limitation — not masking a failing op.)
+
     if (!cellCoords) {
       console.warn('Block F: could not locate oligo_helm (oligo) cell coordinates — dblclick skipped (headless canvas limitation)');
       return;

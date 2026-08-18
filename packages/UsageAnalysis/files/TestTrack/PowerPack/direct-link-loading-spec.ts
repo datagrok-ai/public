@@ -80,11 +80,10 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       expect(projectId).toBeTruthy();
       expect(ownerLogin).toBeTruthy();
     });
-    const directLinkPath = `/p/${ownerLogin}.${projectName}`; // direct-link URL form: /p/<owner>.<project>
+    const directLinkPath = `/p/${ownerLogin}.${projectName}`; 
 
-    // Scenario 1: Direct-link entry (fresh browser context).
     await softStep('Scenario 1 Step 1+2: open fresh context and navigate to direct-link URL', async () => {
-      // Fresh context (no shared cookies/localStorage) so PowerPack's powerPackInit runs from scratch.
+
       secondaryContext = await browser.newContext({
         viewport: specTestOptions.viewport,
       });
@@ -94,8 +93,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
     });
     await softStep('Scenario 1 Step 3: observe PowerPack loading window during page load (no zero-dimension cropping)', async () => {
       const freshPage: Page = (secondaryContext as any)._freshPage;
-      // GROK-18721 invariant: while loading, the welcome view must not render as a degenerate box (one dim
-      // zero, the other non-zero — the pre-fix "cropped" presentation). Snapshot rects across the load window.
+
       const snapshots: Array<{t: number; box: {found: boolean; w: number; h: number}}> = [];
       for (let i = 0; i < 30; i++) {
         const box = await getBoxOf(freshPage, '.power-pack-welcome-view');
@@ -109,7 +107,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
         s.box.found &&
         ((s.box.w === 0 && s.box.h > 0) || (s.box.h === 0 && s.box.w > 0)));
       expect(degenerate, `GROK-18721 invariant: no cropped loading window with one-zero-one-nonzero dimensions. Offending snapshots: ${JSON.stringify(degenerate)}`).toEqual([]);
-      // Also: a mounted welcome view must clear ≥100px in both dimensions (no 1-px sliver crop).
+
       const tinyBoxes = snapshots.filter((s) =>
         s.box.found && s.box.w > 0 && s.box.h > 0 &&
         (s.box.w < 100 || s.box.h < 100));
@@ -123,13 +121,12 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
     });
     await softStep('Scenario 1 Step 5: verify post-load rendering (grid has non-zero dimensions, no zombie welcome fragments)', async () => {
       const freshPage: Page = (secondaryContext as any)._freshPage;
-      // Project view rendered correctly: grid present with non-zero box.
+
       const gridBox = await getBoxOf(freshPage, '[name="viewer-Grid"]');
       expect(gridBox.found).toBe(true);
       expect(gridBox.w).toBeGreaterThan(100);
       expect(gridBox.h).toBeGreaterThan(100);
-      // The dataframe under the grid is the demog table (the direct-link
-      // target). Confirm by reading the table info via JS API.
+
       const tableMeta = await freshPage.evaluate(() => {
         const grok = (window as any).grok;
         const df = grok.shell.tv?.dataFrame;
@@ -138,7 +135,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       expect(tableMeta).not.toBeNull();
       expect(tableMeta!.rowCount).toBeGreaterThan(0);
       expect(tableMeta!.colCount).toBeGreaterThan(0);
-      // Welcome view must have yielded — removed, hidden, or zero-box (not occupying the project-view area).
+
       const welcomeStillActive = await freshPage.evaluate(() => {
         const w = document.querySelector('.power-pack-welcome-view') as HTMLElement | null;
         if (!w) return false;
@@ -149,7 +146,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       });
       expect(welcomeStillActive, 'Welcome view should have yielded to the project view after load').toBe(false);
     });
-    // Scenario 2: in-app navigation control (warm session). URL goto is equivalent to a Recent Projects click.
+
     await softStep('Scenario 2 Step 1+2: from inside Datagrok, navigate to the same project via direct-link URL (warm session)', async () => {
       await page.evaluate(async () => {
         const grok = (window as any).grok;
@@ -159,7 +156,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       await page.goto(baseUrl + directLinkPath);
     });
     await softStep('Scenario 2 Step 3: observe loading window during in-app open (control case — no cropping)', async () => {
-      // Same invariant against the warm-session page (control: pre-fix this path never reproduced the glitch).
+
       const snapshots: Array<{t: number; box: {found: boolean; w: number; h: number}}> = [];
       for (let i = 0; i < 30; i++) {
         const box = await getBoxOf(page, '.power-pack-welcome-view');
@@ -194,7 +191,7 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
       expect(tableMeta!.colCount).toBeGreaterThan(0);
     });
   } finally {
-    // Cleanup: delete the project + table info, close both contexts.
+
     try {
       if (projectId || tableInfoId) {
         await page.evaluate(async (ids) => {
@@ -203,17 +200,17 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
             try {
               const p = await grok.dapi.projects.find(ids.projectId);
               if (p) await grok.dapi.projects.delete(p);
-            } catch (_) { /* best effort */ }
+            } catch (_) {  }
           }
           if (ids.tableInfoId) {
             try {
               const ti = await grok.dapi.tables.find(ids.tableInfoId);
               if (ti) await grok.dapi.tables.delete(ti);
-            } catch (_) { /* best effort */ }
+            } catch (_) {  }
           }
         }, {projectId: projectId ?? undefined, tableInfoId: tableInfoId ?? undefined});
       }
-    } catch (_) { /* best-effort cleanup, do not mask test outcome */ }
+    } catch (_) {  }
     try { await page.evaluate(() => (window as any).grok?.shell?.closeAll?.()); } catch (_) {}
     if (secondaryContext) {
       try { await secondaryContext.close(); } catch (_) {}

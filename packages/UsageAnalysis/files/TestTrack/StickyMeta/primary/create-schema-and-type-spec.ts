@@ -6,9 +6,6 @@ test.use(specTestOptions);
 test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
   test.setTimeout(300_000);
 
-  // Canonical token-based login; the previous flow imported login/password
-  // from spec-login (which doesn't export them) and filled the HTML form
-  // manually, so the spec couldn't even compile against a fresh checkout.
   await loginToDatagrok(page);
 
   await page.evaluate(() => {
@@ -18,11 +15,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     (window as any).grok.shell.closeAll();
   });
 
-  // Pre-cleanup: delete TestEntity1 and TestSchema1 if they already exist. The Sticky-Meta list
-  // is paginated (18 of 57), so we use the search box to narrow the list before the right-click
-  // delete — otherwise the label-by-text lookup misses entries past the first page.
-  // Browse-tree navigation is used because direct goto() between Sticky-Meta sibling routes is
-  // ignored by the SPA (it reloads to the most-recently-visited one).
   await softStep('Setup: remove pre-existing TestEntity1 / TestSchema1', async () => {
     const searchAndDelete = async (name: string) => {
       await page.evaluate(async (n) => {
@@ -44,7 +36,7 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
         await new Promise((r) => setTimeout(r, 800));
         (document.querySelector('[name="button-DELETE"]') as HTMLElement | null)?.click();
         await new Promise((r) => setTimeout(r, 1800));
-        // Clear the search
+
         setter.call(search, '');
         search.dispatchEvent(new Event('input', {bubbles: true}));
       }, name);
@@ -56,7 +48,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     await searchAndDelete('TestSchema1');
     await page.waitForTimeout(800);
 
-    // Navigate to Types via Browse tree (goto sibling route is ignored).
     const navToTypes = async () => page.evaluate(async () => {
       const findLabel = (t: string) =>
         Array.from(document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-item-label'))
@@ -68,7 +59,7 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       await wait(1500);
       return location.href;
     });
-    // Retry tree click a few times — tree-click to sibling SPA routes is occasionally a no-op.
+
     for (let attempt = 0; attempt < 4; attempt++) {
       const url = await navToTypes();
       if (/\/meta\/types$/.test(url)) break;
@@ -79,13 +70,9 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       await page.waitForTimeout(1500);
       await searchAndDelete('TestEntity1');
     }
-    // Tolerant — if Setup couldn't reach /meta/types, the scenario's Step 2 will; Step 4's
-    // duplicate-name handling below will no-op if TestEntity1 already exists.
+
   });
 
-  // Step 2: Navigate to Browse > Platform > Sticky Meta > Types via the Browse tree.
-  // Datagrok's SPA ignores goto() between Sticky-Meta sibling routes — it reloads to the
-  // most-recently-visited one. So we click through the tree, matching what a user would do.
   await softStep('Step 2: Navigate to Browse > Platform > Sticky Meta > Types', async () => {
     const click = async () => page.evaluate(async () => {
       const findLabel = (t: string) =>
@@ -107,7 +94,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     await expect(page).toHaveURL(/\/meta\/types(\?|$)/);
   });
 
-  // Step 3: Click "New Entity Type..."
   await softStep('Step 3: Click NEW ENTITY TYPE button', async () => {
     await page.locator('[name="button-New-Entity-Type..."]').click();
     await page.locator('[name="dialog-Create-a-new-entity-type"], .d4-dialog').first().waitFor({timeout: 5000});
@@ -115,7 +101,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     expect(title).toBe('Create a new entity type');
   });
 
-  // Step 4: Enter name TestEntity1, matcher semtype=molecule, Save
   await softStep('Step 4: Fill name / matcher and save new entity type', async () => {
     const nameInput = page.locator('.d4-dialog [name="input-Name"]');
     await nameInput.focus();
@@ -127,7 +112,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     await page.keyboard.press('Control+A');
     await page.keyboard.type('semtype=molecule', {delay: 10});
 
-    // Verify inputs filled and OK enabled before submitting.
     const inputs = await page.evaluate(() => {
       const dialog = Array.from(document.querySelectorAll('.d4-dialog'))
         .find((d) => d.querySelector('.d4-dialog-title')?.textContent?.trim() === 'Create a new entity type');
@@ -140,17 +124,12 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     expect(inputs.name).toBe('TestEntity1');
     expect(inputs.matcher).toBe('semtype=molecule');
 
-    // Simulate a real mouse click on OK — Playwright's .click() respects pointer-event
-    // interception; JS .click() skips that, matching keyboard-driven user flow.
     const okBox = await page.locator('.d4-dialog[name="dialog-Create-a-new-entity-type"] [name="button-OK"]').boundingBox();
     if (okBox) {
       await page.mouse.click(okBox.x + okBox.width / 2, okBox.y + okBox.height / 2);
     }
     await page.waitForTimeout(3000);
 
-    // Handle duplicate-name case: if the dialog is still open and a "Duplicate name" toast is
-    // shown, the previous spec run left TestEntity1 behind. Cancel, delete via search, and
-    // re-create in one recursive pass.
     const dialogStillOpen = await page.evaluate(() => !!Array.from(document.querySelectorAll('.d4-dialog'))
       .find((d) => d.querySelector('.d4-dialog-title')?.textContent?.trim() === 'Create a new entity type'));
     if (dialogStillOpen) {
@@ -160,7 +139,7 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
         (dialog?.querySelector('[name="button-CANCEL"]') as HTMLElement | null)?.click();
       });
       await page.waitForTimeout(800);
-      // Search-based delete (list is paginated)
+
       await page.evaluate(async () => {
         const search = document.querySelector('input[placeholder*="by name"]') as HTMLInputElement | null;
         if (!search) return;
@@ -181,12 +160,12 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
           (document.querySelector('[name="button-DELETE"]') as HTMLElement | null)?.click();
           await new Promise((r) => setTimeout(r, 2000));
         }
-        // Clear search
+
         setter.call(search, '');
         search.dispatchEvent(new Event('input', {bubbles: true}));
       });
       await page.waitForTimeout(500);
-      // Re-open Create dialog and re-fill
+
       await page.locator('[name="button-New-Entity-Type..."]').click();
       await page.waitForTimeout(800);
       await page.locator('.d4-dialog [name="input-Name"]').focus();
@@ -200,8 +179,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       await page.waitForTimeout(3000);
     }
 
-    // The Types list is paginated (only ~18 of 57 items rendered). Filter via the search box
-    // before checking — a bare DOM scan misses entries past the first page.
     const present = await page.evaluate(async () => {
       const search = document.querySelector('input[placeholder*="by name"]') as HTMLInputElement | null;
       if (search) {
@@ -213,7 +190,7 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       }
       const labels = Array.from(document.querySelectorAll('label')).map((l) => l.textContent?.trim());
       const found = labels.includes('TestEntity1');
-      // Clear search
+
       if (search) {
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
         setter.call(search, '');
@@ -224,7 +201,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     expect(present).toBe(true);
   });
 
-  // Step 5: Navigate to Browse > Platform > Sticky Meta > Schemas (tree already expanded)
   await softStep('Step 5: Navigate to Browse > Platform > Sticky Meta > Schemas', async () => {
     const click = async () => page.evaluate(async () => {
       const labels = Array.from(document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-item-label'));
@@ -244,7 +220,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     await expect(page).toHaveURL(/\/meta\/schemas(\?|$)/);
   });
 
-  // Step 6: Click "NEW SCHEMA..."
   await softStep('Step 6: Click NEW SCHEMA button', async () => {
     await page.locator('[name="button-New-Schema..."]').click();
     await page.locator('.d4-dialog').first().waitFor({timeout: 5000});
@@ -252,22 +227,20 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     expect(title).toBe('Create a new schema');
   });
 
-  // Step 7: Enter schema name + associate with TestEntity1
   await softStep('Step 7: Fill schema name and associate with TestEntity1', async () => {
-    // `input-host-Name` also exists inside the Properties table. Scope to the direct form child.
+
     await page.locator('.d4-dialog .ui-form > [name="input-host-Name"] > [name="input-Name"]').click();
     await page.keyboard.press('Control+A');
     await page.keyboard.type('TestSchema1', {delay: 10});
 
-    // Open the type selector (link action)
     await page.locator('[name="div-Associated-with-"] .d4-link-action').click();
     await page.waitForTimeout(800);
-    // Check TestEntity1 checkbox in the type picker dialog
+
     await page.evaluate(() => {
       const cb = document.querySelector('[name="prop-view-testentity1"]') as HTMLInputElement | null;
       if (cb && !cb.checked) cb.click();
     });
-    // Confirm the picker (it's the topmost dialog)
+
     await page.evaluate(() => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
       const picker = dialogs.find((d) => /Select types/.test(d.querySelector('.d4-dialog-title')?.textContent || ''));
@@ -279,7 +252,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     expect(assocText).toContain('TestEntity1');
   });
 
-  // Step 8: Add 4 properties and save
   await softStep('Step 8: Add properties (rating/int, notes/string, verified/bool, review_date/datetime) and save', async () => {
     const props: [string, string][] = [
       ['rating', 'int'],
@@ -287,33 +259,25 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       ['verified', 'bool'],
       ['review_date', 'datetime'],
     ];
-    // Verified live against dev (2026-05-21 MCP recon): the Property-Type
-    // select serves options ['string', 'int', 'bool', 'double', 'datetime',
-    // 'string_list']. The previous flow set `sel.value = 'int' + dispatch
-    // input+change`, which updated the JS DOM but did NOT trip Datagrok's
-    // Dart-side listener — at save time the Dart model still held the empty
-    // default, so the saved schema came back with `type: undefined`.
-    // Fix: use Playwright's `selectOption` which fires the proper user-event
-    // chain (focus → mousedown → change) the Dart binding actually reads.
+
     for (let i = 0; i < props.length; i++) {
       const [name, type] = props[i];
       if (i > 0) {
         await page.locator('[name="button-Add-new-property-to-schema"]').click();
         await page.waitForTimeout(250);
       }
-      // Ctrl+A + keyboard type is what the Dart row listener sees (matches MCP behavior).
+
       const row = page.locator('.d4-dialog table.d4-item-table input[name="input-Name"]').nth(i);
       await row.click();
       await page.keyboard.press('Control+A');
       await page.keyboard.type(name, {delay: 10});
-      // Property-Type select — use selectOption to fire user-event chain.
+
       const typeSelect = page.locator(
         '.d4-dialog table.d4-item-table select[name="input-Property-Type"]').nth(i);
       await typeSelect.selectOption(type);
       await page.waitForTimeout(150);
     }
 
-    // Wait for OK to become enabled, then click via mouse (bypasses pointer-event interception)
     await page.locator('.d4-dialog [name="button-OK"].enabled').waitFor({timeout: 5000});
     const okSchemaBox = await page.locator('.d4-dialog[name="dialog-Create-a-new-schema"] [name="button-OK"]').boundingBox();
     if (okSchemaBox) {
@@ -321,7 +285,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     }
     await page.waitForTimeout(3000);
 
-    // List is paginated — filter via search to find TestSchema1 reliably.
     const present = await page.evaluate(async () => {
       const search = document.querySelector('input[placeholder*="by name"]') as HTMLInputElement | null;
       if (search) {
@@ -335,7 +298,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     });
     expect(present).toBe(true);
 
-    // Close any lingering dialogs so only the Edit dialog will be open later.
     await page.evaluate(() => {
       document.querySelectorAll('.d4-dialog').forEach((d) => {
         (d.querySelector('[name="button-CANCEL"]') as HTMLElement | null)?.click();
@@ -343,7 +305,6 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
     });
     await page.waitForTimeout(500);
 
-    // Verify schema content via Edit dialog (list is still filtered to TestSchema1).
     await page.evaluate(async () => {
       const label = Array.from(document.querySelectorAll('label')).find((l) => l.textContent?.trim() === 'TestSchema1') as HTMLElement | undefined;
       if (!label) return;
@@ -360,13 +321,9 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
         .find((d) => d.querySelector('.d4-dialog-title')?.textContent?.trim() === 'Edit schema');
       if (!dialog) return {dialog: false};
       const table = dialog.querySelector('table.d4-item-table');
-      // Per MCP recon on dev 2026-05-21: the Edit dialog renders a property's
-      // type as a read-only <span> inside the second <td> of each row, not as
-      // a <select> (the type can't be changed after creation). Reading
-      // `select[name="input-Property-Type"]` would always return undefined.
-      // Read the trimmed text content of the type cell instead.
+
       const propRows = Array.from(table?.querySelectorAll('tr') || []) as HTMLElement[];
-      // First <tr> is the header — skip it.
+
       const dataRows = propRows.slice(1);
       const rows = dataRows.map((tr) => {
         const cells = tr.querySelectorAll('td');
@@ -385,7 +342,7 @@ test('StickyMeta: Create metadata schema & entity type', async ({page}) => {
       {name: 'verified', type: 'bool'},
       {name: 'review_date', type: 'datetime'},
     ]);
-    // Close the Edit dialog — scope to it to avoid strict-mode violation if any dialog lingers.
+
     await page.evaluate(() => {
       const dialog = Array.from(document.querySelectorAll('.d4-dialog'))
         .find((d) => d.querySelector('.d4-dialog-title')?.textContent?.trim() === 'Edit schema');

@@ -3,6 +3,7 @@ realizes: [linechart.cp.filter-follow-and-empty]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 declare const DG: any;
@@ -20,11 +21,7 @@ function realErrors(): string[] {
 }
 
 async function setProps(page: Page, props: Record<string, any>) {
-  await page.evaluate((p) => {
-    const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
-    for (const [k, val] of Object.entries(p)) (lc.props as any)[k] = val;
-  }, props);
-  await page.waitForTimeout(500);
+  await v.setViewerProps(page, 'Line chart', [{set: props, wait: 500}]);
 }
 
 async function getProps(page: Page, ...names: string[]): Promise<Record<string, any>> {
@@ -36,23 +33,24 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
   }, names);
 }
 
-// The filter card is a canvas, so fg.updateOrAdd + requestFilter is the driving
-// path. selected:[] yields 0 rows, while a histogram range clamps to >=1, so the
-// empty-chart state has to come from the categorical filter.
-async function filterSeries(page: Page, selected: string[] | null): Promise<number> {
-  return page.evaluate((sel) => {
+async function filterSeries(
+  page: Page, selected: string[] | null, settled: (count: number) => boolean,
+): Promise<number> {
+  await page.evaluate((sel) => {
     const tv = grok.shell.tv;
     const df = tv.dataFrame;
     const fg = tv.getFiltersGroup();
     const values = sel === null ? df.columns.byName('Series').categories : sel;
     fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Series', selected: values});
     df.rows.requestFilter();
-    return new Promise<number>((resolve) => setTimeout(() => resolve(df.filter.trueCount), 800));
   }, selected);
+  return v.pollValue(() => trueCount(page), settled, 800, 100);
 }
 
-async function filterRange(page: Page, column: string, frac: [number, number] | null): Promise<number> {
-  return page.evaluate((args) => {
+async function filterRange(
+  page: Page, column: string, frac: [number, number] | null, settled: (count: number) => boolean,
+): Promise<number> {
+  await page.evaluate((args) => {
     const {col, f} = args;
     const tv = grok.shell.tv;
     const df = tv.dataFrame;
@@ -62,8 +60,8 @@ async function filterRange(page: Page, column: string, frac: [number, number] | 
     const hi = f === null ? c.max : c.min + (c.max - c.min) * f[1];
     fg.updateOrAdd({type: 'histogram', column: col, min: lo, max: hi});
     df.rows.requestFilter();
-    return new Promise<number>((resolve) => setTimeout(() => resolve(df.filter.trueCount), 800));
   }, {col: column, f: frac});
+  return v.pollValue(() => trueCount(page), settled, 800, 100);
 }
 
 async function trueCount(page: Page): Promise<number> {
@@ -81,31 +79,15 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
-    }
-    await new Promise((r) => setTimeout(r, 5000));
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await page.locator('[name="icon-line-chart"]').click();
   await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});
 
   await setProps(page, {xColumnName: 'Chemical Space X', yColumnNames: ['Chemical Space Y'], axesFollowFilter: true});
   await page.evaluate(() => grok.shell.tv.getFiltersGroup());
-  await page.waitForTimeout(1500);
+  await v.pollValue(() => page.locator('[name="viewer-Filters"] .d4-filter').count(),
+    (n) => n > 0, 1500, 100);
 
   const baseline = await trueCount(page);
   expect(baseline).toBe(fullRowCount);
@@ -116,19 +98,20 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
   });
 
   await softStep('S1 Step 4: filter to zero rows, filter.trueCount === 0', async () => {
-    const cnt = await filterSeries(page, []);
+    const cnt = await filterSeries(page, [], (n) => n === 0);
     expect(cnt).toBe(0);
   });
 
   await softStep('S1 Step 5-6: hover empty log-axis chart raises no error (github-2574)', async () => {
     const before = realErrors().length;
     await page.locator('[name="viewer-Line-chart"]').hover();
+
     await page.waitForTimeout(800);
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S1 Step 7-8: remove filter restores baseline row count', async () => {
-    const cnt = await filterSeries(page, null);
+    const cnt = await filterSeries(page, null, (n) => n === baseline);
     expect(cnt).toBe(baseline);
   });
 
@@ -137,13 +120,9 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
     expect((await getProps(page, 'xAxisType')).xAxisType).toBe('linear');
   });
 
-  // GROK-18375: with a time-split X axis, applying a filter removed every row. The
-  // Chem substructure filter cannot be driven headless, so a categorical filter on
-  // the structure-family Series column stands in for it.
   await softStep('S2 Step 1-2: set X to a date column with Year-quarter time-split, no error', async () => {
     const before = realErrors().length;
-    // xMap is the time-split the GROK-18375 repro requires — without it the
-    // bug's configuration (time-split x filter) is not actually exercised.
+
     await setProps(page, {xColumnName: 'Competition assay Date', xMap: 'Year quarter'});
     const cfg = await getProps(page, 'xColumnName', 'xMap');
     expect(cfg.xColumnName).toBe('Competition assay Date');
@@ -153,25 +132,21 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
 
   await softStep('S2 Step 5: filter while time-split X keeps rows > 0 (GROK-18375)', async () => {
     const before = realErrors().length;
-    const cnt = await filterSeries(page, ['Aminopiperidines', 'Pyrrolidines']);
+    const cnt = await filterSeries(page, ['Aminopiperidines', 'Pyrrolidines'],
+      (n) => n > 0 && n < baseline);
     expect(cnt).toBeGreaterThan(0);
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S2 Step 7: remove filter, restore numeric X for next scenario', async () => {
-    await filterSeries(page, null);
+    await filterSeries(page, null, (n) => n === baseline);
     await setProps(page, {xColumnName: 'Chemical Space X', xMap: ''});
     const cfg = await getProps(page, 'xColumnName', 'xMap');
     expect(cfg.xColumnName).toBe('Chemical Space X');
-    expect(cfg.xMap).toBe(''); // time-split must not leak into Scenario 3
+    expect(cfg.xMap).toBe(''); 
     expect(await trueCount(page)).toBe(baseline);
   });
 
-  // The range-slider drag is not scriptable — the Filter Panel numeric filter is
-  // an embedded Histogram with a canvas-drawn range strip (no DOM handle elements)
-  // and min/max inputs that stay invisible to automation. The range is therefore
-  // driven through fg.updateOrAdd, which still verifies the GROK-20185 observable:
-  // the live count update and its reversibility.
   await softStep('S3 Step 1: confirm numeric X, linear scale', async () => {
     const cfg = await getProps(page, 'xColumnName', 'xAxisType');
     expect(cfg.xColumnName).toBe('Chemical Space X');
@@ -180,14 +155,15 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
 
   await softStep('S3 Step 4-5: narrow X range, filter.trueCount drops below baseline (GROK-20185)', async () => {
     const before = realErrors().length;
-    const narrowed = await filterRange(page, 'Chemical Space X', [0.25, 0.75]);
+    const narrowed = await filterRange(page, 'Chemical Space X', [0.25, 0.75],
+      (n) => n > 0 && n < baseline);
     expect(narrowed).toBeLessThan(baseline);
     expect(narrowed).toBeGreaterThan(0);
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S3 Step 7-8: restore full range, filter.trueCount returns to baseline', async () => {
-    const restored = await filterRange(page, 'Chemical Space X', null);
+    const restored = await filterRange(page, 'Chemical Space X', null, (n) => n === baseline);
     expect(restored).toBe(baseline);
   });
 

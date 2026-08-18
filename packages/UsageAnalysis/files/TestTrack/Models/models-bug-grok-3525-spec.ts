@@ -4,8 +4,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('GROK-3525 regression: target nulls surface in validator tip + Ignore missing recovers', async ({page}) => {
-  // Block 2 trains one small EDA model (30-row in-memory Linear Regression) — fast, not chemprop.
-  // 300s covers the train wait (step 2.6 polls SAVE-enable up to 180s) plus the UI driving around it.
+
   test.setTimeout(300_000);
 
   await loginToDatagrok(page);
@@ -54,7 +53,6 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
     return Array.from(w.querySelectorAll('li')).map((li) => li.textContent || '').join(' || ');
   });
 
-  
   await softStep('1.1 Open demog.csv and inject a single null into RACE row 0', async () => {
     const setupInfo = await page.evaluate(async () => {
       const g: any = (window as any).grok;
@@ -68,7 +66,7 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      
+
       const race = df.columns.byName('RACE');
       race.set(0, null);
       return {rows: df.rowCount, raceNullsAfter: race.stats.missingValueCount};
@@ -87,7 +85,7 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
   });
 
   await softStep('1.4 Set Features to AGE, WEIGHT via canvas picker', async () => {
-    
+
     await page.evaluate(() => {
       const editor = (window as any).grok.shell.v.root.querySelector('[name="div-Features"]') as HTMLElement;
       const r = editor.getBoundingClientRect();
@@ -100,7 +98,7 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
       editor.dispatchEvent(opts('click'));
     });
     await page.locator('[name="dialog-Select-columns..."]').waitFor({timeout: 10_000});
-    
+
     await page.evaluate(() => {
       const overlay = document.querySelector('[name="dialog-Select-columns..."] canvas[name="overlay"]') as HTMLCanvasElement;
       if (!overlay) throw new Error('column-picker overlay canvas not found');
@@ -110,8 +108,8 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
         overlay.dispatchEvent(new MouseEvent('mouseup', opts));
         overlay.dispatchEvent(new MouseEvent('click', opts));
       };
-      click(826, 285); // AGE
-      click(826, 397); // WEIGHT
+      click(826, 285); 
+      click(826, 397); 
     });
     await page.waitForFunction(() => {
       const lbl = Array.from(document.querySelectorAll('[name="dialog-Select-columns..."] label'))
@@ -124,17 +122,17 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
   });
 
   await softStep('1.5 Validator tip names RACE as a missing-values column (GROK-3525 invariant)', async () => {
-    
+
     await expect.poll(readTipText, {timeout: 15_000})
       .toMatch(/contain.*missing values/i);
     const tip = await readTipText();
-    
+
     expect(tip).toContain('RACE');
     expect(tip).toMatch(/RACE:\s*\d+/);
   });
 
   await softStep('1.6 SAVE/TRAIN button stays disabled — no model save side-effect fires', async () => {
-    
+
     await page.waitForTimeout(5_000);
     const btnCls = await page.evaluate(() => {
       const b = document.querySelector('[name="button-Save"]') as HTMLElement | null;
@@ -147,13 +145,13 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
     });
     expect(savedCount).toBe(0);
   });
-  
+
   await softStep('2.1 Build small in-memory df (X num feature, Y num target with 5 nulls)', async () => {
     await page.evaluate(async () => {
       const g: any = (window as any).grok;
       const DG: any = (window as any).DG;
       g.shell.closeAll();
-      // 30 rows: X = 1..30; Y = X*2 except indices 5,10,15,20,25 are null.
+
       const xs: number[] = [];
       const ys: (number | null)[] = [];
       for (let i = 1; i <= 30; i++) {
@@ -190,7 +188,7 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
   });
 
   await softStep('2.4 Set Features to X (only column left after Y is excluded)', async () => {
-    // Picker has 1 visible row (X) once Y is the Predict column.
+
     await page.evaluate(() => {
       const editor = (window as any).grok.shell.v.root.querySelector('[name="div-Features"]') as HTMLElement;
       const r = editor.getBoundingClientRect();
@@ -203,7 +201,7 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
       editor.dispatchEvent(opts('click'));
     });
     await page.locator('[name="dialog-Select-columns..."]').waitFor({timeout: 10_000});
-    
+
     await page.evaluate(() => {
       const overlay = document.querySelector('[name="dialog-Select-columns..."] canvas[name="overlay"]') as HTMLCanvasElement;
       const opts = {bubbles: true, cancelable: true, view: window, button: 0, clientX: 800, clientY: 263};
@@ -222,17 +220,17 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
   });
 
   await softStep('2.5 Sanity check (mirrors Block 1): tip names Y as a missing-values column', async () => {
-    
+
     await expect.poll(readTipText, {timeout: 15_000})
       .toMatch(/contain.*missing values/i);
     const tip = await readTipText();
     expect(tip).toContain('Y');
-    
+
     expect(tip).toMatch(/Column[s]?\s+['"]?Y['"]?.*missing values/i);
   });
 
   await softStep('2.6 Tick Ignore missing — re-train fires, SAVE enables', async () => {
-    
+
     await page.locator('[name="input-host-Ignore-missing"] input[type="checkbox"]').click();
     await expect(page.locator('[name="input-host-Ignore-missing"] input[type="checkbox"]'))
       .toBeChecked();
@@ -248,9 +246,9 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
   });
 
   await softStep('2.7 Post-ignore tip no longer cites Y as a missing-values column', async () => {
-    
+
     const tip = await readTipText();
-    
+
     const missingClauseMatch = tip.match(/Column[s]? '[^']+' contain[s]? missing values/);
     if (missingClauseMatch) {
       expect(missingClauseMatch[0]).not.toContain('Y');

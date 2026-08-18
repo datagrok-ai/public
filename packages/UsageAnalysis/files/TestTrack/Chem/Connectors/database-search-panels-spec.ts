@@ -4,10 +4,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec
 test.use(specTestOptions);
 
 test('Chem | Context Panel — External Database Search Panels', async ({page}) => {
-  // Six scenarios driving live proxied searches against ChEMBL / Chemspace / PubChem (async
-  // listkey polling) / DrugBank. The cost is external-API latency, not model training; each
-  // slow search is now bounded by an explicit result-poll. 300s covers the full sweep with
-  // margin for network variance.
+
   test.setTimeout(300_000);
 
   await loginToDatagrok(page);
@@ -81,7 +78,7 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
         .map((c: any) => c.getAttribute('d4-title')).filter(Boolean);
       const sim = await w.__expand(chembl, 'Similarity Search API', 0);
       const simC = sim.querySelector('.d4-accordion-pane-content');
-      // Poll the proxied ChEMBL similarity search until cards render, not a fixed 9s wait.
+
       for (let i = 0; i < 40; i++) {
         if (simC.querySelectorAll('canvas').length > 0 || /Score:\s*1\.00/.test(simC.innerText)) break;
         await new Promise((r) => setTimeout(r, 500));
@@ -98,7 +95,7 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
       const ssOk = ssC.querySelectorAll('canvas').length > 0 || /No matches/.test(ssC.innerText) || ssC.innerText.trim() === '';
       const viewsBefore = Array.from(w.grok.shell.views).length;
       simC.querySelector('i.fa-arrow-square-down').click();
-      // Poll until the results table view opens, not a fixed 3s wait.
+
       for (let i = 0; i < 20; i++) {
         if (Array.from(w.grok.shell.views).length > viewsBefore) break;
         await new Promise((r) => setTimeout(r, 250));
@@ -165,8 +162,7 @@ test('Chem | Context Panel — External Database Search Panels', async ({page}) 
         const h = (p as Element).querySelector('.d4-accordion-pane-header') as HTMLElement;
         if (!h.classList.contains('expanded')) h.click();
       }
-      // PubChem uses async listkey polling — poll until every expanded sub-panel resolves
-      // (cards / "No matches" / "Compound" / "Score") instead of a 30s blind wait. Cap ~60s.
+
       const paneResolved = (p: Element) => {
         const c = p.querySelector('.d4-accordion-pane-content') as HTMLElement;
         return c.querySelectorAll('canvas').length > 0 || /No matches|Score|Compound/i.test(c.innerText);

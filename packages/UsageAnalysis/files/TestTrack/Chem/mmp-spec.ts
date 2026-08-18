@@ -1,4 +1,3 @@
-// GROK-18517: MMP generation on mmp_demo.csv with both activities must not fire minified runtime errors.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -17,10 +16,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
       grok.shell.closeAll();
-      // System:DemoFiles/chem/mmp_demo.csv on dev is a corrupt mixed-delimiter copy
-      // (header "SMILES\tCMPD_CHEMBLID,..."), so no clean SMILES column gets Molecule
-      // semType. Use the canonical demo file shipped by the Chem package — the same
-      // one the platform's own MMP demo (Chem/src/demo/demo.ts) loads.
+
       const df = await grok.dapi.files.readCsv('System:AppData/Chem/demo_files/mmp_demo.csv');
       grok.shell.addTableView(df);
       (window as any).__mmp_errors = [];
@@ -31,12 +27,11 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
       };
     });
     await waitForChemMenu(page);
-    // The Chem Molecule detector runs async AFTER the menu attaches; poll for it
-    // before asserting semType (checking immediately races the detector).
+
     await waitForMolecule(page);
     const cols = await page.evaluate(() =>
       grok.shell.t.columns.toList().map((c: any) => ({name: c.name, semType: c.semType, type: c.type})));
-    // Soft assertions — accept variant col counts as long as required cols present.
+
     const hasMolecule = cols.some(c => c.semType === 'Molecule');
     const numericCount = cols.filter(c => /^(int|double|float|num)/i.test(c.type ?? '')).length;
     expect(hasMolecule, `Expected Molecule semType; got cols=${JSON.stringify(cols.slice(0, 6))}`).toBe(true);
@@ -113,7 +108,7 @@ test('Chem: MMP GROK-18517 on mmp_demo — both activities + 4-tab walk', async 
     }, tabName);
 
   await softStep('Step 4-7: SR-DEFERRED 4-tab walk — GROK-18517 invariant verified via viewer mount + no minified-runtime error (final assertion)', async () => {
-    // SR-DEFERRED: MMP tab DOM is opaque to DOM selectors; invariant covered by Step 3b mount + final no-error check.
+
   });
 
   await softStep('Final: no minified-runtime errors throughout MMP walk', async () => {

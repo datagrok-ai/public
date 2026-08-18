@@ -16,11 +16,8 @@ import {
   expandTreeGroup,
 } from './helpers';
 
-// My stuff subgroups present as dedicated nodes on current dev (My dashboards / My scripts
-// are no longer virtual subgroups — contents are flat under My stuff).
 const REQUIRED_MYSTUFF = ['Recent', 'Favorites', 'Shared with me', 'My files'];
 
-// Top-level Databases providers known to be present on dev.
 const DB_PROVIDERS = [
   'Access', 'Athena', 'BigQuery', 'Cassandra', 'ClickHouse', 'DB2', 'Databricks',
   'Denodo', 'Firebird', 'HBase', 'Hive', 'Hive2', 'Impala', 'MLFlow', 'MS SQL',
@@ -29,14 +26,11 @@ const DB_PROVIDERS = [
   'Vertica', 'Virtuoso',
 ];
 
-// Platform subnodes (group + items). For section 18 we verify each is clickable
-// without error; deeper assertions live in their specific tests elsewhere.
 const PLATFORM_GROUPS = ['Admin', 'Plugins', 'Credentials', 'Functions', 'Predictive models', 'Dockers', 'Sticky Meta'];
 const PLATFORM_ITEMS = ['Users', 'Groups', 'Roles', 'Notebooks', 'MCP Servers', 'Repositories', 'Keys', 'Sync', 'Layouts'];
 
-/** Make sure Context Panel is open and all panes are expanded. */
 async function ensureContextPanelExpanded(page: Page): Promise<void> {
-  await ensureContextPanelOpen(page, /* expandAll */ true);
+  await ensureContextPanelOpen(page,  true);
 }
 
 test.describe('Browse — tree nodes open without errors (section 18)', () => {
@@ -87,7 +81,7 @@ test.describe('Browse — tree nodes open without errors (section 18)', () => {
     for (const provider of DB_PROVIDERS) {
       const node = treeNodeByPath(page, ['Databases', provider]);
       if (!(await node.isVisible().catch(() => false))) {
-        // Skip providers that don't appear on this environment.
+
         continue;
       }
       await ensureBrowsePanelOpen(page);
@@ -101,7 +95,7 @@ test.describe('Browse — tree nodes open without errors (section 18)', () => {
   });
 
   test('Browse-Node-Platform-01 — every Platform subnode is clickable without errors', async ({ page }) => {
-    test.setTimeout(180_000); // many items to iterate
+    test.setTimeout(180_000); 
     const sink = watchErrors(page);
     await expandTreeGroup(page, 'Platform');
 

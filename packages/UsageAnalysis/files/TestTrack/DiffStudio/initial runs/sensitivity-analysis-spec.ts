@@ -56,7 +56,7 @@ test("DiffStudio Sensitivity Analysis: Bioreactor, Process mode cascade, Run, 4 
         { timeout: 30000 },
       );
       await page.waitForTimeout(2000);
-      // Make sure Edit is OFF so form with inputs is visible
+
       const editOn = await page.evaluate(() =>
         document
           .querySelector(".d4-ribbon-item .ui-input-switch")
@@ -198,7 +198,7 @@ test("DiffStudio Sensitivity Analysis: Bioreactor, Process mode cascade, Run, 4 
   await softStep(
     "Step 4: Run Sensitivity Analysis; 4 viewers open",
     async () => {
-      // Enable 2 input switchers so SA has varied inputs to analyze
+
       await page.evaluate(() => {
         (
           document.querySelector(
@@ -212,14 +212,14 @@ test("DiffStudio Sensitivity Analysis: Bioreactor, Process mode cascade, Run, 4 
         )?.click();
       });
       await page.waitForTimeout(1500);
-      // Click Run (▶) on ribbon — fa-play icon
+
       await page.evaluate(() => {
         const runIcon = Array.from(
           document.querySelectorAll(".d4-ribbon-item i"),
         ).find((e) => e.className.includes("fa-play")) as HTMLElement;
         runIcon?.click();
       });
-      // Wait for viewers to materialize
+
       await page.waitForTimeout(15000);
       const viewerCount = await page.evaluate(
         () => document.querySelectorAll(".d4-viewer").length,

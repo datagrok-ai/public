@@ -74,7 +74,7 @@ test('Tree — rowSource x onClick state machine (github-3245)', async ({page}) 
         };
       }, [rs, oc] as [string, string]);
       expect(result.ok).toBe(true);
-      // github-3245: readback logged only — Tree normalizes (rowSource, onClick) so strict round-trip drifts.
+
       expect(result.setOptionsThrew).toBe(false);
       expect(result.hasContent).toBe(true);
       expect(result.width).toBeGreaterThan(0);
@@ -88,21 +88,18 @@ test('Tree — rowSource x onClick state machine (github-3245)', async ({page}) 
     });
   };
 
-  // Forward iteration: 9 combinations
   for (const rs of rowSources) {
     for (const oc of onClicks) {
       await iterateCombo(rs, oc, '(forward)');
     }
   }
 
-  // Reverse iteration: same 9 combos, reverse order
   for (const rs of [...rowSources].reverse()) {
     for (const oc of [...onClicks].reverse()) {
       await iterateCombo(rs, oc, '(reverse)');
     }
   }
 
-  // ESC-equivalent state-clear check
   await softStep('Step 4: ESC-equivalent (df.selection.setAll(false)) — viewer remains stable', async () => {
     const result = await page.evaluate(async () => {
       const grok = (window as any).grok;

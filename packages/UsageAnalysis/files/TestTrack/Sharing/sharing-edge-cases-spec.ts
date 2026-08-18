@@ -18,8 +18,7 @@ async function setupSession(page: Page) {
 }
 
 test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, dependent-entity notice)', async ({page}) => {
-  // Single-actor: setup save + global-permission gate + remove-all-grants + Share dialog
-  // UI render. No login switches; 180s is ample.
+
   test.setTimeout(180_000);
   stepErrors.length = 0;
 
@@ -32,8 +31,7 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
   let allUsersGroupId: string | null = null;
 
   try {
-    
-    
+
     await softStep('Setup: create a Script that is a member of a Project; resolve All users group', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok, DG = window.DG;
@@ -63,11 +61,6 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       console.log(`[edge] Setup: script=${scriptId} in project=${projId}; All users=${allUsersGroupId}`);
     });
 
-    
-    
-    
-    
-    
     await softStep('Scenario 1: SHARE_WITH_EVERYONE global-permission gate returns a boolean and exists', async () => {
       const res = await evalJs(page, `(async () => {
         try {
@@ -83,8 +76,7 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       })()`);
       expect(res.ok, `global-permission check must run (${res.reason ?? ''})`).toBe(true);
       expect(res.status, 'global-permission check route must respond 200').toBe(200);
-      
-      
+
       expect(res.isBoolean, `gate must return a boolean (got "${res.body}")`).toBe(true);
       console.log(`[edge] Scenario 1: ShareWithEveryone gate → ${res.body} (current actor holds=${res.holds})`);
     });
@@ -117,11 +109,6 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       console.log('[edge] Scenario 1: all-users grant landed for holder and revoked cleanly (gate-governed path)');
     });
 
-    
-    
-    
-    
-    
     await softStep('Scenario 2 (UI): owner opens the Advanced editor (PermissionsView) for the script', async () => {
       const opened = await evalJs(page, `(async () => {
         try {
@@ -132,9 +119,7 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
         } catch (e) { return {ok: false, reason: String(e).slice(0, 200)}; }
       })()`);
       expect(opened.ok, `navigation to PermissionsView must run (${opened.reason ?? ''})`).toBe(true);
-      
-      
-      
+
       const loaded = await page.locator(
         '.grok-permissions-self, .d4-grid, [name="button-Calculate-resulting-permissions-for-this-entity"], input[placeholder="Type in user, role or group to add..."]',
       ).first().isVisible({timeout: 20_000}).catch(() => false);
@@ -142,7 +127,7 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
         console.log('[edge] Scenario 2 (UI): Advanced editor PermissionsView loaded (DOM signal, class-1)');
       else
         console.warn('[edge] Scenario 2 (UI): PermissionsView DOM signal not observed; owner-retention is asserted via API below');
-      
+
       await evalJs(page, `(async () => { try { window.grok.shell.closeAll(); } catch(_){} })()`).catch(() => {});
       await page.waitForTimeout(500);
     });
@@ -171,8 +156,7 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       })()`);
       expect(res.ok, `remove-all-grants must succeed (${res.reason ?? ''})`).toBe(true);
       expect(res.remaining, 'every grant row must be removed (matrix empty)').toBe(0);
-      
-      
+
       expect(res.ownerView, 'owner must still have View after removing every grant').toBe(true);
       expect(res.ownerEdit, 'owner must still have Edit after removing every grant').toBe(true);
       expect(res.ownerDelete, 'owner must still have Delete after removing every grant').toBe(true);
@@ -181,14 +165,8 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       console.log(`[edge] Scenario 2: grants removed (remaining=${res.remaining}); owner retains View/Edit/Delete/Share — ownership is not a removable grant row`);
     });
 
-    
-    
-    
-    
-    
-    
     await softStep('Scenario 3 (UI): Share dialog PermissionsEditor renders for the project-member script', async () => {
-      
+
       await evalJs(page, `(async () => {
         const g = window.grok;
         const script = await g.dapi.scripts.find('${scriptId}');
@@ -196,10 +174,6 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       })()`);
       await page.waitForTimeout(1500);
 
-      
-      
-      
-      
       const header = page.locator('[name="div-section--Sharing"]');
       const shareBtn = page.locator('[name="button-Share..."]');
       if (await header.isVisible({timeout: 10_000}).catch(() => false)) {
@@ -210,21 +184,18 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
         }
       }
       await expect(shareBtn, 'SHARE... button must be attached (context-panel Sharing pane)').toBeAttached({timeout: 10_000});
-      
+
       await shareBtn.click().catch(() => {});
       await page.waitForTimeout(1200);
 
-      
       const dialog = page.locator('.d4-dialog');
       const dialogVisible = await dialog.first().isVisible({timeout: 10_000}).catch(() => false);
       expect(dialogVisible, 'Share dialog (PermissionsEditor) must render for the script').toBe(true);
-      
+
       const editorInput = await page.locator('.d4-dialog input[placeholder="User, group, or email"]')
         .first().isVisible({timeout: 5_000}).catch(() => false);
       expect(editorInput, 'PermissionsEditor recipient autocomplete must render').toBe(true);
 
-      
-      
       const noticeText = await page.locator('.d4-dialog').first().evaluate((dlg: any) => {
         const t = (dlg.textContent || '').replace(/\s+/g, ' ').trim();
         const hasNotice = /\b(also|will be shared|depend|member of|co-)\b/i.test(t);
@@ -232,12 +203,11 @@ test('Sharing — Edge cases (SHARE_WITH_EVERYONE gate, owner-retention, depende
       }).catch(() => ({hasNotice: false, snippet: ''}));
       console.log(`[edge] Scenario 3: PermissionsEditor rendered; dependent-entity notice present=${noticeText.hasNotice} (behavioral remark, SR-02)`);
 
-      
       await page.locator('.d4-dialog [name="button-CANCEL"]').first().click().catch(() => {});
       await page.waitForTimeout(400);
     });
   } finally {
-    
+
     await evalJs(page, `(async () => {
       const g = window.grok;
       try {

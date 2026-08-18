@@ -48,7 +48,6 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
     availableProps = result.propNames;
   });
 
-  // Helper applied 8 times — exercises each enhancement
   const exerciseProperty = async (propName: string, value: any, label: string) => {
     await softStep(`Capability: ${label} (${propName})`, async () => {
       const errorsBefore = consoleErrors.length;
@@ -76,7 +75,7 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
         };
       }, [propName, value] as [string, any]);
       expect(result.ok).toBe(true);
-      // github-3221 invariant: each capability's setOptions does not throw.
+
       expect(result.setOptionsThrew).toBe(false);
       expect(result.hasContent).toBe(true);
       expect(result.width).toBeGreaterThan(0);
@@ -97,7 +96,6 @@ test('Tree — 8-enhancement bundle regression (github-3221)', async ({page}) =>
   await exerciseProperty('includeNulls', true, 'includeNulls ON');
   await exerciseProperty('includeNulls', false, 'includeNulls OFF');
 
-  // Capability 4 (layout) — guarded probe; 'layout' may not be exposed on dev build.
   if (availableProps.includes('layout'))
     await exerciseProperty('layout', 'orthogonal', 'layout=orthogonal');
   else

@@ -143,11 +143,11 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
       const im = svm.querySelector('[name="input-Invariant-Map"]') as HTMLInputElement | null;
       const radiosFound = !!mc && !!im;
       if (!radiosFound) return {radiosFound, afterIM: null, afterMC: null};
-      // Switch to Invariant Map.
+
       im!.click();
       await new Promise((r) => setTimeout(r, 1500));
       const afterIM = {mc: mc!.checked, im: im!.checked};
-      // Switch back to Mutation Cliffs.
+
       mc!.click();
       await new Promise((r) => setTimeout(r, 1500));
       const afterMC = {mc: mc!.checked, im: im!.checked};
@@ -164,7 +164,7 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
       const df = tv.dataFrame;
       const selBefore = df.selection.trueCount;
       const svm = document.querySelector('[name="viewer-Sequence-Variability-Map"]')!;
-      // The largest canvas is the SVM render surface (the tiny one is a scrollbar).
+
       const canvases = Array.from(svm.querySelectorAll('canvas')) as HTMLCanvasElement[];
       let canvas: HTMLCanvasElement | null = null;
       let maxArea = 0;
@@ -174,7 +174,7 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
       }
       if (!canvas) return {canvasFound: false, selBefore, selAfter: selBefore};
       const r = canvas.getBoundingClientRect();
-      // Deterministic data-cell position past the row-header column and WebLogo header row.
+
       const cx = r.x + 120;
       const cy = r.y + 120;
       const opts = {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 0, view: window};
@@ -184,22 +184,22 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
       canvas.dispatchEvent(new MouseEvent('click', opts));
       await new Promise((res) => setTimeout(res, 2500));
       const selAfter = df.selection.trueCount;
-      // Read the Context Panel panes that materialized.
+
       const namedPanes = Array.from(document.querySelectorAll('[name^="pane-"]'))
         .map((p) => p.getAttribute('name'));
       return {canvasFound: true, selBefore, selAfter, namedPanes};
     });
     expect(result.canvasFound, 'SVM render canvas not found for the cell click').toBe(true);
-    // The map cell click selects the corresponding monomer-position rows.
+
     expect(result.selAfter, 'cell click did not change the DataFrame selection')
       .toBeGreaterThan(result.selBefore);
-    // Step 12: the Context Panel exposes the Mutation Cliffs pairs + Distribution panes.
+
     expect(result.namedPanes, 'Context Panel did not surface the Mutation Cliffs pairs pane')
       .toContain('pane-Mutation-Cliffs-pairs');
     expect(result.namedPanes, 'Context Panel did not surface the Distribution pane')
       .toContain('pane-Distribution');
   });
-  // Scenario 4 — change one representative Distribution parameter and verify re-render.
+
   await softStep('Scenario 4 (step 13): adjust a Distribution panel parameter', async () => {
     const result = await page.evaluate(async () => {
       const distPane = document.querySelector('[name="pane-Distribution"]');
@@ -207,7 +207,7 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
       const header = distPane.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
       if (header && !distPane.classList.contains('expanded')) header.click();
       await new Promise((r) => setTimeout(r, 1500));
-      // Representative non-default change: toggle "Stack split categories".
+
       const stack = distPane.querySelector('[name="input-Stack-split-categories"]') as HTMLInputElement | null;
       const stackFound = !!stack;
       const before = stack ? stack.checked : null;
@@ -220,7 +220,7 @@ test('SAR — Launch and verify viewers (context-panel entry path)', async ({pag
     expect(result.distPaneFound, '[name="pane-Distribution"] not found in the Context Panel').toBe(true);
     expect(result.stackFound, '[name="input-Stack-split-categories"] not found in the Distribution pane').toBe(true);
     expect(result.after, 'Distribution parameter toggle did not change state').not.toBe(result.before);
-    // The pane keeps rendered content (histograms) after the parameter change.
+
     expect(result.childCount, 'Distribution pane lost its rendered content after the parameter change')
       .toBeGreaterThan(5);
   });

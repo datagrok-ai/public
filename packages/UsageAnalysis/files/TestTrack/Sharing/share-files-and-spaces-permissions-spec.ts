@@ -24,8 +24,7 @@ async function setupSession(page: Page) {
 }
 
 test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives / revoke)', async ({page}) => {
-  // Two-actor: owner setup (Space save) + 4 login switches (recipient/owner) each waiting
-  // on dapi-ready, plus permission grant/revoke round-trips. 300s covers the re-auths.
+
   test.setTimeout(300_000);
   stepErrors.length = 0;
 
@@ -33,8 +32,7 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
   await setupSession(page);
 
   const ownerLogin = await readLogin(page);
-  
-  
+
   const recipientLogin = await getSecondUserLogin();
   console.log(`[two-actor] owner='${ownerLogin}', recipient='${recipientLogin}' (from token claim)`);
   expect(recipientLogin, 'recipient login must resolve').toBeTruthy();
@@ -43,14 +41,12 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
   const stamp = Date.now();
   const spaceName = 'AutoTest-ShareSpace-' + stamp;
 
-  
   let fileConnId: string | null = null;
   let spaceId: string | null = null;
   let recipientGroupId: string | null = null;
 
   try {
-    
-    
+
     await softStep('Setup: resolve file share + recipient group + create Space with dataset', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -77,24 +73,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       expect(res.ownerCanShareConn, 'owner must hold Share on their file share').toBe(true);
       expect(res.recipientGroupId, 'recipient personal group must resolve').toBeTruthy();
 
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
       const created = await evalJs(page, `(async () => {
         const g = window.grok, DG = window.DG;
         try {
@@ -128,7 +106,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       console.log(`[two-actor] Setup: file share '${res.fileConnName}', Space '${spaceName}' (${spaceId}) created — STILL OWNER`);
     });
 
-    
     await softStep('Block A: owner shares the file share with recipient at View and use', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -148,11 +125,8 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       console.log(`[two-actor] Block A: file share shared View-and-use to '${recipientLogin}' — owner-side get() confirms grant`);
     });
 
-    
-    
-    
     await softStep('Block A (UI): owner-side Sharing context-panel pane renders', async () => {
-      
+
       await evalJs(page, `(async () => {
         const g = window.grok;
         const conn = await g.dapi.connections.find('${fileConnId}');
@@ -160,23 +134,20 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       })()`);
       await page.waitForTimeout(1500);
       const header = page.locator('[name="div-section--Sharing"]');
-      
+
       if (await header.isVisible({timeout: 10_000}).catch(() => false)) {
         await header.click();
         await page.waitForTimeout(800);
-        
+
         const shareBtn = page.locator('[name="button-Share..."]');
         await expect(shareBtn).toBeAttached({timeout: 10_000});
         console.log('[two-actor] Block A (UI): Sharing pane expanded; SHARE... button attached (DOM-driven, class-1)');
       } else {
-        // Tolerated environmental skip: the context-panel Sharing pane is not always
-        // surfaced for a file-share connection object headless. The grant under test was
-        // already asserted via the API in Block A; this UI render is a non-blocking extra.
+
         console.warn('[two-actor] Block A (UI): Sharing context-panel pane not visible for connection object; state already verified via API');
       }
     });
 
-    
     await softStep('Block A (recipient): recipient gains View access on the shared file share', async () => {
       await loginAsSecondUser(page);
       try {
@@ -196,7 +167,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         expect(res.canView, 'recipient must have View on the shared file share').toBe(true);
         console.log(`[two-actor] Block A (recipient): canView=${res.canView}, canEdit=${res.canEdit}`);
 
-        
         await softStep('Block B (recipient): edit / re-share are denied', async () => {
           const neg = await evalJs(page, `(async () => {
             const g = window.grok;
@@ -220,7 +190,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       }
     });
 
-    
     await softStep('Block B (owner): owner revokes the file-share grant; recipient loses access', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -239,7 +208,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       console.log(`[two-actor] Block B (owner): revoked file-share grant; owner-side get() shows owner-only again`);
     });
 
-    
     await softStep('Block C: owner shares the Space with recipient at View and use', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -259,17 +227,16 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       console.log(`[two-actor] Block C: Space '${spaceName}' shared View-and-use to '${recipientLogin}' — cascade is the project permission model`);
     });
 
-    
     await softStep('Block C (recipient): shared Space appears and its contents are viewable', async () => {
       await loginAsSecondUser(page);
       try {
         const live = await readLogin(page);
         expect(live).toBe(recipientLogin);
-        
+
         await expect.poll(async () => evalJs(page,
           `(async () => { const p = await grok.dapi.projects.find('${spaceId}').catch(() => null); return p != null; })()`,
         ), {timeout: 30_000, intervals: [1000, 2000, 5000]}).toBe(true);
-        
+
         const res = await evalJs(page, `(async () => {
           const g = window.grok;
           try {
@@ -282,7 +249,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         expect(res.canView, 'recipient must have View on the shared Space (cascade)').toBe(true);
         console.log(`[two-actor] Block C (recipient): shared Space visible; canView=${res.canView}`);
 
-        
         await softStep('Block D (recipient): edit / delete / re-share on the Space are denied', async () => {
           const neg = await evalJs(page, `(async () => {
             const g = window.grok;
@@ -306,7 +272,6 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       }
     });
 
-    
     await softStep('Block D (owner): owner revokes the Space share; cascade disappears', async () => {
       const res = await evalJs(page, `(async () => {
         const g = window.grok;
@@ -325,7 +290,7 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
       console.log(`[two-actor] Block D (owner): revoked Space share; recipient loses access to Space + cascaded contents`);
     });
   } finally {
-    
+
     await evalJs(page, `(async () => {
       const g = window.grok;
       try {

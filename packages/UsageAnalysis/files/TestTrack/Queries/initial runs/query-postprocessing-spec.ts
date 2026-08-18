@@ -22,7 +22,7 @@ test("Queries — query post-process balloon and saved layout", async ({
     w.grok.shell.windows.simpleMode = true;
     w.grok.shell.closeAll();
     w.grok.shell.windows.showBrowse = true;
-    // Hook grok.shell.info to capture post-process balloons.
+
     if (!w.__capturedInfo) {
       w.__capturedInfo = [];
       const orig = w.grok.shell.info.bind(w.grok.shell);
@@ -31,8 +31,7 @@ test("Queries — query post-process balloon and saved layout", async ({
         return orig(msg);
       };
     }
-    // Pre-clean any leftover queries from previous runs (server normalizes
-    // `Test_Postprocessing` → `TestPostprocessing`; suffixed copies pile up).
+
     try {
       const list = await w.grok.dapi.queries
         .filter('name in ("Test_Postprocessing", "TestPostprocessing")')
@@ -223,8 +222,7 @@ test("Queries — query post-process balloon and saved layout", async ({
           if (cm) break;
         }
         if (!cm) return { ok: false, missing: "CodeMirror" };
-        // Template seeds line 7 (index 6) with `console.log(result.rowCount)`.
-        // Replace it with the scenario's grok.shell.info(result.rowCount); call.
+
         cm.replaceRange(
           "grok.shell.info(result.rowCount);",
           { line: 6, ch: 0 },
@@ -246,7 +244,7 @@ test("Queries — query post-process balloon and saved layout", async ({
         | undefined;
       if (!tab) return { ok: false, missing: "Layout tab" };
       tab.click();
-      // Layout tab needs the result DF (Run was clicked already). Wait for Grid.
+
       for (let i = 0; i < 40; i++) {
         await new Promise((r) => setTimeout(r, 200));
         const root = (window as any).grok.shell.v?.root;
@@ -314,9 +312,7 @@ test("Queries — query post-process balloon and saved layout", async ({
       undefined,
       { timeout: 30_000 },
     );
-    // Re-install the info hook on the new document, since closeAll/navigation
-    // doesn't necessarily reset window state but the hook needs to survive any
-    // grok.shell rebind on view re-init.
+
     await page.evaluate(() => {
       const w: any = window;
       if (!w.__capturedInfo) w.__capturedInfo = [];
@@ -575,7 +571,6 @@ test("Queries — query post-process balloon and saved layout", async ({
     },
   );
 
-  // Cleanup — delete the saved query.
   await page.evaluate(async (id) => {
     if (!id) {
       const list = await (window as any).grok.dapi.queries

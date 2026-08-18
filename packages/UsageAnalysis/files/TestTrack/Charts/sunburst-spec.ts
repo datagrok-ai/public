@@ -11,7 +11,6 @@ test('Sunburst viewer', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -23,7 +22,6 @@ test('Sunburst viewer', async ({page}) => {
     (window as any).grok.shell.windows.simpleMode = true;
   });
 
-  // Step 1a/1b split into two softSteps (no closeAll between) to avoid "Execution context destroyed".
   await softStep('Step 1a: Open SPGI.csv and add Sunburst viewer via gallery', async () => {
     const spgi = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
@@ -33,7 +31,7 @@ test('Sunburst viewer', async ({page}) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      // Full pointer-event sequence required to open the gallery.
+
       const fullClick = (el: HTMLElement) => {
         const r = el.getBoundingClientRect();
         const opts = {bubbles: true, cancelable: true, view: window,
@@ -46,7 +44,7 @@ test('Sunburst viewer', async ({page}) => {
       };
       const addBtn = document.querySelector('i.svg-add-viewer') as HTMLElement | null;
       if (!addBtn) throw new Error('Add Viewer ribbon icon not found');
-      // Two-tier click: fullClick first, then simple .click() if the gallery hasn't appeared in 800ms.
+
       const openGallery = async () => {
         const probe = () => {
           const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
@@ -63,7 +61,7 @@ test('Sunburst viewer', async ({page}) => {
       if (!dlg) {
         console.warn('[sunburst Step 1a]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Sunburst');
-        // Retry probe up to ~25s — Charts webpack-lazy-load + Sunburst DOM attach can take 15+ s on cold start.
+
         let sbRoot = false;
         for (let attempt = 0; attempt < 5; attempt++) {
           await new Promise((r) => setTimeout(r, 5000));
@@ -83,7 +81,7 @@ test('Sunburst viewer', async ({page}) => {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
       }
-      // Retry probe up to ~25s, DOM-or-JS-API tolerant.
+
       let sbRoot = false;
       for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise((r) => setTimeout(r, 5000));
@@ -121,7 +119,7 @@ test('Sunburst viewer', async ({page}) => {
       };
       const addBtn = document.querySelector('i.svg-add-viewer') as HTMLElement | null;
       if (!addBtn) throw new Error('Add Viewer ribbon icon not found');
-      // Same two-tier + JS-API fallback as Step 1a.
+
       const openGallery = async () => {
         const probe = () => {
           const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
@@ -138,7 +136,7 @@ test('Sunburst viewer', async ({page}) => {
       if (!dlg) {
         console.warn('[sunburst Step 1b]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Sunburst');
-        // Retry probe up to ~25s (same as Step 1a).
+
         let sbRoot = false;
         for (let attempt = 0; attempt < 5; attempt++) {
           await new Promise((r) => setTimeout(r, 5000));
@@ -156,7 +154,7 @@ test('Sunburst viewer', async ({page}) => {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
       }
-      // Retry probe up to ~25s, DOM-or-JS-API tolerant.
+
       let sbRoot = false;
       for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise((r) => setTimeout(r, 5000));
@@ -208,12 +206,10 @@ test('Sunburst viewer', async ({page}) => {
       expect(result.apiPropNames).toEqual(expect.arrayContaining(['hierarchyColumnNames', 'inheritFromGrid', 'includeNulls']));
   });
 
-  // Step 3.1: Table switching between SPGI and demog — AMBIGUOUS (not exercised in this run).
   await softStep('Step 3.1: Table switching SPGI <-> demog (AMBIGUOUS, not exercised)', async () => {
     console.warn('[SKIP]', 'AMBIGUOUS: table switching via UI/props not exercised in MCP run');
   });
 
-  // Step 3.2: Open Select Columns dialog (DOM); inner grid is canvas so set hierarchy via JS API.
   await softStep('Step 3.2: Open Select columns dialog via Hierarchy "..." button; set hierarchy via JS API; OK', async () => {
     const result = await page.evaluate(async () => {
       const cp = document.querySelector('.grok-prop-panel');
@@ -225,7 +221,7 @@ test('Sunburst viewer', async ({page}) => {
         await new Promise((r) => setTimeout(r, 500));
         dialogOpened = !!document.querySelector('[name="dialog-Select-columns..."]');
       }
-      // Cancel any open dialog so the JS-API path doesn't conflict.
+
       const dlg = document.querySelector('[name="dialog-Select-columns..."]') as HTMLElement | null;
       if (dlg) {
         const cancel = dlg.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -245,7 +241,6 @@ test('Sunburst viewer', async ({page}) => {
     expect(result.cols).toEqual(['SEX', 'RACE']);
   });
 
-  // Step 3.3: Inherit from grid — toggle on, read back
   await softStep('Step 3.3: Toggle inheritFromGrid=true and read back', async () => {
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -259,7 +254,6 @@ test('Sunburst viewer', async ({page}) => {
     expect(result.inheritFromGrid).toBe(true);
   });
 
-  // Step 3.4: Toggle includeNulls true then false
   await softStep('Step 3.4: Toggle includeNulls true then false and read back', async () => {
     const result = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
@@ -298,7 +292,7 @@ test('Sunburst viewer', async ({page}) => {
         resetClicked = true;
         await new Promise((res) => setTimeout(res, 400));
       }
-      // Close any residual menu.
+
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
       return {menuOpened, resetClicked};
     });
@@ -306,9 +300,6 @@ test('Sunburst viewer', async ({page}) => {
     expect(result.resetClicked).toBe(true);
   });
 
-  // Step 5 + Step 6 — canvas multi-selection / empty-category click moved to charts-ui.md (manual).
-
-  // Step 7: Save current layout via Toolbox → Layouts pane; apply best-effort (list may be empty).
   await softStep('Step 7: Save layout via Toolbox > Layouts > Save (DOM); apply best-effort', async () => {
     const result = await page.evaluate(async () => {
       const layoutsHeader = document.querySelector('[name="div-section--Layouts"]') as HTMLElement | null;
@@ -318,7 +309,7 @@ test('Sunburst viewer', async ({page}) => {
       const layoutsPane = layoutsHeader.parentElement?.querySelector('.d4-toolbox-layouts');
       const saveBtn = layoutsPane?.querySelector('[name="button-Save"]') as HTMLElement | null;
       const saveBtnFound = !!saveBtn;
-      // Save button enables once the layout drifts from baseline (we already toggled props).
+
       let saveClicked = false;
       if (saveBtn && !saveBtn.classList.contains('d4-disabled')) {
         saveBtn.click();
@@ -336,12 +327,10 @@ test('Sunburst viewer', async ({page}) => {
     });
     expect(result.expanded).toBe(true);
     expect(result.saveBtnFound).toBe(true);
-    // Don't strict-check saveClicked / applied — fresh-table baseline may keep Save disabled.
+
     console.log('[Step 7]', JSON.stringify({saveClicked: result.saveClicked, applied: result.applied, cardCount: result.cardCount}));
   });
 
-  // Step 7b: Save SPGI Sunburst as a project, close all, reopen by name, verify hierarchy preserved.
-  // JS API path (UI Save Project dialog is gated by an unreliable share-dialog overlay in headless).
   const projectName = `sunburst-save-reopen-${Date.now()}`;
   let savedProjectInfo: {id: string | null; name: string} = {id: null, name: projectName};
   try {
@@ -358,7 +347,7 @@ test('Sunburst viewer', async ({page}) => {
         let sunburst: any = null;
         for (const v of spgiTv.viewers) if (v.type === 'Sunburst') { sunburst = v; break; }
         if (!sunburst) return {ok: false, reason: 'Sunburst viewer not found on SPGI tv'};
-        // Pick the first 3 string columns as hierarchy.
+
         const df = spgiTv.dataFrame;
         const stringCols: string[] = [];
         for (const col of df.columns) {
@@ -380,7 +369,7 @@ test('Sunburst viewer', async ({page}) => {
       }, projectName);
 
       console.log('[Step 7b saved]', JSON.stringify(saved));
-      // The save is the operation under test — assert it succeeded (don't silently pass when it fails).
+
       expect((saved as any).ok, (saved as any).ok ? '' : `Project save failed: ${(saved as any).reason ?? 'unknown'}`).toBe(true);
       expect((saved as any).hierarchy.length, 'Sunburst hierarchy was empty before save').toBeGreaterThan(0);
       if (saved.savedId != null) savedProjectInfo.id = saved.savedId;
@@ -427,10 +416,10 @@ test('Sunburst viewer', async ({page}) => {
       }, projectName);
 
       console.log('[Step 7b reopened]', JSON.stringify(reopened));
-      // The reopen (proj.open) is the operation under test — assert it succeeded + the closeAll invariant held.
+
       expect(reopened.ok, reopened.ok ? '' : `Project reopen failed: ${(reopened as any).reason ?? 'unknown'}`).toBe(true);
       expect(reopened.tableViewsAfterClose).toBe(0);
-      // Sunburst restoration (and its hierarchy round-trip) is best-effort — documented dev-flake.
+
       if (reopened.sunburstPresent) {
         if (reopened.hierarchyAfter != null) expect(reopened.hierarchyAfter.length).toBeGreaterThan(0);
       } else {
@@ -438,7 +427,7 @@ test('Sunburst viewer', async ({page}) => {
       }
     });
   } finally {
-    // Always delete the saved project.
+
     if (savedProjectInfo.id != null) {
       await page.evaluate(async ([id]) => {
         try {
@@ -468,7 +457,6 @@ test('Sunburst viewer', async ({page}) => {
 
   await page.evaluate(() => (window as any).grok.shell.closeAll());
 
-  // Filter test.skip "errors" out of the aggregation — they're the defensive-skip pattern, not failures.
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));
   if (realErrors.length > 0) {
     const summary = realErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');

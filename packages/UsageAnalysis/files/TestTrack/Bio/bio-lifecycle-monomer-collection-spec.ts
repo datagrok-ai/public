@@ -20,7 +20,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
   let saved: {projectId: string; primaryTableInfoId: string; tableInfoIds: string[]; layoutId: string | null} | null = null;
   let workingCollectionWritten = false;
   await loginToDatagrok(page);
-  // Setup — open the HELM dataset so the renderer touches the monomer collection paths.
+
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     grok.shell.settings.showFiltersIconsConstantly = true;
@@ -47,12 +47,12 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
   await page.evaluate(async () => {
     const probes = ['Bio:getMonomerLibHelper', 'Bio:getSeqHelper', 'Bio:getBioLib'];
     for (const fn of probes) {
-      try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+      try { await (grok as any).functions.call(fn, {}); return; } catch {  }
     }
     await new Promise((r) => setTimeout(r, 3000));
   });
   try {
-    // Scenario 1 — Write a new collection via the shared lib-manager path
+
     await softStep('S1.1-1.3: getMonomerLibHelper returns singleton + writeCollection lands on FileShare with content round-trip', async () => {
       const result = await page.evaluate(async ({path, name, symbols, desc, tags}) => {
         const helper: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
@@ -60,9 +60,9 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
         try {
           if (helper && typeof helper.awaitLoaded === 'function') {
             try { await helper.awaitLoaded(30_000); }
-            catch (_) { try { await helper.awaitLoaded(); } catch (__) { /* non-fatal */ } }
+            catch (_) { try { await helper.awaitLoaded(); } catch (__) {  } }
           }
-        } catch (_) { /* timeout non-fatal */ }
+        } catch (_) {  }
         let writeErr: string | null = null;
         try {
           if (typeof helper.addOrUpdateMonomerCollection === 'function')
@@ -76,10 +76,10 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
         const exists = await grok.dapi.files.exists(path);
         let readBack: string | null = null;
         try { readBack = await grok.dapi.files.readAsText(path); }
-        catch (e) { /* leave null */ }
+        catch (e) {  }
         let parsed: any = null;
         try { parsed = readBack ? JSON.parse(readBack) : null; }
-        catch (e) { /* leave null */ }
+        catch (e) {  }
         const monomersMatch = parsed != null && Array.isArray(parsed.monomerSymbols) &&
           parsed.monomerSymbols.length === symbols.length &&
           symbols.every((s: string) => parsed.monomerSymbols.includes(s));
@@ -117,7 +117,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
       expect((result.parsedUpdatedOn || '').length).toBeGreaterThan(0);
       workingCollectionWritten = true;
     });
-    // Scenario 2 — Reload via the Monomer Collections app
+
     await softStep('S2.1-2.2: Monomer Collections app opens via registered function; working collection card appears in listing', async () => {
       const installDiag = await page.evaluate(async () => {
         const diag: any = {
@@ -137,7 +137,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
           view = await (grok as any).functions.call('Bio:monomerCollectionsApp', {});
           diag.callOk = true;
           diag.viewCaptured = view != null;
-          try { diag.viewNameAfterCall = view?.name ?? null; } catch (_) { /* ignore */ }
+          try { diag.viewNameAfterCall = view?.name ?? null; } catch (_) {  }
         } catch (e: any) {
           diag.callErr = String(e).slice(0, 200);
         }
@@ -156,10 +156,10 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
             diag.viewsWalkFound = true;
             if ((grok.shell as any).v?.name !== 'Monomer Collections') {
               try { (grok.shell as any).v = target; diag.viewsWalkPromoted = true; }
-              catch (_) { /* ignore */ }
+              catch (_) {  }
             }
           }
-        } catch (_) { /* ignore */ }
+        } catch (_) {  }
         return diag;
       });
       const installed = await page.waitForFunction(() => {
@@ -170,7 +170,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
           return views.some((v: any) => v?.name === 'Monomer Collections');
         } catch (_) { return false; }
       }, null, {timeout: 30_000}).catch(() => null);
-      // Settle: loadCollections fires the FileShare listing call + builds cards async.
+
       await page.waitForTimeout(2500);
       const installDiagStr = `installDiag=${JSON.stringify(installDiag)}`;
       const result = await page.evaluate((fileName) => {
@@ -212,7 +212,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
       expect(result.hasWorkingCollection,
         `expected working collection '${workingCollection}' in card dataset names; observed: [${result.cardCollectionNames.join(', ')}]`).toBe(true);
     });
-    // Pre-S2.3: promote the HELM TableView to current so the TableView-gated Bio top-menu re-mounts.
+
     await page.evaluate(async () => {
       const tvs: any[] = Array.from((grok.shell as any).tableViews || []);
       const helm = tvs.find((tv: any) => {
@@ -222,7 +222,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm) {
-        try { (grok.shell as any).v = helm; } catch (_) { /* setter read-only on some builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
       }
       await new Promise((r) => setTimeout(r, 500));
     });
@@ -252,7 +252,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
       expect((info.viewName || '').toLowerCase()).toContain('monomer librar');
       expect(info.formPresent).toBe(true);
     });
-    // Scenario 3 — Save project referencing the collection
+
     await softStep('S3.1: HELM dataset remains open; Macromolecule column renderer is dispatchable post-manage-view', async () => {
       const info = await page.evaluate(() => {
         const tvs: any[] = Array.from((grok.shell as any).tableViews || []);
@@ -295,7 +295,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
       expect(info.units).toBe('helm');
       expect(info.rowCount).toBeGreaterThan(0);
     });
-    // Pre-S3.2: close auxiliary views + bring the HELM TableView forward for layout save.
+
     await page.evaluate(async () => {
       const views: any[] = Array.from(grok.shell.views || []);
       for (const name of ['Manage Monomer Libraries', 'Monomer Collections']) {
@@ -313,7 +313,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
         return cols.some((c: any) => c.semType === 'Macromolecule');
       });
       if (helm && typeof (grok.shell as any).v !== 'undefined') {
-        try { (grok.shell as any).v = helm; } catch (_) { /* setter may be read-only on some shell builds */ }
+        try { (grok.shell as any).v = helm; } catch (_) {  }
       }
       await new Promise((r) => setTimeout(r, 500));
     });
@@ -336,23 +336,23 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
         try {
           if (typeof helper?.listMonomerCollections === 'function')
             collectionNames = await helper.listMonomerCollections();
-        } catch (_) { /* leave empty */ }
+        } catch (_) {  }
         const stem = fileName.replace(/\.json$/, '');
         const hasWorkingCollectionInList = collectionNames.some((n: string) =>
           n === fileName || n === stem || n.includes(stem));
         let view: any = null;
         try { view = await (grok as any).functions.call('Bio:monomerCollectionsApp', {}); }
-        catch (_) { /* surface via viewName check below */ }
+        catch (_) {  }
         if (view) {
-          try { (grok.shell as any).addView(view); } catch (_) { /* ignore */ }
-          try { (grok.shell as any).v = view; } catch (_) { /* ignore */ }
+          try { (grok.shell as any).addView(view); } catch (_) {  }
+          try { (grok.shell as any).v = view; } catch (_) {  }
         }
         try {
           const views: any[] = Array.from((grok.shell as any).views || []);
           const target: any = views.find((vv: any) => vv?.name === 'Monomer Collections');
           if (target && (grok.shell as any).v?.name !== 'Monomer Collections')
             (grok.shell as any).v = target;
-        } catch (_) { /* ignore */ }
+        } catch (_) {  }
         let installed = false;
         for (let i = 0; i < 30; i++) {
           try {
@@ -363,7 +363,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
               installed = true;
               break;
             }
-          } catch (_) { /* keep polling */ }
+          } catch (_) {  }
           await new Promise((r) => setTimeout(r, 200));
         }
         await new Promise((r) => setTimeout(r, 2000));
@@ -414,20 +414,20 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
         `expected working collection '${workingCollection}' (or stem) in post-reopen Monomer Collections app cards; observed: [${post.cardCollectionNames.join(', ')}]`).toBe(true);
     });
   } finally {
-    // Scenario 4 — Cleanup (runs regardless of earlier failures)
+
     if (workingCollectionWritten) {
       await page.evaluate(async ({path, name}) => {
         try {
           const helper: any = await (grok as any).functions.call('Bio:getMonomerLibHelper', {});
           if (helper && typeof helper.deleteMonomerCollection === 'function') {
             try { await helper.deleteMonomerCollection(name); }
-            catch (_) { /* fall through to raw delete */ }
+            catch (_) {  }
           }
           try {
             if (await grok.dapi.files.exists(path))
               await grok.dapi.files.delete(path);
-          } catch (_) { /* best effort */ }
-        } catch (_) { /* best effort */ }
+          } catch (_) {  }
+        } catch (_) {  }
       }, {path: workingCollectionPath, name: workingCollection.replace(/\.json$/, '')}).catch(() => {});
     }
     if (saved) {
@@ -447,7 +447,7 @@ test('Bio monomer_collection source-class lifecycle: write collection → reload
           const v: any = views.find((x: any) => x?.name === name);
           if (v && typeof v.close === 'function') v.close();
         }
-      } catch (_) { /* best effort */ }
+      } catch (_) {  }
     }).catch(() => {});
   }
   finishSpec();

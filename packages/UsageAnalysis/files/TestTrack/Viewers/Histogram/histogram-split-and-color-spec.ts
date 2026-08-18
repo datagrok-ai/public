@@ -11,8 +11,6 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-// Computed opacity of the three Color property-grid rows: 1.0 = color-coding
-// active, 0.5 = disabled because a split is active.
 async function colorRowOpacities(page: import('@playwright/test').Page): Promise<string[]> {
   return page.evaluate(() => {
     const names = ['prop-color', 'prop-color-aggr-type', 'prop-invert-color-scheme'];
@@ -31,8 +29,6 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
-  // grok.shell.warnings is not exposed to JS here, so uncaught page errors and
-  // console errors are the no-error floor for the range-slider step.
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(m.text()); });
@@ -43,8 +39,6 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
     grok.shell.o = h;
   });
 
-  // The Context Panel mounts asynchronously after grok.shell.o is assigned, so poll
-  // for the Color row and re-issue the assignment on each attempt.
   await expect(async () => {
     const attached = await page.evaluate(() =>
       !!document.querySelector('.property-grid tr[name="prop-color"]'));
@@ -80,7 +74,7 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
     await v.setViewerProps(page, 'Histogram', [{set: {splitColumnName: 'RACE'}, wait: 600}]);
     await page.locator('.property-grid tr[name="prop-color"]').waitFor({state: 'attached', timeout: 15000});
     const ops = await colorRowOpacities(page);
-    // GROK-19761: an active split disables the Color UI (opacity 0.5).
+
     for (const o of ops) expect(Number(o)).toBeLessThan(1);
   });
 
@@ -94,8 +88,7 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
       const df = grok.shell.tv.dataFrame;
       return {filtered: df.filter.trueCount, rowCount: df.rowCount};
     });
-    // GROK-18399: a range-slider change under a split must not error and must keep
-    // df.filter valid.
+
     expect(filtered).toBeGreaterThanOrEqual(0);
     expect(filtered).toBeLessThanOrEqual(rowCount);
     expect(filtered).toBeLessThanOrEqual(fullCount);
@@ -113,7 +106,7 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
     await v.setViewerProps(page, 'Histogram', [{set: {splitColumnName: null}, wait: 600}]);
     await page.locator('.property-grid tr[name="prop-color"]').waitFor({state: 'attached', timeout: 15000});
     const ops = await colorRowOpacities(page);
-    expect(ops).toEqual(['1', '1', '1']); // GROK-19761 regression guard (round-trip)
+    expect(ops).toEqual(['1', '1', '1']); 
   });
 
   v.finishSpec();

@@ -1,17 +1,3 @@
-// GROK-17109: 3-step calc-column chain (Weight2→Weight3→Weight4) + Formula info panel edits +
-// save+reopen persistence of formula tags.
-//
-// Load-bearing facts:
-//   - The CM6 EditorView is exposed at `cmContent.cmTile.view` (NOT cmDiv.cmView.view, which is always
-//     undefined and falls through to the brittle keyboard fallback). Same surface for dialog + panel widget.
-//   - The Formula info panel widget renders `.add-new-column-dialog-cm-div` (NOT -widget-cm-div): the
-//     constructor reads this.widget BEFORE assigning it, so the -dialog- class wins. Scope to .grok-prop-panel.
-//   - Widget mode does NOT call prepareForSeleniumTests(), so button-Add-New-Column---OK is unset; the
-//     widget's Apply button carries [name="button-Apply"] (text-content lookup as fallback).
-//   - The Formula accordion-pane header click TOGGLES (not idempotent) and persists across column switches;
-//     read .expanded/aria-expanded before clicking, else a blind click collapses it (cm-content hidden in DOM).
-//   - The JS API path PowerPack:formulaWidget(col) is a deterministic fallback exercising the same widget code.
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -41,12 +27,12 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
   await page.waitForTimeout(500);
 
   try {
-    // Setup: open demog.csv with datasync provenance so the GROK-17109 invariant can be tested.
+
     await softStep('Setup: open System:DemoFiles/demog.csv with datasync provenance', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
       await page.waitForTimeout(1000);
-      // Without wired provenance, save-with-datasync degrades to snapshot-only and GROK-17109 can't be tested.
+
       await assertProvenanceScript(page, 'files', opened.script);
       const cols = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;
@@ -54,8 +40,6 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       });
       expect(cols).toContain('WEIGHT');
     });
-
-    // Block 1: Build a 3-step calc-column chain Weight2 → Weight3 → Weight4 via the Add-New-Column dialog.
 
     await softStep('B1.1: add Weight2 = ${WEIGHT}+100 via Add New Column dialog', async () => {
       await openAddNewColumnDialog(page);
@@ -123,8 +107,6 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       expect(check!.w4v).toBeCloseTo(check!.expected, 3);
     });
 
-    // Block 2: Verify formula dependency recalc via the Formula info panel; downstream-only propagation.
-
     await softStep('B2.1+2: edit Weight2 formula via Formula info panel; verify Weight2/Weight3/Weight4 recompute', async () => {
       const pre = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;
@@ -136,7 +118,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
         };
       });
       await editFormulaViaInfoPanel(page, 'Weight2', '${WEIGHT} + 200');
-      await page.waitForTimeout(1000); // recalc settle.
+      await page.waitForTimeout(1000); 
       const post = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;
         return {
@@ -147,10 +129,10 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
           w2Tag: df.col('Weight2')?.tags?.get?.('formula') ?? df.col('Weight2')?.tags?.get?.('.formula') ?? '',
         };
       });
-      expect(post.w).toBeCloseTo(pre.w, 6); // source WEIGHT unaffected
+      expect(post.w).toBeCloseTo(pre.w, 6); 
       expect(post.w2).toBeCloseTo(post.w + 200, 1);
       expect(post.w2).not.toBeCloseTo(pre.w2, 1);
-      // Weight3/Weight4 recompute automatically downstream.
+
       expect(post.w3).toBeCloseTo(post.w2 + 100, 1);
       expect(post.w3).not.toBeCloseTo(pre.w3, 1);
       expect(Number.isFinite(post.w4)).toBe(true);
@@ -182,7 +164,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
           w3Tag: df.col('Weight3')?.tags?.get?.('formula') ?? df.col('Weight3')?.tags?.get?.('.formula') ?? '',
         };
       });
-      expect(post.w2).toBeCloseTo(pre.w2, 6); // Weight2 upstream — unaffected
+      expect(post.w2).toBeCloseTo(pre.w2, 6); 
       expect(post.w3).toBeCloseTo(post.w2 + 50, 1);
       expect(post.w3).not.toBeCloseTo(pre.w3, 1);
       expect(Number.isFinite(post.w4)).toBe(true);
@@ -214,7 +196,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
           w4Tag: df.col('Weight4')?.tags?.get?.('formula') ?? df.col('Weight4')?.tags?.get?.('.formula') ?? '',
         };
       });
-      // Terminal-node edit must NOT propagate upstream to Weight2/Weight3.
+
       expect(post.w2).toBeCloseTo(pre.w2, 6);
       expect(post.w3).toBeCloseTo(pre.w3, 6);
       expect(Number.isFinite(post.w4)).toBe(true);
@@ -226,8 +208,6 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       });
       expect(warnings).toBe(0);
     });
-
-    // Block 3: Save, close, reopen — verify chained calc columns persist with formula tags (GROK-17109).
 
     let preSaveSnapshot: {w: number; w2: number; w3: number; w4: number} | null = null;
 
@@ -272,7 +252,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
         const grok = (window as any).grok;
         const p = await grok.dapi.projects.find(pid);
         await p.open();
-        // File source re-executes OpenFile, slower than snapshot — wait for tables to re-materialize.
+
         for (let i = 0; i < 40; i++) {
           const tv = grok.shell.tv;
           if (tv?.dataFrame) break;
@@ -303,19 +283,19 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
         };
       }, projectId);
       expect(reopen.ok).toBe(true);
-      // GROK-17109: all three calc columns persist on reopen (pre-fix they disappeared).
+
       expect(reopen.hasWeight2).toBe(true);
       expect(reopen.hasWeight3).toBe(true);
       expect(reopen.hasWeight4).toBe(true);
-      // Formula tags preserved (else the column reverts to a plain snapshot column).
+
       expect(reopen.w2Formula.length).toBeGreaterThan(0);
       expect(reopen.w3Formula.length).toBeGreaterThan(0);
       expect(reopen.w4Formula.length).toBeGreaterThan(0);
-      // Tags carry the last-applied (block 2) formula state, not the original block-1 formulas.
+
       expect(reopen.w2Formula).toContain('+ 200');
       expect(reopen.w3Formula).toContain('+ 50');
       expect(reopen.w4Formula).toContain('- 0.1');
-      // Values reflect the last-applied state; Weight2/3/4 recompute from post-reopen WEIGHT.
+
       expect(reopen.w).toBeCloseTo(preSaveSnapshot.w, 6);
       expect(reopen.w2v).toBeCloseTo(reopen.w + 200, 1);
       expect(reopen.w3v).toBeCloseTo(reopen.w2v + 50, 1);
@@ -333,15 +313,13 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
         if (cancel) cancel.click();
         const anyCancel = document.querySelector('.d4-dialog [name="button-CANCEL"]') as HTMLElement | null;
         if (anyCancel) anyCancel.click();
-      } catch (_) { /* best effort */ }
+      } catch (_) {  }
       try { (window as any).grok.shell.closeAll(); } catch (_) {}
     }).catch(() => {});
   }
 
   finishSpec();
 });
-
-// File-local helpers (kept inline; no powerpack helper module exists yet).
 
 async function openAddNewColumnDialog(page: any): Promise<void> {
   await page.locator('.d4-dialog').first()
@@ -356,7 +334,7 @@ async function openAddNewColumnDialog(page: any): Promise<void> {
 
 async function composeAddNewColumn(page: any, name: string, formula: string): Promise<void> {
   const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
-  // Fill Name via native setter + input/change events (Dart InputBase listens on these).
+
   await page.evaluate((n: string) => {
     const input = document.querySelector('[name="input-Add-New-Column---Name"]') as HTMLInputElement | null;
     if (!input) throw new Error('Name input not found');
@@ -366,7 +344,7 @@ async function composeAddNewColumn(page: any, name: string, formula: string): Pr
     input.dispatchEvent(new Event('change', {bubbles: true}));
   }, name);
   await page.waitForTimeout(150);
-  // Compose via CM6 view.dispatch; the EditorView is at cmContent.cmTile.view. force:true click bypasses overlay intercept.
+
   const cm = dlg.locator('.add-new-column-dialog-cm-div .cm-content').first();
   await cm.waitFor({timeout: 15_000, state: 'visible'});
   await cm.click({force: true});
@@ -385,7 +363,7 @@ async function composeAddNewColumn(page: any, name: string, formula: string): Pr
     if (composed.ok) break;
     await page.waitForTimeout(200);
   }
-  // Keyboard fallback if cmTile.view never surfaced.
+
   if (!composed.ok) {
     await cm.click({force: true});
     await page.keyboard.press('Control+A');
@@ -404,7 +382,7 @@ async function composeAddNewColumn(page: any, name: string, formula: string): Pr
   }
   if (!composed.ok)
     throw new Error('composeAddNewColumn: CodeMirror cmTile.view not exposed even after keyboard fallback');
-  // Contains-check (keyboard fallback may collapse whitespace); downstream value checks are load-bearing.
+
   const doc = composed.doc || '';
   const firstToken = formula.split(/\s+/)[0];
   if (firstToken)
@@ -414,7 +392,7 @@ async function composeAddNewColumn(page: any, name: string, formula: string): Pr
 async function clickAddNewColumnOK(page: any): Promise<void> {
   const dlg = page.locator('.d4-dialog').filter({hasText: 'Add New Column'}).first();
   await dlg.locator('[name="button-Add-New-Column---OK"]').first().click();
-  // Calc columns finish evaluating asynchronously — see waitForColumnPresent for the arrival poll.
+
   await page.locator('.d4-dialog').first()
     .waitFor({state: 'detached', timeout: 10_000}).catch(() => {});
 }
@@ -432,10 +410,8 @@ async function waitForColumnPresent(page: any, columnName: string): Promise<void
   expect(added).toBe(true);
 }
 
-// Edit a calc-column formula via the Formula info panel widget (PowerPack:formulaWidget spawns the same
-// AddNewColumnDialog pre-bound to the column). Accordion-pane-click path with a direct-JS-API fallback.
 async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula: string): Promise<void> {
-  // Set grok.shell.o to the column (same end state as a header click, deterministic under headless).
+
   await page.evaluate((n: string) => {
     const grok = (window as any).grok;
     const df = grok.shell.tv?.dataFrame;
@@ -444,10 +420,8 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     if (!col) throw new Error(`editFormulaViaInfoPanel: column "${n}" not found`);
     grok.shell.o = col;
   }, columnName);
-  await page.waitForTimeout(500); // let Context Panel populate
+  await page.waitForTimeout(500); 
 
-  // Find the "Formula" pane header by text in .grok-prop-panel. Header click TOGGLES (not idempotent) and
-  // expansion persists across column switches; read .expanded/aria-expanded first, click only when not expanded.
   const accordionPathWorked = await page.evaluate(() => {
     const propPanel = document.querySelector('.grok-prop-panel');
     if (!propPanel) return false;
@@ -459,10 +433,8 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     if (!isExpanded) target.click();
     return true;
   });
-  await page.waitForTimeout(500); // accordion expansion + widget re-render settle
+  await page.waitForTimeout(500); 
 
-  // Wait for the widget's CM host. It renders .add-new-column-dialog-cm-div (the constructor reads
-  // this.widget before assigning it, so -dialog- wins); scope to .grok-prop-panel.
   let widgetCmFound = false;
   if (accordionPathWorked) {
     for (let i = 0; i < 25; i++) {
@@ -475,7 +447,6 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     }
   }
 
-  // Fallback: spawn the widget directly via JS API (exercises the same panel render function).
   if (!widgetCmFound) {
     await page.evaluate(async (n: string) => {
       const grok = (window as any).grok;
@@ -487,9 +458,9 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
       const propPanel = document.querySelector('.grok-prop-panel');
       const host = ui.div([widget.root]);
       host.style.padding = '8px';
-      host.setAttribute('data-fr-fallback', '1'); // tag for cleanup
+      host.setAttribute('data-fr-fallback', '1'); 
       propPanel?.appendChild(host);
-      void DG; // silence unused
+      void DG; 
     }, columnName);
     for (let i = 0; i < 25; i++) {
       widgetCmFound = await page.evaluate(() => {
@@ -504,7 +475,6 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   if (!widgetCmFound)
     throw new Error(`editFormulaViaInfoPanel: Formula widget CM host (.grok-prop-panel .add-new-column-dialog-cm-div .cm-content) did not render for column "${columnName}"`);
 
-  // Dispatch the new formula via cmTile.view (same as composeAddNewColumn). Self-heal if the pane collapsed.
   await page.evaluate(() => {
     const pp = document.querySelector('.grok-prop-panel');
     if (!pp) return;
@@ -536,7 +506,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     if (composed.ok) break;
     await page.waitForTimeout(200);
   }
-  // Keyboard fallback for the in-panel widget.
+
   if (!composed.ok) {
     await panelCm.click({force: true});
     await page.keyboard.press('Control+A');
@@ -556,13 +526,12 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   }
   if (!composed.ok)
     throw new Error('editFormulaViaInfoPanel: CodeMirror cmTile.view not exposed on in-panel widget even after keyboard fallback');
-  // Contains-check (keyboard fallback may collapse whitespace); recalc value assertions are load-bearing.
+
   const doc = composed.doc || '';
   const firstToken = newFormula.split(/\s+/)[0];
   if (firstToken)
     expect(doc).toContain(firstToken);
 
-  // Widget mode has no OK button (prepareForSeleniumTests is skipped); click [name="button-Apply"], text fallback.
   let applyClicked = false;
   for (let i = 0; i < 25; i++) {
     applyClicked = await page.evaluate(() => {
@@ -584,9 +553,8 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   }
   if (!applyClicked)
     throw new Error('editFormulaViaInfoPanel: Apply button not found (or stayed disabled) in Formula widget panel');
-  await page.waitForTimeout(400); // addNewColumnAction is async; caller waits a further 1s for recalc
+  await page.waitForTimeout(400); 
 
-  // Detach the fallback widget host if it was added.
   await page.evaluate(() => {
     document.querySelectorAll('[data-fr-fallback="1"]').forEach((el) => el.remove());
   });

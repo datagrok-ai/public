@@ -1,3 +1,6 @@
+/* ---
+realizes: []
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -13,11 +16,6 @@ const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop)
 const category = (page: Page, cat: string, probe: string) =>
   v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
 
-/**
- * The words the cloud actually drew, with their counts. Read from the ECharts
- * series the viewer renders — the canvas carries no text nodes, and this is the
- * same data the user sees as words and reads in the tooltip.
- */
 async function renderedWords(page: Page): Promise<{name: string; value: number}[]> {
   return page.evaluate(() => {
     const wc = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Word cloud') as any;
@@ -34,7 +32,6 @@ const clearSelection = async (page: Page) => {
   await expect.poll(() => selectionCount(page), {timeout: 5000}).toBe(0);
 };
 
-/** Screen positions of the drawn words — dark pixel blobs on the canvas. */
 async function wordPositions(page: Page): Promise<{x: number; y: number}[]> {
   return page.evaluate((sel) => {
     const root = document.querySelector(sel) as HTMLElement;
@@ -59,7 +56,6 @@ async function wordPositions(page: Page): Promise<{x: number; y: number}[]> {
   }, VIEWER);
 }
 
-/** Category counts of a column, as the cloud should show them. */
 async function columnCounts(page: Page, column: string): Promise<Record<string, number>> {
   return page.evaluate((col) => {
     const c = (window as any).grok.shell.t.col(col);
@@ -78,16 +74,15 @@ test('Word cloud', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add the viewer
   await softStep('Add Word cloud from the Viewers toolbox', async () => {
     await page.locator('[name="icon-Word-cloud"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
 
-    // The cloud is laid out asynchronously — wait for words to be drawn.
     await expect.poll(async () => (await v.countCanvasPixels(page, VIEWER_TYPE)).total,
       {timeout: 30_000}).toBeGreaterThan(500);
 
-    // The default column is drawn word-for-word with the right counts.
+    await expect.poll(async () => (await renderedWords(page)).length,
+      {timeout: 3000, intervals: [100, 150]}).toBeGreaterThan(0);
     const words = await renderedWords(page);
     const expected = await columnCounts(page, await shownValue(page, 'column') || 'SEX');
     expect(words.length).toBeGreaterThan(0);
@@ -95,10 +90,10 @@ test('Word cloud', async ({page}) => {
       expect(w.value).toBe(expected[w.name]);
   });
 
-  // #### Column assignment
   await softStep('Column RACE draws one word per race with its row count', async () => {
     await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'data', 'column');
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
 
     await v.pickColumnViaSelectorTrusted(page, {
@@ -107,14 +102,16 @@ test('Word cloud', async ({page}) => {
     });
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 500});
 
-    const words = await renderedWords(page);
     const expected = await columnCounts(page, 'RACE');
+
+    await expect.poll(async () => (await renderedWords(page)).length,
+      {timeout: 3000, intervals: [100, 150]}).toBe(Object.keys(expected).length);
+    const words = await renderedWords(page);
     expect(words.length).toBe(Object.keys(expected).length);
     for (const w of words)
       expect(w.value).toBe(expected[w.name]);
   });
 
-  // #### Too many categories is reported, not drawn
   await softStep('A high-cardinality column shows an error instead of a cloud', async () => {
     await v.pickColumnViaSelectorTrusted(page, {
       role: 'column', columnName: 'USUBJID', viewerType: VIEWER_TYPE,
@@ -134,11 +131,11 @@ test('Word cloud', async ({page}) => {
       {timeout: 15_000}).toBeGreaterThan(0);
   });
 
-  // #### Layout properties
   await softStep('Shape rearranges the words', async () => {
     await category(page, 'misc', 'shape');
     const shapes: Record<string, number> = {};
     for (const shape of ['star', 'diamond', 'circle']) {
+      await v.waitForCanvasQuiet(page, VIEWER_TYPE);
       await v.snapshotCanvasColors(page, VIEWER_TYPE);
       await v.selectPropertyGridChoice(page, 'shape', shape);
       expect(await shownValue(page, 'shape')).toBe(shape);
@@ -150,6 +147,7 @@ test('Word cloud', async ({page}) => {
 
   await softStep('Equal min and max text size flattens the word sizes', async () => {
     await category(page, 'misc', 'min-text-size');
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.setPropertyGridValue(page, 'min-text-size', '20');
     await v.setPropertyGridValue(page, 'max-text-size', '20');
@@ -163,6 +161,7 @@ test('Word cloud', async ({page}) => {
 
   await softStep('Rotation range changes the word angles', async () => {
     await category(page, 'misc', 'min-rotation-degree');
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.setPropertyGridValue(page, 'min-rotation-degree', '0');
     await v.setPropertyGridValue(page, 'max-rotation-degree', '0');
@@ -173,12 +172,14 @@ test('Word cloud', async ({page}) => {
 
   await softStep('Bold and font family restyle the words', async () => {
     await category(page, 'misc', 'bold');
-    // Bold ships on, so the step asserts the flip rather than a fixed value.
+
     const boldWas = await shownValue(page, 'bold');
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     expect(String(await v.togglePropertyGridCheckbox(page, 'bold'))).not.toBe(boldWas);
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 100});
 
+    await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.selectPropertyGridChoice(page, 'font-family', 'monospace');
     expect(await shownValue(page, 'font-family')).toBe('monospace');
@@ -188,7 +189,6 @@ test('Word cloud', async ({page}) => {
     await v.selectPropertyGridChoice(page, 'font-family', 'sans-serif');
   });
 
-  // #### Hovering and clicking a word
   await softStep('Hovering a word shows its row count', async () => {
     const words = await wordPositions(page);
     expect(words.length).toBeGreaterThan(0);
@@ -197,15 +197,18 @@ test('Word cloud', async ({page}) => {
     for (const w of words) {
       await page.mouse.move(w.x - 20, w.y - 20);
       await page.mouse.move(w.x, w.y, {steps: 6});
-      await page.waitForTimeout(400);
-      tooltip = await page.evaluate(() => {
+
+      tooltip = await v.pollValue(() => page.evaluate(() => {
         const t = document.querySelector('.d4-tooltip') as HTMLElement | null;
         return {visible: !!t && getComputedStyle(t).display !== 'none', text: t?.innerText ?? ''};
-      });
+      }), (tip) => tip.visible, 1200);
       if (tooltip.visible) break;
     }
     expect(tooltip.visible).toBe(true);
     expect(tooltip.text).toMatch(/\d+\s+rows/);
+
+    const shownCount = parseInt(tooltip.text.match(/(\d+)\s+rows/)![1], 10);
+    expect((await renderedWords(page)).map((w) => w.value)).toContain(shownCount);
   });
 
   await softStep('Clicking a word selects exactly that word\'s rows', async () => {
@@ -216,20 +219,14 @@ test('Word cloud', async ({page}) => {
     let selected = 0;
     for (const position of await wordPositions(page)) {
       await page.mouse.click(position.x, position.y);
-      await expect.poll(() => selectionCount(page), {timeout: 5000}).toBeGreaterThanOrEqual(0);
-      selected = await selectionCount(page);
+
+      selected = await v.pollValue(() => selectionCount(page), (n) => n > 0);
       if (selected > 0) break;
     }
+    expect(selected).toBeGreaterThan(0);
     expect(counts).toContain(selected);
   });
 
-  // #### Filtering
-  //
-  // The cloud does NOT follow the table filter — it has no Row Source and no
-  // Filter property, and the counts stay at their unfiltered values (dev,
-  // 2026-08-04: `SEX = M` leaves RACE at Caucasian 5267 instead of 2444, even
-  // after a forced redraw). The step therefore checks that filtering leaves the
-  // viewer intact and still drawing, and does not pin the counts either way.
   await softStep('Filtering the table leaves the cloud rendering', async () => {
     const before = await renderedWords(page);
     const {filteredCount} = await v.applyCategoricalFilter(page, 'SEX', ['M']);
@@ -237,6 +234,8 @@ test('Word cloud', async ({page}) => {
     expect(filteredCount).toBeGreaterThan(0);
     expect(filteredCount).toBeLessThan(total);
 
+    await expect.poll(async () => (await renderedWords(page)).length,
+      {timeout: 3000, intervals: [100, 150]}).toBe(before.length);
     const after = await renderedWords(page);
     expect(after.map((w) => w.name).sort()).toEqual(before.map((w) => w.name).sort());
     expect(await page.locator(`${VIEWER} .d4-viewer-error`).count()).toBe(0);
@@ -245,13 +244,12 @@ test('Word cloud', async ({page}) => {
     await v.resetFilters(page);
   });
 
-  // #### Closing the viewer
   await softStep('Close the viewer from its title bar', async () => {
     await v.clickViewerTitlebarIcon(page, VIEWER_NAME, 'Close');
     await expect(page.locator(VIEWER)).toHaveCount(0);
   });
 
-  await v.cleanupShell(page);
+  await v.closeAllAndWait(page);
 
   v.finishSpec();
 });

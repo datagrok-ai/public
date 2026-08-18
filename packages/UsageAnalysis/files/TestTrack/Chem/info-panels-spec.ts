@@ -36,8 +36,6 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   await loginToDatagrok(page);
   await page.waitForTimeout(3000);
 
-  // ===== Phase A — smiles-50 column + cell walk =====
-
   await softStep('Phase A — Step 1: Open smiles-50.csv', async () => {
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -76,8 +74,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   await softStep('Phase A — Step 4: Walk Chemistry/Biology/Structure info panels (column context)', async () => {
     const {found, seen} = await expandAndVerifyPanes(
       page, 'A4 column', [...CHEMISTRY_PANES, ...BIOLOGY_PANES, ...STRUCTURE_PANES]);
-    // The named behavior is "walk Chem info panels": at least some of the expected panes must render
-    // (a zero-match pass would mean the Chem info-panel pipeline never produced any pane).
+
     expect(found.length,
       `No expected Chem info panels rendered on the column context. seen=${JSON.stringify(seen)}`)
       .toBeGreaterThan(0);
@@ -99,7 +96,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       grok.shell.addTableView(df);
     });
     await waitForChemMenu(page);
-    // SR-DEFERRED scaffold alignment + Highlight custom color: applied via JS API column tags.
+
     await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const molCol = tv.dataFrame.columns.toList().find((c: any) => c.semType === 'Molecule');
@@ -136,8 +133,6 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       `No expected Chem cell-context info panels rendered. seen=${JSON.stringify(seen)}`)
       .toBeGreaterThan(0);
   });
-
-  // ===== Phase B — Multi-format coverage =====
 
   type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile'};
   const variants: Variant[] = [

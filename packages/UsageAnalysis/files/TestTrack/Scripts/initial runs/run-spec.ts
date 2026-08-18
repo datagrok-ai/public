@@ -36,7 +36,6 @@ test("Scripts Run — context menu + console", async ({ page }) => {
     },
   );
 
-  // Prerequisite — script must exist and cars table must be open for the dialog to pre-select it
   await softStep(
     "[pre] Ensure testRscript exists and cars is open",
     async () => {
@@ -60,7 +59,7 @@ test("Scripts Run — context menu + console", async ({ page }) => {
             grok.shell.addTableView(df);
           }
         }
-        // Full route round-trip so the gallery re-fetches
+
         grok.shell.route("/");
         await new Promise((r) => setTimeout(r, 400));
         grok.shell.route("/scripts");
@@ -70,7 +69,7 @@ test("Scripts Run — context menu + console", async ({ page }) => {
         null,
         { timeout: 30000 },
       );
-      // Poll for the card with a fallback delay
+
       const found = await page.evaluate(async () => {
         for (let i = 0; i < 40; i++) {
           const hit = Array.from(
@@ -110,7 +109,7 @@ test("Scripts Run — context menu + console", async ({ page }) => {
           document.querySelectorAll(".d4-menu-item-label, .d4-menu-item"),
         ).find((e) => e.textContent?.trim() === "Run...") as HTMLElement;
         run.click();
-        // Wait for the dialog to appear
+
         for (let i = 0; i < 30; i++) {
           const dlgs = Array.from(
             document.querySelectorAll(".d4-dialog"),
@@ -137,14 +136,13 @@ test("Scripts Run — context menu + console", async ({ page }) => {
           .map((b) => b.textContent?.trim())
           .filter(Boolean);
       });
-      // Script run should produce output (count=510) — filter by the specific error text
+
       expect(
         balloons.filter((b: any) => /Value not defined/i.test(b || "")),
       ).toEqual([]);
     },
   );
 
-  // 4-6. Rerun with local file / Datagrok Files / query — intentionally skipped (manual)
   await test.step.skip(
     "4-6. Rerun with local file / Datagrok Files / query (SKIP — manual)",
     async () => {},
@@ -167,7 +165,7 @@ test("Scripts Run — context menu + console", async ({ page }) => {
     '8-9. Enter {login}:testRscript("cars"), press Enter, check output',
     async () => {
       await page.evaluate(async () => {
-        // Ensure cars table is open
+
         if (!grok.shell.tables.some((t: any) => t.name === "cars")) {
           const df = await grok.dapi.files
             .readCsv("System:DemoFiles/cars.csv")

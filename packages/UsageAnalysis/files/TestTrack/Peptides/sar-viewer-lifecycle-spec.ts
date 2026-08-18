@@ -1,9 +1,3 @@
-// SAR viewer lifecycle — top-menu Bio | Analyze | SAR... launch, verify model.add-* surfaces realize,
-// and round-trip the Settings-dialog Viewers-pane toggles (Dendrogram + Active peptide selection).
-// The config dialog exposes only [name="input-Generate-clusters"], so per-viewer surfaces (CMA,
-// Dendrogram) are driven via direct PeptidesModel JS-API. Dendrogram + LST attach tolerantly on
-// this build (addLogoSummaryTable throws circular-JSON without an explicit clustersColumn).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -42,14 +36,13 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 4000);
       });
-      // Macromolecule dataset: wait for grid canvas + Bio package settle.
+
       for (let i = 0; i < 50; i++) {
         if (document.querySelector('[name="viewer-Grid"] canvas')) break;
         await new Promise((r) => setTimeout(r, 200));
       }
       await new Promise((r) => setTimeout(r, 4000));
 
-      // GROK-17557 prewarm — also loads the Bio TreeHelper for the model.add-dendrogram path.
       try { await grok.functions.call('Peptides:initPeptides'); }
       catch (e) { console.log('[note] Peptides:initPeptides pre-warm threw (non-fatal):', String(e)); }
 
@@ -103,7 +96,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     await page.waitForFunction(() => {
       return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
     }, {timeout: 90000});
-    // Let MCL clustering / sequence-space settle before probing the viewer set.
+
     await page.waitForTimeout(10000);
   });
 
@@ -129,26 +122,21 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     expect(state.findMcl, 'findViewer(VIEWER_TYPE.MCL) must return non-null').toBe(true);
   });
 
-  // Exercise the remaining model.add-* surfaces via direct JS-API (no DOM driver on this build).
   await softStep('Scenario 1 (steps 4-5): exercise the remaining model.add-* family (CMA + Dendrogram + LST)', async () => {
     const result = await page.evaluate(async (VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const model = tv.dataFrame.temp['peptidesModel'];
       const out: any = {modelPresent: !!model};
 
-      // peptides.model.add-cluster-max-activity (model.ts#L1211)
       try { await model.addClusterMaxActivityViewer(); out.cmaInvoked = 'ok'; }
       catch (e) { out.cmaInvoked = 'threw: ' + String(e).slice(0, 240); }
 
-      // peptides.model.add-dendrogram (model.ts#L1069)
       try { await model.addDendrogram(); out.dendroInvoked = 'ok'; }
       catch (e) { out.dendroInvoked = 'threw: ' + String(e).slice(0, 240); }
 
-      // peptides.model.add-logo-summary-table (model.ts#L1195) — known to throw default-prop here.
       try { await model.addLogoSummaryTable(); out.lstInvoked = 'ok'; }
       catch (e) { out.lstInvoked = 'threw: ' + String(e).slice(0, 240); }
 
-      // Settle for dock-manager + viewer-mount.
       await new Promise((r) => setTimeout(r, 6000));
 
       const viewers = Array.from(tv.viewers).map((v) => v.type);
@@ -164,7 +152,6 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
       .toContain(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY);
     expect(result.findCma, 'findViewer(VIEWER_TYPE.CLUSTER_MAX_ACTIVITY) must return non-null').toBe(true);
 
-    // addDendrogram wraps the inner call in try/catch; tolerant on visible attach.
     expect(result.dendroInvoked, 'addDendrogram() invocation must not throw uncaught (internal try/catch swallows)')
       .toBe('ok');
     if (!result.findDendro) {
@@ -174,7 +161,6 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
         `peptides.model.add-dendrogram code path was invoked end-to-end; visible attach is build-/package-dependent.`);
     }
 
-    // addLogoSummaryTable throws default-prop on this build (downstream d4 serialization); tolerant.
     if (result.lstInvoked !== 'ok') {
       console.log(`[note] addLogoSummaryTable() default-prop invocation threw on this build: ${result.lstInvoked}. ` +
         `peptides.model.add-logo-summary-table entry point was invoked; the d4 viewer serialization circular ref ` +
@@ -200,7 +186,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
         ? Array.from(dlg.querySelectorAll('.d4-accordion-pane'))
           .map((p) => p.querySelector('.d4-accordion-pane-header')?.textContent?.trim())
         : [];
-      // d4 panes signal collapse via .d4-accordion-pane-content display, not a class; click header only if hidden.
+
       const viewersPane = dlg
         ? Array.from(dlg.querySelectorAll('.d4-accordion-pane'))
           .find((p) => p.querySelector('.d4-accordion-pane-header')?.textContent?.trim() === 'Viewers')
@@ -232,7 +218,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
       .toContain('input-Sequence-space');
     expect(toggleNames, 'Viewers pane must expose [name="input-Active-peptide-selection"]')
       .toContain('input-Active-peptide-selection');
-    // Cancel; the dialog is re-opened per step to drive a clean settingsChanged dispatch.
+
     await page.evaluate(() => {
       const cancel = document.querySelector('[name="dialog-Peptides-settings"] [name="button-CANCEL"]') as HTMLElement | null;
       if (cancel) cancel.click();
@@ -240,7 +226,6 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     await page.waitForTimeout(500);
   });
 
-  // Toggle CMA OFF: expand pane only if collapsed (no .expanded class), drive cb/OK via composed MouseEvents.
   await softStep('Scenario 2 (steps 3-4): toggle Cluster max activity OFF via the Settings dialog, apply', async () => {
     const before = await page.evaluate((VT) => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
@@ -250,10 +235,9 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
         viewers: Array.from(tv.viewers).map((v) => v.type),
       };
     }, VIEWER_TYPE);
-    // Sanity: CMA is currently attached (from Scenario 1's direct invocation).
+
     expect(before.cmaAttached, 'precondition: CMA viewer should be attached entering Scenario 2 step 3').toBe(true);
 
-    // Re-open the Settings dialog via the wrench.
     await page.evaluate(async () => {
       const wrench = document.querySelector(
         'i.grok-icon.fa-wrench[aria-label="Peptides analysis settings"]') as HTMLElement | null;
@@ -264,7 +248,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     const ok = await page.evaluate(async () => {
       const dlg = document.querySelector('[name="dialog-Peptides-settings"]');
       if (!dlg) return {error: 'dialog not found'};
-      // Expand Viewers pane only if its content is actually collapsed.
+
       const viewersPane = Array.from(dlg.querySelectorAll('.d4-accordion-pane'))
         .find((p) => p.querySelector('.d4-accordion-pane-header')?.textContent?.trim() === 'Viewers');
       if (viewersPane) {
@@ -279,7 +263,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
       const cb = dlg.querySelector('[name="input-Active-peptide-selection"]') as HTMLInputElement | null;
       if (!cb) return {error: 'cb not found'};
       const initialChecked = cb.checked;
-      // Entry state is FALSE (Scenario 1 leaves showClusterMaxActivity undefined); click twice to fire OFF.
+
       if (initialChecked === false) {
         cb.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, composed: true, view: window}));
         await new Promise((r) => setTimeout(r, 300));
@@ -329,7 +313,6 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     expect(after.findMpr, 'MPR viewer must persist after CMA toggle-off').toBe(true);
   });
 
-  // Re-add path: toggle CMA ON from a non-empty analysisView (single click; entry state is FALSE).
   await softStep('Scenario 2 (steps 5-7): toggle Cluster max activity ON again, verify re-add path', async () => {
     await page.evaluate(async () => {
       const wrench = document.querySelector(
@@ -341,7 +324,7 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     const ok = await page.evaluate(async () => {
       const dlg = document.querySelector('[name="dialog-Peptides-settings"]');
       if (!dlg) return {error: 'dialog not found'};
-      // Expand Viewers pane only if its content is actually collapsed.
+
       const viewersPane = Array.from(dlg.querySelectorAll('.d4-accordion-pane'))
         .find((p) => p.querySelector('.d4-accordion-pane-header')?.textContent?.trim() === 'Viewers');
       if (viewersPane) {
@@ -372,7 +355,6 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
     await page.waitForFunction(() =>
       !document.querySelector('[name="dialog-Peptides-settings"]'), null, {timeout: 8000});
 
-    // Poll for re-add: addClusterMaxActivityViewer is async (awaits dockManager.dock).
     let cmaAttachedSettled = false;
     for (let i = 0; i < 16; i++) {
       cmaAttachedSettled = await page.evaluate((VT) => {

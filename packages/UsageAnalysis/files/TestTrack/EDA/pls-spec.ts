@@ -56,16 +56,15 @@ test('PLS scenario', async ({page}) => {
   });
 
   await softStep('Step 3 — Select all features in Using; set Components = 3', async () => {
-    // Open "Select columns..." dialog from Using input
+
     await page.locator('[name="input-host-Using"] .ui-input-editor').first().click();
     await page.waitForTimeout(700);
     await page.locator('[name="label-All"]').click();
     await page.waitForTimeout(200);
-    // Confirm selection — click the top-most OK (Select columns sub-dialog)
+
     await page.locator('[name="button-OK"]').last().click();
     await page.waitForTimeout(600);
 
-    // Set Components = 3 on the PLS dialog
     const compInput = page.locator('[name="input-Components"]').first();
     await compInput.click();
     await page.keyboard.press('Control+A');
@@ -82,14 +81,14 @@ test('PLS scenario', async ({page}) => {
   });
 
   await softStep('Step 4 — Click RUN; expect PLS1/PLS2/PLS3 columns added', async () => {
-    // Assert RUN button is enabled. If it's disabled, fail loudly with the reason.
+
     const runBtn = page.locator('.d4-dialog [name="button-RUN"]').last();
     await runBtn.waitFor({timeout: 10000});
     const disabledAttr = await runBtn.getAttribute('disabled');
     const ariaDisabled = await runBtn.getAttribute('aria-disabled');
     const isDisabled = disabledAttr !== null || ariaDisabled === 'true';
     if (isDisabled) {
-      // Capture validation styles on Predict / Using hosts for diagnostics
+
       const diag = await page.evaluate(() => {
         const names = ['Predict', 'Using', 'Components'];
         const out: Record<string, string> = {};
@@ -109,7 +108,6 @@ test('PLS scenario', async ({page}) => {
 
     await runBtn.click();
 
-    // Poll up to 120s for PLS1/PLS2/PLS3 columns to appear
     const deadline = Date.now() + 120_000;
     let found: string[] = [];
     let totalCols = 0;
@@ -135,7 +133,7 @@ test('PLS scenario', async ({page}) => {
   });
 
   await softStep('Step 4b (fallback) — Deselect `price` from Using and retry RUN', async () => {
-    // Re-open PLS dialog if it was closed by a prior RUN click.
+
     const dialogVisible = await page.locator('.d4-dialog').isVisible().catch(() => false);
     if (!dialogVisible) {
       await page.evaluate(() => {
@@ -144,7 +142,7 @@ test('PLS scenario', async ({page}) => {
       });
       await page.waitForTimeout(1200);
       await page.locator('.d4-dialog').waitFor({timeout: 10000});
-      // Re-select All before toggling off price
+
       await page.locator('[name="input-host-Using"] .ui-input-editor').first().click();
       await page.waitForTimeout(700);
       await page.locator('[name="label-All"]').click();
@@ -158,11 +156,9 @@ test('PLS scenario', async ({page}) => {
       await page.keyboard.press('Tab');
     }
 
-    // Re-open Select columns... sub-dialog for Using
     await page.locator('[name="input-host-Using"] .ui-input-editor').first().click();
     await page.waitForTimeout(700);
 
-    // Try to type 'price' into a search field inside the sub-dialog to narrow down the list.
     const typedInSearch = await page.evaluate(() => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
       const top = dialogs[dialogs.length - 1] as HTMLElement | undefined;
@@ -178,7 +174,6 @@ test('PLS scenario', async ({page}) => {
     if (typedInSearch)
       await page.waitForTimeout(300);
 
-    // Toggle 'price' off — click its label in the top-most dialog.
     const toggled = await page.evaluate(() => {
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
       const top = dialogs[dialogs.length - 1] as HTMLElement | undefined;
@@ -197,7 +192,6 @@ test('PLS scenario', async ({page}) => {
     await page.locator('[name="button-OK"]').last().click();
     await page.waitForTimeout(600);
 
-    // Assert RUN now enabled
     const runBtn = page.locator('.d4-dialog [name="button-RUN"]').last();
     await runBtn.waitFor({timeout: 10000});
     const disabledAttr = await runBtn.getAttribute('disabled');
@@ -207,7 +201,6 @@ test('PLS scenario', async ({page}) => {
 
     await runBtn.click();
 
-    // Poll up to 120s for PLS1/PLS2/PLS3
     const deadline = Date.now() + 120_000;
     let found: string[] = [];
     let totalCols = 0;

@@ -100,8 +100,7 @@ test('Projects / Lifecycle API contract', async ({page}) => {
           return {rejected: true};
         }
       })()`);
-      // Contract is "rejects"; some servers may return success-with-noop.
-      // Treat both as acceptable provided a subsequent find returns null.
+
       expect([true, false]).toContain(r.rejected);
     });
   } finally {

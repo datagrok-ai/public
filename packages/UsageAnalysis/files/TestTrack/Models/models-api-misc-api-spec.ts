@@ -4,8 +4,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 test.use(specTestOptions);
 
 test('Models — MLClient REST surface (zip / blobs / images / build) — apitest', async ({page}) => {
-  // Pure REST round-trips (list + zip/blob/image GET/POST + build status) against an existing
-  // trained model — no training happens here. 120s is ample.
+
   test.setTimeout(120_000);
   stepErrors.length = 0;
 
@@ -41,7 +40,7 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
     }, MODEL_ID);
     expect(r.status, `GET /api/ml/zip/${MODEL_ID} body=${r.body}`).toBe(200);
     expect(r.len, 'zip body must be non-empty').toBeGreaterThan(0);
-    
+
     const head = r.head.join(',');
     expect(head === '80,75,3,4' || head === '80,75,5,6',
       `leading bytes ${JSON.stringify(r.head)} must match a zip magic-byte signature`).toBe(true);
@@ -61,7 +60,7 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
   });
 
   await softStep('S2.2 getBlob: GET /api/ml/blobs/{id}?ext=bin returns non-empty bytes (SR-01: byte-equality deferred)', async () => {
-    
+
     const r = await page.evaluate(async (modelId: string) => {
       const resp = await fetch(`/api/ml/blobs/${modelId}?ext=bin`, {credentials: 'include'});
       if (!resp.ok) return {ok: resp.ok, status: resp.status, len: 0, body: (await resp.text()).slice(0, 200)};
@@ -74,7 +73,7 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
 
   await softStep('S2.3 saveImage: POST /api/ml/images/{name}/{id}?ext=png with PNG bytes returns 200', async () => {
     const r = await page.evaluate(async ({modelId, tag}) => {
-      // Minimal valid 1x1 transparent PNG.
+
       const png = new Uint8Array([
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D,
         0x49, 0x48, 0x44, 0x52, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0,
@@ -98,10 +97,10 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
       const resp = await fetch(`/api/ml/images/${modelId}`, {credentials: 'include'});
       const text = await resp.text();
       let parsed: string[] = [];
-      try { parsed = JSON.parse(text); } catch (_) { /* keep raw */ }
+      try { parsed = JSON.parse(text); } catch (_) {  }
       return {
         ok: resp.ok, status: resp.status, count: parsed.length,
-        
+
         hasTag: parsed.some((n: string) => n.includes(`${tag}-img`)),
         sample: parsed.slice(0, 5),
         raw: text.slice(0, 300),
@@ -114,7 +113,7 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
 
   await softStep('S2.5 getImage: GET /api/ml/images/{id}/{storedName} returns image bytes with PNG signature', async () => {
     const r = await page.evaluate(async ({modelId, tag}) => {
-      
+
       const listResp = await fetch(`/api/ml/images/${modelId}`, {credentials: 'include'});
       const names: string[] = JSON.parse(await listResp.text());
       const stored = names.find((n: string) => n.includes(`${tag}-img`));
@@ -133,14 +132,12 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
   });
 
   await softStep('S2.6 getImageUrl: URL shape /ml/images/{currentId}/{image} is composed from the model id + image name', async () => {
-    // NOTE: no public getImageUrl builder is exposed on grok.dapi, so the URL is composed here from the
-    // same inputs the server endpoint (exercised in S2.5) consumes. Assert the structural contract against
-    // those inputs — not a string against an identical copy of itself.
+
     const imageName = `${RUN_TAG}-img`;
     const built = `/ml/images/${MODEL_ID}/${imageName}`;
     expect(built).toBe(`/ml/images/${MODEL_ID}/${imageName}`);
     expect(built.startsWith('/ml/images/')).toBe(true);
-    // The id and image-name segments must actually be present in the built URL.
+
     expect(built.split('/')).toEqual(['', 'ml', 'images', MODEL_ID, imageName]);
     expect(MODEL_ID.length, 'MODEL_ID must be a non-empty id').toBeGreaterThan(0);
   });
@@ -150,13 +147,13 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
       const resp = await fetch(`/api/ml/build/status/${modelId}`, {credentials: 'include'});
       return {status: resp.status, ct: resp.headers.get('content-type') || '', body: (await resp.text()).slice(0, 200)};
     }, MODEL_ID);
-    
+
     expect(r.status, `status response (body=${r.body})`).toBeLessThan(500);
     expect(r.body.length, 'status body must be present').toBeGreaterThan(0);
   });
 
   await softStep('S3.2 cancelModelBuild on inactive model: GET /api/ml/build/cancel/{id} does not 5xx', async () => {
-    
+
     const r = await page.evaluate(async (modelId: string) => {
       const resp = await fetch(`/api/ml/build/cancel/${modelId}`, {credentials: 'include'});
       return {status: resp.status, body: (await resp.text()).slice(0, 200)};
@@ -165,7 +162,7 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
   });
 
   await softStep('S3.3 post-cancel status read returns the documented inactive-build shape', async () => {
-    
+
     const r = await page.evaluate(async (modelId: string) => {
       const resp = await fetch(`/api/ml/build/status/${modelId}`, {credentials: 'include'});
       return {status: resp.status, body: (await resp.text()).slice(0, 200)};
@@ -174,7 +171,6 @@ test('Models — MLClient REST surface (zip / blobs / images / build) — apites
     expect(r.body.length).toBeGreaterThan(0);
   });
 
-  
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
     throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);

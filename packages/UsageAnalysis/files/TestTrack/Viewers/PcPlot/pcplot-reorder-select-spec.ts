@@ -7,11 +7,9 @@ import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 
-
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-
 
 test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async ({page}) => {
   test.setTimeout(300_000);
@@ -35,169 +33,185 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
-  await page.evaluate(async () => {
+  await page.evaluate(() => {
     const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
     pc.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT'];
-    await new Promise((r) => setTimeout(r, 800));
   });
 
   const readAxisNames = () => page.evaluate(() =>
     Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
       .map((e) => e.getAttribute('name')!.replace('axis-slider-', '')));
 
+  const selectionCount = () => page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
+  const columnNames = () => page.evaluate(() =>
+    grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!.props.columnNames.slice());
+
   await softStep('Setup — confirm three axes AGE, HEIGHT, WEIGHT (DOM axis-slider names)', async () => {
-    // Baseline for Scenario 1 Step 1 / Scenario 2 Step 1: the viewer RENDERS one
-    // axis-slider element per column, so the DOM names are a real re-render read
-    // rather than an echo of the prop just written.
-    expect(await readAxisNames()).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
+
+    const names = await v.pollValue(readAxisNames, (n) => n.length === 3, 800, 100);
+    expect(names).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
   });
 
   await softStep('Scenario 1 Step 5 — shift+drag rectangle selects polylines (selection rises above zero)', async () => {
-    const result = await page.evaluate(async () => {
+    const before = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
+      const cleared = new Promise((res) => {
+        const sub = df.onSelectionChanged.subscribe(() => { sub.unsubscribe(); res(undefined); });
+        setTimeout(res, 200);
+      });
       df.selection.setAll(false);
-      await new Promise((r) => setTimeout(r, 200));
-      const before = df.selection.trueCount;
+      await cleared;
+      return df.selection.trueCount;
+    });
+    await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number, extra: any) => Object.assign(
         {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
-      // shift+drag a rectangle in the band between the first two axes (AGE/HEIGHT)
+
       const x1 = r0.x + r0.width * 0.32, y1 = r0.y + r0.height * 0.40;
       const x2 = r0.x + r0.width * 0.45, y2 = r0.y + r0.height * 0.55;
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
+
       await new Promise((r) => setTimeout(r, 30));
       for (let t = 0; t <= 1.0001; t += 0.25) {
         const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
         overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
         document.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
+
         await new Promise((r) => setTimeout(r, 25));
       }
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
       document.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
-      await new Promise((r) => setTimeout(r, 400));
-      return {before, after: df.selection.trueCount};
     });
-    expect(result.before).toBe(0);
-    expect(result.after).toBeGreaterThan(0);
+    const after = await v.pollValue(selectionCount, (n) => n > 0, 400, 50);
+    expect(before).toBe(0);
+    expect(after).toBeGreaterThan(0);
   });
 
   await softStep('Scenario 1 Step 7 — additive second shift+drag band (selection rises again, not replaced)', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const beforeSecond = df.selection.trueCount;
+    const beforeSecond = await selectionCount();
+    await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number, extra: any) => Object.assign(
         {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
-      // Second band in the HEIGHT/WEIGHT region. In PC Plot a shift+drag is
-      // ADDITIVE by design — no Ctrl modifier is needed to add to the selection.
-      // A shift-only second band grows the selection past the first band's count,
-      // whereas adding ctrlKey REPLACES it with a smaller set. So this second drag
-      // stays shift-only to match the additive product behaviour the assertion checks.
+
       const x1 = r0.x + r0.width * 0.58, y1 = r0.y + r0.height * 0.42;
       const x2 = r0.x + r0.width * 0.72, y2 = r0.y + r0.height * 0.58;
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
+
       await new Promise((r) => setTimeout(r, 30));
       for (let t = 0; t <= 1.0001; t += 0.25) {
         const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
         overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
         document.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
+
         await new Promise((r) => setTimeout(r, 25));
       }
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
       document.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
-      await new Promise((r) => setTimeout(r, 400));
-      return {beforeSecond, afterSecond: df.selection.trueCount};
     });
-    expect(result.afterSecond).toBeGreaterThan(result.beforeSecond);
+    const afterSecond = await v.pollValue(selectionCount, (n) => n > beforeSecond, 400, 50);
+    expect(afterSecond).toBeGreaterThan(beforeSecond);
   });
 
   await softStep('Scenario 1 Step 9 — click empty space clears the selection (round-trip to zero)', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const beforeClear = df.selection.trueCount;
+    const beforeClear = await selectionCount();
+    await page.evaluate(() => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number) =>
         ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-      // Click the empty top margin, above the polylines, to clear the selection.
+
       const ex = r0.x + r0.width * 0.5, ey = r0.y + r0.height * 0.02;
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(ex, ey)));
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(ex, ey)));
       overlay.dispatchEvent(new MouseEvent('click', mk(ex, ey)));
-      await new Promise((r) => setTimeout(r, 400));
-      return {beforeClear, afterClear: df.selection.trueCount};
     });
-    expect(result.beforeClear).toBeGreaterThan(0);
-    expect(result.afterClear).toBe(0);
+    const afterClear = await v.pollValue(selectionCount, (n) => n === 0, 400, 50);
+    expect(beforeClear).toBeGreaterThan(0);
+    expect(afterClear).toBe(0);
   });
 
   await softStep('Scenario 1 Step 11 — click a polyline sets current row off -1', async () => {
-    const result = await page.evaluate(async () => {
+    const before = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
+      const settled = new Promise((res) => {
+        const sub = df.onCurrentRowChanged.subscribe(() => { sub.unsubscribe(); res(undefined); });
+        setTimeout(res, 200);
+      });
       df.currentRowIdx = -1;
-      await new Promise((r) => setTimeout(r, 200));
-      const before = df.currentRowIdx;
+      await settled;
+      return df.currentRowIdx;
+    });
+    await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number) =>
         ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-      // Click a point in the mid band where polylines cross between the first two axes.
+
       const cx = r0.x + r0.width * 0.42, cy = r0.y + r0.height * 0.45;
       overlay.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy)));
+
       await new Promise((r) => setTimeout(r, 60));
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy)));
       overlay.dispatchEvent(new MouseEvent('click', mk(cx, cy)));
-      await new Promise((r) => setTimeout(r, 300));
-      return {before, after: df.currentRowIdx};
     });
-    expect(result.before).toBe(-1);
-    expect(result.after).toBeGreaterThanOrEqual(0);
+    const after = await v.pollValue(
+      () => page.evaluate(() => grok.shell.tv.dataFrame.currentRowIdx), (i) => i >= 0, 300, 50);
+    expect(before).toBe(-1);
+    expect(after).toBeGreaterThanOrEqual(0);
   });
 
   await softStep('Scenario 2 Step 5 — drag a column label reorders the axes (columnNames order changes, still 3)', async () => {
-    const result = await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      const before = pc.props.columnNames.slice();
+    const before = await columnNames();
+    await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number) =>
         ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-      // Column-name labels are canvas-rendered near the top; dragging the rightmost
-      // label to the leftmost position reorders the axes.
+
       const labelY = r0.y + 8;
       const leftX = r0.x + r0.width * 0.08;
       const rightX = r0.x + r0.width * 0.88;
       overlay.dispatchEvent(new MouseEvent('mousemove', mk(rightX, labelY)));
+
       await new Promise((r) => setTimeout(r, 60));
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(rightX, labelY)));
+
       await new Promise((r) => setTimeout(r, 40));
       for (let t = 0; t <= 1.0001; t += 0.1) {
         const x = rightX + (leftX - rightX) * t;
         overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, labelY)));
         document.dispatchEvent(new MouseEvent('mousemove', mk(x, labelY)));
+
         await new Promise((r) => setTimeout(r, 30));
       }
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(leftX, labelY)));
       document.dispatchEvent(new MouseEvent('mouseup', mk(leftX, labelY)));
-      await new Promise((r) => setTimeout(r, 500));
-      const after = pc.props.columnNames.slice();
-      return {before, after};
     });
-    expect(result.before).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
-    expect(result.after.length).toBe(3);
-    expect(result.after).not.toEqual(result.before);
-    expect([...result.after].sort()).toEqual([...result.before].sort());
+    const after = await v.pollValue(
+      columnNames, (a: string[]) => a.join('|') !== before.join('|'), 500, 50);
+    expect(before).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
+    expect(after.length).toBe(3);
+    expect(after).not.toEqual(before);
+    expect([...after].sort()).toEqual([...before].sort());
   });
 
   await softStep('Scenario 2 Step 7 — shift+drag on the reordered chart selects (selection rises above zero)', async () => {
-    const result = await page.evaluate(async () => {
+    const before = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
+      const cleared = new Promise((res) => {
+        const sub = df.onSelectionChanged.subscribe(() => { sub.unsubscribe(); res(undefined); });
+        setTimeout(res, 200);
+      });
       df.selection.setAll(false);
-      await new Promise((r) => setTimeout(r, 200));
-      const before = df.selection.trueCount;
+      await cleared;
+      return df.selection.trueCount;
+    });
+    await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number, extra: any) => Object.assign(
@@ -205,26 +219,26 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
       const x1 = r0.x + r0.width * 0.32, y1 = r0.y + r0.height * 0.40;
       const x2 = r0.x + r0.width * 0.45, y2 = r0.y + r0.height * 0.55;
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
+
       await new Promise((r) => setTimeout(r, 30));
       for (let t = 0; t <= 1.0001; t += 0.25) {
         const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
         overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
         document.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
+
         await new Promise((r) => setTimeout(r, 25));
       }
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
       document.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
-      await new Promise((r) => setTimeout(r, 400));
-      return {before, after: df.selection.trueCount};
     });
-    expect(result.before).toBe(0);
-    expect(result.after).toBeGreaterThan(0);
+    const after = await v.pollValue(selectionCount, (n) => n > 0, 400, 50);
+    expect(before).toBe(0);
+    expect(after).toBeGreaterThan(0);
   });
 
   await softStep('Scenario 2 Step 9 — click empty space clears on the reordered chart (round-trip to zero)', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const beforeClear = df.selection.trueCount;
+    const beforeClear = await selectionCount();
+    await page.evaluate(() => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number) =>
@@ -233,11 +247,10 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(ex, ey)));
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(ex, ey)));
       overlay.dispatchEvent(new MouseEvent('click', mk(ex, ey)));
-      await new Promise((r) => setTimeout(r, 400));
-      return {beforeClear, afterClear: df.selection.trueCount};
     });
-    expect(result.beforeClear).toBeGreaterThan(0);
-    expect(result.afterClear).toBe(0);
+    const afterClear = await v.pollValue(selectionCount, (n) => n === 0, 400, 50);
+    expect(beforeClear).toBeGreaterThan(0);
+    expect(afterClear).toBe(0);
   });
 
   v.finishSpec();

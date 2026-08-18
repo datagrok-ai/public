@@ -38,7 +38,7 @@ for (const ds of datasets) {
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
@@ -62,7 +62,7 @@ for (const ds of datasets) {
         await new Promise((r) => setTimeout(r, 400));
         (document.querySelector('[name="div-Bio---Calculate---Extract-Region..."]') as HTMLElement).click();
       });
-      // Dialog name is `dialog-Get-Region` (named after API getRegion, not the menu label).
+
       await page.locator('[name="dialog-Get-Region"]').waitFor({timeout: 60_000});
       await page.locator('[name="dialog-Get-Region"] [name="button-OK"]').click();
       await page.waitForFunction(

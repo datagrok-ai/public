@@ -21,10 +21,9 @@ async function waitForDapiReady(page: Page) {
     const g = (window as any).grok;
     if (!g || !g.dapi) return false;
     try {
-      
-      
+
       await g.dapi.tables.filter('name = "__dapi_ready_probe__"').first();
-      
+
       if (!g.dapi.permissions || !g.dapi.groups) return false;
       const u = await g.dapi.users.current();
       return !!u;
@@ -69,7 +68,7 @@ async function pollPermission(
 async function openAdvancedEditorToPermissionsRoute(page: Page, tableId: string) {
   const label = page.locator('[name="label-Advanced-editor..."]');
   await label.waitFor({state: 'visible', timeout: 15_000});
-  
+
   await expect.poll(async () => page.evaluate(() => {
     const e = document.querySelector('[name="label-Advanced-editor..."]') as HTMLElement | null;
     if (!e) return false;
@@ -77,8 +76,6 @@ async function openAdvancedEditorToPermissionsRoute(page: Page, tableId: string)
     return e.offsetParent !== null && r.width > 0 && r.height > 0;
   }), {timeout: 15_000, intervals: [200, 400, 800]}).toBe(true);
 
-  
-  
   const uiDeadline = Date.now() + 8_000;
   while (Date.now() < uiDeadline) {
     const onPermRoute = await page.evaluate(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href));
@@ -93,8 +90,6 @@ async function openAdvancedEditorToPermissionsRoute(page: Page, tableId: string)
     } catch (_) {  }
   }
 
-  
-  
   await page.evaluate((id) => { try { grok.shell.route(`/permissions/${id}`); } catch (_) {  } }, tableId);
   await page.waitForFunction(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href),
     null, {timeout: 15_000});
@@ -140,16 +135,12 @@ async function expandSharingPaneAndWaitShare(page: Page) {
 }
 
 test('Sharing & Permissions — Table', async ({page}) => {
-  // UI lifecycle + two-user login switches + permission round-trips; 240s covers the
-  // two re-auths (each waits on dapi-ready) plus the UI pane/dialog/PermissionsView steps.
+
   test.setTimeout(240_000);
 
-  
   await loginToDatagrok(page);
   await waitForDapiReady(page); 
-  
-  
-  
+
   const ownerLogin = await page.evaluate(async () => (await grok.dapi.users.current()).login as string);
 
   await page.evaluate(() => {
@@ -166,16 +157,13 @@ test('Sharing & Permissions — Table', async ({page}) => {
   const recipientLogin = await getSecondUserLogin();
   await createTable(page, TABLE_NAME);
   await setCurrentObjectToTable(page, TABLE_NAME);
-  
-  
-  
+
   const tableId = await page.evaluate(async (tName) => {
     const ti = await grok.dapi.tables.filter(`name = "${tName}"`).first();
     return ti ? (ti.id as string) : '';
   }, TABLE_NAME);
   expect(tableId).not.toBe('');
 
-  
   await softStep('Block A.1: Expand Sharing pane; owner grant + SHARE... button', async () => {
     await expandSharingPaneAndWaitShare(page);
     const shareBtn = page.locator('[name="button-Share..."]');
@@ -198,23 +186,17 @@ test('Sharing & Permissions — Table', async ({page}) => {
     await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
-    
+
     const selText = await page.locator('[name="div-share-selector"]').textContent();
     expect((selText ?? '').replace(/\s+/g, ' ')).toContain('View and use');
   });
 
-  
   await softStep('Block B.1: Type recipient into autocomplete; suggestion list appears', async () => {
     const input = page.locator('input[placeholder="User, group, or email"]');
     await input.click();
     await input.fill('');
     await page.keyboard.type(recipientLogin.slice(0, Math.max(3, recipientLogin.length - 2)));
-    
-    
-    
-    
-    
-    
+
     const dropSel = '.d4-tags-selector-drop-down.d4-user-selector-drop-down';
     await expect.poll(async () => page.evaluate((sel) => {
       const e = document.querySelector(sel) as HTMLElement | null;
@@ -225,11 +207,7 @@ test('Sharing & Permissions — Table', async ({page}) => {
   });
 
   await softStep('Block B.2: Notification controls present; NO cascade notice for a table', async () => {
-    
-    
-    
-    
-    
+
     await expect(page.locator('textarea[placeholder="Type in message here"]')).toBeAttached();
     const sendNotifPresent = await page.locator(
       '[name="input-Send-notifications"], .grok-permission-notifications input[type="checkbox"]').count();
@@ -245,8 +223,7 @@ test('Sharing & Permissions — Table', async ({page}) => {
   await softStep('Block B.3: CANCEL closes dialog; no grant changed (owner-only)', async () => {
     await page.locator('[name="button-CANCEL"]').click();
     await expect(page.locator('.d4-dialog')).toHaveCount(0, {timeout: 10_000});
-    
-    
+
     const state = await page.evaluate(async (tName) => {
       const ti = await grok.dapi.tables.filter(`name = "${tName}"`).first();
       if (!ti) return {exists: false, viewGroups: [] as string[]};
@@ -257,41 +234,23 @@ test('Sharing & Permissions — Table', async ({page}) => {
     expect(state.viewGroups.join(' ').toLowerCase()).not.toContain(recipientLogin.toLowerCase());
   });
 
-  
   await softStep('Block C.1: Open Advanced editor; PermissionsView matrix opens at /permissions/<id>', async () => {
-    
-    
+
     await expandSharingPaneAndWaitShare(page);
     await page.locator('[name="button-Share..."]').click();
     await expect(page.locator('.d4-dialog')).toBeVisible({timeout: 15_000});
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     await openAdvancedEditorToPermissionsRoute(page, tableId);
     await page.waitForTimeout(2500);
     await expect(page.locator('.grok-permissions-self, [class*="grok-permissions"]').first())
       .toBeVisible({timeout: 15_000});
     await expect(page.locator('.d4-grid').first()).toBeVisible({timeout: 15_000});
     await expect(page.locator('[name="button-Save"]')).toBeVisible({timeout: 10_000});
-    // The Calculate-resulting-permissions button is not present for every entity type / permission
-    // state, so record its presence as a remark — the PermissionsView render is already hard-asserted
-    // above via .grok-permissions-self + .d4-grid + the Save button.
+
     const calcPresent = await page.locator(
       '[name="button-Calculate-resulting-permissions-for-this-entity"]').count();
     test.info().annotations.push({type: 'remark',
       description: `Calculate-resulting-permissions button present: ${calcPresent > 0}`});
-
 
     test.info().annotations.push({type: 'remark',
       description: 'Table Advanced editor opens the PermissionsView at /permissions/<id> (dialog closes); ' +
@@ -301,22 +260,15 @@ test('Sharing & Permissions — Table', async ({page}) => {
   });
 
   await softStep('Block C.2: Add-user row present in the PermissionsView; close without saving', async () => {
-    
-    
+
     await expect(
       page.locator('input[placeholder="Type in user, role or group to add..."]')).toBeVisible();
     await page.evaluate(() => grok.shell.closeAll());
     await page.waitForTimeout(1500);
   });
 
-  
   await softStep('Block D.1: Owner shares "View and use" with recipient via JS API grant', async () => {
-    
-    
-    
-    
-    
-    
+
     const granted = await page.evaluate(async (args) => {
       const {tName, login} = args;
       const ti = await grok.dapi.tables.filter(`name = "${tName}"`).first();
@@ -324,11 +276,7 @@ test('Sharing & Permissions — Table', async ({page}) => {
       if (!ti || !grp) return {ok: false, reason: !ti ? 'no-table' : 'no-recipient-group'};
       await grok.dapi.permissions.grant(ti, grp, false); 
       const p = await grok.dapi.permissions.get(ti);
-      
-      
-      
-      
-      
+
       const grantedToRecipient = (p?.view ?? []).some((g: any) => g.id === grp.id);
       return {ok: true, grantedToRecipient,
         viewGroups: (p?.view ?? []).map((g: any) => g.friendlyName || g.name)};
@@ -342,16 +290,7 @@ test('Sharing & Permissions — Table', async ({page}) => {
     await loginAsSecondUser(page);
     await waitForDapiReady(page); 
     await waitForIdentity(page, recipientLogin); 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     await page.locator('[name="tree-My-stuff---Shared-with-me"]').click({timeout: 8_000}).catch(() => {});
     await page.waitForTimeout(1500);
     const reachable = await page.evaluate(async (tName) => {
@@ -362,17 +301,10 @@ test('Sharing & Permissions — Table', async ({page}) => {
   });
 
   await softStep('Block D.3: Recipient has View (and ReadData) on the shared table; rows load', async () => {
-    
-    
-    
+
     const canView = await pollPermission(page, TABLE_NAME, 'View', true);
     expect(canView).toBe(true); 
-    
-    
-    
-    
-    
-    
+
     const loaded = await page.evaluate(async (tName) => {
       const ti = await grok.dapi.tables.filter(`name = "${tName}"`).first();
       if (!ti) return {found: false, rowCount: -1};
@@ -392,10 +324,8 @@ test('Sharing & Permissions — Table', async ({page}) => {
         'rowCount) under the recipient identity.'});
   });
 
-  
   await softStep('Block E: Recipient lacks Edit / Delete / Share on the shared table', async () => {
-    
-    
+
     const viewReady = await pollPermission(page, TABLE_NAME, 'View', true);
     const checks = await page.evaluate(async (tName) => {
       const ti = await grok.dapi.tables.filter(`name = "${tName}"`).first();
@@ -412,7 +342,6 @@ test('Sharing & Permissions — Table', async ({page}) => {
     expect(checks.canShare).toBe(false);  
   });
 
-  
   await softStep('Block F.1-2: Owner revokes recipient grant; pane shows owner-only', async () => {
     await resetToCleanRoot(page); 
     await loginToDatagrok(page); 
@@ -425,9 +354,7 @@ test('Sharing & Permissions — Table', async ({page}) => {
       if (!ti || !grp) return {ok: false};
       await grok.dapi.permissions.revoke(grp, ti); 
       const p = await grok.dapi.permissions.get(ti);
-      
-      
-      
+
       const stillGranted = (p?.view ?? []).some((g: any) => g.id === grp.id);
       return {ok: true, stillGranted};
     }, {tName: TABLE_NAME, login: recipientLogin});
@@ -440,15 +367,11 @@ test('Sharing & Permissions — Table', async ({page}) => {
     await loginAsSecondUser(page);
     await waitForDapiReady(page); 
     await waitForIdentity(page, recipientLogin); 
-    
-    
-    
-    
+
     const canView = await pollPermission(page, TABLE_NAME, 'View', false);
     expect(canView).toBe(false);
   });
 
-  
   await loginToDatagrok(page);
   await waitForDapiReady(page); 
   await waitForIdentity(page, ownerLogin); 

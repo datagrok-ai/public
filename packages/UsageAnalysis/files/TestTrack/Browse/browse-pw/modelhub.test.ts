@@ -33,7 +33,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
     await expandTreeGroup(page, 'Compute');
     const mh = treeNodeByPath(page, MH_PATH);
     await expect(mh, 'Model Hub node must be present').toBeVisible({ timeout: 10_000 });
-    // Click expands it.
+
     await mh.click();
     await page.waitForTimeout(1500);
 
@@ -41,10 +41,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
   });
 
   test('Browse-ModelHub-02 — single click on a model in the tree updates Context Panel without errors', async ({ page }) => {
-    // KNOWN REGRESSION (ref: GROK-19740): clicking a Model Hub model currently throws
-    // `TypeError: p.append is not a function` in Dart code. Once the platform fix lands,
-    // this `test.fail` annotation will start producing an "unexpected pass" — remove the
-    // annotation at that point.
+
     test.fail(true, 'Platform regression GROK-19740 — model click throws inside Dart code.');
 
     const sink = watchErrors(page);
@@ -65,8 +62,7 @@ test.describe('Browse Model Hub (Browse-ModelHub-*)', () => {
   });
 
   test('Browse-ModelHub-03 — double click on a model does not crash, right-click Run is reachable', async ({ page }) => {
-    // KNOWN REGRESSION (ref: GROK-19965): double-click on a model triggers a Dart
-    // `TypeError: p.append is not a function`. Same root cause as ModelHub-02.
+
     test.fail(true, 'Platform regression GROK-19965 — double-click on a model throws in Dart code.');
 
     const sink = watchErrors(page);

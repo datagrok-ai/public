@@ -21,12 +21,12 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
   });
   await page.waitForTimeout(500);
   try {
-    // Setup: open demog.csv with datasync provenance so the GROK-17109 invariant can be tested.
+
     await softStep('Setup: open System:DemoFiles/demog.csv with datasync provenance', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
       await page.waitForTimeout(1000);
-      // Without wired provenance, save-with-datasync degrades to snapshot-only and GROK-17109 can't be tested.
+
       await assertProvenanceScript(page, 'files', opened.script);
       const cols = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;

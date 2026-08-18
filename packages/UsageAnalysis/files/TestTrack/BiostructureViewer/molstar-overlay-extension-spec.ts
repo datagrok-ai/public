@@ -1,7 +1,3 @@
-// Mol* viewport overlay buttons: Screenshot / Toggle Controls / Selection Mode / Settings.
-// Each overlay button only renders when .msp-plugin is mounted, so DOM-click assertions are gated on
-// that precondition (the engine doesn't init reliably in headless CI). Scenario 2 also asserts the
-// layoutShowControls property round-trip unconditionally (mirrors the Toggle Controls button).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -21,7 +17,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -36,7 +31,7 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
   try {
-    // SHARED SETUP — load 1bdq.pdb Molecule3D fixture + add Biostructure viewer (used by all scenarios).
+
     let setupReady = false;
 
     await softStep('Shared Setup — Open Molecule3D table; tv.addViewer("Biostructure"); container DOM mounts', async () => {
@@ -50,13 +45,13 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
         ]);
         const col = df.col('structure');
         col.semType = 'Molecule3D';
-        try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) { /* tag set */ }
+        try { col.setTag('cell.renderer', 'Molecule3D'); } catch (_) {  }
         df.name = 'overlay-extension-fixture';
         const tv = grok.shell.addTableView(df);
         await new Promise((r) => setTimeout(r, 2500));
         const v = tv.addViewer('Biostructure');
-        // Wait for Mol* render; tolerate timeout (per-scenario .msp-plugin guards cover the WebGL-uncertain case).
-        try { await v.awaitRendered(20_000); } catch (_) { /* WebGL-uncertain */ }
+
+        try { await v.awaitRendered(20_000); } catch (_) {  }
         await new Promise((r) => setTimeout(r, 3000));
         return {
           rowCount: df.rowCount,
@@ -77,7 +72,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
       setupReady = true;
     });
 
-    // SCENARIO 1 — Screenshot / State Snapshot overlay button toggles a Mol* panel (.msp-plugin gated).
     await softStep('Scenario 1 — Screenshot / State Snapshot overlay button toggles a Mol* panel', async () => {
       if (!setupReady) return;
       const res = await page.evaluate(async () => {
@@ -120,7 +114,7 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
           toggleOffAfter2: classAfter2 === classBefore,
         };
       });
-      // When .msp-plugin is built, the button must be present and toggle class state.
+
       if (res.precondition) {
         expect(
           res.btnPresent,
@@ -131,7 +125,7 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
           `Screenshot overlay button class did not flip on first click. ` +
           `Before: '${res.classBefore}', After1: '${res.classAfter1}'.`,
         ).toBe(true);
-        // Panel-mount DOM diff: msp-control count increases on first click.
+
         expect(
           res.mspPanelsAfter1,
           `Screenshot panel did not mount (msp-control count did not increase). ` +
@@ -148,13 +142,11 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
       ).toEqual([]);
     });
 
-    // SCENARIO 2 — Toggle Controls Panel: DOM-click (.msp-plugin gated) + unconditional
-    //   layoutShowControls property round-trip (mirrors the button state).
     await softStep('Scenario 2 — Toggle Controls Panel overlay button + layoutShowControls property mirror', async () => {
       if (!setupReady) return;
       pageErrors.length = 0;
       const res = await page.evaluate(async () => {
-        // Layer (b): unconditional layoutShowControls round-trip.
+
         let v: any = null;
         for (const tv of grok.shell.tableViews || []) {
           for (const x of tv.viewers || []) if (x.type === 'Biostructure') { v = x; break; }
@@ -169,7 +161,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
         await new Promise((r) => setTimeout(r, 1000));
         const layoutRestored = v.props.get('layoutShowControls');
 
-        // Layer (a): conditional DOM click on the overlay button.
         const pluginPresent = !!document.querySelector('.msp-plugin');
         if (!pluginPresent) {
           return {
@@ -211,7 +202,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
 
       expect(res.viewerPresent).toBe(true);
 
-      // Layer (b): layoutShowControls round-trip (default false — 3D viewport only).
       expect(
         res.layoutInit,
         `layoutShowControls default expected false (3D-viewport-only default per refdoc).`,
@@ -225,7 +215,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
         `layoutShowControls did not restore to false — round-trip regression.`,
       ).toBe(false);
 
-      // Layer (a): conditional DOM-click assertion.
       if (res.precondition) {
         expect(
           res.btnPresent,
@@ -243,7 +232,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
         ).toBe(res.classBefore);
       }
 
-      // No JS console error during the click + setOptions chain.
       const errSig = pageErrors.filter((m) =>
         /TypeError|ReferenceError|Cannot read properties/i.test(m),
       );
@@ -253,7 +241,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
       ).toEqual([]);
     });
 
-    // SCENARIO 3 — Toggle Selection Mode overlay button class-flip (.msp-plugin gated; no residue-pick pixels).
     await softStep('Scenario 3 — Toggle Selection Mode overlay button class-flip on/off', async () => {
       if (!setupReady) return;
       pageErrors.length = 0;
@@ -309,7 +296,6 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
       ).toEqual([]);
     });
 
-    // SCENARIO 4 — Settings / Controls Info overlay button toggles a Mol* settings panel (.msp-plugin gated).
     await softStep('Scenario 4 — Settings / Controls Info overlay button toggles a Mol* settings panel', async () => {
       if (!setupReady) return;
       pageErrors.length = 0;
@@ -374,7 +360,7 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
       ).toEqual([]);
     });
   } finally {
-    // Cleanup.
+
     try {
       await page.evaluate(() => {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
@@ -383,9 +369,9 @@ test('BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot
           const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
           if (cancel) cancel.click();
         });
-        try { grok.shell.closeAll(); } catch (_) { /* best-effort */ }
+        try { grok.shell.closeAll(); } catch (_) {  }
       });
-    } catch (e) { /* best-effort */ }
+    } catch (e) {  }
   }
 
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));

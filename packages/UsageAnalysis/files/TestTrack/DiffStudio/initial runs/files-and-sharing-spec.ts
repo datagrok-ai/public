@@ -65,7 +65,6 @@ test("DiffStudio Files & Sharing: pk.ivp preview, modify Step/Count, URL reload"
       await page.keyboard.press("Tab");
       await page.waitForTimeout(1500);
 
-      // Count via clicker — force click (icons only visible on hover)
       for (let i = 0; i < 3; i++) {
         await page
           .locator('[name="input-host-count"] [name="icon-plus"]')
@@ -92,7 +91,7 @@ test("DiffStudio Files & Sharing: pk.ivp preview, modify Step/Count, URL reload"
       const url = page.url();
       const newTab = await context.newPage();
       await newTab.goto(url);
-      // login if needed on new tab (shared context — session cookie carries)
+
       await newTab.waitForFunction(
         () => (window as any).grok?.shell?.v?.name === "PK",
         null,
@@ -119,17 +118,16 @@ test("DiffStudio Files & Sharing: pk.ivp preview, modify Step/Count, URL reload"
     },
   );
 
-  // Step 4: REMARK — not a test but a consistency check. With count<=3 expect no Multiaxis/Facet.
   await softStep(
     "Step 4: REMARK — with 1-3 curves no Multiaxis/Facet; with >=4 curves they appear",
     async () => {
-      // Currently count=4 — check what's there
+
       const tabsAt4 = await page.evaluate(() =>
         Array.from(document.querySelectorAll(".tab-handle-text"))
           .map((t) => t.textContent?.trim())
           .filter(Boolean),
       );
-      // Then drop to 1 and re-check
+
       const countInp = page.locator(
         '[name="input-host-count"] input.ui-input-editor',
       );
@@ -149,7 +147,7 @@ test("DiffStudio Files & Sharing: pk.ivp preview, modify Step/Count, URL reload"
           type: "remark",
           description: `tabsAt4=${tabsAt4.join(",")} tabsAt1=${tabsAt1.join(",")}`,
         });
-      // REMARK only — assertion is permissive
+
       expect(tabsAt1).not.toContain("Multiaxis");
       expect(tabsAt1).not.toContain("Facet");
     },

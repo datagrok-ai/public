@@ -1,4 +1,3 @@
-// Paired scenario: r-group-analysis.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -26,10 +25,8 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
   await loginToDatagrok(page);
   await page.waitForTimeout(3000);
 
-  // ===== Block A — smiles-50.csv empty-result balloon (GROK-16329) =====
-
   await softStep('A1: Open smiles.csv (DIVERSE dataset — required for GROK-16329 empty-MCS trigger)', async () => {
-    // smiles.csv diversity triggers MCS-cannot-decompose → empty result; smiles-50.csv is too uniform.
+
     await page.evaluate(async () => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
       try { (grok as any).shell.windows.simpleMode = true; } catch (e) {}
@@ -75,8 +72,6 @@ test('Chem: R-Groups Analysis Block A (GROK-16329) + Block B (Replace Latest mat
     expect((result as any).nullRefErr,
       `GROK-16329 regression: null-reference crash. err=${(result as any).nullRefErr}`).toBeUndefined();
   });
-
-  // ===== Block B — sar_small.csv Replace Latest matrix =====
 
   await softStep('B1: Open sar_small.csv', async () => {
     await page.evaluate(async () => {

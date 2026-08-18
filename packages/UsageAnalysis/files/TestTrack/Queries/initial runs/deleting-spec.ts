@@ -13,9 +13,6 @@ test("Queries — delete new_test_query via context menu", async ({ page }) => {
 
   await loginToDatagrok(page);
 
-  // Setup + precondition: ensure new_test_query exists on the PostgresTest
-  // connection (UI label "NorthwindTest"). The scenario depends on the prior
-  // edit step leaving the query behind; if previous runs deleted it, seed it.
   const seedId = await page.evaluate(async () => {
     document.body.classList.add("selenium");
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
@@ -91,7 +88,7 @@ test("Queries — delete new_test_query via context menu", async ({ page }) => {
         null,
         { timeout: 15_000 },
       );
-      // Dispatch contextmenu with viewport coords on the gallery card.
+
       await page.evaluate(async () => {
         const label = Array.from(document.querySelectorAll("*")).find(
           (el) =>
@@ -115,19 +112,19 @@ test("Queries — delete new_test_query via context menu", async ({ page }) => {
           }),
         );
       });
-      // Click "Delete" menu item (no name= attribute).
+
       const deleteItem = page
         .locator(".d4-menu-popup .d4-menu-item-label", { hasText: /^Delete$/ })
         .first();
       await deleteItem.waitFor({ timeout: 10_000 });
       await deleteItem.click();
-      // Confirmation dialog — DELETE button lives in .d4-dialog-footer.
+
       const deleteBtn = page
         .locator(".d4-dialog-footer button", { hasText: /^DELETE$/ })
         .first();
       await deleteBtn.waitFor({ timeout: 10_000 });
       await deleteBtn.click();
-      // Verify deletion via dapi.
+
       const gone = await page.evaluate(async (id) => {
         for (let i = 0; i < 40; i++) {
           const q = await (window as any).grok.dapi.queries

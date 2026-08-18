@@ -18,7 +18,6 @@ test('XGBoost 2: Regression on cars.csv', async () => {
     }, {timeout: 45000});
   }
 
-  // Step 1: Open cars.csv
   await softStep('Open cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -38,7 +37,6 @@ test('XGBoost 2: Regression on cars.csv', async () => {
     expect(result.cols).toBe(17);
   });
 
-  // Step 2: Train XGBoost Regression (JS API fallback)
   await softStep('Train XGBoost Regression (JS API fallback)', async () => {
     const result = await page!.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;

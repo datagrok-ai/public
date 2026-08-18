@@ -214,12 +214,12 @@ test('Peptides — Export Mutation Cliffs to a new TableView', async ({page}) =>
     expect(result.found,
       `exported table did not carry the Seq 1 ID / Seq 2 ID paired columns; saw: ${JSON.stringify(result.anyCols)}`)
       .toBe(true);
-    // Base columns still present.
+
     expect(result.hasAllBase, 'paired-column export lost one or more base columns').toBe(true);
-    // One paired pair (Seq 1 <extra> / Seq 2 <extra>) for the chosen extra column.
+
     expect(result.cols, 'paired export missing the Seq-1-value paired column').toContain('Seq 1 ID');
     expect(result.cols, 'paired export missing the Seq-2-value paired column').toContain('Seq 2 ID');
-    // Total = 6 base + 2 paired columns.
+
     expect(result.cols!.length, 'paired export should add exactly one Seq-1/Seq-2 pair (8 columns total)')
       .toBe(BASE_EXPORT_COLS.length + 2);
     expect(result.rows, 'paired-column export grid is empty').toBeGreaterThan(0);

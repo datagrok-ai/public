@@ -29,8 +29,6 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
 
   await openTable(page, demogPath);
 
-  // ── Group 2: Apply color coding types ──────────────────────────────────────
-
   await softStep('2.1 AGE: linear then conditional', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
@@ -89,8 +87,6 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
     expect(result.type).toBe('Linear');
   });
 
-  // ── Group 3: Disable and re-enable ─────────────────────────────────────────
-
   await softStep('3.1 Disable AGE, SEX, STARTED', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
@@ -110,7 +106,7 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
   });
 
   await softStep('3.2 Re-enable: types and custom colors preserved', async () => {
-    // setDisabled() only sets .color-coding-type='Off'; restoring the type restores the colors.
+
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
 
@@ -142,8 +138,6 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
     expect(result.tagsPreserved).toBe(true);
   });
 
-  // ── Group 4: Pick Up / Apply coloring ──────────────────────────────────────
-
   await softStep('4.1 Create Race_copy, apply categorical', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
@@ -160,7 +154,7 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
   });
 
   await softStep('4.2 Apply RACE coloring to Race_copy', async () => {
-    // Copies all .color-coding-* tags — equivalent to Pick Up Coloring / Apply Coloring.
+
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
       const src = df.col('RACE');
@@ -187,8 +181,6 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
     });
     expect(result.dstType).toBe(result.srcType);
   });
-
-  // ── Group 5: Linked color coding ───────────────────────────────────────────
 
   await softStep('5.1 RACE linked to WEIGHT (background)', async () => {
     const result = await page.evaluate(async () => {
@@ -272,8 +264,6 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
     expect(result.started).toBe('Linked');
   });
 
-  // ── Group 6: Edit linear color scheme ──────────────────────────────────────
-
   await softStep('6.1 AGE: custom 3-stop linear scheme', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
@@ -289,7 +279,7 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
   });
 
   await softStep('6.2 AGE: invert the scheme', async () => {
-    // Tag .color-coding-linear stores ARGB integers; reverse = invert gradient.
+
     const result = await page.evaluate(async () => {
       const col = grok.shell.t.col('AGE');
       const tagKey = '.color-coding-linear';

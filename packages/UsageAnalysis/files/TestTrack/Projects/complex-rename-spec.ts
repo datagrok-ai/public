@@ -1,5 +1,3 @@
-// GROK-19212: rename a referenced table inside a project, reopen, verify it loads without resolution error.
-// Test 1 = table rename (GROK-19212); Test 2 = query rename (github-3550); Test 3 = script rename (sister).
 import {test, expect, Page} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -67,7 +65,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
     });
 
     await softStep('Save baseline project (Data Sync ON), capture project ID', async () => {
-      // Multi-table inline save — all 3 tables must persist so renaming src_a breaks joined's reference.
+
       const saved = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
         const DG = (window as any).DG;
@@ -109,7 +107,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
 
     await softStep('Step 7: rename a referenced table inside the project (the GROK-19212 trigger)', async () => {
       if (!projectId) throw new Error('no projectId captured');
-      // Reopen by id (filter-by-name fails for dashed names).
+
       await closeAll(page);
       await page.evaluate(async (pid) => {
         const grok = (window as any).grok;
@@ -150,7 +148,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
           if (!p) return {ok: false, reason: 'project disappeared after rename+save'};
           await p.open();
           await new Promise((r) => setTimeout(r, 3000));
-          // Use dataFrame.rowCount as load signal (shell.tables.length throws Tn.grok_TableNames in some reopen states).
+
           const rc = grok?.shell?.tv?.dataFrame?.rowCount ?? 0;
           return {ok: true, rowCount: rc};
         } catch (e) {
@@ -158,7 +156,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
         }
       }, projectId);
       expect(result.ok).toBe(true);
-      // rowCount > 0 means at least one source table re-materialized despite the rename.
+
       expect(result.rowCount).toBeGreaterThan(0);
     });
   } finally {
@@ -166,16 +164,12 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
       projectId: projectId ?? undefined,
       tableInfoId: tableInfoId ?? undefined,
     });
-    void layoutId; // layout cleanup deferred; deleteProjectWithCleanup doesn't take layoutId yet
+    void layoutId; 
     await closeAll(page);
   }
 
   finishSpec();
 });
-
-// ---------------------------------------------------------------------------
-// Test 2 — Query rename: github-3550 reproduction via project source
-// ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Query, reopen, verify reference resolution (github-3550)', async ({page}) => {
   test.setTimeout(420_000);
@@ -260,10 +254,6 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
 
   finishSpec();
 });
-
-// ---------------------------------------------------------------------------
-// Test 3 — Script rename: github-3550 sister invariant via project source
-// ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Script, reopen, verify reference resolution', async ({page}) => {
   test.setTimeout(420_000);

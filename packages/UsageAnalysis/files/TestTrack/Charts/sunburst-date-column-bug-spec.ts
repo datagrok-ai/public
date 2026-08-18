@@ -81,7 +81,7 @@ test('Sunburst — date-column hierarchy graceful handling (github-2954)', async
       };
     });
     expect(result.ok).toBe(true);
-    // github-2954 invariant: setOptions does NOT throw with date column.
+
     expect(result.setOptionsThrew).toBe(false);
     expect(result.hasContent).toBe(true);
     expect(result.width).toBeGreaterThan(0);

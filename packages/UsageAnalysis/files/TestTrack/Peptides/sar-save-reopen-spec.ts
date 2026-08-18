@@ -232,7 +232,7 @@ test('SAR — save project with SAR layout + selection + scaling, reopen and ver
     const fatal = result.lastError && /setTrue|fire.*on (null|undefined)|Cannot read .* (null|undefined)/i.test(result.lastError);
     expect(fatal, `GROK-14461-sister: post-reopen broadcast produced a null-receiver error: ${result.lastError}`).toBeFalsy();
   });
-  // Cleanup — delete the project created by this run, then close the workspace.
+
   await page.evaluate(async (name) => {
     try {
       const p = await grok.dapi.projects.filter('name = "' + name + '"').first();

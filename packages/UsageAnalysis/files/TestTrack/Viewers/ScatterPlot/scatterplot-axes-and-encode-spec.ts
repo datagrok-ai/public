@@ -18,8 +18,6 @@ const isAmbientError = (text: string) =>
   /powerPreference option is currently ignored/.test(text) ||
   /willReadFrequently/.test(text);
 
-// NullError / "Stack trace" / cloned-iframe messages are benign ONLY during the
-// ribbon project save; elsewhere that same Dart class is the regression signal.
 let inProjectSaveWindow = false;
 const isBenignError = (text: string) => {
   if (isAmbientError(text)) return true;
@@ -30,8 +28,6 @@ const isBenignError = (text: string) => {
   return false;
 };
 
-/** Viewer root is disambiguated: the Formula Lines dialog embeds its own preview
- * plot under the same name. */
 const canvasRect = (page: Page) => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'))!;
@@ -39,15 +35,8 @@ const canvasRect = (page: Page) => page.evaluate(() => {
   return {x: r.x, y: r.y, width: r.width, height: r.height};
 });
 
-/** Poll `cond` until it holds. The caller keeps its own assert, so a poll that
- * runs out of time leaves the observed state to be graded as it is. */
 async function waitUntil(cond: () => Promise<boolean>, timeoutMs: number, stepMs = 100): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    if (await cond()) return true;
-    if (Date.now() >= deadline) return false;
-    await new Promise((r) => setTimeout(r, stepMs));
-  }
+  return v.pollValue(cond, (ok) => ok, timeoutMs, stepMs);
 }
 
 const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
@@ -58,14 +47,11 @@ const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
 const propIs = (page: Page, propName: string, value: unknown, timeoutMs: number) =>
   waitUntil(async () => await readProp(page, propName) === value, timeoutMs);
 
-/** Assign a column through the on-viewer selector. The shared helper verifies
- * the property itself, so the short commit settle is retried through a poll on
- * that property before the pick is repeated at the helper's own pace. */
 async function pickOnViewer(page: Page, role: string, column: string): Promise<void> {
   try {
     await v.pickColumnViaSelectorTrusted(page, {role, columnName: column, commitSettleMs: 250});
     return;
-  } catch (_) { /* fall through to the poll, then to a full retry */ }
+  } catch (_) {  }
   if (await propIs(page, `${role}ColumnName`, column, 2500)) return;
   await v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 }
@@ -75,22 +61,16 @@ async function waitBackdrop(page: Page, timeout = 5000): Promise<boolean> {
     null, {timeout}).then(() => true).catch(() => false);
 }
 
-/** The popup grid is canvas-rendered, so the name goes in with real keys; the
- * first key is separated because the popup focuses its search input a tick
- * later. */
 async function commitColumn(page: Page, column: string): Promise<void> {
   const text = column.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(150); 
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(200); 
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(200);
+
 }
 
-/** A row inside a collapsed category keeps its DOM node with an empty box, so
- * readiness is the editor's own rectangle, not the row's presence. The category
- * header is a toggle, hence the retry. */
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {
   const ready = () => page.evaluate((sel: string) => {
     const el = document.querySelector(sel) as HTMLElement | null;
@@ -107,7 +87,6 @@ async function revealPropEditor(page: Page, editorSelector: string, category: st
   throw new Error(`property editor ${editorSelector} never became reachable`);
 }
 
-/** The value cell turns into a select only once clicked. */
 async function setChoiceProp(
   page: Page, rowName: string, viewCell: string, category: string, value: string, propName: string,
 ): Promise<void> {
@@ -146,9 +125,6 @@ const readConfig = (page: Page) => page.evaluate(() => {
   };
 });
 
-/** The grid's header context menu has no Rename entry; the New name field lives
- * in the dialog behind Column Properties. The header cell is addressed through
- * the grid's own column geometry. */
 async function renameColumnViaGrid(page: Page, current: string, next: string): Promise<void> {
   const pt = await page.evaluate((name: string) => {
     const grid = grok.shell.tv.grid;
@@ -172,7 +148,6 @@ async function renameColumnViaGrid(page: Page, current: string, next: string): P
     grok.shell.tv.dataFrame.columns.names().includes(n), next), 5000);
 }
 
-/** Submenu leaves stay hidden until their parent group is hovered. */
 async function openFormulaLines(page: Page): Promise<void> {
   const r = await canvasRect(page);
   await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2, {button: 'right'});
@@ -186,8 +161,6 @@ async function openFormulaLines(page: Page): Promise<void> {
   await waitUntil(async () => await addNew.count() > 0 && await addNew.isVisible(), 5000);
 }
 
-/** Values of the dialog's formula editors — the DOM signal that its list of
- * annotations gained or lost an entry. */
 const formulaEditorValues = (page: Page) => page.evaluate(() =>
   ([...document.querySelectorAll('[name="dialog-Formula-Lines"] textarea')] as HTMLTextAreaElement[])
     .map((a) => a.value).join('|'));
@@ -197,15 +170,13 @@ const formulaLineCount = (page: Page) => page.evaluate(() => {
   return JSON.parse(sp.props.formulaLines || '[]').length;
 });
 
-/** The X and Y rows share `prop-min` / `prop-max`, so an axis bound is addressed
- * through its unique view cell. */
 async function setAxisBound(
   page: Page, cellName: string, value: string | null, propName: string,
 ): Promise<void> {
   const cell = page.locator(`[name="${cellName}"]`);
   await cell.scrollIntoViewIfNeeded();
   await cell.click();
-  // The cell turns into an editor that takes the focus one tick after the click.
+
   await waitUntil(() => page.evaluate(() =>
     document.activeElement instanceof HTMLInputElement), 2000);
   await page.keyboard.press('Control+A');
@@ -243,15 +214,9 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
   await softStep('Scenario 1 — Set the axes and the encodings through the on-viewer selectors (GROK-18411)', async () => {
     const errBefore = errCount();
 
-    // The viewer's auto-pick on attach is not contractual, so every column used
-    // later is set explicitly.
     await pickOnViewer(page, 'x', 'AGE');
     await pickOnViewer(page, 'y', 'HEIGHT');
 
-    // GROK-18411: the Color selector's label text is itself a hit target, not
-    // only the dropdown triangle. It carries no text until a column is assigned,
-    // so the first pick goes through the caption and the label hit target is
-    // exercised right after, on the populated label.
     await pickOnViewer(page, 'color', 'RACE');
     const labelHit = await v.pickColumnViaSelectorTrusted(page, {
       role: 'color', columnName: 'RACE', target: 'column', requirePopup: false,
@@ -264,8 +229,6 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
     await revealPropEditor(page, '[name="prop-markers"] [name="div-column-combobox-markers"]', 'marker');
     await pickInPanel(page, 'prop-markers', 'div-column-combobox-markers', 'SEX', 'markersColumnName');
 
-    // Switch X away and back, so the read-back is not the immediate echo of the
-    // last pick.
     await pickOnViewer(page, 'x', 'WEIGHT');
     await pickOnViewer(page, 'x', 'AGE');
 
@@ -333,7 +296,6 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
     await page.locator('[name="prop-invert-x-axis"] input[type="checkbox"]').click();
     await propIs(page, 'invertXAxis', true, 2500);
 
-    // GROK-13110: minimum above maximum, on an inverted logarithmic axis.
     await setAxisBound(page, 'prop-view-x-min', '60', 'xMin');
     await setAxisBound(page, 'prop-view-x-max', '20', 'xMax');
     await waitUntil(() => page.evaluate(() => {
@@ -389,8 +351,7 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
 
     await pickOnViewer(page, 'x', 'STARTED');
     await waitUntil(async () => await rowOpacity(page, 'prop-x-axis-type') === '0.5', 3000);
-    // An inline opacity of 0.5 on the row is the only disabled signal the
-    // property grid exposes; the context menu does not mirror it.
+
     expect(await rowOpacity(page, 'prop-x-axis-type')).toBe('0.5');
     expect(await rowOpacity(page, 'prop-x-map')).toBe('1');
 
@@ -411,33 +372,32 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
-      await new Promise((r) => setTimeout(r, 1500));
       return layout.id as string;
     });
+    await page.waitForTimeout(1500); 
     try {
-      const result = await page.evaluate(async (id) => {
+      await page.evaluate(() => { grok.shell.tv.addViewer('Histogram'); });
+      await v.pollValue(
+        () => page.evaluate(() => grok.shell.tv.viewers.some((vw: any) => vw.type === 'Histogram')),
+        (present) => present, 1000, 100);
+
+      await v.setViewerProps(page, 'Scatter plot', [{set: {colorColumnName: ''}, wait: 800}]);
+      const clearedColor = await readProp(page, 'colorColumnName');
+      await page.evaluate(async (id) => {
+        grok.shell.tv.loadLayout(await grok.dapi.layouts.find(id));
+      }, layoutId);
+      const result = await v.pollValue(() => page.evaluate(() => {
         const tv = grok.shell.tv;
-        tv.addViewer('Histogram');
-        await new Promise((r) => setTimeout(r, 1000));
-        const sp = tv.viewers.find((vw: any) => vw.type === 'Scatter plot') as any;
-        // Clearing a column sets the prop to the empty string, not null.
-        sp.props.colorColumnName = '';
-        await new Promise((r) => setTimeout(r, 800));
-        const clearedColor = sp.props.colorColumnName;
-        const saved = await grok.dapi.layouts.find(id);
-        tv.loadLayout(saved);
-        await new Promise((r) => setTimeout(r, 4000));
         const restored = tv.viewers.find((vw: any) => vw.type === 'Scatter plot') as any;
         return {
-          clearedColor,
           hasScatter: tv.viewers.some((vw: any) => vw.type === 'Scatter plot'),
           hasHistogram: tv.viewers.some((vw: any) => vw.type === 'Histogram'),
           x: restored?.props.xColumnName, y: restored?.props.yColumnName,
           color: restored?.props.colorColumnName, size: restored?.props.sizeColumnName,
           markers: restored?.props.markersColumnName,
         };
-      }, layoutId);
-      expect(result.clearedColor).toBe('');
+      }), (r) => r.hasScatter && !r.hasHistogram, 4000, 150);
+      expect(clearedColor).toBe('');
       expect(result.hasScatter).toBe(true);
       expect(result.hasHistogram).toBe(false);
       expect(result.x).toBe('AGE');
@@ -464,30 +424,26 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
       projectId = saved.projectId;
       expect(projectId).toBeTruthy();
 
-      const result = await page.evaluate(async (id) => {
-        grok.shell.closeAll();
-        await new Promise((r) => setTimeout(r, 1500));
+      await v.closeAllAndWait(page);
+      await page.evaluate(async (id) => {
         const full = await grok.dapi.projects.find(id);
         await full.open();
-        // Viewers re-materialize asynchronously — poll for the restored plot.
-        let types: string[] = [];
-        for (let t = 0; t < 20; t++) {
-          await new Promise((r) => setTimeout(r, 1000));
-          types = [];
-          for (const view of grok.shell.tableViews)
-            for (const vw of view.viewers) types.push(vw.type);
-          if (types.includes('Scatter plot')) break;
-        }
+      }, projectId);
+
+      const result = await v.pollValue(() => page.evaluate(() => {
+        const types: string[] = [];
         let sp: any = null;
         for (const view of grok.shell.tableViews)
-          for (const vw of view.viewers)
+          for (const vw of view.viewers) {
+            types.push(vw.type);
             if (vw.type === 'Scatter plot') sp = vw;
+          }
         return {
           types,
           x: sp?.props.xColumnName, y: sp?.props.yColumnName, color: sp?.props.colorColumnName,
           size: sp?.props.sizeColumnName, markers: sp?.props.markersColumnName,
         };
-      }, projectId);
+      }), (r) => r.types.includes('Scatter plot'), 20000, 1000);
 
       expect(result.types).toContain('Scatter plot');
       expect(result.x).toBe('AGE');

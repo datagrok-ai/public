@@ -1,13 +1,3 @@
-// Pure JS-API apitest for the Notebooks CRUD lifecycle via grok.dapi.notebooks.
-// Seeds a server notebook with CmdNewNotebook (no JS-API Notebook factory exists),
-// then round-trips it: find (name + .ipynb body intact), list/count/order, rename
-// via friendlyName + save, and delete (verifying removal and that a new notebook
-// can still be created). All work is grok.dapi.notebooks / DG.Func.apply() in
-// page.evaluate — no DOM driving of the app.
-// Scope-reduced: table-link / tag / filter semantics have no enumerable JS surface,
-// so they're covered via the create→find→delete round-trip and the order()+list()
-// path here, and asserted directly server-side. delete requires the entity (not an
-// id string), so steps resolve via find(id) first.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -25,9 +15,6 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
     grok.shell.closeAll();
   });
 
-  // Hoisted so later steps + the final cleanup can key find()/delete() on the
-  // seeded id. Unique target name so the spec never collides with shared
-  // Demog/Cars notebooks on dev and is order-independent.
   let seededId: string | null = null;
   const renameTarget = `automator-lifecycle-${Date.now()}`;
 
@@ -38,7 +25,7 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
         try {
           const cmd = (window as any).DG.Func.find({name: 'CmdNewNotebook'})[0];
           if (!cmd) throw new Error('CmdNewNotebook command function not registered (Notebooks plugin not installed?)');
-          // Snapshot newest-first top so we detect the freshly-created entity by id.
+
           const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
           const beforeIds = new Set(before.map((n: any) => n.id));
           try { await cmd.apply(); } catch (e: any) { result.applyErr = String(e?.message ?? e).slice(0, 300); }
@@ -59,7 +46,7 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
       });
       expect(out.seeded, `CmdNewNotebook.apply() should persist a server notebook (applyErr: ${out.applyErr ?? ''}; err: ${out.err ?? ''})`).toBe(true);
       expect(out.seedId, 'seeded notebook has a server-assigned id').toBeTruthy();
-      // Newly created template notebook defaults to the Python 3 kernelspec.
+
       expect(out.kernelspec, `new notebook kernelspec.name === 'python3' (observed: ${out.kernelspec})`).toBe('python3');
       seededId = out.seedId;
     });
@@ -83,7 +70,7 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
       expect(out.fetched, `find(seedId) returns the persisted entity; err: ${out.err ?? ''}`).toBe(true);
       expect(out.notebookPresent, 'fetched entity carries its raw .ipynb JSON body').toBe(true);
       expect(out.cellsIsArray, 'fetched .ipynb has a cells array (well-formed nbformat)').toBe(true);
-      // metadata.kernelspec survives the round-trip (notebooks.entity defaults).
+
       expect(out.kernelspec, `round-trip kernelspec.name === 'python3' (observed: ${out.kernelspec})`).toBe('python3');
     });
 
@@ -96,23 +83,22 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
           firstOk: false, err: null,
         };
         try {
-          // newest-first list — the freshly-seeded notebook is the newest, so it
-          // appears in the top-10 (cheap, ~0.1-2.2s, vs a full pageSize:500 scan).
+
           const top = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
           result.listOk = Array.isArray(top);
           result.listCount = top.length;
           result.seedInTop = id != null && top.some((n: any) => n.id === id);
-          // count() — getNotebooksCount service method.
+
           const c = await grok.dapi.notebooks.count();
           result.countIsNumber = typeof c === 'number';
           result.countVal = c;
-          // order() asc vs desc by name should differ (deterministic ordering).
+
           const asc = await grok.dapi.notebooks.order('name').list({pageSize: 2});
           const desc = await grok.dapi.notebooks.order('name', true).list({pageSize: 2});
           result.ascFirst = asc[0]?.name ?? null;
           result.descFirst = desc[0]?.name ?? null;
           result.orderDistinct = asc[0]?.id != null && desc[0]?.id != null && asc[0].id !== desc[0].id;
-          // first() — convenience over the ordered list.
+
           const fst = await grok.dapi.notebooks.order('createdOn', true).first();
           result.firstOk = fst != null && !!fst.id;
         } catch (e: any) { result.err = String(e?.message ?? e).slice(0, 400); }
@@ -135,18 +121,16 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
           ent.friendlyName = args.name;
           await grok.dapi.notebooks.save(ent);
           result.saveOk = true;
-          // Re-fetch and confirm the rename persisted. A cold server can lag the
-          // first save after a CmdNewNotebook seed, so poll up to 30s with an
-          // idempotent re-save at the 10s/20s marks in case the save was dropped.
+
           const tPoll = Date.now();
           for (let i = 0; i < 30 && !result.persisted; i++) {
             const re: any = await grok.dapi.notebooks.find(args.id).catch(() => null);
             const cur = re ? (re.friendlyName || re.name) : null;
             result.value = cur;
             if (cur === args.name) { result.persisted = true; break; }
-            // Idempotent re-save at the 10s and 20s marks if still not persisted.
+
             if ((i === 10 || i === 20) && re && re.id) {
-              try { re.friendlyName = args.name; await grok.dapi.notebooks.save(re); result.resaves++; } catch (_) { /* re-save best-effort */ }
+              try { re.friendlyName = args.name; await grok.dapi.notebooks.save(re); result.resaves++; } catch (_) {  }
             }
             await new Promise((r) => setTimeout(r, 1000));
           }
@@ -163,12 +147,12 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
         const result: any = {deleted: false, findAfter: 'NOT_TESTED', recreatable: false, err: null};
         try {
           if (!id) throw new Error('seed failed upstream — no id');
-          // delete requires the entity, not an id string.
+
           const ent: any = await grok.dapi.notebooks.find(id);
           if (!ent || !ent.id) throw new Error('entity not found before delete');
           await grok.dapi.notebooks.delete(ent);
           result.deleted = true;
-          // Verify removal: find(id) resolves to `undefined` once deleted.
+
           let gone = false;
           for (let i = 0; i < 30 && !gone; i++) {
             const after: any = await grok.dapi.notebooks.find(id).catch(() => undefined);
@@ -176,9 +160,7 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
             else await new Promise((r) => setTimeout(r, 500));
           }
           result.findAfter = gone ? 'undefined/empty' : 'still-present';
-          // The notebooks_tables join + tags are cleared server-side by
-          // repository.delete -> delete-tables-relations (no FK left dangling); a
-          // subsequent seed must still succeed (no FK conflict from the removed row).
+
           const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
           const beforeIds = new Set(before.map((n: any) => n.id));
           const cmd = (window as any).DG.Func.find({name: 'CmdNewNotebook'})[0];
@@ -191,7 +173,7 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
               fresh2 = cur.find((n: any) => !beforeIds.has(n.id));
             }
             result.recreatable = fresh2 != null;
-            // Clean up this verification notebook immediately.
+
             if (fresh2) {
               const e2: any = await grok.dapi.notebooks.find(fresh2.id).catch(() => null);
               if (e2 && e2.id) await grok.dapi.notebooks.delete(e2).catch(() => {});
@@ -203,22 +185,19 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
       expect(out.deleted, `delete(entity) succeeds; err: ${out.err ?? ''}`).toBe(true);
       expect(out.findAfter, 'find(seedId) resolves to undefined/empty after delete (not-found signal)').toBe('undefined/empty');
       expect(out.recreatable, 'a new notebook can be created after delete (join rows cleared — no FK conflict)').toBe(true);
-      // The seeded notebook is gone — clear the cleanup handle so the finally
-      // block does not attempt a redundant delete.
+
       seededId = null;
     });
   } finally {
-    // Best-effort cleanup: if any step failed mid-flight and left the seeded
-    // notebook on the shared server, remove it by entity (delete needs the entity,
-    // not an id string). Keyed on the captured id via find() — no full list scan.
+
     await page.evaluate(async (id: string | null) => {
       if (!id) return;
       try {
         const ent: any = await grok.dapi.notebooks.find(id).catch(() => null);
         if (ent && ent.id) await grok.dapi.notebooks.delete(ent).catch(() => {});
-      } catch (_) { /* best-effort teardown must not throw */ }
+      } catch (_) {  }
     }, seededId);
-    await page.evaluate(() => { try { grok.shell.closeAll(); } catch (_) { /* ignore */ } });
+    await page.evaluate(() => { try { grok.shell.closeAll(); } catch (_) {  } });
   }
 
   if (stepErrors.length > 0) {

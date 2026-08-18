@@ -33,25 +33,18 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
-  await page.evaluate(async () => {
-    const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-    pc.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT'];
-    await new Promise((r) => setTimeout(r, 500));
-  });
+  await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}], 500);
 
   const readRootInDom = () => page.evaluate(() => {
     const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
     return document.body.contains(pc.root);
   });
 
-  // Settle-gated canvas ink count: repeated reads until two consecutive counts
-  // agree, so a delta between two measurements is the setter's effect, not a
-  // render tail.
   const settledPx = async () => {
     let prev = (await v.countCanvasPixels(page, 'PC Plot')).total;
     let cur = prev;
     for (let i = 0; i < 5; i++) {
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(300);   
       cur = (await v.countCanvasPixels(page, 'PC Plot')).total;
       if (Math.abs(cur - prev) < 200) break;
       prev = cur;
@@ -59,38 +52,25 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
     return cur;
   };
 
-  // Sparse-canvas basis for the density-ink measurements: with all polylines
-  // hidden and the selection empty, only axes/labels are painted, so density
-  // shapes become the dominant ink instead of paint-over on a full canvas.
-  const setAllLines = (on: boolean) => page.evaluate(async (val) => {
-    const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-    grok.shell.tv.dataFrame.selection.setAll(false);
-    pc.props.showAllLines = val;
-    await new Promise((r) => setTimeout(r, 400));
-  }, on);
+  const setAllLines = async (on: boolean) => {
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await v.setViewerProps(page, 'PC Plot', [{set: {showAllLines: on}}], 400);
+  };
 
-  // Hidden-lines ink floor measured in Scenario 2 and reused by Scenario 3's
-  // anti-stale check.
   let floorPx = -1;
 
   await softStep('Scenario 1 — switch vertical scale global then back', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    const setNormalize = (on: boolean) => page.evaluate(async (val) => {
-      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      pc.props.normalizeEachColumn = val;
-      await new Promise((r) => setTimeout(r, 300));
-    }, on);
+    const setNormalize = (on: boolean) =>
+      v.setViewerProps(page, 'PC Plot', [{set: {normalizeEachColumn: on}}], 300);
     const normalizedPx = await settledPx();
     await setNormalize(false);
     const globalPx = await settledPx();
     await setNormalize(true);
     const backPx = await settledPx();
-    // Keep the measured ink values visible on green runs so the fixed
-    // thresholds below can be audited against live numbers.
+
     console.log(`Normalize scale px: normalizedPx=${normalizedPx} globalPx=${globalPx} backPx=${backPx}`);
-    // Repaint-delta: the shared global scale redistributes the polylines, so
-    // the ink count must move by a real margin (the direction depends on the
-    // data), and the round-trip back to Normalized must land near the original.
+
     expect(normalizedPx).toBeGreaterThanOrEqual(0);
     expect(globalPx).toBeGreaterThanOrEqual(0);
     expect(Math.abs(globalPx - normalizedPx)).toBeGreaterThan(500);
@@ -105,36 +85,23 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
       grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!.props.densityStyle)).toBe('circles');
     await setAllLines(false);
     floorPx = await settledPx();
-    await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      pc.props.showDensity = true;
-      pc.props.densityStyle = 'box plot';
-      await new Promise((r) => setTimeout(r, 400));
-    });
+    await v.setViewerProps(page, 'PC Plot', [{set: {showDensity: true, densityStyle: 'box plot'}}], 400);
     const densityPx = await settledPx();
     console.log(`Density px: floorPx=${floorPx} densityPx=${densityPx}`);
-    // Repaint-delta on the sparse basis, measured on the BOX PLOT style: with
-    // the polylines hidden, enabling the overlay must ADD ink over the
-    // axes-only floor by a real margin. The circles overlay hugs the axis line
-    // and is not pixel-distinguishable from it, so circles stays covered by
-    // the no-error cycling floor below instead of a delta assert.
+
     expect(floorPx).toBeGreaterThanOrEqual(0);
     expect(densityPx - floorPx).toBeGreaterThan(1000);
     await setAllLines(true);
-    await page.evaluate(async () => {
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {showDensity: true}, wait: 300},
+      {set: {densityStyle: 'circles'}, wait: 300},
+      {set: {densityStyle: 'box plot'}, wait: 300},
+      {set: {densityStyle: 'violin plot'}, wait: 300},
+      {set: {densityStyle: 'box plot'}, wait: 200},
+    ]);
+
+    await page.evaluate(() => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      pc.props.showDensity = true;
-      await new Promise((r) => setTimeout(r, 300));
-      for (const s of ['circles', 'box plot', 'violin plot']) {
-        pc.props.densityStyle = s;
-        await new Promise((r) => setTimeout(r, 300));
-      }
-      // Per-part box/violin component toggles named in the .md — Show Median,
-      // Interquartile Range, Mean Cross, upper/lower whisker dash, Show Circles
-      // and the Bins change. Each redraws to canvas only, so they share the same
-      // no-error + DOM-presence floor rather than a per-toggle assertion.
-      pc.props.densityStyle = 'box plot';
-      await new Promise((r) => setTimeout(r, 200));
       pc.props.showMedian = false; pc.props.showMedian = true;
       pc.props.showInterquartileRange = false; pc.props.showInterquartileRange = true;
       pc.props.showMeanCross = false; pc.props.showMeanCross = true;
@@ -142,53 +109,37 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
       pc.props.showLowerDash = false; pc.props.showLowerDash = true;
       pc.props.showCircles = true;
       pc.props.bins = 200;
-      await new Promise((r) => setTimeout(r, 300));
-      pc.props.bins = 100;
-      pc.props.showDensity = false;
-      await new Promise((r) => setTimeout(r, 300));
     });
+    await v.waitForViewerRendered(page, 'PC Plot', 300);
+    await v.setViewerProps(page, 'PC Plot', [{set: {bins: 100, showDensity: false}}], 300);
     expect(await readRootInDom()).toBe(true);
     expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
   });
 
   await softStep('Scenario 3 — density recalculates on normalization double-toggle and AGE log scale (github-1546)', async () => {
-    // github-1546: the density overlay must recalculate without throwing or freezing
-    // after a normalization double-toggle and a log-scale switch.
+
     const errBefore = pageErrors.length + consoleErrors.length;
-    await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      pc.props.showDensity = true;
-      pc.props.densityStyle = 'box plot';
-      await new Promise((r) => setTimeout(r, 300));
-      pc.props.normalizeEachColumn = false;
-      await new Promise((r) => setTimeout(r, 400));
-      pc.props.normalizeEachColumn = true;
-      await new Promise((r) => setTimeout(r, 400));
-      pc.props.normalizeEachColumn = false;
-      await new Promise((r) => setTimeout(r, 400));
-      pc.props.normalizeEachColumn = true;
-      await new Promise((r) => setTimeout(r, 400));
-    });
-    // Anti-stale on the sparse basis: hide the polylines so the surviving
-    // density ink is measured against the Scenario 2 axes-only floor — the
-    // overlay is still painted after the double-toggle, not stale-empty.
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {showDensity: true, densityStyle: 'box plot'}, wait: 300},
+      {set: {normalizeEachColumn: false}, wait: 400},
+      {set: {normalizeEachColumn: true}, wait: 400},
+      {set: {normalizeEachColumn: false}, wait: 400},
+      {set: {normalizeEachColumn: true}, wait: 400},
+    ]);
+
     await setAllLines(false);
     const staleGuardPx = await settledPx();
     console.log(`Stale-guard px: staleGuardPx=${staleGuardPx} floorPx=${floorPx}`);
     expect(floorPx).toBeGreaterThanOrEqual(0);
     expect(staleGuardPx - floorPx).toBeGreaterThan(1000);
     await setAllLines(true);
-    const alive = await page.evaluate(async () => {
-      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      pc.props.logColumnsColumnNames = ['AGE'];
-      await new Promise((r) => setTimeout(r, 400));
-      const stillResponsive = await new Promise((r) => setTimeout(() => r(true), 10));
-      pc.props.logColumnsColumnNames = [];
-      await new Promise((r) => setTimeout(r, 300));
-      pc.props.showDensity = false;
-      await new Promise((r) => setTimeout(r, 300));
-      return stillResponsive;
-    });
+    await v.setViewerProps(page, 'PC Plot', [{set: {logColumnsColumnNames: ['AGE']}}], 400);
+
+    const alive = await page.evaluate(() => new Promise((r) => setTimeout(() => r(true), 10)));
+    await v.setViewerProps(page, 'PC Plot', [
+      {set: {logColumnsColumnNames: []}, wait: 300},
+      {set: {showDensity: false}, wait: 300},
+    ]);
     expect(alive).toBe(true);
     expect(await readRootInDom()).toBe(true);
     expect(pageErrors.length + consoleErrors.length).toBe(errBefore);

@@ -8,8 +8,7 @@ const HELM_PEPTIDE_EXPECTED_ATOMS = 9;
 const HELM_RNA_SHORT = 'RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$';
 
 test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHelmHelper / createHelmInput / createHelmWebEditor / getHoveredAtom', async ({page}) => {
-  // Pure JS-API surface spec: getHelmHelper + factory/hit-test calls, no full-screen
-  // editor dialog open. 180s covers a cold getHelmHelper warmup with margin.
+
   test.setTimeout(180_000);
   stepErrors.length = 0;
 
@@ -62,7 +61,7 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
         return result;
       });
       expect(out.hhResolved, `getHelmHelper err: ${out.err ?? ''}`).toBe(true);
-      // Singleton invariant
+
       expect(out.isSingleton, 'Helm:getHelmHelper singleton invariant').toBe(true);
       expect(
         out.methods,
@@ -93,7 +92,7 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
               sandbox.appendChild(host);
               result.hostAppendable = sandbox.firstChild === host;
             } finally {
-              try { sandbox.removeChild(host); } catch (_) { /* ignore */ }
+              try { sandbox.removeChild(host); } catch (_) {  }
             }
           }
         } catch (e) {
@@ -111,10 +110,7 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
     });
 
     await softStep('S3: HelmHelper.createHelmWebEditor returns an IHelmWebEditor; host-by-reference; editor adapter object; no-host fallback ok', async () => {
-      // 2026-06 rewrite: the new SVG editor is NOT JSDraw2 — we.editor is a plain
-      // adapter object exposing setHelm/getHelm/getMolfile/getFormula/getMolWeight/…
-      // and does NOT carry a `viewonly` flag (it is null). Assert the adapter method
-      // surface instead of the removed JSDraw2 viewonly flag.
+
       const ADAPTER_METHODS = ['setHelm', 'getHelm', 'getMolfile', 'getFormula', 'getMolWeight'];
       const out = await page.evaluate(async (adapterMethods: string[]) => {
         const result: any = {weResolved: false, weKind: null, hostMatches: false, editorPresent: false, editorMethods: [], weNoHostResolved: false, weNoHostHost: null, errBalloons: 0, errWithHost: null, errNoHost: null};
@@ -224,8 +220,8 @@ test('Helm HelmHelper accessor + factories + hit-test API surface — Helm:getHe
     });
   } finally {
     await page.evaluate(() => {
-      try { delete (window as any).__hh; } catch (_) { /* ignore */ }
-      try { (window as any).grok.shell.closeAll(); } catch (_) { /* ignore */ }
+      try { delete (window as any).__hh; } catch (_) {  }
+      try { (window as any).grok.shell.closeAll(); } catch (_) {  }
     });
   }
 

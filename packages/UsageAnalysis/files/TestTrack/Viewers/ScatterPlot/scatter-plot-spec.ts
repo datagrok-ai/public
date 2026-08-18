@@ -24,10 +24,6 @@ const LINES_ORDER_COLUMN = 'AGE';
 const COLOR_COLUMN = 'RACE';
 const LINES_BY_COLUMN = 'SEX';
 
-// Canvas readings scale with viewer size and dpr, so only these bounds are
-// asserted, never a reading. Their ordering is what keeps the asserts honest:
-// settle < restore-ceiling < change-floor. The restore ceiling also bounds
-// "the rendering did not change" (the connecting-lines split rules).
 const CANVAS_SETTLE_TOLERANCE = 400;
 const CANVAS_CHANGE_MIN = 2000;
 const CANVAS_RESTORE_MAX = 1500;
@@ -38,15 +34,10 @@ const isAmbientError = (text: string) =>
   /powerPreference option is currently ignored/.test(text) ||
   /willReadFrequently/.test(text);
 
-// Nothing beyond the shared server's ambient noise is whitelisted here: a Dart
-// NullError or a "Stack trace" line while a visibility setting is toggled, a
-// whisker column is bound or the context menu is opened is the regression signal.
 const isBenignError = (text: string) => isAmbientError(text);
 
 interface Rect {x: number; y: number; width: number; height: number}
 
-/** Viewer root is disambiguated: a dialog carrying its own preview plot matches
- * the same name. */
 const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'))!;
@@ -54,27 +45,16 @@ const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
   return {x: r.x, y: r.y, width: r.width, height: r.height};
 });
 
-/** Poll `cond` until it holds. The caller keeps its own assert, so a poll that
- * runs out of time leaves the observed state to be graded as it is. */
 async function waitUntil(cond: () => Promise<boolean>, timeoutMs: number, stepMs = 100): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    if (await cond()) return true;
-    if (Date.now() >= deadline) return false;
-    await new Promise((r) => setTimeout(r, stepMs));
-  }
+  return v.pollValue(cond, (ok) => ok, timeoutMs, stepMs);
 }
 
-/** The plot repaints its mouse-over indication as the pointer crosses it, so
- * every rendering reading is taken from the same parked pointer position. The
- * longer settle serves the readings that have no known frame to leave. */
 async function parkPointer(page: Page, settleMs = 300): Promise<void> {
   await page.mouse.move(2, 2);
+
   await page.waitForTimeout(settleMs);
 }
 
-/** Store a per-color histogram of the data canvas under `key`. False means the
- * canvas could not be read — a fault, not an equal reading. */
 const captureCanvas = (page: Page, key: string) => page.evaluate((k: string) => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'));
@@ -94,8 +74,6 @@ const captureCanvas = (page: Page, key: string) => page.evaluate((k: string) => 
   return true;
 }, key);
 
-/** Summed absolute per-color pixel delta against the reading stored under
- * `key`. -1 signals a fault. */
 const diffCanvas = (page: Page, key: string) => page.evaluate((k: string) => {
   const w = window as any;
   const prev = w.__spCanvasSnap?.[k] as Map<number, number> | undefined;
@@ -117,16 +95,6 @@ const diffCanvas = (page: Page, key: string) => page.evaluate((k: string) => {
   return delta;
 }, key);
 
-/** Wait for the data canvas to stop repainting, then return its delta against
- * the reading stored under `key`. The settle gate compares two consecutive
- * readings of the current frame, so it stays independent of what the step
- * changed.
- *
- * `expectChange` is passed by the steps that claim the rendering moved: the poll
- * then starts at once and first waits for the delta against `key` to leave the
- * settle drift. The steps claiming the rendering did NOT move leave it off and
- * keep the blind settle, because an unchanged frame and one that has not
- * repainted yet read alike. */
 async function settledCanvasDiff(page: Page, key: string, expectChange = false): Promise<number> {
   await parkPointer(page, expectChange ? 150 : 300);
   expect(await captureCanvas(page, '__settle')).toBe(true);
@@ -154,39 +122,28 @@ async function captureBaseline(page: Page, key: string): Promise<void> {
   expect(await captureCanvas(page, key)).toBe(true);
 }
 
-/** Assign a column through the on-viewer selector. The shared helper verifies
- * the property itself, so the short commit settle is retried through a poll on
- * that property before the pick is repeated at the helper's own pace. */
 async function pickOnViewer(page: Page, role: string, column: string): Promise<void> {
   try {
     await v.pickColumnViaSelectorTrusted(page, {role, columnName: column, commitSettleMs: 250});
     return;
-  } catch (_) { /* fall through to the poll, then to a full retry */ }
+  } catch (_) {  }
   if (await waitUntil(async () => await readProp(page, `${role}ColumnName`) === column, 2500)) return;
   await v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 }
 
-// The helpers below serve PROPERTY-PANEL column rows only (whiskers, connecting
-// lines). The shared pickColumnViaSelectorTrusted covers on-viewer selectors: it
-// hovers the plot to reveal them and clicks their text. A panel row has neither
-// — it is scrolled into view inside the settings panel and its popup opens from
-// a mousedown on the nested combobox — so these paths stay local.
 async function waitBackdrop(page: Page, timeout = 6000): Promise<boolean> {
   return await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
     null, {timeout}).then(() => true).catch(() => false);
 }
 
-/** The popup grid is canvas-rendered, so the name goes in with real keys; the
- * first key is separated because the popup focuses its search input a tick
- * later. */
 async function commitColumn(page: Page, column: string): Promise<void> {
   const text = column.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(150); 
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(200); 
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(200);
+
 }
 
 const settingsBuilt = (page: Page) =>
@@ -201,9 +158,6 @@ async function openSettings(page: Page): Promise<void> {
   throw new Error('the scatter plot settings panel did not build');
 }
 
-/** A row inside a collapsed category keeps its DOM node with an empty box, so
- * readiness is the editor's own rectangle, not the row's presence. The category
- * header is a toggle, hence the retry. */
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {
   const ready = () => page.evaluate((sel: string) => {
     const el = document.querySelector(sel) as HTMLElement | null;
@@ -225,7 +179,6 @@ const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
   return sp.props[n];
 }, name);
 
-/** Inline row opacity — the property grid's only greyed-out signal. */
 const rowOpacity = (page: Page, rowName: string) => page.evaluate((n: string) =>
   (document.querySelector(`[name="${n}"]`) as HTMLElement | null)?.style.opacity ?? null, rowName);
 
@@ -235,8 +188,6 @@ const categoryCount = (page: Page, column: string) => page.evaluate((c: string) 
 const propIs = (page: Page, propName: string, value: unknown, timeoutMs: number) =>
   waitUntil(async () => await readProp(page, propName) === value, timeoutMs);
 
-/** The row is the actuation; the viewer's own property confirms the click
- * landed before any rendering is read. */
 async function setCheckboxProp(
   page: Page, rowName: string, category: string, propName: string, value: boolean,
 ): Promise<void> {
@@ -271,8 +222,6 @@ async function setNumericProp(
     throw new Error(`${propName} did not reach ${value} from the ${rowName} row`);
 }
 
-/** The popup of a property-panel column row opens on a mousedown, never on a
- * plain click. */
 async function openPanelColumnPopup(
   page: Page, rowName: string, comboName: string, category: string,
 ): Promise<void> {
@@ -298,8 +247,6 @@ async function pickPanelColumn(
     throw new Error(`${propName} did not reach ${column} from the ${rowName} row`);
 }
 
-/** The popup's first data row is the empty entry, one row height below the
- * popup's own header; picking it sets the property to the empty string. */
 async function clearPanelColumn(
   page: Page, rowName: string, comboName: string, category: string, propName: string,
 ): Promise<void> {
@@ -318,7 +265,6 @@ async function clearPanelColumn(
     throw new Error(`${propName} was left as ${left} by the ${rowName} row`);
 }
 
-/** The value cell turns into a text editor only once clicked. */
 async function setTextProp(
   page: Page, rowName: string, viewCell: string, propName: string, value: string,
 ): Promise<void> {
@@ -341,9 +287,6 @@ async function setTextProp(
     throw new Error(`${propName} did not reach "${value}" from the ${rowName} row`);
 }
 
-/** State of the two on-viewer axis column selectors. The GROK-13533 guard turns
- * on the computed visibility: DOM presence, a live offsetParent and a non-zero
- * box all survive the setting being turned off, so each alone passes either way. */
 const axisSelectorState = (page: Page) => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'))!;
@@ -362,8 +305,6 @@ const axisSelectorState = (page: Page) => page.evaluate(() => {
   return {x: read('x'), y: read('y')};
 });
 
-/** Scoped to `.d4-menu-popup` — a bare `.d4-menu-item` query also matches the
- * application menubar. */
 const menuEntryNames = (page: Page) => page.evaluate(() =>
   [...document.querySelectorAll('.d4-menu-popup [name]')]
     .map((e) => e.getAttribute('name')!).filter((n) => !!n));
@@ -443,9 +384,7 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
     await setCheckboxProp(page, 'prop-show-y-selector', 'y', 'showYSelector', false);
     await parkPointer(page);
     const hidden = await axisSelectorState(page);
-    // The setting hides the selectors without removing them: computed
-    // visibility is the only reading that separates the two states — the three
-    // a presence-style check would use are asserted unchanged next to it.
+
     expect(hidden.x?.visibility).toBe('hidden');
     expect(hidden.y?.visibility).toBe('hidden');
     expect(hidden.x?.inDom).toBe(true);
@@ -522,8 +461,7 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
 
   await softStep('Scenario 5 — Title and description', async () => {
     const errBefore = errCount();
-    // The title renders on the viewer's title bar, the description inside the
-    // viewer element, so the two texts are read from their own scopes.
+
     const viewerText = () => page.evaluate(() => {
       const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
         .find((e) => !e.closest('.d4-dialog'))! as HTMLElement;
@@ -557,14 +495,13 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
 
   await softStep('Lines By overrides the color column when splitting connecting lines', async () => {
     const errBefore = errCount();
-    // Lines By stays inert until a Lines Order column gives the lines an order.
+
     expect(await rowOpacity(page, 'prop-lines-by')).toBe('0.5');
     await captureBaseline(page, 'lines-base');
 
     await pickPanelColumn(page, 'prop-color', 'div-column-combobox-color',
       'color', 'colorColumnName', COLOR_COLUMN);
-    // The two candidate split columns must really differ in how many series
-    // they produce.
+
     const colorCategories = await categoryCount(page, COLOR_COLUMN);
     const linesByCategories = await categoryCount(page, LINES_BY_COLUMN);
     expect(linesByCategories).toBeGreaterThan(1);
@@ -575,19 +512,13 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
       'data', 'linesOrderColumnName', LINES_ORDER_COLUMN);
     expect(await rowOpacity(page, 'prop-lines-by')).toBe('1');
     expect(await settledCanvasDiff(page, 'lines-nolines', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
-    // Lines split by the color column — the reading both Lines By settings are
-    // judged against.
+
     expect(await captureCanvas(page, 'lines-color-split')).toBe(true);
 
-    // Pointing Lines By at the color column keeps the split key the same, so the
-    // picture must not move — this separates a changed split key from the mere
-    // act of setting a property.
     await pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by',
       'data', 'linesByColumnName', COLOR_COLUMN);
     expect(await settledCanvasDiff(page, 'lines-color-split')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
-    // A column with fewer categories changes the split key, and the picture with
-    // it — Lines By has taken over from the color column.
     await pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by',
       'data', 'linesByColumnName', LINES_BY_COLUMN);
     expect(await settledCanvasDiff(page, 'lines-color-split', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);

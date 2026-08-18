@@ -1,4 +1,3 @@
-// GROK-17964: Convert Notation column-action must register exactly once across cancel/commit/repeat invocations.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -53,7 +52,7 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected on smiles-50.csv after 30s poll. cols=${JSON.stringify(result.allCols)}`);
     await page.waitForTimeout(2000);
-    // Expand all accordion panes — chem action labels render only when the Actions pane is expanded.
+
     await page.evaluate(async () => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
       for (const p of panes) {
@@ -64,7 +63,7 @@ test('Chem: GROK-17964 Convert Notation column-action registration is exactly-on
         }
       }
     });
-    // Poll for the Convert Notation action link to render on the expanded Actions pane instead of a blind sleep.
+
     await expect.poll(async () => page.evaluate(() =>
       Array.from(document.querySelectorAll('label.d4-link-action'))
         .some(l => (l.textContent ?? '').trim().startsWith('Convert Notation')),

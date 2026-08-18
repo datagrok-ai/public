@@ -22,7 +22,6 @@ test("Connections / Sparql", async ({ page }) => {
     (window as any).grok.shell.closeAll();
   });
 
-  // Pre-clean any leftover test_sparql from prior runs.
   await page.evaluate(async () => {
     try {
       const c = await (window as any).grok.dapi.connections
@@ -44,7 +43,7 @@ test("Connections / Sparql", async ({ page }) => {
       await expect(page.locator("text=Databases").first()).toBeVisible({
         timeout: 10000,
       });
-      // Click the ellipsis *inside* the Databases group (page has multiple ellipses).
+
       await page.evaluate(async () => {
         const databasesNode = Array.from(
           document.querySelectorAll(".d4-tree-view-group-label"),
@@ -158,7 +157,7 @@ test("Connections / Sparql", async ({ page }) => {
         }
         return "";
       });
-      // Asserts scenario intent — fails on dev where DNS for data.ontotext.com is blocked.
+
       expect(balloonText).toContain("connected successfully");
     },
   );
@@ -178,7 +177,7 @@ test("Connections / Sparql", async ({ page }) => {
   await softStep(
     "Step 7: Right-click test_sparql, Delete, confirm DELETE",
     async () => {
-      // Refresh + re-expose Sparql + expand it so the freshly-saved connection shows.
+
       await page.evaluate(async () => {
         (
           document.querySelector(
@@ -209,7 +208,7 @@ test("Connections / Sparql", async ({ page }) => {
         const sparqlNode = sparql?.closest(
           ".d4-tree-view-node",
         ) as HTMLElement | null;
-        // Click triangle, then dblclick label as a fallback to ensure expansion.
+
         (
           sparqlNode?.querySelector(".d4-tree-view-tri") as HTMLElement | null
         )?.click();

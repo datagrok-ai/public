@@ -39,7 +39,7 @@ for (const ds of datasets) {
     await page.evaluate(async () => {
       const probes = ['Bio:getSeqHelper', 'Bio:getMonomerLibHelper', 'Bio:getBioLib'];
       for (const fn of probes) {
-        try { await (grok as any).functions.call(fn, {}); return; } catch { /* try next */ }
+        try { await (grok as any).functions.call(fn, {}); return; } catch {  }
       }
       await new Promise((r) => setTimeout(r, 3000));
     });
@@ -49,7 +49,7 @@ for (const ds of datasets) {
         for (const n of names) {
           try {
             if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
-          } catch { /* try next */ }
+          } catch {  }
         }
         return false;
       };

@@ -58,7 +58,7 @@ test("DiffStudio Catalog: PK-PD load, save to Model Hub, refresh, run, modify do
     await page
       .locator(".diff-studio-ribbon-save-to-model-catalog-icon")
       .click();
-    // Wait for balloon / notification
+
     await page
       .waitForFunction(
         () =>
@@ -158,7 +158,6 @@ test("DiffStudio Catalog: PK-PD load, save to Model Hub, refresh, run, modify do
     },
   );
 
-  // Cleanup: delete the saved PK-PD file from the user's catalog
   await page.evaluate(async () => {
     try {
       const files = await grok.dapi.files.list(
@@ -171,7 +170,7 @@ test("DiffStudio Catalog: PK-PD load, save to Model Hub, refresh, run, modify do
         await grok.dapi.files.delete(f);
       }
     } catch (e) {
-      /* ignore */
+
     }
     grok.shell.closeAll();
   });

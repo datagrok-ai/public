@@ -3,6 +3,7 @@ realizes: [linechart.cp.legend-color-and-persistence]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 declare const DG: any;
@@ -26,8 +27,6 @@ function realErrors(): string[] {
   return [...pageErrors, ...consoleErrors];
 }
 
-// The line color itself is canvas-rendered; the column's persisted categorical
-// colors (meta.colors) are the readable stand-in for it.
 async function readCategoryColors(page: Page): Promise<Record<string, number>> {
   return page.evaluate((col) => {
     const df = grok.shell.tv.dataFrame;
@@ -40,6 +39,16 @@ async function readCategoryColors(page: Page): Promise<Record<string, number>> {
       if (v && !seen[v]) { seen[v] = true; out[v] = colors.getColor(i, cat); }
     }
     return out;
+  }, splitColumn);
+}
+
+async function readROneColor(page: Page): Promise<number | null> {
+  return page.evaluate((col) => {
+    const tv = grok.shell.tv;
+    const cat = tv.dataFrame.col(col);
+    for (let i = 0; i < tv.dataFrame.rowCount; i++)
+      if (cat.get(i) === 'R_ONE') return cat.meta.colors.getColor(i, cat);
+    return null;
   }, splitColumn);
 }
 
@@ -61,24 +70,7 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-      setTimeout(resolve, 3000);
-    });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
-    }
-    await new Promise((r) => setTimeout(r, 5000));
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await page.locator('[name="icon-line-chart"]').click();
   await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});
@@ -88,131 +80,134 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
     lc.props.xColumnName = 'Chemical Space X';
     lc.props.yColumnNames = ['Chemical Space Y'];
     lc.props.splitColumnNames = [args.col];
-    // Set deterministic per-category colors so the github-1498 color guard is exact.
+
     grok.shell.tv.dataFrame.col(args.col).meta.colors.setCategorical(args.colors);
   }, {col: splitColumn, colors: baselineColors});
-  await page.waitForTimeout(1200);
+  await v.waitForViewerRendered(page, 'Line chart', 1200);
 
-  // Legend renders one entry per category (5 distinct Stereo Category values).
   const legend = page.locator('[name="viewer-Line-chart"] [name="legend"]');
   await legend.waitFor({timeout: 10000});
   await expect(legend.locator('.d4-legend-item.d4-legend-text-item')).toHaveCount(5);
 
   const baselineFilter = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
   const colorBefore = await readCategoryColors(page);
-  expect(colorBefore.R_ONE).toBe(0xFFFF0000); // baseline color set deterministically
+  expect(colorBefore.R_ONE).toBe(0xFFFF0000); 
 
   await softStep('S1: legend click filters + preserves remaining line colors', async () => {
     const before = realErrors().length;
     await legend.locator('.d4-legend-value', {hasText: /^S_ABS$/}).click();
-    await page.waitForTimeout(700);
-    const filtered = await lcFilterCount(page);
+    const filtered = await v.pollValue(() => lcFilterCount(page), (n) => n < baselineFilter, 700, 100);
     expect(filtered).toBeLessThan(baselineFilter);
-    // github-1498: the remaining category keeps its original color.
+
     const colorAfter = await readCategoryColors(page);
     expect(colorAfter.R_ONE).toBe(colorBefore.R_ONE);
-    expect(colorAfter.R_ONE).not.toBe(baselineColors.S_ABS); // did not turn into another category's color
+    expect(colorAfter.R_ONE).not.toBe(baselineColors.S_ABS); 
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S1: re-click legend category resets filter to full count', async () => {
     const before = realErrors().length;
     await legend.locator('.d4-legend-value', {hasText: /^S_ABS$/}).click();
-    await page.waitForTimeout(700);
+    await v.pollValue(() => lcFilterCount(page), (n) => n === baselineFilter, 700, 100);
     expect(await lcFilterCount(page)).toBe(baselineFilter);
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S2: category color persists through layout round-trip (GROK-17278)', async () => {
     const before = realErrors().length;
-    const result = await page.evaluate(async (args) => {
-      const tv = grok.shell.tv;
-      const cat = tv.dataFrame.col(args.col);
-      const colors = cat.meta.colors;
-      colors.setCategorical({R_ONE: 0xFF00AAFF});
-      await new Promise((r) => setTimeout(r, 400));
-      const readOne = () => {
-        for (let i = 0; i < tv.dataFrame.rowCount; i++)
-          if (cat.get(i) === 'R_ONE') return colors.getColor(i, cat);
-        return null;
-      };
-      const expected = readOne();
-      // Clearing the color stands in for closing the viewer.
-      const layout = tv.saveLayout();
+    await page.evaluate((col) => {
+      grok.shell.tv.dataFrame.col(col).meta.colors.setCategorical({R_ONE: 0xFF00AAFF});
+    }, splitColumn);
+    const expected = await v.pollValue(() => readROneColor(page), (c) => c === 0xFF00AAFF, 400, 50);
+
+    const layoutId = await page.evaluate(async () => {
+      const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      await new Promise((r) => setTimeout(r, 1500));
-      colors.setCategorical({});
-      await new Promise((r) => setTimeout(r, 400));
-      const cleared = readOne();
-      const saved = await grok.dapi.layouts.find(layoutId);
-      tv.loadLayout(saved);
-      await new Promise((r) => setTimeout(r, 3000));
-      const restored = readOne();
-      await grok.dapi.layouts.delete(saved);
-      return {expected, cleared, restored};
-    }, {col: splitColumn});
-    expect(result.cleared).not.toBe(result.expected); // clear really removed it
-    expect(result.restored).toBe(result.expected);    // layout round-trip restored it
+      return layout.id as string;
+    });
+
+    await page.waitForTimeout(1500);
+    await page.evaluate((col) => {
+      grok.shell.tv.dataFrame.col(col).meta.colors.setCategorical({});
+    }, splitColumn);
+    const cleared = await v.pollValue(() => readROneColor(page), (c) => c !== expected, 400, 50);
+    await page.evaluate(async (id) => {
+      grok.shell.tv.loadLayout(await grok.dapi.layouts.find(id));
+    }, layoutId);
+    const restored = await v.pollValue(() => readROneColor(page), (c) => c === expected, 3000, 150);
+    await page.evaluate(async (id) => {
+      await grok.dapi.layouts.delete(await grok.dapi.layouts.find(id));
+    }, layoutId);
+    expect(cleared).not.toBe(expected); 
+    expect(restored).toBe(expected);    
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S2 Steps 9-13: color AND markers legend survive a project save/close/reopen via the SAVE button (GROK-17278, GROK-19825)', async () => {
     const before = realErrors().length;
     const projName = 'zz-linechart-color-persist-' + Date.now();
-    // Set the category color, then save the project through the real SAVE
-    // ribbon button; the reopened project restores the Line chart + its legend.
-    const expected = await page.evaluate(async (col) => {
-      const cat = grok.shell.tv.dataFrame.col(col);
-      cat.meta.colors.setCategorical({R_ONE: 0xFF00AAFF});
-      await new Promise((r) => setTimeout(r, 500));
-      for (let i = 0; i < grok.shell.tv.dataFrame.rowCount; i++)
-        if (cat.get(i) === 'R_ONE') return cat.meta.colors.getColor(i, cat);
-      return null;
+
+    await page.evaluate((col) => {
+      grok.shell.tv.dataFrame.col(col).meta.colors.setCategorical({R_ONE: 0xFF00AAFF});
     }, splitColumn);
+    const expected = await v.pollValue(() => readROneColor(page), (c) => c === 0xFF00AAFF, 500, 50);
 
     await page.locator('[name="button-Save"]').first().click();
     await page.locator('.d4-dialog input[type="text"]').first().waitFor({timeout: 8000});
     await page.locator('.d4-dialog input[type="text"]').first().fill(projName);
     await page.locator('.d4-dialog .ui-btn-ok, .d4-dialog-footer button').filter({hasText: /^OK$/i}).first().click({force: true});
-    await page.waitForTimeout(3000);
-    // A "Share <project>" dialog pops up after a successful save — dismiss it.
+
     const cancel = page.locator('.d4-dialog .ui-btn, .d4-dialog button').filter({hasText: /^CANCEL$/i}).first();
+    await v.pollValue(() => cancel.count(), (n) => n > 0, 3000, 150);
     if (await cancel.count() > 0) await cancel.click({force: true});
-    await page.waitForTimeout(800);
+    await v.pollValue(() => cancel.count(), (n) => n === 0, 800, 50);
 
-    // Close everything, reopen the project, verify the restored state.
-    const result = await page.evaluate(async (args) => {
-      let proj = null;
-      for (let a = 0; a < 6 && !proj; a++) {
-        try { proj = await grok.dapi.projects.filter('name = "' + args.name + '"').first(); } catch (e) {}
-        if (!proj) await new Promise((r) => setTimeout(r, 1200));
-      }
-      if (!proj) return {found: false};
-      grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1500));
-      const full = await grok.dapi.projects.find(proj.id);
-      await full.open();
-      await new Promise((r) => setTimeout(r, 4500));
-      const tv = grok.shell.tv;
-      let color = null;
-      if (tv) {
-        const cat = tv.dataFrame.col(args.col);
-        for (let i = 0; i < tv.dataFrame.rowCount; i++)
-          if (cat.get(i) === 'R_ONE') { color = cat.meta.colors.getColor(i, cat); break; }
-      }
-      const legendDom = !!document.querySelector('[name="viewer-Line-chart"] [name="legend"]');
-      const lcRestored = (tv ? Array.from(tv.viewers) : []).some((x: any) => x.type === 'Line chart');
-      await grok.dapi.projects.delete(proj);
-      return {found: true, color, legendDom, lcRestored};
-    }, {name: projName, col: splitColumn});
+    const projId = await v.pollValue(() => page.evaluate(async (name) => {
+      try { return (await grok.dapi.projects.filter('name = "' + name + '"').first())?.id ?? null; }
+      catch (e) { return null; }
+    }, projName), (id) => id !== null, 7200, 1200);
 
-    expect(result.found).toBe(true);
-    expect(result.lcRestored).toBe(true);       // the project restored the viewer layout
-    expect(result.color).toBe(expected);        // GROK-17278: per-category color survived
-    expect(result.legendDom).toBe(true);        // GROK-19825: markers legend present after reopen
-    // Note: the post-save Share dialog can log a benign platform NullError; that
-    // is not a spec failure, so realErrors() is not asserted around the reopen.
+    const found = projId !== null;
+    let color: number | null = null;
+    let legendDom = false;
+    let lcRestored = false;
+    if (found) {
+      await v.closeAllAndWait(page);
+      await page.evaluate(async (id) => {
+        const full = await grok.dapi.projects.find(id);
+        await full.open();
+      }, projId);
+      await v.pollValue(() => page.evaluate(() => {
+        const tv = grok.shell.tv;
+        return !!tv && Array.from(tv.viewers).some((x: any) => x.type === 'Line chart');
+      }), (restored) => restored, 4500, 150);
+      const state = await page.evaluate((col) => {
+        const tv = grok.shell.tv;
+        let c = null;
+        if (tv) {
+          const cat = tv.dataFrame.col(col);
+          for (let i = 0; i < tv.dataFrame.rowCount; i++)
+            if (cat.get(i) === 'R_ONE') { c = cat.meta.colors.getColor(i, cat); break; }
+        }
+        return {
+          color: c,
+          legendDom: !!document.querySelector('[name="viewer-Line-chart"] [name="legend"]'),
+          lcRestored: (tv ? Array.from(tv.viewers) : []).some((x: any) => x.type === 'Line chart'),
+        };
+      }, splitColumn);
+      color = state.color;
+      legendDom = state.legendDom;
+      lcRestored = state.lcRestored;
+      await page.evaluate(async (id) => {
+        await grok.dapi.projects.delete(await grok.dapi.projects.find(id));
+      }, projId);
+    }
+
+    expect(found).toBe(true);
+    expect(lcRestored).toBe(true);       
+    expect(color).toBe(expected);        
+    expect(legendDom).toBe(true);        
+
   });
 
   await page.evaluate(() => grok.shell.closeAll());

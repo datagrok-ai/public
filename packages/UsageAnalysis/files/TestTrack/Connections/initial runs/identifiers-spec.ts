@@ -9,10 +9,6 @@ import {
 
 test.use(specTestOptions);
 
-// Prerequisite: a "test_postgres" connection must exist that connects to
-// db.datagrok.ai:54322/northwind. The MCP run created Agolovko:test_postgres
-// (id af9bcf40-21a0-11f1-89e2-7b1321b80948).
-
 const TEST_POSTGRES = "test_postgres";
 
 async function gotoPostgresAndExpand(page: import("@playwright/test").Page) {
@@ -214,7 +210,7 @@ test("Connections / Identifiers", async ({ page }) => {
   );
 
   await softStep("Step 4: Set Schema = public, click OK", async () => {
-    // Try common label names: "Schema", "Primary Schema"
+
     let r = await setDialogInput(page, "Schema", "public");
     if (!r.set) r = await setDialogInput(page, "Primary Schema", "public");
     expect(
@@ -230,9 +226,7 @@ test("Connections / Identifiers", async ({ page }) => {
   await softStep(
     "Step 5: Add identifier (CUSTOMER_ID, customers, customerid, [A-Z]{5})",
     async () => {
-      // The identifier editor dialog is now open. Add a new row, fill values.
-      // Selectors are best-effort: find an "Add" button or "+" inside the dialog,
-      // then fill four inputs (Semantic Type, Table, Column, MatchRegexp).
+
       const add = await page.evaluate(() => {
         const dialogs = Array.from(document.querySelectorAll(".d4-dialog"));
         const dialog = dialogs[dialogs.length - 1];
@@ -259,7 +253,6 @@ test("Connections / Identifiers", async ({ page }) => {
       ).toBe(true);
       await page.waitForTimeout(500);
 
-      // Fill the four fields. Names guessed based on scenario wording.
       const fillResults: Record<string, any> = {};
       for (const [label, value] of [
         ["Semantic Type", "CUSTOMER_ID"],
@@ -297,9 +290,7 @@ test("Connections / Identifiers", async ({ page }) => {
   await softStep(
     "Step 8-9: Open customers table from test_postgres",
     async () => {
-      // Use JS API to fetch the customers table — the identifiers config is
-      // applied at semantic-type detection time on any DataFrame loaded from
-      // this connection's `public.customers`.
+
       const result = await page.evaluate(async () => {
         const tp = await (window as any).grok.dapi.connections.find(
           "af9bcf40-21a0-11f1-89e2-7b1321b80948",
@@ -367,7 +358,7 @@ test("Connections / Identifiers", async ({ page }) => {
       await gotoPostgresAndExpand(page);
       const r1 = await rightClickConnection(page, TEST_POSTGRES);
       expect(r1.found).toBe(true);
-      // Look for "Remove identifiers" or similar removal item
+
       const items = await page.evaluate(() => {
         return Array.from(document.querySelectorAll(".d4-menu-item")).map(
           (el) => el.textContent?.trim() ?? "",
@@ -383,16 +374,16 @@ test("Connections / Identifiers", async ({ page }) => {
       if (removeText && /remove/i.test(removeText)) {
         const c = await clickMenuItem(page, removeText);
         expect(c.clicked).toBe(true);
-        // confirm if a confirm dialog appears
+
         await page.waitForTimeout(1000);
         const cd = await clickDialogButton(page, "OK");
         if (!cd.clicked) await clickDialogButton(page, "YES");
       } else {
-        // Fall back: re-open Configure Identifiers... and use a Remove/Clear option inside the dialog
+
         const c = await clickMenuItem(page, "Configure Identifiers...");
         expect(c.clicked).toBe(true);
         await page.waitForTimeout(2000);
-        // Try a Remove / Clear / Reset button at the bottom of the dialog
+
         const r = await clickDialogButton(page, "Remove");
         if (!r.clicked) await clickDialogButton(page, "CLEAR");
         await page.waitForTimeout(1000);

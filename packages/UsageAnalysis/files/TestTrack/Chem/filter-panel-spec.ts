@@ -22,8 +22,6 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
     await waitForMolecule(page);
   });
 
-  // ===== Block A — Filter Panel basics =====
-
   await softStep('Step 2 (A): Open Filter Panel → Structure filter card rendered', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup());
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
@@ -34,9 +32,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
   });
 
   await softStep('Step 3 (A): Draw c1ccccc1 substructure → ~32 rows filter', async () => {
-    // SR-DEFERRED sketch-link draw: filling the Edit-sketcher dialog's SMILES input does not
-    // load the molecule into the structure filter's sketcher (filter stays at trueCount=100).
-    // Apply the benzene substructure via the filter-group API (same substitution as Steps 6/9/11/13).
+
     await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
       const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
@@ -47,7 +43,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
         molBlock: 'c1ccccc1',
       });
     });
-    // The substructure search is async — poll for the filter to take effect.
+
     await expect.poll(() => page.evaluate(() => grok.shell.t.filter.trueCount),
       {timeout: 20000}).toBeLessThan(100);
     const filtered = await page.evaluate(() => grok.shell.t.filter.trueCount);
@@ -64,7 +60,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
         const header = card.querySelector('.d4-filter-header');
         if (header?.textContent?.trim() === 'Structure') structureCard = card;
       });
-      // Open gear → reveal search-type select
+
       const gearIcon = structureCard?.querySelector('.chem-search-options-icon, [class*="search-options"]') as HTMLElement | null;
       if (gearIcon) {
         gearIcon.click();
@@ -84,14 +80,12 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
       return res;
     });
     expect(results).not.toBeNull();
-    // Each tab should yield a deterministically-different (or same) count without errors.
+
     expect(typeof (results as any).Contains).toBe('number');
     expect(typeof (results as any)['Included in']).toBe('number');
     expect(typeof (results as any).Exact).toBe('number');
     expect(typeof (results as any).Similar).toBe('number');
   });
-
-  // ===== Block B — Use as filter from molecule cell context menu =====
 
   await softStep('Step 5 (B): Close Filter Panel', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup().close());
@@ -104,7 +98,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
       const molCol = df.columns.toList().find((c: any) => c.semType === 'Molecule');
       const firstSmiles = molCol.get(0);
       const fg = grok.shell.tv.getFiltersGroup();
-      // SR-DEFERRED right-click canvas → Use as filter: substituted with fg.updateOrAdd using the cell's SMILES.
+
       fg.updateOrAdd({
         type: 'Chem:substructureFilter',
         column: molCol.name,
@@ -117,8 +111,6 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
     expect(filtered).toBeLessThan(100);
   });
 
-  // ===== Block C — Filter from column header hamburger menu =====
-
   await softStep('Step 7 (C): Close Filter Panel again', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup().close());
     await page.waitForTimeout(800);
@@ -128,7 +120,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
     await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const molCol = tv.dataFrame.columns.toList().find((c: any) => c.semType === 'Molecule');
-      // Invoke the editor function directly — the column-hamburger Filter entry resolves to this.
+
       const fn = (DG as any).Func.find({name: 'substructureFilterEditor'})[0] ||
                   (DG as any).Func.find({name: 'searchSubstructureEditor'})[0];
       if (fn) await fn.prepare({molecules: molCol}).call();
@@ -169,13 +161,11 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
     await page.waitForTimeout(800);
   });
 
-  // ===== Block D — Drag-and-drop column header =====
-
   await softStep('Step 11 (D): Add Structure filter back (SR-DEFERRED: drag-drop canvas header)', async () => {
     await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
       const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');
-      // SR-DEFERRED drag-drop column header → Filter Panel: substituted with fg.updateOrAdd.
+
       fg.updateOrAdd({type: 'Chem:substructureFilter', column: molCol.name, columnName: molCol.name});
       await new Promise(r => setTimeout(r, 1500));
     });
@@ -186,8 +176,6 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
     });
     expect(hasStructure).toBe(true);
   });
-
-  // ===== Block E — Cross-filter + sketcher↔filter sync =====
 
   await softStep('Step 12 (E): Add Stereo Category categorical filter → AND composition', async () => {
     const before = await page.evaluate(() => grok.shell.t.filter.trueCount);
@@ -201,7 +189,7 @@ test('Chem: Filter Panel deep-dive (Blocks A-E)', async ({page}) => {
   });
 
   await softStep('Step 13 (E): Re-edit substructure filter via hamburger sync', async () => {
-    // SR-DEFERRED hamburger Re-edit click: apply modified structure via fg.updateOrAdd (filter↔structure sync).
+
     await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
       const molCol = grok.shell.t.columns.toList().find((c: any) => c.semType === 'Molecule');

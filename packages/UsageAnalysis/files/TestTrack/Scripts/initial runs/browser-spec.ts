@@ -39,7 +39,6 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
     },
   );
 
-  // Prerequisite — testRscript must exist and be at the top of the gallery (sorted by updated desc)
   await softStep("[pre] Ensure testRscript exists and is fresh", async () => {
     await page.evaluate(async () => {
       let s = await grok.dapi.scripts
@@ -51,9 +50,9 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
           '#name: testRscript\n#language: r\n#sample: cars.csv\n#input: dataframe table [Data table]\n#output: int count [Number of cells in table]\n#output: string newParam\ncount <- nrow(table) * ncol(table)\nnewParam="test"\n';
         s = DG.Script.create(body);
       }
-      // Bump the script so it sorts to the top of the gallery
+
       await grok.dapi.scripts.save(s);
-      // Navigate to Scripts (idempotent — single route, no round-trip)
+
       grok.shell.route("/scripts");
     });
     await page.waitForFunction(
@@ -61,7 +60,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
       null,
       { timeout: 30000 },
     );
-    // Wait for the gallery to be populated AND for testRscript to appear in it
+
     const found = await page.evaluate(async () => {
       for (let i = 0; i < 60; i++) {
         const cards = document.querySelectorAll(".grok-gallery-grid-item");
@@ -77,12 +76,11 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
   });
 
   await softStep("2. Type testRscript in search", async () => {
-    // Real keyboard typing — synthetic input events make the gallery refetch with no results
+
     await page.locator('input[placeholder*="Search scripts"]').click();
     await page.keyboard.type("testRscript", { delay: 30 });
     await page.waitForTimeout(2000);
-    // After typing, the gallery may filter to just testRscript or keep showing all cards;
-    // the scenario passes as long as testRscript is reachable in the gallery DOM
+
     const hasScript = await page.evaluate(async () => {
       for (let i = 0; i < 10; i++) {
         const hit = Array.from(
@@ -143,7 +141,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
   );
 
   await softStep("3B. Run testRscript + Activity counter visible", async () => {
-    // Run the script via JS API (UI Run button in context pane is flaky for table inputs)
+
     const ran = await page.evaluate(async () => {
       let cars = grok.shell.tables.find((t: any) => t.name === "cars");
       if (!cars) {
@@ -160,7 +158,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
       return result;
     });
     expect(ran).toBe(510);
-    // Re-select the card so the context panel rebuilds
+
     await page.evaluate(async () => {
       const titleEl = Array.from(
         document.querySelectorAll(".grok-gallery-grid-item-title"),
@@ -226,7 +224,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
       return activity?.parentElement?.textContent?.trim();
     });
     expect(text).toBeTruthy();
-    // Audit log should contain at least one action on testRscript (created/shared/edited/ran)
+
     expect(text!).toMatch(/(created|shared|edited|ran).*testRscript/);
   });
 
@@ -339,7 +337,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
         }
       });
       const balloons = await page.evaluate(async () => {
-        // Close any leftover dialogs from previous steps
+
         for (const d of (DG.Dialog as any).getOpenDialogs())
           try {
             d.close();
@@ -366,7 +364,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
           document.querySelectorAll(".d4-menu-item-label, .d4-menu-item"),
         ).find((e) => e.textContent?.trim() === "Run...") as HTMLElement;
         run.click();
-        // Wait for the ACF dialog (DG.Dialog API)
+
         let acf: any = null;
         for (let i = 0; i < 40; i++) {
           const opened = (DG.Dialog as any).getOpenDialogs();
@@ -374,7 +372,7 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
           if (acf) break;
           await new Promise((r) => setTimeout(r, 200));
         }
-        // De-duplicate any extra ACF dialogs
+
         const all = (DG.Dialog as any)
           .getOpenDialogs()
           .filter((d: any) => d.title === "ACF");
@@ -382,12 +380,12 @@ test("Scripts Browser — context panel accordions, share, chat, ACF run+edit", 
         const target = (DG.Dialog as any)
           .getOpenDialogs()
           .find((d: any) => d.title === "ACF");
-        // Set the Columns input via the dialog API
+
         const df = grok.shell.tables.find((t: any) => t.name === "TSLA");
         const closeCol = df.col("Close");
         target.input("Columns").value = [closeCol];
         await new Promise((r) => setTimeout(r, 500));
-        // Click OK on the visible ACF dialog
+
         const dlgs = Array.from(
           document.querySelectorAll(".d4-dialog"),
         ) as HTMLElement[];

@@ -199,7 +199,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
         )?.click();
         await wait(1500);
         await pickFromPicker(1);
-        // Add a second Group by column (region, idx 5) for multi-column result so step 17 can delete a column
+
         (
           groupByPanel.querySelector(".grok-icon.fa-plus") as HTMLElement
         )?.click();
@@ -296,7 +296,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
       nameInput.dispatchEvent(new Event("input", { bubbles: true }));
       await wait(400);
       (document.querySelector('[name="button-Save"]') as HTMLElement)?.click();
-      // Retry filter — exact friendlyName match (avoid prefix collisions with leftover test queries)
+
       let q: any = null;
       for (let i = 0; i < 20; i++) {
         await wait(800);
@@ -398,7 +398,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
         const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
         const w: any = window;
         const q = await w.grok.dapi.queries.find(id);
-        // Capture balloon as soon as it appears
+
         const balloons: string[] = [];
         const observer = new MutationObserver((muts) => {
           for (const m of muts)
@@ -450,7 +450,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
         const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
         document.body.classList.add("selenium");
         (window as any).grok.shell.windows.simpleMode = true;
-        // Wait for the editor's pivot panels to materialize after page load
+
         let wherePanel: Element | undefined;
         for (let i = 0; i < 60; i++) {
           await wait(300);
@@ -535,13 +535,13 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
         const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
         const w: any = window;
         const q = await w.grok.dapi.queries.find(id);
-        // Default param run
+
         const fc1 = q.prepare({});
         const r1 = await fc1.call();
         const df1 = r1.outputs.result;
         w.grok.shell.addTableView(df1);
         await wait(1500);
-        // Refresh with different parameter — q.prepare honors overrides; q.executeTable does not
+
         const fc2 = q.prepare({ companyname: "contains z" });
         const r2 = await fc2.call();
         const df2 = r2.outputs.result;
@@ -550,7 +550,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
         return { rows1: df1.rowCount, rows2: df2.rowCount };
       }, ctx.queryId);
       expect(result.rows1).toBeGreaterThan(0);
-      // The override yields a different (smaller) result than the default
+
       expect(result.rows2).toBeLessThan(result.rows1);
     },
   );
@@ -562,8 +562,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
       const result = await page.evaluate(async (id) => {
         const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
         const w: any = window;
-        // Make sure the current view has the full result (the previous step may have left a tiny
-        // result-set view from "contains z"). Run with empty params and put that DF in the active view.
+
         const q0 = await w.grok.dapi.queries.find(id);
         const r0 = await q0.prepare({}).call();
         const fullDf = r0.outputs.result;
@@ -579,7 +578,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
         const beforeCols = df.columns.length;
         df.rows.removeAt(0, Math.min(5, beforeRows));
         await wait(400);
-        // If the result is multi-column, also delete the second column
+
         let colDeleted = false;
         if (df.columns.length > 1) {
           const second = df.columns.byIndex(1).name;
@@ -633,7 +632,7 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
       await wait(1500);
       const dialog = document.querySelector(".d4-dialog");
       if (!dialog) return { ok: false, missing: "save dialog" };
-      // Set custom name into the project name input
+
       const nameInput = Array.from(
         dialog.querySelectorAll("input.ui-input-editor"),
       ).find(
@@ -668,18 +667,14 @@ test("Queries — Visual Query Advanced (post-process, layout, edit, refresh, pr
     }, projectName);
     if (result.newProjects && result.newProjects.length > 0)
       ctx.projectId = result.newProjects[0].id;
-    // The dev server's project serializer currently throws "Type descriptor for type 'dynamic' not found"
-    // for any TableView containing a DataFrame from a Datagrok query. The save attempt is observable
-    // (warnings/errors balloon, dialog flow), but no project is materialized. The assertion accepts
-    // either a real project id OR the platform error — both are valid evidence the UX path executed.
+
     const platformBlocked = result.errors?.some((e) => e?.includes("dynamic"));
     expect(!!ctx.projectId || platformBlocked).toBeTruthy();
   });
 
   await softStep("20-21. Close all and reopen the saved project", async () => {
     if (!ctx.projectId) {
-      // No projectId means step 19 hit the dev-server "Type descriptor for type 'dynamic' not found" regression.
-      // We log and short-circuit silently rather than fail this softStep, since step 19 already recorded the error.
+
       console.log(
         "[STEP SKIPPED] 20-21: no projectId (project save blocked by dev-server regression)",
       );

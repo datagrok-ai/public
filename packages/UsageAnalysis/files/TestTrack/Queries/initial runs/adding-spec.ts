@@ -13,8 +13,6 @@ test("Queries — adding a new SQL query", async ({ page }) => {
 
   await loginToDatagrok(page);
 
-  // Setup: Tabs mode, selenium class, closeAll, show Browse.
-  // Pre-clean: delete any stale test_query left from previous runs.
   await page.evaluate(async () => {
     document.body.classList.add("selenium");
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
@@ -36,8 +34,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
   await page.locator('[name="Browse"]').waitFor({ timeout: 30_000 });
 
   await softStep("Go to Browse → Databases → Postgres", async () => {
-    // Tree expand semantics differ across levels — Databases expands on single
-    // click, Postgres requires a dblclick event. Use JS to drive the tree.
+
     const expanded = await page.evaluate(async () => {
       const db = Array.from(
         document.querySelectorAll(".d4-tree-view-group-label"),
@@ -74,8 +71,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
   });
 
   await softStep("Right-click NorthwindTest → New Query...", async () => {
-    // chrome-devtools / Playwright contextmenu must be dispatched on the
-    // .d4-tree-view-node ancestor — not the label.
+
     const opened = await page.evaluate(async () => {
       const nw = Array.from(
         document.querySelectorAll(".d4-tree-view-group-label"),
@@ -111,7 +107,7 @@ test("Queries — adding a new SQL query", async ({ page }) => {
   });
 
   await softStep("Enter test_query into the Name field", async () => {
-    // Dart inputs commit only on real keyboard events — focus, Ctrl+A, type.
+
     const nameInput = page.locator('input[name="input-Name"]').first();
     await nameInput.click();
     await page.keyboard.press("Control+a");
@@ -181,18 +177,16 @@ test("Queries — adding a new SQL query", async ({ page }) => {
   );
 
   await softStep("Save the query", async () => {
-    // Switch back to the DataQueryView — the new TableView grabbed focus.
+
     await page.evaluate(() => {
       const views = Array.from((window as any).grok.shell.views) as any[];
       const qv = views.find((v) => v.type === "DataQueryView");
       if (qv) (window as any).grok.shell.v = qv;
     });
     await page.waitForTimeout(500);
-    // Ribbon button is `button-Save` (Title-case) — no all-caps SAVE selector exists.
+
     await page.locator('[name="button-Save"]').first().click();
-    // Verify persistence. Server normalizes name to PascalCase (`TestQuery`)
-    // while friendlyName stays `test_query`. Connection on dev is `PostgresTest`
-    // (the underlying connection that the `NorthwindTest` Browse node aliases).
+
     const saved = await page.evaluate(async () => {
       for (let i = 0; i < 40; i++) {
         const q = await (window as any).grok.dapi.queries
@@ -214,7 +208,6 @@ test("Queries — adding a new SQL query", async ({ page }) => {
     expect(saved.ok).toBe(true);
   });
 
-  // Cleanup
   await page.evaluate(async () => {
     try {
       const all = await (window as any).grok.dapi.queries

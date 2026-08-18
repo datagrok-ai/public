@@ -1,4 +1,3 @@
-// Paired scenario: Advanced/scaffold-tree-functions.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../../spec-login';
 import {finishSpec} from '../../helpers/viewers';
@@ -51,7 +50,7 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
       const wand = document.querySelector('[name="viewer-Scaffold-Tree"] [aria-label="Generate"]') as HTMLElement;
       wand?.click();
     });
-    // Wait up to 60s for nodes
+
     const ready = await page.evaluate(async () => {
       for (let i = 0; i < 30; i++) {
         const viewer = document.querySelector('[name="viewer-Scaffold-Tree"]');
@@ -97,7 +96,7 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
       grok.shell.o = viewer;
       await new Promise(r => setTimeout(r, 2000));
     });
-    // Verify Context Panel has expandable property panes for the viewer
+
     const hasPanes = await page.evaluate(() =>
       document.querySelectorAll('.d4-accordion-pane-header').length > 0);
     expect(hasPanes).toBe(true);

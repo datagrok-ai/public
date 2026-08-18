@@ -1,5 +1,3 @@
-// Sketcher wired into the FILTER PANEL: apply/clear substructure filter (GROK-14028),
-// backend-switch sync to global currentSketcherType (GROK-12581/12903), close+reopen (GROK-12905).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -12,7 +10,6 @@ async function getCurrentSketcherType(page: import('@playwright/test').Page): Pr
   return page.evaluate(() => (window as any).DG.chem.currentSketcherType);
 }
 
-// Open/reopen the molecule column's filter sketcher: click .sketch-link (empty) or canvas (filled).
 async function openFilterSketcher(page: import('@playwright/test').Page): Promise<void> {
   const link = page.locator(`${FILTERS} .d4-filter .sketch-link`);
   if (await link.count() > 0)
@@ -32,7 +29,6 @@ async function closeDialog(page: import('@playwright/test').Page): Promise<void>
   await page.waitForTimeout(800);
 }
 
-// Switch the sketcher backend through the dialog's hamburger menu.
 async function switchBackendInDialog(page: import('@playwright/test').Page, name: string): Promise<void> {
   await page.locator('.d4-dialog .fa-bars').first().click();
   await page.waitForTimeout(800);
@@ -60,7 +56,7 @@ test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reop
         if (df.columns.toList().some((c: any) => c.semType === 'Molecule')) break;
         await sleep(300);
       }
-      // Force Chem + sketcher init so the molecule column gets the substructure filter.
+
       DG.chem.currentSketcherType = 'OpenChemLib';
       const probe = new DG.chem.Sketcher();
       const pd = ui.dialog('init').add(probe.root); pd.show();
@@ -70,7 +66,7 @@ test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reop
       (window as any).__sk_err = [];
       const orig = console.error;
       console.error = function(...a: any[]) { (window as any).__sk_err.push(a.map((x: any) => String(x)).join(' ')); orig.apply(console, a as any); };
-      // retry getFiltersGroup until the substructure sketch-link appears
+
       let found = false;
       for (let i = 0; i < 4 && !found; i++) {
         tv.getFiltersGroup();
@@ -104,7 +100,7 @@ test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reop
   });
 
   await softStep('Block A: Reset on the Filter Panel clears input + restores rows (GROK-14028)', async () => {
-    // GROK-14028: exercise the Filter Panel's Reset (.chem-clear-sketcher-button, hover-revealed, click via DOM).
+
     const clicked = await page.evaluate(async () => {
       const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
       let btn: HTMLElement | null = null;
@@ -121,7 +117,7 @@ test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reop
     expect(clicked, 'GROK-14028: Reset (.chem-clear-sketcher-button) must be present on the Filter Panel after applying').toBe(true);
     const trueCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     expect(trueCount, 'GROK-14028: rows restored after Reset on the Filter Panel').toBe(total);
-    // reopen to confirm Reset cleared the persisted input line
+
     await openFilterSketcher(page);
     const inputVal = await page.locator('.d4-dialog input[placeholder*="SMILES" i]').inputValue();
     console.log(`[fp] after Reset: input="${inputVal}" trueCount=${trueCount}/${total}`);

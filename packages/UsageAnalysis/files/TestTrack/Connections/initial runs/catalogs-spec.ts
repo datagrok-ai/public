@@ -136,12 +136,6 @@ test("Connections / Catalogs", async ({ page }) => {
     },
   );
 
-  // Steps 4-17 require the MS SQL server to be reachable. On the dev
-  // environment, all 3 MS SQL connections (NorthwindTest, Northwind,
-  // MSSQLDBTests) fail to connect (db.datagrok.ai:14331 / :14332 connection
-  // refused), so the schema-group label resolves to "Unavailable" and there
-  // are no catalog children to interact with. Skip the rest when this is the
-  // case.
   test.skip(
     schemaGroupLabel !== "Catalogs",
     `MS SQL > NorthwindTest schema-group is "${schemaGroupLabel}" — connection is unavailable on this server, cannot exercise catalog browsing`,

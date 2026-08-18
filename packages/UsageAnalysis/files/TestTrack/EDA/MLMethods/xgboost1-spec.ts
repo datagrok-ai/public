@@ -18,7 +18,6 @@ test('XGBoost 1: Classification on iris.csv', async () => {
     }, {timeout: 45000});
   }
 
-  // Step 1: Open iris.csv
   await softStep('Open iris.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -38,7 +37,6 @@ test('XGBoost 1: Classification on iris.csv', async () => {
     expect(result.cols).toBe(6);
   });
 
-  // Step 2: Train XGBoost Classification (JS API fallback)
   await softStep('Train XGBoost Classification (JS API fallback)', async () => {
     const result = await page!.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;

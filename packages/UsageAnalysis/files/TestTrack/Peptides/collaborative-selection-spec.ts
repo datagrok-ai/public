@@ -177,41 +177,40 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
     });
     expect(result.pickFound, 'no populated (monomer, position) pick was found in the WebLogo stats').toBe(true);
     expect(result.threw, `WebLogo selection handler / fireBitsetChanged threw: ${result.threw}`).toBeNull();
-    // Step 3: DataFrame.selection populated (exactly the picked-monomer rows).
+
     expect(result.selAfter, 'WebLogo header pick did not populate df.selection (backbone did not fire)')
       .toBeGreaterThan(0);
     expect(result.selAfter, 'df.selection trueCount should equal the picked monomer count')
       .toBe(result.pick!.count);
-    // get-selection-bitset projection is consistent with the broadcast BitSet.
+
     expect(result.combinedCount, 'getCombinedSelection (get-selection-bitset) did not match df.selection')
       .toBe(result.selAfter);
-    // The unified Selection map carries exactly the picked monomer at the picked position.
+
     expect(result.mapForPos, 'webLogoSelection did not record the picked monomer at the picked position')
       .toContain(result.pick!.monomer);
-    // Steps 5-6: cross-viewer surfaces survive the broadcast.
+
     expect(result.svmHasCanvas, 'Sequence Variability Map lost its canvas after the broadcast').toBe(true);
     expect(result.mprPresent, 'Most Potent Residues viewer disappeared after the broadcast').toBe(true);
-    // Steps 7-8: the Distribution + Selection widget surfaces carry rendered content.
+
     expect(result.widgets['pane-Distribution']?.found, 'Distribution widget pane not found').toBe(true);
     expect(result.widgets['pane-Distribution']?.hasContent,
       'Distribution widget pane has no rendered content for the selected subset').toBe(true);
     expect(result.widgets['pane-Selection']?.found, 'Selection widget pane not found').toBe(true);
     expect(result.widgets['pane-Selection']?.hasContent,
       'Selection widget pane has no rendered content for the selected subset').toBe(true);
-    // GROK-14298 invariant: no null-receiver crash in the cross-viewer broadcast path.
+
     expect(isNullReceiverCrash(result.lastError!),
       `GROK-14298 invariant: the first broadcast produced a null-receiver crash: ${result.lastError}`)
       .toBe(false);
   });
-  // Scenario 2 — Shift-click additive (union) then Ctrl-click toggle-off, asserting cross-surface
-  // consistency and no null-receiver crash on either re-broadcast (GROK-14298 listener-mutation mode).
+
   await softStep('Scenario 2 (steps 1-8): Shift additive then Ctrl toggle-off re-broadcast', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const df = tv.dataFrame;
       const model = tv.dataFrame.temp['peptidesModel'] as any;
       const mps = model.monomerPositionStats;
-      // Re-establish the Scenario-1 single pick deterministically (first partial-count item).
+
       const fresh: Record<string, string[]> = {};
       for (const pos of Object.keys(mps).filter((k) => k !== 'general')) fresh[pos] = [];
       model.webLogoSelection = fresh;
@@ -227,14 +226,14 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
       }
       if (partials.length < 2) return {twoPicksFound: false};
       const [first, second] = partials;
-      // Step 1 (re-establish Scenario-1 single pick).
+
       model.modifyWebLogoSelection(
         {positionOrClusterType: first.position, monomerOrCluster: first.monomer},
         {shiftPressed: false, ctrlPressed: false}, true);
       model.fireBitsetChanged('WebLogo');
       await new Promise((r) => setTimeout(r, 800));
       const selSingle = df.selection.trueCount;
-      // Step 2: Shift-click a second distinct (monomer, position) — additive (union).
+
       let shiftThrew: string | null = null;
       try {
         model.modifyWebLogoSelection(
@@ -248,16 +247,16 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
         first: (model.webLogoSelection[first.position] ?? []).slice(),
         second: (model.webLogoSelection[second.position] ?? []).slice(),
       };
-      // Step 4: SVM reflects the additive selection (viewer survives the re-broadcast).
+
       const svmAfterShift = document.querySelector('[name="viewer-Sequence-Variability-Map"]');
       const svmAliveAfterShift = svmAfterShift ? !!svmAfterShift.querySelector('canvas') : false;
-      // Steps 5-6: widget surfaces re-render against the new selection (cold-stable predicate).
+
       const widgetsAfterShift: Record<string, boolean> = {};
       for (const paneName of ['pane-Distribution', 'pane-Selection']) {
         widgetsAfterShift[paneName] = (await (window as any).__paneHasContent(paneName)).hasContent;
       }
       const lastErrorAfterShift = grok.shell.lastError ? String(grok.shell.lastError) : '';
-      // Step 7: Ctrl-click the second pick — toggle it off; re-broadcast the reduced selection.
+
       let ctrlThrew: string | null = null;
       try {
         model.modifyWebLogoSelection(
@@ -272,7 +271,7 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
         second: (model.webLogoSelection[second.position] ?? []).slice(),
       };
       const combinedReduced = model.getCombinedSelection()?.trueCount ?? null;
-      // Step 8: cross-surfaces reflect the reduced selection.
+
       const svmAfterCtrl = document.querySelector('[name="viewer-Sequence-Variability-Map"]');
       const svmAliveAfterCtrl = svmAfterCtrl ? !!svmAfterCtrl.querySelector('canvas') : false;
       const widgetsAfterCtrl: Record<string, boolean> = {};
@@ -294,40 +293,40 @@ test('Collaborative selection — WebLogo header click propagates through fireBi
     expect(result.shiftThrew, `Shift-add WebLogo handler threw: ${result.shiftThrew}`).toBeNull();
     expect(result.selAdditive, 'Shift-click did not grow the selection (additive union expected, not replacement)')
       .toBeGreaterThan(result.selSingle!);
-    // The unified Selection map carries BOTH picks after the Shift-add.
+
     expect(result.mapAfterShift!.first, 'first pick lost from the Selection map after Shift-add')
       .toContain(result.first!.monomer);
     expect(result.mapAfterShift!.second, 'second pick not recorded in the Selection map after Shift-add')
       .toContain(result.second!.monomer);
-    // Step 4: SVM survives the re-broadcast. Steps 5-6: widget surfaces re-render.
+
     expect(result.svmAliveAfterShift, 'Sequence Variability Map lost its canvas after the Shift re-broadcast').toBe(true);
     expect(result.widgetsAfterShift!['pane-Distribution'],
       'Distribution widget did not re-render after the Shift re-broadcast').toBe(true);
     expect(result.widgetsAfterShift!['pane-Selection'],
       'Selection widget did not re-render after the Shift re-broadcast').toBe(true);
-    // No null-receiver crash on the Shift re-broadcast.
+
     expect(isNullReceiverCrash(result.lastErrorAfterShift!),
       `GROK-14298 invariant: the Shift re-broadcast produced a null-receiver crash: ${result.lastErrorAfterShift}`)
       .toBe(false);
-    // Step 7: Ctrl-toggle-off did not throw; selection returns to the single-pick state.
+
     expect(result.ctrlThrew, `Ctrl-toggle WebLogo handler threw: ${result.ctrlThrew}`).toBeNull();
     expect(result.selReduced, 'Ctrl-toggle-off did not return the selection to the single-pick count')
       .toBe(result.selSingle);
-    // get-selection-bitset projection matches the reduced selection.
+
     expect(result.combinedReduced, 'getCombinedSelection did not match the reduced df.selection')
       .toBe(result.selReduced);
-    // The second pick is removed from the unified Selection map; the first remains.
+
     expect(result.mapAfterCtrl!.second, 'Ctrl-toggle did not remove the second pick from the Selection map')
       .not.toContain(result.second!.monomer);
     expect(result.mapAfterCtrl!.first, 'Ctrl-toggle erroneously dropped the first (untouched) pick')
       .toContain(result.first!.monomer);
-    // Step 8: cross-surfaces reflect the reduced selection.
+
     expect(result.svmAliveAfterCtrl, 'Sequence Variability Map lost its canvas after the Ctrl re-broadcast').toBe(true);
     expect(result.widgetsAfterCtrl!['pane-Distribution'],
       'Distribution widget did not re-render after the Ctrl re-broadcast').toBe(true);
     expect(result.widgetsAfterCtrl!['pane-Selection'],
       'Selection widget did not re-render after the Ctrl re-broadcast').toBe(true);
-    // No null-receiver crash on the Ctrl re-broadcast (the listener-mutation crash mode).
+
     expect(isNullReceiverCrash(result.lastErrorAfterCtrl!),
       `GROK-14298 invariant: the Ctrl re-broadcast produced a null-receiver crash: ${result.lastErrorAfterCtrl}`)
       .toBe(false);

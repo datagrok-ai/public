@@ -22,6 +22,7 @@ async function setProps(page: Page, props: Record<string, any>) {
     const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
     for (const [k, val] of Object.entries(p)) (lc.props as any)[k] = val;
   }, props);
+
   await page.waitForTimeout(500);
 }
 
@@ -57,12 +58,14 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
     grok.shell.addTableView(df);
     await new Promise((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
+
       setTimeout(resolve, 3000);
     });
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise((r) => setTimeout(r, 200));
     }
+
     await new Promise((r) => setTimeout(r, 5000));
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
@@ -72,8 +75,6 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
 
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X']});
 
-  // The overlays are canvas-rendered and grok.shell.warnings is undefined on this
-  // build, so page and console errors are the floor for the steps below.
   await softStep('S1 steps 1-3: enable regression line, no-error floor', async () => {
     const before = realErrors().length;
     await setProps(page, {showRegressionLine: true});
@@ -92,8 +93,6 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
     expect(realErrors().length).toBe(before);
   });
 
-  // GROK-20218: with a split, the rolling-average and std-dev overlays render per
-  // category.
   await softStep('S1 steps 8-9: apply split, overlays render per category', async () => {
     const before = realErrors().length;
     await setProps(page, {splitColumnNames: ['Stereo Category']});
@@ -115,8 +114,7 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
     {type: 'line', formula: '${Chemical Space X} = 500', title: 'const-line', color: '#FF0000'},
     {type: 'band', formula: '${Chemical Space X} in(400, 600)', title: 'const-band', color: '#00FF00'},
   ]);
-  // The line and the band are canvas-rendered; only the formulaLines config itself
-  // can be read back.
+
   await softStep('S2 steps 1-5: add a formula line and a formula band', async () => {
     const before = realErrors().length;
     await setProps(page, {formulaLines: formulaLinesSpec});
@@ -124,8 +122,6 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
     expect(realErrors().length).toBe(before);
   });
 
-  // GROK-19943, GROK-19949: the formula-lines config must survive a layout save and
-  // reapply.
   await softStep('S2 steps 6-8: save layout, clear, reapply — formula lines restored', async () => {
     const before = realErrors().length;
     const countBeforeSave = await formulaLinesCount(page);
@@ -135,11 +131,11 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
       const tv = grok.shell.tv;
       const layout = tv.saveLayout();
       await grok.dapi.layouts.save(layout);
+
       await new Promise((r) => setTimeout(r, 1200));
       return layout.id;
     });
 
-    // Clear the formula lines to prove reapply restores them.
     await setProps(page, {formulaLines: ''});
     expect(await formulaLinesCount(page)).toBe(0);
 
@@ -147,6 +143,7 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
       const tv = grok.shell.tv;
       const saved = await grok.dapi.layouts.find(id);
       tv.loadLayout(saved);
+
       await new Promise((r) => setTimeout(r, 3000));
     }, layoutId);
 
@@ -158,7 +155,7 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
       try {
         const saved = await grok.dapi.layouts.find(id);
         if (saved) await grok.dapi.layouts.delete(saved);
-      } catch (e) { /* best-effort cleanup */ }
+      } catch (e) {  }
     }, layoutId);
   });
 

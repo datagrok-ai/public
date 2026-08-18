@@ -1,10 +1,3 @@
-// NOTE: This spec was REMOVED from the playwright-public CI suite (Bio folder) and is kept here in
-// TestTrack/General for reference only. Reason for removal: PepSeA MSA runs through the on-demand `bio`
-// Docker container (dockerfiles/, on_demand:true — datagrok/python + mafft). On the minimal ui_tests CI
-// stack the container image is cold-built on first request, which exceeds the 60s docker-proxy timeout
-// (proxyRequestTimeout: 60000) → the align request returns `504 Gateway Time-out` before the build
-// finishes. grok_spawner is present, but without a pre-built/pre-warmed image the spec cannot run in CI.
-// Restore it to CI once the ui_tests stack pre-builds the `bio` container (or raises the proxy timeout).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -57,12 +50,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
     expect(info.units).toBe('helm');
   });
   await softStep('Add new column Clusters = RandBetween(0, 5)', async () => {
-    // Create the Clusters column via the JS API rather than driving the
-    // Add-New-Column CodeMirror editor: the editor typing is brittle (the formula
-    // can register partially, so the dialog OK produces no column and the test
-    // hangs). The Clusters values are pure setup — they are deterministically
-    // overwritten with `i % 2` immediately below — so the formula UI is not the
-    // feature under test here (PepSeA MSA is).
+
     await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       if (!df.columns.names().includes('Clusters'))
@@ -294,7 +282,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         msaCol.setTag('alphabet', 'UN');
         msaCol.setTag('.alphabetIsMultichar', 'true');
         df.columns.add(msaCol);
-        // detectSemanticTypes binds the Macromolecule cell renderer (mirrors the dialog OK path).
+
         await grok.data.detectSemanticTypes(df);
       });
       await page.waitForFunction(() => {
@@ -306,7 +294,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
         return gridCol?.cellType === 'sequence' || gridCol?.cellType === 'helm';
       }, null, {timeout: 60_000});
     } else {
-      // Happy path — dialog produced the column; poll for the renderer to bind.
+
       await page.waitForFunction(() => {
         const df = grok.shell.tv.dataFrame;
         const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -323,7 +311,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
       const clusters: any = df.col('Clusters');
       const gridCol = (grok.shell.tv as any).grid?.col?.(msa.name);
       let separatorTag = '.';
-      try { separatorTag = msa.getTag('separator') || '.'; } catch { /* ignore */ }
+      try { separatorTag = msa.getTag('separator') || '.'; } catch {  }
       const units = msa?.meta?.units ?? '';
       const countByCluster: Record<string, Set<number>> = {};
       for (let i = 0; i < df.rowCount; i++) {
@@ -340,7 +328,7 @@ test('Bio PepSeA MSA on HELM', async ({page}) => {
       }
       const allEqualPerCluster = Object.values(countByCluster).every((s) => s.size === 1);
       let alignedTag: string | null = null;
-      try { alignedTag = msa.getTag('aligned') ?? null; } catch { /* ignore */ }
+      try { alignedTag = msa.getTag('aligned') ?? null; } catch {  }
       return {
         msaName: msa?.name,
         semType: msa?.semType,

@@ -1,14 +1,3 @@
-/**
- * spaces-general-v2.test.ts
- *
- * Spaces feature end-to-end tests covering CRUD, validation, navigation,
- * hierarchy, favorites, sharing, search, drag-and-drop, content view,
- * link/copy semantics, entity operations, and edge cases.
- *
- * Optimisation: the platform is loaded once in beforeAll; between tests
- * grok.shell.closeAll() resets the UI without a full page reload.
- */
-
 import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as path from 'path';
 
@@ -17,15 +6,10 @@ const SHARING_LOGIN = process.env.DATAGROK_SHARING_LOGIN || '';
 const SHARING_PASSWORD = process.env.DATAGROK_SHARING_PASSWORD || '';
 const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
 
-// ===========================================================================
-// Helpers
-// ===========================================================================
-
-/** Fast reset: close all views/dialogs, dismiss toasts, ensure Spaces tree is visible. */
 async function resetToSpaces(page: Page) {
   await page.evaluate(() => {
     const g = (window as any).grok;
-    // close all open dialogs via Dart API
+
     if (g?.shell?.closeAll) g.shell.closeAll();
     document.querySelectorAll('.d4-dialog').forEach((d: any) => {
       try { d.remove(); } catch(_) {}
@@ -33,7 +17,7 @@ async function resetToSpaces(page: Page) {
     document.querySelectorAll('.d4-toast, .d4-balloon, .d4-menu').forEach(e => e.remove());
   });
   await page.waitForTimeout(500);
-  // double-check: close any remaining dialogs via keyboard
+
   while (await page.locator('.d4-dialog').count() > 0) {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
@@ -46,7 +30,7 @@ async function resetToSpaces(page: Page) {
     await spacesNode.click();
     await page.waitForTimeout(300);
   }
-  // refresh the tree so API-deleted spaces are removed from the UI
+
   await refreshSpacesTree(page);
 }
 
@@ -139,7 +123,7 @@ async function openSpaceViaTree(page: Page, spaceName: string) {
 }
 
 async function dragFileToSpaceNode(page: Page, fileName: string, spaceName: string) {
-  // Navigate to DemoFiles, retry once if page doesn't load properly
+
   for (let attempt = 0; attempt < 3; attempt++) {
     await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`);
     const loaded = await page.locator('.d4-link-label label').first()
@@ -183,10 +167,6 @@ async function rightClickItemInSpaceView(page: Page, name: string) {
   await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
 }
 
-// ===========================================================================
-// 1. Create root space and verify context menu
-// ===========================================================================
-
 test.describe.serial('Spaces general', () => {
   let sharedContext: BrowserContext;
   let page: Page;
@@ -205,7 +185,7 @@ test.describe.serial('Spaces general', () => {
   });
 
 test('1. Create root space and verify context menu', async () => {
-  // Spaces node visible in browse tree; create root space; context menu has all expected items
+
   const ROOT = 'PW-Gen-Root-1';
   try {
     await resetToSpaces(page);
@@ -236,12 +216,8 @@ test('1. Create root space and verify context menu', async () => {
   }
 });
 
-// ===========================================================================
-// 2. Validation: empty name, duplicate root and child names
-// ===========================================================================
-
 test('2. Validation: empty name disables OK; duplicate names show errors', async () => {
-  // Empty name disables OK button; duplicate root name shows error; duplicate child name shows error
+
   const DUP    = 'PW-Gen-Dup-2';
   const PARENT = 'PW-Gen-Dup-Parent-2';
   const CHILD  = 'PW-Gen-Dup-Child-2';
@@ -282,10 +258,6 @@ test('2. Validation: empty name disables OK; duplicate names show errors', async
   }
 });
 
-// ===========================================================================
-// 3. Hierarchy: create child, three levels, navigation
-// ===========================================================================
-
 test('3. Hierarchy: create child from tree, grandchild from view, navigate three levels', async () => {
   const ROOT  = 'PW-Gen-Hier-Root-3';
   const CHILD = 'PW-Gen-Hier-Child-3';
@@ -293,25 +265,20 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
   try {
     await resetToSpaces(page);
 
-    // Create root space via UI
     await uiCreateRootSpace(page, ROOT);
 
-    // Create child from the browse tree
     await rightClickSpace(page, ROOT);
     await clickMenuItem(page, 'Create Child Space...');
     await fillNameAndOk(page, CHILD);
 
-    // Verify child is visible in the browse tree
     await refreshSpacesTree(page);
     await expect(
       page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD}$`) }).first(),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Double-click root to open its content view; verify URL changes to /s/
     await openSpaceContent(page, ROOT);
     expect(page.url()).toMatch(/\/s\//);
 
-    // Verify gallery grid is rendered and child card is visible inside
     await expect(
       page.locator('#elementContent .grok-gallery-grid').first(),
     ).toBeVisible({ timeout: 10_000 });
@@ -319,7 +286,6 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
       page.locator('.d4-link-label').getByText(CHILD, { exact: true }).first(),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Create grandchild from the content view (right-click child card)
     const childCard = page.locator('.d4-link-label')
       .filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
     await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
@@ -327,7 +293,6 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
     await clickMenuItem(page, 'Create Child Space...');
     await fillNameAndOk(page, GRAND);
 
-    // Navigate into child via double-click and verify grandchild is visible
     await openSpaceContent(page, ROOT);
     const childLink = page.locator('.d4-link-label')
       .filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
@@ -336,7 +301,6 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
     await childLink.dispatchEvent('dblclick');
     await page.waitForURL(url => url !== prevUrl, { timeout: 10_000 });
 
-    // Verify URL updated to /s/ after navigating via content view double-click
     expect(page.url()).toMatch(/\/s\//);
 
     await expect(
@@ -348,12 +312,8 @@ test('3. Hierarchy: create child from tree, grandchild from view, navigate three
   }
 });
 
-// ===========================================================================
-// 4. Rename
-// ===========================================================================
-
 test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update', async () => {
-  // Dialog pre-fills current name; cancel preserves original; rename succeeds; duplicate name shows error
+
   const ORIG         = 'PW-Gen-Ren-Orig-6';
   const NEW_NAME     = 'PW-Gen-Ren-New-6';
   const OTHER        = 'PW-Gen-Ren-Other-6';
@@ -390,11 +350,11 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await i2.pressSequentially(NEW_NAME);
     await page.keyboard.press('Enter');
     await d2.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
-    // Refresh tree and verify new name...
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${NEW_NAME}$`) }).first()).toBeVisible({ timeout: 8_000 });
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${ORIG}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
-    // Refresh tree and verify result unchanged
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${NEW_NAME}$`) }).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${ORIG}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
@@ -402,7 +362,6 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
       await page.locator('.grok-prop-panel, [class*="context-panel"]').filter({ hasText: new RegExp(`^${ORIG}$`) }).count(),
     ).toBe(0);
 
-    // Verify new name in the content view (gallery grid), old name gone
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${NEW_NAME}$`) }).first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${ORIG}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
@@ -441,14 +400,12 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await expect(iChild).toBeVisible({ timeout: 5_000 });
     expect(await iChild.inputValue()).toBe(REN_CHILD);
 
-    // Perform the rename of the child space
     await iChild.click();
     await page.keyboard.press('Control+a');
     await page.keyboard.press('Delete');
     await iChild.pressSequentially(REN_CHILD_NEW);
     await page.keyboard.press('Enter');
 
-    // Verify renamed child in the content view
     await openSpaceContent(page, REN_PARENT);
     await expect(
       page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${REN_CHILD_NEW}$`) }).first(),
@@ -457,7 +414,6 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
       page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${REN_CHILD}$`) }).first(),
     ).not.toBeVisible({ timeout: 3_000 });
 
-    // Verify renamed child in the browse tree
     await resetToSpaces(page);
     await expect(
       page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${REN_CHILD_NEW}$`) }).first(),
@@ -465,7 +421,7 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
     await expect(
       page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${REN_CHILD}$`) }).first(),
     ).not.toBeVisible({ timeout: 3_000 });
-    // Refresh tree and verify result unchanged
+
     await refreshSpacesTree(page);
     await expect(
       page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${REN_CHILD_NEW}$`) }).first(),
@@ -479,12 +435,8 @@ test('4. Rename: pre-fill, cancel, success, duplicate error, right panel update'
   }
 });
 
-// ===========================================================================
-// 5. Delete
-// ===========================================================================
-
 test('5. Delete: cancel preserves, selective delete keeps sibling, cascade removes hierarchy', async () => {
-  // Cancel preserves space; deleting one child keeps sibling; deleting parent cascades
+
   test.setTimeout(180_000);
   const SINGLE = 'PW-Gen-DelSingle-7';
   const PARENT = 'PW-Gen-DelParent-7';
@@ -496,21 +448,19 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
       await apiDeleteSpace(page, n);
     await uiCreateRootSpace(page, SINGLE);
 
-    // Part A: cancel delete from tree preserves the space
     await rightClickSpace(page, SINGLE);
     await clickMenuItem(page, 'Delete');
     await expect(page.locator('.ui-btn', { hasText: /^CANCEL$/i }).first()).toBeVisible({ timeout: 5_000 });
     await page.locator('.ui-btn', { hasText: /^CANCEL$/i }).first().click();
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).toBeVisible({ timeout: 5_000 });
 
-    // Delete SINGLE from tree and verify gone from both tree and view
     await rightClickSpace(page, SINGLE);
     await clickMenuItem(page, 'Delete');
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
-    // Refresh tree and verify result unchanged
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${SINGLE}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
 
@@ -522,7 +472,6 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
     await clickMenuItem(page, 'Create Child Space...');
     await fillNameAndOk(page, CHILD2);
 
-    // Part B: selective delete child1 from view, child2 survives
     await openSpaceContent(page, PARENT);
     await expect(page.locator('.d4-link-label').getByText(CHILD1, { exact: true }).first()).toBeVisible({ timeout: 10_000 });
     const child1Card = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first();
@@ -530,28 +479,27 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
     await clickMenuItem(page, /Delete/i);
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
-    // Verify child1 gone from view, child2 still in view
+
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
     await expect(page.locator('.d4-link-label').getByText(CHILD2, { exact: true }).first()).toBeVisible({ timeout: 5_000 });
-    // Verify child1 also gone from tree
+
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
-    // Refresh tree and verify result unchanged
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD1}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
 
-    // Part C: cascade delete parent from tree, verify gone from tree and view
     await resetToSpaces(page);
     await rightClickSpace(page, PARENT);
     await clickMenuItem(page, 'Delete');
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
-    // Verify parent and remaining child2 gone from tree
+
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${PARENT}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD2}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
-    // Verify parent and child2 gone from Spaces gallery view
+
     await page.locator('.d4-tree-view-group-label', { hasText: /^Spaces$/i }).first().click();
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${PARENT}$`) }).first()).not.toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD2}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
-    // Refresh tree and verify result unchanged
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${PARENT}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CHILD2}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
@@ -561,12 +509,8 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
   }
 });
 
-// ===========================================================================
-// 6. Favorites
-// ===========================================================================
-
 test('6. Favorites: add and remove space from favorites', async () => {
-  // Add to favorites → appears; remove → gone
+
   const FAV = 'PW-Gen-Fav-8';
   try {
     await resetToSpaces(page);
@@ -575,7 +519,6 @@ test('6. Favorites: add and remove space from favorites', async () => {
     await rightClickSpace(page, FAV);
     await clickMenuItem(page, 'Add to favorites');
 
-    // Verify in browse tree Favorites section
     await page.evaluate(() => {
       const el = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
@@ -583,16 +526,13 @@ test('6. Favorites: add and remove space from favorites', async () => {
     });
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
 
-    // Verify in sidebar favorites pane (star icon)
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();
     await expect(page.locator('.grok-favorites-pane').first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.grok-favorites-pane').filter({ hasText: new RegExp(FAV) }).first()).toBeVisible({ timeout: 8_000 });
 
-    // Remove from favorites
     await rightClickSpace(page, FAV);
     await clickMenuItem(page, 'Remove from favorites');
 
-    // Verify gone from browse tree Favorites
     await page.evaluate(() => {
       const el = Array.from(document.querySelectorAll('.d4-tree-view-group-label'))
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
@@ -600,17 +540,12 @@ test('6. Favorites: add and remove space from favorites', async () => {
     });
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
 
-    // Verify gone from sidebar favorites pane
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();
     await expect(page.locator('.grok-favorites-pane').filter({ hasText: new RegExp(FAV) }).first()).not.toBeVisible({ timeout: 5_000 });
   } finally {
     await apiDeleteSpace(page, FAV);
   }
 });
-
-// ===========================================================================
-// 7. Share dialog
-// ===========================================================================
 
 test('7. Share dialog: UI structure, share with permission, verify, delete removes access', async () => {
   test.setTimeout(180_000);
@@ -622,7 +557,6 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     await apiDeleteSpace(page, SPACE);
     await uiCreateRootSpace(page, SPACE);
 
-    // Part A: verify dialog structure and default permission
     await rightClickSpace(page, SPACE);
     await clickMenuItem(page, 'Share...');
     await expect(page.locator('input[placeholder*="User"]').first()).toBeVisible({ timeout: 8_000 });
@@ -631,13 +565,12 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     await expect(permSelect.locator('option', { hasText: /Full access/i })).toHaveCount(1);
     await expect(permSelect.locator('option', { hasText: /View and use/i })).toHaveCount(1);
 
-    // Part B: select "View and use" permission explicitly, share with second user
     await permSelect.selectOption({ label: 'View and use' });
     const selectedValue = await permSelect.inputValue();
     const userInput = page.locator('input[placeholder*="User"]').first();
     await userInput.fill(SHARING_LOGIN);
     await page.waitForTimeout(1000);
-    // Select the user from autocomplete dropdown
+
     const suggestion = page.locator('.d4-menu-item-label, .d4-item, .itemFrame')
       .filter({ hasText: new RegExp(SHARING_LOGIN.split('@')[0].replace(/[+]/g, '\\$&'), 'i') }).first();
     if (await suggestion.isVisible({ timeout: 5_000 }).catch(() => false))
@@ -645,13 +578,12 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     else
       await page.keyboard.press('Enter');
     await page.waitForTimeout(300);
-    // Click OK to apply sharing
+
     const okBtn = page.locator('.ui-btn', { hasText: /^OK$/i }).first();
     await expect(okBtn).toBeVisible({ timeout: 5_000 });
     await okBtn.click();
     await page.waitForTimeout(1500);
 
-    // Part C: verify via API — user is in view permissions (not edit) matching the selected permission
     const permCheck = await page.evaluate(async ({ sharingLogin, spaceName }) => {
       try {
         const g = (window as any).grok;
@@ -668,16 +600,15 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
       }
       catch (e: any) { return { error: e.message }; }
     }, { sharingLogin: SHARING_LOGIN, spaceName: SPACE });
-    // "View and use" should result in view permission, not edit
+
     expect(permCheck).not.toHaveProperty('error');
     expect((permCheck as any).inView).toBe(true);
     expect((permCheck as any).inEdit).toBe(false);
 
-    // Part D: delete space and verify sharing user no longer has access
     const spaceId = (permCheck as any).spaceId;
     await apiDeleteSpace(page, SPACE);
     await page.waitForTimeout(500);
-    // Verify space is deleted — not listable via spaces API
+
     const goneFromSpaces = await page.evaluate(async ({ spaceName }) => {
       try {
         const g = (window as any).grok;
@@ -687,7 +618,7 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
       catch { return true; }
     }, { spaceName: SPACE });
     expect(goneFromSpaces).toBe(true);
-    // Verify permissions no longer accessible for the space
+
     const permsGone = await page.evaluate(async (id) => {
       try {
         const resp = await fetch(`/api/security/permissions/entity/${id}`);
@@ -698,7 +629,6 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     }, spaceId);
     expect(permsGone).toBe(true);
 
-    // Part E: child space is also shareable (dialog opens)
     await resetToSpaces(page);
     await uiCreateRootSpace(page, SH_PARENT);
     await rightClickSpace(page, SH_PARENT);
@@ -718,12 +648,8 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
   }
 });
 
-// ===========================================================================
-// 8. Browse tree search
-// ===========================================================================
-
 test('8. Browse tree search: match by name and no-match empty result', async () => {
-  // Search matches space by name; non-existent query hides it
+
   const SPACE = 'PW-Gen-Search-10';
   try {
     await resetToSpaces(page);
@@ -744,12 +670,8 @@ test('8. Browse tree search: match by name and no-match empty result', async () 
   }
 });
 
-// ===========================================================================
-// 9. DnD dialog structure
-// ===========================================================================
-
 test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', async () => {
-  // Dialog has Link/Copy/Move options with Link default; Cancel aborts; Link and Copy add files; duplicate add has no error
+
   test.setTimeout(180_000);
   const SPACE = 'PW-Gen-DnD-9';
   try {
@@ -757,7 +679,6 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await apiDeleteSpace(page, SPACE);
     await uiCreateRootSpace(page, SPACE);
 
-    // Part A: dialog structure and Cancel
     await dragFileToSpaceNode(page, 'wells.csv', SPACE);
     const sel = page.locator('select').filter({ has: page.locator('option[value="Link"]') }).first();
     await expect(sel).toHaveValue('Link');
@@ -765,61 +686,54 @@ test('9. DnD dialog: options, default Link, Cancel, Link, Copy, duplicate add', 
     await expect(sel.locator('option[value="Move"]')).toHaveCount(1);
     await expect(page.locator(`text=${SPACE}`).first()).toBeVisible();
     await page.locator('.ui-btn', { hasText: /^CANCEL$/i }).first().click();
-    // Verify cancel: file not in view
+
     await openSpaceContent(page, SPACE);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^wells\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
-    // Verify cancel: file not in tree under space
+
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: /^wells\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
-    // Refresh tree and verify result unchanged
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-tree-view-group-label').filter({ hasText: /^wells\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
-    // Part B: Link file
     await dragFileToSpaceNode(page, 'acidiq.csv', SPACE);
     await page.locator('.ui-btn', { hasText: /^YES$/i }).first().click();
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
-    // Verify linked file in view
+
     await openSpaceContent(page, SPACE);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
-    // Click linked file to verify right panel shows info
+
     const linkedFile = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
     await linkedFile.dispatchEvent('click');
     await expect(page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first()).toBeVisible({ timeout: 8_000 });
 
-    // Part C: Copy file
     await dragFileToSpaceNode(page, 'TSLA.csv', SPACE);
     await page.locator('select').filter({ has: page.locator('option[value="Link"]') }).first().selectOption('Copy');
     await page.locator('.ui-btn', { hasText: /^YES$/i }).first().click();
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
-    // Verify both files in view
+
     await openSpaceContent(page, SPACE);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
-    // Click copied file to verify right panel shows info
+
     const copiedFile = page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first();
     await copiedFile.dispatchEvent('click');
     await expect(page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first()).toBeVisible({ timeout: 8_000 });
 
-    // Part D: duplicate add — no error, still exactly one acidiq.csv
     await dragFileToSpaceNode(page, 'acidiq.csv', SPACE);
     await page.locator('.ui-btn', { hasText: /^YES$/i }).first().click();
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
     await expect(page.locator('.d4-toast.error, [class*="error-toast"]').first()).not.toBeVisible({ timeout: 2_000 }).catch(() => {});
     await openSpaceContent(page, SPACE);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
-    // Verify only one acidiq.csv in the space (not duplicated)
+
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ })).toHaveCount(1, { timeout: 5_000 });
   } finally {
     await apiDeleteSpace(page, SPACE);
   }
 });
 
-// ===========================================================================
-// 10. DnD Move
-// ===========================================================================
-
 test('10. DnD Move: file moves to target and is absent from source', async () => {
-  // Move file between spaces; file appears in target and disappears from source
+
   test.setTimeout(180_000);
   const SRC = 'PW-Gen-MoveSrc-10';
   const TGT = 'PW-Gen-MoveTgt-10';
@@ -834,7 +748,6 @@ test('10. DnD Move: file moves to target and is absent from source', async () =>
     await openSpaceContent(page, SRC);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
-    // Drag file from source view to target tree node
     const fileInView = page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first();
     const tgtNode = page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${TGT}$`) }).first();
     await expect(tgtNode).toBeVisible({ timeout: 5_000 });
@@ -849,21 +762,17 @@ test('10. DnD Move: file moves to target and is absent from source', async () =>
     await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
     await page.waitForTimeout(300);
 
-    // Verify file gone from source view
     await openSpaceContent(page, SRC);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 8_000 });
 
-    // Verify file present in target view
     await openSpaceContent(page, TGT);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
-    // Click moved file to verify right panel shows info
     const movedFile = page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first();
     await movedFile.dispatchEvent('click');
     await page.waitForTimeout(200);
     await expect(page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first()).toBeVisible({ timeout: 8_000 });
 
-    // Refresh tree and verify result unchanged — file still in target, not in source
     await resetToSpaces(page);
     await refreshSpacesTree(page);
     await openSpaceContent(page, SRC);
@@ -875,10 +784,6 @@ test('10. DnD Move: file moves to target and is absent from source', async () =>
     await apiDeleteSpace(page, TGT);
   }
 });
-
-// ===========================================================================
-// 11–15. Content view: click, open, search, breadcrumb
-// ===========================================================================
 
 const CV_SPACE = 'PW-Gen-CV-Space';
 const CV_CHILD = 'PW-Gen-CV-Child';
@@ -901,19 +806,17 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await addFileToSpaceViaCopy(page, 'TSLA.csv', CV_SPACE);
     await openSpaceContent(page, CV_SPACE);
 
-    // Click first file — panel appears with file name and Details section
     const fileLabel = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
     await expect(fileLabel).toBeVisible({ timeout: 10_000 });
     await fileLabel.dispatchEvent('click');
     await page.waitForTimeout(200);
     const panel = page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first();
     await expect(panel).toBeVisible({ timeout: 8_000 });
-    // Verify panel shows the file name
+
     await expect(panel).toContainText(/acidiq/i, { timeout: 5_000 });
-    // Verify panel has Details section
+
     await expect(page.locator('.d4-accordion-pane-header').filter({ hasText: /Details/i }).first()).toBeVisible({ timeout: 5_000 });
 
-    // Click second file — panel switches to show its name
     const file2Label = page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first();
     await expect(file2Label).toBeVisible({ timeout: 5_000 });
     await file2Label.dispatchEvent('click');
@@ -924,7 +827,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
   test('12. Click child space card shows space info in right panel', async () => {
     const CV_CHILD2 = 'PW-Gen-CV-Child2';
     try {
-      // Create two child spaces and add a file
+
       await rightClickSpace(page, CV_SPACE);
       await clickMenuItem(page, 'Create Child Space...');
       await fillNameAndOk(page, CV_CHILD);
@@ -939,7 +842,6 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await openSpaceContent(page, CV_SPACE);
       const panel = page.locator('.grok-prop-panel, [class*="context-panel"], .d4-info-bar').first();
 
-      // Click first child — panel shows child name and Details
       const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       await expect(childCard).toBeVisible({ timeout: 10_000 });
       await childCard.dispatchEvent('click');
@@ -948,21 +850,18 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await expect(panel).toContainText(new RegExp(CV_CHILD, 'i'), { timeout: 5_000 });
       await expect(page.locator('.d4-accordion-pane-header').filter({ hasText: /Details/i }).first()).toBeVisible({ timeout: 5_000 });
 
-      // Click second child — panel switches
       const child2Card = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD2}$`) }).first();
       await expect(child2Card).toBeVisible({ timeout: 5_000 });
       await child2Card.dispatchEvent('click');
       await page.waitForTimeout(200);
       await expect(panel).toContainText(new RegExp(CV_CHILD2, 'i'), { timeout: 5_000 });
 
-      // Click file — panel switches from space info to file info
       const fileLabel = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
       await expect(fileLabel).toBeVisible({ timeout: 5_000 });
       await fileLabel.dispatchEvent('click');
       await page.waitForTimeout(200);
       await expect(panel).toContainText(/acidiq/i, { timeout: 5_000 });
 
-      // Click back to first child — panel switches from file to space
       await childCard.dispatchEvent('click');
       await page.waitForTimeout(200);
       await expect(panel).toContainText(new RegExp(CV_CHILD, 'i'), { timeout: 5_000 });
@@ -976,7 +875,6 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await addFileToSpaceViaCopy(page, 'acidiq.csv', CV_SPACE);
     await openSpaceContent(page, CV_SPACE);
 
-    // Part A: double-click opens file as table view with grid and ribbon
     const fileLabel = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
     await expect(fileLabel).toBeVisible({ timeout: 10_000 });
     const spaceUrl = page.url();
@@ -986,28 +884,26 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await expect(page.locator('.d4-ribbon').first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.d4-grid').first()).toBeVisible({ timeout: 10_000 });
 
-    // Part B: go back to space, enable eye icon preview, click file — preview appears inside space view
     await openSpaceContent(page, CV_SPACE);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
     const eyeIcon = page.locator('i.grok-icon[name="icon-eye"], i.fal.fa-eye').first();
     await expect(eyeIcon).toBeVisible({ timeout: 5_000 });
-    // Enable preview if not already active
+
     const isActive = await eyeIcon.evaluate((el) => el.classList.contains('d4-current'));
     if (!isActive)
       await eyeIcon.click();
     await page.waitForTimeout(200);
 
-    // Click file — preview grid should appear inside the space view
     const fileLabel2 = page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first();
     await fileLabel2.dispatchEvent('click');
     await page.waitForTimeout(500);
-    // Verify preview grid appeared
+
     await expect(page.locator('.d4-grid').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('14. Search inside space: exact, partial, no match, clear, child space', async () => {
     test.setTimeout(120_000);
-    // Add three files and a child space
+
     await addFileToSpaceViaCopy(page, 'acidiq.csv', CV_SPACE);
     await addFileToSpaceViaCopy(page, 'TSLA.csv', CV_SPACE);
     await addFileToSpaceViaCopy(page, 'beer.csv', CV_SPACE);
@@ -1015,37 +911,33 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await clickMenuItem(page, 'Create Child Space...');
     await fillNameAndOk(page, CV_CHILD);
     await page.waitForTimeout(500);
-    // Wait for dialog to fully close
+
     await page.locator('.d4-dialog').last().waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
     await page.waitForTimeout(500);
 
     await openSpaceContent(page, CV_SPACE);
     const searchInput = page.locator('input[placeholder*="Search"]').first();
     await expect(searchInput).toBeVisible({ timeout: 8_000 });
-    // Wait for all items to load
+
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
-    // Exact match — only acidiq visible
     await searchInput.fill('acidiq');
     await page.waitForTimeout(300);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
-    // Partial match — "aci" finds acidiq
     await searchInput.fill('aci');
     await page.waitForTimeout(300);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
-    // No match — nothing visible
     await searchInput.fill('xyzzy_no_match_12345');
     await page.waitForTimeout(300);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).not.toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
-    // Clear search — all three files and child space visible again
     await searchInput.fill('');
     await page.waitForTimeout(300);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
@@ -1053,13 +945,11 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 5_000 });
 
-    // Search by child space name — child visible, files hidden
     await searchInput.fill(CV_CHILD);
     await page.waitForTimeout(300);
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).not.toBeVisible({ timeout: 3_000 });
 
-    // Verify DemoFiles originals are intact after all operations
     await page.goto(`${BASE}/files/System.DemoFiles/?browse=files`);
     await expect(page.locator('.d4-link-label label').first()).toBeVisible({ timeout: 10_000 });
     const beerExists = await page.locator('.d4-link-label label').filter({ hasText: /^beer\.csv$/ }).count();
@@ -1073,7 +963,7 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
     test.setTimeout(120_000);
     const CV_GRAND = 'PW-Gen-CV-Grand';
     try {
-      // Create child, grandchild, and add a file — all via tree/API before navigating
+
       await rightClickSpace(page, CV_SPACE);
       await clickMenuItem(page, 'Create Child Space...');
       await fillNameAndOk(page, CV_CHILD);
@@ -1090,7 +980,6 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await page.waitForTimeout(500);
       await page.locator('.d4-dialog').last().waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
 
-      // Add file via API to avoid DemoFiles in browser history
       await page.evaluate(async (spaceName) => {
         const g = (window as any).grok;
         const spaces = await g.dapi.spaces.filter(`name = "${spaceName}"`).list({ pageSize: 5 });
@@ -1099,14 +988,12 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
           await g.dapi.spaces.id(space.id).files.writeString('acidiq.csv', 'x,y\n1,2\n');
       }, CV_SPACE);
 
-      // Fresh navigation start: parent → child → grandchild
       await openSpaceContent(page, CV_SPACE);
       await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
       await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
-      // Verify header contains parent name
+
       expect(page.url()).toMatch(/\/s\//);
 
-      // Enter child
       const childLink = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       const parentUrl = page.url();
       await childLink.dispatchEvent('dblclick');
@@ -1115,17 +1002,15 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       const childUrl = page.url();
       await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
 
-      // Enter grandchild
       const grandLink = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first();
       await grandLink.dispatchEvent('dblclick');
       await page.waitForURL(url => url !== childUrl, { timeout: 10_000 });
       await page.waitForTimeout(300);
       expect(page.url()).toMatch(/\/s\//);
 
-      // Navigate back to child via tree — expand parent tree node first
       const parentTreeNode = page.locator('.d4-tree-view-group-label').filter({ hasText: new RegExp(`^${CV_SPACE}$`) }).first();
       await expect(parentTreeNode).toBeVisible({ timeout: 5_000 });
-      // Click the toggle/expander next to the parent node
+
       const expander = parentTreeNode.locator('xpath=../..').locator('.d4-tree-view-tri').first();
       if (await expander.isVisible({ timeout: 2_000 }).catch(() => false))
         await expander.click();
@@ -1133,7 +1018,6 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
         await parentTreeNode.click();
       await page.waitForTimeout(200);
 
-      // Navigate into child via content view instead of tree
       await openSpaceContent(page, CV_SPACE);
       const childCardBack = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first();
       await expect(childCardBack).toBeVisible({ timeout: 10_000 });
@@ -1143,12 +1027,10 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       await page.waitForTimeout(300);
       await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_GRAND}$`) }).first()).toBeVisible({ timeout: 10_000 });
 
-      // Navigate back to parent via tree — child card and file visible
       await openSpaceViaTree(page, CV_SPACE);
       await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
       await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
 
-      // Verify search still works after navigating back
       const searchInput = page.locator('input[placeholder*="Search"]').first();
       await expect(searchInput).toBeVisible({ timeout: 5_000 });
       await searchInput.fill('acidiq');
@@ -1161,10 +1043,6 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
   });
 });
 
-// ===========================================================================
-// 16. Copy semantics: delete source, copy unaffected
-// ===========================================================================
-
 test.describe('Copy semantics: delete source, copy unaffected', () => {
   test('16. Delete file from space does not affect copy in another space', async () => {
     test.setTimeout(180_000);
@@ -1176,10 +1054,8 @@ test.describe('Copy semantics: delete source, copy unaffected', () => {
       await uiCreateRootSpace(page, SRC);
       await uiCreateRootSpace(page, TGT);
 
-      // Add file to source space via DnD from DemoFiles
       await addFileToSpaceViaCopy(page, 'TSLA.csv', SRC);
 
-      // Copy file from source to target space via DnD (retry if tooltip blocks)
       await openSpaceContent(page, SRC);
       await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -1200,22 +1076,18 @@ test.describe('Copy semantics: delete source, copy unaffected', () => {
       await page.locator('text=Move entity').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
       await page.waitForTimeout(200);
 
-      // Verify copied file appeared in target view
       await openSpaceContent(page, TGT);
       await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
-      // Delete source file from source space view
       await openSpaceContent(page, SRC);
       await rightClickItemInSpaceView(page, 'TSLA.csv');
       await page.locator('.d4-menu-item', { hasText: /Delete/i }).first().click();
       await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
       await page.waitForTimeout(300);
 
-      // Verify copied entry still present in target view
       await openSpaceContent(page, TGT);
       await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
 
-      // Refresh tree and verify result unchanged
       await refreshSpacesTree(page);
       await openSpaceContent(page, TGT);
       await expect(page.locator('.d4-link-label label').filter({ hasText: /^TSLA\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });
@@ -1225,12 +1097,8 @@ test.describe('Copy semantics: delete source, copy unaffected', () => {
   });
 });
 
-// ===========================================================================
-// 17. Entity operations inside a space
-// ===========================================================================
-
 test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delete, child space ctx menu', async () => {
-  // File context menu (Open, Rename, Delete); rename file; cancel rename; cancel delete; delete file; child space context menu
+
   test.setTimeout(180_000);
   const SPACE = 'PW-Gen-Entity-18';
   const CHILD = 'PW-Gen-Entity-Child-18';
@@ -1265,7 +1133,7 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await renInp.pressSequentially('PW-Gen-tsla-renamed');
     await page.keyboard.press('Enter');
     await expect(page.locator('.d4-link-label label').filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).toBeVisible({ timeout: 8_000 });
-    // Verify renamed file persists after refresh
+
     await refreshSpacesTree(page);
 
     await rightClickItemInSpaceView(page, 'acidiq.csv');
@@ -1287,12 +1155,11 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await page.locator('.ui-btn', { hasText: /^DELETE$/i }).first().click();
     await expect(page.locator('.d4-link-label label').filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).not.toBeVisible({ timeout: 8_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
-    // Refresh and verify delete persisted
+
     await refreshSpacesTree(page);
     await expect(page.locator('.d4-link-label label').filter({ hasText: /PW-Gen-tsla-renamed/i }).first()).not.toBeVisible({ timeout: 3_000 });
     await expect(page.locator('.d4-link-label label').filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 5_000 });
 
-    // Child space context menu has Rename, Delete, Share
     const childCard = page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD}$`) }).first();
     await expect(childCard).toBeVisible({ timeout: 10_000 });
     await childCard.dispatchEvent('contextmenu', { button: 2, bubbles: true });
@@ -1302,7 +1169,6 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await expect(cItems.filter({ hasText: /Delete/i }).first()).toBeVisible();
     await expect(cItems.filter({ hasText: /Share/i }).first()).toBeVisible();
 
-    // Rename child space from view
     await clickMenuItem(page, 'Rename...');
     const childDlg = page.locator('.d4-dialog').last();
     const childInp = childDlg.locator('input[type="text"]').first();
@@ -1314,14 +1180,12 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
     await childInp.pressSequentially(CHILD_NEW);
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);
-    // Verify renamed child in view
+
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD_NEW}$`) }).first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.d4-link-label').filter({ hasText: new RegExp(`^${CHILD}$`) }).first()).not.toBeVisible({ timeout: 3_000 });
-    // Verify renamed child in tree
+
     await refreshSpacesTree(page);
 
-
-    // No "Duplicate" in space context menu
     await resetToSpaces(page);
     await rightClickSpace(page, SPACE);
     await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
@@ -1335,12 +1199,8 @@ test('17. Entity ops: context menus, rename, cancel rename, cancel delete, delet
   }
 });
 
-// ===========================================================================
-// 18. Edge cases
-// ===========================================================================
-
 test('18. Edge cases: name with spaces, circular drag, duplicate child name', async () => {
-  // Space name with spaces works; dragging parent onto child doesn't crash; duplicate child name shows error
+
   const SPACED = 'PW Gen Name With Spaces 22';
   const PARENT = 'PW-Gen-Edge-Parent-22';
   const CHILD  = 'PW-Gen-Edge-Child-22';
@@ -1372,4 +1232,4 @@ test('18. Edge cases: name with spaces, circular drag, duplicate child name', as
   }
 });
 
-}); // end test.describe.serial('Spaces general')
+}); 

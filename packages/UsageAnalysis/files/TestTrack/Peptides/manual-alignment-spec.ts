@@ -1,9 +1,3 @@
-// Manual Alignment — panel surfaces via overlay-canvas click on a Monomer cell (not via grok.shell.o),
-// Apply rewrites AlignedSequence + at least one per-position column, Reset is non-destructive,
-// post-edit broadcast (model.fireBitsetChanged) stays functional. Apply/Reset driven by
-// [name="button-Apply"]/[name="button-Reset"]; the "pane expanded" signal is the INNER
-// .d4-accordion-pane-content.expanded class (the outer .d4-accordion-pane never gets it).
-
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -71,7 +65,7 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
     await page.waitForFunction(() => {
       return Array.from(grok.shell.tableViews).some((v) => v.dataFrame.temp['peptidesModel']);
     }, {timeout: 60000});
-    // MCL/sequence-space settle + per-position column materialization.
+
     await page.waitForTimeout(8000);
 
     const ready = await page.evaluate(() => {
@@ -92,7 +86,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
     expect(ready.modelPresent, 'PeptidesModel singleton not attached to the dataframe').toBe(true);
   });
 
-  // Anchor to row 1 (row 0 has empty col '2' because the leading "NH2--" leaves split-index 1 empty).
   await softStep('Setup: anchor current row to row 1 (col 2 populated)', async () => {
     const anchor = await page.evaluate(() => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel'])!;
@@ -110,20 +103,19 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       .toBeTruthy();
   });
 
-  // The @panel surfaces only via an interactive overlay-canvas click (not via grok.shell.o).
   await softStep('Scenario 1 (step 1): overlay-canvas click on Monomer cell (row 1, col "2")', async () => {
     const click = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel'])!;
       const grid = tv.grid;
       grid.dataFrame.currentRowIdx = 1;
-      try { grid.scrollToCell('2', 1); } catch (e) { /* tolerated */ }
+      try { grid.scrollToCell('2', 1); } catch (e) {  }
       await new Promise((r) => setTimeout(r, 800));
       const cell = grid.cell('2', 1);
       const b = cell.bounds;
       const rb = grid.root.getBoundingClientRect();
       const cx = rb.x + b.x + Math.floor(b.width / 2);
       const cy = rb.y + b.y + Math.floor(b.height / 2);
-      // Pick the topmost overlay canvas via elementFromPoint.
+
       const target = document.elementFromPoint(cx, cy);
       if (!target || target.tagName !== 'CANVAS') return {targetFound: false, targetTag: target?.tagName ?? null};
       const opts = {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 0, view: window};
@@ -146,7 +138,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
     expect(click.oSemType, 'cell click did not pin a Monomer-semtype shell object — Manual Alignment @panel will not surface').toBe('Monomer');
   });
 
-  // Step 2: confirm the Manual Alignment accordion pane section is present.
   await softStep('Scenario 1 (step 2): Manual Alignment panel section is present', async () => {
     const paneState = await page.evaluate(() => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
@@ -162,7 +153,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
     expect(paneState.manualPaneFound, 'Manual Alignment accordion pane not present in the Context Panel').toBe(true);
   });
 
-  // The "expanded" class lives on the INNER .d4-accordion-pane-content, not the outer pane.
   await softStep('Scenario 1 (step 3): widget mounts; verify textarea + Reset + Apply', async () => {
     const widget = await page.evaluate(async () => {
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
@@ -170,7 +160,7 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
         const h = p.querySelector('.d4-accordion-pane-header');
         return !!h && h.textContent?.trim() === 'Manual Alignment';
       })!;
-      // Defensive: click the header once if the inner content lacks `expanded`.
+
       const innerProbe = manualPane.querySelector('.d4-accordion-pane-content') as HTMLElement | null;
       if (!innerProbe || !innerProbe.classList.contains('expanded')) {
         const header = manualPane.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
@@ -214,12 +204,11 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       const df = tv.dataFrame;
       const alignedCol = df.col('AlignedSequence');
       const baselineSeq = alignedCol.get(1);
-      // Snapshot all per-position column values at row 1 before the Apply.
+
       const posColNames = df.columns.names().filter((n: string) => /^\d+$/.test(n));
       const baselinePosVals: Record<string, any> = {};
       for (const n of posColNames) baselinePosVals[n] = df.col(n)!.get(1);
 
-      // Substitute the first monomer in the textarea: "NH2-M-A-..." -> "NH2-V-A-..."
       const editedSeq = (baselineSeq as string).replace(/^NH2-(.)-/, 'NH2-V-');
 
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
@@ -246,11 +235,10 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
     expect(result.newSeq, 'AlignedSequence column did not reflect the Apply edit')
       .toBe(result.editedSeq);
     expect(result.newSeq, 'AlignedSequence column still equals the pre-edit baseline').not.toBe(result.baselineSeq);
-    // Splitter remaps positions, so assert "at least one changed" rather than per-column equality.
+
     expect(result.changedCols.length, 'no per-position column at the edited row changed after Apply').toBeGreaterThan(0);
   });
 
-  // Canvas coloring is not DOM-inspectable; assert model survives + SVM canvas + cell.renderer tag.
   await softStep('Scenario 1 (step 8): SAR layout refreshes against the new sequence', async () => {
     await page.waitForTimeout(2500);
     const state = await page.evaluate(() => {
@@ -280,10 +268,9 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       `Apply path produced a null-receiver shell error: ${errs}`).toBe(0);
   });
 
-  // Scenario 2 — Reset is non-destructive; post-edit broadcast survives.
   await softStep('Scenario 2 (step 1): re-open Manual Alignment — textarea binds to live (edited) value', async () => {
     const result = await page.evaluate(async () => {
-      // Re-expand if collapsed (expanded class is on the inner content).
+
       const panes = Array.from(document.querySelectorAll('.d4-accordion-pane'));
       const manualPane = panes.find((p) => {
         const h = p.querySelector('.d4-accordion-pane-header');
@@ -306,7 +293,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       .toBe(result.liveSeq);
   });
 
-  // Reset re-binds to the live (edited) column value; it does NOT restore the pre-edit baseline.
   await softStep('Scenario 2 (step 2): Reset on post-Apply state re-binds to live value, no column rewrite', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel'])!;
@@ -345,7 +331,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       .toBe(0);
   });
 
-  // Edit textarea without Apply, click Reset, confirm the unsaved edit is discarded.
   await softStep('Scenario 2 (steps 3-4): Reset on unsaved edit discards the edit, columns unchanged', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel'])!;
@@ -363,7 +348,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       const textarea = manualPane.querySelector('.pep-textinput textarea') as HTMLTextAreaElement;
       const resetBtn = manualPane.querySelector('[name="button-Reset"]') as HTMLElement;
 
-      // Type a fresh edit (different from Scenario 1's substitution) — do NOT Apply.
       const fresh = (seqBefore as string).replace(/-N-T-/, '-X-T-');
       textarea.focus();
       textarea.value = fresh;
@@ -371,7 +355,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
       textarea.dispatchEvent(new Event('change', {bubbles: true}));
       const editedTaValue = textarea.value;
 
-      // Click Reset on the unsaved edit.
       resetBtn.click();
       await new Promise((r) => setTimeout(r, 800));
 
@@ -392,7 +375,6 @@ test('Peptides — Manual Alignment panel applies sequence edits and stays non-d
     expect(result.changedCols.length, 'Reset on an unsaved edit mutated a per-position column').toBe(0);
   });
 
-  // Drive the broadcast via model.fireBitsetChanged (the WebLogo canvas click is coordinate-fragile).
   await softStep('Scenario 2 (step 5): post-edit broadcast (fireBitsetChanged) does not crash', async () => {
     const result = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel'])!;

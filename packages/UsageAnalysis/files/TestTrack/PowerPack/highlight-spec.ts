@@ -327,19 +327,18 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
   });
   await softStep('Scenario 5 / Step 5 + GROK-17004 INVARIANT: five distinct columns highlighted in blue', async () => {
     const tokens = await readHighlightedColumnTokens(page);
-    // At least one highlight span surfaced (the addColHighlight pipeline ran).
+
     expect(tokens.length).toBeGreaterThan(0);
-    // Each of the five referenced columns is highlighted (distinct set).
+
     const distinct = await readDistinctHighlightedColumns(page);
     for (const c of ['Whole blood assay 1', 'Route Admin', 'Chemical Space X', 'Average Mass', 'Species'])
       expect(distinct, `column "${c}" not highlighted; distinct=[${distinct.join(', ')}]`).toContain(c);
-    // At least one rendered span has a blue computed color (the
-    // getColumnNamesAndSelections -> addColHighlight pipeline completed).
+
     const blueness = await readFirstHighlightBlueness(page);
     expect(blueness.hasSpan).toBe(true);
     expect(blueness.isBlue).toBe(true);
   });
-  // ---- Cleanup: cancel the dialog and clear shell state ----
+
   await page.evaluate(() => {
     const cancel = document.querySelector(
       '.d4-dialog [name="button-Add-New-Column---CANCEL"]',
@@ -351,7 +350,7 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
     if (anyCancel) anyCancel.click();
   }).catch(() => {});
   await page.evaluate(() => {
-    try { (window as any).grok.shell.closeAll(); } catch (_) { /* best effort */ }
+    try { (window as any).grok.shell.closeAll(); } catch (_) {  }
   }).catch(() => {});
   finishSpec();
 });

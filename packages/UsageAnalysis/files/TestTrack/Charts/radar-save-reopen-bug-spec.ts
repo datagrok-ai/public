@@ -54,8 +54,7 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       return {rebindOk, readBackTable, demogName: dfDemog.name, spgiName: dfSpgi.name};
     }, projectName);
     expect(result.rebindOk, result.rebindOk ? '' : `Radar table rebind failed: ${(result as any).err}`).toBe(true);
-    // The rebind must actually take effect: the Radar's table prop reads back the demog table
-    // (prop may surface the name or the Table object — assert it resolved to the demog binding, not SPGI).
+
     const readBack = result.readBackTable as any;
     const readBackName = typeof readBack === 'string' ? readBack : (readBack?.name ?? readBack);
     expect(readBackName, `Radar table prop did not rebind to demog (got ${JSON.stringify(readBack)})`)
@@ -67,9 +66,7 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
     const saveResult = await page.evaluate(async (pName) => {
       const grok = (window as any).grok;
       try {
-        // Save the LIVE workspace project — it holds the open demog/SPGI table views, the Radar, and
-        // the rebind layout under test. A fresh DG.Project.create() would be empty and persist none of
-        // it, so reopen would have no TableView and the GROK-18085 invariant could never be exercised.
+
         const project = grok.shell.project;
         project.name = pName;
         const saved = await grok.dapi.projects.save(project);
@@ -78,7 +75,7 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
         return {ok: false, err: String(e).substring(0, 200)};
       }
     }, projectName);
-    // The save is the operation under test — assert it succeeded (don't pass when it silently fails).
+
     expect(saveResult.ok, saveResult.ok ? '' : `Project save failed: ${(saveResult as any).err}`).toBe(true);
     projectId = saveResult.id;
     expect(projectId).toBeTruthy();
@@ -100,10 +97,9 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       }
     }, projectId);
 
-    // The reopen is the operation under test — a thrown reopen must fail, not just warn.
     expect(reopenResult.ok, reopenResult.ok ? '' : `Project reopen failed: ${(reopenResult as any).err}`).toBe(true);
     expect(reopenResult.hasTv, 'reopened project produced no active TableView').toBe(true);
-    // Primary GROK-18085 invariant: no console error during reopen.
+
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
   });
@@ -115,7 +111,7 @@ test('Radar — table-rebind on project save/reopen (GROK-18085)', async ({page}
       try {
         const proj = await grok.dapi.projects.find(id);
         await grok.dapi.projects.delete(proj);
-      } catch (e) { /* best-effort cleanup */ }
+      } catch (e) {  }
     }, projectId);
   });
 

@@ -1,4 +1,3 @@
-// GROK-14028: substructure-filter Clear must clear all 3 layers — L1 BitSet, L2 sketcher UI/summary, L3 leaked tags.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -101,7 +100,7 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
           break;
         }
       }
-      // Sketcher dialog is position:fixed (offsetParent null but visible) — detect via getBoundingClientRect.
+
       for (let i = 0; i < 25; i++) {
         await new Promise(r => setTimeout(r, 400));
         const dlg = document.querySelector('.d4-dialog') as HTMLElement | null;
@@ -114,7 +113,6 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
     });
     expect(sketcherOpened, 'Sketcher dialog did not open via Structure filter sketch-link').toBe(true);
 
-    // Fill SMILES input via DOM event sequence — native fill() may not reach Dart-side state.
     await page.evaluate(async () => {
       const smilesInput = Array.from(document.querySelectorAll('.d4-dialog input'))
         .find((i: any) => /smiles/i.test(i.placeholder || '')) as HTMLInputElement | undefined;
@@ -153,16 +151,14 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
   await softStep('Assert 3-layer cleanup invariant (L1 BitSet + L2 Sketcher UI + L3 No leaked tags)', async () => {
     const result = await page.evaluate(() => {
       const df = grok.shell.t;
-      // L1: BitSet all-true (no filter applied)
+
       const L1_bitsetCleared = df.filter.trueCount === df.rowCount;
-      // L2: sketcher UI cleared — per chem.md regression-lock invariant:
-      //   .chem-clear-sketcher-button absent from DOM AND
-      //   .d4-filter-summary contains no SMARTS/SMILES pattern
+
       const clearBtnGone = !document.querySelector('[name="viewer-Filters"] .d4-filter .chem-clear-sketcher-button');
       const summary = document.querySelector('[name="viewer-Filters"] .d4-filter .d4-filter-summary')?.textContent?.trim() ?? '';
       const summaryEmptyOfSmiles = !/\[#\d+\]|c1[a-zA-Z0-9]/.test(summary);
       const L2_sketcherCleared = clearBtnGone && summaryEmptyOfSmiles;
-      // L3: no leaked virtual / tag columns
+
       const cols = df.columns.names();
       const leakedTags = cols.filter((n: string) => /^~.*(substructure|highlight)/i.test(n));
       const L3_noLeakedTags = leakedTags.length === 0;

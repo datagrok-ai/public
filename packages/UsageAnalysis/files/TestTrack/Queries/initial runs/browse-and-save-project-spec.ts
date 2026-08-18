@@ -24,7 +24,7 @@ test("Queries: browse and save project", async ({ page }) => {
   await softStep("Step 1: Navigate to Databases > Postgres", async () => {
     const result = await page.evaluate(async () => {
       const w = window as any;
-      // Verify both CHEMBL and Northwind connections exist on Postgres provider
+
       const conns = await w.grok.dapi.connections.list({ pageSize: 1000 });
       const pg = conns.filter((c: any) => c.dataSource === "Postgres");
       const chembl = pg.find(
@@ -82,7 +82,7 @@ test("Queries: browse and save project", async ({ page }) => {
         const q = all.find(
           (x: any) => x.name === "FracClassificationWithSubstructure",
         );
-        // Select the query (browse-style preview)
+
         w.grok.shell.o = q;
         await new Promise((r) => setTimeout(r, 1500));
         const headers = Array.from(
@@ -272,7 +272,6 @@ test("Queries: browse and save project", async ({ page }) => {
     },
   );
 
-  // Cleanup
   await page.evaluate(async () => {
     const w = window as any;
     const old = await w.grok.dapi.projects.filter("FRAC scenario test").first();

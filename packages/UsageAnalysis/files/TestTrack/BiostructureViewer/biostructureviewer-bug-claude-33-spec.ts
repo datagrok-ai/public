@@ -1,4 +1,3 @@
-// CLAUDE-33: Molstar onViewRemoved must not throw "reading 'children'" when an unrelated view closes.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
@@ -9,7 +8,6 @@ declare const DG: any;
 
 const samplePdbPath = 'System:AppData/BiostructureViewer/samples/1bdq.pdb';
 
-// Strictly matches the CLAUDE-33 signature, avoiding rcsb-molstar 'props' noise.
 const CLAUDE_33_SIGNATURE = /Cannot read properties of undefined \(reading '?children'?\)/i;
 
 function matchesClaude33(text: string): boolean {
@@ -21,7 +19,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
   test.setTimeout(600_000);
   stepErrors.length = 0;
 
-  // Capture both pageerror and console errors; the CLAUDE-33 signature can surface on either.
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (err) => { pageErrors.push(err.message); });
@@ -31,7 +28,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
 
   await loginToDatagrok(page);
 
-  // Windows mode (simpleMode=false) so view-tabs render with clickable geometry.
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -45,7 +41,7 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
   try {
-    // SETUP — Stage a host table view + mount Biostructure viewer to wire onViewRemoved.
+
     let setupDiag: any = null;
 
     await softStep('Setup — Stage host table view + tv.addViewer(Biostructure) + setOptions({pdb}) to wire onViewRemoved subscription', async () => {
@@ -73,7 +69,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
           bioSetOptsErr = String(e && e.message ? e.message : e);
         }
 
-        // Wait up to 15s for .msp-plugin or the viewer container to mount.
         let mspPluginMounted = false;
         let viewerContainerMounted = false;
         for (let i = 0; i < 75; i++) {
@@ -110,13 +105,12 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
       expect(setupDiag.viewerTypes).toEqual(expect.arrayContaining(['Grid', 'Biostructure']));
     });
 
-    // SCENARIO 1 — Closing an unrelated view (3 cycles) must not throw the 'children' signature.
     const claude33Hits: Array<{cycle: number, channel: string, msg: string}> = [];
     const cycleSummaries: Array<any> = [];
 
     for (let cycle = 1; cycle <= 3; cycle++) {
       await softStep(`Scenario 1 — Open unrelated view, click view-tab Close (cycle ${cycle} of 3); onViewRemoved handler MUST NOT throw 'children' signature`, async () => {
-        // Reset capture buffers to isolate this close action from setup noise.
+
         pageErrors.length = 0;
         consoleErrors.length = 0;
 
@@ -131,10 +125,8 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
         const tabLocator = page.locator(`[name="view-handle: ${unrelatedName}"]`).first();
         await tabLocator.waitFor({timeout: 15_000});
 
-        // Settle so the platform commits the addView before dispatching close.
         await page.waitForTimeout(800);
 
-        // Click the Close icon on the unrelated view's tab.
         const closeIcon = tabLocator.locator('[name="Close"]').first();
         let clickErr: string | null = null;
         try {
@@ -146,8 +138,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
 
         await page.waitForTimeout(1500);
 
-        // Fallback: if the UI click did not remove the tab, close it programmatically
-        // so onViewRemoved fires and the assertion below is not vacuous.
         let usedProgrammaticFallback = false;
         const tabStillPresent = (await page.locator(`[name="view-handle: ${unrelatedName}"]`).count()) > 0;
         if (tabStillPresent) {
@@ -180,7 +170,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
           consoleErrSample: consoleErrors.slice(0, 5).map((s) => s.slice(0, 200)),
         });
 
-        // The CLAUDE-33 signature must not surface on either channel after the close.
         expect(
           pageErrSig,
           'CLAUDE-33 Molstar onViewRemoved unrelated-view-close crash ' +
@@ -212,9 +201,8 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
       });
     }
 
-    // SCENARIO 1 step 6 — Cross-cycle invariant: zero CLAUDE-33 hits across the three cycles.
     await softStep('Scenario 1 step 6 — Cross-cycle invariant: zero CLAUDE-33 signature hits across three open/close cycles', async () => {
-      // eslint-disable-next-line no-console
+
       console.log(`[CLAUDE-33 cycle summaries] ${JSON.stringify(cycleSummaries)}`);
       expect(
         claude33Hits,
@@ -222,7 +210,7 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
         `check: ${JSON.stringify(claude33Hits)}. The handler must no-op ` +
         'for non-matching views across a range of `evtView.root` shapes.',
       ).toEqual([]);
-      // At least two of three cycles must have closed their tabs (robust to one timing hiccup).
+
       const tabsClosedCount = cycleSummaries.filter((s) => s.tabGone === true).length;
       expect(
         tabsClosedCount,
@@ -233,17 +221,15 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
       ).toBeGreaterThanOrEqual(2);
     });
 
-    // SCENARIO 2 — Closing the Molstar host view itself must still tear down cleanly (inverse guard).
     let scenario2Diag: any = null;
 
     await softStep('Scenario 2 step 3 — Close the Molstar host view; teardown must be clean (no children-signature error)', async () => {
-      // Reset capture buffers before the host-view close.
+
       pageErrors.length = 0;
       consoleErrors.length = 0;
 
       const hostViewName = setupDiag.hostViewName;
 
-      // Ensure a live host with the Biostructure viewer exists before closing.
       const hostTabPresent = (await page.locator(`[name="view-handle: ${hostViewName}"]`).count()) > 0;
       if (!hostTabPresent) {
         await page.evaluate(async (path) => {
@@ -255,8 +241,8 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
           try {
             const bioViewer = hostTv.addViewer('Biostructure');
             await new Promise((r) => setTimeout(r, 1000));
-            try { bioViewer.setOptions({pdb: content}); } catch (_) { /* best-effort */ }
-          } catch (_) { /* best-effort */ }
+            try { bioViewer.setOptions({pdb: content}); } catch (_) {  }
+          } catch (_) {  }
           for (let i = 0; i < 75; i++) {
             if (document.querySelector('.msp-plugin')) break;
             await new Promise((r) => setTimeout(r, 200));
@@ -266,7 +252,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
         await page.locator(`[name="view-handle: host-claude-33-rehydrate"]`).first().waitFor({timeout: 30_000});
       }
 
-      // Pick whichever host-view-tab is currently present.
       const candidateNames = ['host-claude-33', 'host-claude-33-rehydrate'];
       let liveHostName: string | null = null;
       for (const n of candidateNames) {
@@ -294,7 +279,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
 
       await page.waitForTimeout(2000);
 
-      // Fallback: if the UI click did not remove the host tab, close it programmatically.
       let usedProgrammaticFallback = false;
       const hostStillPresent = (await page.locator(`[name="view-handle: ${liveHostName}"]`).count()) > 0;
       if (hostStillPresent) {
@@ -326,7 +310,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
         consoleErrSample: consoleErrors.slice(0, 5).map((s) => s.slice(0, 200)),
       };
 
-      // Inverse #1: the CLAUDE-33 signature must not surface on the host close either.
       expect(
         pageErrSig,
         'CLAUDE-33 inverse-regression: closing the Molstar host view ' +
@@ -340,7 +323,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
         `(console channel): ${JSON.stringify(consoleErrSig)}.`,
       ).toEqual([]);
 
-      // Inverse #2: the host close must actually tear down (hostGone true).
       expect(
         scenario2Diag.hostGone,
         'CLAUDE-33 inverse-regression: clicking the Close icon on the ' +
@@ -353,7 +335,6 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
       ).toBe(true);
     });
 
-    // SCENARIO 2 step 4 — Joint invariant cross-check (CLAUDE-33 onViewRemoved safety).
     await softStep('Scenario 2 step 4 — Joint invariant cross-check (CLAUDE-33 onViewRemoved safety)', async () => {
       const summary = {
         scenario1: {
@@ -382,12 +363,12 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
           scenario2Diag.consoleErrSig.length === 0
         ),
       };
-      // eslint-disable-next-line no-console
+
       console.log(`[CLAUDE-33 joint-invariant summary] ${JSON.stringify(summary)}`);
       expect(summary.jointInvariantHolds).toBe(true);
     });
   } finally {
-    // Cleanup — close menus/dialogs and reset shell state.
+
     try {
       await page.evaluate(() => {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
@@ -396,9 +377,9 @@ test('BiostructureViewer — CLAUDE-33 Molstar onViewRemoved unrelated-view-clos
           const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
           if (cancel) cancel.click();
         });
-        try { grok.shell.closeAll(); } catch (_) { /* best-effort */ }
+        try { grok.shell.closeAll(); } catch (_) {  }
       });
-    } catch (_) { /* best-effort */ }
+    } catch (_) {  }
   }
 
   const realErrors = stepErrors.filter((e) => !e.error.startsWith('Test is skipped:'));

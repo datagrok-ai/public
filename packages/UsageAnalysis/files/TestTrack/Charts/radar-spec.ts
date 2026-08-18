@@ -12,7 +12,6 @@ test('Radar viewer (Charts package)', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Baseline environment setup
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -24,7 +23,6 @@ test('Radar viewer (Charts package)', async ({page}) => {
     (window as any).grok.shell.windows.simpleMode = true;
   });
 
-  // Step 1: Open earthquakes.csv and add Radar viewer via Add Viewer gallery (DOM)
   await softStep('Step 1: Open earthquakes.csv and add Radar viewer via gallery', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
@@ -34,7 +32,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      // Full pointer-event sequence: plain .click() won't open the gallery in headless Chromium.
+
       const fullClick = (el: HTMLElement) => {
         const r = el.getBoundingClientRect();
         const opts = {bubbles: true, cancelable: true, view: window,
@@ -47,7 +45,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
       };
       const addBtn = document.querySelector('i.svg-add-viewer') as HTMLElement | null;
       if (!addBtn) throw new Error('Add Viewer ribbon icon not found');
-      // Two-tier click + JS API fallback (sunburst/timelines pattern).
+
       const openGallery = async () => {
         const probe = () => {
           const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
@@ -64,7 +62,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
       if (!dlg) {
         console.warn('[radar Step 1]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Radar');
-        // Retry probe up to ~25s — Charts webpack-lazy-load + Radar DOM attach can take 15+ s on cold start.
+
         let radarRoot = false;
         for (let attempt = 0; attempt < 5; attempt++) {
           await new Promise((r) => setTimeout(r, 5000));
@@ -82,7 +80,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
       }
-      // Retry probe up to ~25s — Charts webpack-lazy-load + Radar DOM attach can take 15+ s on cold start.
+
       let radarRoot = false;
       for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise((r) => setTimeout(r, 5000));
@@ -97,7 +95,6 @@ test('Radar viewer (Charts package)', async ({page}) => {
     expect(result.radarRoot).toBe(true);
   });
 
-  // Step 2: Open demog.csv and add Radar viewer via Add Viewer gallery (DOM)
   await softStep('Step 2: Open demog.csv and add Radar viewer via gallery', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
@@ -121,7 +118,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
       };
       const addBtn = document.querySelector('i.svg-add-viewer') as HTMLElement | null;
       if (!addBtn) throw new Error('Add Viewer ribbon icon not found');
-      // Same two-tier + JS-API fallback as Step 1.
+
       const openGallery = async () => {
         const probe = () => {
           const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
@@ -138,7 +135,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
       if (!dlg) {
         console.warn('[radar Step 2]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Radar');
-        // Retry probe up to ~25s (same as Step 1).
+
         let radarRoot = false;
         for (let attempt = 0; attempt < 5; attempt++) {
           await new Promise((r) => setTimeout(r, 5000));
@@ -156,7 +153,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
         if (closeBtn) closeBtn.click();
       }
-      // Retry probe up to ~25s (same as Step 1).
+
       let radarRoot = false;
       for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise((r) => setTimeout(r, 5000));
@@ -189,7 +186,6 @@ test('Radar viewer (Charts package)', async ({page}) => {
         }
       }
 
-      // Toggle one Style color; wrap in try/catch — Radar props can race cold-start init.
       const tv = (window as any).grok.shell.tv;
       let radar: any = null;
       for (const v of tv.viewers) if (v.type === 'Radar') { radar = v; break; }
@@ -212,7 +208,6 @@ test('Radar viewer (Charts package)', async ({page}) => {
     if (result.echoed != null) expect(result.colorEchoOk).toBe(true);
   });
 
-  // Step 9: table switch — find Radar via shell.tableViews loop (don't depend on shell.tv after switches).
   await softStep('Step 9: Verify radar tableName property surface; attempt setOptions round-trip (race-tolerant)', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
@@ -268,7 +263,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
     if (result.switched != null && result.restored != null) {
       expect(result.restored).toBe(result.beforeName);
     }
-    // Content presence is load-bearing; width may be 0 when active tv isn't radar's tv.
+
     expect(result.hasContent).toBe(true);
     if (result.width > 0) console.log('[Step 9] viewer width:', result.width);
     console.log('[Step 9]', JSON.stringify({
@@ -326,7 +321,7 @@ test('Radar viewer (Charts package)', async ({page}) => {
       if (!radar) return {ok: false, reason: 'Radar viewer not found in any tableView'};
       let propNames: string[] = [];
       try { propNames = radar.props.getProperties().map((p: any) => p.name); } catch (e) {}
-      // Try multiple plausible color/values property names — actual name varies by Radar build.
+
       const candidates = ['colorColumnName', 'valuesColumnNames', 'columns', 'columnNames'];
       const exposed = candidates.filter((c) => propNames.includes(c));
       let togglesAttempted = 0;
@@ -368,8 +363,6 @@ test('Radar viewer (Charts package)', async ({page}) => {
       viewerWidth: result.width,
     }));
   });
-
-  // Step 13 (broad sweep): represented by Step 3 categories enumeration; no separate softStep.
 
   await v.cleanupShell(page);
 

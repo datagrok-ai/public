@@ -29,7 +29,7 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
 
     await softStep('Step 3 equivalent: derive deep-link path for the project', async () => {
       if (!saved) throw new Error('no saved project');
-      // Use entity.path — server-canonical URL slug, e.g. `/p/QaPw.MyProject` (namespace separator is `.`).
+
       projectPath = await page.evaluate(async (id) => {
         const grok = (window as any).grok;
         const p = await grok.dapi.projects.find(id);
@@ -45,8 +45,7 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
       await page.waitForTimeout(500);
       await page.goto(`${BASE_URL}${projectPath}`);
       await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
-      // Verify via project.id match (primary) or TableView rowCount > 0 (fallback). Avoid grok.shell.tables —
-      // Dart-side Tn.grok_TableNames throws on dev for URL-opened projects.
+
       const expectedId = saved.projectId;
       const result = await page.evaluate(async ({pid}) => {
         const grok = (window as any).grok;
@@ -64,8 +63,7 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
         return {ok: false, signal: 'timeout', projId: lastProjId, rc: lastRc, expected: pid};
       }, {pid: expectedId});
       console.log('Project URL load result: ' + JSON.stringify(result));
-      // Deep-link contract: navigating to the project URL must open THIS project
-      // (shell.project.id === expected) with its table re-materialized (rowCount > 0).
+
       expect(
         result.ok,
         result.ok ? '' : `deep-link did not open the expected project within 45s: ` +

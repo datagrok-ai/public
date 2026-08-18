@@ -9,7 +9,6 @@ const aePath = 'System:AppData/Charts/ae.csv';
 test('Timelines viewer — legend filtering regression (GROK-19033)', async ({page}) => {
   test.setTimeout(300_000);
 
-  // Capture console errors for the GROK-19033 visual-stability invariant; filter benign network noise.
   const consoleErrors: string[] = [];
   const isBenignError = (text: string) =>
     /Failed to load resource/.test(text) ||
@@ -23,7 +22,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
   await loginToDatagrok(page);
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
-  // Baseline environment setup
   await page.evaluate(() => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
@@ -35,9 +33,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     (window as any).grok.shell.windows.simpleMode = true;
   });
 
-  // === Scenario 1: Legend click-to-filter (GROK-19033 reproduction class) ===
-
-  // Step 1.1-1.2: Open ae.csv and add Timelines viewer via gallery (DOM).
   await softStep('Scenario 1 Step 1-2: Open ae.csv; Add Timelines viewer via gallery', async () => {
     const result = await page.evaluate(async (path) => {
       const grok = (window as any).grok;
@@ -47,7 +42,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
         setTimeout(resolve, 3000);
       });
-      // Full pointer-event sequence required to open the gallery.
+
       const fullClick = (el: HTMLElement) => {
         const r = el.getBoundingClientRect();
         const opts = {bubbles: true, cancelable: true, view: window,
@@ -60,7 +55,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
       };
       const addBtn = document.querySelector('i.svg-add-viewer') as HTMLElement | null;
       if (!addBtn) throw new Error('Add Viewer ribbon icon not found');
-      // Two-tier click + JS API fallback (same pattern as sunburst-spec.ts).
+
       const openGallery = async () => {
         const probe = () => {
           const all = document.querySelectorAll('[name="dialog-Add-Viewer"]');
@@ -77,7 +72,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
       if (!dlg) {
         console.warn('[timelines Step 1-2]', 'Add Viewer gallery did not open via DOM click; falling back to tv.addViewer JS API');
         tv.addViewer('Timelines');
-        // Charts package webpack-lazy-loads — wait ≥3000ms before probing.
+
         await new Promise((r) => setTimeout(r, 4500));
         const viewerTypes: string[] = [];
         for (const v of (tv && tv.viewers ? Array.from(tv.viewers) as any[] : [] as any[])) viewerTypes.push(v.type);
@@ -88,7 +83,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
         .find((t) => (t.textContent || '').trim() === 'Timelines') as HTMLElement | undefined;
       if (!tile) throw new Error('Timelines tile not found');
       fullClick(tile);
-      // Charts package webpack-lazy-loads — wait ≥3000ms before probing.
+
       await new Promise((r) => setTimeout(r, 4500));
       for (const d of Array.from(document.querySelectorAll('[name="dialog-Add-Viewer"]'))) {
         const closeBtn = d.querySelector('[name="icon-font-icon-close"]') as HTMLElement | null;
@@ -145,7 +140,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
       const legendVisLabel = document.querySelector('[name="prop-view-legend-visibility"]');
       const legendVisLabelShown = !!legendVisLabel;
 
-      // Split-by combobox name uses a double dash.
       const splitCombo = document.querySelector('[name="div-column-combobox-split--by"]');
       const splitComboShown = !!splitCombo;
 
@@ -172,7 +166,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     console.log('[Timelines defaults read]', JSON.stringify(result.defaultProps));
   });
 
-  // Step 1.5-1.7: DOM legend click on AESOC category (legend is real DOM, not ECharts canvas).
   await softStep('Scenario 1 Step 5-7: DOM legend click on AESOC category — visual-stability assertion', async () => {
     const errorsBefore = consoleErrors.length;
     const result = await page.evaluate(async () => {
@@ -191,7 +184,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
 
       const root = tl.getBoundingClientRect();
 
-      // GROK-19033 invariant: canvas pixel sample is not all-white.
       const canvas = tl.querySelector('canvas') as HTMLCanvasElement | null;
       let canvasNotWhite = true;
       if (canvas) {
@@ -226,7 +218,7 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     expect(result.legendFound).toBe(true);
     expect(result.itemCount).toBeGreaterThan(0);
     expect(result.currentToggled).toBe(true);
-    // GROK-19033: viewer remains stable, no console error during the click.
+
     expect(result.rootWidth).toBeGreaterThan(0);
     expect(result.rootHeight).toBeGreaterThan(0);
     expect(result.canvasNotWhite).toBe(true);
@@ -234,9 +226,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     expect(errorsDuring).toEqual([]);
   });
 
-  // === Scenario 2: legendVisibility transitions ===
-
-  // legendVisibility cycle Auto → Always → Never → Auto must be visually stable (GROK-19033).
   await softStep('Scenario 2 Step 2: legendVisibility = Always; visual stability assertion', async () => {
     const errorsBefore = consoleErrors.length;
     const result = await page.evaluate(async () => {
@@ -336,7 +325,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     expect(errorsDuring).toEqual([]);
   });
 
-  // Step 2.5: re-click legend to re-enable category — DOM (re-uses Scenario 1 selector).
   await softStep('Scenario 2 Step 5: Re-click legend item to re-enable category — visual stability', async () => {
     const errorsBefore = consoleErrors.length;
     const result = await page.evaluate(async () => {
@@ -366,8 +354,6 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     const errorsDuring = consoleErrors.slice(errorsBefore);
     expect(errorsDuring).toEqual([]);
   });
-
-  // === Scenario 3: splitByColumnName re-bind mid-session ===
 
   await softStep('Scenario 3 Step 2: splitByColumnName USUBJID -> AESEV; visual stability assertion', async () => {
     const errorsBefore = consoleErrors.length;
@@ -410,14 +396,13 @@ test('Timelines viewer — legend filtering regression (GROK-19033)', async ({pa
     expect(errorsDuring).toEqual([]);
   });
 
-  // Step 3.3: legend click in new split-by configuration — DOM.
   await softStep('Scenario 3 Step 3: Legend click in new split-by config — visual stability', async () => {
     const errorsBefore = consoleErrors.length;
     const result = await page.evaluate(async () => {
       const tl = document.querySelector('[name="viewer-Timelines"]') as HTMLElement | null;
       if (!tl) return {ok: false};
       const legend = tl.querySelector('[name="legend"]');
-      // Legend may re-render or hide after rebind; tolerate either — invariant is no white-screen / error.
+
       const items = legend ? Array.from(legend.querySelectorAll('.d4-legend-item')) : [];
       let clicked = false;
       if (items.length > 0) {

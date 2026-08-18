@@ -124,9 +124,9 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       ` Observed: ${dockProbe.knnRowCount}`).not.toBeNull();
     expect(dockProbe.knnRowCount!).toBeGreaterThanOrEqual(2);
   });
-  // Settle after Scenario 1's compute so Scenario 2's render isn't queued behind a pending renderPromise.
+
   await page.waitForTimeout(1500);
-  // Scenario 2 — Clicking a different row re-queries the KNN viewer.
+
   const scenario1Baseline = await page.evaluate(() => {
     const viewers = Array.from((grok.shell.tv as any).viewers) as any[];
     const v = viewers.find((vw) => vw.type === 'Sequence Similarity Search');
@@ -168,7 +168,7 @@ test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours',
       try {
         const idxsCol = (v as any)?.idxs;
         if (idxsCol && typeof idxsCol.length === 'number') knnRowCount = idxsCol.length;
-      } catch { /* keep null */ }
+      } catch {  }
       return {
         targetMoleculeIdx,
         knnRowCount,

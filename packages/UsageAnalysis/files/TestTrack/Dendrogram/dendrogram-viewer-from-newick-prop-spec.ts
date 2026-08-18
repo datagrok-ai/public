@@ -1,16 +1,12 @@
-// Newick resolution priority: literal `newick` prop > newickTag > .newick tag > empty.
-// Property-panel row selectors are name-mangled (e.g. nodeColumnName -> [name="prop-node"]).
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-// Canonical newick strings (matched against the synthetic `leaves4` DataFrame).
 const NEWICK_BALANCED = '((a:1,b:1):1,(c:1,d:1):1);';
 const NEWICK_LEFT_LEAN = '(((a:1,b:1):1,c:1):1,d:1);';
 
-/** Eighteen property-panel row anchors (name-mangled). Used by the panel-open DOM check. */
 const PROP_ROW_NAMES = [
   'newick', 'newick-tag', 'node', 'color', 'color-aggr-type',
   'line-width', 'node-size', 'show-grid', 'main-color', 'light-color',
@@ -66,7 +62,7 @@ async function getViewerInfo(page: Page): Promise<{
       currentColor: v.props.currentColor ?? null,
       mouseOverColor: v.props.mouseOverColor ?? null,
       selectionsColor: v.props.selectionsColor ?? null,
-      // treeNewick is the resolved (priority-order-applied) newick.
+
       treeNewick: v.treeNewick ?? null,
       dataFrameMatches: v.dataFrame === grok.shell.tv.dataFrame,
       canvasWidth: canvas ? canvas.width : 0,
@@ -82,7 +78,7 @@ async function applyViewerOptions(page: Page, opts: Record<string, unknown>): Pr
     if (!v) throw new Error('Dendrogram viewer not mounted');
     v.setOptions(o);
   }, opts);
-  // Settle so onPropertyChanged restyle/rebuild can run.
+
   await page.waitForTimeout(250);
 }
 
@@ -104,7 +100,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
 
   await loginToDatagrok(page);
 
-  // Setup — build the synthetic `leaves4` DataFrame and seed two newick tags.
   await page.evaluate(async (args: {balanced: string; leftLean: string}) => {
     document.body.classList.add('selenium');
     try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -125,8 +120,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     });
   }, {balanced: NEWICK_BALANCED, leftLean: NEWICK_LEFT_LEAN});
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
-
-  // ── Scenario 1 — Viewer mounts and renders from literal newick property ─
 
   await softStep('1.1 Add Dendrogram viewer with literal newick + nodeColumnName: leaf', async () => {
     await page.evaluate((args: {newick: string}) => {
@@ -153,8 +146,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     const leaves = await getLeafSetFromNewick(page, NEWICK_BALANCED);
     expect(leaves, 'parsed leaf set').toEqual(['a', 'b', 'c', 'd']);
   });
-
-  // ── Scenario 2 — Property-panel sweep ───────────────────────────────────
 
   await softStep('2.1 Open property panel (grok.shell.o = viewer); verify all 18 prop rows render', async () => {
     await page.evaluate(() => {
@@ -188,7 +179,7 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
   });
 
   await softStep('2.2 newickTag dropdown is populated from .* tags; switching it rebuilds the view', async () => {
-    // Clear the literal prop so the newickTag wins, then switch the tag and observe treeNewick.
+
     await applyViewerOptions(page, {newick: ''});
     let info = await getViewerInfo(page);
     expect(info.newick, 'newick prop cleared').toBe('');
@@ -202,13 +193,11 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.canvasWidth, 'canvas non-empty after newickTag swap').toBeGreaterThan(0);
     expect(info.canvasHeight, 'canvas non-empty after newickTag swap').toBeGreaterThan(0);
 
-    // Reset to scenario-1 state: literal newick wins again.
     await applyViewerOptions(page, {newick: NEWICK_BALANCED});
     info = await getViewerInfo(page);
     expect(info.treeNewick, 'treeNewick snaps back to literal newick').toBe(NEWICK_BALANCED);
   });
 
-  // 2.3 — nodeColumnName rebuild path (data prop).
   await softStep('2.3 nodeColumnName toggle leaf<->value<->leaf rebuilds the view (no console error)', async () => {
     await applyViewerOptions(page, {nodeColumnName: 'value'});
     let info = await getViewerInfo(page);
@@ -219,7 +208,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.canvasWidth, 'canvas non-empty after nodeColumnName toggle').toBeGreaterThan(0);
   });
 
-  // 2.4 — colorColumnName + colorAggrType rebuild path (data props).
   await softStep('2.4 colorColumnName=value + colorAggrType {avg,min,max,med,total-count}', async () => {
     await applyViewerOptions(page, {colorColumnName: 'value'});
     let info = await getViewerInfo(page);
@@ -233,7 +221,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.canvasWidth, 'canvas non-empty after colorAggrType sweep').toBeGreaterThan(0);
   });
 
-  // 2.5 — lineWidth restyle path (style prop).
   await softStep('2.5 lineWidth sweep 0 / 16 / 2.5 (slider bounds + mid-range)', async () => {
     for (const lw of [0, 16, 2.5]) {
       await applyViewerOptions(page, {lineWidth: lw});
@@ -244,7 +231,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.canvasWidth, 'canvas non-empty after lineWidth sweep').toBeGreaterThan(0);
   });
 
-  // 2.6 — nodeSize restyle path.
   await softStep('2.6 nodeSize sweep 0 / 16 / 4.0', async () => {
     for (const ns of [0, 16, 4]) {
       await applyViewerOptions(page, {nodeSize: ns});
@@ -253,7 +239,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     }
   });
 
-  // 2.7 — showGrid restyle path.
   await softStep('2.7 showGrid toggle off/on round-trip', async () => {
     const initial = (await getViewerInfo(page)).showGrid;
     await applyViewerOptions(page, {showGrid: !initial});
@@ -264,7 +249,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.showGrid, `showGrid restored to ${initial}`).toBe(initial);
   });
 
-  // 2.8 — Color sweep: hex strings ('#FF0000') are accepted; viewer stores the literal string.
   await softStep('2.8 Color sweep — set each of 5 color props to #FF0000, then restore', async () => {
     const colorProps = [
       'mainColor', 'lightColor', 'currentColor', 'mouseOverColor', 'selectionsColor',
@@ -283,14 +267,13 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
       const info = await getViewerInfo(page);
       expect((info as any)[cp], `${cp} set to #FF0000`).toBe('#FF0000');
     }
-    // Restore defaults.
+
     for (const cp of colorProps)
       await applyViewerOptions(page, {[cp]: defaults[cp]});
     const info = await getViewerInfo(page);
     expect(info.canvasWidth, 'canvas non-empty after color sweep').toBeGreaterThan(0);
   });
 
-  // 2.9 — showLabels + font restyle path.
   await softStep('2.9 showLabels true; font 12pt monospace; showLabels false', async () => {
     await applyViewerOptions(page, {showLabels: true});
     let info = await getViewerInfo(page);
@@ -303,7 +286,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.showLabels, 'showLabels = false').toBe(false);
   });
 
-  // 2.10 — stepZoom behavior prop (tactile wheel-zoom magnitude deferred to manual; reflection only).
   await softStep('2.10 stepZoom sweep -4 / 4 / 0.5 (slider bounds + mid)', async () => {
     for (const sz of [-4, 4, 0.5]) {
       await applyViewerOptions(page, {stepZoom: sz});
@@ -312,7 +294,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     }
   });
 
-  // 2.11 — showTooltip behavior prop (hover-driven tooltip content deferred to manual; reflection only).
   await softStep('2.11 showTooltip toggle off/on (tooltip-content hover deferred to manual per SR-02)', async () => {
     await applyViewerOptions(page, {showTooltip: false});
     let info = await getViewerInfo(page);
@@ -322,7 +303,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.showTooltip, 'showTooltip = true').toBe(true);
   });
 
-  // 2.12 — step style prop.
   await softStep('2.12 step sweep 0 / 64 / 1.5 (slider bounds + mid)', async () => {
     for (const s of [0, 64, 1.5]) {
       await applyViewerOptions(page, {step: s});
@@ -339,7 +319,6 @@ test('Dendrogram: Viewer from literal newick property + full property-panel swee
     expect(info.dataFrameMatches, 'viewer.dataFrame === tv.dataFrame at end of sweep').toBe(true);
   });
 
-  // Cleanup
   await page.evaluate(() => grok.shell.closeAll());
 
   finishSpec();

@@ -18,7 +18,6 @@ test('PLS Regression: Train on cars.csv', async () => {
     }, {timeout: 45000});
   }
 
-  // Step 1: Open cars.csv
   await softStep('Open cars.csv', async () => {
     const result = await page!.evaluate(async () => {
       document.querySelectorAll('.d4-dialog').forEach(d => {
@@ -38,7 +37,6 @@ test('PLS Regression: Train on cars.csv', async () => {
     expect(result.cols).toBe(17);
   });
 
-  // Step 2: Open Train Model via ML > Models > Train Model
   await softStep('Open Train Model via menu', async () => {
     await page!.evaluate(async () => {
       const ml = document.querySelector('[name="div-ML"]') as HTMLElement;
@@ -58,7 +56,6 @@ test('PLS Regression: Train on cars.csv', async () => {
     expect(view).toBe(true);
   });
 
-  // Step 3: Set Predict = price via UI column selector
   await softStep('Set Predict to price', async () => {
     await page!.evaluate(async () => {
       const editor = document.querySelector('[name="input-host-Predict"] .ui-input-editor') as HTMLElement;
@@ -75,9 +72,6 @@ test('PLS Regression: Train on cars.csv', async () => {
     expect(predictText).toContain('price');
   });
 
-  // Step 4: Train PLS Regression (JS API fallback)
-  // - Canvas-based Features selector cannot be automated for individual column toggling
-  // - Model Engine dropdown not visible in Train Model UI
   await softStep('Train PLS Regression (JS API fallback)', async () => {
     const result = await page!.evaluate(async () => {
       Array.from(grok.shell.views).filter(v => v.type === 'PredictiveModel').forEach(v => v.close());

@@ -3,6 +3,7 @@ realizes: [linechart.cp.spc-monitoring-and-zoom]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {setViewerProps} from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -18,11 +19,7 @@ function realErrors(): string[] {
 }
 
 async function setProps(page: Page, props: Record<string, any>) {
-  await page.evaluate((p) => {
-    const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
-    for (const [k, val] of Object.entries(p)) (lc.props as any)[k] = val;
-  }, props);
-  await page.waitForTimeout(500);
+  await setViewerProps(page, 'Line chart', [{set: props, wait: 500}]);
 }
 
 async function getProps(page: Page, ...names: string[]): Promise<Record<string, any>> {
@@ -60,6 +57,7 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise((r) => setTimeout(r, 200));
     }
+
     await new Promise((r) => setTimeout(r, 5000));
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
@@ -67,7 +65,6 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
   await page.locator('[name="icon-line-chart"]').click();
   await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});
 
-  // Single Y, no split, no multi-axis — the SPC gating precondition.
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X']});
 
   await softStep('S1: SPC gating precondition — single Y, no split, no multi-axis', async () => {
@@ -81,12 +78,10 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
     const before = realErrors().length;
     await setProps(page, {showStatisticalProcessControl: true});
     expect((await getProps(page, 'showStatisticalProcessControl')).showStatisticalProcessControl).toBe(true);
-    // No-freeze guard: a follow-up JS roundtrip must resolve — a frozen page
-    // would hang this evaluate until the test timeout.
+
     const alive = await page.evaluate(() => true);
     expect(alive).toBe(true);
-    // grok.shell.warnings is not exposed to JS here, so page and console errors
-    // are the error channel.
+
     expect(realErrors().length).toBe(before);
   });
 
@@ -110,12 +105,13 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
     expect(bounds.xMin).toBeGreaterThan(full.min);
     expect(bounds.xMax).toBeLessThan(full.max);
 
-    // Zoom is canvas-only — no readable viewport prop — so the wheel-zoom and its
-    // reset are checked via their events (d4-linechart-zoomed / -reset-view). The
-    // explicit X Min/Max are the product-state signal: Reset View resets the zoom
-    // but must NOT clear the configured axis bounds.
     const evt = await page.evaluate(async () => {
       const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
+      const until = async (fired: () => boolean, cap: number) => {
+        const t0 = Date.now();
+        while (!fired() && Date.now() - t0 < cap)
+          await new Promise((res) => setTimeout(res, 20));
+      };
       let zoomFired = false;
       const subZ = lc.onEvent('d4-linechart-zoomed').subscribe(() => { zoomFired = true; });
       const cvs = Array.from(document.querySelectorAll('[name="viewer-Line-chart"] canvas')) as HTMLCanvasElement[];
@@ -124,20 +120,21 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
       for (let i = 0; i < 5; i++) {
         t.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true,
           clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, deltaY: -200}));
+
         await new Promise((res) => setTimeout(res, 120));
       }
-      await new Promise((res) => setTimeout(res, 400));
+      await until(() => zoomFired, 400);
       subZ.unsubscribe();
       let resetFired = false;
       const subR = lc.onEvent('d4-linechart-reset-view').subscribe(() => { resetFired = true; });
       lc.resetView();
-      await new Promise((res) => setTimeout(res, 700));
+      await until(() => resetFired, 700);
       subR.unsubscribe();
       return {zoomFired, resetFired};
     });
     expect(evt.zoomFired).toBe(true);
     expect(evt.resetFired).toBe(true);
-    // Reset View cleared the zoom (event) but left the explicit bounds set.
+
     const after = await getProps(page, 'xMin', 'xMax');
     expect(after.xMin).toBe(setMin);
     expect(after.xMax).toBe(setMax);

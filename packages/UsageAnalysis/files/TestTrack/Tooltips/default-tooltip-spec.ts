@@ -3,8 +3,6 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 
 test.use(specTestOptions);
 
-// Helper: hover off the grid then onto the grid canvas, wait past the 200ms
-// tooltip debounce, and return the tooltip text content (or '' when hidden).
 async function readTooltipAfterHover(page: import('@playwright/test').Page): Promise<{display: string; text: string}> {
   const overlay = page.locator('[name="viewer-Grid"] canvas').last();
   const box = await overlay.boundingBox();
@@ -12,7 +10,7 @@ async function readTooltipAfterHover(page: import('@playwright/test').Page): Pro
   await page.evaluate(() => (window as any).ui?.tooltip?.hide?.());
   await page.mouse.move(0, 0);
   await page.waitForTimeout(200);
-  // Move off the grid first to force mouseLeave, then back onto the center to fire mouseEnter
+
   await page.mouse.move(box.x - 50, box.y + box.height / 2);
   await page.waitForTimeout(150);
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -44,11 +42,6 @@ test('Grid: include visible columns in tooltip', async ({page}) => {
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // The scenario's expected tooltip behavior matches `showTooltip = 'inherit from table'`.
-  // The grid's actual default is 'show custom tooltip', which short-circuits the tooltip
-  // pipeline when `rowTooltip` is empty (regardless of `showVisibleColumnsInTooltip`) —
-  // tooltip.dart#getRowTooltip lines 525-537 returns null. Switching mode lets the rest
-  // of the scenario observe the documented `showVisibleColumnsInTooltip` filter behavior.
   await page.evaluate(() => {
     const tv: any = (grok as any).shell.tv;
     tv.grid.props.showTooltip = 'inherit from table';
@@ -92,7 +85,7 @@ test('Grid: include visible columns in tooltip', async ({page}) => {
     await page.waitForTimeout(400);
     const tt = await readTooltipAfterHover(page);
     expect(tt.display).toBe('block');
-    // Only the clipped column ('target') should appear when showVisibleColumnsInTooltip is off.
+
     expect(tt.text).toContain('target');
     expect(tt.text).not.toContain('source');
   });
@@ -123,7 +116,7 @@ test('Grid: include visible columns in tooltip', async ({page}) => {
   });
 
   await softStep('Checked: tooltip shows the same visible columns in both states', async () => {
-    // All columns visible
+
     await page.evaluate(() => {
       const tv: any = (grok as any).shell.tv;
       tv.grid.columns.byName('value').width = 162;
@@ -136,7 +129,6 @@ test('Grid: include visible columns in tooltip', async ({page}) => {
     expect(ttAll.text).toContain('source');
     expect(ttAll.text).toContain('target');
 
-    // Last column clipped
     await page.evaluate(() => {
       const tv: any = (grok as any).shell.tv;
       tv.grid.columns.byName('value').width = 1100;

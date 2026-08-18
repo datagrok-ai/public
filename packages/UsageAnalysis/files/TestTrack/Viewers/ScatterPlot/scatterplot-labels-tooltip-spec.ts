@@ -13,9 +13,7 @@ const demogPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 const SETUP_X = 'WEIGHT';
 const SETUP_Y = 'HEIGHT';
-// The hover aim is computed from this row's X and Y values, but several demog
-// rows share almost the same (WEIGHT, HEIGHT), so the row actually under the
-// pointer is read back from the table and graded instead of assumed.
+
 const REFERENCE_ROW = 10;
 const CUSTOM_TOOLTIP_COLUMNS = ['AGE', 'SEX'];
 const LABEL_COLUMN = 'AGE';
@@ -23,14 +21,10 @@ const SPGI_X = 'Whole blood assay 2 Date';
 const SPGI_Y = 'Stereo Category';
 const SPGI_LABEL_COLUMN = 'Id';
 
-// Canvas readings scale with viewer size and dpr, so only these bounds are
-// asserted, never a reading. Their ordering keeps the asserts honest:
-// INK_SETTLE < OVERLAY_RESTORE_TOLERANCE < LABEL_INK_DELTA.
 const INK_SETTLE = 60;
 const LABEL_INK_DELTA = 500;
 const OVERLAY_RESTORE_TOLERANCE = 150;
-// How far, as a fraction of the viewport rectangle, the row the viewer reports
-// may sit from the reference row's coordinates and still count as the aim.
+
 const MARKER_AIM_TOLERANCE = 0.05;
 
 const isAmbientError = (text: string) =>
@@ -39,18 +33,12 @@ const isAmbientError = (text: string) =>
   /powerPreference option is currently ignored/.test(text) ||
   /willReadFrequently/.test(text);
 
-// No project save here, so no Dart NullError or "Stack trace" window is
-// expected: nothing beyond the shared server's ambient noise is whitelisted,
-// and the Infinity.ceil() class reaches the guards unconditionally.
 const isBenignError = (text: string) => isAmbientError(text);
 
 const CRASH_SIGNATURE = /Infinity\.ceil/i;
 
 interface Rect {x: number; y: number; width: number; height: number}
 
-/** Rect of the scatter-plot data canvas, resolved on the viewer root that is NOT
- * inside a dialog — a dialog can embed its own preview plot with a canvas of the
- * same name. */
 const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'))!;
@@ -58,9 +46,6 @@ const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
   return {x: r.x, y: r.y, width: r.width, height: r.height};
 });
 
-/** Pick a column through an on-viewer selector with trusted input only — the
- * shared helper also covers the long, space-bearing names of the chemical
- * dataset, and raises when the property does not end up holding the column. */
 const pickOnViewer = (page: Page, role: string, column: string) =>
   v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 
@@ -69,24 +54,20 @@ async function openSettings(page: Page): Promise<void> {
     const built = await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'));
     if (built) return;
     await v.openViewerGear(page, 'Scatter plot');
-    await page.waitForFunction(() => !!document.querySelector('[name="prop-category-data"]'),
-      null, {timeout: 2500}).catch(() => {});
+    await v.pollValue(() => page.evaluate(() => !!document.querySelector('[name="prop-category-data"]')),
+      (b) => b, 2500, 100);
   }
   throw new Error('the scatter plot settings panel did not build');
 }
 
-/** Make a property editor reachable. A row inside a collapsed property-grid
- * category keeps its DOM node with an empty box, so the check is on the editor's
- * own rectangle; the category header is a toggle, so an attempt that collapsed
- * it is simply retried. */
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {
   for (let i = 0; i < 8; i++) {
-    const ready = await page.waitForFunction((sel: string) => {
+    const ready = await v.pollValue(() => page.evaluate((sel: string) => {
       const el = document.querySelector(sel) as HTMLElement | null;
       if (!el || !el.offsetParent) return false;
       const b = el.getBoundingClientRect();
       return b.width > 0 && b.height > 0;
-    }, editorSelector, {timeout: i === 0 ? 300 : 900}).then(() => true).catch(() => false);
+    }, editorSelector), (ok) => ok, i === 0 ? 300 : 900, 100);
     if (ready) return;
     const header = page.locator(`[name="prop-category-${category}"]`);
     if (await header.count() > 0 && await header.isVisible()) await header.click();
@@ -94,7 +75,6 @@ async function revealPropEditor(page: Page, editorSelector: string, category: st
   throw new Error(`property editor ${editorSelector} never became reachable`);
 }
 
-/** Set a choice property: the value cell turns into a select once clicked. */
 async function setChoiceProp(
   page: Page, rowName: string, viewCell: string, category: string, value: string,
 ): Promise<void> {
@@ -107,11 +87,8 @@ async function setChoiceProp(
   await editor.waitFor({state: 'visible', timeout: 4000});
   await editor.selectOption(value);
   const prop = rowName.replace(/^prop-/, '').replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
-  for (let i = 0; i < 25; i++) {
-    if (await readProp(page, prop) === value) break;
-    await page.waitForTimeout(100);
-  }
-  await page.waitForTimeout(250);
+  await v.pollValue(() => readProp(page, prop), (x) => x === value, 2500, 100);
+  await v.waitForViewerRendered(page, 'Scatter plot', 250);
 }
 
 const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
@@ -119,25 +96,10 @@ const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
   return sp.props[n];
 }, name);
 
-/**
- * Assign one of the viewer's list-valued properties — the label column list and
- * the custom tooltip column list. Their UI editor is the Select columns dialog,
- * whose checkbox list is a canvas-rendered grid: no DOM checkbox, All / None
- * ignore the search box, and no coordinate toggles a column. The column choice
- * is configuration here, not the graded behaviour — what is graded is the
- * tooltip text and the label overlay the viewer then produces.
- */
 async function setListProp(page: Page, name: string, value: string | string[]): Promise<void> {
-  await page.evaluate(({n, val}: {n: string; val: any}) => {
-    const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
-    sp.props[n] = val;
-  }, {n: name, val: value});
-  await page.waitForTimeout(400);
+  await v.setViewerProps(page, 'Scatter plot', [{set: {[name]: value}, wait: 400}]);
 }
 
-/** Non-white opaque pixels on one of the plot's two canvases. `canvas` carries
- * the markers, axes and grid lines; `overlay` carries the marker labels. -1
- * signals a canvas that cannot be read, which the caller treats as a fault. */
 const canvasInk = (page: Page, layer: 'canvas' | 'overlay') => page.evaluate((name: string) => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'));
@@ -152,21 +114,17 @@ const canvasInk = (page: Page, layer: 'canvas' | 'overlay') => page.evaluate((na
   return n;
 }, layer);
 
-/** Move the pointer clear of every viewer. The plot repaints the marker under
- * the cursor, and this file parks the pointer on markers on purpose to read the
- * tooltip, so a measurement taken without parking can catch that highlight. */
 async function parkPointer(page: Page): Promise<void> {
   await page.mouse.move(4, 4);
-  await page.waitForTimeout(250);
+  await v.waitForViewerRendered(page, 'Scatter plot', 250);
 }
 
-/** Read a canvas until two consecutive readings agree within the settle drift —
- * a repaint finishes after the change that triggered it has been applied. */
 async function settledInk(page: Page, layer: 'canvas' | 'overlay'): Promise<number> {
   await parkPointer(page);
   let prev = await canvasInk(page, layer);
   let cur = prev;
   for (let i = 0; i < 12; i++) {
+
     await page.waitForTimeout(250);
     cur = await canvasInk(page, layer);
     if (cur >= 0 && Math.abs(cur - prev) <= INK_SETTLE) break;
@@ -177,10 +135,6 @@ async function settledInk(page: Page, layer: 'canvas' | 'overlay'): Promise<numb
 
 interface TooltipEntry {name: string; value: string}
 
-/** The tooltip's contents as name/value pairs. The tooltip is a real DOM table:
- * each row carries the column name in its first cell and the formatted value in
- * a value cell. In the custom mode the name cell is absent, so the name comes
- * back empty and the values still read out in order. */
 const tooltipEntries = (page: Page): Promise<TooltipEntry[]> => page.evaluate(() => {
   const tt = document.querySelector('.d4-tooltip') as HTMLElement | null;
   if (!tt) return [];
@@ -192,9 +146,6 @@ const tooltipEntries = (page: Page): Promise<TooltipEntry[]> => page.evaluate(()
   }).filter((e) => e.value.length > 0 || e.name.length > 0);
 });
 
-/** The tooltip's visible text, empty when no tooltip is up. The hover waits are
- * anchored on this rather than on a fixed pause: the tooltip is rebuilt a beat
- * after the pointer lands on a marker. */
 const tooltipText = (page: Page): Promise<string> => page.evaluate(() => {
   const tt = document.querySelector('.d4-tooltip') as HTMLElement | null;
   if (!tt || tt.offsetParent === null) return '';
@@ -210,29 +161,12 @@ interface HoverResult {
   viewportHeight: number;
 }
 
-/**
- * Hover the marker of the reference row and read what came up. The pointer is
- * first parked elsewhere on the plot so that the move onto the marker is a real
- * change of position — the tooltip is rebuilt from that move. The aim goes
- * through the viewer's own world-to-screen mapping, which returns canvas-local
- * coordinates. The plot is dense, so the marker under that coordinate may belong
- * to a neighbouring row: the row the viewer reports is returned together with
- * its distance from the reference row, and the caller grades against that row.
- *
- * `expectTooltip: false` says the step configured the viewer to show none: an
- * absent tooltip cannot be waited for, so that case keeps a blind wait long
- * enough for one to have appeared.
- */
 async function hoverReferenceMarker(
   page: Page, row: number, expectTooltip = true,
 ): Promise<HoverResult> {
   const rect = await canvasRect(page);
   await page.mouse.move(rect.x + rect.width * 0.03, rect.y + rect.height * 0.03);
-  let parked = await tooltipText(page);
-  for (let i = 0; i < 8 && parked.length > 0; i++) {
-    await page.waitForTimeout(100);
-    parked = await tooltipText(page);
-  }
+  const parked = await v.pollValue(() => tooltipText(page), (t) => t.length === 0, 800, 100);
   const aim = await page.evaluate((i: number) => {
     const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
       .find((e) => !e.closest('.d4-dialog'))!;
@@ -244,13 +178,11 @@ async function hoverReferenceMarker(
   }, row);
   await page.mouse.move(aim.x, aim.y, {steps: 8});
   if (expectTooltip) {
-    for (let i = 0; i < 30; i++) {
-      const t = await tooltipText(page);
-      if (t.length > 0 && t !== parked) break;
-      await page.waitForTimeout(100);
-    }
-    await page.waitForTimeout(200);
+    await v.pollValue(() => tooltipText(page), (t) => t.length > 0 && t !== parked, 3000, 100);
+
+    await v.pollValue(() => tooltipEntries(page), (e) => e.length > 0, 200, 50);
   } else
+
     await page.waitForTimeout(1600);
   const state = await page.evaluate((i: number) => {
     const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
@@ -285,30 +217,29 @@ interface Frac {fx: number; fy: number}
 
 const at = (r: Rect, p: Frac) => ({x: r.x + r.width * p.fx, y: r.y + r.height * p.fy});
 
-/** Drag on the data canvas with the real pointer, optionally holding modifier
- * keys. Intermediate moves are required — the viewer tracks the gesture through
- * its own move handler and a straight down/up pair reads as a click. */
 async function dragCanvas(page: Page, from: Frac, to: Frac, mods: string[] = []): Promise<void> {
   const r = await canvasRect(page);
   const p1 = at(r, from);
   const p2 = at(r, to);
   await page.mouse.move(p1.x, p1.y);
+
   await page.waitForTimeout(100);
   for (const m of mods) await page.keyboard.down(m);
   await page.mouse.down();
   await page.mouse.move((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, {steps: 8});
   await page.mouse.move(p2.x, p2.y, {steps: 8});
+
   await page.waitForTimeout(150);
   await page.mouse.up();
   for (const m of [...mods].reverse()) await page.keyboard.up(m);
-  await page.waitForTimeout(300);
+  await v.waitForViewerRendered(page, 'Scatter plot', 300);
 }
 
 async function clickCanvas(page: Page, p: Frac): Promise<void> {
   const r = await canvasRect(page);
   const pt = at(r, p);
   await page.mouse.click(pt.x, pt.y);
-  await page.waitForTimeout(250);
+  await v.waitForViewerRendered(page, 'Scatter plot', 250);
 }
 
 const liveCount = (page: Page, kind: 'selection' | 'filter') =>
@@ -316,9 +247,6 @@ const liveCount = (page: Page, kind: 'selection' | 'filter') =>
     (k === 'selection' ? grok.shell.tv.dataFrame.selection.trueCount
       : grok.shell.tv.dataFrame.filter.trueCount) as number, kind);
 
-/** Read a count once it stops moving: selection and filter are recomputed
- * asynchronously after a gesture. Used where the step is asserted to leave the
- * count as it is, so there is no known value to wait away from. */
 async function settledCount(page: Page, kind: 'selection' | 'filter'): Promise<number> {
   let last = -1;
   let stable = 0;
@@ -331,14 +259,12 @@ async function settledCount(page: Page, kind: 'selection' | 'filter'): Promise<n
       stable = 0;
       last = c;
     }
+
     await page.waitForTimeout(200);
   }
   return last;
 }
 
-/** Read a count once it has left a known value and stopped moving. A count that
- * never leaves `from` is returned as it stands, so the caller's assert fails on
- * the real reading. */
 async function settledCountAfterChange(
   page: Page, kind: 'selection' | 'filter', from: number, timeoutMs = 7000,
 ): Promise<number> {
@@ -350,6 +276,7 @@ async function settledCountAfterChange(
       if (c === prev) return c;
       prev = c;
     }
+
     await page.waitForTimeout(120);
   }
   return await liveCount(page, kind);
@@ -357,20 +284,11 @@ async function settledCountAfterChange(
 
 const rowCount = (page: Page) => page.evaluate(() => grok.shell.tv.dataFrame.rowCount as number);
 
-/** Index of the filter card built for a column, found by the column name its
- * header carries — the cards are laid out in table order and this dataset's
- * panel is long, so position is not a usable handle. */
 async function filterCardIndex(page: Page, column: string, timeoutMs = 45_000): Promise<number> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const idx = await page.evaluate((col: string) =>
-      [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
-        .findIndex((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col),
-    column);
-    if (idx >= 0) return idx;
-    await page.waitForTimeout(300);
-  }
-  return -1;
+  return v.pollValue(() => page.evaluate((col: string) =>
+    [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+      .findIndex((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col),
+  column), (idx) => idx >= 0, timeoutMs, 300);
 }
 
 interface CategoryState {filtered: number; survivors: string[]}
@@ -388,25 +306,15 @@ const categoryState = (page: Page, column: string): Promise<CategoryState> =>
     };
   }, column);
 
-/** Clear the filter cards. `from` is the filtered-row count the panel holds
- * before the click, so the release can be waited for instead of slept through. */
 async function resetFilterPanel(page: Page, from?: number): Promise<void> {
   const reset = page.locator('[name="viewer-Filters"] [name="icon-arrow-rotate-left"]').first();
   await reset.scrollIntoViewIfNeeded();
   await reset.click();
+
   if (from === undefined) await page.waitForTimeout(800);
   else await settledCountAfterChange(page, 'filter', from, 8000);
 }
 
-/**
- * Leave exactly one category checked in a categorical filter card by clicking
- * its list. The list is painted on the card's canvas and carries no DOM text, so
- * the click cannot be aimed at a named category and the spec must not depend on
- * which one survives: a click anywhere on a category row narrows the filter to
- * that row's value. Several vertical positions are tried because the card's row
- * height follows its category count, and the filter is cleared between attempts
- * so each one starts from the whole table.
- */
 async function narrowToOneCategory(
   page: Page, cardIndex: number, column: string, fullRows: number,
 ): Promise<CategoryState | null> {
@@ -446,7 +354,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
   await loginToDatagrok(page);
   await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
-  await page.waitForTimeout(500);
+  await v.waitForViewerRendered(page, 'Scatter plot', 500);
   await pickOnViewer(page, 'x', SETUP_X);
   await pickOnViewer(page, 'y', SETUP_Y);
   expect(await readProp(page, 'xColumnName')).toBe(SETUP_X);
@@ -471,8 +379,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
       .filter((e) => table[e.name] !== null && table[e.name] !== e.value)
       .map((e) => `${e.name}: tooltip ${e.value} vs table ${table[e.name]}`);
     console.log(`inherited tooltip: row=${hover.hitRow} columns=${named.map((e) => e.name).join(',')}`);
-    // Graded against whatever the table's tooltip column list happens to be:
-    // every line must name a real column and repeat its value for the hit row.
+
     expect(unknown).toEqual([]);
     expect(mismatched).toEqual([]);
     expect(errCount()).toBe(errBefore);
@@ -491,8 +398,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     expect(custom.hitRow).toBeGreaterThanOrEqual(0);
     const configured = await rowValues(page, custom.hitRow, CUSTOM_TOOLTIP_COLUMNS);
     console.log(`custom tooltip: row=${custom.hitRow} values=${custom.entries.map((e) => e.value).join('|')}`);
-    // Nothing beyond the two configured values: the axis columns are excluded by
-    // the Data Values setting.
+
     expect(custom.entries.map((e) => e.value))
       .toEqual(CUSTOM_TOOLTIP_COLUMNS.map((c) => configured[c]));
 
@@ -523,16 +429,14 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     await clickCanvas(page, {fx: 0.02, fy: 0.02});
     expect(await settledCount(page, 'selection')).toBe(0);
     const baseline = await settledInk(page, 'overlay');
-    // Comparing one fault value against another would let every claim below pass
-    // without a measurement.
+
     expect(baseline).toBeGreaterThanOrEqual(0);
 
     await setListProp(page, 'labelColumnNames', [LABEL_COLUMN]);
     expect(await readProp(page, 'labelColumnNames')).toEqual([LABEL_COLUMN]);
     await setChoiceProp(page, 'prop-show-labels-for', 'prop-view-show-labels-for', 'labels', 'Selected');
     expect(await readProp(page, 'showLabelsFor')).toBe('Selected');
-    // Configured but with nothing selected yet: this mode draws no label, so the
-    // reading below measures the labels rather than the act of configuring them.
+
     const configured = await settledInk(page, 'overlay');
     expect(Math.abs(configured - baseline)).toBeLessThan(OVERLAY_RESTORE_TOLERANCE);
 
@@ -542,8 +446,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     const labelled = await settledInk(page, 'overlay');
     console.log(`label overlay ink: baseline=${baseline} configured=${configured} ` +
       `labelled=${labelled} selected=${selected}`);
-    // The labels are painted on the overlay and contribute no DOM text, so the
-    // label text is not asserted — only that the overlay rendering moved.
+
     expect(labelled - baseline).toBeGreaterThanOrEqual(LABEL_INK_DELTA);
     expect(errCount()).toBe(errBefore);
 
@@ -565,13 +468,12 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     const fullRows = await rowCount(page);
     expect(fullRows).toBeGreaterThan(0);
     await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
-    await page.waitForTimeout(600);
+    await v.waitForViewerRendered(page, 'Scatter plot', 600);
     await pickOnViewer(page, 'x', SPGI_X);
     await pickOnViewer(page, 'y', SPGI_Y);
     expect(await readProp(page, 'xColumnName')).toBe(SPGI_X);
     expect(await readProp(page, 'yColumnName')).toBe(SPGI_Y);
-    // The crash this scenario guards against comes from the label placement
-    // arithmetic on a date axis, so the axis has to really be a date column.
+
     expect(await page.evaluate((c: string) =>
       String(grok.shell.tv.dataFrame.col(c).type), SPGI_X)).toBe('datetime');
 
@@ -587,9 +489,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     expect(cardIndex).toBeGreaterThanOrEqual(0);
     const narrowed = await narrowToOneCategory(page, cardIndex, SPGI_Y, fullRows);
     expect(narrowed).not.toBeNull();
-    // Which category the click leaves checked is up to the card's own ordering,
-    // so it is read from the data and reported, never asserted; the graded fact
-    // is that the table narrowed to a single category.
+
     console.log(`stereo category filter: kept=${narrowed!.survivors[0]} ` +
       `rows=${narrowed!.filtered}/${fullRows}`);
     expect(narrowed!.survivors.length).toBe(1);
@@ -599,6 +499,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     await dragCanvas(page, {fx: 0.2, fy: 0.2}, {fx: 0.8, fy: 0.8}, ['Shift']);
     const selected = await settledCountAfterChange(page, 'selection', 0);
     expect(selected).toBeGreaterThan(0);
+
     await page.waitForTimeout(2000);
     expect(crashCount()).toBe(crashBefore);
     expect(errCount()).toBe(errBefore);

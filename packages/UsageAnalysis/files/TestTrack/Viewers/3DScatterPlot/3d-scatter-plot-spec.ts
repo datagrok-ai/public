@@ -1,3 +1,6 @@
+/* ---
+realizes: []
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -15,13 +18,11 @@ const shownValue = (page: Page, prop: string) => v.propertyGridValue(page, prop)
 const category = (page: Page, cat: string, probe: string) =>
   v.ensurePropertyCategory(page, VIEWER_NAME, cat, probe);
 
-/** Caption + current column of an on-viewer selector, e.g. "X:\nAGE". */
 async function selectorText(page: Page, role: string): Promise<string> {
   return (await page.locator(`${VIEWER} [name="div-column-combobox-${role}"]`).first().innerText())
     .replace(/\s+/g, ' ').trim();
 }
 
-/** Centre of the plot area — the point every mouse gesture starts from. */
 async function plotCentre(page: Page): Promise<{x: number; y: number; box: any}> {
   const box = (await page.locator(VIEWER).boundingBox())!;
   return {x: box.x + box.width / 2, y: box.y + box.height / 2, box};
@@ -33,18 +34,15 @@ test('3D scatter plot', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  // #### Add the viewer and check the axes it picked
   await softStep('Add 3D scatter plot from the Viewers toolbox', async () => {
     await page.locator('[name="icon-3d-scatter-plot"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
 
-    // The on-viewer selectors are what the user reads to know which columns are plotted.
     await expect.poll(() => selectorText(page, 'x'), {timeout: 30_000}).toBe('X: AGE');
     expect(await selectorText(page, 'y')).toBe('Y: HEIGHT');
     expect(await selectorText(page, 'z')).toBe('Z: WEIGHT');
   });
 
-  // #### Axis assignment through the on-viewer selectors
   await softStep('Reassign X and Z with the on-viewer selectors', async () => {
     const before = await signature(page);
     await v.pickColumnViaSelectorTrusted(page, {
@@ -65,7 +63,6 @@ test('3D scatter plot', async ({page}) => {
     });
   });
 
-  // #### Categorical color coding brings up a legend
   await softStep('Color by SEX shows a categorical legend', async () => {
     const before = await signature(page);
     await v.pickColumnViaSelectorTrusted(page, {
@@ -78,7 +75,6 @@ test('3D scatter plot', async ({page}) => {
     await repaints(page, before);
   });
 
-  // #### Numerical color coding replaces it with a gradient
   await softStep('Color by AGE switches the legend to a gradient', async () => {
     const before = await signature(page);
     await v.pickColumnViaSelectorTrusted(page, {
@@ -90,7 +86,6 @@ test('3D scatter plot', async ({page}) => {
     await repaints(page, before);
   });
 
-  // #### Marker type and opacity through the Context Panel
   await softStep('Marker type redraws the markers', async () => {
     await v.openViewerProperties(page, VIEWER_NAME);
     await category(page, 'marker', 'marker-type');
@@ -114,9 +109,8 @@ test('3D scatter plot', async ({page}) => {
     await v.setPropertyGridValue(page, 'marker-opacity', '100');
   });
 
-  // #### Axes and grid lines
   await softStep('Show Axes hides and restores the axes', async () => {
-    await category(page, 'axes', 'show-axes');
+    await category(page, 'misc', 'show-axes');
     const before = await signature(page);
     expect(await v.togglePropertyGridCheckbox(page, 'show-axes')).toBe(false);
     const withoutAxes = await repaints(page, before);
@@ -126,7 +120,7 @@ test('3D scatter plot', async ({page}) => {
   });
 
   await softStep('X axis type switches to logarithmic', async () => {
-    await category(page, 'axes', 'x-axis-type');
+    await category(page, 'x-axis', 'x-axis-type');
     const before = await signature(page);
     await v.selectPropertyGridChoice(page, 'x-axis-type', 'logarithmic');
     expect(await shownValue(page, 'x-axis-type')).toBe('logarithmic');
@@ -135,7 +129,6 @@ test('3D scatter plot', async ({page}) => {
     expect(await shownValue(page, 'x-axis-type')).toBe('linear');
   });
 
-  // #### Camera: drag to rotate, wheel to zoom, Reset View to recover
   await softStep('Drag rotates the scene and Reset View restores it', async () => {
     const {x, y, box} = await plotCentre(page);
     const before = await signature(page);
@@ -166,7 +159,6 @@ test('3D scatter plot', async ({page}) => {
     await repaints(page, zoomedIn);
   });
 
-  // #### Clicking and shift-clicking points
   await softStep('Click makes a row current, Shift+click selects it', async () => {
     const {x, y, box} = await plotCentre(page);
     const startRow = await page.evaluate(() => (window as any).grok.shell.t.currentRowIdx);
@@ -176,8 +168,8 @@ test('3D scatter plot', async ({page}) => {
     let current = startRow;
     for (const [dx, dy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6]]) {
       await page.mouse.click(box.x + box.width * dx, box.y + box.height * dy);
-      await page.waitForTimeout(400);
-      current = await currentRow();
+
+      current = await v.pollValue(currentRow, (n) => n !== startRow && n >= 0, 1500);
       if (current !== startRow && current >= 0) break;
     }
     expect(current).toBeGreaterThanOrEqual(0);
@@ -194,13 +186,12 @@ test('3D scatter plot', async ({page}) => {
     await page.evaluate(() => (window as any).grok.shell.t.selection.setAll(false));
   });
 
-  // #### Filtered-out points
   await softStep('Show Filtered Out Points repaints the filtered-away rows', async () => {
     const {filteredCount} = await v.applyCategoricalFilter(page, 'SEX', ['F']);
     const total = await page.evaluate(() => (window as any).grok.shell.t.rowCount);
     expect(filteredCount).toBeLessThan(total);
 
-    await category(page, 'misc', 'show-filtered-out-points');
+    await category(page, 'data', 'show-filtered-out-points');
     const filteredOnly = await signature(page);
     expect(await v.togglePropertyGridCheckbox(page, 'show-filtered-out-points')).toBe(true);
     await repaints(page, filteredOnly);
@@ -209,7 +200,6 @@ test('3D scatter plot', async ({page}) => {
     await v.resetFilters(page);
   });
 
-  // #### Highlighting driven by another viewer
   await softStep('Hovering a bar chart bin highlights the matching 3D points', async () => {
     await page.locator('[name="icon-bar-chart"]').first().click();
     await page.locator('[name="viewer-Bar-chart"]').first().waitFor({timeout: 30_000});
@@ -221,21 +211,17 @@ test('3D scatter plot', async ({page}) => {
     await page.mouse.move(bar.x + bar.width * 0.3, bar.y + bar.height * 0.6);
     await repaints(page, idle);
 
-    // The off-state is asserted on the setting itself, not on the pixels: a
-    // screenshot that stayed equal would not prove the group highlight is gone
-    // (the single mouse-over row and the bar chart's own tooltip repaint too).
     await page.mouse.move(bar.x + bar.width * 0.9, bar.y + bar.height * 0.05);
-    await category(page, 'misc', 'show-mouse-over-row-group');
+    await category(page, 'selection', 'show-mouse-over-row-group');
     expect(await v.togglePropertyGridCheckbox(page, 'show-mouse-over-row-group')).toBe(false);
     expect(await shownValue(page, 'show-mouse-over-row-group')).toBe('false');
 
-    await category(page, 'misc', 'show-mouse-over-row-group');
+    await category(page, 'selection', 'show-mouse-over-row-group');
     expect(await v.togglePropertyGridCheckbox(page, 'show-mouse-over-row-group')).toBe(true);
     await v.clickViewerTitlebarIcon(page, 'Bar-chart', 'Close');
     await expect(page.locator('[name="viewer-Bar-chart"]')).toHaveCount(0);
   });
 
-  // #### Legend placement
   await softStep('Legend position moves the legend', async () => {
     await category(page, 'legend', 'legend-position');
     await v.selectPropertyGridChoice(page, 'legend-visibility', 'Always');

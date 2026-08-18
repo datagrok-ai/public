@@ -1,4 +1,3 @@
-// DB-source lifecycle: provisioned saved query + ad-hoc DB table on System:Datagrok public.groups.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
@@ -23,10 +22,6 @@ import {
 } from '../helpers/projects';
 
 test.use(projectsTestOptions);
-
-// ---------------------------------------------------------------------------
-// Test 1: saved query path (provisioned on System:Datagrok)
-// ---------------------------------------------------------------------------
 
 test('Projects / Lifecycle DB / Query: provisioned System:Datagrok query source', async ({page}) => {
   test.setTimeout(420_000);
@@ -80,7 +75,7 @@ test('Projects / Lifecycle DB / Query: provisioned System:Datagrok query source'
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: projectName});
       if (!r.shared) { console.warn('Share skipped: ' + r.reason); return; }
-      // When a second-user token is configured, the recipient must see it.
+
       if (r.recipientVisible !== null) expect(r.recipientVisible).toBe(true);
     });
   } finally {
@@ -94,10 +89,6 @@ test('Projects / Lifecycle DB / Query: provisioned System:Datagrok query source'
 
   finishSpec();
 });
-
-// ---------------------------------------------------------------------------
-// Test 2: ad-hoc DB table double-click path (System:Datagrok / public.groups)
-// ---------------------------------------------------------------------------
 
 test('Projects / Lifecycle DB / Table: System:Datagrok public.groups via DbQuery', async ({page}) => {
   test.setTimeout(420_000);

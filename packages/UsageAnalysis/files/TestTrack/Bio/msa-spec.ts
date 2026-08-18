@@ -46,11 +46,7 @@ test('Bio MSA on FASTA', async ({page}) => {
     expect(info.hasMacro).toBe(true);
   });
   await softStep('Add deterministic int Clusters column (setup for per-cluster MSA)', async () => {
-    // Create the Clusters column directly via the JS API. The Add-New-Column UI + RandBetween
-    // formula path is flaky on dev (CodeMirror autocomplete intercepts the editor click; the
-    // formula compute occasionally exceeds 60s), and this column is pure setup — its values are
-    // overwritten just below. The Add-New-Column dialog itself is covered by
-    // PowerPack/add-new-column-spec.ts. 0..5 matches the original RandBetween(0,5) range.
+
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       if (df.col('Clusters') != null) df.columns.remove('Clusters');
