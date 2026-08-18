@@ -5,14 +5,11 @@ import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
-
 declare const grok: any;
-
 
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-
 
 test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
   test.setTimeout(300_000);
@@ -23,17 +20,6 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
 
   await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
-  // Slice-click machinery. A click is an event triple (mousedown + mouseup +
-  // click on the pie canvas) carrying clientX/clientY (+ ctrlKey for
-  // additive filtering) — the core hit-tests client coordinates against the
-  // slice geometry, no mousemove priming needed. A fixed point cannot know
-  // which slice it hits (demog RACE is ~90% one category), so the click point
-  // for a TARGET category is computed from the data: slice angular spans
-  // mirror the pie's layout (counts per category, ascending-count order under
-  // the default by-value/asc sort, startAngle origin, clockwise in screen
-  // coordinates, radius capped by maxRadius), and each candidate point is
-  // verified in Select mode — accepted only when the resulting selection is
-  // exactly the target category's rows.
   await page.evaluate(() => {
     const w = window as any;
     const pieCanvas = () => (document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement)
@@ -68,8 +54,7 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       }
       return spans;
     };
-    // Verified click point per target category (null = missing-values slice).
-    // Requires onClick = Select; leaves the selection cleared.
+
     w.__pieCalibrate = async (colName: string, targets: any[]) => {
       const pie = Array.from(w.grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = w.grok.shell.tv.dataFrame;
@@ -111,10 +96,6 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
     };
   });
 
-  // Row Source = All keeps every slice visible while the click-filter narrows
-  // the table (under the default Filtered source the pie redraws to only the
-  // surviving slices, making a second category unclickable) and keeps the
-  // slice geometry independent of the filter state.
   await page.evaluate(async () => {
     const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
     pie.props.rowSource = 'All';
@@ -142,7 +123,7 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
           if (df.selection.get(i)) s.add(race.get(i));
         return Array.from(s);
       };
-      // Targets derived from the data: the two most frequent categories.
+
       const byCount = Array.from((w.__pieSpans('RACE') as Map<any, number[]>).keys());
       byCount.sort((a: string, b: string) => countOf(b) - countOf(a));
       const t1 = byCount[0];
@@ -181,8 +162,7 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       try {
-        // Scratch category column cloned from RACE with every 10th value
-        // blanked — no stock demog category column carries missing values.
+
         const src = df.col('RACE');
         const gapsCol = df.columns.addNewString('RACE_GAPS');
         for (let i = 0; i < df.rowCount; i++)
@@ -207,9 +187,6 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
         }
         df.selection.setAll(false);
 
-        // Repaint signal: per-color pixel histogram of the pie canvas before /
-        // after the Include Nulls toggle — the missing-values slice leaving
-        // and re-entering the pie changes the drawn colors.
         const canvasHist = () => {
           const canvas = (document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement)
             .querySelector('canvas') as HTMLCanvasElement;
@@ -317,8 +294,6 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
     expect(result.cleared).toBe(result.full);
   });
 
-  // The pie click-filter must AND-combine with a Filter Panel filter, not
-  // replace it; clearing the pie part must leave the panel filter in place.
   await softStep('Filter Panel composition — pie click narrows the panel-filtered count further, clearing the pie part returns to the panel-only value, Reset filters restores the full count', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup());
     await page.locator('.d4-filter-group-header').waitFor({timeout: 15000});
@@ -336,8 +311,7 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
           if (!race.isNone(i) && race.get(i) === cat) n++;
         return n;
       };
-      // With Row Source = All the slice geometry ignores the filter, so the
-      // point calibrated on the clean state stays valid under the panel filter.
+
       const byCount = Array.from((w.__pieSpans('RACE') as Map<any, number[]>).keys());
       byCount.sort((a: string, b: string) => countOf(b) - countOf(a));
       const t1 = byCount[0];

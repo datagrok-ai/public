@@ -45,19 +45,12 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     return el ? (el.textContent || '').trim() : '';
   });
 
-  // Default aggregation types, captured before any scenario changes them.
-  // Clearing an angle/length COLUMN while a non-default aggregation is still
-  // set blanks the chart with a validation error, so every clear below also
-  // restores these defaults.
   const aggrDefaults = await page.evaluate(() => {
     const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
     return {angle: pie.props.segmentAngleAggrType, length: pie.props.segmentLengthAggrType};
   });
   console.log(`Aggregation defaults: angle=${aggrDefaults.angle} length=${aggrDefaults.length}`);
 
-  // Settle-gated canvas ink count: repeated reads until two consecutive counts
-  // agree, so a delta between two measurements is the setter's effect, not a
-  // render tail.
   const settledPx = async () => {
     let prev = (await v.countCanvasPixels(page, 'Pie chart')).total;
     let cur = prev;
@@ -86,10 +79,6 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     });
     expect(tour).toEqual(['min', 'max', 'med', 'stdev', 'count', 'avg']);
 
-    // The disc stays full when only the angles change, so the avg → sum
-    // signal is the per-color histogram delta, not the non-white total:
-    // avg(AGE) is nearly uniform across races while sum(AGE) follows the row
-    // counts, so the slice angles must redistribute.
     const avgPx = await settledPx();
     expect(await v.snapshotCanvasColors(page, 'Pie chart')).toBe(true);
     await page.evaluate(async () => {
@@ -104,9 +93,6 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(sumPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeGreaterThan(500);
 
-    // Length coding min-max scales the per-category aggregates, so the
-    // smallest category always drops to the minimum outer radius and the ink
-    // count must DECREASE from the full disc by a real margin.
     await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       pie.props.segmentLengthColumnName = 'WEIGHT';
@@ -117,11 +103,6 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     console.log(`Segment length px: fullDiscPx=${sumPx} lengthPx=${lengthPx}`);
     expect(sumPx - lengthPx).toBeGreaterThan(500);
 
-    // Length-aggregation switching repaints within the coded disc — covered
-    // by the scenario's no-error floor; then restore both aggregation types
-    // to their defaults FIRST and clear the columns after — clearing a column
-    // while a non-default aggregation is still set blanks the chart with a
-    // validation error.
     await page.evaluate(async (d) => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       for (const aggr of ['min', 'max']) {
@@ -186,9 +167,7 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
       expect(await readRootInDom()).toBe(true);
       expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
     } finally {
-      // Never leak the scratch columns or the deliberate error state, even
-      // when an assertion above failed: restore the default aggregation,
-      // clear the angle column, then drop the probe columns.
+
       await page.evaluate(async (d) => {
         const pie = Array.from(grok.shell.tv?.viewers ?? []).find((vw: any) => vw.type === 'Pie chart') as any;
         if (pie) {
@@ -233,7 +212,7 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(quarterLegend.labels.length).toBeGreaterThan(0);
     expect(monthLegend.labels.length).toBeLessThanOrEqual(12);
     expect(quarterLegend.labels.length).toBeLessThanOrEqual(4);
-    // The map regroups the same dates into a DIFFERENT category set each time.
+
     expect([...yearLegend.labels].sort()).not.toEqual([...monthLegend.labels].sort());
     expect([...monthLegend.labels].sort()).not.toEqual([...quarterLegend.labels].sort());
     expect([...yearLegend.labels].sort()).not.toEqual([...quarterLegend.labels].sort());
@@ -291,9 +270,7 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     const errBefore = pageErrors.length + consoleErrors.length;
     const raceCats: string[] = await page.evaluate(() =>
       grok.shell.tv.dataFrame.col('RACE').categories.slice());
-    // The tooltip is a page-level singleton element that keeps its last text
-    // when hidden, so every hover starts by blanking it — any text read
-    // afterwards was written by THIS hover, never by a previous state.
+
     const readTooltip = () => page.evaluate(() => {
       const tts = Array.from(document.querySelectorAll('.d4-tooltip')) as HTMLElement[];
       const populated = tts.find((t) => (t.textContent || '').trim().length > 0) || tts[0] || null;
@@ -314,8 +291,7 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
       mm(rect.left + rect.width * p.fx, rect.top + rect.height * p.fy);
       await new Promise((r) => setTimeout(r, 600));
     }, {fx, fy});
-    // Probe a spread of canvas fractions until the hover lands on a slice
-    // and the tooltip text populates.
+
     const hoverSlice = async () => {
       for (const [fx, fy] of [[0.65, 0.4], [0.45, 0.4], [0.5, 0.35], [0.6, 0.5], [0.4, 0.5], [0.5, 0.6]]) {
         await resetAndMove(fx, fy);
@@ -333,7 +309,7 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     await setPie({categoryColumnName: 'RACE', segmentAngleColumnName: '', segmentLengthColumnName: ''});
     const countTt = await hoverSlice();
     console.log(`Tooltip (count): display=${countTt.display} text=${countTt.text.slice(0, 160)}`);
-    // Default row-count tooltip: the hovered category's name plus row counts.
+
     expect(countTt.text.length).toBeGreaterThan(0);
     expect(raceCats.some((c) => countTt.text.includes(c))).toBe(true);
     expect(countTt.text).toMatch(/\d/);
@@ -349,9 +325,6 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(lenTt.text).toContain('avg(AGE)');
     expect(lenTt.text).toContain('max(WEIGHT)');
 
-    // Move away: blank the tooltip, then move to an empty corner and leave the
-    // canvas — nothing may be re-rendered into the tooltip and it must not be
-    // visibly shown.
     const awayTt = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const canvas = pie.root.querySelector('canvas') as HTMLCanvasElement;
@@ -371,8 +344,6 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(awayTt.text).toBe('');
     expect(awayTt.display).not.toBe('block');
 
-    // Restore the aggregation defaults BEFORE clearing the columns — clearing
-    // a column while a non-default aggregation is set blanks the chart.
     await setPie({
       segmentAngleAggrType: aggrDefaults.angle,
       segmentLengthAggrType: aggrDefaults.length,

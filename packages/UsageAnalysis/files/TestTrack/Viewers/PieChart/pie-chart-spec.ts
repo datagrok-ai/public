@@ -20,7 +20,6 @@ test('Pie chart tests', async ({page}) => {
 
   await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
-  // #### Sorting
   await softStep('Sorting', async () => {
     const result = await v.setViewerProps(page, 'Pie chart', [
       {set: {categoryColumnName: 'RACE', pieSortType: 'by value'}, read: 'pieSortType'},
@@ -33,7 +32,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual(['by value', 'desc', 'asc', 'by category', 'asc', 'desc']);
   });
 
-  // #### Appearance
   await softStep('Appearance', async () => {
     const result = await v.setViewerProps(page, 'Pie chart', [
       {set: {startAngle: 90}, wait: 200, read: 'startAngle'},
@@ -47,7 +45,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual([90, 180, 0, 100, 150, 10, 0]);
   });
 
-  // #### Labels
   await softStep('Labels', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -79,7 +76,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual(['Inside', 'Outside', 'Auto', false, false, true]);
   });
 
-  // #### Outline
   await softStep('Outline', async () => {
     const result = await v.setViewerProps(page, 'Pie chart', [
       {set: {outlineLineWidth: 5}, wait: 200, read: 'outlineLineWidth'},
@@ -89,7 +85,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual([5, 0, 1]);
   });
 
-  // #### Column selector
   await softStep('Column selector', async () => {
     const result = await v.setViewerProps(page, 'Pie chart', [
       {set: {showColumnSelector: false}, wait: 200, read: 'showColumnSelector'},
@@ -98,12 +93,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual([false, true]);
   });
 
-  // #### In-viewer column selector re-pick
-  // The pie's own column combo ([name="div-column-combobox-category"]) is a DOM
-  // control, so the re-pick is driven through the real selector UI with no
-  // JS-API substitution; the read-back is the category property plus the legend
-  // labels compared to the column's own category list, so a pick that did not
-  // re-split the pie fails instead of echoing the prop.
   await softStep('In-viewer column selector re-pick', async () => {
     await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -133,8 +122,6 @@ test('Pie chart tests', async ({page}) => {
     const afterSex = await readState();
     await pick('RACE');
     const afterRace = await readState();
-    // Picking SEX through the in-viewer combo rebinds the category column and
-    // re-drives the legend to the SEX categories; picking RACE back round-trips.
     expect(afterSex.cat).toBe('SEX');
     expect([...afterSex.labels].sort()).toEqual([...afterSex.sexCats].sort());
     expect(afterRace.cat).toBe('RACE');
@@ -146,7 +133,6 @@ test('Pie chart tests', async ({page}) => {
     });
   });
 
-  // #### Legend
   await softStep('Legend', async () => {
     const result = await v.setViewerProps(page, 'Pie chart', [
       {set: {legendVisibility: 'Always'}, wait: 200, read: 'legendVisibility'},
@@ -158,7 +144,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual(['Always', 'LeftTop', 'RightBottom', 'Never', 'Auto']);
   });
 
-  // #### Row source
   await softStep('Row source', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -185,7 +170,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual(['Selected', 'Filtered', 'All']);
   });
 
-  // #### Title and description
   await softStep('Title and description', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -218,7 +202,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result[4]).toBe('Never');
   });
 
-  // #### Layout persistence
   await softStep('Layout persistence', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -262,19 +245,16 @@ test('Pie chart tests', async ({page}) => {
     expect(result.after).toEqual(result.before);
   });
 
-  // #### Selection and interaction
   await softStep('Selection and interaction', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       pie.props.categoryColumnName = 'RACE';
 
-      // Toggle showSelectedRows
       pie.props.showSelectedRows = false;
       const sOff = pie.props.showSelectedRows;
       pie.props.showSelectedRows = true;
       const sOn = pie.props.showSelectedRows;
 
-      // Toggle showMouseOverRowGroup
       pie.props.showMouseOverRowGroup = false;
       const mOff = pie.props.showMouseOverRowGroup;
       pie.props.showMouseOverRowGroup = true;
@@ -288,15 +268,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result.mOn).toBe(true);
   });
 
-  // #### Mouse-over row group cross-highlight
-  // The pie highlights the arc of the mouse-over ROW GROUP, not the single
-  // mouse-over row (hovering one grid row leaves the pie unchanged), so the
-  // group is driven through the dataframe row-highlight channel — the same
-  // channel other viewers write when an aggregate element is hovered. The
-  // repaint signal is a per-color canvas histogram delta between SETTLED frames
-  // (the highlight recolors ink in place, so the non-white total stays flat);
-  // the OFF-state measurement proves the delta comes from the option, not from
-  // the highlight machinery itself.
   await softStep('Mouse-over row group cross-highlight', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -329,7 +300,6 @@ test('Pie chart tests', async ({page}) => {
         }
         return prev;
       };
-      // With the option off, highlighting a category's rows repaints nothing.
       pie.props.showMouseOverRowGroup = false;
       await new Promise(res => setTimeout(res, 600));
       const baseOff = await settled();
@@ -339,8 +309,6 @@ test('Pie chart tests', async ({page}) => {
       df.rows.highlight(null);
       await new Promise(res => setTimeout(res, 600));
       await settled();
-      // With the option on, the same group highlight repaints the matching arc,
-      // and clearing it returns the settled frame to the baseline (round-trip).
       pie.props.showMouseOverRowGroup = true;
       await new Promise(res => setTimeout(res, 600));
       const baseOn = await settled();
@@ -352,15 +320,12 @@ test('Pie chart tests', async ({page}) => {
       const clearDelta = diff(baseOn, await settled());
       return {offDelta, onDelta, clearDelta};
     });
-    // Keep the measured deltas visible on green runs so the fixed thresholds
-    // can be audited against live numbers.
     console.log(`Mouse-over row group px: offDelta=${result.offDelta} onDelta=${result.onDelta} clearDelta=${result.clearDelta}`);
     expect(result.offDelta).toBeLessThan(2000);
     expect(result.onDelta).toBeGreaterThan(20000);
     expect(result.clearDelta).toBeLessThan(2000);
   });
 
-  // #### Auto layout
   await softStep('Auto layout', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -387,7 +352,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual([false, 50, 50, true]);
   });
 
-  // #### Table switching and row source (SPGI)
   await softStep('Table switching and row source (SPGI)', async () => {
     const demogName = await page.evaluate(async (spgiPath) => {
       grok.shell.closeAll();
@@ -416,12 +380,8 @@ test('Pie chart tests', async ({page}) => {
       return df.name;
     }, spgiPath);
 
-    // Toolbox icon click with attach + enumerability waits — the raw
-    // querySelector click plus a fixed sleep races the viewer registration.
     await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
-    // Rebind the viewer through the Table property (the Context Panel > Data >
-    // Table path) rather than assigning viewer.dataFrame directly.
     const switched = await page.evaluate(async (demogName) => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const r: string[] = [];
@@ -438,7 +398,6 @@ test('Pie chart tests', async ({page}) => {
     expect(switched[0]).toBe('SPGI');
     expect(switched[1]).toBe(demogName);
 
-    // Row Source = Selected
     const selection = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
@@ -450,8 +409,6 @@ test('Pie chart tests', async ({page}) => {
     expect(selection.rowSource).toBe('Selected');
     expect(selection.selCount).toBe(100);
 
-    // Row Source = Filtered + filter: open the Filter Panel and wait for its
-    // first filter to render before applying the categorical filter.
     await page.evaluate(() => { grok.shell.tv.getFiltersGroup(); });
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
     const filtered = await page.evaluate(async () => {
@@ -463,7 +420,6 @@ test('Pie chart tests', async ({page}) => {
       await new Promise(res => setTimeout(res, 500));
       const r = {rowSource: pie.props.rowSource, filtered: df.filter.trueCount};
 
-      // Reset
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: df.col('RACE').categories});
       df.selection.setAll(false);
       pie.props.rowSource = 'All';
