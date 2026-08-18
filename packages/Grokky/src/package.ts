@@ -26,6 +26,7 @@ export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async init() {
     await UsageLimiter.getInstance().init();
+    const aiAvailable = await ClaudeRuntimeClient.getInstance().discover();
     setupSearchUI();
     initAIWindow();
     setupTableViewAIPanelUI();
@@ -33,7 +34,8 @@ export class PackageFunctions {
     setupAgentScriptsUI();
     PackageFunctions.ensureAgentsFolder();
     // Warm the WebSocket to claude-runtime so the first user turn doesn't pay container-lookup + WS handshake cost.
-    ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
+    if (aiAvailable)
+      ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
     PackageFunctions.subscribeToSyncEvents();
   }
 
@@ -125,7 +127,7 @@ export class PackageFunctions {
     meta: {role: 'searchProvider'},
   })
   static combinedLLMSearchProvider(): DG.SearchProvider {
-    const isAiConfigured = grok.ai.config.configured;
+    const client = ClaudeRuntimeClient.getInstance();
     return {
       'home': {
         name: 'Ask AI Assistant',
@@ -134,10 +136,10 @@ export class PackageFunctions {
           return null;
         },
         getSuggestions: (_query: string) => [],
-        isApplicable: (query: string) => isAiConfigured ? query?.trim().length >= 2 : false,
+        isApplicable: (query: string) => client.available ? query?.trim().length >= 2 : false,
         description: 'Get answers form AI assistant',
         onValueEnter: async (query) => {
-          isAiConfigured && query?.trim().length >= 2 &&
+          client.available && query?.trim().length >= 2 &&
             await CombinedAISearchAssistant.instance.searchUI(query);
         }
       }

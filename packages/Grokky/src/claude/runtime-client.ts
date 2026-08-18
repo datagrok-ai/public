@@ -34,6 +34,7 @@ export class ClaudeRuntimeClient {
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
   private _connectPromise: Promise<void> | null = null;
+  private _discovery: Promise<boolean> | null = null;
 
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
@@ -63,6 +64,32 @@ export class ClaudeRuntimeClient {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
+  get available(): boolean {
+    return this.containerId !== null;
+  }
+
+  discover(): Promise<boolean> {
+    if (!this._discovery) {
+      this._discovery = (async () => {
+        const [runtimeContainers, mcpContainers] = await Promise.all([
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
+        ]);
+        this.containerId = runtimeContainers[0]?.id ?? null;
+        this.mcpServerUrl = mcpContainers[0] ?
+          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
+          null;
+        grok.shell.info(this.containerId);
+        return this.containerId !== null;
+      })().catch((e) => {
+        console.warn('Grokky: container discovery failed:', e);
+        this._discovery = null;
+        return false;
+      });
+    }
+    return this._discovery;
+  }
+
   async ensureConnected(): Promise<void> {
     if (this.connected)
       return;
@@ -77,23 +104,15 @@ export class ClaudeRuntimeClient {
     if (this.connected)
       return;
 
-    try {
-      if (!this.containerId || !this.mcpServerUrl) {
-        const [runtimeContainers, mcpContainers] = await Promise.all([
-          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
-          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
-        ]);
-        this.containerId = runtimeContainers[0]?.id ?? null;
-        this.mcpServerUrl = mcpContainers[0] ?
-          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
-          null;
+    if (await this.discover()) {
+      try {
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId!, '/ws', 180_000);
+      } catch (e) {
+        this._discovery = null;
+        this.containerId = null;
+        this.mcpServerUrl = null;
+        console.error('Failed to connect to Claude runtime:', e);
       }
-      if (this.containerId)
-        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws', 180_000);
-    } catch (e) {
-      this.containerId = null;
-      this.mcpServerUrl = null;
-      console.error('Failed to connect to Claude runtime:', e);
     }
 
     if (!this.ws)

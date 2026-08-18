@@ -165,8 +165,8 @@ export async function askWiki(question: string, sessionId?: string): Promise<DG.
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!grok.ai.config.configured) {
-    console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
+  if (!ClaudeRuntimeClient.getInstance().available) {
+    console.warn('Claude runtime container not found. Search UI will not have AI assistance.');
     return;
   }
 
@@ -234,7 +234,7 @@ export async function aiCombinedSearch(prompt: string) {
 // setQueryAndRun + the meta.viewType-registered SQL schema functions) are reached
 // by the singleton panel through the view-function meta-tools.
 export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return false;
   initAIWindow();
   return true;
@@ -616,7 +616,7 @@ async function streamOnce(
 let _shellAIPanel: AIPanel | null = null;
 
 export function initAIWindow(): AIPanel | null {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return null;
   if (!_shellAIPanel) {
     _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
@@ -641,7 +641,7 @@ export function setupShellAIPanelUI(): void {
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';
 
 export async function setupTableViewAIPanelUI() {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return;
   const handleView = (tableView: DG.TableView) => {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
