@@ -6,10 +6,6 @@ import {after, before, category, expect, delay, test} from '@datagrok-libraries/
 // read through an anonymous S3 connection created in before().
 let dc: DG.DataConnection;
 
-// The bytes arrive (connector returns 200) and ExcelJS parses these files fine offline; only the
-// worker run inside CI's headless Chrome fails, and it rejects with a non-Error so the message is lost.
-const SKIP_REASON = 'xlsx import fails in CI headless Chrome';
-
 async function testExcelImport(fileName: string, isBenchmarkTest: boolean) {
   if (isBenchmarkTest && !DG.Test.isInBenchmark)
     return;
@@ -45,10 +41,8 @@ category('Excel', () => {
     after(async () => {
       await grok.dapi.connections.delete(dc);
     });
-    test('rich text test', async () => await testExcelImport('excel-rich-text-test.xlsx', false),
-      {skipReason: SKIP_REASON});
-    test('1MB', async () => await testExcelImport('excel-1mb.xlsx', false),
-      {skipReason: SKIP_REASON});
+    test('rich text test', async () => await testExcelImport('excel-rich-text-test.xlsx', false));
+    test('1MB', async () => await testExcelImport('excel-1mb.xlsx', false));
     test('5MB', async () => await testExcelImport('excel-5mb.xlsx', true), {benchmark: true});
     test('10MB', async () => await testExcelImport('excel-10mb.xlsx', true), {benchmark: true});
     test('40MB 2 spreadsheets', async () => await testExcelImport('excel-40mb-2-spreadsheets.xlsx', true), {benchmark: true, benchmarkTimeout: 70000, timeout: 70000});
