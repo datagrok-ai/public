@@ -15,10 +15,11 @@ through one faceted, security-trimmed query.
   tags, the `alignment` live-versions table (business key `(publication_id, status)` enforces
   the at-most-one-approved + one-in-review invariant over live rows), and the append-only
   `alignment_history`.
-- `src/service/` — the publish service (frozen-copy deep clone of a saved workflow run,
+- `src/service/` — the publish service (a frozen, stamped copy of a workflow or function run
+  saved through the personal-history save path, transactional
   latest-approved-stays-live versioning over the `(program, study, name)` republish key,
   curation copy-forward), approval/rejection with service-side reviewer checks, and the drift
-  check.
+  check (a referential scan over the frozen artifact FuncCalls).
 - `src/domain/` — program provisioning (audience groups, row grants, column-level write gating
   of the approval/curation columns via per-column property schemas).
 - `src/app/` — the Artifact Catalog Browse app: thin wrappers over the platform's Domain View

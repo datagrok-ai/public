@@ -294,8 +294,9 @@
         grants across all domain schemas/tables/property schemas would provide it</td>
         <td>Platform</td></tr>
     <tr><td>Reliable schema-migration mechanism (worked destructive-migration path, rename support)</td>
-        <td class="gap">Unproven — the platform's migration key has no worked example; renames are
-        drop+add</td>
+        <td class="gap">Missing — the deployer refuses column drops pending an explicit migration,
+        but the server ignores the manifest <code>migrations</code> key entirely (verified by
+        probing); drops are impossible, renames are drop+add</td>
         <td>Platform</td></tr>
   </table>
 </section>
@@ -463,18 +464,19 @@
       untouched.</li>
     <li><b>Approval</b> (by an approver, or by the service in the same breath when the gate is off
       for the artifact's type — same audit trail): copy the previously approved row into
-      <code>alignment_history</code>, soft-delete it, then set the new row to <code>approved</code>.
-      Gated ⇒ notify the approvers group explicitly at publish time.</li>
+      <code>alignment_history</code>, soft-delete it, and set the new row to <code>approved</code> —
+      one domains transaction. Gated ⇒ notify the approvers group explicitly at publish time.</li>
   </ol>
-  <p class="legend">The steps are not one transaction; every partial-failure window is detectable and
-  idempotently repairable — all verified: a duplicate insert against the live-row business key fails
-  with a typed unique-violation error, and so does an update that would create a second approved live
-  row (the flip guard); re-inserting after the soft-delete succeeds; a duplicate history insert
-  against the <code>(publication_id, revision)</code> business key is a graceful no-op
-  (<code>created: false, status: 'duplicate'</code>); the archive-then-approve pair in step 4 is the
-  only window where a publication briefly has no approved row, and an interrupted flip — like a
-  publication left with no live row at all — is reconstructable from history (a republish resumes
-  the publication's identity and numbering); the drift check scans for both.</p>
+  <p class="legend">The multi-row steps (archive + insert on republish, archive + flip on approval)
+  run as one domains transaction (<code>grok.dapi.domains.transaction</code>), so no partial-failure
+  window exists and a publication never briefly lacks its approved row. The business-key guards still
+  back it — all verified: a duplicate insert against the live-row business key fails with a typed
+  unique-violation error, and so does an update that would create a second approved live row (the
+  flip guard); re-inserting after the soft-delete succeeds; a duplicate history insert against the
+  <code>(publication_id, revision)</code> business key is a graceful no-op
+  (<code>created: false, status: 'duplicate'</code>). What the server still cannot guarantee is
+  referential: version rows point at frozen artifact FuncCalls with no FK/onDelete semantics, so the
+  drift check reduces to a deep scan for artifacts that no longer resolve (see Core tasks).</p>
 
   <h2>Permissions</h2>
   <ul>
@@ -531,13 +533,18 @@
   <h2>Service responsibilities (beyond the publish flow)</h2>
   <ul class="tasks">
     <li>Group provisioning per program; batch audience backfills when a program's groups change.</li>
-    <li>Drift check: intended (registry) vs. actual (entity ACL) grants; history/live-row invariants;
-      "approval only ever set by the approvers group or the service" scan over the audit trail.</li>
+    <li>Drift check: intended (registry) vs. actual (entity ACL) grants; a deep referential scan for
+      version rows whose frozen artifact no longer resolves (FuncCall references carry no FK
+      semantics — see Core tasks); "approval only ever set by the approvers group or the service"
+      scan over the audit trail.</li>
     <li>Exclude version rows whose frozen copy was admin-deleted; scheduled registry export.</li>
-    <li>Per-type clone mechanics: queries/scripts are content strings (trivial); projects/dashboards
-      via the platform clone; model runs are already immutable records.</li>
+    <li>Per-type freeze mechanics: queries/scripts are content strings (trivial); projects/dashboards
+      via the platform clone; workflow/model runs re-save through the same save path as personal
+      history — a stamped meta call over the same serialized config, sharing step calls and
+      dataframes with the source run (no deep clone), and still runnable.</li>
     <li>Grant reconciliation is post-hoc by platform necessity (no cancellable pre-commit hooks
-      exist) — retries required; partial failures are repairable, see the flow note above.</li>
+      exist) — retries required; grants sit outside the domains transaction, so partial failures
+      remain possible there and are repairable.</li>
   </ul>
 
   <h2>Storage &amp; ops</h2>
@@ -742,8 +749,16 @@
   <ol class="tasks">
     <li><b>Entity dialog extension points (save / share / load).</b> The share dialog is closed to
       packages (verified: no API, no cancellable pre-save/share event — only post-hoc share
-      notifications). Needed for the publish step to live where users already are; the only hard
+      notifications). Needed for the publish step to live where users already are; a hard
       blocker for the ideal UX. Interim: context-menu / Actions-pane action.</li>
+    <li><b>FuncCall as a full entity: per-run ACL, ownership transfer, lock.</b> Verified: only a
+      run's uploaded dataframes can be audience-scoped — the run itself stays loadable by id by
+      everyone, and remains the author's to edit or soft-delete, so frozen run artifacts are
+      neither audience-gated nor immutable; and catalog rows reference FuncCalls with no
+      FK/onDelete semantics, so an author can delete shared step runs out from under a published
+      artifact. Needed: grant View on a run to a group, hand ownership to a program/service
+      identity, lock a run after approval. Placeholder calls sit commented in
+      <code>historyUtils.saveRun</code>.</li>
   </ol>
 
   <h3>Important</h3>
@@ -759,10 +774,36 @@
       observable arrives in the user notification feed after another user's change (timed test on a
       stock deployment). Approver notifications and review-queue SLA/escalation both depend on it;
       interim: explicit notifications from the service.</li>
-    <li><b>Schema evolution hardening.</b> The destructive-migration manifest key is free-form,
-      undocumented, and unused anywhere; there is no rename operation (renames are drop+add). Provide
-      a worked example, a sub-schema, and ideally a rename op — needed before the registry's first
+    <li><b>Schema evolution: working manifest migrations.</b> Verified by probing: the deployer
+      refuses a column drop, demanding an explicitly declared migration, yet the server ignores
+      the manifest <code>migrations</code> key entirely — even junk content changes nothing, and
+      the expected migration syntax is documented nowhere a plugin author can reach. Column drops
+      are therefore impossible (unused columns must stay declared) and renames are drop+add.
+      Provide a worked, honored, documented migration path before the registry's first
       breaking change.</li>
+    <li><b>Sub-entity handling for system-created FuncCalls.</b> Frozen catalog copies land in the
+      same run history as personal saves; hiding them is a client-side filter on an
+      <code>artifactsFrozen</code> option in Compute2's history listings only (Compute1 untouched).
+      Server-side sub-entity semantics would hide them from every listing at the source.</li>
+    <li><b>FuncCall list performance &amp; shape.</b> Measured: a filtered
+      <code>functions.calls</code> list request has a ~1.5&nbsp;s floor even at pageSize 20; there
+      is no count endpoint and no bulk/where-based delete. Compute2's History panel pulls a
+      function's runs unbounded, so its latency grows with the function's total run count — needs
+      server-side newest-N paging/ordering.</li>
+  </ol>
+
+  <h3>Bugs</h3>
+  <ol class="tasks">
+    <li><b>Silent no-op delete on a scoped FuncCall miss.</b>
+      <code>grok.dapi.functions.calls.delete(fc)</code> resolves OK and deletes nothing when the
+      call belongs to another package version (the source scopes to the current version's func);
+      <code>allPackageVersions().delete(fc)</code> works. A scoped miss should be an error, not a
+      silent success.</li>
+    <li><b>FuncCall mis-wrapped inside <code>object</code> parameters.</b> Passing a
+      <code>DG.FuncCall</code> through the <code>grok.functions.call</code> boundary inside an
+      <code>object</code>-typed parameter re-wraps it wrong on arrival (shaped like a DataFrame
+      wrapper, no <code>.options</code>); typed <code>funccall</code> parameters work. Fix generic
+      dart-object re-wrapping, or document <code>object</code> params as unsafe for entities.</li>
   </ol>
 
   <h3>Normal</h3>
@@ -788,7 +829,12 @@
       refreshGrid — the view's column set draws on entity-type/property-schema meta still loading,
       and a not-yet-loaded column comes through as null. The platform's own <code>/domains</code>
       routes are sequenced after that load; a JS app has nothing to await (REST warm-ups do not
-      populate the Dart-side cache), leaving verify-and-recreate as the only workaround.</li>
+      populate the Dart-side cache) — the shipped workaround polls the entity handler's Dart-side
+      meta before creating the view.</li>
+    <li><b>Per-table UI affordance control in Domain Views.</b> The auto "New &lt;singular&gt;"
+      row-create button cannot be suppressed via the manifest (no such flag), and revoking insert
+      permission instead would break the publish service, which inserts rows as the current user;
+      <code>singularName</code> only fixes the label.</li>
   </ol>
 
 </section>
