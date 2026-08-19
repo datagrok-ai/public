@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {SCHEMA, T_ALIGNMENT, T_PROGRAM} from '../domain/constants';
 import {getPublicationHistory} from '../service/publication-service';
 
-/** Opens the frozen (readonly) workflow run in Compute2; the serialized config of a
- * frozen copy carries isReadonly on every node, so the whole tree opens readonly. */
+/** Opens the frozen workflow or function run in Compute2. The tree opens runnable —
+ * a new run can be started from the artifact's state. */
 export async function openArtifact(frozenMetaCallId: string): Promise<void> {
   try {
     const func = DG.Func.byName('Compute2:OpenWorkflowRun');
@@ -18,6 +18,16 @@ export async function openArtifact(frozenMetaCallId: string): Promise<void> {
 export class AlignmentHandler extends DG.DomainObjectHandler {
   constructor() {
     super(T_ALIGNMENT);
+  }
+
+  /** Double-click / Open on a catalog row opens the published artifact itself;
+   * the row's entity view stays reachable via its deep link (Copy link). */
+  override openRow(x: DG.DomainRow): void {
+    const artifactId = x?.values?.['artifact_id'];
+    if (artifactId != null)
+      void openArtifact(artifactId);
+    else
+      super.openRow(x);
   }
 
   /** Whether the client's domain registry meta for this table has arrived —
