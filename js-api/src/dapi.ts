@@ -96,6 +96,16 @@ export class Dapi {
   get token(): string { return api.grok_Dapi_Get_Token(); }
   set token(token: string | undefined) { api.grok_Dapi_Set_Token(token); }
 
+  /** Token of a user to act AS until this is cleared.
+   *
+   * A browser session authenticates with the HttpOnly `auth` cookie, which script can
+   * neither read nor overwrite, so assigning {@link token} same-origin changes nothing.
+   * Set this to a token you already hold — a signup response, a service token — and it
+   * travels in the `Authorization` header, which the server prefers over the cookie.
+   * Always clear it in a `finally`; while it is set, every call runs as that user. */
+  get impersonationToken(): string | null { return api.grok_Dapi_Get_ImpersonationToken(); }
+  set impersonationToken(token: string | null) { api.grok_Dapi_Set_ImpersonationToken(token); }
+
   /** Retrieves entities from server by list of IDs */
   getEntities(ids: string[]): Promise<Entity[]> {
     return api.grok_Dapi_Entities_GetEntities(ids);

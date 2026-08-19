@@ -27,41 +27,32 @@ interface RestrictedUser {
 
 /** Runs [body] with a throwaway restricted user (login prefix [prefix]).
  *
- * Same-origin sessions authenticate via the `auth` COOKIE — DelegatingHttpClient
- * deliberately attaches no Authorization header when dapi.root starts with the
- * origin — so impersonation means swapping the cookie (setting `grok.dapi.token`
- * alone is a no-op here). The admin session is restored after every `asUser`
- * call and again in the finally, where the user is also BLOCKED: users are not
- * API-deletable, and blocking revokes their sessions including the signup one.
- * The signup itself runs inside that try and the finally resolves the user by
- * login when the body never did, so neither a failed setup nor a tokenless
- * signup can leave an unblocked user behind.
+ * The session cookie is HttpOnly, so script can neither read nor overwrite it:
+ * impersonation goes through `grok.dapi.impersonationToken`, which puts the
+ * probe's token in the Authorization header the server reads ahead of the
+ * cookie. Clearing it restores the admin session — the cookie never moved. The
+ * finally clears it again and BLOCKS the user: users are not API-deletable, and
+ * blocking revokes their sessions including the signup one. The signup itself
+ * runs inside that try and the finally resolves the user by login when the body
+ * never did, so neither a failed setup nor a tokenless signup can leave an
+ * unblocked user behind.
  *
- * Resolves to null, reason logged, where the harness cannot support it: an
- * HttpOnly auth cookie (the restore path could only DELETE it and would take the
- * admin session down with it) or unavailable self-signup (SSO-only or
- * email-confirm setups). */
+ * Resolves to null, reason logged, where the harness cannot support it:
+ * unavailable self-signup (SSO-only or email-confirm setups). */
 export async function withRestrictedUser<T>(prefix: string,
   body: (user: RestrictedUser) => Promise<T>): Promise<T | null> {
-  const adminCookie = document.cookie.match(/(?:^|; )auth=([^;]*)/)?.[1] ?? null;
-  if (adminCookie == null) {
-    console.log('skipped: the auth cookie is not readable (HttpOnly) — impersonation is not restorable');
-    return null;
-  }
-  const adminToken = grok.dapi.token;
-  // Restore exactly what was captured — the cookie VALUE as it was written
-  // (re-encoding a decoded value is not always the same string) and the token
-  // the client held, which the cookie need not carry.
-  const restoreAdmin = () => {
-    document.cookie = `auth=${adminCookie}; path=/`;
-    grok.dapi.token = adminToken;
-  };
+  const restoreAdmin = () => grok.dapi.impersonationToken = null;
   const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
   const login = `${prefix}${stamp}`;
   let user: any = null;
   try {
+    // credentials: 'omit' is load-bearing. Signup mints a session and the server
+    // answers with a Set-Cookie for the NEW user; same-origin fetch defaults to
+    // sending and STORING cookies, so the admin's HttpOnly `auth` cookie would be
+    // overwritten and — being HttpOnly — unrestorable. The whole run would
+    // silently continue as the probe user, which the finally then blocks.
     const signup = await (await fetch(`${grok.dapi.root}/users/signup`, {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
+      method: 'POST', credentials: 'omit', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({login: login, email: `${login}@test.datagrok.ai`,
         password: btoa(`Pw-${stamp}`), firstName: 'ApiTests', lastName: 'Probe'}),
     })).json();
@@ -78,8 +69,7 @@ export async function withRestrictedUser<T>(prefix: string,
       id: user.id,
       group: user.group.id,
       asUser: async <R>(action: () => Promise<R>): Promise<R> => {
-        document.cookie = `auth=${encodeURIComponent(signup.token)}; path=/`;
-        grok.dapi.token = signup.token;
+        grok.dapi.impersonationToken = signup.token;
         try {
           return await action();
         } finally {

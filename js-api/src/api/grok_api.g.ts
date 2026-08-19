@@ -1938,6 +1938,8 @@ export interface IDartApi {
   grok_Dapi_Set_Root(root: String): any;
   grok_Dapi_Set_Token(token: String): any;
   grok_Dapi_Get_Token(): any;
+  grok_Dapi_Set_ImpersonationToken(token: String): any;
+  grok_Dapi_Get_ImpersonationToken(): any;
   grok_Dapi_WS_Root(): any;
   grok_Dapi_OpenAI_Proxy(): any;
   grok_Clear_LastError(): any;
