@@ -68,6 +68,9 @@ export interface UserMessage {
    * own off. */
   gates?: {grounding?: boolean; verify?: boolean};
   resumeExpected?: boolean;
+  /** Id of the queued admission task: the turn holds until the matching
+   * `Grokky:aiChatTurnTask` celery task claims it (see tasks.ts). */
+  taskId?: string;
 }
 
 export interface AbortMessage {

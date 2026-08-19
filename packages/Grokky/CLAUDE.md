@@ -62,6 +62,7 @@ src/
 │       └── query-matching.ts    # LLM-based matching of natural-language to DB queries
 ├── claude/                 # Browser-facing Claude runtime integration
 │   ├── runtime-client.ts   # WebSocket client to claude-runtime container
+│   ├── queue-task.ts      # Queued-task admission: aiChatTurnTask holds the celery slot; the turn streams over the WS
 │   └── exec-blocks.ts      # Executes datagrok-exec / datagrok-entities fenced blocks
 ├── db/                     # Database tooling
 │   ├── sql-tools.ts        # SQLGenerationContext — tool-call-based SQL generation

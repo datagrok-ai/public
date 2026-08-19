@@ -12,6 +12,7 @@ import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace
 import {Verifier, bareToolName} from './verify';
 import {GroundingGate, isSmallTalk} from './grounding';
 import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+import {waitForClaim, endTask} from './tasks';
 
 // Re-exported so server.ts keeps importing the transport surface from one place.
 export {emit} from './stream-filter';
@@ -234,8 +235,11 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
   const sid = data.sessionId ?? '';
   const message = data.message ?? '';
   const images = data.images;
-  if (!message && !images?.length)
+  if (!message && !images?.length) {
+    if (data.taskId)
+      endTask(data.taskId);
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
+  }
   const prev = sessionChains.get(sid);
   let release!: () => void;
   const turn = new Promise<void>((resolve) => { release = resolve; });
@@ -260,8 +264,11 @@ export async function handleMessage(ws: WsSender, data: UserMessage): Promise<vo
 }
 
 async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
-  if (data.resumeExpected && !sessions.has(sid))
+  if (data.resumeExpected && !sessions.has(sid)) {
+    if (data.taskId)
+      endTask(data.taskId);
     return emit(ws, {type: 'session_reset', sessionId: sid});
+  }
 
   const images = data.images;
 
@@ -280,6 +287,21 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
   let verifier: Verifier | undefined;
   let groundingGate: GroundingGate | undefined;
   try {
+    if (data.taskId) {
+      // Queued-task admission (tasks.ts): hold until the celery worker claims the task.
+      // Fail-open on timeout — a missing worker delays the turn, it never blocks it.
+      emit(ws, {type: 'queued', sessionId: sid});
+      const heartbeat = setInterval(() => emit(ws, {type: 'queued', sessionId: sid}), QUEUED_HEARTBEAT_MS);
+      try {
+        if (!await waitForClaim(data.taskId, sid, abortController.signal) && !abortController.signal.aborted)
+          console.warn(`task[${sid}]: no claim for ${data.taskId} — failing open`);
+      } finally {
+        clearInterval(heartbeat);
+      }
+      if (abortController.signal.aborted)
+        return;
+    }
+
     const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
 
     const apiUrl = apiUrlFromMcpUrl(mcpUrl);
@@ -374,6 +396,10 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
+    // Every terminal path — final, error, abort, disconnect, watchdog kill — ends the
+    // admission task here, so the celery slot can never outlive the turn it admitted.
+    if (data.taskId)
+      endTask(data.taskId);
     if (verifier?.hadActions)
       console.log(`verify[${sid}]: ${verifier.statsLine()}`);
     if (groundingGate)

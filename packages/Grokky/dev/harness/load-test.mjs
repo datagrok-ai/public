@@ -14,6 +14,11 @@
 // Options:
 //   --users N        concurrent users (default 10)
 //   --turns N        turns per user (default 3)
+//   --via ws|queue   ws = direct WebSocket to the runtime (default); queue = the production
+//                    admission path: each turn additionally is admitted by the queued
+//                    Grokky:aiChatTurnTask call (the AMQP celery slot), while the turn itself
+//                    still streams over the WebSocket — mirrors src/claude/queue-task.ts.
+//                    Uses the --host server (default localhost) for the task REST auth.
 //   --mode full|bash full = prompts from the pool through the real Datagrok prompt (default);
 //                    bash = `echo` via systemPromptMode:'bash' — real CLI subprocess + API call
 //                    per turn at a fraction of the cost, for finding infrastructure limits
@@ -32,10 +37,12 @@
 //   --yes            skip the cost confirmation for large full-mode runs
 
 import {execFile} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
 import {promisify} from 'node:util';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import yaml from 'yaml';
+import {fetch as ufetch, Agent} from 'undici';
 import {RuntimeDriver, DEFAULT_URL} from './drive.mjs';
 
 const execFileP = promisify(execFile);
@@ -51,6 +58,7 @@ const flag = (name) => process.argv.includes(`--${name}`);
 const users = parseInt(arg('users', '10'), 10);
 const turnsPerUser = parseInt(arg('turns', '3'), 10);
 const mode = arg('mode', 'full');
+const via = arg('via', 'ws');
 const [thinkLo, thinkHi] = arg('think', '3-8').split('-').map(Number);
 const staggerS = parseFloat(arg('stagger', '2'));
 const timeoutMs = parseInt(arg('timeout', '180'), 10) * 1000;
@@ -62,12 +70,14 @@ const label = arg('label',
   `${mode}-${users}u-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`);
 
 let apiKey = arg('api-key');
-const host = arg('host');
+const host = arg('host', via === 'queue' ? 'localhost' : undefined);
+let apiUrl;
 if (host && !apiKey) {
   const cfgPath = path.join(process.env.USERPROFILE ?? process.env.HOME, '.grok', 'config.yaml');
   const server = yaml.parse(fs.readFileSync(cfgPath, 'utf8')).servers?.[host];
   if (!server) throw new Error(`No server '${host}' in ${cfgPath}`);
   apiKey = server.key;
+  apiUrl = server.url;
 }
 
 if (mode === 'full' && users * turnsPerUser > 40 && !flag('yes')) {
@@ -134,6 +144,36 @@ function log(event, consoleLine) {
 const uid = (i) => 'u' + String(i).padStart(String(users - 1).length, '0');
 
 // ---------------------------------------------------------------------------
+// queue transport — per-turn admission task via the queued Grokky:aiChatTurnTask
+// ---------------------------------------------------------------------------
+
+let authToken;
+// Node's default fetch kills header-less responses after 300s — an admission-task call lasts as long
+// as its turn, which can legitimately be longer than that.
+const httpAgent = new Agent({headersTimeout: 0, bodyTimeout: 0});
+
+async function loginQueue() {
+  const r = await ufetch(`${apiUrl}/users/login/dev/${apiKey}`, {method: 'POST', dispatcher: httpAgent});
+  const j = await r.json();
+  if (!j.token) throw new Error(`dev-key login to ${apiUrl} failed`);
+  authToken = j.token;
+}
+
+// Fire-and-forget, matching production (queue-task.ts): a failed admission task is logged and the
+// turn proceeds unmetered — the runtime fails open after its claim-wait timeout.
+function startTurnTask(i, sessionId, taskId) {
+  ufetch(`${apiUrl}/public/v1/Grokky.aiChatTurnTask/call`, {
+    method: 'POST', dispatcher: httpAgent,
+    headers: {'Authorization': authToken, 'Content-Type': 'application/json'},
+    body: JSON.stringify({sessionId, taskId}),
+  }).then(async (r) => {
+    const body = await r.text();
+    if (!r.ok || body.includes('ApiError'))
+      log({user: i, ev: 'task_error', error: oneLine(body, 200)}, `${uid(i)} ✗ task: ${oneLine(body, 120)}`);
+  }).catch((e) => log({user: i, ev: 'task_error', error: e.message}, `${uid(i)} ✗ task: ${e.message}`));
+}
+
+// ---------------------------------------------------------------------------
 // one virtual user
 // ---------------------------------------------------------------------------
 
@@ -170,8 +210,14 @@ async function virtualUser(i, prompts) {
         `${uid(i)} → t${turn} "${oneLine(prompt, 80)}"   (${inFlight} in flight)`);
       let r;
       try {
+        let taskId = null;
+        if (via === 'queue') {
+          taskId = randomUUID();
+          startTurnTask(i, sessionId, taskId);
+        }
         r = await d.turn(prompt, {
           sessionId, timeoutMs,
+          ...(taskId ? {taskId} : {}),
           ...(model ? {model} : {}),
           ...(mode === 'bash' ? {systemPromptMode: 'bash'} : {}),
         });
@@ -190,7 +236,7 @@ async function virtualUser(i, prompts) {
         await sleep((thinkLo + rand() * (thinkHi - thinkLo)) * 1000);
     }
   } finally {
-    d.close();
+    d?.close();
     log({user: i, ev: 'disconnect'});
   }
 }
@@ -245,10 +291,13 @@ function startTicker() {
 // ---------------------------------------------------------------------------
 
 const prompts = mode === 'bash' ? null : loadPrompts();
-console.log(`${users} users × ${turnsPerUser} turns, mode=${mode}` +
+if (via === 'queue') await loginQueue();
+console.log(`${users} users × ${turnsPerUser} turns, mode=${mode}, via=${via}` +
   `${prompts ? ` (${prompts.length} prompts in pool)` : ''}, think ${thinkLo}-${thinkHi}s, ` +
-  `seed ${seed} → ${url}${apiKey ? ' (with apiKey)' : ''}\nlog: ${logPath}`);
-log({ev: 'run_start', users, turnsPerUser, mode, thinkLo, thinkHi, staggerS, seed, url,
+  `seed ${seed} → ${url}${via === 'queue' ? ` + task via ${apiUrl} (Grokky:aiChatTurnTask)` : ''}` +
+  `${apiKey ? ' (with apiKey)' : ''}\nlog: ${logPath}`);
+log({ev: 'run_start', users, turnsPerUser, mode, via, thinkLo, thinkHi, staggerS, seed,
+  url, ...(via === 'queue' ? {taskUrl: apiUrl} : {}),
   model: model ?? null, apiKey: !!apiKey, promptPool: prompts?.length ?? null,
   startedIso: new Date().toISOString()});
 

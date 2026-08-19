@@ -71,6 +71,10 @@ export class ClaudeRuntimeClient {
     return this.containerId !== null;
   }
 
+  get runtimeContainerId(): string | null {
+    return this.containerId;
+  }
+
   discover(): Promise<boolean> {
     if (!this._discovery) {
       this._discovery = (async () => {
@@ -198,7 +202,7 @@ export class ClaudeRuntimeClient {
   }
 
   send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
-    clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
+    taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -209,6 +213,7 @@ export class ClaudeRuntimeClient {
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       ...(options?.model ? {model: options.model} : {}),
+      ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
     }));
   }

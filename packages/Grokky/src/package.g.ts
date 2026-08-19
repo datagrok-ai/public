@@ -40,6 +40,15 @@ export async function runBenchmark(label: string, reps?: number, model?: string,
   return await PackageFunctions.runBenchmark(label, reps, model, only);
 }
 
+//description: Holds the admission slot for one AI chat turn streaming over the browser WebSocket - see queue-task.ts
+//input: string sessionId 
+//input: string taskId 
+//output: string result
+//meta.queue: true
+export async function aiChatTurnTask(sessionId: string, taskId: string) : Promise<string> {
+  return await PackageFunctions.aiChatTurnTask(sessionId, taskId);
+}
+
 //description: Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
 //input: string labels { description: Comma-separated run labels, the first being the reference arm }
 //output: string result

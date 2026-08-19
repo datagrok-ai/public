@@ -13,6 +13,7 @@ import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
+import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -597,10 +598,15 @@ async function streamOnce(
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
       const sendPrompt = () => {
         const transcript = resolvedMode === 'bash' || client.isResumable(sessionId) ? '' : panel.restoredTranscript();
-        client.send(sessionId, transcript ? transcript + '\n---\n\n' + prompt : prompt, {
+        const message = transcript ? transcript + '\n---\n\n' + prompt : prompt;
+        const options = {
           ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
           ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
-        });
+        };
+        // Queued-task admission (queue-task.ts): the queued call only holds the turn's
+        // admission slot; the turn itself streams over this socket as usual.
+        sendChatTurn(client, sessionId, message, options)
+          .catch((e: any) => endWithError(`Claude: ${e?.message ?? e}`));
       };
 
       forSession(client.onSessionReset, () => {
