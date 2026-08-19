@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 2296: Delete the pattern selected in the Load block's Pattern combobox instead of the live editor name
 * Moved the SequenceTranslator Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.11.4 (2026-07-03)
