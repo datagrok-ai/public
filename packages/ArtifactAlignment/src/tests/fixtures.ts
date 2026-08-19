@@ -59,9 +59,48 @@ export async function makeTestStudy(programId: string): Promise<{id: string, pro
   return {id: ins.id, protocolCode};
 }
 
-/** Removes everything the fixtures created: version rows, history, studies, program
- * rows, and the per-program groups. */
+/** Deletes every run of the fixture functions together with the dataframes they
+ * uploaded. Publishing freezes copies of these same functions' runs, so this sweeps
+ * the frozen artifacts too. Time-boxed so a pre-existing backlog cannot blow the
+ * category timeout — leftovers drain on subsequent runs. */
+export async function cleanupTestRuns(budgetMs: number = 45000): Promise<void> {
+  const started = Date.now();
+  for (const nqName of [PROVIDER_NQ, STEP_NQ]) {
+    const funcName = nqName.split(':')[1];
+    while (Date.now() - started < budgetMs) {
+      const page = await grok.dapi.functions.calls.allPackageVersions()
+        .filter(`func.name="${funcName}"`).include('inputs, outputs').list({pageSize: 50});
+      if (page.length === 0)
+        break;
+      await Promise.all(page.map(async (fc) => {
+        // non-materialized dataframe params hold the uploaded table id
+        const tableIds: string[] = [];
+        for (const p of fc.inputParams.values() as Iterable<DG.FuncCallParam>) {
+          if (p.property.propertyType === DG.TYPE.DATA_FRAME && typeof fc.inputs[p.name] === 'string')
+            tableIds.push(fc.inputs[p.name]);
+        }
+        for (const p of fc.outputParams.values() as Iterable<DG.FuncCallParam>) {
+          if (p.property.propertyType === DG.TYPE.DATA_FRAME && typeof fc.outputs[p.name] === 'string')
+            tableIds.push(fc.outputs[p.name]);
+        }
+        for (const id of tableIds) {
+          try {
+            const table = await grok.dapi.tables.find(id);
+            if (table != null)
+              await grok.dapi.tables.delete(table);
+          } catch (_) {/* already gone */}
+        }
+        // the plain calls source silently no-ops the delete — allPackageVersions is required
+        await grok.dapi.functions.calls.allPackageVersions().delete(fc);
+      }));
+    }
+  }
+}
+
+/** Removes everything the fixtures created: runs and their dataframes, version rows,
+ * history, studies, program rows, and the per-program groups. */
 export async function cleanupTestPrograms(): Promise<void> {
+  await cleanupTestRuns();
   for (const program of createdPrograms.splice(0)) {
     const byProgram = DG.cond('program_id', '=', program.id);
     while ((await grok.dapi.domains.table(T_ALIGNMENT).deleteWhere(byProgram)).hasMore);
