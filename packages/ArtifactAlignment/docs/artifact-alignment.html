@@ -369,7 +369,6 @@
   <text x="42" y="546">revision  <tspan fill="#5b6b7b">[I]</tspan>  (`version` is a reserved system column ✅)</text>
   <text x="42" y="564">name — display name (isName) · republish key = (program, study, name)  <tspan fill="#5b6b7b">[I]</tspan></text>
   <text x="42" y="582">artifact_id — unique → frozen copy  <tspan fill="#5b6b7b">[I]</tspan></text>
-  <text x="42" y="600">source_artifact_id → author's working copy  <tspan fill="#5b6b7b">[I]</tspan></text>
   <text x="42" y="618">program — ref, required (delegate) · part of republish key  <tspan fill="#5b6b7b">[I]</tspan></text>
   <text x="42" y="636">study — ref 0..1, part of republish key, onDelete: restrict  <tspan fill="#5b6b7b">[I]</tspan></text>
   <text x="42" y="654">workstream  <tspan fill="#5b6b7b">[E, I]</tspan></text>
@@ -720,7 +719,7 @@
   <ul class="tasks">
     <li>Global-search patterns: compound codes (e.g. <code>GRK-1234</code>) and program codes jump
       straight to the compound/program page.</li>
-    <li>Render <code>artifact_id</code> / <code>source_artifact_id</code> as clickable entity links
+    <li>Render <code>artifact_id</code> as a clickable entity link
       (semantic type + handler) — otherwise domain grids dead-end at a string.</li>
   </ul>
 

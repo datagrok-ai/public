@@ -7,7 +7,7 @@ import {
   OPT_FROZEN, OPT_PARENT_CALL_ID, OPT_PUBLICATION_ID, T_ALIGNMENT,
 } from '../domain/constants';
 import {discover, getPublicationHistory, publishWorkflowRun} from '../service/publication-service';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram} from './fixtures';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, STEP_NQ} from './fixtures';
 
 // Single saved runs — RFV model runs and individually saved workflow steps — publish
 // through the same flow as workflow runs, detected by the absence of a pipeline config.
@@ -23,6 +23,19 @@ category('ArtifactAlignment: function runs', () => {
     const discovered = await discover(program.id);
     expect(discovered.length, 1);
     expect(discovered[0].artifact_type, 'function-run');
+  });
+
+  test('a live in-memory run publishes without a prior history save', async () => {
+    const program = await makeTestProgram();
+    const fc = DG.Func.byName(STEP_NQ).prepare({a: 5});
+    await fc.call(false, undefined, {processed: true, report: false});
+    const result = await publishWorkflowRun({
+      sourceCall: fc, programId: program.id, name: 'In-memory artifact'});
+    expect(result.status, 'approved');
+    const frozen = await historyUtils.loadRun(result.artifactId);
+    expect(frozen.options[OPT_FROZEN], 'true');
+    expect((frozen.outputs['result'] as DG.DataFrame).rowCount, 5);
+    expect(fc.options[OPT_FROZEN] == null, true, 'the live call must not be mutated');
   });
 
   test('the frozen function run is loadable, stamped, and audience-granted', async () => {
@@ -74,7 +87,7 @@ category('ArtifactAlignment: function runs', () => {
     expect(counts['function-run'], 1, JSON.stringify(counts));
   });
 
-  test('frozen copies stay out of the author history listings', async () => {
+  test('frozen copies are excluded by the Compute2 history frozen filter', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const workflow = await publishWorkflowRun({
@@ -82,16 +95,19 @@ category('ArtifactAlignment: function runs', () => {
     const single = await publishWorkflowRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Hidden single'});
     const author = await grok.dapi.users.current();
-    const providerRuns = await historyUtils.pullRunsByName(
-      'AaTestProvider', [{author: author as any}], {}, ['options']);
+    // mirrors the listing filter in Compute2's History component
+    const compute2Visible = (runs: DG.FuncCall[]) =>
+      runs.filter((r) => r.options[OPT_FROZEN] !== 'true');
+    const providerRuns = compute2Visible(await historyUtils.pullRunsByName(
+      'AaTestProvider', [{author: author as any}], {}, ['options']));
     expect(providerRuns.some((r) => r.id === workflow.artifactId), false,
-      'the frozen meta call must not appear in the workflow history list');
+      'the frozen meta call must not pass the workflow history filter');
     expect(providerRuns.some((r) => r.id === run.metaCallId), true,
       'the source run must still appear');
-    const stepRuns = await historyUtils.pullRunsByName(
-      'AaTestStep', [{author: author as any}], {}, ['options']);
+    const stepRuns = compute2Visible(await historyUtils.pullRunsByName(
+      'AaTestStep', [{author: author as any}], {}, ['options']));
     expect(stepRuns.some((r) => r.id === single.artifactId), false,
-      'the frozen single run must not appear in the step history list');
+      'the frozen single run must not pass the step history filter');
   });
 
   test('cloneRun detects the run kind', async () => {

@@ -10,10 +10,11 @@ interface ProgramChoice {
   name: string;
 }
 
-/** The "Publish to program" dialog over a saved Compute2 workflow run (its meta
- * FuncCall id). The republish key is (program, study, name): a key match publishes
- * the next version of that publication, a new key creates a new publication. */
-export async function showPublishDialog(sourceMetaCallId: string, defaultName?: string): Promise<void> {
+/** The "Publish to program" dialog over a Compute2 run — a saved run's meta FuncCall
+ * id, or a live in-memory FuncCall (published without a prior history save). The
+ * republish key is (program, study, name): a key match publishes the next version
+ * of that publication, a new key creates a new publication. */
+export async function showPublishDialog(source: string | DG.FuncCall, defaultName?: string): Promise<void> {
   const programs: ProgramChoice[] =
     await grok.dapi.domains.table(T_PROGRAM).query({sort: 'code', limit: 1000});
   if (programs.length === 0) {
@@ -96,7 +97,7 @@ export async function showPublishDialog(sourceMetaCallId: string, defaultName?: 
       const progress = DG.TaskBarProgressIndicator.create('Publishing…');
       try {
         const result = await publishWorkflowRun({
-          sourceMetaCallId,
+          ...(typeof source === 'string' ? {sourceMetaCallId: source} : {sourceCall: source}),
           programId: program.id,
           studyId: await studyIdOf(program.id, studyInput.value),
           name: nameInput.value!.trim(),

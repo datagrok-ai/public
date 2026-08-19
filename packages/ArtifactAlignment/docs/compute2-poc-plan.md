@@ -34,8 +34,8 @@ One saved workflow run = a graph:
   DataFrames (`_DG_CONSISTENCY_DF_REF_` refs inside `options[INPUT_RESTRICTIONS]`);
 - file-input blobs written via `grok.dapi.files.write`.
 
-`artifact_id` in the alignment row = the **frozen meta call id**; `source_artifact_id` = the
-author's meta call id.
+`artifact_id` in the alignment row = the **frozen meta call id**. The author's working
+copy is not referenced — the frozen copy is self-contained.
 
 ## Deliverable shape
 
@@ -79,9 +79,11 @@ as the verified single-column unique; a one-hour fixture probe).
 
 ## Phase 2 — Publish service (deep clone of the run graph)
 
-`publishWorkflowRun(sourceMetaCallId, {program, study, name, workstream, compounds, description})`:
+`publishWorkflowRun(source, {program, study, name, workstream, compounds, description})` —
+`source` is a saved run's meta call id, or a live in-memory FuncCall for a single
+function run (no prior history save needed):
 
-1. `loadInstanceState(sourceMetaCallId)` → serialized config + source meta call.
+1. For a saved run id: `loadInstanceState(sourceMetaCallId)` → serialized config + source meta call.
 2. Mint the frozen meta call id up front. For each `funcCallId` in the config:
    `historyUtils.loadRun` (materializes DFs and files), `fc.newId()`, stamp
    `options.parentCallId = <frozen meta call id>`, save through a publish variant of `saveRun`

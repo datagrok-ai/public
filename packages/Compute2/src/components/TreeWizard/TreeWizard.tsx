@@ -499,26 +499,13 @@ export const TreeWizard = Vue.defineComponent({
     const publishFunc = _package.settings?.['enableArtifactPublishing'] === true ?
       (DG.Func.find({name: 'publishWorkflowRunDialog'})[0] ?? null) : null;
 
-    // Per-step publish (steps with enableHistory): save the step to history first —
-    // the frozen copy must match what the user is looking at — then publish that id.
-    const publishStepRun = (fc: DG.FuncCall) => {
-      const dialog = makeNodeMetadataDialog(chosenStepUuid.value);
-      dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        if (editOptions.title) fc.options['title'] = editOptions.title;
-        if (editOptions.description) fc.options['description'] = editOptions.description;
-        if (editOptions.tags) fc.options['tags'] = editOptions.tags;
-        fc.options[STEP_HISTORY_OPTION] = 'true';
-        try {
-          const saved = await historyUtils.saveRun(fc);
-          await publishFunc!.prepare({
-            sourceMetaCallId: saved.id,
-            defaultName: editOptions.title ?? chosenStepState.value?.friendlyName ?? fc.func?.friendlyName,
-          }).call();
-        } catch (e: any) {
-          grok.shell.error(e);
-        }
-      });
-      dialog.show({center: true, width: 500});
+    // Per-step publish (steps with enableHistory): the live step call goes straight
+    // to the publish dialog — the frozen copy is made from memory, no history save.
+    const publishStepRun = async (fc: DG.FuncCall) => {
+      await publishFunc!.prepare({
+        sourceCall: fc,
+        defaultName: chosenStepState.value?.friendlyName ?? fc.func?.friendlyName,
+      }).call();
     };
 
     const publishCurrentRun = async () => {

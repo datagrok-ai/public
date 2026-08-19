@@ -122,14 +122,18 @@ export async function saveInstanceState(
   state: any,
   metaData?: ItemMetadata,
   version?: string,
+  opts?: {metaCall?: DG.FuncCall, callOptions?: Record<string, string>},
 ) {
-  const metaCall = await makeMetaCall(nqName);
+  const metaCall = opts?.metaCall ?? await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: false});
   if (metaData?.title) metaCall.options['title'] = metaData.title;
   if (metaData?.description) metaCall.options['description'] = metaData.description;
   if (metaData?.tags) metaCall.options['tags'] = metaData.tags;
   if (version) metaCall.options['version'] = version;
-  metaCall.newId();
+  for (const [key, value] of Object.entries(opts?.callOptions ?? {}))
+    metaCall.options[key] = value;
+  if (opts?.metaCall == null)
+    metaCall.newId();
   await metaCall.call(undefined, undefined, {processed: true, report: false});
   metaCall.started = dayjs();
   await historyUtils.saveRun(metaCall);

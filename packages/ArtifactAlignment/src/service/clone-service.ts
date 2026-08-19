@@ -1,22 +1,19 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
-import {getStartedOrNull} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {deepCopy, getStartedOrNull} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {
-  CONFIG_PATH, makeMetaCall,
+  CONFIG_PATH, makeMetaCall, saveInstanceState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
   ArtifactType, ARTIFACT_TYPE_FUNCTION_RUN, ARTIFACT_TYPE_WORKFLOW_RUN,
   OPT_FROZEN, OPT_PARENT_CALL_ID, OPT_PUBLICATION_ID,
 } from '../domain/constants';
 
 dayjs.extend(utc);
-
-// The Compute2 per-step history marker; a frozen copy must not inherit it, or it
-// would show up in the author's step-history panel.
-const STEP_HISTORY_OPTION = 'compute2StepHistory';
 
 interface SerializedNode {
   type?: string;
@@ -59,27 +56,28 @@ export interface CloneResult {
   sourceAuthorId?: string;
 }
 
-/** Stamps the catalog options every frozen call carries. `isDeleted` reuses the
- * compute history soft-delete convention so frozen copies never appear in the
- * author's history panels (workflow, RFV, or step history) — they stay loadable
- * by id, which is the only way the catalog addresses them. */
-function stampFrozen(fc: DG.FuncCall, publicationId: string): void {
-  fc.options[OPT_FROZEN] = 'true';
-  fc.options[OPT_PUBLICATION_ID] = publicationId;
-  fc.options['isDeleted'] = 'true';
-  // options is a MapProxy — assign rather than delete; the step-history panel
-  // matches on the exact string 'true'.
-  if (fc.options[STEP_HISTORY_OPTION] != null)
-    fc.options[STEP_HISTORY_OPTION] = 'false';
+/** The catalog options every frozen call carries. Compute2's history listings filter
+ * out runs carrying OPT_FROZEN, so frozen copies stay reachable by id only (how the
+ * catalog addresses them); proper hiding awaits core sub-entity handling. */
+function frozenOptions(publicationId: string): Record<string, string> {
+  return {
+    [OPT_FROZEN]: 'true',
+    [OPT_PUBLICATION_ID]: publicationId,
+  };
 }
 
-/** Deep-clones a saved Compute2 run into a frozen copy and returns it together with
- * the detected artifact type. A run whose options carry a serialized pipeline config
- * is a workflow run: every step FuncCall is re-saved under a new id with the
+function stampFrozen(fc: DG.FuncCall, publicationId: string): void {
+  for (const [key, value] of Object.entries(frozenOptions(publicationId)))
+    fc.options[key] = value;
+}
+
+/** Freezes a Compute2 run into a frozen copy and returns it together with the
+ * detected artifact type. A saved run id whose options carry a serialized pipeline
+ * config is a workflow run: every step FuncCall is re-saved under a new id with the
  * audience-scoped dataframe grants, and the config is rewritten to the new ids with
- * `isReadonly` forced on every node. Any other saved run (an RFV model run or an
- * individually saved workflow step) is a function run: the call itself is re-saved
- * the same way, with no config to rewrite.
+ * `isReadonly` forced on every node. Any other source — a saved run without a config,
+ * or a live in-memory FuncCall (an RFV model run or a workflow step, never mutated) —
+ * is a function run: a deep copy is saved the same way, with no config to rewrite.
  *
  * Consistency-restriction dataframe refs inside INPUT_RESTRICTIONS are kept as-is:
  * they point at the tables the source run uploaded (already granted at source-save
@@ -87,38 +85,36 @@ function stampFrozen(fc: DG.FuncCall, publicationId: string): void {
  *
  * The frozen funccalls themselves have no server-side ACL — FuncCall is not a full
  * entity. When the platform adds funccall permissions, the grants slot in here. */
-export async function cloneRun(sourceCallId: string, options: CloneOptions): Promise<CloneResult> {
-  const sourceCall = await historyUtils.loadRun(sourceCallId);
+export async function cloneRun(source: string | DG.FuncCall, options: CloneOptions): Promise<CloneResult> {
+  const sourceCall = typeof source === 'string' ? await historyUtils.loadRun(source) : source;
   return sourceCall.options[CONFIG_PATH] != null ?
     cloneWorkflowRun(sourceCall, options) :
     cloneFunctionRun(sourceCall, options);
 }
 
 async function cloneFunctionRun(sourceCall: DG.FuncCall, options: CloneOptions): Promise<CloneResult> {
-  const sourceStartedOn = getStartedOrNull(sourceCall);
-  const sourceAuthorId = sourceCall.author?.id;
-  sourceCall.newId();
-  stampFrozen(sourceCall, options.publicationId);
+  const fc = deepCopy(sourceCall);
+  fc.newId();
+  stampFrozen(fc, options.publicationId);
   if (options.title != null)
-    sourceCall.options['title'] = options.title;
+    fc.options['title'] = options.title;
   if (options.description != null)
-    sourceCall.options['description'] = options.description;
-  const saved = await historyUtils.saveRun(sourceCall, {audience: options.audience});
+    fc.options['description'] = options.description;
+  const saved = await historyUtils.saveRun(fc, {audience: options.audience});
   return {
     metaCall: saved,
     artifactType: ARTIFACT_TYPE_FUNCTION_RUN,
     nqName: sourceCall.func.nqName,
     childIdMap: {},
-    sourceStartedOn,
-    sourceAuthorId,
+    sourceStartedOn: getStartedOrNull(sourceCall),
+    sourceAuthorId: sourceCall.author?.id ?? grok.shell.user?.id,
   };
 }
 
 async function cloneWorkflowRun(sourceCall: DG.FuncCall, options: CloneOptions): Promise<CloneResult> {
   const state: SerializedNode = deserialize(sourceCall.options[CONFIG_PATH] ?? '{}');
-  const nqName = sourceCall.func.nqName;
-
-  const metaCall = await makeMetaCall(nqName);
+  // minted up front — the frozen children carry it as their parentCallId
+  const metaCall = await makeMetaCall(sourceCall.func.nqName);
   metaCall.newId();
   const frozenMetaId = metaCall.id;
 
@@ -139,29 +135,13 @@ async function cloneWorkflowRun(sourceCall: DG.FuncCall, options: CloneOptions):
     leaf.funcCallId = childIdMap[oldId];
   });
 
-  metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: false});
-  if (options.title != null)
-    metaCall.options['title'] = options.title;
-  if (options.description != null)
-    metaCall.options['description'] = options.description;
-  if (state.version != null)
-    metaCall.options['version'] = state.version;
-  stampFrozen(metaCall, options.publicationId);
-
-  // await grok.dapi.permissions.grant(metaCall, options.audience, false);
-  //   ^ requires core work: FuncCall has no per-entity ACL; the frozen copy is
-  //     unlisted-but-public-by-id until the platform enforces funccall permissions.
-  // await catalogService.transferOwnership(metaCall, serviceUser);
-  //   ^ requires core work: service-identity hand-off; the clone currently stays
-  //     owned by the publishing user's session.
-
-  await metaCall.call(undefined, undefined, {processed: true, report: false});
-  metaCall.started = dayjs();
-  const savedMeta = await historyUtils.saveRun(metaCall);
+  const savedMeta = await saveInstanceState(sourceCall.func.nqName, state,
+    {title: options.title, description: options.description}, state.version,
+    {metaCall, callOptions: frozenOptions(options.publicationId)});
   return {
     metaCall: savedMeta,
     artifactType: ARTIFACT_TYPE_WORKFLOW_RUN,
-    nqName,
+    nqName: sourceCall.func.nqName,
     version: state.version,
     childIdMap,
     sourceStartedOn: getStartedOrNull(sourceCall),

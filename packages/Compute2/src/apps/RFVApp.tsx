@@ -243,12 +243,8 @@ export const RFVApp = Vue.defineComponent({
       if (!canUseResults(currentCallState.value, 'publishing'))
         return;
       const fc = currentFuncCall.value;
-      if (!searchParams.id || searchParams.id !== fc.id) {
-        grok.shell.warning('Publishing works on a saved run — save it to history first');
-        return;
-      }
       await publishFunc!.prepare({
-        sourceMetaCallId: fc.id,
+        sourceCall: fc,
         defaultName: fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name,
       }).call();
     };

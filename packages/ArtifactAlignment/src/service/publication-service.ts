@@ -39,7 +39,6 @@ async function archiveRow(row: AlignmentRow, supersededOn: dayjs.Dayjs): Promise
     revision: row.revision,
     name: row.name,
     artifact_id: row.artifact_id,
-    source_artifact_id: row.source_artifact_id,
     program_id: row.program_id,
     study_id: row.study_id,
     workstream: row.workstream,
@@ -68,7 +67,10 @@ async function liveRows(publicationId: string): Promise<AlignmentRow[]> {
 }
 
 export interface PublishRequest {
-  sourceMetaCallId: string;
+  /** A saved run's meta FuncCall id; required for workflow runs. */
+  sourceMetaCallId?: string;
+  /** A live in-memory function run — publishes without a prior history save. */
+  sourceCall?: DG.FuncCall;
   programId: string;
   studyId?: string | null;
   name: string;
@@ -102,6 +104,9 @@ export interface PublishResult {
  * approves in the same breath — unless the caller lacks approval rights, in which
  * case the version stays pending. */
 export async function publishWorkflowRun(req: PublishRequest): Promise<PublishResult> {
+  const source = req.sourceCall ?? req.sourceMetaCallId;
+  if (source == null)
+    throw new Error('Either sourceCall or sourceMetaCallId is required');
   const groups = await getProgramGroups(req.programId);
   const key = keyFilter(req.programId, req.studyId, req.name);
 
@@ -131,7 +136,7 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
   const previous = liveByKey.find((r) => r.status === 'approved') ?? staleInReview;
   const revision = maxRevision + 1;
 
-  const clone = await cloneRun(req.sourceMetaCallId, {
+  const clone = await cloneRun(source, {
     audience: groups.viewers ?? undefined,
     publicationId,
     title: `${req.name} v${revision}`,
@@ -145,7 +150,6 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
     revision,
     name: req.name,
     artifact_id: clone.metaCall.id,
-    source_artifact_id: req.sourceMetaCallId,
     program_id: req.programId,
     study_id: req.studyId ?? undefined,
     workstream: req.workstream ?? previous?.workstream ?? undefined,

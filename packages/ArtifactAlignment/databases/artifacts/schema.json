@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "artifacts",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "tables": {
     "program": {
       "securityMode": "row",
@@ -195,7 +195,7 @@
         },
         "source_artifact_id": {
           "type": "string",
-          "description": "The author's working-copy meta FuncCall id"
+          "description": "Unused; the server refuses column drops without a migration"
         },
         "program_id": {
           "type": "ref",
@@ -377,7 +377,8 @@
           "required": true
         },
         "source_artifact_id": {
-          "type": "string"
+          "type": "string",
+          "description": "Unused; the server refuses column drops without a migration"
         },
         "program_id": {
           "type": "ref",

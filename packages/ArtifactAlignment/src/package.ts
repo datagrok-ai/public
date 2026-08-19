@@ -45,11 +45,16 @@ export async function publishWorkflowRun(request: PublishRequest): Promise<objec
 }
 
 //name: publishWorkflowRunDialog
-//description: Opens the "Publish to program" dialog for a saved Compute2 workflow run
-//input: string sourceMetaCallId
+//description: Opens the "Publish to program" dialog for a Compute2 run — a saved run id or a live FuncCall
+//input: string sourceMetaCallId {optional: true}
+//input: object sourceCall {optional: true}
 //input: string defaultName {optional: true}
-export async function publishWorkflowRunDialog(sourceMetaCallId: string, defaultName?: string): Promise<void> {
-  await showPublishDialog(sourceMetaCallId, defaultName);
+export async function publishWorkflowRunDialog(
+  sourceMetaCallId?: string, sourceCall?: DG.FuncCall, defaultName?: string): Promise<void> {
+  const source = sourceCall ?? sourceMetaCallId;
+  if (source == null)
+    throw new Error('Either sourceCall or sourceMetaCallId is required');
+  await showPublishDialog(source, defaultName);
 }
 
 //name: approveArtifactPublication

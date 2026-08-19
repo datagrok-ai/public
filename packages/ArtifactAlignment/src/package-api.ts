@@ -31,10 +31,10 @@ export namespace funcs {
   }
 
   /**
-  Opens the "Publish to program" dialog for a saved Compute2 workflow run
+  Opens the "Publish to program" dialog for a Compute2 run — a saved run id or a live FuncCall
   */
-  export async function publishWorkflowRunDialog(sourceMetaCallId: string , defaultName?: string ): Promise<void> {
-    return await grok.functions.call('ArtifactAlignment:PublishWorkflowRunDialog', { sourceMetaCallId, defaultName });
+  export async function publishWorkflowRunDialog(sourceMetaCallId?: string , sourceCall?: any , defaultName?: string ): Promise<void> {
+    return await grok.functions.call('ArtifactAlignment:PublishWorkflowRunDialog', { sourceMetaCallId, sourceCall, defaultName });
   }
 
   export async function approveArtifactPublication(rowId: string ): Promise<void> {

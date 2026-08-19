@@ -44,7 +44,6 @@ export interface AlignmentRow {
   revision: number;
   name: string;
   artifact_id: string;
-  source_artifact_id?: string;
   program_id: string;
   study_id?: string | null;
   workstream?: string | null;
@@ -67,7 +66,6 @@ export interface HistoryRow {
   revision: number;
   name: string;
   artifact_id: string;
-  source_artifact_id?: string | null;
   program_id: string;
   study_id?: string | null;
   workstream?: string | null;
