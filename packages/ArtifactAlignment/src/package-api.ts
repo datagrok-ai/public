@@ -26,8 +26,8 @@ export namespace funcs {
   /**
   Publishes a saved Compute2 workflow run into a program as a frozen copy
   */
-  export async function publishWorkflowRun(request: any ): Promise<any> {
-    return await grok.functions.call('ArtifactAlignment:PublishWorkflowRun', { request });
+  export async function publishWorkflowRun(request: any , sourceCall?: any ): Promise<any> {
+    return await grok.functions.call('ArtifactAlignment:PublishWorkflowRun', { request, sourceCall });
   }
 
   /**

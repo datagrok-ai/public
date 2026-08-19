@@ -39,15 +39,16 @@ export async function artifactCatalogTreeBrowser(treeNode: DG.TreeViewGroup): Pr
 //name: publishWorkflowRun
 //description: Publishes a saved Compute2 workflow run into a program as a frozen copy
 //input: object request
+//input: funccall sourceCall {optional: true}
 //output: object result
-export async function publishWorkflowRun(request: PublishRequest): Promise<object> {
-  return publishRun(request);
+export async function publishWorkflowRun(request: PublishRequest, sourceCall?: DG.FuncCall): Promise<object> {
+  return publishRun(sourceCall != null ? {...request, sourceCall} : request);
 }
 
 //name: publishWorkflowRunDialog
 //description: Opens the "Publish to program" dialog for a Compute2 run — a saved run id or a live FuncCall
 //input: string sourceMetaCallId {optional: true}
-//input: object sourceCall {optional: true}
+//input: funccall sourceCall {optional: true}
 //input: string defaultName {optional: true}
 export async function publishWorkflowRunDialog(
   sourceMetaCallId?: string, sourceCall?: DG.FuncCall, defaultName?: string): Promise<void> {

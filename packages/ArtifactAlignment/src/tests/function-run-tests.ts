@@ -38,6 +38,19 @@ category('ArtifactAlignment: function runs', () => {
     expect(fc.options[OPT_FROZEN] == null, true, 'the live call must not be mutated');
   });
 
+  // The path Compute2 exercises: the live FuncCall crosses the grok.functions.call
+  // boundary — it must travel as a `funccall`-typed param, not inside a plain object.
+  test('a live in-memory run publishes across the function-call boundary', async () => {
+    const program = await makeTestProgram();
+    const fc = DG.Func.byName(STEP_NQ).prepare({a: 6});
+    await fc.call(false, undefined, {processed: true, report: false});
+    const result: any = await grok.functions.call('ArtifactAlignment:PublishWorkflowRun',
+      {request: {programId: program.id, name: 'Boundary artifact'}, sourceCall: fc});
+    expect(result.status, 'approved');
+    const frozen = await historyUtils.loadRun(result.artifactId);
+    expect((frozen.outputs['result'] as DG.DataFrame).rowCount, 6);
+  });
+
   test('the frozen function run is loadable, stamped, and audience-granted', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun(7);
