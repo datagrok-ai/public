@@ -109,7 +109,9 @@ category('Functions: Statistical', () => {
     'Sum([-1, 4, 12, 5])': 20,
     'Sum([2, null, 0, 3])': 5,
     'Sum([null, 1, 0.7, 0.3])': 2,
-    'Sum([null, null])': 0,
+    // GROK-20624: a sum over no values is empty, not 0 — a group that contributed
+    // nothing is not a group that summed to zero.
+    'Sum([null, null])': null,
     'Sum([-0])': 0,
   }));
 
