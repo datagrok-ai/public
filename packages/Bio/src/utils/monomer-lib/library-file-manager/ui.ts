@@ -25,7 +25,11 @@ import {MonomerLibManager} from '../lib-manager';
 import './style.css';
 
 export async function showManageLibrariesDialog(): Promise<void> {
-  await DialogWrapper.showDialog();
+  const existingView = Array.from(grok.shell.views).find((v) => v.name === LibManagerView.viewName);
+  if (existingView)
+    grok.shell.v = existingView;
+  else
+    await DialogWrapper.showDialog();
 }
 
 export async function showManageLibrariesView(addView = true) {
@@ -84,7 +88,7 @@ class MonomerLibraryManagerWidget {
   private async getWidgetContent(): Promise<HTMLElement> {
     const libControlsForm = await LibraryControlsManager.createControlsForm();
     $(libControlsForm).addClass('monomer-lib-controls-form')
-    .addClass('d4-dialog-contents');
+      .addClass('d4-dialog-contents');
     setTimeout(() => {
       libControlsForm && $(libControlsForm) && $(libControlsForm).removeClass('ui-form-condensed');
     }, 200);
