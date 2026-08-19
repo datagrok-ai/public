@@ -2,6 +2,7 @@
 
 ## v.next
 
+* To Atomic Level panel: Added scrollable windowed structure view for long linear single-chain sequences — shows a 20-monomer window with a slider and 1-based start/end position indicators
 * Flow: Added table-aware twins of the `Bio | Transform` entries, which mutate the input frame and return void (or hand the same frame back) — unusable on a pipeline canvas, where the node shows a bare pass-through arrow instead of a named result: Extract Sequence Region, To Atomic Level Column, Molecules to HELM Column, and Split to Monomers Columns (which returns the per-position monomer columns as a table of their own). All share the original implementation
 * Flow: Added Convert Sequence Notation `(table, sequence, targetNotation{fasta,separator,helm}, separator?) -> column`, wrapping `ISeqHandler.convert()`. Notation conversion previously existed only behind a dialog
 * Flow: Added Tag as Macromolecule `(table, sequence) -> column`, which runs sequence detection on a plain string column. Nothing could tag a column built inside a flow, so every semType-dependent bio function silently no-opped on derived data
