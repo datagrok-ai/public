@@ -45,7 +45,8 @@ describe('PidboxConsumer', () => {
     const revoked = new RevokedSet();
     const pidbox = new PidboxConsumer(testSettings(), mockPublisher(), revoked, () => null);
     // exact shape from server_docker_func.dart cancelImpl
-    pidbox.handleControl({'method': 'revoke', 'arguments': {'task_id': 'task-9', 'terminate': true, 'signal': 'SIGTERM'}});
+    pidbox.handleControl(
+      {'method': 'revoke', 'arguments': {'task_id': 'task-9', 'terminate': true, 'signal': 'SIGTERM'}});
     expect(revoked.has('task-9')).toBe(true);
   });
 
@@ -60,12 +61,12 @@ describe('PidboxConsumer', () => {
     expect(revoked.has('undefined')).toBe(false);
   });
 
-  test('revoking the running call sets its cancel flag and publishes the Canceled CALL once', () => {
+  test('revoking a running call sets its cancel flag and publishes the Canceled CALL once', () => {
     const publisher = mockPublisher();
     const call = new FuncCall(callJson('running-1'));
     const context = new TaskContext(call.id, publisher);
-    const current: RunningTask = {call: call, context: context};
-    const pidbox = new PidboxConsumer(testSettings(), publisher, new RevokedSet(), () => current);
+    const running = new Map<string, RunningTask>([[call.id, {call: call, context: context}]]);
+    const pidbox = new PidboxConsumer(testSettings(), publisher, new RevokedSet(), (id) => running.get(id) ?? null);
 
     pidbox.handleControl({'method': 'revoke', 'arguments': {'task_id': 'running-1'}});
     expect(context.cancelled).toBe(true);
@@ -80,6 +81,24 @@ describe('PidboxConsumer', () => {
     // a duplicate revoke does not publish again
     pidbox.handleControl({'method': 'revoke', 'arguments': {'task_id': 'running-1'}});
     expect(publisher.publish).toHaveBeenCalledTimes(1);
+  });
+
+  test('revoking one of several concurrent tasks does not affect the others', () => {
+    const publisher = mockPublisher();
+    const running = new Map<string, RunningTask>();
+    for (const id of ['task-a', 'task-b']) {
+      const call = new FuncCall(callJson(id));
+      running.set(id, {call: call, context: new TaskContext(id, publisher)});
+    }
+    const pidbox = new PidboxConsumer(testSettings(), publisher, new RevokedSet(), (id) => running.get(id) ?? null);
+
+    pidbox.handleControl({'method': 'revoke', 'arguments': {'task_id': 'task-a'}});
+    expect(running.get('task-a')!.context.cancelled).toBe(true);
+    expect(running.get('task-a')!.call.status).toBe(FuncCallStatus.CANCELED);
+    expect(running.get('task-b')!.context.cancelled).toBe(false);
+    expect(running.get('task-b')!.call.status).toBe(FuncCallStatus.RUNNING);
+    expect(publisher.publish).toHaveBeenCalledTimes(1);
+    expect(publisher.publish.mock.calls[0][1]).toBe('task-a');
   });
 });
 
@@ -107,25 +126,18 @@ describe('CeleryConsumer cancel-before-pickup', () => {
     expect(type).toBe('call');
   });
 
-  test('a normal task is accepted and executed single-in-flight in FIFO order', async () => {
+  test('a normal task is accepted and executed', async () => {
     const publisher = mockPublisher();
-    const order: string[] = [];
-    const runTask = jest.fn().mockImplementation(async (call: FuncCall) => {
-      order.push(`start-${call.id}`);
-      await new Promise((resolve) => setImmediate(resolve));
-      order.push(`end-${call.id}`);
-    });
+    const runTask = jest.fn().mockResolvedValue(undefined);
     const consumer = new CeleryConsumer(testSettings(), publisher, new RevokedSet(), runTask);
-    const messageFor = (id: string): any => ({
-      content: Buffer.from(JSON.stringify({'args': [callJson(id)], 'kwargs': {}}), 'utf8'),
+    consumer.onMessage({
+      content: Buffer.from(JSON.stringify({'args': [callJson('t1')], 'kwargs': {}}), 'utf8'),
       properties: {headers: {}},
     });
-    consumer.onMessage(messageFor('t1'));
-    consumer.onMessage(messageFor('t2'));
     await consumer.waitForIdle(1000);
 
     expect(publisher.publish).toHaveBeenCalledWith({}, 't1', 'accepted');
-    expect(publisher.publish).toHaveBeenCalledWith({}, 't2', 'accepted');
-    expect(order).toEqual(['start-t1', 'end-t1', 'start-t2', 'end-t2']);
+    expect(runTask).toHaveBeenCalledTimes(1);
+    expect(consumer.inFlightCount).toBe(0);
   });
 });

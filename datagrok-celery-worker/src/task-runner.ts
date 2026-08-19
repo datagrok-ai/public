@@ -4,7 +4,7 @@ import {FanoutPublisher} from './fanout-publisher';
 import {FuncCall, FuncCallStatus} from './func-call';
 import {PackageHost} from './package-host';
 import {Const, PipeClient} from './pipe-client';
-import {CancelledError, TaskContext} from './progress';
+import {CancelledError, TaskContext, taskContextStorage} from './progress';
 import {RunningTask} from './pidbox';
 import {Settings} from './settings';
 import {marshalInput, marshalOutput, validateCall} from './marshal';
@@ -14,7 +14,7 @@ export class TaskRunner {
   private readonly settings: Settings;
   private readonly publisher: FanoutPublisher;
   private readonly host: PackageHost;
-  private _current: RunningTask | null = null;
+  private readonly running = new Map<string, RunningTask>();
 
   constructor(settings: Settings, publisher: FanoutPublisher, host: PackageHost) {
     this.settings = settings;
@@ -22,14 +22,28 @@ export class TaskRunner {
     this.host = host;
   }
 
-  get current(): RunningTask | null {
-    return this._current;
+  get(taskId: string): RunningTask | null {
+    return this.running.get(taskId) ?? null;
+  }
+
+  get runningCount(): number {
+    return this.running.size;
   }
 
   async run(call: FuncCall): Promise<void> {
     logInfo(`Running ${call.funcName}`, call.id);
     const context = new TaskContext(call.id, this.publisher);
-    this._current = {call: call, context: context};
+    this.running.set(call.id, {call: call, context: context});
+    try {
+      await this.host.runWithToken(call.userApiKey, () =>
+        taskContextStorage.run(context, () => this.execute(call, context)));
+    }
+    finally {
+      this.running.delete(call.id);
+    }
+  }
+
+  private async execute(call: FuncCall, context: TaskContext): Promise<void> {
     let pipe: PipeClient | null = null;
     call.status = FuncCallStatus.RUNNING;
     try {
@@ -47,24 +61,18 @@ export class TaskRunner {
         await pipe.connect();
         context.pipe = pipe;
       }
-      for (const param of call.inputParams)
+      for (const param of call.inputParams) {
         if (param.isStreamable) {
           const received = await pipe!.receiveParam(param.name);
           param.value = received?.bytes ?? null;
           param.receivedType = received?.tags['.type'] ?? null;
         }
+      }
       const dg = this.host.dg;
       for (const param of call.inputParams)
         marshalInput(param, dg);
       const args = call.inputParams.map((p) => p.value);
-      context.install();
-      let value: any;
-      try {
-        value = await impl(...args);
-      }
-      finally {
-        context.uninstall();
-      }
+      const value = await impl(...args);
       if (context.cancelled)
         throw new CancelledError(call.id);
       const output = call.outputParams[0];
@@ -93,7 +101,6 @@ export class TaskRunner {
     finally {
       await this.publishResult(call, context, pipe);
       pipe?.close();
-      this._current = null;
     }
   }
 

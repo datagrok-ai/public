@@ -25,12 +25,15 @@ export class PackageHost {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const runtime = require('datagrok-api/datagrok');
         const apiUrl = call.apiUrl ?? this.settings.apiUrl;
-        if (apiUrl == null)
-          throw new Error('Datagrok API url is not available: neither call.aux.DATAGROK_API_URL nor the DATAGROK_API_URL environment variable is set');
+        if (apiUrl == null) {
+          throw new Error('Datagrok API url is not available: ' +
+            'neither call.aux.DATAGROK_API_URL nor the DATAGROK_API_URL environment variable is set');
+        }
         // detached: no per-user startup data is cached — required because the worker
         // serves calls from many users (see js-api/datagrok.ts startDatagrok docs)
-        await runtime.startDatagrok({apiUrl: apiUrl, apiToken: call.userApiKey ?? undefined, detached: true});
-        logInfo(`Loading package ${this.settings.packageName}${this.settings.packageVersion ? ` (expected version ${this.settings.packageVersion})` : ''}...`);
+        await runtime.startDatagrok({apiUrl: apiUrl, detached: true});
+        logInfo(`Loading package ${this.settings.packageName}` +
+          `${this.settings.packageVersion ? ` (expected version ${this.settings.packageVersion})` : ''}...`);
         const pkg = await runtime.loadPackage(this.settings.packageName);
         logInfo(`Loaded package ${pkg.name} v${pkg.version}, ${pkg.functions.length} functions registered`);
         return pkg;
@@ -51,11 +54,6 @@ export class PackageHost {
    *  that would resolve the server-side DockerFunc entity and recurse into this queue. */
   async resolve(call: FuncCall): Promise<(...args: any[]) => any> {
     const pkg = await this.ensureLoaded(call);
-    // re-bind the session token per call (node_script_handler.dart parity:
-    // `grok.dapi.token = USER_API_KEY`)
-    const grok = (globalThis as any).grok;
-    if (grok?.dapi != null && call.userApiKey != null)
-      grok.dapi.token = call.userApiKey;
     const name = call.funcName;
     const module = pkg.module ?? {};
     let impl = module[name];
@@ -64,5 +62,19 @@ export class PackageHost {
     if (typeof impl !== 'function')
       throw new Error(`Function "${name}" was not found in the module exports of package "${pkg.name}"`);
     return impl;
+  }
+
+  runWithToken<T>(token: string | null, fn: () => T): T {
+    if (token == null)
+      return fn();
+    let storage: any;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      storage = require('datagrok-api/datagrok').datagrokAsyncLocalStorage;
+    }
+    catch (_) {
+      return fn();
+    }
+    return storage.run({token: token}, fn);
   }
 }

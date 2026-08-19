@@ -13,9 +13,11 @@ result back.
 1. **Task pickup** — consumes the queue named by `TASK_QUEUE_NAME` (the worker owns the
    `assertQueue {durable: true}` declaration; datlas publishes into it passively). The
    message body is `{"args": [funcCallJson], "kwargs": {}}` (celery protocol-2 array
-   bodies are accepted too). The message is acked immediately and an `accepted` message
-   is published to the `calls_fanout` exchange — datlas requires it within its
-   task-pickup timeout (60 s by default).
+   bodies are accepted too). An `accepted` message is published to the `calls_fanout`
+   exchange on delivery — datlas requires it within its task-pickup timeout (60 s by
+   default). Up to `DATAGROK_MAX_CONCURRENT_TASKS` tasks run concurrently (celery
+   acks_late semantics: `prefetch(maxConcurrentTasks)` plus ack-on-completion, so the
+   broker holds — and on a worker crash redelivers — everything past the limit).
 2. **Package loading** — on the first task the worker calls
    `startDatagrok({apiUrl, apiToken, detached: true})` and `loadPackage(name)` from
    `datagrok-api/datagrok`, then resolves the function implementation directly from the
@@ -61,6 +63,7 @@ result back.
 | `DATAGROK_PARAM_TIMEOUT` | no | `5` | Total budget for receiving one param, minutes |
 | `DATAGROK_WS_MESSAGE_TIMEOUT` | no | `30` | Per-message pipe wait timeout, seconds |
 | `HEALTH_PORT` | no | `8000` | Port of the `{"status":"ok"}` health endpoint |
+| `DATAGROK_MAX_CONCURRENT_TASKS` | no | `1` | Max tasks executed concurrently (invalid values fall back to `1`). Node runs them on one event loop, so raising it helps I/O-bound functions; CPU-bound functions still serialize |
 
 ## Local run
 
@@ -90,11 +93,18 @@ npm start
 - **No parquet dataframe transfer** — dataframes travel as native d42 binary in both
   directions (preserving column types and tags); CSV input is still accepted from an
   older datlas. A call with `options.isParquet = true` fails fast.
-- **Single in-flight task** — tasks are acked immediately and drained from an in-memory
-  FIFO one at a time.
+- **Single event loop** — concurrent tasks (`DATAGROK_MAX_CONCURRENT_TASKS` > 1) run
+  cooperatively on one Node event loop; CPU-bound functions do not parallelize. Run more
+  worker instances for CPU parallelism.
+- **At-least-once delivery** — with ack-on-completion, a worker that dies mid-task lets
+  the broker redeliver the message, so a task may run twice; datlas ignores the
+  duplicate `accepted` and completes the call from whichever result arrives.
 - **Cooperative cancellation** — a revoke publishes the `Canceled` result right away,
   but the running JS function is only interrupted at its next
   `DG_TASK_PROGRESS` call.
+- **Per-task identity** — `grok.dapi` authenticates as the calling user per task;
+  `grok.dapi.token` itself is unset in the worker (read
+  `globalThis.getTokenFromAsyncLocalStorage()` when the raw token is needed).
 - **One return parameter max** (same rule as the python lib).
 
 ## Security
