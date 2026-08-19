@@ -190,6 +190,13 @@ export namespace historyUtils {
       }));
 
     const fc = await grok.dapi.functions.calls.allPackageVersions().save(callCopy);
+    // await grok.dapi.permissions.grant(fc, audience, false);
+    //   ^ requires core work: FuncCall is not a full entity — it has no per-run ACL,
+    //     so only the uploaded dataframes are audience-scoped and the run itself
+    //     stays loadable by id for everyone.
+    // await grok.dapi.functions.calls.transferOwnership(fc, owner);
+    //   ^ requires core work: ownership hand-off, so published/frozen copies stop
+    //     being the author's to edit or soft-delete.
     grok.log.audit('@user saved run of the @model model', {
       'user': DG.User.current(),
       'model': fc.func,

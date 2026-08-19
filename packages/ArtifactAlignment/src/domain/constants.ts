@@ -19,7 +19,6 @@ export type ArtifactType = typeof ARTIFACT_TYPE_WORKFLOW_RUN | typeof ARTIFACT_T
 // FuncCall option keys stamped on frozen copies
 export const OPT_PUBLICATION_ID = 'artifactsPublicationId';
 export const OPT_FROZEN = 'artifactsFrozen';
-export const OPT_PARENT_CALL_ID = 'parentCallId';
 
 // Columns whose writes are gated through per-column property schemas
 export const APPROVAL_COLUMNS = ['status', 'approved_by', 'approved_on', 'reject_reason'] as const;

@@ -96,8 +96,8 @@ export interface PublishResult {
 }
 
 /** Publishes a saved Compute2 run — a workflow run, or a single function run (an RFV
- * model run or an individually saved step) — into a program: deep-clones it
- * into a frozen copy, then inserts the next version row of the publication addressed
+ * model run or an individually saved step) — into a program: freezes it into a
+ * stamped catalog copy, then inserts the next version row of the publication addressed
  * by the (program, study, name) republish key. The previous approved version stays
  * live until this version is approved; a stale in-review row (rejected or superseded
  * draft) is archived first. The review gate is OFF for workflow runs, so the service

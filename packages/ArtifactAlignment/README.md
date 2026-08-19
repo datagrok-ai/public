@@ -8,8 +8,6 @@ through one faceted, security-trimmed query.
   design (business case, domain model, versioning and review semantics, platform asks). Not
   specific to this package; this package is its first implementation, scoped to Compute2
   workflow runs and single function runs (RFV model runs, individually saved steps).
-- [Compute2 PoC implementation plan](docs/compute2-poc-plan.md) — how the general design maps
-  onto this package, including the accepted gaps and core asks.
 
 ## What's here
 

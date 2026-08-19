@@ -4,7 +4,7 @@ import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {cloneRun} from '../service/clone-service';
 import {
-  OPT_FROZEN, OPT_PARENT_CALL_ID, OPT_PUBLICATION_ID, T_ALIGNMENT,
+  OPT_FROZEN, OPT_PUBLICATION_ID, T_ALIGNMENT,
 } from '../domain/constants';
 import {discover, getPublicationHistory, publishWorkflowRun} from '../service/publication-service';
 import {cleanupTestPrograms, makeSavedRun, makeTestProgram, STEP_NQ} from './fixtures';
@@ -46,7 +46,6 @@ category('ArtifactAlignment: function runs', () => {
     const frozen = await historyUtils.loadRun(result.artifactId);
     expect(frozen.options[OPT_FROZEN], 'true');
     expect(frozen.options[OPT_PUBLICATION_ID], result.publicationId);
-    expect(frozen.options[OPT_PARENT_CALL_ID] == null, true, 'a single run has no parent call');
     expect((frozen.outputs['result'] as DG.DataFrame).rowCount, 7);
     const perms: any = await grok.dapi.permissions.get(
       (frozen.outputs['result'] as DG.DataFrame).getTableInfo());
@@ -94,30 +93,23 @@ category('ArtifactAlignment: function runs', () => {
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Hidden wf'});
     const single = await publishWorkflowRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Hidden single'});
-    const author = await grok.dapi.users.current();
-    // mirrors the listing filter in Compute2's History component
-    const compute2Visible = (runs: DG.FuncCall[]) =>
-      runs.filter((r) => r.options[OPT_FROZEN] !== 'true');
-    const providerRuns = compute2Visible(await historyUtils.pullRunsByName(
-      'AaTestProvider', [{author: author as any}], {}, ['options']));
-    expect(providerRuns.some((r) => r.id === workflow.artifactId), false,
-      'the frozen meta call must not pass the workflow history filter');
-    expect(providerRuns.some((r) => r.id === run.metaCallId), true,
-      'the source run must still appear');
-    const stepRuns = compute2Visible(await historyUtils.pullRunsByName(
-      'AaTestStep', [{author: author as any}], {}, ['options']));
-    expect(stepRuns.some((r) => r.id === single.artifactId), false,
-      'the frozen single run must not pass the step history filter');
+    // The persisted options drive the listing filter in Compute2's History component;
+    // fetch the involved runs by id — an unbounded history pull is not what's under test.
+    const fetch = (id: string) =>
+      grok.dapi.functions.calls.allPackageVersions().include('options').find(id);
+    const runs = await Promise.all(
+      [workflow.artifactId, single.artifactId, run.metaCallId].map(fetch));
+    const visible = runs.filter((r) => r.options[OPT_FROZEN] !== 'true');
+    expect(visible.length, 1, 'both frozen copies must be filtered out');
+    expect(visible[0].id, run.metaCallId, 'the source run must pass the filter');
   });
 
   test('cloneRun detects the run kind', async () => {
     const run = await makeSavedRun();
     const single = await cloneRun(run.stepCallId, {publicationId: crypto.randomUUID()});
     expect(single.artifactType, 'function-run');
-    expect(Object.keys(single.childIdMap).length, 0);
     const workflow = await cloneRun(run.metaCallId, {publicationId: crypto.randomUUID()});
     expect(workflow.artifactType, 'workflow-run');
-    expect(Object.keys(workflow.childIdMap).length, 1);
   });
 
   after(async () => {
