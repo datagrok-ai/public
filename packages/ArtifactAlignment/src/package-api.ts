@@ -74,8 +74,8 @@ export namespace funcs {
     return await grok.functions.call('ArtifactAlignment:SetupArtifactSecurity', {});
   }
 
-  export async function artifactDriftCheck(deep?: boolean ): Promise<any> {
-    return await grok.functions.call('ArtifactAlignment:ArtifactDriftCheck', { deep });
+  export async function artifactDriftCheck(): Promise<any> {
+    return await grok.functions.call('ArtifactAlignment:ArtifactDriftCheck', {});
   }
 
   /**

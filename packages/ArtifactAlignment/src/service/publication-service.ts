@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {
   AlignmentRow, HistoryRow, PublicationStatus,
-  T_ALIGNMENT, T_COMPOUND, T_HISTORY, T_TAG,
+  SCHEMA, T_ALIGNMENT, T_COMPOUND, T_HISTORY, T_TAG,
 } from '../domain/constants';
 import {currentUserIn, getProgramGroups} from '../domain/security';
 import {cloneRun} from './clone-service';
@@ -31,32 +31,35 @@ async function ensureRegistryRows(table: string, names: string[], column: string
 const joinNames = (links?: {name: string}[]) =>
   (links ?? []).map((l) => l.name).join(',');
 
-/** Copies a live version row into alignment_history (idempotent on the
- * (publication_id, revision) business key) and soft-deletes it. */
-async function archiveRow(row: AlignmentRow, supersededOn: dayjs.Dayjs): Promise<void> {
-  await history().insert({
-    publication_id: row.publication_id,
-    revision: row.revision,
-    name: row.name,
-    artifact_id: row.artifact_id,
-    program_id: row.program_id,
-    study_id: row.study_id,
-    workstream: row.workstream,
-    artifact_type: row.artifact_type,
-    artifact_author: row.artifact_author,
-    artifact_created_on: row.artifact_created_on,
-    description: row.description,
-    final_status: row.status,
-    approved_by: row.approved_by,
-    approved_on: row.approved_on,
-    reject_reason: row.reject_reason,
-    path: row.path,
-    tags_snapshot: joinNames(row.tags),
-    compounds_snapshot: joinNames(row.compounds),
-    superseded_on: supersededOn,
-    original_row_id: row.id,
-  });
-  await alignment().delete(row.id);
+/** Transaction ops copying a live version row into alignment_history and removing
+ * it — always combined with the write they make room for, so the catalog never
+ * exposes an intermediate state. */
+function archiveOps(row: AlignmentRow, supersededOn: dayjs.Dayjs): DG.DomainTransactionOp[] {
+  return [
+    {op: 'insert', table: 'alignment_history', values: {
+      publication_id: row.publication_id,
+      revision: row.revision,
+      name: row.name,
+      artifact_id: row.artifact_id,
+      program_id: row.program_id,
+      study_id: row.study_id,
+      workstream: row.workstream,
+      artifact_type: row.artifact_type,
+      artifact_author: row.artifact_author,
+      artifact_created_on: row.artifact_created_on,
+      description: row.description,
+      final_status: row.status,
+      approved_by: row.approved_by,
+      approved_on: row.approved_on,
+      reject_reason: row.reject_reason,
+      path: row.path,
+      tags_snapshot: joinNames(row.tags),
+      compounds_snapshot: joinNames(row.compounds),
+      superseded_on: supersededOn,
+      original_row_id: row.id,
+    }},
+    {op: 'delete', table: 'alignment', id: row.id!},
+  ];
 }
 
 async function liveRows(publicationId: string): Promise<AlignmentRow[]> {
@@ -111,30 +114,12 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
   const key = keyFilter(req.programId, req.studyId, req.name);
 
   const liveByKey = await alignment().query({filter: key, expand: ['tags', 'compounds']});
-  let publicationId = liveByKey[0]?.publication_id;
-  let maxRevision = Math.max(0, ...liveByKey.map((r) => r.revision));
-  if (publicationId == null) {
-    // A publication whose every version is archived (e.g. an interrupted flip)
-    // resumes its identity and numbering from history.
-    const archived = await history().query({filter: key, sort: '!revision', limit: 1});
-    publicationId = archived[0]?.publication_id;
-    maxRevision = archived[0]?.revision ?? 0;
-  }
-  if (publicationId != null) {
-    const historyMax = await history().query({
-      filter: DG.cond('publication_id', '=', publicationId), sort: '!revision', limit: 1,
-    });
-    maxRevision = Math.max(maxRevision, historyMax[0]?.revision ?? 0);
-  }
-  publicationId ??= crypto.randomUUID();
+  const publicationId = liveByKey[0]?.publication_id ?? crypto.randomUUID();
+  const revision = Math.max(0, ...liveByKey.map((r) => r.revision)) + 1;
 
   const now = dayjs();
   const staleInReview = liveByKey.find((r) => r.status !== 'approved');
-  if (staleInReview != null)
-    await archiveRow(staleInReview, now);
-
   const previous = liveByKey.find((r) => r.status === 'approved') ?? staleInReview;
-  const revision = maxRevision + 1;
 
   const clone = await cloneRun(source, {
     audience: groups.viewers ?? undefined,
@@ -145,22 +130,29 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
 
   const tagNames = req.tags ?? previous?.tags?.map((t) => t.name) ?? [];
   const compoundCodes = req.compounds ?? previous?.compounds?.map((c) => c.name) ?? [];
-  const [ins] = await alignment().insert({
-    publication_id: publicationId,
-    revision,
-    name: req.name,
-    artifact_id: clone.metaCall.id,
-    program_id: req.programId,
-    study_id: req.studyId ?? undefined,
-    workstream: req.workstream ?? previous?.workstream ?? undefined,
-    artifact_type: clone.artifactType,
-    artifact_author: clone.sourceAuthorId,
-    artifact_created_on: clone.sourceStartedOn,
-    description: req.description ?? previous?.description ?? undefined,
-    path: req.path ?? previous?.path ?? undefined,
-    tags: await ensureRegistryRows(T_TAG, tagNames, 'name'),
-    compounds: await ensureRegistryRows(T_COMPOUND, compoundCodes, 'registration_code'),
-  } as any, {errorOnDuplicate: true});
+  // archive the superseded draft and insert the next version atomically
+  const results = await grok.dapi.domains.transaction(SCHEMA, [
+    ...(staleInReview != null ? archiveOps(staleInReview, now) : []),
+    {op: 'insert', table: 'alignment', values: {
+      publication_id: publicationId,
+      revision,
+      name: req.name,
+      artifact_id: clone.metaCall.id,
+      program_id: req.programId,
+      study_id: req.studyId ?? undefined,
+      workstream: req.workstream ?? previous?.workstream ?? undefined,
+      artifact_type: clone.artifactType,
+      artifact_author: clone.sourceAuthorId,
+      artifact_created_on: clone.sourceStartedOn,
+      description: req.description ?? previous?.description ?? undefined,
+      path: req.path ?? previous?.path ?? undefined,
+      tags: await ensureRegistryRows(T_TAG, tagNames, 'name'),
+      compounds: await ensureRegistryRows(T_COMPOUND, compoundCodes, 'registration_code'),
+    }},
+  ]);
+  const ins = results[results.length - 1] as DG.DomainInsertResult;
+  if (!ins.created)
+    throw new Error(`Version row was not created (${ins.status})`);
 
   // Gate off for workflow runs: auto-approve with the same audit trail as a human
   // approval. Under the emulated service identity this runs as the publishing user,
@@ -177,11 +169,10 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
   return {publicationId, revision, rowId: ins.id, artifactId: clone.metaCall.id, status};
 }
 
-/** Flips a pending version to approved: archives the previously approved version
- * (the only window where the publication briefly has no approved row — the drift
- * check detects an interrupted flip) and stamps the approval columns.
- * Human approvals enforce approvers-group membership and author != approver
- * service-side; `auto` marks the gate-off same-breath approval. */
+/** Flips a pending version to approved: archives the previously approved version and
+ * stamps the approval columns in one transaction, so the publication always shows
+ * exactly one approved row. Human approvals enforce approvers-group membership and
+ * author != approver service-side; `auto` marks the gate-off same-breath approval. */
 export async function approvePublication(rowId: string, options?: {auto?: boolean}): Promise<void> {
   await DG.retryOnVersionConflict(async () => {
     const row = await alignment().get(rowId);
@@ -199,11 +190,12 @@ export async function approvePublication(rowId: string, options?: {auto?: boolea
     }
     const now = dayjs();
     const currentApproved = (await liveRows(row.publication_id)).find((r) => r.status === 'approved');
-    if (currentApproved != null && currentApproved.id !== row.id)
-      await archiveRow(currentApproved, now);
-    await alignment().update(rowId, {
-      status: 'approved', approved_by: user.id, approved_on: now,
-    } as any, {version: row.version});
+    await grok.dapi.domains.transaction(SCHEMA, [
+      ...(currentApproved != null && currentApproved.id !== row.id ? archiveOps(currentApproved, now) : []),
+      {op: 'update', table: 'alignment', id: rowId,
+        values: {status: 'approved', approved_by: user.id, approved_on: now},
+        expectedVersion: row.version},
+    ]);
   });
 }
 

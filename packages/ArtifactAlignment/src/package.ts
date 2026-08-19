@@ -111,10 +111,9 @@ export async function setupArtifactSecurity(): Promise<void> {
 }
 
 //name: artifactDriftCheck
-//input: bool deep {optional: true}
 //output: object result
-export async function artifactDriftCheck(deep?: boolean): Promise<object> {
-  return driftCheck({deep: deep === true});
+export async function artifactDriftCheck(): Promise<object> {
+  return driftCheck();
 }
 
 //name: AaTestStep

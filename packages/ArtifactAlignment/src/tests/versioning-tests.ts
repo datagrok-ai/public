@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {T_ALIGNMENT, T_HISTORY} from '../domain/constants';
+import {T_ALIGNMENT} from '../domain/constants';
 import {
   approvePublication, discover, getLiveVersions, getPublicationHistory,
   publishWorkflowRun, rejectPublication,
@@ -10,7 +10,6 @@ import {cleanupTestPrograms, makeSavedRun, makeTestProgram, makeTestStudy} from 
 
 category('ArtifactAlignment: versioning', () => {
   const alignment = () => grok.dapi.domains.table(T_ALIGNMENT);
-  const history = () => grok.dapi.domains.table(T_HISTORY);
 
   test('first publish auto-approves and is discoverable', async () => {
     const program = await makeTestProgram();
@@ -134,41 +133,6 @@ category('ArtifactAlignment: versioning', () => {
       'the raw flip must violate the (publication_id, status) live unique key');
     await approvePublication(v2.rowId, {auto: true});
     expect((await discover(program.id))[0].revision, 2);
-  });
-
-  test('history archive insert is idempotent on (publication_id, revision)', async () => {
-    const program = await makeTestProgram();
-    const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
-      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Idem'});
-    await publishWorkflowRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Idem'});
-    const archived = (await getPublicationHistory(v1.publicationId))[0];
-    const [dup] = await history().insert({
-      publication_id: archived.publication_id, revision: archived.revision,
-      name: archived.name, artifact_id: archived.artifact_id,
-      program_id: program.id, final_status: archived.final_status,
-    });
-    expect(dup.created, false);
-    expect(dup.status, 'duplicate');
-  });
-
-  test('publication with only archived versions resumes identity and numbering', async () => {
-    const program = await makeTestProgram();
-    const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
-      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Resume'});
-    // Simulate an interrupted flip: archive the only live row by hand.
-    const row: any = (await getLiveVersions(v1.publicationId))[0];
-    await history().insert({
-      publication_id: row.publication_id, revision: row.revision, name: row.name,
-      artifact_id: row.artifact_id, program_id: row.program_id,
-      final_status: row.status, original_row_id: row.id,
-    });
-    await alignment().delete(row.id);
-    const v2 = await publishWorkflowRun({
-      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Resume'});
-    expect(v2.publicationId, v1.publicationId, 'identity resumes from history');
-    expect(v2.revision, 2);
   });
 
   after(async () => {
