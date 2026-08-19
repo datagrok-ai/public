@@ -20,6 +20,13 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
     super(T_ALIGNMENT);
   }
 
+  /** Whether the client's domain registry meta for this table has arrived —
+   * dartMeta resolves from exactly the cache the Domain View's grid is built
+   * from, and js-api re-resolves misses on every read. */
+  get registryLoaded(): boolean {
+    return this.dartMeta != null;
+  }
+
   override renderProperties(x: DG.DomainRow, context: any = null): HTMLElement {
     const root = super.renderProperties(x, context);
     const values = x.values ?? {};
@@ -56,36 +63,22 @@ function whenDocked(view: DG.ViewBase, action: () => void, tries: number = 100):
     tries > 0 ? void setTimeout(() => whenDocked(view, action, tries - 1), 100) : null;
 }
 
-async function gridMaterialized(view: DG.ViewBase, timeoutMs: number = 3000): Promise<boolean> {
+/** On a cold start (deep link into the app) the app function can run before the
+ * client boot delivers the domain registry meta the Domain View's grid is built
+ * from (NullError in refreshGrid otherwise). Wait on that meta directly before
+ * creating the view. Platform ask stays: an awaitable registry-ready signal. */
+async function whenRegistryLoaded(timeoutMs: number = 10000): Promise<void> {
+  const probe = new AlignmentHandler();
   const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (view.root.querySelector('canvas, .d4-item-card') != null)
-      return true;
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-  return false;
+  while (!probe.registryLoaded && Date.now() - started < timeoutMs)
+    await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
-async function alignmentView(permanentFilter: string, name: string,
-  attempt: number = 0): Promise<DG.ViewBase> {
-  // On a cold start (deep link into the app) creating a DomainView while the client
-  // is still booting intermittently dies with a NullError in refreshGrid: the view's
-  // column set is built from entity-type/property-schema meta that arrives with the
-  // boot sequence, and a not-yet-loaded column comes through as null. The /domains
-  // routes are sequenced after that load; a JS app function is not, and no JS call
-  // can await the Dart-side cache. Warm what is awaitable, then verify the grid
-  // actually materialized and rebuild the view once the boot has settled.
-  // Platform ask: an awaitable registry-ready signal for JS apps.
-  await grok.dapi.domains.table(T_ALIGNMENT).capabilities();
+async function alignmentView(permanentFilter: string, name: string): Promise<DG.ViewBase> {
+  await whenRegistryLoaded();
   const view = DG.DomainView.create({schema: SCHEMA, table: 'alignment', permanentFilter});
   view.name = name;
-  whenDocked(view, async () => {
-    view.showFilters();
-    if (!await gridMaterialized(view) && attempt < 4) {
-      view.close();
-      grok.shell.addView(await alignmentView(permanentFilter, name, attempt + 1) as DG.View);
-    }
-  });
+  whenDocked(view, () => view.showFilters());
   return view;
 }
 
