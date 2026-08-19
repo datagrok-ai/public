@@ -55,9 +55,9 @@
   color: var(--dg-text-color);
   background: var(--dg-bg);
   border: var(--dg-overlay-border);
-  border-radius: var(--dg-radius);
+  border-radius: var(--dg-radius-l);
   outline: none;
-  box-shadow: var(--dg-shadow-overlay);
+  box-shadow: var(--dg-shadow-2);
 }
 
 .u2-date-header {
@@ -124,8 +124,8 @@
 }
 
 .u2-date-selected {
-  color: var(--dg-accent);
-  background: var(--dg-steel-1);
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
   font-weight: var(--dg-font-weight-medium);
 }
 

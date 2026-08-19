@@ -300,6 +300,12 @@ export class Widget<TSettings = any> {
     return api.grok_Widget_FromRoot(root);
   }
 
+  /** Registers a cleanup function to run when [element] is killed — i.e. when its host
+   * view or pane closes. Also marks the element so the kill-walk can find it. */
+  static registerCleanup(element: Element, cleanup: Function): void {
+    api.grok_Widget_RegisterCleanup(element, cleanup);
+  }
+
   toDart() {
     if (this.dart == null)
       this.dart = api.grok_Widget_Wrap(this);

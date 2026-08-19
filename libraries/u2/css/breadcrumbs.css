@@ -38,8 +38,8 @@
 }
 
 .u2-breadcrumbs-item:focus-visible {
-  outline: var(--dg-border-width) solid var(--dg-focus);
-  outline-offset: calc(-1 * var(--dg-border-width));
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }
 
 .u2-breadcrumbs-ellipsis {

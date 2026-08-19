@@ -32,8 +32,9 @@ plugin's TS/CSS — must work there. Verify before reporting UI work as done.
   `mask-image` needs `-webkit-mask-image`. CSS variables (`var(--…)`) and `calc()` are fine (Chrome 49+).
 - **JS runtime APIs missing in Chrome 50** — avoid them, or rely on `src/polyfills.ts` (imported first
   from `package.ts` / `package-test.ts`). Already polyfilled: `crypto.randomUUID`,
-  `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`,
-  `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`. If you need another
+  `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`/`matchAll`,
+  `Array.prototype.flatMap`, `Promise.prototype.finally`,
+  `Element.prototype.append`/`prepend`/`replaceWith`. If you need another
   missing API, add it to `polyfills.ts` rather than to call sites.
 - **Clipboard**: use `copyToClipboard()` from `src/utils.ts` — never `navigator.clipboard.writeText`
   directly (undefined in Chrome 50 and in insecure contexts).
@@ -61,6 +62,7 @@ src/
 │       └── query-matching.ts    # LLM-based matching of natural-language to DB queries
 ├── claude/                 # Browser-facing Claude runtime integration
 │   ├── runtime-client.ts   # WebSocket client to claude-runtime container
+│   ├── queue-task.ts      # Queued-task admission: aiChatTurnTask holds the celery slot; the turn streams over the WS
 │   └── exec-blocks.ts      # Executes datagrok-exec / datagrok-entities fenced blocks
 ├── db/                     # Database tooling
 │   ├── sql-tools.ts        # SQLGenerationContext — tool-call-based SQL generation

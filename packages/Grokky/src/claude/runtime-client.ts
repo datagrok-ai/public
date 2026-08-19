@@ -23,6 +23,7 @@ export type TurnServerMetrics = {
 };
 export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean, metrics?: TurnServerMetrics, revision?: 'kept' | 'replaced'};
 export type ErrorEvent = {sessionId: string, message: string};
+export type SessionResetEvent = {sessionId: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
 export type AuthUrlEvent = {url: string};
@@ -34,6 +35,7 @@ export class ClaudeRuntimeClient {
   private containerId: string | null = null;
   private mcpServerUrl: string | null = null;
   private _connectPromise: Promise<void> | null = null;
+  private _discovery: Promise<boolean> | null = null;
 
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
@@ -41,6 +43,7 @@ export class ClaudeRuntimeClient {
   public onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
+  public onSessionReset = new rxjs.Subject<SessionResetEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
   public onInputRequest = new rxjs.Subject<InputRequestEvent>();
   public onSyncStatus = new rxjs.Subject<{status: string; message?: string; files?: string[]}>();
@@ -50,6 +53,7 @@ export class ClaudeRuntimeClient {
   public onAuthError = new rxjs.Subject<AuthErrorEvent>();
   public onAuthRequired = new rxjs.Subject<{sessionId: string}>();
   private _skillNames: string[] | null = null;
+  private _resumable = new Set<string>();
 
   private constructor() {}
 
@@ -61,6 +65,35 @@ export class ClaudeRuntimeClient {
 
   get connected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  get available(): boolean {
+    return this.containerId !== null;
+  }
+
+  get runtimeContainerId(): string | null {
+    return this.containerId;
+  }
+
+  discover(): Promise<boolean> {
+    if (!this._discovery) {
+      this._discovery = (async () => {
+        const [runtimeContainers, mcpContainers] = await Promise.all([
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
+          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
+        ]);
+        this.containerId = runtimeContainers[0]?.id ?? null;
+        this.mcpServerUrl = mcpContainers[0] ?
+          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
+          null;
+        return this.containerId !== null;
+      })().catch((e) => {
+        console.warn('Grokky: container discovery failed:', e);
+        this._discovery = null;
+        return false;
+      });
+    }
+    return this._discovery;
   }
 
   async ensureConnected(): Promise<void> {
@@ -77,23 +110,15 @@ export class ClaudeRuntimeClient {
     if (this.connected)
       return;
 
-    try {
-      if (!this.containerId || !this.mcpServerUrl) {
-        const [runtimeContainers, mcpContainers] = await Promise.all([
-          grok.dapi.docker.dockerContainers.filter('name = "grokky-claude-runtime"').list(),
-          grok.dapi.docker.dockerContainers.filter('name = "grokky-mcp-server"').list(),
-        ]);
-        this.containerId = runtimeContainers[0]?.id ?? null;
-        this.mcpServerUrl = mcpContainers[0] ?
-          `${grok.dapi.root}/docker/containers/proxy/${mcpContainers[0].id}/mcp` :
-          null;
+    if (await this.discover()) {
+      try {
+        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId!, '/ws', 180_000);
+      } catch (e) {
+        this._discovery = null;
+        this.containerId = null;
+        this.mcpServerUrl = null;
+        console.error('Failed to connect to Claude runtime:', e);
       }
-      if (this.containerId)
-        this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId, '/ws', 180_000);
-    } catch (e) {
-      this.containerId = null;
-      this.mcpServerUrl = null;
-      console.error('Failed to connect to Claude runtime:', e);
     }
 
     if (!this.ws)
@@ -120,6 +145,7 @@ export class ClaudeRuntimeClient {
         this.onRevisionStart.next({sessionId: data.sessionId});
         break;
       case 'final':
+        this._resumable.add(data.sessionId);
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
@@ -130,6 +156,10 @@ export class ClaudeRuntimeClient {
         break;
       case 'error':
         this.onError.next({sessionId: data.sessionId, message: data.message});
+        break;
+      case 'session_reset':
+        this._resumable.delete(data.sessionId);
+        this.onSessionReset.next({sessionId: data.sessionId});
         break;
       case 'aborted':
         this.onAborted.next({sessionId: data.sessionId});
@@ -167,17 +197,23 @@ export class ClaudeRuntimeClient {
     };
   }
 
+  isResumable(sessionId: string): boolean {
+    return this._resumable.has(sessionId);
+  }
+
   send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
-    clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
+    taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[]}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
       type: 'user_message', sessionId, message,
       apiKey: grok.dapi.token,
       mcpServerUrl: this.mcpServerUrl,
+      ...(this._resumable.has(sessionId) ? {resumeExpected: true} : {}),
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
       ...(options?.model ? {model: options.model} : {}),
+      ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
     }));
   }
@@ -278,6 +314,7 @@ export class ClaudeRuntimeClient {
     this.onRevisionStart.complete();
     this.onFinal.complete();
     this.onError.complete();
+    this.onSessionReset.complete();
     this.onAborted.complete();
     this.onInputRequest.complete();
     this.onSyncStatus.complete();
@@ -291,6 +328,7 @@ export class ClaudeRuntimeClient {
     this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
+    this.onSessionReset = new rxjs.Subject<SessionResetEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();
     this.onInputRequest = new rxjs.Subject<InputRequestEvent>();
     this.onSyncStatus = new rxjs.Subject<{status: string; message?: string}>();

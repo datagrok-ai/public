@@ -245,11 +245,11 @@ export async function similarityMatrixTopMenu(table: DG.DataFrame, molecules: DG
 }
 
 //name: Chemical Descriptors
-//description: Calculates molecular descriptors for the molecules column
+//description: Calculates molecular descriptors for the molecules column using RDKit
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: list<string> selected { caption: Descriptors }
-//top-menu: Chem | Calculate | Descriptors...
+//top-menu: Chem | Calculate | Descriptors (RDKit)...
 //editor: Chem:DescriptorsEditor
 export async function descriptorsDocker(table: DG.DataFrame, molecules: DG.Column, selected: string[]) : Promise<void> {
   await PackageFunctions.descriptorsDocker(table, molecules, selected);
@@ -1053,8 +1053,8 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
   return await PackageFunctions.callChemDiversitySearch(col, metricName, fingerprint, limit);
 }
 
-//name: Chemical Properties
-//description: Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+//name: Chemical Properties (OCL)
+//description: Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: bool MW = true 
@@ -1071,7 +1071,6 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
 //meta.role: hitTriageFunction,transform
-//top-menu: Chem | Calculate | Chemical Properties...
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
 }
@@ -1436,9 +1435,9 @@ export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
 }
 
-//name: Biochemical Properties
+//name: Chemical Properties
 //description: Dynamically discovers and executes tagged biochemical calculators
-//top-menu: Chem | Calculate | Biochemical Properties
+//top-menu: Chem | Calculate | Chemical Properties...
 export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
 }

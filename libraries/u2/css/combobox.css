@@ -37,8 +37,8 @@
   color: var(--dg-text-color);
   background: var(--dg-bg);
   border: var(--dg-overlay-border);
-  border-radius: var(--dg-radius);
-  box-shadow: var(--dg-shadow-overlay);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
 }
 
 .u2-combobox-option {
@@ -54,8 +54,8 @@
 }
 
 .u2-combobox-option-active {
-  color: var(--dg-accent);
-  background: var(--dg-steel-1);
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
 }
 
 .u2-combobox-loading,

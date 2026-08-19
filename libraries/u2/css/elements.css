@@ -80,7 +80,7 @@
 }
 
 .u2-link:focus-visible {
-  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline: var(--dg-focus-ring);
   outline-offset: var(--dg-space-xs);
 }
 

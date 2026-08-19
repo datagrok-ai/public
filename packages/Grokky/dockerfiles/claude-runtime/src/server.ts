@@ -11,6 +11,7 @@ import {buildHelpIndex} from './help-index';
 import {WORKSPACE} from './constants';
 import {rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 import {emit, handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
+import {claimTask, releaseTask} from './tasks';
 import {setAuthPid} from './watchdog';
 import type {WsSender} from './session';
 
@@ -91,6 +92,24 @@ const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 
 app.get('/health', (c) => c.json({status: 'ok'}));
+
+// Admission-task long-poll for the queued route (see tasks.ts). The celery worker
+// re-polls while the answer is {status: 'running'}; any other status ends its task.
+app.post('/task/claim', async (c) => {
+  const {taskId, sessionId} = await c.req.json();
+  if (!taskId || !sessionId)
+    return c.json({error: 'taskId and sessionId are required'}, 400);
+  return c.json(await claimTask(taskId, sessionId));
+});
+
+// Task revoked platform-side: free the slot and abort the turn it was admitting.
+app.post('/task/release', async (c) => {
+  const {taskId} = await c.req.json();
+  const sessionId = releaseTask(taskId ?? '');
+  if (sessionId)
+    handleDisconnect([sessionId]);
+  return c.json({status: 'released'});
+});
 
 app.get('/ws', upgradeWebSocket(() => {
   const sessionIds = new Set<string>();

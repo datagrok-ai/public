@@ -51,11 +51,8 @@ function getApiRoot() {
   return `${parsedUrl.protocol}//${parsedUrl.host}/api`;
 }
 
+// The session cookie is HttpOnly and unreadable from script; the platform keeps
+// the token itself for callers like the notebook kernel that must present one.
 export function getAuthToken() {
-  const cookies = document.cookie.split('; ');
-  for (const cookie of cookies) {
-    const [key, value] = cookie.split('=');
-    if (key === 'auth') return decodeURIComponent(value);
-  }
-  return null;
+  return grok.dapi.token;
 }

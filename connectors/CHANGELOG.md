@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.8.4
+
+* GROK-20712: Fixed the main image registering zero providers — the newline `printf` writes into `providers.conf` for the default empty allowlist parsed as an empty set instead of "all providers", so every DB test failed with "Provider Postgres not found" since 2.8.3
+
 # 2.8.3
 
 * GROK-20712: Provider allowlist is now baked into the image at build time (`providers.conf` written by the Dockerfile `FLAVOR` layer from the `GROK_CONNECT_PROVIDERS` build arg) instead of being read from a runtime env variable, so the main/extended provider partition cannot be overridden at deploy time

@@ -105,6 +105,18 @@ export class InputBase<T = any> {
   /** Occurs when [value] is changed by user. */
   get onInput(): Observable<Event> { return api.grok_InputBase_OnInput(this.dart); }
 
+  /** Messages of the current validation results (empty when the input is valid). */
+  get validationResults(): string[] { return api.grok_InputBase_Get_ValidationMessages(this.dart) ?? []; }
+
+  /** Current validation message(s), or null when the input is valid. */
+  get validity(): string | null {
+    const messages = this.validationResults;
+    return messages.length == 0 ? null : messages.join('\n');
+  }
+
+  /** Occurs after each validation run, with the resulting messages. */
+  get onValidated(): Observable<string[]> { return api.grok_InputBase_OnValidated(this.dart); }
+
   /** Saves the value. Used in dialog history. See also {@link load} */
   save(): any {
     return api.grok_InputBase_Save(this.dart);

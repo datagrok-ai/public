@@ -186,7 +186,7 @@ textarea.u2-input-editor {
 }
 
 .u2-input-switch:focus-visible {
-  outline: var(--dg-border-width) solid var(--dg-focus);
+  outline: var(--dg-focus-ring);
   outline-offset: var(--dg-space-s);
 }
 

@@ -57,6 +57,13 @@ Other naming conventions across viewers:
   `colorAxisType`). Not `logX`, not `logScale`.
 - **Axis bounds**: `xMin`, `xMax`, `yMin`, `yMax`. Not `xRange: [a, b]`.
 
+## Unconfirmed options
+
+Options not documented here must be confirmed against the live schema before
+setting: `viewer.getProperties()` → match `.name`, respect `.propertyType` and
+`.choices`. Values are scalars — never objects/arrays: a wrong-typed value is
+stored unchecked.
+
 ## The viewers array
 
 `view.viewers` is a synchronous array snapshot:

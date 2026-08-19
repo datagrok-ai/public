@@ -13,8 +13,8 @@
 }
 
 .u2-list:focus {
-  outline: var(--dg-border-width) solid var(--dg-focus);
-  outline-offset: calc(-1 * var(--dg-border-width));
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }
 
 .u2-list-content {
@@ -41,8 +41,8 @@
 
 .u2-list-row-selected,
 .u2-list-row-selected:hover {
-  background: var(--dg-steel-1);
-  color: var(--dg-accent);
+  background: var(--dg-selection-bg);
+  color: var(--dg-selection-text);
 }
 
 /* hover-revealed action block (src/components/actions.ts): invisible until its row — a list row

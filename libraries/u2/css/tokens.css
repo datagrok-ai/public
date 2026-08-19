@@ -1,7 +1,10 @@
-/* u2 design tokens (L0). Values codify CURRENT Datagrok computed styles verbatim
-   (core/client/xamgle/web/{datagrok,ui,d4}.css) so u2 controls render native inside the
-   existing app. Default density = current platform metrics; compact is the opt-in axis
-   until the P3 gate decides what the u2 shell sets. */
+/* u2 design tokens (L0). Baseline codified from current Datagrok computed styles
+   (core/client/xamgle/web/{datagrok,ui,d4}.css, P1 — verbatim), then evolved by the P7
+   designer pass (adopted as default by askalkin 2026-08-18): layered elevation scale,
+   4px/6px radii, accent-tinted selection, 2px focus ring, calibrated status colors,
+   real heading hierarchy. Palette, typography base, and control metrics remain
+   platform-mirror values. Default density = current platform metrics; compact is the
+   opt-in axis. */
 :root {
   /* palette — mirrors datagrok.css :root */
   --dg-steel-1: #ECEFF2;
@@ -42,14 +45,18 @@
   --dg-bg-secondary: var(--dg-grey-1);
   --dg-accent: var(--dg-blue-1);
   --dg-accent-secondary: var(--dg-blue-2);
-  --dg-success: #006400;
-  --dg-failure: #8B0000;
+  --dg-success: #1A7F37;
+  --dg-failure: #C42B1C;
   --dg-error: var(--dg-red-3);
-  --dg-hover: var(--dg-steel-2);
+  --dg-hover: var(--dg-steel-1);
   --dg-hover-subtle: var(--dg-grey-1);
+  --dg-selection-bg: #DCEAF8;
+  --dg-selection-text: var(--dg-accent);
   --dg-border: var(--dg-grey-2);
   --dg-border-subtle: var(--dg-grey-1);
   --dg-focus: var(--dg-blue-1);
+  --dg-focus-ring-width: 2px;
+  --dg-focus-ring: var(--dg-focus-ring-width) solid var(--dg-focus);
 
   /* typography — Roboto 13px base, compact headings */
   --dg-font-family: 'Roboto', 'Roboto Local', sans-serif;
@@ -57,8 +64,8 @@
   --dg-font-size: 13px;
   --dg-font-size-small: 12px;
   --dg-font-size-xs: 10px;
-  --dg-font-size-h1: 15px;
-  --dg-font-size-h2: 13px;
+  --dg-font-size-h1: 16px;
+  --dg-font-size-h2: 14px;
   --dg-font-size-h3: 13px;
   --dg-font-weight-light: 300;
   --dg-font-weight-regular: 400;
@@ -79,16 +86,19 @@
   --dg-button-height: 24px;
   --dg-inline-control-height: 22px;
   --dg-border-width: 1px;
-  --dg-radius: 2px;
+  --dg-radius: 4px;
+  --dg-radius-l: 6px;
 
   /* input chrome — Datagrok underline style */
   --dg-input-border: var(--dg-border-width) solid var(--dg-border);
   --dg-input-border-focus: var(--dg-border-width) solid var(--dg-focus);
 
-  /* overlays */
-  --dg-backdrop: rgba(0, 0, 0, 0.2);
-  --dg-shadow-overlay: 0 0 5px var(--dg-grey-6);
-  --dg-overlay-border: var(--dg-border-width) solid var(--dg-grey-1);
+  /* overlays — elevation scale: 1 = tooltips/menus, 2 = popups, 3 = dialogs */
+  --dg-backdrop: rgba(0, 0, 0, 0.25);
+  --dg-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.14);
+  --dg-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.16), 0 0 2px rgba(0, 0, 0, 0.10);
+  --dg-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12);
+  --dg-overlay-border: var(--dg-border-width) solid var(--dg-border);
   --dg-z-dialog: 3000;
   --dg-z-overlay: 6000;
 }

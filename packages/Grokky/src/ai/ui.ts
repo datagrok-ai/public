@@ -13,10 +13,10 @@ import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
+import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
-import {_package} from '../package';
 
 interface ExecutionPlan {
   plan: string[];
@@ -166,8 +166,8 @@ export async function askWiki(question: string, sessionId?: string): Promise<DG.
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!grok.ai.config.configured) {
-    console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
+  if (!ClaudeRuntimeClient.getInstance().available) {
+    console.warn('Claude runtime container not found. Search UI will not have AI assistance.');
     return;
   }
 
@@ -235,7 +235,7 @@ export async function aiCombinedSearch(prompt: string) {
 // setQueryAndRun + the meta.viewType-registered SQL schema functions) are reached
 // by the singleton panel through the view-function meta-tools.
 export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return false;
   initAIWindow();
   return true;
@@ -401,6 +401,7 @@ async function streamOnce(
     let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
+    let resentAfterReset = false;
 
     const forSession = <T extends {sessionId: string}>(
       source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
@@ -420,12 +421,7 @@ async function streamOnce(
     try {
       const client = ClaudeRuntimeClient.getInstance();
       const nativeCtx = panel.flushNativeContext();
-      // A conversation restored from history exists only in the browser — the runtime session is
-      // fresh — so the first prompt after a load carries the transcript (one-shot; the SDK session
-      // remembers it from then on).
-      const restoredCtx = panel.flushRestoredContext();
-      const enrichedUserPrompt = (restoredCtx ? restoredCtx + '\n---\n\n' : '') +
-        (nativeCtx ? nativeCtx + userPrompt : userPrompt);
+      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       // Three static meta-tools let Claude search and invoke the current view's functions
@@ -600,10 +596,27 @@ async function streamOnce(
       }));
 
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-      client.send(sessionId, prompt, {
-        ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
-        ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+      const sendPrompt = () => {
+        const transcript = resolvedMode === 'bash' || client.isResumable(sessionId) ? '' : panel.restoredTranscript();
+        const message = transcript ? transcript + '\n---\n\n' + prompt : prompt;
+        const options = {
+          ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
+          ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+        };
+        // Queued-task admission (queue-task.ts): the queued call only holds the turn's
+        // admission slot; the turn itself streams over this socket as usual.
+        sendChatTurn(client, sessionId, message, options)
+          .catch((e: any) => endWithError(`Claude: ${e?.message ?? e}`));
+      };
+
+      forSession(client.onSessionReset, () => {
+        if (resentAfterReset)
+          return endWithError('Claude: the session was lost and could not be restored');
+        resentAfterReset = true;
+        sendPrompt();
       });
+
+      sendPrompt();
     } catch (e: any) {
       panel.clearStreaming();
       grok.shell.error(`Claude runtime: ${e.message}`);
@@ -617,7 +630,7 @@ async function streamOnce(
 let _shellAIPanel: AIPanel | null = null;
 
 export function initAIWindow(): AIPanel | null {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return null;
   if (!_shellAIPanel) {
     _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
@@ -642,7 +655,7 @@ export function setupShellAIPanelUI(): void {
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';
 
 export async function setupTableViewAIPanelUI() {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return;
   const handleView = (tableView: DG.TableView) => {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
@@ -708,7 +721,8 @@ async function runAgentScript(name: string): Promise<void> {
       return;
     AIWindowManager.instance.showPanel(shell);
     shell.resetSession();
-    const workflow = await _package.files.readAsText(`scripts/${name}.md`);
+    const conn = await grok.dapi.connections.filter('name = "My files"').first();
+    const workflow = await grok.dapi.files.readAsText(`${conn.nqName}/agents/scripts/${name}.md`);
     const prompt =
       `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
       `---\n${workflow}\n---`;

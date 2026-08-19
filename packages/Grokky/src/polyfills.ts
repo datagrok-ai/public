@@ -26,6 +26,16 @@
     }
   }
 
+  // Promise.prototype.finally — Chrome 63+
+  const P: any = Promise.prototype;
+  if (!P.finally)
+    P.finally = function (this: Promise<any>, cb: () => void) {
+      return this.then(
+        (v) => Promise.resolve(cb()).then(() => v),
+        (e) => Promise.resolve(cb()).then(() => { throw e; }),
+      );
+    };
+
   // Object.values / Object.entries — Chrome 54+
   const O: any = Object;
   if (!O.values)
@@ -47,6 +57,20 @@
     S.trimStart = S.trimLeft || function (this: string) { return this.replace(/^\s+/, ''); };
   if (!S.trimEnd)
     S.trimEnd = S.trimRight || function (this: string) { return this.replace(/\s+$/, ''); };
+
+  // String.prototype.matchAll — Chrome 73+ (returns an array, which for..of iterates the same way)
+  if (!S.matchAll)
+    S.matchAll = function (this: string, re: RegExp) {
+      const g = re.global ? re : new RegExp(re.source, re.flags + 'g');
+      const out: RegExpExecArray[] = [];
+      let m: RegExpExecArray | null;
+      while ((m = g.exec(this)) !== null) {
+        out.push(m);
+        if (m[0] === '')
+          g.lastIndex++;
+      }
+      return out;
+    };
 
   // Array.prototype.flatMap — Chrome 69+ (Array.prototype.concat already flattens one level of array args)
   const A: any = Array.prototype;
@@ -76,4 +100,9 @@
         this.parentNode.replaceChild(frag, this);
       };
   }
+
+  // SpeechRecognition — Chrome (all versions incl. Dartium) ships only webkitSpeechRecognition
+  const W: any = (typeof window !== 'undefined') ? window : undefined;
+  if (W && !W.SpeechRecognition && W.webkitSpeechRecognition)
+    W.SpeechRecognition = W.webkitSpeechRecognition;
 })();
