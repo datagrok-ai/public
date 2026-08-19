@@ -134,25 +134,17 @@ export const RFVApp = Vue.defineComponent({
       clearUrlInputs();
     };
 
-    let initialRunHandled = false;
+    // Programmatic open (OpenWorkflowRun) passes the id via call.aux, deep links via the start URL
+    let initialRunId = props.initialRunId;
 
     Vue.watch(currentFuncCall, async () => {
-      // Programmatic open (OpenWorkflowRun): the id arrives via call.aux, not the URL.
-      if (props.initialRunId && !initialRunHandled) {
-        initialRunHandled = true;
-        globalThis.initialURLHandled = true;
-        const fc = await historyUtils.loadRun(props.initialRunId);
-        currentFuncCall.value = Vue.markRaw(fc);
+      if (!initialRunId && globalThis.initialURLHandled)
         return;
-      }
-
-      if (globalThis.initialURLHandled)
-        return;
-
-      globalThis.initialURLHandled = true;
 
       const startUrl = new URL(grok.shell.startUri);
-      const loadingId = startUrl.searchParams.get('id');
+      const loadingId = initialRunId ?? startUrl.searchParams.get('id');
+      initialRunId = undefined;
+      globalThis.initialURLHandled = true;
 
       if (loadingId) {
         const fc = await historyUtils.loadRun(loadingId);

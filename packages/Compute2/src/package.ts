@@ -279,7 +279,7 @@ export class PackageFunctions {
   })
   static async OpenWorkflowRun(
     @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
-    const metaCall = await historyUtils.loadRun(id);
+    const metaCall = await historyUtils.shallowLoadRun(id);
     const call = metaCall.func.prepare({});
     call.aux.initialRunId = id;
     call.edit();

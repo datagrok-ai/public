@@ -328,7 +328,8 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     let pendingStepPath: string | null = null;
-    let initialRunHandled = false;
+    // Programmatic open (OpenWorkflowRun) passes the id via call.aux, deep links via the start URL
+    let initialRunId = props.initialRunId;
 
     Vue.watch(treeState, (treeState) => {
       if (!treeState)
@@ -340,21 +341,16 @@ export const TreeWizard = Vue.defineComponent({
         return;
       }
 
-      if (props.initialRunId && !initialRunHandled) {
-        initialRunHandled = true;
-        loadPipeline(props.initialRunId);
-        return;
-      }
-
-      if (globalThis.initialURLHandled)
+      if (!initialRunId && globalThis.initialURLHandled)
         return;
 
       // Getting inital URL user entered with
       const startUrl = new URL(grok.shell.startUri);
+      const loadingId = initialRunId ?? startUrl.searchParams.get('id');
+      pendingStepPath = initialRunId ? null : startUrl.searchParams.get('currentStep');
+      initialRunId = undefined;
       globalThis.initialURLHandled = true;
 
-      const loadingId = startUrl.searchParams.get('id');
-      pendingStepPath = startUrl.searchParams.get('currentStep');
       if (loadingId)
         loadPipeline(loadingId);
       else if (pendingStepPath) {
