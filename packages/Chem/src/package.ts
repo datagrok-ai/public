@@ -622,9 +622,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Descriptors...',
+    'top-menu': 'Chem | Calculate | Descriptors (RDKit)...',
     'name': 'Chemical Descriptors',
-    'description': 'Calculates molecular descriptors for the molecules column',
+    'description': 'Calculates molecular descriptors for the molecules column using RDKit',
     'editor': 'Chem:DescriptorsEditor',
   })
   static async descriptorsDocker(
@@ -2344,9 +2344,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Chemical Properties...',
-    'name': 'Chemical Properties',
-    'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
+    'name': 'Chemical Properties (OCL)',
+    'description': 'Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'role': 'hitTriageFunction,transform'},
   })
   static async addChemPropertiesColumns(
@@ -3112,9 +3111,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'Biochemical Properties',
+    'name': 'Chemical Properties',
     'description': 'Dynamically discovers and executes tagged biochemical calculators',
-    'top-menu': 'Chem | Calculate | Biochemical Properties',
+    'top-menu': 'Chem | Calculate | Chemical Properties...',
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
