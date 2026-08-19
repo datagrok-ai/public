@@ -10,7 +10,9 @@ import {__obs, EventData, EventType, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
-import {FormViewer, Grid, Point, Rect} from "./grid";
+// Must stay type-only: grid.ts has `FormViewer extends Viewer`, so a runtime import closes a
+// cycle and leaves Viewer in the TDZ whenever the bundler emits grid first. Use DG.* below.
+import type {FormViewer, Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
@@ -303,7 +305,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): FormViewer {
-    return new FormViewer(api.grok_Viewer_Form(t.dart, _toJson(options)));
+    return new DG.FormViewer(api.grok_Viewer_Form(t.dart, _toJson(options)));
   }
 
   static markup(t: DataFrame, options?: Partial<interfaces.IMarkupViewerSettings>): Viewer<interfaces.IMarkupViewerSettings> {
@@ -637,10 +639,10 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   }
 
   worldToScreen(x: number, y: number, chartIdx: number): Point {
-    return Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
+    return DG.Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
   }
 
-  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
+  screenToWorld(x: number, y: number): Point { return DG.Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
 
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
@@ -692,11 +694,11 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get yAxisSlider(): RangeSlider { return toJs(api.grok_ScatterPlotViewer_Get_YAxisSlider(this.dart)); }
 
   /** Convert coords */
-  worldToScreen(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
-  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
+  worldToScreen(x: number, y: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
+  screenToWorld(x: number, y: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
 
   /// 32-bit integer with X in the hi 16 bits, and Y in the lo 16 bits
-  pointToScreen(index: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
+  pointToScreen(index: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
 
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
   getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
