@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20631: Fire one open per Workspace row double-click and await the in-flight project preview before opening
 * Add New Column: Fixed "No such column: name" when picking a column in the columns list — the ColumnGrid internal name column is now `__name`, so read it through `ColumnGrid.nameCol` instead of by hardcoded name
 * 23226: Use hasOwnProperty for function-name map lookups in getFunctionNameAtPosition to ignore inherited Object.prototype keys
 * Add New Column: Added an expression-only widget mode (`aux.expressionEditorOnly`) that edits a formula as a value — no Apply button, no preview, and the debounced text published back onto the call so a host can read it through `call.inputParams['expression'].onChanged`
