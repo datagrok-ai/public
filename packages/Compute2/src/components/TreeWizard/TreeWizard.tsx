@@ -703,7 +703,7 @@ export const TreeWizard = Vue.defineComponent({
             onClick={() => guardTreeAction('saving', saveEntireModelState)}
           /> }
           {isTreeLoaded.value && publishFunc != null && <IconFA
-            name='cloud-upload-alt'
+            name='share-alt'
             tooltip={'Publish to program'}
             style={{'padding-right': '3px'}}
             onClick={() => publishCurrentRun()}

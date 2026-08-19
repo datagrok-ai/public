@@ -728,7 +728,7 @@ export const RichFunctionView = Vue.defineComponent({
             onClick={() => emit('saveToHistory', currentCall.value)}
           /> }
           { props.showPublish && !uiBlocked.value && <IconFA
-            name='share-square'
+            name='share-alt'
             tooltip='Publish to program'
             onClick={() => emit('publishRun', currentCall.value)}
           /> }

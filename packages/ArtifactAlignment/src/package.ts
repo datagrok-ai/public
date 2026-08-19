@@ -22,6 +22,7 @@ export function _initArtifactAlignment(): void {
 //name: Artifact Catalog
 //description: Program-aligned catalog of published Compute2 workflow runs
 //tags: app
+//meta.icon: images/catalog.svg
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function artifactCatalogApp(path?: string): Promise<DG.ViewBase> {
