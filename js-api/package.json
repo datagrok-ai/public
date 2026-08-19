@@ -93,9 +93,10 @@
     "link": "npm link",
     "link-all": "npm link @datagrok-libraries/chem-meta",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
-    "build-js-api": "git clean -f -X -d ./src && tsc && webpack",
-    "build": "tsc && webpack",
-    "build-docker": "tsc && webpack --config webpack.config.docker.js",
+    "smoke": "node scripts/smoke-bundle.cjs",
+    "build-js-api": "git clean -f -X -d ./src && tsc && webpack && npm run smoke",
+    "build": "tsc && webpack && npm run smoke",
+    "build-docker": "tsc && webpack --config webpack.config.docker.js && npm run smoke",
     "build-node": "webpack --config webpack.config.node.js",
     "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
   }
