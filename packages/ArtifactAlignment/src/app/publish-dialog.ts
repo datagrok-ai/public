@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {T_ALIGNMENT, T_PROGRAM, T_STUDY} from '../domain/constants';
+import {T_ALIGNMENT, T_COMPOUND, T_PROGRAM, T_PROGRAM_COMPOUND, T_STUDY, T_TAG} from '../domain/constants';
 import {publishWorkflowRun} from '../service/publication-service';
 
 interface ProgramChoice {
@@ -28,10 +28,31 @@ export async function showPublishDialog(source: string | DG.FuncCall, defaultNam
   const studyInput = ui.input.choice<string | null>('Study', {items: [null], value: null});
   const workstreamInput = ui.input.choice('Workstream', {
     items: ['clinical', 'modeling', 'discovery', 'cmc', 'other'], value: 'modeling'});
-  const compoundsInput = ui.input.string('Molecules', {value: '', nullable: true});
-  compoundsInput.setTooltip('Comma-separated registration codes');
-  const tagsInput = ui.input.string('Tags', {value: '', nullable: true});
-  tagsInput.setTooltip('Comma-separated tags');
+  // chips with registry-backed suggestions; empty text suggests the program's own
+  // compounds. allowNew is off — a typo must not mint a new registry compound.
+  let programCompoundCodes: string[] = [];
+  const compoundsInput = ui.input.tags('Molecules', {
+    allowNew: false,
+    getSuggestions: async (text: string) => {
+      const t = text?.trim() ?? '';
+      if (t === '')
+        return programCompoundCodes;
+      const rows = await grok.dapi.domains.table(T_COMPOUND).query({
+        filter: DG.cond('registration_code', 'like', `%${t}%`), sort: 'registration_code', limit: 20});
+      return rows.map((r: any) => r.registration_code);
+    },
+  });
+  compoundsInput.setTooltip('Registration codes from the compound registry');
+  const tagsInput = ui.input.tags('Tags', {
+    allowNew: true,
+    createNewItem: (text: string) => text.trim(),
+    getSuggestions: async (text: string) => {
+      const rows = await grok.dapi.domains.table(T_TAG).query({
+        filter: DG.cond('name', 'like', `%${text?.trim() ?? ''}%`), sort: 'name', limit: 20});
+      return rows.map((r: any) => r.name);
+    },
+  });
+  tagsInput.setTooltip('Existing tags are suggested; a new name creates the tag');
   const pathInput = ui.input.string('Path', {value: '', nullable: true});
   pathInput.setTooltip('Folder-like grouping, e.g. PK/exposure');
   const descriptionInput = ui.input.textArea('Description', {value: ''});
@@ -44,6 +65,15 @@ export async function showPublishDialog(source: string | DG.FuncCall, defaultNam
       filter: [{property: 'program_id', operator: '=', value: currentProgram().id}], sort: 'protocol_code'});
     (studyInput as any).items = [null, ...studies.map((s) => s.protocol_code)];
     studyInput.value = null;
+  };
+
+  const refreshProgramCompounds = async () => {
+    const links = await grok.dapi.domains.table(T_PROGRAM_COMPOUND).query({
+      filter: DG.cond('program_id', '=', currentProgram().id), limit: 100});
+    programCompoundCodes = links.length === 0 ? [] :
+      (await grok.dapi.domains.table(T_COMPOUND).query({
+        filter: DG.or(...links.map((l: any) => DG.cond('id', '=', l.compound_id))), limit: 100}))
+        .map((c: any) => c.registration_code).sort();
   };
 
   const refreshHint = async () => {
@@ -78,14 +108,15 @@ export async function showPublishDialog(source: string | DG.FuncCall, defaultNam
 
   programInput.onChanged.subscribe(() => {
     refreshStudies().then(refreshHint);
+    void refreshProgramCompounds();
   });
   studyInput.onChanged.subscribe(() => refreshHint());
   nameInput.onChanged.subscribe(() => refreshHint());
-  await refreshStudies();
+  await Promise.all([refreshStudies(), refreshProgramCompounds()]);
   await refreshHint();
 
-  const parseList = (value: string | null) =>
-    (value ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  const chips = (value: unknown): string[] =>
+    ((value ?? []) as string[]).map((s) => `${s}`.trim()).filter((s) => s.length > 0);
 
   ui.dialog('Publish to program')
     .add(ui.divV([
@@ -102,8 +133,8 @@ export async function showPublishDialog(source: string | DG.FuncCall, defaultNam
           studyId: await studyIdOf(program.id, studyInput.value),
           name: nameInput.value!.trim(),
           workstream: workstreamInput.value ?? undefined,
-          compounds: parseList(compoundsInput.value),
-          tags: parseList(tagsInput.value),
+          compounds: chips(compoundsInput.value),
+          tags: chips(tagsInput.value),
           path: pathInput.value?.trim() || undefined,
           description: descriptionInput.value?.trim() || undefined,
         });
