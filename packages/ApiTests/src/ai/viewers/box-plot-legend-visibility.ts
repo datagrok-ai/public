@@ -10,7 +10,8 @@ category('AI: Viewers: BoxPlot legend visibility', () => {
   // 'Always' would force the legend on and contradict the hidden-legend assertions below.
   const opts = {valueColumnName: 'age', category1ColumnName: 'race',
     markerColorColumnName: 'race', legendVisibility: 'Auto'};
-  const legendPresent = (v: DG.Viewer): boolean => v.root.querySelector('.d4-legend') != null;
+  const legendPresent = (v: DG.Viewer): boolean => v.root.querySelector('.d4-legend') != null ||
+  (v.root.querySelector('.d4-corner-legend-icon')?.clientWidth ?? 0) > 0;
 
   test('legend hidden when single category equals markerColor column', async () => {
     await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT, opts, async (v) => {

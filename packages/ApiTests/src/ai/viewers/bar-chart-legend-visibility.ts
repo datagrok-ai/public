@@ -4,7 +4,8 @@ import {demog, expectLook, until, wait, withAttachedViewer} from '../helpers';
 
 // BarChart auto legend is suppressed when stack column equals split column (would duplicate the X axis).
 category('AI: Viewers: BarChart legend visibility', () => {
-  const legendPresent = (v: DG.Viewer): boolean => v.root.querySelector('.d4-legend') != null;
+  const legendPresent = (v: DG.Viewer): boolean => v.root.querySelector('.d4-legend') != null ||
+    (v.root.querySelector('.d4-corner-legend-icon')?.clientWidth ?? 0) > 0;
 
   test('legend hidden when stack column equals split column', async () => {
     await withAttachedViewer<DG.BarChartViewer>(demog(), DG.VIEWER.BAR_CHART,
