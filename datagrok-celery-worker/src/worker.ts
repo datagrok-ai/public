@@ -27,13 +27,14 @@ async function main(): Promise<void> {
     `${settings.packageVersion ? ` v${settings.packageVersion}` : ''}` +
     `, queue '${settings.taskQueueName}', hostname '${settings.celeryHostname}'`);
 
-  const health = startHealthServer(settings.healthPort);
   const publisher = new FanoutPublisher(settings.brokerUrl);
   const revoked = new RevokedSet();
   const host = new PackageHost(settings);
   const runner = new TaskRunner(settings, publisher, host);
-  const pidbox = new PidboxConsumer(settings, publisher, revoked, () => runner.current);
+  const pidbox = new PidboxConsumer(settings, publisher, revoked, (taskId) => runner.get(taskId));
   const consumer = new CeleryConsumer(settings, publisher, revoked, (call) => runner.run(call));
+  const health = startHealthServer(settings.healthPort,
+    () => ({'running': consumer.inFlightCount, 'capacity': settings.maxConcurrentTasks}));
 
   await pidbox.start();
   await consumer.start();
@@ -47,7 +48,7 @@ async function main(): Promise<void> {
     try {
       await consumer.stopConsuming();
       if (!await consumer.waitForIdle(SHUTDOWN_WAIT_MS))
-        logError(`In-flight task did not finish within ${SHUTDOWN_WAIT_MS} ms, exiting anyway`);
+        logError(`In-flight tasks did not finish within ${SHUTDOWN_WAIT_MS} ms, exiting anyway`);
       await consumer.close();
       await pidbox.close();
       await publisher.close();
