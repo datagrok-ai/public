@@ -3,10 +3,10 @@
    input bridge and its depiction through drawMolecule, and contains no chemistry itself. */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {Input} from '../core/input-base.js';
-import {ObjectRenderer} from '../core/object-renderer.js';
+import {Input} from '../../core/input-base.js';
+import {ObjectRenderer} from '../../core/object-renderer.js';
 import {fromDartInput} from './from-dart-input.js';
-import {Editors} from './editors.js';
+import {Editors} from '../forms/editors.js';
 
 /** The platform's molecule editor (sketcher-backed, whatever backend the deployment runs) as a
  * u2 `Input<string>` over the molecule string — form validity, label alignment and the value

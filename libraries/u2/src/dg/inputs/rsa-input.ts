@@ -3,10 +3,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {Input, InputOptions} from '../core/input-base.js';
-import {button, span} from '../core/elements.js';
-import {TextInput} from '../components/inputs/text-input.js';
-import {buttonWithIcon} from '../components/actions/buttons.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import {button, span} from '../../core/elements.js';
+import {TextInput} from '../../components/inputs/text-input.js';
+import {buttonWithIcon} from '../../components/actions/buttons.js';
 import {dropZone} from './file-input.js';
 
 export interface RsaInputOptions extends InputOptions<string | null> {

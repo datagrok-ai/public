@@ -13,7 +13,7 @@ function injectOnce(id, href) {
 injectOnce('u2-elements-css', '../../css/elements.css');
 injectOnce('u2-typeahead-css', '../../css/typeahead.css');
 
-// platform-free stand-ins for DG.User — the same shape src/dg/user-input.ts renders
+// platform-free stand-ins for DG.User — the same shape src/dg/inputs/user-input.ts renders
 const FIRST = ['Ada', 'Bruno', 'Chen', 'Dmitri', 'Elena', 'Farid', 'Grace', 'Hugo', 'Iris', 'Jonas',
   'Klara', 'Liam', 'Maya', 'Nikolai', 'Olga', 'Pavel', 'Quinn', 'Rosa', 'Sofia', 'Tomas',
   'Ulrich', 'Vera', 'Wanda', 'Xenia', 'Yusuf', 'Zara', 'Anton', 'Bianca', 'Cyril', 'Dana'];

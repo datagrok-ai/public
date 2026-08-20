@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
-import {propertyForm, objectForm, inputForProperty, PlatformInputs} from '../src/dg/object-form.js';
+import {propertyForm, objectForm, inputForProperty, PlatformInputs} from '../src/dg/forms/object-form.js';
 import {QNum} from '../src/core/qnum.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */

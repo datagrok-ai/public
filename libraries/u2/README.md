@@ -31,7 +31,12 @@ src/components/    platform-free controls, by role — the same vocabulary as th
   display/         icon, badge, progress, async-view
 src/spec/          dg-ui/1 document: renderer, registry, patch engine, binding paths
 src/sources/       the data sources a spec can declare (platform-free, behind `backends`)
-src/dg/            the platform layer — the only code that imports datagrok-api; `dg/designer/` is the visual designer
+src/dg/            the platform layer — the only code that imports datagrok-api
+  inputs/          platform-bound inputs (file, files, user, molecule, meta, rsa, column and table pickers) and the two Dart bridges
+  forms/           object-form, property-editor, the Editors registry
+  entities/        entity chips/cards, column rendering, dapi-backed sources
+  shell/           app-view, widget-host, platformContext, the sources' backends
+  designer/        the visual designer
 css/               one sheet per component, flat — imported by path from packages
 ```
 

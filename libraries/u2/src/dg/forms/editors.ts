@@ -2,8 +2,8 @@
    by ObjectForm before `editors: 'auto'` and the generated editors, so semType-specific inputs
    (molecule, sequence…) plug in without the generator learning any domain. Structural on
    purpose — platform-bound editors register themselves from their own modules. */
-import {Input, InputOptions} from '../core/input-base.js';
-import type {PropertyLike} from '../core/property-like.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import type {PropertyLike} from '../../core/property-like.js';
 
 export interface EditorRule {
   match(prop: PropertyLike): boolean;

@@ -3,7 +3,7 @@
    read by the writable panel and the read-only one alike. */
 import {Component} from '../../core/component.js';
 import type {PropertyLike} from '../../core/property-like.js';
-import type {FieldOverride} from '../object-form.js';
+import type {FieldOverride} from '../forms/object-form.js';
 import {htmlProps, isHtmlTag} from '../../spec/spec.js';
 import type {SpecEventEntry, SpecNode} from '../../spec/spec.js';
 import {backends} from '../../sources/backends.js';

@@ -3,10 +3,10 @@
    `FileInfo` (port of `file_input.dart`). */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Input, InputOptions} from '../core/input-base.js';
-import {signal, Signal} from '../core/signals.js';
-import {AsyncSource, AsyncState} from '../core/async-source.js';
-import {iconButton} from '../components/actions/buttons.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import {signal, Signal} from '../../core/signals.js';
+import {AsyncSource, AsyncState} from '../../core/async-source.js';
+import {iconButton} from '../../components/actions/buttons.js';
 
 export type FileInputMode = 'file' | 'folder' | 'any';
 

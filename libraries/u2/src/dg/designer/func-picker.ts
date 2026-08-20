@@ -10,9 +10,9 @@ import {TextInput} from '../../components/inputs/text-input.js';
 import {div, divV, span} from '../../core/elements.js';
 import {Scope} from '../../core/scope.js';
 import type {PropertyLike} from '../../core/property-like.js';
-import {propertyForm} from '../object-form.js';
-import {handlerRenderer} from '../entity.js';
-import type {HandlerRenderer} from '../entity.js';
+import {propertyForm} from '../forms/object-form.js';
+import {handlerRenderer} from '../entities/entity.js';
+import type {HandlerRenderer} from '../entities/entity.js';
 import type {SpecEventEntry, SpecInstance} from '../../spec/spec.js';
 import {bindPicker, bindPickerButton} from './bind-picker.js';
 

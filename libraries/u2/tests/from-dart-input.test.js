@@ -1,6 +1,6 @@
 /* Inbound bridge tests. datagrok-api cannot load in node, so the platform input here is a minimal
    fake of the `DartInputLike` shape the bridge consumes — a real `DG.InputBase` satisfies it
-   structurally (checked at compile time by src/dg/object-form.ts's auto mode) — and the core's
+   structurally (checked at compile time by src/dg/forms/object-form.ts's auto mode) — and the core's
    validation surface is faked through the same globals the bridge feature-detects. */
 
 import {test} from 'node:test';
@@ -9,8 +9,8 @@ import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Form} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
-import {fromDartInput, PlatformInput} from '../src/dg/from-dart-input.js';
-import {propertyForm} from '../src/dg/object-form.js';
+import {fromDartInput, PlatformInput} from '../src/dg/inputs/from-dart-input.js';
+import {propertyForm} from '../src/dg/forms/object-form.js';
 
 /** Every test runs against a clean document, without leftover globals, and must leave the
  * live-scope count where it was. */

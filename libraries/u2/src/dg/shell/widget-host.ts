@@ -4,9 +4,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Observable, Subscription} from 'rxjs';
-import {Control} from '../core/component.js';
-import type {PropertyLike} from '../core/property-like.js';
-import type {FuncLike, WidgetLike} from '../core/widget-like.js';
+import {Control} from '../../core/component.js';
+import type {PropertyLike} from '../../core/property-like.js';
+import type {FuncLike, WidgetLike} from '../../core/widget-like.js';
 
 const _conformance: WidgetLike = null! as unknown as DG.Widget;
 

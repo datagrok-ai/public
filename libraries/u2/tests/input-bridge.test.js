@@ -10,11 +10,11 @@ import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {NumberInput} from '../src/components/inputs/number-input.js';
 import {ChoiceInput} from '../src/components/inputs/choice-input.js';
-import {inputForProperty} from '../src/dg/object-form.js';
+import {inputForProperty} from '../src/dg/forms/object-form.js';
 
 register('./dg-stub.mjs', import.meta.url);
-const {asDartInput, dartInputFor} = await import('../src/dg/input-bridge.js');
-const {fileInput} = await import('../src/dg/file-input.js');
+const {asDartInput, dartInputFor} = await import('../src/dg/inputs/input-bridge.js');
+const {fileInput} = await import('../src/dg/inputs/file-input.js');
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
 function bridge(name, body) {

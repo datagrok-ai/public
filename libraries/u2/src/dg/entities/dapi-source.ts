@@ -1,7 +1,7 @@
 /* Server collections as async-control sources. Structural on purpose: nothing here imports
    datagrok-api, so a real `grok.dapi.*` source and a headless fake are equally acceptable. */
-import {AsyncFetch} from '../core/async-source.js';
-import {AsyncPager} from '../core/pager.js';
+import {AsyncFetch} from '../../core/async-source.js';
+import {AsyncPager} from '../../core/pager.js';
 
 /** What the adapter needs from `HttpDataSource<T>`; every `grok.dapi.*` source satisfies it. */
 export interface DapiSourceLike<T> {

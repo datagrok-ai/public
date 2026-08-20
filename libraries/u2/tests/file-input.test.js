@@ -11,7 +11,7 @@ import {Scope} from '../src/core/scope.js';
 import {Entity, FileInfo} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
-const {FileInput, fileInput} = await import('../src/dg/file-input.js');
+const {FileInput, fileInput} = await import('../src/dg/inputs/file-input.js');
 const grok = await import('datagrok-api/grok');
 
 const DEBOUNCE = 300;

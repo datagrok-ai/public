@@ -10,7 +10,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 
 register('./dg-stub.mjs', import.meta.url);
-const {filesInput} = await import('../src/dg/files-input.js');
+const {filesInput} = await import('../src/dg/inputs/files-input.js');
 const grok = await import('datagrok-api/grok');
 
 function filesTest(name, body) {

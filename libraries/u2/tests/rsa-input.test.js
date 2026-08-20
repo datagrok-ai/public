@@ -9,7 +9,7 @@ import {Scope} from '../src/core/scope.js';
 import {Entity, UnreadableFileInfo} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
-const {RsaInput, rsaInput} = await import('../src/dg/rsa-input.js');
+const {RsaInput, rsaInput} = await import('../src/dg/inputs/rsa-input.js');
 const grok = await import('datagrok-api/grok');
 const DG = await import('datagrok-api/dg');
 const {drops} = await import('datagrok-api/ui');

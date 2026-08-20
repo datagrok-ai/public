@@ -1,7 +1,7 @@
 /* The introspection surface every platform widget answers — properties, functions, events, an AI
    briefing and a status snapshot (DD7). Mirrored structurally, as `PropertyLike` and
    `DartInputLike` are, so the core stays platform-free while a hosted component IS a `DG.Widget`;
-   src/dg/widget-host.ts asserts at compile time that the real interface satisfies this one. */
+   src/dg/shell/widget-host.ts asserts at compile time that the real interface satisfies this one. */
 import type {PropertyLike} from './property-like.js';
 import type {Signal} from './signals.js';
 

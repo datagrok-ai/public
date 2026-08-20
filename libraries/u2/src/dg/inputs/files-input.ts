@@ -3,10 +3,10 @@
    `FileInfo`. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Input, InputOptions} from '../core/input-base.js';
-import {signal, Signal} from '../core/signals.js';
-import {ProgressBar} from '../components/display/progress.js';
-import {iconButton} from '../components/actions/buttons.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import {signal, Signal} from '../../core/signals.js';
+import {ProgressBar} from '../../components/display/progress.js';
+import {iconButton} from '../../components/actions/buttons.js';
 import {dropZone} from './file-input.js';
 
 export interface FilesInputOptions extends InputOptions<DG.FileInfo[]> {

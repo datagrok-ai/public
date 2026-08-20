@@ -7,11 +7,11 @@
    bound property are not safely mutable, so the caller rebuilds instead
    (`DG.Property.fromOptions`) — see plan.md §5. */
 import type {IProperty} from 'datagrok-api/dg';
-import {Control} from '../core/component.js';
-import {Scope} from '../core/scope.js';
-import {signal, Signal} from '../core/signals.js';
+import {Control} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
+import {signal, Signal} from '../../core/signals.js';
 import {ObjectForm, propertyForm} from './object-form.js';
-import type {PropertyLike} from '../core/property-like.js';
+import type {PropertyLike} from '../../core/property-like.js';
 
 /** The types the editor offers, and the ones the convergence matrix covers (plan.md §"full input
  * matrix"). */

@@ -2,7 +2,7 @@
    Type skeleton only — the source implementations and the dg filling arrive with WO-14. */
 import type {PropertyLike} from '../core/property-like.js';
 import type {ObservableLike} from '../core/widget-like.js';
-import type {DapiPagerSourceLike} from '../dg/dapi-source.js';
+import type {DapiPagerSourceLike} from '../dg/entities/dapi-source.js';
 import type {DataFrameLike} from './df-bindings.js';
 
 export interface FuncDescriptorLike {

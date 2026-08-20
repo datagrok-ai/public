@@ -11,7 +11,7 @@ import {Property} from './platform-doubles.mjs';
 register('./dg-stub.mjs', import.meta.url);
 
 const DG = await import('datagrok-api/dg');
-await import('../src/dg/source-backends.js');
+await import('../src/dg/shell/source-backends.js');
 const {backends} = await import('../src/sources/backends.js');
 
 /** A query that reports the cap it was actually executed under, after an await. */

@@ -4,7 +4,7 @@
 import {signal, computed, Signal} from '../core/signals.js';
 import {Component} from '../core/component.js';
 import {AsyncPager} from '../core/pager.js';
-import {dapiPager, sanitizeFilterValue} from '../dg/dapi-source.js';
+import {dapiPager, sanitizeFilterValue} from '../dg/entities/dapi-source.js';
 import {backends, requireBackend} from './backends.js';
 import {text} from '../core/text.js';
 import {subBind} from './sub-bind.js';

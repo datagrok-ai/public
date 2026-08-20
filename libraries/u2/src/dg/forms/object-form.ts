@@ -2,28 +2,28 @@
    per-field overrides. Everything the generator reads off a property is declared by PropertyLike,
    which DG.Property satisfies structurally; the platform itself is only reached by `editors:
    'auto'`, through the global the bundler binds `datagrok-api/dg` to. */
-import {batch} from '../core/signals.js';
-import type {PropertyLike} from '../core/property-like.js';
-import {Input, InputOptions} from '../core/input-base.js';
-import {text} from '../core/text.js';
-import {Form} from '../components/forms/form.js';
-import {TextInput} from '../components/inputs/text-input.js';
-import {NumberInput, NumberInputOptions} from '../components/inputs/number-input.js';
-import {BigIntInput} from '../components/inputs/bigint-input.js';
-import {QNumInput} from '../components/inputs/qnum-input.js';
-import {BoolInput} from '../components/inputs/bool-input.js';
-import {ChoiceInput, MultiChoiceInput} from '../components/inputs/choice-input.js';
-import {DateTimeInput} from '../components/inputs/date-input.js';
-import {TextArea} from '../components/inputs/text-input.js';
-import {RadioInput} from '../components/inputs/radio-input.js';
-import {ColorInput} from '../components/inputs/color-input.js';
-import {FontInput} from '../components/inputs/font-input.js';
-import {ImageInput} from '../components/inputs/image-input.js';
-import {TagsInput} from '../components/inputs/tags-input.js';
-import {SliderInput} from '../components/inputs/slider-input.js';
-import {ListInput} from '../components/inputs/list-input.js';
-import {MapInput} from '../components/inputs/map-input.js';
-import {fromDartInput} from './from-dart-input.js';
+import {batch} from '../../core/signals.js';
+import type {PropertyLike} from '../../core/property-like.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import {text} from '../../core/text.js';
+import {Form} from '../../components/forms/form.js';
+import {TextInput} from '../../components/inputs/text-input.js';
+import {NumberInput, NumberInputOptions} from '../../components/inputs/number-input.js';
+import {BigIntInput} from '../../components/inputs/bigint-input.js';
+import {QNumInput} from '../../components/inputs/qnum-input.js';
+import {BoolInput} from '../../components/inputs/bool-input.js';
+import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
+import {DateTimeInput} from '../../components/inputs/date-input.js';
+import {TextArea} from '../../components/inputs/text-input.js';
+import {RadioInput} from '../../components/inputs/radio-input.js';
+import {ColorInput} from '../../components/inputs/color-input.js';
+import {FontInput} from '../../components/inputs/font-input.js';
+import {ImageInput} from '../../components/inputs/image-input.js';
+import {TagsInput} from '../../components/inputs/tags-input.js';
+import {SliderInput} from '../../components/inputs/slider-input.js';
+import {ListInput} from '../../components/inputs/list-input.js';
+import {MapInput} from '../../components/inputs/map-input.js';
+import {fromDartInput} from '../inputs/from-dart-input.js';
 import {Editors} from './editors.js';
 
 type DgApi = typeof import('datagrok-api/dg');

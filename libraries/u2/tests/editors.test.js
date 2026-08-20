@@ -6,8 +6,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope, TextInput} from '../src/index.js';
-import {Editors} from '../src/dg/editors.js';
-import {propertyForm} from '../src/dg/object-form.js';
+import {Editors} from '../src/dg/forms/editors.js';
+import {propertyForm} from '../src/dg/forms/object-form.js';
 
 function smoke(name, body) {
   test(name, async () => {

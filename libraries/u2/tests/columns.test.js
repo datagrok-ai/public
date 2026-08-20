@@ -1,4 +1,4 @@
-/* The columns family (src/dg/columns.ts) over the stub in tests/platform-stub.mjs: the ported
+/* The columns family (src/dg/inputs/columns.ts) over the stub in tests/platform-stub.mjs: the ported
    aggregation rules, the summary label and the anchored selection popup of columnsInput, the
    per-key pickers of columnsMapInput, and the aggregation rows. Tables are the getter-backed
    frames of tests/platform-doubles.mjs. */
@@ -13,7 +13,7 @@ import {DataFrame} from './platform-doubles.mjs';
 
 register('./platform-stub.mjs', import.meta.url);
 const {columnsInput, columnsMapInput, aggregatedColumnsInput, aggregationsFor, defaultAggregation} =
-  await import('../src/dg/columns.js');
+  await import('../src/dg/inputs/columns.js');
 
 function columns(name, body) {
   test(name, async () => {

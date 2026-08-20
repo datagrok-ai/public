@@ -1,4 +1,4 @@
-/* Platform pickers (src/dg/pickers.ts) and the column renderer (src/dg/column-renderer.ts) over
+/* Platform pickers (src/dg/inputs/pickers.ts) and the column renderer (src/dg/entities/column-renderer.ts) over
    the shell stub in tests/platform-stub.mjs: the live item lists, the rich column picker, and the
    renderer's glyph/semType/unknown-name rows. The tables are the getter-backed frames of
    tests/platform-doubles.mjs. */
@@ -13,8 +13,8 @@ import {DataFrame} from './platform-doubles.mjs';
 register('./platform-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
 const {Input} = await import('../src/core/input-base.js');
-const {columnInput, tableInput, tablesInput, ColumnPicker} = await import('../src/dg/pickers.js');
-const {columnRenderer} = await import('../src/dg/column-renderer.js');
+const {columnInput, tableInput, tablesInput, ColumnPicker} = await import('../src/dg/inputs/pickers.js');
+const {columnRenderer} = await import('../src/dg/entities/column-renderer.js');
 
 function picker(name, body) {
   test(name, async () => {

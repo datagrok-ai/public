@@ -4,9 +4,9 @@
    what a Datagrok function or a dapi collection actually is. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {backends, FuncDescriptorLike} from '../sources/backends.js';
-import type {DataFrameLike} from '../sources/df-bindings.js';
-import type {DapiPagerSourceLike} from './dapi-source.js';
+import {backends, FuncDescriptorLike} from '../../sources/backends.js';
+import type {DataFrameLike} from '../../sources/df-bindings.js';
+import type {DapiPagerSourceLike} from '../entities/dapi-source.js';
 
 type Collection = () => DapiPagerSourceLike<unknown>;
 

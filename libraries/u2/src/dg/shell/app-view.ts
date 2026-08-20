@@ -3,8 +3,8 @@
    reaches, which is why components passed as chrome are disposed with the content instead. */
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {Control} from '../core/component.js';
-import {Signal, ReadonlySignal, rawEffect} from '../core/signals.js';
+import {Control} from '../../core/component.js';
+import {Signal, ReadonlySignal, rawEffect} from '../../core/signals.js';
 import {host} from './widget-host.js';
 
 type ChromeItem = Control | HTMLElement;

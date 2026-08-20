@@ -1,7 +1,7 @@
 /* host(): a u2 component hosted as a real DG.Widget (DD7). `DG.Widget`, `DG.Property` and
    `grok.functions.register` come from tests/dg-stub.mjs — the platform contract, nothing more;
    everything under test is the shipped module. The compile-time half of the convergence (that
-   DG.Widget satisfies WidgetLike) is asserted by tsc in src/dg/widget-host.ts. */
+   DG.Widget satisfies WidgetLike) is asserted by tsc in src/dg/shell/widget-host.ts. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import {Scope} from '../src/core/scope.js';
 import {Control} from '../src/core/component.js';
 
 register('./dg-stub.mjs', import.meta.url);
-const {host, U2Widget} = await import('../src/dg/widget-host.js');
+const {host, U2Widget} = await import('../src/dg/shell/widget-host.js');
 const DG = await import('datagrok-api/dg');
 const grok = await import('datagrok-api/grok');
 

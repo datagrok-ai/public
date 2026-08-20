@@ -3,12 +3,12 @@
    inputs plain `ChoiceInput`s that serialize, bind and validate like any other. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Input, InputOptions} from '../core/input-base.js';
-import {Control} from '../core/component.js';
-import {ChoiceInput, MultiChoiceInput} from '../components/inputs/choice-input.js';
-import {TypeAhead} from '../components/inputs/typeahead.js';
-import {iconButton} from '../components/actions/buttons.js';
-import {columnRenderer} from './column-renderer.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import {Control} from '../../core/component.js';
+import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
+import {TypeAhead} from '../../components/inputs/typeahead.js';
+import {iconButton} from '../../components/actions/buttons.js';
+import {columnRenderer} from '../entities/column-renderer.js';
 
 export interface ColumnInputOptions {
   filter?: (column: DG.Column) => boolean;

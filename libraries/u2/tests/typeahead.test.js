@@ -1,6 +1,6 @@
 /* TypeAhead: sync filtering with a custom row renderer, keyboard picking, selection/text
    coupling, and the async loading/error/retry states driven by hand-resolved promises.
-   `userInput` (src/dg/user-input.ts) is not covered here — it imports datagrok-api, which does
+   `userInput` (src/dg/inputs/user-input.ts) is not covered here — it imports datagrok-api, which does
    not load headless; it is exercised in the platform gallery instead. */
 
 import {test} from 'node:test';

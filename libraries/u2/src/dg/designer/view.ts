@@ -19,7 +19,7 @@ import {registry as globalRegistry} from '../../spec/registry.js';
 import type {Registry} from '../../spec/registry.js';
 import {SpecEditor} from '../../spec/editor.js';
 import type {AppliedPatch, SpecPatch} from '../../spec/editor.js';
-import {appView} from '../app-view.js';
+import {appView} from '../shell/app-view.js';
 import {disposePanel} from './handler.js';
 import {accepts} from './dnd.js';
 import {makeDesignerDroppable} from './drop.js';

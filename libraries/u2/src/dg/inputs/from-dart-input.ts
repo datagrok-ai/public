@@ -1,8 +1,8 @@
 /* Platform inputs inside u2 — the inbound half of the input bridge (core/docs/features/ui2/
    INTEROP.md). Structural on purpose: nothing here imports datagrok-api, so a real `DG.InputBase`
    and a headless fake are equally acceptable. */
-import {Input, InputOptions} from '../core/input-base.js';
-import {signal, Signal} from '../core/signals.js';
+import {Input, InputOptions} from '../../core/input-base.js';
+import {signal, Signal} from '../../core/signals.js';
 
 /** Everything the bridge reads off a platform input; `DG.InputBase` satisfies it structurally. */
 export interface DartInputLike<T = unknown> {

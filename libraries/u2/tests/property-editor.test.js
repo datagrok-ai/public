@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {propertyEditor} from '../src/dg/property-editor.js';
+import {propertyEditor} from '../src/dg/forms/property-editor.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
 function editorTest(name, body) {

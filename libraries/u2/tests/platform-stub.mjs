@@ -1,5 +1,5 @@
 /* Module hooks that serve minimal `datagrok-api/grok` and `datagrok-api/dg` modules to node, so
-   the platform-bound pickers and column selectors (src/dg/pickers.ts, src/dg/columns.ts) load
+   the platform-bound pickers and column selectors (src/dg/inputs/pickers.ts, src/dg/inputs/columns.ts) load
    headlessly. Same idea as tests/dg-stub.mjs, which serves the input bridge's slice of the API;
    this one serves the shell (open tables + their events) and the enums the column modules read.
 
