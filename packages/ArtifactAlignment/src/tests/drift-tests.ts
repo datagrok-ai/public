@@ -1,16 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {driftCheck} from '../service/drift-check';
-import {publishWorkflowRun} from '../service/publication-service';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram} from './fixtures';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, publishRun} from './fixtures';
 
 category('ArtifactAlignment: drift check', () => {
   test('healthy catalog reports no findings for its publications', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Healthy'});
-    await publishWorkflowRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Healthy'});
+    await publishRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Healthy'});
     const findings = await driftCheck();
     expect(findings.filter((f) => f.publicationId === v1.publicationId).length, 0,
       JSON.stringify(findings));

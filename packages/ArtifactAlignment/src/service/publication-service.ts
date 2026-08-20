@@ -111,6 +111,7 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
   if (source == null)
     throw new Error('Either sourceCall or sourceMetaCallId is required');
   const groups = await getProgramGroups(req.programId);
+  await requireProgramWriter(groups, 'publish into');
   const key = keyFilter(req.programId, req.studyId, req.name);
 
   const liveByKey = await alignment().query({filter: key, expand: ['tags', 'compounds']});
@@ -224,10 +225,27 @@ export async function rejectPublication(rowId: string, reason: string,
   });
 }
 
+/** Per-program write authority: transitive membership in the program's
+ * contributors or approvers group — the same groups the program row's Edit is
+ * shared to. Resolved through the acting user's session (holds under
+ * impersonation, unlike DomainRow.permissions(), whose client-side admin
+ * fast-path always answers true in an admin browser session). The table-level
+ * umbrella grants are wider (a master-row-scoped write predicate is a core
+ * ask), so the services enforce per-program isolation themselves. */
+async function requireProgramWriter(
+  groups: {contributors: DG.Group | null, approvers: DG.Group | null}, action: string): Promise<void> {
+  if (!await currentUserIn(groups.contributors) && !await currentUserIn(groups.approvers))
+    throw new Error(`Only members of the program contributors or approvers groups can ${action} it`);
+}
+
 /** Post-publish curation: retags/moves a live version row. Requires Edit on the
- * curation columns (contributors umbrella) plus Edit on the program row. */
+ * curation columns (contributors umbrella) plus program-group membership. */
 export async function updateCuration(rowId: string,
   curation: {tags?: string[], path?: string}): Promise<void> {
+  const row = await alignment().get(rowId);
+  if (row == null)
+    throw new Error(`Version row ${rowId} not found`);
+  await requireProgramWriter(await getProgramGroups(row.program_id), 'curate rows of');
   const values: any = {};
   if (curation.tags != null)
     values.tags = await ensureRegistryRows(T_TAG, curation.tags, 'name');

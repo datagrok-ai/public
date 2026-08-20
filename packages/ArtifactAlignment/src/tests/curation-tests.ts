@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {T_ALIGNMENT} from '../domain/constants';
 import {
-  discover, getLiveVersions, publishWorkflowRun, updateCuration,
+  discover, getLiveVersions, updateCuration,
 } from '../service/publication-service';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram} from './fixtures';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, publishRun} from './fixtures';
 
 category('ArtifactAlignment: curation', () => {
   const alignment = () => grok.dapi.domains.table(T_ALIGNMENT);
@@ -13,7 +13,7 @@ category('ArtifactAlignment: curation', () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const marker = `t${Date.now()}`;
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Curated',
       tags: [`${marker}-pk`, `${marker}-final`], compounds: [`GRK-${marker}`], path: 'PK/exposure',
     });
@@ -48,7 +48,7 @@ category('ArtifactAlignment: curation', () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const marker = `u${Date.now()}`;
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Retagged',
       tags: [`${marker}-old`], path: 'PK/old',
     });
@@ -62,12 +62,12 @@ category('ArtifactAlignment: curation', () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const marker = `f${Date.now()}`;
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Fwd',
       tags: [`${marker}-carried`], path: 'PK/carried', workstream: 'clinical',
     });
     await updateCuration(v1.rowId, {path: 'PK/edited'});
-    const v2 = await publishWorkflowRun({
+    const v2 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Fwd'});
     const row: any = (await getLiveVersions(v2.publicationId)).find((r: any) => r.revision === 2);
     expect(row.path, 'PK/edited', 'path must carry forward from the latest live version');
@@ -79,11 +79,11 @@ category('ArtifactAlignment: curation', () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const marker = `s${Date.now()}`;
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Snap',
       tags: [`${marker}-a`, `${marker}-b`], compounds: [`GRK-${marker}`],
     });
-    await publishWorkflowRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Snap'});
+    await publishRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Snap'});
     const {getPublicationHistory} = await import('../service/publication-service');
     const archived = (await getPublicationHistory(v1.publicationId))[0];
     expect(archived.tags_snapshot?.split(',').sort().join(','), `${marker}-a,${marker}-b`);
@@ -97,7 +97,7 @@ category('ArtifactAlignment: curation', () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const marker = `m${Date.now()}`;
-    await publishWorkflowRun({
+    await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'MultiValue',
       tags: [`${marker}-x`, `${marker}-y`], compounds: [`GRK-${marker}`],
     });
@@ -117,7 +117,7 @@ category('ArtifactAlignment: curation', () => {
   test('discovery slice carries curation for facet-driven reuse pickers', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    await publishWorkflowRun({
+    await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Slice', path: 'PK/x'});
     const slice = await discover(program.id);
     expect(slice.length, 1);

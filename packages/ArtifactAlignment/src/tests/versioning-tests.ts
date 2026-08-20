@@ -3,10 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {T_ALIGNMENT} from '../domain/constants';
 import {
-  approvePublication, discover, getLiveVersions, getPublicationHistory,
-  publishWorkflowRun, rejectPublication,
+  approvePublication, discover, getLiveVersions, getPublicationHistory, rejectPublication,
 } from '../service/publication-service';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram, makeTestStudy} from './fixtures';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, makeTestStudy, publishRun} from './fixtures';
 
 category('ArtifactAlignment: versioning', () => {
   const alignment = () => grok.dapi.domains.table(T_ALIGNMENT);
@@ -14,7 +13,7 @@ category('ArtifactAlignment: versioning', () => {
   test('first publish auto-approves and is discoverable', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'First',
       workstream: 'modeling',
     });
@@ -30,9 +29,9 @@ category('ArtifactAlignment: versioning', () => {
   test('republish under the same key bumps the revision and archives the old version on approval', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Repub'});
-    const v2 = await publishWorkflowRun({
+    const v2 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Repub'});
     expect(v1.publicationId, v2.publicationId, 'same key must address the same publication');
     expect(v2.revision, 2);
@@ -49,9 +48,9 @@ category('ArtifactAlignment: versioning', () => {
   test('latest-approved-stays-live — a pending update never affects the audience', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Stays'});
-    const v2 = await publishWorkflowRun({
+    const v2 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Stays', skipAutoApprove: true});
     expect(v2.status, 'pending');
     const live = await getLiveVersions(v1.publicationId);
@@ -69,14 +68,14 @@ category('ArtifactAlignment: versioning', () => {
   test('rejection leaves the approved version untouched; resubmission archives the rejected draft', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Rej'});
-    const v2 = await publishWorkflowRun({
+    const v2 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Rej', skipAutoApprove: true});
     await rejectPublication(v2.rowId, 'wrong cohort', {auto: true});
     const discovered = await discover(program.id);
     expect(discovered[0].revision, 1, 'audience keeps seeing v1 after the rejection');
-    const v3 = await publishWorkflowRun({
+    const v3 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Rej', skipAutoApprove: true});
     expect(v3.revision, 3);
     const archived = await getPublicationHistory(v1.publicationId);
@@ -90,9 +89,9 @@ category('ArtifactAlignment: versioning', () => {
     const program = await makeTestProgram();
     const study = await makeTestStudy(program.id);
     const run = await makeSavedRun();
-    const noStudy = await publishWorkflowRun({
+    const noStudy = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Keyed'});
-    const withStudy = await publishWorkflowRun({
+    const withStudy = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, studyId: study.id, name: 'Keyed'});
     expect(noStudy.publicationId === withStudy.publicationId, false);
     expect(withStudy.revision, 1);
@@ -102,7 +101,7 @@ category('ArtifactAlignment: versioning', () => {
   test('server-enforced singleton — a second pending row of the same publication is rejected', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Singleton', skipAutoApprove: true});
     let error: any = null;
     try {
@@ -119,9 +118,9 @@ category('ArtifactAlignment: versioning', () => {
   test('approve flip is blocked while another approved row is live (direct write)', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    await publishWorkflowRun({
+    await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Flip'});
-    const v2 = await publishWorkflowRun({
+    const v2 = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Flip', skipAutoApprove: true});
     let error: any = null;
     try {

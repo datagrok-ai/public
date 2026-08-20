@@ -7,13 +7,19 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {cloneRun} from '../service/clone-service';
 import {OPT_FROZEN, OPT_PUBLICATION_ID} from '../domain/constants';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram} from './fixtures';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, trackCalls} from './fixtures';
+
+async function trackedClone(...args: Parameters<typeof cloneRun>): ReturnType<typeof cloneRun> {
+  const clone = await cloneRun(...args);
+  trackCalls(clone.metaCall.id);
+  return clone;
+}
 
 category('ArtifactAlignment: clone', () => {
   test('workflow freeze saves a stamped meta call over the shared config', async () => {
     const run = await makeSavedRun(4);
     const publicationId = crypto.randomUUID();
-    const clone = await cloneRun(run.metaCallId, {publicationId, title: 'Frozen v1'});
+    const clone = await trackedClone(run.metaCallId, {publicationId, title: 'Frozen v1'});
 
     expect(clone.metaCall.id === run.metaCallId, false);
     const [config, metaCall] = await loadInstanceState(clone.metaCall.id);
@@ -25,7 +31,7 @@ category('ArtifactAlignment: clone', () => {
 
   test('the shared step run stays loadable, complete, and unstamped', async () => {
     const run = await makeSavedRun(5);
-    await cloneRun(run.metaCallId, {publicationId: crypto.randomUUID()});
+    await trackedClone(run.metaCallId, {publicationId: crypto.randomUUID()});
     const step = await historyUtils.loadRun(run.stepCallId);
     expect((step.outputs['result'] as DG.DataFrame).rowCount, 5);
     expect(step.options[OPT_FROZEN] == null, true, 'the source step must not be stamped');
@@ -36,7 +42,7 @@ category('ArtifactAlignment: clone', () => {
   test('function-run freeze grants the program viewers group on its dataframes', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun(2);
-    const clone = await cloneRun(run.stepCallId,
+    const clone = await trackedClone(run.stepCallId,
       {publicationId: crypto.randomUUID(), audience: program.viewers});
     const frozen = await historyUtils.loadRun(clone.metaCall.id);
     const tableInfo = (frozen.outputs['result'] as DG.DataFrame).getTableInfo();
@@ -52,14 +58,14 @@ category('ArtifactAlignment: clone', () => {
 
   test('two publications of the same source produce independent meta calls', async () => {
     const run = await makeSavedRun();
-    const c1 = await cloneRun(run.metaCallId, {publicationId: crypto.randomUUID()});
-    const c2 = await cloneRun(run.metaCallId, {publicationId: crypto.randomUUID()});
+    const c1 = await trackedClone(run.metaCallId, {publicationId: crypto.randomUUID()});
+    const c2 = await trackedClone(run.metaCallId, {publicationId: crypto.randomUUID()});
     expect(c1.metaCall.id === c2.metaCall.id, false);
   });
 
   test('frozen copy content matches the source config structurally', async () => {
     const run = await makeSavedRun();
-    const clone = await cloneRun(run.metaCallId, {publicationId: crypto.randomUUID()});
+    const clone = await trackedClone(run.metaCallId, {publicationId: crypto.randomUUID()});
     const source = await historyUtils.loadRun(run.metaCallId);
     const frozen = await historyUtils.loadRun(clone.metaCall.id);
     const normalize = (s: string) => JSON.stringify(JSON.parse(s));

@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {expect} from '@datagrok-libraries/test/src/test';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {saveInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {T_ALIGNMENT, T_HISTORY, T_PROGRAM, T_STUDY} from '../domain/constants';
 import {ensureProgram, ProgramInfo} from '../domain/security';
+import {publishWorkflowRun, PublishRequest, PublishResult} from '../service/publication-service';
 
 export const STEP_NQ = 'ArtifactAlignment:AaTestStep';
 export const PROVIDER_NQ = 'ArtifactAlignment:AaTestProvider';
@@ -11,6 +13,24 @@ export const PROVIDER_NQ = 'ArtifactAlignment:AaTestProvider';
 export interface SavedRunFixture {
   metaCallId: string;
   stepCallId: string;
+}
+
+/** Every FuncCall a test creates registers here (fixtures do it automatically;
+ * tests that clone or publish outside the fixtures call {@link trackCalls}), so
+ * cleanup deletes exactly this run's artifacts by id — no server-wide listing. */
+const trackedCallIds = new Set<string>();
+
+export function trackCalls(...ids: string[]): void {
+  for (const id of ids)
+    trackedCallIds.add(id);
+}
+
+/** Publishes through the service and tracks the frozen artifact for cleanup.
+ * Tests use this instead of calling publishWorkflowRun directly. */
+export async function publishRun(req: PublishRequest): Promise<PublishResult> {
+  const result = await publishWorkflowRun(req);
+  trackCalls(result.artifactId);
+  return result;
 }
 
 /** A genuine saved compute2-style workflow run, built headlessly: one executed step
@@ -40,6 +60,7 @@ export async function makeSavedRun(a: number = 3): Promise<SavedRunFixture> {
     }],
   };
   const metaCall = await saveInstanceState(PROVIDER_NQ, state, {title: 'AA fixture run'});
+  trackCalls(savedStep.id, metaCall.id);
   return {metaCallId: metaCall.id, stepCallId: savedStep.id};
 }
 
@@ -59,48 +80,153 @@ export async function makeTestStudy(programId: string): Promise<{id: string, pro
   return {id: ins.id, protocolCode};
 }
 
-/** Deletes every run of the fixture functions together with the dataframes they
- * uploaded. Publishing freezes copies of these same functions' runs, so this sweeps
- * the frozen artifacts too. Time-boxed so a pre-existing backlog cannot blow the
- * category timeout — leftovers drain on subsequent runs. */
-export async function cleanupTestRuns(budgetMs: number = 45000): Promise<void> {
+/** Deletes one tracked run together with the dataframes it uploaded, all by id. */
+async function deleteTrackedRun(callId: string): Promise<void> {
+  const source = () => grok.dapi.functions.calls.allPackageVersions();
+  const fc = await source().include('inputs, outputs').find(callId).catch(() => null);
+  if (fc == null)
+    return;
+  // non-materialized dataframe params hold the uploaded table id
+  const tableIds: string[] = [];
+  for (const [params, values] of
+    [[fc.inputParams, fc.inputs], [fc.outputParams, fc.outputs]] as const) {
+    for (const p of params.values() as Iterable<DG.FuncCallParam>) {
+      if (p.property.propertyType === DG.TYPE.DATA_FRAME && typeof values[p.name] === 'string')
+        tableIds.push(values[p.name]);
+    }
+  }
+  for (const id of tableIds) {
+    try {
+      const table = await grok.dapi.tables.find(id);
+      if (table != null)
+        await grok.dapi.tables.delete(table);
+    } catch (_) {/* already gone */}
+  }
+  // the plain calls source silently no-ops the delete — allPackageVersions is required
+  await source().delete(fc);
+  const remains = await source().find(callId).catch(() => null);
+  if (remains != null)
+    throw new Error(`tracked run ${callId} survived its delete`);
+}
+
+/** Deletes every run the tests tracked (sources and frozen clones) by id.
+ * Frozen workflow clones share their source's step calls and dataframes, so
+ * deleting sources + frozen call ids covers everything a run created. */
+export async function cleanupTrackedRuns(): Promise<void> {
+  const ids = [...trackedCallIds];
+  trackedCallIds.clear();
+  await Promise.all(ids.map((id) => deleteTrackedRun(id)));
+}
+
+/** Server-wide sweep of ALL fixture-function runs — the old cleanup, kept as a
+ * manual utility for draining artifacts that escaped tracking (e.g. from runs
+ * predating id-tracking or aborted mid-test). Not wired into any category. */
+export async function sweepFixtureBacklog(budgetMs: number = 45000): Promise<number> {
   const started = Date.now();
+  let deleted = 0;
   for (const nqName of [PROVIDER_NQ, STEP_NQ]) {
     const funcName = nqName.split(':')[1];
     while (Date.now() - started < budgetMs) {
       const page = await grok.dapi.functions.calls.allPackageVersions()
-        .filter(`func.name="${funcName}"`).include('inputs, outputs').list({pageSize: 50});
+        .filter(`func.name="${funcName}"`).list({pageSize: 50});
       if (page.length === 0)
         break;
-      await Promise.all(page.map(async (fc) => {
-        // non-materialized dataframe params hold the uploaded table id
-        const tableIds: string[] = [];
-        for (const p of fc.inputParams.values() as Iterable<DG.FuncCallParam>) {
-          if (p.property.propertyType === DG.TYPE.DATA_FRAME && typeof fc.inputs[p.name] === 'string')
-            tableIds.push(fc.inputs[p.name]);
+      await Promise.all(page.map((fc) => deleteTrackedRun(fc.id)));
+      deleted += page.length;
+    }
+  }
+  return deleted;
+}
+
+/** A freshly signed-up user with no privileges, and the way to act as them. */
+export interface RestrictedUser {
+  login: string;
+  id: string;
+  /** The user's personal group — what a grant or membership is addressed to. */
+  group: string;
+  /** The user's session token — for raw authenticated fetches when a test
+   * asserts on the HTTP surface itself; asUser covers everything else. */
+  token: string;
+  /** Runs [action] under THAT user's session, restoring the admin one after. */
+  asUser<T>(action: () => Promise<T>): Promise<T>;
+}
+
+/** Adds the probe's personal group into [group] (admin session). Test groups are
+ * deleted wholesale by cleanupTestPrograms, so memberships need no undo. */
+export async function addToGroup(memberGroupId: string, group: DG.Group): Promise<void> {
+  const g = await grok.dapi.groups.find(group.id);
+  g.addMember(await grok.dapi.groups.find(memberGroupId));
+  await grok.dapi.groups.saveRelations(g);
+}
+
+/** Runs [body] with a throwaway restricted user (adapted from ApiTests'
+ * domain-lifecycle helper — packages cannot share test code).
+ *
+ * The session cookie is HttpOnly, so script can neither read nor overwrite it:
+ * impersonation goes through `grok.dapi.impersonationToken`, which puts the
+ * probe's token in the Authorization header the server reads ahead of the
+ * cookie. Clearing it restores the admin session. The finally clears it again
+ * and BLOCKS the user (users are not API-deletable; blocking revokes their
+ * sessions). Throws where self-signup is unavailable (SSO-only or
+ * email-confirm setups) — a multiuser test must fail loudly, not pass vacuously. */
+export async function withRestrictedUser<T>(prefix: string,
+  body: (user: RestrictedUser) => Promise<T>): Promise<T> {
+  const restoreAdmin = () => grok.dapi.impersonationToken = null;
+  const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
+  const login = `${prefix}${stamp}`;
+  let user: any = null;
+  try {
+    // credentials: 'omit' is load-bearing — same-origin fetch would otherwise
+    // store the signup's Set-Cookie over the admin's HttpOnly auth cookie.
+    const signup = await (await fetch(`${grok.dapi.root}/users/signup`, {
+      method: 'POST', credentials: 'omit', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({login: login, email: `${login}@test.datagrok.ai`,
+        password: btoa(`Pw-${stamp}`), firstName: 'AaTests', lastName: 'Probe'}),
+    })).json();
+    if (!signup?.token) {
+      throw new Error(`restricted-user signup unavailable (${signup?.reason ?? 'no token'}) — ` +
+        'multiuser tests need self-signup enabled on the stand');
+    }
+    user = await grok.dapi.users.filter(`login = "${login}"`).include('group').first();
+    if (user == null)
+      throw new Error('signed-up user not found');
+    return await body({
+      login: login,
+      id: user.id,
+      group: user.group.id,
+      token: signup.token,
+      asUser: async <R>(action: () => Promise<R>): Promise<R> => {
+        grok.dapi.impersonationToken = signup.token;
+        try {
+          return await action();
+        } finally {
+          restoreAdmin();
         }
-        for (const p of fc.outputParams.values() as Iterable<DG.FuncCallParam>) {
-          if (p.property.propertyType === DG.TYPE.DATA_FRAME && typeof fc.outputs[p.name] === 'string')
-            tableIds.push(fc.outputs[p.name]);
-        }
-        for (const id of tableIds) {
-          try {
-            const table = await grok.dapi.tables.find(id);
-            if (table != null)
-              await grok.dapi.tables.delete(table);
-          } catch (_) {/* already gone */}
-        }
-        // the plain calls source silently no-ops the delete — allPackageVersions is required
-        await grok.dapi.functions.calls.allPackageVersions().delete(fc);
-      }));
+      },
+    });
+  } finally {
+    restoreAdmin();
+    if (user?.id == null) {
+      try {
+        user = await grok.dapi.users.filter(`login = "${login}"`).first();
+      } catch (x) {
+        console.error(`test user ${login} could not be looked up — block it manually: ${x}`);
+      }
+    }
+    if (user?.id != null) {
+      const blocked = await fetch(`${grok.dapi.root}/users/block`, {
+        method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({'#type': 'User', 'id': user.id, 'login': login}),
+      });
+      expect(blocked.ok, true, `test user ${login} was not blocked: ${blocked.status}`);
     }
   }
 }
 
-/** Removes everything the fixtures created: runs and their dataframes, version rows,
- * history, studies, program rows, and the per-program groups. */
+/** Removes everything the fixtures created: tracked runs and their dataframes,
+ * version rows, history, studies, program rows, and the per-program groups. */
 export async function cleanupTestPrograms(): Promise<void> {
-  await cleanupTestRuns();
+  await cleanupTrackedRuns();
   for (const program of createdPrograms.splice(0)) {
     const byProgram = DG.cond('program_id', '=', program.id);
     while ((await grok.dapi.domains.table(T_ALIGNMENT).deleteWhere(byProgram)).hasMore);

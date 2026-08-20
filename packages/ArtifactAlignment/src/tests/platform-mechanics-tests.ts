@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {T_ALIGNMENT, T_STUDY} from '../domain/constants';
-import {approvePublication, publishWorkflowRun} from '../service/publication-service';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram, makeTestStudy} from './fixtures';
+import {approvePublication} from '../service/publication-service';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, makeTestStudy, publishRun} from './fixtures';
 
 // Pins the platform mechanics the design doc (docs/artifact-alignment.html) marks as
 // verified, so a platform upgrade that breaks one fails loudly here.
@@ -53,7 +53,7 @@ category('ArtifactAlignment: platform mechanics', () => {
   test('the approval flip leaves an audit row with before/after diffs and the actor', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Audited',
       skipAutoApprove: true});
     await approvePublication(result.rowId, {auto: true});
@@ -68,7 +68,7 @@ category('ArtifactAlignment: platform mechanics', () => {
   test('dotted reference paths filter through the program registry', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Dotted'});
     const rows = await alignment().query({filter: [
       {property: 'program_id.code', operator: '=', value: program.code},
@@ -80,10 +80,10 @@ category('ArtifactAlignment: platform mechanics', () => {
   test('set-level molecule questions — compounds.id = null finds unlinked publications', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const linked = await publishWorkflowRun({
+    const linked = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Linked',
       compounds: [`GRK-SET-${Date.now()}`]});
-    const unlinked = await publishWorkflowRun({
+    const unlinked = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Unlinked'});
     const rows = await alignment().query({filter: [
       {property: 'program_id', operator: '=', value: program.id},
@@ -97,7 +97,7 @@ category('ArtifactAlignment: platform mechanics', () => {
   test('published artifact ids resolve through batch entity resolution', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Resolvable'});
     const [entity] = await grok.dapi.getEntities([result.artifactId]);
     expect(entity != null, true, 'the frozen meta call id must resolve to an entity');

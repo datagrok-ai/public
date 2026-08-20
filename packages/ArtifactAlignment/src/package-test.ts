@@ -9,6 +9,7 @@ import './tests/drift-tests';
 import './tests/platform-mechanics-tests';
 import './tests/function-run-tests';
 import './tests/ui-forms-tests';
+import './tests/restricted-publish-tests';
 
 export const _package = new DG.Package();
 export {tests};

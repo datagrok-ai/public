@@ -26,6 +26,7 @@ export const CURATION_COLUMNS = ['path'] as const;
 
 export const UMBRELLA_APPROVERS = 'Artifacts: Approvers';
 export const UMBRELLA_CONTRIBUTORS = 'Artifacts: Contributors';
+export const UMBRELLA_VIEWERS = 'Artifacts: Viewers';
 
 export const programGroupNames = (code: string) => ({
   viewers: `Artifacts: ${code} Viewers`,

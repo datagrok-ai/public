@@ -6,8 +6,8 @@ import {cloneRun} from '../service/clone-service';
 import {
   OPT_FROZEN, OPT_PUBLICATION_ID, T_ALIGNMENT,
 } from '../domain/constants';
-import {discover, getPublicationHistory, publishWorkflowRun} from '../service/publication-service';
-import {cleanupTestPrograms, makeSavedRun, makeTestProgram, STEP_NQ} from './fixtures';
+import {discover, getPublicationHistory} from '../service/publication-service';
+import {cleanupTestPrograms, makeSavedRun, makeTestProgram, publishRun, STEP_NQ, trackCalls} from './fixtures';
 
 // Single saved runs — RFV model runs and individually saved workflow steps — publish
 // through the same flow as workflow runs, detected by the absence of a pipeline config.
@@ -15,7 +15,7 @@ category('ArtifactAlignment: function runs', () => {
   test('a single saved run publishes as a function-run artifact', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun(4);
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Step artifact',
       workstream: 'modeling'});
     expect(result.status, 'approved');
@@ -29,7 +29,7 @@ category('ArtifactAlignment: function runs', () => {
     const program = await makeTestProgram();
     const fc = DG.Func.byName(STEP_NQ).prepare({a: 5});
     await fc.call(false, undefined, {processed: true, report: false});
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceCall: fc, programId: program.id, name: 'In-memory artifact'});
     expect(result.status, 'approved');
     const frozen = await historyUtils.loadRun(result.artifactId);
@@ -46,6 +46,7 @@ category('ArtifactAlignment: function runs', () => {
     await fc.call(false, undefined, {processed: true, report: false});
     const result: any = await grok.functions.call('ArtifactAlignment:PublishWorkflowRun',
       {request: {programId: program.id, name: 'Boundary artifact'}, sourceCall: fc});
+    trackCalls(result.artifactId);
     expect(result.status, 'approved');
     const frozen = await historyUtils.loadRun(result.artifactId);
     expect((frozen.outputs['result'] as DG.DataFrame).rowCount, 6);
@@ -54,7 +55,7 @@ category('ArtifactAlignment: function runs', () => {
   test('the frozen function run is loadable, stamped, and audience-granted', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun(7);
-    const result = await publishWorkflowRun({
+    const result = await publishRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Frozen single'});
     const frozen = await historyUtils.loadRun(result.artifactId);
     expect(frozen.options[OPT_FROZEN], 'true');
@@ -73,9 +74,9 @@ category('ArtifactAlignment: function runs', () => {
   test('republishing a function run under the same key bumps the revision', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const v1 = await publishWorkflowRun({
+    const v1 = await publishRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Single repub'});
-    const v2 = await publishWorkflowRun({
+    const v2 = await publishRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Single repub'});
     expect(v1.publicationId, v2.publicationId);
     expect(v2.revision, 2);
@@ -85,9 +86,9 @@ category('ArtifactAlignment: function runs', () => {
   test('workflow and function runs coexist in discovery with distinct type facets', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    await publishWorkflowRun({
+    await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'A workflow'});
-    await publishWorkflowRun({
+    await publishRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'A step'});
     const facets: any = await grok.dapi.domains.table(T_ALIGNMENT).facets({
       filter: [{property: 'program_id', operator: '=', value: program.id}],
@@ -102,9 +103,9 @@ category('ArtifactAlignment: function runs', () => {
   test('frozen copies are excluded by the Compute2 history frozen filter', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
-    const workflow = await publishWorkflowRun({
+    const workflow = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Hidden wf'});
-    const single = await publishWorkflowRun({
+    const single = await publishRun({
       sourceMetaCallId: run.stepCallId, programId: program.id, name: 'Hidden single'});
     // The persisted options drive the listing filter in Compute2's History component;
     // fetch the involved runs by id — an unbounded history pull is not what's under test.
@@ -120,8 +121,10 @@ category('ArtifactAlignment: function runs', () => {
   test('cloneRun detects the run kind', async () => {
     const run = await makeSavedRun();
     const single = await cloneRun(run.stepCallId, {publicationId: crypto.randomUUID()});
+    trackCalls(single.metaCall.id);
     expect(single.artifactType, 'function-run');
     const workflow = await cloneRun(run.metaCallId, {publicationId: crypto.randomUUID()});
+    trackCalls(workflow.metaCall.id);
     expect(workflow.artifactType, 'workflow-run');
   });
 

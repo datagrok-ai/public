@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {
   APPROVAL_COLUMNS, CURATION_COLUMNS, programGroupNames,
-  T_ALIGNMENT, T_COMPOUND, T_PROGRAM, T_TAG,
-  UMBRELLA_APPROVERS, UMBRELLA_CONTRIBUTORS,
+  T_ALIGNMENT, T_ALIGNMENT_COMPOUND, T_ALIGNMENT_TAG, T_COMPOUND, T_HISTORY,
+  T_PROGRAM, T_PROGRAM_COMPOUND, T_STUDY, T_TAG,
+  UMBRELLA_APPROVERS, UMBRELLA_CONTRIBUTORS, UMBRELLA_VIEWERS,
 } from './constants';
 import {shareEntity} from './rest';
 
@@ -28,16 +29,47 @@ async function allUsers(): Promise<DG.Group> {
  * must not approve Beta rows) additionally requires Edit on the row's delegate program
  * row, and the service re-checks membership in the row's own approvers group before
  * flipping status. */
-export async function setupSchemaSecurity(): Promise<{approvers: DG.Group, contributors: DG.Group}> {
+export async function setupSchemaSecurity():
+    Promise<{viewers: DG.Group, approvers: DG.Group, contributors: DG.Group}> {
+  const viewers = await ensureGroup(UMBRELLA_VIEWERS);
   const approvers = await ensureGroup(UMBRELLA_APPROVERS);
   const contributors = await ensureGroup(UMBRELLA_CONTRIBUTORS);
   const all = await allUsers();
+
+  // Table gate: without a table-level View grant the server refuses ANY access
+  // for non-admins — row shares alone never surface rows (core ask: per-row
+  // visibility trimming), and a table View grant exposes every row of the
+  // table. So the catalog tables are gated to the artifact audience umbrellas:
+  // any program's audience sees the whole registry, while WRITES stay
+  // per-program — the insert/update predicate checks Edit on the row's
+  // delegate program row, which only that program's contributors and approvers
+  // hold.
+  // Writes are authorized at TABLE level only — verified: a delegate-row Edit
+  // share alone cannot insert, and a table Edit grant writes into every
+  // program. So the umbrellas get table Edit, and per-program isolation is
+  // enforced service-side through the platform's effective row permission
+  // (publish/curate require Edit on the program row; approve/reject
+  // additionally check approvers-group membership); a master-row-scoped
+  // insert/update predicate stays a core ask.
+  for (const table of [T_PROGRAM, T_STUDY, T_ALIGNMENT, T_HISTORY,
+    T_PROGRAM_COMPOUND, T_ALIGNMENT_COMPOUND, T_ALIGNMENT_TAG]) {
+    const client = grok.dapi.domains.table(table);
+    for (const group of [viewers, contributors, approvers])
+      await client.grant(group.id, 'View');
+    for (const group of [contributors, approvers])
+      await client.grant(group.id, 'Edit');
+    try {
+      await client.revoke(all.id, 'View');
+    } catch (_) {/* nothing to revoke */}
+  }
 
   const compound = grok.dapi.domains.table(T_COMPOUND);
   const tag = grok.dapi.domains.table(T_TAG);
   await compound.grant(all.id, 'View');
   await tag.grant(all.id, 'View');
   await tag.grant(contributors.id, 'Edit');
+  // publish creates missing compounds by registration code, same as tags
+  await compound.grant(contributors.id, 'Edit');
 
   const alignment = grok.dapi.domains.table(T_ALIGNMENT);
   for (const column of APPROVAL_COLUMNS) {
@@ -48,11 +80,12 @@ export async function setupSchemaSecurity(): Promise<{approvers: DG.Group, contr
     await alignment.shareColumn(column, all.id, 'View');
     await alignment.shareColumn(column, contributors.id, 'Edit');
   }
-  return {approvers, contributors};
+  return {viewers, approvers, contributors};
 }
 
-let _setupDone: Promise<{approvers: DG.Group, contributors: DG.Group}> | null = null;
-export function setupSchemaSecurityOnce(): Promise<{approvers: DG.Group, contributors: DG.Group}> {
+let _setupDone: Promise<{viewers: DG.Group, approvers: DG.Group, contributors: DG.Group}> | null = null;
+export function setupSchemaSecurityOnce():
+    Promise<{viewers: DG.Group, approvers: DG.Group, contributors: DG.Group}> {
   return _setupDone ??= setupSchemaSecurity();
 }
 
@@ -85,6 +118,7 @@ export async function ensureProgram(spec: ProgramSpec): Promise<ProgramInfo> {
   const approvers = await ensureGroup(names.approvers);
 
   const umbrellas = await setupSchemaSecurityOnce();
+  await grok.dapi.groups.includeTo(viewers, umbrellas.viewers);
   await grok.dapi.groups.includeTo(contributors, umbrellas.contributors);
   await grok.dapi.groups.includeTo(approvers, umbrellas.approvers);
 
