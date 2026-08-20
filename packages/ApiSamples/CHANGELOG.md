@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Fixed statistics/pearson-correlation.js reading `c1` twice, so it correlated a column with itself and always returned 1
+* Fixed functions/caching-results.js referencing an undefined `result` (and dropped an unused `counts`)
+* Fixed ui/widgets/widgets-tree.js throwing on a widget with no `children`
+* Fixed dapi/projects.js saving an unnamed project ("Project name cannot be empty")
+* Gave the `s` input of PythonDup and RDup a default so they run without arguments
+
 * GROK-20298: Added dapi/domains/platform-grid.js — the editable domain grid with NO package installed: `DG.DomainGrid.create`, the frame's service columns, and the grid's machine surface
 * GROK-20298: Added dapi/domains/relations.js — many-to-many relations end to end: insert with a link set, expand, the d42 chips + id companion, relation filter paths and facet counts, set-replace update, and the create-and-link transaction
 * GROK-20298: Added dapi/domains/extend-schema.js — extending a plugin's domain schema: the Extend grant, the extend apply, and using the new column by its logical name

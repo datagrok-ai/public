@@ -14,6 +14,10 @@ const skip = [
   'menu-customization', '10k-columns-updates', '100-million-rows',
   'sticky-meta-1-tags', 'sticky-meta-2-semtype', /* skipped as they spawn persisting data */
   'files' /* do not test manually */,
+  // Takes two `column` inputs, and a column input cannot carry a default the way
+  // `int a = 3` can, so a bare script.apply() leaves them null. Scripts whose
+  // inputs CAN default were given one instead (PythonDup, RDup).
+  'Pearson',
 
   // To fix
   'custom-viewer-properties',

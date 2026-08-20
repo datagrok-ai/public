@@ -1,4 +1,5 @@
 let project = DG.Project.create();
+project.name = 'sample_project';
 let table = grok.data.demo.demog();
 let tableInfo = table.getTableInfo();
 project.addChild(tableInfo);

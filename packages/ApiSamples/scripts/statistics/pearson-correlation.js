@@ -7,7 +7,7 @@
 //output: double corr
 
 let a1 = c1.getRawData();
-let a2 = c1.getRawData();
+let a2 = c2.getRawData();
 let n = 0;
 let sumX = 0, sumY = 0;
 let sumXX = 0, sumYY = 0;

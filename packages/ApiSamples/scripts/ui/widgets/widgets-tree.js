@@ -2,7 +2,8 @@
 // along with the functions and properties that these widgets expose
 
 function addWidgetToTree(widget, parentGroup) {
-  const label = widget.type + (widget.children.length === 0 ? '' : '(' + widget.children.length + ')');
+  const childCount = widget.children?.length ?? 0;
+  const label = widget.type + (childCount === 0 ? '' : '(' + childCount + ')');
   const group = parentGroup.group(label, widget, false);
 
   const functions = widget.getFunctions();
