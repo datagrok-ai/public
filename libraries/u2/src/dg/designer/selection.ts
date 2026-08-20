@@ -5,9 +5,9 @@
 import * as grok from 'datagrok-api/grok';
 import {div} from '../../core/elements.js';
 import type {ReadonlySignal} from '../../core/signals.js';
-import {Accordion} from '../../components/accordion.js';
-import {TabStrip} from '../../components/tabs.js';
-import type {VirtualTree} from '../../components/tree.js';
+import {Accordion} from '../../components/containers/accordion.js';
+import {TabStrip} from '../../components/containers/tabs.js';
+import type {VirtualTree} from '../../components/collections/tree.js';
 import type {SpecEditor} from '../../spec/editor.js';
 import type {SpecInstance, SpecNode} from '../../spec/spec.js';
 import {place} from './dnd.js';

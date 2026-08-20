@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {Control} from '../core/component.js';
 import {Tooltip} from '../core/tooltip.js';
 import {ObjectRenderer} from '../core/object-renderer.js';
-import {TypeAhead} from '../components/typeahead.js';
+import {TypeAhead} from '../components/inputs/typeahead.js';
 import {dapiSource, DapiSourceLike, DapiSourceOptions} from './dapi-source.js';
 
 /** An `ObjectRenderer` over the platform's ObjectHandler registry. The handler is resolved

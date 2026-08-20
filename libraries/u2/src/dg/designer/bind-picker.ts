@@ -1,11 +1,11 @@
 /* The binding picker (Q7): the bind tree in a dialog, grouped by where each root came from, with one
    search box over the labels. It answers the assembled path and nothing else — the commit stays with
    the panel, whose funnel (canApply → set-bind → warn) is the one authority on what may be written. */
-import {Dialog} from '../../components/dialog.js';
-import {VirtualTree} from '../../components/tree.js';
-import type {TreeNode} from '../../components/tree.js';
-import {TextInput} from '../../components/text-input.js';
-import {iconButton} from '../../components/buttons.js';
+import {Dialog} from '../../components/containers/dialog.js';
+import {VirtualTree} from '../../components/collections/tree.js';
+import type {TreeNode} from '../../components/collections/tree.js';
+import {TextInput} from '../../components/inputs/text-input.js';
+import {iconButton} from '../../components/actions/buttons.js';
 import {div, divV, span} from '../../core/elements.js';
 import type {Input} from '../../core/input-base.js';
 import {parsePath} from '../../spec/path.js';

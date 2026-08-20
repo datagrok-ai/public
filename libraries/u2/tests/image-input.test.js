@@ -4,7 +4,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {ImageInput} from '../src/components/image-input.js';
+import {ImageInput} from '../src/components/inputs/image-input.js';
 
 const LOGO = 'https://datagrok.ai/img/logo.svg';
 

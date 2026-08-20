@@ -8,7 +8,7 @@ import {Component} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {divV, h3, span} from '../../core/elements.js';
 import {text} from '../../core/text.js';
-import {tableFromMap} from '../../components/table.js';
+import {tableFromMap} from '../../components/collections/table.js';
 import {SpecNodeRef, SpecNodesRef} from './node-ref.js';
 import {propEditors} from './prop-editors.js';
 import {eventsOf, propsFor} from './prop-model.js';

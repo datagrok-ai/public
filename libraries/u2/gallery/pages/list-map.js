@@ -1,7 +1,7 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {ListInput} from '../../src/components/list-input.js';
-import {MapInput} from '../../src/components/map-input.js';
+import {ListInput} from '../../src/components/inputs/list-input.js';
+import {MapInput} from '../../src/components/inputs/map-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

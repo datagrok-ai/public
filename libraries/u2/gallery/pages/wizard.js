@@ -1,8 +1,8 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divV, divH, span, button} from '../../src/core/elements.js';
-import {TextInput} from '../../src/components/text-input.js';
-import {Form} from '../../src/components/form.js';
-import {Wizard} from '../../src/components/wizard.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
+import {Form} from '../../src/components/forms/form.js';
+import {Wizard} from '../../src/components/containers/wizard.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

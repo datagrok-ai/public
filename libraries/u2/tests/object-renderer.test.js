@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {TypeAhead} from '../src/components/typeahead.js';
+import {TypeAhead} from '../src/components/inputs/typeahead.js';
 
 const PROJECTS = [
   {name: 'Chem', owner: 'ada'},

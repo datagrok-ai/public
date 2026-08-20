@@ -7,7 +7,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Combobox} from '../src/index.js';
-import {TypeAhead} from '../src/components/typeahead.js';
+import {TypeAhead} from '../src/components/inputs/typeahead.js';
 
 const USERS = [
   {name: 'Ada Almeida', login: 'adaalmeida'},

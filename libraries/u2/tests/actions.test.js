@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {timestamp} from '../src/core/elements.js';
-import {rowActions, actionsMenu} from '../src/components/actions.js';
-import {VirtualList} from '../src/components/list.js';
+import {rowActions, actionsMenu} from '../src/components/actions/actions.js';
+import {VirtualList} from '../src/components/collections/list.js';
 
 function scoped(name, body) {
   test(name, async () => {

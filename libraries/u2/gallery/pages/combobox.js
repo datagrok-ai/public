@@ -1,5 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
-import {Combobox} from '../../src/components/combobox.js';
+import {Combobox} from '../../src/components/inputs/combobox.js';
 
 // The library imports @floating-ui/dom by bare specifier (correct for plugin bundlers); the
 // gallery runs as raw ESM, so it needs an import map. Belongs in index.html once its owner
@@ -96,7 +96,7 @@ export async function render(main) {
   main.append(el('h1', null, 'Combobox'));
   const intro = el('p');
   intro.innerHTML = 'Hand-written WAI-ARIA 1.2 combobox machine (see the header comment in ' +
-    '<code>src/components/combobox.ts</code> for the Zag.js evaluation), popup via the shared ' +
+    '<code>src/components/inputs/combobox.ts</code> for the Zag.js evaluation), popup via the shared ' +
     '<code>Overlay</code> layer, async data via <code>AsyncSource</code>. ' +
     'Keys: ↓ opens/moves, ↑ moves, Enter selects, Esc closes then clears, Tab closes and keeps the value.';
   main.append(intro);

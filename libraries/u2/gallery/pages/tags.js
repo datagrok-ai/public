@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {TagsInput} from '../../src/components/tags-input.js';
+import {TagsInput} from '../../src/components/inputs/tags-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

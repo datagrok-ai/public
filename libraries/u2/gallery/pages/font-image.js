@@ -1,8 +1,8 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {FontInput} from '../../src/components/font-input.js';
-import {ImageInput} from '../../src/components/image-input.js';
-import {TextInput} from '../../src/components/text-input.js';
+import {FontInput} from '../../src/components/inputs/font-input.js';
+import {ImageInput} from '../../src/components/inputs/image-input.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

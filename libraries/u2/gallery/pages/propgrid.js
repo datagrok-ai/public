@@ -1,6 +1,6 @@
 import {computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {PropertyGrid} from '../../src/components/property-grid.js';
+import {PropertyGrid} from '../../src/components/forms/property-grid.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

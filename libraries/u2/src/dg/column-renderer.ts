@@ -5,7 +5,7 @@
 import * as DG from 'datagrok-api/dg';
 import {ObjectRenderer} from '../core/object-renderer.js';
 import {divH, span} from '../core/elements.js';
-import {icon} from '../components/icon.js';
+import {icon} from '../components/display/icon.js';
 
 // the platform has no glyph table to port (its column selector shows none); these are the FA
 // names the app uses for the same notions elsewhere

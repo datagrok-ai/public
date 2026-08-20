@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {TextInput} from '../src/components/text-input.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
 import {propertyForm, objectForm, inputForProperty, PlatformInputs} from '../src/dg/object-form.js';
 import {QNum} from '../src/core/qnum.js';
 

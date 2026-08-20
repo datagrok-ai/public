@@ -7,8 +7,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {Form} from '../src/components/form.js';
-import {TextInput} from '../src/components/text-input.js';
+import {Form} from '../src/components/forms/form.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
 import {fromDartInput, PlatformInput} from '../src/dg/from-dart-input.js';
 import {propertyForm} from '../src/dg/object-form.js';
 

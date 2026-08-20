@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
 import {QNum} from '../src/core/qnum.js';
-import {QNumInput} from '../src/components/qnum-input.js';
+import {QNumInput} from '../src/components/inputs/qnum-input.js';
 
 function smoke(name, body) {
   test(name, async () => {

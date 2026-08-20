@@ -3,7 +3,7 @@
    same control picks projects, groups or queries. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {TypeAhead} from '../components/typeahead.js';
+import {TypeAhead} from '../components/inputs/typeahead.js';
 import {dapiSource} from './dapi-source.js';
 
 const SEARCH_FIELDS = ['firstName', 'lastName', 'login', 'email'];

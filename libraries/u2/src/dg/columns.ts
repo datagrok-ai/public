@@ -7,10 +7,10 @@ import {Input, InputOptions} from '../core/input-base.js';
 import {Scope} from '../core/scope.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../core/overlay.js';
 import {button, divH, divV, link, span} from '../core/elements.js';
-import {iconButton} from '../components/buttons.js';
-import {VirtualList} from '../components/list.js';
-import {TextInput} from '../components/text-input.js';
-import {ChoiceInput} from '../components/choice-input.js';
+import {iconButton} from '../components/actions/buttons.js';
+import {VirtualList} from '../components/collections/list.js';
+import {TextInput} from '../components/inputs/text-input.js';
+import {ChoiceInput} from '../components/inputs/choice-input.js';
 import {columnInput, onColumnRenamed} from './pickers.js';
 import {columnRenderer} from './column-renderer.js';
 

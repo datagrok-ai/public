@@ -1,5 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
-import {TabStrip} from '../../src/components/tabs.js';
+import {TabStrip} from '../../src/components/containers/tabs.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;

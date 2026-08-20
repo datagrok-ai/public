@@ -5,9 +5,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Input, InputOptions} from '../core/input-base.js';
 import {Control} from '../core/component.js';
-import {ChoiceInput, MultiChoiceInput} from '../components/choice-input.js';
-import {TypeAhead} from '../components/typeahead.js';
-import {iconButton} from '../components/buttons.js';
+import {ChoiceInput, MultiChoiceInput} from '../components/inputs/choice-input.js';
+import {TypeAhead} from '../components/inputs/typeahead.js';
+import {iconButton} from '../components/actions/buttons.js';
 import {columnRenderer} from './column-renderer.js';
 
 export interface ColumnInputOptions {

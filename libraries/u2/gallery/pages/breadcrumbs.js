@@ -1,5 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
-import {Breadcrumbs} from '../../src/components/breadcrumbs.js';
+import {Breadcrumbs} from '../../src/components/navigation/breadcrumbs.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;

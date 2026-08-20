@@ -1,7 +1,7 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {TextInput} from '../../src/components/text-input.js';
-import {Dialog} from '../../src/components/dialog.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
+import {Dialog} from '../../src/components/containers/dialog.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

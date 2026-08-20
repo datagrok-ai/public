@@ -1,5 +1,5 @@
 import {Scope} from '../../src/index.js';
-import {Splitter} from '../../src/components/splitter.js';
+import {Splitter} from '../../src/components/containers/splitter.js';
 
 const OUTER_SIZES = [0.35, 0.65];
 const INNER_SIZES = [0.5, 0.5];

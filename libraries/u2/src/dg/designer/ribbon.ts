@@ -3,11 +3,11 @@
 import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import type {ReadonlySignal, Signal} from '../../core/signals.js';
-import type {Action} from '../../components/actions.js';
-import {dropDownButton, iconButton} from '../../components/buttons.js';
-import {Dialog} from '../../components/dialog.js';
-import type {Menu} from '../../components/menu.js';
-import {TextArea, TextInput} from '../../components/text-input.js';
+import type {Action} from '../../components/actions/actions.js';
+import {dropDownButton, iconButton} from '../../components/actions/buttons.js';
+import {Dialog} from '../../components/containers/dialog.js';
+import type {Menu} from '../../components/navigation/menu.js';
+import {TextArea, TextInput} from '../../components/inputs/text-input.js';
 import type {SpecEditor} from '../../spec/editor.js';
 import {ACTIONS, ACTION_ICONS} from './actions.js';
 import {loadGallery, saveToGallery} from './gallery.js';

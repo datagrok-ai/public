@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {ColorInput} from '../src/components/color-input.js';
+import {ColorInput} from '../src/components/inputs/color-input.js';
 
 function smoke(name, body) {
   test(name, async () => {

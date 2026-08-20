@@ -1,10 +1,10 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, divV, span, button} from '../../src/core/elements.js';
-import {iconButton, buttonWithIcon, dropDownButton} from '../../src/components/buttons.js';
-import {ButtonGroup} from '../../src/components/button-group.js';
-import {Toolbar} from '../../src/components/toolbar.js';
-import {Form} from '../../src/components/form.js';
-import {TextInput} from '../../src/components/text-input.js';
+import {iconButton, buttonWithIcon, dropDownButton} from '../../src/components/actions/buttons.js';
+import {ButtonGroup} from '../../src/components/actions/button-group.js';
+import {Toolbar} from '../../src/components/navigation/toolbar.js';
+import {Form} from '../../src/components/forms/form.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -74,7 +74,7 @@ export async function render(main) {
   main.append(el('h1', null, 'Buttons & groups'));
   const intro = el('p');
   intro.innerHTML = 'Icon-capable buttons compose the core <code>button()</code> — the icon layer ' +
-    'lives in <code>components/buttons.ts</code> because core may not import components. ' +
+    'lives in <code>components/actions/buttons.ts</code> because core may not import components. ' +
     '<code>ButtonGroup</code> is one control for three jobs: an action group, a radio group ' +
     '(<code>single</code> — clicking the active item never deselects it) and independent toggles ' +
     '(<code>multi</code>). Icon groups are the same control in <code>iconOnly</code> mode, and the ' +

@@ -1,5 +1,5 @@
 import {signal, computed, Scope, Control, bindText} from '../../src/index.js';
-import {Accordion} from '../../src/components/accordion.js';
+import {Accordion} from '../../src/components/containers/accordion.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;

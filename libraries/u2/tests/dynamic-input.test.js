@@ -4,7 +4,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {DynamicInput} from '../src/components/dynamic-input.js';
+import {DynamicInput} from '../src/components/inputs/dynamic-input.js';
 
 function smoke(name, body) {
   test(name, async () => {

@@ -3,9 +3,9 @@
 import * as grok from 'datagrok-api/grok';
 import {Component} from '../../core/component.js';
 import type {ReadonlySignal} from '../../core/signals.js';
-import {actionsMenu} from '../../components/actions.js';
-import type {Action} from '../../components/actions.js';
-import type {TreeNode} from '../../components/tree.js';
+import {actionsMenu} from '../../components/actions/actions.js';
+import type {Action} from '../../components/actions/actions.js';
+import type {TreeNode} from '../../components/collections/tree.js';
 import {SpecInstance} from '../../spec/spec.js';
 import type {SpecNode} from '../../spec/spec.js';
 import type {DesignerAction} from '../../spec/registry.js';

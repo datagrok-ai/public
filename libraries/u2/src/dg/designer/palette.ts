@@ -4,9 +4,9 @@
    (a mousedown on a pane header finds no `.u2-palette-item` and falls through to the toggle). */
 import {Control} from '../../core/component.js';
 import {div} from '../../core/elements.js';
-import {Accordion} from '../../components/accordion.js';
-import type {AccordionPane} from '../../components/accordion.js';
-import {TextInput} from '../../components/text-input.js';
+import {Accordion} from '../../components/containers/accordion.js';
+import type {AccordionPane} from '../../components/containers/accordion.js';
+import {TextInput} from '../../components/inputs/text-input.js';
 import type {ComponentMeta, Registry} from '../../spec/registry.js';
 
 const UNGROUPED = 'Other';

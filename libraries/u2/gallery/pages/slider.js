@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {SliderInput} from '../../src/components/slider-input.js';
+import {SliderInput} from '../../src/components/inputs/slider-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

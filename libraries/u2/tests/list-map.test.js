@@ -5,8 +5,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {ListInput} from '../src/components/list-input.js';
-import {MapInput} from '../src/components/map-input.js';
+import {ListInput} from '../src/components/inputs/list-input.js';
+import {MapInput} from '../src/components/inputs/map-input.js';
 
 function smoke(name, body) {
   test(name, async () => {

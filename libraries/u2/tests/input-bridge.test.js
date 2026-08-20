@@ -7,9 +7,9 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {TextInput} from '../src/components/text-input.js';
-import {NumberInput} from '../src/components/number-input.js';
-import {ChoiceInput} from '../src/components/choice-input.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
+import {NumberInput} from '../src/components/inputs/number-input.js';
+import {ChoiceInput} from '../src/components/inputs/choice-input.js';
 import {inputForProperty} from '../src/dg/object-form.js';
 
 register('./dg-stub.mjs', import.meta.url);

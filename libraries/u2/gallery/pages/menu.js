@@ -1,6 +1,6 @@
 import {signal, computed, Scope, bindText} from '../../src/index.js';
-import {Menu} from '../../src/components/menu.js';
-import {MenuBar} from '../../src/components/menu-bar.js';
+import {Menu} from '../../src/components/navigation/menu.js';
+import {MenuBar} from '../../src/components/navigation/menu-bar.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;

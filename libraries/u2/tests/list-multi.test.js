@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {batch} from '../src/core/signals.js';
-import {VirtualList} from '../src/components/list.js';
-import {VirtualTree} from '../src/components/tree.js';
+import {VirtualList} from '../src/components/collections/list.js';
+import {VirtualTree} from '../src/components/collections/tree.js';
 
 function scoped(name, body) {
   test(name, async () => {

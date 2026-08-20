@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, divV, span, button} from '../../src/core/elements.js';
-import {DynamicInput} from '../../src/components/dynamic-input.js';
+import {DynamicInput} from '../../src/components/inputs/dynamic-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

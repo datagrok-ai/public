@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Components: `src/components/` is split by role — `inputs/`, `forms/`, `containers/`, `actions/`, `navigation/`, `collections/`, `display/` — the same vocabulary as the registry categories; the public surface (`src/index.ts`, `src/dg/index.ts`) and the flat `css/` paths are unchanged
 * Designer: split the view into its layers behind the same surface — `view.ts` keeps the canvas and the wiring, `selection.ts` the selection model and hit-testing, `drag.ts` the mouse-drag layer, `actions.ts` the editing verbs, `keys.ts` the keyboard map, `ribbon.ts` the ribbon and its dialogs; the object handler into `handler.ts`, `prop-model.ts` (the property model) and `prop-editors.ts`. Names, signatures and import paths are unchanged
 * Tests: introduced one module of getter-backed platform doubles (`tests/platform-doubles.mjs`) for the headless suite — every fake `Property`, `Func`, `FileInfo`, `DataFrame` or entity row keeps its state on `dart` behind prototype getters, as the real one does, and the module pins it; the loader hooks serve these same classes
 * E2E: split the designer checks into per-feature files under `e2e/checks/`, each opening on its own fixture, ids numbered per file; `npm run e2e:local -- --only <feature>` runs one
@@ -266,7 +267,7 @@
 * Initial scaffold: library skeleton, platform-free-core eslint guard, vendor/ layout, standalone gallery shell
 * Added design tokens (css/tokens.css): 74 --dg-* tokens codifying current Datagrok styles, compact density axis, gallery token sheet
 * Added signals core: vendored @preact/signals-core 1.14.4, Scope/Component lifecycle with leak counter, bindText/bindValue with echo suppression, dg adapter (host(), toSignal/toObservable, leakReport)
-* Added VirtualList (src/components/list.ts): VS Code listView virtualization ported onto the u2 core — fixed row height, row recycling, signal-driven selection, keyboard navigation, listbox ARIA; css/list.css and a 1M-row gallery page
+* Added VirtualList (src/components/collections/list.ts): VS Code listView virtualization ported onto the u2 core — fixed row height, row recycling, signal-driven selection, keyboard navigation, listbox ARIA; css/list.css and a 1M-row gallery page
 * Added AsyncSource (src/core/async-source.ts): debounced, abortable idle/loading/ready/empty/error-with-retry contract for every async control
 * Added Overlay (src/core/overlay.ts): single body-level layer host, @floating-ui/dom positioning (flip + size), dismissal on outside pointerdown / Esc / anchor detach
-* Added Combobox (src/components/combobox.ts): hand-written WAI-ARIA 1.2 combobox machine (Zag.js vendoring evaluated and rejected — see the file header), sync and async sources, css/combobox.css and a gallery page
+* Added Combobox (src/components/inputs/combobox.ts): hand-written WAI-ARIA 1.2 combobox machine (Zag.js vendoring evaluated and rejected — see the file header), sync and async sources, css/combobox.css and a gallery page

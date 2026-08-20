@@ -6,8 +6,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope, Control} from '../src/index.js';
-import {iconButton, buttonWithIcon, dropDownButton} from '../src/components/buttons.js';
-import {ButtonGroup} from '../src/components/button-group.js';
+import {iconButton, buttonWithIcon, dropDownButton} from '../src/components/actions/buttons.js';
+import {ButtonGroup} from '../src/components/actions/button-group.js';
 
 function ui(name, body) {
   test(name, async () => {

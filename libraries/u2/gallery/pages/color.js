@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {ColorInput} from '../../src/components/color-input.js';
+import {ColorInput} from '../../src/components/inputs/color-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

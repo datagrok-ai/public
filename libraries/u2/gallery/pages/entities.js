@@ -1,5 +1,5 @@
 import {Scope, bindText, computed} from '../../src/index.js';
-import {TypeAhead} from '../../src/components/typeahead.js';
+import {TypeAhead} from '../../src/components/inputs/typeahead.js';
 import {Tooltip} from '../../src/core/tooltip.js';
 
 function injectOnce(id, href) {

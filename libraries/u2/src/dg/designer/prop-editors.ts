@@ -4,9 +4,9 @@
 import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import {h3} from '../../core/elements.js';
-import {Accordion} from '../../components/accordion.js';
-import {PropertyGrid} from '../../components/property-grid.js';
-import type {PropDescriptor} from '../../components/property-grid.js';
+import {Accordion} from '../../components/containers/accordion.js';
+import {PropertyGrid} from '../../components/forms/property-grid.js';
+import type {PropDescriptor} from '../../components/forms/property-grid.js';
 import type {PropertyLike} from '../../core/property-like.js';
 import {propertyForm} from '../object-form.js';
 import type {FieldOverride, ObjectForm} from '../object-form.js';

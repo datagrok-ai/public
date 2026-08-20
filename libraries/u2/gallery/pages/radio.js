@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {RadioInput} from '../../src/components/radio-input.js';
+import {RadioInput} from '../../src/components/inputs/radio-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

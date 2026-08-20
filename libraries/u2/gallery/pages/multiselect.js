@@ -1,7 +1,7 @@
 import {computed, Scope, bindText} from '../../src/index.js';
-import {MultiSelect} from '../../src/components/multi-select.js';
-import {TextInput} from '../../src/components/text-input.js';
-import {Form} from '../../src/components/form.js';
+import {MultiSelect} from '../../src/components/inputs/multi-select.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
+import {Form} from '../../src/components/forms/form.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

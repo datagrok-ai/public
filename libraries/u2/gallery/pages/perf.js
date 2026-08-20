@@ -1,12 +1,12 @@
 import {Scope, Control} from '../../src/index.js';
 import {Perf} from '../../src/core/perf.js';
 import {divV, span, button as u2Button} from '../../src/core/elements.js';
-import {TextInput} from '../../src/components/text-input.js';
-import {BoolInput} from '../../src/components/bool-input.js';
-import {NumberInput} from '../../src/components/number-input.js';
-import {ChoiceInput} from '../../src/components/choice-input.js';
-import {TabStrip} from '../../src/components/tabs.js';
-import {VirtualList} from '../../src/components/list.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
+import {BoolInput} from '../../src/components/inputs/bool-input.js';
+import {NumberInput} from '../../src/components/inputs/number-input.js';
+import {ChoiceInput} from '../../src/components/inputs/choice-input.js';
+import {TabStrip} from '../../src/components/containers/tabs.js';
+import {VirtualList} from '../../src/components/collections/list.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

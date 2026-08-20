@@ -1,8 +1,8 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {QNum} from '../../src/core/qnum.js';
-import {QNumInput} from '../../src/components/qnum-input.js';
-import {BigIntInput} from '../../src/components/bigint-input.js';
+import {QNumInput} from '../../src/components/inputs/qnum-input.js';
+import {BigIntInput} from '../../src/components/inputs/bigint-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

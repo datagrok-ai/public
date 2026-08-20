@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
-import {Wizard} from '../src/components/wizard.js';
+import {Wizard} from '../src/components/containers/wizard.js';
 
 function wizard(name, body) {
   test(name, async () => {

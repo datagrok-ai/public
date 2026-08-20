@@ -3,7 +3,7 @@
    both are testable without the shell; only the handler and the view below need datagrok-api. */
 import {Component} from '../../core/component.js';
 import type {ComponentMetaLike} from '../../core/widget-like.js';
-import type {TreeNode} from '../../components/tree.js';
+import type {TreeNode} from '../../components/collections/tree.js';
 import type {SpecEditor} from '../../spec/editor.js';
 import {SpecInstance} from '../../spec/spec.js';
 import type {SpecNode} from '../../spec/spec.js';

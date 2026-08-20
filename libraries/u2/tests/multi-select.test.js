@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Form, TextInput} from '../src/index.js';
-import {MultiSelect} from '../src/components/multi-select.js';
+import {MultiSelect} from '../src/components/inputs/multi-select.js';
 
 const ITEMS = ['MW', 'LogP', 'TPSA', 'HBA', {value: 'hbd', label: 'H-bond donors'}];
 const MANY = ['MW', 'LogP', 'TPSA', 'HBA', 'HBD', 'Rotatable bonds', 'Rings', 'Formal charge',

@@ -13,7 +13,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
-import {TextInput} from '../src/components/text-input.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {SpecEditor} from '../src/spec/editor.js';

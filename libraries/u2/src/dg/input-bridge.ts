@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Input} from '../core/input-base.js';
 import {Scope} from '../core/scope.js';
-import {BigIntInput} from '../components/bigint-input.js';
+import {BigIntInput} from '../components/inputs/bigint-input.js';
 import {PlatformInput} from './from-dart-input.js';
 
 const DATA_TYPES: {[id: string]: string} = {

@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {TagsInput} from '../src/components/tags-input.js';
+import {TagsInput} from '../src/components/inputs/tags-input.js';
 
 const KEYWORDS = ['acid', 'base', 'ester', 'amine'];
 const USERS = [

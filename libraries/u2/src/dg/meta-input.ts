@@ -1,5 +1,5 @@
 import {span} from '../core/elements.js';
-import {DynamicInput, DynamicInputOptions} from '../components/dynamic-input.js';
+import {DynamicInput, DynamicInputOptions} from '../components/inputs/dynamic-input.js';
 import {ChipOptions, EntityCard, entityCard} from './entity.js';
 
 export interface MetaInputOptions extends Omit<DynamicInputOptions<any>, 'render'>, ChipOptions {}

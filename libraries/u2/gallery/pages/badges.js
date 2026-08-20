@@ -1,7 +1,7 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {badge, countBadge, dot, tag} from '../../src/components/badge.js';
-import {ProgressBar} from '../../src/components/progress.js';
+import {badge, countBadge, dot, tag} from '../../src/components/display/badge.js';
+import {ProgressBar} from '../../src/components/display/progress.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

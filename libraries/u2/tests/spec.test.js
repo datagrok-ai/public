@@ -8,7 +8,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {Signal, computed, signal} from '../src/core/signals.js';
 import {Scope} from '../src/core/scope.js';
 import {Control} from '../src/core/component.js';
-import {TextInput} from '../src/components/text-input.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, checkProp, parseSpec, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';

@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {DateInput, DateTimeInput} from '../src/components/date-input.js';
+import {DateInput, DateTimeInput} from '../src/components/inputs/date-input.js';
 
 function smoke(name, body) {
   test(name, async () => {

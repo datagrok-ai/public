@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Control, Tooltip} from '../src/index.js';
-import {icon} from '../src/components/icon.js';
+import {icon} from '../src/components/display/icon.js';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

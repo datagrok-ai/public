@@ -1,6 +1,6 @@
 import {Scope, timestamp} from '../../src/index.js';
-import {VirtualList} from '../../src/components/list.js';
-import {rowActions} from '../../src/components/actions.js';
+import {VirtualList} from '../../src/components/collections/list.js';
+import {rowActions} from '../../src/components/actions/actions.js';
 
 const ITEM_COUNT = 1000000;
 

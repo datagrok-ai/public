@@ -4,7 +4,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
-import {RadioInput} from '../src/components/radio-input.js';
+import {RadioInput} from '../src/components/inputs/radio-input.js';
 
 const STAGES = ['Discovery', 'Preclinical', 'Clinical'];
 

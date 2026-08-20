@@ -1,6 +1,6 @@
 import {signal, computed, Scope, bindText} from '../../src/index.js';
-import {Toolbar} from '../../src/components/toolbar.js';
-import {TextInput} from '../../src/components/text-input.js';
+import {Toolbar} from '../../src/components/navigation/toolbar.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

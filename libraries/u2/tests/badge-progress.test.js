@@ -6,8 +6,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, computed, Scope, Control} from '../src/index.js';
-import {badge, countBadge, dot, tag} from '../src/components/badge.js';
-import {ProgressBar} from '../src/components/progress.js';
+import {badge, countBadge, dot, tag} from '../src/components/display/badge.js';
+import {ProgressBar} from '../src/components/display/progress.js';
 
 function ui(name, body) {
   test(name, async () => {

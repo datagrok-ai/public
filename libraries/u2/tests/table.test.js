@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, computed, Scope, Control} from '../src/index.js';
 import {span} from '../src/core/elements.js';
-import {BasicTable, tableFromMap} from '../src/components/table.js';
+import {BasicTable, tableFromMap} from '../src/components/collections/table.js';
 
 function table(name, body) {
   test(name, async () => {

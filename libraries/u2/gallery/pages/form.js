@@ -1,8 +1,8 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, divV, span, button} from '../../src/core/elements.js';
-import {TextInput, TextArea} from '../../src/components/text-input.js';
-import {BoolInput} from '../../src/components/bool-input.js';
-import {Form} from '../../src/components/form.js';
+import {TextInput, TextArea} from '../../src/components/inputs/text-input.js';
+import {BoolInput} from '../../src/components/inputs/bool-input.js';
+import {Form} from '../../src/components/forms/form.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

@@ -4,9 +4,9 @@
    func-source's `params`) belongs to whoever opened it, so the commit stays with the panel and the
    tray, whose funnels are the one authority on what may be written. */
 import * as DG from 'datagrok-api/dg';
-import {Dialog} from '../../components/dialog.js';
-import {VirtualList} from '../../components/list.js';
-import {TextInput} from '../../components/text-input.js';
+import {Dialog} from '../../components/containers/dialog.js';
+import {VirtualList} from '../../components/collections/list.js';
+import {TextInput} from '../../components/inputs/text-input.js';
 import {div, divV, span} from '../../core/elements.js';
 import {Scope} from '../../core/scope.js';
 import type {PropertyLike} from '../../core/property-like.js';

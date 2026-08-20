@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {DateInput, DateTimeInput} from '../../src/components/date-input.js';
+import {DateInput, DateTimeInput} from '../../src/components/inputs/date-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

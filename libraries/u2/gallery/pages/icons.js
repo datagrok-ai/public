@@ -1,6 +1,6 @@
 import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {icon} from '../../src/components/icon.js';
+import {icon} from '../../src/components/display/icon.js';
 
 // The gallery is a standalone host: without this marker css/icons.css contributes no font at all.
 document.documentElement.classList.add('u2-standalone');
