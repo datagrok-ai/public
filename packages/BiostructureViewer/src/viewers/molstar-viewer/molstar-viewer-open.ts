@@ -21,7 +21,10 @@ import {MolScriptBuilder} from 'molstar/lib/mol-script/language/builder';
 import {Script} from 'molstar/lib/mol-script/script';
 import {StructureSelection} from 'molstar/lib/mol-model/structure';
 
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+
 import {molecule3dFileExtensions} from './consts';
+import {molfileV3KToV2K} from '../../utils/molfile-converter';
 
 import {_package} from '../../package';
 
@@ -96,6 +99,11 @@ export async function parseAndVisualsData(
   const logPrefix = `parseAndVisualsData(${caller ? ` <- ${caller} ` : ''})`;
   if (!dataEff)
     throw new Error(`Argument null exception 'dataEff'.`);
+
+  // The mol reader of Mol* 2.x handles V2000 only
+  if (dataEff.ext === 'mol' && typeof dataEff.data === 'string' &&
+    !MolfileHandler.isMolfileV2K(dataEff.data) && MolfileHandler.isMolfileV3K(dataEff.data))
+    dataEff = {...dataEff, data: molfileV3KToV2K(dataEff.data)};
 
   const refListRes: string[] = [];
   const binary = dataEff.binary !== undefined ? dataEff.binary : molecule3dFileExtensions[dataEff.ext].binary;
