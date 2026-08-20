@@ -238,10 +238,14 @@ async function requireProgramWriter(
     throw new Error(`Only members of the program contributors or approvers groups can ${action} it`);
 }
 
-/** Post-publish curation: retags/moves a live version row. Requires Edit on the
- * curation columns (contributors umbrella) plus program-group membership. */
+/** Post-publish curation of a live version row — the informational columns only
+ * (tags, path, compounds, description, workstream); identity (name, program,
+ * study, revision, artifact refs) and the approval columns are not editable
+ * here. Requires program-group membership; the tags/path writes additionally
+ * need the curation column grants (contributors umbrella). */
 export async function updateCuration(rowId: string,
-  curation: {tags?: string[], path?: string}): Promise<void> {
+  curation: {tags?: string[], path?: string, compounds?: string[],
+    description?: string, workstream?: string}): Promise<void> {
   const row = await alignment().get(rowId);
   if (row == null)
     throw new Error(`Version row ${rowId} not found`);
@@ -251,6 +255,12 @@ export async function updateCuration(rowId: string,
     values.tags = await ensureRegistryRows(T_TAG, curation.tags, 'name');
   if (curation.path != null)
     values.path = curation.path;
+  if (curation.compounds != null)
+    values.compounds = await ensureRegistryRows(T_COMPOUND, curation.compounds, 'registration_code');
+  if (curation.description != null)
+    values.description = curation.description;
+  if (curation.workstream != null)
+    values.workstream = curation.workstream;
   await alignment().update(rowId, values);
 }
 

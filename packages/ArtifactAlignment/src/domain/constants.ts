@@ -23,6 +23,7 @@ export const OPT_FROZEN = 'artifactsFrozen';
 // Columns whose writes are gated through per-column property schemas
 export const APPROVAL_COLUMNS = ['status', 'approved_by', 'approved_on', 'reject_reason'] as const;
 export const CURATION_COLUMNS = ['path'] as const;
+export const WORKSTREAMS = ['clinical', 'modeling', 'discovery', 'cmc', 'other'] as const;
 
 export const UMBRELLA_APPROVERS = 'Artifacts: Approvers';
 export const UMBRELLA_CONTRIBUTORS = 'Artifacts: Contributors';

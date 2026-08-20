@@ -334,10 +334,10 @@
   <text x="42" y="646">source_artifact_id — unused (column drops need a core migration path)</text>
   <text x="42" y="664">program_id → program · onDelete: restrict · delegate  <tspan fill="#5b6b7b">[I]</tspan></text>
   <text x="42" y="682">study_id → study · 0..1 · onDelete: restrict  <tspan fill="#5b6b7b">[I]</tspan></text>
-  <text x="42" y="700">workstream  <tspan fill="#5b6b7b">[E: clinical|modeling|discovery|cmc|other]</tspan>  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="700">workstream  <tspan fill="#5b6b7b">[E: clinical|modeling|discovery|cmc|other]</tspan>  <tspan fill="#5b6b7b">[M]</tspan></text>
   <text x="42" y="718">artifact_type  <tspan fill="#5b6b7b">[E: workflow-run|function-run]</tspan>  <tspan fill="#5b6b7b">[I]</tspan></text>
   <text x="42" y="736">artifact_author (user) · artifact_created_on (datetime)  <tspan fill="#5b6b7b">[I]</tspan></text>
-  <text x="42" y="754">description</text>
+  <text x="42" y="754">description  <tspan fill="#5b6b7b">[M]</tspan></text>
   <line x1="30" y1="766" x2="650" y2="766" stroke="#7d92a5"/>
   <rect x="31" y="767" width="618" height="100" fill="#eef5fc"/>
   <text x="42" y="786" font-weight="700" fill="#1a73c4">approval columns — column security · View: everyone · Edit: approvers umbrella</text>
@@ -349,7 +349,7 @@
   <text x="42" y="887" font-weight="700" fill="#7248a8">curation — column security · View: everyone · Edit: contributors umbrella</text>
   <text x="42" y="905">path — folder-like grouping (e.g. "PK/exposure")  <tspan fill="#5b6b7b">[M]</tspan></text>
   <text x="42" y="923">tags — M:N via alignment_tag · allowCreate  <tspan fill="#5b6b7b">[M]</tspan></text>
-  <text x="42" y="941">compounds — M:N via alignment_compound  <tspan fill="#5b6b7b">[I]</tspan></text>
+  <text x="42" y="941">compounds — M:N via alignment_compound  <tspan fill="#5b6b7b">[M]</tspan></text>
   <text x="42" y="984" fill="#5b6b7b" font-size="11">shipped filter facets: status · study · workstream · molecules · tags · path · type</text>
 
   <!-- junction: alignment_compound -->

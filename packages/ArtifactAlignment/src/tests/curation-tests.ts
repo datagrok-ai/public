@@ -44,18 +44,23 @@ category('ArtifactAlignment: curation', () => {
     expect(facets.facets.path.categories.some((c: any) => c.value === 'PK/exposure'), true);
   });
 
-  test('post-publish curation edits tags and path in place', async () => {
+  test('post-publish curation edits the informational columns in place', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
     const marker = `u${Date.now()}`;
     const result = await publishRun({
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'Retagged',
-      tags: [`${marker}-old`], path: 'PK/old',
+      tags: [`${marker}-old`], path: 'PK/old', workstream: 'modeling',
     });
-    await updateCuration(result.rowId, {tags: [`${marker}-new1`, `${marker}-new2`], path: 'PK/new'});
+    await updateCuration(result.rowId, {
+      tags: [`${marker}-new1`, `${marker}-new2`], path: 'PK/new',
+      compounds: [`${marker}-GRK1`], description: 'annotated later', workstream: 'cmc'});
     const row: any = (await getLiveVersions(result.publicationId))[0];
     expect(row.path, 'PK/new');
     expect(row.tags.map((t: any) => t.name).sort().join(','), `${marker}-new1,${marker}-new2`);
+    expect(row.compounds.map((c: any) => c.name).join(','), `${marker}-GRK1`);
+    expect(row.description, 'annotated later');
+    expect(row.workstream, 'cmc');
   });
 
   test('curation is copied forward to the next version on republish', async () => {

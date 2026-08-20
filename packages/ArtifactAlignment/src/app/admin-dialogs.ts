@@ -1,12 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {programGroupNames, T_ALIGNMENT} from '../domain/constants';
+import {programGroupNames, T_ALIGNMENT, WORKSTREAMS} from '../domain/constants';
 import {ensureProgram} from '../domain/security';
 import {rejectPublication, updateCuration} from '../service/publication-service';
-
-const parseList = (value: string | null) =>
-  (value ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+import {chips, compoundsChipInput, programCompoundCodes, tagsChipInput} from './registry-inputs';
 
 /** Create/edit dialog for a program. Saves through {@link ensureProgram} — a plain
  * domain insert would skip the audience group provisioning, promote, and shares. */
@@ -94,24 +92,35 @@ export function showRejectDialog(rowId: string): DG.Dialog {
   return dialog;
 }
 
+/** Edits the informational columns of a live version row; identity (name,
+ * program, study) and the approval columns are deliberately absent. */
 export async function showCurateDialog(rowId: string): Promise<DG.Dialog> {
   const [row] = await grok.dapi.domains.table(T_ALIGNMENT).query({
-    filter: [{property: 'id', operator: '=', value: rowId}], expand: ['tags']});
+    filter: [{property: 'id', operator: '=', value: rowId}], expand: ['tags', 'compounds']});
+  const linked = row?.program_id == null ? [] : await programCompoundCodes(row.program_id);
+  const compoundsInput = compoundsChipInput(() => linked,
+    (row?.compounds ?? []).map((c: any) => c.name));
+  const tagsInput = tagsChipInput((row?.tags ?? []).map((t: any) => t.name));
+  const workstreamInput = ui.input.choice<string | null>('Workstream',
+    {items: [...WORKSTREAMS], value: row?.workstream ?? null, nullable: true});
   const pathInput = ui.input.string('Path', {value: row?.path ?? '', nullable: true});
   pathInput.setTooltip('Folder-like grouping, e.g. PK/exposure');
-  const tagsInput = ui.input.string('Tags',
-    {value: (row?.tags ?? []).map((t: any) => t.name).join(', '), nullable: true});
-  tagsInput.setTooltip('Comma-separated tags');
+  const descriptionInput = ui.input.textArea('Description', {value: row?.description ?? ''});
   return ui.dialog('Curate publication')
-    .add(pathInput)
-    .add(tagsInput)
+    .add(ui.divV([compoundsInput, tagsInput, workstreamInput, pathInput, descriptionInput]))
     .onOK(async () => {
       try {
-        await updateCuration(rowId, {path: pathInput.value?.trim() ?? '', tags: parseList(tagsInput.value)});
+        await updateCuration(rowId, {
+          path: pathInput.value?.trim() ?? '',
+          tags: chips(tagsInput.value),
+          compounds: chips(compoundsInput.value),
+          description: descriptionInput.value?.trim() ?? '',
+          workstream: workstreamInput.value ?? undefined,
+        });
         grok.shell.info('Curation saved');
       } catch (e: any) {
         grok.shell.error(`Curation failed: ${e?.message ?? e}`);
       }
     })
-    .show({center: true, width: 400});
+    .show({center: true, width: 450});
 }
