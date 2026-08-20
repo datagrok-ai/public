@@ -132,8 +132,18 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
   try {
     const programs = await grok.dapi.domains.table(T_PROGRAM).query({sort: 'code', limit: 100});
     const programHandler = new DG.DomainObjectHandler(T_PROGRAM);
+    // keyed by the node's DOM root — the wrapper identity is not stable across events
+    const nodePrograms = new Map<HTMLElement, any>();
+    const editableIds = new Set<string>();
     for (const program of programs) {
-      programsNode.item(program.code).onSelected.subscribe(async () => {
+      const item = programsNode.item(program.code);
+      nodePrograms.set(item.root, program);
+      // session-truth row permission gates the edit affordance; the save path
+      // re-checks server-side, so this is presentation only
+      void programHandler.rowFrom(program).permissions()
+        .then((p) => p.edit && editableIds.add(program.id))
+        .catch(() => {/* no edit affordance */});
+      item.onSelected.subscribe(async () => {
         grok.shell.preview = await programView(program.code) as DG.View;
         // the program's context panel renders the audience group columns as
         // clickable links — the member-management entry point for admins
@@ -141,6 +151,14 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
         grok.shell.windows.showContextPanel = true;
       });
     }
+    // subscribed on the browse-tree root: context-menu events surface there;
+    // the node map scopes the handler to this build's program items
+    treeNode.rootNode.onNodeContextMenu.subscribe((event: any) => {
+      const menu: DG.Menu | null = event?.args?.menu;
+      const program = nodePrograms.get((event?.args?.item as DG.TreeViewNode)?.root);
+      if (menu != null && program != null && editableIds.has(program.id))
+        menu.item('Edit program…', () => showProgramDialog(program));
+    });
   } catch (_) {/* no visible programs */}
   const registryNode = treeNode.group('Registry');
   registryNode.item('New study…').onSelected.subscribe(() =>
