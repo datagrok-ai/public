@@ -190,9 +190,15 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
   });
   try {
     const programs = await grok.dapi.domains.table(T_PROGRAM).query({sort: 'code', limit: 100});
+    const programHandler = new DG.DomainObjectHandler(T_PROGRAM);
     for (const program of programs) {
-      programsNode.item(program.code).onSelected.subscribe(async () =>
-        grok.shell.preview = await programView(program.code) as DG.View);
+      programsNode.item(program.code).onSelected.subscribe(async () => {
+        grok.shell.preview = await programView(program.code) as DG.View;
+        // the program's context panel renders the audience group columns as
+        // clickable links — the member-management entry point for admins
+        grok.shell.o = programHandler.rowFrom(program);
+        grok.shell.windows.showContextPanel = true;
+      });
     }
   } catch (_) {/* no visible programs */}
   const registryNode = treeNode.group('Registry');

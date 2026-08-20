@@ -1,7 +1,10 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {showProgramDialog, showRejectDialog} from '../app/admin-dialogs';
 import {AlignmentHandler, HIDDEN_GRID_COLUMNS} from '../app/catalog-app';
+import {T_PROGRAM} from '../domain/constants';
+import {cleanupTestPrograms, makeTestProgram} from './fixtures';
 
 category('ArtifactAlignment: ui forms', () => {
   test('program dialog: relevant fields only, derived group names, OK gating', async () => {
@@ -51,6 +54,22 @@ category('ArtifactAlignment: ui forms', () => {
     }
   });
 
+  test('program dialog in edit mode links the audience groups', async () => {
+    const program = await makeTestProgram();
+    const row = await grok.dapi.domains.table(T_PROGRAM).get(program.id);
+    const dialog = showProgramDialog(row);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const links = Array.from(dialog.root.querySelectorAll('.d4-link-label')).map((e) => e.textContent);
+      for (const group of [program.viewers, program.contributors, program.approvers]) {
+        expect(links.includes(group.friendlyName), true,
+          `group link '${group.friendlyName}' missing, got: ${links.join(', ')}`);
+      }
+    } finally {
+      dialog.close();
+    }
+  });
+
   test('catalog grid hides internal bookkeeping columns', async () => {
     const df = DG.DataFrame.fromColumns(
       ['name', ...HIDDEN_GRID_COLUMNS].map((n) => DG.Column.fromStrings(n, ['x'])));
@@ -60,4 +79,8 @@ category('ArtifactAlignment: ui forms', () => {
       expect(grid.columns.byName(name)?.visible, false, `'${name}' must be hidden`);
     expect(grid.columns.byName('name')?.visible, true, `'name' must stay visible`);
   });
-});
+
+  after(async () => {
+    await cleanupTestPrograms();
+  });
+}, {timeout: 120000});

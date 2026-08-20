@@ -22,12 +22,23 @@ export function showProgramDialog(existing?: {[key: string]: any}): DG.Dialog {
   const statusInput = ui.input.string('Status', {value: existing?.status ?? '', nullable: true});
   const indicationInput = ui.input.string('Indication', {value: existing?.indication ?? '', nullable: true});
   const groupsNote = ui.divText('', 'aa-program-groups-note');
+  const groupLinks = ui.divV([], {style: {gap: '4px'}});
+  if (existing != null) {
+    groupLinks.appendChild(ui.divText('Audience groups:'));
+    for (const id of [existing.viewers_group, existing.contributors_group, existing.approvers_group]) {
+      if (id != null) {
+        grok.dapi.groups.find(id)
+          .then((group) => group != null && groupLinks.appendChild(ui.render(group)))
+          .catch(() => {});
+      }
+    }
+  }
 
   let dialog = ui.dialog(existing == null ? 'New program' : `Edit program ${existing.code}`);
   for (const input of [codeInput, nameInput, descriptionInput, externalRefInput,
     stageInput, statusInput, indicationInput])
     dialog = dialog.add(input);
-  dialog = dialog.add(groupsNote)
+  dialog = dialog.add(groupsNote).add(groupLinks)
     .onOK(async () => {
       const progress = DG.TaskBarProgressIndicator.create('Saving program…');
       try {
@@ -53,7 +64,7 @@ export function showProgramDialog(existing?: {[key: string]: any}): DG.Dialog {
   const refresh = () => {
     const code = codeInput.value?.trim();
     okButton.disabled = !code || !nameInput.value?.trim();
-    const names = code ? programGroupNames(code) : null;
+    const names = existing == null && code ? programGroupNames(code) : null;
     groupsNote.textContent = names == null ? '' :
       `Audience groups: ${names.viewers}, ${names.contributors}, ${names.approvers}`;
   };
