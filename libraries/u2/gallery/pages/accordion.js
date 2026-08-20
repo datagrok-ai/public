@@ -1,4 +1,5 @@
-import {signal, computed, Scope, Component, bindText} from '../../src/index.js';
+import {signal, computed, Scope, Control, bindText} from '../../src/index.js';
+import {Accordion} from '../../src/components/accordion.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;
@@ -37,8 +38,6 @@ function paragraph(text) {
 const TITLES = ['Overview', 'Lazy details', 'Live values', 'Removable'];
 
 export async function render(main) {
-  const {Accordion} = await import('../../src/components/accordion.js');
-
   main.append(el('h1', null, 'Accordion'));
   const intro = el('p');
   intro.innerHTML = 'Panes expand independently (no exclusive mode, like the platform accordion). ' +
@@ -80,13 +79,13 @@ export async function render(main) {
   };
 
   const live = () => {
-    const content = Component.build(() => {
+    const content = Control.build(() => {
       const value = el('b');
       bindText(Scope.ambient, value, computed(() => String(ticks.value)));
       const line = el('div');
       line.append('ticks = ', value);
       return [
-        paragraph('A Component built inside the builder — adopted by the pane scope via Scope.ambient.'),
+        paragraph('A Control built inside the builder — adopted by the pane scope via Scope.ambient.'),
         line,
         button('Tick', () => ticks.value++),
       ];

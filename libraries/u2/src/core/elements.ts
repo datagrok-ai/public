@@ -2,14 +2,14 @@
    is bound through the ambient Scope, so live values never outlive their owner. */
 import {Signal, ReadonlySignal} from './signals.js';
 import {Scope} from './scope.js';
-import {Component} from './component.js';
+import {Control} from './component.js';
 import {bindText} from './bind.js';
 
-export type Child = HTMLElement | Component | string | ReadonlySignal<unknown>;
+export type Child = HTMLElement | Control | string | ReadonlySignal<unknown>;
 export type Text = string | ReadonlySignal<unknown>;
 
 const NO_OWNER = 'u2: signal binding needs an owner — ' +
-  'wrap the code in Component.build(...) or component.run(...)';
+  'wrap the code in Control.build(...) or component.run(...)';
 
 function isSignal(x: unknown): x is ReadonlySignal<unknown> {
   return x instanceof Signal;
@@ -42,7 +42,7 @@ function setText<T extends HTMLElement>(el: T, text: Text): T {
 function node(child: Child): HTMLElement | string {
   if (isSignal(child))
     return setText(element('span'), child);
-  return child instanceof Component ? child.root : child;
+  return child instanceof Control ? child.root : child;
 }
 
 function fill<T extends HTMLElement>(el: T, children?: Child[]): T {

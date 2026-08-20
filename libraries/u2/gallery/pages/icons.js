@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {icon} from '../../src/components/icon.js';
 
@@ -116,7 +116,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -209,7 +209,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Every section is a Component.build(...) builder, so the grid filter effect and every ' +
+    'Every section is a Control.build(...) builder, so the grid filter effect and every ' +
     'tooltip binding are owned by it: disposing the sections stops the filter and releases the ' +
     'hover listeners, and live scopes drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {

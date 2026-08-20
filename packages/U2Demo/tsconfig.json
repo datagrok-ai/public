@@ -45,7 +45,12 @@
     /* Module Resolution Options */
     "moduleResolution": "bundler",                  /* Specify how TypeScript looks up a file from a given module specifier. Use 'bundler' for webpack/rollup/etc. */
     // "baseUrl": "./",                             /* Base directory to resolve non-absolute module names. */
-    // "paths": {},                                 /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
+    /* Type-check against the library itself, matching the webpack alias — the copy a `file:`
+       dependency leaves in node_modules goes stale on every u2 change until a reinstall. */
+    "paths": {
+      "@datagrok-libraries/u2": ["../../libraries/u2"],
+      "@datagrok-libraries/u2/*": ["../../libraries/u2/*"]
+    },
     // "rootDirs": [],                              /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [],                             /* List of folders to include type definitions from. */
     // "types": [],                                 /* Type declaration files to be included in compilation. */

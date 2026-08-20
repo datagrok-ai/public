@@ -6,7 +6,7 @@
    drag-and-drop, touch, custom scrollables, multi-template renderers, and the mouse-controller and
    accessibility-provider indirection layers. */
 
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
 import {Action, actionsMenu} from './actions.js';
 
@@ -51,7 +51,7 @@ function complement(a: IndexRange, b: IndexRange): IndexRange[] {
 const OVERSCAN = 3;
 let listCount = 0;
 
-export class VirtualList<T> extends Component {
+export class VirtualList<T> extends Control {
   readonly selectedIndex: Signal<number> = signal(-1);
 
   private readonly _itemHeight: number;

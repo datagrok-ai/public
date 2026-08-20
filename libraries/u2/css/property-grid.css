@@ -56,6 +56,13 @@
   min-width: 0;
 }
 
+/* the editor sits inside the options box, so the box is the flex child that has to fill the cell —
+   the row's own box, not one belonging to an input nested inside a composite editor */
+.u2-propgrid-editor > .u2-input-root > .u2-input-box {
+  flex: 1;
+  min-width: 0;
+}
+
 .u2-propgrid-category {
   display: flex;
   box-sizing: border-box;

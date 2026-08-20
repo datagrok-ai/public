@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, divV, span, button} from '../../src/core/elements.js';
 import {TextInput, TextArea} from '../../src/components/text-input.js';
 import {BoolInput} from '../../src/components/bool-input.js';
@@ -58,7 +58,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -95,7 +95,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Each form above was built inside a Component.build(...) builder, so the builder owns both the ' +
+    'Each form above was built inside a Control.build(...) builder, so the builder owns both the ' +
     'form and its inputs: disposing the sections releases every effect and listener, and live ' +
     'scopes drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {

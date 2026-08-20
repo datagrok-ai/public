@@ -5,6 +5,9 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  width: 140px;
+  max-width: 140px;
+  min-width: 0;
   padding: 0;
 }
 
@@ -34,14 +37,13 @@
   color: var(--dg-text-color-light);
 }
 
-/* .u2-btn in the selector so the metric wins over css/buttons.css whatever the sheet order */
-.u2-date > .u2-btn.u2-date-toggle {
-  flex-shrink: 0;
-  height: var(--dg-inline-control-height);
-  width: var(--dg-inline-control-height);
-  min-width: var(--dg-inline-control-height);
-  margin-right: var(--dg-space-xs);
-  color: var(--dg-text-color-light);
+/* the rail carries the calendar icon and, as in the platform, no underline of its own
+   (ui.css:239-242); the selector matches the rail rule in css/inputs.css so it wins whatever the
+   sheet order */
+.u2-input-root[data-u2='date-input'] .u2-input-box > .u2-input-editor + .u2-input-options,
+.u2-input-root[data-u2='datetime-input'] .u2-input-box > .u2-input-editor + .u2-input-options {
+  align-self: flex-start;
+  border-bottom: none;
 }
 
 .u2-date-popup {

@@ -26,12 +26,14 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
     this.root.dataset.u2 = 'choice-input';
   }
 
-  /** Replaces the item list, keeping the current value if it is still one of the items. */
+  /** Replaces the item list, keeping the current value if it is still one of the items. Dropping
+   * a value whose item vanished is a {@link Input.system} write, not a user edit. */
   setItems(items: ChoiceItem[]): void {
     this._items = items;
     this._fill();
     const value = this.value.peek();
-    this.value.value = value !== null && items.some((i) => itemValue(i) === value) ? value : null;
+    Input.system(() => this.value.value =
+      value !== null && items.some((i) => itemValue(i) === value) ? value : null);
     this._select.value = this.value.peek() ?? '';
   }
 
@@ -70,43 +72,78 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
 
 export interface MultiChoiceInputOptions extends InputOptions<string[]> {
   items: ChoiceItem[];
+  /** Stands in for the checkbox list while there is nothing to check, so a picker over a live
+   * collection reads as empty rather than broken. 'No items' by default. */
+  emptyText?: string;
 }
 
 /** Compact checkbox list; the value holds the checked items in item order. */
 export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
+  private _list!: HTMLElement;
+  private _boxes!: HTMLInputElement[];
+
   constructor(options: MultiChoiceInputOptions) {
     super(options, []);
     this.root.dataset.u2 = 'multi-choice-input';
   }
 
+  /** Replaces the item list, keeping the items that are still there checked
+   * (`multi_choice_input.dart:19-37`). The value is rewritten only when something actually
+   * vanished, and that rewrite is a {@link Input.system} write rather than a user edit — Dart
+   * instead RETAINS a checked item the new list no longer offers, which leaves a value the user
+   * can neither see nor uncheck. */
+  setItems(items: ChoiceItem[]): void {
+    this._fill(items);
+    const current = new Set(this.value.peek());
+    const pruned = items.filter((i) => current.has(itemValue(i))).map(itemValue);
+    if (pruned.length !== current.size)
+      Input.system(() => this.value.value = pruned);
+  }
+
   protected createEditor(): HTMLElement {
     const list = document.createElement('div');
+    this._list = list;
     list.className = 'u2-multi-choice';
     list.setAttribute('role', 'group');
-    const boxes: HTMLInputElement[] = [];
-    for (const item of this.options.items) {
+    this._fill(this.options.items);
+    const onChange = () => {
+      this.value.value = this._boxes.filter((b) => b.checked).map((b) => b.value);
+    };
+    list.addEventListener('change', onChange);
+    this.own(() => list.removeEventListener('change', onChange));
+    this.effect(() => {
+      const selected = new Set(this.value.value);
+      for (const box of this._boxes)
+        box.checked = selected.has(box.value);
+    });
+    return list;
+  }
+
+  private _fill(items: ChoiceItem[]): void {
+    const selected = new Set(this.value.peek());
+    this._list.textContent = '';
+    this._boxes = [];
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'u2-multi-choice-empty';
+      empty.textContent = this.options.emptyText ?? 'No items';
+      this._list.append(empty);
+      return;
+    }
+    for (const item of items) {
       const row = document.createElement('label');
       row.className = 'u2-multi-choice-item';
       const box = document.createElement('input');
       box.type = 'checkbox';
       box.className = 'u2-input-checkbox';
       box.value = itemValue(item);
+      box.checked = selected.has(box.value);
       const text = document.createElement('span');
       text.textContent = itemLabel(item);
       row.append(box, text);
-      list.append(row);
-      boxes.push(box);
+      this._list.append(row);
+      this._boxes.push(box);
     }
-    const onChange = () => {
-      this.value.value = boxes.filter((b) => b.checked).map((b) => b.value);
-    };
-    list.addEventListener('change', onChange);
-    this.own(() => list.removeEventListener('change', onChange));
-    this.effect(() => {
-      const selected = new Set(this.value.value);
-      for (const box of boxes)
-        box.checked = selected.has(box.value);
-    });
-    return list;
+    this.refreshEnabled();
   }
 }

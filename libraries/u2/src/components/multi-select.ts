@@ -17,6 +17,10 @@ export interface MultiSelectOptions extends InputOptions<string[]> {
   /** Tags shown in the closed field before the '+N more' overflow. */
   maxTags?: number;
   selectAll?: boolean;
+  /** Free tags (Dart `TagsInput`): Enter in the filter box adds the typed text as an item and
+   * selects it, matching an existing item case-insensitively instead of duplicating it. Implies
+   * a filter box, since that is where the typing happens. */
+  allowCustom?: boolean;
 }
 
 export type MultiSelectState = 'idle' | 'focused' | 'open';
@@ -107,7 +111,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
     this._popup.className = 'u2-multi-select-popup';
     this._popup.tabIndex = -1;
     this._focusEl = this._popup;
-    if (this.options.filterable ?? this.options.items.length > 8)
+    if (this.options.filterable ?? (this.options.allowCustom === true || this.options.items.length > 8))
       this._popup.append(this._buildFilter());
     if (this.options.selectAll ?? true)
       this._popup.append(this._buildSelectAll());
@@ -145,7 +149,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
     filter.className = 'u2-multi-select-filter-input';
     filter.type = 'text';
     filter.autocomplete = 'off';
-    filter.placeholder = 'Filter…';
+    filter.placeholder = this.options.allowCustom ? 'Filter or add…' : 'Filter…';
     filter.setAttribute('aria-label', 'Filter options');
     filter.setAttribute('aria-controls', `${this._id}-listbox`);
     bindValue(this.scope, filter, this._filter);
@@ -197,6 +201,9 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
         this._toggleAt(this._activeIndex.peek());
         break;
       case 'enter':
+        if (!this.options.allowCustom || !this._addCustom())
+          this._dismiss(true);
+        break;
       case 'escape':
       case 'tab':
         this._dismiss(true);
@@ -267,6 +274,26 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
         selected.add(itemValue(item));
     }
     this._commit(selected);
+  }
+
+  /** Adds the typed text as an item and selects it; an item that already exists (by value or
+   * label, ignoring case) is selected instead of being added twice. False when there is nothing
+   * typed, so Enter keeps its usual "close the popup" meaning. */
+  private _addCustom(): boolean {
+    const text = this._filter.peek().trim();
+    if (text === '')
+      return false;
+    const items = this._items.peek();
+    const lower = text.toLowerCase();
+    const existing = items.find((i) =>
+      itemValue(i).toLowerCase() === lower || itemLabel(i).toLowerCase() === lower);
+    if (!existing)
+      this._items.value = [...items, text];
+    const selected = new Set(this.value.peek());
+    selected.add(existing ? itemValue(existing) : text);
+    this._commit(selected);
+    this._filter.value = '';
+    return true;
   }
 
   private _commit(selected: Set<string>): void {

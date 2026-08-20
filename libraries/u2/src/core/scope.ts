@@ -50,13 +50,26 @@ export class Scope {
     return this;
   }
 
+  /** Drops a cleanup registered by {@link own} — for things that come and go many times over
+   * the owner's life (an overlay reopened on every click) and would otherwise leave a dead
+   * closure behind on every round. */
+  disown(dispose: () => void): this {
+    const i = this._disposers.indexOf(dispose);
+    if (i >= 0)
+      this._disposers.splice(i, 1);
+    return this;
+  }
+
   dispose(): void {
     if (this._disposed)
       return;
     this._disposed = true;
     Scope._live.delete(this);
-    for (const d of this._disposers)
+    // snapshot: a cleanup that disowns itself while running would splice the list out from
+    // under this loop and skip its neighbour
+    const disposers = this._disposers;
+    this._disposers = [];
+    for (const d of disposers)
       d();
-    this._disposers.length = 0;
   }
 }

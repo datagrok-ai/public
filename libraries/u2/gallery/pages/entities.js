@@ -1,4 +1,6 @@
 import {Scope, bindText, computed} from '../../src/index.js';
+import {TypeAhead} from '../../src/components/typeahead.js';
+import {Tooltip} from '../../src/core/tooltip.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -51,9 +53,6 @@ const projectRenderer = {
 };
 
 export async function render(main) {
-  const {TypeAhead} = await import('../../src/components/typeahead.js');
-  const {Tooltip} = await import('../../src/core/tooltip.js');
-
   main.append(el('h1', null, 'Object renderers'));
   const intro = el('p');
   intro.innerHTML = 'The <code>ObjectRenderer&lt;T&gt;</code> protocol: caption / icon / ' +

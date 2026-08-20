@@ -1,4 +1,7 @@
 import {computed, Scope, bindText} from '../../src/index.js';
+import {MultiSelect} from '../../src/components/multi-select.js';
+import {TextInput} from '../../src/components/text-input.js';
+import {Form} from '../../src/components/form.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -53,10 +56,6 @@ function readout(ms) {
 }
 
 export async function render(main) {
-  const {MultiSelect} = await import('../../src/components/multi-select.js');
-  const {TextInput} = await import('../../src/components/text-input.js');
-  const {Form} = await import('../../src/components/form.js');
-
   main.append(el('h1', null, 'Multi-select'));
   const intro = el('p');
   intro.innerHTML = 'Popup multi-select: the closed field shows the picks as tags with per-tag ✕, ' +
@@ -106,6 +105,20 @@ export async function render(main) {
     placeholder: 'Pick assays…',
   });
   main.append(assays.root, readout(assays));
+
+  main.append(el('h2', null, 'Free tags (allowCustom)'));
+  main.append(el('p', 'u2-gallery-status',
+    'With allowCustom the popup always carries the filter box, and Enter turns whatever is typed ' +
+    'into a tag — the parity path for Dart\'s TagsInput. A typed word that already exists selects ' +
+    'that item instead of adding a second one, ignoring case.'));
+  const tags = new MultiSelect({
+    label: 'Tags',
+    items: ['acid', 'base', 'zwitterion'],
+    allowCustom: true,
+    maxTags: 6,
+    placeholder: 'Pick or type a tag…',
+  });
+  main.append(tags.root, readout(tags));
 
   main.append(el('h2', null, 'Validation'));
   main.append(el('p', 'u2-gallery-status',
@@ -159,7 +172,7 @@ export async function render(main) {
   main.append(el('p', 'u2-gallery-status',
     'Dispose closes any open popup and releases every effect and listener.'));
   main.append(button('Dispose multi-selects', () => {
-    for (const ms of [descriptors, series, assays, axes, columns, name, form])
+    for (const ms of [descriptors, series, assays, tags, axes, columns, name, form])
       ms.dispose();
     refresh();
   }));

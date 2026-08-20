@@ -28,6 +28,11 @@
           "description": "Compact one-row variant without a label."
         },
         {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
           "name": "tooltipText",
           "type": "string"
         },
@@ -39,6 +44,16 @@
           "name": "search",
           "type": "bool",
           "description": "Magnifier affordance plus a clear button."
+        },
+        {
+          "name": "password",
+          "type": "bool",
+          "description": "Masked field with an eye toggle."
+        },
+        {
+          "name": "autoResize",
+          "type": "bool",
+          "description": "Width follows the text between 100 and 300px."
         }
       ],
       "events": [
@@ -76,6 +91,11 @@
           "name": "inline",
           "type": "bool",
           "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
@@ -128,6 +148,11 @@
           "description": "Compact one-row variant without a label."
         },
         {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
           "name": "tooltipText",
           "type": "string"
         },
@@ -151,7 +176,7 @@
     },
     {
       "tag": "u2-number-input",
-      "description": "Numeric editor with a spinner; text that does not parse only marks the input invalid.",
+      "description": "Numeric editor; text that does not parse or falls outside min/max stays on screen and only marks the input invalid.",
       "props": [
         {
           "name": "label",
@@ -164,7 +189,7 @@
         },
         {
           "name": "value",
-          "type": "float",
+          "type": "double",
           "bindable": true,
           "twoWay": true
         },
@@ -172,6 +197,11 @@
           "name": "inline",
           "type": "bool",
           "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
@@ -184,16 +214,31 @@
         },
         {
           "name": "min",
-          "type": "float"
+          "type": "double"
         },
         {
           "name": "max",
-          "type": "float"
+          "type": "double"
         },
         {
           "name": "step",
-          "type": "float",
-          "description": "Spinner and arrow-key increment; 1 by default."
+          "type": "double",
+          "description": "Spinner, clicker and arrow-key increment; 1 by default."
+        },
+        {
+          "name": "slider",
+          "type": "bool",
+          "description": "Range control under the box, revealed on hover; needs both bounds."
+        },
+        {
+          "name": "clicker",
+          "type": "bool",
+          "description": "− / + buttons on the options rail, revealed on hover."
+        },
+        {
+          "name": "spinner",
+          "type": "bool",
+          "description": "Hover spinner inside the field."
         }
       ],
       "events": [
@@ -235,12 +280,17 @@
           "description": "Compact one-row variant without a label."
         },
         {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
           "name": "tooltipText",
           "type": "string"
         },
         {
           "name": "items",
-          "type": "string[]"
+          "type": "string_list"
         },
         {
           "name": "nullable",
@@ -279,7 +329,7 @@
         },
         {
           "name": "value",
-          "type": "string[]",
+          "type": "string_list",
           "bindable": true,
           "twoWay": true
         },
@@ -289,12 +339,22 @@
           "description": "Compact one-row variant without a label."
         },
         {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
           "name": "tooltipText",
           "type": "string"
         },
         {
           "name": "items",
-          "type": "string[]"
+          "type": "string_list"
+        },
+        {
+          "name": "emptyText",
+          "type": "string",
+          "description": "Stands in for an empty list; 'No items' by default."
         }
       ],
       "events": [
@@ -423,12 +483,12 @@
         },
         {
           "name": "sizes",
-          "type": "json",
+          "type": "object",
           "description": "Fraction per panel, normalized; equal shares by default."
         },
         {
           "name": "minSize",
-          "type": "float",
+          "type": "double",
           "description": "Smallest panel size in pixels; 60 by default."
         }
       ],
@@ -603,12 +663,12 @@
       "props": [
         {
           "name": "properties",
-          "type": "json",
-          "description": "Row descriptors: name, type (string/int/float/bool/choice), category, choices, min, max, description, readonly."
+          "type": "object",
+          "description": "Row descriptors: name, type (string/int/double/bool/choice), category, choices, min, max, description, readonly."
         },
         {
           "name": "values",
-          "type": "json",
+          "type": "object",
           "description": "Initial value per property name."
         }
       ],
@@ -640,7 +700,7 @@
       "props": [
         {
           "name": "items",
-          "type": "string[]"
+          "type": "string_list"
         }
       ],
       "events": [
@@ -654,6 +714,441 @@
             "Projects",
             "Demo"
           ]
+        }
+      }
+    },
+    {
+      "tag": "u2-slider-input",
+      "description": "Bare range track; the value shows in a tooltip on hover and while dragging.",
+      "usage": "For a value that is only meaningful within known bounds. When the exact number matters too, use `u2-number-input` — it carries the slider as an option.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "min",
+          "type": "double"
+        },
+        {
+          "name": "max",
+          "type": "double"
+        },
+        {
+          "name": "step",
+          "type": "double",
+          "description": "(max - min) / 100 by default."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-slider-input",
+        "props": {
+          "label": "Opacity",
+          "value": 50,
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "tag": "u2-radio-input",
+      "description": "Radio group over native radios; one item at a time.",
+      "usage": "For three to five always-visible options. Above that use `u2-choice-input`.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "items",
+          "type": "string_list"
+        },
+        {
+          "name": "buttons",
+          "type": "bool",
+          "description": "Raised-button variant instead of radio dots."
+        },
+        {
+          "name": "itemTooltips",
+          "type": "object",
+          "description": "Hover text per item."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-radio-input",
+        "props": {
+          "label": "Stage",
+          "items": [
+            "Discovery",
+            "Preclinical"
+          ],
+          "value": "Discovery"
+        }
+      }
+    },
+    {
+      "tag": "u2-color-input",
+      "description": "Hex field plus a swatch that opens the browser color picker.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "swatchOnly",
+          "type": "bool",
+          "description": "Swatch alone, no hex field."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-color-input",
+        "props": {
+          "label": "Color",
+          "value": "#1f77b4"
+        }
+      }
+    },
+    {
+      "tag": "u2-list-input",
+      "description": "Comma-separated list; items carrying a comma are quoted. Expands to a textarea.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string_list",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "placeholder",
+          "type": "string"
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-list-input",
+        "props": {
+          "label": "Synonyms",
+          "value": [
+            "ASA",
+            "2-acetoxybenzoic acid"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "u2-map-input",
+      "description": "Key/value rows with per-row add and remove; duplicate keys are invalid, and a row with an empty key stays out of the value.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-map-input",
+        "props": {
+          "label": "Params",
+          "value": {
+            "solvent": "DMSO"
+          }
+        }
+      }
+    },
+    {
+      "tag": "u2-qnum-input",
+      "description": "Qualified number editor — \"<5.2\", \"10\", \">1e3\". The value is the packed double the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.",
+      "usage": "For measurements reported against a detection limit. A plain number belongs in `u2-number-input` — this editor spends two bits of precision on the qualifier.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "placeholder",
+          "type": "string"
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-qnum-input",
+        "props": {
+          "label": "IC50",
+          "value": 5.2
+        }
+      }
+    },
+    {
+      "tag": "u2-font-input",
+      "description": "Font editor over the platform font string — size box with presets, bold and italic toggles, family select.",
+      "usage": "For the \"<weight> <style> <size>px <family>\" strings viewer looks carry; anything else that needs a font belongs in CSS.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "families",
+          "type": "string_list",
+          "description": "Families on offer; four defaults otherwise."
+        },
+        {
+          "name": "sizes",
+          "type": "object",
+          "description": "Sizes in the popup under the size box."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-font-input",
+        "props": {
+          "label": "Font",
+          "value": "bold normal 14px \"Roboto\""
+        }
+      }
+    },
+    {
+      "tag": "u2-image-input",
+      "description": "Image preview by URL or data URL; the REMOVE link appears on hover and clears it.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        },
+        {
+          "name": "alt",
+          "type": "string",
+          "description": "Alternative text."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-image-input",
+        "props": {
+          "label": "Logo",
+          "value": "https://datagrok.ai/img/logo.svg"
         }
       }
     }

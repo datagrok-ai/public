@@ -3,7 +3,7 @@
    are this control in `iconOnly` mode, not a separate one. WAI-ARIA: a single tab stop with roving
    ←/→ focus; `single` is radiogroup/radio, everything else stays plain buttons. */
 import {signal, Signal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Tooltip} from '../core/tooltip.js';
 import {icon} from './icon.js';
 
@@ -27,7 +27,7 @@ export interface ButtonGroupOptions {
   density?: ButtonGroupDensity;
 }
 
-export class ButtonGroup extends Component {
+export class ButtonGroup extends Control {
   /** Selected ids. `single` keeps 0..1 and never deselects on a repeat click (radio semantics);
    * `none` stays empty. Writes always produce a fresh array. */
   readonly selected: Signal<string[]> = signal<string[]>([]);

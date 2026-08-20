@@ -2,7 +2,7 @@
    over an AsyncSource, so no control hand-rolls a spinner. Combobox renders these states into
    its popup; AsyncView renders them into a content area. */
 import {AsyncSource, AsyncFetch, AsyncState} from '../core/async-source.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Scope} from '../core/scope.js';
 import {button} from '../core/elements.js';
 
@@ -39,7 +39,7 @@ export function skeleton(lines = 3): HTMLElement {
   return el;
 }
 
-export class AsyncView<T> extends Component {
+export class AsyncView<T> extends Control {
   private readonly _source: AsyncSource<T>;
   private readonly _render: (items: T[]) => HTMLElement;
   private readonly _empty: string;

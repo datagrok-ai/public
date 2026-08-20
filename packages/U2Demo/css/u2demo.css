@@ -114,3 +114,90 @@
   gap: var(--dg-space-m);
 }
 
+.u2demo-wide {
+  max-width: none;
+}
+
+/* A/B grid: a row per property, so the Dart editor and its u2 counterpart share a baseline; the
+   leading narrow column holds the '…' that opens the property's metadata in the context panel */
+.u2demo-ab {
+  display: grid;
+  /* 320px is the floor a row needs to stay a row: the widest cell measures 312 (the file input),
+     and under ~310 the u2 side wraps its caption above the editor while the Dart side does not,
+     which is the end of a row-by-row A/B. Where the pane cannot hold two of them the GRID scrolls,
+     not the page — the prose, the notes and the status line stay where they were, and only the
+     matrix moves */
+  grid-template-columns: min-content repeat(2, minmax(320px, 460px));
+  align-items: center;
+  column-gap: var(--dg-space-xxl);
+  overflow-x: auto;
+}
+
+.u2demo-ab > * {
+  min-width: 0;
+  margin: 0;
+  padding: var(--dg-space-xs) 0;
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-ab .u2-input-label,
+.u2demo-ab .ui-input-label {
+  min-width: 100px;
+}
+
+.u2demo-ab-note {
+  grid-column: 1 / -1;
+  color: var(--dg-text-color-light);
+}
+
+/* the row whose metadata the context panel is editing */
+.u2demo-ab-current {
+  background: var(--dg-selection-bg);
+}
+
+/* two editors are intrinsically wider than a cell — the 300x200 image preview and the map's
+   two-column table — so without this they bleed over the next column, push a page scrollbar, and
+   wrap their own label onto a line of its own. Each takes what the label leaves and fits into it. */
+.u2demo-ab [data-u2='image-input'] .u2-input-box,
+.u2demo-ab [data-u2='map-input'] .u2-input-box {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.u2demo-ab .u2-image-preview,
+.u2demo-ab .ui-input-image img {
+  max-width: 100%;
+  height: auto;
+}
+
+.u2demo-ab .u2-map {
+  width: 100%;
+  min-width: 0;
+}
+
+/* the platform's map is an auto-layout table, which never shrinks below its two 20-char editors */
+.u2demo-ab .ui-input-map table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.u2demo-ab .ui-input-map table input {
+  width: 100%;
+  min-width: 0;
+}
+
+.u2demo-code {
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2demo-toggles {
+  align-items: center;
+  gap: var(--dg-space-xl);
+  flex-wrap: wrap;
+}
+
+.u2demo-toggles .u2-input-label {
+  min-width: 0;
+  margin-right: var(--dg-space-s);
+}

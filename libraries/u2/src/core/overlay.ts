@@ -31,7 +31,8 @@ export class Overlay {
   }
 
   /** Shows `content` under `anchor` in the shared layer. The returned close is idempotent and
-   * also registered on `scope`, so disposing the owner tears the overlay down. */
+   * also registered on `scope`, so disposing the owner tears the overlay down; closing drops that
+   * registration again, so an input reopened all day never piles dead closures up on its scope. */
   static show(anchor: HTMLElement, content: HTMLElement, scope: Scope): () => void {
     // Fixed strategy: viewport coordinates, independent of offsetParent chains — the app's
     // dock/view containers are positioned ancestors that break absolute-strategy math.
@@ -68,6 +69,7 @@ export class Overlay {
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('keydown', onKeyDown);
       content.remove();
+      scope.disown(close);
       content.dispatchEvent(new CustomEvent(OVERLAY_CLOSE_EVENT));
     };
 

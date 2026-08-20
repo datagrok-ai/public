@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button, bigButton, link} from '../../src/core/elements.js';
 import {TextInput, TextArea} from '../../src/components/text-input.js';
 import {BoolInput} from '../../src/components/bool-input.js';
@@ -45,7 +45,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -70,7 +70,9 @@ export async function render(main) {
   const query = signal('');
   section('Text', () => {
     const text = new TextInput({label: 'Name', value: 'Aspirin', tooltipText: 'Compound name'});
-    const search = new TextInput({label: 'Search', search: true, bind: query, placeholder: 'Filter compounds…'});
+    const search = new TextInput({label: 'Search', search: true, bind: query,
+      placeholder: 'Filter compounds…',
+      tooltipText: 'The clear icon shows only while the pointer is over the input, as the platform\'s does'});
     const notes = new TextArea({label: 'Notes', placeholder: 'Grows as you type…', autoGrow: true});
     return [text, search, notes, readout('search', computed(() => query.value || '(empty)'))];
   });
@@ -112,7 +114,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Every input above was created inside a Component.build(...) builder, so it is owned by that ' +
+    'Every input above was created inside a Control.build(...) builder, so it is owned by that ' +
     'component: disposing the sections releases their effects and listeners too, and live scopes ' +
     'drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {

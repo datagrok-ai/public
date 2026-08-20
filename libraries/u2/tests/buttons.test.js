@@ -5,7 +5,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, Scope, Component} from '../src/index.js';
+import {signal, Scope, Control} from '../src/index.js';
 import {iconButton, buttonWithIcon, dropDownButton} from '../src/components/buttons.js';
 import {ButtonGroup} from '../src/components/button-group.js';
 
@@ -79,7 +79,7 @@ ui('iconButton: icon-only square button that fires its click', () => {
 ui('iconButton: the toggle signal drives aria-pressed, and the button drives the signal', () => {
   const starred = signal(false);
   const clicks = [];
-  const owner = Component.build(() => iconButton('star', () => clicks.push('star'), {toggle: starred}));
+  const owner = Control.build(() => iconButton('star', () => clicks.push('star'), {toggle: starred}));
   const el = owner.root;
   assert.equal(el.getAttribute('aria-pressed'), 'false');
 
@@ -386,7 +386,7 @@ ui('dropDownButton: the menu is rebuilt on every open, so checked state is never
 
 ui('dropDownButton: disposing the owner closes the menu and releases the listeners', async () => {
   const fired = [];
-  const owner = Component.build(() =>
+  const owner = Control.build(() =>
     dropDownButton('Export', (m) => m.item('CSV', () => fired.push('CSV'))));
   const el = mount(owner.root);
   fire(el, 'click');

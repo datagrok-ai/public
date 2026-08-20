@@ -11,7 +11,7 @@
    states, typed events, WAI-ARIA 1.2 combobox pattern, and `machineState` exposed for
    getWidgetStatus()-style introspection — the property we wanted from Zag in the first place. */
 import {signal, computed, Signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {bindValue} from '../core/bind.js';
 import {AsyncSource, AsyncState} from '../core/async-source.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../core/overlay.js';
@@ -28,7 +28,7 @@ type ComboboxEvent =
   {type: 'enter'} | {type: 'escape'} | {type: 'tab'} | {type: 'dismiss'} |
   {type: 'select', index: number};
 
-export class Combobox extends Component {
+export class Combobox extends Control {
   private static _seq = 0;
 
   readonly value: Signal<string> = signal('');

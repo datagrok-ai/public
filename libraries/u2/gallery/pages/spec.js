@@ -1,4 +1,4 @@
-import {signal, Scope, Component, SpecContext, parseSpec, renderSpec} from '../../src/index.js';
+import {signal, Scope, Control, SpecContext, parseSpec, renderSpec} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {registerAll} from '../../src/spec/registrations.js';
 
@@ -86,7 +86,7 @@ function dumpedValue(node, label) {
 }
 
 export async function render(main) {
-  const page = new Component();
+  const page = new Control();
   main.append(el('h1', null, 'Spec (dg-ui/1)'));
   const intro = el('p');
   intro.innerHTML = 'A spec is JSON: registered <code>u2-*</code> tags, validated props, ' +
@@ -168,7 +168,7 @@ export async function render(main) {
   main.append(buttons, status, host);
 
   main.append(el('h2', null, 'Render context'));
-  const context = Component.build(() => [
+  const context = Control.build(() => [
     readout('$.name', name),
     readout('$.amount', amount),
     readout('cmd:save', saved),

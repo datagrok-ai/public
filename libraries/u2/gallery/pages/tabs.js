@@ -1,4 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
+import {TabStrip} from '../../src/components/tabs.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;
@@ -40,8 +41,6 @@ const FILES = [
 ];
 
 export async function render(main) {
-  const {TabStrip} = await import('../../src/components/tabs.js');
-
   main.append(el('h1', null, 'Tabs'));
   const intro = el('p');
   intro.innerHTML = 'IDE document tabs: manual activation (focus moves with ←/→/Home/End, ' +

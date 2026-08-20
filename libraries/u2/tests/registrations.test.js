@@ -76,7 +76,7 @@ spec('manifest: survives JSON and describes every component', () => {
     assert.equal(meta.example.tag, meta.tag, `${meta.tag} has no example of itself`);
     assert.equal(Array.isArray(meta.props), true);
     for (const prop of [...meta.props, ...meta.childProps ?? []])
-      assert.match(prop.type, /^(string|int|float|bool|string\[\]|json)$/);
+      assert.match(prop.type, /^(string|int|double|bool|string_list|object)$/);
   }
 });
 
@@ -294,7 +294,7 @@ spec('manifest: the child hooks stay out of it, the metadata they need stays in'
     assert.equal(meta.acceptsChildren, true, `${tag} does not advertise its children`);
   }
   assert.deepEqual(metas.get('u2-tabs').childProps.map((p) => p.name), ['title']);
-  assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['json', 'json']);
+  assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object']);
 });
 
 spec('dump: a splitter of a form and an accordion round-trips', () => {

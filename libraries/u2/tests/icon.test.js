@@ -4,9 +4,13 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {flush, resetDom} from './dom-shim.js';
-import {Scope, Component, Tooltip} from '../src/index.js';
+import {fire, flush, resetDom} from './dom-shim.js';
+import {Scope, Control, Tooltip} from '../src/index.js';
 import {icon} from '../src/components/icon.js';
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function ui(name, body) {
   test(name, async () => {
@@ -55,8 +59,9 @@ ui('icon: without an owner the tooltip falls back to the title attribute', () =>
 });
 
 ui('icon: with an owner the tooltip binds to the scope and dies with it', () => {
-  const owner = Component.build(() => icon('info-circle', {tooltip: 'Bound'}));
+  const owner = Control.build(() => icon('info-circle', {tooltip: 'Bound'}));
   const el = owner.root;
+  document.body.append(el);
   assert.equal(el.hasAttribute('title'), false, 'the bound tooltip replaces the title attribute');
   assert.equal(el.getAttribute('aria-label'), 'Bound');
 
@@ -64,4 +69,25 @@ ui('icon: with an owner the tooltip binds to the scope and dies with it', () => 
   assert.equal(Tooltip.isVisible, true);
   owner.dispose();
   assert.equal(Tooltip.isVisible, false, 'disposing the owner hides its tooltip');
+});
+
+ui('tooltip: an anchor torn down before the hover delay elapses shows nothing', async () => {
+  const owner = Control.build(() => icon('info-circle', {tooltip: 'Pending'}));
+  document.body.append(owner.root);
+  // past the 100ms warm window, so the hover schedules the show instead of running it
+  await sleep(150);
+  assert.equal(Tooltip.isVisible, false);
+  fire(owner.root, 'pointerenter');
+
+  // what a rebuilt list does to the row under the pointer: no pointerleave ever arrives
+  owner.root.remove();
+  owner.dispose();
+  await sleep(400);                                   // past the 300ms show delay
+  assert.equal(Tooltip.isVisible, false, 'the pending show went with the anchor');
+});
+
+ui('tooltip: a detached anchor is never shown against — there is nothing to position on', () => {
+  const el = icon('info-circle');
+  Tooltip.show('Nowhere', el);
+  assert.equal(Tooltip.isVisible, false);
 });

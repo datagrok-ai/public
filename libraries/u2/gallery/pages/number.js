@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {NumberInput} from '../../src/components/number-input.js';
 
@@ -36,9 +36,16 @@ export async function render(main) {
   intro.innerHTML = 'A text editor, not <code>input type=number</code>: the native spinner and ' +
     'validation fight the token chrome. Text that does not parse stays on screen and marks the ' +
     'input invalid — the value signal keeps the last good number until it parses again. ' +
-    'Min/max are applied on commit (blur, Enter, spinner), never mid-keystroke. ' +
-    'Hover or focus an editor for the spinner; ArrowUp/ArrowDown step, Shift steps by ten, and ' +
-    'the wheel steps only while the editor is focused.';
+    '<b>Min/max validate, they do not clamp</b> (platform parity): an out-of-range number you type ' +
+    'stays visible, reaches the value signal, and shows the range message, so a form can block on ' +
+    'it. Only the bounded controls stay inside the range — the slider inherently, the spinner and ' +
+    'the clicker deliberately. <b>The chrome is the platform\'s, ported as it stands</b>: at rest ' +
+    'a bare field, and hovering anywhere on the input (the label included) reveals the − + pair on ' +
+    'the options rail, left of the units, and the slider under the field at its full width — ' +
+    'overlapping the row below by 9px, exactly as <code>d4.css</code> positions it. u2\'s own ' +
+    'hover spinner has no platform counterpart and is opt-in (<code>spinner: true</code>). ' +
+    'ArrowUp/ArrowDown step, Shift steps by ten, and the wheel steps only while the editor is ' +
+    'focused.';
   main.append(intro);
 
   const scopeCount = el('span', null, String(Scope.liveCount));
@@ -50,7 +57,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -59,7 +66,7 @@ export async function render(main) {
   const count = signal(10);
   section('Int', () => {
     const input = new NumberInput({label: 'Count', mode: 'int', min: 0, max: 100, bind: count,
-      tooltipText: 'Whole numbers, clamped to 0…100 on commit'});
+      tooltipText: 'Whole numbers; 0…100 is validated, not enforced'});
     return [input, readout('count', computed(() => shown(count.value)))];
   });
 
@@ -76,6 +83,36 @@ export async function render(main) {
     new NumberInput({label: 'Same dose', bind: shared, step: 5}),
     readout('dose', computed(() => shown(shared.value))),
   ]);
+
+  const dose = signal(250);
+  section('Slider + postfix (what a float property gets)', () => {
+    const input = new NumberInput({label: 'Dose', min: 0, max: 1000, slider: true, clicker: true,
+      postfix: 'mg', format: (v) => v.toFixed(1), bind: dose,
+      tooltipText: 'Hover the row: the slider appears under the field, the − + pair left of the units'});
+    return [input, readout('dose', computed(() => shown(dose.value)))];
+  });
+
+  const replicates = signal(3);
+  section('Clicker (what a bounded int property gets)', () => {
+    const input = new NumberInput({label: 'Replicates', mode: 'int', min: 1, max: 10, clicker: true,
+      bind: replicates, tooltipText: 'showPlusMinus: − / + step by `step ?? 1` and stop at the bounds'});
+    return [input, readout('replicates', computed(() => shown(replicates.value)))];
+  });
+
+  const spun = signal(7);
+  section('Hover spinner (u2 only, opt-in)', () => {
+    const input = new NumberInput({label: 'Rows', mode: 'int', min: 0, max: 100, spinner: true,
+      bind: spun, tooltipText: 'No platform counterpart: off unless spinner: true'});
+    return [input, readout('rows', computed(() => shown(spun.value)))];
+  });
+
+  const outOfRange = signal(5);
+  section('Out of range', () => {
+    const input = new NumberInput({label: 'Percent', min: 0, max: 100, bind: outOfRange,
+      tooltipText: 'Type 1000: the text stays, the value is 1000, the message shows'});
+    return [input, readout('percent', computed(() => shown(outOfRange.value))),
+      readout('validity', computed(() => input.validity.value ?? 'valid'))];
+  });
 
   section('Validation', () => {
     const even = new NumberInput({label: 'Even', mode: 'int', value: 2, step: 2});
@@ -96,7 +133,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Each section is a Component.build(...) owner: disposing it releases the editors\' effects, ' +
+    'Each section is a Control.build(...) owner: disposing it releases the editors\' effects, ' +
     'their key/wheel/spinner listeners and the readout bindings, and live scopes drop back to ' +
     'the page baseline.'));
   main.append(button('Dispose sections', () => {

@@ -1,4 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
+import {Combobox} from '../../src/components/combobox.js';
 
 // The library imports @floating-ui/dom by bare specifier (correct for plugin bundlers); the
 // gallery runs as raw ESM, so it needs an import map. Belongs in index.html once its owner
@@ -92,8 +93,6 @@ function readout(combo) {
 }
 
 export async function render(main) {
-  const {Combobox} = await import('../../src/components/combobox.js');
-
   main.append(el('h1', null, 'Combobox'));
   const intro = el('p');
   intro.innerHTML = 'Hand-written WAI-ARIA 1.2 combobox machine (see the header comment in ' +

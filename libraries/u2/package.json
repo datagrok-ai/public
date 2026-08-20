@@ -24,6 +24,8 @@
   "scripts": {
     "build": "tsc",
     "test": "node --test tests/*.test.js",
+    "e2e:local": "node e2e/run.mjs",
+    "e2e:stand": "node e2e/designer.stand.spec.mjs",
     "manifest": "node scripts/gen-manifest.mjs",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",

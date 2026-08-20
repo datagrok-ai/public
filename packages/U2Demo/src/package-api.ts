@@ -16,6 +16,17 @@ export namespace funcs {
     return await grok.functions.call('U2Demo:ReportsBrowserApp', {});
   }
 
+  export async function u2DesignerApp(): Promise<DG.View> {
+    return await grok.functions.call('U2Demo:U2DesignerApp', {});
+  }
+
+  /**
+  Registers u2 value editors for the property types enabled in `u2.valueEditors`
+  */
+  export async function u2AutoRegisterEditors(): Promise<void> {
+    return await grok.functions.call('U2Demo:U2AutoRegisterEditors', {});
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('U2Demo:Info', {});
   }

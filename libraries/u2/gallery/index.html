@@ -72,7 +72,9 @@
       padding: var(--dg-space-xl) var(--dg-space-xxl);
       overflow-y: auto;
     }
-    .u2-gallery-status { color: var(--dg-text-color-light); font-size: var(--dg-font-size-small); }
+    /* gap, not a trailing space in the label: HTML collapses that one away ('count =10') */
+    .u2-gallery-status { color: var(--dg-text-color-light); font-size: var(--dg-font-size-small);
+      gap: var(--dg-space-s); }
     .u2-density-toggle { display: block; margin: 0 0 8px; }
     .u2-token-grid {
       display: grid;
@@ -136,6 +138,10 @@
     <a href="#tree" data-page="tree">Tree</a>
     <a href="#select" data-page="select">Choice inputs</a>
     <a href="#number" data-page="number">Number input</a>
+    <a href="#slider" data-page="slider">Slider input</a>
+    <a href="#radio" data-page="radio">Radio input</a>
+    <a href="#color" data-page="color">Color input</a>
+    <a href="#list-map" data-page="list-map">List & map inputs</a>
     <a href="#date" data-page="date">Date & time</a>
     <a href="#dialog" data-page="dialog">Dialog</a>
     <a href="#accordion" data-page="accordion">Accordion</a>
@@ -155,6 +161,10 @@
     <a href="#badges" data-page="badges">Badges & progress</a>
     <a href="#table" data-page="table">Table</a>
     <a href="#multiselect" data-page="multiselect">Multi-select</a>
+    <a href="#bignum" data-page="bignum">Big &amp; qualified numbers</a>
+    <a href="#dynamic" data-page="dynamic">Dynamic input</a>
+    <a href="#font-image" data-page="font-image">Font &amp; image inputs</a>
+    <a href="#tags" data-page="tags">Tags input</a>
     <label style="display: flex; align-items: center; gap: 6px; padding: 8px 12px;">theme
       <select id="theme">
         <option value="">default</option>

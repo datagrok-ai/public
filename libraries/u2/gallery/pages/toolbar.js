@@ -1,4 +1,6 @@
 import {signal, computed, Scope, bindText} from '../../src/index.js';
+import {Toolbar} from '../../src/components/toolbar.js';
+import {TextInput} from '../../src/components/text-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -28,9 +30,6 @@ function button(text, onClick) {
 }
 
 export async function render(main) {
-  const {Toolbar} = await import('../../src/components/toolbar.js');
-  const {TextInput} = await import('../../src/components/text-input.js');
-
   main.append(el('h1', null, 'Toolbar'));
   const intro = el('p');
   intro.innerHTML = 'A single compact row of flat icon-style buttons: toggles reflect a ' +
@@ -44,6 +43,7 @@ export async function render(main) {
   const grid = signal(false);
   const last = signal('(none)');
   const page = new Scope();
+  Scope.ambient?.own(() => page.dispose());
 
   const bar = new Toolbar({ariaLabel: 'Document actions'});
   const filter = new TextInput({inline: true, search: true, placeholder: 'Filter…'});

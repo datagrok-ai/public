@@ -115,7 +115,7 @@ bridge('mirrors the value both ways, with the platform value canonical', () => {
   assert.equal(input.name, 'Compound', 'the caption is the u2 name');
   assert.equal(input.value.value, 'Aspirin');
   assert.equal(input.root.dataset.u2, 'dart-input');
-  assert.equal(dg.root.parentNode, input.root, 'the platform root is the whole editor');
+  assert.equal(dg.root.parentNode, input.box, 'the platform root is the whole editor');
   assert.equal(input.root.querySelector('.u2-input-label'), null, 'no second caption');
   assert.equal(dg.root.classList.contains('u2-input-editor'), false);
   assert.equal(dg.editor.classList.contains('u2-input-editor'), true, 'the skin moved to the editor');
@@ -229,7 +229,7 @@ bridge('dispose severs the bridge and leaves the platform input alone', () => {
   input.dispose();
   assert.equal(dg.subscribers.length, 0);
   assert.equal(source.listeners.length, 0);
-  assert.equal(dg.root.parentNode, input.root, 'the platform input is never detached');
+  assert.equal(dg.root.parentNode, input.box, 'the platform input is never detached');
 
   dg.value = 'b';
   assert.equal(input.value.value, 'a', 'a severed bridge carries nothing');

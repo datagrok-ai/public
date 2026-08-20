@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {
-  signal, computed, Signal, ReadonlySignal, Component, Scope,
+  signal, computed, Signal, ReadonlySignal, Control, Scope,
   divV, divH, panel, span, h3, button, bigButton, link,
   TextInput, TextArea, BoolInput, NumberInput, ChoiceInput, MultiChoiceInput,
   Combobox, TypeAhead, AsyncView, VirtualList, VirtualTree, TreeNode,
@@ -11,8 +11,12 @@ import {
 import * as DG from 'datagrok-api/dg';
 import {asDartInput, tableInput, columnInput, leakReport, propertyForm, PropertyLike,
   userInput, entityInput, chip, EntityChip, entityCard, handlerRenderer,
-  moleculeInput, moleculeRenderer}
+  moleculeInput, moleculeRenderer, fileInput, filesInput, rsaInput, tablesInput,
+  columnsInput, columnsMapInput, aggregatedColumnsInput}
   from '@datagrok-libraries/u2/src/dg/index.js';
+import {convergencePage} from './convergence';
+
+const LAST_TAB = 'u2demo.tab';
 
 const CITIES = [
   'Amsterdam', 'Athens', 'Barcelona', 'Berlin', 'Boston', 'Brussels', 'Budapest', 'Chicago',
@@ -46,7 +50,8 @@ function inputsPage(): HTMLElement {
   code.addValidator((v) => v.length > 10 ? 'At most 10 characters' : null);
 
   return divV([
-    span('Every input is a signal owner: bind to it, or pass your own signal via `bind`.', 'u2demo-hint'),
+    span('Every input is a signal owner: bind to it, or pass your own signal through the bind option.',
+      'u2demo-hint'),
     name, search, notes, enabled, notifications, dose, replicates, stage, targets, code,
     readout('search', computed(() => query.value || '(empty)')),
     readout('notifications', computed(() => String(notify.value))),
@@ -226,7 +231,7 @@ function formPage(): HTMLElement {
   const pg = new PropertyGrid();
   pg.setProperties([
     {name: 'title', type: 'string', description: 'Viewer title'},
-    {name: 'opacity', type: 'float', min: 0, max: 1},
+    {name: 'opacity', type: 'double', min: 0, max: 1},
     {name: 'width', type: 'int', min: 100, max: 2000, category: 'Layout'},
     {name: 'height', type: 'int', min: 100, max: 2000, category: 'Layout'},
     {name: 'showLegend', type: 'bool', category: 'Legend'},
@@ -288,6 +293,45 @@ function platformPage(): HTMLElement {
   ], 'u2demo-page');
 }
 
+function dgInputsPage(): HTMLElement {
+  const demog = grok.data.demo.demog(100);
+
+  const file = fileInput('File');
+  const files = filesInput('Files');
+  const key = rsaInput('Private key');
+
+  const column = columnInput('Column', demog, {rich: true});
+  const tables = tablesInput('Tables');
+  const columns = columnsInput('Columns', demog);
+  const mapping = columnsMapInput('Mapping', ['x', 'y'], demog);
+  const aggregations = aggregatedColumnsInput('Aggregations', demog);
+
+  return divV([
+    span('Inputs that need the platform: file shares through dapi, live tables and columns ' +
+      'through platform events. In local mode dapi answers every existence check with nothing, ' +
+      'so a typed path settles on "does not exist" — the state the machine is supposed to reach.',
+    'u2demo-hint'),
+    divH([
+      button('Add demog to workspace', () => grok.shell.addTableView(demog)),
+      span('— then the tables picker follows.'),
+    ], 'u2demo-row'),
+    h3('Files'),
+    file, readout('file', computed(() => file.value.value?.name ?? '(none)')),
+    files, readout('files', computed(() =>
+      files.value.value.map((f) => f.name).join(', ') || '(none)')),
+    key, readout('key', computed(() => {
+      const v = key.value.value;
+      return v ? `${v.length} characters` : '(none)';
+    })),
+    h3('Tables and columns'),
+    column, readout('column', computed(() => column.value.value ?? '(none)')),
+    tables, readout('tables', computed(() => tables.value.value.join(', ') || '(none)')),
+    columns, readout('columns', computed(() => columns.value.value.join(', ') || '(none)')),
+    mapping, readout('mapping', computed(() => JSON.stringify(mapping.value.value))),
+    aggregations, readout('aggregations', computed(() => JSON.stringify(aggregations.value.value))),
+  ], 'u2demo-page');
+}
+
 function objectFormPage(): HTMLElement {
   const group = DG.Group.create(`u2demo-${Math.random().toString(36).slice(2, 8)}`);
   const props: PropertyLike[] = [
@@ -307,18 +351,30 @@ function objectFormPage(): HTMLElement {
           result.value = 'Fix validation first';
           return;
         }
-        const saved = await grok.dapi.groups.save(group);
-        result.value = `Saved: ${saved.friendlyName} (${saved.id})`;
+        result.value = 'Saving…';
+        try {
+          const saved = await grok.dapi.groups.save(group);
+          result.value = `Saved: ${saved.friendlyName} (${saved.id})`;
+        } catch (e) {
+          result.value = `Save failed: ${e instanceof Error ? e.message : e}`;
+        }
       }),
       button('Delete', async () => {
-        await grok.dapi.groups.delete(group);
-        result.value = 'Deleted';
+        try {
+          await grok.dapi.groups.delete(group);
+          result.value = 'Deleted';
+        } catch (e) {
+          result.value = `Delete failed: ${e instanceof Error ? e.message : e}`;
+        }
       }));
   });
   return divV([
     span('propertyForm(): everything below is generated from PropertyLike metadata over a real DG.Group — ' +
       'editors chosen by type, required from nullable: false, edits write through to the entity, ' +
       'SAVE persists it via grok.dapi.groups.', 'u2demo-hint'),
+    span('SAVE and Delete need a server: in local mode dapi has nobody to talk to, so both fail — ' +
+      'the reason lands in the result line below. Open the app on a stand to persist for real.',
+    'u2demo-hint'),
     form.root,
     readout('result', result),
   ], 'u2demo-page');
@@ -409,6 +465,14 @@ const DRUGS = [
 ];
 
 function moleculesPage(): HTMLElement {
+  // everything here goes through Chem: the sketcher input, the semType editor and drawMolecule.
+  // Without the package `grok.chem.drawMolecule` still returns a host and then fails to resolve
+  // its asset — five console errors on app open in local mode, one per depiction
+  if (DG.Func.find({package: 'Chem', name: 'drawMolecule'}).length === 0) {
+    return divV([span('This tab needs the Chem package: the sketcher input, the semType-driven ' +
+      'editor and the structure depictions are all bridged to it. Open the app on a stand that ' +
+      'has Chem published.', 'u2demo-hint')], 'u2demo-page');
+  }
   const structure = moleculeInput('Structure');
   structure.value.value = DRUGS[0].smiles;
 
@@ -460,8 +524,8 @@ function moleculesPage(): HTMLElement {
   ], 'u2demo-page');
 }
 
-export function buildDemo(): Component {
-  return Component.build(() => {
+export function buildDemo(): Control {
+  return Control.build(() => {
     const status = signal('Ready');
     const compact = signal(false);
 
@@ -474,7 +538,7 @@ export function buildDemo(): Component {
       .item('About u2', () => status.value = 'u2: next-gen Datagrok UI library')
       .item('Gallery', () => window.open('https://github.com/datagrok-ai/public/tree/master/libraries/u2')));
 
-    const tabs = new TabStrip({tabs: [
+    const pages = [
       {id: 'inputs', label: 'Inputs', content: inputsPage()},
       {id: 'async', label: 'Combobox & async', content: asyncPage()},
       {id: 'lists', label: 'Lists & trees', content: listsPage()},
@@ -486,8 +550,17 @@ export function buildDemo(): Component {
       {id: 'spaces', label: 'Spaces & dashboards', content: spacesPage()},
       {id: 'molecules', label: 'Molecules', content: moleculesPage()},
       {id: 'dg', label: 'Platform bridge', content: platformPage()},
-    ]});
+      {id: 'dginputs', label: 'Files & columns', content: dgInputsPage()},
+      {id: 'convergence', label: 'Input convergence', content: convergencePage()},
+    ];
+    const tabs = new TabStrip({tabs: pages});
     tabs.root.classList.add('u2demo-tabs');
+    // the value-editor toggles only take effect on a reload; without this the reader comes back to
+    // the first tab and has to find their way to the convergence page again
+    const last = localStorage.getItem(LAST_TAB);
+    if (pages.some((p) => p.id === last))
+      tabs.activeTab.value = last;
+    Scope.ambient!.effect(() => localStorage.setItem(LAST_TAB, tabs.activeTab.value ?? ''));
 
     const statusBar = divH([
       span('Status: '), span(status),

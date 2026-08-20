@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {badge, countBadge, dot, tag} from '../../src/components/badge.js';
 import {ProgressBar} from '../../src/components/progress.js';
@@ -57,7 +57,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -181,7 +181,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Every section is a Component.build(...) builder, so its bindings, listeners and the simulate ' +
+    'Every section is a Control.build(...) builder, so its bindings, listeners and the simulate ' +
     'timer are owned by it: disposing the sections stops the counters and the running bar, and ' +
     'live scopes drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {

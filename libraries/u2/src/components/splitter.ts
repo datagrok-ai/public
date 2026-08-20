@@ -6,7 +6,7 @@
    sash states (disabled/minimum/maximum), and the layout-provider indirection — sizes are a signal
    here, so panels lay themselves out. Added: keyboard resizing, which upstream has no equivalent of. */
 
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {signal, Signal} from '../core/signals.js';
 
 export interface SplitterOptions {
@@ -25,7 +25,7 @@ interface Drag {
   total: number;
 }
 
-export class Splitter extends Component {
+export class Splitter extends Control {
   readonly sizes: Signal<number[]>;
 
   private readonly _horizontal: boolean;

@@ -1,4 +1,4 @@
-import {Component} from './component.js';
+import {Control} from './component.js';
 
 export interface PerfEntry {
   label: string;
@@ -15,7 +15,7 @@ export class Perf {
 
   /** Builds, mounts, measures, then detaches and disposes. Paint is a double-rAF wait, which
    * means nothing without a compositor — outside a browser it stays 0. */
-  static async measure(label: string, build: () => Component): Promise<PerfEntry> {
+  static async measure(label: string, build: () => Control): Promise<PerfEntry> {
     const started = performance.now();
     const component = build();
     const construct = performance.now() - started;

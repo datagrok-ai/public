@@ -1,4 +1,4 @@
-import {computed, Scope, Component} from '../../src/index.js';
+import {computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {PropertyGrid} from '../../src/components/property-grid.js';
 
@@ -35,7 +35,7 @@ const PROPS = [
   {name: 'Color scheme', type: 'choice', category: 'Appearance', choices: ['Categorical', 'Linear', 'Diverging'],
     description: 'Palette used for the marker color'},
   {name: 'Font size', type: 'int', category: 'Appearance', min: 6, max: 72, description: 'Axis label size, in pixels'},
-  {name: 'Opacity', type: 'float', category: 'Appearance', min: 0, max: 1,
+  {name: 'Opacity', type: 'double', category: 'Appearance', min: 0, max: 1,
     description: 'Marker opacity, clamped to 0…1 on commit'},
   {name: 'Show legend', type: 'bool', category: 'Appearance'},
 
@@ -96,7 +96,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;

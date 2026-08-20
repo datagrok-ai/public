@@ -4,7 +4,7 @@
    server-entity picker (OBJECTS.md in core/docs/features/ui2). */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Tooltip} from '../core/tooltip.js';
 import {ObjectRenderer} from '../core/object-renderer.js';
 import {TypeAhead} from '../components/typeahead.js';
@@ -63,7 +63,7 @@ export interface ChipOptions {
 /** An inline representation of a platform object — handler markup, handler tooltip through
  * the u2 tooltip service, click sets `grok.shell.o`, and a semantic automation id
  * (`data-entity`, plus `data-entity-id` for a `DG.Entity`). */
-export class EntityChip extends Component {
+export class EntityChip extends Control {
   constructor(x: any, options: ChipOptions = {}) {
     super(document.createElement('span'));
     const renderer = options.renderer ?? handlerRenderer();
@@ -91,7 +91,7 @@ export function chip(x: any, options: ChipOptions = {}): EntityChip {
 /** A card-sized preview of a platform object — the handler's `renderCard` (markup, then
  * caption, as fallbacks), with the same current-object click and automation ids as
  * {@link EntityChip}. The platform styles the card content itself. */
-export class EntityCard extends Component {
+export class EntityCard extends Control {
   constructor(x: any, options: ChipOptions = {}) {
     super();
     const renderer = options.renderer ?? handlerRenderer();

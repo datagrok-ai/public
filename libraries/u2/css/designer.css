@@ -1,0 +1,78 @@
+/* Design-mode chrome over a rendered spec (see src/dg/designer/). The glass pane makes the canvas
+   inert so a click hit-tests a node instead of running the control under it; the adorners are drawn
+   above the pane and never take pointer events, so they stay out of the hit-test.
+   Requires css/tokens.css, css/tree.css and css/spec.css. */
+.u2-designer {
+  position: relative;
+  height: 100%;
+  overflow: auto;
+}
+
+.u2-designer-surface {
+  padding: var(--dg-space-m);
+}
+
+.u2-designer-pane {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: default;
+}
+
+.u2-designer-selected,
+.u2-designer-hover {
+  position: absolute;
+  display: none;
+  z-index: 3;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.u2-designer-selected {
+  outline: 2px solid var(--dg-accent);
+  outline-offset: 1px;
+}
+
+.u2-designer-hover {
+  outline: var(--dg-border-width) dashed var(--dg-accent-secondary);
+  outline-offset: 1px;
+}
+
+.u2-designer-toolbox {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 200px;
+  padding: var(--dg-space-m);
+  gap: var(--dg-space-s);
+}
+
+.u2-designer-toolbox > .u2-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-designer-properties {
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-m);
+}
+
+.u2-designer-caption {
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+/* the panel's own header — the platform draws one only for entities it knows */
+.u2-designer-properties > .u2-designer-caption {
+  font-size: var(--dg-font-size-h2);
+  font-weight: var(--dg-font-weight-medium);
+  color: var(--dg-text-color);
+}
+
+.u2-designer-spec-editor textarea {
+  width: 520px;
+  height: 320px;
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}

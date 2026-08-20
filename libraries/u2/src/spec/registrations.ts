@@ -2,24 +2,33 @@
    manifest.json. Left out: components whose options are functions (list, tree, combobox, dialog,
    toolbar, async view). */
 import {Signal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {button, divH, divV, panel} from '../core/elements.js';
 import {Input, InputOptions} from '../core/input-base.js';
 import {TextInput, TextArea} from '../components/text-input.js';
 import {BoolInput} from '../components/bool-input.js';
 import {NumberInput} from '../components/number-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../components/choice-input.js';
+import {SliderInput} from '../components/slider-input.js';
+import {RadioInput} from '../components/radio-input.js';
+import {ColorInput} from '../components/color-input.js';
+import {ListInput} from '../components/list-input.js';
+import {MapInput} from '../components/map-input.js';
+import {QNum} from '../core/qnum.js';
+import {QNumInput} from '../components/qnum-input.js';
+import {FontInput} from '../components/font-input.js';
+import {ImageInput} from '../components/image-input.js';
 import {Form} from '../components/form.js';
 import {Splitter} from '../components/splitter.js';
 import {Accordion} from '../components/accordion.js';
 import {TabStrip} from '../components/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/property-grid.js';
 import {Breadcrumbs} from '../components/breadcrumbs.js';
-import {ComponentMeta, PropMeta, Registry, registry as globalRegistry} from './registry.js';
+import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry} from './registry.js';
 import type {SpecNode} from './spec.js';
 
 type Props = Record<string, unknown>;
-type Child = Component | HTMLElement;
+type Child = Control | HTMLElement;
 
 /** A bound `value` arrives as the context signal itself, so the input adopts it instead of copying:
  * no bridge, no echo, and the spec's two-way contract holds through every edit. */
@@ -30,25 +39,27 @@ function inputOptions<T>(props: Props): InputOptions<T> {
     label: props.label as string | undefined,
     name: props.name as string | undefined,
     inline: props.inline as boolean | undefined,
+    postfix: props.postfix as string | undefined,
     tooltipText: props.tooltipText as string | undefined,
     value: bound ? undefined : value as T,
     bind: bound ? value as Signal<T> : undefined,
   };
 }
 
-function inputProps(value: PropMeta['type'], ...extra: PropMeta[]): PropMeta[] {
+function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
   return [
     {name: 'label', type: 'string'},
     {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
     {name: 'value', type: value, bindable: true, twoWay: true},
     {name: 'inline', type: 'bool', description: 'Compact one-row variant without a label.'},
+    {name: 'postfix', type: 'string', description: 'Units or a short suffix shown after the editor.'},
     {name: 'tooltipText', type: 'string'},
     ...extra,
   ];
 }
 
 function element(child: Child): HTMLElement {
-  return child instanceof Component ? child.root : child;
+  return child instanceof Control ? child.root : child;
 }
 
 /** The title a container reads off its child's spec node — the one prop a parent owns. */
@@ -73,7 +84,7 @@ function container(tag: string, create: () => HTMLElement, description: string):
       const cls = props.cls as string | undefined;
       if (cls)
         el.classList.add(...cls.split(' ').filter((c) => c));
-      return new Component(el);
+      return new Control(el);
     },
     description,
     props: [{name: 'cls', type: 'string', description: 'Extra layout class.'}],
@@ -89,13 +100,17 @@ const METAS: ComponentMeta[] = [
       ...inputOptions<string>(props),
       placeholder: props.placeholder as string | undefined,
       search: props.search as boolean | undefined,
+      password: props.password as boolean | undefined,
+      autoResize: props.autoResize as boolean | undefined,
     }),
     description: 'Single-line text editor with validation.',
     usage: 'With `search: true` this is the filter box; in a platform view the main filter belongs ' +
       'in the view ribbon (`appView({ribbon})`), not inside the content area.',
     props: inputProps('string',
       {name: 'placeholder', type: 'string'},
-      {name: 'search', type: 'bool', description: 'Magnifier affordance plus a clear button.'}),
+      {name: 'search', type: 'bool', description: 'Magnifier affordance plus a clear button.'},
+      {name: 'password', type: 'bool', description: 'Masked field with an eye toggle.'},
+      {name: 'autoResize', type: 'bool', description: 'Width follows the text between 100 and 300px.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-text-input', props: {label: 'Name', value: 'Aspirin'}},
   },
@@ -132,13 +147,22 @@ const METAS: ComponentMeta[] = [
       min: props.min as number | undefined,
       max: props.max as number | undefined,
       step: props.step as number | undefined,
+      slider: props.slider as boolean | undefined,
+      clicker: props.clicker as boolean | undefined,
+      spinner: props.spinner as boolean | undefined,
     }),
-    description: 'Numeric editor with a spinner; text that does not parse only marks the input invalid.',
-    props: inputProps('float',
+    description: 'Numeric editor; text that does not parse or falls outside min/max stays on ' +
+      'screen and only marks the input invalid.',
+    props: inputProps('double',
       {name: 'mode', type: 'string', description: '"int" or "float" (default).'},
-      {name: 'min', type: 'float'},
-      {name: 'max', type: 'float'},
-      {name: 'step', type: 'float', description: 'Spinner and arrow-key increment; 1 by default.'}),
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: 'Spinner, clicker and arrow-key increment; 1 by default.'},
+      {name: 'slider', type: 'bool',
+        description: 'Range control under the box, revealed on hover; needs both bounds.'},
+      {name: 'clicker', type: 'bool',
+        description: '− / + buttons on the options rail, revealed on hover.'},
+      {name: 'spinner', type: 'bool', description: 'Hover spinner inside the field.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-number-input', props: {label: 'Amount', value: 10, min: 0, max: 100}},
   },
@@ -151,7 +175,7 @@ const METAS: ComponentMeta[] = [
     }),
     description: 'Single choice over a native select.',
     props: inputProps('string',
-      {name: 'items', type: 'string[]'},
+      {name: 'items', type: 'string_list'},
       {name: 'nullable', type: 'bool', description: 'Offers an empty option; true by default.'}),
     events: ['change'],
     example: {tag: 'u2-choice-input', props: {label: 'Series', items: ['a', 'b', 'c'], value: 'b'}},
@@ -161,15 +185,17 @@ const METAS: ComponentMeta[] = [
     create: (props) => new MultiChoiceInput({
       ...inputOptions<string[]>(props),
       items: (props.items as string[]) ?? [],
+      emptyText: props.emptyText as string | undefined,
     }),
     description: 'Checkbox list; the value holds the checked items in item order.',
-    props: inputProps('string[]', {name: 'items', type: 'string[]'}),
+    props: inputProps('string_list', {name: 'items', type: 'string_list'},
+      {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'}),
     events: ['change'],
     example: {tag: 'u2-multi-choice-input', props: {label: 'Tags', items: ['acid', 'base'], value: ['acid']}},
   },
   {
     tag: 'u2-button',
-    create: (props) => new Component(button((props.text as string | undefined) ?? '', () => {},
+    create: (props) => new Control(button((props.text as string | undefined) ?? '', () => {},
       {primary: props.primary === true})),
     description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
     props: [
@@ -191,8 +217,8 @@ const METAS: ComponentMeta[] = [
       'platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.',
     props: [
       {name: 'direction', type: 'string', description: '"horizontal" (default) or "vertical".'},
-      {name: 'sizes', type: 'json', description: 'Fraction per panel, normalized; equal shares by default.'},
-      {name: 'minSize', type: 'float', description: 'Smallest panel size in pixels; 60 by default.'},
+      {name: 'sizes', type: 'object', description: 'Fraction per panel, normalized; equal shares by default.'},
+      {name: 'minSize', type: 'double', description: 'Smallest panel size in pixels; 60 by default.'},
     ],
     acceptsChildren: true,
     example: {tag: 'u2-splitter', props: {direction: 'horizontal', sizes: [0.3, 0.7]}, children: [
@@ -277,10 +303,10 @@ const METAS: ComponentMeta[] = [
     usage: 'For editing a live object that carries Property metadata, prefer `propertyForm` — this ' +
       'grid is for descriptor-driven settings panels.',
     props: [
-      {name: 'properties', type: 'json',
-        description: 'Row descriptors: name, type (string/int/float/bool/choice), category, choices, ' +
-          'min, max, description, readonly.'},
-      {name: 'values', type: 'json', description: 'Initial value per property name.'},
+      {name: 'properties', type: 'object',
+        description: 'Row descriptors: name, type (string/int/double/bool/choice), category, ' +
+          'choices, min, max, description, readonly.'},
+      {name: 'values', type: 'object', description: 'Initial value per property name.'},
     ],
     example: {tag: 'u2-property-grid', props: {
       properties: [{name: 'Title', type: 'string'}, {name: 'Rows', type: 'int', min: 0}],
@@ -293,9 +319,119 @@ const METAS: ComponentMeta[] = [
     description: 'Path bar that collapses its middle segments when it overflows.',
     usage: 'For navigation within your own view. The shell already renders the view\'s own ' +
       'breadcrumb from its name/path — don\'t duplicate it.',
-    props: [{name: 'items', type: 'string[]'}],
+    props: [{name: 'items', type: 'string_list'}],
     events: ['click'],
     example: {tag: 'u2-breadcrumbs', props: {items: ['Home', 'Projects', 'Demo']}},
+  },
+  {
+    tag: 'u2-slider-input',
+    create: (props) => new SliderInput({
+      ...inputOptions<number | null>(props),
+      min: props.min as number | undefined,
+      max: props.max as number | undefined,
+      step: props.step as number | undefined,
+    }),
+    description: 'Bare range track; the value shows in a tooltip on hover and while dragging.',
+    usage: 'For a value that is only meaningful within known bounds. When the exact number matters ' +
+      'too, use `u2-number-input` — it carries the slider as an option.',
+    props: inputProps('double',
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: '(max - min) / 100 by default.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-slider-input', props: {label: 'Opacity', value: 50, min: 0, max: 100}},
+  },
+  {
+    tag: 'u2-radio-input',
+    create: (props) => new RadioInput({
+      ...inputOptions<string | null>(props),
+      items: (props.items as string[]) ?? [],
+      buttons: props.buttons as boolean | undefined,
+      itemTooltips: props.itemTooltips as Record<string, string> | undefined,
+    }),
+    description: 'Radio group over native radios; one item at a time.',
+    usage: 'For three to five always-visible options. Above that use `u2-choice-input`.',
+    props: inputProps('string',
+      {name: 'items', type: 'string_list'},
+      {name: 'buttons', type: 'bool', description: 'Raised-button variant instead of radio dots.'},
+      {name: 'itemTooltips', type: 'object', description: 'Hover text per item.'}),
+    events: ['change'],
+    example: {tag: 'u2-radio-input', props: {label: 'Stage', items: ['Discovery', 'Preclinical'],
+      value: 'Discovery'}},
+  },
+  {
+    tag: 'u2-color-input',
+    create: (props) => new ColorInput({
+      ...inputOptions<string>(props),
+      swatchOnly: props.swatchOnly as boolean | undefined,
+    }),
+    description: 'Hex field plus a swatch that opens the browser color picker.',
+    props: inputProps('string',
+      {name: 'swatchOnly', type: 'bool', description: 'Swatch alone, no hex field.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-color-input', props: {label: 'Color', value: '#1f77b4'}},
+  },
+  {
+    tag: 'u2-list-input',
+    create: (props) => new ListInput({
+      ...inputOptions<string[]>(props),
+      placeholder: props.placeholder as string | undefined,
+    }),
+    description: 'Comma-separated list; items carrying a comma are quoted. Expands to a textarea.',
+    props: inputProps('string_list', {name: 'placeholder', type: 'string'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-list-input', props: {label: 'Synonyms', value: ['ASA', '2-acetoxybenzoic acid']}},
+  },
+  {
+    tag: 'u2-map-input',
+    create: (props) => new MapInput(inputOptions<Record<string, string>>(props)),
+    description: 'Key/value rows with per-row add and remove; duplicate keys are invalid, and a ' +
+      'row with an empty key stays out of the value.',
+    props: inputProps('object'),
+    events: ['input', 'change'],
+    example: {tag: 'u2-map-input', props: {label: 'Params', value: {solvent: 'DMSO'}}},
+  },
+  {
+    tag: 'u2-qnum-input',
+    create: (props) => new QNumInput({
+      ...inputOptions<number | null>(props),
+      placeholder: props.placeholder as string | undefined,
+    }),
+    description: 'Qualified number editor — "<5.2", "10", ">1e3". The value is the packed double ' +
+      'the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.',
+    usage: 'For measurements reported against a detection limit. A plain number belongs in ' +
+      '`u2-number-input` — this editor spends two bits of precision on the qualifier.',
+    props: inputProps('double', {name: 'placeholder', type: 'string'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-qnum-input', props: {label: 'IC50', value: QNum.less(5.2)}},
+  },
+  {
+    tag: 'u2-font-input',
+    create: (props) => new FontInput({
+      ...inputOptions<string>(props),
+      families: props.families as string[] | undefined,
+      sizes: props.sizes as number[] | undefined,
+    }),
+    description: 'Font editor over the platform font string — size box with presets, bold and ' +
+      'italic toggles, family select.',
+    usage: 'For the "<weight> <style> <size>px <family>" strings viewer looks carry; anything ' +
+      'else that needs a font belongs in CSS.',
+    props: inputProps('string',
+      {name: 'families', type: 'string_list', description: 'Families on offer; four defaults otherwise.'},
+      {name: 'sizes', type: 'object', description: 'Sizes in the popup under the size box.'}),
+    events: ['change'],
+    example: {tag: 'u2-font-input', props: {label: 'Font', value: 'bold normal 14px "Roboto"'}},
+  },
+  {
+    tag: 'u2-image-input',
+    create: (props) => new ImageInput({
+      ...inputOptions<string>(props),
+      alt: props.alt as string | undefined,
+    }),
+    description: 'Image preview by URL or data URL; the REMOVE link appears on hover and clears it.',
+    props: inputProps('string', {name: 'alt', type: 'string', description: 'Alternative text.'}),
+    events: ['change'],
+    example: {tag: 'u2-image-input', props: {label: 'Logo', value: 'https://datagrok.ai/img/logo.svg'}},
   },
 ];
 

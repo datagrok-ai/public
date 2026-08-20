@@ -1,4 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
+import {Breadcrumbs} from '../../src/components/breadcrumbs.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;
@@ -46,8 +47,6 @@ const PATHS = {
 const DEEP = ['Home', 'Files', 'Demo', 'Chem', 'Screening', 'Runs', '2026', 'August', 'plate-17.csv'];
 
 export async function render(main) {
-  const {Breadcrumbs} = await import('../../src/components/breadcrumbs.js');
-
   main.append(el('h1', null, 'Breadcrumbs'));
   const intro = el('p');
   intro.innerHTML = 'Real buttons in a <code>nav</code>, so Tab reaches them and Enter or Space ' +

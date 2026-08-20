@@ -266,6 +266,55 @@ smoke('validators and Form validity come from the input base', async () => {
   ms.dispose();
 });
 
+smoke('allowCustom: Enter turns the typed text into a tag, matching existing items case-blind',
+  async () => {
+    const plain = mount(new MultiSelect({items: ['acid', 'base'], filterable: true}));
+    fire(field(plain), 'click');
+    await flush();
+    plain.value.value = [];
+    const off = popup().querySelector('.u2-multi-select-filter-input');
+    assert.equal(off.placeholder, 'Filter…');
+    off.value = 'ester';
+    fire(off, 'input');
+    await flush();
+    fire(popup(), 'keydown', {key: 'Enter'});
+    assert.deepEqual(plain.value.value, [], 'custom tags are off by default');
+    assert.equal(plain.isOpen.value, false, 'Enter keeps its usual meaning');
+    plain.dispose();
+
+    const ms = mount(new MultiSelect({items: ['acid', 'base'], allowCustom: true}));
+    fire(field(ms), 'click');
+    await flush();
+    const filter = popup().querySelector('.u2-multi-select-filter-input');
+    assert.ok(filter, 'allowCustom implies a filter box, whatever the item count');
+    assert.equal(filter.placeholder, 'Filter or add…');
+
+    filter.value = 'ester';
+    fire(filter, 'input');
+    await flush();
+    fire(popup(), 'keydown', {key: 'Enter'});
+    assert.deepEqual(ms.value.value, ['ester']);
+    assert.deepEqual(tags(ms), ['ester']);
+    assert.equal(ms.isOpen.value, true, 'adding a tag never closes the popup');
+    assert.equal(filter.value, '', 'the filter box is cleared for the next tag');
+    assert.equal(rows().length, 3, 'the custom item joined the list');
+
+    filter.value = 'ACID';
+    fire(filter, 'input');
+    await flush();
+    fire(popup(), 'keydown', {key: 'Enter'});
+    assert.deepEqual(ms.value.value, ['acid', 'ester'], 'an existing item is selected, not duplicated');
+    assert.equal(rows().length, 3);
+
+    fire(popup(), 'keydown', {key: 'Enter'});
+    assert.equal(ms.isOpen.value, false, 'Enter on an empty filter closes, as ever');
+
+    fire(ms.root.querySelectorAll('.u2-tag-remove')[1], 'click');
+    await flush();
+    assert.deepEqual(ms.value.value, ['acid'], 'a custom tag removes like any other');
+    ms.dispose();
+  });
+
 smoke('dispose: closes the popup and kills the listeners', async () => {
   const before = Scope.liveCount;
   const ms = select();

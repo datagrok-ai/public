@@ -135,15 +135,18 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     this._listen(input, 'focus', () => this._send({type: 'focus'}));
     this._listen(input, 'keydown', (e) => this._onFieldKeyDown(e as KeyboardEvent));
 
-    this._toggle = iconButton('calendar-day', () => this._send({type: 'toggleOpen'}),
-      {tooltip: this.withTime ? 'Choose date and time' : 'Choose date'});
+    // `calendar-alt` on the options rail, always visible — the platform's own affordance
+    // (`date_input.dart:19-28`, rail metrics `ui.css:239-242`)
+    this._toggle = iconButton('calendar-alt', () => this._send({type: 'toggleOpen'}),
+      {tooltip: 'Pick a date'});
     this._toggle.classList.add('u2-date-toggle');
     this._toggle.setAttribute('aria-haspopup', 'dialog');
+    this.addOptions(this._toggle);
 
     const field = document.createElement('div');
     this._field = field;
     field.className = 'u2-date';
-    field.append(input, this._toggle);
+    field.append(input);
     this._popup = this._buildPopup();
 
     this.effect(() => {

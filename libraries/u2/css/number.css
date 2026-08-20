@@ -1,26 +1,46 @@
-/* Number input skin — underline editor plus a spinner column revealed on hover/focus.
+/* Number input skin — the platform's chrome, ported from d4.css:75-134 and ui.css:244-254: a
+   140px underlined field, the − + pair on the options rail and the slider absolutely positioned
+   under the field, both hidden until the pointer enters the input. The hover spinner inside the
+   field is u2's own (`spinner: true`) and has no platform counterpart.
    Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
 .u2-input-editor.u2-number {
   position: relative;
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 140px;
+  max-width: 150px;
+  min-width: 0;
   padding: 0;
 }
 
-/* :not() keeps the invalid underline from inputs.css winning regardless of sheet order */
-.u2-input-editor.u2-number:not(.u2-invalid) {
+/* the underline belongs to the text box, so the slider stays clear of it */
+.u2-input-editor.u2-number,
+.u2-input-editor.u2-number.u2-invalid {
+  border-bottom: none;
+}
+
+.u2-number-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
   border-bottom: var(--dg-input-border);
 }
 
-.u2-input-editor.u2-number:not(.u2-invalid):focus-within {
+.u2-number-box:focus-within {
   border-bottom: var(--dg-input-border-focus);
 }
 
-.u2-number > input {
+.u2-number.u2-invalid .u2-number-box,
+.u2-number.u2-invalid .u2-number-box:focus-within {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+.u2-number-box > input {
   flex: 1;
   min-width: 0;
   height: 100%;
-  padding: 0 var(--dg-space-xl) 0 var(--dg-space-s);
+  padding: 0 var(--dg-space-s);
   font: inherit;
   color: inherit;
   background: none;
@@ -28,8 +48,14 @@
   outline: none;
 }
 
-.u2-number > input::placeholder {
+.u2-number-box > input::placeholder {
   color: var(--dg-text-color-light);
+}
+
+/* only the opt-in spinner needs room reserved inside the field; without it the box carries the
+   platform's own `0 4px` (ui.css:244-254 leaves the padding to the editor rule) */
+.u2-number-box:has(> .u2-number-spinner) > input {
+  padding-right: var(--dg-space-xl);
 }
 
 .u2-number-spinner {
@@ -43,8 +69,8 @@
   visibility: hidden;
 }
 
-.u2-number:hover .u2-number-spinner,
-.u2-number:focus-within .u2-number-spinner {
+.u2-number-box:hover .u2-number-spinner,
+.u2-number-box:focus-within .u2-number-spinner {
   visibility: visible;
 }
 
@@ -65,4 +91,69 @@
 .u2-number-spin:hover {
   color: var(--dg-accent);
   background: var(--dg-hover-subtle);
+}
+
+/* clicker: the platform's plus/minus pair, leftmost on the rail — before the units, which carry
+   `order: -1` (d4.css:100-116 gives the pair `order: -2`) */
+.u2-number-click > .u2-icon {
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  margin: 0;
+  font-size: inherit;
+}
+
+.u2-number-click {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  order: -2;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: var(--dg-font-size-small);
+  line-height: 1;
+  color: var(--dg-accent);
+  visibility: hidden;
+  background: none;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.u2-number-click:hover {
+  background: var(--dg-selection-bg);
+}
+
+.u2-number-click:active {
+  filter: brightness(90%) contrast(90%);
+}
+
+/* absolute, full field width, overlapping the row below by 9px — the platform's own geometry
+   (d4.css:81-89), quirk included */
+.u2-number-slider {
+  position: absolute;
+  right: 0;
+  bottom: -9px;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  z-index: 2;
+  visibility: hidden;
+  accent-color: var(--dg-accent);
+  outline: none;
+  cursor: pointer;
+}
+
+.u2-input-root:hover .u2-number-slider,
+.u2-input-root:hover .u2-number-click,
+.u2-input-box:hover .u2-number-slider,
+.u2-input-box:hover .u2-number-click {
+  visibility: visible;
+}
+
+.u2-number-slider:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-s);
 }

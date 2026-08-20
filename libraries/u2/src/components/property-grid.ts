@@ -1,6 +1,6 @@
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
 import {Scope} from '../core/scope.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Input} from '../core/input-base.js';
 import {TextInput} from './text-input.js';
 import {NumberInput} from './number-input.js';
@@ -9,7 +9,9 @@ import {ChoiceInput} from './choice-input.js';
 
 export interface PropDescriptor {
   name: string;
-  type: 'string' | 'int' | 'float' | 'bool' | 'choice';
+  /** Platform TYPE strings, as the registry and `PropertyLike` use them; `choice` is the one
+   * addition — a string constrained to {@link choices}. */
+  type: 'string' | 'int' | 'double' | 'bool' | 'choice';
   /** Rows sharing a category sit under one collapsible header; uncategorized rows come first. */
   category?: string;
   choices?: string[];
@@ -28,7 +30,7 @@ let gridCount = 0;
 
 /** Compact two-column editor over the u2 inputs: a name column and an inline editor per row.
  * The value record is replaced (never mutated) on every edit, so consumers can bind to it. */
-export class PropertyGrid extends Component {
+export class PropertyGrid extends Control {
   readonly values: Signal<Record<string, unknown>> = signal<Record<string, unknown>>({});
   readonly onChanged: ReadonlySignal<PropChange | null>;
 
@@ -146,8 +148,9 @@ export class PropertyGrid extends Component {
       case 'choice':
         return new ChoiceInput({inline: true, items: prop.choices ?? []});
       case 'int':
-      case 'float':
-        return new NumberInput({inline: true, mode: prop.type, min: prop.min, max: prop.max});
+      case 'double':
+        return new NumberInput({inline: true, mode: prop.type === 'int' ? 'int' : 'float',
+          min: prop.min, max: prop.max});
       default:
         return new TextInput({inline: true});
     }
@@ -192,7 +195,7 @@ export class PropertyGrid extends Component {
       case 'bool':
         return value === true;
       case 'int':
-      case 'float': {
+      case 'double': {
         if (typeof value === 'number')
           return value;
         const parsed = value === null || value === undefined || value === '' ? NaN : Number(value);

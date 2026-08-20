@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, divV, span, button} from '../../src/core/elements.js';
 import {iconButton, buttonWithIcon, dropDownButton} from '../../src/components/buttons.js';
 import {ButtonGroup} from '../../src/components/button-group.js';
@@ -91,7 +91,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -289,7 +289,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Every section is a Component.build(...) builder that owns its groups, toggle effects, click ' +
+    'Every section is a Control.build(...) builder that owns its groups, toggle effects, click ' +
     'listeners and tooltip bindings: disposing the sections releases all of them and live scopes ' +
     'drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {

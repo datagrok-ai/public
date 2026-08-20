@@ -30,6 +30,14 @@
   min-width: 0;
 }
 
+/* the growing editors sit inside the options box, so the box is the flex child that has to grow */
+.u2-form .u2-input-box:has(> input.u2-input-editor),
+.u2-form .u2-input-box:has(> textarea.u2-input-editor),
+.u2-form .u2-input-box:has(> .u2-input-editor.u2-input-search) {
+  flex: 1;
+  min-width: 0;
+}
+
 .u2-form-condensed .u2-form-rows {
   gap: var(--dg-space-xs);
 }

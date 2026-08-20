@@ -1,4 +1,5 @@
 import {computed, Scope, bindText} from '../../src/index.js';
+import {TypeAhead} from '../../src/components/typeahead.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -90,8 +91,6 @@ function readout(typeahead) {
 }
 
 export async function render(main) {
-  const {TypeAhead} = await import('../../src/components/typeahead.js');
-
   main.append(el('h1', null, 'Type-ahead'));
   const intro = el('p');
   intro.innerHTML = 'Generic <code>TypeAhead&lt;T&gt;</code>: the combobox machine over items of ' +

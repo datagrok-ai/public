@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Signal} from '../src/core/signals.js';
 import {Scope} from '../src/core/scope.js';
-import {Component} from '../src/core/component.js';
+import {Control} from '../src/core/component.js';
 import {TextInput} from '../src/components/text-input.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, parseSpec, renderSpec} from '../src/spec/spec.js';
@@ -192,10 +192,10 @@ spec('adopt: children are rendered first, then handed over one by one with their
     description: 'Fake adopting container for the spec tests',
     props: [],
     acceptsChildren: true,
-    create: () => new Component(),
+    create: () => new Control(),
     adopt: (parent, child, index) => {
-      adopted.push([child instanceof Component ? 'component' : child.tagName, index]);
-      parent.root.append(child instanceof Component ? child.root : child);
+      adopted.push([child instanceof Control ? 'component' : child.tagName, index]);
+      parent.root.append(child instanceof Control ? child.root : child);
     },
     example: {tag: 'u2-fake-box'},
   });
@@ -223,13 +223,13 @@ spec('createWithChildren: rendered children and their spec nodes reach the const
     props: [{name: 'gap', type: 'int'}],
     childProps: [{name: 'title', type: 'string'}],
     acceptsChildren: true,
-    create: () => new Component(),
+    create: () => new Control(),
     createWithChildren: (props, children, nodes) => {
       seen.push({gap: props.gap, titles: nodes.map((n) => n.props?.title),
-        ready: children.map((c) => c instanceof Component && c.root.querySelector('input') !== null)});
-      const component = new Component();
+        ready: children.map((c) => c instanceof Control && c.root.querySelector('input') !== null)});
+      const component = new Control();
       for (const child of children)
-        component.root.append(child instanceof Component ? child.root : child);
+        component.root.append(child instanceof Control ? child.root : child);
       return component;
     },
     example: {tag: 'u2-fake-strip'},
@@ -263,10 +263,10 @@ spec('json props: any JSON payload passes through, functions and cycles do not',
   reg.register({
     tag: 'u2-fake-json',
     description: 'Fake holder of a JSON payload',
-    props: [{name: 'payload', type: 'json'}],
+    props: [{name: 'payload', type: 'object'}],
     create: (props) => {
       seen.push(props.payload);
-      return new Component();
+      return new Control();
     },
     example: {tag: 'u2-fake-json', props: {payload: {rows: 3}}},
   });
@@ -286,7 +286,7 @@ spec('json props: any JSON payload passes through, functions and cycles do not',
       $schema: 'dg-ui/1',
       root: {tag: 'u2-fake-json', props: {payload: value}},
     }, new SpecContext(), reg);
-    assert.match(bad.root.querySelector('.u2-spec-error').textContent, /prop "payload" expects json/);
+    assert.match(bad.root.querySelector('.u2-spec-error').textContent, /prop "payload" expects object/);
     bad.dispose();
   }
   assert.equal(seen.length, 1, 'a rejected payload never reaches create');
@@ -344,6 +344,84 @@ spec('dump: round-trips the spec with live values folded in', () => {
   assert.deepEqual(restored.dump(), dumped, 'and the restored tree dumps the same again');
   instance.dispose();
   restored.dispose();
+});
+
+spec('names: round-trip through dump, and a duplicate warns on the node that repeats it', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-fake-input', name: 'nameInput', props: {label: 'Name', value: 'Aspirin'}},
+      {tag: 'span', name: 'note', props: {text: 'static'}},
+    ]},
+  };
+  const instance = renderSpec(source, new SpecContext(), reg);
+  assert.deepEqual(instance.dump(), source, 'names survive the round-trip');
+  instance.dispose();
+
+  const warnings = captureWarnings(() => {
+    const duplicate = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'div', children: [
+        {tag: 'u2-fake-input', name: 'field', props: {label: 'One'}},
+        {tag: 'u2-fake-input', name: 'field', props: {label: 'Two'}},
+      ]},
+    }, new SpecContext(), reg);
+    assert.equal(duplicate.root.querySelectorAll('.u2-spec-error').length, 0, 'a duplicate name still renders');
+    assert.equal(editors(duplicate).length, 2);
+    duplicate.dispose();
+  });
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /duplicate name "field"/);
+});
+
+spec('data-u2-name: named nodes carry the automation id, unnamed ones carry nothing', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', name: 'form', children: [
+      {tag: 'u2-fake-input', name: 'nameInput', props: {label: 'Name', value: 'Aspirin'}},
+      {tag: 'span', props: {text: 'unnamed'}},
+      {tag: 'u2-missing', name: 'brokenNode'},
+    ]},
+  };
+  const instance = renderSpec(source, new SpecContext(), reg);
+  document.body.append(instance.root);
+
+  assert.equal(instance.root.querySelector('[data-u2-name="form"]'), instance.node('form'));
+  assert.equal(instance.root.querySelector('[data-u2-name="nameInput"]'), instance.node('nameInput').root);
+  const broken = instance.root.querySelector('[data-u2-name="brokenNode"]');
+  assert.equal(broken.classList.contains('u2-spec-error'), true, 'a placeholder is addressable too');
+  assert.equal(instance.root.querySelectorAll('[data-u2-name]').length, 3, 'the unnamed span carries none');
+  assert.deepEqual(instance.dump(), source, 'stamping leaves the spec alone');
+  instance.dispose();
+});
+
+spec('nodes, node and nodeAt: every rendered node is reachable, and elements hit-test to theirs', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const input = {tag: 'u2-fake-input', name: 'nameInput', props: {label: 'Name'}};
+  const inner = {tag: 'span', name: 'note', props: {text: 'static', cls: 'note'}};
+  const middle = {tag: 'div', props: {cls: 'middle'}, children: [input, inner]};
+  const root = {tag: 'div', children: [middle]};
+  const instance = renderSpec({$schema: 'dg-ui/1', root}, new SpecContext(), reg);
+  document.body.append(instance.root);
+
+  const nodes = instance.nodes();
+  assert.equal(nodes.size, 4, 'components and HTML tags alike are tracked');
+  assert.equal(nodes.get(input).root.querySelector('input') !== null, true);
+  assert.equal(nodes.get(inner).tagName, 'SPAN');
+  assert.equal(instance.node('nameInput'), nodes.get(input));
+  assert.equal(instance.node('note'), nodes.get(inner));
+  assert.equal(instance.node('nope'), undefined);
+
+  assert.equal(instance.nodeAt(editors(instance)[0]), input, 'an element inside a component finds it');
+  assert.equal(instance.nodeAt(instance.root.querySelector('.note')), inner);
+  assert.equal(instance.nodeAt(instance.root.querySelector('.middle')), middle);
+  assert.equal(instance.nodeAt(document.createElement('div')), null, 'nothing outside the spec matches');
+  instance.dispose();
 });
 
 spec('parseSpec: takes JSON or objects and rejects a wrong envelope', () => {

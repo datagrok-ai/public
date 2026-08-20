@@ -3,36 +3,29 @@
    which DG.Property satisfies structurally; the platform itself is only reached by `editors:
    'auto'`, through the global the bundler binds `datagrok-api/dg` to. */
 import {batch} from '../core/signals.js';
+import type {PropertyLike} from '../core/property-like.js';
 import {Input, InputOptions} from '../core/input-base.js';
 import {Form} from '../components/form.js';
 import {TextInput} from '../components/text-input.js';
-import {NumberInput} from '../components/number-input.js';
+import {NumberInput, NumberInputOptions} from '../components/number-input.js';
+import {BigIntInput} from '../components/bigint-input.js';
+import {QNumInput} from '../components/qnum-input.js';
 import {BoolInput} from '../components/bool-input.js';
-import {ChoiceInput} from '../components/choice-input.js';
+import {ChoiceInput, MultiChoiceInput} from '../components/choice-input.js';
 import {DateTimeInput} from '../components/date-input.js';
+import {TextArea} from '../components/text-input.js';
+import {RadioInput} from '../components/radio-input.js';
+import {ColorInput} from '../components/color-input.js';
+import {FontInput} from '../components/font-input.js';
+import {ImageInput} from '../components/image-input.js';
+import {TagsInput} from '../components/tags-input.js';
+import {SliderInput} from '../components/slider-input.js';
+import {ListInput} from '../components/list-input.js';
+import {MapInput} from '../components/map-input.js';
 import {fromDartInput} from './from-dart-input.js';
 import {Editors} from './editors.js';
 
 type DgApi = typeof import('datagrok-api/dg');
-
-/** The property metadata a form is generated from. `DG.Property` IS a `PropertyLike`; so is any
- * descriptor that names the field and can read and write it (`type` is read when `propertyType`
- * is absent, as on a `DG.IProperty` literal). A property with no `set` renders read-only. */
-export interface PropertyLike {
-  name: string;
-  caption?: string | null;
-  friendlyName?: string | null;
-  propertyType?: string | null;
-  type?: string | null;
-  semType?: string | null;
-  description?: string | null;
-  choices?: string[] | null;
-  nullable?: boolean;
-  min?: number | null;
-  max?: number | null;
-  get?: (source: any) => any;
-  set?: (source: any, value: any) => void;
-}
 
 export interface FieldOverride extends Partial<InputOptions<any>> {
   /** Replaces the generated input entirely — a semType-specific editor, say. The form wires it to
@@ -60,13 +53,232 @@ export interface PropertySource {
   getProperties(): PropertyLike[];
 }
 
-type Kind = 'string' | 'int' | 'float' | 'bool' | 'choice' | 'datetime' | 'readonly';
+/** The value type a field is read and written in — what the editor is built from is decided
+ * separately, by {@link routeFor}. */
+type Kind = 'string' | 'int' | 'float' | 'bigint' | 'qnum' | 'bool' | 'choice' | 'datetime' |
+  'list' | 'map' | 'file' | 'readonly';
 
 interface Field {
   prop: PropertyLike;
   /** Null for a platform editor, which reads and writes the property in its own native type. */
   kind: Kind | null;
   input: Input<any>;
+}
+
+export type InputFactory = (prop: PropertyLike, options: InputOptions<any>) => Input<any>;
+
+/** Editors the router routes to but cannot import: this module has to load without the platform
+ * (its own tests, `editors` and `from-dart-input` run headless), while `FileInput` reaches for
+ * `grok.dapi` at import time. `src/dg/index.ts` registers them; a kind nobody registered falls
+ * back to a read-only text field. */
+export class PlatformInputs {
+  private static readonly _factories: Record<string, InputFactory> = {};
+
+  /** Returns the unregister function, as {@link Editors.register} does. */
+  static register(kind: string, factory: InputFactory): () => void {
+    PlatformInputs._factories[kind] = factory;
+    return () => {
+      if (PlatformInputs._factories[kind] === factory)
+        delete PlatformInputs._factories[kind];
+    };
+  }
+
+  static create(kind: string, prop: PropertyLike, options: InputOptions<any>): Input<any> | null {
+    const factory = PlatformInputs._factories[kind];
+    return factory ? factory(prop, options) : null;
+  }
+}
+
+/** `InputType` → editor, the u2 half of the platform's `inputFactories` map
+ * (`input_base.dart:580-607`); an input type u2 has no editor for falls through to the rest of
+ * the routing, where Dart would reach for a JS-registered input instead. */
+const BY_INPUT_TYPE: Record<string, InputFactory> = {
+  Text: (prop, options) => new TextInput(options),
+  Search: (prop, options) => new TextInput({...options, search: true}),
+  TextArea: (prop, options) => new TextArea(options),
+  Int: (prop, options) => new NumberInput({...options, ...numberOptions(prop, 'int', options)}),
+  Float: (prop, options) => new NumberInput({...options, ...numberOptions(prop, 'float', options)}),
+  BigInt: (prop, options) => new BigIntInput(options),
+  QNum: (prop, options) => new QNumInput({...options, format: formatter(prop)}),
+  Slider: (prop, options) => sliderFor(prop, options),
+  Bool: (prop, options) => new BoolInput(options),
+  Switch: (prop, options) => new BoolInput({...options, switch: true}),
+  Date: (prop, options) => new DateTimeInput(options),
+  Color: (prop, options) => new ColorInput(options),
+  Font: (prop, options) => new FontInput(options),
+  Image: (prop, options) => new ImageInput(options),
+  Radio: (prop, options) => new RadioInput({...options, items: prop.choices ?? []}),
+  Choice: (prop, options) => new ChoiceInput({...options, items: prop.choices ?? []}),
+  MultiChoice: (prop, options) => new MultiChoiceInput({...options, items: prop.choices ?? []}),
+  Tags: (prop, options) => new TagsInput<string>({...options, items: prop.choices ?? undefined,
+    allowNew: true}),
+  List: (prop, options) => new ListInput(options),
+  Map: (prop, options) => new MapInput(options),
+  File: (prop, options) => fileInputFor(prop, options),
+};
+
+/** `editor` → editor (`input_base.dart:702-728`), matched case-insensitively: Dart compares against
+ * lower-case 'textarea', while `Property.propertyOptions` writes the `InputType` spelling
+ * ('TextArea') into its own `description` option (`property.ts:326`). */
+const BY_EDITOR: Record<string, InputFactory> = {
+  textarea: (prop, options) => new TextArea(options),
+  password: (prop, options) => new TextInput({...options, password: true}),
+  switch: (prop, options) => new BoolInput({...options, switch: true}),
+  slider: (prop, options) => sliderFor(prop, options),
+};
+
+/** The property types each `editor` hint is honored for, mirroring where `_forProperty` reaches its
+ * branch: switch under `pt == Types.BOOL` (`input_base.dart:702`), textarea and password under
+ * `pt == Types.STRING` (`:725-728`), and the slider (`:705`) for everything the two bool branches
+ * above it did not already take. A hint the type does not accept is ignored, and the type's own
+ * editor is built — `{editor: 'textarea', type: 'int'}` is an int box on both sides. */
+const EDITOR_TYPES: Record<string, (type: string | null | undefined) => boolean> = {
+  textarea: (type) => type === 'string',
+  password: (type) => type === 'string',
+  switch: (type) => type === 'bool',
+  slider: (type) => type !== 'bool',
+};
+
+function kindOf(prop: PropertyLike, assumeWritable = false): Kind {
+  if (!prop.set && !assumeWritable)
+    return 'readonly';
+  const type = prop.propertyType ?? prop.type;
+  if (type === 'list')
+    return 'list';
+  if (type === 'map')
+    return 'map';
+  if (type === 'file' || type === 'blob')
+    return 'file';
+  if (prop.choices != null && prop.choices.length > 0)
+    return 'choice';
+  switch (type) {
+    case 'string':
+      return 'string';
+    case 'datetime':
+      return 'datetime';
+    case 'int':
+      return 'int';
+    case 'bigint':
+      return 'bigint';
+    case 'qnum':
+      return 'qnum';
+    case 'double':
+    case 'float':
+    case 'num':
+      return 'float';
+    case 'bool':
+      return 'bool';
+    default:
+      return 'readonly';
+  }
+}
+
+/** The editor the property's own hints ask for, before its type gets a say. */
+function routeFor(prop: PropertyLike, options: InputOptions<any>): Input<any> | null {
+  const byInputType = prop.inputType ? BY_INPUT_TYPE[prop.inputType] : undefined;
+  if (byInputType)
+    return byInputType(prop, options);
+  const editor = prop.editor?.toLowerCase();
+  const byEditor = editor ? BY_EDITOR[editor] : undefined;
+  return byEditor && EDITOR_TYPES[editor!](prop.propertyType ?? prop.type) ?
+    byEditor(prop, options) : null;
+}
+
+function sliderFor(prop: PropertyLike, options: InputOptions<any>): Input<any> {
+  return new SliderInput({...options, min: finite(prop.min) ?? 0, max: finite(prop.max) ?? 100,
+    step: finite(prop.step)});
+}
+
+function fileInputFor(prop: PropertyLike, options: InputOptions<any>): Input<any> {
+  return PlatformInputs.create('file', prop, options) ?? readonlyText(options);
+}
+
+function readonlyText(options: InputOptions<any>): Input<any> {
+  const input = new TextInput(options);
+  input.enabled = false;
+  return input;
+}
+
+function finite(value: number | null | undefined): number | undefined {
+  return typeof value === 'number' && isFinite(value) ? value : undefined;
+}
+
+/** `DG.format` where the platform is loaded (the same global `editors: 'auto'` reaches for);
+ * without it the input keeps its own precision rules. */
+function formatter(prop: PropertyLike): ((value: number) => string) | undefined {
+  const format = prop.format;
+  const dgFormat = (globalThis as any).DG?.format as ((x: number, f: string) => string) | undefined;
+  if (format == null || format === '' || typeof dgFormat !== 'function')
+    return undefined;
+  return (value) => dgFormat(value, format);
+}
+
+/** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart:119-129`): bounds, step
+ * and format from the property, a clicker on bounded ints, a slider on floats or on explicit
+ * `showSlider`, units as the postfix. */
+function numberOptions(prop: PropertyLike, kind: 'int' | 'float',
+  options: InputOptions<any>): NumberInputOptions {
+  const min = finite(prop.min);
+  const max = finite(prop.max);
+  return {
+    mode: kind === 'int' ? 'int' : 'float',
+    min, max,
+    step: finite(prop.step),
+    slider: prop.showSlider === true || kind === 'float',
+    clicker: prop.showPlusMinus ?? (kind === 'int' && min !== undefined && max !== undefined),
+    format: formatter(prop),
+    postfix: options.postfix ?? prop.units ?? undefined,
+  };
+}
+
+export interface PropertyInputOptions extends InputOptions<any> {
+  /** Builds the editor the property's type asks for even when the property has no setter. For a
+   * value editor (`dartInputFor`) the value belongs to the platform proxy, not to the property,
+   * and a `FuncParam` never carries a `set` — without this every func-param dialog would get a
+   * disabled text box. */
+  assumeWritable?: boolean;
+}
+
+/** The editor {@link propertyForm} generates for a property, with the platform's own metadata
+ * mapping applied. Exported for value-editor builders (`dartInputFor`), which learn the property
+ * only after the platform binds it; a null property — nothing bound — gets a plain text editor. */
+export function inputForProperty(prop: PropertyLike | null,
+  options: PropertyInputOptions = {}): Input<any> {
+  const {assumeWritable, ...rest} = options;
+  if (prop == null)
+    return new TextInput(rest);
+  const kind = kindOf(prop, assumeWritable);
+  const merged: InputOptions<any> = {nullable: prop.nullable,
+    tooltipText: prop.description ?? undefined, ...rest};
+  if (kind === 'readonly')
+    return readonlyText(merged);
+  const routed = routeFor(prop, merged);
+  if (routed != null)
+    return routed;
+  switch (kind) {
+    case 'bool':
+      return new BoolInput(merged);
+    case 'choice':
+      return new ChoiceInput({...merged, items: prop.choices ?? []});
+    case 'int':
+    case 'float':
+      return new NumberInput({...merged, ...numberOptions(prop, kind, merged)});
+    case 'bigint':
+      return new BigIntInput(merged);
+    case 'qnum':
+      return new QNumInput({...merged, format: formatter(prop)});
+    case 'datetime':
+      return new DateTimeInput(merged);
+    case 'list':
+      return prop.choices != null && prop.choices.length > 0 ?
+        new MultiChoiceInput({...merged, items: prop.choices}) : new ListInput(merged);
+    case 'map':
+      return new MapInput(merged);
+    case 'file':
+      return fileInputFor(prop, merged);
+    default:
+      return new TextInput(merged);
+  }
 }
 
 /** A {@link Form} generated from property metadata and kept in sync with {@link target} both ways:
@@ -118,7 +330,7 @@ export class ObjectForm extends Form {
   }
 
   private _addField(prop: PropertyLike, override: FieldOverride): void {
-    const kind = ObjectForm._kindOf(prop);
+    const kind = kindOf(prop);
     const {input: custom, ...rest} = override;
     const options: InputOptions<any> = {
       name: prop.name,
@@ -130,7 +342,7 @@ export class ObjectForm extends Form {
     const registered = custom ? null : this.run(() => Editors.resolve(prop, options));
     const platform = (custom ?? registered) != null ? null : this._platformInput(prop);
     const input = custom ?? registered ?? platform ??
-      this.run(() => ObjectForm._createInput(prop, kind, options));
+      this.run(() => inputForProperty(prop, options));
     const native = input === platform;
     if (!native) {
       input.value.value = this._read(prop, kind);
@@ -160,7 +372,7 @@ export class ObjectForm extends Form {
     // after that effect returns, so a transient flag would already be down (as in PropertyGrid)
     this.effect(() => {
       const value = input.value.value;
-      if (Object.is(value, this._read(prop, kind)))
+      if (ObjectForm._same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
       this._onChanged?.(prop.name, value);
@@ -196,64 +408,23 @@ export class ObjectForm extends Form {
     return exclude ? selected.filter((p) => !exclude.includes(p.name)) : selected;
   }
 
-  private static _kindOf(prop: PropertyLike): Kind {
-    if (!prop.set)
-      return 'readonly';
-    if (prop.choices != null && prop.choices.length > 0)
-      return 'choice';
-    switch (prop.propertyType ?? prop.type) {
-      case 'string':
-        return 'string';
-      case 'datetime':
-        return 'datetime';
-      case 'int':
-      case 'bigint':
-        return 'int';
-      case 'double':
-      case 'float':
-      case 'num':
-      case 'qnum':
-        return 'float';
-      case 'bool':
-        return 'bool';
-      default:
-        return 'readonly';
-    }
-  }
-
-  private static _createInput(prop: PropertyLike, kind: Kind, options: InputOptions<any>): Input<any> {
-    switch (kind) {
-      case 'bool':
-        return new BoolInput(options);
-      case 'choice':
-        return new ChoiceInput({...options, items: prop.choices ?? []});
-      case 'int':
-      case 'float':
-        return new NumberInput({...options, mode: kind === 'int' ? 'int' : 'float',
-          min: ObjectForm._number(prop.min), max: ObjectForm._number(prop.max)});
-      case 'datetime':
-        return new DateTimeInput(options);
-      case 'readonly': {
-        const input = new TextInput(options);
-        input.enabled = false;
-        return input;
-      }
-      default:
-        return new TextInput(options);
-    }
-  }
-
   private static _coerce(kind: Kind, value: unknown): any {
     switch (kind) {
       case 'bool':
         return value === true;
       case 'int':
-      case 'float': {
+      case 'float':
+      case 'qnum': {
         if (typeof value === 'number')
           return value;
         const parsed = value === null || value === undefined || value === '' ? NaN : Number(value);
         return isFinite(parsed) ? parsed : null;
       }
+      // js-api marshals a Dart `BigInt` to a JS one and back (wrappers_impl.ts:88,133); a property
+      // that hands over the digits as text is read here just as well
+      case 'bigint':
+        return typeof value === 'bigint' ? value :
+          (value === null || value === undefined ? null : BigIntInput.parse(String(value)) ?? null);
       case 'choice':
         return value === null || value === undefined ? null : String(value);
       case 'datetime': {
@@ -266,13 +437,36 @@ export class ObjectForm extends Form {
         const date = typeof dayjsLike.toDate === 'function' ? dayjsLike.toDate() : new Date(value as string | number);
         return isNaN(date.getTime()) ? null : date;
       }
+      case 'list':
+        return Array.isArray(value) ? value :
+          (value === null || value === undefined || value === '' ? [] : ListInput.parse(String(value)));
+      case 'map':
+        return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
+      // the platform's own value (a FileInfo), handed to the platform's own editor untouched
+      case 'file':
+        return value ?? null;
       default:
         return value === null || value === undefined ? '' : String(value);
     }
   }
 
-  private static _number(value: number | null | undefined): number | undefined {
-    return typeof value === 'number' && isFinite(value) ? value : undefined;
+  /** Identity for echo suppression. `Object.is` decides the scalars, but {@link _coerce} builds a
+   * fresh `Date`, list or record on every read of an empty or foreign-shaped value, so identity
+   * alone would report an edit — and fire `onChanged` — the moment the field is constructed. */
+  private static _same(a: unknown, b: unknown): boolean {
+    if (a instanceof Date && b instanceof Date)
+      return a.getTime() === b.getTime();
+    if (Array.isArray(a) && Array.isArray(b))
+      return a.length === b.length && a.every((item, i) => Object.is(item, b[i]));
+    if (ObjectForm._isRecord(a) && ObjectForm._isRecord(b)) {
+      const keys = Object.keys(a);
+      return keys.length === Object.keys(b).length && keys.every((k) => Object.is(a[k], b[k]));
+    }
+    return Object.is(a, b);
+  }
+
+  private static _isRecord(x: unknown): x is Record<string, unknown> {
+    return typeof x === 'object' && x !== null && !Array.isArray(x) && !(x instanceof Date);
   }
 
   private static _isEmpty(value: unknown): boolean {

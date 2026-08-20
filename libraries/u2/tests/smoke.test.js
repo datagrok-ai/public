@@ -6,7 +6,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {
-  signal, computed, batch, untracked, Scope, Component, bindText, bindValue, AsyncSource,
+  signal, computed, batch, untracked, Scope, Control, bindText, bindValue, AsyncSource,
   Overlay, OVERLAY_CLOSE_EVENT, Tooltip, VirtualList, VirtualTree, Combobox, TabStrip, Menu,
   Splitter, TextInput, TextArea, BoolInput, ChoiceInput, MultiChoiceInput, NumberInput, Dialog,
   Accordion, Breadcrumbs, Toolbar, Form, panel, div, span, h1, button, link,
@@ -108,11 +108,11 @@ smoke('bindText/bindValue: live text and echo-suppressed two-way binding', () =>
   assert.equal(label.textContent, 'Hello, typed!');
 });
 
-smoke('Component.build: everything built inside is disposed with the result', () => {
+smoke('Control.build: everything built inside is disposed with the result', () => {
   let inner;
   let released = 0;
   const value = signal('x');
-  const outer = Component.build(() => {
+  const outer = Control.build(() => {
     inner = new TextInput({label: 'Name'});
     Scope.ambient.own(() => released++);
     return [inner, panel([span(value)])];
@@ -390,8 +390,8 @@ smoke('TextArea and BoolInput: bound editors and the switch variant', () => {
   toggle.dispose();
 });
 
-smoke('NumberInput: parses, steps and clamps', () => {
-  const count = mount(new NumberInput({label: 'Count', mode: 'int', min: 0, max: 10, step: 2}));
+smoke('NumberInput: parses, steps, and validates instead of clamping typed text', () => {
+  const count = mount(new NumberInput({label: 'Count', mode: 'int', min: 0, max: 10, step: 2, spinner: true}));
   const editor = count.root.querySelector('input');
 
   editor.value = 'abc';
@@ -412,8 +412,12 @@ smoke('NumberInput: parses, steps and clamps', () => {
   editor.value = '-5';
   fire(editor, 'input');
   fire(editor, 'blur');
-  assert.equal(count.value.value, 0, 'commit clamps at min');
-  assert.equal(editor.value, '0');
+  assert.equal(count.value.value, -5, 'out-of-range text is kept, as the platform input keeps it');
+  assert.equal(editor.value, '-5');
+  assert.equal(count.validity.value, 'Value must be at least 0');
+  fire(count.root.querySelector('.u2-number-spin'), 'click');
+  assert.equal(count.value.value, 0, 'stepping clamps back into range');
+  assert.equal(count.validity.value, null);
   count.dispose();
 });
 
@@ -481,7 +485,7 @@ smoke('Accordion: lazy pane content is built once and disposed with the pane', (
   const accordion = mount(new Accordion());
   const pane = accordion.addPane('Details', () => {
     builds++;
-    const content = new Component();
+    const content = new Control();
     content.own(() => released++);
     return content.root;
   });
@@ -570,7 +574,7 @@ smoke('Form: aggregates validity, focuses the first invalid input, round-trips v
 });
 
 smoke('Tooltip: bind shows on hover, hide clears it, dispose unbinds', async () => {
-  const host = new Component();
+  const host = new Control();
   const target = document.createElement('button');
   document.body.append(target);
   Tooltip.bind(target, () => 'Compound name', host.scope);
@@ -643,7 +647,7 @@ smoke('AsyncSource: debounces, aborts the superseded call, retries and reports e
 smoke('Perf: times construction, disposes the tree, accumulates the report', async () => {
   const before = Perf.report().length;
   let inner;
-  const entry = await Perf.measure('two inputs', () => Component.build(() => {
+  const entry = await Perf.measure('two inputs', () => Control.build(() => {
     inner = new TextInput({label: 'Name'});
     return [inner, new BoolInput({label: 'Flag'})];
   }));

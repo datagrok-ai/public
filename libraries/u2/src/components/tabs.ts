@@ -2,7 +2,7 @@
    model and the widget layer we skipped). The overflow dropdown is a plain absolutely-positioned
    div rather than the Overlay layer: it is anchored inside the header and must not outlive it. */
 import {signal, untracked, Signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 
 export interface TabOptions {
   id: string;
@@ -21,7 +21,7 @@ interface Tab {
 
 let stripCount = 0;
 
-export class TabStrip extends Component {
+export class TabStrip extends Control {
   readonly activeTab: Signal<string | null> = signal<string | null>(null);
   readonly onTabClosed: ReadonlySignal<string | null>;
 

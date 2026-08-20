@@ -1,5 +1,5 @@
 import {batch, computed, signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Input} from '../core/input-base.js';
 
 export interface FormOptions {
@@ -13,7 +13,7 @@ const LABELS = '.u2-input-label, .ui-input-label';
 
 /** Vertical input layout with an aligned label column and aggregated validity. The form does not
  * own the inputs it lays out: each one is already adopted by the scope that created it. */
-export class Form extends Component {
+export class Form extends Control {
   readonly validity: ReadonlySignal<string | null>;
 
   private readonly _rows = document.createElement('div');

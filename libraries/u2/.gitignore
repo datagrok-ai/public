@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .idea
+e2e/.artifacts/
 
 src/**/*.js
 src/**/*.d.ts

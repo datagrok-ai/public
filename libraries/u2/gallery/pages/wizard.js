@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divV, divH, span, button} from '../../src/core/elements.js';
 import {TextInput} from '../../src/components/text-input.js';
 import {Form} from '../../src/components/form.js';
@@ -110,7 +110,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -151,7 +151,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Both wizards were built inside a Component.build(...) builder, so the sections own them: ' +
+    'Both wizards were built inside a Control.build(...) builder, so the sections own them: ' +
     'disposing releases the per-step scopes (including whatever a lazy step built), the rail and ' +
     'content listeners and the dialog — live scopes return to the page baseline.'));
   main.append(button('Dispose sections', () => {

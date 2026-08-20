@@ -5,7 +5,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, computed, Scope, Component} from '../src/index.js';
+import {signal, computed, Scope, Control} from '../src/index.js';
 import {badge, countBadge, dot, tag} from '../src/components/badge.js';
 import {ProgressBar} from '../src/components/progress.js';
 
@@ -41,7 +41,7 @@ ui('badge: every variant gets its own class, and text follows a signal', () => {
     assert.equal(badge('x', {variant}).classList.contains(`u2-badge-${variant}`), true);
 
   const status = signal('Draft');
-  const owner = Component.build(() => badge(status, {variant: 'warning'}));
+  const owner = Control.build(() => badge(status, {variant: 'warning'}));
   assert.equal(owner.root.textContent, 'Draft');
   status.value = 'Published';
   assert.equal(owner.root.textContent, 'Published');
@@ -60,7 +60,7 @@ ui('countBadge: caps at max, hides at zero and follows its signal', () => {
   assert.equal(countBadge(1).style.display, '');
 
   const unread = signal(0);
-  const owner = Component.build(() => countBadge(unread));
+  const owner = Control.build(() => countBadge(unread));
   const el = owner.root;
   assert.equal(el.style.display, 'none', 'zero hides the badge');
 

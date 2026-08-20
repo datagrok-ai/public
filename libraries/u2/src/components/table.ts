@@ -2,7 +2,7 @@
    real table semantics, compact platform density, cells rendered by the caller. Rows all live in the
    DOM, so anything big belongs in VirtualList. */
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Scope} from '../core/scope.js';
 
 export interface TableColumn<T> {
@@ -21,7 +21,7 @@ export interface BasicTableOptions<T> {
   headerVisible?: boolean;
 }
 
-export class BasicTable<T> extends Component {
+export class BasicTable<T> extends Control {
   /** -1 when nothing is selected; only meaningful for a `selectable` table. */
   readonly selectedIndex: Signal<number> = signal(-1);
 

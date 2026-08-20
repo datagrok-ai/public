@@ -3,7 +3,7 @@
    DG.Dialog so platform users read it unaided. */
 
 import {signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Scope} from '../core/scope.js';
 import {Overlay} from '../core/overlay.js';
 import {button} from '../core/elements.js';
@@ -19,7 +19,7 @@ export interface DialogShowOptions {
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
   'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export class Dialog extends Component {
+export class Dialog extends Control {
   private static _seq = 0;
 
   readonly isOpen: ReadonlySignal<boolean>;
@@ -77,8 +77,8 @@ export class Dialog extends Component {
     return new Dialog(title);
   }
 
-  add(el: HTMLElement | Component | string): Dialog {
-    this._content.append(el instanceof Component ? el.root : el);
+  add(el: HTMLElement | Control | string): Dialog {
+    this._content.append(el instanceof Control ? el.root : el);
     return this;
   }
 

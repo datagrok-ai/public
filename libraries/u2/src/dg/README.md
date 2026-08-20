@@ -6,12 +6,24 @@ lifecycle, events, and value editors.
 
 | Export | What it does |
 |---|---|
-| `host(component, closeIn?)` | Component → `DG.Widget`; disposal joins `Widget.subs` |
+| `host(component, closeIn?)` | Control → a `DG.Widget` subclass delegating the whole introspection surface; disposal joins `Widget.subs` |
 | `toSignal` / `toObservable` | rxjs ↔ signals, both directions |
 | `leakReport()` | live u2 scopes vs registered widgets |
+| `appView({name, content, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome |
+| `designerView(spec, options?)` | the spec designer as a view: live canvas, structure tree in the toolbox, Design/Run toggle, selection path in the status bar |
+| `registerSpecNodeHandler()` | the `ObjectHandler` that renders a selected spec node (`SpecNodeRef`) in the context panel |
 | `asDartInput(input, {dataType?})` | u2 `Input` → `DG.JsInputBase` (a `DG.InputBase` everywhere) |
-| `columnInput(label, table, {filter?})` / `tableInput(label)` | platform-bound `ChoiceInput`s |
+| `dartInputFor(build, {dataType?})` | the same, built from the bound property at `getInput()` time |
+| `inputForProperty(prop, options?)` | the u2 editor a `Property` maps to, metadata and all |
+| `columnInput(label, table, {filter?, rich?})` / `tableInput(label)` / `tablesInput(label)` | platform-bound choice inputs over columns and open tables |
+| `columnRenderer(table)` | `ObjectRenderer<string>` over column names — type glyph, name, semType |
+| `columnsInput(label, table, {filter?})` | many columns, picked in a searchable dialog |
+| `columnsMapInput(label, keys, table)` / `aggregatedColumnsInput(label, table)` | key → column rows; column + aggregation rows |
+| `metaInput(options?)` | read-only `DynamicInput` showing the object handler's card (Dart `MetaInput`) |
+| `fileInput(label, {mode?, connection?})` / `filesInput(label, {accept?})` | one or many files, checked against the file share |
+| `rsaInput(label, {accept?})` | a private key file, held masked |
 | `propertyForm(props, source, options?)` / `objectForm(source, options?)` | a whole form out of `Property` metadata |
+| `propertyEditor(record, options?)` | the editor of property metadata itself — the `IProperty` options |
 
 Import path today: `@datagrok-libraries/u2/src/dg/index.js` (the `@datagrok-libraries/u2/dg`
 subpath needs an `exports` map in `package.json`).
@@ -64,6 +76,64 @@ What the platform owns and what stays with u2:
   `input.value.peek()` or bind it. User edits fire `onInput` + `onChanged`; `setValue()` fires
   `onChanged` only, and nothing when the value is unchanged (echo suppression both ways).
 
+## Property-aware value editors: `dartInputFor`
+
+`asDartInput` wraps an input that already exists, so it can carry nothing the property says — a
+registered `valueEditor` built that way loses every min/max/step/format/units/showSlider/
+showPlusMinus the platform would have applied. `dartInputFor` defers construction instead:
+
+```ts
+grok.functions.register({
+  signature: 'object u2IntValueEditor()',
+  tags: 'valueEditor',
+  options: {propertyType: 'int'},
+  run: () => dartInputFor((prop) => inputForProperty(prop)),
+});
+```
+
+**The timing contract.** `InputBase._forProperty` resolves the editor func, wraps the result in a
+`JsInputProxy.fromFunc` and *immediately* runs `..caption = p.friendlyName ..bindProperty(p)`
+(`input_base.dart:676-679`). Only afterwards does the proxy bind the JS object
+(`jsi.dart = this`) and ask for its element from a `Timer` (`input_base_js_proxy.dart:18-25,27-38`).
+So by the first `getInput()` the property is readable through `this.property`, and that is where
+`build` runs — once. Consequences worth knowing:
+
+- `getInput()` outside that path (a hand-built editor, a dialog) hands `build` a `null` property;
+  `inputForProperty(null)` degrades to a text input.
+- Values the platform writes before the editor exists (the proxy's `_tempValue` path) are buffered
+  and applied to the input as programmatic writes.
+- Repeated `getInput()` — the `FromJS` proxy and the `fromFunc` proxy each ask once — returns the
+  same element and never rebuilds.
+- The input is built under the bridge's own scope, so its effects are released by `detach()` (or by
+  disposing the input, which severs the bridge) — a `Timer` callback has no ambient scope of its own.
+- `u2` is `null` until the build, and so is the type it would name: `dataType` reads `object` until
+  the editor exists. Afterwards the component id answers (`number-input` → `double`, `map-input` →
+  `object`, …); only for a component outside that table does the type get inferred from the value —
+  which reads `object` while the value is still null. Pass `dataType` explicitly in both cases.
+
+`inputForProperty` is the mapping `propertyForm` uses, so a registered editor and a generated form
+show the same control for the same metadata: bounds and step, `units` as the postfix, `format`
+through `DG.format`, a clicker on bounded ints, a slider on floats or explicit `showSlider`, and a
+`ChoiceInput` whenever the property carries `choices` — which matters because the valueEditor seam
+is consulted *before* Dart's own choices branch (`input_base.dart:675` vs `:715-717`).
+
+Pass `{assumeWritable: true}` from a value editor. A form renders a property it cannot write as a
+disabled text box, and a `FuncParam` never carries a setter — so without it every func-param dialog
+would get one. A value editor owns the value through the proxy, not through the property, so the
+setter is beside the point there.
+
+**Events and validation, both indirect.** The bridge fires `fireInput`/`fireChanged` from a
+microtask rather than from the value effect: a platform subscriber that writes a u2 signal back —
+the other half of a cross-synced form — would otherwise land inside the running effect round, and
+the signal runtime aborts the round as a cycle and kills the effect for good. One edit is still one
+pair of events, in that order, and a programmatic write (`setValue`) still fires `fireChanged`
+alone; a value the input prunes on its own (`Input.system`, e.g. `ChoiceInput.setItems` dropping an
+item that vanished) counts as programmatic too, as it does in Dart. Validators live on the *dart
+handle*, and the platform re-homes the JS input on a second `JsInputProxy` when a `valueEditor` func
+resolves — so the u2 validity feed is re-registered on every `getInput()`, once per handle. Without
+that the form binds a proxy with no validators at all: the u2 editor shows its invalid state and the
+dialog's OK stays enabled.
+
 ## Lifecycle
 
 `host()` makes a component a `DG.Widget` so the Dart kill-walk (view close) disposes its effects.
@@ -75,6 +145,13 @@ const w = host(component, grok.shell.dockManager);
 grok.shell.dockManager.dock(w.root, DG.DOCK_TYPE.RIGHT);
 ```
 
+A hosted component IS a widget, introspection included: `getProperties()` (the registry props over
+the component's signals), `getFunctions()`, `onEvent()`, `aiDescription` and `getWidgetStatus()` all
+delegate to it, so the shell, the context panel and the copilot interrogate it with the calls they
+already use on every platform widget. Functions are minted through `grok.functions.register` on
+first ask (namespace `U2`, params positional in declared order) and cached; a component that
+declares none registers nothing.
+
 **Components that are never mounted are yours to dispose.** The kill-walk only reaches roots that
 made it into the DOM — a lazily-built container (a collapsed accordion pane, a tab never opened)
 never inserts the root, so nothing kills it. Same for value editors: the platform does not dispose
@@ -85,14 +162,84 @@ severs the bridge; `DartInput.detach()` severs only the bridge (it never owns th
 
 ```ts
 const col = columnInput('Column', table, {filter: (c) => c.isNumerical});
+const rich = columnInput('Column', table, {rich: true});   // searchable, with type glyphs
 const tbl = tableInput('Table');
+const tbls = tablesInput('Tables');                        // value: string[]
 ```
 
-Both are ordinary `ChoiceInput`s whose items follow the platform (`onColumnsChanged`,
-`onTableAdded`/`onTableRemoved`) through the input's own scope — dispose the input and the
-subscriptions go with it. The value is the **name**; the caller resolves it
-(`table.col(col.value.peek())`, `grok.shell.table(tbl.value.peek())`), which keeps the value
-serializable and the input identical to any other choice input.
+`columnInput`, `tableInput` and `tablesInput` are ordinary choice inputs whose items follow the
+platform (`onColumnsChanged`, `onTableAdded`/`onTableRemoved`) through the input's own scope —
+dispose the input and the subscriptions go with it. The value is the **name** (names, for the
+multi-choice ones); the caller resolves it (`table.col(col.value.peek())`,
+`grok.shell.table(tbl.value.peek())`), which keeps the value serializable and the input identical
+to any other choice input. Whatever a picker holds when its column or table goes away is cleared.
+
+`{rich: true}` swaps the native select for a type-ahead whose rows carry the column's type glyph,
+name and semantic type — Dart's ColumnComboBox affordances, and a `ColumnPicker` rather than a
+`ChoiceInput`, though the value contract is the same. The same rows come from `columnRenderer(table)`,
+an `ObjectRenderer<string>` any u2 control can take.
+
+`tableInput` and `tablesInput` carry the platform inputs' import action (`table_input.dart:37-58`,
+`tables_multi_choice_input.dart:66-77`): a `folder-open` icon on the options rail opens a local
+file, adds the table to the workspace and picks or checks it, as a user edit. It opens what js-api
+can read on its own — csv/tsv/txt through `grok.data.parseCsv`, d42 through
+`DG.DataFrame.fromByteArray` — and refuses anything else with the platform input's own
+`File extension .x is not supported.`. Dart hands the bytes to `FileHandler`, which also opens
+xlsx, sdf and whatever a package registered; js-api exposes no equivalent, so those formats stay
+out of reach here.
+
+## Column selectors
+
+```ts
+const cols = columnsInput('Features', table, {filter: (c) => c.isNumerical});  // value: string[]
+const map = columnsMapInput('Map', ['id', {name: 'when', type: 'datetime'}], table);
+const aggs = aggregatedColumnsInput('Aggregations', table);  // value: {column, aggregation}[]
+```
+
+`columnsInput` shows the summary Dart shows — `(3) age, sex, race`, or `(N) All` once everything
+is in — and opens a searchable check-list with the picked columns on top; OK commits, cancel does
+not, `changeTable(other)` starts over. The list is a u2 `Dialog` over a `VirtualList`, not the
+platform's `selectColumns` modal, since the convergence retires that one; the additional-column
+checks of the Dart input (`columns_input.dart:11-18,66-70`) are not ported and land when a consumer
+(a pivot or aggregation UI migration) needs them.
+
+`columnsMapInput` is a row per key — a plain column picker each, with the key's `type` restricting
+what it offers (int and double count as one type, as in Dart). Unmapped keys stay out of the value.
+
+`aggregatedColumnsInput` edits column + aggregation rows. The aggregation list follows the column's
+type through `aggregationsFor(type)`, which is ddt's own per-type registry minus the exclusions
+Dart's aggregation editor applies (`aggregated_columns_input.dart:8-12`) — so a string or bool
+column offers the four counts, and a datetime one those plus `range`. Changing a row's column to a
+type that does not offer the row's aggregation resets it to `defaultAggregation(column)`.
+
+## Files and keys
+
+```ts
+const path = fileInput('Data', {mode: 'file'});                       // value: DG.FileInfo | null
+const remote = fileInput('Data', {connection: myConnection});         // paths under one share
+const batch = filesInput('Batch', {accept: ['.csv', '.sdf']});        // value: DG.FileInfo[]
+const key = rsaInput('Private key');                                  // value: PEM text or BASE64
+```
+
+`fileInput` takes a path, a dropped file, or one chosen from disk. A typed path is checked against
+the share — debounced 250 ms, one check at a time, a late answer to an abandoned path dropped —
+and the input reports the platform's three states: empty (when not nullable), still checking, and
+does not exist. A `connection` namespaces the path with its `nqName` before the check and drops
+the local-file affordance, as the platform input does. What resolves comes out of the directory
+listing, which is js-api's only per-path lookup: a path the server says exists but the listing does
+not carry (the root of a connection, for one) stays valid and leaves the value as it was — js-api
+cannot build a directory `FileInfo` the way `file_input.dart:147` does dart-side.
+
+`filesInput` reads several files at once, each row carrying its own percentage and a ✕ that
+cancels the read or drops the file; re-adding a name replaces it. The value — the loaded
+`FileInfo`s — is published once every read has settled, failures included, and the input is
+invalid while anything is loading or has failed.
+
+`rsaInput` shows an upload button and a drop zone until a key is in and a masked field with a
+Change button afterwards. The value is the file's text when it opens with `-----BEGIN`, and BASE64
+of its bytes when it does not, so armoured and DER keys go through the same input. Keys dragged
+out of the platform's file browser arrive as `FileInfo`s through `ui.makeDroppable` and must be
+PEM; that registration is dart-side and has no undo, so it outlives `dispose()`.
 
 ## Schema-driven forms
 
@@ -136,21 +283,30 @@ override-supplied, or a platform editor wrapped by `fromDartInput` — keyed by 
 regardless of its caption. From there, everything on `Input<T>` applies: `value`, `validity`,
 `addValidator`, `enabled`.
 
-How an input is picked, from `prop.propertyType` (or `type`):
+How an input is picked — `inputType` first, then `editor`, then `propertyType` (or `type`), the
+order `InputBase.forProperty` uses (`input_base.dart:668,689-714`):
 
 | Metadata | Input |
 |---|---|
-| `choices` non-empty (any type) | `ChoiceInput` |
-| `string`, `datetime` | `TextInput` — the date picker is v1's one deferred control, and an edit writes the typed string back, so override a `datetime` field until it lands |
-| `int`, `bigint` | `NumberInput` int, `min`/`max` applied |
-| `double`, `float`, `num`, `qnum` | `NumberInput` float, `min`/`max` applied |
+| `inputType` | the editor it names, from the u2 half of the platform's factory map: `Text`, `Search`, `TextArea`, `Int`, `Float`, `BigInt`, `QNum`, `Slider`, `Bool`, `Switch`, `Date`, `Color`, `Font`, `Image`, `Radio`, `Choice`, `MultiChoice`, `Tags`, `List`, `Map`, `File`. An input type u2 has no editor for falls through to the rows below, where the platform would look for a JS-registered input |
+| `editor` | `textarea` (or the `TextArea` spelling `Property.propertyOptions` itself uses) → `TextArea`, `password` → masked `TextInput`, `switch` → `BoolInput` switch, `slider` → `SliderInput` |
+| `choices` non-empty (any scalar type) | `ChoiceInput` |
+| `string` | `TextInput` |
+| `datetime` | `DateTimeInput` |
+| `int` | `NumberInput` int, `min`/`max` applied |
+| `double`, `float`, `num` | `NumberInput` float, `min`/`max` applied |
+| `bigint` | `BigIntInput` — the value is a JS `bigint`, which js-api marshals to and from a Dart `BigInt` (`wrappers_impl.ts:88,133`); a property that hands the digits over as text is read all the same |
+| `qnum` | `QNumInput` — the value is the packed double the platform stores, `format` applied to its numeric part |
 | `bool` | `BoolInput` |
+| `list` | `MultiChoiceInput` with `choices`, `ListInput` (comma-separated) without |
+| `map` | `MapInput` |
+| `file`, `blob` | the dg `FileInput` — registered on `PlatformInputs` by `src/dg/index.ts`, since the router itself must load without the platform; importing only `object-form.js` leaves the file field read-only |
 | anything else, or no `set` | disabled `TextInput` showing `String(value)` |
 
 `caption ?? friendlyName ?? name` is the label, `name` is the input's name (so `form.getValues()`
 is keyed by property name), `description` is the tooltip, and `nullable: false` adds a required
-validator and drops the empty option from a choice. Everything else — `semType`, `units`,
-`format`, `editor` — is ignored by the generator; that is what `overrides` is for:
+validator and drops the empty option from a choice. `semType` is the generator's own blind spot —
+that is what `Editors` and `overrides` are for:
 
 ```ts
 const molecule = new TextInput({label: 'Structure'});   // or a real semType editor
@@ -225,3 +381,32 @@ and validation the platform runs server-side. A u2 control reaches those surface
 time, through `asDartInput` and the `valueEditor` role (see above); replacing the dialog generator
 itself is out of scope for u2. The two generators read the same metadata, so a property that
 renders well in one renders well in the other.
+
+## Editing the metadata itself: `propertyEditor`
+
+`propertyEditor(record)` edits an `IProperty` record — what a property IS, not what it holds. Its
+fields are the platform's own `Property.propertyOptions` vocabulary (js-api `property.ts:322-348`),
+and their visibility follows the `applicableTo` the map declares: an identity section (name, type,
+friendly name, description, nullable, semType, plus the `inputType`/`editor`/`units`/`format`/
+`category` hints) that is always there, and a type-dependent one — `min`/`max`/`step`/`showSlider`/
+`showPlusMinus` for a numerical property, `choices` for a string — rebuilt whenever the type or an
+editor hint changes. The map itself is mirrored, not read: the control builds off-platform too.
+
+The value model is a plain record, not a live property: `name` and `type` of a bound `DG.Property`
+are not safely mutable, so **every edit reports the whole record** and the caller reconstructs.
+
+```ts
+const editor = propertyEditor(records['dose'], {onChanged: (options) => {
+  records[options.name] = options;
+  rebuild(DG.Property.fromOptions(options));   // and whatever hangs off it
+}});
+editor.setTarget(records['replicates']);       // re-target; the type-dependent fields rebuild
+```
+
+`setTarget` is the context-panel pattern: one editor, re-targeted per row, so nothing leaks per
+click. `editor.options` is the same record as a signal, for a caller that would rather watch it.
+
+Every field reports as it is typed except `name`, which reports on commit — blur or Enter. A caller
+keys its records by that name (the example above does), and per keystroke `dose` → `name` would
+rename the property through `n`, `na` and `nam` on the way. Pass `validators: {name: …}` to refuse a
+name the caller cannot take: the message shows on the field, and the record keeps the name it had.

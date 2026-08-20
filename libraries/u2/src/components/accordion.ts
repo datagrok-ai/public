@@ -3,7 +3,7 @@
    builder constructed; collapsed content is hidden, never detached, so its state survives. */
 import {signal, untracked, Signal} from '../core/signals.js';
 import {Scope} from '../core/scope.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 
 export interface AccordionPane {
   readonly title: string;
@@ -20,7 +20,7 @@ interface Pane extends AccordionPane {
 
 let accordionCount = 0;
 
-export class Accordion extends Component {
+export class Accordion extends Control {
   private readonly _idPrefix = `u2-accordion-${++accordionCount}`;
   private readonly _panes: Pane[] = [];
   private _nextPaneId = 0;

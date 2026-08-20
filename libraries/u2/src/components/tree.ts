@@ -2,7 +2,7 @@
    roots + expanded descendants flatten into a row array fed to the list as a signal, so the list
    keeps owning virtualization, recycling, selection and vertical keyboard motion. The tree adds
    expansion, lazy branches, inline rename and the tree ARIA layer on top. */
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {signal, computed, Signal, ReadonlySignal} from '../core/signals.js';
 import {VirtualList} from './list.js';
 
@@ -27,7 +27,7 @@ interface FlatRow<T> {
 
 const INDENT = 12;
 
-export class VirtualTree<T = unknown> extends Component {
+export class VirtualTree<T = unknown> extends Control {
   readonly expanded: Signal<Set<string>> = signal(new Set<string>());
   readonly selectedNode: ReadonlySignal<TreeNode<T> | null>;
 
@@ -72,6 +72,10 @@ export class VirtualTree<T = unknown> extends Component {
 
   setRoots(roots: TreeNode<T>[]): void {
     this._roots.value = roots;
+  }
+
+  clearSelection(): void {
+    this._list.selectedIndex.value = -1;
   }
 
   /** Expands every ancestor in `ids` (awaiting lazy loads), then selects and reveals the last one. */

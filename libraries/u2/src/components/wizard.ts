@@ -3,7 +3,7 @@
    carries the buttons — the Dialog's button row stays empty — and any close that is not a finish
    reports a cancel, which covers CANCEL, the ✕ and Esc in one place. */
 import {signal, computed, untracked, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Scope} from '../core/scope.js';
 import {button} from '../core/elements.js';
 import {Dialog} from './dialog.js';
@@ -36,7 +36,7 @@ interface Step {
 
 let wizardCount = 0;
 
-export class Wizard extends Component {
+export class Wizard extends Control {
   readonly currentStep: ReadonlySignal<string>;
   readonly completed: ReadonlySignal<boolean>;
 

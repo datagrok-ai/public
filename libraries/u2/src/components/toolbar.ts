@@ -2,7 +2,7 @@
    width. WAI-ARIA toolbar pattern — a single tab stop with roving ←/→ focus. */
 import {Signal} from '../core/signals.js';
 import {Scope} from '../core/scope.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Tooltip} from '../core/tooltip.js';
 import {Menu} from './menu.js';
 
@@ -28,7 +28,7 @@ const HIDDEN = 'u2-toolbar-hidden';
 const FOCUSABLE = 'input, button, select, textarea, a[href], [tabindex]';
 const CARET = 'input:not([type=button]):not([type=checkbox]):not([type=radio]), textarea';
 
-export class Toolbar extends Component {
+export class Toolbar extends Control {
   private readonly _items: Item[] = [];
   private readonly _chevron = document.createElement('button');
   private _menu: Menu | undefined;

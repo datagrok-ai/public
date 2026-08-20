@@ -1,5 +1,6 @@
 import {signal, computed, Scope, bindText} from '../../src/index.js';
 import {Menu} from '../../src/components/menu.js';
+import {MenuBar} from '../../src/components/menu-bar.js';
 
 function injectOnce(id, make) {
   if (document.getElementById(id)) return;
@@ -49,6 +50,7 @@ export async function render(main) {
   main.append(intro);
 
   const page = new Scope();
+  Scope.ambient?.own(() => page.dispose());
   const wrap = signal(true);
   const last = signal('(none)');
 
@@ -88,6 +90,7 @@ export async function render(main) {
     if (anchored) anchored.close();
     if (watch) watch.dispose();
     watch = new Scope();
+    page.own(() => watch.dispose());
     anchored = build();
     slot.replaceChildren(readout(watch, anchored));
     bindText(watch, live, computed(() =>
@@ -131,7 +134,6 @@ export async function render(main) {
     l.href = new URL('../../css/menu-bar.css', import.meta.url).href;
     return l;
   });
-  const {MenuBar} = await import('../../src/components/menu-bar.js');
 
   main.append(el('h1', null, 'Menu bar'));
   const barIntro = el('p');
@@ -144,6 +146,7 @@ export async function render(main) {
   main.append(barIntro);
 
   const barScope = new Scope();
+  Scope.ambient?.own(() => barScope.dispose());
   const barWrap = signal(true);
   const layout = signal('Grid');
   const view = (name) => ({check: layout.peek() === name});

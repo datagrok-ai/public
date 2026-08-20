@@ -2,11 +2,13 @@
    a visible placeholder — the rest of the tree always renders. Specs never carry code: events
    name context commands, and that is the only executable form. */
 import {signal, Signal} from '../core/signals.js';
-import {Component} from '../core/component.js';
-import {ComponentMeta, PropMeta, Registry, registry as globalRegistry, SPEC_SCHEMA} from './registry.js';
+import {Control} from '../core/component.js';
+import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry, SPEC_SCHEMA} from './registry.js';
 
 export interface SpecNode {
   tag: string;
+  /** Unique within the spec: what selection, patches, code-behind and automation address. */
+  name?: string;
   props?: Record<string, unknown>;
   /** `{propName: '$.path'}` — binds a prop to a context signal. */
   bind?: Record<string, string>;
@@ -52,14 +54,16 @@ export class SpecContext {
   }
 }
 
-/** A rendered spec: one scope owning every component the spec built, plus the node → component
- * map that makes {@link dump} read live state. */
-export class SpecInstance extends Component {
+/** A rendered spec: one scope owning every component the spec built, plus the node → built map
+ * that makes {@link dump} read live state and {@link nodeAt} hit-test the DOM. */
+export class SpecInstance extends Control {
   readonly ctx: SpecContext;
 
   private readonly _spec: Spec;
   private readonly _registry: Registry;
-  private readonly _components = new Map<SpecNode, Component>();
+  private readonly _nodes = new Map<SpecNode, Control | HTMLElement>();
+  private readonly _named = new Map<string, Control | HTMLElement>();
+  private readonly _elements = new Map<Element, SpecNode>();
   private readonly _warned = new Set<string>();
 
   constructor(spec: Spec, ctx: SpecContext, reg: Registry = globalRegistry) {
@@ -71,15 +75,57 @@ export class SpecInstance extends Component {
     this.run(() => this.root.append(SpecInstance._element(this._render(spec.root))));
   }
 
+  dispose(): void {
+    super.dispose();
+    this._nodes.clear();
+    this._named.clear();
+    this._elements.clear();
+  }
+
   /** The spec back out, with live values folded in: bound props keep their `bind` entry, plain
    * ones report what the component holds now. Rendering the result reproduces this UI. */
   dump(): object {
     return {$schema: SPEC_SCHEMA, root: this._dump(this._spec.root)};
   }
 
+  /** Every node the spec rendered, components and plain HTML alike. */
+  nodes(): ReadonlyMap<SpecNode, Control | HTMLElement> {
+    return this._nodes;
+  }
+
+  node(name: string): Control | HTMLElement | undefined {
+    return this._named.get(name);
+  }
+
+  /** The nearest spec node owning `el` — the designer's hit-test. */
+  nodeAt(el: Element): SpecNode | null {
+    for (let at: Element | null = el; at; at = at.parentElement) {
+      const node = this._elements.get(at);
+      if (node)
+        return node;
+    }
+    return null;
+  }
+
+  private _render(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
+    const built = this._build(node, parent);
+    const el = SpecInstance._element(built);
+    this._nodes.set(node, built);
+    this._elements.set(el, node);
+    if (node.name !== undefined) {
+      // the automation id: what a test, a tutorial or an agent addresses the node by
+      el.dataset.u2Name = node.name;
+      if (this._named.has(node.name))
+        this._warn(`${node.tag}: duplicate name "${node.name}"`);
+      else
+        this._named.set(node.name, built);
+    }
+    return built;
+  }
+
   /** `parent` is the meta of the component this node hangs under: a prop the parent declares in
    * `childProps` — a pane title — validates against it instead of counting as unknown. */
-  private _render(node: SpecNode, parent?: ComponentMeta): Component | HTMLElement {
+  private _build(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
     try {
       const commands = SpecInstance._commands(node);
       const meta = this._registry.get(node.tag);
@@ -92,7 +138,7 @@ export class SpecInstance extends Component {
     }
   }
 
-  private _component(node: SpecNode, meta: ComponentMeta, parent?: ComponentMeta): Component {
+  private _component(node: SpecNode, meta: ComponentMeta, parent?: ComponentMeta): Control {
     const props: Record<string, unknown> = {};
     for (const [name, value] of Object.entries(node.props ?? {})) {
       const prop = SpecInstance._prop(meta, name, parent);
@@ -115,7 +161,6 @@ export class SpecInstance extends Component {
     const component = meta.createWithChildren ?
       meta.createWithChildren(props, this._children(node, meta, true), node.children ?? []) :
       this._adopt(node, meta, meta.create(props));
-    this._components.set(node, component);
     for (const [name, source] of twoWay)
       this._bridge(component, name, source);
     return component;
@@ -147,7 +192,7 @@ export class SpecInstance extends Component {
     return el;
   }
 
-  private _adopt(node: SpecNode, meta: ComponentMeta, component: Component): Component {
+  private _adopt(node: SpecNode, meta: ComponentMeta, component: Control): Control {
     const accepts = meta.acceptsChildren === true || meta.adopt !== undefined;
     const children = this._children(node, meta, accepts);
     for (let i = 0; i < children.length; i++) {
@@ -160,7 +205,7 @@ export class SpecInstance extends Component {
   }
 
   private _children(node: SpecNode, meta: ComponentMeta | undefined, accepts: boolean):
-      (Component | HTMLElement)[] {
+      (Control | HTMLElement)[] {
     const children = node.children ?? [];
     if (children.length > 0 && !accepts) {
       this._warn(`${node.tag}: takes no children — ${children.length} dropped`);
@@ -172,7 +217,7 @@ export class SpecInstance extends Component {
   /** Both directions, echo-suppressed by comparison: a write made inside an effect is flushed
    * after that effect returns, so a transient flag would already be down (property-grid's lesson).
    * Components that took the context signal itself need no bridge at all. */
-  private _bridge(component: Component, name: string, source: Signal<unknown>): void {
+  private _bridge(component: Control, name: string, source: Signal<unknown>): void {
     const own = (component as unknown as Record<string, unknown>)[name];
     if (!(own instanceof Signal) || own === source)
       return;
@@ -202,6 +247,8 @@ export class SpecInstance extends Component {
 
   private _dump(node: SpecNode): object {
     const out: Record<string, unknown> = {tag: node.tag};
+    if (node.name !== undefined)
+      out.name = node.name;
     if (node.props)
       out.props = this._dumpProps(node);
     if (node.bind)
@@ -224,8 +271,8 @@ export class SpecInstance extends Component {
   /** The component's own `value` signal, but only where the spec's prop — not a binding — feeds it. */
   private _liveValue(node: SpecNode): {current: unknown} | null {
     const meta = this._registry.get(node.tag);
-    const component = this._components.get(node);
-    if (!meta || !component || (node.bind && 'value' in node.bind))
+    const component = this._nodes.get(node);
+    if (!meta || !(component instanceof Control) || (node.bind && 'value' in node.bind))
       return null;
     if (!meta.props.some((p) => p.name === 'value'))
       return null;
@@ -250,20 +297,21 @@ export class SpecInstance extends Component {
     return commands;
   }
 
-  private static _prop(meta: ComponentMeta, name: string, parent?: ComponentMeta): PropMeta | undefined {
+  private static _prop(meta: ComponentMeta, name: string, parent?: ComponentMeta): SpecPropMeta | undefined {
     return meta.props.find((p) => p.name === name) ?? SpecInstance._childProp(parent, name);
   }
 
-  private static _childProp(parent: ComponentMeta | undefined, name: string): PropMeta | undefined {
+  private static _childProp(parent: ComponentMeta | undefined, name: string): SpecPropMeta | undefined {
     return parent?.childProps?.find((p) => p.name === name);
   }
 
-  private static _element(built: Component | HTMLElement): HTMLElement {
-    return built instanceof Component ? built.root : built;
+  private static _element(built: Control | HTMLElement): HTMLElement {
+    return built instanceof Control ? built.root : built;
   }
 
-  private static _checked(prop: PropMeta, value: unknown): unknown {
-    switch (prop.type) {
+  private static _checked(prop: SpecPropMeta, value: unknown): unknown {
+    const type = prop.propertyType ?? prop.type;
+    switch (type) {
       case 'string':
         if (typeof value === 'string')
           return value;
@@ -272,7 +320,7 @@ export class SpecInstance extends Component {
         if (typeof value === 'number' && Number.isInteger(value))
           return value;
         break;
-      case 'float':
+      case 'double':
         if (typeof value === 'number' && isFinite(value))
           return value;
         break;
@@ -280,16 +328,16 @@ export class SpecInstance extends Component {
         if (typeof value === 'boolean')
           return value;
         break;
-      case 'string[]':
+      case 'string_list':
         if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
           return value;
         break;
-      case 'json':
+      case 'object':
         if (SpecInstance._isJson(value))
           return value;
         break;
     }
-    throw new Error(`prop "${prop.name}" expects ${prop.type}`);
+    throw new Error(`prop "${prop.name}" expects ${type}`);
   }
 
   private static _isJson(value: unknown): boolean {

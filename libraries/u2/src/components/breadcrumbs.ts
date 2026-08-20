@@ -2,9 +2,9 @@
    in full, and if it overflows the middle segments are swapped for one `…` segment that expands
    the path inline when clicked (no menu, so the control stays overlay-free). */
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 
-export class Breadcrumbs extends Component {
+export class Breadcrumbs extends Control {
   readonly items: ReadonlySignal<string[]>;
 
   private readonly _items: Signal<string[]>;

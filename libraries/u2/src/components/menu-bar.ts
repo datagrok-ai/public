@@ -3,7 +3,7 @@
    item switches to it instantly (menubar convention, unlike the intent delay of submenus). */
 import {signal, ReadonlySignal} from '../core/signals.js';
 import {Scope} from '../core/scope.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {Menu} from './menu.js';
 
 export interface MenuBarItem {
@@ -17,7 +17,7 @@ interface Entry {
   el: HTMLButtonElement;
 }
 
-export class MenuBar extends Component {
+export class MenuBar extends Control {
   /** Label of the open item, null while the bar is closed. */
   readonly openMenu: ReadonlySignal<string | null>;
 

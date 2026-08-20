@@ -12,6 +12,7 @@ const WARM_MS = 100;
 export class Tooltip {
   private static _root: HTMLElement | undefined;
   private static _anchor: HTMLElement | undefined;
+  private static _pending: HTMLElement | undefined;
   private static _timer = 0;
   private static _hiddenAt = 0;
 
@@ -41,6 +42,7 @@ export class Tooltip {
         show();
       else {
         window.clearTimeout(Tooltip._timer);
+        Tooltip._pending = el;
         Tooltip._timer = window.setTimeout(show, SHOW_DELAY_MS);
       }
     };
@@ -52,13 +54,18 @@ export class Tooltip {
       el.removeEventListener('pointerenter', enter);
       el.removeEventListener('pointerleave', leave);
       el.removeEventListener('pointerdown', leave);
-      if (Tooltip._anchor === el)
+      // the pending show too: an element torn down under the pointer never gets its pointerleave,
+      // so a timer left running would show the tooltip against an anchor that is no longer there
+      if (Tooltip._anchor === el || Tooltip._pending === el)
         Tooltip.hide();
     });
   }
 
   static show(content: string | HTMLElement, anchor: HTMLElement): void {
     window.clearTimeout(Tooltip._timer);
+    Tooltip._pending = undefined;
+    if (!anchor.isConnected)
+      return;
     const root = Tooltip.root;
     root.textContent = '';
     if (typeof content === 'string')
@@ -84,6 +91,7 @@ export class Tooltip {
 
   static hide(): void {
     window.clearTimeout(Tooltip._timer);
+    Tooltip._pending = undefined;
     if (!Tooltip.isVisible)
       return;
     Tooltip._anchor = undefined;

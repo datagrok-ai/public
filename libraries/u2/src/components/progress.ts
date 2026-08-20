@@ -1,7 +1,7 @@
 /* Progress bar: a thin track whose fill follows a 0..1 signal, plus the indeterminate variant for
    work with no known extent. */
 import {signal, Signal, ReadonlySignal} from '../core/signals.js';
-import {Component} from '../core/component.js';
+import {Control} from '../core/component.js';
 import {span} from '../core/elements.js';
 
 export interface ProgressBarOptions {
@@ -10,7 +10,7 @@ export interface ProgressBarOptions {
   description?: string | ReadonlySignal<unknown>;
 }
 
-export class ProgressBar extends Component {
+export class ProgressBar extends Control {
   readonly value: Signal<number>;
 
   private readonly _track = document.createElement('div');
