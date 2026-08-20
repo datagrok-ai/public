@@ -67,7 +67,8 @@ save disk and RAM.
 | `grok_connect`                   | Grok Connect (external database connectors)                                                  |
 | `grok_spawner`                   | Grok Spawner (manages plugin containers)                                                     |
 | `rabbitmq`                       | RabbitMQ (AMQP queue, required for `scripting`)                                              |
-| `scripting` / `jkg`              | Jupyter Kernel Gateway, RabbitMQ, `grok_pipe` — server-side script execution                 |
+| `scripting` / `jkg`              | All five kernel gateways, RabbitMQ, `grok_pipe` — server-side script execution               |
+| `jkg_python`, `jkg_r`, `jkg_octave`, `jkg_julia`, `jkg_nodejs` | A single language's kernel gateway                             |
 | `cvm`                            | Convenience alias for `scripting` + everything it needs                                      |
 | `mlflow` / `ml`                  | MLflow tracking server and supporting Postgres                                               |
 | `demo`                           | Demo databases (`world`, `chembl`, `northwind`, `unichem`, `starbucks`) — used by tutorials  |
@@ -174,8 +175,10 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
 </TabItem>
 </Tabs>
 
-The `scripting` profile pulls in RabbitMQ, `grok_pipe`, and the Jupyter Kernel Gateway —
-everything needed for [server-side scripts](../../compute/scripting/scripting.mdx).
+The `scripting` profile pulls in RabbitMQ, `grok_pipe`, and a kernel gateway per language —
+everything needed for [server-side scripts](../../compute/scripting/scripting.mdx). Each
+gateway is a multi-GB image, so if you only script in one language start just that one
+(`--profile jkg_python`); its RabbitMQ and `grok_pipe` dependencies come up with it.
 
 ## Demo databases
 
@@ -228,7 +231,11 @@ stand a different project name and override the host ports it binds.
    | `GROK_SPAWNER_VERSION`              | `datagrok/grok_spawner`      |
    | `GROK_CONNECT_VERSION`              | `datagrok/grok_connect`      |
    | `GROK_CONNECT_ADBC_VERSION`         | `datagrok/grok_connect_adbc` |
-   | `JUPYTER_KERNEL_GATEWAY_VERSION`    | `datagrok/jupyter_kernel_gateway` |
+   | `JKG_PYTHON_VERSION`                | `datagrok/jkg_python`        |
+   | `JKG_R_VERSION`                     | `datagrok/jkg_r`             |
+   | `JKG_OCTAVE_VERSION`                | `datagrok/jkg_octave`        |
+   | `JKG_JULIA_VERSION`                 | `datagrok/jkg_julia`         |
+   | `JKG_NODEJS_VERSION`                | `datagrok/jkg_nodejs`        |
 
    :::caution
 
@@ -371,7 +378,7 @@ docker compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
     </Tabs>
 
    Replace `datagrok` with any service: `db`, `grok_connect`, `grok_pipe`,
-   `grok_spawner`, `jupyter_kernel_gateway`, `rabbitmq`, etc.
+   `grok_spawner`, `jkg_python`, `rabbitmq`, etc.
 
 2. Open a shell inside a container:
 
