@@ -21,7 +21,7 @@ import {ImageInput} from '../components/inputs/image-input.js';
 import {Form} from '../components/forms/form.js';
 import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
-import {TabStrip} from '../components/containers/tabs.js';
+import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
 import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
 import {StateSource} from '../sources/state.js';
@@ -79,6 +79,18 @@ function element(child: Child): HTMLElement {
 function childTitle(node: SpecNode | undefined, fallback: string): string {
   const title = node?.props?.title;
   return typeof title === 'string' ? title : fallback;
+}
+
+function childIcon(node: SpecNode | undefined): string | undefined {
+  const icon = node?.props?.icon;
+  return typeof icon === 'string' && icon !== '' ? icon : undefined;
+}
+
+function tabStrip(props: Props): TabStripOptions {
+  return {
+    orientation: props.orientation === 'vertical' ? 'vertical' : 'horizontal',
+    variant: props.variant === 'document' ? 'document' : 'platform',
+  };
 }
 
 function splitter(props: Props, children: Child[]): Splitter {
@@ -272,12 +284,15 @@ const METAS: ComponentMeta[] = [
     createWithChildren: (_props, children, nodes) => {
       const accordion = new Accordion();
       for (let i = 0; i < children.length; i++)
-        accordion.addPane(childTitle(nodes[i], `Pane ${i + 1}`), element(children[i]));
+        accordion.addPane(childTitle(nodes[i], `Pane ${i + 1}`), element(children[i]), false, childIcon(nodes[i]));
       return accordion;
     },
     description: 'Independently expanding panes, one per spec child; the child node carries the pane title.',
     props: [],
-    childProps: [{name: 'title', type: 'string', description: 'Pane title; numbered when absent.'}],
+    childProps: [
+      {name: 'title', type: 'string', description: 'Pane title; numbered when absent.'},
+      {name: 'icon', type: 'string', description: 'Font Awesome icon name shown before the title.'},
+    ],
     acceptsChildren: true,
     defaultChildren: [{tag: 'u2-panel', props: {title: 'Pane 1'}}],
     designerActions: [{name: 'Add pane', produce: (node) => ({op: 'add-child',
@@ -290,22 +305,34 @@ const METAS: ComponentMeta[] = [
   {
     tag: 'u2-tabs',
     category: 'Containers',
-    create: () => new TabStrip(),
-    createWithChildren: (_props, children, nodes) => {
-      const tabs = new TabStrip();
-      for (let i = 0; i < children.length; i++)
-        tabs.addTab({id: `tab-${i}`, label: childTitle(nodes[i], `Tab ${i + 1}`), content: element(children[i])});
+    create: (props) => new TabStrip(tabStrip(props)),
+    createWithChildren: (props, children, nodes) => {
+      const tabs = new TabStrip(tabStrip(props));
+      for (let i = 0; i < children.length; i++) {
+        tabs.addTab({id: `tab-${i}`, label: childTitle(nodes[i], `Tab ${i + 1}`), icon: childIcon(nodes[i]),
+          content: element(children[i])});
+      }
       return tabs;
     },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
-    props: [],
-    childProps: [{name: 'title', type: 'string', description: 'Tab label; numbered when absent.'}],
+    props: [
+      {name: 'orientation', type: 'string', choices: ['horizontal', 'vertical'],
+        description: '"horizontal" (default) or "vertical" — a header column on the left.'},
+      {name: 'variant', type: 'string', choices: ['platform', 'document'],
+        description: '"platform" (default) is the ui.tabControl look; "document" the IDE document-tab skin.'},
+    ],
+    childProps: [
+      {name: 'title', type: 'string', description: 'Tab label; numbered when absent.'},
+      {name: 'icon', type: 'string', description: 'Font Awesome icon name shown before the title.'},
+    ],
     acceptsChildren: true,
+    defaults: {orientation: 'horizontal', variant: 'platform'},
     defaultChildren: [{tag: 'u2-panel', props: {title: 'Tab 1'}}],
     designerActions: [{name: 'Add tab', produce: (node) => ({op: 'add-child',
       node: {tag: 'u2-panel', props: {title: `Tab ${(node.children?.length ?? 0) + 1}`}}})}],
     example: {tag: 'u2-tabs', children: [
-      {tag: 'u2-panel', props: {title: 'Data'}, children: [{tag: 'u2-text-input', props: {label: 'Table'}}]},
+      {tag: 'u2-panel', props: {title: 'Data', icon: 'table'},
+        children: [{tag: 'u2-text-input', props: {label: 'Table'}}]},
       {tag: 'u2-panel', props: {title: 'Style'}, children: [{tag: 'u2-bool-input', props: {label: 'Legend'}}]},
     ]},
   },

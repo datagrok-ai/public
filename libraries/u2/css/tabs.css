@@ -1,4 +1,7 @@
-/* Tab strip skin. Tokens only — css/tokens.css must be loaded alongside. */
+/* Tab strip skin. Tokens only — css/tokens.css must be loaded alongside.
+   Default = the platform's `ui.tabControl` (.d4-tab-header): accent text, 2px accent underline on
+   the selected tab, no stripe chrome. `.u2-tabs-document` is the IDE document-tab variant,
+   `.u2-tabs-vertical` the left-hand column with a 4px accent bar (.d4-tab-vertical). */
 .u2-tabs {
   display: flex;
   flex-direction: column;
@@ -12,7 +15,7 @@
   flex-shrink: 0;
   align-items: stretch;
   height: var(--dg-button-height);
-  background: var(--dg-bg-secondary);
+  background: var(--dg-bg);
   box-shadow: inset 0 calc(-1 * var(--dg-border-width)) 0 var(--dg-border);
 }
 
@@ -39,25 +42,16 @@
   padding: 0 var(--dg-space-m);
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
-  color: var(--dg-text-color-light);
-  background: var(--dg-bg-secondary);
-  border-top: 2px solid transparent;
-  border-right: var(--dg-border-width) solid var(--dg-border);
-  border-bottom: var(--dg-border-width) solid var(--dg-border);
+  color: var(--dg-accent);
+  border-bottom: 2px solid transparent;
   cursor: pointer;
   outline: none;
   user-select: none;
 }
 
-.u2-tabs-tab:hover {
-  background: var(--dg-hover-subtle);
-}
-
 .u2-tabs-tab-active {
-  color: var(--dg-text-color);
-  background: var(--dg-bg);
-  border-top-color: var(--dg-accent);
-  border-bottom-color: var(--dg-bg);
+  border-bottom-color: var(--dg-accent);
+  cursor: default;
 }
 
 .u2-tabs-tab:focus-visible {
@@ -65,10 +59,21 @@
   outline-offset: calc(-1 * var(--dg-focus-ring-width) - var(--dg-border-width));
 }
 
+.u2-tabs-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
 .u2-tabs-label {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.u2-tabs-label:empty {
+  display: none;
 }
 
 .u2-tabs-close,
@@ -128,10 +133,8 @@
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
   color: var(--dg-text-color-light);
-  background: var(--dg-bg-secondary);
+  background: var(--dg-bg);
   border: none;
-  border-left: var(--dg-border-width) solid var(--dg-border);
-  border-bottom: var(--dg-border-width) solid var(--dg-border);
   cursor: pointer;
 }
 
@@ -170,6 +173,9 @@
 }
 
 .u2-tabs-overflow-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
   padding: var(--dg-space-xs) var(--dg-space-m);
   white-space: nowrap;
   cursor: pointer;
@@ -186,8 +192,81 @@
 
 .u2-tabs-content {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: var(--dg-space-m);
   background: var(--dg-bg);
+}
+
+/* document variant — the IDE editor-group look */
+.u2-tabs-document .u2-tabs-header,
+.u2-tabs-document .u2-tabs-overflow {
+  background: var(--dg-bg-secondary);
+}
+
+.u2-tabs-document .u2-tabs-tab {
+  color: var(--dg-text-color-light);
+  background: var(--dg-bg-secondary);
+  border-top: 2px solid transparent;
+  border-right: var(--dg-border-width) solid var(--dg-border);
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-tabs-document .u2-tabs-tab:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-tabs-document .u2-tabs-tab-active {
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border-top-color: var(--dg-accent);
+  border-bottom-color: var(--dg-bg);
+}
+
+.u2-tabs-document .u2-tabs-overflow {
+  border-left: var(--dg-border-width) solid var(--dg-border);
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* vertical — header column on the left, selected tab marked by a right bar */
+.u2-tabs-vertical {
+  flex-direction: row;
+}
+
+.u2-tabs-vertical .u2-tabs-header {
+  flex-direction: column;
+  height: auto;
+  box-shadow: inset calc(-1 * var(--dg-border-width)) 0 0 var(--dg-border);
+}
+
+.u2-tabs-vertical .u2-tabs-scroller {
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.u2-tabs-vertical .u2-tabs-tab {
+  justify-content: flex-end;
+  min-height: var(--dg-button-height);
+  padding: var(--dg-space-m);
+  text-align: right;
+  border-right: 4px solid transparent;
+  border-bottom: none;
+}
+
+.u2-tabs-vertical .u2-tabs-tab-active {
+  color: var(--dg-text-color);
+  border-right-color: var(--dg-accent);
+}
+
+.u2-tabs-vertical .u2-tabs-overflow {
+  width: auto;
+  height: var(--dg-button-height);
+}
+
+.u2-tabs-vertical .u2-tabs-overflow-menu {
+  right: auto;
+  left: 0;
 }

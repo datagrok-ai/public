@@ -587,6 +587,11 @@
           "name": "title",
           "type": "string",
           "description": "Pane title; numbered when absent."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "description": "Font Awesome icon name shown before the title."
         }
       ],
       "acceptsChildren": true,
@@ -636,15 +641,43 @@
       "tag": "u2-tabs",
       "category": "Containers",
       "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
-      "props": [],
+      "props": [
+        {
+          "name": "orientation",
+          "type": "string",
+          "choices": [
+            "horizontal",
+            "vertical"
+          ],
+          "description": "\"horizontal\" (default) or \"vertical\" — a header column on the left."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "choices": [
+            "platform",
+            "document"
+          ],
+          "description": "\"platform\" (default) is the ui.tabControl look; \"document\" the IDE document-tab skin."
+        }
+      ],
       "childProps": [
         {
           "name": "title",
           "type": "string",
           "description": "Tab label; numbered when absent."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "description": "Font Awesome icon name shown before the title."
         }
       ],
       "acceptsChildren": true,
+      "defaults": {
+        "orientation": "horizontal",
+        "variant": "platform"
+      },
       "defaultChildren": [
         {
           "tag": "u2-panel",
@@ -659,7 +692,8 @@
           {
             "tag": "u2-panel",
             "props": {
-              "title": "Data"
+              "title": "Data",
+              "icon": "table"
             },
             "children": [
               {

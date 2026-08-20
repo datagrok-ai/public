@@ -309,6 +309,40 @@ spec('u2-tabs: child nodes label the tabs, and activation switches panels', () =
   instance.dispose();
 });
 
+spec('u2-tabs and u2-accordion: the child icon prop renders, the tabs props pick orientation and variant', () => {
+  const reg = registry();
+  let instance;
+  const warnings = captureWarnings(() => {
+    instance = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'u2-div-v', children: [
+        {tag: 'u2-tabs', props: {orientation: 'vertical', variant: 'document'}, children: [
+          {tag: 'u2-panel', props: {title: 'Data', icon: 'table'}},
+          {tag: 'u2-panel', props: {title: 'Style'}},
+        ]},
+        {tag: 'u2-accordion', children: [
+          {tag: 'u2-panel', props: {title: 'General', icon: 'cog'}},
+          {tag: 'u2-panel', props: {title: 'Notes'}},
+        ]},
+      ]},
+    }, new SpecContext(), reg);
+  });
+  document.body.append(instance.root);
+
+  assert.deepEqual(warnings, [], 'icon is declared child metadata on both hosts');
+  const tabs = instance.root.querySelector('.u2-tabs');
+  assert.equal(tabs.classList.contains('u2-tabs-vertical'), true);
+  assert.equal(tabs.classList.contains('u2-tabs-document'), true);
+  const tabIcons = tabs.querySelectorAll('.u2-tabs-tab').map((t) => t.querySelector('.u2-tabs-icon .fa-table'));
+  assert.equal(tabIcons[0] !== null, true, 'the first tab carries its icon');
+  assert.equal(tabIcons[1], null);
+  const paneIcons = instance.root.querySelectorAll('.u2-accordion-header')
+    .map((h) => h.querySelector('.u2-accordion-icon .fa-cog'));
+  assert.equal(paneIcons[0] !== null, true, 'the first pane carries its icon');
+  assert.equal(paneIcons[1], null);
+  instance.dispose();
+});
+
 spec('u2-property-grid: its JSON payload renders without a single warning', () => {
   const reg = registry();
   let instance;
@@ -341,7 +375,11 @@ spec('manifest: the child hooks stay out of it, the metadata they need stays in'
     assert.equal('adopt' in meta, false, `${tag} leaks a hook into the manifest`);
     assert.equal(meta.acceptsChildren, true, `${tag} does not advertise its children`);
   }
-  assert.deepEqual(metas.get('u2-tabs').childProps.map((p) => p.name), ['title']);
+  assert.deepEqual(metas.get('u2-tabs').childProps.map((p) => p.name), ['title', 'icon']);
+  assert.deepEqual(metas.get('u2-accordion').childProps.map((p) => p.name), ['title', 'icon']);
+  const tabProps = Object.fromEntries(metas.get('u2-tabs').props.map((p) => [p.name, p.choices]));
+  assert.deepEqual(tabProps, {orientation: ['horizontal', 'vertical'], variant: ['platform', 'document']});
+  assert.deepEqual(metas.get('u2-tabs').defaults, {orientation: 'horizontal', variant: 'platform'});
   assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object']);
 });
 

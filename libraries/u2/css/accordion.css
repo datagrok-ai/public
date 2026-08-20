@@ -1,4 +1,6 @@
-/* Accordion skin. Tokens only — css/tokens.css must be loaded alongside. */
+/* Accordion skin — the platform's `ui.accordion` (.d4-accordion-pane-header): 28px row, text
+   indented 24px past an absolutely placed chevron, no borders between panes.
+   Tokens only — css/tokens.css must be loaded alongside. */
 .u2-accordion {
   display: flex;
   flex-direction: column;
@@ -9,17 +11,14 @@
   background: var(--dg-bg);
 }
 
-.u2-accordion-pane {
-  border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
-}
-
 .u2-accordion-header {
+  position: relative;
   display: flex;
   box-sizing: border-box;
   align-items: center;
   gap: var(--dg-space-s);
-  height: var(--dg-inline-control-height);
-  padding: 0 var(--dg-space-m);
+  height: var(--dg-control-height);
+  padding: 0 0 0 var(--dg-space-xxl);
   cursor: pointer;
   outline: none;
   user-select: none;
@@ -35,27 +34,38 @@
 }
 
 .u2-accordion-chevron {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  font-size: var(--dg-font-size-xs);
+  width: var(--dg-space-xl);
+  font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
+  transform: rotate(-90deg);
   transition: transform 100ms ease;
 }
 
 .u2-accordion-header[aria-expanded='true'] .u2-accordion-chevron {
-  transform: rotate(90deg);
+  transform: rotate(0);
+}
+
+.u2-accordion-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--dg-text-color-light);
 }
 
 .u2-accordion-title {
   overflow: hidden;
-  font-weight: var(--dg-font-weight-medium);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .u2-accordion-content {
-  padding: var(--dg-space-s) var(--dg-space-m) var(--dg-space-m) var(--dg-space-xl);
+  padding: 0 0 var(--dg-space-s) var(--dg-space-xxl);
 }

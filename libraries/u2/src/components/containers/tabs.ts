@@ -1,14 +1,32 @@
-/* IDE document tabs: hand-written (no VS Code port — its tab bar is welded to the editor-group
-   model and the widget layer we skipped). The overflow dropdown is a plain absolutely-positioned
-   div rather than the Overlay layer: it is anchored inside the header and must not outlive it. */
+/* Tab strip in the platform's `ui.tabControl` look (accent underline, no stripe chrome), with the
+   IDE document-tab skin as a variant. Hand-written (no VS Code port — its tab bar is welded to the
+   editor-group model and the widget layer we skipped). The overflow dropdown is a plain
+   absolutely-positioned div rather than the Overlay layer: it is anchored inside the header and
+   must not outlive it. */
 import {signal, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {iconOf} from '../display/icon.js';
 
 export interface TabOptions {
   id: string;
+  /** An empty label with an icon makes an icon-only tab (the platform's `d4-tab-icons` mode). */
   label: string;
+  /** A Font Awesome name (rendered through `icon`) or a ready element. */
+  icon?: string | HTMLElement;
+  /** Header tooltip; defaults to the label, so an icon-only tab should set it. */
+  tooltip?: string;
   closable?: boolean;
   content: HTMLElement | (() => HTMLElement);
+}
+
+export type TabOrientation = 'horizontal' | 'vertical';
+export type TabVariant = 'platform' | 'document';
+
+export interface TabStripOptions {
+  tabs?: TabOptions[];
+  orientation?: TabOrientation;
+  /** `platform` (default) is `ui.tabControl`; `document` is the IDE document-tab skin. */
+  variant?: TabVariant;
 }
 
 interface Tab {
@@ -24,6 +42,7 @@ let stripCount = 0;
 export class TabStrip extends Control {
   readonly activeTab: Signal<string | null> = signal<string | null>(null);
   readonly onTabClosed: ReadonlySignal<string | null>;
+  readonly orientation: TabOrientation;
 
   private readonly _idPrefix = `u2-tabs-${++stripCount}`;
   private readonly _header = document.createElement('div');
@@ -35,15 +54,19 @@ export class TabStrip extends Control {
   private readonly _menuOpen = signal(false);
   private readonly _closed = signal<string | null>(null);
 
-  constructor(options?: {tabs?: TabOptions[]}) {
+  constructor(options?: TabStripOptions) {
     super();
     this.onTabClosed = this._closed;
+    this.orientation = options?.orientation ?? 'horizontal';
 
     this.root.classList.add('u2-tabs');
+    this.root.classList.toggle('u2-tabs-vertical', this.orientation === 'vertical');
+    this.root.classList.toggle('u2-tabs-document', options?.variant === 'document');
     this.root.dataset.u2 = 'tabs';
 
     this._header.className = 'u2-tabs-header';
     this._header.setAttribute('role', 'tablist');
+    this._header.setAttribute('aria-orientation', this.orientation);
     this._scroller.className = 'u2-tabs-scroller';
     this._scroller.setAttribute('role', 'presentation');
     this._overflow.className = 'u2-tabs-overflow';
@@ -82,7 +105,7 @@ export class TabStrip extends Control {
     header.id = `${this._idPrefix}-tab-${tab.id}`;
     header.dataset.id = tab.id;
     header.tabIndex = -1;
-    header.title = tab.label;
+    header.title = tab.tooltip ?? tab.label;
     header.setAttribute('role', 'tab');
     header.setAttribute('aria-selected', 'false');
     header.setAttribute('aria-controls', `${this._idPrefix}-panel-${tab.id}`);
@@ -94,6 +117,8 @@ export class TabStrip extends Control {
     mark.className = tab.closable ? 'u2-tabs-close' : 'u2-tabs-mark';
     if (tab.closable)
       mark.title = 'Close';
+    if (tab.icon !== undefined)
+      header.append(TabStrip._icon(tab.icon));
     header.append(label, mark);
 
     const panel = document.createElement('div');
@@ -131,6 +156,13 @@ export class TabStrip extends Control {
     const tab = this._find(id);
     if (tab)
       tab.mark.classList.toggle('u2-tabs-dirty', dirty);
+  }
+
+  private static _icon(source: string | HTMLElement): HTMLElement {
+    const wrap = document.createElement('span');
+    wrap.className = 'u2-tabs-icon';
+    wrap.append(iconOf(source));
+    return wrap;
   }
 
   private _find(id: string): Tab | undefined {
@@ -193,10 +225,23 @@ export class TabStrip extends Control {
     if (current < 0)
       return;
     const last = tabs.length - 1;
+    const back = current === 0 ? last : current - 1;
+    const forward = current === last ? 0 : current + 1;
+    const vertical = this.orientation === 'vertical';
     let next: number;
     switch (e.key) {
-      case 'ArrowLeft': next = current === 0 ? last : current - 1; break;
-      case 'ArrowRight': next = current === last ? 0 : current + 1; break;
+      case 'ArrowLeft': next = back; break;
+      case 'ArrowRight': next = forward; break;
+      case 'ArrowUp':
+        if (!vertical)
+          return;
+        next = back;
+        break;
+      case 'ArrowDown':
+        if (!vertical)
+          return;
+        next = forward;
+        break;
       case 'Home': next = 0; break;
       case 'End': next = last; break;
       case 'Enter':
@@ -256,18 +301,24 @@ export class TabStrip extends Control {
     }
     const active = this.activeTab.value;
     this._menu.replaceChildren(...this._tabs.value.map((tab) => {
+      const {id, label, icon, tooltip} = tab.options;
       const item = document.createElement('div');
       item.className = 'u2-tabs-overflow-item';
-      item.dataset.id = tab.options.id;
-      item.textContent = tab.options.label;
+      item.dataset.id = id;
       item.setAttribute('role', 'menuitem');
-      item.classList.toggle('u2-tabs-overflow-item-active', tab.options.id === active);
+      item.classList.toggle('u2-tabs-overflow-item-active', id === active);
+      // the header owns its icon element, so the menu gets a copy
+      if (icon !== undefined)
+        item.append(TabStrip._icon(typeof icon === 'string' ? icon : icon.cloneNode(true) as HTMLElement));
+      item.append(label || tooltip || id);
       return item;
     }));
   }
 
   private _updateOverflow(): void {
-    const overflowing = this._scroller.scrollWidth > this._scroller.clientWidth + 1;
+    const overflowing = this.orientation === 'vertical' ?
+      this._scroller.scrollHeight > this._scroller.clientHeight + 1 :
+      this._scroller.scrollWidth > this._scroller.clientWidth + 1;
     this._overflow.classList.toggle('u2-tabs-overflow-visible', overflowing);
     this._overflow.tabIndex = overflowing ? 0 : -1;
     if (!overflowing)

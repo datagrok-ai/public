@@ -198,7 +198,11 @@
 
 .u2-palette .u2-accordion-header {
   height: auto;
-  padding: var(--dg-space-xs) var(--dg-space-s);
+  padding: var(--dg-space-xs) var(--dg-space-s) var(--dg-space-xs) var(--dg-space-xxl);
+}
+
+.u2-palette .u2-accordion-chevron {
+  font-size: var(--dg-font-size-xs);
 }
 
 .u2-palette .u2-accordion-title {

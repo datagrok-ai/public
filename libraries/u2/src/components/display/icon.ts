@@ -54,3 +54,8 @@ export function icon(name: string, options?: IconOptions): HTMLElement {
   }
   return el;
 }
+
+/** What containers accept as an icon option: a Font Awesome name, or a ready element used as is. */
+export function iconOf(source: string | HTMLElement): HTMLElement {
+  return typeof source === 'string' ? icon(source) : source;
+}

@@ -238,6 +238,73 @@ smoke('TabStrip: activation, lazy content built once, close', () => {
   tabs.dispose();
 });
 
+smoke('TabStrip: the platform look is the default, document is a variant, vertical walks with ↑/↓', () => {
+  const plain = mount(new TabStrip({tabs: [{id: 'a', label: 'A', content: span('a')}]}));
+  assert.equal(plain.orientation, 'horizontal');
+  assert.equal(plain.root.classList.contains('u2-tabs-document'), false);
+  assert.equal(plain.root.classList.contains('u2-tabs-vertical'), false);
+  plain.dispose();
+
+  const documents = mount(new TabStrip({variant: 'document'}));
+  assert.equal(documents.root.classList.contains('u2-tabs-document'), true);
+  documents.dispose();
+
+  const vertical = mount(new TabStrip({orientation: 'vertical', tabs: [
+    {id: 'a', label: 'A', content: span('a')},
+    {id: 'b', label: 'B', content: span('b')},
+  ]}));
+  assert.equal(vertical.orientation, 'vertical');
+  assert.equal(vertical.root.classList.contains('u2-tabs-vertical'), true);
+  assert.equal(vertical.root.querySelector('.u2-tabs-header').getAttribute('aria-orientation'), 'vertical');
+  const [a, b] = vertical.root.querySelectorAll('.u2-tabs-tab');
+  a.focus();
+  fire(a, 'keydown', {key: 'ArrowDown'});
+  assert.equal(document.activeElement, b, 'ArrowDown moves focus down the column');
+  fire(b, 'keydown', {key: 'ArrowUp'});
+  assert.equal(document.activeElement, a);
+  fire(a, 'keydown', {key: 'ArrowRight'});
+  assert.equal(document.activeElement, b, 'the horizontal keys keep working');
+  assert.equal(vertical.activeTab.value, 'a', 'focus moved, activation did not');
+  vertical.dispose();
+
+  const horizontal = mount(new TabStrip({tabs: [
+    {id: 'a', label: 'A', content: span('a')},
+    {id: 'b', label: 'B', content: span('b')},
+  ]}));
+  const first = horizontal.root.querySelector('.u2-tabs-tab');
+  first.focus();
+  fire(first, 'keydown', {key: 'ArrowDown'});
+  assert.equal(document.activeElement, first, 'ArrowDown is not a tab key in a horizontal strip');
+  horizontal.dispose();
+});
+
+smoke('TabStrip: icons by name or element, icon-only tabs keep their tooltip', () => {
+  const custom = span('★');
+  const tabs = mount(new TabStrip({tabs: [
+    {id: 'home', label: 'Home', icon: 'home', content: span('home')},
+    {id: 'star', label: 'Starred', icon: custom, content: span('star')},
+    {id: 'help', label: '', icon: 'question-circle', tooltip: 'Help', content: span('help')},
+    {id: 'plain', label: 'Plain', content: span('plain')},
+  ]}));
+  const [home, star, help, plain] = tabs.root.querySelectorAll('.u2-tabs-tab');
+
+  const homeIcon = home.querySelector('.u2-tabs-icon');
+  assert.equal(homeIcon.firstChild.classList.contains('fa-home'), true, 'a string renders through icon()');
+  assert.equal(homeIcon.firstChild.classList.contains('grok-icon'), true);
+  assert.equal(home.children[0], homeIcon, 'the icon precedes the label');
+  assert.equal(home.querySelector('.u2-tabs-label').textContent, 'Home');
+  assert.equal(home.title, 'Home');
+
+  assert.equal(star.querySelector('.u2-tabs-icon').firstChild, custom, 'an element is used as is');
+
+  assert.equal(help.querySelector('.u2-tabs-label').textContent, '', 'icon-only: no label text');
+  assert.equal(help.querySelector('.u2-tabs-icon .fa-question-circle') !== null, true);
+  assert.equal(help.title, 'Help', 'the header title carries the tooltip');
+
+  assert.equal(plain.querySelector('.u2-tabs-icon'), null);
+  tabs.dispose();
+});
+
 smoke('Menu: builds at coordinates, activates an item, closes', async () => {
   let clicked = '';
   const menu = new Menu()
@@ -521,6 +588,28 @@ smoke('Dialog: shows, runs OK and restores focus', () => {
 
   dialog.dispose();
   name.dispose();
+});
+
+smoke('Accordion: a pane icon by name or element sits between the chevron and the title', () => {
+  const accordion = mount(new Accordion());
+  const named = accordion.addPane('General', span('g'), false, 'cog');
+  const custom = span('★');
+  const element = accordion.addPane('Starred', span('s'), true, custom);
+  const plain = accordion.addPane('Plain', span('p'));
+
+  const header = named.root.querySelector('.u2-accordion-header');
+  assert.deepEqual([...header.children].map((c) => c.className),
+    ['u2-accordion-chevron', 'u2-accordion-icon', 'u2-accordion-title']);
+  assert.equal(named.icon.classList.contains('fa-cog'), true, 'a string renders through icon()');
+  assert.equal(header.querySelector('.u2-accordion-icon').firstChild, named.icon);
+  assert.equal(header.title, 'General');
+  assert.equal(header.querySelector('.u2-accordion-chevron .fa-chevron-down') !== null, true);
+
+  assert.equal(element.icon, custom, 'an element is used as is');
+  assert.equal(element.expanded.value, true, 'the positional expanded flag still applies');
+  assert.equal(plain.icon, undefined);
+  assert.equal(plain.root.querySelector('.u2-accordion-icon'), null);
+  accordion.dispose();
 });
 
 smoke('Accordion: lazy pane content is built once and disposed with the pane', () => {

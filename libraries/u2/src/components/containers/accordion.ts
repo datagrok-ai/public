@@ -4,9 +4,11 @@
 import {signal, untracked, Signal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
+import {iconOf} from '../display/icon.js';
 
 export interface AccordionPane {
   readonly title: string;
+  readonly icon?: HTMLElement;
   readonly expanded: Signal<boolean>;
   readonly root: HTMLElement;
 }
@@ -33,7 +35,9 @@ export class Accordion extends Control {
     this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
   }
 
-  addPane(title: string, content: HTMLElement | (() => HTMLElement), expanded = false): AccordionPane {
+  /** `icon` is a Font Awesome name (rendered through `icon`) or a ready element, shown before the title. */
+  addPane(title: string, content: HTMLElement | (() => HTMLElement), expanded = false,
+    icon?: string | HTMLElement): AccordionPane {
     const id = `${this._idPrefix}-${this._nextPaneId++}`;
     const root = document.createElement('div');
     root.className = 'u2-accordion-pane';
@@ -48,11 +52,19 @@ export class Accordion extends Control {
 
     const chevron = document.createElement('span');
     chevron.className = 'u2-accordion-chevron';
-    chevron.textContent = '▸';
+    chevron.append(iconOf('chevron-down'));
+    header.append(chevron);
+    const iconEl = icon === undefined ? undefined : iconOf(icon);
+    if (iconEl) {
+      const wrap = document.createElement('span');
+      wrap.className = 'u2-accordion-icon';
+      wrap.append(iconEl);
+      header.append(wrap);
+    }
     const label = document.createElement('span');
     label.className = 'u2-accordion-title';
     label.textContent = title;
-    header.append(chevron, label);
+    header.append(label);
 
     const host = document.createElement('div');
     host.className = 'u2-accordion-content';
@@ -67,6 +79,7 @@ export class Accordion extends Control {
     this.own(() => scope.dispose());
     const pane: Pane = {
       title,
+      icon: iconEl,
       root,
       header,
       content: host,

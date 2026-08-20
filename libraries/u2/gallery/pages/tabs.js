@@ -1,24 +1,28 @@
 import {computed, Scope, bindText} from '../../src/index.js';
 import {TabStrip} from '../../src/components/containers/tabs.js';
 
-function injectOnce(id, make) {
+function injectOnce(id, href) {
   if (document.getElementById(id)) return;
-  const e = make();
-  e.id = id;
-  document.head.append(e);
-}
-
-injectOnce('u2-tabs-css', () => {
   const l = document.createElement('link');
   l.rel = 'stylesheet';
-  l.href = new URL('../../css/tabs.css', import.meta.url).href;
-  return l;
-});
+  l.href = new URL(href, import.meta.url).href;
+  l.id = id;
+  document.head.append(l);
+}
+
+injectOnce('u2-icons-css', '../../css/icons.css');
+injectOnce('u2-tabs-css', '../../css/tabs.css');
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function html(tag, cls, markup) {
+  const e = el(tag, cls);
+  e.innerHTML = markup;
   return e;
 }
 
@@ -43,10 +47,11 @@ const FILES = [
 export async function render(main) {
   main.append(el('h1', null, 'Tabs'));
   const intro = el('p');
-  intro.innerHTML = 'IDE document tabs: manual activation (focus moves with ←/→/Home/End, ' +
-    'Enter or Space activates), Delete or middle-click closes a closable tab, panels are hidden ' +
-    'with <code>display:none</code> so their state survives switching, and lazy content is built ' +
-    'once on first activation. Twelve tabs force the overflow chevron at normal widths.';
+  intro.innerHTML = 'The platform\'s <code>ui.tabControl</code> look by default: manual activation ' +
+    '(focus moves with ←/→/Home/End, Enter or Space activates), Delete or middle-click closes a ' +
+    'closable tab, panels are hidden with <code>display:none</code> so their state survives ' +
+    'switching, and lazy content is built once on first activation. Twelve tabs force the ' +
+    'overflow chevron at normal widths.';
   main.append(intro);
 
   const scopeCount = el('span', null, String(Scope.liveCount));
@@ -113,6 +118,36 @@ export async function render(main) {
     })
   );
   main.append(hint, row);
+
+  main.append(el('h2', null, 'Document variant'));
+  main.append(html('p', 'u2-gallery-status',
+    '<code>variant: \'document\'</code> — the IDE editor-group skin: secondary stripe, accent top border, ' +
+    'active tab on the page background.'));
+  const documents = new TabStrip({variant: 'document', tabs: [
+    {id: 'package.ts', label: 'package.ts', closable: true, content: paragraph('Contents of package.ts')},
+    {id: 'README.md', label: 'README.md', closable: true, content: paragraph('Contents of README.md')},
+    {id: 'tokens.css', label: 'tokens.css', content: paragraph('Contents of tokens.css')},
+  ]});
+  documents.root.style.height = '120px';
+  documents.root.style.maxWidth = '620px';
+  documents.root.style.border = 'var(--dg-border-width) solid var(--dg-border)';
+  main.append(documents.root);
+
+  main.append(el('h2', null, 'Vertical, with icons'));
+  main.append(html('p', 'u2-gallery-status',
+    '<code>orientation: \'vertical\'</code> — the header is a column on the left and ↑/↓ move focus; ' +
+    '<code>icon</code> is a Font Awesome name or an element, and a tab with an empty label is ' +
+    'icon-only (its <code>tooltip</code> carries the name).'));
+  const vertical = new TabStrip({orientation: 'vertical', tabs: [
+    {id: 'home', label: 'Home', icon: 'home', content: paragraph('Home')},
+    {id: 'settings', label: 'Settings', icon: 'cog', content: paragraph('Settings')},
+    {id: 'charts', label: 'Charts', icon: 'chart-line', content: paragraph('Charts')},
+    {id: 'help', label: '', icon: 'question-circle', tooltip: 'Help', content: paragraph('Help (icon-only tab)')},
+  ]});
+  vertical.root.style.height = '180px';
+  vertical.root.style.maxWidth = '620px';
+  vertical.root.style.border = 'var(--dg-border-width) solid var(--dg-border)';
+  main.append(vertical.root);
 
   main.append(el('h2', null, 'Lazy build log'));
   main.append(log);

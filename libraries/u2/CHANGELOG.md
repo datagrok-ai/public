@@ -2,6 +2,12 @@
 
 ## v.next
 
+* TabStrip: the platform's `ui.tabControl` look is the default — accent text, a 2px accent underline on the selected tab, no stripe chrome; the IDE document-tab skin survives as `variant: 'document'`
+* TabStrip: added `orientation: 'vertical'` — the header is a column on the left, the selected tab shows a 4px accent bar, ↑/↓ move focus, and overflow is measured on the vertical axis
+* TabStrip: added `TabOptions.icon` (a Font Awesome name or an element) rendered before the label and in the overflow menu; an empty label with an icon makes an icon-only tab, whose header `title` carries `TabOptions.tooltip`
+* Accordion: restyled to the platform's `ui.accordion` — 28px rows indented past an absolutely placed chevron that turns from right to down, normal-weight titles, no borders between panes
+* Accordion: `addPane(title, content, expanded, icon)` takes a Font Awesome name or an element; `AccordionPane.icon` exposes it
+* Spec: `u2-tabs` and `u2-accordion` children accept an `icon` child prop; `u2-tabs` gained `orientation` and `variant` choice props
 * Components: `src/components/` is split by role — `inputs/`, `forms/`, `containers/`, `actions/`, `navigation/`, `collections/`, `display/` — the same vocabulary as the registry categories; `src/dg/` likewise into `inputs/`, `forms/`, `entities/`, `shell/` beside `designer/`. The public surface (`src/index.ts`, `src/dg/index.ts`) and the flat `css/` paths are unchanged
 * Designer: split the view into its layers behind the same surface — `view.ts` keeps the canvas and the wiring, `selection.ts` the selection model and hit-testing, `drag.ts` the mouse-drag layer, `actions.ts` the editing verbs, `keys.ts` the keyboard map, `ribbon.ts` the ribbon and its dialogs; the object handler into `handler.ts`, `prop-model.ts` (the property model) and `prop-editors.ts`. Names, signatures and import paths are unchanged
 * Tests: introduced one module of getter-backed platform doubles (`tests/platform-doubles.mjs`) for the headless suite — every fake `Property`, `Func`, `FileInfo`, `DataFrame` or entity row keeps its state on `dart` behind prototype getters, as the real one does, and the module pins it; the loader hooks serve these same classes
