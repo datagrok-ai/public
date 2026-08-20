@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {SCHEMA, T_ALIGNMENT, T_COMPOUND, T_PROGRAM, T_PROGRAM_COMPOUND, T_STUDY} from '../domain/constants';
 import {approvePublication, getPublicationHistory} from '../service/publication-service';
 import {showCurateDialog, showProgramDialog, showRejectDialog} from './admin-dialogs';
+import {createGuardedDomainView} from './cold-boot-workarounds';
 
 /** Opens the frozen workflow or function run in Compute2. The tree opens runnable —
  * a new run can be started from the artifact's state. */
@@ -43,13 +44,6 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
       void openArtifact(artifactId);
     else
       super.openRow(x);
-  }
-
-  /** Whether the client's domain registry meta for this table has arrived —
-   * dartMeta resolves from exactly the cache the Domain View's grid is built
-   * from, and js-api re-resolves misses on every read. */
-  get registryLoaded(): boolean {
-    return this.dartMeta != null;
   }
 
   override renderProperties(x: DG.DomainRow, context: any = null): HTMLElement {
@@ -99,58 +93,8 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
   }
 }
 
-function whenDocked(view: DG.ViewBase, action: () => void, tries: number = 100): void {
-  view.root.isConnected ? action() :
-    tries > 0 ? void setTimeout(() => whenDocked(view, action, tries - 1), 100) : null;
-}
-
-/** On a cold start (deep link into the app) the app function can run before the
- * client boot delivers the domain registry meta the Domain View's grid is built
- * from (NullError in refreshGrid otherwise). Wait on that meta directly before
- * creating the view. Platform ask stays: an awaitable registry-ready signal. */
-async function whenRegistryLoaded(timeoutMs: number = 10000): Promise<void> {
-  const probe = new AlignmentHandler();
-  const started = Date.now();
-  while (!probe.registryLoaded && Date.now() - started < timeoutMs)
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  // The registry meta alone is not enough: the view's grid build also needs the
-  // per-table entity metas, which the platform otherwise registers lazily during
-  // the first Domain View creation — racing refreshGrid at cold boot (NullError
-  // in refreshGrid/loadNextPage, dead view). Force the registration up front;
-  // awaitable and idempotent.
-  await (window as any).grok_DomainRowMeta_RegisterPerTableMetas?.();
-}
-
-/** Cold-boot core race: the first Domain View of a deep-linked session can die
- * while building its grid (NullError in DataSourceCardView.refreshGrid /
- * loadNextPage) — not preventable from a package (neither the registry meta nor
- * the per-table entity metas close the window) and not recoverable via
- * refresh(). Once the client is warm, creation is reliable — so when the grid
- * never materializes, transplant a freshly created view into the docked root.
- * Platform ask stays: make the cold-boot grid build await its dependencies. */
-async function healIfGridDied(view: DG.DomainView, permanentFilter: string, attempt: number = 0): Promise<void> {
-  for (let waited = 0; waited < 8000; waited += 500) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    if (view.root.querySelector('canvas') != null)
-      return;
-  }
-  if (!view.root.isConnected || attempt >= 2)
-    return;
-  const replacement = DG.DomainView.create({schema: SCHEMA, table: 'alignment', permanentFilter});
-  replacement.root.style.width = '100%';
-  replacement.root.style.height = '100%';
-  ui.empty(view.root);
-  view.root.appendChild(replacement.root);
-  void healIfGridDied(replacement, permanentFilter, attempt + 1);
-}
-
-async function alignmentView(permanentFilter: string, name: string): Promise<DG.ViewBase> {
-  await whenRegistryLoaded();
-  const view = DG.DomainView.create({schema: SCHEMA, table: 'alignment', permanentFilter});
-  view.name = name;
-  whenDocked(view, () => view.showFilters());
-  void healIfGridDied(view, permanentFilter);
-  return view;
+function alignmentView(permanentFilter: string, name: string): Promise<DG.ViewBase> {
+  return createGuardedDomainView({schema: SCHEMA, table: 'alignment', permanentFilter, name, showFilters: true});
 }
 
 export function catalogView(): Promise<DG.ViewBase> {
@@ -169,11 +113,8 @@ export function myPublicationsView(): Promise<DG.ViewBase> {
   return alignmentView('artifact_author = @current', 'My publications');
 }
 
-async function registryView(table: string, name: string): Promise<DG.ViewBase> {
-  await whenRegistryLoaded();
-  const view = DG.DomainView.create({schema: SCHEMA, table});
-  view.name = name;
-  return view;
+function registryView(table: string, name: string): Promise<DG.ViewBase> {
+  return createGuardedDomainView({schema: SCHEMA, table, name});
 }
 
 export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
