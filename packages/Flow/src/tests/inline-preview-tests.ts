@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ClassicPreset} from 'rete';
-import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectFloat, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions, createNode, getRegisteredFuncs} from '../rete/node-factory';
 import {FlowEditor} from '../rete/flow-editor';
@@ -21,6 +21,7 @@ import {OutputPreviewPanel} from '../execution/output-preview';
 import {ExecutionController} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
+import {FuncFlowView} from '../funcflow-view';
 
 const SETTINGS = {name: 'T', description: '', tags: []};
 
@@ -40,8 +41,11 @@ function funcTypeName(name: string): string | null {
 
 /** Editor whose in-node previews resolve through an ExecutionController, wired
  *  the same way FuncFlowView wires the real one. */
-function makeWiredEditor(): TestEditor & {ctrl: ExecutionController} {
-  const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+function makeWiredEditor(opts: {onScreen?: boolean} = {}): TestEditor & {ctrl: ExecutionController} {
+  const container = ui.div([], {style: opts.onScreen ?
+    {width: '1000px', height: '700px', position: 'fixed', left: '0', top: '0',
+      zIndex: '5000', background: '#fff'} :
+    {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
   document.body.appendChild(container);
   const box: {ctrl?: ExecutionController} = {};
   const flow = new FlowEditor(container, {
@@ -55,6 +59,31 @@ function makeWiredEditor(): TestEditor & {ctrl: ExecutionController} {
 
 function previewEl(container: HTMLElement, nodeId: string): HTMLElement | null {
   return container.querySelector(`[data-node-id="${nodeId}"] [data-testid="ff-node-preview"]`);
+}
+
+/** The screen-space portal actually hosting a node's preview content. */
+function portalEl(container: HTMLElement, nodeId: string): HTMLElement | null {
+  return container.querySelector(`.ff-node-preview-portal[data-node-id="${nodeId}"]`);
+}
+
+/** Last measured portal/host rects — appended to failure messages. */
+let lastPortalGeom = '';
+
+/** True once the portal's on-screen box matches the in-card container's. */
+function portalAligned(container: HTMLElement, nodeId: string): boolean {
+  const portal = portalEl(container, nodeId);
+  const host = previewEl(container, nodeId);
+  if (!portal || !host) {
+    lastPortalGeom = `portal=${!!portal} host=${!!host}`;
+    return false;
+  }
+  const p = portal.getBoundingClientRect();
+  const h = host.getBoundingClientRect();
+  lastPortalGeom = `portal=[${[p.left, p.top, p.width, p.height].map(Math.round)}] ` +
+    `host=[${[h.left, h.top, h.width, h.height].map(Math.round)}] ` +
+    `style=[${portal.style.left},${portal.style.top},${portal.style.width},${portal.style.display}]`;
+  return Math.abs(p.left - h.left) < 2 && Math.abs(p.top - h.top) < 2 &&
+    Math.abs(p.width - h.width) < 2 && Math.abs(p.height - h.height) < 2;
 }
 
 category('Flow: inline preview', () => {
@@ -180,14 +209,30 @@ category('Flow: inline preview', () => {
       await flow.addNodeAt(viewer, 0, 0);
       await flow.setInlinePreview(viewer.id, true);
 
-      expect(await until(() => previewEl(container, viewer.id)?.contains(fakeRoot) === true), true,
-        'the live root is mounted inside the node');
+      // The content mounts once into the screen-space portal and never moves
+      // again — no re-mount or resize on hover, nothing visibly "happens".
+      expect(await until(() => portalEl(container, viewer.id)?.contains(fakeRoot) === true), true,
+        'the live root is mounted in the portal');
+      expect(fakeRoot.closest('.ff-node'), null,
+        'the content has NO transformed node ancestor (fixed-position popups stay true)');
+      expect(await until(() => portalAligned(container, viewer.id)), true,
+        `the portal covers the in-card container — ${lastPortalGeom}`);
       expect(fakeRoot.dataset[INLINE_HOSTED_DATA_KEY], 'true', 'the root is marked as node-hosted');
+      expect(!!portalEl(container, viewer.id)!.querySelector('[data-testid="ff-node-preview-grip"]'), true,
+        'the portal carries the resize grip');
+      const mountedPortal = portalEl(container, viewer.id);
+      previewEl(container, viewer.id)!.dispatchEvent(new PointerEvent('pointerenter', {buttons: 0}));
+      mountedPortal!.dispatchEvent(new PointerEvent('pointerenter', {buttons: 0}));
+      await new Promise((r) => setTimeout(r, 200));
+      expect(portalEl(container, viewer.id) === mountedPortal, true,
+        'hover changes nothing — same portal, no re-mount');
+      expect(mountedPortal!.contains(fakeRoot), true, 'the content never moved');
 
       // A collapsed node folds the preview away and releases the root.
       await flow.toggleCollapsed(viewer.id);
       expect(await until(() => fakeRoot.dataset[INLINE_HOSTED_DATA_KEY] === undefined), true,
         'collapse releases the hosted marker');
+      expect(portalEl(container, viewer.id), null, 'collapse removes the portal');
       await flow.toggleCollapsed(viewer.id);
       expect(await until(() => fakeRoot.dataset[INLINE_HOSTED_DATA_KEY] === 'true'), true,
         'expand claims it back');
@@ -195,6 +240,7 @@ category('Flow: inline preview', () => {
       await flow.setInlinePreview(viewer.id, false);
       expect(await until(() => fakeRoot.dataset[INLINE_HOSTED_DATA_KEY] === undefined), true,
         'toggle-off releases the hosted marker');
+      expect(portalEl(container, viewer.id), null, 'toggle-off removes the portal');
       expect(previewEl(container, viewer.id), null, 'the container is gone');
 
       // No content → placeholder, and stale content swaps out cleanly.
@@ -203,6 +249,7 @@ category('Flow: inline preview', () => {
       expect(await until(() =>
         !!previewEl(container, viewer.id)?.querySelector('[data-testid="ff-node-preview-placeholder"]')), true,
       'no captured value → placeholder');
+      expect(portalEl(container, viewer.id), null, 'no content → no portal');
     } finally {
       flow.destroy();
       container.remove();
@@ -361,10 +408,123 @@ category('Flow: inline preview', () => {
       });
       await e.flow.setInlinePreview(node.id, true);
       expect(await until(() =>
-        !!previewEl(e.container, node.id)?.querySelector('svg')), true,
-      'the graphics element is mounted inside the node container');
-      expect(previewEl(e.container, node.id)!.contains(e.ctrl.inlinePreviewRoot(node.id)!), true,
+        !!portalEl(e.container, node.id)?.querySelector('svg')), true,
+      'the graphics element is mounted in the node preview portal');
+      expect(portalEl(e.container, node.id)!.contains(e.ctrl.inlinePreviewRoot(node.id)!), true,
         'it is the controller-cached element');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('overlapping cards interleave with previews: portal order + clip holes', async () => {
+    // The reported artifact: previews painted above every card. Portals now
+    // follow their nodes' paint order, and a card ABOVE a portal's node cuts a
+    // click-through hole into it — visual and interactive interleaving.
+    const e = makeWiredEditor({onScreen: true});
+    try {
+      const a = outputNodeOf('graphics');
+      const b = outputNodeOf('graphics');
+      await e.flow.addNodeAt(a, 20, 20);
+      // B is added later → painted above A; place its card over A's preview box.
+      await e.flow.addNodeAt(b, 180, 120);
+      for (const n of [a, b]) {
+        e.ctrl.state.setNodeStatus(n.id, NodeExecStatus.completed, {
+          outputs: {charges: {type: 'graphics', value: SVG_SAMPLE}},
+        });
+        await e.flow.setInlinePreview(n.id, true);
+      }
+      expect(await until(() => portalAligned(e.container, a.id) && portalAligned(e.container, b.id)),
+        true, 'both portals mounted and tracking');
+
+      const pa = portalEl(e.container, a.id)!;
+      const pb = portalEl(e.container, b.id)!;
+      // eslint-disable-next-line no-bitwise
+      expect((pa.compareDocumentPosition(pb) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0, true,
+        'portal order follows node paint order (B above A)');
+
+      // A's portal is cut where B's card covers it; B's portal is uncut.
+      const diag = (): string => {
+        const aCardEl = e.container.querySelector(`[data-node-id="${a.id}"]`) as HTMLElement;
+        const wrap = aCardEl?.parentElement;
+        const sibs: string[] = [];
+        for (let sib = wrap?.nextElementSibling; sib; sib = sib.nextElementSibling) {
+          sibs.push(`[${sib.className.toString().slice(0, 20)}|hasCard=${
+            !!sib.querySelector(':scope > .ff-node')}]`);
+        }
+        return `wrapParent=${wrap?.parentElement?.className?.toString()?.slice(0, 30)} ` +
+          `sibsAfterA=${sibs.join(',')} clipA='${pa.style.clipPath.slice(0, 60)}'`;
+      };
+      expect(await until(() => pa.style.clipPath.includes('evenodd')), true,
+        `the covered portal carries an evenodd clip with a hole — ${diag()}`);
+      expect(pb.style.clipPath, '', 'the top portal is not clipped');
+
+      // The hole is real: a point inside the overlap hits B (card or portal),
+      // never A's portal — clicks reach the covering card.
+      const bCard = e.container.querySelector(`[data-node-id="${b.id}"]`) as HTMLElement;
+      const br = bCard.getBoundingClientRect();
+      const ar = pa.getBoundingClientRect();
+      const x = Math.max(br.left, ar.left) + 8;
+      const y = Math.max(br.top, ar.top) + 8;
+      expect(x < Math.min(br.right, ar.right) && y < Math.min(br.bottom, ar.bottom), true,
+        'the test geometry actually overlaps');
+      const hit = document.elementFromPoint(x, y);
+      expect(!!hit && !pa.contains(hit), true,
+        `the overlap point hits the covering card, not the clipped portal (hit=${
+          (hit as HTMLElement)?.className?.toString()?.slice(0, 40)})`);
+      expect(!!hit && (bCard.contains(hit) || pb.contains(hit)), true,
+        'what it hits belongs to the covering node');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('repro + fix: fixed-position popups break in the canvas, stay true in the portal', async () => {
+    const e = makeWiredEditor();
+    try {
+      const node = outputNodeOf('graphics');
+      await e.flow.addNodeAt(node, 120, 60);
+      e.ctrl.state.setNodeStatus(node.id, NodeExecStatus.completed, {
+        outputs: {charges: {type: 'graphics', value: SVG_SAMPLE}},
+      });
+      await e.flow.setInlinePreview(node.id, true);
+      expect(await until(() => portalEl(e.container, node.id) != null), true, 'portal mounted');
+
+      // A viewer's axis/color selector popup is `position: fixed` at viewport
+      // coordinates — this probe stands in for it.
+      const probeAt = (parent: Element): DOMRect => {
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;left:50px;top:60px;width:10px;height:10px;';
+        parent.appendChild(probe);
+        const r = probe.getBoundingClientRect();
+        probe.remove();
+        return r;
+      };
+      for (const k of [1, 2]) {
+        e.flow.setZoom(k);
+        expect(await until(() => portalAligned(e.container, node.id), 3000), true,
+          `the portal tracks the container at k=${k} — ${lastPortalGeom}`);
+        // REPRO of the bug: inside the transformed canvas subtree, the transform
+        // becomes the fixed-position containing block — the "viewport" popup
+        // lands relative to the node instead, far from where DG placed it.
+        const nodeBody = e.container.querySelector(
+          `[data-node-id="${node.id}"] .ff-node-body`) as HTMLElement;
+        const broken = probeAt(nodeBody);
+        expect(Math.abs(broken.left - 50) > 20 || Math.abs(broken.top - 60) > 20, true,
+          `k=${k}: a fixed popup inside the node lands far from its viewport coords ` +
+          `(got ${Math.round(broken.left)},${Math.round(broken.top)} for 50,60) — the reported bug`);
+        // THE FIX: the portal has no transformed ancestor, so fixed coordinates
+        // are true viewport coordinates — popups land where DG puts them.
+        const fixedOk = probeAt(portalEl(e.container, node.id)!);
+        expectFloat(fixedOk.left, 50, 1.5, `k=${k}: a fixed popup in the portal lands at its coords (x)`);
+        expectFloat(fixedOk.top, 60, 1.5, `k=${k}: ...and (y)`);
+        expectFloat(fixedOk.width, 10, 1.5, `k=${k}: ...unscaled`);
+        // And the content itself renders untransformed — canvas hit-tests true.
+        const content = e.ctrl.inlinePreviewRoot(node.id)!;
+        expectFloat(content.getBoundingClientRect().width, content.clientWidth, 2,
+          `k=${k}: content client px == layout px`);
+      }
+      e.flow.setZoom(1);
     } finally {
       destroyEditor(e);
     }
@@ -377,7 +537,7 @@ category('Flow: inline preview', () => {
     // running" — when the compute VM is down, a script call hangs into a 504
     // minutes later, so probe first and skip with the cause named.
     const probe = await Promise.race([
-      grok.functions.call('Chem:TestPythonRunning', {x: 2, y: 3}).then((v) => v, () => null),
+      grok.functions.call('Chem:TestPythonRunning', {x: 2, y: 3}).then((v) => v as number, () => null),
       new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 30000)),
     ]);
     if (probe !== 5) {
@@ -403,8 +563,8 @@ category('Flow: inline preview', () => {
 
       const root = (): HTMLElement | null => e.ctrl.inlinePreviewRoot(node.id);
       expect(await until(() => root() != null, 5000), true, 'a graphics element was built');
-      expect(await until(() => previewEl(e.container, node.id)?.contains(root()!) === true, 5000), true,
-        'the charges image is mounted inside the node');
+      expect(await until(() => portalEl(e.container, node.id)?.contains(root()!) === true, 5000), true,
+        'the charges image is mounted in the node preview portal');
       const el = root()!;
       expect(!!el.querySelector('svg') || el.style.backgroundImage.includes('data:image'), true,
         'the element carries a real rendered image');
@@ -432,14 +592,29 @@ category('Flow: inline preview', () => {
 
       const root = (): HTMLElement | null => e.ctrl.inlinePreviewRoot(viewer.id);
       expect(await until(() => root() != null, 5000), true, 'a live viewer root was captured');
-      expect(await until(() => previewEl(e.container, viewer.id)?.contains(root()!) === true, 5000), true,
-        'the live viewer is mounted inside the node');
+      expect(await until(() => portalEl(e.container, viewer.id)?.contains(root()!) === true, 5000), true,
+        'the live viewer is mounted in the node preview portal');
       expect(root()!.dataset[INLINE_HOSTED_DATA_KEY], 'true', 'the root is claimed by the node');
 
       const block = buildPreview('viewer',
         e.ctrl.state.getNodeState(viewer.id)!.outputs!['viewer']);
       expect(block?.dataset.testid, 'ff-preview-inline-note',
         'the bottom panel yields with a note while the node hosts the viewer');
+
+      // The scatter plot hit-tests on its own canvas in client px — in the
+      // portal the REAL viewer renders untransformed at every zoom.
+      for (const k of [0.5, 2]) {
+        e.flow.setZoom(k);
+        expect(await until(() => portalAligned(e.container, viewer.id), 3000), true,
+          `the portal re-tracks the container at k=${k} — ${lastPortalGeom}`);
+        const r = root()!;
+        expectFloat(r.getBoundingClientRect().width, r.clientWidth, 2,
+          `the live scatter plot's client geometry is unscaled at k=${k}`);
+        expectFloat(r.getBoundingClientRect().height, r.clientHeight, 2,
+          `...vertically too at k=${k}`);
+      }
+      e.flow.setZoom(1);
+      await until(() => portalAligned(e.container, viewer.id), 3000);
 
       await e.flow.setInlinePreview(viewer.id, false);
       expect(await until(() => root()!.dataset[INLINE_HOSTED_DATA_KEY] === undefined), true,
@@ -451,4 +626,153 @@ category('Flow: inline preview', () => {
       destroyEditor(e);
     }
   }, {timeout: 60000});
+
+  test('right-click inside the preview reaches the viewer, not the node menu', async () => {
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    const fakeRoot = ui.divText('live-content');
+    const flow = new FlowEditor(container, {getInlinePreviewContent: () => fakeRoot});
+    const flowMenuItem = (label: string): HTMLElement | null =>
+      Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+        .find((el) => el.textContent?.trim() === label) ?? null;
+    try {
+      const viewer = createNode('Viewers/Scatter Plot')!;
+      await flow.addNodeAt(viewer, 0, 0);
+      await flow.setInlinePreview(viewer.id, true);
+      expect(await until(() => portalEl(container, viewer.id)?.contains(fakeRoot) === true), true,
+        'content mounted in the portal');
+
+      // Right-click on the content: the portal swallows it before the canvas —
+      // no node menu, and the event is left for the viewer's own menu.
+      const ev = new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 5, clientY: 5});
+      fakeRoot.dispatchEvent(ev);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(flowMenuItem('Duplicate'), null, 'no node context menu over the preview content');
+      expect(ev.defaultPrevented, false, 'the event is not defaultPrevented — the viewer may handle it');
+
+      // Right-click on the node title still opens the node menu.
+      const title = container.querySelector(
+        `[data-node-id="${viewer.id}"] [data-testid="ff-node-title"]`) as HTMLElement;
+      title.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 5, clientY: 5}));
+      expect(await until(() => flowMenuItem('Duplicate') != null), true, 'the node menu still works on the card');
+    } finally {
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
+      flow.destroy();
+      container.remove();
+    }
+  });
+
+  test('axis selector popup opens AT the viewer; right-click gets the viewer menu (live)', async () => {
+    // Faithful environment: the Flow view attached to the shell, on screen.
+    const view = new FuncFlowView();
+    grok.shell.addView(view);
+    const df = DG.DataFrame.fromCsv('height,weight,age\n160,60,30\n170,70,40\n180,80,50\n175,72,35\n');
+    df.name = 'ffInlinePopupLive';
+    const shellTable = grok.shell.addTable(df);
+    grok.shell.v = view;
+    try {
+      await until(() => (view as any).flow != null, 10000);
+      const flow = (view as any).flow as FlowEditor;
+      const ctrl = (view as any).executionController as ExecutionController;
+      const sel = await addNode(flow, 'Utilities/Select Table');
+      sel.properties['tableName'] = 'ffInlinePopupLive';
+      const viewer = await addNode(flow, 'Viewers/Scatter Plot', 300, 0);
+      await flow.addConnectionByKeys(sel.id, 'table', viewer.id, 'table');
+      await flow.setInlinePreview(viewer.id, true);
+      expect(ctrl.runAutorun(new Set(), SETTINGS), 'started', 'the run starts');
+      await until(() => ctrl.state.getNodeState(viewer.id)?.status === NodeExecStatus.completed, 15000);
+      const root = (): HTMLElement | null => ctrl.inlinePreviewRoot(viewer.id);
+      expect(await until(() => root() != null &&
+        !!root()!.querySelector('.d4-column-selector-column'), 8000), true,
+      'the live scatter plot with its DOM axis selectors is mounted');
+      expect(await until(() => portalEl(view.root, viewer.id)?.contains(root()!) === true, 5000), true,
+        'the viewer is mounted in the preview portal');
+
+      // DG may reuse a previously-built popup element on later clicks — remember
+      // the ones we've seen and accept a known popup that became visible again.
+      const knownPopups = new Set<HTMLElement>();
+      const clickSelector = async (): Promise<HTMLElement[]> => {
+        const selEl = root()!.querySelector('.d4-column-selector-column') as HTMLElement;
+        const r = selEl.getBoundingClientRect();
+        const px = r.left + r.width / 2;
+        const py = r.top + r.height / 2;
+        const added: HTMLElement[] = [];
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts) {
+            for (const n of Array.from(m.addedNodes))
+              if (n instanceof HTMLElement) added.push(n);
+          }
+        });
+        mo.observe(document.documentElement, {childList: true, subtree: true});
+        for (const t of ['pointermove', 'mousemove', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+          const Ev = t.startsWith('pointer') ? PointerEvent : MouseEvent;
+          selEl.dispatchEvent(new Ev(t, {bubbles: true, cancelable: true, view: window,
+            clientX: px, clientY: py, button: 0} as MouseEventInit));
+        }
+        await new Promise((r2) => setTimeout(r2, 600));
+        mo.disconnect();
+        const isShown = (el: HTMLElement): boolean => el.isConnected &&
+          getComputedStyle(el).position === 'fixed' && el.getBoundingClientRect().width > 10;
+        const found = added.filter(isShown);
+        for (const el of found) knownPopups.add(el);
+        return found.length > 0 ? found : Array.from(knownPopups).filter(isShown);
+      };
+      const assertNear = (popup: HTMLElement, label: string): void => {
+        const p = popup.getBoundingClientRect();
+        const v = root()!.getBoundingClientRect();
+        const near = p.left > v.left - 200 && p.left < v.right + 200 &&
+          p.top > v.top - 200 && p.top < v.bottom + 200;
+        expect(near, true, `${label}: the popup [${Math.round(p.left)},${Math.round(p.top)}] opens near ` +
+          `the viewer [${Math.round(v.left)},${Math.round(v.top)},${Math.round(v.width)}x${Math.round(v.height)}]`);
+        const center = document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2);
+        expect(!!center && (popup === center || popup.contains(center)), true,
+          `${label}: the popup is actually visible (nothing covers it)`);
+      };
+
+      // A click can TOGGLE a popup Escape failed to dismiss — retry once.
+      const openSelectorPopup = async (): Promise<HTMLElement[]> => {
+        const first = await clickSelector();
+        return first.length > 0 ? first : clickSelector();
+      };
+
+      // Zoom 1: the popup used to land ~200px off (transformed containing block).
+      let popups = await openSelectorPopup();
+      expect(popups.length > 0, true, 'clicking the axis selector opens its popup');
+      assertNear(popups[0], 'k=1');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+      await new Promise((r) => setTimeout(r, 300));
+
+      // Zoomed: same guarantee — the portal never scales or displaces the viewer.
+      flow.setZoom(1.5);
+      await until(() => portalAligned(view.root, viewer.id), 3000);
+      popups = await openSelectorPopup();
+      expect(popups.length > 0, true, 'the selector still opens its popup at zoom 1.5');
+      assertNear(popups[0], 'k=1.5');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+      await new Promise((r) => setTimeout(r, 300));
+      flow.setZoom(1);
+
+      // Right-click on the plot: the VIEWER's menu, not the node's.
+      const canvas = root()!.querySelector('canvas') as HTMLElement;
+      const cr = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, view: window,
+        clientX: cr.left + cr.width / 2, clientY: cr.top + cr.height / 2}));
+      const menuLabels = (): string[] => Array.from(
+        document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+        .map((el) => el.textContent?.trim() ?? '');
+      expect(await until(() => menuLabels().length > 0, 3000), true,
+        'right-clicking the plot opens a context menu (the viewer\'s own)');
+      expect(menuLabels().includes('Run up to here & preview'), false,
+        'it is NOT the flow node menu');
+      document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    } finally {
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
+      try {
+        grok.shell.closeTable(shellTable);
+      } catch {/* best effort */}
+      view.close();
+    }
+  }, {timeout: 90000});
 });
