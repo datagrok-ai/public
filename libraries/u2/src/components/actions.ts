@@ -8,6 +8,8 @@ export interface Action {
   name: string;
   /** Platform icon name (see `icon()`); an action without one appears only in menus. */
   icon?: string;
+  /** An action that does not apply to the current object stays visible and greyed out. */
+  enabled?: boolean;
   run: () => void;
 }
 
@@ -20,8 +22,12 @@ export function rowActions(actions: Action[]): HTMLElement {
   el.className = 'u2-row-actions';
   el.dataset.u2 = 'row-actions';
   for (const action of actions) {
-    if (action.icon)
-      el.append(iconButton(action.icon, action.run, {tooltip: action.name}));
+    if (!action.icon)
+      continue;
+    const button = iconButton(action.icon, action.run, {tooltip: action.name});
+    if (action.enabled === false)
+      button.disabled = true;
+    el.append(button);
   }
   return el;
 }
@@ -30,6 +36,6 @@ export function rowActions(actions: Action[]): HTMLElement {
 export function actionsMenu(actions: Action[]): Menu {
   const menu = new Menu();
   for (const action of actions)
-    menu.item(action.name, action.run, {icon: action.icon});
+    menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
   return menu;
 }

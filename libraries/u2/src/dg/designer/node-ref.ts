@@ -1,11 +1,12 @@
 /* What the designer selects and navigates: a handle on one node of a rendered spec, plus the two
    models derived from the node map — the structure tree and the breadcrumb path. Platform-free, so
    both are testable without the shell; only the handler and the view below need datagrok-api. */
-import {Control} from '../../core/component.js';
+import {Component} from '../../core/component.js';
 import type {ComponentMetaLike} from '../../core/widget-like.js';
 import type {TreeNode} from '../../components/tree.js';
-import {registry as globalRegistry} from '../../spec/registry.js';
-import type {SpecInstance, SpecNode} from '../../spec/spec.js';
+import type {SpecEditor} from '../../spec/editor.js';
+import {SpecInstance} from '../../spec/spec.js';
+import type {SpecNode} from '../../spec/spec.js';
 
 const SEPARATOR = ' › ';
 /** The class the spec renderer gives a node it could not build (`css/spec.css`). */
@@ -20,29 +21,36 @@ export interface SpecTree {
 /** The designer's selection handle: what `grok.shell.o` carries, and what the node ObjectHandler
  * renders the context panel from. */
 export class SpecNodeRef {
-  constructor(readonly instance: SpecInstance, readonly node: SpecNode) {}
+  /** Without an `editor` the panel renders read-only: the absence of the channel is the mode. */
+  constructor(readonly instance: SpecInstance, readonly node: SpecNode,
+    readonly editor?: SpecEditor) {}
+
+  parent(): SpecNode | null {
+    return this.instance.parentOf(this.node);
+  }
 
   /** What the spec built here — a component, a plain element, or the error placeholder. */
-  built(): Control | HTMLElement | undefined {
+  built(): Component | HTMLElement | undefined {
     return this.instance.nodes().get(this.node);
   }
 
+  /** Undefined for a tray component, which holds no place in the DOM. */
   element(): HTMLElement | undefined {
     const built = this.built();
-    return built instanceof Control ? built.root : built;
+    return built === undefined ? undefined : SpecInstance.elementOf(built);
   }
 
-  /** The registry metadata behind the tag: the component's own stamp, or the registry itself for a
-   * node that failed to build and has no component to ask. */
+  /** The registry metadata behind the tag: the component's own stamp, or the instance's registry
+   * for a node that failed to build and has no component to ask. */
   meta(): ComponentMetaLike | undefined {
     const built = this.built();
-    return (built instanceof Control ? built.meta : undefined) ?? globalRegistry.get(this.node.tag);
+    return (built instanceof Component ? built.meta : undefined) ?? this.instance.registry.get(this.node.tag);
   }
 
   /** Why the node renders as a placeholder, or null when it built. */
   error(): string | null {
     const built = this.built();
-    if (built === undefined || built instanceof Control || !built.classList.contains(ERROR_CLASS))
+    if (built === undefined || built instanceof Component || !built.classList.contains(ERROR_CLASS))
       return null;
     return built.textContent;
   }
@@ -55,6 +63,12 @@ export class SpecNodeRef {
       parts.unshift(nodeLabel(at));
     return parts.join(SEPARATOR);
   }
+}
+
+/** A multi-selection (F5): what `grok.shell.o` carries when the designer holds several nodes —
+ * one ref per member, in selection order. */
+export class SpecNodesRef {
+  constructor(readonly refs: SpecNodeRef[]) {}
 }
 
 /** A node's spec identity where it has one, its tag otherwise. */
@@ -84,7 +98,7 @@ export function idPath(id: string): string[] {
 export function brokenCount(instance: SpecInstance): number {
   let count = 0;
   for (const built of instance.nodes().values()) {
-    if (!(built instanceof Control) && built.classList.contains(ERROR_CLASS))
+    if (!(built instanceof Component) && built.classList.contains(ERROR_CLASS))
       count++;
   }
   return count;
@@ -95,18 +109,11 @@ function childrenOf(instance: SpecInstance, node: SpecNode): SpecNode[] {
   return (node.children ?? []).filter((child) => nodes.has(child));
 }
 
+/** The form, then the tray in declaration order — the spec's own two roots, not a derived walk:
+ * a component is nobody's child, and construction order would list the tray first. */
 function rootsOf(instance: SpecInstance): SpecNode[] {
-  const children = new Set<SpecNode>();
-  for (const node of instance.nodes().keys()) {
-    for (const child of childrenOf(instance, node))
-      children.add(child);
-  }
-  const roots: SpecNode[] = [];
-  for (const node of instance.nodes().keys()) {
-    if (!children.has(node))
-      roots.push(node);
-  }
-  return roots;
+  const spec = instance.spec;
+  return [spec.root, ...(spec.components ?? [])].filter((node) => instance.nodes().has(node));
 }
 
 function parentMap(instance: SpecInstance): Map<SpecNode, SpecNode> {

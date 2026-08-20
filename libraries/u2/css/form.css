@@ -57,6 +57,11 @@
   column-gap: var(--dg-space-xl);
 }
 
+/* a non-input row (Form.addElement) spans both columns of the wide variant */
+.u2-form-wide .u2-form-rows > :not(.u2-input-root) {
+  grid-column: 1 / -1;
+}
+
 .u2-form-buttons {
   display: flex;
   justify-content: flex-end;

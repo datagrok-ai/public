@@ -8,6 +8,7 @@ import {Scope} from '../src/core/scope.js';
 import {TextInput} from '../src/components/text-input.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
+import {SpecEditor} from '../src/spec/editor.js';
 import {registerAll} from '../src/spec/registrations.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
@@ -58,7 +59,9 @@ spec('registerAll: fills a fresh registry and is idempotent', () => {
   assert.equal(new Set(tags).size, tags.length, 'no tag registered twice');
   for (const tag of tags) {
     assert.match(tag, /^u2-/);
-    assert.equal(reg.get(tag).create instanceof Function, true);
+    const meta = reg.get(tag);
+    assert.equal((meta.visual === false ? meta.createComponent : meta.create) instanceof Function,
+      true, `${tag} carries no factory for what it is`);
   }
   registerAll(reg);
   assert.equal(components(reg).length, tags.length, 'a second call registers nothing new');
@@ -86,7 +89,11 @@ spec('every registered example renders without a placeholder and disposes clean'
   const instances = [];
   const warnings = captureWarnings(() => {
     for (const meta of components(reg)) {
-      const instance = renderSpec({$schema: 'dg-ui/1', root: meta.example}, new SpecContext(), reg);
+      // a non-visual example belongs on the tray: rendered as the root it is a placeholder by design
+      const spec = meta.visual === false ?
+        {$schema: 'dg-ui/1', root: {tag: 'div'}, components: [meta.example]} :
+        {$schema: 'dg-ui/1', root: meta.example};
+      const instance = renderSpec(spec, new SpecContext(), reg);
       const errors = instance.root.querySelectorAll('.u2-spec-error');
       assert.equal(errors.length, 0, `${meta.tag}: ${errors.map((e) => e.textContent).join('; ')}`);
       instances.push(instance);
@@ -116,7 +123,7 @@ spec('u2-text-input: the bound value drives the context signal and back', () => 
   instance.dispose();
 });
 
-spec('u2-form: a misspelled child is a placeholder, its sibling still renders', () => {
+spec('u2-form: a misspelled child is a placeholder in its own row, its sibling still renders', () => {
   const reg = registry();
   let instance;
   const warnings = captureWarnings(() => {
@@ -129,12 +136,53 @@ spec('u2-form: a misspelled child is a placeholder, its sibling still renders', 
     }, new SpecContext(), reg);
   });
 
-  const errors = instance.root.querySelectorAll('.u2-spec-error');
-  assert.equal(errors.length, 1);
-  assert.match(errors[0].textContent, /^u2-txt-input: /);
+  const rows = instance.root.querySelector('.u2-form-rows');
+  assert.equal(rows.children.length, 2, 'the placeholder is a row, not a trailer on the form root');
+  assert.equal(rows.children[0].classList.contains('u2-spec-error'), true, 'and it holds its child index');
+  assert.match(rows.children[0].textContent, /^u2-txt-input: /);
   assert.equal(instance.root.querySelector('input').value, 'Aspirin');
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /u2-form: child 0 is not an input/, 'the placeholder took the non-input path');
+  assert.equal(warnings.length, 0, 'a child rendered in place warrants no warning');
+  instance.dispose();
+});
+
+spec('u2-form: DOM order follows spec order across inputs and plain children alike', () => {
+  const reg = registry();
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-form', children: [
+      {tag: 'u2-text-input', name: 'a', props: {label: 'A'}},
+      {tag: 'u2-button', name: 'b', props: {text: 'Go'}},
+      {tag: 'u2-text-input', name: 'c', props: {label: 'C'}},
+    ]},
+  }, new SpecContext(), reg);
+
+  const rows = instance.root.querySelector('.u2-form-rows');
+  assert.deepEqual([...rows.children].map((el) => el.dataset.u2Name), ['a', 'b', 'c']);
+  instance.dispose();
+});
+
+spec('u2-form: a child broken by a patch renders its placeholder in place, and undo heals it there', () => {
+  const reg = registry();
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-form', name: 'form', children: [
+      {tag: 'u2-text-input', name: 'a', props: {label: 'A'}},
+      {tag: 'u2-text-input', name: 'mid', props: {label: 'Mid'}},
+      {tag: 'u2-text-input', name: 'z', props: {label: 'Z'}},
+    ]},
+  };
+  const instance = renderSpec(source, new SpecContext(), reg);
+  const editor = new SpecEditor(instance);
+  const rows = () => instance.root.querySelector('.u2-form-rows');
+
+  editor.apply({op: 'set-bind', node: source.root.children[1], name: 'value', path: '$.nowhere'});
+  assert.equal(rows().children[1].classList.contains('u2-spec-error'), true,
+    'the broken child keeps its row between its siblings');
+  assert.deepEqual([...rows().children].map((el) => el.dataset.u2Name), ['a', 'mid', 'z']);
+
+  editor.undo();
+  assert.equal(rows().children[1].classList.contains('u2-spec-error'), false);
+  assert.deepEqual([...rows().children].map((el) => el.dataset.u2Name), ['a', 'mid', 'z']);
   instance.dispose();
 });
 
@@ -204,9 +252,9 @@ spec('u2-form: adopt takes inputs into the form and aggregates their validity', 
   assert.equal(form.validity.value, 'Name is required', 'an invalid child invalidates the form');
   name.value.value = 'Aspirin';
   assert.equal(form.validity.value, null);
-  assert.equal(stray.parentNode, form.root, 'a non-input still lands in the form root');
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /u2-form: child 1 is not an input/);
+  assert.deepEqual([...form.root.querySelector('.u2-form-rows').children], [name.root, stray],
+    'a non-input is a row in adopt order');
+  assert.equal(warnings.length, 0);
   form.dispose();
   name.dispose();
 });

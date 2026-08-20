@@ -1,21 +1,20 @@
 /* Platform pickers (src/dg/pickers.ts) and the column renderer (src/dg/column-renderer.ts) over
    the shell stub in tests/platform-stub.mjs: the live item lists, the rich column picker, and the
-   renderer's glyph/semType/unknown-name rows. The tables are plain fakes — a picker asks a table
-   for `columns` and `onColumnsChanged`, nothing else. */
+   renderer's glyph/semType/unknown-name rows. The tables are the getter-backed frames of
+   tests/platform-doubles.mjs. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
+import {DataFrame} from './platform-doubles.mjs';
 
 register('./platform-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
 const {Input} = await import('../src/core/input-base.js');
 const {columnInput, tableInput, tablesInput, ColumnPicker} = await import('../src/dg/pickers.js');
 const {columnRenderer} = await import('../src/dg/column-renderer.js');
-
-const NUMERIC = new Set(['int', 'double', 'bigint', 'qnum']);
 
 function picker(name, body) {
   test(name, async () => {
@@ -31,49 +30,7 @@ function picker(name, body) {
   });
 }
 
-/** A DataFrame as the pickers see it: a column list and a columns-changed stream. */
-function fakeTable(specs) {
-  const columns = specs.map((s) => ({
-    name: s.name, type: s.type ?? 'double', semType: s.semType ?? '',
-    isNumerical: NUMERIC.has(s.type ?? 'double'),
-  }));
-  const listeners = [];
-  const renames = [];
-  const stream = (target) => ({
-    subscribe(fn) {
-      target.push(fn);
-      return {unsubscribe() {
-        const i = target.indexOf(fn);
-        if (i >= 0)
-          target.splice(i, 1);
-      }};
-    },
-  });
-  return {
-    columns: {
-      names: () => columns.map((c) => c.name),
-      toList: () => columns.slice(),
-      contains: (name) => columns.some((c) => c.name === name),
-      byName: (name) => columns.find((c) => c.name === name),
-    },
-    onColumnsChanged: stream(listeners),
-    onColumnNameChanged: stream(renames),
-    liveSubscriptions: () => listeners.length + renames.length,
-    removeColumn(name) {
-      columns.splice(columns.findIndex((c) => c.name === name), 1);
-      for (const fn of listeners.slice())
-        fn();
-    },
-    /** A rename fires this one ALONE (`column.dart:68`), with the names in the event args. */
-    renameColumn(oldName, newName) {
-      columns.find((c) => c.name === oldName).name = newName;
-      for (const fn of renames.slice())
-        fn({args: {oldName, newName}});
-    },
-  };
-}
-
-const DEMO = () => fakeTable([
+const DEMO = () => new DataFrame([
   {name: 'age', type: 'int'}, {name: 'height', type: 'double'},
   {name: 'sex', type: 'string', semType: 'Sex'}, {name: 'started', type: 'datetime'},
 ]);
@@ -101,7 +58,7 @@ picker('columnInput: names follow the table, a dropped column clears the value',
   assert.deepEqual(options(input), ['age', 'height', 'sex', 'started']);
   input.value.value = 'sex';
 
-  table.removeColumn('sex');
+  table.columns.remove('sex');
   assert.deepEqual(options(input), ['age', 'height', 'started']);
   assert.equal(input.value.value, null);
 
@@ -114,11 +71,11 @@ picker('columnInput: a renamed column keeps the value and re-lists under the new
   const input = columnInput('Column', table);
   input.value.value = 'sex';
 
-  table.renameColumn('sex', 'gender');
+  table.columns.byName('sex').name = 'gender';
   assert.deepEqual(options(input), ['age', 'height', 'gender', 'started']);
   assert.equal(input.value.value, 'gender', 'the value follows the column, it is not dropped');
 
-  table.renameColumn('age', 'ageYears');
+  table.columns.byName('age').name = 'ageYears';
   assert.equal(input.value.value, 'gender', 'renaming another column leaves the value alone');
   input.dispose();
   assert.equal(table.liveSubscriptions(), 0, 'both subscriptions go with the input');
@@ -126,7 +83,7 @@ picker('columnInput: a renamed column keeps the value and re-lists under the new
 
 picker('columnInput: the filter decides what is offered', () => {
   const input = columnInput('Number', DEMO(), {filter: (c) => c.isNumerical});
-  assert.deepEqual(options(input), ['age', 'height']);
+  assert.deepEqual(options(input), ['age', 'height', 'started'], 'datetime is numerical to the platform');
   input.dispose();
 });
 
@@ -283,7 +240,7 @@ picker('rich columnInput: two-way with the value signal; a dropped column clears
   input.value.value = 'age';
   assert.equal(box.value, 'age');
 
-  table.removeColumn('age');
+  table.columns.remove('age');
   assert.equal(input.value.value, null);
   assert.equal(box.value, '');
   input.dispose();
@@ -294,7 +251,7 @@ picker('rich columnInput: a renamed column carries the value and the box text', 
   const input = new ColumnPicker({label: 'Column', table, value: 'sex'});
   const box = input.root.querySelector('input');
 
-  table.renameColumn('sex', 'gender');
+  table.columns.byName('sex').name = 'gender';
   assert.equal(input.value.value, 'gender');
   assert.equal(box.value, 'gender');
   input.dispose();

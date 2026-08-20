@@ -42,7 +42,8 @@ export class Splitter extends Control {
     this._horizontal = options.direction === 'horizontal';
     this._minSize = options.minSize ?? 60;
 
-    const initial = options.sizes ?? panels.map(() => 1 / panels.length);
+    const initial = options.sizes?.length === panels.length ?
+      options.sizes : panels.map(() => 1 / panels.length);
     const sum = initial.reduce((a, b) => a + b, 0);
     this.sizes = signal(initial.map((s) => s / sum));
 

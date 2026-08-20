@@ -20,8 +20,10 @@ const NO_OWNER = 'u2: signal binding needs an owner — ' +
   'wrap the code in Control.build(...) or component.run(...)';
 
 /** Hover text in the icon.ts convention: the tooltip service when there is a scope to own it,
- * the native `title` otherwise. */
+ * the native `title` otherwise. The tooltip doubles as the accessible name — the u2 tooltip
+ * leaves no `title` attribute, so without `aria-label` an icon-only button would be nameless. */
 function tip(el: HTMLElement, text: string): void {
+  el.setAttribute('aria-label', text);
   const scope = Scope.ambient;
   if (scope)
     Tooltip.bind(el, text, scope);
@@ -31,7 +33,8 @@ function tip(el: HTMLElement, text: string): void {
 
 /** Square icon-only button — flat until hover, sized by its context (the form metric standalone,
  * the inline metric inside a toolbar or a flat button group). */
-export function iconButton(name: string, onClick: () => void, options?: IconButtonOptions): HTMLElement {
+export function iconButton(name: string, onClick: () => void,
+  options?: IconButtonOptions): HTMLButtonElement {
   const toggle = options?.toggle;
   const el = button(icon(name, {variant: options?.variant}), () => {
     if (toggle)
@@ -40,10 +43,8 @@ export function iconButton(name: string, onClick: () => void, options?: IconButt
   });
   el.classList.add('u2-icon-btn');
   el.dataset.u2 = 'icon-button';
-  if (options?.tooltip) {
-    el.setAttribute('aria-label', options.tooltip);
+  if (options?.tooltip)
     tip(el, options.tooltip);
-  }
   if (!toggle)
     return el;
   const scope = Scope.ambient;

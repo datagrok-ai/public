@@ -2,16 +2,18 @@ import {signal, Signal, ReadonlySignal} from '../core/signals.js';
 import {Scope} from '../core/scope.js';
 import {Control} from '../core/component.js';
 import {Input} from '../core/input-base.js';
+import {text as asText} from '../core/text.js';
 import {TextInput} from './text-input.js';
 import {NumberInput} from './number-input.js';
 import {BoolInput} from './bool-input.js';
 import {ChoiceInput} from './choice-input.js';
+import {ListInput} from './list-input.js';
 
 export interface PropDescriptor {
   name: string;
   /** Platform TYPE strings, as the registry and `PropertyLike` use them; `choice` is the one
    * addition — a string constrained to {@link choices}. */
-  type: 'string' | 'int' | 'double' | 'bool' | 'choice';
+  type: 'string' | 'int' | 'double' | 'bool' | 'choice' | 'string_list';
   /** Rows sharing a category sit under one collapsible header; uncategorized rows come first. */
   category?: string;
   choices?: string[];
@@ -131,7 +133,7 @@ export class PropertyGrid extends Control {
       const text = document.createElement('span');
       text.className = 'u2-propgrid-value';
       cell.append(text);
-      this._rows.effect(() => text.textContent = PropertyGrid._format(this.values.value[prop.name]));
+      this._rows.effect(() => text.textContent = asText(this.values.value[prop.name]));
       return row;
     }
 
@@ -151,6 +153,8 @@ export class PropertyGrid extends Control {
       case 'double':
         return new NumberInput({inline: true, mode: prop.type === 'int' ? 'int' : 'float',
           min: prop.min, max: prop.max});
+      case 'string_list':
+        return new ListInput({inline: true, placeholder: prop.description});
       default:
         return new TextInput({inline: true});
     }
@@ -163,7 +167,7 @@ export class PropertyGrid extends Control {
     this._rows.effect(() => {
       const value = input.value.value;
       const record = this.values.peek();
-      if (PropertyGrid._coerce(prop, record[prop.name]) === value)
+      if (PropertyGrid.same(prop, PropertyGrid._coerce(prop, record[prop.name]), value))
         return;
       this.values.value = {...record, [prop.name]: value};
       this._lastChange.value = {name: prop.name, value};
@@ -203,12 +207,19 @@ export class PropertyGrid extends Control {
       }
       case 'choice':
         return value === null || value === undefined ? null : String(value);
+      case 'string_list':
+        return Array.isArray(value) && value.every((item) => typeof item === 'string') ? value : [];
       default:
-        return value === null || value === undefined ? '' : String(value);
+        return asText(value);
     }
   }
 
-  private static _format(value: unknown): string {
-    return value === null || value === undefined ? '' : String(value);
+  /** A list editor answers a fresh array for the same list, so the echo check above compares
+   * element-wise there — identity would report every rebuild as an edit and loop. Public because
+   * anything comparing a row's old and new value has to compare it the way the grid does. */
+  static same(prop: PropDescriptor, a: unknown, b: unknown): boolean {
+    if (prop.type !== 'string_list' || !Array.isArray(a) || !Array.isArray(b))
+      return a === b;
+    return a.length === b.length && a.every((item, i) => item === b[i]);
   }
 }

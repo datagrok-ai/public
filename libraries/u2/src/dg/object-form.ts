@@ -5,6 +5,7 @@
 import {batch} from '../core/signals.js';
 import type {PropertyLike} from '../core/property-like.js';
 import {Input, InputOptions} from '../core/input-base.js';
+import {text} from '../core/text.js';
 import {Form} from '../components/form.js';
 import {TextInput} from '../components/text-input.js';
 import {NumberInput, NumberInputOptions} from '../components/number-input.js';
@@ -446,7 +447,7 @@ export class ObjectForm extends Form {
       case 'file':
         return value ?? null;
       default:
-        return value === null || value === undefined ? '' : String(value);
+        return text(value);
     }
   }
 

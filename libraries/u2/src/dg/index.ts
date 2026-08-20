@@ -38,11 +38,33 @@ export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggre
 export {host, U2Widget} from './widget-host.js';
 export {appView} from './app-view.js';
 export type {AppViewOptions} from './app-view.js';
-export {SpecNodeRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
+export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
 export type {SpecTree} from './designer/node-ref.js';
 export {registerSpecNodeHandler} from './designer/handler.js';
+export {Palette} from './designer/palette.js';
+export {Tray, sourceNode, funcSourceNode} from './designer/tray.js';
+export type {TrayOptions} from './designer/tray.js';
+export {accepts, resolveDrop} from './designer/dnd.js';
+export type {DropRect, DropTarget} from './designer/dnd.js';
+export {makeDesignerDroppable, readDrop, dropNode, funcRef, tabularExtensions, OPEN_FILE}
+  from './designer/drop.js';
+export type {DropItem, DropReading, DesignerDropOptions} from './designer/drop.js';
 export {designerView, SpecDesigner} from './designer/view.js';
 export type {DesignerViewOptions} from './designer/view.js';
+export {SAMPLES} from './designer/samples.js';
+export {loadGallery, saveToGallery, listGallery, GALLERY_KEY} from './designer/gallery.js';
+export {bindTree} from './designer/bind-model.js';
+export type {BindTreeNode} from './designer/bind-model.js';
+export {bindPicker, bindGroups, bindRows} from './designer/bind-picker.js';
+export type {BindGroup, BindRows} from './designer/bind-picker.js';
+export {funcPicker, funcEntries, filterFuncs, paramProps, paramValues, eventEntry, eventPick}
+  from './designer/func-picker.js';
+export type {FuncEntry, FuncLike, FuncPick, FuncPickerOptions} from './designer/func-picker.js';
+export {sourceStatus, statusText, refreshSource} from './designer/source-status.js';
+export type {SourceStatus} from './designer/source-status.js';
+export {platformContext} from './spec-context.js';
+// side-effect only: filling `backends` is what makes the data sources work in the platform
+import './source-backends.js';
 
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';

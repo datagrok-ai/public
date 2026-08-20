@@ -24,6 +24,8 @@ import {Accordion} from '../components/accordion.js';
 import {TabStrip} from '../components/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/property-grid.js';
 import {Breadcrumbs} from '../components/breadcrumbs.js';
+import {StateSource} from '../sources/state.js';
+import {registerDataSources} from '../sources/registrations.js';
 import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry} from './registry.js';
 import type {SpecNode} from './spec.js';
 
@@ -44,6 +46,17 @@ function inputOptions<T>(props: Props): InputOptions<T> {
     value: bound ? undefined : value as T,
     bind: bound ? value as Signal<T> : undefined,
   };
+}
+
+/** A bound `items` list follows its signal instead of being copied once — how a data source feeds
+ * a picker (`bind: {"items": "$.people.names"}`). One-way: the list is data, not an edit. */
+function boundItems(input: Control & {setItems(items: string[]): void}, items: unknown): void {
+  if (items instanceof Signal)
+    input.effect(() => input.setItems(items.value as string[] ?? []));
+}
+
+function itemList(items: unknown): string[] {
+  return (items instanceof Signal ? items.peek() : items) as string[] ?? [];
 }
 
 function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
@@ -79,6 +92,7 @@ function splitter(props: Props, children: Child[]): Splitter {
 function container(tag: string, create: () => HTMLElement, description: string): ComponentMeta {
   return {
     tag,
+    category: 'Containers',
     create: (props) => {
       const el = create();
       const cls = props.cls as string | undefined;
@@ -96,6 +110,7 @@ function container(tag: string, create: () => HTMLElement, description: string):
 const METAS: ComponentMeta[] = [
   {
     tag: 'u2-text-input',
+    category: 'Inputs',
     create: (props) => new TextInput({
       ...inputOptions<string>(props),
       placeholder: props.placeholder as string | undefined,
@@ -116,6 +131,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-text-area',
+    category: 'Inputs',
     create: (props) => new TextArea({
       ...inputOptions<string>(props),
       placeholder: props.placeholder as string | undefined,
@@ -130,6 +146,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-bool-input',
+    category: 'Inputs',
     create: (props) => new BoolInput({
       ...inputOptions<boolean>(props),
       switch: props.switch as boolean | undefined,
@@ -141,6 +158,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-number-input',
+    category: 'Inputs',
     create: (props) => new NumberInput({
       ...inputOptions<number | null>(props),
       mode: props.mode as 'int' | 'float' | undefined,
@@ -154,7 +172,7 @@ const METAS: ComponentMeta[] = [
     description: 'Numeric editor; text that does not parse or falls outside min/max stays on ' +
       'screen and only marks the input invalid.',
     props: inputProps('double',
-      {name: 'mode', type: 'string', description: '"int" or "float" (default).'},
+      {name: 'mode', type: 'string', choices: ['int', 'float'], description: '"int" or "float" (default).'},
       {name: 'min', type: 'double'},
       {name: 'max', type: 'double'},
       {name: 'step', type: 'double', description: 'Spinner, clicker and arrow-key increment; 1 by default.'},
@@ -168,33 +186,46 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-choice-input',
-    create: (props) => new ChoiceInput({
-      ...inputOptions<string | null>(props),
-      items: (props.items as string[]) ?? [],
-      nullable: props.nullable as boolean | undefined,
-    }),
+    category: 'Inputs',
+    create: (props) => {
+      const input = new ChoiceInput({
+        ...inputOptions<string | null>(props),
+        items: itemList(props.items),
+        nullable: props.nullable as boolean | undefined,
+      });
+      boundItems(input, props.items);
+      return input;
+    },
     description: 'Single choice over a native select.',
     props: inputProps('string',
-      {name: 'items', type: 'string_list'},
+      {name: 'items', type: 'string_list', bindable: true},
       {name: 'nullable', type: 'bool', description: 'Offers an empty option; true by default.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
     example: {tag: 'u2-choice-input', props: {label: 'Series', items: ['a', 'b', 'c'], value: 'b'}},
   },
   {
     tag: 'u2-multi-choice-input',
-    create: (props) => new MultiChoiceInput({
-      ...inputOptions<string[]>(props),
-      items: (props.items as string[]) ?? [],
-      emptyText: props.emptyText as string | undefined,
-    }),
+    category: 'Inputs',
+    create: (props) => {
+      const input = new MultiChoiceInput({
+        ...inputOptions<string[]>(props),
+        items: itemList(props.items),
+        emptyText: props.emptyText as string | undefined,
+      });
+      boundItems(input, props.items);
+      return input;
+    },
     description: 'Checkbox list; the value holds the checked items in item order.',
-    props: inputProps('string_list', {name: 'items', type: 'string_list'},
+    props: inputProps('string_list', {name: 'items', type: 'string_list', bindable: true},
       {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
     example: {tag: 'u2-multi-choice-input', props: {label: 'Tags', items: ['acid', 'base'], value: ['acid']}},
   },
   {
     tag: 'u2-button',
+    category: 'Actions',
     create: (props) => new Control(button((props.text as string | undefined) ?? '', () => {},
       {primary: props.primary === true})),
     description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
@@ -202,6 +233,7 @@ const METAS: ComponentMeta[] = [
       {name: 'text', type: 'string'},
       {name: 'primary', type: 'bool', description: 'Accent styling for the main action.'},
     ],
+    defaults: {text: 'Button'},
     events: ['click'],
     example: {tag: 'u2-button', props: {text: 'Save', primary: true}, on: {click: 'cmd:save'}},
   },
@@ -210,17 +242,24 @@ const METAS: ComponentMeta[] = [
   container('u2-div-h', divH, 'Horizontal row.'),
   {
     tag: 'u2-splitter',
+    category: 'Containers',
     create: (props) => splitter(props, []),
     createWithChildren: (props, children) => splitter(props, children),
     description: 'Resizable panels separated by draggable sashes; every spec child becomes a panel.',
     usage: 'Master-detail layouts (list left, details right): see the entity-browser recipe. In a ' +
       'platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.',
     props: [
-      {name: 'direction', type: 'string', description: '"horizontal" (default) or "vertical".'},
+      {name: 'direction', type: 'string', choices: ['horizontal', 'vertical'],
+        description: '"horizontal" (default) or "vertical".'},
       {name: 'sizes', type: 'object', description: 'Fraction per panel, normalized; equal shares by default.'},
       {name: 'minSize', type: 'double', description: 'Smallest panel size in pixels; 60 by default.'},
     ],
     acceptsChildren: true,
+    defaults: {direction: 'horizontal'},
+    // two, not one: a single-panel splitter has no sash to drag and is a panel with extra steps
+    defaultChildren: [{tag: 'u2-panel'}, {tag: 'u2-panel'}],
+    designerActions: [{name: 'Add panel',
+      produce: () => ({op: 'add-child', node: {tag: 'u2-panel'}})}],
     example: {tag: 'u2-splitter', props: {direction: 'horizontal', sizes: [0.3, 0.7]}, children: [
       {tag: 'u2-panel', children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
       {tag: 'u2-panel', children: [{tag: 'u2-text-area', props: {label: 'Notes'}}]},
@@ -228,6 +267,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-accordion',
+    category: 'Containers',
     create: () => new Accordion(),
     createWithChildren: (_props, children, nodes) => {
       const accordion = new Accordion();
@@ -239,6 +279,9 @@ const METAS: ComponentMeta[] = [
     props: [],
     childProps: [{name: 'title', type: 'string', description: 'Pane title; numbered when absent.'}],
     acceptsChildren: true,
+    defaultChildren: [{tag: 'u2-panel', props: {title: 'Pane 1'}}],
+    designerActions: [{name: 'Add pane', produce: (node) => ({op: 'add-child',
+      node: {tag: 'u2-panel', props: {title: `Pane ${(node.children?.length ?? 0) + 1}`}}})}],
     example: {tag: 'u2-accordion', children: [
       {tag: 'u2-panel', props: {title: 'General'}, children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
       {tag: 'u2-panel', props: {title: 'Advanced'}, children: [{tag: 'u2-bool-input', props: {label: 'Active'}}]},
@@ -246,6 +289,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-tabs',
+    category: 'Containers',
     create: () => new TabStrip(),
     createWithChildren: (_props, children, nodes) => {
       const tabs = new TabStrip();
@@ -257,6 +301,9 @@ const METAS: ComponentMeta[] = [
     props: [],
     childProps: [{name: 'title', type: 'string', description: 'Tab label; numbered when absent.'}],
     acceptsChildren: true,
+    defaultChildren: [{tag: 'u2-panel', props: {title: 'Tab 1'}}],
+    designerActions: [{name: 'Add tab', produce: (node) => ({op: 'add-child',
+      node: {tag: 'u2-panel', props: {title: `Tab ${(node.children?.length ?? 0) + 1}`}}})}],
     example: {tag: 'u2-tabs', children: [
       {tag: 'u2-panel', props: {title: 'Data'}, children: [{tag: 'u2-text-input', props: {label: 'Table'}}]},
       {tag: 'u2-panel', props: {title: 'Style'}, children: [{tag: 'u2-bool-input', props: {label: 'Legend'}}]},
@@ -264,21 +311,20 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-form',
+    category: 'Containers',
     create: (props) => new Form({
       condensed: props.condensed as boolean | undefined,
       wide: props.wide as boolean | undefined,
     }),
-    adopt: (parent, child, index) => {
+    adopt: (parent, child) => {
       const form = parent as Form;
-      if (child instanceof Input) {
+      if (child instanceof Input)
         form.add(child);
-        return;
-      }
-      console.warn(`u2 spec: u2-form: child ${index} is not an input — appended to the form root`);
-      form.root.append(element(child));
+      else
+        form.addElement(element(child));
     },
     description: 'Vertical input layout: spec children that are inputs join the form and share its ' +
-      'label column, validity and Enter navigation; anything else lands in the form root.',
+      'label column, validity and Enter navigation; anything else renders as a plain row in place.',
     usage: 'Labels share a left column and values stay left-aligned — never center form content. ' +
       'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.',
     props: [
@@ -293,6 +339,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-property-grid',
+    category: 'Display',
     create: (props) => {
       const grid = new PropertyGrid();
       grid.setProperties((props.properties as PropDescriptor[]) ?? [],
@@ -304,8 +351,8 @@ const METAS: ComponentMeta[] = [
       'grid is for descriptor-driven settings panels.',
     props: [
       {name: 'properties', type: 'object',
-        description: 'Row descriptors: name, type (string/int/double/bool/choice), category, ' +
-          'choices, min, max, description, readonly.'},
+        description: 'Row descriptors: name, type (string/int/double/bool/choice/string_list), ' +
+          'category, choices, min, max, description, readonly.'},
       {name: 'values', type: 'object', description: 'Initial value per property name.'},
     ],
     example: {tag: 'u2-property-grid', props: {
@@ -315,16 +362,23 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-breadcrumbs',
+    category: 'Display',
     create: (props) => new Breadcrumbs({items: (props.items as string[]) ?? []}),
     description: 'Path bar that collapses its middle segments when it overflows.',
     usage: 'For navigation within your own view. The shell already renders the view\'s own ' +
       'breadcrumb from its name/path — don\'t duplicate it.',
     props: [{name: 'items', type: 'string_list'}],
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['click'],
+    designerActions: [{name: 'Add item', produce: (node) => {
+      const items = (node.props?.items ?? []) as string[];
+      return {op: 'set-prop', name: 'items', value: [...items, `Item ${items.length + 1}`]};
+    }}],
     example: {tag: 'u2-breadcrumbs', props: {items: ['Home', 'Projects', 'Demo']}},
   },
   {
     tag: 'u2-slider-input',
+    category: 'Inputs',
     create: (props) => new SliderInput({
       ...inputOptions<number | null>(props),
       min: props.min as number | undefined,
@@ -343,6 +397,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-radio-input',
+    category: 'Inputs',
     create: (props) => new RadioInput({
       ...inputOptions<string | null>(props),
       items: (props.items as string[]) ?? [],
@@ -355,12 +410,14 @@ const METAS: ComponentMeta[] = [
       {name: 'items', type: 'string_list'},
       {name: 'buttons', type: 'bool', description: 'Raised-button variant instead of radio dots.'},
       {name: 'itemTooltips', type: 'object', description: 'Hover text per item.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
     example: {tag: 'u2-radio-input', props: {label: 'Stage', items: ['Discovery', 'Preclinical'],
       value: 'Discovery'}},
   },
   {
     tag: 'u2-color-input',
+    category: 'Inputs',
     create: (props) => new ColorInput({
       ...inputOptions<string>(props),
       swatchOnly: props.swatchOnly as boolean | undefined,
@@ -373,6 +430,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-list-input',
+    category: 'Inputs',
     create: (props) => new ListInput({
       ...inputOptions<string[]>(props),
       placeholder: props.placeholder as string | undefined,
@@ -384,6 +442,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-map-input',
+    category: 'Inputs',
     create: (props) => new MapInput(inputOptions<Record<string, string>>(props)),
     description: 'Key/value rows with per-row add and remove; duplicate keys are invalid, and a ' +
       'row with an empty key stays out of the value.',
@@ -393,6 +452,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-qnum-input',
+    category: 'Inputs',
     create: (props) => new QNumInput({
       ...inputOptions<number | null>(props),
       placeholder: props.placeholder as string | undefined,
@@ -407,6 +467,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-font-input',
+    category: 'Inputs',
     create: (props) => new FontInput({
       ...inputOptions<string>(props),
       families: props.families as string[] | undefined,
@@ -424,6 +485,7 @@ const METAS: ComponentMeta[] = [
   },
   {
     tag: 'u2-image-input',
+    category: 'Inputs',
     create: (props) => new ImageInput({
       ...inputOptions<string>(props),
       alt: props.alt as string | undefined,
@@ -432,6 +494,24 @@ const METAS: ComponentMeta[] = [
     props: inputProps('string', {name: 'alt', type: 'string', description: 'Alternative text.'}),
     events: ['change'],
     example: {tag: 'u2-image-input', props: {label: 'Logo', value: 'https://datagrok.ai/img/logo.svg'}},
+  },
+  {
+    tag: 'u2-state',
+    category: 'Data',
+    visual: false,
+    createComponent: (props) => new StateSource({type: props.type as string, initial: props.initial}),
+    description: 'A value the form owns: one writable signal several controls share.',
+    usage: 'For a draft, a flag or a selection that outlives no single control — anything two ' +
+      'nodes must agree on. Data that comes from somewhere belongs in a source, not here.',
+    props: [
+      {name: 'type', type: 'string',
+        choices: ['string', 'int', 'double', 'bool', 'string_list', 'object'],
+        description: 'What the value holds; `initial` is checked against it.'},
+      {name: 'initial', type: 'object', description: 'The value it starts at, and what `clear` ' +
+        'returns it to; the type\'s empty value otherwise.'},
+    ],
+    defaults: {type: 'string'},
+    example: {tag: 'u2-state', name: 'draft', props: {type: 'string', initial: ''}},
   },
 ];
 
@@ -444,4 +524,5 @@ export function registerAll(reg: Registry = globalRegistry): void {
   registered.add(reg);
   for (const meta of METAS)
     reg.register(meta);
+  registerDataSources(reg);
 }

@@ -6,54 +6,24 @@
    The stub is the platform's own contract, nothing more: the `DG.TYPE` strings copied from
    js-api's `const.ts`, the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
    fireInput/fireChanged, and `property`, which throws off a dart handle when nothing is bound),
-   the `FileInfo` the file inputs build and read, and the `grok.dapi.files` / `grok.shell` calls
-   they make. Everything on `dapi`, `shell` and `ui` is a mutable field a test replaces with its
-   own function — import the stub module in the test and assign.
+   the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` calls the inputs make.
+   The entities and the shell are the getter-backed doubles of tests/platform-doubles.mjs, served
+   here so an `instanceof` in the module under test and a `new` in the test meet the same class.
+   Everything on `dapi`, `shell` and `ui` is a field a test replaces with its own function.
 
    Register it with `register('./dg-stub.mjs', import.meta.url)` before importing the module under
    test. */
 
+const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
+
 const STUB = `
+export {BitSet, Column, DataFrame, DataQuery, Entity, FileInfo, Func, Package, Property, Script,
+  TableQuery, User} from '${DOUBLES}';
+
 export const TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
   BIG_INT: 'bigint', QNUM: 'qnum', OBJECT: 'object', FILE: 'file',
 };
-
-/** Enough of the entity for the file inputs: what they build (fromBytes) and what they read.
- * A file in a share carries the connection it lives on; one built out of local bytes does not. */
-export class FileInfo {
-  constructor(path, data, connection = null) {
-    this.fullPath = path;
-    this.path = path;
-    this.fileName = path.substring(path.lastIndexOf('/') + 1);
-    this.data = data;
-    this.connection = connection;
-    this.isFile = true;
-    this.isDirectory = false;
-  }
-
-  static fromBytes(path, data) { return new FileInfo(path, data); }
-}
-
-/** The platform property the widget host mints out of a u2 PropertyLike: what it is created with,
- * plus the options record it is refined with. */
-export class Property {
-  static create(name, type, get, set, defaultValue) {
-    const p = new Property();
-    p.name = name;
-    p.type = type;
-    p.propertyType = type;
-    p.get = get;
-    p.set = set;
-    p.defaultValue = defaultValue;
-    return p;
-  }
-
-  fromOptions(options) {
-    Object.assign(this, options);
-    return this;
-  }
-}
 
 /** The base widget contract the host subclasses: a root, the kill channel, and the introspection
  * members it overrides (js-api widgets/base.ts). */
@@ -144,6 +114,8 @@ export class JsInputBase {
 `;
 
 const GROK_STUB = `
+import {Func, Shell} from '${DOUBLES}';
+
 export const dapi = {
   files: {
     exists: async () => false,
@@ -152,14 +124,7 @@ export const dapi = {
   },
 };
 
-export const shell = {
-  info: () => {},
-  warning: () => {},
-  error: () => {},
-  /** The current object — what a selection writes to, and what the context panel renders. */
-  o: null,
-  windows: {showContextPanel: false},
-};
+export const shell = new Shell();
 
 /** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and
  * the Func it hands back — the platform's own is a dart wrapper over the same record. */
@@ -167,7 +132,7 @@ export const functions = {
   registrations: [],
   register(data) {
     functions.registrations.push(data);
-    return {...data, name: data.signature.split(/[ (]/)[1]};
+    return new Func(data.signature.split(/[ (]/)[1]);
   },
 };
 `;

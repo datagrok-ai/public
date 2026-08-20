@@ -4,6 +4,7 @@
   "components": [
     {
       "tag": "u2-text-input",
+      "category": "Inputs",
       "description": "Single-line text editor with validation.",
       "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area.",
       "props": [
@@ -70,6 +71,7 @@
     },
     {
       "tag": "u2-text-area",
+      "category": "Inputs",
       "description": "Multi-line text editor.",
       "props": [
         {
@@ -125,6 +127,7 @@
     },
     {
       "tag": "u2-bool-input",
+      "category": "Inputs",
       "description": "Checkbox or switch.",
       "props": [
         {
@@ -176,6 +179,7 @@
     },
     {
       "tag": "u2-number-input",
+      "category": "Inputs",
       "description": "Numeric editor; text that does not parse or falls outside min/max stays on screen and only marks the input invalid.",
       "props": [
         {
@@ -210,6 +214,10 @@
         {
           "name": "mode",
           "type": "string",
+          "choices": [
+            "int",
+            "float"
+          ],
           "description": "\"int\" or \"float\" (default)."
         },
         {
@@ -257,6 +265,7 @@
     },
     {
       "tag": "u2-choice-input",
+      "category": "Inputs",
       "description": "Single choice over a native select.",
       "props": [
         {
@@ -290,7 +299,8 @@
         },
         {
           "name": "items",
-          "type": "string_list"
+          "type": "string_list",
+          "bindable": true
         },
         {
           "name": "nullable",
@@ -298,6 +308,13 @@
           "description": "Offers an empty option; true by default."
         }
       ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
       "events": [
         "change"
       ],
@@ -316,6 +333,7 @@
     },
     {
       "tag": "u2-multi-choice-input",
+      "category": "Inputs",
       "description": "Checkbox list; the value holds the checked items in item order.",
       "props": [
         {
@@ -349,7 +367,8 @@
         },
         {
           "name": "items",
-          "type": "string_list"
+          "type": "string_list",
+          "bindable": true
         },
         {
           "name": "emptyText",
@@ -357,6 +376,13 @@
           "description": "Stands in for an empty list; 'No items' by default."
         }
       ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
       "events": [
         "change"
       ],
@@ -376,6 +402,7 @@
     },
     {
       "tag": "u2-button",
+      "category": "Actions",
       "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command.",
       "props": [
         {
@@ -388,6 +415,9 @@
           "description": "Accent styling for the main action."
         }
       ],
+      "defaults": {
+        "text": "Button"
+      },
       "events": [
         "click"
       ],
@@ -404,6 +434,7 @@
     },
     {
       "tag": "u2-panel",
+      "category": "Containers",
       "description": "Padded vertical container.",
       "props": [
         {
@@ -427,6 +458,7 @@
     },
     {
       "tag": "u2-div-v",
+      "category": "Containers",
       "description": "Vertical stack.",
       "props": [
         {
@@ -450,6 +482,7 @@
     },
     {
       "tag": "u2-div-h",
+      "category": "Containers",
       "description": "Horizontal row.",
       "props": [
         {
@@ -473,12 +506,17 @@
     },
     {
       "tag": "u2-splitter",
+      "category": "Containers",
       "description": "Resizable panels separated by draggable sashes; every spec child becomes a panel.",
       "usage": "Master-detail layouts (list left, details right): see the entity-browser recipe. In a platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.",
       "props": [
         {
           "name": "direction",
           "type": "string",
+          "choices": [
+            "horizontal",
+            "vertical"
+          ],
           "description": "\"horizontal\" (default) or \"vertical\"."
         },
         {
@@ -493,6 +531,17 @@
         }
       ],
       "acceptsChildren": true,
+      "defaults": {
+        "direction": "horizontal"
+      },
+      "defaultChildren": [
+        {
+          "tag": "u2-panel"
+        },
+        {
+          "tag": "u2-panel"
+        }
+      ],
       "example": {
         "tag": "u2-splitter",
         "props": {
@@ -530,6 +579,7 @@
     },
     {
       "tag": "u2-accordion",
+      "category": "Containers",
       "description": "Independently expanding panes, one per spec child; the child node carries the pane title.",
       "props": [],
       "childProps": [
@@ -540,6 +590,14 @@
         }
       ],
       "acceptsChildren": true,
+      "defaultChildren": [
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Pane 1"
+          }
+        }
+      ],
       "example": {
         "tag": "u2-accordion",
         "children": [
@@ -576,6 +634,7 @@
     },
     {
       "tag": "u2-tabs",
+      "category": "Containers",
       "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
       "props": [],
       "childProps": [
@@ -586,6 +645,14 @@
         }
       ],
       "acceptsChildren": true,
+      "defaultChildren": [
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Tab 1"
+          }
+        }
+      ],
       "example": {
         "tag": "u2-tabs",
         "children": [
@@ -622,7 +689,8 @@
     },
     {
       "tag": "u2-form",
-      "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else lands in the form root.",
+      "category": "Containers",
+      "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else renders as a plain row in place.",
       "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.",
       "props": [
         {
@@ -658,13 +726,14 @@
     },
     {
       "tag": "u2-property-grid",
+      "category": "Display",
       "description": "Two-column property editor over a JSON descriptor list.",
       "usage": "For editing a live object that carries Property metadata, prefer `propertyForm` — this grid is for descriptor-driven settings panels.",
       "props": [
         {
           "name": "properties",
           "type": "object",
-          "description": "Row descriptors: name, type (string/int/double/bool/choice), category, choices, min, max, description, readonly."
+          "description": "Row descriptors: name, type (string/int/double/bool/choice/string_list), category, choices, min, max, description, readonly."
         },
         {
           "name": "values",
@@ -695,6 +764,7 @@
     },
     {
       "tag": "u2-breadcrumbs",
+      "category": "Display",
       "description": "Path bar that collapses its middle segments when it overflows.",
       "usage": "For navigation within your own view. The shell already renders the view's own breadcrumb from its name/path — don't duplicate it.",
       "props": [
@@ -703,6 +773,13 @@
           "type": "string_list"
         }
       ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
       "events": [
         "click"
       ],
@@ -719,6 +796,7 @@
     },
     {
       "tag": "u2-slider-input",
+      "category": "Inputs",
       "description": "Bare range track; the value shows in a tooltip on hover and while dragging.",
       "usage": "For a value that is only meaningful within known bounds. When the exact number matters too, use `u2-number-input` — it carries the slider as an option.",
       "props": [
@@ -781,6 +859,7 @@
     },
     {
       "tag": "u2-radio-input",
+      "category": "Inputs",
       "description": "Radio group over native radios; one item at a time.",
       "usage": "For three to five always-visible options. Above that use `u2-choice-input`.",
       "props": [
@@ -828,6 +907,13 @@
           "description": "Hover text per item."
         }
       ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
       "events": [
         "change"
       ],
@@ -845,6 +931,7 @@
     },
     {
       "tag": "u2-color-input",
+      "category": "Inputs",
       "description": "Hex field plus a swatch that opens the browser color picker.",
       "props": [
         {
@@ -896,6 +983,7 @@
     },
     {
       "tag": "u2-list-input",
+      "category": "Inputs",
       "description": "Comma-separated list; items carrying a comma are quoted. Expands to a textarea.",
       "props": [
         {
@@ -949,6 +1037,7 @@
     },
     {
       "tag": "u2-map-input",
+      "category": "Inputs",
       "description": "Key/value rows with per-row add and remove; duplicate keys are invalid, and a row with an empty key stays out of the value.",
       "props": [
         {
@@ -997,6 +1086,7 @@
     },
     {
       "tag": "u2-qnum-input",
+      "category": "Inputs",
       "description": "Qualified number editor — \"<5.2\", \"10\", \">1e3\". The value is the packed double the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.",
       "usage": "For measurements reported against a detection limit. A plain number belongs in `u2-number-input` — this editor spends two bits of precision on the qualifier.",
       "props": [
@@ -1048,6 +1138,7 @@
     },
     {
       "tag": "u2-font-input",
+      "category": "Inputs",
       "description": "Font editor over the platform font string — size box with presets, bold and italic toggles, family select.",
       "usage": "For the \"<weight> <style> <size>px <family>\" strings viewer looks carry; anything else that needs a font belongs in CSS.",
       "props": [
@@ -1104,6 +1195,7 @@
     },
     {
       "tag": "u2-image-input",
+      "category": "Inputs",
       "description": "Image preview by URL or data URL; the REMOVE link appears on hover and clears it.",
       "props": [
         {
@@ -1149,6 +1241,234 @@
         "props": {
           "label": "Logo",
           "value": "https://datagrok.ai/img/logo.svg"
+        }
+      }
+    },
+    {
+      "tag": "u2-state",
+      "category": "Data",
+      "visual": false,
+      "description": "A value the form owns: one writable signal several controls share.",
+      "usage": "For a draft, a flag or a selection that outlives no single control — anything two nodes must agree on. Data that comes from somewhere belongs in a source, not here.",
+      "props": [
+        {
+          "name": "type",
+          "type": "string",
+          "choices": [
+            "string",
+            "int",
+            "double",
+            "bool",
+            "string_list",
+            "object"
+          ],
+          "description": "What the value holds; `initial` is checked against it."
+        },
+        {
+          "name": "initial",
+          "type": "object",
+          "description": "The value it starts at, and what `clear` returns it to; the type's empty value otherwise."
+        }
+      ],
+      "defaults": {
+        "type": "string"
+      },
+      "example": {
+        "tag": "u2-state",
+        "name": "draft",
+        "props": {
+          "type": "string",
+          "initial": ""
+        }
+      }
+    },
+    {
+      "tag": "u2-func-source",
+      "category": "Data",
+      "visual": false,
+      "description": "A function, query or script run as data: its outputs are what the form binds to.",
+      "usage": "The default source for anything computed or queried. Bind a param to an input and the source re-runs as that input changes; bind a DataFrame output's `currentRow` to reach the fields of the current record.",
+      "props": [
+        {
+          "name": "func",
+          "type": "string",
+          "description": "The function name, `Package:Name` for a package function."
+        },
+        {
+          "name": "params",
+          "type": "object",
+          "subBindable": true,
+          "description": "What it is called with; a `params.<name>` bind makes that param reactive."
+        },
+        {
+          "name": "auto",
+          "type": "bool",
+          "description": "Run at construction and whenever a bound param changes (default true)."
+        },
+        {
+          "name": "debounce",
+          "type": "int",
+          "description": "Milliseconds a param change waits before the re-run (default 300)."
+        },
+        {
+          "name": "designData",
+          "type": "string",
+          "choices": [
+            "live",
+            "schema",
+            "sample"
+          ],
+          "description": "What the designer shows: real runs, the declared shape without running, or the stored `sample`."
+        },
+        {
+          "name": "sample",
+          "type": "object",
+          "description": "The preview the `sample` policy builds its outputs from; rows become a table."
+        }
+      ],
+      "designPreview": [
+        {
+          "name": "Sample row",
+          "value": 1
+        }
+      ],
+      "example": {
+        "tag": "u2-func-source",
+        "name": "orders",
+        "props": {
+          "func": "U2demo:demoOrders"
+        }
+      }
+    },
+    {
+      "tag": "u2-entity-source",
+      "category": "Data",
+      "visual": false,
+      "description": "A paged listing of a server collection: users, groups, projects and the rest.",
+      "usage": "For a picker over server entities, or a list of them. `names` feeds a choice input directly; `items` carries the entities themselves.",
+      "props": [
+        {
+          "name": "entity",
+          "type": "string",
+          "choices": [
+            "users",
+            "groups",
+            "projects",
+            "queries",
+            "connections",
+            "scripts",
+            "spaces"
+          ],
+          "description": "The `grok.dapi` collection to list."
+        },
+        {
+          "name": "filter",
+          "type": "string",
+          "bindable": true,
+          "description": "A smart-search filter; changing it reloads the collection from the first page."
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "The field to order by."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "description": "How many entities one page loads (default 20)."
+        }
+      ],
+      "defaults": {
+        "entity": "users",
+        "pageSize": 20
+      },
+      "example": {
+        "tag": "u2-entity-source",
+        "name": "people",
+        "props": {
+          "entity": "users",
+          "pageSize": 20
+        }
+      }
+    },
+    {
+      "tag": "u2-table-source",
+      "category": "Data",
+      "visual": false,
+      "description": "An open workspace table, by name — the whole DataFrame binding surface.",
+      "usage": "For a form over a table the user already has open. It references the table BY NAME, so prefer a query or a project table for a form that must keep working tomorrow.",
+      "props": [
+        {
+          "name": "table",
+          "type": "string",
+          "description": "The name of the open table."
+        }
+      ],
+      "example": {
+        "tag": "u2-table-source",
+        "name": "demog",
+        "props": {
+          "table": "demog"
+        }
+      }
+    },
+    {
+      "tag": "u2-entity-ref",
+      "category": "Data",
+      "visual": false,
+      "description": "One server entity, looked up by id — the object a details form shows.",
+      "usage": "For a form about a single entity. Bind `id` to whatever selects it and every bound field follows; the entity's own properties are binding steps.",
+      "props": [
+        {
+          "name": "entityType",
+          "type": "string",
+          "choices": [
+            "users",
+            "groups",
+            "projects",
+            "queries",
+            "connections",
+            "scripts",
+            "spaces"
+          ],
+          "description": "Which collection the id belongs to."
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "bindable": true,
+          "description": "The entity id to look up."
+        },
+        {
+          "name": "designData",
+          "type": "string",
+          "choices": [
+            "live",
+            "schema",
+            "sample"
+          ],
+          "description": "What the designer shows: real runs, the declared shape without running, or the stored `sample`."
+        },
+        {
+          "name": "sample",
+          "type": "object",
+          "description": "The preview the `sample` policy builds its outputs from; rows become a table."
+        }
+      ],
+      "defaults": {
+        "entityType": "users",
+        "designData": "live"
+      },
+      "designPreview": {
+        "name": "Sample entity",
+        "friendlyName": "Sample entity"
+      },
+      "example": {
+        "tag": "u2-entity-ref",
+        "name": "author",
+        "props": {
+          "entityType": "users",
+          "id": "current"
         }
       }
     }

@@ -3,6 +3,7 @@
    `DartInputLike` are, so the core stays platform-free while a hosted component IS a `DG.Widget`;
    src/dg/widget-host.ts asserts at compile time that the real interface satisfies this one. */
 import type {PropertyLike} from './property-like.js';
+import type {Signal} from './signals.js';
 
 /** The subscription surface of an event stream; an rxjs `Observable` satisfies it structurally.
  * What {@link WidgetLike.onEvent} emits is a union: a component event's own payload, or a DOM
@@ -73,6 +74,25 @@ export interface WidgetLike {
   getWidgetStatus(): WidgetStatusLike;
 }
 
+/** Mirrors the spec layer's `BindProp` (structural, as {@link ComponentMetaLike} is): one
+ * enumerated binding step, typed like a property plus what the picker needs. */
+export interface BindPropLike extends PropertyLike {
+  /** `bindStep(name)` answers another source — the picker renders an expandable node. */
+  walkable?: boolean;
+  /** The leaf is a writable signal — two-way capable. */
+  writable?: boolean;
+}
+
+/** Mirrors the spec layer's `BindSource` — the DD5 binding protocol — structurally, so the core
+ * never imports the spec layer. Every {@link Component} answers it off its registry meta. */
+export interface BindSourceLike {
+  /** Resolve one step; a Signal ends the walk, a source continues it, null is unresolvable.
+   * '' asks for the default binding. */
+  bindStep(name: string): Signal<unknown> | BindSourceLike | null;
+  /** What a binding picker enumerates. Must not allocate signals. */
+  bindProps(): BindPropLike[];
+}
+
 /** The registry metadata a component introspects itself through; `ComponentMeta` satisfies it
  * (structural, so the core never imports the spec layer). */
 export interface ComponentMetaLike {
@@ -81,4 +101,6 @@ export interface ComponentMetaLike {
   description?: string;
   usage?: string;
   events?: string[];
+  /** The tag-level design-time sample a source falls back to (DD9). */
+  designPreview?: object;
 }

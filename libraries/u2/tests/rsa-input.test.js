@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
+import {Entity, UnreadableFileInfo} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {RsaInput, rsaInput} = await import('../src/dg/rsa-input.js');
@@ -33,7 +34,7 @@ function rsaTest(name, body) {
 
 /** A key sitting in a file share, as the Files browser hands it to the drag channel. */
 function shared(name) {
-  return new DG.FileInfo(`keys/${name}`, null, {nqName: 'Home'});
+  return new DG.FileInfo(`keys/${name}`, {connection: new Entity('Home')});
 }
 
 /** Drops `payload` on the input's own registration, in the shape the running platform uses. */
@@ -174,14 +175,10 @@ rsaTest('a shared file that is not a key says so', async (errors) => {
   input.dispose();
 });
 
-/** A deployed js-api bundle passes the wrapped handle to the accessor (`table-info.ts:73`), so
- * `connection` throws for every FileInfo. Rejecting the drop over that would be a silent no-op. */
+/** Rejecting the drop over an unreadable connection would be a silent no-op. */
 rsaTest('a key whose connection cannot be read is still taken', async () => {
   grok.dapi.files.readAsText = async () => PEM;
-  const key = shared('server.pem');
-  Object.defineProperty(key, 'connection', {get() {
-    throw new RangeError('Invalid argument');
-  }});
+  const key = new UnreadableFileInfo('keys/server.pem');
 
   const input = rsaInput('Key');
   assert.equal(drops[drops.length - 1].acceptDrop(key), true);

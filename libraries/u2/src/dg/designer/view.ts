@@ -1,27 +1,44 @@
 /* The designer as a citizen of the shell (DD1): the canvas is a live `SpecInstance`, the toolbox is
-   its structure tree, the ribbon holds the actions and the Design/Run toggle, and the status bar
-   carries the selection path. Design mode is one glass pane over the canvas — the components render
-   exactly as they run, and the pane hit-tests through `SpecInstance.nodeAt` instead of fighting each
-   control's own handlers. Read-only at P2: selecting is the only gesture. */
+   the palette over its registry plus its structure tree, the ribbon holds the actions and the
+   Design/Run toggle, and the status bar carries the selection path. Design mode is one glass pane
+   over the canvas — the components render exactly as they run, and the pane hit-tests through
+   `SpecInstance.nodeAt` instead of fighting each control's own handlers. Every edit is a patch
+   through `SpecEditor`: this file is the gesture layer, the engine owns validation and undo. */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Control} from '../../core/component.js';
-import {Scope} from '../../core/scope.js';
 import {signal, ReadonlySignal} from '../../core/signals.js';
-import {button, div, divV, h3} from '../../core/elements.js';
+import {div, divV, h3} from '../../core/elements.js';
+import type {Action} from '../../components/actions.js';
+import {actionsMenu} from '../../components/actions.js';
 import {ButtonGroup} from '../../components/button-group.js';
-import {Dialog} from '../../components/dialog.js';
-import {TextArea} from '../../components/text-input.js';
-import {VirtualTree} from '../../components/tree.js';
+import {TreeNode, VirtualTree} from '../../components/tree.js';
 import {SpecContext, SpecInstance, parseSpec, renderSpec} from '../../spec/spec.js';
 import type {Spec, SpecNode} from '../../spec/spec.js';
+import {registry as globalRegistry} from '../../spec/registry.js';
+import type {Registry} from '../../spec/registry.js';
+import {SpecEditor} from '../../spec/editor.js';
+import type {AppliedPatch, SpecPatch} from '../../spec/editor.js';
 import {appView} from '../app-view.js';
-import {SpecNodeRef, SpecTree, brokenCount, idPath, specTree} from './node-ref.js';
+import {disposePanel} from './handler.js';
+import {accepts} from './dnd.js';
+import {makeDesignerDroppable} from './drop.js';
+import {DragLayer} from './drag.js';
+import type {Drag} from './drag.js';
+import {Selection} from './selection.js';
+import {DesignerActions} from './actions.js';
+import {dragKey, keyDown} from './keys.js';
+import {Ribbon} from './ribbon.js';
+import {Palette} from './palette.js';
+import {Tray} from './tray.js';
+import {SpecNodeRef, SpecTree, brokenCount, specTree} from './node-ref.js';
 
 export interface DesignerViewOptions {
   name?: string;
   /** What `$.` paths and `cmd:` names resolve against while the spec runs. */
   ctx?: SpecContext;
+  /** The components the canvas may build and the palette offers; the global registry by default. */
+  registry?: Registry;
 }
 
 /** The canvas: a rendered spec plus the design-mode chrome over it. */
@@ -30,28 +47,49 @@ export class SpecDesigner extends Control {
   readonly toolbox: HTMLElement;
 
   private readonly _ctx: SpecContext;
+  private readonly _registry: Registry;
   private readonly _surface = div([], 'u2-designer-surface');
   private readonly _pane = div([], 'u2-designer-pane');
-  private readonly _selection = div([], 'u2-designer-selected');
-  private readonly _hover = div([], 'u2-designer-hover');
   private readonly _tree: VirtualTree<SpecNode>;
+  private readonly _tray: Tray;
+  private readonly _palette: Palette;
   private readonly _mode: ButtonGroup;
+  private readonly _selection: Selection;
+  private readonly _dragLayer: DragLayer;
+  private readonly _verbs: DesignerActions;
+  private readonly _ribbon: Ribbon;
   private readonly _status = signal('');
+  private readonly _outlines = signal(true);
+  private readonly _editor = signal<SpecEditor | undefined>(undefined);
+  /** Bumped by anything that changes what the actions would apply to — the ribbon reads it. */
+  private readonly _revision = signal(0);
   private _instance: SpecInstance | undefined;
   private _model: SpecTree | undefined;
-  private _selected: SpecNode | null = null;
-  private _hovered: SpecNode | null = null;
+  /** What the gesture in flight wants selected once its patch has landed — the node it inserts, or
+   * the parent of the node it removes. The rebuild reads it, so one patch is one selection. */
+  private _pendingSelect: SpecNode | null = null;
 
-  constructor(spec: string | object, ctx?: SpecContext) {
+  constructor(spec: string | object, ctx?: SpecContext, registry?: Registry) {
     super();
     this.status = this._status;
     this._ctx = ctx ?? new SpecContext();
+    this._registry = registry ?? globalRegistry;
     this.root.classList.add('u2-designer');
     this.root.dataset.u2 = 'designer';
-    this.root.append(this._surface, this._selection, this._hover);
-
-    this._tree = this.run(() => new VirtualTree<SpecNode>({}));
-    this.toolbox = divV([h3('Structure'), this._tree.root], 'u2-designer-toolbox');
+    // the shortcuts below are the view's own: the root has to be able to hold focus for them
+    this.root.tabIndex = 0;
+    this._tray = this.run(() => new Tray({
+      onSelect: (node) => this._select(node),
+      onContext: (node, x, y) => {
+        this._select(node);
+        actionsMenu(this._verbs.handBack(this._actions())).show({x, y});
+      },
+      onAdd: (base, seed) => this._dragLayer.addComponent(base, seed),
+    }));
+    this._tree = this.run(() => new VirtualTree<SpecNode>({
+      onRename: (node, label) => this._rename(node, label),
+      contextActions: (node) => this._rowActions(node),
+    }));
     this._mode = this.run(() => new ButtonGroup({
       items: [{id: 'design', label: 'Design'}, {id: 'run', label: 'Run'}],
       toggle: 'single',
@@ -59,51 +97,175 @@ export class SpecDesigner extends Control {
     }));
     this._mode.selected.value = ['design'];
 
+    const host = {
+      root: this.root,
+      surface: this._surface,
+      pane: this._pane,
+      tree: this._tree,
+      tray: this._tray,
+      mode: this._mode.root,
+      outlines: this._outlines,
+      editor: this._editor,
+      instance: () => this._instance,
+      model: () => this._model,
+      selected: () => this._selected,
+      multi: () => this._multi,
+      revision: () => this._revision.value,
+      inDrag: () => this._drag !== undefined,
+      dragged: () => this._dragLayer.dragged,
+      hit: (e: MouseEvent) => this._selection.hit(e),
+      select: (node: SpecNode) => this._select(node),
+      collapse: () => this._selection.collapse(),
+      endDrag: (commit: boolean) => this._endDrag(commit),
+      actions: () => this._actions(),
+      run: (name: string) => this._run(name),
+      pending: (node: SpecNode | null) => this._pendingSelect = node,
+      apply: (patch: SpecPatch) => this._apply(patch),
+      refresh: (node: SpecNode) => this._verbs.refresh(node),
+      open: (spec: string | object) => this.open(spec),
+      dump: () => this.dump(),
+      effect: (fn: () => void) => this.effect(fn),
+      report: () => this._report(),
+      touch: () => this._touch(),
+      refocus: () => this._refocus(),
+    };
+    this._selection = new Selection(host);
+    this._dragLayer = new DragLayer(host);
+    this._verbs = new DesignerActions(host);
+    this._ribbon = new Ribbon(host);
+
+    // in flow, after the surface: the tray sticks to the bottom edge and hides itself in Run mode
+    this.root.append(this._surface, this._tray.root, this._selection.box, this._selection.hover,
+      this._dragLayer.into, this._dragLayer.line);
+    // the platform's drag channel, on the root rather than the pane: the pane is removed in Run
+    // mode and the dart-side registration has no counterpart to undo, so it must be wired on the
+    // element that lives as long as the designer — and every callback asks `active()` first
+    makeDesignerDroppable({
+      element: this.root,
+      active: () => !this.scope.isDisposed && this._pane.isConnected && this._drag === undefined,
+      onDragActive: (on) => {
+        this._dragLayer.platformDrag = on;
+        this._tray.setDropTarget(on);
+        if (on)
+          this._selection.setHovered(null);
+      },
+      onDrop: (reading) => this._dragLayer.dropSources(reading),
+    });
+
     // a click on the row that is already selected moves no signal, so the selection effect below
-    // never re-fires — the click itself has to re-assert it
-    this._listen(this._tree.root, 'click',
-      () => this._onTreeSelection(this._tree.selectedNode.peek()?.data ?? null));
-    this._listen(this._pane, 'click', (e) => this._onCanvasClick(e as MouseEvent));
-    this._listen(this._pane, 'mousemove', (e) => this._setHovered(this._hit(e as MouseEvent)));
-    this._listen(this._pane, 'mouseleave', () => this._setHovered(null));
-    this._listen(this._surface, 'scroll', () => this._reposition(), true);
-    this._listen(window, 'resize', () => this._reposition());
+    // never re-fires — the click itself has to re-assert it, past the guard that effect needs;
+    // a modifier click is a multi-selection gesture, and re-asserting would collapse the set (F5)
+    this._listen(this._tree.root, 'click', (e) => {
+      const me = e as MouseEvent;
+      if (me.ctrlKey || me.metaKey || me.shiftKey)
+        return;
+      const node = this._tree.selectedNode.peek()?.data;
+      if (node)
+        this._select(node);
+    });
+    this._listen(this._pane, 'click', (e) => this._selection.onCanvasClick(e as MouseEvent));
+    this._listen(this._pane, 'mousedown', (e) => this._dragLayer.onPaneDown(e as MouseEvent));
+    this._listen(this._pane, 'contextmenu',
+      (e) => this._verbs.onContextMenu(e as MouseEvent, this._selection.hit(e as MouseEvent)));
+    this._listen(this._pane, 'mousemove',
+      (e) => this._selection.setHovered(this._dragging ? null : this._selection.hit(e as MouseEvent)));
+    this._listen(this._pane, 'mouseleave', () => this._selection.setHovered(null));
+    // the second hover source: a tree row highlights its node on the canvas (run mode draws
+    // nothing — `reposition` suppresses the adorners while the pane is detached)
+    this._listen(this._tree.root, 'mouseover', (e) =>
+      this._selection.setHovered(this._dragging ? null : this._tree.nodeForRow(e.target)?.data ?? null));
+    this._listen(this._tree.root, 'mouseleave', () => this._selection.setHovered(null));
+    // the platform wraps every JS view in a widget whose ancestor-level bubble contextmenu
+    // listener opens its own 'Properties...' menu — nothing may propagate past the designer
+    // while it is designing; Run mode keeps the platform menu
+    // preventDefault too: a KEYBOARD contextmenu (Shift+F10) targets the focused designer root
+    // itself, below the pane's own handler, and would otherwise pop the browser menu
+    this._listen(this.root, 'contextmenu', (e) => {
+      if (this._pane.isConnected) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    this._listen(this._surface, 'scroll', () => this._selection.reposition(), true);
+    this._listen(window, 'resize', () => this._selection.reposition());
+    // a drag that starts on a palette row leaves the pane at once, and Escape has to reach it
+    // wherever the focus is; all three do nothing while no drag is in flight
+    this._listen(document, 'mousemove', (e) => this._dragLayer.onMove(e as MouseEvent));
+    this._listen(document, 'mouseup', () => this._endDrag(true));
+    this._listen(document, 'keydown', (e) => dragKey(e as KeyboardEvent, host));
 
     this.open(spec);
-    this.effect(() => this._onTreeSelection(this._tree.selectedNode.value?.data ?? null));
+
+    this._palette = this.run(() => new Palette(this._instance?.registry ?? this._registry));
+    this.toolbox = divV([h3('Palette'), this._palette.root, h3('Structure'), this._tree.root],
+      'u2-designer-toolbox');
+    this._listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
+    this._listen(this.toolbox, 'contextmenu', (e) => {
+      // keyboard contextmenu with focus on the tree/palette chrome — no menu of any kind
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    this._listen(this._mode.root, 'click', () => this._refocus());
+    this._listen(this.root, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
+    this._listen(this.toolbox, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
+
+    this.effect(() => {
+      const rows = this._tree.selectedNodes.value;
+      const lead = this._tree.selectedNode.value?.data ?? null;
+      if (rows.length > 1)
+        this._selection.selectMulti(rows.map((row) => row.data!), lead);
+      else
+        this._selection.onTreeSelection(lead);
+    });
     this.effect(() => this._setDesign(this._mode.selected.value[0] !== 'run'));
+    this.effect(() => this.root.classList.toggle('u2-designer-outlines', this._outlines.value));
+    this.effect(() => {
+      const applied = this._editor.value?.onDidApply.value;
+      if (applied)
+        this._afterPatch(applied);
+    });
+    // the context panel the handler rendered for this designer's selections dies with it —
+    // otherwise its sync effect keeps refreshing a detached form for the rest of the session
+    this.own(disposePanel);
   }
 
   ribbon(): HTMLElement[] {
-    return this.run(() => [
-      button('Open…', () => this._openDialog()),
-      button('Copy spec', () => this._copy()),
-      this._mode.root,
-    ]);
+    return this.run(() => this._ribbon.build());
   }
 
-  /** Renders `spec` in place of what the canvas holds. A spec that is not a spec is refused and the
-   * current one stays up — the designer never leaves an empty canvas behind. */
+  /** Renders `spec` in place of what the canvas holds, with a fresh editor — an instance and its
+   * edit history die together. A spec that is not a spec is refused and the current one stays up.
+   * What the canvas holds is always this designer's own copy: the editor patches the document in
+   * place (DD10), so a caller's object stays the constant it was — `dump()` is how the edits leave. */
   open(spec: string | object): void {
     let parsed: Spec;
     try {
       parsed = parseSpec(spec);
+      // a string parsed into an object nobody else holds; only an object input needs copying
+      if (typeof spec !== 'string')
+        parsed = JSON.parse(JSON.stringify(parsed)) as Spec;
     } catch (e) {
       grok.shell.error(e instanceof Error ? e.message : String(e));
       return;
     }
     this._instance?.dispose();
     this._surface.textContent = '';
-    this._selected = null;
+    this._selection.selected = null;
+    this._selection.multi = [];
     this._hovered = null;
-    this._instance = this.run(() => renderSpec(parsed, this._ctx));
+    this._pendingSelect = null;
+    this._instance = this.run(() => renderSpec(parsed, this._ctx, this._registry,
+      {designTime: this._mode.selected.peek()[0] !== 'run'}));
     this._surface.append(this._instance.root);
+    this._editor.value = new SpecEditor(this._instance);
     this._model = specTree(this._instance);
     // cleared BEFORE setRoots: the list preserves selection by row key on items change, and
     // tree ids are ordinals that collide across specs — the old selection's id would silently
     // re-select an arbitrary node of the new spec (and announce it) before root wins
     this._tree.clearSelection();
     this._tree.setRoots(this._model.roots);
+    this._stampDesign();
+    this._tray.update(this._instance, null);
     this._report();
     // the root is selected outright: the panel shows something from the first frame, and the tree
     // never carries a row selected against the spec that has just been replaced
@@ -111,62 +273,116 @@ export class SpecDesigner extends Control {
     if (root)
       this._select(root);
     else
-      this._reposition();
+      this._selection.reposition();
   }
 
   dump(): object | null {
     return this._instance ? this._instance.dump() : null;
   }
 
-  /** A click that lands on no node — the designer's own padding — leaves the selection alone, so the
-   * context panel and the status bar never disagree about what is current. */
-  private _onCanvasClick(e: MouseEvent): void {
-    const node = this._hit(e);
-    if (node)
-      this._select(node);
-  }
+  private get _drag(): Drag | undefined { return this._dragLayer.drag; }
+  private set _drag(drag: Drag | undefined) { this._dragLayer.drag = drag; }
+  private get _dragging(): boolean { return this._dragLayer.dragging; }
+  private get _selected(): SpecNode | null { return this._selection.selected; }
+  private get _multi(): SpecNode[] { return this._selection.multi; }
+  private get _hovered(): SpecNode | null { return this._selection.hovered; }
+  private set _hovered(node: SpecNode | null) { this._selection.hovered = node; }
+  private _select(node: SpecNode): void { this._selection.select(node); }
+  private _endDrag(commit: boolean): void { this._dragLayer.end(commit); }
+  private _actions(): Action[] { return this._verbs.actions(); }
+  private _run(name: string): void { this._verbs.run(name); }
+  private _rowActions(row: TreeNode<SpecNode>): Action[] { return this._verbs.rowActions(row); }
 
-  /** Re-selecting what is already selected is not a no-op: the context panel can miss an update
-   * when clicks come faster than the platform renders it, and clicking the row again is how a user
-   * asks for it back — so `shell.o` is always re-assigned. */
-  private _select(node: SpecNode): void {
-    if (!this._instance)
-      return;
-    this._selected = node;
-    this._reposition();
+  /** Every applied patch lands here, from a gesture, a keystroke or undo alike: the adorners and
+   * the status line always follow, the tree and the selection only when the structure moved. */
+  private _afterPatch(applied: AppliedPatch): void {
+    if (applied.structural)
+      this._rebuildTree();
+    this._selection.reposition();
+    this._tray.update(this._instance, this._selected);
     this._report();
-    grok.shell.windows.showContextPanel = true;
-    grok.shell.o = new SpecNodeRef(this._instance, node);
-    const id = this._model?.ids.get(node);
-    if (id !== undefined)
-      void this._tree.expandPath(idPath(id));
+    this._stampDesign();
+    this._touch();
   }
 
-  private _onTreeSelection(node: SpecNode | null): void {
-    if (node)
-      this._select(node);
-  }
-
-  private _setHovered(node: SpecNode | null): void {
-    if (node === this._hovered)
+  private _rebuildTree(): void {
+    const instance = this._instance;
+    if (!instance)
       return;
-    this._hovered = node;
-    this._reposition();
+    this._model = specTree(instance);
+    this._tree.clearSelection();
+    this._tree.setRoots(this._model.roots);
+    const survivor = this._survivor(instance);
+    this._pendingSelect = null;
+    if (survivor)
+      this._select(survivor);
   }
 
-  /** The topmost element under the pointer that the spec owns — the pane itself sits above the
-   * canvas, so it is skipped, and the adorners never take pointer events at all. */
-  private _hit(e: MouseEvent): SpecNode | null {
-    if (!this._instance)
-      return null;
-    for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
-      if (!this._surface.contains(el))
+  /** What stays selected across a structural patch: what the gesture asked for, the same node where
+   * it is still rendered otherwise, and the root as the last resort. */
+  private _survivor(instance: SpecInstance): SpecNode | null {
+    const nodes = instance.nodes();
+    if (this._pendingSelect && nodes.has(this._pendingSelect))
+      return this._pendingSelect;
+    if (this._selected && nodes.has(this._selected))
+      return this._selected;
+    return nodes.has(instance.spec.root) ? instance.spec.root : null;
+  }
+
+  /** The design-time classes on what the spec rendered: the root's always-on bounds, the
+   * per-control outline (toggleable via `u2-designer-outlines` on the designer root) and the
+   * empty-container affordance that makes an invisible drop target visible. Run mode keeps the
+   * classes and drops the styling (css/designer.css). */
+  private _stampDesign(): void {
+    const instance = this._instance;
+    if (!instance)
+      return;
+    for (const [node, built] of instance.nodes()) {
+      const el = SpecInstance.elementOf(built);
+      // a tray component has no element to stamp
+      if (!el)
         continue;
-      const node = this._instance.nodeAt(el);
-      if (node)
-        return node;
+      el.classList.add('u2-designer-node');
+      el.classList.toggle('u2-designer-root', node === instance.spec.root);
+      el.classList.toggle('u2-designer-empty',
+        (node.children?.length ?? 0) === 0 && accepts(instance.registry, node));
     }
-    return null;
+  }
+
+  /** Never `_revision.value++`: an effect that reads the signal to rebuild the ribbon would count
+   * the read-modify-write as a dependency on itself. */
+  private _touch(): void {
+    this._revision.value = this._revision.peek() + 1;
+  }
+
+  /** A ribbon or menu click parks focus on chrome outside the designer, where the next Ctrl+Z
+   * belongs to the platform ("Nothing to undo") — a finished action hands focus back. */
+  private _refocus(): void {
+    this.root.focus({preventScroll: true});
+  }
+
+  /** Every gesture goes through here: the engine is the one authority on what may apply, and its
+   * refusal is what the user is told. */
+  private _apply(patch: SpecPatch): boolean {
+    const editor = this._editor.peek();
+    if (!editor)
+      return false;
+    const refusal = editor.canApply(patch);
+    if (refusal) {
+      this._pendingSelect = null;
+      grok.shell.warning(refusal);
+      return false;
+    }
+    editor.apply(patch);
+    return true;
+  }
+
+  private _rename(row: TreeNode<SpecNode>, label: string): void {
+    if (!row.data)
+      return;
+    // the tree writes the new label as it commits — a refused rename is undone by rebuilding it
+    if (!this._apply({op: 'rename', node: row.data, name: label}))
+      this._rebuildTree();
   }
 
   private _setDesign(design: boolean): void {
@@ -177,28 +393,12 @@ export class SpecDesigner extends Control {
       this._hovered = null;
     }
     this.root.classList.toggle('u2-designer-running', !design);
-    this._reposition();
-  }
-
-  private _reposition(): void {
-    const design = this._pane.isConnected;
-    this._outline(this._selection, design ? this._selected : null);
-    this._outline(this._hover, design && this._hovered !== this._selected ? this._hovered : null);
-  }
-
-  private _outline(box: HTMLElement, node: SpecNode | null): void {
-    const el = node && this._instance ? new SpecNodeRef(this._instance, node).element() : undefined;
-    if (!el || !el.isConnected) {
-      box.style.display = 'none';
-      return;
-    }
-    const rect = el.getBoundingClientRect();
-    const base = this.root.getBoundingClientRect();
-    box.style.display = 'block';
-    box.style.left = `${rect.left - base.left + this.root.scrollLeft}px`;
-    box.style.top = `${rect.top - base.top + this.root.scrollTop}px`;
-    box.style.width = `${rect.width}px`;
-    box.style.height = `${rect.height}px`;
+    // the sources build for the mode they are in (DD9) — and everything bound to one is rendered
+    // again with it, so the toggle really does swap in the live context
+    this._instance?.setDesignTime(design);
+    this._stampDesign();
+    this._tray.update(this._instance, this._selected);
+    this._selection.reposition();
   }
 
   private _report(): void {
@@ -207,42 +407,15 @@ export class SpecDesigner extends Control {
       return;
     }
     const count = this._instance.nodes().size;
-    const parts = [this._selected ? new SpecNodeRef(this._instance, this._selected).path() : 'No selection',
-      `${count} node${count === 1 ? '' : 's'}`];
+    const parts = [this._multi.length > 1 ? `${this._multi.length} selected` :
+      this._selected ? new SpecNodeRef(this._instance, this._selected).path() : 'No selection',
+    `${count} node${count === 1 ? '' : 's'}`];
     const broken = brokenCount(this._instance);
     if (broken > 0)
       parts.push(`${broken} broken`);
+    if (this._editor.peek()?.dirty.peek())
+      parts.push('modified');
     this._status.value = parts.join(' · ');
-  }
-
-  private _openDialog(): void {
-    const scope = new Scope();
-    const spec = this.dump();
-    const area = Scope.runWith(scope, () => new TextArea({
-      label: 'Spec',
-      value: spec ? JSON.stringify(spec, null, 2) : '',
-      placeholder: 'Paste a dg-ui/1 spec',
-    }));
-    area.root.classList.add('u2-designer-spec-editor');
-    Scope.runWith(scope, () => new Dialog('Open spec'))
-      .add(area)
-      .onOK(() => {
-        this.open(area.value.peek());
-        scope.dispose();
-      })
-      .onCancel(() => scope.dispose())
-      .show({modal: true, width: 560});
-  }
-
-  private _copy(): void {
-    const spec = this.dump();
-    if (!spec) {
-      grok.shell.info('Nothing to copy — the canvas is empty.');
-      return;
-    }
-    navigator.clipboard.writeText(JSON.stringify(spec, null, 2))
-      .then(() => grok.shell.info('Spec copied to the clipboard.'),
-        (e: unknown) => grok.shell.error(`Could not copy: ${e instanceof Error ? e.message : String(e)}`));
   }
 
   private _listen(target: EventTarget, type: string, handler: (e: Event) => void, capture = false): void {
@@ -251,10 +424,10 @@ export class SpecDesigner extends Control {
   }
 }
 
-/** The designer as a platform view: canvas as content, structure tree in the toolbox, actions and
- * the Design/Run toggle in the ribbon, selection path in the status bar. */
+/** The designer as a platform view: canvas as content, palette and structure tree in the toolbox,
+ * actions and the Design/Run toggle in the ribbon, selection path in the status bar. */
 export function designerView(spec: string | object, options: DesignerViewOptions = {}): DG.ViewBase {
-  const designer = new SpecDesigner(spec, options.ctx);
+  const designer = new SpecDesigner(spec, options.ctx, options.registry);
   return appView({
     name: options.name ?? 'Designer',
     content: designer,

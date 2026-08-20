@@ -98,6 +98,12 @@ export function shot(page, name) {
   return page.screenshot({path: join(ARTIFACTS, `${name}.png`)});
 }
 
+/** Evidence a check leaves behind whole — a `detail` string is truncated, a dump is not. */
+export function artifact(name, text) {
+  mkdirSync(ARTIFACTS, {recursive: true});
+  writeFileSync(join(ARTIFACTS, name), text);
+}
+
 /** Writes the run to `.artifacts/<name>.json` and answers the process exit code. */
 export function report(name = 'results') {
   mkdirSync(ARTIFACTS, {recursive: true});

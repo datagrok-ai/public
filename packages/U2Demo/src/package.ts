@@ -52,7 +52,7 @@ import {buildDemo} from './demo';
 import {buildReportsBrowser} from './reports-browser';
 import {registerEnabledEditors} from './editors';
 import {registerPropRowHandler} from './convergence';
-import {DESIGNER_SPEC, designerContext} from './designer';
+import {DESIGNER_SPEC, appendRunLog, designerContext} from './designer';
 
 export * from './package.g';
 
@@ -114,4 +114,36 @@ export function u2AutoRegisterEditors(): void {
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
+}
+
+/* What the designer's data sources are demonstrated against: a client-side table small enough to
+   read whole, with a parameter worth binding to an input. */
+const ORDERS = [
+  {orderId: 1001, customer: 'Aspirin Labs', city: 'Kyiv', total: 1240, daysAgo: 2},
+  {orderId: 1002, customer: 'Bayer', city: 'Lviv', total: 380, daysAgo: 5},
+  {orderId: 1003, customer: 'Roche', city: 'Basel', total: 2150, daysAgo: 11},
+  {orderId: 1004, customer: 'Novartis', city: 'Basel', total: 640, daysAgo: 24},
+  {orderId: 1005, customer: 'Pfizer', city: 'New York', total: 1790, daysAgo: 45},
+  {orderId: 1006, customer: 'Merck', city: 'Darmstadt', total: 920, daysAgo: 88},
+];
+
+//name: demoOrders
+//description: Demo orders placed within the last N days — the data source demo of the u2 designer
+//input: int days = 30
+//output: dataframe orders
+export function demoOrders(days: number): DG.DataFrame {
+  const rows = ORDERS.filter((order) => order.daysAgo <= days);
+  return DG.DataFrame.fromObjects(rows) ?? DG.DataFrame.create(0);
+}
+
+//name: u2Record
+//description: Records a line in the U2 Designer's Run log — the function to wire a button to
+//input: string text
+//output: string entry
+export function u2Record(text: string): string {
+  const entry = `u2Record: ${text}`;
+  grok.shell.info(entry);
+  // the balloon is gone in five seconds — the Run log of the demo form is what stays
+  appendRunLog(entry);
+  return entry;
 }

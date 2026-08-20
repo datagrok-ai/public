@@ -85,6 +85,11 @@ export class Accordion extends Control {
     return this._panes.find((p) => p.title === title);
   }
 
+  /** By position — unambiguous where {@link getPane} is not (duplicate titles). */
+  paneAt(index: number): AccordionPane | undefined {
+    return this._panes[index];
+  }
+
   removePane(title: string): void {
     const index = this._panes.findIndex((p) => p.title === title);
     if (index < 0)

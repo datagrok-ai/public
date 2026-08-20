@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Added `u2Record(text)` — the published function to wire a button to from the designer: it takes a literal argument and leaves a trace that outlives the balloon by appending to the demo form's Run log. Nothing published both took an argument and showed anything, so `wire a button with a literal argument` could not be completed at all: `info` and `balloons` take nothing, `test` runs the test harness, and the `u2Record` the e2e checks used was registered client-side by the check itself
+* U2 Designer: the demo context's run log is `demoRunLog` rather than `log`, and every command and function that fires writes it through one place — a key named `log` on a brand-new empty form reads as the designer's own plumbing rather than as the host app's data
+
+* U2 Designer: `demoOrders` is published, so the local-mode fixture knows it as a package function — the e2e checks that build a data-bound form now reach it through `DG.Func.find` like any other function, with no client-side registration standing in for it
+* U2 Designer: the demo context is platform-backed (`platformContext`), so a button the designer's function picker wires runs the function it names
+* Added `demoOrders` — a small orders table filtered by a `days` parameter, the function the u2 designer's data sources are demonstrated and tested against
+* U2 Designer: the demo's `cmd:save` also appends to a bound 'Run log' text area in the form — the balloon autohides in seconds, and two acceptance passes misread the command as silent
 * U2 Designer: a new app (Dev) hosting u2's read-only spec inspector over a representative form — pick a node on the canvas or in the structure tree and the context panel shows its properties, events and bindings; the ribbon opens another spec, copies the current one, and toggles Design/Run
 * Input convergence: where the pane cannot hold both editor columns the grid scrolls sideways on its own instead of the page — the prose, the notes and the status line stay where they are, and the page says so and what to close to get both columns back
 * Input convergence: the intro points at the Files & columns tab for the pickers that need an open table

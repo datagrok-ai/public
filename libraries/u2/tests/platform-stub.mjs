@@ -3,92 +3,44 @@
    headlessly. Same idea as tests/dg-stub.mjs, which serves the input bridge's slice of the API;
    this one serves the shell (open tables + their events) and the enums the column modules read.
 
-   Nothing here fakes a DataFrame — tests build their own, since a picker only ever asks a table
-   for `columns` and `onColumnsChanged`. Register with
-   `register('./platform-stub.mjs', import.meta.url)` before importing the modules under test, then
-   import 'datagrok-api/grok' to drive the shell (`shell.tableNames`, `emitTableAdded()`). */
+   The shell and the frames are the getter-backed doubles of tests/platform-doubles.mjs. Register
+   with `register('./platform-stub.mjs', import.meta.url)` before importing the modules under test,
+   then import 'datagrok-api/grok' to drive the shell (`openTable()`, `closeTable()`). */
+
+const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 
 const GROK = `
-export const shell = {
-  tableNames: [],
-  error: () => {},
-  /** Adds a table to the workspace and returns it, under the name it ended up with. */
-  addTable(table) {
-    table.name = uniqueName(table.name ?? 'table');
-    openTable(table.name);
-    return table;
-  },
-};
+import {DataFrame, Shell} from '${DOUBLES}';
 
-export const data = {
-  /** A DataFrame as a picker sees it — a name is all it ever reads. */
-  parseCsv: (csv) => ({name: 'table', csv}),
-};
+export const shell = new Shell();
 
-const listeners = {added: [], removed: []};
+/** A DataFrame as a picker sees it — a name is all it ever reads. */
+export const data = {parseCsv: () => new DataFrame()};
 
-function stream(key) {
-  return {
-    subscribe(fn) {
-      listeners[key].push(fn);
-      return {unsubscribe() {
-        const i = listeners[key].indexOf(fn);
-        if (i >= 0)
-          listeners[key].splice(i, 1);
-      }};
-    },
-  };
-}
-
-export const events = {onTableAdded: stream('added'), onTableRemoved: stream('removed')};
-
-/** The platform never opens two tables under one name; the second becomes \`demog (2)\`. */
-function uniqueName(name) {
-  let unique = name;
-  for (let n = 2; shell.tableNames.includes(unique); n++)
-    unique = \`\${name} (\${n})\`;
-  return unique;
-}
+export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved};
 
 /** Opens or closes tables the way the shell would: the name list first, then the event. */
-export function openTable(name) {
-  shell.tableNames = [...shell.tableNames, name];
-  for (const fn of listeners.added.slice())
-    fn();
-}
+export const openTable = (name) => shell.addTable(new DataFrame([], [], name));
 
-export function closeTable(name) {
-  shell.tableNames = shell.tableNames.filter((n) => n !== name);
-  for (const fn of listeners.removed.slice())
-    fn();
-}
+export const closeTable = (name) => shell.closeTable(name);
 
 export function resetShell() {
-  shell.tableNames = [];
-  shell.error = () => {};
-  data.parseCsv = (csv) => ({name: 'table', csv});
-  listeners.added.length = 0;
-  listeners.removed.length = 0;
+  shell.dart.tableNames = [];
+  delete shell.error;
+  data.parseCsv = () => new DataFrame();
+  events.onTableAdded.subs.clear();
+  events.onTableRemoved.subs.clear();
 }
 
 export function liveSubscriptions() {
-  return listeners.added.length + listeners.removed.length;
+  return events.onTableAdded.count + events.onTableRemoved.count;
 }
 `;
 
-/* The enum members the column modules read, copied from js-api's const.ts, plus the one DataFrame
-   entry point the table import uses. */
+/* The enum members the column modules read, copied from js-api's const.ts, plus the DataFrame
+   the table import builds. */
 const DG = `
-/** Only what a picker reads off a table it just opened. \`fromByteArray\` takes the d42 blob the
- * platform writes (\`data-frame.ts:75\`), so the bytes are carried, not parsed. */
-export class DataFrame {
-  constructor(name, bytes) {
-    this.name = name;
-    this.bytes = bytes;
-  }
-
-  static fromByteArray(bytes) { return new DataFrame('table', bytes); }
-}
+export {Column, DataFrame} from '${DOUBLES}';
 
 export const COLUMN_TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', BOOL: 'bool', BYTE_ARRAY: 'byte_array',

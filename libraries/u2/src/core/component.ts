@@ -1,15 +1,15 @@
 import {Scope} from './scope.js';
-import {Signal} from './signals.js';
+import {Signal, isWritableSignal} from './signals.js';
 import type {PropertyLike} from './property-like.js';
-import type {ComponentMetaLike, FuncLike, ObservableLike, WidgetLike, WidgetStatusLike}
-  from './widget-like.js';
+import type {BindPropLike, BindSourceLike, ComponentMetaLike, FuncLike, ObservableLike, WidgetLike,
+  WidgetStatusLike} from './widget-like.js';
 
 /** Base of every u2 component, visual or not: a name, an effect/cleanup scope, and the widget
  * introspection surface (DD7) generated from {@link meta}. A component constructed inside
  * another's scope is disposed with it. Platform-free; in Datagrok, `u2/dg`'s `host()` wires
  * {@link dispose} into the existing `DG.Widget` kill channel and delegates the introspection to a
  * real `DG.Widget`. Standalone hosts (gallery, tests) call {@link dispose} directly. */
-export class Component implements WidgetLike {
+export class Component implements WidgetLike, BindSourceLike {
   readonly scope: Scope;
   /** Unique within a spec: the anchor for selection, patches and automation. */
   name?: string;
@@ -120,6 +120,24 @@ export class Component implements WidgetLike {
       description: this.meta?.description ?? null,
       error: null,
     };
+  }
+
+  /** One binding step (DD5): a meta-declared prop's same-named Signal member — a named node is a
+   * bind source, generated off {@link meta} the way {@link getProperties} is. '' answers the
+   * default binding: the component's own `value` signal, where one exists. */
+  bindStep(name: string): Signal<unknown> | BindSourceLike | null {
+    const self = this as unknown as Record<string, unknown>;
+    const member = name === '' ? self.value :
+      this.meta?.props.some((p) => p.name === name) ? self[name] : undefined;
+    return member instanceof Signal ? member as Signal<unknown> : null;
+  }
+
+  /** The signal-backed subset of the meta props — what a binding picker offers on a named node. */
+  bindProps(): BindPropLike[] {
+    const self = this as unknown as Record<string, unknown>;
+    return (this.meta?.props ?? [])
+      .filter((p) => self[p.name] instanceof Signal)
+      .map((p) => ({...p, writable: isWritableSignal(self[p.name])}));
   }
 
   private static _read(self: Record<string, unknown>, name: string): unknown {

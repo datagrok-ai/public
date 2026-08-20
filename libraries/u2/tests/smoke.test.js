@@ -314,6 +314,17 @@ smoke('Splitter: keyboard resize clamps at minSize', () => {
   splitter.dispose();
 });
 
+smoke('Splitter: a sizes list that does not match the panels falls back to equal shares', () => {
+  const splitter = mount(new Splitter([span('a'), span('b'), span('c')],
+    {direction: 'horizontal', sizes: [0.3, 0.7]}));
+  for (const size of splitter.sizes.value)
+    assert.ok(Math.abs(size - 1 / 3) < 1e-9, `equal thirds, got ${splitter.sizes.value}`);
+  const bases = splitter.root.querySelectorAll('.u2-splitter-panel').map((p) => p.style.flexBasis);
+  assert.equal(bases.length, 3);
+  assert.ok(bases.every((b) => !b.includes('NaN')), `no NaN flex basis: ${bases}`);
+  splitter.dispose();
+});
+
 smoke('VirtualTree: expands a branch and renames a node', () => {
   const renamed = [];
   const tree = mount(new VirtualTree({onRename: (node, label) => renamed.push([node.id, label])}));
@@ -330,6 +341,13 @@ smoke('VirtualTree: expands a branch and renames a node', () => {
   assert.deepEqual(texts(tree.root, '.u2-tree-label'), ['Alpha', 'Alpha one', 'Beta']);
   assert.equal(tree.root.querySelector('.u2-list-row[data-index="0"]').getAttribute('aria-expanded'), 'true');
 
+  assert.equal(tree.nodeForRow(tree.root.querySelector('.u2-list-row[data-index="1"] .u2-tree-label')).id,
+    'a1', 'nodeForRow resolves any element inside a row to its node');
+  assert.equal(tree.nodeForRow(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-twistie')).id,
+    'a');
+  assert.equal(tree.nodeForRow(tree.root), null, 'off the rows there is no node');
+  assert.equal(tree.nodeForRow(null), null);
+
   const label = tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-label');
   fire(label, 'dblclick');
   const editor = tree.root.querySelector('.u2-tree-rename');
@@ -338,6 +356,32 @@ smoke('VirtualTree: expands a branch and renames a node', () => {
   fire(editor, 'keydown', {key: 'Enter'});
   assert.deepEqual(renamed, [['a', 'Renamed']]);
   assert.equal(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-label').textContent, 'Renamed');
+  tree.dispose();
+});
+
+smoke('VirtualTree: contextActions reach the list, so a right-click opens the node\'s own menu', () => {
+  const log = [];
+  const tree = mount(new VirtualTree({
+    contextActions: (node) => [{name: `Rename ${node.label}`, run: () => log.push(node.id)},
+      {name: 'Delete', enabled: false, run: () => log.push('deleted')}],
+  }));
+  tree.root.querySelector('.u2-list').clientHeight = 220;
+  tree.setRoots([{id: 'a', label: 'Alpha'}, {id: 'b', label: 'Beta'}]);
+
+  let leaked = 0;
+  const ancestor = () => leaked++;
+  document.body.addEventListener('contextmenu', ancestor);
+  fire(tree.root.querySelector('.u2-list-row[data-index="1"] .u2-tree-label'), 'contextmenu');
+  document.body.removeEventListener('contextmenu', ancestor);
+  assert.equal(leaked, 0, 'the row menu is the only menu — nothing propagates to an ancestor hook');
+  const items = document.querySelectorAll('[role="menuitem"]');
+  assert.deepEqual(items.map((el) => el.querySelector('.u2-menu-label').textContent),
+    ['Rename Beta', 'Delete']);
+  assert.equal(items[1].getAttribute('aria-disabled'), 'true', 'a disabled action stays visible');
+  fire(items[1], 'click');
+  assert.deepEqual(log, [], 'and does nothing');
+  fire(items[0], 'click');
+  assert.deepEqual(log, ['b']);
   tree.dispose();
 });
 
@@ -500,6 +544,9 @@ smoke('Accordion: lazy pane content is built once and disposed with the pane', (
   pane.expanded.value = true;
   assert.equal(builds, 1, 'collapsed content is hidden, not rebuilt');
 
+  assert.equal(accordion.paneAt(0), pane, 'paneAt addresses a pane by position');
+  assert.equal(accordion.paneAt(1), undefined);
+
   accordion.removePane('Details');
   assert.equal(released, 1, 'removePane disposes what the builder made');
   assert.equal(accordion.getPane('Details'), undefined);
@@ -659,4 +706,43 @@ smoke('Perf: times construction, disposes the tree, accumulates the report', asy
   const report = Perf.report();
   assert.equal(report.length, before + 1);
   assert.equal(report[report.length - 1].label, 'two inputs');
+});
+
+smoke('VirtualTree: the whole row is the rename handle — except the twistie, and never without onRename', () => {
+  const silent = mount(new VirtualTree());
+  silent.root.querySelector('.u2-list').clientHeight = 220;
+  silent.setRoots([{id: 'a', label: 'Alpha'}]);
+  fire(silent.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-label'), 'dblclick');
+  assert.equal(silent.root.querySelector('.u2-tree-rename'), null, 'no onRename, no editor');
+  silent.dispose();
+
+  const tree = mount(new VirtualTree({onRename: () => {}}));
+  tree.root.querySelector('.u2-list').clientHeight = 220;
+  tree.setRoots([{id: 'a', label: 'Alpha', children: [{id: 'a1', label: 'Alpha one'}]}]);
+  fire(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-twistie'), 'dblclick');
+  assert.equal(tree.root.querySelector('.u2-tree-rename'), null, 'the twistie is not a rename handle');
+
+  // a short label leaves most of the row bare — a dblclick on the bare row must still rename
+  fire(tree.root.querySelector('.u2-list-row[data-index="0"] .u2-tree-row'), 'dblclick');
+  const editor = tree.root.querySelector('.u2-tree-rename');
+  assert.equal(editor?.value, 'Alpha', 'the row itself opens the editor');
+  fire(editor, 'keydown', {key: 'Escape'});
+  fire(tree.root, 'dblclick');
+  assert.equal(tree.root.querySelector('.u2-tree-rename'), null, 'off the rows there is nothing to rename');
+  tree.dispose();
+});
+
+smoke('VirtualTree: expandPath over an already-open path leaves the rows alone', async () => {
+  const tree = mount(new VirtualTree({onRename: () => {}}));
+  tree.root.querySelector('.u2-list').clientHeight = 220;
+  tree.setRoots([{id: 'a', label: 'Alpha', children: [{id: 'a1', label: 'Alpha one'}]}]);
+  await tree.expandPath(['a', 'a1']);
+  const row = tree.root.querySelector('.u2-list-row[data-index="1"]');
+
+  // the second click of a double-click re-runs this path; a rows rebuild between the two
+  // clicks recycles the target element, and the browser then never synthesizes the dblclick
+  await tree.expandPath(['a', 'a1']);
+  assert.equal(tree.root.querySelector('.u2-list-row[data-index="1"]'), row,
+    'the very same row element is still up');
+  tree.dispose();
 });

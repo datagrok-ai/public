@@ -5,6 +5,7 @@
 import {Control} from '../core/component.js';
 import {signal, computed, Signal, ReadonlySignal} from '../core/signals.js';
 import {VirtualList} from './list.js';
+import type {Action} from './actions.js';
 
 export interface TreeNode<T = unknown> {
   id: string;
@@ -16,6 +17,8 @@ export interface TreeNode<T = unknown> {
 export interface TreeOptions<T> {
   itemHeight?: number;
   onRename?: (node: TreeNode<T>, newLabel: string) => void;
+  /** The node's full action list: right-click selects the row and opens it as a menu at the cursor. */
+  contextActions?: (node: TreeNode<T>) => Action[];
 }
 
 interface FlatRow<T> {
@@ -30,6 +33,8 @@ const INDENT = 12;
 export class VirtualTree<T = unknown> extends Control {
   readonly expanded: Signal<Set<string>> = signal(new Set<string>());
   readonly selectedNode: ReadonlySignal<TreeNode<T> | null>;
+  /** The full multi-selection in selection order (F5); {@link selectedNode} is its lead. */
+  readonly selectedNodes: ReadonlySignal<TreeNode<T>[]>;
 
   private readonly _list: VirtualList<FlatRow<T>>;
   private readonly _roots = signal<TreeNode<T>[]>([]);
@@ -43,11 +48,15 @@ export class VirtualTree<T = unknown> extends Control {
   constructor(options: TreeOptions<T> = {}) {
     super();
     this._rename = options.onRename;
+    const contextActions = options.contextActions;
     this._list = new VirtualList<FlatRow<T>>({
       itemHeight: options.itemHeight ?? 22,
       rowRole: 'treeitem',
       keyOf: (row) => `${row.kind}:${row.node.id}`,
       render: (row, index, el) => this._renderRow(row, el),
+      contextActions: contextActions ?
+        (row) => row.kind === 'node' ? contextActions(row.node) : [] :
+        undefined,
     });
     this.own(() => this._list.dispose());
     this.own(() => this._endRename?.());
@@ -62,9 +71,25 @@ export class VirtualTree<T = unknown> extends Control {
       const row = this._flat.value[this._list.selectedIndex.value];
       return row && row.kind === 'node' ? row.node : null;
     });
+    this.selectedNodes = computed(() => {
+      const rows = this._flat.value;
+      const nodes: TreeNode<T>[] = [];
+      for (const index of this._list.selectedIndices.value) {
+        const row = rows[index];
+        if (row && row.kind === 'node')
+          nodes.push(row.node);
+      }
+      return nodes;
+    });
 
     this._listen(this._list.root, 'click', (e) => this._onClick(e as MouseEvent), true);
-    this._listen(this._list.root, 'dblclick', (e) => this._startRename(VirtualTree._rowIndex(e.target)));
+    // the whole row is the rename handle — short auto-names leave most of the row bare, and a
+    // dblclick aimed at "the row" must not silently miss the text; the twistie keeps toggling
+    this._listen(this._list.root, 'dblclick', (e) => {
+      const target = e.target as Element | null;
+      if (target && !target.closest('.u2-tree-twistie'))
+        this._startRename(VirtualTree._rowIndex(target));
+    });
     this._listen(this._list.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
 
     this.effect(() => this._rebuild());
@@ -78,11 +103,18 @@ export class VirtualTree<T = unknown> extends Control {
     this._list.selectedIndex.value = -1;
   }
 
+  /** The node behind whatever element an event hit — null off the rows and on loading/error rows. */
+  nodeForRow(target: EventTarget | null): TreeNode<T> | null {
+    const row = this._flat.peek()[VirtualTree._rowIndex(target)];
+    return row && row.kind === 'node' ? row.node : null;
+  }
+
   /** Expands every ancestor in `ids` (awaiting lazy loads), then selects and reveals the last one. */
   async expandPath(ids: string[]): Promise<void> {
     if (ids.length === 0)
       return;
-    const expanded = new Set(this.expanded.peek());
+    const current = this.expanded.peek();
+    const expanded = new Set(current);
     let nodes = this._roots.peek();
     for (let i = 0; i < ids.length - 1; i++) {
       const node = nodes.find((n) => n.id === ids[i]);
@@ -91,7 +123,10 @@ export class VirtualTree<T = unknown> extends Control {
       expanded.add(node.id);
       nodes = await this._childrenOf(node);
     }
-    this.expanded.value = expanded;
+    // an unchanged set is never written: the rebuild would recycle every row between the two
+    // clicks of a double-click, and the browser only fires dblclick on a stable target
+    if (expanded.size !== current.size)
+      this.expanded.value = expanded;
     const target = ids[ids.length - 1];
     const index = this._flat.peek().findIndex((r) => r.kind === 'node' && r.node.id === target);
     if (index >= 0)

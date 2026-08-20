@@ -1,4 +1,5 @@
-import {Control} from '../core/component.js';
+import {Component, Control} from '../core/component.js';
+import type {Signal} from '../core/signals.js';
 import type {PropertyLike} from '../core/property-like.js';
 import type {SpecNode} from './spec.js';
 
@@ -15,12 +16,53 @@ export interface SpecPropMeta extends PropertyLike {
   bindable?: boolean;
   /** Edits made in the component flow back into the bound context signal. */
   twoWay?: boolean;
+  /** An object prop that accepts dotted `bind` keys (`params.days`) — sub-binds, delivered raw
+   * through the components engine and resolved at start. */
+  subBindable?: boolean;
+}
+
+/** What a design-time action wants done, described against the node's current state — the
+ * designer view converts it into an engine patch. */
+export type DesignerActionPatch =
+  | {op: 'add-child', node: SpecNode}
+  | {op: 'set-prop', name: string, value: unknown};
+
+/** A per-component design-time verb ('Add tab'), shown on the designer's context menus. */
+export interface DesignerAction {
+  name: string;
+  /** Reads the node's current children/props and answers what to do — pure, no editor. */
+  produce: (node: SpecNode) => DesignerActionPatch;
+}
+
+/** What a non-visual component is built with (Q9): the mode it builds for, and the binds it
+ * resolves once the whole tree exists. */
+export interface ComponentEnv {
+  designTime: boolean;
+  /** Resolution deferred to {@link ComponentStart.start}: by then a param may bind to an input
+   * declared after this source. Null where the path does not resolve — the renderer warns. */
+  resolve: (path: string) => Signal<unknown> | null;
+  /** The node's raw `bind` entries, dotted sub-bind keys included ('params.days' → '$.daysInput'). */
+  subBinds: Record<string, string>;
+}
+
+/** The second construction phase (Q1) a component may declare: run once the visual tree exists,
+ * where an auto-run kicks and a sub-bind resolves. */
+export interface ComponentStart {
+  start(): void;
 }
 
 export interface ComponentMeta {
   /** `u2-*`. */
   tag: string;
-  create: (props: Record<string, unknown>) => Control;
+  /** Palette and manifest grouping: 'Inputs' | 'Containers' | 'Actions' | 'Display' | 'Data'. */
+  category?: string;
+  /** False puts the tag on the non-visual tray: a data source, built through
+   * {@link createComponent} and never appended to the canvas. */
+  visual?: boolean;
+  create?: (props: Record<string, unknown>) => Control;
+  /** How a `visual: false` tag is built — no DOM, and the env carries the design-time mode and
+   * the binds it resolves at {@link ComponentStart.start}. */
+  createComponent?: (props: Record<string, unknown>, env: ComponentEnv) => Component;
   /** Replaces {@link create} where children are constructor arguments (splitter panels, tabs).
    * They arrive rendered, with their spec nodes alongside so per-child props can be read. */
   createWithChildren?: (props: Record<string, unknown>, children: (Control | HTMLElement)[],
@@ -34,6 +76,13 @@ export interface ComponentMeta {
    * {@link description}; composition-level judgment lives in docs/recipes. */
   usage?: string;
   props: SpecPropMeta[];
+  /** Props a designer seeds a freshly inserted node with ('Item 1..3' for breadcrumbs) —
+   * plain JSON, so it stays in the manifest. */
+  defaults?: Record<string, unknown>;
+  /** Children a designer seeds a freshly inserted node with — a multi-host (tabs, accordion) arrives
+   * with one pane, so there is something to see and click. Deep-cloned per insert and named like
+   * any inserted node; plain JSON, so it stays in the manifest. */
+  defaultChildren?: SpecNode[];
   /** Props a child node may carry that this component reads — an accordion pane's `title`. */
   childProps?: SpecPropMeta[];
   events?: string[];
@@ -41,6 +90,11 @@ export interface ComponentMeta {
   acceptsChildren?: boolean;
   /** A valid node spec — the gallery renders it, an LLM learns the shape from it. */
   example: object;
+  /** The tag-level sample a design-time preview falls back to where the node carries no `sample`
+   * prop (DD9); plain JSON, so it stays in the manifest. */
+  designPreview?: object;
+  /** Carries closures, so {@link Registry.manifest} strips it. */
+  designerActions?: DesignerAction[];
 }
 
 /** Tag → component metadata, and the source of the machine-readable manifest. */
@@ -54,13 +108,22 @@ export class Registry {
   register(meta: ComponentMeta): void {
     if (this._metas.has(meta.tag))
       throw new Error(`u2 registry: "${meta.tag}" is already registered`);
+    const create = meta.create;
     const withChildren = meta.createWithChildren;
+    const component = meta.createComponent;
+    if (meta.visual === false ? component === undefined : create === undefined && withChildren === undefined) {
+      throw new Error(`u2 registry: "${meta.tag}" needs ${meta.visual === false ?
+        'createComponent' : 'create or createWithChildren'}`);
+    }
     const stamped: ComponentMeta = {
       ...meta,
-      create: (props) => Registry._stamp(meta.create(props), stamped, props),
+      create: create ? (props) => Registry._stamp(create(props), stamped, props) : undefined,
       createWithChildren: withChildren ?
         (props, children, nodes) =>
           Registry._stamp(withChildren(props, children, nodes), stamped, props) :
+        undefined,
+      createComponent: component ?
+        (props, env) => Registry._stamp(component(props, env), stamped, props) :
         undefined,
     };
     this._metas.set(meta.tag, stamped);
@@ -70,18 +133,25 @@ export class Registry {
     return this._metas.get(tag);
   }
 
+  /** Registration order — the palette's source. */
+  metas(): readonly ComponentMeta[] {
+    return [...this._metas.values()];
+  }
+
   /** Everything a spec author, an LLM or a generated wrapper needs — the metadata minus its hooks. */
   manifest(): object {
-    const components: Omit<ComponentMeta, 'create' | 'createWithChildren' | 'adopt'>[] = [];
+    const components: Omit<ComponentMeta,
+      'create' | 'createWithChildren' | 'createComponent' | 'adopt' | 'designerActions'>[] = [];
     for (const meta of this._metas.values()) {
-      const {create: _create, createWithChildren: _createWithChildren, adopt: _adopt, ...rest} = meta;
+      const {create: _create, createWithChildren: _createWithChildren, createComponent: _createComponent,
+        adopt: _adopt, designerActions: _designerActions, ...rest} = meta;
       components.push(rest);
     }
     return {schema: SPEC_SCHEMA, recipes: 'docs/recipes/', components};
   }
 
-  private static _stamp(component: Control, meta: ComponentMeta,
-    props: Record<string, unknown>): Control {
+  private static _stamp<T extends Component>(component: T, meta: ComponentMeta,
+    props: Record<string, unknown>): T {
     component.meta = meta;
     component.specProps = props;
     return component;

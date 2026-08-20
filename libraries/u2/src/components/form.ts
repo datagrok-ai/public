@@ -62,6 +62,13 @@ export class Form extends Control {
     return this;
   }
 
+  /** A non-input row — a button, a heading, a plain element — kept in document order with the
+   * input rows instead of trailing the form. */
+  addElement(el: HTMLElement): Form {
+    this._rows.append(el);
+    return this;
+  }
+
   addButtons(build: (row: HTMLElement) => void): Form {
     if (!this._buttons) {
       this._buttons = document.createElement('div');

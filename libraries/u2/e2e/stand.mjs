@@ -52,10 +52,14 @@ export async function openAppFromBrowse(page, browsePath, appName) {
   }
   await page.locator('.d4-tree-view-group-label', {hasText: /^Apps$/}).first().click();
   await page.waitForTimeout(2000);
-  await page.locator('.d4-tree-view-group-label, .d4-tree-view-item-label',
+  await page.locator('.d4-tree-view-group-label:visible, .d4-tree-view-item-label:visible',
     {hasText: new RegExp(`^${browsePath}$`)}).first().click();
   await page.waitForTimeout(2000);
-  await page.locator('.d4-tree-view-group-label, .d4-tree-view-item-label, .grok-gallery-grid *',
-    {hasText: new RegExp(`^${appName}$`)}).first().click();
+  // :visible matters: collapsed tree groups keep hidden item labels in the DOM, and .first()
+  // would pick one of those over the visible gallery card, then time out waiting to click it.
+  // Double-click: a single click only previews the app in the context panel.
+  await page.locator(
+    '.d4-tree-view-group-label:visible, .d4-tree-view-item-label:visible, .grok-gallery-grid *:visible',
+    {hasText: new RegExp(`^${appName}$`)}).first().dblclick();
   await page.waitForTimeout(4000);
 }

@@ -1,15 +1,31 @@
 /* The whole property-panel mechanism of the designer (DD1): selecting a node makes it the shell's
    current object, and this handler renders it — so spec nodes reach the context panel the way every
-   other platform object does, with no bespoke panel plumbing. Read-only at P2. */
+   other platform object does, with no bespoke panel plumbing. The panel writes exactly when the ref
+   carries an editor (D-9): the absence of that channel is the read-only mode, and both paths read
+   the same property model, so a plain HTML node shows its props either way. */
 import * as DG from 'datagrok-api/dg';
-import {Control} from '../../core/component.js';
+import {Component} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
 import {divV, h3, span} from '../../core/elements.js';
+import {text} from '../../core/text.js';
 import {tableFromMap} from '../../components/table.js';
-import type {PropertyLike} from '../../core/property-like.js';
-import {SpecNodeRef} from './node-ref.js';
+import {SpecNodeRef, SpecNodesRef} from './node-ref.js';
+import {propEditors} from './prop-editors.js';
+import {eventsOf, propsFor} from './prop-model.js';
+import type {PropSection} from './prop-model.js';
+import {sourceStatus} from './source-status.js';
 
-/** Heading for the properties a component declares without a category of their own. */
-const UNGROUPED = 'Properties';
+export {propsFor} from './prop-model.js';
+export type {PropSection} from './prop-model.js';
+
+/** The live panel's editors and their effects: one per session, replaced on every render. The
+ * platform gives no teardown hook, so the designer view owns the last one's disposal. */
+let panel: Scope | undefined;
+
+export function disposePanel(): void {
+  panel?.dispose();
+  panel = undefined;
+}
 
 export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
   get type(): string {
@@ -30,6 +46,7 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
   }
 
   renderProperties(x: SpecNodeRef): HTMLElement {
+    disposePanel();
     const identity: Record<string, unknown> = {Tag: x.node.tag, Name: x.node.name ?? '', Path: x.path()};
     const error = x.error();
     if (error !== null)
@@ -37,54 +54,104 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
 
     // the panel carries its own header: the platform shows one only for entities it knows
     const sections: HTMLElement[] = [this.renderMarkup(x), h3('Node'), tableFromMap(identity)];
-    for (const [category, props] of SpecNodeHandler._grouped(x)) {
-      const values: Record<string, unknown> = {};
-      for (const prop of props)
-        values[prop.caption ?? prop.friendlyName ?? prop.name] = SpecNodeHandler._text(prop.get?.(null));
-      sections.push(h3(category), tableFromMap(values));
+    const model = propsFor(x);
+    const events = eventsOf(x);
+    const editor = x.editor;
+    if (editor === undefined) {
+      sections.push(...SpecNodeHandler._status(x, undefined));
+      sections.push(...SpecNodeHandler._tables(model, events, {...x.node.bind}));
+    } else {
+      const scope = new Scope();
+      panel = scope;
+      sections.push(...SpecNodeHandler._status(x, scope));
+      sections.push(...Scope.runWith(scope, () => propEditors(x, editor, model, events, scope)));
     }
-
-    const events = SpecNodeHandler._events(x);
-    if (Object.keys(events).length > 0)
-      sections.push(h3('Events'), tableFromMap(events));
-    const bind = x.node.bind;
-    if (bind && Object.keys(bind).length > 0)
-      sections.push(h3('Bindings'), tableFromMap({...bind}));
     return divV(sections, 'u2-designer-properties');
   }
 
-  /** Declaration order, categories in the order they first appear. */
-  private static _grouped(x: SpecNodeRef): Map<string, PropertyLike[]> {
+  /** A data source's pulse: the one LIVE section of the panel, because a source runs on its own
+   * clock and the canvas shows the same empty fields whether it is loading, was never run or
+   * failed. Read-only and cheap — a redrawn table touches no editor, so the in-place refresh the
+   * form fields rely on is untouched. */
+  private static _status(x: SpecNodeRef, scope: Scope | undefined): HTMLElement[] {
     const built = x.built();
-    const groups = new Map<string, PropertyLike[]>();
-    if (!(built instanceof Control))
-      return groups;
-    for (const prop of built.getProperties()) {
-      const key = prop.category ?? UNGROUPED;
-      const group = groups.get(key);
-      if (group)
-        group.push(prop);
-      else
-        groups.set(key, [prop]);
+    if (!(built instanceof Component) || sourceStatus(built) === null)
+      return [];
+    // a source with no `designData` prop never runs anything the user did not ask for: saying so
+    // is what keeps its ABSENCE from reading as a missing feature
+    const policy = x.meta()?.props.some((prop) => prop.name === 'designData') === true ? null :
+      'always live — this source has no design-time policy';
+    const host = divV([], 'u2-designer-status');
+    const draw = (): void => {
+      const at = sourceStatus(built)!;
+      const shown: Record<string, unknown> = {};
+      if (at.state !== '')
+        shown.State = at.state === 'idle' ? 'idle — not run yet; use Refresh' : at.state;
+      if (at.count !== null)
+        shown[at.counts === 'rows' ? 'Rows' : 'Entities'] = at.count;
+      if (at.error !== null)
+        shown.Error = at.error;
+      if (policy !== null)
+        shown['Design data'] = policy;
+      host.textContent = '';
+      host.append(tableFromMap(shown));
+    };
+    if (scope === undefined)
+      draw();
+    else
+      scope.effect(draw);
+    return [h3('Status'), host];
+  }
+
+  /** The read-only panel, built from the same model — which is what finally gives a plain HTML node
+   * (and a node that failed to build) properties to show. */
+  private static _tables(model: PropSection[], events: Record<string, string>,
+    bind: Record<string, string>): HTMLElement[] {
+    const sections: HTMLElement[] = [];
+    for (const section of model) {
+      const values: Record<string, unknown> = {};
+      for (const prop of section.props)
+        values[prop.name] = text(section.values[prop.name]);
+      sections.push(h3(section.title), tableFromMap(values));
     }
-    return groups;
+    if (Object.keys(events).length > 0)
+      sections.push(h3('Events'), tableFromMap(events));
+    if (Object.keys(bind).length > 0)
+      sections.push(h3('Bindings'), tableFromMap(bind));
+    return sections;
+  }
+}
+
+/** The multiple-objects convention over a multi-selection: how many, of what, and where —
+ * read-only, no property editing across a multi-selection. */
+export class SpecNodesHandler extends DG.ObjectHandler<SpecNodesRef> {
+  get type(): string {
+    return 'u2-spec-nodes';
   }
 
-  /** Every event the component declares, wired or not, plus anything the node wires beyond them. */
-  private static _events(x: SpecNodeRef): Record<string, string> {
-    const on = x.node.on ?? {};
-    const events: Record<string, string> = {};
-    for (const name of x.meta()?.events ?? [])
-      events[name] = on[name] ?? '';
-    for (const name of Object.keys(on))
-      events[name] = on[name];
-    return events;
+  isApplicable(x: any): boolean {
+    return x instanceof SpecNodesRef;
   }
 
-  private static _text(value: unknown): string {
-    if (value === null || value === undefined)
-      return '';
-    return typeof value === 'object' ? JSON.stringify(value) : String(value);
+  getCaption(x: SpecNodesRef): string {
+    return `${x.refs.length} nodes`;
+  }
+
+  renderMarkup(x: SpecNodesRef): HTMLElement {
+    return span(this.getCaption(x), 'u2-designer-caption');
+  }
+
+  renderProperties(x: SpecNodesRef): HTMLElement {
+    // the multi panel replaces the single-node one — its editors must not outlive it
+    disposePanel();
+    const counts: Record<string, unknown> = {};
+    for (const ref of x.refs)
+      counts[ref.node.tag] = Number(counts[ref.node.tag] ?? 0) + 1;
+    return divV([
+      this.renderMarkup(x),
+      h3('Tags'), tableFromMap(counts),
+      h3('Nodes'), divV(x.refs.map((ref) => span(ref.path()))),
+    ], 'u2-designer-properties');
   }
 }
 
@@ -97,4 +164,5 @@ export function registerSpecNodeHandler(): void {
     return;
   registered = true;
   DG.ObjectHandler.register(new SpecNodeHandler());
+  DG.ObjectHandler.register(new SpecNodesHandler());
 }

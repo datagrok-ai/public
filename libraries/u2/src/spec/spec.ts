@@ -1,30 +1,58 @@
 /* dg-ui/1: JSON in, a live component tree out, and back through dump(). A malformed node becomes
    a visible placeholder — the rest of the tree always renders. Specs never carry code: events
    name context commands, and that is the only executable form. */
-import {signal, Signal} from '../core/signals.js';
-import {Control} from '../core/component.js';
-import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry, SPEC_SCHEMA} from './registry.js';
+import {signal, Signal, isWritableSignal} from '../core/signals.js';
+import {Scope} from '../core/scope.js';
+import {Component, Control} from '../core/component.js';
+import {ComponentMeta, ComponentStart, SpecPropMeta, Registry, registry as globalRegistry,
+  SPEC_SCHEMA} from './registry.js';
+import {findBindingCycle, parsePath, referencesOf} from './path.js';
+import {BindProp, BindSource, isBindSource} from './bind-source.js';
+
+/** An event's wiring: `'cmd:name'`, or the structured form carrying arguments — values that are
+ * strings starting `$.` are paths resolved when the event fires, `$$.` escapes a literal `$.`,
+ * everything else is a literal. Still JSON, still code-free. */
+export type SpecEventEntry = string | {cmd: string, args?: Record<string, unknown>};
 
 export interface SpecNode {
   tag: string;
   /** Unique within the spec: what selection, patches, code-behind and automation address. */
   name?: string;
   props?: Record<string, unknown>;
-  /** `{propName: '$.path'}` — binds a prop to a context signal. */
+  /** `{propName: '$.path'}` — binds a prop to what the path resolves to. */
   bind?: Record<string, string>;
   /** `{eventName: 'cmd:name'}` — the only executable form a spec has. */
-  on?: Record<string, string>;
+  on?: Record<string, SpecEventEntry>;
   children?: SpecNode[];
 }
 
 export interface Spec {
   $schema: string;
   root: SpecNode;
+  /** The non-visual tray (Q1): data sources and state, same node shape, no children. Built before
+   * the visual tree — a bind resolves against them — and started after it. */
+  components?: SpecNode[];
+}
+
+export interface SpecInstanceOptions {
+  /** The designer's mode: sources build for preview, never for effect (DD9). */
+  designTime?: boolean;
 }
 
 export interface SpecContextOptions {
   data?: Record<string, unknown>;
   commands?: Record<string, () => void>;
+  /** The platform-function tier of `cmd:` (Q6); absent — gallery, headless — that tier resolves
+   * nothing and the handler warns. */
+  callFunction?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
+}
+
+/** What one node rendered: the scope everything under it hangs on, and the handle that disposes it
+ * and drops the disposer its owner keeps — so re-rendering the same node many times leaves no dead
+ * closures on the parent. */
+interface Mount {
+  scope: Scope;
+  release(): void;
 }
 
 const HTML_TAGS = new Set(['div', 'span', 'p', 'h1', 'h2', 'h3', 'a', 'img']);
@@ -34,45 +62,81 @@ const JSON_TYPES = new Set(['object', 'string', 'number', 'boolean']);
 /** What `$.path` and `cmd:name` resolve against. Plain data values are wrapped into signals,
  * so a spec binds to them and sees live updates either way. */
 export class SpecContext {
-  readonly data: Record<string, Signal<unknown>> = {};
+  readonly data: Record<string, Signal<unknown> | BindSource> = {};
   readonly commands: Record<string, () => void>;
+  readonly callFunction?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 
   constructor(options: SpecContextOptions = {}) {
     const data = options.data ?? {};
     for (const key of Object.keys(data)) {
       const value = data[key];
-      this.data[key] = value instanceof Signal ? value as Signal<unknown> : signal(value);
+      this.data[key] = value instanceof Signal ? value as Signal<unknown> :
+        isBindSource(value) ? value : signal(value);
     }
     this.commands = options.commands ?? {};
+    this.callFunction = options.callFunction;
   }
 
-  resolve(path: string): Signal<unknown> {
-    const found = path.startsWith('$.') ? this.data[path.slice(2)] : undefined;
-    if (!(found instanceof Signal))
-      throw new Error(`nothing bound at "${path}"`);
-    return found;
+  /** What the binding picker roots at the context: one entry per data key, the type inferred from
+   * the current value, sources walkable. Allocates nothing. */
+  bindProps(): BindProp[] {
+    return Object.entries(this.data).map(([name, value]) => value instanceof Signal ?
+      {name, type: SpecContext._typeOf(value.peek()), writable: isWritableSignal(value)} :
+      {name, walkable: true});
+  }
+
+  private static _typeOf(value: unknown): string {
+    if (typeof value === 'string')
+      return 'string';
+    if (typeof value === 'number')
+      return Number.isInteger(value) ? 'int' : 'double';
+    if (typeof value === 'boolean')
+      return 'bool';
+    if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+      return 'string_list';
+    return 'object';
   }
 }
 
-/** A rendered spec: one scope owning every component the spec built, plus the node → built map
- * that makes {@link dump} read live state and {@link nodeAt} hit-test the DOM. */
+/** A rendered spec: a scope per node — so one subtree can be released and rendered again alone —
+ * plus the node → built map that makes {@link dump} read live state and {@link nodeAt} hit-test
+ * the DOM. */
 export class SpecInstance extends Control {
   readonly ctx: SpecContext;
 
   private readonly _spec: Spec;
   private readonly _registry: Registry;
-  private readonly _nodes = new Map<SpecNode, Control | HTMLElement>();
-  private readonly _named = new Map<string, Control | HTMLElement>();
+  private readonly _nodes = new Map<SpecNode, Component | HTMLElement>();
+  private readonly _named = new Map<string, Component | HTMLElement>();
   private readonly _elements = new Map<Element, SpecNode>();
+  private readonly _mounts = new Map<SpecNode, Mount>();
   private readonly _warned = new Set<string>();
+  /** Components a re-render has mounted but not started yet: the same two phases construction has,
+   * for the same reason — a param bound to an input must resolve against the input the re-render
+   * leaves behind, not the one it replaced. */
+  private readonly _pending: SpecNode[] = [];
+  private _cycle: string[] | null;
+  private _designTime: boolean;
+  private _batching = false;
 
-  constructor(spec: Spec, ctx: SpecContext, reg: Registry = globalRegistry) {
+  constructor(spec: Spec, ctx: SpecContext, reg: Registry = globalRegistry,
+    options: SpecInstanceOptions = {}) {
     super();
     this._spec = spec;
     this.ctx = ctx;
     this._registry = reg;
+    this._designTime = options.designTime ?? false;
+    this._cycle = findBindingCycle(spec);
     this.root.classList.add('u2-spec');
-    this.run(() => this.root.append(SpecInstance._element(this._render(spec.root))));
+    // two phases (Q1): the tray is built first, so a visual bind resolves against it, and started
+    // last, so a source param can bind to an input declared anywhere in the form
+    this.run(() => {
+      for (const node of spec.components ?? [])
+        this._mountComponent(node);
+      this.root.append(SpecInstance._element(this._render(spec.root)));
+      for (const node of spec.components ?? [])
+        this._start(node);
+    });
   }
 
   dispose(): void {
@@ -80,21 +144,74 @@ export class SpecInstance extends Control {
     this._nodes.clear();
     this._named.clear();
     this._elements.clear();
+    this._mounts.clear();
+  }
+
+  get spec(): Spec {
+    return this._spec;
+  }
+
+  get registry(): Registry {
+    return this._registry;
+  }
+
+  /** The designer's Design/Run toggle (DD9). Not a patch: the mode is view state, so the edit
+   * history is untouched — but every tray component is built again for the new mode, and
+   * everything bound to one comes back with it (a visual node captured the old signals). */
+  setDesignTime(x: boolean): void {
+    if (x === this._designTime)
+      return;
+    this._designTime = x;
+    const dependents: SpecNode[] = [];
+    const components = this._spec.components ?? [];
+    this._batching = true;
+    try {
+      for (const node of components) {
+        if (!this._nodes.has(node))
+          continue;
+        this.rerender(node);
+        if (node.name !== undefined) {
+          // a source whose param binds to another source is a dependent that is ALSO a component:
+          // this loop has just rebuilt it, and rendering it again would start it twice
+          dependents.push(...referencesOf(this._spec, node.name)
+            .filter((dependent) => !components.includes(dependent)));
+        }
+      }
+    } finally {
+      this._batching = false;
+    }
+    // the dependents render again before the sources start — which is what starts them
+    this.rerenderAll(dependents);
+  }
+
+  get designTime(): boolean {
+    return this._designTime;
   }
 
   /** The spec back out, with live values folded in: bound props keep their `bind` entry, plain
    * ones report what the component holds now. Rendering the result reproduces this UI. */
   dump(): object {
-    return {$schema: SPEC_SCHEMA, root: this._dump(this._spec.root)};
+    const components = this._spec.components ?? [];
+    const out: Record<string, unknown> = {$schema: SPEC_SCHEMA};
+    // authoring order: what the form binds to is declared before the form
+    if (components.length > 0)
+      out.components = components.map((node) => this._dump(node));
+    out.root = this._dump(this._spec.root);
+    return out;
   }
 
-  /** Every node the spec rendered, components and plain HTML alike. */
-  nodes(): ReadonlyMap<SpecNode, Control | HTMLElement> {
+  /** Every node the spec built, tray components, plain HTML and placeholders alike. */
+  nodes(): ReadonlyMap<SpecNode, Component | HTMLElement> {
     return this._nodes;
   }
 
-  node(name: string): Control | HTMLElement | undefined {
+  node(name: string): Component | HTMLElement | undefined {
     return this._named.get(name);
+  }
+
+  /** The element a build occupies — none for a tray component, which never reaches the DOM. */
+  static elementOf(built: Component | HTMLElement): HTMLElement | undefined {
+    return built instanceof Control ? built.root : built instanceof Component ? undefined : built;
   }
 
   /** The nearest spec node owning `el` — the designer's hit-test. */
@@ -107,20 +224,282 @@ export class SpecInstance extends Control {
     return null;
   }
 
-  private _render(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
-    const built = this._build(node, parent);
-    const el = SpecInstance._element(built);
-    this._nodes.set(node, built);
-    this._elements.set(el, node);
-    if (node.name !== undefined) {
-      // the automation id: what a test, a tutorial or an agent addresses the node by
-      el.dataset.u2Name = node.name;
-      if (this._named.has(node.name))
-        this._warn(`${node.tag}: duplicate name "${node.name}"`);
-      else
-        this._named.set(node.name, built);
+  /** Walks from the spec root; null for the root or an unreachable node. */
+  parentOf(node: SpecNode): SpecNode | null {
+    return node === this._spec.root ? null : SpecInstance._parentOf(this._spec.root, node);
+  }
+
+  /** Whether `descendant` sits anywhere under `node` — the cycle check a move and a drop need. */
+  static contains(node: SpecNode, descendant: SpecNode): boolean {
+    return SpecInstance._parentOf(node, descendant) !== null;
+  }
+
+  /** Full binding resolution (Q2). First segment: a named component → a named visual node → a
+   * context data entry; then a {@link BindSource} walk, `bindStep('')` — the default binding —
+   * at path exhaustion. Throws with a precise message; render-time containment turns that into
+   * the node's placeholder. */
+  resolveBinding(path: string): {signal: Signal<unknown>, writable: boolean} {
+    const segments = parsePath(path);
+    if (segments === null)
+      throw new Error(`"${path}" is not a valid bind path`);
+    let at = this._firstStep(segments[0], path);
+    for (const segment of segments.slice(1)) {
+      if (at instanceof Signal)
+        throw new Error(`"${path}": cannot walk into "${segment}" — the path continues past a signal`);
+      const next = at.bindStep(segment);
+      if (next === null)
+        throw new Error(`"${path}": no binding step "${segment}"`);
+      at = next;
     }
-    return built;
+    // depth-bounded, like the picker's own walk: a default step that answers its own source would
+    // otherwise spin here and hang the renderer
+    for (let depth = 3; !(at instanceof Signal); depth--) {
+      const source: BindSource = at;
+      const fallback = depth > 0 ? source.bindStep('') : null;
+      if (fallback === null) {
+        const choices = source.bindProps().map((p) => p.name).join(', ');
+        throw new Error(`"${path}" needs one more step — one of: ${choices}`);
+      }
+      at = fallback;
+    }
+    return {signal: at, writable: isWritableSignal(at)};
+  }
+
+  private _firstStep(first: string, path: string): Signal<unknown> | BindSource {
+    const component = this._spec.components?.find((c) => c.name === first);
+    if (component) {
+      const built = this._nodes.get(component);
+      if (built !== undefined && isBindSource(built))
+        return built;
+      throw new Error(`component "${first}" is not built`);
+    }
+    const named = this._named.get(first);
+    if (named !== undefined) {
+      if (isBindSource(named))
+        return named;
+      throw new Error(`"${first}" is not a bind source`);
+    }
+    const data = this.ctx.data[first];
+    if (data !== undefined)
+      return data;
+    if (SpecInstance._declared(this._spec.root, first))
+      throw new Error(`"${first}" is not built yet — node-to-node binds resolve in document order`);
+    throw new Error(`nothing bound at "${path}"`);
+  }
+
+  /** Whether the document declares a node of this name at all, built or not. */
+  private static _declared(root: SpecNode, name: string): boolean {
+    return root.name === name || (root.children ?? []).some((child) => SpecInstance._declared(child, name));
+  }
+
+  /** Disposes what `node` rendered — its whole subtree, scopes, components, listeners and map
+   * entries — and renders it anew in place. The node must currently be rendered. */
+  rerender(node: SpecNode): void {
+    const old = this._nodes.get(node);
+    if (old === undefined)
+      throw new Error('u2 spec: rerender of a node that is not rendered');
+    this._cycle = findBindingCycle(this._spec);
+    if (this._isComponent(node)) {
+      // nothing to replace: a tray component holds no place in the DOM
+      this._unmount(node);
+      this._mountComponent(node);
+      // once per flush, whatever rebuilt it: `start()` is not idempotent — a second one registers
+      // the source's effects again and doubles its server traffic for the session
+      if (!this._pending.includes(node))
+        this._pending.push(node);
+      if (!this._batching)
+        this._flushStarts();
+      return;
+    }
+    const oldEl = SpecInstance.elementOf(old)!;
+    const parent = this.parentOf(node);
+    this._unmount(node);
+    const scope = parent ? this._mounts.get(parent)!.scope : this.scope;
+    const meta = parent ? this._registry.get(parent.tag) : undefined;
+    const built = Scope.runWith(scope, () => this._render(node, meta));
+    oldEl.replaceWith(SpecInstance._element(built));
+  }
+
+  /** Renders each node again at its render root, nested targets collapsed into the outermost —
+   * what a change touching several nodes at once has to do. Nodes that are not rendered are
+   * skipped: a reference may point at a subtree the same change has just dropped. */
+  rerenderAll(nodes: SpecNode[]): void {
+    const roots: SpecNode[] = [];
+    for (const node of nodes) {
+      if (!this._nodes.has(node))
+        continue;
+      const root = this.renderRootOf(node);
+      if (!roots.includes(root))
+        roots.push(root);
+    }
+    this._batching = true;
+    try {
+      for (const root of roots.filter((root, i) =>
+        !roots.some((other, j) => j !== i && SpecInstance.contains(other, root))))
+        this.rerender(root);
+    } finally {
+      this._batching = false;
+    }
+    // the closing act of every patch: what it mounted starts against the tree it ends up with
+    this._flushStarts();
+  }
+
+  /** Promotion (D-3): a parent that wires its children into itself — `Form.add`, a tab strip
+   * consuming them at construction — must be rebuilt whole; replacing one child element under it
+   * would corrupt its internals. A tray component has no parent and answers itself. */
+  renderRootOf(node: SpecNode): SpecNode {
+    let at = node;
+    for (;;) {
+      const parent = this.parentOf(at);
+      const meta = parent ? this._registry.get(parent.tag) : undefined;
+      if (!parent || !meta || (meta.adopt === undefined && meta.createWithChildren === undefined))
+        return at;
+      at = parent;
+    }
+  }
+
+  /** Builds a tray component into a rendered instance — the engine's `add-component`. Started by
+   * the `rerenderAll` that closes the patch, once whatever references it has rendered again. */
+  mountComponent(node: SpecNode): void {
+    this._cycle = findBindingCycle(this._spec);
+    this._mountComponent(node);
+    this._pending.push(node);
+  }
+
+  /** Releases a tray component and everything it owns — the engine's `remove-component`. */
+  unmountComponent(node: SpecNode): void {
+    this._unmount(node);
+  }
+
+  private _isComponent(node: SpecNode): boolean {
+    return this._spec.components?.includes(node) === true;
+  }
+
+  /** The tray's mount: the same scope bookkeeping a visual node gets, minus the DOM half — no
+   * element, nothing appended (Q1). A build that throws maps the standard placeholder, so a broken
+   * source is counted, selectable and undoable like any other node. */
+  private _mountComponent(node: SpecNode): void {
+    // owned by the instance, never by whatever scope happens to be ambient: a patch committed
+    // while the context panel builds its form would hand a live data source to the panel's scope,
+    // and the next `disposePanel()` would take it down
+    const scope = this._mount(node, this.scope);
+    Scope.runWith(scope, () => {
+      const built = this._buildComponent(node);
+      this._nodes.set(node, built);
+      if (node.name === undefined)
+        this._warn(`${node.tag}: a component without a name cannot be bound to`);
+      else
+        this._name(node, built);
+    });
+  }
+
+  private _flushStarts(): void {
+    const pending = this._pending.splice(0);
+    for (const node of pending) {
+      // a component the same patch removed again has nothing to start
+      if (this._nodes.has(node))
+        this._start(node);
+    }
+  }
+
+  /** Phase two (Q1): the tray is built and the form is up — a source kicks its auto-run and
+   * resolves the params bound to inputs anywhere in it. */
+  private _start(node: SpecNode): void {
+    const built = this._nodes.get(node) as Partial<ComponentStart> | undefined;
+    if (typeof built?.start !== 'function')
+      return;
+    try {
+      built.start();
+    } catch (e) {
+      this._warn(`${node.tag}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  private _buildComponent(node: SpecNode): Component | HTMLElement {
+    try {
+      const meta = this._registry.get(node.tag);
+      if (!meta?.createComponent) {
+        throw new Error(meta ? 'is a visual component — it belongs in the form' :
+          'is not a registered component');
+      }
+      this._children(node, meta, false);
+      this._noCycle(node);
+      return meta.createComponent(this._props(node, meta), {
+        designTime: this._designTime,
+        subBinds: {...node.bind},
+        resolve: (path) => {
+          try {
+            return this.resolveBinding(path).signal;
+          } catch (e) {
+            this._warn(`${node.tag}: ${e instanceof Error ? e.message : String(e)}`);
+            return null;
+          }
+        },
+      });
+    } catch (e) {
+      return SpecInstance._placeholder(`${node.tag}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  private _render(node: SpecNode, parent?: ComponentMeta): Control | HTMLElement {
+    const scope = this._mount(node);
+    return Scope.runWith(scope, () => {
+      const built = this._build(node, parent);
+      const el = SpecInstance._element(built);
+      this._nodes.set(node, built);
+      this._elements.set(el, node);
+      if (node.name !== undefined) {
+        // the automation id: what a test, a tutorial or an agent addresses the node by
+        el.dataset.u2Name = node.name;
+        this._name(node, built);
+      }
+      return built;
+    });
+  }
+
+  /** The scope everything under one node hangs on, and the release that also drops the disposer
+   * its owner keeps — so re-rendering the same node many times leaves no dead closures behind. */
+  private _mount(node: SpecNode, owner: Scope = Scope.ambient ?? this.scope): Scope {
+    const scope = new Scope();
+    const disposer = () => scope.dispose();
+    owner.own(disposer);
+    this._mounts.set(node, {scope, release: () => {
+      scope.dispose();
+      owner.disown(disposer);
+    }});
+    return scope;
+  }
+
+  private _name(node: SpecNode, built: Component | HTMLElement): void {
+    if (this._named.has(node.name!))
+      this._warn(`${node.tag}: duplicate name "${node.name}"`);
+    else
+      this._named.set(node.name!, built);
+  }
+
+  /** Releasing one node's scope cascades through every scope below it, so the maps are cleaned by
+   * the scopes that died — not by walking `children`, which a patch may already have spliced. */
+  private _unmount(node: SpecNode): void {
+    this._mounts.get(node)!.release();
+    const gone = new Set<Component | HTMLElement>();
+    for (const [at, mount] of Array.from(this._mounts)) {
+      if (!mount.scope.isDisposed)
+        continue;
+      const built = this._nodes.get(at);
+      if (built !== undefined) {
+        gone.add(built);
+        this._nodes.delete(at);
+        const el = SpecInstance.elementOf(built);
+        if (el)
+          this._elements.delete(el);
+      }
+      this._mounts.delete(at);
+    }
+    // by identity, not by name: a rename patch has already moved the name off the node
+    for (const [name, built] of Array.from(this._named)) {
+      if (gone.has(built))
+        this._named.delete(name);
+    }
   }
 
   /** `parent` is the meta of the component this node hangs under: a prop the parent declares in
@@ -139,6 +518,40 @@ export class SpecInstance extends Control {
   }
 
   private _component(node: SpecNode, meta: ComponentMeta, parent?: ComponentMeta): Control {
+    if (meta.visual === false)
+      throw new Error('is a data source — it belongs on the components tray');
+    this._noCycle(node);
+    const props = this._props(node, meta, parent);
+
+    const twoWay: [string, Signal<unknown>, boolean][] = [];
+    for (const [name, path] of Object.entries(node.bind ?? {})) {
+      const dot = name.indexOf('.');
+      // a sub-bind ('params.days') delivers raw through the components engine's env, never here
+      if (dot >= 0 && SpecInstance._prop(meta, name.slice(0, dot))?.subBindable)
+        continue;
+      const prop = SpecInstance._prop(meta, name);
+      if (!prop || !prop.bindable)
+        throw new Error(`prop "${name}" is not bindable`);
+      const {signal: source, writable} = this.resolveBinding(path);
+      props[name] = source;
+      if (prop.twoWay) {
+        if (!writable)
+          this._warn(`bind "${path}" is read-only — edits will not flow back`);
+        twoWay.push([name, source, writable]);
+      }
+    }
+
+    const component = meta.createWithChildren ?
+      meta.createWithChildren(props, this._children(node, meta, true), node.children ?? []) :
+      this._adopt(node, meta, meta.create!(props));
+    for (const [name, source, writable] of twoWay)
+      this._bridge(component, name, source, writable);
+    return component;
+  }
+
+  /** The node's props, each validated against what the tag declares — an unknown one is a warning
+   * and passes through, a wrong type throws and the node becomes a placeholder. */
+  private _props(node: SpecNode, meta: ComponentMeta, parent?: ComponentMeta): Record<string, unknown> {
     const props: Record<string, unknown> = {};
     for (const [name, value] of Object.entries(node.props ?? {})) {
       const prop = SpecInstance._prop(meta, name, parent);
@@ -146,24 +559,12 @@ export class SpecInstance extends Control {
         this._warn(`${node.tag}: unknown prop "${name}"`);
       props[name] = prop ? SpecInstance._checked(prop, value) : value;
     }
+    return props;
+  }
 
-    const twoWay: [string, Signal<unknown>][] = [];
-    for (const [name, path] of Object.entries(node.bind ?? {})) {
-      const prop = SpecInstance._prop(meta, name);
-      if (!prop || !prop.bindable)
-        throw new Error(`prop "${name}" is not bindable`);
-      const source = this.ctx.resolve(path);
-      props[name] = source;
-      if (prop.twoWay)
-        twoWay.push([name, source]);
-    }
-
-    const component = meta.createWithChildren ?
-      meta.createWithChildren(props, this._children(node, meta, true), node.children ?? []) :
-      this._adopt(node, meta, meta.create(props));
-    for (const [name, source] of twoWay)
-      this._bridge(component, name, source);
-    return component;
+  private _noCycle(node: SpecNode): void {
+    if (node.name !== undefined && this._cycle !== null && this._cycle.includes(node.name))
+      throw new Error(`binding cycle: ${this._cycle.join(' → ')}`);
   }
 
   private _html(node: SpecNode, parent?: ComponentMeta): HTMLElement {
@@ -216,33 +617,88 @@ export class SpecInstance extends Control {
 
   /** Both directions, echo-suppressed by comparison: a write made inside an effect is flushed
    * after that effect returns, so a transient flag would already be down (property-grid's lesson).
-   * Components that took the context signal itself need no bridge at all. */
-  private _bridge(component: Control, name: string, source: Signal<unknown>): void {
+   * Components that took the source signal itself need no bridge at all; a read-only leaf gets
+   * the forward direction alone. */
+  private _bridge(component: Control, name: string, source: Signal<unknown>, writable: boolean): void {
     const own = (component as unknown as Record<string, unknown>)[name];
     if (!(own instanceof Signal) || own === source)
       return;
-    this.scope.effect(() => {
+    const scope = Scope.ambient ?? this.scope;
+    scope.effect(() => {
       const value = source.value;
       if (own.peek() !== value)
         own.value = value;
     });
-    this.scope.effect(() => {
+    if (!writable)
+      return;
+    scope.effect(() => {
       const value = own.value;
       if (source.peek() !== value)
         source.value = value;
     });
   }
 
-  private _listen(node: SpecNode, el: HTMLElement, event: string, command: string): void {
-    const handler = () => {
-      const run = this.ctx.commands[command];
-      if (typeof run !== 'function')
-        this._warn(`${node.tag}: no command "${command}"`);
-      else
-        run();
-    };
+  private _listen(node: SpecNode, el: HTMLElement, event: string, entry: SpecEventEntry): void {
+    const handler = () => this._fire(node, entry);
     el.addEventListener(event, handler);
-    this.scope.own(() => el.removeEventListener(event, handler));
+    (Scope.ambient ?? this.scope).own(() => el.removeEventListener(event, handler));
+  }
+
+  /** The `cmd:` tiers (Q6), classified by syntax at fire time — commands and functions may appear
+   * after render. `#` is reserved for code-behind; `:` names a platform function; `.` names a
+   * function of a named component; a bare name is a context command, then a platform function. */
+  private _fire(node: SpecNode, entry: SpecEventEntry): void {
+    const name = (typeof entry === 'string' ? entry : entry.cmd).slice(4);
+    let args: Record<string, unknown>;
+    try {
+      args = typeof entry === 'string' ? {} : this._args(entry.args);
+    } catch (e) {
+      this._warn(`${node.tag}: ${e instanceof Error ? e.message : String(e)}`);
+      return;
+    }
+    if (name.startsWith('#')) {
+      this._warn(`${node.tag}: "cmd:${name}" is reserved — code-behind commands arrive with dg-form`);
+      return;
+    }
+    if (name.includes(':')) {
+      if (this.ctx.callFunction)
+        this.ctx.callFunction(name, args);
+      else
+        this._warn(`${node.tag}: no function runner for "${name}"`);
+      return;
+    }
+    if (name.includes('.')) {
+      const dot = name.indexOf('.');
+      const owner = name.slice(0, dot);
+      const fn = name.slice(dot + 1);
+      const component = this._named.get(owner);
+      const found = component instanceof Component ?
+        component.getFunctions().find((f) => f.name === fn) : undefined;
+      if (found)
+        found.apply(args);
+      else
+        this._warn(`${node.tag}: no function "${fn}" on "${owner}"`);
+      return;
+    }
+    const run = this.ctx.commands[name];
+    if (typeof run === 'function')
+      run();
+    else if (this.ctx.callFunction)
+      this.ctx.callFunction(name, args);
+    else
+      this._warn(`${node.tag}: no command "${name}"`);
+  }
+
+  /** Argument values, resolved when the event fires: `$.` paths peeked — untracked, a handler
+   * must not become a dependency — `$$.` unescaped once, everything else as-is. */
+  private _args(args: Record<string, unknown> | undefined): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(args ?? {})) {
+      out[key] = typeof value !== 'string' ? value :
+        value.startsWith('$.') ? this.resolveBinding(value).signal.peek() :
+          value.startsWith('$$.') ? value.slice(1) : value;
+    }
+    return out;
   }
 
   private _dump(node: SpecNode): object {
@@ -253,8 +709,12 @@ export class SpecInstance extends Control {
       out.props = this._dumpProps(node);
     if (node.bind)
       out.bind = {...node.bind};
-    if (node.on)
-      out.on = {...node.on};
+    if (node.on) {
+      const on: Record<string, SpecEventEntry> = {};
+      for (const [event, entry] of Object.entries(node.on))
+        on[event] = typeof entry === 'string' ? entry : JSON.parse(JSON.stringify(entry));
+      out.on = on;
+    }
     if (node.children)
       out.children = node.children.map((child) => this._dump(child));
     return out;
@@ -287,12 +747,13 @@ export class SpecInstance extends Control {
     console.warn(`u2 spec: ${message}`);
   }
 
-  private static _commands(node: SpecNode): [string, string][] {
-    const commands: [string, string][] = [];
-    for (const [event, command] of Object.entries(node.on ?? {})) {
-      if (!command.startsWith('cmd:'))
-        throw new Error(`on.${event} must be "cmd:<name>" — a spec never carries code`);
-      commands.push([event, command.slice(4)]);
+  private static _commands(node: SpecNode): [string, SpecEventEntry][] {
+    const commands: [string, SpecEventEntry][] = [];
+    for (const [event, entry] of Object.entries(node.on ?? {})) {
+      const cmd = typeof entry === 'string' ? entry : entry?.cmd;
+      if (typeof cmd !== 'string' || !cmd.startsWith('cmd:'))
+        throw new Error(`on.${event} must be 'cmd:' followed by a command name — a spec never carries code`);
+      commands.push([event, entry]);
     }
     return commands;
   }
@@ -310,49 +771,21 @@ export class SpecInstance extends Control {
   }
 
   private static _checked(prop: SpecPropMeta, value: unknown): unknown {
-    const type = prop.propertyType ?? prop.type;
-    switch (type) {
-      case 'string':
-        if (typeof value === 'string')
-          return value;
-        break;
-      case 'int':
-        if (typeof value === 'number' && Number.isInteger(value))
-          return value;
-        break;
-      case 'double':
-        if (typeof value === 'number' && isFinite(value))
-          return value;
-        break;
-      case 'bool':
-        if (typeof value === 'boolean')
-          return value;
-        break;
-      case 'string_list':
-        if (Array.isArray(value) && value.every((item) => typeof item === 'string'))
-          return value;
-        break;
-      case 'object':
-        if (SpecInstance._isJson(value))
-          return value;
-        break;
-    }
-    throw new Error(`prop "${prop.name}" expects ${type}`);
+    const error = checkProp(prop, value);
+    if (error)
+      throw new Error(error);
+    return value;
   }
 
-  private static _isJson(value: unknown): boolean {
-    if (!JSON_TYPES.has(typeof value))
-      return false;
-    try {
-      JSON.stringify(value, (_name, item) => {
-        if (item === undefined || typeof item === 'function')
-          throw new Error('not JSON');
-        return item;
-      });
-      return true;
-    } catch (e) {
-      return false;
+  private static _parentOf(at: SpecNode, node: SpecNode): SpecNode | null {
+    for (const child of at.children ?? []) {
+      if (child === node)
+        return at;
+      const found = SpecInstance._parentOf(child, node);
+      if (found)
+        return found;
     }
+    return null;
   }
 
   private static _placeholder(message: string): HTMLElement {
@@ -360,6 +793,84 @@ export class SpecInstance extends Control {
     el.className = 'u2-spec-error';
     el.textContent = message;
     return el;
+  }
+}
+
+const warnedTags = new Set<string>();
+
+/** One line per distinct message for the life of the page — the dedupe {@link SpecInstance} does
+ * per instance, for what is built outside one: a tray component is constructed again on every
+ * design/run toggle and every prop edit, and its complaint is about the document, not the mount. */
+export function specWarn(message: string): void {
+  if (warnedTags.has(message))
+    return;
+  warnedTags.add(message);
+  console.warn(`u2 spec: ${message}`);
+}
+
+/** The type rules the renderer enforces, as a query — null when `value` fits `prop`, the message
+ * the renderer would throw otherwise. The designer validates an edit against the same code. */
+export function checkProp(prop: SpecPropMeta, value: unknown): string | null {
+  const type = prop.propertyType ?? prop.type;
+  if (!fitsType(type, value))
+    return `prop "${prop.name}" expects ${type}`;
+  const choices = prop.choices;
+  // scalar values only: on a string_list, choices constrain the items a picker offers, not the array
+  if (choices && choices.length > 0 && type !== 'string_list' && type !== 'object' &&
+    !choices.includes(value as string))
+    return `prop "${prop.name}" must be one of ${choices.map((c) => `"${c}"`).join(', ')}`;
+  return null;
+}
+
+function fitsType(type: string, value: unknown): boolean {
+  switch (type) {
+    case 'string':
+      return typeof value === 'string';
+    case 'int':
+      return typeof value === 'number' && Number.isInteger(value);
+    case 'double':
+      return typeof value === 'number' && isFinite(value);
+    case 'bool':
+      return typeof value === 'boolean';
+    case 'string_list':
+      return Array.isArray(value) && value.every((item) => typeof item === 'string');
+    case 'object':
+      return isJson(value);
+    default:
+      return false;
+  }
+}
+
+export function isHtmlTag(tag: string): boolean {
+  return HTML_TAGS.has(tag);
+}
+
+/** The panel property model of a plain HTML node: text and cls everywhere, href on `a`,
+ * src on `img` — exactly what the renderer honors. */
+export function htmlProps(tag: string): SpecPropMeta[] {
+  const props: SpecPropMeta[] = [
+    {name: 'text', type: 'string', description: 'Text content'},
+    {name: 'cls', type: 'string', description: 'Space-separated CSS classes'},
+  ];
+  if (tag === 'a')
+    props.push({name: 'href', type: 'string', description: 'Link target'});
+  if (tag === 'img')
+    props.push({name: 'src', type: 'string', description: 'Image source'});
+  return props;
+}
+
+function isJson(value: unknown): boolean {
+  if (!JSON_TYPES.has(typeof value))
+    return false;
+  try {
+    JSON.stringify(value, (_name, item) => {
+      if (item === undefined || typeof item === 'function')
+        throw new Error('not JSON');
+      return item;
+    });
+    return true;
+  } catch (e) {
+    return false;
   }
 }
 
@@ -373,9 +884,18 @@ export function parseSpec(json: string | object): Spec {
     throw new Error(`u2 spec: $schema must be "${SPEC_SCHEMA}", got ${JSON.stringify(spec.$schema)}`);
   if (!spec.root || typeof spec.root !== 'object' || typeof spec.root.tag !== 'string')
     throw new Error('u2 spec: "root" must be a node with a "tag"');
+  if (spec.components !== undefined) {
+    if (!Array.isArray(spec.components))
+      throw new Error('u2 spec: "components" must be an array of nodes');
+    for (const node of spec.components) {
+      if (!node || typeof node !== 'object' || typeof node.tag !== 'string')
+        throw new Error('u2 spec: every entry of "components" must be a node with a "tag"');
+    }
+  }
   return spec as Spec;
 }
 
-export function renderSpec(spec: string | object, ctx?: SpecContext, reg?: Registry): SpecInstance {
-  return new SpecInstance(parseSpec(spec), ctx ?? new SpecContext(), reg);
+export function renderSpec(spec: string | object, ctx?: SpecContext, reg?: Registry,
+  options?: SpecInstanceOptions): SpecInstance {
+  return new SpecInstance(parseSpec(spec), ctx ?? new SpecContext(), reg, options);
 }

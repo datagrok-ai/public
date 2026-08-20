@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
+import {Entity, FileInfo} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {FileInput, fileInput} = await import('../src/dg/file-input.js');
@@ -39,11 +40,6 @@ function fileTest(name, body) {
   });
 }
 
-function entry(fullPath, directory = false) {
-  return {fullPath, path: fullPath, fileName: fullPath.substring(fullPath.lastIndexOf('/') + 1),
-    isFile: !directory, isDirectory: directory};
-}
-
 function type(input, text) {
   const field = input.root.querySelector('input.u2-file-path');
   field.value = text;
@@ -68,7 +64,7 @@ test('qualify: the path the platform is asked about', () => {
 fileTest('an existing path resolves to the file it names', async () => {
   const input = fileInput('Path');
   grok.dapi.files.exists = async () => true;
-  grok.dapi.files.list = async () => [entry('geo/cities.csv'), entry('geo/other.csv')];
+  grok.dapi.files.list = async () => [new FileInfo('geo/cities.csv'), new FileInfo('geo/other.csv')];
 
   type(input, 'geo/cities.csv');
   assert.equal(input.validity.peek(), 'File geo/cities.csv is loading.', 'typing invalidates at once');
@@ -81,7 +77,7 @@ fileTest('an existing path resolves to the file it names', async () => {
 fileTest('a path that is not there says so, and keeps the value it had', async () => {
   const input = fileInput('Path');
   grok.dapi.files.exists = async () => true;
-  grok.dapi.files.list = async () => [entry('geo/cities.csv')];
+  grok.dapi.files.list = async () => [new FileInfo('geo/cities.csv')];
   type(input, 'geo/cities.csv');
   await wait(DEBOUNCE);
 
@@ -104,7 +100,7 @@ fileTest('an answer to an abandoned path never overwrites a newer verdict', asyn
     }
     return false;
   };
-  grok.dapi.files.list = async () => [entry('slow.csv')];
+  grok.dapi.files.list = async () => [new FileInfo('slow.csv')];
 
   type(input, 'slow.csv');
   await wait(DEBOUNCE);              // the slow check is now in flight
@@ -142,13 +138,13 @@ fileTest('folder mode asks for a folder, and says folder', async () => {
   assert.equal(input.root.querySelector('.u2-input-options'), null,
     'no local-file affordance in folder mode');
   grok.dapi.files.exists = async () => true;
-  grok.dapi.files.list = async () => [entry('geo/cities.csv')];
+  grok.dapi.files.list = async () => [new FileInfo('geo/cities.csv')];
 
   type(input, 'geo/cities.csv');
   await wait(DEBOUNCE);
   assert.equal(input.validity.peek(), 'Folder does not exist.');
 
-  grok.dapi.files.list = async () => [entry('geo/maps', true)];
+  grok.dapi.files.list = async () => [new FileInfo('geo/maps', {directory: true})];
   type(input, 'geo/maps');
   await wait(DEBOUNCE);
   assert.equal(input.validity.peek(), null);
@@ -163,8 +159,8 @@ fileTest('a connection namespaces the path and hides the local picker', async ()
     return true;
   };
   grok.dapi.files.list = async () =>
-    [{...entry('Demo:Files/geo/cities.csv'), path: 'geo/cities.csv'}];
-  const input = fileInput('Path', {connection: {nqName: 'Demo:Files'}});
+    [new FileInfo('Demo:Files/geo/cities.csv')];
+  const input = fileInput('Path', {connection: new Entity('Files', {nqName: 'Demo:Files'})});
   assert.equal(input.root.querySelector('.u2-input-options'), null);
 
   type(input, 'geo/cities.csv');
@@ -191,7 +187,7 @@ fileTest('a path the listing does not carry does not resolve', async () => {
 fileTest('the root of a connection resolves with no FileInfo to show for it', async () => {
   grok.dapi.files.exists = async () => true;
   grok.dapi.files.list = async () => [];
-  const input = fileInput('Path', {connection: {nqName: 'Demo:Files'}});
+  const input = fileInput('Path', {connection: new Entity('Files', {nqName: 'Demo:Files'})});
   type(input, '/');
   await wait(DEBOUNCE);
   assert.equal(input.validity.peek(), null, 'js-api cannot build a directory FileInfo for it');
@@ -204,7 +200,7 @@ fileTest('the extension filter is for file mode alone — a dotted folder name i
   grok.dapi.files.exists = async () => true;
   grok.dapi.files.list = async (path, recursive, ext) => {
     asked.push(ext);
-    return [entry('geo/v1.2', true)];
+    return [new FileInfo('geo/v1.2', {directory: true})];
   };
   const input = fileInput('Path', {mode: 'folder'});
   type(input, 'geo/v1.2');
@@ -221,12 +217,12 @@ fileTest('a value written from outside drops the verdict on the path it replaces
   await wait(DEBOUNCE);
   assert.equal(input.validity.peek(), 'File does not exist.');
 
-  input.value.value = entry('geo/cities.csv');
+  input.value.value = new FileInfo('geo/cities.csv');
   assert.equal(input.root.querySelector('input.u2-file-path').value, 'geo/cities.csv');
   assert.equal(input.validity.peek(), null, 'the platform setter clears and revalidates');
 
   type(input, 'geo/other.csv');
-  input.value.value = entry('geo/cities.csv');
+  input.value.value = new FileInfo('geo/cities.csv');
   await wait(DEBOUNCE);
   assert.equal(input.validity.peek(), null, 'a check in flight cannot re-assert a verdict either');
   input.dispose();
@@ -250,7 +246,7 @@ fileTest('a dropped file becomes the value; several are refused', async (errors)
 fileTest('a file dropped while a path check runs is what the input keeps', async () => {
   const input = fileInput('Path');
   grok.dapi.files.exists = async () => true;
-  grok.dapi.files.list = async () => [entry('geo/cities.csv')];
+  grok.dapi.files.list = async () => [new FileInfo('geo/cities.csv')];
 
   type(input, 'geo/cities.csv');
   drop(input, [new File(['x'], 'local.csv')]);

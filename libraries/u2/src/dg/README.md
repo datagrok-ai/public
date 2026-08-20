@@ -12,6 +12,7 @@ lifecycle, events, and value editors.
 | `appView({name, content, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome |
 | `designerView(spec, options?)` | the spec designer as a view: live canvas, structure tree in the toolbox, Design/Run toggle, selection path in the status bar |
 | `registerSpecNodeHandler()` | the `ObjectHandler` that renders a selected spec node (`SpecNodeRef`) in the context panel |
+| `makeDesignerDroppable({element, active, onDragActive, onDrop})` | the platform's drag channel pointed at an element: a file or a function dragged out of Browse arrives as a `DropReading` (`readDrop`), each item ready for `dropNode` to make a `u2-func-source` of it |
 | `asDartInput(input, {dataType?})` | u2 `Input` → `DG.JsInputBase` (a `DG.InputBase` everywhere) |
 | `dartInputFor(build, {dataType?})` | the same, built from the bound property at `getInput()` time |
 | `inputForProperty(prop, options?)` | the u2 editor a `Property` maps to, metadata and all |

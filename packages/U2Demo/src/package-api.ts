@@ -30,4 +30,18 @@ export namespace funcs {
   export async function info(): Promise<void> {
     return await grok.functions.call('U2Demo:Info', {});
   }
+
+  /**
+  Demo orders placed within the last N days — the data source demo of the u2 designer
+  */
+  export async function demoOrders(days: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('U2Demo:DemoOrders', { days });
+  }
+
+  /**
+  Records a line in the U2 Designer's Run log — the function to wire a button to
+  */
+  export async function u2Record(text: string ): Promise<string> {
+    return await grok.functions.call('U2Demo:U2Record', { text });
+  }
 }

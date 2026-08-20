@@ -5,12 +5,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {Signal} from '../src/core/signals.js';
+import {Signal, computed, signal} from '../src/core/signals.js';
 import {Scope} from '../src/core/scope.js';
 import {Control} from '../src/core/component.js';
 import {TextInput} from '../src/components/text-input.js';
 import {Registry} from '../src/spec/registry.js';
-import {SpecContext, parseSpec, renderSpec} from '../src/spec/spec.js';
+import {SpecContext, checkProp, parseSpec, renderSpec} from '../src/spec/spec.js';
+import {registerAll} from '../src/spec/registrations.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
 function spec(name, body) {
@@ -312,7 +313,7 @@ spec('renderSpec: a missing command warns once instead of throwing', () => {
     $schema: 'dg-ui/1',
     root: {tag: 'span', on: {click: 'alert(1)'}},
   }, new SpecContext(), reg);
-  assert.match(bad.root.querySelector('.u2-spec-error').textContent, /must be "cmd:<name>"/);
+  assert.match(bad.root.querySelector('.u2-spec-error').textContent, /must be 'cmd:' followed by a command name/);
   instance.dispose();
   bad.dispose();
 });
@@ -422,6 +423,406 @@ spec('nodes, node and nodeAt: every rendered node is reachable, and elements hit
   assert.equal(instance.nodeAt(instance.root.querySelector('.middle')), middle);
   assert.equal(instance.nodeAt(document.createElement('div')), null, 'nothing outside the spec matches');
   instance.dispose();
+});
+
+spec('rerender: the node comes back new in the same place, and the maps follow it', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const input = {tag: 'u2-fake-input', name: 'nameInput', props: {label: 'Name', value: 'Aspirin'}};
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'span', props: {text: 'before'}},
+      input,
+      {tag: 'span', props: {text: 'after'}},
+    ]},
+  }, new SpecContext(), reg);
+  document.body.append(instance.root);
+
+  const live = Scope.liveCount;
+  const old = instance.nodes().get(input);
+  input.props.label = 'Alias';
+  instance.rerender(input);
+
+  const built = instance.nodes().get(input);
+  assert.notEqual(built, old, 'a fresh component');
+  assert.equal(old.scope.isDisposed, true, 'and the one it replaced is disposed');
+  assert.equal(Scope.liveCount, live, 'a re-render accumulates nothing');
+
+  const container = instance.root.querySelector('div');
+  assert.deepEqual([...container.children].map((el) => el.textContent === 'before' ? 'before' :
+    el === built.root ? 'input' : 'after'), ['before', 'input', 'after'], 'same position');
+  assert.equal(instance.nodeAt(built.root), input, 'the element map points at the new element');
+  assert.equal(instance.node('nameInput'), built, 'and the name at the new component');
+  assert.equal(built.root.dataset.u2Name, 'nameInput', 'the automation id is restamped');
+  assert.equal(instance.dump().root.children[1].props.label, 'Alias');
+  assert.throws(() => instance.rerender({tag: 'div'}), /not rendered/);
+  instance.dispose();
+});
+
+spec('rerender: a duplicate name does not take the survivor out of node(name) with it', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const second = {tag: 'u2-fake-input', name: 'field', props: {label: 'Two'}};
+  let instance;
+  captureWarnings(() => {
+    instance = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'div', children: [
+        {tag: 'u2-fake-input', name: 'field', props: {label: 'One'}},
+        second,
+      ]},
+    }, new SpecContext(), reg);
+  });
+  const survivor = instance.node('field');
+  captureWarnings(() => instance.rerender(second));
+  assert.equal(instance.node('field'), survivor, 'the first node still owns the name');
+  assert.notEqual(instance.nodes().get(second), survivor);
+  instance.dispose();
+});
+
+spec('rerender: a warning fires once per instance, however often the node is rebuilt', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const node = {tag: 'u2-fake-input', props: {label: 'Name', bogus: 'kept'}};
+  let instance;
+  const first = captureWarnings(() => {
+    instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'div', children: [node]}},
+      new SpecContext(), reg);
+  });
+  assert.equal(first.length, 1);
+  assert.match(first[0], /unknown prop "bogus"/);
+
+  const again = captureWarnings(() => {
+    instance.rerender(node);
+    instance.rerender(node);
+  });
+  assert.deepEqual(again, [], 'the same message is not re-spammed');
+  instance.dispose();
+});
+
+spec('checkProp: a literal value for a prop with choices must be one of them; a bind is exempt', () => {
+  const direction = {name: 'direction', type: 'string', choices: ['horizontal', 'vertical']};
+  assert.equal(checkProp(direction, 'vertical'), null);
+  assert.equal(checkProp(direction, 'diagonal'),
+    'prop "direction" must be one of "horizontal", "vertical"');
+  assert.match(checkProp(direction, 42), /expects string/, 'the type rule still comes first');
+  assert.equal(checkProp({name: 'families', type: 'string_list', choices: ['a', 'b']}, ['a', 'c']),
+    null, 'the rule is for scalars — on a string_list, choices are the picker\'s, not the array\'s');
+
+  const reg = new Registry();
+  reg.register({
+    tag: 'u2-fake-choice',
+    description: 'Fake choices holder for the spec tests',
+    props: [{...direction, bindable: true}],
+    create: () => new Control(),
+    example: {tag: 'u2-fake-choice'},
+  });
+  // a bound value is the context's, not the spec's — the renderer never routes it through checkProp
+  const bound = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-fake-choice', bind: {direction: '$.dir'}},
+  }, new SpecContext({data: {dir: 'diagonal'}}), reg);
+  assert.equal(bound.root.querySelectorAll('.u2-spec-error').length, 0);
+  bound.dispose();
+
+  const literal = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-fake-choice', props: {direction: 'diagonal'}},
+  }, new SpecContext(), reg);
+  assert.match(literal.root.querySelector('.u2-spec-error').textContent, /must be one of/);
+  literal.dispose();
+});
+
+/** The one test here over the real registrations: the designer metadata they declare. */
+spec('designer metadata: actions read the node state, and the manifest keeps defaults but not closures', () => {
+  const reg = new Registry();
+  registerAll(reg);
+
+  const tabs = reg.get('u2-tabs').designerActions;
+  assert.deepEqual(tabs.map((a) => a.name), ['Add tab']);
+  assert.deepEqual(tabs[0].produce({tag: 'u2-tabs', children: [{tag: 'u2-panel'}, {tag: 'u2-panel'}]}),
+    {op: 'add-child', node: {tag: 'u2-panel', props: {title: 'Tab 3'}}},
+    'the title counts the children the node has now');
+  assert.deepEqual(tabs[0].produce({tag: 'u2-tabs'}),
+    {op: 'add-child', node: {tag: 'u2-panel', props: {title: 'Tab 1'}}});
+  assert.deepEqual(tabs[0].produce({tag: 'u2-tabs', children: [{tag: 'u2-panel', props: {title: 'Tab 1'}}]}),
+    {op: 'add-child', node: {tag: 'u2-panel', props: {title: 'Tab 2'}}},
+    'the seeded pane counts: the first Add tab never repeats it');
+
+  assert.deepEqual(reg.get('u2-accordion').designerActions[0]
+    .produce({tag: 'u2-accordion', children: [{tag: 'u2-panel'}]}),
+  {op: 'add-child', node: {tag: 'u2-panel', props: {title: 'Pane 2'}}});
+  assert.deepEqual(reg.get('u2-splitter').designerActions[0].produce({tag: 'u2-splitter'}),
+    {op: 'add-child', node: {tag: 'u2-panel'}});
+
+  const crumbs = reg.get('u2-breadcrumbs').designerActions[0];
+  assert.deepEqual(crumbs.produce({tag: 'u2-breadcrumbs', props: {items: ['Item 1', 'Item 2']}}),
+    {op: 'set-prop', name: 'items', value: ['Item 1', 'Item 2', 'Item 3']},
+    'the appended item counts the items the node has now');
+  assert.deepEqual(crumbs.produce({tag: 'u2-breadcrumbs'}),
+    {op: 'set-prop', name: 'items', value: ['Item 1']});
+
+  const metas = new Map(reg.manifest().components.map((c) => [c.tag, c]));
+  assert.deepEqual(metas.get('u2-tabs').defaultChildren, [{tag: 'u2-panel', props: {title: 'Tab 1'}}]);
+  assert.deepEqual(metas.get('u2-accordion').defaultChildren,
+    [{tag: 'u2-panel', props: {title: 'Pane 1'}}]);
+  assert.deepEqual(metas.get('u2-splitter').defaultChildren, [{tag: 'u2-panel'}, {tag: 'u2-panel'}],
+    'a one-panel splitter has no sash to drag — it seeds the pair');
+  assert.equal('defaultChildren' in metas.get('u2-form'), false,
+    'a container that is not a multi-host declares none');
+  assert.deepEqual(metas.get('u2-breadcrumbs').defaults, {items: ['Item 1', 'Item 2', 'Item 3']});
+  assert.deepEqual(metas.get('u2-choice-input').defaults, {items: ['Item 1', 'Item 2', 'Item 3']});
+  assert.deepEqual(metas.get('u2-button').defaults, {text: 'Button'});
+  assert.deepEqual(metas.get('u2-splitter').props.find((p) => p.name === 'direction').choices,
+    ['horizontal', 'vertical']);
+  assert.deepEqual(metas.get('u2-number-input').props.find((p) => p.name === 'mode').choices,
+    ['int', 'float']);
+  for (const [tag, meta] of metas)
+    assert.equal('designerActions' in meta, false, `${tag} leaks designer closures into the manifest`);
+});
+
+/* WO-11 — the binding substrate: full path resolution, named nodes as bind sources, writability,
+   cycles, and the cmd: tiers with fire-time argument resolution. */
+
+spec('resolveBinding: a named node is a bind source — explicit prop, default step, precedence', () => {
+  const reg = new Registry();
+  registerEcho(reg);
+  // the context deliberately carries a same-named key: the node's declaration is closer and wins
+  const ctx = new SpecContext({data: {doseInput: 'shadowed'}});
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-fake-echo', name: 'doseInput', props: {label: 'Dose'}},
+      {tag: 'u2-fake-echo', name: 'viaValue', bind: {value: '$.doseInput.value'}},
+      {tag: 'u2-fake-echo', name: 'viaDefault', bind: {value: '$.doseInput'}},
+    ]},
+  }, ctx, reg);
+  document.body.append(instance.root);
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+
+  const source = instance.node('doseInput');
+  const resolved = instance.resolveBinding('$.doseInput.value');
+  assert.equal(resolved.signal, source.value, 'the node shadows the same-named context key');
+  assert.equal(resolved.writable, true);
+  assert.equal(instance.resolveBinding('$.doseInput').signal, source.value,
+    'the default step is the value signal');
+  assert.deepEqual(source.bindProps().map((p) => [p.name, p.writable]), [['value', true]],
+    'only signal-backed meta props enumerate');
+
+  const [dose, viaValue, viaDefault] = editors(instance);
+  type(dose, 'typed');
+  assert.equal(viaValue.value, 'typed', 'two-way bridge over the explicit step');
+  assert.equal(viaDefault.value, 'typed', 'and over the default step');
+  type(viaValue, 'back');
+  assert.equal(dose.value, 'back', 'edits flow back into the named node');
+  instance.dispose();
+});
+
+spec('resolveBinding: a BindSource in the context is passed through and walked', () => {
+  const reg = new Registry();
+  const col = signal(42);
+  const row = {bindStep: (n) => n === 'weight' ? col : null,
+    bindProps: () => [{name: 'weight', type: 'int', writable: true}]};
+  const orders = {
+    bindStep: (n) => n === 'currentRow' ? row : n === '' ? col : null,
+    bindProps: () => [{name: 'currentRow', walkable: true}],
+  };
+  const ctx = new SpecContext({data: {orders, plain: 'x'}});
+  assert.equal(ctx.data.orders, orders, 'passed through un-wrapped');
+
+  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'div'}}, ctx, reg);
+  const deep = instance.resolveBinding('$.orders.currentRow.weight');
+  assert.equal(deep.signal, col);
+  assert.equal(deep.writable, true);
+  assert.equal(instance.resolveBinding('$.orders').signal, col,
+    'exhausted at the source: the default step');
+  assert.throws(() => instance.resolveBinding('$.orders.nope'), /no binding step "nope"/);
+  assert.throws(() => instance.resolveBinding('$.orders.currentRow'),
+    /needs one more step — one of: weight/);
+  assert.throws(() => instance.resolveBinding('$.orders.currentRow.weight.deeper'),
+    /the path continues past a signal/);
+  assert.throws(() => instance.resolveBinding('$.plain.x'), /the path continues past a signal/);
+  assert.throws(() => instance.resolveBinding('$.missing'), /nothing bound at "\$\.missing"/);
+  assert.throws(() => instance.resolveBinding('$.orders['), /is not a valid bind path/);
+  instance.dispose();
+});
+
+spec('resolveBinding: a default step that answers its own source is bounded, not a hang', () => {
+  const itself = {bindStep: () => itself, bindProps: () => [{name: 'round', walkable: true}]};
+  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'div'}},
+    new SpecContext({data: {itself}}), new Registry());
+  assert.throws(() => instance.resolveBinding('$.itself'), /needs one more step — one of: round/);
+  instance.dispose();
+});
+
+spec('resolveBinding: a bind to a later sibling is contained with the document-order message', () => {
+  const reg = new Registry();
+  registerEcho(reg);
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-fake-echo', name: 'early', bind: {value: '$.late'}},
+      {tag: 'u2-fake-echo', name: 'late'},
+      {tag: 'span', name: 'static', props: {text: 'x'}},
+      {tag: 'u2-fake-echo', name: 'toHtml', bind: {value: '$.static'}},
+    ]},
+  }, new SpecContext(), reg);
+  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /"late" is not built yet — node-to-node binds resolve in document order/);
+  assert.match(errors[1], /"static" is not a bind source/, 'a plain HTML node has no signals');
+  assert.equal(editors(instance).length, 1, 'the later sibling renders fine');
+  instance.dispose();
+});
+
+spec('twoWay to a read-only leaf: the one-way bridge still applies, with a single warning', () => {
+  const reg = new Registry();
+  registerEcho(reg);
+  const base = signal('A');
+  const ro = computed(() => base.value.toLowerCase());
+  let instance;
+  const warnings = captureWarnings(() => {
+    instance = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'div', children: [
+        {tag: 'u2-fake-echo', name: 'one', bind: {value: '$.ro'}},
+        {tag: 'u2-fake-echo', name: 'two', bind: {value: '$.ro'}},
+      ]},
+    }, new SpecContext({data: {ro}}), reg);
+  });
+  assert.deepEqual(warnings, ['u2 spec: bind "$.ro" is read-only — edits will not flow back']);
+  assert.equal(instance.resolveBinding('$.ro').writable, false);
+
+  const [one, two] = editors(instance);
+  assert.equal(one.value, 'a');
+  base.value = 'B';
+  assert.equal(one.value, 'b', 'the forward direction is live');
+  type(two, 'edited');
+  assert.equal(ro.value, 'b', 'nothing flows back into the computed');
+  assert.equal(one.value, 'b', 'and the sibling keeps the source value');
+  instance.dispose();
+});
+
+spec('a binding cycle marks its members broken, naming the loop', () => {
+  const reg = new Registry();
+  registerEcho(reg);
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-fake-echo', name: 'a', bind: {value: '$.b'}},
+      {tag: 'u2-fake-echo', name: 'b', bind: {value: '$.a'}},
+      {tag: 'u2-fake-echo', name: 'c'},
+    ]},
+  }, new SpecContext(), reg);
+  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /binding cycle: a → b → a/);
+  assert.match(errors[1], /binding cycle: a → b → a/);
+  assert.equal(editors(instance).length, 1, 'the node off the loop renders');
+  instance.dispose();
+});
+
+spec('cmd tiers: bare command, platform fallback, colon, component function, reserved #', () => {
+  const reg = new Registry();
+  const calls = [];
+  class Source extends Control {
+    constructor() {
+      super();
+      this.registerFunction({name: 'refresh', inputs: [],
+        apply: (params) => calls.push(['refresh', params])});
+    }
+  }
+  reg.register({tag: 'u2-fake-source', description: 'Fake function owner', props: [],
+    create: () => new Source(), example: {tag: 'u2-fake-source'}});
+
+  let saves = 0;
+  const platform = [];
+  const amount = signal(5);
+  const ctx = new SpecContext({
+    data: {amount},
+    commands: {save: () => saves++},
+    callFunction: async (name, args) => platform.push([name, args]),
+  });
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-fake-source', name: 'orders'},
+      {tag: 'span', props: {cls: 'bare'}, on: {click: 'cmd:save'}},
+      {tag: 'span', props: {cls: 'fallback'}, on: {click: 'cmd:Sin'}},
+      {tag: 'span', props: {cls: 'platform'}, on: {click: {cmd: 'cmd:MyPkg:SaveOrder',
+        args: {amount: '$.amount', tag: '$$.literal', note: 'plain'}}}},
+      {tag: 'span', props: {cls: 'component'}, on: {click: {cmd: 'cmd:orders.refresh', args: {n: 1}}}},
+      {tag: 'span', props: {cls: 'reserved'}, on: {click: 'cmd:#local'}},
+      {tag: 'span', props: {cls: 'nowhere'}, on: {click: {cmd: 'cmd:orders.nope'}}},
+    ]},
+  }, ctx, reg);
+  document.body.append(instance.root);
+  const click = (cls) => fire(instance.root.querySelector('.' + cls), 'click');
+
+  click('bare');
+  assert.equal(saves, 1, 'a context command wins the bare tier');
+  assert.equal(platform.length, 0);
+
+  click('fallback');
+  assert.deepEqual(platform, [['Sin', {}]], 'a bare name falls back to the platform tier');
+
+  click('platform');
+  assert.deepEqual(platform[1], ['MyPkg:SaveOrder', {amount: 5, tag: '$.literal', note: 'plain'}],
+    'args: the path peeked, $$. unescaped once, the literal as-is');
+  amount.value = 7;
+  click('platform');
+  assert.equal(platform[2][1].amount, 7, 'paths resolve at fire time');
+
+  click('component');
+  assert.deepEqual(calls, [['refresh', {n: 1}]], 'the dotted tier applies the component function');
+
+  const warnings = captureWarnings(() => {
+    click('reserved');
+    click('nowhere');
+  });
+  assert.equal(warnings.length, 2);
+  assert.match(warnings[0], /"cmd:#local" is reserved — code-behind commands arrive with dg-form/);
+  assert.match(warnings[1], /no function "nope" on "orders"/);
+  instance.dispose();
+});
+
+spec('dump: structured event entries deep-copy, args never shared with the document', () => {
+  const reg = new Registry();
+  const entry = {cmd: 'cmd:Pkg:Save', args: {ids: ['a'], note: '$.note'}};
+  const source = {$schema: 'dg-ui/1',
+    root: {tag: 'span', props: {text: 'Go'}, on: {click: entry}}};
+  const instance = renderSpec(source, new SpecContext({data: {note: 'x'}}), reg);
+  const dumped = instance.dump();
+  assert.deepEqual(dumped.root.on.click, entry);
+  assert.notEqual(dumped.root.on.click, entry, 'a copy, not the document object');
+  dumped.root.on.click.args.ids.push('b');
+  assert.deepEqual(entry.args.ids, ['a'], 'and deep — mutations never reach back');
+
+  const bad = renderSpec({$schema: 'dg-ui/1', root: {tag: 'span', on: {click: {cmd: 'save'}}}},
+    new SpecContext(), reg);
+  assert.match(bad.root.querySelector('.u2-spec-error').textContent,
+    /must be 'cmd:' followed by a command name/);
+  instance.dispose();
+  bad.dispose();
+});
+
+spec('SpecContext.bindProps: data keys typed from current values, sources walkable', () => {
+  const base = signal(2);
+  const ctx = new SpecContext({data: {
+    name: 'x', count: 3, ratio: 1.5, on: true, tags: ['a'], blob: {a: 1},
+    ro: computed(() => base.value), src: {bindStep: () => null, bindProps: () => []},
+  }});
+  assert.deepEqual(ctx.bindProps(), [
+    {name: 'name', type: 'string', writable: true},
+    {name: 'count', type: 'int', writable: true},
+    {name: 'ratio', type: 'double', writable: true},
+    {name: 'on', type: 'bool', writable: true},
+    {name: 'tags', type: 'string_list', writable: true},
+    {name: 'blob', type: 'object', writable: true},
+    {name: 'ro', type: 'int', writable: false},
+    {name: 'src', walkable: true},
+  ]);
 });
 
 spec('parseSpec: takes JSON or objects and rejects a wrong envelope', () => {

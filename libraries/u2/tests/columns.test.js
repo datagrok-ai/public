@@ -1,7 +1,7 @@
 /* The columns family (src/dg/columns.ts) over the stub in tests/platform-stub.mjs: the ported
    aggregation rules, the summary label and the anchored selection popup of columnsInput, the
-   per-key pickers of columnsMapInput, and the aggregation rows. Tables are the same plain fakes
-   the picker tests use. */
+   per-key pickers of columnsMapInput, and the aggregation rows. Tables are the getter-backed
+   frames of tests/platform-doubles.mjs. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,12 +9,11 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Input} from '../src/core/input-base.js';
+import {DataFrame} from './platform-doubles.mjs';
 
 register('./platform-stub.mjs', import.meta.url);
 const {columnsInput, columnsMapInput, aggregatedColumnsInput, aggregationsFor, defaultAggregation} =
   await import('../src/dg/columns.js');
-
-const NUMERIC = new Set(['int', 'double', 'bigint', 'qnum']);
 
 function columns(name, body) {
   test(name, async () => {
@@ -29,48 +28,7 @@ function columns(name, body) {
   });
 }
 
-function fakeTable(specs) {
-  const cols = specs.map((s) => ({
-    name: s.name, type: s.type ?? 'double', semType: s.semType ?? '',
-    isNumerical: NUMERIC.has(s.type ?? 'double') || (s.type ?? 'double') === 'datetime',
-  }));
-  const listeners = [];
-  const renames = [];
-  const stream = (target) => ({
-    subscribe(fn) {
-      target.push(fn);
-      return {unsubscribe() {
-        const i = target.indexOf(fn);
-        if (i >= 0)
-          target.splice(i, 1);
-      }};
-    },
-  });
-  return {
-    columns: {
-      names: () => cols.map((c) => c.name),
-      toList: () => cols.slice(),
-      contains: (name) => cols.some((c) => c.name === name),
-      byName: (name) => cols.find((c) => c.name === name),
-    },
-    onColumnsChanged: stream(listeners),
-    onColumnNameChanged: stream(renames),
-    liveSubscriptions: () => listeners.length + renames.length,
-    removeColumn(name) {
-      cols.splice(cols.findIndex((c) => c.name === name), 1);
-      for (const fn of listeners.slice())
-        fn();
-    },
-    /** A rename fires this one ALONE (`column.dart:68`), with the names in the event args. */
-    renameColumn(oldName, newName) {
-      cols.find((c) => c.name === oldName).name = newName;
-      for (const fn of renames.slice())
-        fn({args: {oldName, newName}});
-    },
-  };
-}
-
-const DEMO = () => fakeTable([
+const DEMO = () => new DataFrame([
   {name: 'age', type: 'int'}, {name: 'height', type: 'double'},
   {name: 'sex', type: 'string'}, {name: 'started', type: 'datetime'},
 ]);
@@ -297,10 +255,10 @@ columns('columnsInput: a dropped column leaves the value; changeTable resets it'
   const table = DEMO();
   const input = columnsInput('Columns', table);
   input.value.value = ['age', 'sex'];
-  table.removeColumn('sex');
+  table.columns.remove('sex');
   assert.deepEqual(input.value.value, ['age']);
 
-  const other = fakeTable([{name: 'x', type: 'int'}, {name: 'y', type: 'int'}]);
+  const other = new DataFrame([{name: 'x', type: 'int'}, {name: 'y', type: 'int'}]);
   input.changeTable(other);
   assert.deepEqual(input.value.value, []);
   assert.equal(summary(input), '(0)');
@@ -320,12 +278,12 @@ columns('columnsInput: a renamed column is remapped, and as a system write', () 
   input.value.value = ['age', 'sex'];
   assert.equal(systemic, false, 'a plain write is a user edit');
 
-  table.renameColumn('sex', 'gender');
+  table.columns.byName('sex').name = 'gender';
   assert.deepEqual(input.value.value, ['age', 'gender'], 'remapped, not pruned');
   assert.equal(summary(input), '(2) age, gender');
   assert.equal(systemic, true, 'the remap is the input speaking for itself');
 
-  table.renameColumn('height', 'cm');
+  table.columns.byName('height').name = 'cm';
   assert.deepEqual(input.value.value, ['age', 'gender'], 'a column outside the value changes nothing');
   input.dispose();
   assert.equal(table.liveSubscriptions(), 0);
@@ -395,7 +353,7 @@ columns('columnsMapInput: a renamed column is remapped in the record and in the 
   const input = columnsMapInput('Map', ['x', 'y'], table);
   input.value.value = {x: 'age', y: 'sex'};
 
-  table.renameColumn('age', 'ageYears');
+  table.columns.byName('age').name = 'ageYears';
   assert.deepEqual(input.value.value, {x: 'ageYears', y: 'sex'});
   assert.equal(input.root.querySelectorAll('select')[0].value, 'ageYears');
   input.dispose();
@@ -407,7 +365,7 @@ columns('aggregatedColumnsInput: a renamed column is remapped in the rows and th
   const input = aggregatedColumnsInput('Aggregations', table);
   input.value.value = [{column: 'age', aggregation: 'avg'}];
 
-  table.renameColumn('age', 'ageYears');
+  table.columns.byName('age').name = 'ageYears';
   assert.deepEqual(input.value.value, [{column: 'ageYears', aggregation: 'avg'}]);
   const column = input.root.querySelectorAll('.u2-aggregations-row select')[0];
   assert.equal(column.value, 'ageYears');

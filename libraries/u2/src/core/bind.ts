@@ -17,7 +17,9 @@ export function bindValue(scope: Scope, input: HTMLInputElement | HTMLTextAreaEl
   source: Signal<string>, commitOn: 'input' | 'change' = 'input'): void {
   let echo = false;
   scope.effect(() => {
-    const v = source.value;
+    // a bound source may hold nothing yet — a data source before its first run — and the DOM
+    // would render that as the literal "undefined"
+    const v = source.value ?? '';
     if (!echo)
       input.value = v;
   });
