@@ -162,6 +162,16 @@ export class OutputPreviewPanel {
       this.setState(this.userMinimized ? 'minimized' : 'expanded');
   }
 
+  /** Rebuild the shown node's preview from its kept state — for when what a
+   *  block renders depends on outside state (the in-node preview toggled). */
+  refresh(): void {
+    const nodeId = this.lastNodeId;
+    const state = this.lastState;
+    if (nodeId == null || state == null) return;
+    this.lastState = null; // defeat the identity gate — same state must rebuild
+    this.showForNode({id: nodeId, label: this.nodeLabelEl.textContent ?? ''}, state);
+  }
+
   minimize(): void {
     this.userMinimized = true;
     if (this.state === 'expanded') {

@@ -139,6 +139,7 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:diverseSubset',
   'Chem:FilterByCatalogs',
   'Chem:filterBySubstructure',
+  'Chem:ChemistryGasteigerPartialCharges',
   // 'Chem:findSimilar',  → superseded by Chem:callChemSimilaritySearch
   'Chem:GenerateConformers',
   // 'Chem:getDiversities',      → Chem:diverseSubset

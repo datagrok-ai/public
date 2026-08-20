@@ -10,7 +10,8 @@ import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements,
-  hiddenSocketRow} from './scheme';
+  hiddenSocketRow, supportsInlinePreview, inlinePreviewEnabled, inlinePreviewSize,
+  INLINE_PREVIEW_SIZE_PROP, INLINE_HOSTED_DATA_KEY} from './scheme';
 import {InputValueControl} from './nodes/input-value-control';
 import {TypedSocket} from './sockets';
 import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
@@ -57,6 +58,9 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
 
   const autoSummary = !node.description && !collapsed ? summarizeNode(node) : '';
 
+  const previewCapable = supportsInlinePreview(node);
+  const previewOn = previewCapable && inlinePreviewEnabled(node);
+
   const onCaretClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     toggleCollapsed(node);
@@ -78,6 +82,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       data-selected={node.selected ? 'true' : 'false'}
       data-status={dgStatus}
       data-attention={attention ? 'true' : 'false'}
+      data-inline-preview={previewOn ? 'true' : 'false'}
     >
       {/* Exec ports always render so edges keep their endpoints; CSS shows them
           only when wired, hovered, or during an order drag. */}
@@ -128,6 +133,19 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
           title={statusText || 'Not run yet'}
         />
         <span className="ff-node-title-text" data-testid={tid('node-title-text')} title={node.label}>{node.label}</span>
+        {previewCapable && (
+          <span
+            className="ff-node-preview-toggle"
+            data-testid={tid('node-preview-toggle')}
+            data-on={previewOn ? 'true' : 'false'}
+            title={previewOn ? 'Hide the in-node preview' : 'Show the result right on the node'}
+            onPointerDown={stopPointer}
+            onClick={(e) => {
+              e.stopPropagation();
+              node.editorBridge?.toggleInlinePreview(node.id);
+            }}
+          >{previewOn ? '⊟' : '⊞'}</span>
+        )}
         <span
           className="ff-node-caret"
           data-testid={tid('node-caret')}
@@ -230,6 +248,8 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
               ))}
             </div>
           )}
+
+          {previewOn && <InlineNodePreview node={node} />}
         </div>
       )}
 
@@ -265,6 +285,87 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         </div>
       )}
     </div>
+  );
+}
+
+/** In-node preview of a viewer/widget output: mounts the live root captured by
+ *  the last run (reached through the editor bridge), or a placeholder before one
+ *  exists. The container is user-resizable (CSS `resize: both`); the size
+ *  persists in `node.properties` so it serializes with the flow. */
+function InlineNodePreview(props: {node: FlowNode}): React.JSX.Element {
+  const node = props.node;
+  const hostRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLElement | null>(null);
+
+  // Mount / swap the captured live root. Like DgControlComponent, the content
+  // element survives React re-renders — it is re-attached, never rebuilt.
+  React.useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const content = node.editorBridge?.getInlinePreviewContent(node.id) ?? null;
+    if (content !== contentRef.current) {
+      if (contentRef.current) delete contentRef.current.dataset[INLINE_HOSTED_DATA_KEY];
+      contentRef.current = content;
+    }
+    if (content) {
+      content.dataset[INLINE_HOSTED_DATA_KEY] = 'true';
+      content.style.width = '100%';
+      content.style.height = '100%';
+      if (content.parentElement !== host) {
+        host.innerHTML = '';
+        host.appendChild(content);
+      }
+      host.dataset.empty = 'false';
+    } else if (host.dataset.empty !== 'true') {
+      host.innerHTML = '';
+      const ph = document.createElement('div');
+      ph.className = 'ff-node-preview-placeholder';
+      ph.dataset.testid = tid('node-preview-placeholder');
+      ph.textContent = 'Run the flow to see the preview';
+      host.appendChild(ph);
+      host.dataset.empty = 'true';
+    }
+  });
+
+  // Release the hosted marker when the preview unmounts (toggle off, collapse,
+  // node removed) so the bottom output panel can host the live root again.
+  React.useEffect(() => () => {
+    if (contentRef.current) {
+      delete contentRef.current.dataset[INLINE_HOSTED_DATA_KEY];
+      contentRef.current = null;
+    }
+  }, []);
+
+  // Persist a user drag-resize into the node properties (cosmetic — no
+  // params-changed report; properties serialize on save).
+  React.useEffect(() => {
+    const host = hostRef.current;
+    if (!host || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      // The CSS `resize` handle writes inline width/height — read those, not
+      // offsetWidth (which adds the borders and would drift the stored size).
+      const w = Math.round(parseFloat(host.style.width) || host.offsetWidth);
+      const h = Math.round(parseFloat(host.style.height) || host.offsetHeight);
+      if (w <= 0 || h <= 0) return;
+      const cur = inlinePreviewSize(node);
+      if (cur.width !== w || cur.height !== h)
+        node.properties[INLINE_PREVIEW_SIZE_PROP] = {width: w, height: h};
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, []);
+
+  const size = inlinePreviewSize(node);
+  return (
+    <div
+      className="ff-node-inline-preview"
+      data-testid={tid('node-preview')}
+      style={{width: `${size.width}px`, height: `${size.height}px`}}
+      ref={hostRef}
+      onPointerDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+    />
   );
 }
 

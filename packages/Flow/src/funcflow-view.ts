@@ -498,6 +498,14 @@ export class FuncFlowView extends DG.ViewBase {
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
+      // In-node preview: the node component mounts the captured live viewer/widget root.
+      getInlinePreviewContent: (nodeId: string) =>
+        this.executionController?.inlinePreviewRoot(nodeId) ?? null,
+      onInlinePreviewToggled: (nodeId: string) => {
+        this.executionController?.syncInlinePreviewOwnership(nodeId);
+        // The bottom panel must swap between the live root and the hosted-note.
+        if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.refresh();
+      },
       canRerunNode: (nodeId: string) => this.executionController?.canRerunNode(nodeId) ?? false,
       // Only suggestions wired FROM the drag-source node apply to a socket drag.
       getSocketSuggestions: async (nodeId: string) => {

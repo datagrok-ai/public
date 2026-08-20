@@ -16,6 +16,10 @@ export interface FlowEditorBridge {
   notifyParamsChanged(nodeId: string): void;
   /** Pop the "Shown inputs" checkbox menu (the ⋯ hidden-inputs indicator). */
   showShownInputsMenu(nodeId: string, event: MouseEvent): void;
+  /** Flip the in-node viewer/widget preview (`properties['inlinePreview']`). */
+  toggleInlinePreview(nodeId: string): void;
+  /** The live viewer/widget root captured for this node — mounted by the in-node preview. */
+  getInlinePreviewContent(nodeId: string): HTMLElement | null;
 }
 
 /** Base class for every canvas node — `ClassicPreset.Node` plus FuncFlow metadata. */
@@ -156,6 +160,42 @@ export function isExecKey(key: string): boolean {
  *  in the run context and declare a script output, compiling to the same thing. */
 export function isSetVarNode(node: FlowNode): boolean {
   return (node.dgFunc?.name?.toLowerCase() ?? '') === 'setvar';
+}
+
+/** In-node preview of a viewer/widget output. Both keys live in `node.properties`
+ *  so save/load, duplicate, and copy-paste carry the choice for free. */
+export const INLINE_PREVIEW_PROP = 'inlinePreview';
+export const INLINE_PREVIEW_SIZE_PROP = 'inlinePreviewSize';
+export const INLINE_PREVIEW_DEFAULT_SIZE = 300;
+
+/** `dataset` key stamped on a live root while the in-node preview hosts it — the
+ *  bottom output panel renders a note instead of stealing the element. */
+export const INLINE_HOSTED_DATA_KEY = 'ffInlineHosted';
+
+/** Whether the node can show an in-node preview: it produces a viewer, a widget,
+ *  or graphics (a manual viewer node, or a function declaring such an output —
+ *  e.g. Chem's Gasteiger Partial Charges script). */
+export function supportsInlinePreview(node: FlowNode): boolean {
+  if (node.properties['viewerType'] != null) return true;
+  for (const [key, out] of Object.entries(
+    node.outputs as Record<string, {socket?: TypedSocket} | undefined>)) {
+    if (isExecKey(key) || key.endsWith('__pt')) continue;
+    const t = out?.socket?.dgType;
+    if (t === 'viewer' || t === 'widget' || t === 'graphics') return true;
+  }
+  return false;
+}
+
+export function inlinePreviewEnabled(node: FlowNode): boolean {
+  return node.properties[INLINE_PREVIEW_PROP] === true && supportsInlinePreview(node);
+}
+
+/** Preview container size; malformed/missing values fall back to the 300×300 default. */
+export function inlinePreviewSize(node: FlowNode): {width: number; height: number} {
+  const s = node.properties[INLINE_PREVIEW_SIZE_PROP] as {width?: unknown; height?: unknown} | undefined;
+  const dim = (v: unknown): number =>
+    typeof v === 'number' && isFinite(v) && v > 0 ? Math.round(v) : INLINE_PREVIEW_DEFAULT_SIZE;
+  return {width: dim(s?.width), height: dim(s?.height)};
 }
 
 /** Labels of required inputs neither connected nor filled; pure — `isConnected` is supplied by the caller. */

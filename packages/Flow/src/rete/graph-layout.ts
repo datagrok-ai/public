@@ -1,7 +1,7 @@
 /** Layered, banded graph layout shared by the creation-script importer and the ribbon's
  *  "Clean Layout". Pure and DOM-free: reads node metadata, mutates `node.pos`. */
 
-import {FlowNode, isExecKey, hiddenSocketRow} from './scheme';
+import {FlowNode, isExecKey, hiddenSocketRow, inlinePreviewEnabled, inlinePreviewSize} from './scheme';
 
 export interface LayoutEdge {
   source: FlowNode;
@@ -206,12 +206,18 @@ export function estimateNodeHeight(node: FlowNode): number {
   const rows = Math.max(visible('input', Object.keys(node.inputs)),
     visible('output', Object.keys(node.outputs)), 1);
   // title bar + the always-present one-line info row + body padding + rows.
-  return 28 + 19 + 12 + rows * 20;
+  const base = 28 + 19 + 12 + rows * 20;
+  // The in-node preview container adds its own height (plus its margins).
+  return inlinePreviewEnabled(node) ? base + inlinePreviewSize(node).height + 14 : base;
 }
 
 /** Estimated rendered width; constants mirror the funcflow.css min-widths and title font. */
 export function estimateNodeWidth(node: FlowNode): number {
   const labelWidth = 44 + String(node.label ?? '').length * 6.5;
   // Must cap with the CSS max-width 280 or long-titled nodes get phantom column width.
-  return Math.min(280, Math.max(node.collapsed ? 160 : 220, labelWidth));
+  const base = Math.min(280, Math.max(node.collapsed ? 160 : 220, labelWidth));
+  // A node with the in-node preview lifts the CSS cap — its width is the container's.
+  if (!node.collapsed && inlinePreviewEnabled(node))
+    return Math.max(base, inlinePreviewSize(node).width + 18);
+  return base;
 }

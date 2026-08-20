@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
+import {INLINE_HOSTED_DATA_KEY} from '../rete/scheme';
 import {setTid} from '../utils/test-ids';
 import * as rxjs from 'rxjs';
 
@@ -212,6 +213,20 @@ async function addViewerToWorkspace(viewer: DG.Viewer): Promise<void> {
   }
 }
 
+/** Element rendering a graphics output (inline SVG markup or a base64 PNG) —
+ *  shared by the bottom panel and the in-node preview. Graphics is data, not a
+ *  live object, so each caller builds its own copy. */
+export function graphicsElement(imageData: string): HTMLElement {
+  const img = ui.div([], {style: {
+    width: '100%', minHeight: '200px',
+    backgroundPosition: 'left', backgroundRepeat: 'no-repeat', backgroundSize: 'contain',
+    aspectRatio: '1',
+  }});
+  if (imageData.startsWith('<svg')) img.innerHTML = imageData;
+  else img.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;
+  return img;
+}
+
 /** True if this state has at least one output worth a rich preview —
  *  primitive-only states stay in the property panel. */
 export function hasRenderablePreview(state: NodeExecState): boolean {
@@ -347,14 +362,7 @@ export function buildPreview(
     const imageData = summary.value as string;
     if (typeof imageData !== 'string') return null;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
-    const img = ui.div([], {style: {
-      width: '100%', minHeight: '200px',
-      backgroundPosition: 'left', backgroundRepeat: 'no-repeat', backgroundSize: 'contain',
-      aspectRatio: '1',
-    }});
-    if (imageData.startsWith('<svg')) img.innerHTML = imageData;
-    else img.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;
-    wrap.appendChild(img);
+    wrap.appendChild(graphicsElement(imageData));
     return wrap;
   }
   case 'widget':
@@ -362,6 +370,15 @@ export function buildPreview(
     // The live object captured during the run — its root is attached nowhere else.
     const obj = summary.value as {root?: HTMLElement} | undefined;
     if (!obj?.root || !(obj.root instanceof Element)) return null;
+    // A root the in-node preview hosts must not be stolen — one live DOM
+    // element cannot be in two places.
+    if (obj.root.dataset?.[INLINE_HOSTED_DATA_KEY] === 'true') {
+      const note = setTid(ui.div([], 'funcflow-preview-block'), 'preview-inline-note');
+      note.classList.add('ff-preview-inline-note');
+      note.textContent = `This ${summary.type} is previewed on its node — ` +
+        'turn off the node preview (⊟) to show it here.';
+      return note;
+    }
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     wrap.style.position = 'relative';
     obj.root.style.width = '100%';

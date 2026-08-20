@@ -9,11 +9,13 @@ import {FlowEditor, GraphEdit} from '../rete/flow-editor';
 import {ExecutionState, NodeExecStatus, ExecEvent} from './execution-state';
 import {ExecutionVisualizer, errorSummary, normalizeErrorMessage} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
+import {graphicsElement} from './value-inspector';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
-import {FlowNode, isExecKey, nodeMissingRequirements} from '../rete/scheme';
+import {FlowNode, isExecKey, nodeMissingRequirements, inlinePreviewEnabled,
+  INLINE_HOSTED_DATA_KEY} from '../rete/scheme';
 import {resolveInputValue, inputBlockReason} from '../utils/input-values';
 
 /** Grow a dirty node set upstream until every crossing connection comes from a
@@ -183,6 +185,60 @@ export class ExecutionController {
         onComplete: () => resolve(this.cloneForNode(sourceNodeId)),
       });
     });
+  }
+
+  /** Elements built from captured graphics outputs, one per summary — React
+   *  re-renders must re-attach the same element, never rebuild it. */
+  private readonly graphicsPreviewEls = new WeakMap<ValueSummary, HTMLElement>();
+
+  /** The in-node preview content for a node: the first captured live
+   *  viewer/widget root, else an element built from a graphics output. Kept
+   *  through `stale` — like the bottom panel, the node shows the last result. */
+  inlinePreviewRoot(nodeId: string): HTMLElement | null {
+    const live = this.liveObjectRoot(nodeId);
+    if (live) return live;
+    const outputs = this.state.getNodeState(nodeId)?.outputs;
+    if (!outputs) return null;
+    // Graphics arrive as data (SVG markup / base64 PNG), not a live object — the
+    // node gets its own element and the bottom panel keeps its own copy too.
+    for (const s of Object.values(outputs)) {
+      if (s != null && s.type === 'graphics' && typeof s.value === 'string') {
+        let el = this.graphicsPreviewEls.get(s);
+        if (!el) {
+          el = graphicsElement(s.value as string);
+          this.graphicsPreviewEls.set(s, el);
+        }
+        return el;
+      }
+    }
+    return null;
+  }
+
+  /** First captured live viewer/widget root — the only content the node and the
+   *  bottom panel would otherwise fight over (graphics is copied, not shared). */
+  private liveObjectRoot(nodeId: string): HTMLElement | null {
+    const outputs = this.state.getNodeState(nodeId)?.outputs;
+    if (!outputs) return null;
+    for (const s of Object.values(outputs)) {
+      if (s != null && (s.type === 'viewer' || s.type === 'widget') &&
+          s.value?.root instanceof HTMLElement)
+        return s.value.root as HTMLElement;
+    }
+    return null;
+  }
+
+  /** Stamp/clear the hosted marker on the node's live root. A stamped root makes
+   *  the bottom panel render a note instead of stealing the element the node
+   *  preview is showing; stamping happens BEFORE any panel build so the outcome
+   *  never depends on render order. */
+  syncInlinePreviewOwnership(nodeId: string): void {
+    const root = this.liveObjectRoot(nodeId);
+    if (!root) return;
+    const node = this.flow.getNodeById(nodeId);
+    if (node && inlinePreviewEnabled(node) && !node.collapsed)
+      root.dataset[INLINE_HOSTED_DATA_KEY] = 'true';
+    else
+      delete root.dataset[INLINE_HOSTED_DATA_KEY];
   }
 
   /** Whether the `__ff_stash` live-value registry holds this node's output. */
@@ -485,6 +541,9 @@ export class ExecutionController {
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.completed, {
         endTime: event.timestamp, outputs: event.outputs,
       });
+      // Claim a fresh viewer/widget root for the in-node preview before any
+      // panel below could mount it.
+      this.syncInlinePreviewOwnership(event.nodeId);
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);

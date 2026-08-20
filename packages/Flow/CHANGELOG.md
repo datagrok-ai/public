@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Introduced: In-node preview for viewer-, widget- and graphics-producing nodes (e.g. Chem's Gasteiger Partial Charges) — a title-bar ⊞ toggle (also in the node context menu) mounts the live result right on the node in a resizable container (300×300 by default; the choice and size persist with the flow); while a node hosts its viewer, the bottom output panel shows a note instead of stealing it (graphics is copied, so both previews coexist)
+
 * Improved: Node cards hide primitive-typed input rows (string/int/double/bool/datetime and their pass-throughs) by default — they're edited in the context panel; a new "Shown inputs" checkbox submenu in the node context menu re-shows any input per node (persists through save/load, duplicate, and copy-paste), a wired input always renders so connections keep their endpoints, and a ⋯ indicator below the input rows marks nodes with hidden inputs and pops the same checkboxes on click
 * Fixed: A hand-typed Full Path was silently discarded (the file picker only reports server-resolved values) — the panel reverted the text and the next run reported success on the OLD file; typed paths now commit on change/Enter like every other field
 * Improved: Node cards no longer resize during runs — one always-present info line (needs-input hint / run status / description / auto-summary, in that precedence) replaces the three stacked conditional lines, cards cap at 280px with ellipsized titles, and a new run keeps each node's last result visible (stale grey) instead of flashing blank before "Running…"

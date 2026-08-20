@@ -19,7 +19,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
-  EXEC_IN_KEY, EXEC_OUT_KEY, hiddenSocketRow,
+  EXEC_IN_KEY, EXEC_OUT_KEY, hiddenSocketRow, supportsInlinePreview, INLINE_PREVIEW_PROP,
 } from './scheme';
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
@@ -65,6 +65,12 @@ export interface FlowEditorCallbacks {
   /** Suggestion-engine picks for the node an output drag started from — the
    *  drag-out menu leads with them and applies their prefills on selection. */
   getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
+  /** Live viewer/widget root captured for a node — the in-node preview mounts it. */
+  getInlinePreviewContent?: (nodeId: string) => HTMLElement | null;
+  /** Fired after the in-node preview is toggled, BEFORE the node re-renders —
+   *  the host re-stamps live-root ownership and refreshes the bottom panel.
+   *  Cosmetic, like collapse — never a params change. */
+  onInlinePreviewToggled?: (nodeId: string, enabled: boolean) => void;
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
@@ -285,6 +291,8 @@ export class FlowEditor {
     isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
     notifyParamsChanged: (nodeId) => this.notifyNodeParamsChanged(nodeId),
     showShownInputsMenu: (nodeId, event) => this.showShownInputsMenu(nodeId, event),
+    toggleInlinePreview: (nodeId) => void this.toggleInlinePreview(nodeId),
+    getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
   };
 
   /** Reject incompatible connections at pick time, before they enter the data layer. */
@@ -2587,6 +2595,11 @@ export class FlowEditor {
         // Right-clicking a node in a multi-selection duplicates the whole selection.
         void this.duplicateNodes(inSelection && sel.length > 1 ? sel : [node.id]);
       });
+    if (supportsInlinePreview(node)) {
+      menu.item(node.properties[INLINE_PREVIEW_PROP] === true ?
+        'Hide preview on node' : 'Show preview on node',
+      () => void this.toggleInlinePreview(node.id));
+    }
     const groupable = inSelection && sel.length > 1 && sel.filter((id) =>
       this.editor.getNode(id)?.dgNodeType !== 'output' && !this.groupOf(id)).length > 1;
     if (groupable)
@@ -2840,6 +2853,26 @@ export class FlowEditor {
     const node = this.editor.getNode(nodeId);
     if (!node) return;
     node.collapsed = !node.collapsed;
+    await this.area.update('node', nodeId);
+  }
+
+  async toggleInlinePreview(nodeId: string): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    await this.setInlinePreview(nodeId, node.properties[INLINE_PREVIEW_PROP] !== true);
+  }
+
+  /** Show/hide the in-node viewer/widget preview. The choice lives in
+   *  `node.properties`, so it serializes with the flow. Cosmetic like collapse —
+   *  no params-changed invalidation. */
+  async setInlinePreview(nodeId: string, on: boolean): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node || !supportsInlinePreview(node)) return;
+    if ((node.properties[INLINE_PREVIEW_PROP] === true) === on) return;
+    if (on) node.properties[INLINE_PREVIEW_PROP] = true;
+    else delete node.properties[INLINE_PREVIEW_PROP]; // default is off — keep saves tidy
+    // The host re-stamps live-root ownership BEFORE the re-render mounts/unmounts it.
+    this.callbacks.onInlinePreviewToggled?.(nodeId, on);
     await this.area.update('node', nodeId);
   }
 

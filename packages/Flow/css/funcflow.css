@@ -1584,6 +1584,77 @@
   background: rgba(0, 0, 0, 0.08);
 }
 
+/* ===== In-node viewer/widget preview ===== */
+
+/* The 300px default preview must not be clipped by the card's 280px cap. */
+.ff-node[data-inline-preview="true"] {
+  max-width: none;
+}
+
+.ff-node-preview-toggle {
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: #455a64;
+  padding: 2px 3px;
+  margin: -2px 0;
+  border-radius: 4px;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.ff-node-preview-toggle:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.ff-node-preview-toggle[data-on="true"] {
+  color: #1976d2;
+  opacity: 1;
+}
+
+/* User-resizable via the native corner handle; the size persists per node. */
+.ff-node-inline-preview {
+  position: relative;
+  margin: 6px 8px 8px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  resize: both;
+  min-width: 180px;
+  min-height: 120px;
+  max-width: 900px;
+  max-height: 900px;
+  cursor: default;
+}
+
+.ff-node-inline-preview[data-empty="true"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ff-node-preview-placeholder {
+  color: var(--grey-4, #9497a0);
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+  user-select: none;
+}
+
+/* Bottom-panel stand-in for an output whose live root the node preview hosts. */
+.ff-preview-inline-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-4, #9497a0);
+  font-size: 12px;
+  text-align: center;
+  padding: 16px;
+}
+
 /* Info line — fixed 1-line height so run-state changes never resize the card; kind via data-kind. */
 .ff-node-infoline {
   padding: 2px 10px 3px 10px;
