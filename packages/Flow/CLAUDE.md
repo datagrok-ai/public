@@ -278,7 +278,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `input-value-tests.ts` | Flow: input values | `resolveInputValue` per type (scalars/lists/map/dataframe by name + `transientValue` priority), `inputBlockReason` wording, header emission guard (table names stay out, scalar defaults stay), `runAutorun` unconfigured-skips / configured-runs-silently (no dialog), explicit Run with configured scalar needs no dialog, `autorunBlockers`, the node-body DG editor renders + panel→node sync, editor edits report `params-changed` exactly once (guarded) |
 | `toolbox-tabs-tests.ts` | Flow: toolbox tabs | the five top tabs (Files/Spaces/Queries/Workflows/Favorites) with icon-only headers (Browse-tree glyphs, no text, aria-label keeps the name), the Spaces tab lazily mounts the content-mode SpacePicker, Workflows tab lists saved flows (and they're out of the accordion), favorites store toggle/persistence/notifications, row-star → Favorites tab round-trip (star, list, dblclick-create, unstar in place), search badges (>0 count pill, 0-match dim, cleared with the query), group-by catalog-header button (label + persistence), DG-func favorite resolves back to its FuncInfo |
 | `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; panel state machine (hidden → expanded on first renderable output; minimize remembered — content updates never pop it up; `clear()` hides but keeps the preference; caret click toggles + fires `onStateChanged`, header body does not; disabled panels never show); same node + same state → no preview rebuild (new state / other node → rebuild); **pin**: pinning gates `showForNode` to the pinned node (others ignored), the pinned node still updates in place, the pin survives `clear()`, `unpin()` releases, user-unpin fires `onUnpinned`, `markUpdating`/`clearUpdating` overlay/release the recalculating indicator over kept content; the panel is a pane of the view splitter, disabled in embedded views; **opening the panel minimizes the overview minimap** (one-shot, hidden → visible edge) |
-| `inline-preview-tests.ts` | Flow: inline preview | `supportsInlinePreview` (viewer/widget/graphics outputs only), default-off + size fallback, save/load round-trip of choice+size, the title-bar ⊞ toggle (capable nodes only, flips property, container appears at 300×300, off deletes the property), the context-menu item, live-root mounting through the bridge (claim marker, collapse/toggle-off release, placeholder without content), drag-resize persistence via ResizeObserver, layout estimates including the preview, the bottom panel's hosted-note handoff (`buildPreview` never steals a claimed root), `OutputPreviewPanel.refresh`, controller ownership (`inlinePreviewRoot`/`syncInlinePreviewOwnership`, stale keeps the last root), graphics outputs (SVG/PNG element built + cached per summary, no ownership marker, panel copy coexists, mounted in the node), a live Select Table → Scatter Plot run mounting the real viewer in the node, and a live Gasteiger Partial Charges run rendering its graphics in the node |
+| `inline-preview-tests.ts` | Flow: inline preview | `supportsInlinePreview` (viewer/widget/graphics outputs only), default-off + size fallback, save/load round-trip of choice+size, the title-bar ⊞ toggle (capable nodes only, flips property, container appears at 300×300, off deletes the property), the context-menu item, live-root mounting through the bridge (claim marker, collapse/toggle-off release, placeholder without content), drag-resize persistence via ResizeObserver, layout estimates including the preview, the bottom panel's hosted-note handoff (`buildPreview` never steals a claimed root), `OutputPreviewPanel.refresh`, controller ownership (`inlinePreviewRoot`/`syncInlinePreviewOwnership`, stale keeps the last root), graphics outputs (SVG/PNG element built + cached per summary, no ownership marker, panel copy coexists, mounted in the node), the portal (content mounts once — no transformed ancestor, hover changes nothing, portal tracks the container across zoom/pan, grip present; collapse/toggle-off/no-content release), the overlap-interleave regression (portal DOM order follows node paint order; the covered portal carries an evenodd clip hole, the top one none, and elementFromPoint in the overlap hits the covering card — click-through), the fixed-position repro+fix (a fixed probe inside the node lands far from its viewport coords — the popup bug — while in the portal it lands exactly, at k=1 and 2), right-click routing (no node menu over preview content, node menu still on the card), a live Select Table → Scatter Plot run mounting the real viewer with client geometry unscaled at k=0.5/2, a live shell-attached run clicking the REAL axis selector (`d4-column-selector-column`) asserting its popup opens next to the viewer and is visible at k=1 and 1.5 and that plot right-click opens the viewer's menu, and a live Gasteiger Partial Charges run rendering its graphics in the node (skips with a warning when JKG is down, probed via Chem:TestPythonRunning) |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
 | `column-picker-tests.ts` | Flow: column picker | `column`/`column_list` inputs render a `ff-prop-pick-columns-<param>` icon; the request resolves the right dataframe input per column (JoinTables `keys1`→`table1`, `keys2`→`table2`); **viewer** axis options and **Select Column(s)** utilities get the picker too (resolving their `table` input); the request carries the icon as its menu `anchor`; `buildColumnMatchFilter` gates by `semType` / `columnTypeFilter`; no icon without an `onPickColumns` handler |
 | `connect-interaction-tests.ts` | Flow: connect interaction | `soleCompatibleInput` (drop-on-node decision): one compatible free input → its key, several/zero → null, taken inputs excluded; `soleCompatibleOutput` (reverse drop): real output wins over passthroughs, sole-passthrough fallback, ambiguous/incompatible → null |
@@ -509,25 +509,51 @@ value), `properties.viewerLook` (the accumulated options, look keys minus `#type
   `setOptions` is the only reliable applier.)
 - **In-node preview** (viewer nodes AND any func whose output socket is `viewer`/`widget`/`graphics`
   — `supportsInlinePreview` in [scheme.ts](src/rete/scheme.ts)): a title-bar **⊞ toggle** (and a node
-  context-menu item) sets `properties['inlinePreview']`, which renders a **resizable**
-  (`resize: both`, size persisted in `properties['inlinePreviewSize']`, default 300×300) container
-  at the bottom of the node body that mounts the **captured live root**
-  (`ExecutionController.inlinePreviewRoot`, reached through
-  `FlowEditorBridge.getInlinePreviewContent` → `FlowEditorCallbacks.getInlinePreviewContent`).
-  Both keys live in `properties`, so save/load/duplicate carry them; the toggle is **cosmetic**
-  (like collapse — never `params-changed`). One live DOM root cannot be in two places: whoever
-  hosts it stamps `data-ff-inline-hosted` on the root (`INLINE_HOSTED_DATA_KEY`; the controller
-  stamps at `node-complete` *before* any panel build, `syncInlinePreviewOwnership`; the React
-  component claims on mount, releases on unmount — toggle-off, collapse, node removal), and
-  `buildPreview` renders a **note** instead of stealing a claimed root. **Graphics outputs**
-  (e.g. Chem's Gasteiger Partial Charges — `#output: graphics`) are data (SVG markup / base64 PNG),
-  not a live object: `inlinePreviewRoot` builds an element via the shared `graphicsElement`
-  (value-inspector), cached per captured summary in a `WeakMap` so React re-renders re-attach the
-  same element; no ownership handoff — the bottom panel keeps its own copy. Toggling fires
-  `onInlinePreviewToggled` BEFORE the re-render so the view re-stamps ownership and
-  `OutputPreviewPanel.refresh()`es a panel currently showing that node. Layout estimates
-  (`estimateNodeWidth/Height`) include the preview, and `.ff-node[data-inline-preview="true"]`
-  lifts the 280px card cap. Tests: [tests/inline-preview-tests.ts](src/tests/inline-preview-tests.ts).
+  context-menu item) sets `properties['inlinePreview']`, which reserves a container box at the
+  bottom of the node body (size persisted in `properties['inlinePreviewSize']`, default 300×300)
+  showing the **captured live root** (`ExecutionController.inlinePreviewRoot`, reached through
+  `FlowEditorCallbacks.getInlinePreviewContent`). Both keys live in `properties`, so
+  save/load/duplicate carry them; the toggle is **cosmetic** (like collapse — never
+  `params-changed`). **Screen-space portal with paint-order clipping**
+  (`FlowEditor.syncInlinePreview`/`releaseInlinePreview`, reached from the React component via the
+  bridge): DG viewer popups (axis/color selectors, context menus) are `position: fixed`, and a CSS
+  transform on ANY ancestor becomes their containing block — inside the zoom/pan canvas subtree a
+  popup lands far from the viewer or outside the clipped canvas (even at zoom 1, from the pan
+  translate); there is no CSS opt-out, so interactive preview content must render OUTSIDE the
+  transformed subtree. Each preview mounts ONCE into a `.ff-node-preview-portal` (in a
+  `.ff-preview-layer` inside `canvasEl`, like the minimap — clips at the canvas edge, never covers
+  the Outputs strip) and **never moves or resizes on hover** — from the user's perspective the
+  preview simply is card content (an earlier hover-lift variant visibly re-laid-out the viewer on
+  every pointerenter and was rejected). Portals track their in-card containers with left/top on
+  every pan/zoom/drag/resize (`syncPreviewPortals`, rAF-coalesced; host + canvas ResizeObservers).
+  A permanent above-everything layer cannot z-interleave with overlapping cards (previews painted
+  over foreign cards — a reported artifact), so `syncPreviewPortals` (1) keeps portals in their
+  nodes' PAINT ORDER (rete raises a picked node's view — the `nodepicked` pipe branch resyncs; the
+  sort uses `compareDocumentPosition` of the view wrappers) and (2) cuts each portal with a
+  `clip-path: path(evenodd, …)` HOLE wherever a card painted above its node overlaps it
+  (`applyPortalClip`, walking `nextElementSibling` view wrappers; `wrapperCard` finds `.ff-node`
+  by DESCENDANT search — a React mount div sits between the wrapper and the card): the hole
+  reveals the covering card beneath the layer AND is click-through, so looks and hit-testing both
+  interleave. Untransformed content → canvas hit-testing true at any zoom, fixed popups land at
+  the viewer; pointer events are stopPropagation-ed so the canvas never pans/zooms/menus over the
+  preview — **right-click on the preview reaches the viewer's own context menu** (belt-and-braces:
+  `installContextMenu` also skips the node menu when the target is mounted preview content; the
+  empty placeholder box still gets the node menu). Resizing uses a custom `.ff-node-preview-grip`
+  in the portal (the native CSS handle would sit under it); it writes the host's layout size
+  (screen deltas ÷ zoom) and the component's ResizeObserver persists it.
+  `FlowEditor.setZoom(k)`/`getZoom()` are public for tests. One live DOM root cannot be in two places: whoever hosts it stamps
+  `data-ff-inline-hosted` on the root (`INLINE_HOSTED_DATA_KEY`; the controller stamps at
+  `node-complete` *before* any panel build, `syncInlinePreviewOwnership`; the portal claims on
+  mount, releases on unmount — toggle-off, collapse, node removal), and `buildPreview` renders a
+  **note** instead of stealing a claimed root. **Graphics outputs** (e.g. Chem's Gasteiger Partial
+  Charges — `#output: graphics`) are data (SVG markup / base64 PNG), not a live object:
+  `inlinePreviewRoot` builds an element via the shared `graphicsElement` (value-inspector), cached
+  per captured summary in a `WeakMap` so re-renders re-attach the same element; no ownership
+  handoff — the bottom panel keeps its own copy. Toggling fires `onInlinePreviewToggled` BEFORE the
+  re-render so the view re-stamps ownership and `OutputPreviewPanel.refresh()`es a panel currently
+  showing that node. Layout estimates (`estimateNodeWidth/Height`) include the preview, and
+  `.ff-node[data-inline-preview="true"]` lifts the 280px card cap.
+  Tests: [tests/inline-preview-tests.ts](src/tests/inline-preview-tests.ts).
 
 ### Function Nodes ([rete/nodes/func-node.ts](src/rete/nodes/func-node.ts))
 
@@ -1100,7 +1126,7 @@ its raw, un-slugified identity — the test-id `ff-node` is the same on every no
 | Start panel | `ff-start-overlay`, `ff-start-panel`, `ff-start-bg`, `ff-start-template-<file>`, `ff-start-blank`, `ff-start-open`, `ff-start-first-flow` (flagship build tutorial), `ff-start-ui-tour` (hint link → interface tour), `ff-start-recent` + `ff-start-recent-item-<name>` (recent-flows section/rows) |
 | Function browser | `ff-browser`, `ff-browser-search`, `ff-browser-groupby`, `ff-browser-tree`, `ff-browser-section-<title>`, `ff-browser-item-<typeName>` |
 | Files / Queries panes | `ff-browser-files`, `ff-browser-queries`, `ff-browser-query-conn-<conn>` (+ `data-query-conn`); tree rows `ff-files-conn-<name>` / `ff-files-folder-<name>` / `ff-files-file-<name>` (+ `data-conn`/`data-folder`/`data-file`/`data-file-path`) |
-| Canvas node | `ff-node` (+ `data-node-id`, `data-node-type`), `ff-node-title`/`-title-text`/`-status`/`-caret`/`-body`; the single info line is `.ff-node-infoline` whose test-id follows its content kind (`ff-node-hint`/`-statusline`/`-description`/`-summary`, `ff-node-infoline` when empty; `data-kind` carries the kind), `ff-exec-in`/`ff-exec-out`, `ff-socket-input-<key>`/`ff-socket-output-<key>`, `ff-socket-<type>`; in-node preview: `ff-node-preview-toggle` (title bar, `data-on`), `ff-node-preview` (the resizable container, `data-empty`), `ff-node-preview-placeholder`, and the node root carries `data-inline-preview`; the bottom panel's stand-in for a node-hosted root is `ff-preview-inline-note` |
+| Canvas node | `ff-node` (+ `data-node-id`, `data-node-type`), `ff-node-title`/`-title-text`/`-status`/`-caret`/`-body`; the single info line is `.ff-node-infoline` whose test-id follows its content kind (`ff-node-hint`/`-statusline`/`-description`/`-summary`, `ff-node-infoline` when empty; `data-kind` carries the kind), `ff-exec-in`/`ff-exec-out`, `ff-socket-input-<key>`/`ff-socket-output-<key>`, `ff-socket-<type>`; in-node preview: `ff-node-preview-toggle` (title bar, `data-on`), `ff-node-preview` (the resizable container, `data-empty`), `ff-node-preview-portal` (the screen-space content portal, `data-node-id`) with `ff-node-preview-grip`, `ff-node-preview-placeholder`, and the node root carries `data-inline-preview`; the bottom panel's stand-in for a node-hosted root is `ff-preview-inline-note` |
 | Connections | `ff-connection`, `ff-edge-count`, `ff-waypoint-<i>` |
 | Property panel | `ff-property-panel`, `ff-property-content`, `ff-property-header`, `ff-property-title-row`, `ff-property-type-badge`, `ff-prop-func-chips` (+`ff-prop-func-fullname`/`ff-prop-func-package` chips), `ff-prop-input-<label/param>`, `ff-prop-pick-columns-<param>` (column picker icon on a column/column_list input) |
 | Editor extras | `ff-minimap`(+`-header`/`-toggle`), `ff-guide-overlay`, `ff-suggest-popup`/`-search`/`-list`, `ff-suggest-item-<typeName>`, `ff-hover-docs`, `ff-port-preview`, `ff-output-panel`(+`-header`/`-node`/`-pin`/`-caret`/`-content`), `ff-value-inspector`/`ff-value-previews`/`ff-preview-block-<name>`, `ff-add-to-workspace`, `ff-viewer-edit` |

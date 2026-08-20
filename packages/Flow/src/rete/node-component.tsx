@@ -11,7 +11,7 @@ import {classicConnectionPath} from 'rete-render-utils';
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements,
   hiddenSocketRow, supportsInlinePreview, inlinePreviewEnabled, inlinePreviewSize,
-  INLINE_PREVIEW_SIZE_PROP, INLINE_HOSTED_DATA_KEY} from './scheme';
+  INLINE_PREVIEW_SIZE_PROP} from './scheme';
 import {InputValueControl} from './nodes/input-value-control';
 import {TypedSocket} from './sockets';
 import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
@@ -288,33 +288,25 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   );
 }
 
-/** In-node preview of a viewer/widget output: mounts the live root captured by
- *  the last run (reached through the editor bridge), or a placeholder before one
- *  exists. The container is user-resizable (CSS `resize: both`); the size
- *  persists in `node.properties` so it serializes with the flow. */
+/** In-node preview of a viewer/widget output. The in-card container only
+ *  reserves the box (border, placeholder, resize) — the actual content is
+ *  mounted by the editor in a SCREEN-SPACE PORTAL tracking this container
+ *  (`FlowEditor.syncInlinePreview`): DG viewer popups are `position: fixed`,
+ *  and any transformed ancestor (the zoom/pan canvas) would become their
+ *  containing block, throwing them far from the viewer. The size persists in
+ *  `node.properties` so it serializes with the flow. */
 function InlineNodePreview(props: {node: FlowNode}): React.JSX.Element {
   const node = props.node;
   const hostRef = React.useRef<HTMLDivElement>(null);
-  const contentRef = React.useRef<HTMLElement | null>(null);
 
-  // Mount / swap the captured live root. Like DgControlComponent, the content
-  // element survives React re-renders — it is re-attached, never rebuilt.
+  // Placeholder before content exists; the portal binds/refreshes on every
+  // render, so a fresh run's content appears without extra plumbing.
   React.useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const content = node.editorBridge?.getInlinePreviewContent(node.id) ?? null;
-    if (content !== contentRef.current) {
-      if (contentRef.current) delete contentRef.current.dataset[INLINE_HOSTED_DATA_KEY];
-      contentRef.current = content;
-    }
-    if (content) {
-      content.dataset[INLINE_HOSTED_DATA_KEY] = 'true';
-      content.style.width = '100%';
-      content.style.height = '100%';
-      if (content.parentElement !== host) {
-        host.innerHTML = '';
-        host.appendChild(content);
-      }
+    const has = (node.editorBridge?.getInlinePreviewContent(node.id) ?? null) != null;
+    if (has) {
+      host.querySelector(':scope > .ff-node-preview-placeholder')?.remove();
       host.dataset.empty = 'false';
     } else if (host.dataset.empty !== 'true') {
       host.innerHTML = '';
@@ -325,15 +317,13 @@ function InlineNodePreview(props: {node: FlowNode}): React.JSX.Element {
       host.appendChild(ph);
       host.dataset.empty = 'true';
     }
+    node.editorBridge?.syncInlinePreview(node.id, host);
   });
 
-  // Release the hosted marker when the preview unmounts (toggle off, collapse,
-  // node removed) so the bottom output panel can host the live root again.
+  // Tear the portal down when the preview unmounts (toggle off, collapse, node
+  // removed) — this also releases the hosted marker to the bottom panel.
   React.useEffect(() => () => {
-    if (contentRef.current) {
-      delete contentRef.current.dataset[INLINE_HOSTED_DATA_KEY];
-      contentRef.current = null;
-    }
+    node.editorBridge?.releaseInlinePreview(node.id);
   }, []);
 
   // Persist a user drag-resize into the node properties (cosmetic — no

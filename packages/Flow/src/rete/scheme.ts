@@ -18,8 +18,12 @@ export interface FlowEditorBridge {
   showShownInputsMenu(nodeId: string, event: MouseEvent): void;
   /** Flip the in-node viewer/widget preview (`properties['inlinePreview']`). */
   toggleInlinePreview(nodeId: string): void;
-  /** The live viewer/widget root captured for this node — mounted by the in-node preview. */
+  /** The live viewer/widget root captured for this node — shown by the in-node preview. */
   getInlinePreviewContent(nodeId: string): HTMLElement | null;
+  /** Bind/refresh the screen-space preview portal tracking a node's in-card container. */
+  syncInlinePreview(nodeId: string, host: HTMLElement): void;
+  /** Tear the node's preview portal down (toggle-off, collapse, unmount). */
+  releaseInlinePreview(nodeId: string): void;
 }
 
 /** Base class for every canvas node — `ClassicPreset.Node` plus FuncFlow metadata. */

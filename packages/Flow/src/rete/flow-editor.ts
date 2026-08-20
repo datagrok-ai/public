@@ -20,6 +20,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
   EXEC_IN_KEY, EXEC_OUT_KEY, hiddenSocketRow, supportsInlinePreview, INLINE_PREVIEW_PROP,
+  INLINE_HOSTED_DATA_KEY, inlinePreviewSize,
 } from './scheme';
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
@@ -293,6 +294,8 @@ export class FlowEditor {
     showShownInputsMenu: (nodeId, event) => this.showShownInputsMenu(nodeId, event),
     toggleInlinePreview: (nodeId) => void this.toggleInlinePreview(nodeId),
     getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
+    syncInlinePreview: (nodeId, host) => this.syncInlinePreview(nodeId, host),
+    releaseInlinePreview: (nodeId) => this.releaseInlinePreview(nodeId),
   };
 
   /** Reject incompatible connections at pick time, before they enter the data layer. */
@@ -373,6 +376,7 @@ export class FlowEditor {
         this.chipSocketSubs.delete(context.data.id);
         this.groupSocketSubs.delete(context.data.id);
         this.handleGroupMemberRemoved(context.data.id);
+        this.releaseInlinePreview(context.data.id);
       }
       if (context.type === 'connectioncreated')
         this.maybeAutoTypeValueOutput(context.data);
@@ -404,6 +408,8 @@ export class FlowEditor {
 
     this.area.addPipe((context) => {
       if (context.type === 'nodepicked') {
+        // Picking raises the node's view — portal order and clips must follow.
+        this.schedulePreviewPortalSync();
         const node = this.editor.getNode(context.data.id);
         if (node) {
           // Re-picking the current node must not make the host rebuild its
@@ -437,6 +443,8 @@ export class FlowEditor {
         const g = this.groupOf(context.data.id);
         if (g && !g.minimized) this.scheduleGroupRefit(g);
         this.scheduleMinimapRedraw();
+        // A dragged node's preview portal must ride along.
+        this.schedulePreviewPortalSync();
       }
       if (context.type === 'nodedragged') this.hideGuides();
       // The dot-grid background is screen-space — rescale/shift it on pan/zoom.
@@ -446,6 +454,9 @@ export class FlowEditor {
         this.scheduleMinimapRedraw();
         this.scheduleStripSync(false);
       }
+      // Screen-space preview portals track their nodes' containers.
+      if (context.type === 'translated' || context.type === 'zoomed' || context.type === 'render')
+        this.schedulePreviewPortalSync();
       // Tag rendered connection wrappers with id + status for the CSS animations.
       if (context.type === 'rendered' && (context.data as {type?: string}).type === 'connection')
         this.tagConnectionElement(context.data as {element: HTMLElement; payload: FlowConnection});
@@ -2558,6 +2569,16 @@ export class FlowEditor {
         event: MouseEvent & {_ffHandled?: boolean};
         context: 'root' | FlowNode | FlowConnection;
       };
+      // A right-click on mounted preview content belongs to the VIEWER's own
+      // context menu — no node menu, no preventDefault (the viewer handles it).
+      // The empty (placeholder) box still gets the node menu.
+      const target = data.event.target as Element | null;
+      const previewHost = target?.closest?.('.ff-node-inline-preview') as HTMLElement | null;
+      if ((previewHost && previewHost.dataset.empty === 'false') ||
+          target?.closest?.('.ff-node-preview-portal')) {
+        data.event._ffHandled = true;
+        return context;
+      }
       data.event.preventDefault();
       if (data.context === 'root') {
         if (data.event._ffHandled) return context;
@@ -3205,6 +3226,205 @@ export class FlowEditor {
 
   zoomIn(): void {void this.area.area.zoom(this.area.area.transform.k * 1.2);}
   zoomOut(): void {void this.area.area.zoom(this.area.area.transform.k * 0.8);}
+  getZoom(): number {return this.area.area.transform.k;}
+  setZoom(k: number): void {void this.area.area.zoom(k);}
+
+  // ===== In-node preview portals ==========================================
+  // DG viewer popups (axis/color selectors, menus) are `position: fixed`, and a
+  // transformed ancestor becomes their containing block — inside the zoom/pan
+  // canvas subtree a popup lands far from the viewer (even at zoom 1, from the
+  // pan translate). There is no CSS opt-out, so interactive preview content
+  // must render OUTSIDE the transformed subtree: a screen-space portal per
+  // node, tracking its in-card container (same idea as the Outputs-strip
+  // chips). The content mounts ONCE and never moves or resizes on hover — from
+  // the user's perspective the preview simply IS part of the card. Two
+  // mechanisms make the layer z-interleave with overlapping cards instead of
+  // painting above everything (the early version's artifact):
+  //   1. portals are kept in their nodes' paint order (rete raises a picked
+  //      node's view; `syncPreviewPortals` re-appends portals to match), and
+  //   2. where a card ABOVE a portal's node overlaps it, the portal is cut out
+  //      with a `clip-path: path(evenodd, ...)` hole — the hole reveals the
+  //      covering card painted beneath the layer AND is click-through, so both
+  //      looks and hit-testing interleave correctly.
+
+  private previewLayer: HTMLElement | null = null;
+  private readonly previewPortals = new Map<string,
+    {host: HTMLElement; portal: HTMLElement; content: HTMLElement | null; ro: ResizeObserver}>();
+  private previewSyncRaf: number | null = null;
+  private previewLayerRo: ResizeObserver | null = null;
+
+  private ensurePreviewLayer(): HTMLElement {
+    if (this.previewLayer) return this.previewLayer;
+    const layer = document.createElement('div');
+    layer.className = 'ff-preview-layer';
+    // In the canvas viewport (like the minimap): clips at the canvas edge and
+    // never covers the Outputs strip.
+    this.canvasEl.appendChild(layer);
+    this.previewLayer = layer;
+    this.previewLayerRo = new ResizeObserver(() => this.schedulePreviewPortalSync());
+    this.previewLayerRo.observe(this.canvasEl);
+    return layer;
+  }
+
+  /** Bind/refresh a node's preview portal; no captured content → no portal
+   *  (the in-card container shows its placeholder). */
+  syncInlinePreview(nodeId: string, host: HTMLElement): void {
+    const content = this.callbacks.getInlinePreviewContent?.(nodeId) ?? null;
+    let entry = this.previewPortals.get(nodeId) ?? null;
+    if (!content) {
+      if (entry) this.releaseInlinePreview(nodeId);
+      return;
+    }
+    if (!entry) {
+      const portal = document.createElement('div');
+      portal.className = 'ff-node-preview-portal';
+      setTid(portal, 'node-preview-portal');
+      portal.dataset.nodeId = nodeId;
+      // The portal sits inside the area container — swallow the gestures the
+      // canvas would otherwise claim (pan on drag, zoom on wheel, node menus).
+      for (const t of ['pointerdown', 'contextmenu', 'wheel', 'dblclick'])
+        portal.addEventListener(t, (ev) => ev.stopPropagation());
+      portal.appendChild(this.buildPreviewGrip(nodeId));
+      this.ensurePreviewLayer().appendChild(portal);
+      const ro = new ResizeObserver(() => this.schedulePreviewPortalSync());
+      ro.observe(host);
+      entry = {host, portal, content: null, ro};
+      this.previewPortals.set(nodeId, entry);
+    } else if (entry.host !== host) {
+      entry.ro.disconnect();
+      entry.ro.observe(host);
+      entry.host = host;
+    }
+    if (entry.content !== content) {
+      if (entry.content) {
+        delete entry.content.dataset[INLINE_HOSTED_DATA_KEY];
+        entry.content.remove();
+      }
+      content.dataset[INLINE_HOSTED_DATA_KEY] = 'true';
+      content.style.width = '100%';
+      content.style.height = '100%';
+      entry.portal.insertBefore(content, entry.portal.firstChild);
+      entry.content = content;
+    }
+    this.schedulePreviewPortalSync();
+  }
+
+  /** Remove a node's portal and hand its live root back to the bottom panel. */
+  releaseInlinePreview(nodeId: string): void {
+    const entry = this.previewPortals.get(nodeId);
+    if (!entry) return;
+    if (entry.content) delete entry.content.dataset[INLINE_HOSTED_DATA_KEY];
+    entry.ro.disconnect();
+    entry.portal.remove();
+    this.previewPortals.delete(nodeId);
+  }
+
+  /** Custom resize grip — the native CSS handle would sit under the portal.
+   *  Writes the host's layout size (screen deltas ÷ zoom); the node component's
+   *  ResizeObserver persists it into the properties. */
+  private buildPreviewGrip(nodeId: string): HTMLElement {
+    const grip = document.createElement('div');
+    grip.className = 'ff-node-preview-grip';
+    setTid(grip, 'node-preview-grip');
+    grip.title = 'Resize the preview';
+    grip.addEventListener('pointerdown', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const entry = this.previewPortals.get(nodeId);
+      const node = this.editor.getNode(nodeId);
+      if (!entry || !node) return;
+      const start = {x: ev.clientX, y: ev.clientY, ...inlinePreviewSize(node)};
+      const k = this.area.area.transform.k || 1;
+      const onMove = (mv: PointerEvent): void => {
+        const w = Math.min(900, Math.max(180, Math.round(start.width + (mv.clientX - start.x) / k)));
+        const h = Math.min(900, Math.max(120, Math.round(start.height + (mv.clientY - start.y) / k)));
+        entry.host.style.width = `${w}px`;
+        entry.host.style.height = `${h}px`;
+        this.schedulePreviewPortalSync();
+      };
+      const onUp = (): void => {
+        window.removeEventListener('pointermove', onMove, true);
+        window.removeEventListener('pointerup', onUp, true);
+      };
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('pointerup', onUp, true);
+    });
+    return grip;
+  }
+
+  private schedulePreviewPortalSync(): void {
+    if (this.previewSyncRaf != null || this.previewPortals.size === 0) return;
+    this.previewSyncRaf = requestAnimationFrame(() => {
+      this.previewSyncRaf = null;
+      this.syncPreviewPortals();
+    });
+  }
+
+  /** The card element of a node view wrapper, or null for non-node holder
+   *  children (wires, annotations). The card sits under a React mount div
+   *  inside the wrapper, and each wrapper holds at most one card — search
+   *  descendants. */
+  private static wrapperCard(el: Element): HTMLElement | null {
+    const card = el.querySelector('.ff-node') as HTMLElement | null;
+    return card && card.dataset.nodeType !== 'output' ? card : null;
+  }
+
+  private syncPreviewPortals(): void {
+    const canvasRect = this.canvasEl.getBoundingClientRect();
+    // Node-view wrappers in paint order — the basis for portal order and clips.
+    const viewOf = (nodeId: string): HTMLElement | null =>
+      (this.area.nodeViews.get(nodeId)?.element as HTMLElement | undefined) ?? null;
+    let lastPortal: HTMLElement | null = null;
+    // Iterate portals in their nodes' paint order so re-appends are stable.
+    const ordered = Array.from(this.previewPortals.entries()).sort(([a], [b]) => {
+      const va = viewOf(a);
+      const vb = viewOf(b);
+      if (!va || !vb) return 0;
+      // eslint-disable-next-line no-bitwise
+      return (va.compareDocumentPosition(vb) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+    });
+    for (const [nodeId, entry] of ordered) {
+      const r = entry.host.getBoundingClientRect();
+      // A hidden host (minimized group, display:none ancestors) measures 0.
+      const visible = entry.host.isConnected && r.width > 4 && r.height > 4;
+      entry.portal.style.display = visible ? '' : 'none';
+      // Keep layer DOM order aligned with node paint order.
+      if (lastPortal ? entry.portal.previousElementSibling !== lastPortal :
+        entry.portal.previousElementSibling != null)
+        this.previewLayer?.insertBefore(entry.portal, lastPortal?.nextElementSibling ?? this.previewLayer.firstChild);
+      lastPortal = entry.portal;
+      if (!visible) continue;
+      entry.portal.style.left = `${r.left - canvasRect.left}px`;
+      entry.portal.style.top = `${r.top - canvasRect.top}px`;
+      entry.portal.style.width = `${r.width}px`;
+      entry.portal.style.height = `${r.height}px`;
+      this.applyPortalClip(nodeId, entry.portal, r);
+    }
+  }
+
+  /** Cut the portal where a card painted ABOVE its node overlaps it: the hole
+   *  reveals the covering card (beneath the layer) and passes clicks to it. */
+  private applyPortalClip(nodeId: string, portal: HTMLElement, portalRect: DOMRect): void {
+    const view = (this.area.nodeViews.get(nodeId)?.element as HTMLElement | undefined) ?? null;
+    if (!view) {
+      portal.style.clipPath = '';
+      return;
+    }
+    const holes: string[] = [];
+    for (let sib = view.nextElementSibling; sib; sib = sib.nextElementSibling) {
+      const card = FlowEditor.wrapperCard(sib);
+      if (!card) continue;
+      const c = card.getBoundingClientRect();
+      const x1 = Math.max(0, c.left - portalRect.left);
+      const y1 = Math.max(0, c.top - portalRect.top);
+      const x2 = Math.min(portalRect.width, c.right - portalRect.left);
+      const y2 = Math.min(portalRect.height, c.bottom - portalRect.top);
+      if (x2 - x1 > 1 && y2 - y1 > 1)
+        holes.push(`M${x1} ${y1}H${x2}V${y2}H${x1}Z`);
+    }
+    portal.style.clipPath = holes.length === 0 ? '' :
+      `path(evenodd, "M0 0H${portalRect.width}V${portalRect.height}H0Z${holes.join('')}")`;
+  }
 
   async zoomToFit(): Promise<void> {
     // Strip-pinned output rows follow the viewport — fit the graph proper.
@@ -3280,6 +3500,13 @@ export class FlowEditor {
       window.removeEventListener('pointermove', this.suggestPointerMove, true);
     if (this.suggestPointerUp)
       window.removeEventListener('pointerup', this.suggestPointerUp, true);
+    if (this.previewSyncRaf != null) {
+      cancelAnimationFrame(this.previewSyncRaf);
+      this.previewSyncRaf = null;
+    }
+    for (const id of Array.from(this.previewPortals.keys())) this.releaseInlinePreview(id);
+    this.previewLayerRo?.disconnect();
+    this.previewLayerRo = null;
     if (this.hoverDocsTimer != null) {
       clearTimeout(this.hoverDocsTimer);
       this.hoverDocsTimer = null;
