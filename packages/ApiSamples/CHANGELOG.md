@@ -4,7 +4,7 @@
 
 * Fixed statistics/pearson-correlation.js reading `c1` twice, so it correlated a column with itself and always returned 1
 * Fixed functions/caching-results.js referencing an undefined `result` (and dropped an unused `counts`)
-* Fixed ui/widgets/widgets-tree.js throwing on a widget with no `children`
+* Fixed ui/widgets/widgets-tree.js throwing on a widget with no `children`, and on the base `Widget`, which has no `getFunctions`/`getProperties` (only domain widgets do)
 * Fixed dapi/projects.js saving an unnamed project ("Project name cannot be empty")
 * Gave the `s` input of PythonDup and RDup a default so they run without arguments
 
