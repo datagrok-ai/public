@@ -386,10 +386,10 @@ async function handleTicket(args: ReportArgs): Promise<boolean> {
 
   const auth = jiraAuthHeader();
   if (auth == null) {
-    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report ticket`.');
+    color.error('Set JIRA_TOKEN (plus JIRA_USER for a user API token) for `grok report ticket`.');
     return false;
   }
-  const jiraBase = resolveJiraBase(args);
+  const jiraBase = await resolveJiraBase(args);
 
   try {
     const {url, key} = getDevKey(instance);
@@ -463,10 +463,23 @@ async function handleTicket(args: ReportArgs): Promise<boolean> {
 
 // ─── JIRA REST helpers (used by `grok report comment` / `grok report label`) ─
 //
-// These talk DIRECTLY to Atlassian Cloud REST v2 (not Datagrok). Auth is HTTP
-// Basic with `JIRA_USER` (Atlassian email) + `JIRA_TOKEN` (API token from
-// id.atlassian.com/manage-profile/security/api-tokens). Base URL defaults to
-// the Datagrok org instance; override via --jira-url or $JIRA_URL.
+// These talk DIRECTLY to Atlassian Cloud REST v2 (not Datagrok). Two auth schemes, picked from
+// the token itself:
+//
+//   * user API token (`ATATT...`, from id.atlassian.com/manage-profile/security/api-tokens) —
+//     HTTP Basic with `JIRA_USER` + `JIRA_TOKEN`, against the site. The original path.
+//   * service-account token (`ATSTT...`, from admin.atlassian.com) — a SCOPED token. The site
+//     host will not take it: Basic gives 401, and Bearer gives 403 "Failed to parse Connect
+//     Session Auth Token" because Jira tries to read it as a Connect session. Only the API
+//     gateway accepts it, addressed by cloud id, with Bearer. No JIRA_USER is involved.
+//
+// Both are supported on purpose. Automation moved to a service account when its bot mailbox
+// became a Google group (a group holds no Atlassian identity and cannot mint tokens), while
+// release-notes CI and every developer's local setup still use user tokens.
+//
+// Base URL defaults to the Datagrok org instance; override via --jira-url or $JIRA_URL. That
+// value stays the SITE — the gateway address is derived from it, never substituted for it, so
+// human-facing links elsewhere keep working.
 //
 // Why v2 and not v3: v3 requires comment bodies in ADF (Atlassian Document
 // Format) JSON, which is much heavier to construct. v2 accepts a plain string
@@ -474,16 +487,52 @@ async function handleTicket(args: ReportArgs): Promise<boolean> {
 // becomes a top-level ordered-list item, `&nbsp;` shows up literally, etc.
 // `markdownToJiraWiki` below bridges the gap for Markdown-emitting callers.
 
-function resolveJiraBase(args: ReportArgs): string {
+const JIRA_SERVICE_TOKEN_RE = /^ATSTT/;
+
+function isJiraServiceToken(): boolean {
+  return JIRA_SERVICE_TOKEN_RE.test(process.env.JIRA_TOKEN || '');
+}
+
+// The site, as configured. Human-facing links are built from this.
+function resolveJiraSite(args: ReportArgs): string {
   const cli = (args['jira-url'] as string | undefined) || '';
   const env = process.env.JIRA_URL || '';
   return (cli || env || 'https://reddata.atlassian.net').replace(/\/+$/, '');
 }
 
+let cloudIdCache: string | null = null;
+
+// The gateway addresses a site by cloud id rather than hostname. Public endpoint, no credentials
+// needed, cached for the process.
+async function resolveJiraCloudId(site: string): Promise<string> {
+  if (process.env.JIRA_CLOUD_ID) return process.env.JIRA_CLOUD_ID.trim();
+  if (cloudIdCache !== null) return cloudIdCache;
+  try {
+    const r = await fetch(`${site}/_edge/tenant_info`);
+    const j = r.ok ? await r.json() as {cloudId?: string} : {};
+    cloudIdCache = (j.cloudId || '').trim();
+  } catch {
+    cloudIdCache = '';
+  }
+  return cloudIdCache;
+}
+
+// Where REST calls go. A service token needs the gateway; anything else keeps the site. If the
+// cloud id cannot be resolved, fall back to the site rather than failing outright — the request
+// then reports a normal auth error instead of a confusing lookup one.
+async function resolveJiraBase(args: ReportArgs): Promise<string> {
+  const site = resolveJiraSite(args);
+  if (!isJiraServiceToken()) return site;
+  const cloudId = await resolveJiraCloudId(site);
+  return cloudId ? `https://api.atlassian.com/ex/jira/${cloudId}` : site;
+}
+
 function jiraAuthHeader(): string | null {
-  const user = process.env.JIRA_USER;
   const token = process.env.JIRA_TOKEN;
-  if (!user || !token) return null;
+  if (!token) return null;
+  if (isJiraServiceToken()) return `Bearer ${token}`;
+  const user = process.env.JIRA_USER;
+  if (!user) return null;
   return 'Basic ' + Buffer.from(`${user}:${token}`).toString('base64');
 }
 
@@ -568,7 +617,7 @@ async function handleComment(args: ReportArgs): Promise<boolean> {
 
   const auth = jiraAuthHeader();
   if (auth == null) {
-    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report comment`.');
+    color.error('Set JIRA_TOKEN (plus JIRA_USER for a user API token) for `grok report comment`.');
     return false;
   }
 
@@ -593,7 +642,7 @@ async function handleComment(args: ReportArgs): Promise<boolean> {
     return false;
   }
 
-  const base = resolveJiraBase(args);
+  const base = await resolveJiraBase(args);
   const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}/comment`;
   // Callers (especially the dg-fix-reports M2 handoff) emit Markdown, but JIRA
   // REST v2 renders the body as wiki markup. Convert before posting so headings,
@@ -638,14 +687,15 @@ async function handleAttach(args: ReportArgs): Promise<boolean> {
     return false;
   }
 
-  const user = process.env.JIRA_USER;
-  const token = process.env.JIRA_TOKEN;
-  if (!user || !token) {
-    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report attach`.');
+  // Through the same helper as every other call: a service token authenticates with Bearer and
+  // has no JIRA_USER at all, so checking for one here would refuse a working setup.
+  const auth = jiraAuthHeader();
+  if (auth == null) {
+    color.error('Set JIRA_TOKEN (plus JIRA_USER for a user API token) for `grok report attach`.');
     return false;
   }
 
-  const base = resolveJiraBase(args);
+  const base = await resolveJiraBase(args);
   const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}/attachments`;
 
   // node-fetch v2 has no built-in FormData and the codebase doesn't depend on
@@ -655,7 +705,7 @@ async function handleAttach(args: ReportArgs): Promise<boolean> {
   const {spawnSync} = require('child_process');
   const r = spawnSync('curl', [
     '-sS', '-X', 'POST',
-    '-u', `${user}:${token}`,
+    '-H', `Authorization: ${auth}`,
     '-H', 'X-Atlassian-Token: no-check',
     '-F', `file=@${filePath}`,
     '-w', '\n%{http_code}\n',
@@ -701,11 +751,11 @@ async function handleLabel(args: ReportArgs): Promise<boolean> {
 
   const auth = jiraAuthHeader();
   if (auth == null) {
-    color.error('JIRA_USER and JIRA_TOKEN env vars are required for `grok report label`.');
+    color.error('Set JIRA_TOKEN (plus JIRA_USER for a user API token) for `grok report label`.');
     return false;
   }
 
-  const base = resolveJiraBase(args);
+  const base = await resolveJiraBase(args);
   const url = `${base}/rest/api/2/issue/${encodeURIComponent(ticket)}`;
   const update = {labels: labels.map((l) => ({add: l}))};
   try {

@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.6 (WIP)
+
+* `grok report` (`ticket`, `comment`, `label`, `attach`) — support Atlassian **service-account** tokens alongside user API tokens, chosen by the token itself. A user token (`ATATT...`) keeps HTTP Basic with `JIRA_USER` + `JIRA_TOKEN` against the site. A service-account token (`ATSTT...`, minted at admin.atlassian.com) is a scoped token that the site host will not accept — Basic returns 401 and Bearer returns 403 `"Failed to parse Connect Session Auth Token"` — so it is sent as Bearer to the API gateway at `api.atlassian.com/ex/jira/<cloudId>`, with the cloud id read once from the site's public `/_edge/tenant_info` (override with `$JIRA_CLOUD_ID`). `$JIRA_URL` and `--jira-url` still mean the SITE; the gateway address is derived from it, never substituted for it. A service token needs no `JIRA_USER`, so the credential checks no longer demand one.
+
 ## 6.5.5 (WIP)
 
 * GROK-20298: `grok api --ui` — a relation-bearing table's `<Table>Ui` handle carries `<Table>Update` as its fifth generic too (`<Table>Ui.client`, `.table()` and the `<Schema>UiDb` property), so `<table>Ui.client.update(id, {labels: [...]})` compiles instead of failing the excess-property check.
