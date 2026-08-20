@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Build: Fixed the local build — `@datagrok-libraries/domain-ui` now takes `datagrok-api` from `../../js-api` instead of the registry, so its types are the same ones ApiTests compiles against. `build-js-api-tests-local` builds js-api and domain-ui only; the `link-*` scripts are gone.
+
 GROK-20298: `Dapi: domain frame editor` covers the move of the editor into the platform — `DomainFrameEditor.attachTo(frame, schema, table)` adopting a frame its HOST owns (the Dart Domain View's entry point), with `DG.DomainFrameEditor` asserted to be the very class `@datagrok-libraries/domain-ui` exports.
 
 GROK-20298: `Dapi: domain frame editor` covers the ref-column gate lift — a writable `ref` column is editable in `DomainGrid` (the in-place picker's precondition), a cleared ref reaches the update op as an explicit `null`, a required ref clear blocks the save, and a pick back to the original drops the pending change.
