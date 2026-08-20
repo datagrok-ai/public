@@ -287,9 +287,9 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
   let verifier: Verifier | undefined;
   let groundingGate: GroundingGate | undefined;
   try {
+    // Admission: wait for the celery claim (when the queued route is deployed) — the
+    // queue container's concurrency limit is the only cap on concurrent turns.
     if (data.taskId) {
-      // Queued-task admission (tasks.ts): hold until the celery worker claims the task.
-      // Fail-open on timeout — a missing worker delays the turn, it never blocks it.
       emit(ws, {type: 'queued', sessionId: sid});
       const heartbeat = setInterval(() => emit(ws, {type: 'queued', sessionId: sid}), QUEUED_HEARTBEAT_MS);
       try {
@@ -298,9 +298,9 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       } finally {
         clearInterval(heartbeat);
       }
-      if (abortController.signal.aborted)
-        return;
     }
+    if (abortController.signal.aborted)
+      return;
 
     const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
 

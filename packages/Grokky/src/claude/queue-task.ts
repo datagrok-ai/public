@@ -20,7 +20,8 @@ export async function holdChatTurnTask(sessionId: string, taskId: string): Promi
   const post = async (path: string) => {
     const r = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, {
       // fetchProxy authenticates via browser cookies; headless workers must send the token.
-      method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': grok.dapi.token},
+      method: 'POST', headers: {'Content-Type': 'application/json',
+        'Authorization': (globalThis as any).getTokenFromAsyncLocalStorage?.() ?? grok.dapi.token},
       body: JSON.stringify({taskId, sessionId}),
     });
     if (!r.ok)

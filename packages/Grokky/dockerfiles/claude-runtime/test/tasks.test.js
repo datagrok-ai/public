@@ -46,6 +46,22 @@ test('release frees both waiters and reports the session to abort', async () => 
   assert.deepEqual(await claim, {status: 'released'});
 });
 
+test('a busy queue holds the turn past the fail-open window; a dead one fails open', async (t) => {
+  // Start the mocked clock well past any real worker poll recorded by earlier tests.
+  t.mock.timers.enable({apis: ['setTimeout', 'Date'], now: Date.now() + 600_000});
+  const id = freshId();
+  let result = null;
+  waitForClaim(id, 's1', new AbortController().signal).then((r) => { result = r; });
+  claimTask(freshId(), 'other-session'); // a worker polling for another task — the pool is alive
+  t.mock.timers.tick(60_000);
+  await new Promise((r) => setImmediate(r));
+  assert.equal(result, null); // workers live → still waiting
+  t.mock.timers.tick(60_000); // no polls for 120s now — the pool looks dead
+  await new Promise((r) => setImmediate(r));
+  assert.equal(result, false);
+  endTask(id);
+});
+
 test('end after release keeps the released status; release after end is a no-op', async () => {
   const id = freshId();
   claimTask(id, 's1');
