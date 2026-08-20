@@ -830,7 +830,16 @@
       and a not-yet-loaded column comes through as null. The platform's own <code>/domains</code>
       routes are sequenced after that load; a JS app has nothing to await (REST warm-ups do not
       populate the Dart-side cache) — the shipped workaround polls the entity handler's Dart-side
-      meta before creating the view.</li>
+      meta before creating the view.
+      <br>Re-verified 2026-08-20: the registry-meta poll alone is NOT sufficient — cold deep links
+      still intermittently die with <code>NullError</code> in
+      <code>DataSourceCardView.refreshGrid</code> (<code>DataFrame.fromList</code> on null) and
+      <code>loadNextPage</code>, leaving a dead grid that <code>refresh()</code> cannot revive.
+      Pre-registering the per-table metas (<code>grok_DomainRowMeta_RegisterPerTableMetas</code>,
+      awaited in the watcher) makes the view recover on its own in practice (error still logs), and
+      the package adds a transplant fallback: if no grid canvas materializes within 8&nbsp;s, a
+      freshly created view is mounted into the docked root. The real fix stays core-side: the
+      cold-boot grid build should await its own dependencies.</li>
     <li><b>Per-table UI affordance control in Domain Views.</b> The auto "New &lt;singular&gt;"
       row-create button cannot be suppressed via the manifest (no such flag), and revoking insert
       permission instead would break the publish service, which inserts rows as the current user;

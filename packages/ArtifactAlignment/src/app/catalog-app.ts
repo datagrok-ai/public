@@ -113,6 +113,35 @@ async function whenRegistryLoaded(timeoutMs: number = 10000): Promise<void> {
   const started = Date.now();
   while (!probe.registryLoaded && Date.now() - started < timeoutMs)
     await new Promise((resolve) => setTimeout(resolve, 100));
+  // The registry meta alone is not enough: the view's grid build also needs the
+  // per-table entity metas, which the platform otherwise registers lazily during
+  // the first Domain View creation — racing refreshGrid at cold boot (NullError
+  // in refreshGrid/loadNextPage, dead view). Force the registration up front;
+  // awaitable and idempotent.
+  await (window as any).grok_DomainRowMeta_RegisterPerTableMetas?.();
+}
+
+/** Cold-boot core race: the first Domain View of a deep-linked session can die
+ * while building its grid (NullError in DataSourceCardView.refreshGrid /
+ * loadNextPage) — not preventable from a package (neither the registry meta nor
+ * the per-table entity metas close the window) and not recoverable via
+ * refresh(). Once the client is warm, creation is reliable — so when the grid
+ * never materializes, transplant a freshly created view into the docked root.
+ * Platform ask stays: make the cold-boot grid build await its dependencies. */
+async function healIfGridDied(view: DG.DomainView, permanentFilter: string, attempt: number = 0): Promise<void> {
+  for (let waited = 0; waited < 8000; waited += 500) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (view.root.querySelector('canvas') != null)
+      return;
+  }
+  if (!view.root.isConnected || attempt >= 2)
+    return;
+  const replacement = DG.DomainView.create({schema: SCHEMA, table: 'alignment', permanentFilter});
+  replacement.root.style.width = '100%';
+  replacement.root.style.height = '100%';
+  ui.empty(view.root);
+  view.root.appendChild(replacement.root);
+  void healIfGridDied(replacement, permanentFilter, attempt + 1);
 }
 
 async function alignmentView(permanentFilter: string, name: string): Promise<DG.ViewBase> {
@@ -120,6 +149,7 @@ async function alignmentView(permanentFilter: string, name: string): Promise<DG.
   const view = DG.DomainView.create({schema: SCHEMA, table: 'alignment', permanentFilter});
   view.name = name;
   whenDocked(view, () => view.showFilters());
+  void healIfGridDied(view, permanentFilter);
   return view;
 }
 
