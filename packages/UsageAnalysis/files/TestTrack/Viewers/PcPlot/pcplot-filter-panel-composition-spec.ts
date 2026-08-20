@@ -25,10 +25,13 @@ test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scopi
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
+  await v.installEventWaits(page);
+
   await softStep('AND-composition ladder — panel filter drops the count, in-chart slider drops it further, Reset View returns to the panel-only value, re-drag drops it again, Reset filters restores the full count', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup());
     await page.locator('.d4-filter-group-header').waitFor({timeout: 15000});
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
       const df = grok.shell.tv.dataFrame;
 
@@ -44,15 +47,13 @@ test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scopi
       };
 
       const settledFilterCount = async (capMs: number, act?: () => void) => {
-        const deadline = Date.now() + capMs;
         await settle(df.onRowsFiltered, capMs, act);
         let prev = -1;
-        while (Date.now() < deadline) {
-          const c = df.filter.trueCount;
-          if (c === prev) break;
+        await w.__poll(() => df.filter.trueCount, (c: number) => {
+          const stable = c === prev;
           prev = c;
-          await new Promise((r) => setTimeout(r, 50));
-        }
+          return stable;
+        }, capMs, 50);
         return df.filter.trueCount;
       };
       await settle(pc.onViewerRendered, 800, () => {
@@ -62,8 +63,8 @@ test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scopi
       const vr = viewer.getBoundingClientRect();
       viewer.dispatchEvent(new MouseEvent('mousemove', {
         bubbles: true, clientX: vr.left + vr.width / 2, clientY: vr.top + vr.height / 2}));
-
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => document.querySelector('[name^="axis-slider-"]'),
+        (el: Element | null) => el !== null, 400);
       const fullCount = df.filter.trueCount;
 
       const afterPanel = await settledFilterCount(700, () =>
@@ -81,12 +82,8 @@ test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scopi
           ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
 
         maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-        await new Promise((r) => setTimeout(r, 50));
-        for (let dy = 20; dy <= 200; dy += 30) {
-          document.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-          svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-          await new Promise((r) => setTimeout(r, 20));
-        }
+        await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 200},
+          {steps: 6, stepMs: 20, holdMs: 50});
         await settledFilterCount(500, () =>
           document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + 200))));
         return true;
@@ -102,12 +99,8 @@ test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scopi
 
       const findResetView = () => Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find((el) => el.textContent!.trim() === 'Reset View');
-      const menuDeadline = Date.now() + 500;
-      let rv = findResetView();
-      while (!rv && Date.now() < menuDeadline) {
-        await new Promise((r) => setTimeout(r, 25));
-        rv = findResetView();
-      }
+      const rv: Element | undefined = await w.__poll(findResetView,
+        (el: Element | undefined) => el !== undefined, 500, 25);
       const afterResetView = await settledFilterCount(700, () => {
         if (rv)
           (rv.closest('.d4-menu-item') as HTMLElement).click();

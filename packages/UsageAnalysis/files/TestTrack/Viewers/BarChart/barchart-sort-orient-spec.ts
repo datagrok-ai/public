@@ -64,9 +64,14 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 4000});
   await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
 
+  await v.installEventWaits(page);
+
   await page.locator('[name="viewer-Bar-chart"]').first().hover();
 
-  await page.waitForTimeout(300);
+  await page.locator('[name="viewer-Bar-chart"]')
+    .locator('xpath=ancestor::div[contains(@class, "panel-base")]')
+    .locator('[name="icon-font-icon-settings"]').first()
+    .waitFor({state: 'attached', timeout: 15_000});
 
   await page.evaluate(() => {
     const bcEl = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
@@ -85,7 +90,7 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
 
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
 
-    await page.waitForTimeout(400);
+    await v.waitForCanvasQuiet(page, 'Bar chart');
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(500);
@@ -119,10 +124,9 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
   await softStep('Scenario 1 Step 4: stacking holds on the negative-sum value column (GROK-19480)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     await page.evaluate(async () => {
+      const w = window as any;
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.legendVisibility = 'Always';
-
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => { bc.props.legendVisibility = 'Always'; }, 2000);
     });
 
     const legendBefore = await v.readLegend(page, 'Bar chart');
@@ -154,10 +158,8 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
     const negatives = Object.entries(sums).filter(([, val]) => val < 0);
     expect(negatives.length).toBeGreaterThanOrEqual(1);
     expect(Math.min(...Object.values(sums))).toBeLessThan(0);
-    const info = await page.evaluate(async () => {
+    const info = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-
-      await new Promise((r) => setTimeout(r, 600));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       return {
         aggr: bc.props.valueAggrType,
@@ -177,7 +179,7 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
 
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
 
-    await page.waitForTimeout(400);
+    await v.waitForCanvasQuiet(page, 'Bar chart');
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(500);

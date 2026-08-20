@@ -33,6 +33,8 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
 
   await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
+  await v.installEventWaits(page);
+
   const readRootInDom = () => page.evaluate(() => {
     const pie = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pie chart') as any;
     return !!pie && document.body.contains(pie.root);
@@ -110,38 +112,20 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
     });
     try {
       const result = await page.evaluate(async (id) => {
+        const w = window as any;
         const tv = grok.shell.tv;
-        tv.addViewer('Scatter plot');
-        await new Promise<void>((resolve) => {
-          const sub = grok.events.onViewerAdded.subscribe(() => { sub.unsubscribe(); resolve(); });
-          setTimeout(resolve, 500);
-        });
+        await w.__settled('grok.events.onViewerAdded', () => tv.addViewer('Scatter plot'), 500);
         const saved = await grok.dapi.layouts.find(id);
-        const applied = new Promise<void>((resolve) => {
-          const sub = grok.events.onViewLayoutApplied.subscribe(() => { sub.unsubscribe(); resolve(); });
-          setTimeout(resolve, 3000);
-        });
-        tv.loadLayout(saved);
-        await applied;
-
-        const pieAfter = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pie chart') as any;
-        await new Promise<void>((resolve) => {
-          let sub: any = null;
-          try { sub = pieAfter?.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
-          catch (_) { resolve(); }
-          setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 4000);
-        });
-        let item: HTMLElement | null = null;
-        for (let i = 0; i < 30; i++) {
+        await w.__settled('grok.events.onViewLayoutApplied', () => tv.loadLayout(saved), 3000);
+        await w.__eventFired('viewer:Pie chart.onViewerRendered', 4000);
+        const item: HTMLElement | null = await w.__poll(() => {
           const t = grok.shell.tv;
           const p = t?.viewers ? Array.from(t.viewers).find((x: any) => x.type === 'Pie chart') as any : null;
-          item = p
+          return p
             ? Array.from(p.root.querySelectorAll('[name="legend"] .d4-legend-item'))
               .find((i: any) => (i.textContent ?? '').includes('Asian')) as HTMLElement ?? null
             : null;
-          if (item) break;
-          await new Promise((r) => setTimeout(r, 100));
-        }
+        }, (v: any) => v !== null, 3000);
         const viewers = Array.from(tv.viewers) as any[];
         const pie = viewers.find((x: any) => x.type === 'Pie chart');
         return {
@@ -184,36 +168,26 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
       const saved = await saveProjectViaUI(page, projName);
       projectId = saved.projectId;
 
-      const result = await page.evaluate(async (id) => {
-        grok.shell.closeAll();
-        await new Promise<void>((resolve) => {
-          const sub = grok.events.onProjectOpened.subscribe(() => { sub.unsubscribe(); resolve(); });
-          grok.dapi.projects.find(id).then((f: any) => f.open()).finally(() => setTimeout(resolve, 500));
-        });
+      await v.closeAllAndWait(page);
 
-        let pie: any = null;
-        for (let a = 0; a < 30 && !pie; a++) {
-          await new Promise((r) => setTimeout(r, 200));
+      const result = await page.evaluate(async (id) => {
+        const w = window as any;
+        await w.__settled('grok.events.onProjectOpened',
+          () => grok.dapi.projects.find(id).then((f: any) => f.open()), 1000);
+
+        const pie: any = await w.__poll(() => {
           const t = grok.shell.tv;
-          pie = t ? Array.from(t.viewers).find((x: any) => x.type === 'Pie chart') as any : null;
-        }
-        await new Promise<void>((resolve) => {
-          let sub: any = null;
-          try { sub = pie?.onViewerRendered.subscribe(() => { sub.unsubscribe(); resolve(); }); }
-          catch (_) { resolve(); }
-          setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(); }, 4000);
-        });
-        let item: HTMLElement | null = null;
-        for (let a = 0; a < 30 && !item; a++) {
+          return t ? Array.from(t.viewers).find((x: any) => x.type === 'Pie chart') as any : null;
+        }, (v: any) => v != null, 6000, 200);
+        await w.__eventFired('viewer:Pie chart.onViewerRendered', 4000);
+        const item: HTMLElement | null = await w.__poll(() => {
           const p = pie ?? (grok.shell.tv
             ? Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pie chart') as any : null);
-          item = p
+          return p
             ? Array.from(p.root.querySelectorAll('[name="legend"] .d4-legend-item'))
               .find((i: any) => (i.textContent ?? '').includes('Asian')) as HTMLElement ?? null
             : null;
-          if (item) break;
-          await new Promise((r) => setTimeout(r, 100));
-        }
+        }, (v: any) => v !== null, 3000);
         const tv = grok.shell.tv;
         const p = pie as any;
         return {

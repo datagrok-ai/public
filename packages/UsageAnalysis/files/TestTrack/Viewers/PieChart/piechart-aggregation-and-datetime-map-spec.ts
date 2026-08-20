@@ -28,10 +28,14 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
 
   await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
+  await v.installEventWaits(page);
+
   await page.evaluate(async () => {
+    const w = window as any;
     const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-    pie.props.categoryColumnName = 'RACE';
-    await new Promise((r) => setTimeout(r, 500));
+    await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+      pie.props.categoryColumnName = 'RACE';
+    }, 2000);
   });
 
   const readRootInDom = () => page.evaluate(() => {
@@ -52,27 +56,22 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
   console.log(`Aggregation defaults: angle=${aggrDefaults.angle} length=${aggrDefaults.length}`);
 
   const settledPx = async () => {
-    let prev = (await v.countCanvasPixels(page, 'Pie chart')).total;
-    let cur = prev;
-    for (let i = 0; i < 5; i++) {
-      await page.waitForTimeout(300);
-      cur = (await v.countCanvasPixels(page, 'Pie chart')).total;
-      if (Math.abs(cur - prev) < 200) break;
-      prev = cur;
-    }
-    return cur;
+    await v.waitForCanvasQuiet(page, 'Pie chart', {optional: true});
+    return (await v.countCanvasPixels(page, 'Pie chart')).total;
   };
 
   await softStep('Scenario 1 — angle aggregation tour, length column switching, clear to standard pie', async () => {
     expect(await readViewerError()).toBe('');
     const errBefore = pageErrors.length + consoleErrors.length;
     const tour = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       pie.props.segmentAngleColumnName = 'AGE';
       const r: string[] = [];
       for (const aggr of ['min', 'max', 'med', 'stdev', 'count', 'avg']) {
-        pie.props.segmentAngleAggrType = aggr;
-        await new Promise((res) => setTimeout(res, 300));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.segmentAngleAggrType = aggr;
+        }, 2000);
         r.push(pie.props.segmentAngleAggrType);
       }
       return r;
@@ -82,9 +81,11 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     const avgPx = await settledPx();
     expect(await v.snapshotCanvasColors(page, 'Pie chart')).toBe(true);
     await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      pie.props.segmentAngleAggrType = 'sum';
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.segmentAngleAggrType = 'sum';
+      }, 2000);
     });
     const sumPx = await settledPx();
     const {deltaPx} = await v.diffCanvasColors(page, 'Pie chart');
@@ -94,27 +95,33 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(deltaPx).toBeGreaterThan(500);
 
     await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      pie.props.segmentLengthColumnName = 'WEIGHT';
-      pie.props.segmentLengthAggrType = 'avg';
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.segmentLengthColumnName = 'WEIGHT';
+        pie.props.segmentLengthAggrType = 'avg';
+      }, 2000);
     });
     const lengthPx = await settledPx();
     console.log(`Segment length px: fullDiscPx=${sumPx} lengthPx=${lengthPx}`);
     expect(sumPx - lengthPx).toBeGreaterThan(500);
 
     await page.evaluate(async (d) => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       for (const aggr of ['min', 'max']) {
-        pie.props.segmentLengthAggrType = aggr;
-        await new Promise((res) => setTimeout(res, 300));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.segmentLengthAggrType = aggr;
+        }, 2000);
       }
-      pie.props.segmentAngleAggrType = d.angle;
-      pie.props.segmentLengthAggrType = d.length;
-      await new Promise((res) => setTimeout(res, 300));
-      pie.props.segmentAngleColumnName = '';
-      pie.props.segmentLengthColumnName = '';
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.segmentAngleAggrType = d.angle;
+        pie.props.segmentLengthAggrType = d.length;
+      }, 2000);
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.segmentAngleColumnName = '';
+        pie.props.segmentLengthColumnName = '';
+      }, 2000);
     }, aggrDefaults);
     const restoredPx = await settledPx();
     console.log(`Cleared px: restoredPx=${restoredPx} lengthPx=${lengthPx}`);
@@ -135,27 +142,33 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     const errBefore = pageErrors.length + consoleErrors.length;
     try {
       const result = await page.evaluate(async (d) => {
+        const w = window as any;
         const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
         const df = grok.shell.tv.dataFrame;
-        df.columns.addNewFloat('NEG_PROBE').init((i: number) => i % 2 === 0 ? -5 : 3);
-        df.columns.addNewFloat('ZERO_PROBE').init(() => 0);
-        await new Promise((res) => setTimeout(res, 500));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          df.columns.addNewFloat('NEG_PROBE').init((i: number) => i % 2 === 0 ? -5 : 3);
+          df.columns.addNewFloat('ZERO_PROBE').init(() => 0);
+        }, 2000);
         const readError = () => {
           const el = pie.root.querySelector('.d4-viewer-error');
           return el ? (el.textContent || '').trim() : '';
         };
-        pie.props.segmentAngleColumnName = 'NEG_PROBE';
-        pie.props.segmentAngleAggrType = 'min';
-        await new Promise((res) => setTimeout(res, 800));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.segmentAngleColumnName = 'NEG_PROBE';
+          pie.props.segmentAngleAggrType = 'min';
+        }, 2000);
         const negMsg = readError();
-        pie.props.segmentAngleColumnName = 'ZERO_PROBE';
-        pie.props.segmentAngleAggrType = 'sum';
-        await new Promise((res) => setTimeout(res, 800));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.segmentAngleColumnName = 'ZERO_PROBE';
+          pie.props.segmentAngleAggrType = 'sum';
+        }, 2000);
         const zeroMsg = readError();
-        pie.props.segmentAngleAggrType = d.angle;
-        await new Promise((res) => setTimeout(res, 300));
-        pie.props.segmentAngleColumnName = '';
-        await new Promise((res) => setTimeout(res, 600));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.segmentAngleAggrType = d.angle;
+        }, 2000);
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.segmentAngleColumnName = '';
+        }, 2000);
         const clearedMsg = readError();
         return {negMsg, zeroMsg, clearedMsg};
       }, aggrDefaults);
@@ -169,18 +182,21 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     } finally {
 
       await page.evaluate(async (d) => {
+        const w = window as any;
         const pie = Array.from(grok.shell.tv?.viewers ?? []).find((vw: any) => vw.type === 'Pie chart') as any;
         if (pie) {
-          try {
-            pie.props.segmentAngleAggrType = d.angle;
-            pie.props.segmentAngleColumnName = '';
-          } catch (_) {}
-          await new Promise((res) => setTimeout(res, 300));
+          await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+            try {
+              pie.props.segmentAngleAggrType = d.angle;
+              pie.props.segmentAngleColumnName = '';
+            } catch (_) {}
+          }, 2000);
         }
         const df = grok.shell.tv?.dataFrame;
-        for (const name of ['NEG_PROBE', 'ZERO_PROBE'])
-          try { df.columns.remove(name); } catch (_) {}
-        await new Promise((res) => setTimeout(res, 300));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          for (const name of ['NEG_PROBE', 'ZERO_PROBE'])
+            try { df.columns.remove(name); } catch (_) {}
+        }, 2000);
       }, aggrDefaults);
     }
   });
@@ -189,18 +205,22 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(await readViewerError()).toBe('');
     const errBefore = pageErrors.length + consoleErrors.length;
     const defaultMap = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      pie.props.legendVisibility = 'Always';
-      pie.props.categoryColumnName = 'STARTED';
-      await new Promise((res) => setTimeout(res, 800));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.legendVisibility = 'Always';
+        pie.props.categoryColumnName = 'STARTED';
+      }, 2000);
       return pie.props.categoryMap;
     });
     expect(defaultMap).toBe('year');
     const yearLegend = await v.readLegend(page, 'Pie chart');
     const setMap = (map: string) => page.evaluate(async (m) => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      pie.props.categoryMap = m;
-      await new Promise((res) => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryMap = m;
+      }, 2000);
     }, map);
     await setMap('month');
     const monthLegend = await v.readLegend(page, 'Pie chart');
@@ -217,11 +237,13 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect([...monthLegend.labels].sort()).not.toEqual([...quarterLegend.labels].sort());
     expect([...yearLegend.labels].sort()).not.toEqual([...quarterLegend.labels].sort());
     await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      pie.props.categoryMap = 'year';
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.legendVisibility = 'Auto';
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryMap = 'year';
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.legendVisibility = 'Auto';
+      }, 2000);
     });
     expect(await readRootInDom()).toBe(true);
     expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
@@ -231,29 +253,34 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(await readViewerError()).toBe('');
     const errBefore = pageErrors.length + consoleErrors.length;
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const target = 'Asian';
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.legendVisibility = 'Always';
-      await new Promise((res) => setTimeout(res, 800));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.legendVisibility = 'Always';
+      }, 2000);
       const itemColor = () => {
         const items = Array.from(pie.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
         const it = items.find((el) => (el.querySelector('.d4-legend-value')?.textContent || '').trim() === target);
         return it ? getComputedStyle(it).color : '';
       };
       const before = itemColor();
-      df.col('RACE').meta.colors.setCategorical({[target]: '#ff0000'});
-      try { pie.invalidate?.(); } catch (_) {}
-      await new Promise((res) => setTimeout(res, 800));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        df.col('RACE').meta.colors.setCategorical({[target]: '#ff0000'});
+        try { pie.invalidate?.(); } catch (_) {}
+      }, 2000);
       const after = itemColor();
-      delete df.col('RACE').tags['.color-coding-categorical'];
-      delete df.col('RACE').tags['.color-coding-type'];
-      try { pie.invalidate?.(); } catch (_) {}
-      await new Promise((res) => setTimeout(res, 800));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        delete df.col('RACE').tags['.color-coding-categorical'];
+        delete df.col('RACE').tags['.color-coding-type'];
+        try { pie.invalidate?.(); } catch (_) {}
+      }, 2000);
       const restored = itemColor();
-      pie.props.legendVisibility = 'Auto';
-      await new Promise((res) => setTimeout(res, 300));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.legendVisibility = 'Auto';
+      }, 2000);
       return {before, after, restored};
     });
     console.log(`Legend swatch colors: before=${result.before} after=${result.after} restored=${result.restored}`);
@@ -279,17 +306,17 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
         : {display: 'missing', text: ''};
     });
     const resetAndMove = (fx: number, fy: number) => page.evaluate(async (p) => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const canvas = pie.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = canvas.getBoundingClientRect();
       const mm = (x: number, y: number) => canvas.dispatchEvent(
         new MouseEvent('mousemove', {bubbles: true, clientX: x, clientY: y}));
-      mm(rect.left + 2, rect.top + 2);
-      await new Promise((r) => setTimeout(r, 250));
+      await w.__settled('grok.events.onTooltipClosed', () => mm(rect.left + 2, rect.top + 2), 250);
       for (const t of Array.from(document.querySelectorAll('.d4-tooltip')))
         t.textContent = '';
-      mm(rect.left + rect.width * p.fx, rect.top + rect.height * p.fy);
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__settled('grok.events.onTooltipShown',
+        () => mm(rect.left + rect.width * p.fx, rect.top + rect.height * p.fy), 2000);
     }, {fx, fy});
 
     const hoverSlice = async () => {
@@ -301,9 +328,11 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
       return {display: 'missing', text: ''};
     };
     const setPie = (props: Record<string, any>) => page.evaluate(async (p) => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-      for (const k of Object.keys(p)) pie.props[k] = p[k];
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        for (const k of Object.keys(p)) pie.props[k] = p[k];
+      }, 2000);
     }, props);
 
     await setPie({categoryColumnName: 'RACE', segmentAngleColumnName: '', segmentLengthColumnName: ''});
@@ -326,14 +355,16 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
     expect(lenTt.text).toContain('max(WEIGHT)');
 
     const awayTt = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const canvas = pie.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = canvas.getBoundingClientRect();
       for (const t of Array.from(document.querySelectorAll('.d4-tooltip')))
         t.textContent = '';
-      canvas.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.left + 2, clientY: rect.top + 2}));
-      canvas.dispatchEvent(new MouseEvent('mouseleave', {bubbles: true}));
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__settled('grok.events.onTooltipClosed', () => {
+        canvas.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.left + 2, clientY: rect.top + 2}));
+        canvas.dispatchEvent(new MouseEvent('mouseleave', {bubbles: true}));
+      }, 2000);
       const tts = Array.from(document.querySelectorAll('.d4-tooltip')) as HTMLElement[];
       const populated = tts.find((t) => (t.textContent || '').trim().length > 0) || tts[0] || null;
       return populated

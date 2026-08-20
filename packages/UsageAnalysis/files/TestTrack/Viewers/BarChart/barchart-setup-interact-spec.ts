@@ -208,7 +208,7 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     });
     await page.mouse.dblclick(rect.x + rect.w * 0.55, rect.y + rect.h * 0.5);
 
-    await page.waitForTimeout(700);
+    await v.waitForViewerRendered(page, 'Bar chart', 700);
     const state = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       return {hasCanvas: !!bc.root.querySelector('canvas'), split: bc.props.splitColumnName};
@@ -377,11 +377,11 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
       col.meta.colors.setCategorical({});
     }, {split: splitCol});
 
-    await page.waitForTimeout(500);
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
+
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
 
     await v.snapshotCanvasColors(page, 'Bar chart');
-
-    await page.waitForTimeout(500);
     const precheck = (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
 
     const scheme = await page.evaluate(({split}) => {
@@ -393,8 +393,10 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
       for (const vw of grok.shell.tv.viewers) if (vw.type !== 'Grid') try { vw.invalidate?.(); } catch (_) {}
       return s;
     }, {split: splitCol});
-    await v.waitForViewerRendered(page, 'Bar chart', 800);
-    const colorDelta = (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
+    // The assertion is about pixels, so the wait is too: waitForViewerRendered resolves on any
+    // render in the last 400ms, which can land before the recolour is painted.
+    const colorDelta = await v.waitForCanvasChange(page, 'Bar chart', {minDelta: 1, timeoutMs: 3000})
+      .catch(() => 0);
 
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
@@ -402,7 +404,6 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
       return layout.id;
     });
 
-    await page.waitForTimeout(800);
     await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.close();

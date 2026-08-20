@@ -35,8 +35,7 @@ async function selectionCount(page: Page): Promise<number> {
 
 async function clearSelection(page: Page): Promise<void> {
   await page.evaluate(() => grok.shell.t.selection.setAll(false));
-
-  await page.waitForTimeout(300);
+  await v.waitForViewerRendered(page, 'Box plot', 300);
 }
 
 async function raceCatCount(page: Page, cat: string): Promise<number> {
@@ -320,7 +319,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.mouse.move(r.x + r.w * 0.62, r.y + r.h * 0.55);
 
-    await page.waitForTimeout(700);
+    await v.waitForCanvasQuiet(page, 'Box plot', {timeoutMs: 700, optional: true});
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
 
     expect(deltaPx).toBeGreaterThanOrEqual(0);
@@ -350,7 +349,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     });
     await page.mouse.move(barRect.x + barRect.w * 0.3, barRect.y + barRect.h * 0.6);
 
-    await page.waitForTimeout(900);
+    await v.waitForCanvasQuiet(page, 'Box plot', {timeoutMs: 900, optional: true});
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
     expect(deltaPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeLessThan(300);

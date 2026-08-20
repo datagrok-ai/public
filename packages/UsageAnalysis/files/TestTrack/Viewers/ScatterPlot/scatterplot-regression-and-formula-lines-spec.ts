@@ -102,7 +102,7 @@ async function hoverPlot(page: Page, role?: string): Promise<void> {
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
   if (!role) {
 
-    await page.waitForTimeout(400);
+    await v.waitForViewerRendered(page, 'Scatter plot', 400);
     return;
   }
   await waitUntil(() => page.evaluate((n: string) => {
@@ -371,7 +371,7 @@ async function deleteAllFormulaLines(page: Page): Promise<void> {
       if (row) {
         await page.mouse.click(row.x, row.y);
 
-        await page.waitForTimeout(300);
+        await v.waitForViewerRendered(page, 'Scatter plot', 300);
       }
 
       const before = await formulaEditorValues(page);
@@ -592,9 +592,10 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
       await page.mouse.move(pt.x, pt.y, {steps: 6});
       await waitUntil(async () => (await tooltipText(page)).length > 0, 1200);
       if ((await tooltipText(page)).length > 0) tooltips++;
-      await page.mouse.move(pt.x + 4, pt.y + 4, {steps: 3});
+      const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 250);
 
-      await page.waitForTimeout(250);
+      await page.mouse.move(pt.x + 4, pt.y + 4, {steps: 3});
+      await shown1();
     }
     expect(tooltips).toBeGreaterThan(0);
     expect(errCount()).toBe(errBefore);

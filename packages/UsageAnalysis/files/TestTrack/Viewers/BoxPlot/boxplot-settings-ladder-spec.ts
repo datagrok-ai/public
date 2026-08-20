@@ -62,7 +62,7 @@ async function verticalSliderHandles(
       await page.mouse.move(s.rect.x + s.rect.w / 2, s.rect.y + s.rect.h * fy, {steps: 4});
     }
 
-    await page.waitForTimeout(300);
+    await v.pollStable(readSlider, (a, b) => JSON.stringify(a) === JSON.stringify(b), 300, 100);
   }
   throw new Error('vertical range slider handles did not lay out to a usable span');
 }
@@ -74,8 +74,9 @@ async function revealIcon(page: Page, iconName: string): Promise<{x: number; y: 
     return {x: c.x, y: c.y};
   });
   for (const [dx, dy] of [[35, 15], [40, 17], [30, 14], [45, 16]]) {
+    const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
     await page.mouse.move(origin.x + dx, origin.y + dy);
-    await page.waitForTimeout(150); 
+    await shown1();
   }
   return page.evaluate((name) => {
     const el = document.querySelector(`[name="${name}"]`) as HTMLElement;
@@ -293,7 +294,7 @@ test('Box Plot settings ladder and persistence round-trip', async ({page}) => {
       throw new Error(`saveLayout failed: ${e}`);
     }
 
-    await page.waitForTimeout(400);
+    await v.waitForViewerRendered(page, 'Box plot', 400);
 
     await page.evaluate(() => {
       const tv = grok.shell.tv;

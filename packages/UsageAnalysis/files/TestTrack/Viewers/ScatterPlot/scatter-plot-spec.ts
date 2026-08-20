@@ -139,9 +139,11 @@ async function waitBackdrop(page: Page, timeout = 6000): Promise<boolean> {
 async function commitColumn(page: Page, column: string): Promise<void> {
   const text = column.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150); 
+  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+    (n) => n > 0, 150, 50);
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200); 
+  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+    (n) => n > 0, 200, 50);
   await page.keyboard.press('Enter');
 
 }

@@ -20,6 +20,8 @@ test('Pie chart tests', async ({page}) => {
 
   await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
+  await v.installEventWaits(page);
+
   await softStep('Sorting', async () => {
     const result = await v.setViewerProps(page, 'Pie chart', [
       {set: {categoryColumnName: 'RACE', pieSortType: 'by value'}, read: 'pieSortType'},
@@ -47,25 +49,30 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Labels', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const r: any[] = [];
 
       for (const pos of ['Inside', 'Outside', 'Auto']) {
-        pie.props.labelPosition = pos;
-        await new Promise(res => setTimeout(res, 200));
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+          pie.props.labelPosition = pos;
+        }, 2000);
         r.push(pie.props.labelPosition);
       }
 
-      pie.props.showLabel = false;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.showLabel = false;
+      }, 2000);
       r.push(pie.props.showLabel);
 
-      pie.props.showPercentage = false;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.showPercentage = false;
+      }, 2000);
       r.push(pie.props.showPercentage);
 
-      pie.props.showValue = true;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.showValue = true;
+      }, 2000);
       r.push(pie.props.showValue);
 
       pie.props.showLabel = true;
@@ -95,11 +102,13 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('In-viewer column selector re-pick', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.showColumnSelector = true;
-      pie.props.legendVisibility = 'Always';
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.showColumnSelector = true;
+        pie.props.legendVisibility = 'Always';
+      }, 2000);
     });
     const readState = () => page.evaluate(() => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -127,9 +136,11 @@ test('Pie chart tests', async ({page}) => {
     expect(afterRace.cat).toBe('RACE');
     expect([...afterRace.labels].sort()).toEqual([...afterRace.raceCats].sort());
     await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      pie.props.legendVisibility = 'Auto';
-      await new Promise(res => setTimeout(res, 300));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.legendVisibility = 'Auto';
+      }, 2000);
     });
   });
 
@@ -146,22 +157,25 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Row source', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
-      df.selection.init((i: number) => i < 50);
-      await new Promise(res => setTimeout(res, 300));
+      await w.__settled('df.onSelectionChanged', () => df.selection.init((i: number) => i < 50), 2000);
       const r: any[] = [];
 
-      pie.props.rowSource = 'Selected';
-      await new Promise(res => setTimeout(res, 300));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.rowSource = 'Selected';
+      }, 2000);
       r.push(pie.props.rowSource);
 
-      pie.props.rowSource = 'Filtered';
-      await new Promise(res => setTimeout(res, 300));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.rowSource = 'Filtered';
+      }, 2000);
       r.push(pie.props.rowSource);
 
-      pie.props.rowSource = 'All';
-      await new Promise(res => setTimeout(res, 300));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.rowSource = 'All';
+      }, 2000);
       r.push(pie.props.rowSource);
 
       df.selection.setAll(false);
@@ -172,6 +186,7 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Title and description', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const r: any[] = [];
 
@@ -184,8 +199,9 @@ test('Pie chart tests', async ({page}) => {
       pie.props.description = 'By race';
       r.push(pie.props.description);
 
-      pie.props.descriptionPosition = 'Top';
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.descriptionPosition = 'Top';
+      }, 2000);
       r.push(pie.props.descriptionPosition);
 
       pie.props.descriptionVisibilityMode = 'Never';
@@ -204,13 +220,15 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Layout persistence', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
 
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.segmentAngleColumnName = 'AGE';
-      pie.props.startAngle = 45;
-      pie.props.shift = 5;
-      await new Promise(res => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.segmentAngleColumnName = 'AGE';
+        pie.props.startAngle = 45;
+        pie.props.shift = 5;
+      }, 2000);
 
       const before = {
         cat: pie.props.categoryColumnName,
@@ -222,14 +240,11 @@ test('Pie chart tests', async ({page}) => {
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
-      await new Promise(res => setTimeout(res, 1000));
 
-      pie.close();
-      await new Promise(res => setTimeout(res, 500));
+      await w.__settled('grok.events.onViewerClosed', () => pie.close(), 2000);
 
       const saved = await grok.dapi.layouts.find(layoutId);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(res => setTimeout(res, 3000));
+      await w.__settled('grok.events.onViewLayoutApplied', () => grok.shell.tv.loadLayout(saved), 3000);
 
       const pie2 = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const after = pie2 ? {
@@ -270,10 +285,13 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Mouse-over row group cross-highlight', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const race = df.col('RACE');
       pie.props.categoryColumnName = 'RACE';
+      // mechanism-under-test: the pixel histogram runs in-page because the whole step is one
+      // evaluate; snapshotCanvasColors is Playwright-side and unreachable from here.
       const snap = () => {
         const cv = pie.root.querySelector('canvas') as HTMLCanvasElement;
         const d = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
@@ -290,33 +308,33 @@ test('Pie chart tests', async ({page}) => {
         for (const k of Object.keys(a)) if (!(k in b)) s += a[+k];
         return s;
       };
+      // The pixel histogram going quiet is the settle here: sampling on onViewerRendered
+      // instead measured slower and less stably (why is unestablished).
       const settled = async () => {
         let prev = snap();
-        for (let i = 0; i < 8; i++) {
-          await new Promise(res => setTimeout(res, 400));
-          const cur = snap();
-          if (diff(prev, cur) === 0) return cur;
+        return w.__poll(snap, (cur: Record<number, number>) => {
+          const quiet = diff(prev, cur) === 0;
           prev = cur;
-        }
-        return prev;
+          return quiet;
+        }, 3200, 400);
       };
-      pie.props.showMouseOverRowGroup = false;
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.showMouseOverRowGroup = false;
+      }, 2000);
       const baseOff = await settled();
-      df.rows.highlight((i: number) => race.get(i) === 'Asian');
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered',
+        () => df.rows.highlight((i: number) => race.get(i) === 'Asian'), 2000);
       const offDelta = diff(baseOff, await settled());
-      df.rows.highlight(null);
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => df.rows.highlight(null), 2000);
       await settled();
-      pie.props.showMouseOverRowGroup = true;
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.showMouseOverRowGroup = true;
+      }, 2000);
       const baseOn = await settled();
-      df.rows.highlight((i: number) => race.get(i) === 'Asian');
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered',
+        () => df.rows.highlight((i: number) => race.get(i) === 'Asian'), 2000);
       const onDelta = diff(baseOn, await settled());
-      df.rows.highlight(null);
-      await new Promise(res => setTimeout(res, 600));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => df.rows.highlight(null), 2000);
       const clearDelta = diff(baseOn, await settled());
       return {offDelta, onDelta, clearDelta};
     });
@@ -328,23 +346,28 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Auto layout', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const r: any[] = [];
 
-      pie.props.autoLayout = false;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.autoLayout = false;
+      }, 2000);
       r.push(pie.props.autoLayout);
 
-      pie.props.marginLeft = 50;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.marginLeft = 50;
+      }, 2000);
       r.push(pie.props.marginLeft);
 
-      pie.props.marginTop = 50;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.marginTop = 50;
+      }, 2000);
       r.push(pie.props.marginTop);
 
-      pie.props.autoLayout = true;
-      await new Promise(res => setTimeout(res, 200));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.autoLayout = true;
+      }, 2000);
       r.push(pie.props.autoLayout);
 
       return r;
@@ -354,8 +377,8 @@ test('Pie chart tests', async ({page}) => {
 
   await softStep('Table switching and row source (SPGI)', async () => {
     const demogName = await page.evaluate(async (spgiPath) => {
-      grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 500));
+      const w = window as any;
+      await w.__settled('grok.events.onViewRemoved', () => grok.shell.closeAll(), 2000);
 
       const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       df.name = 'demog';
@@ -375,23 +398,26 @@ test('Pie chart tests', async ({page}) => {
 
       const views = Array.from(grok.shell.views).filter((v: any) => v.type === 'TableView');
       const demogView = views.find((v: any) => v.dataFrame.name !== 'SPGI') as any;
-      if (demogView) grok.shell.v = demogView;
-      await new Promise(r => setTimeout(r, 500));
+      if (demogView)
+        await w.__settled('grok.events.onCurrentViewChanged', () => { grok.shell.v = demogView; }, 2000);
       return df.name;
     }, spgiPath);
 
     await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
     const switched = await page.evaluate(async (demogName) => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const r: string[] = [];
 
-      pie.props.table = 'SPGI';
-      await new Promise(res => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.table = 'SPGI';
+      }, 2000);
       r.push(pie.dataFrame.name);
 
-      pie.props.table = demogName;
-      await new Promise(res => setTimeout(res, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.table = demogName;
+      }, 2000);
       r.push(pie.dataFrame.name);
       return r;
     }, demogName);
@@ -399,11 +425,13 @@ test('Pie chart tests', async ({page}) => {
     expect(switched[1]).toBe(demogName);
 
     const selection = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
-      pie.props.rowSource = 'Selected';
-      df.selection.init((i: number) => i < 100);
-      await new Promise(res => setTimeout(res, 300));
+      await w.__settled('df.onSelectionChanged', () => {
+        pie.props.rowSource = 'Selected';
+        df.selection.init((i: number) => i < 100);
+      }, 2000);
       return {rowSource: pie.props.rowSource, selCount: df.selection.trueCount};
     });
     expect(selection.rowSource).toBe('Selected');
@@ -412,15 +440,17 @@ test('Pie chart tests', async ({page}) => {
     await page.evaluate(() => { grok.shell.tv.getFiltersGroup(); });
     await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
     const filtered = await page.evaluate(async () => {
+      const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       pie.props.rowSource = 'Filtered';
       const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']});
-      await new Promise(res => setTimeout(res, 500));
+      await w.__settled('df.onRowsFiltered',
+        () => fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']}), 2000);
       const r = {rowSource: pie.props.rowSource, filtered: df.filter.trueCount};
 
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: df.col('RACE').categories});
+      await w.__settled('df.onRowsFiltered', () => fg.updateOrAdd(
+        {type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: df.col('RACE').categories}), 2000);
       df.selection.setAll(false);
       pie.props.rowSource = 'All';
       return r;

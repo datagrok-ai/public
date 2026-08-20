@@ -20,18 +20,21 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
 
   await v.addViewerByIcon(page, 'pie-chart', 'Pie-chart');
 
+  await v.installEventWaits(page);
+
   await page.evaluate(() => {
     const w = window as any;
     const pieCanvas = () => (document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement)
       .querySelector('canvas') as HTMLCanvasElement;
     w.__pieRect = () => pieCanvas().getBoundingClientRect();
-    w.__pieClickAt = async (x: number, y: number, ctrl: boolean) => {
+    w.__pieClickAt = async (x: number, y: number, ctrl: boolean, channel = 'df.onSelectionChanged') => {
       const canvas = pieCanvas();
       const o = {bubbles: true, clientX: x, clientY: y, ctrlKey: ctrl};
-      canvas.dispatchEvent(new MouseEvent('mousedown', o));
-      canvas.dispatchEvent(new MouseEvent('mouseup', o));
-      canvas.dispatchEvent(new MouseEvent('click', o));
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__settled(channel, () => {
+        canvas.dispatchEvent(new MouseEvent('mousedown', o));
+        canvas.dispatchEvent(new MouseEvent('mouseup', o));
+        canvas.dispatchEvent(new MouseEvent('click', o));
+      }, 2000);
     };
     w.__pieSpans = (colName: string) => {
       const pie = Array.from(w.grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
@@ -55,6 +58,8 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       return spans;
     };
 
+    // Slice geometry is derived, not read back: the sweep is walked at several radii and
+    // angles until a click lands rows of exactly one category, which pins the hit point.
     w.__pieCalibrate = async (colName: string, targets: any[]) => {
       const pie = Array.from(w.grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = w.grok.shell.tv.dataFrame;
@@ -97,9 +102,9 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
   });
 
   await page.evaluate(async () => {
+    const w = window as any;
     const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
-    pie.props.rowSource = 'All';
-    await new Promise((r) => setTimeout(r, 400));
+    await w.__settled('viewer:Pie chart.onViewerRendered', () => { pie.props.rowSource = 'All'; }, 2000);
   });
 
   await softStep('Select mode — slice click selects exactly the category row count, another slice switches the selection, clearing returns to zero', async () => {
@@ -108,9 +113,10 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const race = df.col('RACE');
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.onClick = 'Select';
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.onClick = 'Select';
+      }, 2000);
       const countOf = (cat: string) => {
         let n = 0;
         for (let i = 0; i < df.rowCount; i++)
@@ -129,8 +135,12 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const t1 = byCount[0];
       const t2 = byCount[1];
       const pts = await w.__pieCalibrate('RACE', [t1, t2]);
+      const blank = {
+        calibrated: false, t1, t2, sel1: -1, cats1: [] as string[], expected1: -2,
+        sel2: -1, cats2: [] as string[], expected2: -2, cleared: -1,
+      };
       if (!pts[t1] || !pts[t2])
-        return {calibrated: false};
+        return blank;
 
       await w.__pieClickAt(pts[t1].x, pts[t1].y, false);
       const sel1 = df.selection.trueCount;
@@ -142,8 +152,7 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const cats2 = selectedCats();
       const expected2 = countOf(t2);
 
-      df.selection.setAll(false);
-      await new Promise((r) => setTimeout(r, 300));
+      await w.__settled('df.onSelectionChanged', () => df.selection.setAll(false), 2000);
       const cleared = df.selection.trueCount;
       return {calibrated: true, t1, t2, sel1, cats1, expected1, sel2, cats2, expected2, cleared};
     });
@@ -157,82 +166,82 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
   });
 
   await softStep('Missing-values slice — clicking it selects exactly the rows with missing values, Include Nulls off repaints the pie without the slice, Include Nulls on restores it', async () => {
-    const result = await page.evaluate(async () => {
+    const prepared = await page.evaluate(async () => {
       const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
-      try {
-
-        const src = df.col('RACE');
-        const gapsCol = df.columns.addNewString('RACE_GAPS');
-        for (let i = 0; i < df.rowCount; i++)
-          gapsCol.set(i, i % 10 === 0 ? null : src.get(i), false);
+      const src = df.col('RACE');
+      const gapsCol = df.columns.addNewString('RACE_GAPS');
+      for (let i = 0; i < df.rowCount; i++)
+        gapsCol.set(i, i % 10 === 0 ? null : src.get(i), false);
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
         pie.props.categoryColumnName = 'RACE_GAPS';
         pie.props.onClick = 'Select';
         pie.props.includeNulls = true;
-        await new Promise((r) => setTimeout(r, 800));
-        const missing = gapsCol.stats.missingValueCount;
+      }, 3000);
+      const missing = gapsCol.stats.missingValueCount;
 
-        const pts = await w.__pieCalibrate('RACE_GAPS', [null]);
-        if (!pts['__null__'])
-          return {calibrated: false};
-        await w.__pieClickAt(pts['__null__'].x, pts['__null__'].y, false);
-        const nullSel = df.selection.trueCount;
-        let allNull = nullSel > 0;
-        for (let i = 0; i < df.rowCount; i++) {
-          if (df.selection.get(i) && !gapsCol.isNone(i)) {
-            allNull = false;
-            break;
-          }
+      const pts = await w.__pieCalibrate('RACE_GAPS', [null]);
+      if (!pts['__null__'])
+        return {calibrated: false, missing, nullSel: -1, allNull: false};
+      await w.__pieClickAt(pts['__null__'].x, pts['__null__'].y, false);
+      const nullSel = df.selection.trueCount;
+      let allNull = nullSel > 0;
+      for (let i = 0; i < df.rowCount; i++) {
+        if (df.selection.get(i) && !gapsCol.isNone(i)) {
+          allNull = false;
+          break;
         }
-        df.selection.setAll(false);
+      }
+      await w.__settled('df.onSelectionChanged', () => df.selection.setAll(false), 2000);
+      return {calibrated: true, missing, nullSel, allNull};
+    });
 
-        const canvasHist = () => {
-          const canvas = (document.querySelector('[name="viewer-Pie-chart"]') as HTMLElement)
-            .querySelector('canvas') as HTMLCanvasElement;
-          const d = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
-          const m = new Map<number, number>();
-          for (let i = 0; i < d.length; i += 4) {
-            const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
-            m.set(k, (m.get(k) || 0) + 1);
-          }
-          return m;
-        };
-        const histDiff = (a: Map<number, number>, b: Map<number, number>) => {
-          let delta = 0;
-          for (const [k, n] of b) delta += Math.abs(n - (a.get(k) || 0));
-          for (const [k, n] of a) if (!b.has(k)) delta += n;
-          return delta;
-        };
-        const withNulls = canvasHist();
-        pie.props.includeNulls = false;
-        await new Promise((r) => setTimeout(r, 800));
-        const offDelta = histDiff(withNulls, canvasHist());
+    let offDelta = -1;
+    let reSel = -1;
+    if (prepared.calibrated) {
+      await v.snapshotCanvasColors(page, 'Pie chart');
+      await page.evaluate(async () => {
+        const w = window as any;
+        const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => { pie.props.includeNulls = false; }, 3000);
+      });
+      offDelta = (await v.diffCanvasColors(page, 'Pie chart')).deltaPx;
 
-        pie.props.includeNulls = true;
-        await new Promise((r) => setTimeout(r, 800));
+      reSel = await page.evaluate(async () => {
+        const w = window as any;
+        const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
+        const df = grok.shell.tv.dataFrame;
+        await w.__settled('viewer:Pie chart.onViewerRendered', () => { pie.props.includeNulls = true; }, 3000);
         const pts2 = await w.__pieCalibrate('RACE_GAPS', [null]);
-        let reSel = -1;
+        let n = -1;
         if (pts2['__null__']) {
           await w.__pieClickAt(pts2['__null__'].x, pts2['__null__'].y, false);
-          reSel = df.selection.trueCount;
+          n = df.selection.trueCount;
         }
-        df.selection.setAll(false);
-        return {calibrated: true, missing, nullSel, allNull, offDelta, reSel};
-      } finally {
-        df.selection.setAll(false);
+        await w.__settled('df.onSelectionChanged', () => df.selection.setAll(false), 2000);
+        return n;
+      });
+    }
+
+    await page.evaluate(async () => {
+      const w = window as any;
+      const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
+      const df = grok.shell.tv.dataFrame;
+      df.selection.setAll(false);
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
         pie.props.categoryColumnName = 'RACE';
         if (df.col('RACE_GAPS'))
           df.columns.remove('RACE_GAPS');
-        await new Promise((r) => setTimeout(r, 400));
-      }
+      }, 2000);
     });
-    expect(result.calibrated).toBe(true);
-    expect(result.missing).toBeGreaterThan(0);
-    expect(result.allNull).toBe(true);
-    expect(result.nullSel).toBe(result.missing);
-    expect(result.offDelta).toBeGreaterThan(1000);
-    expect(result.reSel).toBe(result.missing);
+
+    expect(prepared.calibrated).toBe(true);
+    expect(prepared.missing).toBeGreaterThan(0);
+    expect(prepared.allNull).toBe(true);
+    expect(prepared.nullSel).toBe(prepared.missing);
+    expect(offDelta).toBeGreaterThan(1000);
+    expect(reSel).toBe(prepared.missing);
   });
 
   await softStep('Filter mode — slice click filters to the category row count, Ctrl+click adds a second category to the sum, empty-area click restores the full count', async () => {
@@ -241,9 +250,10 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const race = df.col('RACE');
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.onClick = 'Select';
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.onClick = 'Select';
+      }, 2000);
       const countOf = (cat: string) => {
         let n = 0;
         for (let i = 0; i < df.rowCount; i++)
@@ -261,25 +271,29 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const t1 = byCount[0];
       const t2 = byCount[1];
       const pts = await w.__pieCalibrate('RACE', [t1, t2]);
+      const blank = {
+        calibrated: false, t1, t2, full: -1, rowCount: df.rowCount, f1: -1,
+        cats1: [] as string[], expected1: -2, f2: -1, cats2: [] as string[],
+        expected2: -2, cleared: -1,
+      };
       if (!pts[t1] || !pts[t2])
-        return {calibrated: false};
+        return blank;
 
-      pie.props.onClick = 'Filter';
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => { pie.props.onClick = 'Filter'; }, 2000);
       const full = df.filter.trueCount;
 
-      await w.__pieClickAt(pts[t1].x, pts[t1].y, false);
+      await w.__pieClickAt(pts[t1].x, pts[t1].y, false, 'df.onRowsFiltered');
       const f1 = df.filter.trueCount;
       const cats1 = filteredCats();
       const expected1 = countOf(t1);
 
-      await w.__pieClickAt(pts[t2].x, pts[t2].y, true);
+      await w.__pieClickAt(pts[t2].x, pts[t2].y, true, 'df.onRowsFiltered');
       const f2 = df.filter.trueCount;
       const cats2 = filteredCats();
       const expected2 = countOf(t1) + countOf(t2);
 
       const rect = w.__pieRect();
-      await w.__pieClickAt(rect.left + 5, rect.top + 5, false);
+      await w.__pieClickAt(rect.left + 5, rect.top + 5, false, 'df.onRowsFiltered');
       const cleared = df.filter.trueCount;
       pie.props.onClick = 'Select';
       return {calibrated: true, t1, t2, full, rowCount: df.rowCount, f1, cats1, expected1, f2, cats2, expected2, cleared};
@@ -297,14 +311,15 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
   await softStep('Filter Panel composition — pie click narrows the panel-filtered count further, clearing the pie part returns to the panel-only value, Reset filters restores the full count', async () => {
     await page.evaluate(() => grok.shell.tv.getFiltersGroup());
     await page.locator('.d4-filter-group-header').waitFor({timeout: 15000});
-    const result = await page.evaluate(async () => {
+    const calibration = await page.evaluate(async () => {
       const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const race = df.col('RACE');
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.onClick = 'Select';
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.onClick = 'Select';
+      }, 2000);
       const countOf = (cat: string) => {
         let n = 0;
         for (let i = 0; i < df.rowCount; i++)
@@ -317,43 +332,48 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const t1 = byCount[0];
       const pts = await w.__pieCalibrate('RACE', [t1]);
       if (!pts[t1])
-        return {calibrated: false};
+        return {calibrated: false, full: -1, t1, pt: {x: -1, y: -1}};
 
-      pie.props.onClick = 'Filter';
-      await new Promise((r) => setTimeout(r, 300));
-      const full = df.filter.trueCount;
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => { pie.props.onClick = 'Filter'; }, 2000);
+      return {calibrated: true, full: df.filter.trueCount, t1, pt: pts[t1]};
+    });
 
-      grok.shell.tv.getFiltersGroup().updateOrAdd({type: 'histogram', column: 'AGE', min: 30, max: 50});
-      await new Promise((r) => setTimeout(r, 700));
-      const afterPanel = df.filter.trueCount;
+    const afterPanel = calibration.calibrated ? await v.applyNumericFilter(page, 'AGE', 30, 50) : -1;
+
+    const result = await page.evaluate(async ({calibrated, t1, pt}) => {
+      if (!calibrated)
+        return {afterBoth: -1, expectedBoth: -2, backToPanel: -1, afterReset: -1};
+      const w = window as any;
+      const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
+      const df = grok.shell.tv.dataFrame;
+      const race = df.col('RACE');
       const panelMask: boolean[] = [];
       for (let i = 0; i < df.rowCount; i++)
         panelMask.push(df.filter.get(i));
 
-      await w.__pieClickAt(pts[t1].x, pts[t1].y, false);
+      await w.__pieClickAt(pt.x, pt.y, false, 'df.onRowsFiltered');
       const afterBoth = df.filter.trueCount;
       let expectedBoth = 0;
       for (let i = 0; i < df.rowCount; i++)
         if (panelMask[i] && race.get(i) === t1) expectedBoth++;
 
       const rect = w.__pieRect();
-      await w.__pieClickAt(rect.left + 5, rect.top + 5, false);
+      await w.__pieClickAt(rect.left + 5, rect.top + 5, false, 'df.onRowsFiltered');
       const backToPanel = df.filter.trueCount;
 
       const btn = document.querySelector('.d4-filter-group-header [name="icon-arrow-rotate-left"]') as HTMLElement | null;
-      if (btn)
-        btn.click();
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__settled('df.onRowsFiltered', () => btn?.click(), 3000);
       const afterReset = df.filter.trueCount;
       pie.props.onClick = 'Select';
-      return {calibrated: true, full, afterPanel, afterBoth, expectedBoth, backToPanel, afterReset};
-    });
-    expect(result.calibrated).toBe(true);
-    expect(result.afterPanel).toBeLessThan(result.full);
-    expect(result.afterBoth).toBeLessThan(result.afterPanel);
+      return {afterBoth, expectedBoth, backToPanel, afterReset};
+    }, {calibrated: calibration.calibrated, t1: calibration.t1, pt: calibration.pt});
+
+    expect(calibration.calibrated).toBe(true);
+    expect(afterPanel).toBeLessThan(calibration.full);
+    expect(result.afterBoth).toBeLessThan(afterPanel);
     expect(result.afterBoth).toBe(result.expectedBoth);
-    expect(result.backToPanel).toBe(result.afterPanel);
-    expect(result.afterReset).toBe(result.full);
+    expect(result.backToPanel).toBe(afterPanel);
+    expect(result.afterReset).toBe(calibration.full);
   });
 
   await softStep('Viewer close releases the filter — closing the pie chart with an active click-filter restores the full count, re-adding the viewer succeeds', async () => {
@@ -362,9 +382,10 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
       const race = df.col('RACE');
-      pie.props.categoryColumnName = 'RACE';
-      pie.props.onClick = 'Select';
-      await new Promise((r) => setTimeout(r, 300));
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
+        pie.props.categoryColumnName = 'RACE';
+        pie.props.onClick = 'Select';
+      }, 2000);
       const countOf = (cat: string) => {
         let n = 0;
         for (let i = 0; i < df.rowCount; i++)
@@ -376,15 +397,13 @@ test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
       const t1 = byCount[0];
       const pts = await w.__pieCalibrate('RACE', [t1]);
       if (!pts[t1])
-        return {calibrated: false};
+        return {calibrated: false, rowCount: df.rowCount, active: -1, restored: -1};
 
-      pie.props.onClick = 'Filter';
-      await new Promise((r) => setTimeout(r, 300));
-      await w.__pieClickAt(pts[t1].x, pts[t1].y, false);
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => { pie.props.onClick = 'Filter'; }, 2000);
+      await w.__pieClickAt(pts[t1].x, pts[t1].y, false, 'df.onRowsFiltered');
       const active = df.filter.trueCount;
 
-      pie.close();
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__settled('df.onRowsFiltered', () => pie.close(), 3000);
       const restored = df.filter.trueCount;
       return {calibrated: true, rowCount: df.rowCount, active, restored};
     });

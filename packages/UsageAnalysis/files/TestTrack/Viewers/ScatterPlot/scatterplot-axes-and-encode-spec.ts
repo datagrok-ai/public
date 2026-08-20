@@ -64,9 +64,11 @@ async function waitBackdrop(page: Page, timeout = 5000): Promise<boolean> {
 async function commitColumn(page: Page, column: string): Promise<void> {
   const text = column.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150); 
+  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+    (n) => n > 0, 150, 50);
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200); 
+  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+    (n) => n > 0, 200, 50);
   await page.keyboard.press('Enter');
 
 }
@@ -374,7 +376,7 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
       await grok.dapi.layouts.save(layout);
       return layout.id as string;
     });
-    await page.waitForTimeout(1500); 
+    await v.waitForViewerRendered(page, 'Scatter plot', 1500);
     try {
       await page.evaluate(() => { grok.shell.tv.addViewer('Histogram'); });
       await v.pollValue(

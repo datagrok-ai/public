@@ -33,6 +33,8 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
+  await v.installEventWaits(page);
+
   await page.evaluate(() => {
     const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
     pc.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT'];
@@ -64,25 +66,13 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
       return df.selection.trueCount;
     });
     await page.evaluate(async () => {
-      const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
+      const w = window as any;
+      const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]') as HTMLElement;
       const r0 = overlay.getBoundingClientRect();
-      const mk = (x: number, y: number, extra: any) => Object.assign(
-        {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
-
-      const x1 = r0.x + r0.width * 0.32, y1 = r0.y + r0.height * 0.40;
-      const x2 = r0.x + r0.width * 0.45, y2 = r0.y + r0.height * 0.55;
-      overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
-
-      await new Promise((r) => setTimeout(r, 30));
-      for (let t = 0; t <= 1.0001; t += 0.25) {
-        const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
-        overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
-        document.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
-
-        await new Promise((r) => setTimeout(r, 25));
-      }
-      overlay.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
-      document.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
+      await w.__drag(overlay,
+        {x: r0.x + r0.width * 0.32, y: r0.y + r0.height * 0.40},
+        {x: r0.x + r0.width * 0.45, y: r0.y + r0.height * 0.55},
+        {modifiers: {shiftKey: true}});
     });
     const after = await v.pollValue(selectionCount, (n) => n > 0, 400, 50);
     expect(before).toBe(0);
@@ -92,25 +82,13 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
   await softStep('Scenario 1 Step 7 — additive second shift+drag band (selection rises again, not replaced)', async () => {
     const beforeSecond = await selectionCount();
     await page.evaluate(async () => {
-      const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
+      const w = window as any;
+      const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]') as HTMLElement;
       const r0 = overlay.getBoundingClientRect();
-      const mk = (x: number, y: number, extra: any) => Object.assign(
-        {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
-
-      const x1 = r0.x + r0.width * 0.58, y1 = r0.y + r0.height * 0.42;
-      const x2 = r0.x + r0.width * 0.72, y2 = r0.y + r0.height * 0.58;
-      overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
-
-      await new Promise((r) => setTimeout(r, 30));
-      for (let t = 0; t <= 1.0001; t += 0.25) {
-        const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
-        overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
-        document.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
-
-        await new Promise((r) => setTimeout(r, 25));
-      }
-      overlay.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
-      document.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
+      await w.__drag(overlay,
+        {x: r0.x + r0.width * 0.58, y: r0.y + r0.height * 0.42},
+        {x: r0.x + r0.width * 0.72, y: r0.y + r0.height * 0.58},
+        {modifiers: {shiftKey: true}});
     });
     const afterSecond = await v.pollValue(selectionCount, (n) => n > beforeSecond, 400, 50);
     expect(afterSecond).toBeGreaterThan(beforeSecond);
@@ -148,16 +126,11 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
-      const mk = (x: number, y: number) =>
-        ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-
-      const cx = r0.x + r0.width * 0.42, cy = r0.y + r0.height * 0.45;
-      overlay.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy)));
-
-      await new Promise((r) => setTimeout(r, 60));
-      overlay.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-      overlay.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy)));
-      overlay.dispatchEvent(new MouseEvent('click', mk(cx, cy)));
+      const w = window as any;
+      const at = {x: r0.x + r0.width * 0.42, y: r0.y + r0.height * 0.45};
+      await w.__drag(overlay, at, at, {hoverFirst: true, holdMs: 60, steps: 0, stepMs: 0});
+      overlay.dispatchEvent(new MouseEvent('click',
+        {bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, button: 0}));
     });
     const after = await v.pollValue(
       () => page.evaluate(() => grok.shell.tv.dataFrame.currentRowIdx), (i) => i >= 0, 300, 50);
@@ -170,27 +143,12 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
-      const mk = (x: number, y: number) =>
-        ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
-
+      const w = window as any;
       const labelY = r0.y + 8;
-      const leftX = r0.x + r0.width * 0.08;
-      const rightX = r0.x + r0.width * 0.88;
-      overlay.dispatchEvent(new MouseEvent('mousemove', mk(rightX, labelY)));
-
-      await new Promise((r) => setTimeout(r, 60));
-      overlay.dispatchEvent(new MouseEvent('mousedown', mk(rightX, labelY)));
-
-      await new Promise((r) => setTimeout(r, 40));
-      for (let t = 0; t <= 1.0001; t += 0.1) {
-        const x = rightX + (leftX - rightX) * t;
-        overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, labelY)));
-        document.dispatchEvent(new MouseEvent('mousemove', mk(x, labelY)));
-
-        await new Promise((r) => setTimeout(r, 30));
-      }
-      overlay.dispatchEvent(new MouseEvent('mouseup', mk(leftX, labelY)));
-      document.dispatchEvent(new MouseEvent('mouseup', mk(leftX, labelY)));
+      await w.__drag(overlay,
+        {x: r0.x + r0.width * 0.88, y: labelY},
+        {x: r0.x + r0.width * 0.08, y: labelY},
+        {hoverFirst: true, holdMs: 50, steps: 10, stepMs: 30});
     });
     const after = await v.pollValue(
       columnNames, (a: string[]) => a.join('|') !== before.join('|'), 500, 50);
@@ -214,22 +172,11 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     await page.evaluate(async () => {
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
-      const mk = (x: number, y: number, extra: any) => Object.assign(
-        {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
-      const x1 = r0.x + r0.width * 0.32, y1 = r0.y + r0.height * 0.40;
-      const x2 = r0.x + r0.width * 0.45, y2 = r0.y + r0.height * 0.55;
-      overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
-
-      await new Promise((r) => setTimeout(r, 30));
-      for (let t = 0; t <= 1.0001; t += 0.25) {
-        const x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
-        overlay.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
-        document.dispatchEvent(new MouseEvent('mousemove', mk(x, y, {shiftKey: true})));
-
-        await new Promise((r) => setTimeout(r, 25));
-      }
-      overlay.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
-      document.dispatchEvent(new MouseEvent('mouseup', mk(x2, y2, {shiftKey: true})));
+      const w = window as any;
+      await w.__drag(overlay,
+        {x: r0.x + r0.width * 0.32, y: r0.y + r0.height * 0.40},
+        {x: r0.x + r0.width * 0.45, y: r0.y + r0.height * 0.55},
+        {modifiers: {shiftKey: true}});
     });
     const after = await v.pollValue(selectionCount, (n) => n > 0, 400, 50);
     expect(before).toBe(0);

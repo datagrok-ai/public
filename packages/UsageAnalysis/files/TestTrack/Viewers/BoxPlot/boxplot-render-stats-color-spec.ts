@@ -43,9 +43,10 @@ async function revealGroupStatsIcon(page: Page): Promise<string> {
     return {x: c.x, y: c.y};
   });
   for (const [dx, dy] of [[35, 15], [40, 17], [30, 14], [45, 16]]) {
-    await page.mouse.move(origin.x + dx, origin.y + dy);
+    const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
 
-    await page.waitForTimeout(150);
+    await page.mouse.move(origin.x + dx, origin.y + dy);
+    await shown1();
   }
 
   return v.pollValue(() => page.evaluate(() => {
@@ -205,7 +206,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     expect(await bpProp(page, 'showPValue')).toBe(false);
     await page.mouse.click(r.x + r.w * 0.5, r.y + r.h * 0.05);
 
-    await page.waitForTimeout(300);
+    await v.waitForViewerRendered(page, 'Box plot', 300);
     await page.keyboard.press('t');
     await v.pollValue(() => bpProp(page, 'showPValue'), (val) => val === true, 700, 100);
     expect(await bpProp(page, 'showPValue')).toBe(true);
@@ -259,7 +260,8 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
       });
       await page.keyboard.press('Escape');
 
-      await page.waitForTimeout(400);
+      await v.pollStable(() => page.evaluate(() => document.querySelectorAll('.d4-menu-popup').length),
+        (a, b) => a === b, 400, 100);
       if (clicked) { toggled = true; break; }
     }
     console.log('Scenario 2 Step 9 menu toggle reached:', toggled);
