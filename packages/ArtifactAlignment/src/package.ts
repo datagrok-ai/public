@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import {AlignmentHandler, buildTreeBrowser, catalogView} from './app/catalog-app';
 import {showPublishDialog} from './app/publish-dialog';
 import {ensureProgram, ProgramSpec, setupSchemaSecurity} from './domain/security';
-import {driftCheck} from './service/drift-check';
 import {
   approvePublication, discover, getPublicationHistory, publishWorkflowRun as publishRun,
   PublishRequest, rejectPublication, updateCuration,
@@ -108,12 +107,6 @@ export async function ensureArtifactProgram(spec: ProgramSpec): Promise<object> 
 //description: One-time idempotent security setup: umbrella groups, registry visibility, per-column write gating
 export async function setupArtifactSecurity(): Promise<void> {
   await setupSchemaSecurity();
-}
-
-//name: artifactDriftCheck
-//output: object result
-export async function artifactDriftCheck(): Promise<object> {
-  return driftCheck();
 }
 
 //name: AaTestStep

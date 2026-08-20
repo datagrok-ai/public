@@ -5,7 +5,7 @@ import './tests/versioning-tests';
 import './tests/clone-tests';
 import './tests/curation-tests';
 import './tests/security-tests';
-import './tests/drift-tests';
+import './tests/integration-tests';
 import './tests/platform-mechanics-tests';
 import './tests/function-run-tests';
 import './tests/ui-forms-tests';

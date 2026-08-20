@@ -460,8 +460,9 @@
   flip guard); re-inserting after the soft-delete succeeds; a duplicate history insert against the
   <code>(publication_id, revision)</code> business key is a graceful no-op
   (<code>created: false, status: 'duplicate'</code>). What the server still cannot guarantee is
-  referential: version rows point at frozen artifact FuncCalls with no FK/onDelete semantics, so the
-  drift check reduces to a deep scan for artifacts that no longer resolve (see Core tasks).</p>
+  referential: version rows point at frozen artifact FuncCalls with no FK/onDelete semantics, so a
+  deleted artifact can only be caught by a periodic referential scan — planned service work, not in
+  the PoC (see Core tasks).</p>
 
   <h2>Permissions (as implemented)</h2>
   <ul>
@@ -504,8 +505,8 @@
   <h2>Service responsibilities (beyond the publish flow)</h2>
   <ul class="tasks">
     <li>Group provisioning per program; batch audience backfills when a program's groups change.</li>
-    <li>Drift check — shipped today: a referential scan for version rows whose frozen artifact no
-      longer resolves (FuncCall references carry no FK semantics — see Core tasks). Planned:
+    <li>Drift check (planned; not in the PoC): a referential scan for version rows whose frozen
+      artifact no longer resolves (FuncCall references carry no FK semantics — see Core tasks),
       intended (registry) vs. actual (entity ACL) grant reconciliation, and audit-trail scans for
       writes by non-members and for approvals set outside the approvers group.</li>
     <li>Exclude version rows whose frozen copy was admin-deleted; scheduled registry export.</li>
