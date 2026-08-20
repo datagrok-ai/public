@@ -8,6 +8,7 @@ import './tests/security-tests';
 import './tests/drift-tests';
 import './tests/platform-mechanics-tests';
 import './tests/function-run-tests';
+import './tests/ui-forms-tests';
 
 export const _package = new DG.Package();
 export {tests};
