@@ -167,6 +167,24 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
     void DG.DomainObjectHandler.createRow(T_COMPOUND));
   registryNode.item('Link compound to program…').onSelected.subscribe(() =>
     void DG.DomainObjectHandler.createRow(T_PROGRAM_COMPOUND));
+  registryNode.item('Unlink compound from program…').onSelected.subscribe(async () => {
+    const picked = await DG.DomainObjectHandler.pickRow(T_PROGRAM_COMPOUND);
+    const values = picked?.values;
+    if (values == null)
+      return;
+    const [program, compound] = await Promise.all([
+      grok.dapi.domains.table(T_PROGRAM).get(values['program_id']),
+      grok.dapi.domains.table(T_COMPOUND).get(values['compound_id']),
+    ]);
+    ui.dialog('Unlink compound')
+      .add(ui.divText(`Remove ${compound?.registration_code ?? 'the compound'} from ` +
+        `${program?.code ?? 'the program'}? Published artifacts keep their molecule links.`))
+      .onOK(async () => {
+        await grok.dapi.domains.table(T_PROGRAM_COMPOUND).delete(values['id']);
+        grok.shell.info('Compound unlinked');
+      })
+      .show();
+  });
   registryNode.item('Studies').onSelected.subscribe(async () =>
     grok.shell.preview = await registryView('study', 'Studies') as DG.View);
   registryNode.item('Compounds').onSelected.subscribe(async () =>
