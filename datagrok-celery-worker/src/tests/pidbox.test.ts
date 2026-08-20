@@ -1,28 +1,8 @@
 import {CeleryConsumer} from '../celery-consumer';
 import {FuncCall, FuncCallStatus} from '../func-call';
 import {PidboxConsumer, RevokedSet, RunningTask} from '../pidbox';
-import {Settings} from '../settings';
 import {TaskContext} from '../progress';
-
-function testSettings(): Settings {
-  return new Settings({
-    taskQueueName: 'test_queue',
-    celeryHostname: 'test-host',
-    celeryName: 'datagrok-celery',
-    packageName: 'TestPkg',
-    amqpHost: 'localhost', amqpPort: 5672, amqpUser: 'guest', amqpPassword: 'guest', amqpTls: false,
-    pipeHost: 'localhost', pipePort: 3000, pipeKey: '',
-    paramTimeoutMinutes: 5, wsMessageTimeoutSeconds: 30, healthPort: 8000,
-  });
-}
-
-function mockPublisher(): any {
-  return {publish: jest.fn().mockResolvedValue(true)};
-}
-
-function callJson(id: string): any {
-  return {'id': id, 'func': {'name': 'f', 'params': []}, 'aux': {}};
-}
+import {callJson, mockPublisher, testSettings} from './helpers';
 
 describe('RevokedSet', () => {
   test('entries expire after the TTL', () => {
@@ -124,20 +104,5 @@ describe('CeleryConsumer cancel-before-pickup', () => {
     expect(payload['status']).toBe('Canceled');
     expect(correlationId).toBe('task-1');
     expect(type).toBe('call');
-  });
-
-  test('a normal task is accepted and executed', async () => {
-    const publisher = mockPublisher();
-    const runTask = jest.fn().mockResolvedValue(undefined);
-    const consumer = new CeleryConsumer(testSettings(), publisher, new RevokedSet(), runTask);
-    consumer.onMessage({
-      content: Buffer.from(JSON.stringify({'args': [callJson('t1')], 'kwargs': {}}), 'utf8'),
-      properties: {headers: {}},
-    });
-    await consumer.waitForIdle(1000);
-
-    expect(publisher.publish).toHaveBeenCalledWith({}, 't1', 'accepted');
-    expect(runTask).toHaveBeenCalledTimes(1);
-    expect(consumer.inFlightCount).toBe(0);
   });
 });

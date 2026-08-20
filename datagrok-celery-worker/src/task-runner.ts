@@ -79,7 +79,7 @@ export class TaskRunner {
       if (output != null) {
         if (value == null)
           logWarn('Task returned null', call.id);
-        const marshaled = marshalOutput(output, value, dg);
+        const marshaled = marshalOutput(output, value);
         if (output.isStreamable && marshaled.bytes != null)
           await pipe!.sendParam(marshaled.bytes, marshaled.tags!);
       }

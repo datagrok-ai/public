@@ -140,6 +140,8 @@ export class CeleryConsumer {
   }
 
   private async admit(call: FuncCall): Promise<void> {
+    // prefetch bounds deliveries per channel; after a reconnect the new channel can
+    // over-deliver while old-channel tasks still run, so the gate is NOT redundant
     while (this.executing >= this.settings.maxConcurrentTasks)
       await new Promise<void>((resolve) => this.slotWaiters.push(resolve));
     if (this.revoked.has(call.id)) {

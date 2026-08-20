@@ -1,0 +1,36 @@
+{
+  "env": {
+    "node": true,
+    "es2022": true,
+    "jest": true
+  },
+  "extends": [
+    "google"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "indent": ["error", 2, {"SwitchCase": 1}],
+    "max-len": ["error", 120],
+    "no-throw-literal": "error",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error",
+      {"varsIgnorePattern": "^_", "argsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_"}],
+    "new-cap": ["error", {"capIsNew": false}],
+    "func-call-spacing": "off",
+    "require-jsdoc": "off",
+    "valid-jsdoc": "off",
+    "spaced-comment": "off",
+    "linebreak-style": "off",
+    "quote-props": "off",
+    "curly": ["error", "multi-or-nest"],
+    "brace-style": ["error", "stroustrup", {"allowSingleLine": true}],
+    "block-spacing": ["error", "always"],
+    "comma-dangle": "off",
+    "guard-for-in": "off"
+  }
+}

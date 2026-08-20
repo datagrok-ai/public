@@ -1,24 +1,9 @@
 import {CeleryConsumer} from '../celery-consumer';
 import {FuncCall} from '../func-call';
 import {RevokedSet} from '../pidbox';
-import {Settings} from '../settings';
 import {TaskRunner} from '../task-runner';
+import {callJson, mockPublisher, testSettings} from './helpers';
 
-function testSettings(maxConcurrentTasks?: number): Settings {
-  return new Settings({
-    taskQueueName: 'test_queue',
-    celeryHostname: 'test-host',
-    celeryName: 'datagrok-celery',
-    packageName: 'TestPkg',
-    amqpHost: 'localhost', amqpPort: 5672, amqpUser: 'guest', amqpPassword: 'guest', amqpTls: false,
-    pipeHost: 'localhost', pipePort: 3000, pipeKey: '',
-    paramTimeoutMinutes: 5, wsMessageTimeoutSeconds: 30, healthPort: 8000,
-    maxConcurrentTasks: maxConcurrentTasks,
-  });
-}
-
-const mockPublisher = (): any => ({publish: jest.fn().mockResolvedValue(true)});
-const callJson = (id: string): any => ({'id': id, 'func': {'name': 'f', 'params': []}, 'aux': {}});
 const messageFor = (id: string): any => ({
   content: Buffer.from(JSON.stringify({'args': [callJson(id)], 'kwargs': {}}), 'utf8'),
   properties: {headers: {}},
