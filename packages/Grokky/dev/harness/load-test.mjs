@@ -62,6 +62,7 @@ const via = arg('via', 'ws');
 const [thinkLo, thinkHi] = arg('think', '3-8').split('-').map(Number);
 const staggerS = parseFloat(arg('stagger', '2'));
 const timeoutMs = parseInt(arg('timeout', '180'), 10) * 1000;
+const queueTimeoutMs = parseInt(arg('queue-timeout', '900'), 10) * 1000;
 const seed = parseInt(arg('seed', '1'), 10);
 const url = arg('url', DEFAULT_URL);
 const model = arg('model');
@@ -216,7 +217,7 @@ async function virtualUser(i, prompts) {
           startTurnTask(i, sessionId, taskId);
         }
         r = await d.turn(prompt, {
-          sessionId, timeoutMs,
+          sessionId, timeoutMs, queueTimeoutMs,
           ...(taskId ? {taskId} : {}),
           ...(model ? {model} : {}),
           ...(mode === 'bash' ? {systemPromptMode: 'bash'} : {}),
@@ -226,10 +227,11 @@ async function virtualUser(i, prompts) {
       }
       results.push({user: i, turn, ...r});
       log({user: i, ev: 'done', turn, ok: r.ok, ttftMs: r.ttftMs, totalMs: r.totalMs,
+        queueWaitMs: r.queueWaitMs, execMs: r.execMs,
         queued: r.queued, error: r.error, tools: r.tools, costUsd: r.metrics?.costUsd ?? null,
         answer: r.content},
       r.ok ?
-        `${uid(i)} ✓ t${turn} ${sec(r.totalMs)} (ttft ${sec(r.ttftMs)})` +
+        `${uid(i)} ✓ t${turn} ${sec(r.totalMs)} (wait ${sec(r.queueWaitMs)} + exec ${sec(r.execMs)})` +
           `${r.queued ? ' [queued]' : ''}  "${oneLine(r.content, 100)}"` :
         `${uid(i)} ✗ t${turn} ${sec(r.totalMs)}  ${r.error}`);
       if (turn < turnsPerUser - 1)
@@ -323,6 +325,8 @@ const ok = results.filter((r) => r.ok);
 const failed = results.filter((r) => !r.ok);
 const ttfts = ok.map((r) => r.ttftMs).filter((x) => x != null);
 const totals = ok.map((r) => r.totalMs);
+const waits = ok.map((r) => r.queueWaitMs).filter((x) => x != null);
+const execs = ok.map((r) => r.execMs).filter((x) => x != null);
 const cost = results.reduce((a, r) => a + (r.metrics?.costUsd ?? 0), 0);
 const summary = {
   ev: 'summary',
@@ -330,7 +334,10 @@ const summary = {
   queued: results.filter((r) => r.queued).length, peakInFlight,
   ttftP50Ms: percentile(ttfts, 50), ttftP90Ms: percentile(ttfts, 90),
   totalP50Ms: percentile(totals, 50), totalP90Ms: percentile(totals, 90),
-  totalMaxMs: percentile(totals, 100), costUsd: +cost.toFixed(2), watchdogKills,
+  totalMaxMs: percentile(totals, 100),
+  queueWaitP50Ms: percentile(waits, 50), queueWaitP90Ms: percentile(waits, 90),
+  execP50Ms: percentile(execs, 50), execP90Ms: percentile(execs, 90),
+  costUsd: +cost.toFixed(2), watchdogKills,
   errors: Object.fromEntries(failed.reduce((m, r) =>
     m.set(r.error ?? 'unknown', (m.get(r.error ?? 'unknown') ?? 0) + 1), new Map())),
 };
@@ -342,6 +349,8 @@ console.log(`turns: ${ok.length}/${results.length} ok` +
   `${connectFailures ? `, ${connectFailures} users failed to connect` : ''}` +
   `${summary.queued ? `, ${summary.queued} queued` : ''}`);
 console.log(`peak concurrency: ${peakInFlight}/${users} turns in flight`);
+console.log(`queue wait p50/p90: ${sec(summary.queueWaitP50Ms)}/${sec(summary.queueWaitP90Ms)}   ` +
+  `exec p50/p90: ${sec(summary.execP50Ms)}/${sec(summary.execP90Ms)}`);
 console.log(`ttft p50/p90: ${sec(summary.ttftP50Ms)}/${sec(summary.ttftP90Ms)}   ` +
   `total p50/p90/max: ${sec(summary.totalP50Ms)}/${sec(summary.totalP90Ms)}/${sec(summary.totalMaxMs)}` +
   `${cost ? `   cost $${cost.toFixed(2)}` : ''}`);
