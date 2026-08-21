@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Control} from '../../src/index.js';
+import {signal, computed, Scope, Control, VirtualGrid, IconInput, ICON_NAMES, BRAND_ICON_NAMES} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {icon} from '../../src/components/display/icon.js';
 
@@ -17,24 +17,24 @@ function injectOnce(id, href) {
 injectOnce('u2-elements-css', '../../css/elements.css');
 injectOnce('u2-tooltip-css', '../../css/tooltip.css');
 injectOnce('u2-icons-css', '../../css/icons.css');
+injectOnce('u2-inputs-css', '../../css/inputs.css');
+injectOnce('u2-grid-css', '../../css/grid.css');
+injectOnce('u2-icon-input-css', '../../css/icon-input.css');
 
 if (!document.getElementById('u2-icons-page-css')) {
   const style = document.createElement('style');
   style.id = 'u2-icons-page-css';
   style.textContent = `
     .u2-icon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-      gap: var(--dg-space-s);
+      height: 360px;
     }
     .u2-icon-cell {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: var(--dg-space-s);
-      padding: var(--dg-space-m) var(--dg-space-s);
-      border: var(--dg-border-width) solid var(--dg-border-subtle);
-      border-radius: var(--dg-radius);
+      width: 100%;
+      padding: var(--dg-space-s);
       overflow: hidden;
     }
     .u2-icon-cell .name {
@@ -48,26 +48,7 @@ if (!document.getElementById('u2-icons-page-css')) {
   document.head.append(style);
 }
 
-const NAMES = [
-  'plus', 'minus', 'times', 'check', 'search', 'filter', 'sync', 'undo', 'redo', 'clone',
-  'save', 'edit', 'pen', 'trash-alt', 'copy', 'paste', 'cut', 'tag', 'tags',
-  'folder', 'folder-open', 'file', 'file-alt', 'file-import', 'file-export',
-  'download', 'upload', 'print', 'share-alt', 'link', 'external-link-alt',
-  'chevron-up', 'chevron-down', 'chevron-left', 'chevron-right',
-  'angle-double-left', 'angle-double-right',
-  'arrow-up', 'arrow-down', 'arrow-left', 'arrow-right',
-  'sort', 'sort-up', 'sort-down', 'bars', 'ellipsis-h', 'ellipsis-v',
-  'cog', 'cogs', 'wrench', 'sliders-h', 'tools', 'key', 'lock', 'unlock',
-  'user', 'users', 'user-plus', 'sign-in-alt', 'sign-out-alt',
-  'home', 'star', 'heart', 'bookmark', 'flag', 'bell', 'envelope', 'comment', 'comments',
-  'question-circle', 'info-circle', 'exclamation-triangle', 'exclamation-circle',
-  'check-circle', 'times-circle', 'ban', 'clock', 'history', 'calendar', 'calendar-alt',
-  'table', 'th', 'th-list', 'list', 'columns',
-  'chart-bar', 'chart-line', 'chart-pie', 'chart-area', 'project-diagram',
-  'database', 'server', 'code', 'terminal', 'play', 'pause', 'stop', 'spinner',
-  'eye', 'eye-slash', 'expand', 'compress',
-  'flask', 'atom', 'microscope', 'dna', 'vial',
-];
+const NAMES = [...ICON_NAMES, ...BRAND_ICON_NAMES];
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -123,8 +104,11 @@ export async function render(main) {
   };
 
   const query = signal('');
-  const matches = computed(() => NAMES.filter((n) => n.includes(query.value.trim().toLowerCase())));
-  section(`Browse (${NAMES.length} free names)`, () => {
+  const matches = computed(() => {
+    const q = query.value.trim().toLowerCase().replace(/\s+/g, '-');
+    return q ? NAMES.filter((n) => n.includes(q)) : NAMES;
+  });
+  section(`Browse (${ICON_NAMES.length} icons + ${BRAND_ICON_NAMES.length} brands, virtualized)`, () => {
     const search = el('input');
     search.type = 'search';
     search.name = 'icon-filter';
@@ -133,25 +117,37 @@ export async function render(main) {
     search.style.width = '240px';
     search.addEventListener('input', () => query.value = search.value);
 
-    const grid = el('div', 'u2-icon-grid');
-    const cells = new Map();
-    for (const name of NAMES) {
+    const grid = new VirtualGrid({cellWidth: 104, cellHeight: 56, render: (name) => {
       const cell = el('div', 'u2-icon-cell');
       cell.append(icon(name, {size: 'large', tooltip: name}), el('div', 'name', name));
-      cells.set(name, cell);
-      grid.append(cell);
-    }
+      return cell;
+    }});
+    grid.root.classList.add('u2-icon-grid');
+    grid.setItems(matches);
     const empty = el('div', 'u2-gallery-status', 'No icon matches that name.');
-    Scope.ambient.effect(() => {
-      const visible = new Set(matches.value);
-      for (const [name, cell] of cells)
-        cell.style.display = visible.has(name) ? '' : 'none';
-      empty.style.display = visible.size === 0 ? '' : 'none';
-    });
+    const inDom = signal(0);
+    const count = () => inDom.value = grid.renderedCount;
+    grid.root.addEventListener('scroll', count);
+    Scope.ambient.effect(() => empty.style.display = matches.value.length === 0 ? '' : 'none');
+    Scope.ambient.effect(() => { matches.value; queueMicrotask(count); });
     return [
-      row([search, readout('showing', computed(() => `${matches.value.length} of ${NAMES.length}`))]),
+      row([search, readout('showing', computed(() => `${matches.value.length} of ${NAMES.length}`)),
+        readout('in DOM', computed(() => String(inDom.value)))]),
       grid,
       empty,
+    ];
+  });
+
+  section('IconInput', () => {
+    const picker = new IconInput({label: 'Icon', value: 'flask'});
+    const brand = new IconInput({label: 'Brand', value: 'github'});
+    const inline = new IconInput({inline: true, names: ['star', 'heart', 'flag', 'bookmark']});
+    return [
+      row([picker, brand, inline]),
+      readout('picked', computed(() => `${picker.value.value} · ${brand.value.value} · ${inline.value.value || '(none)'}`)),
+      el('div', 'u2-gallery-status',
+        'A click (or Enter) opens the grid; type to filter; click or Enter picks, Esc cancels, Backspace clears. ' +
+        'A brand name renders in its own face without being told.'),
     ];
   });
 

@@ -20,6 +20,8 @@ import '@datagrok-libraries/u2/css/choice.css';
 import '@datagrok-libraries/u2/css/multi-select.css';
 import '@datagrok-libraries/u2/css/combobox.css';
 import '@datagrok-libraries/u2/css/list.css';
+import '@datagrok-libraries/u2/css/grid.css';
+import '@datagrok-libraries/u2/css/icon-input.css';
 import '@datagrok-libraries/u2/css/file.css';
 import '@datagrok-libraries/u2/css/progress.css';
 import '@datagrok-libraries/u2/css/spec.css';

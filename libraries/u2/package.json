@@ -28,6 +28,7 @@
     "e2e:stand": "node e2e/designer.stand.spec.mjs",
     "manifest": "node scripts/gen-manifest.mjs",
     "manifest:check": "node scripts/gen-manifest.mjs --check",
+    "icons": "node scripts/gen-icon-names.mjs",
     "lint": "eslint src --ext .ts",
     "lint:tokens": "node scripts/check-tokens.mjs",
     "lint-fix": "eslint src --ext .ts --fix",

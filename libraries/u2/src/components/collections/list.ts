@@ -23,18 +23,18 @@ export interface VirtualListOptions<T> {
   contextActions?: (item: T, index: number) => Action[];
 }
 
-interface IndexRange {
+export interface IndexRange {
   start: number;
   end: number;
 }
 
-function intersect(a: IndexRange, b: IndexRange): IndexRange {
+export function intersect(a: IndexRange, b: IndexRange): IndexRange {
   const start = Math.max(a.start, b.start);
   return {start, end: Math.max(start, Math.min(a.end, b.end))};
 }
 
 /** The parts of `a` not covered by `b` — at most two ranges, in ascending order. */
-function complement(a: IndexRange, b: IndexRange): IndexRange[] {
+export function complement(a: IndexRange, b: IndexRange): IndexRange[] {
   if (a.end <= a.start)
     return [];
   const shared = intersect(a, b);

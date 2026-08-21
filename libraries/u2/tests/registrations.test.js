@@ -309,6 +309,40 @@ spec('u2-tabs: child nodes label the tabs, and activation switches panels', () =
   instance.dispose();
 });
 
+spec('u2-button with an icon, u2-icon and u2-icon-input render; the icon props ask for the Icon editor', () => {
+  const reg = registry();
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-div-v', children: [
+      {tag: 'u2-button', name: 'save', props: {text: 'Save', icon: 'save', primary: true}},
+      {tag: 'u2-button', name: 'plain', props: {text: 'Plain', icon: ''}},
+      {tag: 'u2-icon', name: 'glyph', props: {name: 'github', size: 'large'}},
+      {tag: 'u2-icon-input', name: 'pick', props: {label: 'Icon', value: 'star'}},
+    ]},
+  }, new SpecContext(), reg);
+  document.body.append(instance.root);
+  const save = instance.node('save').root;
+  assert.notEqual(save.querySelector('.fa-save'), null, 'the icon leads the text');
+  assert.equal(save.textContent, 'Save');
+  assert.equal(save.classList.contains('u2-btn-primary'), true);
+  assert.equal(instance.node('plain').root.querySelector('.u2-icon'), null, 'an empty icon is no icon');
+  const glyph = instance.node('glyph').root;
+  assert.equal(['grok-icon', 'u2-icon', 'fab', 'fa-github', 'u2-icon-large'].every((c) => glyph.classList.contains(c)), true);
+  const pick = instance.node('pick');
+  assert.equal(pick.root.dataset.u2, 'icon-input');
+  assert.equal(pick.value.value, 'star');
+  assert.deepEqual(instance.dump().root.children[3], {tag: 'u2-icon-input', name: 'pick', props: {label: 'Icon', value: 'star'}});
+  instance.dispose();
+
+  const metas = new Map(components(reg).map((c) => [c.tag, c]));
+  const inputType = (tag, list, name) => metas.get(tag)[list].find((p) => p.name === name).inputType;
+  assert.equal(inputType('u2-button', 'props', 'icon'), 'Icon');
+  assert.equal(inputType('u2-icon', 'props', 'name'), 'Icon');
+  assert.equal(inputType('u2-icon-input', 'props', 'value'), 'Icon');
+  assert.equal(inputType('u2-tabs', 'childProps', 'icon'), 'Icon');
+  assert.equal(inputType('u2-accordion', 'childProps', 'icon'), 'Icon');
+});
+
 spec('u2-tabs and u2-accordion: the child icon prop renders, the tabs props pick orientation and variant', () => {
   const reg = registry();
   let instance;

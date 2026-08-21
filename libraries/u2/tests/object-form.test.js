@@ -431,6 +431,7 @@ form('inputType picks the editor, ahead of every other hint', () => {
     [prop('shade', 'string', {inputType: 'Color'}), 'color-input'],
     [prop('face', 'string', {inputType: 'Font'}), 'font-input'],
     [prop('logo', 'string', {inputType: 'Image'}), 'image-input'],
+    [prop('glyph', 'string', {inputType: 'Icon'}), 'icon-input'],
     [prop('labels', 'list', {inputType: 'Tags', choices: ['a', 'b']}), 'tags-input'],
     [prop('note', 'string', {inputType: 'TextArea', editor: 'password'}), 'text-area'],
     [prop('grade', 'int', {inputType: 'Slider', min: 1, max: 5}), 'slider-input'],

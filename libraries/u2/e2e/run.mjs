@@ -15,7 +15,7 @@ const GROK_CORE = join(REPO, 'core/tools/grok-core/bin/grok-core.js');
 /** Every file opens with its own fixture, so the order is a convention — except `leak`, which
  * closes every view and reopens the app: it stays last. */
 const FILES = ['view-and-panel', 'editing', 'metadata-and-navigation', 'multi-select-and-guards',
-  'tray-and-sources', 'pickers', 'full-build', 'seeded-panes', 'platform-drop', 'leak'];
+  'tray-and-sources', 'pickers', 'full-build', 'seeded-panes', 'platform-drop', 'icon-input', 'leak'];
 
 async function pubServeIsUp() {
   try {

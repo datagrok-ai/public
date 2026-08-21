@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import {
   signal, computed, Signal, ReadonlySignal, Control, Scope,
   divV, divH, panel, span, h3, button, bigButton, link,
-  TextInput, TextArea, BoolInput, NumberInput, ChoiceInput, MultiChoiceInput,
+  TextInput, TextArea, BoolInput, NumberInput, ChoiceInput, MultiChoiceInput, IconInput,
   Combobox, TypeAhead, AsyncView, VirtualList, VirtualTree, TreeNode,
   TabStrip, Splitter, Accordion, Breadcrumbs, Toolbar,
   Menu, Dialog, Tooltip, Form, PropertyGrid,
@@ -45,6 +45,7 @@ function inputsPage(): HTMLElement {
   const targets = new MultiChoiceInput({label: 'Targets', items: ['GPCR', 'Kinase', 'Ion channel', 'Protease'],
     value: ['Kinase']});
 
+  const glyph = new IconInput({label: 'Icon', value: 'flask'});
   const code = new TextInput({label: 'Code', placeholder: 'required, up to 10 characters'});
   code.addValidator((v) => v.trim().length > 0 ? null : 'Value is required');
   code.addValidator((v) => v.length > 10 ? 'At most 10 characters' : null);
@@ -52,12 +53,13 @@ function inputsPage(): HTMLElement {
   return divV([
     span('Every input is a signal owner: bind to it, or pass your own signal through the bind option.',
       'u2demo-hint'),
-    name, search, notes, enabled, notifications, dose, replicates, stage, targets, code,
+    name, search, notes, enabled, notifications, dose, replicates, stage, targets, glyph, code,
     readout('search', computed(() => query.value || '(empty)')),
     readout('notifications', computed(() => String(notify.value))),
     readout('dose * replicates', computed(() =>
       String((dose.value.value ?? 0) * (replicates.value.value ?? 0)))),
     readout('code validity', computed(() => code.validity.value ?? 'valid')),
+    readout('icon', glyph.value),
   ], 'u2demo-page');
 }
 

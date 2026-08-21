@@ -4,6 +4,7 @@
    vendored FA Pro webfonts. */
 import {Scope} from '../../core/scope.js';
 import {Tooltip} from '../../core/tooltip.js';
+import {BRAND_ICON_NAMES} from './icon-names.js';
 
 const STANDALONE_FACES = [
   '300 12px "Font Awesome 5 Pro Light"',
@@ -23,7 +24,7 @@ function requestStandaloneFaces(): void {
     document.fonts.load(f).catch(() => undefined);
 }
 
-export type IconVariant = 'light' | 'regular' | 'solid';
+export type IconVariant = 'light' | 'regular' | 'solid' | 'brands';
 
 export interface IconOptions {
   variant?: IconVariant;
@@ -34,12 +35,15 @@ export interface IconOptions {
   cls?: string;
 }
 
-const VARIANT_CLASS: Record<IconVariant, string> = {light: 'fal', regular: 'far', solid: 'fas'};
+const VARIANT_CLASS: Record<IconVariant, string> = {light: 'fal', regular: 'far', solid: 'fas', brands: 'fab'};
+const BRANDS = new Set(BRAND_ICON_NAMES);
 
 export function icon(name: string, options?: IconOptions): HTMLElement {
   requestStandaloneFaces();
   const el = document.createElement('i');
-  el.className = ['grok-icon', 'u2-icon', VARIANT_CLASS[options?.variant ?? 'light'], `fa-${name}`,
+  // a brand exists in one face only, so a bare name renders it instead of an empty light glyph
+  const variant = options?.variant ?? (BRANDS.has(name) ? 'brands' : 'light');
+  el.className = ['grok-icon', 'u2-icon', VARIANT_CLASS[variant], `fa-${name}`,
     options?.size ? `u2-icon-${options.size}` : undefined, options?.cls]
     .filter((c) => c).join(' ');
   el.dataset.u2 = 'icon';

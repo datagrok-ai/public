@@ -413,6 +413,12 @@
           "name": "primary",
           "type": "bool",
           "description": "Accent styling for the main action."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon",
+          "description": "Font Awesome icon name shown before the text."
         }
       ],
       "defaults": {
@@ -591,6 +597,7 @@
         {
           "name": "icon",
           "type": "string",
+          "inputType": "Icon",
           "description": "Font Awesome icon name shown before the title."
         }
       ],
@@ -670,6 +677,7 @@
         {
           "name": "icon",
           "type": "string",
+          "inputType": "Icon",
           "description": "Font Awesome icon name shown before the title."
         }
       ],
@@ -793,6 +801,49 @@
             "Title": "Demo",
             "Rows": 20
           }
+        }
+      }
+    },
+    {
+      "tag": "u2-icon",
+      "category": "Display",
+      "description": "A Font Awesome icon.",
+      "props": [
+        {
+          "name": "name",
+          "type": "string",
+          "inputType": "Icon",
+          "description": "Font Awesome icon name."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "choices": [
+            "light",
+            "regular",
+            "solid",
+            "brands"
+          ],
+          "description": "Face; light by default, brands picked on its own for a brand name."
+        },
+        {
+          "name": "size",
+          "type": "string",
+          "choices": [
+            "small",
+            "medium",
+            "large"
+          ]
+        }
+      ],
+      "defaults": {
+        "name": "star"
+      },
+      "example": {
+        "tag": "u2-icon",
+        "props": {
+          "name": "flask",
+          "size": "large"
         }
       }
     },
@@ -1012,6 +1063,54 @@
         "props": {
           "label": "Color",
           "value": "#1f77b4"
+        }
+      }
+    },
+    {
+      "tag": "u2-icon-input",
+      "category": "Inputs",
+      "description": "Font Awesome icon name, picked from a searchable grid of every icon the platform ships.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true,
+          "inputType": "Icon"
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string"
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-icon-input",
+        "props": {
+          "label": "Icon",
+          "value": "star"
         }
       }
     },

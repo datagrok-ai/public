@@ -40,6 +40,12 @@ ui('icon: variants map to the Font Awesome weight classes', () => {
   assert.equal(icon('star', {variant: 'solid'}).classList.contains('fal'), false);
 });
 
+ui('icon: a brand name picks the brands face on its own; an explicit variant still wins', () => {
+  assert.equal(icon('github').className, 'grok-icon u2-icon fab fa-github');
+  assert.equal(icon('github', {variant: 'solid'}).classList.contains('fas'), true);
+  assert.equal(icon('star', {variant: 'brands'}).classList.contains('fab'), true);
+});
+
 ui('icon: size adds a sizing class, and no size adds none', () => {
   for (const size of ['small', 'medium', 'large'])
     assert.equal(icon('cog', {size}).classList.contains(`u2-icon-${size}`), true);

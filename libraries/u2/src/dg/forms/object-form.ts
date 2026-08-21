@@ -18,6 +18,7 @@ import {TextArea} from '../../components/inputs/text-input.js';
 import {RadioInput} from '../../components/inputs/radio-input.js';
 import {ColorInput} from '../../components/inputs/color-input.js';
 import {FontInput} from '../../components/inputs/font-input.js';
+import {IconInput} from '../../components/inputs/icon-input.js';
 import {ImageInput} from '../../components/inputs/image-input.js';
 import {TagsInput} from '../../components/inputs/tags-input.js';
 import {SliderInput} from '../../components/inputs/slider-input.js';
@@ -108,6 +109,7 @@ const BY_INPUT_TYPE: Record<string, InputFactory> = {
   Color: (prop, options) => new ColorInput(options),
   Font: (prop, options) => new FontInput(options),
   Image: (prop, options) => new ImageInput(options),
+  Icon: (prop, options) => new IconInput(options),
   Radio: (prop, options) => new RadioInput({...options, items: prop.choices ?? []}),
   Choice: (prop, options) => new ChoiceInput({...options, items: prop.choices ?? []}),
   MultiChoice: (prop, options) => new MultiChoiceInput({...options, items: prop.choices ?? []}),

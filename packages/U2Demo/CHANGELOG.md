@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Inputs: added an `IconInput` row to the Inputs tab; the package imports `grid.css` and `icon-input.css`
 * Added `u2Record(text)` — the published function to wire a button to from the designer: it takes a literal argument and leaves a trace that outlives the balloon by appending to the demo form's Run log. Nothing published both took an argument and showed anything, so `wire a button with a literal argument` could not be completed at all: `info` and `balloons` take nothing, `test` runs the test harness, and the `u2Record` the e2e checks used was registered client-side by the check itself
 * U2 Designer: the demo context's run log is `demoRunLog` rather than `log`, and every command and function that fires writes it through one place — a key named `log` on a brand-new empty form reads as the designer's own plumbing rather than as the host app's data
 

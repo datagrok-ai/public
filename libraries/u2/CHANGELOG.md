@@ -2,6 +2,10 @@
 
 ## v.next
 
+* IconInput: added `IconInput` — a Font Awesome picker: a button-like control showing the glyph and name, and an anchored popup with a search box over a virtualized grid of every icon the platform ships (1853 + 456 brands, generated into `icon-names.ts` by `npm run icons`); a pick commits and closes, Esc / outside click cancel, Backspace clears
+* VirtualGrid: added `VirtualGrid` — the fixed-cell, two-dimensional sibling of `VirtualList`: columns follow the width, arrows/Page/Home/End move by cell, row and viewport, click/Enter/Space activate, `keyOf` keeps the selection across `setItems`
+* Icons: `icon()` renders a brand name in the `fab` face on its own; `IconVariant` gained `brands`
+* Spec: `u2-button` gained an `icon` prop; registered `u2-icon` (name / variant / size) and `u2-icon-input`; the `icon` props of `u2-button`, `u2-icon`, `u2-icon-input` and the tab/accordion pane child prop carry `inputType: 'Icon'`, which `propertyForm` routes to `IconInput` — so the designer's context panel offers the picker wherever a prop is an icon
 * TabStrip: the platform's `ui.tabControl` look is the default — accent text, a 2px accent underline on the selected tab, no stripe chrome; the IDE document-tab skin survives as `variant: 'document'`
 * TabStrip: added `orientation: 'vertical'` — the header is a column on the left, the selected tab shows a 4px accent bar, ↑/↓ move focus, and overflow is measured on the vertical axis
 * TabStrip: added `TabOptions.icon` (a Font Awesome name or an element) rendered before the label and in the overflow menu; an empty label with an icon makes an icon-only tab, whose header `title` carries `TabOptions.tooltip`

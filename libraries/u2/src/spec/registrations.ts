@@ -4,6 +4,8 @@
 import {Signal} from '../core/signals.js';
 import {Control} from '../core/component.js';
 import {button, divH, divV, panel} from '../core/elements.js';
+import {buttonWithIcon} from '../components/actions/buttons.js';
+import {icon, IconVariant} from '../components/display/icon.js';
 import {Input, InputOptions} from '../core/input-base.js';
 import {TextInput, TextArea} from '../components/inputs/text-input.js';
 import {BoolInput} from '../components/inputs/bool-input.js';
@@ -18,6 +20,7 @@ import {QNum} from '../core/qnum.js';
 import {QNumInput} from '../components/inputs/qnum-input.js';
 import {FontInput} from '../components/inputs/font-input.js';
 import {ImageInput} from '../components/inputs/image-input.js';
+import {IconInput} from '../components/inputs/icon-input.js';
 import {Form} from '../components/forms/form.js';
 import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
@@ -238,12 +241,19 @@ const METAS: ComponentMeta[] = [
   {
     tag: 'u2-button',
     category: 'Actions',
-    create: (props) => new Control(button((props.text as string | undefined) ?? '', () => {},
-      {primary: props.primary === true})),
+    create: (props) => {
+      const text = (props.text as string | undefined) ?? '';
+      const primary = props.primary === true;
+      const name = props.icon;
+      return new Control(typeof name === 'string' && name !== '' ?
+        buttonWithIcon(text, name, () => {}, {primary}) : button(text, () => {}, {primary}));
+    },
     description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
     props: [
       {name: 'text', type: 'string'},
       {name: 'primary', type: 'bool', description: 'Accent styling for the main action.'},
+      {name: 'icon', type: 'string', inputType: 'Icon',
+        description: 'Font Awesome icon name shown before the text.'},
     ],
     defaults: {text: 'Button'},
     events: ['click'],
@@ -291,7 +301,8 @@ const METAS: ComponentMeta[] = [
     props: [],
     childProps: [
       {name: 'title', type: 'string', description: 'Pane title; numbered when absent.'},
-      {name: 'icon', type: 'string', description: 'Font Awesome icon name shown before the title.'},
+      {name: 'icon', type: 'string', inputType: 'Icon',
+        description: 'Font Awesome icon name shown before the title.'},
     ],
     acceptsChildren: true,
     defaultChildren: [{tag: 'u2-panel', props: {title: 'Pane 1'}}],
@@ -323,7 +334,8 @@ const METAS: ComponentMeta[] = [
     ],
     childProps: [
       {name: 'title', type: 'string', description: 'Tab label; numbered when absent.'},
-      {name: 'icon', type: 'string', description: 'Font Awesome icon name shown before the title.'},
+      {name: 'icon', type: 'string', inputType: 'Icon',
+        description: 'Font Awesome icon name shown before the title.'},
     ],
     acceptsChildren: true,
     defaults: {orientation: 'horizontal', variant: 'platform'},
@@ -386,6 +398,22 @@ const METAS: ComponentMeta[] = [
       properties: [{name: 'Title', type: 'string'}, {name: 'Rows', type: 'int', min: 0}],
       values: {Title: 'Demo', Rows: 20},
     }},
+  },
+  {
+    tag: 'u2-icon',
+    category: 'Display',
+    create: (props) => new Control(icon((props.name as string | undefined) ?? 'question',
+      {variant: props.variant as IconVariant | undefined,
+        size: props.size as 'small' | 'medium' | 'large' | undefined})),
+    description: 'A Font Awesome icon.',
+    props: [
+      {name: 'name', type: 'string', inputType: 'Icon', description: 'Font Awesome icon name.'},
+      {name: 'variant', type: 'string', choices: ['light', 'regular', 'solid', 'brands'],
+        description: 'Face; light by default, brands picked on its own for a brand name.'},
+      {name: 'size', type: 'string', choices: ['small', 'medium', 'large']},
+    ],
+    defaults: {name: 'star'},
+    example: {tag: 'u2-icon', props: {name: 'flask', size: 'large'}},
   },
   {
     tag: 'u2-breadcrumbs',
@@ -454,6 +482,15 @@ const METAS: ComponentMeta[] = [
       {name: 'swatchOnly', type: 'bool', description: 'Swatch alone, no hex field.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-color-input', props: {label: 'Color', value: '#1f77b4'}},
+  },
+  {
+    tag: 'u2-icon-input',
+    category: 'Inputs',
+    create: (props) => new IconInput(inputOptions<string>(props)),
+    description: 'Font Awesome icon name, picked from a searchable grid of every icon the platform ships.',
+    props: inputProps('string').map((p) => p.name === 'value' ? {...p, inputType: 'Icon'} : p),
+    events: ['input', 'change'],
+    example: {tag: 'u2-icon-input', props: {label: 'Icon', value: 'star'}},
   },
   {
     tag: 'u2-list-input',
