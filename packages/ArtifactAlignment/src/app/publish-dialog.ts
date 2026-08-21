@@ -15,15 +15,16 @@ interface ProgramChoice {
  * id, or a live in-memory FuncCall (published without a prior history save). The
  * republish key is (program, study, name): a key match publishes the next version
  * of that publication, a new key creates a new publication. */
-export async function showPublishDialog(source: string | DG.FuncCall, defaultName?: string): Promise<void> {
+export async function showPublishDialog(source: string | DG.FuncCall, defaultName?: string):
+  Promise<DG.Dialog | null> {
   const programs: ProgramChoice[] =
     await grok.dapi.domains.table(T_PROGRAM).query({sort: 'code', limit: 1000});
   if (programs.length === 0) {
     grok.shell.warning('No programs are visible to you — ask an administrator to provision one');
-    return;
+    return null;
   }
 
-  const nameInput = ui.input.string('Name', {value: defaultName ?? ''});
+  const nameInput = ui.input.string('Name', {value: defaultName ?? '', nullable: false});
   const programInput = ui.input.choice('Program', {
     items: programs.map((p) => p.code), value: programs[0].code, nullable: false});
   const studyInput = ui.input.choice<string | null>('Study', {items: [null], value: null});
@@ -89,11 +90,11 @@ export async function showPublishDialog(source: string | DG.FuncCall, defaultNam
   await Promise.all([refreshStudies(), refreshProgramCompounds()]);
   await refreshHint();
 
-  ui.dialog('Publish to program')
-    .add(ui.divV([
-      nameInput, programInput, studyInput, workstreamInput,
-      compoundsInput, tagsInput, pathInput, descriptionInput, hint,
-    ]))
+  let dialog = ui.dialog('Publish to program');
+  for (const input of [nameInput, programInput, studyInput, workstreamInput,
+    compoundsInput, tagsInput, pathInput, descriptionInput])
+    dialog = dialog.add(input);
+  dialog = dialog.add(hint)
     .onOK(async () => {
       const program = currentProgram();
       const progress = DG.TaskBarProgressIndicator.create('Publishing…');
@@ -117,4 +118,10 @@ export async function showPublishDialog(source: string | DG.FuncCall, defaultNam
       }
     })
     .show({center: true, width: 500});
+
+  const okButton = dialog.getButton('OK');
+  const refreshOk = () => okButton.disabled = !nameInput.value?.trim();
+  refreshOk();
+  nameInput.onChanged.subscribe(refreshOk);
+  return dialog;
 }

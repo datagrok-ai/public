@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {showProgramDialog, showRejectDialog} from '../app/admin-dialogs';
+import {showPublishDialog} from '../app/publish-dialog';
 import {AlignmentHandler, HIDDEN_GRID_COLUMNS} from '../app/catalog-app';
 import {T_PROGRAM} from '../domain/constants';
 import {cleanupTestPrograms, makeTestProgram} from './fixtures';
@@ -35,6 +36,21 @@ category('ArtifactAlignment: ui forms', () => {
       expect(dialog.input('Code').enabled, false);
       expect(dialog.input('Code').value, 'ZZED');
       expect(dialog.getButton('OK').disabled, false);
+    } finally {
+      dialog.close();
+    }
+  });
+
+  test('publish dialog requires a name', async () => {
+    await makeTestProgram();
+    const dialog = (await showPublishDialog('00000000-0000-0000-0000-000000000000'))!;
+    try {
+      const ok = dialog.getButton('OK');
+      expect(ok.disabled, true, 'OK must be disabled while the name is empty');
+      const name = dialog.input('Name');
+      name.value = 'ui gating test';
+      name.fireChanged();
+      expect(ok.disabled, false, 'OK must enable once the name is set');
     } finally {
       dialog.close();
     }

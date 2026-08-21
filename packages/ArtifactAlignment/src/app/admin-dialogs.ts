@@ -9,10 +9,10 @@ import {chips, compoundsChipInput, programCompoundCodes, tagsChipInput} from './
 /** Create/edit dialog for a program. Saves through {@link ensureProgram} — a plain
  * domain insert would skip the audience group provisioning, promote, and shares. */
 export function showProgramDialog(existing?: {[key: string]: any}): DG.Dialog {
-  const codeInput = ui.input.string('Code', {value: existing?.code ?? ''});
+  const codeInput = ui.input.string('Code', {value: existing?.code ?? '', nullable: false});
   codeInput.setTooltip('Unique program code; also seeds the audience group names');
   codeInput.enabled = existing == null;
-  const nameInput = ui.input.string('Name', {value: existing?.name ?? ''});
+  const nameInput = ui.input.string('Name', {value: existing?.name ?? '', nullable: false});
   const descriptionInput = ui.input.textArea('Description', {value: existing?.description ?? ''});
   const externalRefInput = ui.input.string('External ref', {value: existing?.external_ref ?? '', nullable: true});
   externalRefInput.setTooltip('Link into the owning portfolio/DMS system');
@@ -73,7 +73,7 @@ export function showProgramDialog(existing?: {[key: string]: any}): DG.Dialog {
 }
 
 export function showRejectDialog(rowId: string): DG.Dialog {
-  const reasonInput = ui.input.textArea('Reason', {value: ''});
+  const reasonInput = ui.input.textArea('Reason', {value: '', nullable: false});
   const dialog = ui.dialog('Reject publication')
     .add(reasonInput)
     .onOK(async () => {
