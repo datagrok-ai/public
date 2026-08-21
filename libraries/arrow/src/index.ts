@@ -21,7 +21,8 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
     if (columnType === 'double' || columnType === 'qnum') {
       const raw = (column.getRawData() as Float64Array).subarray(0, column.length);
       values = Array.from(raw, (v) => v === DG.FLOAT_NULL ? null : v);
-      type = inferNumberType(values as number[]);
+      // always Float64: inferring Int32 from integral values made the written schema drift with data
+      type = new arrow.Float64();
     } else if (columnType === 'int') {
       const raw = (column.getRawData() as Int32Array).subarray(0, column.length);
       values = Array.from(raw, (v) => v === DG.INT_NULL ? null : v);
@@ -97,6 +98,7 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
     let values: any;
     let type = vector.type;
     const name = table.schema.fields[i].name;
+    const hasNulls = vector.nullCount > 0;
     if (arrow.DataType.isDictionary(type)) {
       type = vector.data[vector.data.length - 1].dictionary?.type;
       if (type.typeId === arrow.Type.Utf8) {
@@ -114,22 +116,30 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
     case arrow.Type.Int32:
     case arrow.Type.Int:
       if (ArrayBuffer.isView(values)) {
-        if (type.bitWidth < 64)
-          columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
-        else
-          columns.push(convertInt64Column(values as BigInt64Array, name));
+        if (type.bitWidth < 64) {
+          if (hasNulls)
+            columns.push(DG.Column.fromInt32Array(name,
+              int32ArrayWithNulls(extractWithNulls(vector, (v) => Number(v)))));
+          else
+            columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
+        } else
+          columns.push(convertInt64Column(vector, name));
       } else
         columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
       break;
     case arrow.Type.Uint32:
     case arrow.Type.Int64:
     case arrow.Type.Uint64:
-      columns.push(convertInt64Column(values, name));
+      columns.push(convertInt64Column(vector, name));
       break;
     case arrow.Type.Float:
     case arrow.Type.Decimal:
       if (ArrayBuffer.isView(values)) {
-        if (type.bitWidth < 64)
+        if (hasNulls) {
+          // float32 -> float64 widening is exact, so one Float64 path covers both bit widths
+          columns.push(DG.Column.fromFloat64Array(name,
+            float64ArrayWithNulls(extractWithNulls(vector, (v) => Number(v)))));
+        } else if (type.bitWidth < 64)
           columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
         else
           columns.push(DG.Column.fromFloat64Array(name, values as Float64Array));
@@ -141,21 +151,37 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
       columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
       break;
     case arrow.Type.Bool:
-      if (ArrayBuffer.isView(values))
+      if (hasNulls)
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name,
+          Array.from({length: vector.length}, (_, j) => vector.get(j))));
+      else if (ArrayBuffer.isView(values))
         columns.push(DG.Column.fromBitSet(name, DG.BitSet.fromBytes(values.buffer as ArrayBuffer, table.numRows)));
       else
         columns.push(DG.Column.fromList(DG.COLUMN_TYPE.BOOL as DG.ColumnType, name, values));
       break;
     case arrow.Type.Date:
+      // get() normalizes Date32 day counts and Date64 to epoch ms and honors the null bitmap
+      columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name,
+        Array.from({length: vector.length}, (_, j) => {
+          const v = vector.get(j);
+          if (v == null) return null;
+          return v instanceof Date ? v : new Date(Number(v));
+        })));
+      break;
     case arrow.Type.Timestamp:
-      columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values instanceof BigInt64Array ?
-        Array.from(values, (b) => timestampBigIntToDate(b, type.unit)) : values));
+      if (hasNulls)
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name,
+          extractWithNulls(vector, (v) => timestampBigIntToDate(BigInt(v), (type as any).unit))));
+      else
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name,
+          values instanceof BigInt64Array ?
+            Array.from(values, (b) => timestampBigIntToDate(b, type.unit)) : values));
       break;
     case arrow.Type.Time:
       if (type?.bitWidth < 64)
         columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
       else
-        columns.push(convertInt64Column(values, name));
+        columns.push(convertInt64Column(vector, name));
       break;
     default:
       columns.push(DG.Column.fromStrings(name, values));
@@ -163,6 +189,40 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
     }
   }
   return DG.DataFrame.fromColumns(columns);
+}
+
+/** Extracts values honoring the null bitmap, which toArray() discards for primitive vectors. */
+function extractWithNulls<T>(vector: arrow.Vector, convert: (raw: any) => T): (T | null)[] {
+  const out = new Array(vector.length);
+  let i = 0;
+  for (const chunk of vector.data) {
+    const nullMap = chunk.nullBitmap;
+    for (let j = 0; j < chunk.length; j++) {
+      // the null bitmap is indexed from the buffer start (bit granularity prevents
+      // slicing), while the values buffer is already offset-adjusted by Arrow JS
+      const k = chunk.offset + j;
+      if (nullMap && nullMap.length && !(nullMap[k >> 3] & (1 << (k % 8))))
+        out[i] = null;
+      else
+        out[i] = convert(chunk.values[j]);
+      i++;
+    }
+  }
+  return out;
+}
+
+function int32ArrayWithNulls(values: (number | null)[]): Int32Array {
+  const result = new Int32Array(values.length);
+  for (let i = 0; i < values.length; i++)
+    result[i] = values[i] == null ? DG.INT_NULL : (values[i] as number);
+  return result;
+}
+
+function float64ArrayWithNulls(values: (number | null)[]): Float64Array {
+  const result = new Float64Array(values.length);
+  for (let i = 0; i < values.length; i++)
+    result[i] = values[i] == null ? DG.FLOAT_NULL : (values[i] as number);
+  return result;
 }
 
 function unpackDictionaryColumn(vector: arrow.Vector) {
@@ -200,19 +260,30 @@ function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Colu
   return DG.Column.fromIndexes(name, data, indexes);
 }
 
-function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string): DG.Column {
-  for (const i of array) {
-    if (i > BigInt(2 ** 31 - 1))
-      return DG.Column.fromBigInt64Array(name, array);
+/** Converts a 64-bit (or Uint32) integer vector, honoring nulls: int32 + DG.INT_NULL when values fit, bigint otherwise. */
+function convertInt64Column(vector: arrow.Vector, name: string): DG.Column {
+  const values = extractWithNulls(vector, (v) => BigInt(v));
+  let fitsInt32 = true;
+  for (const v of values) {
+    if (v != null && (v > BigInt(2 ** 31 - 1) || v < BigInt(-(2 ** 31) + 1))) {
+      fitsInt32 = false;
+      break;
+    }
   }
-  const result: Int32Array = new Int32Array(new ArrayBuffer(array.length * 4));
-  for (let i = 0; i < array.length; i++)
-    result[i] = Number(array[i]);
-  return DG.Column.fromInt32Array(name, result);
-}
-
-function inferNumberType(values: number[]): arrow.DataType {
-  return values.every((v) => Number.isInteger(v)) ? new arrow.Int32() : new arrow.Float64();
+  if (fitsInt32) {
+    const result = new Int32Array(values.length);
+    for (let i = 0; i < values.length; i++)
+      result[i] = values[i] == null ? DG.INT_NULL : Number(values[i]);
+    return DG.Column.fromInt32Array(name, result);
+  }
+  if (vector.nullCount > 0)
+    // DG.toDart bridges each JS bigint to a Dart BigInt, as fromBigInt64Array does
+    return DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name,
+      values.map((v) => v == null ? null : DG.toDart(v)));
+  const result = new BigInt64Array(values.length);
+  for (let i = 0; i < values.length; i++)
+    result[i] = values[i] as bigint;
+  return DG.Column.fromBigInt64Array(name, result);
 }
 
 function timestampBigIntToDate(value: bigint, unit: number): Date {

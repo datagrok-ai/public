@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## v.next
+
+* GROK-20732: Preserve null bitmaps in Arrow conversion; point library main/types at compiled entry
+
 ## 1.6.0 (2026-06-03)
 
 * Extracted conversion core into `@datagrok-libraries/arrow`; package now delegates to the library
