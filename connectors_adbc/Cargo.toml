@@ -1,0 +1,75 @@
+[package]
+name = "grok_connect_adbc"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.83"
+
+[[bin]]
+name = "grok_connect_adbc"
+path = "src/main.rs"
+
+[lib]
+name = "grok_connect_adbc"
+path = "src/lib.rs"
+
+[dependencies]
+# Web framework
+axum = { version = "0.7", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Arrow — v57 to match databricks-adbc driver
+arrow = { version = "57", features = ["ipc"] }
+arrow-array = "57"
+arrow-schema = "57"
+arrow-ipc = "57"
+
+# ADBC core (also used transitively by databricks-adbc and driverbase)
+adbc_core = "0.22"
+arrow-buffer = "57"
+
+# Databricks: native Rust ADBC driver (not on crates.io)
+# Note: cargo's git fetcher fails on the C#/hiveserver2 submodule (SSH).
+# If the git fetch below fails, clone manually with --no-recurse-submodules and switch
+# to a path dep:
+#   git clone --no-recurse-submodules https://github.com/adbc-drivers/databricks /tmp/adbc-databricks
+#   databricks-adbc = { path = "/tmp/adbc-databricks/rust" }
+databricks-adbc = { git = "https://github.com/adbc-drivers/databricks", rev = "d4bfe38dbefafc6f630b9e14f4db1d8c47f5306f" }
+
+# Snowflake: pure Rust wrapper around the pre-built adbc_driver_snowflake dynamic library.
+# Loaded at runtime via ManagedDriver::load_dynamic_from_name — no Go toolchain, no C build.
+# The native library is fetched into `lib/` by `scripts/fetch_adbc_driver.{sh,ps1} snowflake`.
+adbc_snowflake = { version = "0.22", default-features = false, features = ["env"] }
+
+# ClickHouse and BigQuery: loaded at runtime as C-ABI libraries via the ADBC driver manager
+# (no arrow/adbc_core bump — a driver's own arrow/adbc_core stays sealed behind the frozen
+# C Data Interface). Build the ClickHouse one with `cargo build --release --features ffi` in
+# the adbc_clickhouse crate and drop adbc_clickhouse.dll into lib/, or point
+# ADBC_CLICKHOUSE_DRIVER at the full path; fetch the BigQuery one with
+# `scripts/fetch_adbc_driver.{sh,ps1} bigquery`, or point ADBC_BIGQUERY_DRIVER at it.
+adbc_driver_manager = "0.22"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+log = "0.4"
+
+# Utilities
+base64 = "0.22"
+regex = "1"
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio-tungstenite = "0.24"
+reqwest = { version = "0.12", features = ["json"] }
+futures-util = "0.3"
+tempfile = "3"
+

@@ -1,0 +1,40 @@
+{
+  "id": "test_snowflake_call",
+  "func": {
+    "#type": "DataQuery",
+    "id": "q2",
+    "name": "Test Snowflake Query",
+    "query": "SELECT * FROM MOCK_DATA WHERE id = @id",
+    "connectionId": "conn_snowflake",
+    "connection": {
+      "id": "conn_snowflake",
+      "dataSource": "SnowflakeADBC",
+      "parameters": {
+        "server": "test_account.us-east-1",
+        "db": "TEST_DB",
+        "warehouse": "TEST_WH",
+        "schema": "PUBLIC"
+      },
+      "credentials": {
+        "parameters": {
+          "login": "test_user",
+          "password": "test_password"
+        }
+      }
+    },
+    "params": [
+      {
+        "#type": "FuncParam",
+        "name": "id",
+        "propertyType": "int",
+        "value": 1,
+        "isInput": true
+      }
+    ],
+    "options": {}
+  },
+  "options": {},
+  "parameterValues": {
+    "id": 1
+  }
+}
