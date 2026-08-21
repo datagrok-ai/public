@@ -13,7 +13,7 @@ set timeout=30
 
 REM Any tag of datagrok/datagrok: `latest` for the newest stable release, an exact `X.Y.Z`,
 REM `bleeding-edge` to track master, or an `X.Y.Z-rc` candidate.
-set datagrok_default_version=1.27.7
+set datagrok_default_version=1.27.9
 
 REM A compose file and the images it starts must come from the same release: the compose file
 REM carries the GROK_PARAMETERS that the datlas build inside datagrok/datagrok parses, and the

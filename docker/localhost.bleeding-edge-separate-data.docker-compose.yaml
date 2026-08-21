@@ -1,4 +1,4 @@
-x-datagrok-release: 1.27.7
+x-datagrok-release: 1.27.9
 
 services:
   rabbitmq:
@@ -18,7 +18,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-1.22.0}
+    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-1.22.2}
     container_name: grok_pipe_dev
     ports:
       - "3000:3000"
@@ -34,7 +34,7 @@ services:
   datagrok:
     privileged: true
     container_name: datagrok_dev
-    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.7}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.9}
     environment:
       GROK_PARAMETERS: |
         {
@@ -93,7 +93,7 @@ services:
     profiles: [ "all", "datagrok" ]
 
   grok_spawner:
-    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-2.22.0}
+    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-2.23.0}
     user: root
     container_name: grok_spawner_dev
     environment:
@@ -113,7 +113,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-2.6.5}
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-2.8.4}
     container_name: grok_connect_dev
     networks:
       datagrok_dev:

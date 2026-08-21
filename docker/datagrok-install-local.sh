@@ -13,7 +13,7 @@ timeout=30
 
 # Any tag of datagrok/datagrok: `latest` for the newest stable release, an exact `X.Y.Z`,
 # `bleeding-edge` to track master, or an `X.Y.Z-rc` candidate.
-datagrok_default_version="1.27.7"
+datagrok_default_version="1.27.9"
 
 # A compose file and the images it starts must come from the same release: the compose file
 # carries the GROK_PARAMETERS that the datlas build inside datagrok/datagrok parses, and the
