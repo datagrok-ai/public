@@ -24,6 +24,7 @@ import './tests/mol3d-atom-picker-link-widget-tests';
 import './tests/pl-batch-tests';
 import './tests/docking-pose-prolif-tests';
 import './tests/pl-object-handler-tests';
+import './tests/molfile-converter-tests';
 
 
 // This _package object is for tests only.
