@@ -805,7 +805,7 @@ export namespace funcs {
   }
 
   /**
-  Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+  Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
   */
   export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean ): Promise<void> {
     return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });
