@@ -675,14 +675,20 @@ export class TestTrack extends DG.ViewBase {
 
   async processFileData(data: string, filepath: string, name: string): Promise<TestCase> {
     const pathL = filepath.replace(/\.[^.]+$/, '').split('/').slice(2);
-    // Two metadata formats are supported:
-    //   - YAML front matter: `---\n<yaml>\n---\n<markdown>` (metadata is not consumed by the UI)
-    //   - legacy trailing JSON: `<markdown>\n---\n{json}`
+    // Two metadata formats are supported, and may be combined in one file:
+    //   - YAML front matter: `---\n<yaml>\n---\n<markdown>` (not consumed by the UI)
+    //   - trailing JSON: `<markdown>\n---\n{json}`
     const frontMatter = data.match(/^\s*---\r?\n[\s\S]*?\r?\n---\r?\n([\s\S]*)$/);
     let textS = '';
     let jsonS: string | undefined = undefined;
-    if (frontMatter)
+    if (frontMatter) {
       textS = frontMatter[1];
+      const trailing = textS.match(/\r?\n---\s*\r?\n(\{[\s\S]*\})\s*$/);
+      if (trailing) {
+        jsonS = trailing[1];
+        textS = textS.slice(0, trailing.index);
+      }
+    }
     else
       [textS, jsonS] = data.split('---', 3);
     const text = ui.markdown(textS);
