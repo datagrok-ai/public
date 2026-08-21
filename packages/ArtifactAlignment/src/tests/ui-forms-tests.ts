@@ -106,8 +106,8 @@ category('ArtifactAlignment: ui forms', () => {
     try {
       expect(review.name, 'Review queue');
       expect(program.name, 'ZZRT');
-      expect(program.basePath.endsWith('programs/ZZRT'), true,
-        `program view must carry its address, got: ${program.basePath}`);
+      expect(program.path.endsWith('programs/ZZRT'), true,
+        `program view must carry its address, got: ${program.path}`);
       expect(root.name, 'Artifact Catalog');
     } finally {
       for (const v of [review, program, root])

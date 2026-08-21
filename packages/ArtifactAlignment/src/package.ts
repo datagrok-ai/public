@@ -12,8 +12,7 @@ export * from './package.g';
 
 export const _package = new DG.Package();
 
-//tags: autostart
-//meta.autostartImmediate: true
+//tags: init
 export function _initArtifactAlignment(): void {
   DG.ObjectHandler.register(new AlignmentHandler());
 }
@@ -25,7 +24,7 @@ export function _initArtifactAlignment(): void {
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function artifactCatalogApp(path?: string): Promise<DG.ViewBase> {
-  return await routeView(path);
+  return routeView(path);
 }
 
 //name: artifactCatalogTreeBrowser

@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {SCHEMA, T_ALIGNMENT, T_COMPOUND, T_PROGRAM, T_PROGRAM_COMPOUND, T_STUDY} from '../domain/constants';
 import {approvePublication, getPublicationHistory} from '../service/publication-service';
 import {showCurateDialog, showProgramDialog, showRejectDialog} from './admin-dialogs';
-import {createGuardedDomainView} from './cold-boot-workarounds';
 
 /** Opens the frozen workflow or function run in Compute2. The tree opens runnable —
  * a new run can be started from the artifact's state. */
@@ -23,19 +22,22 @@ export const HIDDEN_GRID_COLUMNS = ['publication_id', 'artifact_id', 'source_art
   'approved_by', 'approved_on', 'reject_reason'];
 
 /** study id → protocol code. Render members are synchronous, so the map is warmed
- * at handler construction and cards re-render their facts once it arrives. */
+ * lazily by the first card and cards re-render their facts once it arrives. */
 let studyCodes: Map<string, string> | null = null;
 let studiesLoading: Promise<Map<string, string>> | null = null;
 
 function warmStudyCodes(): Promise<Map<string, string>> {
   return studiesLoading ??= grok.dapi.domains.table(T_STUDY).query({limit: 1000})
-    .then((rows: any[]) => studyCodes = new Map(rows.map((r) => [r.id, r.protocol_code])));
+    .then((rows: any[]) => studyCodes = new Map(rows.map((r) => [r.id, r.protocol_code])))
+    .catch((e) => {
+      studiesLoading = null; // a failed warm must not disable study labels forever
+      throw e;
+    });
 }
 
 export class AlignmentHandler extends DG.DomainObjectHandler {
   constructor() {
     super(T_ALIGNMENT);
-    warmStudyCodes().catch(() => {});
   }
 
   override renderGrid(grid: DG.Grid, options?: {items?: DG.DataFrame}): void {
@@ -135,63 +137,75 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
   }
 }
 
-/** URL base of the app's child views; the catalog root keeps the address the
- * platform composes from the app call itself. */
-const APP_BASE = '/apps/ArtifactAlignment';
+/** URL base of the app's views when the package sets an absolute address itself
+ * (tree navigation); views returned from the app function get this prefix from
+ * the platform and carry a RELATIVE path instead — never both, that duplicates
+ * the suffix. */
+const APP_BASE = 'apps/ArtifactAlignment';
 
-async function alignmentView(permanentFilter: string, name: string, route?: string): Promise<DG.ViewBase> {
-  const view = await createGuardedDomainView(
-    {schema: SCHEMA, table: 'alignment', permanentFilter, name, showFilters: true});
-  if (route != null)
-    view.basePath = `${APP_BASE}/${route}`;
+function alignmentView(permanentFilter: string, name: string): DG.ViewBase {
+  const view = DG.DomainView.create({schema: SCHEMA, table: 'alignment', permanentFilter});
+  view.name = name;
   return view;
 }
 
-export function catalogView(): Promise<DG.ViewBase> {
+export function catalogView(): DG.ViewBase {
   return alignmentView('status = "approved"', 'Artifact Catalog');
 }
 
-export function programView(programCode: string): Promise<DG.ViewBase> {
-  return alignmentView(`status = "approved" and program_id.code = "${programCode}"`, programCode,
-    `programs/${encodeURIComponent(programCode)}`);
+export function programView(programCode: string): DG.ViewBase {
+  return alignmentView(`status = "approved" and program_id.code = "${programCode}"`, programCode);
 }
 
-export function reviewQueueView(): Promise<DG.ViewBase> {
-  return alignmentView('status != "approved"', 'Review queue', 'review-queue');
+export function reviewQueueView(): DG.ViewBase {
+  return alignmentView('status != "approved"', 'Review queue');
 }
 
-export function myPublicationsView(): Promise<DG.ViewBase> {
-  return alignmentView('artifact_author = @current', 'My publications', 'my-publications');
+export function myPublicationsView(): DG.ViewBase {
+  return alignmentView('artifact_author = @current', 'My publications');
 }
 
-async function registryView(table: string, name: string, route: string): Promise<DG.ViewBase> {
-  const view = await createGuardedDomainView({schema: SCHEMA, table, name});
-  view.basePath = `${APP_BASE}/${route}`;
+function registryView(table: string, name: string): DG.ViewBase {
+  const view = DG.DomainView.create({schema: SCHEMA, table});
+  view.name = name;
   return view;
 }
 
 /** Resolves the app's `path` URL input (everything after the app base) to the view
- * it addresses — the deep-link half of the routes the view factories publish. */
-export function routeView(path?: string): Promise<DG.ViewBase> {
+ * it addresses. The paths set here are relative — the platform prefixes the app
+ * base for views returned from the app function. */
+export function routeView(path?: string): DG.ViewBase {
   const seg = (path ?? '').split('?')[0].split('/').filter((s) => s !== '').map(decodeURIComponent);
+  const routed = (view: DG.ViewBase, route: string): DG.ViewBase => {
+    view.path = `/${route}`;
+    return view;
+  };
   if (seg[0] === 'programs' && seg[1] != null)
-    return programView(seg[1]);
+    return routed(programView(seg[1]), `programs/${encodeURIComponent(seg[1])}`);
   if (seg[0] === 'review-queue')
-    return reviewQueueView();
+    return routed(reviewQueueView(), 'review-queue');
   if (seg[0] === 'my-publications')
-    return myPublicationsView();
+    return routed(myPublicationsView(), 'my-publications');
   if (seg[0] === 'registry' && seg[1] === 'studies')
-    return registryView('study', 'Studies', 'registry/studies');
+    return routed(registryView('study', 'Studies'), 'registry/studies');
   if (seg[0] === 'registry' && seg[1] === 'compounds')
-    return registryView('compound', 'Compounds', 'registry/compounds');
+    return routed(registryView('compound', 'Compounds'), 'registry/compounds');
   return catalogView();
 }
 
+/** Shows [view] as the Browse preview and publishes its address. The path is
+ * absolute here: a tree-created view has no app call behind it, so nothing else
+ * supplies the prefix. */
+function preview(view: DG.ViewBase, route: string): void {
+  grok.shell.preview = view as DG.View;
+  view.path = `${APP_BASE}/${route}`;
+}
+
 export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
-  treeNode.item('My publications').onSelected.subscribe(async () =>
-    grok.shell.preview = await myPublicationsView() as DG.View);
-  treeNode.item('Review queue').onSelected.subscribe(async () =>
-    grok.shell.preview = await reviewQueueView() as DG.View);
+  treeNode.item('My publications').onSelected.subscribe(() =>
+    preview(myPublicationsView(), 'my-publications'));
+  treeNode.item('Review queue').onSelected.subscribe(() =>
+    preview(reviewQueueView(), 'review-queue'));
   const programsNode = treeNode.group('Programs');
   programsNode.item('New program…').onSelected.subscribe(() => showProgramDialog());
   programsNode.item('Edit program…').onSelected.subscribe(async () => {
@@ -213,8 +227,8 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
       void programHandler.rowFrom(program).permissions()
         .then((p) => p.edit && editableIds.add(program.id))
         .catch(() => {/* no edit affordance */});
-      item.onSelected.subscribe(async () => {
-        grok.shell.preview = await programView(program.code) as DG.View;
+      item.onSelected.subscribe(() => {
+        preview(programView(program.code), `programs/${encodeURIComponent(program.code)}`);
         // the program's context panel renders the audience group columns as
         // clickable links — the member-management entry point for admins
         grok.shell.o = programHandler.rowFrom(program);
@@ -255,8 +269,8 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
       })
       .show();
   });
-  registryNode.item('Studies').onSelected.subscribe(async () =>
-    grok.shell.preview = await registryView('study', 'Studies', 'registry/studies') as DG.View);
-  registryNode.item('Compounds').onSelected.subscribe(async () =>
-    grok.shell.preview = await registryView('compound', 'Compounds', 'registry/compounds') as DG.View);
+  registryNode.item('Studies').onSelected.subscribe(() =>
+    preview(registryView('study', 'Studies'), 'registry/studies'));
+  registryNode.item('Compounds').onSelected.subscribe(() =>
+    preview(registryView('compound', 'Compounds'), 'registry/compounds'));
 }
