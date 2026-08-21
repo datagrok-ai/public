@@ -1,3 +1,9 @@
+---
+feature: statsviewer
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Statistics viewer — manual tests
 
 All scenarios should start with the following sequence of events:

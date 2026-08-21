@@ -1,31 +1,24 @@
 ---
 feature: connections
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: []
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  OS-originated drag-and-drop of the swagger file into a browser tab must be
+  done by hand.
 related_bugs: []
 ---
 
 # Import Swagger — manual UI checks
 
-This is the **manual companion** to `import-swagger.md`. Covers the parts that
-`import-swagger.test.ts` cannot exercise because OS-originated drag-and-drop into
-a browser tab cannot be synthesised by Playwright (the browser only accepts a
-real `dataTransfer` from the OS shell).
+This is the **manual companion** to `import-swagger.md`. Covers the parts the
+autotest cannot exercise: OS-originated drag-and-drop into a browser tab must
+be done by hand.
 
-The autotest covers:
-
-- The OpenWeatherMap connection appearing under **Browse > Platform > Functions > OpenAPI** after the YAML is ingested
-- Right-click → **Edit...** dialog opening, ApiKey input accepting the real keyboard, **SAVE**
-- Right-click on a query → **Run** producing either a result grid or a non-error balloon
-
-The manual steps below cover the part the autotest skips.
 
 ## Pre-conditions
 
-- Logged into Datagrok (dev or release)
 - The Samples package's `openweathermap.yaml` is downloaded locally — easiest path is to clone the public repo or "Download raw file" from the GitHub mirror
 
 ## Steps
@@ -41,3 +34,14 @@ The manual steps below cover the part the autotest skips.
 - The new `OpenWeatherMap` node appears under **OpenAPI** without page reload
 - The node carries the standard connection icon (no broken / placeholder icons)
 - Right-clicking the new node shows the standard connection context menu (Edit…, Delete…, etc.)
+
+## Cleanup
+
+- Right-click the imported `OpenWeatherMap` node under **Browse > Platform > Functions > OpenAPI**
+  → **Delete...** → confirm, so the next import starts from a clean tree.
+
+---
+{
+  "order": 5,
+  "datasets": []
+}

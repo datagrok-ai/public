@@ -1,25 +1,18 @@
 ---
 feature: legend
+realizes_atlas: [legend.cp.categorical-color-coded-show, legend.cp.conditional-vs-numerical-coloring]
 realizes: [viewers.line-chart, viewers.scatter-plot]
+priority: p0
 target_layer: manual-only
 coverage_type: regression
-priority: p2
-pyramid_layer: manual
-produced_from: split
-original_paths:
-  - public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/line-chart.md
-  - public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/scatterplot.md
-date_split: 2026-05-08
+manual_only_reason: |
+  The artifact under test is a pixel/canvas-level visual property (palette
+  ordering, subplot layout, gradient swatch rendering) that automation cannot
+  assert — human visual verification only.
 related_bugs: []
 ---
 
 # Legend — visual / undecidable steps (manual QA only)
-
-Scenario steps that require human visual verification — they cannot be
-deterministically asserted via JS API or Playwright UI because the artifact
-under test is a pixel/canvas-level visual property (palette ordering,
-subplot SVG layout, gradient swatch rendering) that isn't exposed through
-the DOM on `dev.datagrok.ai` (2026-05-08).
 
 Each section is self-contained and includes the preceding setup steps so a
 manual QA can reproduce end-to-end.
@@ -34,8 +27,6 @@ Each scenario starts by opening SPGI fresh:
 
 ### 1. Line chart — distinct palette colors (no two adjacent share)
 
-**Source:** moved from `line-chart.md` Scenario 1 step 3 (2026-05-08).
-
 1. Add a **Line chart**
 2. Set **Split** = `Series`
 3. Wait for the legend to render — it lists every distinct value of `Series`
@@ -44,12 +35,7 @@ Each scenario starts by opening SPGI fresh:
    color from the categorical palette — no two adjacent categories share the
    same color.
 
-**Why manual:** categorical palette ordering is internal; pixel-level color
-comparison across legend items is not deterministic at the JS API surface.
-
 ### 2. Line chart — Multi Axis: each Y line gets its own subplot
-
-**Source:** moved from `line-chart.md` Scenario 2 step 2 (2026-05-08).
 
 1. Add a **Line chart**
 2. Set **Split** = `Series`
@@ -58,14 +44,7 @@ comparison across legend items is not deterministic at the JS API surface.
 5. **Visual check:** each Y line is rendered in its own dedicated subplot —
    a vertical stack of plot regions, not a single merged plot.
 
-**Why manual:** subplot SVG layout requires DOM measurement; the Line chart
-exposes only a single `[name="legend"]` element regardless of subplot
-count, so subplot-count cannot be derived from the DOM tree at the JS API
-surface.
-
 ### 3. Line chart — corresponding legend block updates on Y-column replacement
-
-**Source:** moved from `line-chart.md` Scenario 4 step 4 (2026-05-08).
 
 1. Add a **Line chart**
 2. Set **Split** = `Series`
@@ -76,14 +55,7 @@ surface.
    updates to reflect the new column's values; the other Y column's legend
    block stays put.
 
-**Why manual:** per-line legend blocks are not individually labeled in the
-DOM (single `[name="legend"]` element for the whole chart), so per-Y
-legend update cannot be observed by a DOM query.
-
 ### 4. Scatter plot — numerical color gradient swatch
-
-**Source:** moved from `scatterplot.md` Scenario 1 step 10 first sub-bullet
-(2026-05-08).
 
 1. Add a **Scatter plot**
 2. Add a derived numerical column:
@@ -93,22 +65,6 @@ legend update cannot be observed by a DOM query.
 4. **Visual check:** the legend renders a linear (numerical) color scale —
    a vertical gradient swatch with min/max axis labels — instead of
    categorical legend items.
-
-**Why manual:** when a numerical Color column is bound, the Scatter plot's
-`[name="legend"]` element on `dev.datagrok.ai` (2026-05-08) is empty in
-the DOM — the gradient swatch is rendered to a canvas without DOM
-children. There is nothing to query at the JS API level to verify the
-gradient swatch appearance.
-
-## Notes
-
-- These scenarios are not redundant with their source files (`line-chart.md`,
-  `scatterplot.md`): those files retain the JS-API / UI assertions that can
-  be checked automatically (legend item count, property round-trip, etc.);
-  this file holds only the visual checks that need a human eye.
-- When the platform starts exposing these rendering details in the DOM (e.g.
-  per-subplot legend elements, per-bin gradient swatch divs), the
-  corresponding scenario can move back to its source file and be automated.
 
 ---
 {

@@ -1,3 +1,11 @@
+---
+feature: viewers
+realizes_atlas: []   # untyped: nx cross-viewer integration chain
+priority: p2
+target_layer: manual-only
+coverage_type: smoke
+---
+
 1. Open the NxProject project
 1. Go to SPGI
 1. View > Layout > Clone View
@@ -8,14 +16,14 @@
 1. Order Or Hide Columns: 
    * Unselect all
    * Select columns: NIBR logP, Whole blood assay 1, Chemical Space X, Average Mass, Species, and  `${Species} result`
-1. Go to the `${Species}` result hamburger menu and click Add Filter - **the Filter Panel should open with the the `${Species}` result filter**
+1. Go to the `${Species}` result hamburger menu and click Add Filter - **the Filter Panel should open with the `${Species}` result filter**
 1. Go to the filter tab and click missing values > filter out missing values
- 1. Rename the `Species` column to `Spec` - the `${Species} result` column should be renamed to `${Spec} result`
- 1. Change some values in visible columns - the corresponding value of the `${Spec} result` column should be changed
+1. Rename the `Species` column to `Spec` - the `${Species} result` column should be renamed to `${Spec} result`
+1. Change some values in visible columns - the corresponding value of the `${Spec} result` column should be changed
 1. View > Layout > Clone View - the view with exactly the same set of visible columns and filter should open
 1. Right-click the grid and select Add > Summary columns > Pie chart
 1. Save the Layout
-1. Change Layout
+1. Change the layout (e.g. close the Filter Panel and resize the grid)
 1. Apply the saved layout - check the filtering, `${Spec} result`, and summary column
 1. Right-click the view’s header and select Table > Add view - a new view without opened Filter Panel and with all SPGI columns visible should appear; check: new grid should be filtered to 30 rows as all views are.
 1. Open the Filter Panel and use Remove All
@@ -25,7 +33,10 @@
 1. Save a new copy of the project as 'NxProjectCalcColumns'
 
 Close All
+
+Cleanup: deferred to the end of the NX chain (see filtering-ui.md).
 ---
 {
-  "order": 2
+  "order": 2,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv", "System:AppData/ApiTests/datasets/SPGI-linked1.csv", "System:AppData/ApiTests/datasets/SPGI-linked2.csv"]
 }

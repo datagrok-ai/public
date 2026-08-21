@@ -1,5 +1,11 @@
-Automated coverage lives in the paired spec(s) of this section; this file lists
-only checks that need a human eye.
+---
+feature: linechart
+target_layer: manual-only
+coverage_type: smoke
+manual_only_reason: |
+  Automated coverage lives in the paired spec(s) of this section; this file
+  lists only checks that need a human eye.
+---
 
 # Line chart — manual tests
 
@@ -15,10 +21,6 @@ All scenarios should start with the following sequence of events:
 2. On the viewer, right-click the canvas and go to Controls — check Multi Axis
 3. Right-click on the AGE chart area, go to AGE > Chart Type > Area — only AGE chart becomes area
 
-Note: the per-chart 'Hide other charts' action (Y columns reduced to the one chart)
-is automated in multi-axis-and-split-spec.ts; only the per-chart chart-type VISUAL
-(one chart becomes area, the others stay lines) needs a human eye.
-
 ## Custom tooltip (uses spgi-100 dataset)
 
 Setup: Close all, open spgi-100 (not demog)
@@ -30,8 +32,15 @@ Setup: Close all, open spgi-100 (not demog)
 5. Close the dialog
 6. Hover over the line chart — custom tooltip should appear with the configured columns
 
+## Pick Up / Apply
+
+1. Customize the line chart: set X to AGE, Y to HEIGHT and WEIGHT, turn markers on
+2. Add a second Line chart with default settings
+3. Right-click the customized line chart and select Pick Up / Apply > Pick Up
+4. Right-click the second line chart and select Pick Up / Apply > Apply — the second viewer now matches the first (axes, series, markers)
+
 ---
 {
   "order": 102,
-  "datasets": ["System:DemoFiles/demog.csv,System:AppData/Chem/tests/spgi-100.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:AppData/Chem/tests/spgi-100.csv"]
 }

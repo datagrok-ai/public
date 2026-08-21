@@ -1,3 +1,9 @@
+---
+feature: trellisplot
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Trellis plot tests (manual checklist)
 
 All scenarios should start with the following sequence of events:
@@ -95,6 +101,14 @@ This section starts from a scatter plot, not from a trellis plot.
 4. Look at a populated cell — the colour coding is applied, one category keeps the same colour
    across all cells, and no cell is left showing the pre-change colours
 5. Switch the inner viewer to **Box plot** and repeat — the colour change lands there too
+
+## Cleanup
+
+1. Delete whichever of these this run saved (a partial run may have created only some): the
+   layout from the "Floating viewer" section and the gallery entry from **Save to Gallery**
+   in the context-menu walk (View > Layout > Open gallery / Browse > Platform > Layouts).
+2. Discard the PNG file downloaded by **Save as PNG**.
+3. Close all.
 
 ---
 {

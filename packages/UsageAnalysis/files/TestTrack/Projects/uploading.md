@@ -380,6 +380,10 @@ workspace).
 
 ## Notes
 
+- **Manual companion.** Source cases not yet in this matrix (local-machine
+  files, SDF, Get Top 100 result, Scratchpad Upload dialog) live in
+  `uploading-ui.md` (frontmatter `automation_candidate: true`) — fold them
+  into `uploading-spec.ts` when automating.
 - **All 16 paths are the source of truth.** This file spells out all
   8 source-combination cases (each with a Sync-ON and Sync-OFF
   variant, minus Case 7 which moved to

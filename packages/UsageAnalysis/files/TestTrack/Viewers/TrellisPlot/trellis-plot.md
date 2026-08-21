@@ -516,8 +516,8 @@ count by count rather than asking whether "the controls" are visible.
 
 3. Add two trellis plots
 4. For the first trellis plot: set Y axis to R1, switch inner viewer to bar chart, enable legend and change its position, add a title
-5. Right-click the first trellis plot > **Pick up/Apply > Pick up**
-6. Right-click the second trellis plot > **Pick up/Apply > Apply** -- second plot should match the first
+5. Right-click the first trellis plot > **Pick Up / Apply > Pick Up**
+6. Right-click the second trellis plot > **Pick Up / Apply > Apply** -- second plot should match the first
 7. Change the X or Y axis on the first trellis plot -- the second plot should not be affected
 8. Adjust the range slider on the second trellis plot -- the first plot should not be affected
 

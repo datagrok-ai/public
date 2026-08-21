@@ -1,3 +1,9 @@
+---
+feature: heatmap
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Heat map — manual test checklist
 
 All scenarios should start with the following sequence of events:
@@ -30,5 +36,5 @@ All scenarios should start with the following sequence of events:
 ---
 {
   "order": 14,
-  "datasets": ["System:DemoFiles/demog.csv", "System:AppData/Chem/tests/spgi-100.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/SPGI.csv"]
 }

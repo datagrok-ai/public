@@ -1,41 +1,35 @@
 ---
 feature: queries
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.queries, sharing.share-dialog, file.menu.save.tables-as-project]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  The visual builder's column selectors and drag-drop cannot be driven by
+  automation (same for the Layout-tab viewer setup), and the saved-project
+  layout restore is verified only in a real browser session.
 related_bugs: []
 ---
 
 # Visual Query Advanced — manual UI checks
 
-This is the **manual companion** to `visual-query-advanced.md`. The autotest
-`visual-query-advanced.test.ts` runs the parameterised-query runtime path using a
+This is the **manual companion** to `visual-query-advanced.md`. The automated
+companion runs the parameterised-query runtime path using a
 pre-existing fixture (`postgres customers in @country`) and verifies the param
 refresh + add result viewer + save project flow. This file covers everything that
 DOM automation can't reach.
-
-The autotest covers (via the fixture):
-* Right-click → Run, parameter dialog with default value, OK, result view appears.
-* Toolbar parameter input → type new value → REFRESH; row count changes.
-* Add a Bar Chart viewer to the result view via Toolbox > Viewers icon.
-* Click Save → Save-project dialog → set name → OK → dismiss auto-Share dialog.
-* Server-side assertion: project persisted; in-memory both Grid + Bar chart present.
 
 The manual steps below cover four carve-outs the autotest cannot exercise:
 
 1. **Building a brand-new visual query through the visual builder** — Group by /
    Where (with Expose-as-parameter checkbox) / Aggregate / Pivot / Order by columns.
-   The column selectors are canvas-rendered and the drag-drop uses Dart pointer-handlers
-   that don't respond to JS-synthesised events. Same blocker as
-   `new-visual-query-ui.md` step 5–11.
+   The column selectors and drag-drop cannot be driven by automation — same
+   blocker as `new-visual-query-ui.md`.
 2. **Sharing the query** — the Share dialog and its share-target picker.
 3. **Adding a layout (viewers + color coding + format + row size) inside the
    Layout tab** — same Layout-tab blocker as `query-layout-ui.md`.
 4. **Re-opening a saved project from the Browse tree to verify the layout was
-   restored** — SPA route doesn't resolve to the project's TableView in headless
-   Playwright; works in a real human browser session.
+   restored** — works only in a real browser session, so it is verified here.
 5. **Delete rows / columns + Refresh with Enrich on** — verifying that Enrich
    restores deleted rows and columns without changing the layout.
 
@@ -141,3 +135,19 @@ The manual steps below cover four carve-outs the autotest cannot exercise:
 * Refresh with Enrich on restores deleted rows/columns without rearranging viewers.
 * Saved project's Open opens the TableView with the full layout intact.
 * No red error balloons or console errors during any step.
+
+## Cleanup
+
+Delete whichever of these exist (a partial run may have created only some):
+
+* The project saved in step 32: **Browse > Projects**, right-click it → **Delete**.
+* The `test_visual_query` query: right-click it under
+  **Browse > Databases > Postgres > NorthwindTest** → **Delete...** → confirm
+  (deleting the query also drops the share granted in step 8).
+* Close All.
+
+---
+{
+  "order": 14,
+  "datasets": []
+}

@@ -1,6 +1,12 @@
+---
+feature: correlationplot
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Correlation plot tests (manual)
 
-Manual checklist. Not included in Playwright automation.
+Manual checklist — only items not covered by the automated tests.
 
 All scenarios should start with the following sequence of events:
 1. Close all

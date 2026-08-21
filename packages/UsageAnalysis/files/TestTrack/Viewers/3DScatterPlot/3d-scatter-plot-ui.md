@@ -1,3 +1,9 @@
+---
+feature: 3d-scatter-plot
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # 3D Scatter Plot — manual checklist
 
 All scenarios should start with the following sequence of events:

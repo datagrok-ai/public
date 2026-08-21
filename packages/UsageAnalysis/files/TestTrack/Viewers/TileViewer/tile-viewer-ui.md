@@ -1,7 +1,14 @@
+---
+feature: tileviewer
+target_layer: manual-only
+coverage_type: smoke
+manual_only_reason: |
+  Everything that could be automated has moved into the section's automated
+  scenarios; what is left here is what a person still has to judge by eye.
+---
+
 # Tile Viewer — manual checklist
 
-Exploratory only. Everything that could be automated has moved into the section's
-Playwright scenarios, so what is left here is what a person still has to judge by eye.
 Automated elsewhere, do not repeat here: the Edit Form designer (field removal, label
 deletion, RESET, CLOSE AND APPLY) and the layout round-trip in
 `tile-viewer-selection-form-editor.md`; dragging a tile between lanes, the lanes ladder
@@ -36,9 +43,8 @@ written and is kept as a manual probe of the broken-binding behaviour.
 
 ## Picking the lanes column from the property panel
 
-The automated scenarios set the lanes column through the viewer's property object, because
-the picker is a canvas grid with no selector for an individual row. The UI pick itself is
-therefore exercised nowhere else, and this is the step that covers it.
+The lanes column picker is a canvas grid a script cannot drive, so the UI pick itself is
+exercised nowhere else — this is the step that covers it.
 
 1. Open the viewer's Properties → Data and click the Lanes column picker
 2. Choose RACE: the tiles regroup into one lane per race, each lane headed by its value

@@ -1,3 +1,9 @@
+---
+feature: formsviewer
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Forms viewer tests (manual / exploratory)
 
 > Exploratory checklist — manual steps that are NOT covered by the automated

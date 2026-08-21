@@ -1,3 +1,11 @@
+---
+feature: browse
+realizes_atlas: []   # untyped: legacy checklist, spaces atlas not yet authored
+priority: p2
+target_layer: manual-only
+coverage_type: smoke
+---
+
 ### Spaces: scenarios not covered by server autotests
 
 2. **Update**
@@ -49,5 +57,6 @@
    - Dragging a child space to the root *Spaces* level (waiting for clarification)
 ---
 {
-  "order": 5
+  "order": 5,
+  "datasets": []
 }

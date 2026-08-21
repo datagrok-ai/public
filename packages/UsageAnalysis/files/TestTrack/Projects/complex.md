@@ -1,5 +1,7 @@
 ---
 feature: projects
+ui_coverage_split_to:
+  - complex-ui.md
 target_layer: playwright
 coverage_type: regression
 priority: p1
@@ -243,9 +245,9 @@ through Playwright and are covered instead by the manual companion
     > step number 10 for cross-reference). Reason: both documented
     > paths are unavailable for automation — drag-drop registration
     > mechanism not accessible from Playwright (same blocker as
-    > Step 4) AND the right-click `Move to` menu option does not
-    > exist in the current UI (verified 2026-05-03 against
-    > dev.datagrok.ai). See decision-log
+    > Step 4). The right-click menu now offers **Move to Space...**
+    > (verified 2026-08-19; the 2026-05-03 finding that no `Move to`
+    > option exists is outdated). See decision-log
     > `b2-2026-05-03-drag-drop-ui-only-reclassification`. Section
     > excluded from `-spec.ts` generation. The JS-API move path is
     > covered separately by `complex-move.md` /
@@ -306,9 +308,9 @@ After completing all 13 steps, verify:
   logout/login-as-other-user helper). The Step 10 move across
   namespaces was decomposed into the separate scenario
   `complex-move.md`, realized by `complex-move-spec.ts` via the
-  `grok.dapi.projects` JS API; only the UI move paths (drag-drop and
-  right-click "Move to") remain unautomatable in the current UI and
-  live in the manual companion `complex-ui.md`. This .md remains the
+  `grok.dapi.projects` JS API; only the UI move paths (drag-drop, and
+  right-click "Move to Space..." pending reclassification) live in
+  the manual companion `complex-ui.md`. This .md remains the
   canonical 13-step scope; the three specs together are its realized
   coverage.
 - **Cross-cutting bug coverage lives partly in sibling scenarios.**

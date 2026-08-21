@@ -1,26 +1,20 @@
 ---
 feature: queries
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.queries, views.projects, view.menu.toolbox]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  Adding viewers to the Layout-tab preview requires a drag-and-drop
+  interaction that must be done by hand.
 related_bugs: []
 ---
 
 # Query Layout — manual UI checks
 
 This is the **manual companion** to `query-layout.md`. It covers the parts that the
-autotest `query-layout.test.ts` cannot exercise because
-adding viewers to the Layout-tab preview requires either a drag-drop interaction
-(canvas + Dart pointer-handlers — does not respond to synthesised events) or a JS
-handle on the nested `TableView` instance inside the Layout tab, which is not exposed
-through `grok.shell.tv` / `grok.shell.v`.
-
-The autotest covers: creating a query, opening the Layout tab, running Play to
-populate the preview, Save, and round-trip reopen so the Layout tab still attaches
-its preview TableView. It does **not** add viewers, save layouts with viewers, save
-projects, or test the post-reopen rehydration of layouts.
+autotest cannot exercise — adding viewers to the Layout-tab preview requires a
+drag-drop interaction that must be done by hand.
 
 The manual steps below cover the full lifecycle of a saved query layout, project
 save/reopen with that layout, and the Toolbox > File > Refresh interaction.
@@ -41,7 +35,9 @@ save/reopen with that layout, and the Toolbox > File > Refresh interaction.
 4. Click **Run query** — the preview TableView populates.
 5. Add some viewers. Mix the layout:
    * Add at least two viewers side-by-side (no overlap).
-   * Add at least one viewer **docked over another** — verify docking works as expected.
+   * Add at least one viewer **docked over another** — the dropped viewer docks into the
+     target viewer's area (the two share the dock cell as a split), and both stay fully
+     visible and selectable with no overlap artifacts.
 6. **Save** — the layout is persisted with the query.
 7. **Close All**.
 8. Go to **Browse** > **Databases** > **Postgres** > **NorthwindTest** and click the
@@ -64,3 +60,16 @@ save/reopen with that layout, and the Toolbox > File > Refresh interaction.
 * Refresh updates the data without resetting the layout (no viewers disappear or
   rearrange).
 * No console errors / red balloons during any of the steps.
+
+## Cleanup
+
+* Delete the project saved in step 11: **Browse > Projects**, right-click it → **Delete**.
+* Revert the `PostgresAll` layout: right-click the query → **Edit...** → **Layout** tab,
+  remove the viewers added in step 5, **Save** — the next run starts from a bare grid preview.
+* Close All.
+
+---
+{
+  "order": 12,
+  "datasets": []
+}

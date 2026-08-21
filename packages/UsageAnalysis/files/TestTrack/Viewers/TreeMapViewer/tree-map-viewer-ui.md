@@ -1,3 +1,9 @@
+---
+feature: treemap
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Tree Map — manual test checklist
 
 ## Hover tooltip
@@ -38,3 +44,9 @@
 2. Set split column to RACE, color column to AGE
 3. Hover over a rectangle — tooltip header shows the leaf name
 4. Verify tooltip body lists individual rows belonging to that group
+
+---
+{
+  "order": 100,
+  "datasets": ["System:DemoFiles/demog.csv"]
+}
