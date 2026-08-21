@@ -580,13 +580,17 @@
       A grant/revoke round-trip on a domain table produces no audit record at either the domain
       layer or the platform log; only classic entity shares are logged. Table stakes for
       regulated-adjacent customers.</li>
-    <li><b>Cold-boot readiness for domain views.</b>
-      <span class="pill pill-bug">bug</span><br>
-      Creating a domain view early in client startup (e.g. from a deep link) can crash grid
-      construction with null errors while entity-type and property-schema metadata is still
-      loading, leaving a dead grid that a refresh cannot revive. A JS app has no signal to await.
-      Fix: the view awaits its own metadata dependencies, or the platform exposes an awaitable
-      registry-ready signal.</li>
+    <li><b>Server-side sub-entity handling for system-created FuncCalls.</b>
+      <span class="pill pill-imp">improvement</span><br>
+      Snapshot copies created by services land in the same run history as personal saves,
+      cluttering every user's run listings with system-generated garbage; hiding them relies on
+      every listing UI filtering on a call option client-side. A server-side sub-entity flag
+      would hide them from all listings at the source.</li>
+    <li><b>Per-table UI affordance control in domain views.</b>
+      <span class="pill pill-imp">improvement</span><br>
+      The automatic "New &lt;singular&gt;" row-create button cannot be suppressed through the
+      manifest, and revoking insert permission instead would break services that insert rows on the
+      user's behalf. Needed: a manifest flag controlling per-table create/edit affordances.</li>
   </ol>
 
   <h3>Normal</h3>
@@ -597,22 +601,11 @@
       pages; there is no count endpoint and no bulk or criteria-based delete. History UIs that pull
       a function's full run list degrade with the function's lifetime run count — needs server-side
       newest-N paging, ordering, and counts.</li>
-    <li><b>FuncCall re-wrapped incorrectly inside object-typed parameters.</b>
-      <span class="pill pill-bug">bug</span><br>
-      Passing a FuncCall across the function-call boundary inside an <code>object</code>-typed
-      parameter delivers a wrongly re-wrapped value on the other side (shaped like a DataFrame
-      wrapper, missing the call's properties); a <code>funccall</code>-typed parameter works. Fix
-      the generic re-wrapping, or document object parameters as unsafe for entities.</li>
     <li><b>Typed JS API for property-schema grants.</b>
       <span class="pill pill-imp">improvement</span><br>
       Single-column security has a typed surface (restrict a column, grant View/Edit per group).
       Manifest-declared multi-column property schemas can only be granted through the raw REST
       route — a typed grant/revoke/list surface is missing.</li>
-    <li><b>Server-side sub-entity handling for system-created FuncCalls.</b>
-      <span class="pill pill-imp">improvement</span><br>
-      Snapshot copies created by services land in the same run history as personal saves; hiding
-      them relies on every listing UI filtering on a call option client-side. A server-side
-      sub-entity flag would hide them from all listings at the source.</li>
     <li><b>Declarative column immutability.</b>
       <span class="pill pill-feat">feature</span><br>
       An <code>immutable</code> manifest flag for columns that must never change after insert.
@@ -622,15 +615,30 @@
       Transition rules such as "a status may not leave an approved state" or "the row's author may
       not write the approval columns" are inexpressible in the manifest; they can only be
       approximated by keeping whole roles off a column and re-checking in services.</li>
+  </ol>
+
+  <h3>Low</h3>
+  <ol class="tasks">
+    <li><b>Cold-boot readiness for domain views.</b>
+      <span class="pill pill-bug">bug</span><br>
+      Creating a domain view early in client startup (e.g. from a deep link) can crash grid
+      construction with null errors while entity-type and property-schema metadata is still
+      loading, leaving a dead grid that a refresh cannot revive. A JS app has no signal to await.
+      Fix: the view awaits its own metadata dependencies, or the platform exposes an awaitable
+      registry-ready signal. Downgraded 2026-08-21: after the plugin moved its handler
+      registration off the boot path (autostart → init), the crash stopped reproducing across
+      repeated cold deep links — fixed or sharply reduced in frequency; re-raise if it recurs.</li>
+    <li><b>FuncCall re-wrapped incorrectly inside object-typed parameters.</b>
+      <span class="pill pill-bug">bug</span><br>
+      Passing a FuncCall across the function-call boundary inside an <code>object</code>-typed
+      parameter delivers a wrongly re-wrapped value on the other side (shaped like a DataFrame
+      wrapper, missing the call's properties); a <code>funccall</code>-typed parameter works. Fix
+      the generic re-wrapping, or document object parameters as unsafe for entities.</li>
     <li><b>Documented backup &amp; restore for on-prem deployments.</b>
       <span class="pill pill-imp">improvement</span><br>
       Domain tables live in the platform Postgres, but domain file uploads and published dataframes
       live in platform file storage; only cloud file-storage backup is documented. An on-prem
       restore runbook covering both stores is an ops prerequisite for production.</li>
-  </ol>
-
-  <h3>Low</h3>
-  <ol class="tasks">
     <li><b>Row-permission probes cannot reflect a request-level acting identity.</b>
       <span class="pill pill-imp">improvement</span><br>
       Row-permission answers are computed client-side and keyed to the session user. That is
@@ -658,11 +666,6 @@
       grantable. The typed permissions API refuses promoted domain rows; the shares route accepts
       them but addresses groups by name only. Promoted-row grants need a typed, id-addressed
       surface. The shares route is a workable interim.</li>
-    <li><b>Per-table UI affordance control in domain views.</b>
-      <span class="pill pill-imp">improvement</span><br>
-      The automatic "New &lt;singular&gt;" row-create button cannot be suppressed through the
-      manifest, and revoking insert permission instead would break services that insert rows on the
-      user's behalf. Needed: a manifest flag controlling per-table create/edit affordances.</li>
   </ol>
 
 </section>
