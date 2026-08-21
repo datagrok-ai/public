@@ -10,6 +10,9 @@ import { testSchema } from '../test-analysis/sticky-meta-initialization';
 
 const NEW_TESTING = 'New Testing';
 const BATCHNAME_STORAGE_KEY = 'Datagrok/UsageAnalysis/TestTrack/BatchName';
+const TEST_TRACK_FOLDER = 'TestTrack';
+const TEST_TRACK_PATH = `UsageAnalysis/${TEST_TRACK_FOLDER}`;
+const TEST_CASE_SUFFIX = '-ui.md';
 
 interface TestCase extends Options {
   name: string;
@@ -232,7 +235,7 @@ export class TestTrack extends DG.ViewBase {
     };
 
     // Generate tree
-    const filesP = _package.files.list('TestTrack', true);
+    const filesP = _package.files.list(TEST_TRACK_FOLDER, true);
     const namePFromDb: string = (await grok.functions.call('UsageAnalysis:TestingName',
       { uid: this.uid, version: this.version, start: this.start })) || NEW_TESTING;
     const nameP: string = this.testingName || namePFromDb;
@@ -287,13 +290,14 @@ export class TestTrack extends DG.ViewBase {
     for (const file of files) {
       if (file.isDirectory)
         this.processDir(file);
-      else {
+      else if (file.path.endsWith(TEST_CASE_SUFFIX)) {
         let filepath = file.path.substring(0, file.path.lastIndexOf('/'));
         if (!this.filesToLoad.has(filepath))
           this.filesToLoad.set(filepath, []);
         this.filesToLoad.get(filepath)!.push(file)
       }
     }
+    this.list = this.pruneEmptyCategories(this.list, TEST_TRACK_PATH);
     this.list.forEach((c) => this.sortCategoryRecursive(c));
     let onExpandingSubscription = this.tree.onChildNodeExpanding.subscribe(async (node: DG.TreeViewGroup) => {
       node.root.children[0].appendChild(ui.loader());
@@ -453,7 +457,7 @@ export class TestTrack extends DG.ViewBase {
       if (category && this.filesToLoad.has(nodePath)) {
         let files = await _package.files.readFilesAsString(nodePath.replace(`${_package.name}/`, ''), false, 'md');
         for (const key in files) {
-          if (key.endsWith('-run.md'))
+          if (!key.endsWith(TEST_CASE_SUFFIX))
             continue;
           let name = key.replace(/\.md$/, '')
           category.children.push(await this.processFileData(files[key], `${nodePath}/${name}`, name));
@@ -700,6 +704,14 @@ export class TestTrack extends DG.ViewBase {
     this.loadingFiles[path] = el;
     this.map[path] = el;
     return el;
+  }
+
+  pruneEmptyCategories(cats: Category[], path: string): Category[] {
+    return cats.filter((cat) => {
+      const catPath = `${path}/${cat.name}`;
+      cat.children = this.pruneEmptyCategories(cat.children as Category[], catPath);
+      return cat.children.length > 0 || this.filesToLoad.has(catPath);
+    });
   }
 
   sortCategoryRecursive(cat: Category): void {
