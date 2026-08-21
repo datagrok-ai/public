@@ -1,6 +1,6 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
-import {AlignmentHandler, buildTreeBrowser, catalogView} from './app/catalog-app';
+import {AlignmentHandler, buildTreeBrowser, routeView} from './app/catalog-app';
 import {showPublishDialog} from './app/publish-dialog';
 import {ensureProgram, ProgramSpec, setupSchemaSecurity} from './domain/security';
 import {
@@ -25,7 +25,7 @@ export function _initArtifactAlignment(): void {
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function artifactCatalogApp(path?: string): Promise<DG.ViewBase> {
-  return await catalogView();
+  return await routeView(path);
 }
 
 //name: artifactCatalogTreeBrowser

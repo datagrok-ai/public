@@ -90,6 +90,7 @@ async function healIfGridDied(view: DG.DomainView, spec: GuardedDomainViewSpec,
   if (attempt >= 2)
     return;
   const replacement = build(spec);
+  replacement.basePath = view.basePath;
   void healIfGridDied(replacement, spec, attempt + 1);
   if (grok.shell.preview?.root === view.root) {
     // the dead view is the current Browse preview — a full, properly wired swap

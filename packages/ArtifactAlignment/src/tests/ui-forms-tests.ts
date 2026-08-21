@@ -4,6 +4,7 @@ import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {showProgramDialog, showRejectDialog} from '../app/admin-dialogs';
 import {showPublishDialog} from '../app/publish-dialog';
 import {AlignmentHandler, HIDDEN_GRID_COLUMNS} from '../app/catalog-app';
+import {artifactCatalogApp} from '../package';
 import {T_PROGRAM} from '../domain/constants';
 import {cleanupTestPrograms, makeTestProgram} from './fixtures';
 
@@ -83,6 +84,34 @@ category('ArtifactAlignment: ui forms', () => {
       }
     } finally {
       dialog.close();
+    }
+  });
+
+  test('card shows the name, not the publication id', async () => {
+    const handler = new AlignmentHandler();
+    const card = handler.renderCard(handler.rowFrom({
+      publication_id: '0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0', status: 'approved',
+      name: 'Exposure model', revision: 2, workstream: 'modeling'}));
+    const text = card.textContent ?? '';
+    expect(text.includes('Exposure model'), true, `card must show the name, got: ${text}`);
+    expect(text.includes('0b1c2d3e'), false, `card must not surface the publication id, got: ${text}`);
+    expect(text.includes('Workstream'), true, `card fields must be labeled, got: ${text}`);
+    expect(text.includes('Status'), false, `approved status is noise on a card, got: ${text}`);
+  });
+
+  test('app function routes deep links and publishes view addresses', async () => {
+    const review = await artifactCatalogApp('review-queue');
+    const program = await artifactCatalogApp('programs/ZZRT');
+    const root = await artifactCatalogApp();
+    try {
+      expect(review.name, 'Review queue');
+      expect(program.name, 'ZZRT');
+      expect(program.basePath.endsWith('programs/ZZRT'), true,
+        `program view must carry its address, got: ${program.basePath}`);
+      expect(root.name, 'Artifact Catalog');
+    } finally {
+      for (const v of [review, program, root])
+        v.close();
     }
   });
 

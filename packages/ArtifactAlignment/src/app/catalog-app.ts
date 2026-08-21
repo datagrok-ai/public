@@ -22,9 +22,20 @@ export async function openArtifact(frozenMetaCallId: string): Promise<void> {
 export const HIDDEN_GRID_COLUMNS = ['publication_id', 'artifact_id', 'source_artifact_id',
   'approved_by', 'approved_on', 'reject_reason'];
 
+/** study id → protocol code. Render members are synchronous, so the map is warmed
+ * at handler construction and cards re-render their facts once it arrives. */
+let studyCodes: Map<string, string> | null = null;
+let studiesLoading: Promise<Map<string, string>> | null = null;
+
+function warmStudyCodes(): Promise<Map<string, string>> {
+  return studiesLoading ??= grok.dapi.domains.table(T_STUDY).query({limit: 1000})
+    .then((rows: any[]) => studyCodes = new Map(rows.map((r) => [r.id, r.protocol_code])));
+}
+
 export class AlignmentHandler extends DG.DomainObjectHandler {
   constructor() {
     super(T_ALIGNMENT);
+    warmStudyCodes().catch(() => {});
   }
 
   override renderGrid(grid: DG.Grid, options?: {items?: DG.DataFrame}): void {
@@ -36,19 +47,50 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
     }
   }
 
-  /** Double-click / Open on a catalog row opens the published artifact itself;
-   * the row's entity view stays reachable via its deep link (Copy link). */
-  override openRow(x: DG.DomainRow): void {
-    const artifactId = x?.values?.['artifact_id'];
-    if (artifactId != null)
-      void openArtifact(artifactId);
-    else
-      super.openRow(x);
+  override renderCard(x: DG.DomainRow, context: any = null): HTMLElement {
+    const row = this.rowOf(x);
+    if (row == null)
+      return super.renderCard(x, context);
+    const values = row.values ?? {};
+    const detail: {[label: string]: string | undefined} = {};
+    const detailHost = ui.div([], 'aa-card-details');
+    const renderDetail = () => {
+      ui.empty(detailHost);
+      const filled = ['Status', 'Study', 'Workstream', 'Tags']
+        .filter((label) => detail[label])
+        .map((label) => [label, detail[label]!] as const);
+      if (filled.length > 0)
+        detailHost.appendChild(ui.tableFromMap(Object.fromEntries(filled)));
+    };
+    if (values['status'] != null && values['status'] !== 'approved')
+      detail['Status'] = values['status'];
+    detail['Workstream'] = values['workstream'];
+    renderDetail();
+    void warmStudyCodes().then(() => {
+      detail['Study'] = studyCodes?.get(values['study_id']);
+      renderDetail();
+    }).catch(() => {});
+    if (row.id != null) {
+      grok.dapi.domains.table(T_ALIGNMENT)
+        .query({filter: DG.cond('id', '=', row.id), expand: ['tags']})
+        .then(([full]: any[]) => {
+          detail['Tags'] = (full?.tags ?? []).map((t: any) => t.name).join(', ');
+          renderDetail();
+        }).catch(() => {});
+    }
+    // deliberately NOT ui.bind: the gallery wrapper already selects the row on
+    // click, and a second binding turns one left click into select + open
+    const name = values['name'] ?? row.displayName ?? '';
+    return ui.divV([
+      ui.divText(values['revision'] != null ? `${name} · v${values['revision']}` : name,
+        {style: {fontWeight: 'bold'}}),
+      detailHost,
+    ], 'd4-gallery-item');
   }
 
   override renderProperties(x: DG.DomainRow, context: any = null): HTMLElement {
     const root = super.renderProperties(x, context);
-    const values = x.values ?? {};
+    const values = this.rowOf(x)?.values ?? {};
     const pane = ui.divV([], {style: {marginTop: '8px'}});
     pane.appendChild(ui.button('Open artifact', () => openArtifact(values['artifact_id'])));
     // The service re-checks approvers-group membership and author != approver, so the
@@ -93,8 +135,16 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
   }
 }
 
-function alignmentView(permanentFilter: string, name: string): Promise<DG.ViewBase> {
-  return createGuardedDomainView({schema: SCHEMA, table: 'alignment', permanentFilter, name, showFilters: true});
+/** URL base of the app's child views; the catalog root keeps the address the
+ * platform composes from the app call itself. */
+const APP_BASE = '/apps/ArtifactAlignment';
+
+async function alignmentView(permanentFilter: string, name: string, route?: string): Promise<DG.ViewBase> {
+  const view = await createGuardedDomainView(
+    {schema: SCHEMA, table: 'alignment', permanentFilter, name, showFilters: true});
+  if (route != null)
+    view.basePath = `${APP_BASE}/${route}`;
+  return view;
 }
 
 export function catalogView(): Promise<DG.ViewBase> {
@@ -102,19 +152,39 @@ export function catalogView(): Promise<DG.ViewBase> {
 }
 
 export function programView(programCode: string): Promise<DG.ViewBase> {
-  return alignmentView(`status = "approved" and program_id.code = "${programCode}"`, programCode);
+  return alignmentView(`status = "approved" and program_id.code = "${programCode}"`, programCode,
+    `programs/${encodeURIComponent(programCode)}`);
 }
 
 export function reviewQueueView(): Promise<DG.ViewBase> {
-  return alignmentView('status != "approved"', 'Review queue');
+  return alignmentView('status != "approved"', 'Review queue', 'review-queue');
 }
 
 export function myPublicationsView(): Promise<DG.ViewBase> {
-  return alignmentView('artifact_author = @current', 'My publications');
+  return alignmentView('artifact_author = @current', 'My publications', 'my-publications');
 }
 
-function registryView(table: string, name: string): Promise<DG.ViewBase> {
-  return createGuardedDomainView({schema: SCHEMA, table, name});
+async function registryView(table: string, name: string, route: string): Promise<DG.ViewBase> {
+  const view = await createGuardedDomainView({schema: SCHEMA, table, name});
+  view.basePath = `${APP_BASE}/${route}`;
+  return view;
+}
+
+/** Resolves the app's `path` URL input (everything after the app base) to the view
+ * it addresses — the deep-link half of the routes the view factories publish. */
+export function routeView(path?: string): Promise<DG.ViewBase> {
+  const seg = (path ?? '').split('?')[0].split('/').filter((s) => s !== '').map(decodeURIComponent);
+  if (seg[0] === 'programs' && seg[1] != null)
+    return programView(seg[1]);
+  if (seg[0] === 'review-queue')
+    return reviewQueueView();
+  if (seg[0] === 'my-publications')
+    return myPublicationsView();
+  if (seg[0] === 'registry' && seg[1] === 'studies')
+    return registryView('study', 'Studies', 'registry/studies');
+  if (seg[0] === 'registry' && seg[1] === 'compounds')
+    return registryView('compound', 'Compounds', 'registry/compounds');
+  return catalogView();
 }
 
 export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
@@ -186,7 +256,7 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
       .show();
   });
   registryNode.item('Studies').onSelected.subscribe(async () =>
-    grok.shell.preview = await registryView('study', 'Studies') as DG.View);
+    grok.shell.preview = await registryView('study', 'Studies', 'registry/studies') as DG.View);
   registryNode.item('Compounds').onSelected.subscribe(async () =>
-    grok.shell.preview = await registryView('compound', 'Compounds') as DG.View);
+    grok.shell.preview = await registryView('compound', 'Compounds', 'registry/compounds') as DG.View);
 }
