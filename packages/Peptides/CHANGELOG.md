@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## v.next
+
+* 2304: Guard LogoSummaryTable.onPropertyChanged and render against a null dataFrame on a detached viewer
+
 ## 1.27.10 (2026-07-08)
 
 ### Features
