@@ -162,6 +162,9 @@
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>META-INF/versions/**</exclude>
+                                        <!-- dnsjava's JDK 18+ resolver lives under META-INF/versions (dropped above);
+                                             keeping its service entry makes every InetAddress lookup throw on JDK 18+ -->
+                                        <exclude>META-INF/services/java.net.spi.InetAddressResolverProvider</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

@@ -9,7 +9,8 @@
 * Streaming: chunks are gzipped in grok_connect when Datlas sends `compressChunks` (`gzipLevel`, default 1); announced as `DATAFRAME PART SIZE: <n> gzip=true` and passed through by Datlas
 * Streaming: two-stage pipeline - fetch(k+2) runs in parallel with serialize+gzip(k+1) while chunk k is sent; `-Dgrok.connect.pipelineFetch=false` restores the single-task path; closing mid-stream flags the query cancelled and waits (up to 5 s) for the in-flight fetch before releasing the connection
 * Debug: `COLUMN SIZES` line (per-column bytes/gz/encoder) after the serialize END marker; per-column encode `ms` only with the `columnTimings` query option
-* Known issue: the shaded jar must run on JDK 17 - on JDK >= 18 a `java.net.spi.InetAddressResolverProvider` service entry points at a dnsjava class the shade drops, so every hostname lookup fails
+* Fixed: the shaded jar failed every hostname lookup on JDK >= 18 (dnsjava's `java.net.spi.InetAddressResolverProvider` service entry pointed at a multi-release class the shade drops); the entry is now excluded
+* Fixed: `grok_connect.cmd` / `grok_connect.sh` put `lib/*` before the jar on the classpath, letting a driver's bundled SLF4J shadow the shaded one
 
 # 2.8.4
 

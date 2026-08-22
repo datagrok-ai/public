@@ -32,8 +32,7 @@ grok_connect.cmd         # Windows
 ```bash
 # Start REST server (port 1234, 4GB heap). Keep the jar FIRST on the classpath: with lib/* first,
 # an SLF4J 1.x bundled in a driver jar shadows the shaded 2.x and GrokConnect.<clinit> crashes
-# (grok_connect.cmd and the .sh shell-mode line still put lib/* first — watch out on a lib/ with
-# extra driver jars). Run on JDK 8-17, not 18+ (see Notes).
+# (grok_connect.cmd / .sh and the Dockerfile all put the jar first).
 java -Xmx4g -classpath "grok_connect/target/grok_connect.jar:grok_connect/lib/*" grok_connect.GrokConnect
 
 # Shell mode (CLI for testing queries)
@@ -554,13 +553,11 @@ Default settings (can be overridden):
 ## Notes
 
 - Source/target level is Java 8 (`pom.xml`; some JDBC drivers don't support newer versions) and
-  the Docker image runs on `datagrok/openjdk:8`. For local runs use JDK 8-17. **JDK 18+ breaks
-  every hostname lookup**: the shade config excludes `META-INF/versions/**`
-  (`grok_connect/pom.xml:164`) but keeps dnsjava's
-  `META-INF/services/java.net.spi.InetAddressResolverProvider`, so the JVM tries to load a
-  multi-release class that is no longer in the jar, `InetAddress` resolution throws and every
-  JDBC connect times out (~30 s, pool `total=0`). Ticket candidate: exclude that service file (or
-  keep `META-INF/versions`) in the shade config.
+  the Docker image runs on `datagrok/openjdk:8`. The shade config drops `META-INF/versions/**`,
+  so it must also drop every service entry that points at a multi-release class — dnsjava's
+  `META-INF/services/java.net.spi.InetAddressResolverProvider` is excluded for that reason
+  (`grok_connect/pom.xml`); with it present, JDK 18+ fails every `InetAddress` lookup
+  (`ServiceConfigurationError`) and every JDBC connect times out (~30 s, pool `total=0`).
 - Two image flavors from one codebase: `datagrok/grok_connect` (main) and `datagrok/grok_connect_extended`
   (opt-in; ships only the CVE-quarantined drivers — Amazon Neptune 3.0.3, Cloudera Impala). The `FLAVOR`
   build arg prunes `lib/`, and the `GROK_CONNECT_PROVIDERS` build arg (comma-separated `descriptor.type`
