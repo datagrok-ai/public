@@ -8,6 +8,7 @@ public enum EventType {
     ERROR("ERROR"),
     CHECKSUM_SEND("CHECKSUM SEND"),
     DATAFRAME_TO_BYTEARRAY_CONVERSION("DATAFRAME TO BYTEARRAY CONVERSION"),
+    COMPRESSION("GZIP COMPRESSION"),
     RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL("RESULT SET PROCESSING WITH DATAFRAME FILL"),
     RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL("DRY RUN"),
     DRY_RUN("DRY RUN TOTAL DURATION"),
@@ -33,6 +34,10 @@ public enum EventType {
     public Marker getMarker(Stage stage) {
         String formattedName = String.format("%s| |%s", this, stage);
         return MarkerFactory.getMarker(formattedName);
+    }
+
+    public Marker getMarker(Integer dfNumber) {
+        return MarkerFactory.getMarker(String.format("%s|%s| ", this, dfNumber));
     }
 
     public Marker getMarker(Integer dfNumber, Stage stage) {

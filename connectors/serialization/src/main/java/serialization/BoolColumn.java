@@ -54,8 +54,12 @@ public class BoolColumn extends AbstractColumn<Boolean> {
 
     @Override
     public void add(Boolean value) {
+        add(value != null && value);
+    }
+
+    public void add(boolean value) {
         ensureSpace(1);
-        if ((value != null) && value)
+        if (value)
             data[length / 0x20] |= 1 << ((length % 0x20) & 0x1F);
         length++;
     }

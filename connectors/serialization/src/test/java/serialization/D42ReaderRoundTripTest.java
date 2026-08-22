@@ -120,7 +120,7 @@ public class D42ReaderRoundTripTest {
             boolean none = BIGS[r] == null || BIGS[r].isEmpty();
             assertNoneAgrees(bigs, r, none);
             if (!none)
-                Assertions.assertEquals(BIGS[r], bigs.get(r));
+                Assertions.assertEquals(BIGS[r], String.valueOf(bigs.get(r)));
         }
     }
 
@@ -196,10 +196,9 @@ public class D42ReaderRoundTripTest {
         Assertions.assertEquals(Integer.valueOf(6), ((IntColumn) decoded.getColumn(1)).get(2));
     }
 
-    // The Java writer only emits int:raw (id 1). These focused tests exercise the
-    // int:pattern (id 2) and int:bitIntList (id 4) decoder ports directly, by
-    // hand-building their wire form per the Dart serialize layout. Full cross-
-    // language coverage (incl. int:rle id 3) lands with the WO-2 Dart fixtures.
+    // These focused tests exercise the int:pattern (id 2) and int:bitIntList (id 4)
+    // decoder ports directly, by hand-building their wire form per the Dart serialize
+    // layout, independently of the Java writer's encoder selection.
 
     @Test
     public void testIntPatternDecode() {
@@ -259,6 +258,73 @@ public class D42ReaderRoundTripTest {
         ui32 = ui32 & ~(mask << shift);
         ui32 = ui32 | ((value & mask) << shift);
         data[i / intsPer32] = (int) ui32;
+    }
+
+    // Java writer with best-encoder selection -> Java reader: every int encoder id,
+    // an rle-indexed string column, and BigIntColumn in both int and overflow modes.
+    @Test
+    public void testAdvancedEncoderFrameRoundTrip() {
+        int rows = 20000;
+        int[] seq = IntColumnEncoderSelectionTest.sequential(rows);
+        int[] grouped = IntColumnEncoderSelectionTest.grouped(rows, 384);
+        int[] small = IntColumnEncoderSelectionTest.smallRange(rows, 10, 11);
+        int[] entropy = IntColumnEncoderSelectionTest.highEntropy(rows, 12);
+        String[] plates = IntColumnEncoderSelectionTest.plates(grouped);
+        for (int i = 0; i < rows; i += 1000)
+            plates[i] = null;
+        BigIntColumn ids = new BigIntColumn("ids", 10);
+        ids.setDowncastAllowed(true);
+        BigIntColumn wide = new BigIntColumn("wide", 10);
+        wide.setDowncastAllowed(true);
+        for (int i = 0; i < rows; i++) {
+            ids.add(i % 100 == 99 ? null : (Object) (long) i);
+            wide.add(i % 100 == 99 ? null : (Object) ((long) i * 3000000000L));
+        }
+
+        DataFrame df = new DataFrame();
+        df.name = "advanced";
+        df.addColumn(new IntColumn("seq", seq));
+        df.addColumn(new IntColumn("grouped", grouped));
+        df.addColumn(new IntColumn("small", small));
+        df.addColumn(new IntColumn("entropy", entropy));
+        df.addColumn(new StringColumn("plates", plates));
+        df.addColumn(ids);
+        df.addColumn(wide);
+
+        byte[] bytes = df.toByteArray();
+        java.util.Map<String, Integer> observed = D42DartFixtureTest.scanEncoderIds(bytes);
+        Assertions.assertEquals(2, observed.get("seq").intValue());
+        Assertions.assertEquals(3, observed.get("grouped").intValue());
+        Assertions.assertEquals(4, observed.get("small").intValue());
+        Assertions.assertEquals(1, observed.get("entropy").intValue());
+        Assertions.assertEquals(0, observed.get("plates").intValue());
+        Assertions.assertEquals(3, IntColumnEncoderSelectionTest.indexEncoderId(new StringColumn("plates", plates)));
+        Assertions.assertEquals(3, observed.get("ids").intValue());
+        Assertions.assertEquals(1, observed.get("wide").intValue());
+
+        DataFrame decoded = DataFrame.fromByteArray(bytes);
+        Assertions.assertEquals(Integer.valueOf(rows), decoded.rowCount);
+        Assertions.assertArrayEquals(seq, (int[]) decoded.getColumn("seq").toArray());
+        Assertions.assertArrayEquals(grouped, (int[]) decoded.getColumn("grouped").toArray());
+        Assertions.assertArrayEquals(small, (int[]) decoded.getColumn("small").toArray());
+        Assertions.assertArrayEquals(entropy, (int[]) decoded.getColumn("entropy").toArray());
+        StringColumn decodedPlates = (StringColumn) decoded.getColumn("plates");
+        IntColumn decodedIds = (IntColumn) decoded.getColumn("ids");
+        BigIntColumn decodedWide = (BigIntColumn) decoded.getColumn("wide");
+        Assertions.assertEquals(Types.INT, decodedIds.getType());
+        Assertions.assertEquals(Types.BIG_INT, decodedWide.getType());
+        for (int r = 0; r < rows; r++) {
+            assertNoneAgrees(decodedPlates, r, plates[r] == null);
+            if (plates[r] != null)
+                Assertions.assertEquals(plates[r], decodedPlates.get(r));
+            boolean none = r % 100 == 99;
+            assertNoneAgrees(decodedIds, r, none);
+            assertNoneAgrees(decodedWide, r, none);
+            if (!none) {
+                Assertions.assertEquals(Integer.valueOf(r), decodedIds.get(r));
+                Assertions.assertEquals(String.valueOf((long) r * 3000000000L), String.valueOf(decodedWide.get(r)));
+            }
+        }
     }
 
     @Test

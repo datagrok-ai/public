@@ -6,7 +6,7 @@ import serialization.ColumnEncoderArchiveType;
 import serialization.IntColumn;
 import serialization.Zlib;
 
-// Decode-only port of ddt/lib/src/serialization/bit_int_list.dart:57-147.
+// Port of ddt/lib/src/serialization/bit_int_list.dart.
 // An efficient storage of ints where each element takes the number of bits
 // necessary to represent (max - min). Element mapping: raw==0 -> None,
 // raw v -> v + min - 1. Bit packing is MSB-first within each 32-bit word.
@@ -19,6 +19,43 @@ public class BitIntList {
     private int length = 0;
 
     private BitIntList() {
+    }
+
+    public static BitIntList fromList(int[] values, int start, int count) {
+        long min = 0;
+        long max = 0;
+        boolean any = false;
+        for (int i = start; i < start + count; i++) {
+            if (values[i] == None)
+                continue;
+            min = any ? Math.min(min, values[i]) : values[i];
+            max = any ? Math.max(max, values[i]) : values[i];
+            any = true;
+        }
+
+        BitIntList b = new BitIntList();
+        b.length = count;
+        b.min = min;
+        b.bits = count == 0 ? 0 : msb(max - min + 1);
+        b.data = new int[b.bits == 0 ? 0 : wordCount(count, b.bits)];
+        for (int i = 0; i < count; i++)
+            b.set(i, values[start + i]);
+        return b;
+    }
+
+    // What fromList writes; deliberately not bit_int_list.dart:52's msb(max - min), which is one bit short on power-of-two ranges.
+    public static int sizeInBytes(int count, long min, long max) {
+        int bitsPerInt = count == 0 ? 0 : msb(max - min + 1);
+        return (bitsPerInt == 0 ? 0 : wordCount(count, bitsPerInt)) * 4;
+    }
+
+    public static int msb(long v) {
+        return v <= 0 ? 0 : 64 - Long.numberOfLeadingZeros(v);
+    }
+
+    private static int wordCount(int count, int bits) {
+        int intsPer32 = 32 / bits;
+        return (count + intsPer32 - 1) / intsPer32;
     }
 
     public static BitIntList fromBuffer(BufferAccessor buffer) {
@@ -36,6 +73,14 @@ public class BitIntList {
         return b;
     }
 
+    public void serialize(BufferAccessor buffer) {
+        buffer.writeInt32(bits);
+        buffer.writeInt64(min);
+        buffer.writeInt64(length);
+        buffer.writeInt8((byte) ColumnEncoderArchiveType.ARCHIVE_TYPE_NONE);
+        buffer.writeUint32List(data);
+    }
+
     public int get(int idx) {
         if (idx < 0 || idx >= length)
             throw new RuntimeException("Index out of bounds: " + idx);
@@ -45,6 +90,14 @@ public class BitIntList {
 
         long val = getInt(data, idx, bits);
         return val == 0 ? None : (int) (val + min - 1);
+    }
+
+    private void set(int idx, int value) {
+        if (idx < 0 || idx >= length)
+            throw new RuntimeException("Index out of bounds: " + idx);
+
+        if (bits != 0)
+            setInt(data, idx, bits, value == None ? 0 : value - min + 1);
     }
 
     public int[] toInt32List() {
@@ -60,5 +113,15 @@ public class BitIntList {
         long ui32 = data[i / intsPer32] & 0xFFFFFFFFL;
         long x = ui32 >>> (bits * (intsPer32 - i % intsPer32 - 1));
         return x & mask;
+    }
+
+    private static void setInt(int[] data, int i, int bits, long value) {
+        long mask = (1L << bits) - 1;
+        int intsPer32 = 32 / bits;
+        long ui32 = data[i / intsPer32] & 0xFFFFFFFFL;
+        int shift = bits * (intsPer32 - i % intsPer32 - 1);
+        ui32 = ui32 & ~(mask << shift);
+        ui32 = ui32 | (value << shift);
+        data[i / intsPer32] = (int) ui32;
     }
 }

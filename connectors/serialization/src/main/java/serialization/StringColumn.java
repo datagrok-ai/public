@@ -10,7 +10,7 @@ public class StringColumn extends AbstractColumn<String> {
     private static final String TYPE = Types.STRING;
 
     private String[] data;
-    private Integer[] idxs;
+    private int[] idxs;
     private List<String> categories;
 
     // Decoded categorical state (set by decode): resolve get(idx) via
@@ -54,9 +54,7 @@ public class StringColumn extends AbstractColumn<String> {
         categorize();
         buf.writeInt32(0);
         buf.writeStringList(categories.toArray(new String[0]));
-        IntColumn col = new IntColumn("");
-        col.addAll(idxs);
-        col.encode(buf);
+        new IntColumn("", idxs).encode(buf);
     }
 
     @Override
@@ -240,7 +238,7 @@ public class StringColumn extends AbstractColumn<String> {
         for (int i = 0; i < categories.size(); i++)
             remap[categoryMap.get(categories.get(i))] = i;
 
-        idxs = new Integer[length];
+        idxs = new int[length];
         for (int n = 0; n < length; n++)
             idxs[n] = remap[tempIdxs[n]];
     }

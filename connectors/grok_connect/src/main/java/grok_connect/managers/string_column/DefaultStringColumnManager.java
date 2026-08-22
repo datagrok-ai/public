@@ -14,19 +14,18 @@ import oracle.sql.CLOB;
 import oracle.sql.NCLOB;
 import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import serialization.Column;
 import serialization.StringColumn;
 import java.sql.Array;
 import java.sql.Clob;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.util.HashMap;
 import java.util.Map;
 
 public class DefaultStringColumnManager implements ColumnManager<String> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultStringColumnManager.class);
     private static final Converter<String> DEFAULT_CONVERTER = value -> value == null ? ""
             : value.toString();
     private final Map<Class<?>, Converter<String>> converterMap;
@@ -57,7 +56,6 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
 
     @Override
     public String convert(Object value, ColumnMeta columnMeta) {
-        LOGGER.trace("convert method was called");
         if (value == null) return "";
         Class<?> aClass = value.getClass();
         Converter<String> converter;
@@ -78,8 +76,6 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
         String typeName = columnMeta.getTypeName();
         int precision = columnMeta.getPrecision();
         int scale = columnMeta.getScale();
-        LOGGER.trace("isApplicable method was called with parameters: {}, {}, {}, {}", type,
-                typeName, precision, scale);
         return type == java.sql.Types.ARRAY ||
                 typeName.equalsIgnoreCase("ARRAY") ||
                 ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
@@ -95,6 +91,19 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
                         typeName.equalsIgnoreCase("xml")) ||
                 typeName.startsWith("Tuple") || typeName.startsWith("UDT") ||
                 typeName.startsWith("List") || typeName.equalsIgnoreCase("JSON");
+    }
+
+    @Override
+    public boolean canReadFast(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        return type == java.sql.Types.VARCHAR || type == java.sql.Types.CHAR || type == java.sql.Types.LONGVARCHAR
+                || columnMeta.getTypeName().equalsIgnoreCase("text");
+    }
+
+    @Override
+    public void readFast(ResultSet resultSet, int index, Column<?> column, ColumnMeta columnMeta) throws SQLException {
+        String value = resultSet.getString(index);
+        ((StringColumn) column).add(value == null ? "" : value);
     }
 
     @Override

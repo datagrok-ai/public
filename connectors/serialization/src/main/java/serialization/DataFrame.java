@@ -117,9 +117,12 @@ public class DataFrame implements Taggable {
         return buffer.toString();
     }
 
+    public TablesBlob toBlob() {
+        return new TablesBlob(new DataFrame[] {this});
+    }
+
     public byte[] toByteArray() {
-        DataFrame[] tables = {this};
-        return (new TablesBlob(tables)).toByteArray();
+        return toBlob().toByteArray();
     }
 
     // Decodes the first table of a d42 blob. Wraps out-of-bounds reads (from a

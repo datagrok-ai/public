@@ -2,7 +2,9 @@ package grok_connect.resultset;
 
 import grok_connect.managers.ColumnManager;
 import serialization.Column;
+import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 
 public interface ResultSetManager {
 
@@ -13,6 +15,11 @@ public interface ResultSetManager {
      * @param meta ResultSetMetaData (JDBC interface)
      */
     void init(ResultSetMetaData meta, int initColumnSize);
+
+    /** Lets BigIntColumn report itself as int while its values fit; set before init. */
+    void setInt8AsInt32(boolean value);
+
+    boolean readFast(ResultSet resultSet, int index) throws SQLException;
 
     ColumnManager<?> getApplicableColumnManager(ColumnMeta meta);
 
@@ -32,7 +39,8 @@ public interface ResultSetManager {
     Column<?>[] getProcessedColumns();
 
     /**
-     * Empty all columns for reuse without the need to init ResultSetManager again
+     * Replaces the filled columns with fresh empty ones of the same classes without the need to init
+     * ResultSetManager again; the previous columns stay intact for the DataFrame that holds them.
      */
-    void empty(int newColSize);
+    void detach(int nextColSize);
 }

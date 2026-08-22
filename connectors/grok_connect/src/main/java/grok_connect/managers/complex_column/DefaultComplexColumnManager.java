@@ -17,11 +17,8 @@ public class DefaultComplexColumnManager implements ColumnManager<Map<String, Ob
 
     @Override
     public Map<String, Object> convert(Object value, ColumnMeta columnMeta) {
-        LOGGER.trace("convert method was called");
-        if (value == null) {
-            LOGGER.trace("value is null, return empty map");
+        if (value == null)
             return Collections.emptyMap();
-        }
         LOGGER.debug("using default converter for class {}",
                 value.getClass());
         return DEFAULT_CONVERTER.convert(value);

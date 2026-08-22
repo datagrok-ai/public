@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,14 +22,23 @@ import grok_connect.table_query.TableQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import serialization.BigIntColumn;
+import serialization.Column;
 import serialization.DataFrame;
+import serialization.Types;
 
 public class QueryManager {
     public static final String CHUNK_NUMBER_TAG = "chunkNumber";
     public static final String FETCH_SIZE_KEY = "connectFetchSize";
     public static final String INIT_FETCH_SIZE_KEY = "initConnectFetchSize";
+    public static final String INT8_AS_INT32_KEY = "int8AsInt32";
+    public static final String COMPRESS_CHUNKS_KEY = "compressChunks";
+    public static final String GZIP_LEVEL_KEY = "gzipLevel";
+    public static final String COLUMN_TIMINGS_KEY = "columnTimings";
+    public static final String ALLOW_COL_TYPE_CHANGE_TAG = "ALLOW_COL_TYPE_CHANGE";
+    private static final int DEFAULT_GZIP_LEVEL = 1;
     private static final int MAX_CHUNK_SIZE_BYTES = 10_000_000;
-    private static final int MAX_FETCH_SIZE = 100000;
+    private static final int MAX_FETCH_SIZE = 500000;
     private static final int MIN_FETCH_SIZE = 100;
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryManager.class);
     public boolean isDebug;
@@ -46,6 +56,8 @@ public class QueryManager {
     private boolean isFinished = false;
     private boolean supportsFetchSize = true;
     private boolean committed;
+    private volatile float lastWireBytesPerRow;
+    private boolean hasDowncast;
 
     public QueryManager(String message) {
         LOGGER.debug("Deserializing json call and preprocessing it...");
@@ -108,23 +120,29 @@ public class QueryManager {
     }
 
     public DataFrame getSubDF(int dfNumber) throws SQLException, QueryCancelledByUser {
+        return getSubDF(dfNumber, 0);
+    }
+
+    /** {@code wireBytesPerRow} (the caller's snapshot of {@link #getWireBytesPerRow()}, 0 = unknown) sizes the chunk
+     *  after this one, so the decision does not depend on which serialize has completed while this fetch runs. */
+    public DataFrame getSubDF(int dfNumber, float wireBytesPerRow) throws SQLException, QueryCancelledByUser {
         DataFrame df = new DataFrame();
         if (!isFinished && !resultSet.isClosed() && !connection.isClosed()) {
             if (dfNumber != 1)
-                resultSetManager.empty(currentFetchSize);
+                resultSetManager.detach(currentFetchSize);
             int rowsNumber = dfNumber == 1 ? initFetchSize : currentFetchSize;
             df =  provider.getResultSetSubDf(query, resultSet, resultSetManager, rowsNumber, columnCount, dfNumber, false);
             if (df.rowCount == rowsNumber && supportsFetchSize) {
                 if (dfNumber == 1 && changedFetchSize)
                     tryFetchSize(currentFetchSize);
                 else if (!changedFetchSize)
-                    changeFetchSize(df);
+                    changeFetchSize(df, wireBytesPerRow);
             }
             else {
                 isFinished = true;
                 LOGGER.info("Received all data");
             }
-            df.setTag(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
+            tagChunk(df, dfNumber);
             if (dfNumber == 1)
                 try {
                     SqlAnnotator.annotate(query.func, df);
@@ -174,19 +192,74 @@ public class QueryManager {
         return Boolean.TRUE.equals(query.aux.get(DataProvider.RAW_WRITE_DETECTED));
     }
 
-    private void changeFetchSize(DataFrame df) {
+    public void reportSerialized(int bytes, int rows) {
+        if (rows > 0)
+            lastWireBytesPerRow = bytes / (float) rows;
+    }
+
+    public float getWireBytesPerRow() {
+        return lastWireBytesPerRow;
+    }
+
+    void tagChunk(DataFrame df, int dfNumber) {
+        df.setTag(CHUNK_NUMBER_TAG, String.valueOf(dfNumber));
+        if (dfNumber == 1)
+            hasDowncast = hasDowncastColumn(df);
+        if (hasDowncast)
+            df.setTag(ALLOW_COL_TYPE_CHANGE_TAG, "true");
+    }
+
+    static boolean int8AsInt32(Map<String, Object> options) {
+        return String.valueOf(options.get(INT8_AS_INT32_KEY)).equals("true");
+    }
+
+    public static boolean compressChunks(Map<String, Object> options) {
+        return String.valueOf(options.get(COMPRESS_CHUNKS_KEY)).equals("true");
+    }
+
+    public static boolean columnTimings(Map<String, Object> options) {
+        return String.valueOf(options.get(COLUMN_TIMINGS_KEY)).equals("true");
+    }
+
+    // Mirrors Datlas (external_provider.dart): chunk 1 is gzipped only when initConnectFetchSize
+    // was given and is not the number 100 (the string "100" counts as given).
+    public static boolean gzipChunk(Map<String, Object> options, int dfNumber) {
+        if (!compressChunks(options))
+            return false;
+        Object initFetchSize = options.get(INIT_FETCH_SIZE_KEY);
+        return dfNumber > 1 || (initFetchSize != null
+                && !(initFetchSize instanceof Number && ((Number) initFetchSize).doubleValue() == 100));
+    }
+
+    public static int gzipLevel(Map<String, Object> options) {
+        Object level = options.get(GZIP_LEVEL_KEY);
+        if (level == null)
+            return DEFAULT_GZIP_LEVEL;
+        int value = level instanceof Number ? ((Number) level).intValue() : Double.valueOf(level.toString()).intValue();
+        return Math.min(Math.max(1, value), 9);
+    }
+
+    private static boolean hasDowncastColumn(DataFrame df) {
+        for (Column<?> column : df.getColumns())
+            if (column instanceof BigIntColumn && column.getType().equals(Types.INT))
+                return true;
+        return false;
+    }
+
+    private void changeFetchSize(DataFrame df, float wireBytesPerRow) {
         if (!provider.descriptor.type.equals("Virtuoso")) {
             LOGGER.debug("Calculating dynamically next fetch size...");
-            currentFetchSize = getFetchSize(df);
+            currentFetchSize = getFetchSize(df, wireBytesPerRow);
             tryFetchSize(currentFetchSize);
         }
     }
 
-    private int getFetchSize(DataFrame df) {
+    int getFetchSize(DataFrame df, float wireBytesPerRow) {
         int fetchSize = 0;
         if (df.rowCount != 0) {
             int maxChunkSize = chunkSize != -1 ? chunkSize : MAX_CHUNK_SIZE_BYTES;
-            fetchSize = Math.round(maxChunkSize / (float) (df.memoryInBytes() / df.rowCount));
+            float bytesPerRow = wireBytesPerRow > 0 ? wireBytesPerRow : (float) (df.memoryInBytes() / df.rowCount);
+            fetchSize = Math.round(maxChunkSize / bytesPerRow);
         }
         return Math.min(Math.max(MIN_FETCH_SIZE, fetchSize), MAX_FETCH_SIZE);
     }
@@ -195,6 +268,7 @@ public class QueryManager {
         query.options.entrySet().removeIf(e -> e.getValue() == null);
         setFetchSize(query.options.getOrDefault(FETCH_SIZE_KEY, "").toString());
         setInitFetchSize(query.options.getOrDefault(INIT_FETCH_SIZE_KEY, "").toString());
+        resultSetManager.setInt8AsInt32(int8AsInt32(query.options));
     }
 
     private void setFetchSize(String optionValue) {

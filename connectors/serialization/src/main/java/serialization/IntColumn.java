@@ -1,8 +1,16 @@
 package serialization;
 
+import serialization.codecs.BitIntList;
+import serialization.codecs.IntRle;
+import serialization.codecs.IntSequencePattern;
+
 public class IntColumn extends AbstractColumn<Integer> {
     private static final String TYPE = Types.INT;
     public static final int None = -2147483648;
+
+    // Best-encoder selection (ids 2/3/4) as in Dart; false restores int:raw only.
+    public static boolean ADVANCED_ENCODERS =
+            Boolean.parseBoolean(System.getProperty("grok.connect.advancedEncoders", "true"));
 
     private int[] data;
 
@@ -22,6 +30,12 @@ public class IntColumn extends AbstractColumn<Integer> {
         addAll(values);
     }
 
+    public IntColumn(String name, int[] values) {
+        super(name);
+        data = values;
+        length = values.length;
+    }
+
     @Override
     public String getType() {
         return TYPE;
@@ -35,9 +49,82 @@ public class IntColumn extends AbstractColumn<Integer> {
 
     @Override
     public void encode(BufferAccessor buf) {
-        buf.writeInt32(1);
-        buf.writeInt8((byte)0);
-        buf.writeInt32List(data, 0, length);
+        Encoding.choose(data, length).write(buf, data, length);
+    }
+
+    // The encoder encode() picks for a value list and the payload bytes it takes after the 4-byte id
+    // (codec headers included), so nested writers (DateTimeColumn components) can estimate before committing.
+    public static final class Encoding {
+        private static final int LIST_HEADER = 2 + 8;
+        private static final int BIT_LIST_HEADER = 4 + 8 + 8 + 1 + LIST_HEADER;
+
+        public final int id;
+        public final int size;
+        private final IntSequencePattern pattern;
+        private final IntRle rle;
+        private final int min;
+
+        private Encoding(int id, int size, IntSequencePattern pattern, IntRle rle, int min) {
+            this.id = id;
+            this.size = size;
+            this.pattern = pattern;
+            this.rle = rle;
+            this.min = min;
+        }
+
+        private static Encoding raw(int length) {
+            return new Encoding(1, 1 + LIST_HEADER + length * 4, null, null, 0);
+        }
+
+        // Dart's getBestEncodingEstimate over IntMeta.encoders (pattern, raw, rle, bitIntList): skip -1, stop at 0, else smallest.
+        public static Encoding choose(int[] data, int length) {
+            if (!ADVANCED_ENCODERS)
+                return raw(length);
+
+            IntSequencePattern pattern = IntSequencePattern.fromList(data, length);
+            if (pattern != null)
+                return new Encoding(2, 5 * 4, pattern, null, 0);
+
+            long min = Long.MAX_VALUE;
+            long max = Long.MIN_VALUE;
+            for (int i = 0; i < length; i++) {
+                if (data[i] == None)
+                    continue;
+                min = Math.min(min, data[i]);
+                max = Math.max(max, data[i]);
+            }
+            if (max < min)
+                return raw(length);
+
+            int best = length * 4;
+            int bitListSize = BitIntList.sizeInBytes(length, min, max);
+            // Range >= 2^30: bitIntList cannot beat raw and rle's deltas (up to twice the range) rarely fit its 31 bits, so skip its O(n) estimate.
+            IntRle rle = BitIntList.msb(max - min) >= 31 ? null : new IntRle();
+            int rleSize = rle == null ? -1 : rle.estimate(data, length, (int) min);
+            if (rleSize != -1 && rleSize < best && rleSize <= bitListSize)
+                return new Encoding(3, 3 * 4 + 2 * BIT_LIST_HEADER + rleSize, null, rle, (int) min);
+            if (bitListSize < best)
+                return new Encoding(4, BIT_LIST_HEADER + bitListSize, null, null, 0);
+            return raw(length);
+        }
+
+        public void write(BufferAccessor buf, int[] data, int length) {
+            buf.writeInt32(id);
+            switch (id) {
+                case 2:
+                    pattern.serialize(buf);
+                    break;
+                case 3:
+                    rle.encode(buf, data, length, min);
+                    break;
+                case 4:
+                    BitIntList.fromList(data, 0, length).serialize(buf);
+                    break;
+                default:
+                    buf.writeInt8((byte) 0);
+                    buf.writeInt32List(data, 0, length);
+            }
+        }
     }
 
     @Override
@@ -69,6 +156,11 @@ public class IntColumn extends AbstractColumn<Integer> {
     public void add(Integer value) {
         ensureSpace(1);
         data[length++] = (value != null) ? value : None;
+    }
+
+    public void add(int value) {
+        ensureSpace(1);
+        data[length++] = value;
     }
 
     @Override

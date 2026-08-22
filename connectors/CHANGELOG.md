@@ -1,5 +1,16 @@
 # Grok Connect changelog
 
+# 2.8.5 (unreleased)
+
+* Streaming: typed JDBC fast reads (`getInt`/`getDouble`/`getString`/... instead of `getObject` + conversion for the common column types, `ResultSetManager.readFast`)
+* Streaming: `int8AsInt32` query option - bigint columns travel as `int` while every value fits int32; the downcast is opt-in, sticky once a value overflows and survives chunk boundaries (`detach` carries the flag)
+* Streaming: next fetch size is derived from the previous chunk's serialized bytes/row instead of the in-memory estimate; the measurement is snapshotted when the fetch is scheduled (chunk k feeds fetch k+2 single-task, k+3 pipelined); `MAX_FETCH_SIZE` raised to 500000 rows
+* Serialization: cost-based int and datetime encoder selection (RLE / sequence-pattern / bit-packed list, `dateTime:int`) with Dart-fixture goldens; no d42 VERSION bump
+* Streaming: chunks are gzipped in grok_connect when Datlas sends `compressChunks` (`gzipLevel`, default 1); announced as `DATAFRAME PART SIZE: <n> gzip=true` and passed through by Datlas
+* Streaming: two-stage pipeline - fetch(k+2) runs in parallel with serialize+gzip(k+1) while chunk k is sent; `-Dgrok.connect.pipelineFetch=false` restores the single-task path; closing mid-stream flags the query cancelled and waits (up to 5 s) for the in-flight fetch before releasing the connection
+* Debug: `COLUMN SIZES` line (per-column bytes/gz/encoder) after the serialize END marker; per-column encode `ms` only with the `columnTimings` query option
+* Known issue: the shaded jar must run on JDK 17 - on JDK >= 18 a `java.net.spi.InetAddressResolverProvider` service entry points at a dnsjava class the shade drops, so every hostname lookup fails
+
 # 2.8.4
 
 * GROK-20712: Fixed the main image registering zero providers — the newline `printf` writes into `providers.conf` for the default empty allowlist parsed as an empty set instead of "all providers", so every DB test failed with "Provider Postgres not found" since 2.8.3

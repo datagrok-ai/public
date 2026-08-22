@@ -1,56 +1,200 @@
 package serialization;
 
-public class BigIntColumn extends StringColumn {
+// Long storage until the first non-integral value (then decimal strings, today's wire format).
+// With downcastAllowed the type is `int` while every value fits int32; sticky survives empty().
+public class BigIntColumn extends AbstractColumn<Object> {
     static final String TYPE = Types.BIG_INT;
+    public static final long None = Long.MIN_VALUE;
+
+    private long[] longs;
+    private long min = Long.MAX_VALUE;
+    private long max = Long.MIN_VALUE;
+    private StringColumn strings;
+    private boolean downcastAllowed;
+    private boolean sticky;
 
     public BigIntColumn(String name) {
-        super(name);
+        this(name, DEFAULT_INIT_SIZE);
     }
 
     public BigIntColumn(String name, int initColumnSize) {
         super(name, initColumnSize);
+        longs = new long[initColumnSize];
     }
 
     public BigIntColumn(String name, String[] values) {
-        super(name, values);
+        this(name);
+        addAll(values);
+    }
+
+    public void setDowncastAllowed(boolean value) {
+        downcastAllowed = value;
+    }
+
+    public boolean isSticky() {
+        return sticky;
+    }
+
+    public void setSticky(boolean value) {
+        sticky = value;
     }
 
     @Override
     public String getType() {
-        return TYPE;
+        return downcastAllowed && !sticky && strings == null && length > 0 && max >= min
+                && min > Integer.MIN_VALUE && max <= Integer.MAX_VALUE ? Types.INT : TYPE;
+    }
+
+    @Override
+    public void empty() {
+        length = 0;
+        longs = new long[initColumnSize];
+        strings = null;
+        min = Long.MAX_VALUE;
+        max = Long.MIN_VALUE;
     }
 
     @Override
     public void encode(BufferAccessor buf) {
+        if (getType().equals(Types.INT)) {
+            IntColumn ints = new IntColumn(name, length);
+            for (int i = 0; i < length; i++)
+                ints.add(longs[i] == None ? IntColumn.None : (int) longs[i]);
+            ints.encode(buf);
+            return;
+        }
         buf.writeInt32(1);
-        super.encode(buf);
+        toStrings().encode(buf);
     }
 
     @Override
     public void decode(BufferAccessor buf) {
         int id = buf.readInt32();
+        StringColumn decoded = new StringColumn(name, 0);
         switch (id) {
             case 1: // bigInt:raw delegates to the nested string-column (categories) decode.
-                super.decode(buf);
+                decoded.decode(buf);
                 break;
             case 2: // bigInt:list - polynomial {sizes, values, signs}.
-                adoptFlat(decodeList(buf));
+                adoptFlat(decoded, decodeList(buf));
                 break;
             case 3: // bigInt:capped - fixed-length polynomial columns.
-                adoptFlat(decodeCapped(buf));
+                adoptFlat(decoded, decodeCapped(buf));
                 break;
             default:
                 throw new RuntimeException("decoding " + name + ": bigint encoder " + id + " not supported");
         }
+        strings = decoded;
+        longs = null;
+        length = decoded.getLength();
     }
 
-    // Stores flat decimal strings (null = None) into the StringColumn parent with an
-    // identity index map, so get(idx) returns values[idx] without re-categorizing.
-    private void adoptFlat(String[] values) {
+    @Override
+    public void add(Object value) {
+        if (strings == null) {
+            if (value == null) {
+                addLong(None);
+                return;
+            }
+            if (isExactIntegral(value) && ((Number) value).longValue() != None) {
+                addLong(((Number) value).longValue());
+                return;
+            }
+            switchToStrings();
+        }
+        strings.add(toText(value));
+        length++;
+    }
+
+    @Override
+    public void addAll(Object[] values) {
+        for (Object value : values)
+            add(value);
+    }
+
+    @Override
+    public Object get(int idx) {
+        if (strings != null)
+            return strings.get(idx);
+        return longs[idx] == None ? null : (Object) longs[idx];
+    }
+
+    @Override
+    public void set(int index, Object value) {
+        if (strings == null && (value == null || isExactIntegral(value) && ((Number) value).longValue() != None)) {
+            longs[index] = value == null ? None : ((Number) value).longValue();
+            track(longs[index]);
+            return;
+        }
+        if (strings == null)
+            switchToStrings();
+        strings.set(index, toText(value));
+    }
+
+    @Override
+    public long memoryInBytes() {
+        return strings != null ? strings.memoryInBytes() : (long) longs.length * 8;
+    }
+
+    @Override
+    public boolean isNone(int idx) {
+        return strings != null ? strings.isNone(idx) : longs[idx] == None;
+    }
+
+    @Override
+    public Object toArray() {
+        return strings != null ? strings.toArray() : longs;
+    }
+
+    private static boolean isExactIntegral(Object value) {
+        return value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte;
+    }
+
+    private static String toText(Object value) {
+        return value == null ? null : value.toString();
+    }
+
+    private void addLong(long value) {
+        if (length >= longs.length) {
+            long[] newData = new long[Math.max(longs.length * 2, length + 1)];
+            System.arraycopy(longs, 0, newData, 0, longs.length);
+            longs = newData;
+        }
+        longs[length++] = value;
+        track(value);
+    }
+
+    private void track(long value) {
+        if (value == None)
+            return;
+        if (value < min) min = value;
+        if (value > max) max = value;
+        if (value <= Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+            sticky = true;
+    }
+
+    private StringColumn toStrings() {
+        if (strings != null)
+            return strings;
+        StringColumn result = new StringColumn(name, length);
+        for (int i = 0; i < length; i++)
+            result.add(longs[i] == None ? null : Long.toString(longs[i]));
+        return result;
+    }
+
+    private void switchToStrings() {
+        strings = toStrings();
+        longs = null;
+        sticky = true;
+    }
+
+    // Stores flat decimal strings (null = None) with an identity index map, so get(idx)
+    // returns values[idx] without re-categorizing.
+    private static void adoptFlat(StringColumn target, String[] values) {
         int[] indices = new int[values.length];
         for (int i = 0; i < values.length; i++)
             indices[i] = i;
-        adoptDecoded(values, indices);
+        target.adoptDecoded(values, indices);
     }
 
     // Ports BigIntListEncoder.decode (big_int_column_encoders.dart:51-60).

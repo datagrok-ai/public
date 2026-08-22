@@ -135,7 +135,7 @@ public class D42DartFixtureTest {
                     case "bigint": {
                         boolean none = isNull || v.getAsString().isEmpty();
                         Assertions.assertEquals(none, col.isNone(r), at + " none");
-                        if (!none) Assertions.assertEquals(v.getAsString(), ((BigIntColumn) col).get(r), at);
+                        if (!none) Assertions.assertEquals(v.getAsString(), String.valueOf(col.get(r)), at);
                         break;
                     }
                     case "datetimeMicros":

@@ -560,17 +560,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             int rowCount = 0;
             do {
                 rowCount++;
+                if (!dryRun && queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
+                    logger.info("Query was canceled");
+                    queryMonitor.removeResultSet(queryRun.id);
+                    throw new QueryCancelledByUser();
+                }
                 for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = getObjectFromResultSet(resultSet, c);
-
-                    if (dryRun) continue;
-                    resultSetManager.processValue(value, c);
-
-                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
-                        logger.info("Query was canceled");
-                        queryMonitor.removeResultSet(queryRun.id);
-                        throw new QueryCancelledByUser();
-                    }
+                    if (dryRun)
+                        getObjectFromResultSet(resultSet, c);
+                    else if (!resultSetManager.readFast(resultSet, c))
+                        resultSetManager.processValue(getObjectFromResultSet(resultSet, c), c);
                 }
             } while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next());
 
