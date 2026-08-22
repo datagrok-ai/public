@@ -290,7 +290,12 @@ public class QueryManager {
             LOGGER.info("Default init fetch size of {} will be used", initFetchSize);
             return;
         }
-        initFetchSize = Double.valueOf(optionValue).intValue();
+        try {
+            initFetchSize = Double.valueOf(optionValue).intValue();
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(INIT_FETCH_SIZE_KEY + " must be a row count, got '" + optionValue
+                    + "' (the \"N MB\" form applies to " + FETCH_SIZE_KEY + " only)");
+        }
         LOGGER.info("Init fetch size was set to {}", initFetchSize);
     }
 

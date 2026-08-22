@@ -11,6 +11,7 @@
 * Debug: `COLUMN SIZES` line (per-column bytes/gz/encoder) after the serialize END marker; per-column encode `ms` only with the `columnTimings` query option
 * Fixed: the shaded jar failed every hostname lookup on JDK >= 18 (dnsjava's `java.net.spi.InetAddressResolverProvider` service entry pointed at a multi-release class the shade drops); the entry is now excluded
 * Fixed: `grok_connect.cmd` / `grok_connect.sh` put `lib/*` before the jar on the classpath, letting a driver's bundled SLF4J shadow the shaded one
+* `initConnectFetchSize` with a non-numeric value (e.g. `"10 MB"`, which only `connectFetchSize` accepts) now fails with a clear message instead of a bare `NumberFormatException`
 
 # 2.8.4
 

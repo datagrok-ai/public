@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20752: `ProgressIndicator` covers `onLogUpdated` delivering plain `{level, message, flag, params, time}` objects — a debug-mode call of an ad-hoc JS script, asserting the client `CALL DURATION` start event's types and params.
+
 Build: Fixed the local build — `@datagrok-libraries/domain-ui` now takes `datagrok-api` from `../../js-api` instead of the registry, so its types are the same ones ApiTests compiles against. `build-js-api-tests-local` builds js-api and domain-ui only; the `link-*` scripts are gone.
 
 GROK-20298: `Dapi: domain frame editor` covers the move of the editor into the platform — `DomainFrameEditor.attachTo(frame, schema, table)` adopting a frame its HOST owns (the Dart Domain View's entry point), with `DG.DomainFrameEditor` asserted to be the very class `@datagrok-libraries/domain-ui` exports.

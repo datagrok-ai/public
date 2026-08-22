@@ -2,6 +2,7 @@
 
 ## v.next
 
+* ProgressIndicator: Added functions/progress-log-updated.js — `onLogUpdated` during a debug-mode call, where each event is a plain `{level, message, flag, params, time}` object
 * Fixed statistics/pearson-correlation.js reading `c1` twice, so it correlated a column with itself and always returned 1
 * Fixed functions/caching-results.js referencing an undefined `result` (and dropped an unused `counts`)
 * Fixed ui/widgets/widgets-tree.js throwing on a widget with no `children`, and on the base `Widget`, which has no `getFunctions`/`getProperties` (only domain widgets do)

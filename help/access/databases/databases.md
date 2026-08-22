@@ -742,10 +742,10 @@ For existing queries:
         --meta.connectFetchSize: 10 MB
         ```
       
-   * **Init fetch size** (optional): This parameter is the same as **Fetch
-   size** but it applies to a [statement
-   object](https://docs.oracle.com/javase/8/docs/api/java/sql/Statement.html).
-   To persist this parameter, include a meta parameter in your query:
+   * **Init fetch size** (optional): The number of rows in the first chunk (default 100,
+   chosen to show the first rows quickly). Unlike **Fetch size**, it accepts only a row
+   count, not a megabyte value (the size of a row isn't known before the first chunk is
+   read). To persist this parameter, include a meta parameter in your query:
 
       ```
      --meta.initConnectFetchSize: 1000

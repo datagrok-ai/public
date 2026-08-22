@@ -75,6 +75,15 @@ public class QueryManagerTest {
     }
 
     @Test
+    public void initFetchSizeIsARowCountAndRejectsTheByteFormClearly() {
+        manager("{\"initConnectFetchSize\":\"1000\"}");
+        manager("{\"connectFetchSize\":\"10 MB\"}");
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> manager("{\"initConnectFetchSize\":\"10 MB\"}"));
+        Assertions.assertTrue(e.getMessage().contains("initConnectFetchSize must be a row count"), e.getMessage());
+    }
+
+    @Test
     public void initParamsWiresInt8AsInt32IntoTheResultSetManager() throws Exception {
         Assertions.assertEquals(Types.INT, int8TypeFor("{\"int8AsInt32\":true}"));
         Assertions.assertEquals(Types.INT, int8TypeFor("{\"int8AsInt32\":\"true\"}"));
