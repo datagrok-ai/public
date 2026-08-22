@@ -5,7 +5,7 @@ import {signal, computed, Signal, ReadonlySignal} from '../core/signals.js';
 import {Component} from '../core/component.js';
 import {AsyncValue} from '../core/async-value.js';
 import {backends, requireBackend, FuncDescriptorLike} from './backends.js';
-import {dfBindings, DataFrameLike} from './df-bindings.js';
+import {DF_STEPS, dfBindings, DataFrameLike} from './df-bindings.js';
 import {AsyncSteps, DesignData} from './async-steps.js';
 import type {PropertyLike} from '../core/property-like.js';
 import type {BindProp, BindSource} from '../spec/bind-source.js';
@@ -105,10 +105,15 @@ export class FuncSource extends Component implements BindSource, ComponentStart 
    * in the binding picker. */
   bindProps(): BindProp[] {
     const props = AsyncSteps.props('Why the last run failed');
-    for (const output of this._descriptor?.outputs ?? []) {
+    const outputs = this._descriptor?.outputs ?? [];
+    // a single-table source IS that table (bindStep): its steps sit right under the source, not
+    // under an output name the author of the form never chose
+    if (outputs.length === 1 && FuncSource._isFrameProp(outputs[0]))
+      return props.concat(DF_STEPS);
+    for (const output of outputs) {
       props.push({name: output.name, type: output.propertyType ?? output.type,
         semType: output.semType, description: output.description,
-        walkable: FuncSource._isFrameProp(output)});
+        walkable: FuncSource._isFrameProp(output), default: outputs.length === 1});
     }
     return props;
   }

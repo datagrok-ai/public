@@ -52,15 +52,15 @@ async function checkFullBuild(page) {
   JSON.stringify(built));
 
   // 3. the wiring: three binds through the picker, one event through the function picker
-  await bindThroughPicker(page, 'numberInput1', 'currentRowIdx', 'funcSource1', 'orders');
-  await bindThroughPicker(page, 'textInput1', 'customer', 'funcSource1', 'orders', 'currentRow :');
-  const rows = await bindThroughPicker(page, 'textInput2', 'rowCount', 'funcSource1', 'orders');
+  await bindThroughPicker(page, 'numberInput1', 'currentRowIdx', 'funcSource1');
+  await bindThroughPicker(page, 'textInput1', 'customer', 'funcSource1', 'currentRow :');
+  const rows = await bindThroughPicker(page, 'textInput2', 'rowCount', 'funcSource1');
   const wired = JSON.parse(await dumpViaDialog(page)).root.children;
   await shot(page, 'full-build-1-bound');
   ok('full-build/1d/the-picker-binds-the-navigator-the-detail-field-and-the-row-count',
-    wired[0].bind?.value === '$.funcSource1.orders.currentRowIdx' &&
-    wired[1].bind?.value === '$.funcSource1.orders.currentRow.customer' &&
-    wired[2].bind?.value === '$.funcSource1.orders.rowCount',
+    wired[0].bind?.value === '$.funcSource1.currentRowIdx' &&
+    wired[1].bind?.value === '$.funcSource1.currentRow.customer' &&
+    wired[2].bind?.value === '$.funcSource1.rowCount',
     `${JSON.stringify(wired.map((c) => c.bind))} last picked=${rows.found}`);
 
   await selectRow(page, 'button1');

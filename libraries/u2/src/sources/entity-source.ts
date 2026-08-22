@@ -80,7 +80,7 @@ export class EntitySource extends Component implements BindSource, ComponentStar
 
   bindProps(): BindProp[] {
     return [
-      {name: 'items', type: 'object', description: 'The entities loaded so far'},
+      {name: 'items', type: 'object', description: 'The entities loaded so far', default: true},
       {name: 'names', type: 'string_list', description: 'Their names, for a choice input'},
       {name: 'state', type: 'string', description: 'idle, loading, done or error'},
       {name: 'total', type: 'int'},

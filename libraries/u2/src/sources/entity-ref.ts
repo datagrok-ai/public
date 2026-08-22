@@ -80,7 +80,7 @@ export class EntityRef extends Component implements BindSource, ComponentStart {
 
   bindProps(): BindProp[] {
     const props = AsyncSteps.props('Why the last lookup failed');
-    props.push({name: 'entity', type: 'object', description: 'The entity itself'});
+    props.push({name: 'entity', type: 'object', description: 'The entity itself', default: true});
     const value = this._entity.peek();
     if (value !== null && typeof value === 'object') {
       for (const name of EntityRef._readable(value as object))

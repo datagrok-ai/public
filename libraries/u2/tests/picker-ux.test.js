@@ -6,10 +6,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import './dom-shim.js';
-import {bindGroups, bindRows} from '../src/dg/designer/bind-picker.js';
+import {Registry} from '../src/spec/registry.js';
 import {Func} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
+const {bindGroups, bindRows} = await import('../src/dg/designer/bind-picker.js');
 const {funcEntries, filterFuncs} = await import('../src/dg/designer/func-picker.js');
 
 /** A source with a walkable step under it — the three levels the acceptance pass had to open by
@@ -59,12 +60,15 @@ test('bindRows: nothing matches, nothing is invented', () => {
   assert.deepEqual(bindRows(model(), 'u2Record'), {rows: [], expand: []});
 });
 
+/** A rendered spec as `bindGroups` reads it: the tray, the form and the registry its tags came from. */
+const rendered = (root, components = [], data = {}, registry = new Registry()) =>
+  ({spec: {root, components}, ctx: {data}, registry});
+
 test('bindGroups: every root says where it came from, and a component wins its name', () => {
-  const instance = {spec: {components: [{tag: 'u2-state', name: 'draft'}]},
-    ctx: {data: {reagent: 1, draft: 2}}};
-  const roots = [{label: 'reagent : string ⇄', path: '$.reagent'},
-    {label: 'draft (u2-state)', path: '$.draft'},
-    {label: 'nameInput (u2-text-input)', path: '$.nameInput'}];
+  const instance = rendered({tag: 'u2-form'}, [{tag: 'u2-state', name: 'draft'}], {reagent: 1, draft: 2});
+  const roots = [{label: 'reagent : string ⇄', path: '$.reagent', name: 'reagent'},
+    {label: 'draft (u2-state)', path: '$.draft', name: 'draft'},
+    {label: 'nameInput (u2-text-input)', path: '$.nameInput', name: 'nameInput'}];
   assert.deepEqual(bindGroups(instance, roots).map((g) => [g.title, labels(g.nodes)]), [
     ['App data', ['reagent : string ⇄']],
     ['Data sources', ['draft (u2-state)']],
@@ -73,9 +77,26 @@ test('bindGroups: every root says where it came from, and a component wins its n
 });
 
 test('bindGroups: a heading with nothing under it is not shown', () => {
-  const instance = {spec: {}, ctx: {data: {reagent: 1}}};
-  assert.deepEqual(bindGroups(instance, [{label: 'reagent : string ⇄', path: '$.reagent'}])
+  const instance = rendered({tag: 'u2-form'}, [], {reagent: 1});
+  assert.deepEqual(bindGroups(instance, [{label: 'reagent : string ⇄', path: '$.reagent', name: 'reagent'}])
     .map((g) => g.title), ['App data']);
+});
+
+test('bindGroups: a platform viewer — registry category Viewers — has a heading of its own, before the controls', () => {
+  const registry = new Registry();
+  registry.register({tag: 'u2-viewer-grid', category: 'Viewers', description: 'The platform grid',
+    create: () => ({}), props: [], example: {tag: 'u2-viewer-grid'}});
+  registry.register({tag: 'u2-text-input', category: 'Inputs', description: 'Text',
+    create: () => ({}), props: [], example: {tag: 'u2-text-input'}});
+  const instance = rendered({tag: 'u2-form', children: [
+    {tag: 'u2-viewer-grid', name: 'grid'}, {tag: 'u2-text-input', name: 'nameInput'}]}, [], {}, registry);
+  // a viewer root is a group (no default step) — grouped by its name, never by a path it lacks
+  const roots = [{label: 'nameInput (u2-text-input)', path: '$.nameInput', name: 'nameInput'},
+    {label: 'grid (u2-viewer-grid)', path: null, name: 'grid'}];
+  assert.deepEqual(bindGroups(instance, roots).map((g) => [g.title, labels(g.nodes)]), [
+    ['Viewers', ['grid (u2-viewer-grid)']],
+    ['Form controls', ['nameInput (u2-text-input)']],
+  ]);
 });
 
 test('funcEntries: what no spec can call is not offered', () => {

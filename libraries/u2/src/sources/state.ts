@@ -35,7 +35,7 @@ export class StateSource extends Component implements BindSource {
   }
 
   bindProps(): BindProp[] {
-    return [{name: 'value', type: this.type, writable: true}];
+    return [{name: 'value', type: this.type, writable: true, default: true}];
   }
 
   private static _empty(type: string): unknown {

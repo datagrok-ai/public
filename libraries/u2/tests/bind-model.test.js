@@ -4,6 +4,7 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {register} from 'node:module';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
@@ -11,10 +12,14 @@ import {Component} from '../src/core/component.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
+import {backends} from '../src/sources/backends.js';
 import {dfBindings} from '../src/sources/df-bindings.js';
-import {DataFrame} from './platform-doubles.mjs';
+import {DataFrame, Property, WidgetDescriptor, platform} from './platform-doubles.mjs';
 import {brokenCount} from '../src/dg/designer/node-ref.js';
 import {bindTree, NOTHING_YET} from '../src/dg/designer/bind-model.js';
+
+register('./dg-stub.mjs', import.meta.url);
+const {registerPlatformComponents} = await import('../src/dg/viewers/registrations.js');
 
 /** A frame whose handle counts its reads: allocating one column signal costs a `get`. */
 const frame = () => new DataFrame([{name: 'name', type: 'string', semType: 'Text'},
@@ -164,6 +169,110 @@ test('a walkable step with nothing under it explains itself, and the note is not
     } finally {
       instance.dispose();
       scope.dispose();
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+  });
+
+/* WO-V5 — a viewer node is a bind source with no picker code of its own: `bindProps()` answers the
+   walkable `table` step ahead of the look properties, and a property with a setter is a ⇄ leaf. */
+test('a viewer node walks through table to the seven frame steps; its writable look props carry ⇄',
+  async () => {
+    const live = Scope.liveCount;
+    const warn = console.warn;
+    console.warn = () => {};
+    WidgetDescriptor.registry = [new WidgetDescriptor('Grid', [
+      new Property('allowEdit', 'bool'), new Property('rowHeight', 'int', {set: null})])];
+    const scope = new Scope();
+    const reg = new Registry();
+    registerPlatformComponents(reg);
+    const df = frame();
+    const orders = Scope.runWith(scope, () => new TableSource(df, scope));
+    const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-div-v', name: 'box', children: [
+      {tag: 'u2-viewer-grid', name: 'grid', bind: {table: '$.orders'}}]}},
+    new SpecContext({data: {orders}}), reg);
+    try {
+      assert.equal(brokenCount(instance), 0);
+      const grid = at(bindTree(instance), 'grid');
+      assert.equal(grid.label, 'grid (u2-viewer-grid)');
+      assert.equal(grid.path, null, 'a viewer has no default step: a group to walk, not a pick');
+      const props = grid.children();
+      assert.deepEqual(props.map((n) => [n.label, n.path]), [
+        ['table : dataframe', null],
+        ['allowEdit : bool ⇄', '$.grid.allowEdit'],
+        ['rowHeight : int', '$.grid.rowHeight'],
+      ], 'the table step first, then every look property — ⇄ exactly where a setter exists');
+
+      const steps = at(props, 'table').children();
+      assert.deepEqual(steps.map((n) => n.label), ['df : dataframe', 'currentRowIdx : int ⇄',
+        'currentRow : object', 'selection : object', 'filter : object', 'rowCount : int',
+        'columns : string_list'], 'the same seven steps a table source answers');
+      assert.equal(at(steps, 'rowCount').path, '$.grid.table.rowCount');
+      assert.deepEqual(at(steps, 'currentRow').children().map((n) => n.path),
+        ['$.grid.table.currentRow.name', '$.grid.table.currentRow[\'Mol Weight\']']);
+      assert.equal(df.dart.reads, 0, 'enumeration through the viewer allocates nothing either');
+    } finally {
+      instance.dispose();
+      scope.dispose();
+      WidgetDescriptor.registry = [];
+      platform.reset();
+      console.warn = warn;
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+  });
+
+/* U1 of the viewers acceptance pass: the picker offered a function source as `orders › orders › df`,
+   and OK on the source's own row did nothing — the source IS its one table (func-source's
+   bindStep), so its row is the pick (`$.orders`, the sample's own path) and the frame's steps sit
+   right under it. A function with several outputs keeps their names; neither probes a source to
+   find out — `default` is metadata. */
+test('a single-table function source is pickable as itself and lists the frame\'s steps; several outputs keep their names',
+  async () => {
+    const live = Scope.liveCount;
+    const warn = console.warn;
+    console.warn = () => {};
+    const saved = {...backends};
+    const outputs = {
+      Frames: [new Property('orders', 'dataframe')],
+      Both: [new Property('orders', 'dataframe'), new Property('total', 'int')],
+    };
+    backends.funcRunner = {
+      find: (name) => name in outputs ? {name, kind: 'query', inputs: [], outputs: outputs[name]} : null,
+      run: () => Promise.resolve({}),
+    };
+    const reg = new Registry();
+    registerAll(reg);
+    const instance = renderSpec({$schema: 'dg-ui/1', components: [
+      {tag: 'u2-func-source', name: 'orders', props: {func: 'Frames', auto: false}},
+      {tag: 'u2-func-source', name: 'multi', props: {func: 'Both', auto: false}},
+    ], root: {tag: 'u2-form', name: 'form'}}, new SpecContext(), reg);
+    try {
+      const roots = bindTree(instance);
+      const orders = at(roots, 'orders');
+      assert.equal(orders.path, '$.orders', 'the source itself is the pick — its default step is the frame');
+      const steps = orders.children();
+      assert.deepEqual(steps.map((n) => n.label), ['state : string', 'error : string', 'df : dataframe',
+        'currentRowIdx : int ⇄', 'currentRow : object', 'selection : object', 'filter : object',
+        'rowCount : int', 'columns : string_list'], 'the frame\'s steps right under the source');
+      assert.equal(at(steps, 'df').path, '$.orders.df');
+      assert.equal(at(steps, 'currentRow').path, null);
+
+      const multi = at(roots, 'multi');
+      assert.equal(multi.path, null, 'no default output — a group that needs one more step');
+      const named = multi.children();
+      assert.deepEqual(named.map((n) => [n.label, n.path]), [['state : string', '$.multi.state'],
+        ['error : string', '$.multi.error'], ['orders : dataframe', null], ['total : int', '$.multi.total']]);
+      assert.deepEqual(at(named, 'orders').children().map((n) => n.path).slice(0, 2),
+        ['$.multi.orders.df', '$.multi.orders.currentRowIdx'], 'a named output walks as a frame');
+    } finally {
+      instance.dispose();
+      for (const key of Object.keys(backends))
+        delete backends[key];
+      Object.assign(backends, saved);
+      console.warn = warn;
       resetDom();
       await flush();
     }

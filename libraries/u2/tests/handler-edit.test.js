@@ -11,19 +11,22 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {Signal} from '../src/core/signals.js';
+import {Signal, signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {SpecEditor} from '../src/spec/editor.js';
 import {backends} from '../src/sources/backends.js';
-import {Property} from './platform-doubles.mjs';
+import {dfBindings} from '../src/sources/df-bindings.js';
+import {DataFrame, Property, WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {SpecNodeRef} = await import('../src/dg/designer/node-ref.js');
 const {SpecNodeHandler, propsFor, disposePanel} = await import('../src/dg/designer/handler.js');
+const {TABLE_HINT} = await import('../src/dg/designer/prop-model.js');
 const {shell} = await import('datagrok-api/grok');
+const {registerPlatformComponents} = await import('../src/dg/viewers/registrations.js');
 
 /** A prop whose value lives nowhere but the component — what the dump-noise guard is about. */
 class FakeInput extends TextInput {
@@ -541,12 +544,16 @@ edit('a param bind is a dotted set-bind, and the row it lands on becomes the bin
     assert.notEqual(dialog, null, 'every param row carries the picker');
 
     fire(pickerRow(dialog, 'reagent'), 'click');
+    const writes = shell.dart.writes.length;
     okButton(dialog).click();
     await flush();
     assert.deepEqual(patches.map((p) => [p.op, p.name, p.path]),
       [['set-bind', 'params.city', '$.reagent']]);
     assert.equal(node('orders').bind['params.city'], '$.reagent');
+    assert.equal(field(shown, 'Bindings', 'params.city').value, '$.reagent',
+      'the Bindings section shows the row at once, in place — the platform renders a shell.o write one gesture behind');
     assert.equal(shell.o?.node, node('orders'), 'the panel is asked for again: its shape changed');
+    assert.equal(shell.dart.writes.length - writes, 1, 'one shell.o write per pick');
 
     const after = panel('orders');
     const city = field(after, 'Parameters', 'city');
@@ -554,6 +561,28 @@ edit('a param bind is a dotted set-bind, and the row it lands on becomes the bin
     assert.equal(city.disabled, true, 'and the Bindings row below is where it is changed');
     assert.equal(field(after, 'Bindings', 'params.city').value, '$.reagent');
     assert.equal(instance.dump().components[0].bind['params.city'], '$.reagent');
+  });
+
+/* U1 of the viewers acceptance pass: OK on a group closed the picker and bound nothing — four
+   attempts read as a broken feature. A group warns and the dialog stays open. */
+edit('OK on a group warns and leaves the picker open; nothing reaches the document',
+  async ({panel, patches, warnings}) => {
+    const shown = panel('nameInput');
+    fire(shown.querySelector('[data-u2-bind-pick="value"]'), 'click');
+    const dialog = picker();
+    // the fake source has no default step: its row is a group, as every heading is
+    fire(pickerRow(dialog, 'orders'), 'click');
+    okButton(dialog).click();
+    await flush();
+    assert.deepEqual(warnings, ['Pick a value — a group has nothing to bind to on its own']);
+    assert.equal(patches.length, 0);
+    assert.notEqual(document.querySelector('.u2-bind-picker'), null, 'the dialog stays up for the real pick');
+
+    fire(pickerRow(dialog, 'reagent'), 'click');
+    okButton(dialog).click();
+    await flush();
+    assert.deepEqual(patches.map((p) => [p.op, p.name, p.path]), [['set-bind', 'value', '$.reagent']]);
+    assert.equal(document.querySelector('.u2-bind-picker'), null, 'and a leaf closes it');
   });
 
 edit('a cycle picked in the tree is refused: the loop is named and nothing reaches the document',
@@ -584,4 +613,216 @@ edit('Bindings folds until something is bound; Events, the section it was hiding
       'folded, never unbuilt — the fields refresh in place on every patch, opened or not');
     assert.deepEqual(panes(panel('boundInput')), [['Bindings', 'true'], ['Events', 'true']],
       'wiring that exists is shown');
+  });
+
+/* WO-V5 — a property-tier node in the panel (VP-13): a set-prop re-creates a platform viewer, so
+   its sections commit on blur/Enter, while a u2 input beside it keeps committing per keystroke.
+   The viewer is the WO-V3 double, registered as `u2-viewer-scatter-plot` on a private registry. */
+function tier(name, body) {
+  test(name, async () => {
+    const live = Scope.liveCount;
+    const warn = console.warn;
+    console.warn = () => {};
+    // a descriptor with no label of its own answers the name as friendlyName and caption alike
+    WidgetDescriptor.registry = [new WidgetDescriptor('Scatter plot', [
+      new Property('xColumnName', 'string', {category: 'Data', friendlyName: 'xColumnName', caption: 'xColumnName'}),
+      new Property('yColumnName', 'string', {category: 'Data', friendlyName: 'Y'}),
+      new Property('showColumnNames', 'bool', {category: 'Data', friendlyName: 'Show Column Names',
+        caption: 'Show Column Names'}),
+      new Property('markerMinSize', 'num', {category: 'Misc'}),
+      new Property('showRegressionLine', 'bool', {category: 'Regression'}),
+    ])];
+    const reg = new Registry();
+    registerPlatformComponents(reg);
+    const scope = new Scope();
+    const df = new DataFrame([{name: 'city', type: 'string'}, {name: 'total', type: 'double'}],
+      [{city: 'Kyiv', total: 1240}], 'orders');
+    const spec = {$schema: 'dg-ui/1', root: {tag: 'u2-div-v', name: 'box', children: [
+      {tag: 'u2-viewer-scatter-plot', name: 'plot', bind: {table: '$.orders'}, props: {xColumnName: 'total'}},
+      {tag: 'u2-text-input', name: 'nameInput', props: {label: 'Name'}},
+    ]}};
+    const instance = renderSpec(spec,
+      new SpecContext({data: {orders: dfBindings(signal(df), scope), reagent: 'total'}}), reg);
+    const editor = new SpecEditor(instance);
+    const patches = [];
+    const apply = editor.apply.bind(editor);
+    editor.apply = (patch) => {
+      patches.push(patch);
+      apply(patch);
+    };
+    const handler = new SpecNodeHandler();
+    try {
+      await body({
+        instance, patches, editor,
+        node: (n) => find(spec, n),
+        panel: (n) => handler.renderProperties(new SpecNodeRef(instance, find(spec, n), editor)),
+      });
+    } finally {
+      disposePanel();
+      instance.dispose();
+      scope.dispose();
+      WidgetDescriptor.registry = [];
+      platform.reset();
+      console.warn = warn;
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+  });
+}
+
+tier('a property-tier node commits on change, never per keystroke; a u2 input keeps per-keystroke commits',
+  ({instance, node, panel, patches}) => {
+    const plot = node('plot');
+    const shown = panel('plot');
+    const before = instance.nodes().get(plot);
+    assert.equal(before.propertyTier, true);
+    const x = shown.querySelector('[data-u2-prop="xColumnName"] input');
+    assert.equal(x.value, 'total', 'the live look value, read through the tier');
+    for (const text of ['c', 'ci', 'cit'])
+      fire(Object.assign(x, {value: text}), 'input');
+    assert.equal(patches.length, 0, 'a keystroke builds no scatter plot');
+    assert.equal(instance.nodes().get(plot), before);
+    assert.equal(plot.props.xColumnName, 'total');
+
+    fire(Object.assign(x, {value: 'city'}), 'change');
+    assert.deepEqual(patches.map((p) => [p.op, p.name, p.value]), [['set-prop', 'xColumnName', 'city']]);
+    assert.notEqual(instance.nodes().get(plot), before, 'one commit, one re-created viewer');
+    assert.equal(instance.nodes().get(plot).props.xColumnName, 'city');
+    assert.equal(x.value, 'city', 'the field refreshed in place from the new viewer');
+
+    const label = panel('nameInput').querySelector('[data-u2-prop="label"] input');
+    fire(Object.assign(label, {value: 'Reagent'}), 'input');
+    assert.equal(patches.length, 2, 'a u2 input commits as it is typed');
+    assert.equal(node('nameInput').props.label, 'Reagent');
+  });
+
+/* UX-B — the viewer's panel as the platform's own shows a viewer: the frame prop is a binding, not a
+   field; the categories fold past the first, Misc/Description/Events last; the labels read as words;
+   the Bindings section lists what is bound and one row to add the next. */
+
+const label = (panel, title, name) =>
+  section(panel, title).querySelector(`[data-u2-prop="${name}"] .u2-input-label`)?.textContent;
+
+tier('a property-tier node: categories fold past the first, Misc last, labels humanized, the frame kept out of the fields',
+  ({panel}) => {
+    const shown = panel('plot');
+    assert.deepEqual(panes(shown), [['Data', 'true'], ['Regression', 'false'], ['Misc', 'false'],
+      ['Bindings', 'true'], ['Events', 'true']],
+    'one pane per category, the first open, Misc behind the rest, the wiring sections after');
+    assert.deepEqual(sections(shown), ['Node'], 'no plain section: every category folds');
+    assert.equal(section(shown, 'Data').querySelector('[data-u2-prop="table"]'), null,
+      'a dataframe prop is bind-only');
+    assert.notEqual(section(shown, 'Misc').querySelector('[data-u2-prop="look"]'), null,
+      'the look escape hatch files under Misc, behind the descriptor\'s own categories');
+    assert.equal(label(shown, 'Data', 'xColumnName'), 'X Column Name',
+      'camelCase read as words — the name echoed back as friendlyName/caption is no label');
+    assert.equal(label(shown, 'Data', 'yColumnName'), 'Y', 'a friendlyName the descriptor gives wins');
+    assert.equal(label(shown, 'Data', 'showColumnNames'), 'Show Column Names', 'as does a platform-authored caption');
+    assert.equal(label(shown, 'Regression', 'showRegressionLine'), 'Show Regression Line');
+    assert.equal(label(panel('nameInput'), 'Properties', 'label'), 'label', 'a u2 control keeps its prop names');
+  });
+
+tier('a property-tier node binds through one "Add binding…" row: the bound props, then the next one picked',
+  async ({node, panel, patches}) => {
+    const plot = node('plot');
+    const shown = panel('plot');
+    const rows = (p) => [...section(p, 'Bindings').querySelectorAll('[data-u2-prop]')].map((el) => el.dataset.u2Prop);
+    assert.deepEqual(rows(shown), ['table', 'add-binding'], 'what is bound, and the row that adds');
+    assert.equal(field(shown, 'Bindings', 'table').value, '$.orders');
+    const select = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
+    const offered = select.querySelectorAll('option').map((o) => o.value).filter((v) => v !== '');
+    assert.ok(offered.includes('xColumnName') && !offered.includes('table'), `the unbound props: ${offered}`);
+
+    const said = [];
+    const warning = shell.warning;
+    shell.warning = (text) => said.push(text);
+    try {
+      fire(shown.querySelector('[data-u2-bind-pick="add-binding"]'), 'click');
+      assert.equal(picker(), null, 'no property picked, no picker');
+      assert.equal(said.length, 1);
+      assert.match(said[0], /pick the property first/);
+    } finally {
+      shell.warning = warning;
+    }
+
+    select.value = 'xColumnName';
+    fire(select, 'change');
+    fire(shown.querySelector('[data-u2-bind-pick="add-binding"]'), 'click');
+    const dialog = picker();
+    assert.notEqual(dialog, null, 'the picker opens for the property named');
+    fire(pickerRow(dialog, 'reagent'), 'click');
+    const writes = shell.dart.writes.length;
+    okButton(dialog).click();
+    await flush();
+    assert.deepEqual(patches.map((p) => [p.op, p.name, p.path]), [['set-bind', 'xColumnName', '$.reagent']]);
+    assert.equal(plot.bind.xColumnName, '$.reagent');
+    assert.deepEqual(rows(shown), ['table', 'xColumnName', 'add-binding'],
+      'the row is there at once, in place — the platform renders a shell.o write one gesture behind');
+    assert.equal(field(shown, 'Bindings', 'xColumnName').value, '$.reagent');
+    const next = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
+    assert.equal([...next.querySelectorAll('option')].some((o) => o.value === 'xColumnName'), false,
+      'and "Add binding…" no longer offers what is bound');
+    assert.equal(shell.o?.node, plot, 'the panel is asked for again: it has a row more');
+    assert.equal(shell.dart.writes.length - writes, 1, 'one shell.o write per pick');
+
+    const after = panel('plot');
+    assert.deepEqual(rows(after), ['table', 'xColumnName', 'add-binding']);
+    assert.equal(field(after, 'Bindings', 'xColumnName').value, '$.reagent');
+    assert.equal(field(after, 'Data', 'xColumnName').disabled, true, 'and the field is the binding\'s now');
+  });
+
+/** A viewer as the registry describes one, built by a create that wants its frame — the placeholder
+ * every dropped viewer is until `table` is bound. */
+const VIEWER = {
+  tag: 'u2-e-viewer',
+  category: 'Viewers',
+  create: (props) => {
+    if (props.table === undefined)
+      throw new Error('u2-e-viewer needs a table');
+    return new Control();
+  },
+  description: 'Fake viewer that builds only over a frame',
+  props: [
+    {name: 'table', type: 'dataframe', bindable: true},
+    {name: 'xColumnName', type: 'string', bindable: true, category: 'Misc'},
+    {name: 'yColumnName', type: 'string', bindable: true, category: 'Axes'},
+    {name: 'title', type: 'string', bindable: true, category: 'Description'},
+  ],
+  example: {tag: 'u2-e-viewer'},
+};
+
+test('a broken viewer without its frame: the Error row says what to bind, Bindings opens on it, the frame is no field',
+  async () => {
+    const live = Scope.liveCount;
+    const warn = console.warn;
+    console.warn = () => {};
+    const reg = new Registry();
+    for (const meta of [BOX, VIEWER])
+      reg.register(meta);
+    const spec = {$schema: 'dg-ui/1', root: {tag: 'u2-e-box', name: 'layout', children: [
+      {tag: 'u2-e-viewer', name: 'plot'}]}};
+    const instance = renderSpec(spec, new SpecContext({data: {reagent: 'Ethanol'}}), reg);
+    const editor = new SpecEditor(instance);
+    const handler = new SpecNodeHandler();
+    try {
+      const ref = new SpecNodeRef(instance, find(spec, 'plot'), editor);
+      assert.match(ref.error(), /needs a table/);
+      const shown = handler.renderProperties(ref);
+      const error = [...section(shown, 'Node').querySelectorAll('tr')]
+        .find((tr) => tr.children[0].textContent === 'Error');
+      assert.equal(error.querySelector('.u2-designer-hint')?.textContent, TABLE_HINT, 'the way out, under the error');
+      assert.deepEqual(sections(shown), ['Node', 'Axes', 'Misc', 'Description'],
+        'no frame field; Misc and Description last, the rest first-seen');
+      assert.deepEqual(panes(shown), [['Bindings', 'true']], 'open on the binding that is missing');
+      assert.deepEqual([...section(shown, 'Bindings').querySelectorAll('[data-u2-prop]')].map((el) => el.dataset.u2Prop),
+        ['table', 'xColumnName', 'yColumnName', 'title'], 'a node that did not build is no tier: every bindable row');
+    } finally {
+      disposePanel();
+      instance.dispose();
+      console.warn = warn;
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
   });

@@ -42,7 +42,7 @@ function setText<T extends HTMLElement>(el: T, text: Text): T {
 function node(child: Child): HTMLElement | string {
   if (isSignal(child))
     return setText(element('span'), child);
-  return child instanceof Control ? child.root : child;
+  return Control.is(child) ? child.root : child;
 }
 
 function fill<T extends HTMLElement>(el: T, children?: Child[]): T {

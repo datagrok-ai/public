@@ -46,10 +46,12 @@ import '@datagrok-libraries/u2/css/table.css';
 import '@datagrok-libraries/u2/css/adaptive.css';
 import '@datagrok-libraries/u2/css/buttons.css';
 import '@datagrok-libraries/u2/css/designer.css';
+import '@datagrok-libraries/u2/css/viewers.css';
 import '../css/u2demo.css';
 
-import {MenuBar, registerAll, signal} from '@datagrok-libraries/u2';
-import {appView, designerView, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {MenuBar, signal} from '@datagrok-libraries/u2';
+import {appView, designerView, registerPlatformComponents, registerSpecNodeHandler}
+  from '@datagrok-libraries/u2/src/dg/index.js';
 import {buildDemo} from './demo';
 import {buildReportsBrowser} from './reports-browser';
 import {registerEnabledEditors} from './editors';
@@ -57,6 +59,8 @@ import {registerPropRowHandler} from './convergence';
 import {DESIGNER_SPEC, appendRunLog, designerContext} from './designer';
 
 export * from './package.g';
+// not a package function: what the e2e leak check reads after closing every view
+export {leakReport} from '@datagrok-libraries/u2/src/dg/index.js';
 
 export const _package = new DG.Package();
 
@@ -101,7 +105,7 @@ export function reportsBrowserApp(): DG.ViewBase {
 //meta.browsePath: Dev
 //output: view result
 export function u2DesignerApp(): DG.ViewBase {
-  registerAll();
+  registerPlatformComponents();
   registerSpecNodeHandler();
   return designerView(DESIGNER_SPEC, {name: 'U2 Designer', ctx: designerContext()});
 }

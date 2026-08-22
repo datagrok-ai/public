@@ -670,7 +670,8 @@ spec('resolveBinding: a bind to a later sibling is contained with the document-o
   }, new SpecContext(), reg);
   const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
   assert.equal(errors.length, 2);
-  assert.match(errors[0], /"late" is not built yet — node-to-node binds resolve in document order/);
+  assert.match(errors[0], /"late" is declared after this node — move "late" before it in the structure tree, or bind through a state variable \(u2-state\)/,
+    'the placeholder names the move; the document-order clause is the console warning\'s');
   assert.match(errors[1], /"static" is not a bind source/, 'a plain HTML node has no signals');
   assert.equal(editors(instance).length, 1, 'the later sibling renders fine');
   instance.dispose();
@@ -833,4 +834,78 @@ spec('parseSpec: takes JSON or objects and rejects a wrong envelope', () => {
   assert.throws(() => parseSpec({$schema: 'dg-ui/1'}), /"root" must be a node/);
   assert.throws(() => parseSpec({$schema: 'dg-ui/1', root: {}}), /"root" must be a node/);
   assert.throws(() => parseSpec('not json'), SyntaxError);
+});
+
+/** A property-tier control (VP-1): `level` lives on a plain object, not on a signal member. */
+class TierGauge extends Control {
+  constructor(target) {
+    super();
+    this.target = target;
+  }
+
+  get propertyTier() {
+    return true;
+  }
+
+  getProperties() {
+    return [{name: 'level', type: 'int', get: () => this.target.level, set: (_t, v) => this.target.level = v}];
+  }
+
+  bump() {
+    this.fireEvent('bumped', {by: 1});
+  }
+}
+
+function registerGauge(reg, target) {
+  reg.register({
+    tag: 'u2-gauge',
+    description: 'Property-tier control',
+    props: [{name: 'level', type: 'int', bindable: true, twoWay: true}],
+    events: ['bumped'],
+    create: () => new TierGauge(target),
+    example: {tag: 'u2-gauge'},
+  });
+}
+
+spec('renderSpec: a property-tier prop binds two-way through link', () => {
+  const reg = new Registry();
+  const target = {level: 1};
+  registerGauge(reg, target);
+  const ctx = new SpecContext({data: {lvl: 3}});
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-gauge', name: 'gauge', bind: {level: '$.lvl'}},
+  }, ctx, reg);
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  assert.equal(target.level, 3, 'the context value reached the object');
+  ctx.data.lvl.value = 5;
+  assert.equal(target.level, 5);
+  instance.node('gauge').bindStep('level').value = 8;
+  assert.equal(ctx.data.lvl.value, 8, 'and the step writes back');
+  assert.equal(instance.resolveBinding('$.gauge.level').writable, true);
+  instance.dispose();
+});
+
+spec('on: a DOM event on a u2-button and a component event on a control both run their command', () => {
+  const reg = new Registry();
+  registerAll(reg);
+  registerGauge(reg, {level: 1});
+  const ran = [];
+  const ctx = new SpecContext({commands: {x: () => ran.push('x'), y: () => ran.push('y')}});
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-button', name: 'btn', props: {text: 'Go'}, on: {click: 'cmd:x'}},
+      {tag: 'u2-gauge', name: 'gauge', on: {bumped: 'cmd:y'}},
+    ]},
+  }, ctx, reg);
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  fire(instance.root.querySelector('[data-u2-name="btn"]'), 'click');
+  assert.deepEqual(ran, ['x']);
+  const gauge = instance.node('gauge');
+  gauge.bump();
+  assert.deepEqual(ran, ['x', 'y']);
+  instance.dispose();
+  gauge.bump();
+  assert.deepEqual(ran, ['x', 'y'], 'listeners die with the instance');
 });

@@ -331,13 +331,22 @@ generates it owns, so `form.dispose()` is the whole cleanup. A `bind` override w
 `objectForm(source)` is `propertyForm(source.getProperties(), source)` — for objects that both
 enumerate their properties and are the get/set target. That means **JS-implemented** `DG.Widget`
 subclasses (a `JsViewer`, a custom filter or widget): their `addProperty` getters close over the
-widget itself. A Dart-backed object — `DG.Viewer` and any other `DartWidget`, `DG.ViewBase` —
-enumerates fine but reads and writes through its dart handle, so give `propertyForm` that handle
-explicitly (it is what `ObjectPropertyBag` does internally):
+widget itself. A `DG.Viewer` enumerates fine but its properties are defined over its **look**
+(`grok_Viewer_Get_Look(viewer.dart)`) — neither the viewer nor its dart handle is the get/set
+target, and both throw — so use `viewerSettings(viewer)` (`dg/viewers/viewers.ts`), which hands
+`propertyForm` the look and its user-editable properties:
 
 ```ts
-const form = propertyForm(scatter.getProperties(), scatter.dart, {include: ['xColumnName', 'yColumnName']});
+const form = viewerSettings(scatter);   // propertyForm(userEditable props, grok_Viewer_Get_Look(scatter.dart))
 ```
+
+The designer panel shows an `object`-typed prop such as `filters` read-only; the write paths are
+*Add filter for column…* and a spec `set-prop`. Note that `FilterGroup.props.columnNames` reads
+`[]` once panes exist — the platform converts it into `filters`, so read
+`getOptions(true).look.filters`.
+
+Other Dart-backed widgets (`DartWidget`, `DG.ViewBase`) read and write through their dart handle:
+`propertyForm(widget.getProperties(), widget.dart)`.
 
 **`DG.Entity` is not one of them, and there is no generic way to enumerate an arbitrary entity's
 properties from JS.** Both entity "get properties" calls return *values*, not metadata:

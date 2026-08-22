@@ -29,7 +29,7 @@ export function appView(options: AppViewOptions): DG.ViewBase {
   view.name = options.name;
 
   const adopt = (item: ChromeItem): HTMLElement => {
-    if (!(item instanceof Control))
+    if (!Control.is(item))
       return item;
     w.subs.push(new Subscription(() => item.dispose()));
     return item.root;

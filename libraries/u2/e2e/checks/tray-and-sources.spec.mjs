@@ -295,7 +295,7 @@ async function checkSourceFeedback(page) {
   await selectRow(page, 'textInput1');
   await openSection(page, 'Bindings');
   await page.locator('.u2-designer-properties [data-u2-bind-pick="value"]').first().click();
-  const unrun = await pickerWalk(page, 'funcSource1', 'orders', 'currentRow :');
+  const unrun = await pickerWalk(page, 'funcSource1', 'currentRow :');
   await dialogCancel(page, '.u2-bind-picker');
   await page.waitForTimeout(300);
   await shot(page, 'tray-and-sources-5-unrun');
@@ -320,11 +320,11 @@ async function checkSourceFeedback(page) {
     `balloons=${JSON.stringify(said)} status=${JSON.stringify(ready.Status ?? null)}`);
 
   const walked = await bindThroughPicker(page, 'textInput1', 'customer',
-    'funcSource1', 'orders', 'currentRow :');
+    'funcSource1', 'currentRow :');
   ok('tray-and-sources/5d/a-source-that-has-run-lists-its-columns',
     walked.found !== undefined && !walked.labels.some((l) => l.startsWith('nothing here yet')),
     `found=${walked.found} labels=${JSON.stringify(walked.labels)}`);
-  await bindThroughPicker(page, 'numberInput1', 'currentRowIdx', 'funcSource1', 'orders');
+  await bindThroughPicker(page, 'numberInput1', 'currentRowIdx', 'funcSource1');
 
   await toMode(page, 'Run');
   await page.waitForTimeout(900);

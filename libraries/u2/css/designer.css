@@ -4,12 +4,30 @@
    Requires css/tokens.css, css/tree.css and css/spec.css. */
 .u2-designer {
   position: relative;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: auto;
 }
 
+/* the rendered root fills the surface in both modes, so a splitter (and the viewers in its
+   panels) gets a real height; a form only grows its outline — nothing inside it stretches */
 .u2-designer-surface {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  box-sizing: border-box;
   padding: var(--dg-space-m);
+}
+
+.u2-designer-surface > .u2-spec {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.u2-designer-surface > .u2-spec > .u2-designer-root {
+  flex: 1 0 auto;
 }
 
 .u2-designer-pane {
@@ -105,6 +123,7 @@
   bottom: 0;
   z-index: 6;
   display: flex;
+  flex: none;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--dg-space-xs);
@@ -217,10 +236,38 @@
 }
 
 .u2-palette-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
   padding: var(--dg-space-xs) var(--dg-space-s);
   border-radius: var(--dg-radius);
   cursor: grab;
   user-select: none;
+}
+
+/* the platform's own viewer glyph, boxed like the function picker's row icon */
+.u2-palette-item-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.u2-palette-item-icon img,
+.u2-palette-item-icon svg,
+.u2-palette-item-icon i {
+  max-width: 16px;
+  max-height: 16px;
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-palette-item-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .u2-palette-item:hover {
@@ -234,6 +281,12 @@
 
 .u2-designer-caption {
   font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+/* what to do about the error above it */
+.u2-designer-hint {
+  color: var(--dg-text-color-light);
   font-size: var(--dg-font-size-small);
 }
 

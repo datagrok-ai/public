@@ -7,8 +7,11 @@
    js-api's `const.ts`, the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
    fireInput/fireChanged, and `property`, which throws off a dart handle when nothing is bound),
    the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` calls the inputs make.
-   The entities and the shell are the getter-backed doubles of tests/platform-doubles.mjs, served
-   here so an `instanceof` in the module under test and a `new` in the test meet the same class.
+   The entities, the widgets, the viewers and the shell are the getter-backed doubles of
+   tests/platform-doubles.mjs, served here so an `instanceof` in the module under test and a `new`
+   in the test meet the same class; the kill-walk globals u2 feature-detects (`grok_Widget_Kill`,
+   `grok_Widget_RegisterCleanup`, `grok_Property_Get_PropertySubType`, `grok_Viewer_Get_Look`) are
+   installed when `datagrok-api/dg` loads, and what they did is on `DG.platform`.
    Everything on `dapi`, `shell` and `ui` is a field a test replaces with its own function.
 
    Register it with `register('./dg-stub.mjs', import.meta.url)` before importing the module under
@@ -17,58 +20,50 @@
 const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 
 const STUB = `
-export {BitSet, Column, DataFrame, DataQuery, Entity, FileInfo, Func, Package, Property, Script,
-  TableQuery, User} from '${DOUBLES}';
+import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
+export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
+  Grid, JsViewer, ObjectPropertyBag, Package, Property, Script, TableQuery, User, Viewer, ViewerMetaHelper,
+  Widget, WidgetDescriptor, platform} from '${DOUBLES}';
 
 export const TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
   BIG_INT: 'bigint', QNUM: 'qnum', OBJECT: 'object', FILE: 'file',
 };
 
-/** The base widget contract the host subclasses: a root, the kill channel, and the introspection
- * members it overrides (js-api widgets/base.ts). */
-export class Widget {
-  constructor(root) {
-    this._root = root;
-    this.subs = [];
-    this.temp = {};
-    this._properties = [];
-    this._functions = [];
-    this._aiDescription = null;
-    this.isDetached = false;
-  }
+/** What the column renderer the dg pickers share reads at import (column-renderer.ts:13). */
+export const COLUMN_TYPE = {
+  STRING: 'string', INT: 'int', FLOAT: 'double', BOOL: 'bool', BYTE_ARRAY: 'byte_array',
+  DATE_TIME: 'datetime', BIG_INT: 'bigint', QNUM: 'qnum', DATA_FRAME: 'dataframe',
+  OBJECT: 'object',
+};
 
-  static fromRoot(root) { return new Widget(root); }
-
-  get type() { return 'Unknown'; }
-
-  get root() { return this._root; }
-
-  getProperties() { return this._properties; }
-
-  getFunctions() { return this._functions; }
-
-  get aiDescription() { return this._aiDescription; }
-
-  set aiDescription(x) { this._aiDescription = x; }
-
-  onEvent(_eventId = null) { return {subscribe: () => ({unsubscribe() {}})}; }
-
-  getWidgetStatus() {
-    return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null};
-  }
-
-  toDart() {
-    this.dart ??= {widget: this};
-    return this.dart;
-  }
-
-  detach() {
-    for (const s of this.subs)
-      s.unsubscribe();
-    this.isDetached = true;
-  }
-}
+/** The interop u2 reaches through feature-detected globals (P9, P10). A kill records the element,
+ * runs the cleanups registered on it or under it (once — they are gone afterwards), then detaches
+ * every registered widget under it: a Dart-owned one is marked, a JS-owned one gets its \`detach()\`
+ * as the Dart proxy would call it, and a viewer's \`onDetached\` fires. */
+Object.assign(globalThis, {
+  grok_Widget_Kill(element) {
+    platform.kills.push(element);
+    const due = platform.cleanups.filter((c) => element === c.element || element.contains(c.element));
+    for (const c of due) {
+      platform.cleanups.splice(platform.cleanups.indexOf(c), 1);
+      c.cleanup();
+    }
+    for (const w of platform.widgets) {
+      if (w.isDetached || !(element === w.root || element.contains(w.root)))
+        continue;
+      if (w instanceof DartWidget || (w instanceof Viewer && !(w instanceof JsViewer)))
+        w.isDetached = true;
+      else
+        w.detach();
+      if (w instanceof Viewer)
+        w.onDetached.fire();
+    }
+  },
+  grok_Widget_RegisterCleanup(element, cleanup) { platform.cleanups.push({element, cleanup}); },
+  grok_Property_Get_PropertySubType: (dart) => dart.subType ?? null,
+  grok_Viewer_Get_Look: (dart) => dart.look,
+});
 
 /** The base a handler subclasses (js-api ui.ts:1687): what it must override throws, what it may
  * override has the platform's default, and the registry is the list \`register\` appends to. */

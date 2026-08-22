@@ -121,9 +121,12 @@ async function checkPaddingDropAndGuardedFields(page) {
     await confirmDiscard(page);
   await waitStatus(page, 'form1');
 
-  // the drop point is the surface padding well below the empty form — no rendered node there
+  // the drop point is the surface padding well below the empty form — no rendered node there;
+  // the palette is filtered first, as dropControl does — an unfiltered item sits below the fold
   const surface = await page.locator('.u2-designer-surface').boundingBox();
   const form = await page.locator('.u2-designer-surface [data-u2-name="form1"]').boundingBox();
+  await page.locator('.u2-palette input').first().fill('text');
+  await page.waitForTimeout(200);
   const item = page.locator('.u2-palette-item[data-u2-tag="u2-text-input"]').first();
   const a = await item.boundingBox();
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);

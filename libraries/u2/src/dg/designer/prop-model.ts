@@ -11,8 +11,15 @@ import type {SpecNodeRef} from './node-ref.js';
 
 /** Heading for the properties a component declares without a category of their own. */
 const UNGROUPED = 'Properties';
+/** The categories the platform's own panel keeps at the bottom, in this order; the rest first-seen. */
+const LAST = ['Misc', 'Description', 'Events'];
 /** The types with an editor of their own; anything else (`object`) renders as read-only JSON. */
 const EDITABLE = new Set(['string', 'int', 'double', 'bool', 'string_list']);
+/** A frame reaches a node through its Bindings row only — never through a field. */
+const BIND_ONLY = 'dataframe';
+const TABLE = 'table';
+
+export const TABLE_HINT = 'Bind `table` to a data source (Bindings › table)';
 
 /** One section of a node's panel property model: what a form renders, the mutable snapshot it
  * edits, and what the document says now — where a refused edit goes back to, and what an undo
@@ -34,8 +41,11 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
   const node = ref.node;
   const meta = ref.meta();
   const declared = meta ? meta.props : isHtmlTag(node.tag) ? htmlProps(node.tag) : [];
+  const tier = propertyTier(ref);
   const groups = new Map<string, PropertyLike[]>();
   for (const prop of declared) {
+    if (typeOf(prop) === BIND_ONLY)
+      continue;
     const title = prop.category ?? UNGROUPED;
     const group = groups.get(title);
     if (group)
@@ -49,7 +59,7 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
     groups.set(`Parent (${parent!.tag})`, childProps);
 
   const sections: PropSection[] = [];
-  for (const [title, props] of groups) {
+  for (const [title, props] of [...groups].sort((a, b) => rank(a[0]) - rank(b[0]))) {
     const read = (): Record<string, unknown> => {
       const live = liveValues(ref);
       const values: Record<string, unknown> = {};
@@ -59,29 +69,60 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
       }
       return values;
     };
-    sections.push({title, props: props.map((prop) => editable(prop, node)), values: read(), read});
+    sections.push({title, props: props.map((prop) => editable(prop, node, tier)), values: read(), read});
   }
   return sections;
+}
+
+const rank = (title: string): number => LAST.indexOf(title) + 1;
+
+/** A node whose props are the built object's own (a platform viewer's look): it reads its values
+ * through the tier, commits on change, and shows its forty props the way the platform panel does. */
+export function propertyTier(ref: SpecNodeRef): boolean {
+  const built = ref.built();
+  return Component.is(built) && built.propertyTier;
+}
+
+/** `xColumnName` → `X Column Name`: the label a platform prop gets where the descriptor names none. */
+export function humanize(name: string): string {
+  const words = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** A broken node that wants a frame — the renderer said so, or its bind-only `table` is unbound. */
+export function missingTable(x: SpecNodeRef): boolean {
+  const error = x.error();
+  if (error === null)
+    return false;
+  return error.includes('needs a table') || (x.node.bind?.[TABLE] === undefined &&
+    x.meta()?.props.some((prop) => prop.name === TABLE && typeOf(prop) === BIND_ONLY) === true);
 }
 
 /** The declared prop as the form edits it: get/set closures over the section snapshot. A prop the
  * node binds is the context's to change — the Bindings field is where it is edited — and a
  * structured value has no editor yet: neither gets a set, so the form renders them read-only.
  * `string_list` is spoken as the form's `list`, which routes it to the list editor. */
-function editable(prop: PropertyLike, node: SpecNode): PropertyLike {
+function editable(prop: PropertyLike, node: SpecNode, tier: boolean): PropertyLike {
   const name = prop.name;
   const type = typeOf(prop);
-  return {...prop, propertyType: null, type: type === 'string_list' ? 'list' : type,
+  const shown: PropertyLike = {...prop, propertyType: null, type: type === 'string_list' ? 'list' : type,
     get: (t) => t[name],
     set: node.bind?.[name] === undefined && EDITABLE.has(type) ? (t, v) => t[name] = v : undefined};
+  // a descriptor with no label of its own answers the name as friendlyName and caption alike
+  const labeled = (label: string | null | undefined): boolean => label != null && label !== name;
+  if (tier && !labeled(prop.caption) && !labeled(prop.friendlyName)) {
+    shown.caption = null;
+    shown.friendlyName = humanize(name);
+  }
+  return shown;
 }
 
 function liveValues(ref: SpecNodeRef): Record<string, unknown> {
   const built = ref.built();
   const live: Record<string, unknown> = {};
-  if (built instanceof Component) {
+  if (Component.is(built)) {
     for (const prop of built.getProperties())
-      live[prop.name] = prop.get?.(null);
+      live[prop.name] = built.readProperty(prop.name);
   }
   return live;
 }
@@ -99,7 +140,7 @@ export function stringProps(values: Record<string, string>, description: string)
     get: (t: any) => t[name], set: (t: any, v: any) => t[name] = v}));
 }
 
-export function commitOnChange(values: Record<string, string>): Record<string, FieldOverride> {
+export function commitOnChange(values: Record<string, unknown>): Record<string, FieldOverride> {
   const overrides: Record<string, FieldOverride> = {};
   for (const name of Object.keys(values))
     overrides[name] = {commitOn: 'change'};
@@ -144,6 +185,23 @@ export function bindsOf(x: SpecNodeRef): Record<string, string> {
   for (const name of Object.keys(bind))
     binds[name] = bind[name];
   return binds;
+}
+
+/** The Bindings rows a panel shows: every bindable prop on a u2 control; on a property-tier node —
+ * a viewer with forty look props — only what is bound, the rest one "Add binding…" row away. */
+export function bindRowsOf(x: SpecNodeRef): Record<string, string> {
+  const all = bindsOf(x);
+  if (!propertyTier(x))
+    return all;
+  const bound: Record<string, string> = {};
+  for (const name of Object.keys(x.node.bind ?? {}))
+    bound[name] = all[name];
+  return bound;
+}
+
+/** What "Add binding…" offers on a property-tier node: the bindable props not bound yet. */
+export function unboundOf(x: SpecNodeRef): string[] {
+  return Object.keys(bindsOf(x)).filter((name) => x.node.bind?.[name] === undefined);
 }
 
 /** Every event the component declares, wired or not, plus anything the node wires beyond them. */

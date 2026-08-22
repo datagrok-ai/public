@@ -32,6 +32,9 @@ export interface ActionsHost {
 }
 
 export class DesignerActions {
+  /** The verbs that may ask the user first: they refocus when they are done, not when they start. */
+  private readonly _deferred = new WeakSet<Action>();
+
   constructor(private readonly _host: ActionsHost) {}
 
   /** A multi-selection deletes as one compound patch; the reorder verbs wait for a single node (F5). */
@@ -69,8 +72,12 @@ export class DesignerActions {
         run: () => this._duplicate(node)},
       // after the fixed four: the ribbon reads only those by position, so these are menu-only
       ...this._refreshAction(node),
-      ...(instance.registry.get(node.tag)?.designerActions ?? []).map((action): Action =>
-        ({name: action.name, run: () => this._designerAction(node, action)})),
+      ...(instance.registry.get(node.tag)?.designerActions ?? []).map((action): Action => {
+        const verb: Action = {name: action.name, icon: action.icon,
+          run: () => void this._designerAction(node, action)};
+        this._deferred.add(verb);
+        return verb;
+      }),
     ];
   }
 
@@ -91,7 +98,7 @@ export class DesignerActions {
 
   private _source(node: SpecNode): Component | undefined {
     const built = this._host.instance()?.nodes().get(node);
-    return this._isComponent(node) && built instanceof Component &&
+    return this._isComponent(node) && Component.is(built) &&
       built.getFunctions().some((f) => f.name === 'refresh') ? built : undefined;
   }
 
@@ -105,41 +112,50 @@ export class DesignerActions {
 
   /** A meta action describes a change against the node's current state (registry.ts); the view
    * turns it into a patch — an added child is seeded and named exactly like a palette drop. */
-  private _designerAction(node: SpecNode, action: DesignerAction): void {
-    const editor = this._host.editor.peek();
+  private async _designerAction(node: SpecNode, action: DesignerAction): Promise<void> {
     const instance = this._host.instance();
-    if (!editor || !instance)
+    if (!instance)
       return;
-    const produced = action.produce(node);
-    if (produced.op === 'set-prop') {
-      this._host.apply({op: 'set-prop', node, name: produced.name, value: produced.value});
-      return;
+    try {
+      const produced = await action.produce(node, instance.nodes().get(node));
+      const editor = this._host.editor.peek();
+      if (produced === null || !editor)
+        return;
+      if (produced.op === 'set-prop') {
+        this._host.apply({op: 'set-prop', node, name: produced.name, value: produced.value});
+        return;
+      }
+      const unique = editor.uniqueNames();
+      const tag = produced.node.tag;
+      const seeded = seedNode(instance.registry.get(tag), tag, unique(nameForTag(tag)), unique);
+      // the action's own props win over the seeded ones — the pane title it counted out is the point
+      const child: SpecNode = {...seeded, ...produced.node, name: seeded.name};
+      const props = {...seeded.props, ...produced.node.props};
+      if (Object.keys(props).length > 0)
+        child.props = props;
+      this._host.pending(child);
+      this._host.apply({op: 'add', parent: node, index: (node.children ?? []).length, node: child});
+    } catch (e) {
+      grok.shell.warning(`${action.name}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      this._host.refocus();
     }
-    const unique = editor.uniqueNames();
-    const tag = produced.node.tag;
-    const seeded = seedNode(instance.registry.get(tag), tag, unique(nameForTag(tag)), unique);
-    // the action's own props win over the seeded ones — the pane title it counted out is the point
-    const child: SpecNode = {...seeded, ...produced.node, name: seeded.name};
-    const props = {...seeded.props, ...produced.node.props};
-    if (Object.keys(props).length > 0)
-      child.props = props;
-    this._host.pending(child);
-    this._host.apply({op: 'add', parent: node, index: (node.children ?? []).length, node: child});
   }
 
   run(name: string): void {
     const action = this.actions().find((a) => a.name === name);
     if (action && action.enabled !== false) {
       action.run();
-      this._host.refocus();
+      if (!this._deferred.has(action))
+        this._host.refocus();
     }
   }
 
   handBack(actions: Action[]): Action[] {
-    return actions.map((a) => ({...a, run: () => {
+    return actions.map((a) => this._deferred.has(a) ? a : {...a, run: () => {
       a.run();
       this._host.refocus();
-    }}));
+    }});
   }
 
   private _delete(node: SpecNode): void {

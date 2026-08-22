@@ -11,6 +11,9 @@ export interface BindProp extends PropertyLike {
   walkable?: boolean;
   /** The leaf is a writable signal — two-way capable. */
   writable?: boolean;
+  /** What `bindStep('')` answers: a path that stops at the source binds here, so the picker
+   * offers the source itself. */
+  default?: boolean;
 }
 
 export interface BindSource {

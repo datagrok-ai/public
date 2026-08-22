@@ -11,8 +11,10 @@ import type {SpecInstance, SpecNode} from '../../spec/spec.js';
 export interface BindTreeNode {
   label: string;
   /** What picking this node binds to; null for a group — a walkable step that is nothing on its
-   * own (`currentRow`). */
+   * own (`currentRow`), or a source with no default step (a viewer, a multi-output function). */
   path: string | null;
+  /** A root's first path segment, pickable or not — what the picker groups it by. */
+  name?: string;
   prop?: BindProp;
   children?: () => BindTreeNode[];
 }
@@ -42,18 +44,22 @@ export function bindTree(instance: SpecInstance): BindTreeNode[] {
  * tray's failures out of the picker instead of throwing at it. */
 function sourceOf(instance: SpecInstance, node: SpecNode): BindSource | undefined {
   const built = instance.nodes().get(node);
-  return node.name !== undefined && built instanceof Component && isBindSource(built) ? built : undefined;
+  return node.name !== undefined && Component.is(built) && isBindSource(built) ? built : undefined;
 }
 
 /** What an expander says when it has nothing to offer YET — a source that has not run knows no
  * columns, and an empty branch is indistinguishable from a broken one. Not pickable (no path). */
 export const NOTHING_YET = 'nothing here yet — Refresh the source, or set designData to sample';
 
+/** A source is pickable on its own exactly where a path stopping at it resolves — its default
+ * step, which its `bindProps()` flags (ARCHITECTURE §4); read from the metadata, never probed. */
 function root(label: string, name: string, source: BindSource | undefined,
   prop?: BindProp): BindTreeNode {
   const path = segmentsToPath([name]);
-  return source === undefined ? {label, path, prop} :
-    {label, path, prop, children: () => stepsOf(source, [name])};
+  if (source === undefined)
+    return {label, path, name, prop};
+  const stops = source.bindProps().some((p) => p.default === true);
+  return {label, path: stops ? path : null, name, prop, children: () => stepsOf(source, [name])};
 }
 
 function stepsOf(source: BindSource, segments: string[]): BindTreeNode[] {
@@ -70,7 +76,7 @@ function stepsOf(source: BindSource, segments: string[]): BindTreeNode[] {
 }
 
 /** Every named node of the form, in document order. */
-function named(node: SpecNode): SpecNode[] {
+export function named(node: SpecNode): SpecNode[] {
   const found = node.name === undefined ? [] : [node];
   for (const child of node.children ?? [])
     found.push(...named(child));

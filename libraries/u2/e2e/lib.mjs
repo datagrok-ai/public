@@ -458,3 +458,28 @@ export const dragChrome = (page) => page.evaluate(() => ({
 }));
 
 export const components = async (page) => JSON.parse(await dumpViaDialog(page)).components ?? [];
+
+/** The platform viewer behind a `data-u2-name` element (an adopted viewer IS the node's root, and
+ * `DG.Widget.find` answers the cached wrapper): what it shows, read off its frame; `prop` reads one
+ * look property through the viewer's own `props` bag. */
+export const viewerAt = (page, name, prop) => page.evaluate(({name, prop}) => {
+  const root = document.querySelector(`.u2-designer-surface [data-u2-name="${name}"]`);
+  const viewer = root ? DG.Widget.find(root) : null;
+  if (!viewer)
+    return null;
+  const df = viewer.dataFrame;
+  const out = {type: viewer.type, rows: df?.rowCount ?? -1, filtered: df?.filter.trueCount ?? -1,
+    current: df?.currentRowIdx ?? -2, canvases: root.querySelectorAll('canvas').length};
+  if (prop !== undefined)
+    out.props = {[prop]: viewer.props[prop]};
+  return out;
+}, {name, prop});
+
+/** Where to `page.mouse.click` to hit one cell of a `u2-viewer-grid` — the cell's bounds are
+ * relative to the grid's root. */
+export const gridCellCenter = (page, name, column, row) => page.evaluate(({name, column, row}) => {
+  const root = document.querySelector(`.u2-designer-surface [data-u2-name="${name}"]`);
+  const b = DG.Widget.find(root).cell(column, row).bounds;
+  const r = root.getBoundingClientRect();
+  return {x: r.left + b.x + b.width / 2, y: r.top + b.y + b.height / 2};
+}, {name, column, row});

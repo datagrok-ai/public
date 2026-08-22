@@ -81,6 +81,8 @@ export interface BindPropLike extends PropertyLike {
   walkable?: boolean;
   /** The leaf is a writable signal — two-way capable. */
   writable?: boolean;
+  /** What `bindStep('')` answers — a path that stops at the source binds here. */
+  default?: boolean;
 }
 
 /** Mirrors the spec layer's `BindSource` — the DD5 binding protocol — structurally, so the core

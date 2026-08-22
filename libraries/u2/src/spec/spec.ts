@@ -211,7 +211,7 @@ export class SpecInstance extends Control {
 
   /** The element a build occupies — none for a tray component, which never reaches the DOM. */
   static elementOf(built: Component | HTMLElement): HTMLElement | undefined {
-    return built instanceof Control ? built.root : built instanceof Component ? undefined : built;
+    return Control.is(built) ? built.root : Component.is(built) ? undefined : built;
   }
 
   /** The nearest spec node owning `el` — the designer's hit-test. */
@@ -282,8 +282,11 @@ export class SpecInstance extends Control {
     const data = this.ctx.data[first];
     if (data !== undefined)
       return data;
-    if (SpecInstance._declared(this._spec.root, first))
-      throw new Error(`"${first}" is not built yet — node-to-node binds resolve in document order`);
+    if (SpecInstance._declared(this._spec.root, first)) {
+      this._warn(`"${first}" is not built yet — node-to-node binds resolve in document order`);
+      throw new Error(`"${first}" is declared after this node — move "${first}" before it in the ` +
+        'structure tree, or bind through a state variable (u2-state)');
+    }
     throw new Error(`nothing bound at "${path}"`);
   }
 
@@ -510,7 +513,7 @@ export class SpecInstance extends Control {
       const meta = this._registry.get(node.tag);
       const built = meta ? this._component(node, meta, parent) : this._html(node, parent);
       for (const [event, command] of commands)
-        this._listen(node, SpecInstance._element(built), event, command);
+        this._listen(node, built, event, command);
       return built;
     } catch (e) {
       return SpecInstance._placeholder(`${node.tag}: ${e instanceof Error ? e.message : String(e)}`);
@@ -545,7 +548,7 @@ export class SpecInstance extends Control {
       meta.createWithChildren(props, this._children(node, meta, true), node.children ?? []) :
       this._adopt(node, meta, meta.create!(props));
     for (const [name, source, writable] of twoWay)
-      this._bridge(component, name, source, writable);
+      component.link(name, source, writable);
     return component;
   }
 
@@ -615,33 +618,18 @@ export class SpecInstance extends Control {
     return children.map((child) => this._render(child, meta));
   }
 
-  /** Both directions, echo-suppressed by comparison: a write made inside an effect is flushed
-   * after that effect returns, so a transient flag would already be down (property-grid's lesson).
-   * Components that took the source signal itself need no bridge at all; a read-only leaf gets
-   * the forward direction alone. */
-  private _bridge(component: Control, name: string, source: Signal<unknown>, writable: boolean): void {
-    const own = (component as unknown as Record<string, unknown>)[name];
-    if (!(own instanceof Signal) || own === source)
-      return;
-    const scope = Scope.ambient ?? this.scope;
-    scope.effect(() => {
-      const value = source.value;
-      if (own.peek() !== value)
-        own.value = value;
-    });
-    if (!writable)
-      return;
-    scope.effect(() => {
-      const value = own.value;
-      if (source.peek() !== value)
-        source.value = value;
-    });
-  }
-
-  private _listen(node: SpecNode, el: HTMLElement, event: string, entry: SpecEventEntry): void {
+  /** A component node listens through its own event surface — component events and, on a u2
+   * control, the DOM events of that name; a plain HTML node through the DOM alone. */
+  private _listen(node: SpecNode, built: Control | HTMLElement, event: string, entry: SpecEventEntry): void {
     const handler = () => this._fire(node, entry);
-    el.addEventListener(event, handler);
-    (Scope.ambient ?? this.scope).own(() => el.removeEventListener(event, handler));
+    const scope = Scope.ambient ?? this.scope;
+    if (Control.is(built)) {
+      const subscription = built.onEvent(event).subscribe(handler);
+      scope.own(() => subscription.unsubscribe());
+      return;
+    }
+    built.addEventListener(event, handler);
+    scope.own(() => built.removeEventListener(event, handler));
   }
 
   /** The `cmd:` tiers (Q6), classified by syntax at fire time — commands and functions may appear
@@ -672,7 +660,7 @@ export class SpecInstance extends Control {
       const owner = name.slice(0, dot);
       const fn = name.slice(dot + 1);
       const component = this._named.get(owner);
-      const found = component instanceof Component ?
+      const found = Component.is(component) ?
         component.getFunctions().find((f) => f.name === fn) : undefined;
       if (found)
         found.apply(args);
@@ -732,7 +720,7 @@ export class SpecInstance extends Control {
   private _liveValue(node: SpecNode): {current: unknown} | null {
     const meta = this._registry.get(node.tag);
     const component = this._nodes.get(node);
-    if (!meta || !(component instanceof Control) || (node.bind && 'value' in node.bind))
+    if (!meta || !Control.is(component) || (node.bind && 'value' in node.bind))
       return null;
     if (!meta.props.some((p) => p.name === 'value'))
       return null;
@@ -767,7 +755,7 @@ export class SpecInstance extends Control {
   }
 
   private static _element(built: Control | HTMLElement): HTMLElement {
-    return built instanceof Control ? built.root : built;
+    return Control.is(built) ? built.root : built;
   }
 
   private static _checked(prop: SpecPropMeta, value: unknown): unknown {

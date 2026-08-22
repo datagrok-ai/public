@@ -30,8 +30,12 @@ export type DesignerActionPatch =
 /** A per-component design-time verb ('Add tab'), shown on the designer's context menus. */
 export interface DesignerAction {
   name: string;
-  /** Reads the node's current children/props and answers what to do — pure, no editor. */
-  produce: (node: SpecNode) => DesignerActionPatch;
+  /** A platform icon name ('filter') for the menus that show it. */
+  icon?: string;
+  /** Reads the node's current children/props — and what it built, when rendered — and answers
+   * what to do; null is nothing to do (cancelled). May ask the user first, hence the promise. */
+  produce: (node: SpecNode, built?: Component | HTMLElement) =>
+    DesignerActionPatch | null | Promise<DesignerActionPatch | null>;
 }
 
 /** What a non-visual component is built with (Q9): the mode it builds for, and the binds it
@@ -54,6 +58,8 @@ export interface ComponentStart {
 export interface ComponentMeta {
   /** `u2-*`. */
   tag: string;
+  /** What the palette shows for the tag ('Scatter plot'); the tag's suffix where absent. */
+  label?: string;
   /** Palette and manifest grouping: 'Inputs' | 'Containers' | 'Actions' | 'Display' | 'Data'. */
   category?: string;
   /** False puts the tag on the non-visual tray: a data source, built through
@@ -95,6 +101,8 @@ export interface ComponentMeta {
   designPreview?: object;
   /** Carries closures, so {@link Registry.manifest} strips it. */
   designerActions?: DesignerAction[];
+  /** A palette glyph (the platform's own viewer icon); a closure, so {@link Registry.manifest} strips it. */
+  icon?: () => HTMLElement;
 }
 
 /** Tag → component metadata, and the source of the machine-readable manifest. */
@@ -141,10 +149,10 @@ export class Registry {
   /** Everything a spec author, an LLM or a generated wrapper needs — the metadata minus its hooks. */
   manifest(): object {
     const components: Omit<ComponentMeta,
-      'create' | 'createWithChildren' | 'createComponent' | 'adopt' | 'designerActions'>[] = [];
+      'create' | 'createWithChildren' | 'createComponent' | 'adopt' | 'designerActions' | 'icon'>[] = [];
     for (const meta of this._metas.values()) {
       const {create: _create, createWithChildren: _createWithChildren, createComponent: _createComponent,
-        adopt: _adopt, designerActions: _designerActions, ...rest} = meta;
+        adopt: _adopt, designerActions: _designerActions, icon: _icon, ...rest} = meta;
       components.push(rest);
     }
     return {schema: SPEC_SCHEMA, recipes: 'docs/recipes/', components};

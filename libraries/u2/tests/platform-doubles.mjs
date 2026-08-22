@@ -5,14 +5,22 @@
    defects survived 600 tests. Every double keeps its whole state on `dart` and answers it through
    getters; a test that needs to poke the state behind the handle goes through `dart` too. (The
    real `DG.DataFrame` also keeps `columns, rows, filter, temp, tags` as own fields, data-frame.ts:48-53;
-   the double is deliberately stricter, since no u2 path reads those.)
+   the double is deliberately stricter, since no u2 path reads those — and so do `DG.Widget` and
+   `DG.Viewer`, whose doubles below keep root, subs, look and events behind the handle.)
    tests/dg-stub.mjs and tests/platform-stub.mjs serve these same classes to the modules under test
-   as `datagrok-api/dg` and `datagrok-api/grok`. */
+   as `datagrok-api/dg` and `datagrok-api/grok`; dg-stub also installs the kill-walk globals over
+   {@link platform}. */
 
 /** Prototype getters over the handle — what every field of a real entity is. */
 function getters(cls, ...keys) {
   for (const key of keys)
     Object.defineProperty(cls.prototype, key, {get() { return this.dart[key]; }});
+}
+
+/** Prototype accessors over the handle, for the fields the platform lets a caller assign. */
+function fields(cls, ...keys) {
+  for (const key of keys)
+    Object.defineProperty(cls.prototype, key, {get() { return this.dart[key]; }, set(x) { this.dart[key] = x; }});
 }
 
 /** The rxjs shape u2 subscribes to, plus what a test needs to drive it: `fire` and `count`. */
@@ -95,9 +103,14 @@ export class Property {
 
   /** Unset answers null, as the Dart field does (prop_gen/lib/property.dart:63). */
   get choices() { return this.dart.choices ?? null; }
+
+  /** A `list` property's element type (`string`, `map`) — what `grok_Property_Get_PropertySubType` reads. */
+  get propertySubType() { return this.dart.subType ?? null; }
 }
 getters(Property, 'name', 'propertyType', 'semType', 'description', 'caption', 'friendlyName',
-  'nullable', 'defaultValue', 'category', 'get', 'set');
+  'nullable', 'defaultValue', 'category', 'userEditable', 'min', 'max', 'step', 'inputType', 'editor',
+  'format', 'units', 'showSlider', 'showPlusMinus');
+fields(Property, 'get', 'set');
 
 /** A file in a share carries the connection it lives on; one built out of local bytes does not. */
 export class FileInfo extends Entity {
@@ -212,6 +225,9 @@ export class DataFrame {
     return frame;
   }
 
+  /** An empty frame of `rows` rows — what an unbound viewer starts over (VP-8). */
+  static create(rows = 0) { return new DataFrame([], Array.from({length: rows}, () => ({}))); }
+
   get name() { return this.dart.name; }
   set name(x) { this.dart.name = x; }
   get rowCount() { return this.dart.rows.length; }
@@ -278,3 +294,297 @@ export class Shell {
   }
 }
 getters(Shell, 'windows', 'tableNames');
+
+/** What the kill-walk globals of tests/dg-stub.mjs work over: the elements killed, the cleanups
+ * registered and not yet run, and the widgets the platform knows of — every viewer built, every
+ * widget that went through `toDart()`. */
+export const platform = {
+  kills: [], cleanups: [], widgets: new Set(),
+  reset() {
+    this.kills.length = 0;
+    this.cleanups.length = 0;
+    this.widgets.clear();
+  },
+};
+
+/** An event a descriptor declares: `name` is the id `onEvent()` takes, `eventName` a label (P4). */
+export class EventType {
+  constructor(dart) { this.dart = dart; }
+}
+getters(EventType, 'name', 'eventName', 'description');
+
+/** The bag over a widget's declared properties (js-api widgets/base.ts:76): a key read or written
+ * goes through the property's `get`/`set` with `target` as the receiver — the widget itself, or a
+ * viewer's LOOK. A name nothing declares throws, as the platform's does. */
+export class ObjectPropertyBag {
+  constructor(source, target = source) {
+    this.source = source;
+    const own = ['source', 'getProperties', 'getProperty', 'hasProperty', 'get', 'set', 'setAll'];
+    return new Proxy(this, {
+      ownKeys: () => this.getProperties().map((p) => p.name),
+      has: (_, name) => this.hasProperty(name),
+      getOwnPropertyDescriptor: () => ({enumerable: true, configurable: true}),
+      get: (bag, name) => typeof name !== 'string' || own.includes(name) ? bag[name] : bag.getProperty(name).get(target),
+      set: (bag, name, value) => {
+        bag.getProperty(name).set(target, value);
+        return true;
+      },
+    });
+  }
+
+  getProperties() { return this.source.getProperties(); }
+
+  getProperty(name) {
+    const property = this.getProperties().find((p) => p.name === name);
+    if (property === undefined)
+      throw `Property not found: ${name}`;
+    return property;
+  }
+
+  hasProperty(name) { return this.getProperties().some((p) => p.name === name); }
+
+  /** Over `source`, never the look — so on a viewer these throw (P6), as the platform's do. */
+  get(name) { return this.getProperty(name).get(this.source); }
+  set(name, value) { this.getProperty(name).set(this.source, value); }
+
+  setAll(params) {
+    for (const [name, value] of Object.entries(params))
+      this.set(name, value);
+  }
+}
+
+/** The base widget contract (js-api widgets/base.ts:265), its state behind the handle: the root,
+ * the subscriptions `detach` cancels, the properties `addProperty` declares and the bag over them. */
+export class Widget {
+  constructor(root) {
+    this.dart = {root, subs: [], temp: {}, _properties: [], _functions: [], aiDescription: null, isDetached: false};
+  }
+
+  static fromRoot(root) { return new Widget(root); }
+
+  get type() { return 'Unknown'; }
+  get root() { return this.dart.root; }
+  set root(r) { this.dart.root = r; }
+  get props() { return this.dart.props ??= new ObjectPropertyBag(this); }
+
+  /** Registers the widget with the platform — what the kill-walk finds (`grok_Widget_Wrap`). */
+  toDart() {
+    platform.widgets.add(this);
+    return this.dart;
+  }
+
+  sub(subscription) { this.subs.push(subscription); }
+  getProperties() { return this._properties; }
+  getFunctions() { return this._functions; }
+  onPropertyChanged(_property) {}
+
+  /** Declares a property over the field of that name; its setter tells {@link onPropertyChanged}. */
+  addProperty(propertyName, propertyType, defaultValue = null, options = null) {
+    const fieldName = options?.fieldName ?? propertyName;
+    const p = Property.create(propertyName, propertyType, () => this[fieldName], null, defaultValue);
+    p.set = (_, x) => {
+      this[fieldName] = x;
+      this.onPropertyChanged(p);
+    };
+    for (const [key, value] of Object.entries(options ?? {}))
+      if (key !== 'fieldName')
+        p.dart[key] = value;
+    this._properties.push(p);
+    return p.defaultValue;
+  }
+
+  onEvent(_eventId = null) { return {subscribe: () => ({unsubscribe() {}})}; }
+
+  getWidgetStatus() {
+    return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null};
+  }
+
+  detach() {
+    for (const s of this.subs)
+      s.unsubscribe();
+    this.isDetached = true;
+  }
+}
+fields(Widget, 'subs', 'temp', '_properties', '_functions', 'aiDescription', 'isDetached');
+
+/** A widget implemented in Dart (widgets/base.ts:443): its properties' `get`/`set` take the handle. */
+export class DartWidget extends Widget {
+  constructor(dart) {
+    super(dart.root ?? document.createElement('div'));
+    this.dart = {type: 'DartWidget', properties: [], functions: [], ...this.dart, ...dart};
+  }
+
+  get type() { return this.dart.type; }
+  get props() { return this.dart.props ??= new ObjectPropertyBag(this, this.dart); }
+  getProperties() { return this.dart.properties; }
+  getFunctions() { return this.dart.functions; }
+}
+
+/** A look's owner — the viewer whose `onPropertyValueChanged` a property write fires — and the
+ * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError (P6). */
+const LOOKS = new WeakMap();
+
+/** What the platform knows about a viewer type without instantiating it (viewer.ts:32). The
+ * registry is the test's to fill, as `Func.registry` is. A descriptor property's `get`/`set`,
+ * unless given, are defined over the LOOK; a write fires the owning viewer's
+ * `onPropertyValueChanged` with the property — for a same value too (P7). */
+export class WidgetDescriptor {
+  static registry = [];
+
+  constructor(name, properties = [], data = {}) {
+    this.dart = {name, description: '', synonyms: [], events: [], ...data, properties};
+    for (const p of properties)
+      WidgetDescriptor._overLook(p);
+  }
+
+  static getDescriptors() { return WidgetDescriptor.registry.slice(); }
+  static getByName(name) { return WidgetDescriptor.registry.find((d) => d.name === name) ?? null; }
+
+  get events() { return this.dart.events.map((e) => new EventType(e)); }
+
+  static _overLook(p) {
+    const name = p.name;
+    const look = (target) => {
+      if (!LOOKS.has(target))
+        throw new Error(`NoSuchMethodError: method not found: '${name}' Receiver: Instance of '${target?.constructor?.name ?? target}'`);
+      return target;
+    };
+    if (!('get' in p.dart))
+      p.dart.get = (target) => look(target)[name];
+    if (!('set' in p.dart))
+      p.dart.set = (target, value) => {
+        look(target)[name] = value;
+        LOOKS.get(target).onPropertyValueChanged.fire({args: {property: p}});
+      };
+  }
+}
+getters(WidgetDescriptor, 'name', 'description', 'synonyms', 'properties');
+
+export class ViewerMetaHelper {
+  constructor(viewer) { this.dart = {viewer, formulaLines: {}, annotationRegions: {}}; }
+}
+getters(ViewerMetaHelper, 'formulaLines', 'annotationRegions');
+
+/** A platform viewer (viewer.ts:82): the handle carries the type, the LOOK its properties are
+ * defined over, the frame, one event stream per id and the descriptor it was built from. */
+export class Viewer extends Widget {
+  constructor(dart, root) {
+    super(root ?? dart.root ?? Viewer._root());
+    this.initDartObject(dart);
+  }
+
+  static _root() {
+    const root = document.createElement('div');
+    root.setAttribute('data-widget', 'true');
+    return root;
+  }
+
+  initDartObject(dart) {
+    this.dart = {look: {}, events: {}, detached: new Stream(), propertyReads: 0, ...this.dart, ...dart};
+    LOOKS.set(this.dart.look, this);
+    platform.widgets.add(this);
+  }
+
+  /** The viewer of `viewerType` from its registered descriptor: the look at the descriptor's
+   * defaults, `options` applied over it. */
+  static fromType(viewerType, table, options = null) {
+    const descriptor = WidgetDescriptor.getByName(viewerType);
+    if (descriptor === null)
+      throw new Error(`Unknown viewer type: ${viewerType}`);
+    const viewer = new (VIEWER_CLASSES[viewerType] ?? Viewer)({type: viewerType, descriptor, dataFrame: table});
+    for (const p of descriptor.properties)
+      viewer.dart.look[p.name] = p.defaultValue ?? null;
+    viewer.setOptions(options ?? {});
+    return viewer;
+  }
+
+  static grid(t, options) { return Viewer.fromType('Grid', t, options); }
+  static filters(t, options) { return Viewer.fromType('Filters', t, options); }
+  static form(t, options) { return Viewer.fromType('Form', t, options); }
+  static scatterPlot(t, options) { return Viewer.fromType('Scatter plot', t, options); }
+
+  get type() { return this.dart.type; }
+  get root() { return this.dart.root; }
+  get descriptor() { return this.dart.descriptor; }
+  get table() { return this.dart.dataFrame; }
+  get dataFrame() { return this.dart.dataFrame; }
+
+  set dataFrame(t) {
+    this.dart.dataFrame = t;
+    this.onDataFrameChanged.fire();
+  }
+
+  /** The bag over the LOOK (viewer.ts:154) — why `viewer.props.x` works where `prop.get(viewer.dart)` throws. */
+  get props() { return this.dart.props ??= new ObjectPropertyBag(this, this.dart.look); }
+
+  /** The descriptor's properties, a fresh list per call as the platform answers; counted on the handle. */
+  getProperties() {
+    this.dart.propertyReads++;
+    return this.dart.descriptor.properties.slice();
+  }
+
+  getFunctions() { return []; }
+
+  /** Declared keys go through their property, one event each (P7); `type` and unknown keys are ignored. */
+  setOptions(map) {
+    for (const [name, value] of Object.entries(map))
+      if (name !== 'type' && this.props.hasProperty(name))
+        this.props[name] = value;
+  }
+
+  getOptions(includeDefaults = false) {
+    const defaultOf = (name) => this.descriptor.properties.find((p) => p.name === name)?.defaultValue ?? null;
+    const look = Object.fromEntries(Object.entries(this.dart.look)
+      .filter(([name, value]) => includeDefaults || JSON.stringify(value) !== JSON.stringify(defaultOf(name))));
+    return {type: this.type, look};
+  }
+
+  onEvent(eventId) { return this.dart.events[eventId] ??= new Stream(); }
+  get onDataEvent() { return this.onEvent('d4-data-event'); }
+  get onPropertyValueChanged() { return this.onEvent('d4-property-value-changed'); }
+  get onDataFrameChanged() { return this.onEvent('d4-data-frame-changed'); }
+
+  /** The Dart detach — the kill-walk's; JS `detach()` never reaches it (P9). */
+  get onDetached() { return this.dart.detached; }
+
+  /** Getter-only, as the platform's (P8): `viewer.meta = x` throws. */
+  get meta() { return this.dart.meta ??= new ViewerMetaHelper(this); }
+
+  liveSubscriptions() {
+    return Object.values(this.dart.events).reduce((n, stream) => n + stream.count, this.dart.detached.count);
+  }
+}
+
+export class Grid extends Viewer {
+  static create(table) { return Viewer.fromType('Grid', table); }
+}
+
+export class FilterGroup extends Viewer {
+  /** The one write that rebuilds the panel (P14): the entry of the same column and type is
+   * replaced in place, a new one appended; the `filters` property fires. */
+  updateOrAdd(state, _requestFilter) {
+    const filters = [...(this.dart.look.filters ?? [])];
+    const at = filters.findIndex((f) => f.column === state.column && f.type === state.type);
+    if (at < 0)
+      filters.push(state);
+    else
+      filters[at] = state;
+    this.props.filters = filters;
+  }
+}
+
+/** A viewer implemented in JS (viewer.ts:423) — JS-owned: its properties are the ones
+ * `addProperty` declared, over the viewer itself, and `detach()` is the real thing. */
+export class JsViewer extends Viewer {
+  constructor() {
+    super({type: 'JsViewer', descriptor: null, dataFrame: null}, document.createElement('div'));
+  }
+
+  get root() { return this.dart.root; }
+  set root(r) { this.dart.root = r; }
+  get props() { return this.dart.props ??= new ObjectPropertyBag(this); }
+  getProperties() { return this._properties; }
+}
+
+/** The js-api class a type wraps into: `Viewer.grid` and `heatMap` answer a `Grid`, `filters` a `FilterGroup`. */
+const VIEWER_CLASSES = {'Grid': Grid, 'Heat map': Grid, 'Filters': FilterGroup};

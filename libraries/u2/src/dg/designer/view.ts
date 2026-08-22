@@ -125,6 +125,7 @@ export class SpecDesigner extends Control {
       open: (spec: string | object) => this.open(spec),
       dump: () => this.dump(),
       effect: (fn: () => void) => this.effect(fn),
+      own: (dispose: () => void) => this.own(dispose),
       report: () => this._report(),
       touch: () => this._touch(),
       refocus: () => this._refocus(),
@@ -298,6 +299,8 @@ export class SpecDesigner extends Control {
   private _afterPatch(applied: AppliedPatch): void {
     if (applied.structural)
       this._rebuildTree();
+    else
+      this._selection.followRerender();
     this._selection.reposition();
     this._tray.update(this._instance, this._selected);
     this._report();
@@ -395,10 +398,15 @@ export class SpecDesigner extends Control {
     this.root.classList.toggle('u2-designer-running', !design);
     // the sources build for the mode they are in (DD9) — and everything bound to one is rendered
     // again with it, so the toggle really does swap in the live context
+    const toggled = this._instance !== undefined && this._instance.designTime !== design;
     this._instance?.setDesignTime(design);
     this._stampDesign();
     this._tray.update(this._instance, this._selected);
     this._selection.reposition();
+    // the panel was rendered from what the old mode built — a source whose status it still reads,
+    // or whatever the platform's own gear put there in Run mode
+    if (toggled)
+      this._selection.reassert();
   }
 
   private _report(): void {

@@ -132,7 +132,7 @@ export class Tray extends Control {
    * of empty fields cannot tell apart on its own. */
   private static _pulseOf(scope: Scope, chip: HTMLElement, ref: SpecNodeRef): void {
     const built = ref.built();
-    if (!(built instanceof Component))
+    if (!Component.is(built))
       return;
     const label = ref.error() ?? ref.node.tag;
     scope.effect(() => {

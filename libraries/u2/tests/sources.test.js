@@ -115,7 +115,10 @@ source('func-source: a DataFrame output walks through dfBindings', async () => {
   assert.equal(name.value, 'ibuprofen', 'stepping the row index moves the bound field');
   name.value = 'naproxen';
   assert.equal(df.dart.rows[1].name, 'naproxen', 'and editing the field writes the frame');
-  assert.equal(src.bindProps().find((p) => p.name === 'orders').walkable, true);
+  assert.deepEqual(src.bindProps().map((p) => p.name), ['state', 'error', 'df', 'currentRowIdx', 'currentRow',
+    'selection', 'filter', 'rowCount', 'columns'],
+  'a single-table source enumerates the frame\'s own steps — no output name the author never chose');
+  assert.equal(src.bindProps().find((p) => p.name === 'df').default, true, 'and a path stopping at it binds the frame');
   assert.equal(src.bindStep('currentRow').bindStep('name'), name,
     'a single-table source answers the frame\'s own steps too');
   assert.equal(src.bindStep('rowCount').value, 2);

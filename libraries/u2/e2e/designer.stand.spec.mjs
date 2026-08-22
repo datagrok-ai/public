@@ -5,7 +5,7 @@
    (`npm run debug-u2demo-<host>` in packages/U2Demo). */
 import {ARTIFACTS, note, ok, report, results, shot} from './local.mjs';
 import {balloons, bindThroughPicker, clearBalloons, components, dropControl, fieldValue,
-  newForm, openSpec, panel, platformDrag, selectChip, specErrors, toMode, waitStatus}
+  newForm, openSpec, panel, platformDrag, selectChip, specErrors, toMode, viewerAt, waitStatus}
   from './lib.mjs';
 import {STAND_URL, openAppByRoute, openAppFromBrowse, openStand} from './stand.mjs';
 
@@ -91,22 +91,29 @@ async function checkEntitySource(page) {
     `state="${state}" shown=${JSON.stringify(shown)} of ${real.length} on the server`);
 }
 
+/** A visual query this stand can cap: a `TableQuery` over the Northwind `orders` table (830 rows),
+ * saved under `name` and run once for the truth about its row count. The caller removes it. */
+const makeProbeQuery = (page, name) => page.evaluate(async (name) => {
+  const conns = await grok.dapi.connections.list();
+  const connection = conns.find((c) => c.nqName === 'Admin:NW');
+  if (!connection)
+    return {error: 'no Admin:NW connection on this stand'};
+  const query = DG.TableQuery.create(connection);
+  query.table = 'orders';
+  query.name = name;
+  const saved = await grok.dapi.queries.save(query);
+  const found = DG.Func.find({name});
+  return {id: saved.id, name: saved.name, found: found.length,
+    rows: (await found[0].prepare({}).call()).outputs.result.rowCount};
+}, name);
+
+const dropProbeQuery = (page, id) =>
+  page.evaluate(async (id) => grok.dapi.queries.delete(await grok.dapi.queries.find(id)), id);
+
 /** The design-time 100-row cap (DD9/OR-1). It rides `TableQuery.limit`, and this stand carries no
  * visual query, so the check makes one over a table with 830 rows and removes it again. */
 async function checkDesignRowCap(page) {
-  const made = await page.evaluate(async () => {
-    const conns = await grok.dapi.connections.list();
-    const connection = conns.find((c) => c.nqName === 'Admin:NW');
-    if (!connection)
-      return {error: 'no Admin:NW connection on this stand'};
-    const query = DG.TableQuery.create(connection);
-    query.table = 'orders';
-    query.name = 'u2CapProbe';
-    const saved = await grok.dapi.queries.save(query);
-    const found = DG.Func.find({name: 'u2CapProbe'});
-    return {id: saved.id, name: saved.name, found: found.length,
-      rows: (await found[0].prepare({}).call()).outputs.result.rowCount};
-  });
+  const made = await makeProbeQuery(page, 'u2CapProbe');
   if (made.error !== undefined || made.found !== 1) {
     note('S6/row-cap', `not provable here: ${made.error ?? `find answered ${made.found} funcs`}`);
     return;
@@ -122,7 +129,43 @@ async function checkDesignRowCap(page) {
       made.rows > 100 && state === 'ready' && Number(rows) === 100 && await specErrors(page) === 0,
       `${made.name} holds ${made.rows} rows; the designer's live run shows ${rows} (state ${state})`);
   } finally {
-    await page.evaluate(async (id) => grok.dapi.queries.delete(await grok.dapi.queries.find(id)), made.id);
+    await dropProbeQuery(page, made.id);
+  }
+}
+
+const viewerCapSpec = (func) => JSON.stringify({
+  $schema: 'dg-ui/1',
+  components: [{tag: 'u2-func-source', name: 'capped', props: {func, designData: 'live', debounce: 50}}],
+  root: {tag: 'u2-panel', name: 'capPanel', children: [
+    {tag: 'u2-viewer-grid', name: 'grid', bind: {table: '$.capped'}},
+  ]},
+}, null, 2);
+
+/** The cap reaches a viewer (viewers/plan.md WO-V4): a `u2-viewer-grid` over a live query source
+ * shows the capped frame at design time and every row in Run mode. */
+async function checkViewerRowCap(page) {
+  const made = await makeProbeQuery(page, 'u2ViewerCapProbe');
+  if (made.error !== undefined || made.found !== 1) {
+    note('S6b/viewer-row-cap', `not provable here: ${made.error ?? `find answered ${made.found} funcs`}`);
+    return;
+  }
+  try {
+    await openSpec(page, viewerCapSpec(made.name));
+    await waitStatus(page, 'capPanel');
+    await page.waitForTimeout(6000);
+    const design = await viewerAt(page, 'grid');
+    await shot(page, 'stand-4b-viewer-cap-design');
+    await toMode(page, 'Run');
+    await page.waitForTimeout(6000);
+    const run = await viewerAt(page, 'grid');
+    await shot(page, 'stand-4b-viewer-cap-run');
+    await toMode(page, 'Design');
+    ok('S6b/the-design-time-cap-reaches-a-grid-viewer-and-run-mode-shows-every-row',
+      made.rows > 100 && design?.type === 'Grid' && design.rows > 0 && design.rows <= 100 &&
+      run?.rows === made.rows && await specErrors(page) === 0,
+      `${made.name} holds ${made.rows} rows; design grid=${JSON.stringify(design)} run grid=${JSON.stringify(run)}`);
+  } finally {
+    await dropProbeQuery(page, made.id);
   }
 }
 
@@ -176,9 +219,9 @@ async function checkDroppedFile(page) {
 
   await dropControl(page, 'u2-text-input', 'text-input', 'form1');
   await dropControl(page, 'u2-number-input', 'number-input', 'form1');
-  const walked = await bindThroughPicker(page, 'textInput1', `${file.col} :`, name, 'result',
+  const walked = await bindThroughPicker(page, 'textInput1', `${file.col} :`, name,
     'currentRow :');
-  await bindThroughPicker(page, 'numberInput1', 'currentRowIdx', name, 'result');
+  await bindThroughPicker(page, 'numberInput1', 'currentRowIdx', name);
   await toMode(page, 'Run');
   await page.waitForTimeout(1500);
   const row = page.locator('.u2-designer-surface [data-u2-name="numberInput1"] input').first();
@@ -198,19 +241,7 @@ async function checkDroppedFile(page) {
  * one over a table with more rows than the cap and removes it again; the qualified-name rule and the
  * DD9 silence are asserted against whatever ambiguous hand-written query this stand already has. */
 async function checkDroppedQuery(page) {
-  const made = await page.evaluate(async () => {
-    const conns = await grok.dapi.connections.list();
-    const connection = conns.find((c) => c.nqName === 'Admin:NW');
-    if (!connection)
-      return {error: 'no Admin:NW connection on this stand'};
-    const query = DG.TableQuery.create(connection);
-    query.table = 'orders';
-    query.name = 'u2DropProbe';
-    const saved = await grok.dapi.queries.save(query);
-    const found = DG.Func.find({name: 'u2DropProbe'});
-    return {id: saved.id, name: saved.name, found: found.length,
-      rows: (await found[0].prepare({}).call()).outputs.result.rowCount};
-  });
+  const made = await makeProbeQuery(page, 'u2DropProbe');
   if (made.error !== undefined || made.found !== 1) {
     note('S8/dropped-query', `not provable here: ${made.error ?? `find answered ${made.found} funcs`}`);
     return;
@@ -232,7 +263,7 @@ async function checkDroppedQuery(page) {
       `${made.name} holds ${made.rows} rows; ${JSON.stringify(dropped)} ` +
       `status=${JSON.stringify(status)} ran=${JSON.stringify(ran)}`);
   } finally {
-    await page.evaluate(async (id) => grok.dapi.queries.delete(await grok.dapi.queries.find(id)), made.id);
+    await dropProbeQuery(page, made.id);
   }
 
   // the WO-16 naming rule and the DD9 gate, on a query this stand already has: hand-written SQL
@@ -278,7 +309,7 @@ const started = Date.now();
 const {browser, page} = await openStand();
 try {
   for (const check of [checkRegistration, checkRoute, checkBrowse, checkEntitySource,
-    checkDesignRowCap, checkDroppedFile, checkDroppedQuery]) {
+    checkDesignRowCap, checkViewerRowCap, checkDroppedFile, checkDroppedQuery]) {
     try {
       await check(page);
     } catch (e) {

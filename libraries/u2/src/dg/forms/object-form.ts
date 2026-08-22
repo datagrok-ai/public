@@ -485,9 +485,10 @@ export function propertyForm(props: PropertyLike[], source: object, options?: Ob
 }
 
 /** {@link propertyForm} over an object that enumerates its own properties AND is itself the
- * get/set target — a JS-implemented `DG.Widget` subclass. A Dart-backed one (`DG.Viewer`,
- * `DG.ViewBase`) reads and writes through its dart handle:
- * `propertyForm(viewer.getProperties(), viewer.dart)`. `DG.Entity` cannot enumerate at all. */
+ * get/set target — a JS-implemented `DG.Widget` subclass. A `DG.Viewer` is not one: its properties
+ * are defined over its LOOK (`grok_Viewer_Get_Look(viewer.dart)`), so both the viewer and its dart
+ * handle throw as the target — use `viewerSettings(viewer)` (`dg/viewers/viewers.ts`), which
+ * hands `propertyForm` the look. `DG.Entity` cannot enumerate at all. */
 export function objectForm(source: PropertySource, options?: ObjectFormOptions): ObjectForm {
   return propertyForm(source.getProperties(), source, options);
 }

@@ -9,9 +9,11 @@ import {Scope} from '../../core/scope.js';
 import {divV, h3, span} from '../../core/elements.js';
 import {text} from '../../core/text.js';
 import {tableFromMap} from '../../components/collections/table.js';
+import type {SpecNode} from '../../spec/spec.js';
 import {SpecNodeRef, SpecNodesRef} from './node-ref.js';
 import {propEditors} from './prop-editors.js';
-import {eventsOf, propsFor} from './prop-model.js';
+import type {PanelEditors} from './prop-editors.js';
+import {TABLE_HINT, eventsOf, missingTable, propsFor} from './prop-model.js';
 import type {PropSection} from './prop-model.js';
 import {sourceStatus} from './source-status.js';
 
@@ -21,10 +23,22 @@ export type {PropSection} from './prop-model.js';
 /** The live panel's editors and their effects: one per session, replaced on every render. The
  * platform gives no teardown hook, so the designer view owns the last one's disposal. */
 let panel: Scope | undefined;
+/** The node the live panel shows, and the redraw of the parts that read its state. */
+let live: {node: SpecNode, refresh: (x: SpecNodeRef) => void} | undefined;
 
 export function disposePanel(): void {
   panel?.dispose();
   panel = undefined;
+  live = undefined;
+}
+
+/** The caption, the Node table, the Status block and the Bindings section drawn again in place for
+ * a panel already showing `x.node` — the platform renders the panel one `shell.o` write behind, so
+ * the re-issue after a mode toggle, a broken/built flip or a picked binding would leave the old
+ * state on screen until the next gesture. */
+export function refreshPanel(x: SpecNodeRef): void {
+  if (live?.node === x.node)
+    live.refresh(x);
 }
 
 export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
@@ -47,26 +61,54 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
 
   renderProperties(x: SpecNodeRef): HTMLElement {
     disposePanel();
+    const editor = x.editor;
+    const scope = editor === undefined ? undefined : new Scope();
+    panel = scope;
+    // the status block follows a source that a refresh replaces: its effect is scoped apart
+    let statusScope: Scope | undefined;
+    scope?.own(() => statusScope?.dispose());
+    const status = (at: SpecNodeRef): HTMLElement[] => {
+      statusScope?.dispose();
+      statusScope = scope === undefined ? undefined : new Scope();
+      return SpecNodeHandler._status(at, statusScope);
+    };
+
+    // the panel carries its own header: the platform shows one only for entities it knows
+    const caption = this.renderMarkup(x);
+    let identity = SpecNodeHandler._identity(x);
+    let shown = status(x);
+    const sections: HTMLElement[] = [caption, h3('Node'), identity, ...shown];
+    const model = propsFor(x);
+    const events = eventsOf(x);
+    let edited: PanelEditors | undefined;
+    if (editor === undefined)
+      sections.push(...SpecNodeHandler._tables(model, events, {...x.node.bind}));
+    else {
+      edited = Scope.runWith(scope!, () => propEditors(x, editor, model, events, scope!));
+      sections.push(...edited.sections);
+    }
+    live = {node: x.node, refresh: (at) => {
+      edited?.refresh();
+      caption.textContent = this.getCaption(at);
+      const table = SpecNodeHandler._identity(at);
+      identity.replaceWith(table);
+      identity = table;
+      for (const el of shown)
+        el.remove();
+      shown = status(at);
+      const next = identity.nextSibling;
+      for (const el of shown)
+        identity.parentElement!.insertBefore(el, next);
+    }};
+    return divV(sections, 'u2-designer-properties');
+  }
+
+  private static _identity(x: SpecNodeRef): HTMLElement {
     const identity: Record<string, unknown> = {Tag: x.node.tag, Name: x.node.name ?? '', Path: x.path()};
     const error = x.error();
     if (error !== null)
-      identity.Error = error;
-
-    // the panel carries its own header: the platform shows one only for entities it knows
-    const sections: HTMLElement[] = [this.renderMarkup(x), h3('Node'), tableFromMap(identity)];
-    const model = propsFor(x);
-    const events = eventsOf(x);
-    const editor = x.editor;
-    if (editor === undefined) {
-      sections.push(...SpecNodeHandler._status(x, undefined));
-      sections.push(...SpecNodeHandler._tables(model, events, {...x.node.bind}));
-    } else {
-      const scope = new Scope();
-      panel = scope;
-      sections.push(...SpecNodeHandler._status(x, scope));
-      sections.push(...Scope.runWith(scope, () => propEditors(x, editor, model, events, scope)));
-    }
-    return divV(sections, 'u2-designer-properties');
+      identity.Error = missingTable(x) ? divV([span(error), span(TABLE_HINT, 'u2-designer-hint')]) : error;
+    return tableFromMap(identity);
   }
 
   /** A data source's pulse: the one LIVE section of the panel, because a source runs on its own
@@ -75,7 +117,7 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
    * form fields rely on is untouched. */
   private static _status(x: SpecNodeRef, scope: Scope | undefined): HTMLElement[] {
     const built = x.built();
-    if (!(built instanceof Component) || sourceStatus(built) === null)
+    if (!Component.is(built) || sourceStatus(built) === null)
       return [];
     // a source with no `designData` prop never runs anything the user did not ask for: saying so
     // is what keeps its ABSENCE from reading as a missing feature

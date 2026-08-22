@@ -44,13 +44,13 @@ export class SpecNodeRef {
    * for a node that failed to build and has no component to ask. */
   meta(): ComponentMetaLike | undefined {
     const built = this.built();
-    return (built instanceof Component ? built.meta : undefined) ?? this.instance.registry.get(this.node.tag);
+    return (Component.is(built) ? built.meta : undefined) ?? this.instance.registry.get(this.node.tag);
   }
 
   /** Why the node renders as a placeholder, or null when it built. */
   error(): string | null {
     const built = this.built();
-    if (built === undefined || built instanceof Component || !built.classList.contains(ERROR_CLASS))
+    if (built === undefined || Component.is(built) || !built.classList.contains(ERROR_CLASS))
       return null;
     return built.textContent;
   }
@@ -98,7 +98,7 @@ export function idPath(id: string): string[] {
 export function brokenCount(instance: SpecInstance): number {
   let count = 0;
   for (const built of instance.nodes().values()) {
-    if (!(built instanceof Component) && built.classList.contains(ERROR_CLASS))
+    if (!Component.is(built) && built.classList.contains(ERROR_CLASS))
       count++;
   }
   return count;

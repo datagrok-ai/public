@@ -28,6 +28,18 @@ export interface DataFrameLike {
   onColumnsChanged: ObservableLike<unknown>;
 }
 
+/** The seven steps every DataFrame answers — static, so a source that IS a frame enumerates them
+ * without building the frame's bindings first. */
+export const DF_STEPS: BindProp[] = [
+  {name: 'df', type: 'dataframe', default: true},
+  {name: 'currentRowIdx', type: 'int', writable: true},
+  {name: 'currentRow', type: 'object', walkable: true},
+  {name: 'selection', type: 'object'},
+  {name: 'filter', type: 'object'},
+  {name: 'rowCount', type: 'int'},
+  {name: 'columns', type: 'string_list'},
+];
+
 const VALUE = Object.getOwnPropertyDescriptor(Signal.prototype, 'value')!;
 const LIVE_PROTO = Object.create(Signal.prototype, {value: {get: VALUE.get}});
 
@@ -179,14 +191,6 @@ export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope:
   };
   return {
     bindStep: (name) => steps[name === '' ? 'df' : name] ?? null,
-    bindProps: (): BindProp[] => [
-      {name: 'df', type: 'dataframe'},
-      {name: 'currentRowIdx', type: 'int', writable: true},
-      {name: 'currentRow', type: 'object', walkable: true},
-      {name: 'selection', type: 'object'},
-      {name: 'filter', type: 'object'},
-      {name: 'rowCount', type: 'int'},
-      {name: 'columns', type: 'string_list'},
-    ],
+    bindProps: () => DF_STEPS,
   };
 }

@@ -9,6 +9,8 @@ import {Dialog} from '../../components/containers/dialog.js';
 import type {Menu} from '../../components/navigation/menu.js';
 import {TextArea, TextInput} from '../../components/inputs/text-input.js';
 import type {SpecEditor} from '../../spec/editor.js';
+import type {SpecInstance} from '../../spec/spec.js';
+import {platformSamples} from '../viewers/samples.js';
 import {ACTIONS, ACTION_ICONS} from './actions.js';
 import {loadGallery, saveToGallery} from './gallery.js';
 import {SAMPLES} from './samples.js';
@@ -18,6 +20,7 @@ export interface RibbonHost {
   readonly outlines: Signal<boolean>;
   readonly editor: ReadonlySignal<SpecEditor | undefined>;
   effect(fn: () => void): void;
+  instance(): SpecInstance | undefined;
   revision(): number;
   actions(): Action[];
   run(name: string): void;
@@ -103,7 +106,7 @@ export class Ribbon {
   /** The Open arrow's menu, rebuilt per open so the gallery names never show stale state. */
   private _openMenu(menu: Menu): void {
     menu.group('Samples');
-    for (const sample of SAMPLES)
+    for (const sample of [...SAMPLES, ...platformSamples(this._host.instance()?.registry)])
       menu.item(sample.name, () => this._load(sample.spec));
     menu.endGroup();
     const saved = loadGallery();

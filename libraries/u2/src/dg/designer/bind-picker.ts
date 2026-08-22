@@ -1,6 +1,7 @@
 /* The binding picker (Q7): the bind tree in a dialog, grouped by where each root came from, with one
    search box over the labels. It answers the assembled path and nothing else — the commit stays with
    the panel, whose funnel (canApply → set-bind → warn) is the one authority on what may be written. */
+import * as grok from 'datagrok-api/grok';
 import {Dialog} from '../../components/containers/dialog.js';
 import {VirtualTree} from '../../components/collections/tree.js';
 import type {TreeNode} from '../../components/collections/tree.js';
@@ -8,9 +9,8 @@ import {TextInput} from '../../components/inputs/text-input.js';
 import {iconButton} from '../../components/actions/buttons.js';
 import {div, divV, span} from '../../core/elements.js';
 import type {Input} from '../../core/input-base.js';
-import {parsePath} from '../../spec/path.js';
 import type {SpecInstance} from '../../spec/spec.js';
-import {bindTree} from './bind-model.js';
+import {bindTree, named} from './bind-model.js';
 import type {BindTreeNode} from './bind-model.js';
 
 /** One heading of the picker: the roots under it, and where they came from — a form that offers
@@ -28,21 +28,31 @@ export interface BindRows {
 
 const APP_DATA = 'App data';
 const SOURCES = 'Data sources';
+const VIEWERS = 'Viewers';
 const CONTROLS = 'Form controls';
+/** The picker's one rule, as its hint and as the warning OK gives when a group is what is selected. */
+export const PICK_A_VALUE = 'Pick a value — a group has nothing to bind to on its own';
 
 /** The roots under the heading that says where they came from. A component wins a name collision
- * with a context key (OR-2): the spec's own declaration is the closer one. */
+ * with a context key (OR-2): the spec's own declaration is the closer one. A platform viewer
+ * (registry category `Viewers`) is a frame to walk, not a control to follow — its own heading. */
 export function bindGroups(instance: SpecInstance, roots: BindTreeNode[]): BindGroup[] {
   const sources = new Set<string>();
   for (const node of instance.spec.components ?? []) {
     if (node.name !== undefined)
       sources.add(node.name);
   }
+  const viewers = new Set<string>();
+  for (const node of named(instance.spec.root)) {
+    if (instance.registry.get(node.tag)?.category === VIEWERS)
+      viewers.add(node.name!);
+  }
   const data = new Set(Object.keys(instance.ctx.data));
-  const groups = new Map<string, BindTreeNode[]>([[APP_DATA, []], [SOURCES, []], [CONTROLS, []]]);
+  const groups = new Map<string, BindTreeNode[]>([[APP_DATA, []], [SOURCES, []], [VIEWERS, []], [CONTROLS, []]]);
   for (const root of roots) {
-    const name = root.path === null ? '' : parsePath(root.path)?.[0] ?? '';
-    groups.get(sources.has(name) ? SOURCES : data.has(name) ? APP_DATA : CONTROLS)!.push(root);
+    const name = root.name ?? '';
+    groups.get(sources.has(name) ? SOURCES : data.has(name) ? APP_DATA : viewers.has(name) ? VIEWERS : CONTROLS)!
+      .push(root);
   }
   return [...groups].filter(([, nodes]) => nodes.length > 0).map(([title, nodes]) => ({title, nodes}));
 }
@@ -75,7 +85,8 @@ export function bindRows(nodes: BindTreeNode[], query: string, prefix = '', dept
 }
 
 /** Opens the picker over everything `instance` can bind to. `onPick` gets the assembled path when
- * OK closes it on a leaf; a group — a step that is nothing on its own — commits nothing. The
+ * OK closes it on a leaf; on a group — a step that is nothing on its own — OK warns and the dialog
+ * stays open, because a close that committed nothing read as a pick that silently failed. The
  * dialog is adopted by the ambient scope, so the panel that opened it takes it down with it. */
 export function bindPicker(instance: SpecInstance, onPick: (path: string) => void): Dialog {
   const dialog = new Dialog('Bind to');
@@ -112,14 +123,16 @@ export function bindPicker(instance: SpecInstance, onPick: (path: string) => voi
   });
 
   dialog.add(divV([search.root, tree.root, empty,
-    span('Pick a value; a group has nothing to bind to on its own. App data comes from the app that ' +
-      'opened the designer.', 'u2-bind-picker-hint')],
+    span(`${PICK_A_VALUE}. App data comes from the app that opened the designer.`, 'u2-bind-picker-hint')],
   'u2-bind-picker-body'));
   dialog.onCancel(() => dialog.dispose());
   dialog.onOK(() => {
     const picked = tree.selectedNode.peek()?.data;
-    if (picked?.path != null)
-      onPick(picked.path);
+    if (picked?.path == null) {
+      grok.shell.warning(PICK_A_VALUE);
+      return false;
+    }
+    onPick(picked.path);
     dialog.dispose();
   });
   return dialog.show({modal: true, width: 460});

@@ -31,7 +31,7 @@ export class Dialog extends Control {
   private readonly _backdrop = document.createElement('div');
   private _ok: HTMLButtonElement | undefined;
   private _cancel: HTMLButtonElement | undefined;
-  private _onOK: (() => void) | undefined;
+  private _onOK: (() => unknown) | undefined;
   private _onCancel: (() => void) | undefined;
   private _scope: Scope | undefined;
   private _restore: HTMLElement | undefined;
@@ -78,7 +78,7 @@ export class Dialog extends Control {
   }
 
   add(el: HTMLElement | Control | string): Dialog {
-    this._content.append(el instanceof Control ? el.root : el);
+    this._content.append(Control.is(el) ? el.root : el);
     return this;
   }
 
@@ -87,13 +87,26 @@ export class Dialog extends Control {
     return this;
   }
 
-  onOK(fn: () => void): Dialog {
+  /** `fn` answering `false` keeps the dialog open — for a pick that is not one yet. */
+  onOK(fn: () => unknown): Dialog {
     this._onOK = fn;
+    this._okButton();
+    return this;
+  }
+
+  /** OK — the button and Enter alike — follows `on`: a pick the dialog cannot finish without. */
+  okEnabled(on: ReadonlySignal<boolean>): Dialog {
+    const ok = this._okButton();
+    this.effect(() => ok.disabled = !on.value);
+    return this;
+  }
+
+  private _okButton(): HTMLButtonElement {
     if (!this._ok) {
       this._ok = this._button('OK', () => this._finish(this._onOK), true);
       this._buttons.prepend(this._ok);
     }
-    return this;
+    return this._ok;
   }
 
   onCancel(fn: () => void): Dialog {
@@ -159,9 +172,9 @@ export class Dialog extends Control {
     return this.run(() => button(text, onClick, {primary}));
   }
 
-  private _finish(fn: (() => void) | undefined): void {
-    if (fn)
-      fn();
+  private _finish(fn: (() => unknown) | undefined): void {
+    if (fn?.() === false)
+      return;
     this.close();
   }
 
@@ -198,6 +211,8 @@ export class Dialog extends Control {
       this._finish(this._onCancel);
     } else if (e.key === 'Enter' && this._ok && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
       e.preventDefault();
+      if (this._ok.disabled)
+        return;
       this._finish(this._onOK);
     } else if (e.key === 'Tab')
       this._trapTab(e);

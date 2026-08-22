@@ -1,8 +1,33 @@
 import {Scope} from './scope.js';
-import {Signal, isWritableSignal} from './signals.js';
+import {Signal, computed, isWritableSignal, signal} from './signals.js';
+import {propertyFields} from './property-like.js';
 import type {PropertyLike} from './property-like.js';
 import type {BindPropLike, BindSourceLike, ComponentMetaLike, FuncLike, ObservableLike, WidgetLike,
   WidgetStatusLike} from './widget-like.js';
+
+/** What a widget announces when one of its properties changed: the property's name, or null when
+ * several changed at once (or the widget cannot say which). Structural — nothing platform-typed. */
+export type PropertyChange = string | null;
+
+/** The per-instance u2 state, kept under one own field so that {@link Component.init} can be
+ * applied to a foreign object (an adopted `DG.Widget`) without clobbering its own fields. */
+export interface ComponentState {
+  meta?: ComponentMetaLike;
+  aiDescription: string | null;
+  properties: PropertyLike[] | null;
+  propertiesMeta?: ComponentMetaLike;
+  functions: FuncLike[];
+  listeners: {id: string | null, next: (x: unknown) => void}[];
+  propertySignals: Map<string, {inner: Signal<unknown>, step: Signal<unknown>}>;
+  propertyIndex?: Map<string, PropertyLike>;
+  warned?: Set<string>;
+  changesWired: boolean;
+  writing: boolean;
+  converging: Set<string>;
+  table?: unknown;
+  detaching?: boolean;
+  platformKilled?: boolean;
+}
 
 /** Base of every u2 component, visual or not: a name, an effect/cleanup scope, and the widget
  * introspection surface (DD7) generated from {@link meta}. A component constructed inside
@@ -10,7 +35,7 @@ import type {BindPropLike, BindSourceLike, ComponentMetaLike, FuncLike, Observab
  * {@link dispose} into the existing `DG.Widget` kill channel and delegates the introspection to a
  * real `DG.Widget`. Standalone hosts (gallery, tests) call {@link dispose} directly. */
 export class Component implements WidgetLike, BindSourceLike {
-  readonly scope: Scope;
+  readonly scope!: Scope;
   /** Unique within a spec: the anchor for selection, patches and automation. */
   name?: string;
   /** The registry metadata of the tag that built this component, stamped by the spec renderer —
@@ -20,18 +45,49 @@ export class Component implements WidgetLike, BindSourceLike {
    * of the property read below, for a component that keeps a prop under another name or not at all
    * (a `create` wrapping a bare element). Construction-time values — a live one always wins. */
   specProps?: Record<string, unknown>;
-
-  private _aiDescription: string | null = null;
-  private _properties: PropertyLike[] | null = null;
-  private _propertiesMeta?: ComponentMetaLike;
-  private readonly _functions: FuncLike[] = [];
-  private readonly _listeners: {id: string | null, next: (x: unknown) => void}[] = [];
+  readonly _u2!: ComponentState;
 
   constructor(scope?: Scope) {
-    this.scope = scope ?? new Scope();
+    Component.init(this, scope);
+  }
+
+  /** Per-instance state, for a constructed component and for an adopted platform object alike. */
+  static init(self: Component, scope?: Scope): void {
+    const it = self as {scope: Scope, _u2: ComponentState};
+    it.scope = scope ?? new Scope();
+    it._u2 = {aiDescription: null, properties: null, functions: [], listeners: [],
+      propertySignals: new Map(), changesWired: false, writing: false, converging: new Set()};
     const owner = Scope.ambient;
-    if (owner && owner !== this.scope)
-      owner.own(() => this.dispose());
+    if (owner && owner !== it.scope)
+      owner.own(() => self.dispose());
+  }
+
+  static is(x: unknown): x is Component {
+    if (x instanceof Component)
+      return true;
+    const c = x as Partial<Component> | null | undefined;
+    return typeof c?.bindStep === 'function' && typeof c?.bindProps === 'function' && c?.scope instanceof Scope;
+  }
+
+  /** The equality the property tier and {@link link} suppress echoes by: `Object.is`, arrays
+   * element-wise, plain objects key-wise (recursive), everything else by identity. */
+  static sameValue(a: unknown, b: unknown): boolean {
+    if (Object.is(a, b))
+      return true;
+    if (Array.isArray(a) && Array.isArray(b))
+      return a.length === b.length && a.every((x, i) => Component.sameValue(x, b[i]));
+    if (!Component._isPlain(a) || !Component._isPlain(b))
+      return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length &&
+      keys.every((k) => k in b && Component.sameValue(a[k], b[k]));
+  }
+
+  private static _isPlain(x: unknown): x is Record<string, unknown> {
+    if (x === null || typeof x !== 'object')
+      return false;
+    const proto = Object.getPrototypeOf(x);
+    return proto === Object.prototype || proto === null;
   }
 
   run<T>(fn: () => T): T {
@@ -54,11 +110,11 @@ export class Component implements WidgetLike, BindSourceLike {
 
   /** A short AI-facing briefing, seeded from the registry's usage or description. */
   get aiDescription(): string | null {
-    return this._aiDescription ?? this.meta?.usage ?? this.meta?.description ?? null;
+    return this._u2.aiDescription ?? this.meta?.usage ?? this.meta?.description ?? null;
   }
 
   set aiDescription(x: string | null) {
-    this._aiDescription = x;
+    this._u2.aiDescription = x;
   }
 
   /** The props {@link meta} declares, each closed over the component's own state: a same-named
@@ -69,11 +125,13 @@ export class Component implements WidgetLike, BindSourceLike {
    * A component never hand-writes its property list. The list is generated once per {@link meta}:
    * the accessors read live state, so only a re-stamp invalidates it. */
   getProperties(): PropertyLike[] {
-    if (this._properties && this._propertiesMeta === this.meta)
-      return this._properties;
+    const u2 = this._u2;
+    if (u2.properties && u2.propertiesMeta === this.meta)
+      return u2.properties;
     const self = this as unknown as Record<string, unknown>;
-    this._propertiesMeta = this.meta;
-    this._properties = (this.meta?.props ?? []).map((p) => {
+    u2.propertiesMeta = this.meta;
+    u2.propertyIndex = undefined;
+    u2.properties = (this.meta?.props ?? []).map((p) => {
       const prop: PropertyLike = {...p, get: () => Component._read(self, p.name)};
       if (self[p.name] instanceof Signal) {
         prop.set = (_source: unknown, value: unknown) => {
@@ -82,11 +140,11 @@ export class Component implements WidgetLike, BindSourceLike {
       }
       return prop;
     });
-    return this._properties;
+    return u2.properties;
   }
 
   getFunctions(): FuncLike[] {
-    return this._functions;
+    return this._u2.functions;
   }
 
   /** Events fired by this component, and — on a {@link Control} — the DOM events of that name
@@ -95,12 +153,13 @@ export class Component implements WidgetLike, BindSourceLike {
   onEvent(eventId: string | null = null): ObservableLike<unknown> {
     return {
       subscribe: (next: (x: unknown) => void) => {
+        const listeners = this._u2.listeners;
         const listener = {id: eventId, next};
-        this._listeners.push(listener);
+        listeners.push(listener);
         const off = () => {
-          const i = this._listeners.indexOf(listener);
+          const i = listeners.indexOf(listener);
           if (i >= 0)
-            this._listeners.splice(i, 1);
+            listeners.splice(i, 1);
         };
         this.scope.own(off);
         return {unsubscribe: () => {
@@ -122,22 +181,177 @@ export class Component implements WidgetLike, BindSourceLike {
     };
   }
 
+  /** The second binding tier is on: every property {@link getProperties} declares is a bind step,
+   * read through {@link readProperty} and written through {@link writeProperty}. Off for a plain
+   * u2 component, whose signal-less meta props are construction-time options. */
+  get propertyTier(): boolean {
+    return false;
+  }
+
+  readProperty(name: string): unknown {
+    return this._property(name)?.get?.(this);
+  }
+
+  writeProperty(name: string, value: unknown): void {
+    this._property(name)?.set?.(this, value);
+  }
+
+  /** What refreshes the property tier's cached signals from outside: null where nothing announces
+   * a change (one-way). */
+  protected propertyChanges(): ObservableLike<PropertyChange> | null {
+    return null;
+  }
+
+  /** Keeps this component's `name` step and `source` equal, echo-suppressed by value; the reverse
+   * direction only where `twoWay`. A component that took `source` as its own signal needs no link
+   * and gets none; a read-only step cannot follow anything and gets none either. */
+  link(name: string, source: Signal<unknown>, twoWay: boolean): void {
+    const own = this.bindStep(name);
+    if (!(own instanceof Signal) || own === source)
+      return;
+    if (!isWritableSignal(own)) {
+      const owner = this.name ?? this.meta?.tag ?? 'component';
+      this._warnOnce(name, `${owner}.${name} is read-only — edits will not flow back`);
+      return;
+    }
+    const scope = Scope.ambient ?? this.scope;
+    scope.effect(() => {
+      const value = source.value;
+      if (!Component.sameValue(own.peek(), value))
+        own.value = value;
+    });
+    if (!twoWay)
+      return;
+    scope.effect(() => {
+      const value = own.value;
+      if (!Component.sameValue(source.peek(), value))
+        source.value = value;
+    });
+  }
+
   /** One binding step (DD5): a meta-declared prop's same-named Signal member — a named node is a
-   * bind source, generated off {@link meta} the way {@link getProperties} is. '' answers the
-   * default binding: the component's own `value` signal, where one exists. */
+   * bind source, generated off {@link meta} the way {@link getProperties} is — then, under
+   * {@link propertyTier}, a cached signal over the declared property. '' answers the default
+   * binding: the component's own `value` signal, where one exists. */
   bindStep(name: string): Signal<unknown> | BindSourceLike | null {
     const self = this as unknown as Record<string, unknown>;
     const member = name === '' ? self.value :
-      this.meta?.props.some((p) => p.name === name) ? self[name] : undefined;
-    return member instanceof Signal ? member as Signal<unknown> : null;
+      this.meta?.props?.some((p) => p.name === name) ? self[name] : undefined;
+    if (member instanceof Signal)
+      return member as Signal<unknown>;
+    return this.propertyTier && name !== '' ? this._propertySignal(name) : null;
   }
 
-  /** The signal-backed subset of the meta props — what a binding picker offers on a named node. */
+  /** The signal-backed subset of the meta props — what a binding picker offers on a named node —
+   * plus, under {@link propertyTier}, every declared property. Allocates no signal. */
   bindProps(): BindPropLike[] {
     const self = this as unknown as Record<string, unknown>;
-    return (this.meta?.props ?? [])
+    const props: BindPropLike[] = (this.meta?.props ?? [])
       .filter((p) => self[p.name] instanceof Signal)
-      .map((p) => ({...p, writable: isWritableSignal(self[p.name])}));
+      .map((p) => ({...p, writable: isWritableSignal(self[p.name]),
+        ...(p.name === 'value' ? {default: true} : {})}));
+    if (!this.propertyTier)
+      return props;
+    const own = new Set(props.map((p) => p.name));
+    for (const p of this._propertyIndex().values()) {
+      if (!own.has(p.name))
+        props.push({...propertyFields(p), writable: p.set != null});
+    }
+    return props;
+  }
+
+  private _property(name: string): PropertyLike | undefined {
+    return this.propertyTier ? this._propertyIndex().get(name) :
+      this.getProperties().find((p) => p.name === name);
+  }
+
+  private _propertyIndex(): Map<string, PropertyLike> {
+    const u2 = this._u2;
+    if (u2.propertyIndex === undefined)
+      u2.propertyIndex = new Map(this.getProperties().map((p) => [p.name, p]));
+    return u2.propertyIndex;
+  }
+
+  private _propertySignal(name: string): Signal<unknown> | null {
+    const u2 = this._u2;
+    const cached = u2.propertySignals.get(name);
+    if (cached)
+      return cached.step;
+    const prop = this._property(name);
+    if (prop === undefined)
+      return null;
+    const inner = signal(this.readProperty(name));
+    let step: Signal<unknown> = inner;
+    if (prop.set == null)
+      step = computed(() => inner.value) as unknown as Signal<unknown>;
+    else {
+      this.scope.effect(() => {
+        const value = inner.value;
+        if (Component.sameValue(this.readProperty(name), value))
+          return;
+        const was = u2.writing;
+        u2.writing = true;
+        try {
+          this.writeProperty(name, value);
+        } finally {
+          u2.writing = was;
+        }
+        // the platform may normalize what it was given ('nope' → ''): converge without a cycle, and
+        // one round at most — a read answering a fresh wrapper per call would otherwise spin forever
+        if (!Component.sameValue(this.readProperty(name), value) && !u2.converging.has(name)) {
+          u2.converging.add(name);
+          queueMicrotask(() => this._refreshProperty(name));
+        }
+      });
+    }
+    u2.propertySignals.set(name, {inner, step});
+    this._wireChanges();
+    return step;
+  }
+
+  private _wireChanges(): void {
+    const u2 = this._u2;
+    if (u2.changesWired)
+      return;
+    u2.changesWired = true;
+    const changes = this.propertyChanges();
+    if (changes === null)
+      return;
+    const subscription = changes.subscribe((name) => {
+      const refresh = () => name === null ? this._refreshAll() : this._refreshProperty(name);
+      if (u2.writing)
+        queueMicrotask(refresh);
+      else
+        refresh();
+    });
+    this.scope.own(() => subscription.unsubscribe());
+  }
+
+  private _refreshProperty(name: string): void {
+    const u2 = this._u2;
+    const entry = u2.propertySignals.get(name);
+    if (entry === undefined || this.scope.isDisposed)
+      return;
+    try {
+      const value = this.readProperty(name);
+      if (!Component.sameValue(entry.inner.peek(), value))
+        entry.inner.value = value;
+    } finally {
+      u2.converging.delete(name);
+    }
+  }
+
+  private _refreshAll(): void {
+    for (const name of this._u2.propertySignals.keys())
+      this._refreshProperty(name);
+  }
+
+  private _warnOnce(key: string, message: string): void {
+    const warned = this._u2.warned ??= new Set();
+    if (warned.has(key))
+      return;
+    warned.add(key);
+    console.warn(`u2: ${message}`);
   }
 
   private static _read(self: Record<string, unknown>, name: string): unknown {
@@ -154,11 +368,11 @@ export class Component implements WidgetLike, BindSourceLike {
   }
 
   protected registerFunction(f: FuncLike): void {
-    this._functions.push(f);
+    this._u2.functions.push(f);
   }
 
   protected fireEvent(eventId: string, args?: unknown): void {
-    for (const listener of this._listeners.slice()) {
+    for (const listener of this._u2.listeners.slice()) {
       if (listener.id === null || listener.id === eventId)
         listener.next(args);
     }
@@ -173,6 +387,10 @@ export class Control extends Component {
     super(scope);
     this.root = root ?? document.createElement('div');
     this.root.classList.add('u2-component');
+  }
+
+  static is(x: unknown): x is Control {
+    return (x as Partial<Control> | null | undefined)?.root instanceof HTMLElement && Component.is(x);
   }
 
   /** Component events plus the DOM events of that name raised on {@link root} — the listener is
@@ -209,7 +427,7 @@ export class Control extends Component {
       return new Control(built, scope);
     const root = document.createElement('div');
     for (const child of built)
-      root.append(child instanceof Control ? child.root : child);
+      root.append(Control.is(child) ? child.root : child);
     return new Control(root, scope);
   }
 }

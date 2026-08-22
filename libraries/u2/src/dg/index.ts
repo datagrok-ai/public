@@ -96,3 +96,10 @@ export function toObservable<T>(source: ReadonlySignal<T>): Observable<T> {
 export function leakReport(): {liveScopes: number, liveWidgets: number} {
   return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length};
 }
+export {adopt, dartOwned, TABLE_STEP} from './viewers/adopt.js';
+export {viewerOf, viewerControl} from './viewers/viewer-control.js';
+export type {Bindable, TableRef} from './viewers/viewer-control.js';
+export {viewers, viewerSettings} from './viewers/viewers.js';
+export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, VIEWER_USAGE}
+  from './viewers/registrations.js';
+export {VIEWER_SAMPLES, platformSamples} from './viewers/samples.js';

@@ -31,3 +31,18 @@ export interface PropertyLike {
   get?: (source: any) => any;
   set?: (source: any, value: any) => void;
 }
+
+const PROPERTY_FIELDS: (keyof PropertyLike)[] = ['name', 'caption', 'friendlyName', 'propertyType', 'type',
+  'semType', 'description', 'category', 'choices', 'inputType', 'editor', 'nullable', 'min', 'max', 'step',
+  'format', 'units', 'showSlider', 'showPlusMinus', 'get', 'set'];
+
+/** A plain copy of the named fields — a spread of a `DG.Property` copies nothing but its `dart`
+ * handle, since every field is a prototype getter. */
+export function propertyFields(p: PropertyLike): PropertyLike {
+  const out: Record<string, unknown> = {};
+  for (const key of PROPERTY_FIELDS) {
+    if (p[key] !== undefined)
+      out[key] = p[key];
+  }
+  return out as unknown as PropertyLike;
+}

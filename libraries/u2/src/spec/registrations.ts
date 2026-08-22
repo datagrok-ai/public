@@ -75,7 +75,7 @@ function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
 }
 
 function element(child: Child): HTMLElement {
-  return child instanceof Control ? child.root : child;
+  return Control.is(child) ? child.root : child;
 }
 
 /** The title a container reads off its child's spec node — the one prop a parent owns. */

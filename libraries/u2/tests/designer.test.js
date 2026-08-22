@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
+import {signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {TabStrip} from '../src/components/containers/tabs.js';
@@ -16,13 +17,15 @@ import {Registry, registry as globalRegistry} from '../src/spec/registry.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {registerAll} from '../src/spec/registrations.js';
 import {SAMPLES} from '../src/dg/designer/samples.js';
-import {Property} from './platform-doubles.mjs';
+import {dfBindings} from '../src/sources/df-bindings.js';
+import {DataFrame, Property, WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {SpecNodeRef, SpecNodesRef, specTree, idPath, brokenCount, nodeLabel} =
   await import('../src/dg/designer/node-ref.js');
 const {SpecNodeHandler, SpecNodesHandler} = await import('../src/dg/designer/handler.js');
 const {SpecDesigner} = await import('../src/dg/designer/view.js');
+const {registerPlatformComponents} = await import('../src/dg/viewers/registrations.js');
 const {shell} = await import('datagrok-api/grok');
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
@@ -340,20 +343,56 @@ designer('the palette groups the registry into accordion panes, filters across t
     .filter((el) => !el.hidden && !el.closest('.u2-accordion-pane').hidden)
     .map((el) => el.dataset.u2Tag);
 
-  assert.deepEqual(headers(), ['Inputs', 'Containers'], 'one pane per category, first-appearance order');
-  assert.deepEqual(items(), ['u2-p-text', 'u2-p-number', 'u2-p-box'], 'registration order within a pane');
+  assert.deepEqual(headers(), ['Containers', 'Inputs'], 'one pane per category, in the fixed pane order');
+  assert.deepEqual(items(), ['u2-p-box', 'u2-p-text', 'u2-p-number'], 'registration order within a pane');
   assert.ok(panes().every((p) =>
     p.querySelector('.u2-accordion-header').getAttribute('aria-expanded') === 'true'),
   'every pane starts expanded');
-  assert.equal(palette.root.querySelector('.u2-palette-item').textContent, 'p-text',
-    'the row is labelled by the tag suffix');
-  assert.equal(palette.root.querySelector('.u2-palette-item').title, 'Single-line text editor');
+  const text = palette.root.querySelector('[data-u2-tag="u2-p-text"]');
+  assert.equal(text.textContent, 'p-text', 'the row is labelled by the tag suffix');
+  assert.equal(text.title, 'Single-line text editor');
 
   palette.filter.value.value = 'numeric';
   assert.deepEqual(items(), ['u2-p-number'], 'the filter reads the description too');
   assert.deepEqual(headers(), ['Inputs'], 'a pane with nothing left in it hides whole');
   palette.filter.value.value = '';
   assert.equal(items().length, 3);
+  palette.dispose();
+});
+
+designer('a viewer row: its platform label and icon, the Viewers pane sorted and filed after Containers, usage searchable', () => {
+  const reg = new Registry();
+  const plain = (tag, category, description, extra = {}) => reg.register({tag, category, description,
+    create: () => new Control(), props: [], example: {tag}, ...extra});
+  plain('u2-p-text', 'Inputs', 'Single-line text editor');
+  plain('u2-viewer-scatter-plot', 'Viewers', 'Dots', {label: 'Scatter plot', usage: 'Two numeric columns',
+    icon: () => Object.assign(document.createElement('i'), {className: 'fake-glyph'})});
+  plain('u2-viewer-bar-chart', 'Viewers', 'Bars', {label: 'Bar chart'});
+  plain('u2-p-odd', 'Oddities', 'Unlisted category');
+  plain('u2-p-box', 'Containers', 'Vertical stack', {acceptsChildren: true});
+  const palette = new Palette(reg);
+  const panes = () => palette.root.querySelectorAll('.u2-accordion-pane').filter((p) => !p.hidden);
+  const headers = () => panes().map((p) => p.querySelector('.u2-accordion-title').textContent);
+  const items = () => palette.root.querySelectorAll('.u2-palette-item')
+    .filter((el) => !el.hidden && !el.closest('.u2-accordion-pane').hidden)
+    .map((el) => el.dataset.u2Tag);
+
+  assert.deepEqual(headers(), ['Containers', 'Viewers', 'Inputs', 'Oddities'],
+    'Viewers right after Containers; a category the order does not name follows, first-seen');
+  assert.deepEqual(items(), ['u2-p-box', 'u2-viewer-bar-chart', 'u2-viewer-scatter-plot', 'u2-p-text', 'u2-p-odd'],
+    'the Viewers pane sorts by label, the others keep registration order');
+  const scatter = palette.root.querySelector('[data-u2-tag="u2-viewer-scatter-plot"]');
+  const bar = palette.root.querySelector('[data-u2-tag="u2-viewer-bar-chart"]');
+  assert.equal(scatter.textContent, 'Scatter plot', 'the meta label, not the tag suffix');
+  assert.notEqual(scatter.querySelector('.u2-palette-item-icon .fake-glyph'), null, 'the platform glyph before it');
+  assert.equal(bar.querySelector('.u2-palette-item-icon'), null, 'no glyph, no box');
+  assert.equal(scatter.title, 'Two numeric columns', 'usage is the tooltip where there is one');
+  assert.equal(bar.title, 'Bars', 'the description otherwise');
+
+  palette.filter.value.value = 'numeric';
+  assert.deepEqual(items(), ['u2-viewer-scatter-plot'], 'usage is searchable');
+  palette.filter.value.value = 'scatter plot';
+  assert.deepEqual(items(), ['u2-viewer-scatter-plot'], 'so is the label');
   palette.dispose();
 });
 
@@ -1554,3 +1593,250 @@ designer('a JSON string opens the same document, and reopening it is a fresh one
   shell.o = null;
   view.dispose();
 });
+
+/* UX-B — the panel after the canvas moved under it: the Design/Run toggle rebuilds every source and
+   viewer, and a re-render can turn a placeholder into a component or back; the platform renders
+   the panel from the ref it was handed, so each of those is one fresh `shell.o`. */
+
+designer('the Design/Run toggle re-issues the panel for the selected node — once per toggle, from what the new mode built',
+  async () => {
+    const warn = console.warn;
+    console.warn = () => {};
+    const view = new SpecDesigner({$schema: 'dg-ui/1',
+      components: [{tag: 'u2-state', name: 'draft'}], root: {tag: 'u2-form', name: 'form'}});
+    console.warn = warn;
+    const draft = view._instance.spec.components[0];
+    view._select(draft);
+    await flush();
+
+    const toRun = await shellWrites(async () => {
+      view._mode.selected.value = ['run'];
+      await flush();
+    });
+    assert.equal(toRun.length, 1, `one assignment per toggle, got ${toRun.length}`);
+    assert.equal(toRun[0].node, draft);
+    assert.equal(toRun[0].built(), view._instance.node('draft'),
+      'the ref reads what Run mode built — the Status section the old panel kept reading is gone with it');
+
+    // the platform's own gear, clicked on a viewer in Run mode, puts that viewer on the panel
+    const toDesign = await shellWrites(async () => {
+      shell.o = new DG.Viewer({type: 'Grid'});
+      view._mode.selected.value = ['design'];
+      await flush();
+    });
+    assert.equal(toDesign.length, 2, 'the gear\'s own write, then the one the toggle makes');
+    assert.ok(toDesign[1] instanceof SpecNodeRef, 'leaving Run mode puts the selection back on the panel');
+    assert.equal(toDesign[1].node, draft);
+
+    const same = await shellWrites(async () => {
+      view._mode.selected.value = ['design'];
+      await flush();
+    });
+    assert.equal(same.length, 0, 'the mode it is already in is no toggle');
+    view.dispose();
+  });
+
+/** The rows of the panel's Status block — the table under its h3. */
+function statusRows(panel) {
+  const kids = [...panel.children];
+  const i = kids.findIndex((el) => el.tagName === 'H3' && el.textContent === 'Status');
+  const rows = {};
+  for (const tr of kids[i + 1]?.querySelectorAll('tr') ?? [])
+    rows[tr.children[0].textContent] = tr.children[1].textContent;
+  return rows;
+}
+
+const errorRow = (panel) => [...panel.querySelectorAll('tr')].find((tr) => tr.children[0].textContent === 'Error');
+
+/* The platform renders the panel one `shell.o` write behind, so the one re-issue above would leave
+   the old state on screen until the next gesture: the selection first redraws, in place, the parts
+   of the panel it rendered that read the node's state — the caption, the Node table, the Status
+   block — and then asks once. */
+
+designer('the Design/Run toggle redraws the Status block of the panel on screen from what Run mode built — still one write',
+  async () => {
+    const saved = backends.funcRunner;
+    const frames = {name: 'Frames', kind: 'function', inputs: [], outputs: [new Property('orders', 'dataframe')]};
+    backends.funcRunner = {find: (name) => name === 'Frames' ? frames : null,
+      run: () => Promise.resolve({orders: new DataFrame([{name: 'customer', type: 'string'}],
+        [{customer: 'Bayer'}, {customer: 'Roche'}])})};
+    const warn = console.warn;
+    console.warn = () => {};
+    const view = new SpecDesigner({$schema: 'dg-ui/1',
+      components: [{tag: 'u2-func-source', name: 'orders', props: {func: 'Frames', debounce: 0}}],
+      root: {tag: 'u2-form', name: 'form'}});
+    console.warn = warn;
+    try {
+      view._select(view._instance.spec.components[0]);
+      const shown = new SpecNodeHandler().renderProperties(shell.o);
+      document.body.append(shown);
+      assert.deepEqual(statusRows(shown), {State: 'idle — not run yet; use Refresh', Rows: '0'});
+
+      const writes = await shellWrites(async () => {
+        view._mode.selected.value = ['run'];
+        for (let i = 0; i < 5; i++)
+          await flush();
+      });
+      assert.equal(writes.length, 1, 'one assignment per toggle');
+      assert.deepEqual(statusRows(shown), {State: 'ready', Rows: '2'},
+        'the same panel element reads the source Run mode built and ran');
+    } finally {
+      backends.funcRunner = saved;
+      view.dispose();
+    }
+  });
+
+designer('a re-render that builds a broken node, or breaks a built one, re-issues the panel; one that does neither is silent',
+  async () => {
+    const warn = console.warn;
+    console.warn = () => {};
+    const view = new SpecDesigner({$schema: 'dg-ui/1', root: {tag: 'u2-fake-box', name: 'layout', children: [
+      {tag: 'u2-fake-input', name: 'ghost', props: {label: 'Ghost'}, bind: {value: '$.nowhere'}},
+    ]}}, new SpecContext({data: {reagent: signal('Aspirin')}}));
+    console.warn = warn;
+    const ghost = find(view._instance.spec, 'ghost');
+    view._select(ghost);
+    await flush();
+    assert.notEqual(shell.o.error(), null, 'selected while broken');
+    const shown = new SpecNodeHandler().renderProperties(shell.o);
+    document.body.append(shown);
+    assert.equal(shown.querySelector('.u2-designer-caption').textContent, 'ghost (u2-fake-input) — broken');
+    assert.notEqual(errorRow(shown), undefined);
+
+    const built = await shellWrites(async () => {
+      view._apply({op: 'set-bind', node: ghost, name: 'value', path: '$.reagent'});
+      await flush();
+    });
+    assert.equal(built.length, 1, `the flip is one assignment, got ${built.length}`);
+    assert.equal(built[0].node, ghost);
+    assert.equal(built[0].error(), null, 'and the new ref says the node is fine');
+    assert.equal(shown.querySelector('.u2-designer-caption').textContent, 'ghost (u2-fake-input)',
+      'the panel on screen lost its "— broken" without waiting for the platform');
+    assert.equal(errorRow(shown), undefined, 'and its Error row');
+
+    const quiet = await shellWrites(async () => {
+      view._apply({op: 'set-prop', node: ghost, name: 'label', value: 'Spirit'});
+      await flush();
+    });
+    assert.equal(quiet.length, 0, 'a re-render that keeps the node built refreshes the panel in place (prop-editors)');
+
+    console.warn = () => {};
+    const broken = await shellWrites(async () => {
+      view._apply({op: 'set-bind', node: ghost, name: 'value', path: '$.nowhere'});
+      await flush();
+    });
+    console.warn = warn;
+    assert.equal(broken.length, 1);
+    assert.notEqual(broken[0].error(), null, 'the panel is told the node broke');
+    assert.equal(shown.querySelector('.u2-designer-caption').textContent, 'ghost (u2-fake-input) — broken');
+    assert.notEqual(errorRow(shown), undefined, 'the Error row is back in place');
+    view.dispose();
+  });
+
+designer('an "Add binding…" pick that breaks the viewer is one shell.o write — the selection\'s re-issue, not the panel\'s',
+  async () => {
+    WidgetDescriptor.registry = [new WidgetDescriptor('Scatter plot',
+      [new Property('xColumnName', 'string', {category: 'Data'})])];
+    WidgetDescriptor.prototype.createIcon = () => null;
+    const reg = new Registry();
+    registerPlatformComponents(reg);
+    const scope = new Scope();
+    const df = new DataFrame([{name: 'city', type: 'string'}], [{city: 'Kyiv'}], 'orders');
+    // the platform refuses a look it cannot build: the bound value is what breaks the viewer
+    const fromType = DG.Viewer.fromType;
+    DG.Viewer.fromType = (type, table, options) => {
+      if (options?.xColumnName === 'boom')
+        throw new Error('no such column: boom');
+      return fromType(type, table, options);
+    };
+    const warn = console.warn;
+    console.warn = () => {};
+    const view = new SpecDesigner({$schema: 'dg-ui/1', root: {tag: 'u2-div-v', name: 'box', children: [
+      {tag: 'u2-viewer-scatter-plot', name: 'plot', bind: {table: '$.orders'}}]}},
+    new SpecContext({data: {orders: dfBindings(signal(df), scope), boom: signal('boom')}}), reg);
+    try {
+      const plot = find(view._instance.spec, 'plot');
+      view._select(plot);
+      await flush();
+      const shown = new SpecNodeHandler().renderProperties(shell.o);
+      document.body.append(shown);
+      const select = shown.querySelector('[data-u2-prop="add-binding"] select');
+      select.value = 'xColumnName';
+      fire(select, 'change');
+      fire(shown.querySelector('[data-u2-bind-pick="add-binding"]'), 'click');
+      const dialog = document.querySelector('.u2-bind-picker');
+      const list = dialog.querySelector('.u2-list');
+      list.clientHeight = 400;
+      fire(list, 'scroll');
+      fire([...dialog.querySelectorAll('.u2-list-row')]
+        .find((row) => (row.querySelector('.u2-tree-label')?.textContent ?? '').startsWith('boom')), 'click');
+      const writes = await shellWrites(async () => {
+        [...dialog.querySelectorAll('.u2-dialog-buttons button')].find((b) => b.textContent === 'OK').click();
+        await flush();
+      });
+      assert.equal(plot.bind.xColumnName, '$.boom');
+      assert.equal(writes.length, 1, `the flip re-issued the panel and the pick did not ask again, got ${writes.length}`);
+      assert.notEqual(writes[0].error(), null, 'the one ref says the node broke');
+      assert.equal(shown.querySelector('.u2-designer-caption').textContent, 'plot (u2-viewer-scatter-plot) — broken',
+        'and the panel on screen says so already');
+    } finally {
+      console.warn = warn;
+      DG.Viewer.fromType = fromType;
+      view.dispose();
+      scope.dispose();
+      WidgetDescriptor.registry = [];
+      delete WidgetDescriptor.prototype.createIcon;
+      platform.reset();
+    }
+  });
+
+designer('the selection adorner follows the lead element\'s size: one ResizeObserver, moved with the selection, gone with the designer',
+  async () => {
+    const Real = globalThis.ResizeObserver;
+    const observers = [];
+    globalThis.ResizeObserver = class {
+      constructor(callback) {
+        this.callback = callback;
+        this.targets = [];
+        this.disconnected = false;
+        observers.push(this);
+      }
+      observe(el) { this.targets.push(el); }
+      unobserve(el) { this.targets = this.targets.filter((t) => t !== el); }
+      disconnect() {
+        this.disconnected = true;
+        this.targets = [];
+      }
+    };
+    try {
+      const view = mounted(new SpecDesigner(editable()));
+      const spec = view._instance.spec;
+      // the pane reads as connected only once the designer is: the first reposition after mounting
+      // (the first hover, in the app) is what attaches the watch
+      view._selection.reposition();
+      // the tree's virtual list measures its scroller through an observer of its own
+      const watching = observers.filter((o) => o.targets.includes(element(view, spec.root)));
+      assert.equal(watching.length, 1, 'the root is selected on open — and watched, once');
+      const [observer] = watching;
+
+      view._select(find(spec, 'first'));
+      await flush();
+      assert.deepEqual(observer.targets, [element(view, find(spec, 'first'))], 'the watch moves with the lead');
+
+      const box = view._selection.box;
+      box.style.display = 'none';
+      observer.callback();
+      assert.equal(box.style.display, 'block', 'a size change re-outlines the lead');
+
+      view._mode.selected.value = ['run'];
+      assert.deepEqual(observer.targets, [], 'run mode draws no adorner, so nothing is watched');
+      view._mode.selected.value = ['design'];
+      assert.equal(observer.targets.length, 1);
+
+      shell.o = null;
+      view.dispose();
+      assert.equal(observer.disconnected, true, 'disposed with the designer');
+    } finally {
+      globalThis.ResizeObserver = Real;
+    }
+  });
