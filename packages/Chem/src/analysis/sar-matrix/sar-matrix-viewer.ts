@@ -402,6 +402,8 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** "Vary" filter: show only this R-position's column group, or all when empty. */
   private varyPosition = '';
   columnCaption: string;
+  /** The assembled set, serialized so a saved layout restores it instead of spending minutes rebuilding. */
+  matricesData: string;
   private contextCell: {matrix: SarMatrix, ri: number, ci: number} | null = null;
   /** Per-SMILES "SAR analysis" panel builders; cleared on recompute and detach. */
   private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
@@ -504,6 +506,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred],
         friendlyName: 'Rank by', description: 'How the navigator orders the matrices'});
     this.columnCaption = this.string('columnCaption', COLSORT_POTENCY, {choices: COLUMN_SORTS});
+    this.matricesData = this.string('matricesData', '', {userEditable: false, includeInLayout: true});
     this.host.style.height = '100%';
     this.transferHost.style.height = '100%';
 
@@ -821,11 +824,15 @@ export class SarMatrixViewer extends DG.JsViewer {
         threshold: this.threshold,
         rankScheme: this.rankScheme as SarRankScheme,
       };
-      const matrices = await runSarMatrix(molecules, activity as DG.Column<number>, params);
+      // A set carried in by a layout is the analysis already; rebuilding it would cost minutes.
+      const matrices = this.matricesData && !this.matrices.length ?
+        JSON.parse(this.matricesData) as SarMatrix[] :
+        await runSarMatrix(molecules, activity as DG.Column<number>, params);
       // Closed while the workers ran; rendering now would build a grid nothing releases.
       if (this.detached)
         return;
       this.matrices = matrices;
+      this.matricesData = JSON.stringify(matrices);
       this.collapseSeeded = false;
       this.selIndex = 0;
       // Must clear before render(): render() re-activates the transfer tab, which defers while
