@@ -11,6 +11,10 @@ export const specTestOptions = {
   launchOptions: {args: ['--window-size=1920,1080', '--window-position=0,0']},
   actionTimeout: 15_000,
   navigationTimeout: 60_000,
+  // Stated rather than inherited: specs that read an exported artefact through
+  // page.waitForEvent('download') depend on it, and Playwright's default is not
+  // part of any contract this section controls.
+  acceptDownloads: true,
 };
 
 export interface StepError { step: string; error: string; }
@@ -29,12 +33,39 @@ export async function waitForChemMenu(page: Page) {
   await page.locator('[name="div-Chem"]').first().waitFor({state: 'attached', timeout: 15_000});
 }
 
+// Resolves when a Molecule column is typed. Both the platform's detection event
+// (`SemanticTypeDetector.SEMANTIC_TYPE_DETECTED`,
+// grok_shared/lib/src/semantics/semantic_type_detector.dart:289) and a poll are
+// armed: a column has been observed reaching semType Molecule with no further
+// global event arriving, so an event-only barrier hangs on a ready table.
 export async function waitForMolecule(page: Page, timeoutMs = 45_000) {
-  await page.waitForFunction(() => {
+  await page.evaluate(({timeout}) => new Promise<void>((resolve, reject) => {
     const g = (window as any).grok;
-    const tables = [g?.shell?.t, (window as any).__df].filter(Boolean);
-    return tables.some((t: any) => t.columns.toList().some((c: any) => c.semType === 'Molecule'));
-  }, null, {timeout: timeoutMs});
+    const typed = () => [g?.shell?.t, (window as any).__df]
+      .filter(Boolean)
+      .some((t: any) => t.columns.toList().some((c: any) => c.semType === 'Molecule'));
+
+    if (typed())
+      return resolve();
+
+    const sub = g.events.onEvent('ddt-semantic-type-detected').subscribe(() => {
+      if (typed())
+        done();
+    });
+    const poll = setInterval(() => { if (typed()) done(); }, 500);
+    const timer = setTimeout(
+      () => done(new Error('waitForMolecule: no Molecule column detected within ' + timeout + 'ms')), timeout);
+
+    function done(err?: Error) {
+      clearTimeout(timer);
+      clearInterval(poll);
+      sub.unsubscribe();
+      err ? reject(err) : resolve();
+    }
+
+    if (typed())
+      done();
+  }), {timeout: timeoutMs});
 }
 
 async function injectToken(page: Page, token: string) {

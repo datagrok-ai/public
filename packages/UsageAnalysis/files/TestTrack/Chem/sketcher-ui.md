@@ -1,12 +1,9 @@
 ---
 feature: chem
-target_layer: manual
-coverage_type: smoke
-produced_from: decomposed
-original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
-migration_date: 2026-05-11
-related_bugs: []
 realizes: [chem.panel.chemistry.highlight, chem.cell.molecule]
+target_layer: manual-only
+coverage_type: smoke
+related_bugs: []
 ---
 
 # Chem | Sketcher — Stereochemistry preserved on SMILES Highlight (ui-only)
@@ -78,7 +75,8 @@ invariant.
 
 ## Notes
 
-- **Disjoint from `sketcher.md`.** The main `sketcher.md` (playwright-automated) covers the
-  canonical sketcher cell-editor walk (Favorites / Recent / Copy / Paste / backend
-  enumeration). This scenario carries only the stereo-preservation visual invariant on the
-  Highlights surface — no sketcher modal interaction.
+---
+{
+  "order": 3,
+  "datasets": ["System:AppData/Chem/tests/SMILES_highlighted.csv"]
+}
