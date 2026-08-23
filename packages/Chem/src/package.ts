@@ -77,7 +77,7 @@ import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
-  _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
+  _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch,
 } from './demo/demo';
 import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
@@ -2638,6 +2638,15 @@ export class PackageFunctions {
   })
   static async demoMMPA(): Promise<void> {
     await _demoMMPA();
+  }
+
+  @grok.decorators.func({
+    name: 'Demo SAR Matrix',
+    description: 'Group analog series into potency matrices and predict the analogs worth making next',
+    meta: {demoPath: 'Cheminformatics | SAR Matrix'},
+  })
+  static async demoSarMatrix(): Promise<void> {
+    await _demoSarMatrix();
   }
 
   @grok.decorators.func({

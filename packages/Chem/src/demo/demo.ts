@@ -188,6 +188,23 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 }
 
 
+export async function _demoSarMatrix(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  const df = DG.DataFrame.fromCsv(await _package.files.readAsText('demo_files/sar_matrix_demo.csv'),
+    {columnImportOptions: [{name: 'smiles', semType: DG.SEMTYPE.MOLECULE}]});
+  df.name = 'SAR Matrix';
+  const layout = DG.ViewLayout.fromJson(await _package.files.readAsText('demo_files/sar_matrix_demo.layout'));
+  const tv = grok.shell.addTableView(df);
+  await DG.delay(100);
+  tv.loadLayout(layout, true);
+  df.currentRowIdx = 0;
+
+  setTimeout(() => {
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix');
+  }, 1000);
+}
+
 export async function _demoMMPA(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
 
