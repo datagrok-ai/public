@@ -20,6 +20,8 @@ keywords:
   - structural alerts
   - Matched molecular pairs
   - MMP
+  - SAR Matrix
+  - SAR transfer
   - docking
   - admetox
   - admet
@@ -58,6 +60,7 @@ design.
 * **SAR analysis**  
   * [Activity cliffs](#structure-relationship-analysis)
   * [Matched molecular pairs](#matched-molecular-pairs)
+  * [SAR Matrix](#sar-matrix)
 * **Predictive and generative modeling**
   * [QSAR/QSPR modeling](#qsar-and-qspr-modeling) and [ADMET predictions](#admet-predictions)
   * [Docking](#docking) using AutoDock Vina
@@ -929,6 +932,80 @@ plots with regression lines and an identity line to assess model quality.
 
 </TabItem>
 </Tabs>
+</details>
+
+### SAR Matrix
+
+The **SAR Matrix** tool organizes a compound set into analog series and lays each one
+out as related cores (rows) against the substituents they share (columns), coloring
+every cell by potency.
+
+The series come from cutting each compound into a core and a substituent, so the compounds
+sharing a core vary at one position. Related cores are then grouped into a single matrix by
+cutting the cores a second time and collecting those that leave the same remainder, or
+optionally by fingerprint similarity, so every row of a matrix is a variation on one scaffold.
+
+Reading the matrix is reading the SAR: a substituent that helps on every core shows up
+as a colored column, and a productive core as a colored row.
+
+The combinations nobody has made are filled in with a local **Free-Wilson** model. Each
+prediction is the matrix average plus two corrections: a **core effect** for how that core
+performs relative to the average, and a **substituent effect** for how that substituent does.
+
+Selecting a predicted cell shows all three terms with the number of measurements behind
+each, and their total as **reference points**: the measured compounds sharing that cell's
+core or its substituent. More reference points means a better-supported prediction: a cell
+whose core and substituent are both well measured rests on more evidence than one sitting at
+the sparse edge of the matrix.
+
+Series are nested. **L1** is the finest view: one matrix per cut site, each row a single
+core with its substituents. **L2** folds the L1 matrices whose cores agree one cut deeper
+into a single, broader matrix, **L3** folds those again, and so on. The same compounds
+appear at every level, and a higher level trades more rows for a wider view of the chemistry,
+so start at L1 for a tight series and move up to see how it relates to its neighbours.
+
+Predicted analogs do not have to stay in the matrix. The **Design action** in the context
+panel adds the selected one to a separate table of virtual analogs, and the right-click menu
+exports a whole matrix, or every matrix at once, into that table - a make-list to triage for
+synthesis.
+
+A dedicated **SAR transfer** view finds pairs of cores whose potency trends run in
+parallel across the substituents they have both explored. Where the trends track, an
+optimization learned on one scaffold is expected to carry to the other.
+
+The results are presented as a ranked list of series alongside the selected matrix,
+allowing you to:
+
+* Spot the substituents and cores that drive potency across a whole series
+* Read predicted analogs together with the evidence behind each prediction
+* Collect the analogs worth making into a separate table for synthesis triage
+* Carry an optimization from one scaffold to another where their SAR runs in parallel
+
+<details>
+<summary>How to use</summary>
+
+To run SAR Matrix analysis:
+
+1. In the **Top Menu**, select **Chem** > **Analyze** > **SAR Matrix...** to open the dialog.
+2. Select the **Table**, the **Molecules** column, and a numerical **Activity** column.
+3. Choose the activity **Scaling** (_none_, _log10_, or _-log10_). Use _-log10_ for IC50 or Ki values so that higher numbers mean more potent.
+4. Click **OK**. The analysis opens with a ranked list of matrices on the left and the selected matrix on the right.
+
+Click a cell to inspect a measured compound or a predicted analog in the **Context Panel**.
+
+For a predicted cell the panel shows a **Design action**: click **Add to make-list** to copy that
+analog into a separate table of virtual analogs, building it up one compound at a time. To take
+more at once, right-click the matrix and export the predicted analogs of the current series, or of
+every series, which opens them as a new table.
+
+Use the **Rank by** control to reorder the series by potent compounds, SAR discontinuity, or
+preferred substituent, and the filter icons to narrow the list by core substructure, potency
+or size.
+
+Switch to the **SAR Transfer** tab for the pairs of cores whose potency trends run in parallel.
+Each entry shows the two series side by side over the substituents they share, the strength of
+the correlation, and the untested analogs the transfer argues for making.
+
 </details>
 
 ## Docking
