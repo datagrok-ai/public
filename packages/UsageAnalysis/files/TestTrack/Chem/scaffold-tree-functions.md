@@ -3,27 +3,15 @@ feature: chem
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [chem.cp.scaffold-tree-add-filter]
-realizes: [chem.menu.analyze.scaffold-tree, chem.viewer.scaffold-tree, chem.filter.scaffold-tree-filter]
+realizes_atlas: [ chem.cp.scaffold-tree-add-filter ]
+realizes:
+  [
+    chem.menu.analyze.scaffold-tree,
+    chem.viewer.scaffold-tree,
+    chem.filter.scaffold-tree-filter
+  ]
 realized_as:
   - scaffold-tree-functions-spec.ts
-produced_from: migrated
-original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions.md
-migration_date: 2026-05-11
-source_text_fixes: []
-candidate_helpers:
-  - helpers.playwright.chem.addScaffoldTreeViewer
-  - helpers.playwright.chem.generateScaffoldTreeViaMagicWand
-  - helpers.playwright.chem.clickScaffoldTreeNode
-unresolved_ambiguities:
-  - check-them-step-5-property-panel-verification-depth
-  - magic-wand-icon-dom-locator
-  - scaffold-tree-viewer-empty-state-placeholder-text
-scope_reductions:
-  - id: SR-01
-    check: A-STRUCT-02
-    rationale: "A-STRUCT-02 carryforward (chain-level edge/perf coverage)"
-    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 ---
 
@@ -103,7 +91,7 @@ inspection.
    property groups and confirm each property control is visible and
    interactable.
 
-## Notes
+## Automation notes
 
 - **Cross-cutting bugs not covered here.** Known Scaffold Tree bugs are covered by dedicated bug-focused
   specs, not this smoke walk: opening a scaffold node in the Sketcher corrupting subsequent

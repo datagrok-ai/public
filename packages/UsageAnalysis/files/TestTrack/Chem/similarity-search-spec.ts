@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
-import {finishSpec} from '../../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -49,13 +49,11 @@ test('Chem: Similarity Search', async ({page}) => {
       const simViewer: any = Array.from(grok.shell.tv.viewers).find((v: any) => /Similarity/i.test(v.type || ''));
       if (!simViewer) return {error: 'viewer not found'};
       const res: Record<string, boolean> = {};
-      const beforeErr = (grok.shell.warnings || []).length;
       try { simViewer.setOptions({fingerprint: 'Pattern'}); await new Promise(r => setTimeout(r, 1500)); res.fingerprint = true; } catch (e) { res.fingerprint = false; }
       try { simViewer.setOptions({limit: 5}); await new Promise(r => setTimeout(r, 1500)); res.limit = true; } catch (e) { res.limit = false; }
       try { simViewer.setOptions({distanceMetric: 'Dice'}); await new Promise(r => setTimeout(r, 1500)); res.metric = true; } catch (e) { res.metric = false; }
       try { simViewer.setOptions({cutoff: 1.0}); await new Promise(r => setTimeout(r, 1500)); res.cutoff = true; } catch (e) { res.cutoff = false; }
       simViewer.setOptions({fingerprint: 'Morgan', limit: 12, distanceMetric: 'Tanimoto', cutoff: 0.01});
-      (res as any).errDelta = (grok.shell.warnings || []).length - beforeErr;
       return res;
     });
     expect(results.fingerprint).toBe(true);

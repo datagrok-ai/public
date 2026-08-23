@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../../spec-login';
-import {finishSpec} from '../../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -25,6 +25,7 @@ test('Chem: Scaffold Tree add + generate + node-click filter + toolbox + propert
       };
     });
     await waitForChemMenu(page);
+    await waitForMolecule(page);
   });
 
   await softStep('Step 2-3: Chem → Analyze → Scaffold Tree → viewer mounted (empty state)', async () => {

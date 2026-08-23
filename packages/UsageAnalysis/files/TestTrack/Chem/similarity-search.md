@@ -3,13 +3,10 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [chem.cp.similarity-search-viewer]
-realizes: [chem.menu.search.similarity-search, chem.viewer.chem-similarity-search]
+realizes_atlas: [ chem.cp.similarity-search-viewer ]
+realizes: [ chem.menu.search.similarity-search, chem.viewer.chem-similarity-search ]
 realized_as:
   - similarity-search-spec.ts
-produced_from: migrated
-original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/similarity-search.md
-migration_date: 2026-05-11
 migration_report: similarity-search-migration-report.md
 related_bugs: []
 ---
@@ -106,7 +103,7 @@ Properties, Cutoff) in turn.
     viewer remained interactable throughout the property-panel walk
     and re-queried correctly for each knob change.
 
-## Notes
+## Automation notes
 
 - **Scope note.** Step 9 intentionally selects a few Molecule Properties entries (e.g. MW, LogP, HBA)
   rather than every available property — the assertion is that selected properties appear on the hit
