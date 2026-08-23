@@ -183,7 +183,7 @@ async function hoverReferenceMarker(
     await v.pollValue(() => tooltipEntries(page), (e) => e.length > 0, 200, 50);
   } else
 
-    await page.waitForTimeout(1600);
+    await v.waitForViewerRendered(page, 'Scatter plot', 1600);
   const state = await page.evaluate((i: number) => {
     const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
     const df = grok.shell.tv.dataFrame;
@@ -221,15 +221,17 @@ async function dragCanvas(page: Page, from: Frac, to: Frac, mods: string[] = [])
   const r = await canvasRect(page);
   const p1 = at(r, from);
   const p2 = at(r, to);
-  await page.mouse.move(p1.x, p1.y);
+  const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 100);
 
-  await page.waitForTimeout(100);
+  await page.mouse.move(p1.x, p1.y);
+  await shown1();
   for (const m of mods) await page.keyboard.down(m);
   await page.mouse.down();
   await page.mouse.move((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, {steps: 8});
-  await page.mouse.move(p2.x, p2.y, {steps: 8});
+  const shown2 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
 
-  await page.waitForTimeout(150);
+  await page.mouse.move(p2.x, p2.y, {steps: 8});
+  await shown2();
   await page.mouse.up();
   for (const m of [...mods].reverse()) await page.keyboard.up(m);
   await v.waitForViewerRendered(page, 'Scatter plot', 300);
@@ -311,7 +313,7 @@ async function resetFilterPanel(page: Page, from?: number): Promise<void> {
   await reset.scrollIntoViewIfNeeded();
   await reset.click();
 
-  if (from === undefined) await page.waitForTimeout(800);
+  if (from === undefined) await v.waitForViewerRendered(page, 'Scatter plot', 800);
   else await settledCountAfterChange(page, 'filter', from, 8000);
 }
 
@@ -500,7 +502,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     const selected = await settledCountAfterChange(page, 'selection', 0);
     expect(selected).toBeGreaterThan(0);
 
-    await page.waitForTimeout(2000);
+    await v.waitForViewerRendered(page, 'Scatter plot', 2000);
     expect(crashCount()).toBe(crashBefore);
     expect(errCount()).toBe(errBefore);
 

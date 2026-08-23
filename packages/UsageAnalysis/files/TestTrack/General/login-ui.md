@@ -1,25 +1,24 @@
 ---
 feature: general
+realizes_atlas: []
+realizes: []
+priority: p2
 target_layer: manual-only
 coverage_type: regression
-produced_from: split
-original_path: public/packages/UsageAnalysis/files/TestTrack/General/login.md
-split_date: 2026-06-16
-realizes: []
-related_bugs: []
 manual_only_reason: |
   Third-party OAuth (Login with Google) redirects to an external Google-owned
   consent screen whose DOM and bot-detection are outside Datagrok's control and
   not stable to automate. The username/password positive+negative matrix and
   logout are already fully automated in General/login.test.ts; only the Google
   sign-in path remains manual.
+related_bugs: []
 ---
 
 # Login with Google (third-party auth)
 
 Manual companion to `login.md`. The local-credential login matrix (empty /
 wrong / boundary / special inputs, valid login, logout) is covered by the
-Playwright spec `login.test.ts`. This file covers only the external OAuth path.
+automated companion. This file covers only the external OAuth path.
 
 ## Preconditions
 
@@ -39,5 +38,6 @@ Playwright spec `login.test.ts`. This file covers only the external OAuth path.
 
 ---
 {
-  "order": 1
+  "order": 1,
+  "datasets": []
 }

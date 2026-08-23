@@ -171,10 +171,8 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
       return {yearN: years.size, monthN: months.size};
     });
     expect(dist.monthN).toBeGreaterThan(dist.yearN);
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-
-    await page.waitForTimeout(400);
-
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(300);

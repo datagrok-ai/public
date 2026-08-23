@@ -1,30 +1,21 @@
 ---
 feature: connections
-target_layer: playwright
-coverage_type: edge
-priority: p2
 realizes: [views.connections]
-realized_as: []
+priority: p2
+target_layer: manual-only
+coverage_type: edge
+manual_only_reason: |
+  The customerid blue highlighting in the rendered grid cells is drawn on
+  canvas, so it must be checked by eye.
 related_bugs: []
 ---
 
 # Identifiers — manual UI checks
 
-This is the **manual companion** to `identifiers.md`. Covers the part that
-`identifiers.test.ts` cannot exercise because the grid is canvas-rendered:
-the auto-test verifies the column's semantic type via the JS API
-(`tv.dataFrame.col(...).semType`), but the manual `customerid` blue
-highlighting in the rendered grid cells lives entirely in canvas pixels —
-unreachable from the DOM.
+This is the **manual companion** to `identifiers.md`. Covers the part the
+autotest cannot exercise: the `customerid` blue highlighting in the rendered
+grid cells is drawn on canvas, so it must be checked by eye.
 
-The autotest covers (when `DG_PG_PASSWORD` is set):
-
-- Right-click `test_postgres` → **Configure Identifiers...**, fill Schema, fill
-  identifier (CUSTOMER_ID / customers / customerid / `[A-Z]{5}`), SAVE
-- Reload, expand `test_postgres > Schemas > public > customers`, **Get All**,
-  verify `customerid` carries `semType = "CUSTOMER_ID"` server-side
-- Right-click connection → remove identifiers config, reload, verify column
-  no longer carries the type
 
 ## Pre-conditions
 
@@ -46,3 +37,16 @@ The autotest covers (when `DG_PG_PASSWORD` is set):
   pane shows `Semantic type: CUSTOMER_ID`
 - After **Remove identifiers config** + page reload, the same column renders
   with default text colour (no blue) and no `Semantic type` row in the panel
+
+## Cleanup
+
+- The final check already removes the identifiers config; if the run stopped
+  early, right-click `test_postgres` → **Configure Identifiers...** and remove
+  the CUSTOMER_ID entry so `identifiers.md` step 5 can re-create it cleanly on the next run.
+- Close the opened `customers` table view.
+
+---
+{
+  "order": 2,
+  "datasets": []
+}

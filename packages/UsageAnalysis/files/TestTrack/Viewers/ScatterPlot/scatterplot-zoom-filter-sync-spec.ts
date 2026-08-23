@@ -51,7 +51,8 @@ async function openSettings(page: Page): Promise<void> {
     if (built) return;
     await v.openViewerGear(page, 'Scatter plot');
 
-    await page.waitForTimeout(1000);
+    await v.pollValue(() => page.evaluate(() => document.querySelectorAll('[name^="prop-"]').length),
+      (n) => n > 0, 1000, 200);
   }
   throw new Error('the scatter plot settings panel did not build');
 }
@@ -70,7 +71,8 @@ async function revealPropEditor(
     const header = page.locator(`[name="prop-category-${category}"]`);
     if (await header.count() > 0 && await header.isVisible()) await header.click();
 
-    await page.waitForTimeout(800);
+    await v.pollValue(() => page.evaluate(() => document.querySelectorAll('[name^="prop-"]').length),
+      (n) => n > 0, 800, 150);
   }
   throw new Error(`property editor ${editorSelector} never became reachable`);
 }
@@ -139,7 +141,8 @@ async function openPlotContextMenu(page: Page): Promise<void> {
   await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2, {button: 'right'});
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 8000});
 
-  await page.waitForTimeout(500);
+  await v.pollStable(() => page.evaluate(() => document.querySelectorAll('.d4-menu-popup').length),
+    (a, b) => a === b, 500, 100);
 }
 
 const dismissPlotMenu = (page: Page, capMs: number) =>
@@ -168,7 +171,7 @@ async function wheelZoomIn(page: Page, steps = 1): Promise<void> {
   for (let i = 0; i < steps; i++) {
     await page.mouse.wheel(0, -300);
 
-    await page.waitForTimeout(600);
+    await v.waitForViewerRendered(page, 'Scatter plot', 600);
   }
 }
 

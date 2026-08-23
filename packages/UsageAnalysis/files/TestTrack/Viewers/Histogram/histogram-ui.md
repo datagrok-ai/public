@@ -1,7 +1,13 @@
-# Histogram tests (manual checklist)
+---
+feature: histogram
+target_layer: manual-only
+coverage_type: smoke
+manual_only_reason: |
+  Automated coverage lives in the paired spec(s) of this section; this file
+  lists only checks that need a human eye.
+---
 
-Automated coverage lives in the paired spec(s) of this section; this file lists
-only checks that need a human eye.
+# Histogram tests (manual checklist)
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -24,8 +30,15 @@ All scenarios should start with the following sequence of events:
 3. Hover over a cluster of points in the scatter plot -- the histogram should highlight the distribution of the hovered group
 4. Move the mouse away -- highlight disappears
 
+## Pick Up / Apply
+
+1. Customize the histogram: set Value to HEIGHT and change the number of bins
+2. Add a second Histogram with default settings
+3. Right-click the customized histogram and select Pick Up / Apply > Pick Up
+4. Right-click the second histogram and select Pick Up / Apply > Apply — the second viewer now matches the first (value column, bins)
+
 ---
 {
   "order": 105,
-  "datasets": ["System:DemoFiles/demog.csv","System:AppData/Chem/tests/spgi-100.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/SPGI.csv"]
 }

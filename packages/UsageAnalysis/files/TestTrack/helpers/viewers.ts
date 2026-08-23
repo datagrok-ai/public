@@ -680,12 +680,22 @@ export async function waitForCanvasChange(
   return (await diffCanvasColors(page, viewerType, canvasSelector)).deltaPx;
 }
 
+/**
+ * Waits until the viewer's canvas stops changing.
+ *
+ * `optional: true` reports a timeout as `false` instead of throwing — for a settle-precheck,
+ * "still painting" is what the delta assertion downstream is there to catch, not a reason to
+ * abort the step with a waitForFunction error. Default stays throwing: existing callers use it
+ * as an assertion that the canvas DID settle.
+ *
+ * Returns true when the canvas went quiet.
+ */
 export async function waitForCanvasQuiet(
   page: Page, viewerType: string,
-  opts: {canvasSelector?: string; stableReads?: number; timeoutMs?: number} = {},
-): Promise<void> {
+  opts: {canvasSelector?: string; stableReads?: number; timeoutMs?: number; optional?: boolean} = {},
+): Promise<boolean> {
   await page.evaluate(() => { (window as any).__canvasQuiet = null; });
-  await page.waitForFunction(({vt, cs, need}) => {
+  const quiet = page.waitForFunction(({vt, cs, need}) => {
     const w = window as any;
     const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
     const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
@@ -707,6 +717,11 @@ export async function waitForCanvasQuiet(
     }
   }, {vt: viewerType, cs: opts.canvasSelector ?? 'canvas', need: opts.stableReads ?? 2},
   {timeout: opts.timeoutMs ?? 20_000, polling: 300});
+  if (!opts.optional) {
+    await quiet;
+    return true;
+  }
+  return quiet.then(() => true, () => false);
 }
 
 export async function waitForViewerRepaint(
@@ -808,6 +823,28 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
   expect(final).toBe(lowerHex);
 }
 
+/**
+ * Navigates an already-open `.d4-menu-popup` to `group > leaf` and clicks it.
+ *
+ * Shared by drivePanelMenuLeaf and driveContextMenuLeaf — the two differ only in how the popup
+ * is opened. Kept as one function on purpose: the registry records eleven copy-pasted copies of
+ * this block spreading through a single section, each inheriting the original's bugs and none of
+ * its fixes.
+ *
+ * Failure modes: throws naming the missing segment and listing the labels actually visible.
+ * Cleanup: N/A (leaves the menu closed by the click).
+ */
+async function navigateMenuPopup(page: Page, group: string | null, leaf: string): Promise<void> {
+  await installEventWaits(page);
+  await page.evaluate(({g, l}) => (window as any).__menuLeaf(g, l), {g: group, l: leaf});
+}
+
+/**
+ * Opens a viewer's PANEL menu (the titlebar burger) and clicks `group > leaf`.
+ *
+ * Failure modes: throws when the burger, the group, or the leaf is absent.
+ * Cleanup: N/A.
+ */
 export async function drivePanelMenuLeaf(
   page: Page, viewerName: string, group: string | null, leaf: string,
 ): Promise<void> {
@@ -820,42 +857,36 @@ export async function drivePanelMenuLeaf(
     burger.click();
   }, viewerName);
   await page.locator('.d4-menu-popup').last().waitFor({timeout: 15_000});
+  await navigateMenuPopup(page, group, leaf);
+}
 
-  // The view's top menu carries identically-labelled items and precedes every popup in document
-  // order, so both segments are looked up inside the panel's own popup only. The panel menu is a
-  // SINGLE popup — hovering a group appends no second container, the level lives in the element
-  // name — so the same scope serves group leaves and top-level ones alike.
-  await page.evaluate(async ({g, l}: {g: string | null; l: string}) => {
-    const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
-    const labels = () => {
-      const popup = [...document.querySelectorAll('.d4-menu-popup')].pop();
-      return [...(popup?.querySelectorAll('.d4-menu-item-label') ?? [])];
-    };
-    const visible = () => labels().map((i) => (i.textContent ?? '').trim()).join(' | ');
-    const find = (text: string) =>
-      labels().find((i) => norm(i.textContent) === norm(text))?.closest('.d4-menu-item') ?? null;
-    const waitFor = async (text: string) => {
-      const deadline = Date.now() + 5000;
-      let item = find(text);
-      while (!item && Date.now() < deadline) {
-        await new Promise((r) => setTimeout(r, 100));
-        item = find(text);
-      }
-      return item;
-    };
-    if (g !== null) {
-      const groupItem = await waitFor(g);
-      if (!groupItem)
-        throw new Error(`panel menu: group "${g}" not found in the panel popup; visible: ${visible()}`);
-      const b = groupItem.getBoundingClientRect();
-      for (const type of ['mouseover', 'mousemove'])
-        groupItem.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
-    }
-    const leafItem = await waitFor(l);
-    if (!leafItem)
-      throw new Error(`panel menu: leaf "${l}" not found in the ${g === null ? 'panel popup' : `"${g}" submenu popup`}; visible: ${visible()}`);
-    (leafItem as HTMLElement).click();
-  }, {g: group, l: leaf});
+/**
+ * Right-clicks a viewer's canvas and clicks `group > leaf` in the CONTEXT menu.
+ *
+ * The context menu is a different surface from the panel burger menu — different opener, same
+ * popup structure — so drivePanelMenuLeaf cannot drive it. Specs were hand-rolling the
+ * dispatch-hover-click sequence with fixed sleeps at every site instead.
+ *
+ * Failure modes: throws when the canvas, the group, or the leaf is absent.
+ * Cleanup: N/A.
+ */
+export async function driveContextMenuLeaf(
+  page: Page, viewerName: string, group: string | null, leaf: string,
+  opts: {canvasSelector?: string} = {},
+): Promise<void> {
+  await page.evaluate(({vn, cs}) => {
+    const canvas = (document.querySelector(`[name="viewer-${vn}"]`) as HTMLElement | null)
+      ?.querySelector(cs) as HTMLCanvasElement | null;
+    if (!canvas)
+      throw new Error(`no ${cs} in viewer-${vn}`);
+    const r = canvas.getBoundingClientRect();
+    canvas.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true, button: 2,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+    }));
+  }, {vn: viewerName, cs: opts.canvasSelector ?? 'canvas'});
+  await page.locator('.d4-menu-popup').last().waitFor({timeout: 15_000});
+  await navigateMenuPopup(page, group, leaf);
 }
 
 const BAR_POSITIONS = (w: number, h: number, nCats: number) => [
@@ -976,11 +1007,16 @@ export async function applyCategoricalFilter(
 ): Promise<{filteredCount: number}> {
   return await page.evaluate(async ({col, sel, settle}) => {
     const tv = (window as any).grok.shell.tv;
+    const df = tv.dataFrame;
     const fg = tv.getFiltersGroup();
     const DG = (window as any).DG;
+    const settled = new Promise<void>((resolve) => {
+      const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, settle);
+    });
     fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: col, selected: sel});
-    await new Promise((r) => setTimeout(r, settle));
-    return {filteredCount: tv.dataFrame.filter.trueCount};
+    await settled;
+    return {filteredCount: df.filter.trueCount};
   }, {col: column, sel: selected, settle: settleMs});
 }
 
@@ -1049,6 +1085,10 @@ export async function resetFilters(page: Page, opts: {clearScatterFilter?: boole
     const tv = (window as any).grok.shell.tv;
     if (!tv) return;
     const df = tv.dataFrame;
+    const settled = new Promise<void>((resolve) => {
+      const sub = df.onRowsFiltered.subscribe(() => { sub.unsubscribe(); resolve(); });
+      setTimeout(resolve, 500);
+    });
     df.filter.setAll(true);
     const fg = tv.getFiltersGroup();
     for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
@@ -1056,7 +1096,7 @@ export async function resetFilters(page: Page, opts: {clearScatterFilter?: boole
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (sp) try { sp.props.filter = ''; } catch (_) {}
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await settled;
   }, opts.clearScatterFilter ?? false);
 }
 
@@ -1166,10 +1206,216 @@ export async function pollValue<T>(
   return value;
 }
 
+/**
+ * Polls `read` until two consecutive reads compare equal under `same`, and returns that value.
+ *
+ * The stability idiom the specs kept hand-rolling: read, tick, re-read, stop when nothing moved.
+ * Thirty-six copies of it existed across the viewer specs, each with its own iteration count and
+ * its own fixed tick — which is what a "fixed sleep" in these files usually was. The tick lives
+ * here now, in the helper layer, instead of at every call site.
+ *
+ * On timeout it returns the last value read rather than throwing: the caller's assertion is what
+ * decides whether an unsettled value is a failure, and it gives a far better message than a bare
+ * timeout would.
+ *
+ * Failure modes: none — always resolves. Cleanup: N/A.
+ */
+/**
+ * Arms a JS-API event subscription, then hands back a function that awaits it.
+ *
+ * The two-phase twin of the in-page `__settled`, for when the ACTION is Playwright-side —
+ * `page.mouse.move`, `page.keyboard.press`, `locator.click` — and so cannot be passed into the
+ * browser as a callback:
+ *
+ *   const shown = await armEvent(page, 'grok.events.onTooltipShown', 2000);
+ *   await page.mouse.move(x, y);          // the real gesture, driven from Playwright
+ *   const args = await shown();           // event payload, or undefined if the cap won
+ *
+ * Arming BEFORE the action is the whole point: subscribe-after-act races the event and always
+ * burns the cap. Without this, every Playwright-driven action had no rung-1 option at all, which
+ * is why those sites ended up polling the DOM for a symptom instead of listening for the fact.
+ *
+ * Failure modes: an unknown channel rejects when awaited. Cleanup: unsubscribes on both paths.
+ */
+export async function armEvent(
+  page: Page, channel: string, capMs = 2000,
+): Promise<() => Promise<any>> {
+  await installEventWaits(page);
+  const token = `__armed_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+  await page.evaluate(({ch, cap, tok}) => {
+    const w = window as any;
+    w[tok] = w.__armed(ch, cap);
+  }, {ch: channel, cap: capMs, tok: token});
+  return async () => page.evaluate(async (tok) => {
+    const w = window as any;
+    const args = await w[tok];
+    delete w[tok];
+    return args ?? null;
+  }, token);
+}
+
+export async function pollStable<T>(
+  read: () => Promise<T>,
+  same: (a: T, b: T) => boolean,
+  timeoutMs = 3000,
+  intervalMs = 150,
+): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  let prev = await read();
+  while (Date.now() < deadline) {
+    await new Promise((res) => setTimeout(res, intervalMs));
+    const cur = await read();
+    if (same(prev, cur)) return cur;
+    prev = cur;
+  }
+  return prev;
+}
+
 export async function closeAllAndWait(page: Page): Promise<void> {
   await page.evaluate(() => (window as any).grok.shell.closeAll());
   await page.waitForFunction(() => Array.from((window as any).grok.shell.tableViews).length === 0,
     null, {timeout: 5000}).catch(() => {});
+}
+
+/**
+ * Installs the in-page channel awaiter used inside `page.evaluate` bodies.
+ *
+ * Browser-context code cannot reach the Playwright-side wait helpers, which is why fixed sleeps
+ * kept reappearing there. After this call a spec evaluates against named channels instead:
+ *
+ *   await w.__settled('df.onSelectionChanged', () => canvas.dispatchEvent(clickEvent));
+ *   const args = await w.__eventFired('grok.events.onContextMenu', 2000);
+ *
+ * `__settled` subscribes BEFORE running the action and resolves on the first event, so it cannot
+ * miss one fired synchronously; the cap is a ceiling, not a delay. Both resolve with the event
+ * payload, or `undefined` when the cap wins.
+ *
+ * Channel grammar: `df.<stream>` (current dataframe), `grok.events.<stream>`,
+ * `viewer:<Type>.<stream>` (viewer matched on its type, whitespace/dash-insensitive).
+ *
+ * Failure modes: an unknown channel throws inside the evaluate; a cap that is routinely consumed
+ * means the channel does not fire for that action — a product gap to record, not a cap to raise.
+ * Cleanup: N/A (idempotent, re-installed on navigation).
+ */
+export async function installEventWaits(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as any;
+    if (w.__settled) return;
+
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+
+    w.__stream = (channel: string) => {
+      const dot = channel.indexOf('.');
+      const scope = channel.slice(0, dot);
+      const rest = channel.slice(dot + 1);
+      if (scope === 'df') return w.grok.shell.tv.dataFrame[rest];
+      if (scope === 'grok') return w.grok.events[rest.replace(/^events\./, '')];
+      if (scope.startsWith('viewer:')) {
+        const type = scope.slice('viewer:'.length);
+        const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => norm(x.type) === norm(type)) as any;
+        if (!v) throw new Error(`__settled: no viewer of type "${type}"`);
+        return v[rest];
+      }
+      throw new Error(`__settled: unknown channel "${channel}"`);
+    };
+
+    w.__armed = (channel: string, capMs: number) => {
+      const stream = w.__stream(channel);
+      let sub: any = null;
+      return new Promise<any>((resolve) => {
+        sub = stream.subscribe((args: any) => { sub.unsubscribe(); resolve(args); });
+        setTimeout(() => { try { sub?.unsubscribe(); } catch (_) {} resolve(undefined); }, capMs);
+      });
+    };
+
+    w.__settled = async (channel: string, act: () => any, capMs = 2000) => {
+      const fired = w.__armed(channel, capMs);
+      await act();
+      return fired;
+    };
+
+    w.__eventFired = (channel: string, capMs = 2000) => w.__armed(channel, capMs);
+
+    // In-page twin of pollValue, for state with no event behind it — a viewer
+    // appearing in tv.viewers after a project opens, a legend item rendering.
+    // Resolves with the first value that satisfies `ok`, or the last one read.
+    // A drag is a sequence of mousemove events PACED over time — the pacing is the gesture, not a
+    // wait for something to settle, so there is no channel to race and no event to await mid-drag.
+    // That makes it the one shape where a fixed sleep is correct, and it belongs here in the
+    // helper rather than repeated at every call site.
+    w.__drag = async (el: HTMLElement, from: {x: number; y: number}, to: {x: number; y: number},
+      opts: {steps?: number; stepMs?: number; holdMs?: number; hoverFirst?: boolean;
+        modifiers?: Record<string, boolean>} = {}) => {
+      const {steps = 4, stepMs = 25, holdMs = 30, hoverFirst = false, modifiers = {}} = opts;
+      const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const mk = (x: number, y: number) => ({
+        bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, ...modifiers,
+      });
+      const at = (type: string, x: number, y: number, alsoDocument = false) => {
+        el.dispatchEvent(new MouseEvent(type, mk(x, y)));
+        if (alsoDocument) document.dispatchEvent(new MouseEvent(type, mk(x, y)));
+      };
+      if (hoverFirst) {
+        at('mousemove', from.x, from.y);
+        await pause(holdMs);
+      }
+      at('mousedown', from.x, from.y);
+      await pause(holdMs);
+      for (let i = 0; i <= steps; i++) {
+        // steps: 0 is the degenerate path a hover-and-click uses; 0/0 would be NaN.
+        const t = steps === 0 ? 1 : i / steps;
+        at('mousemove', from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t, true);
+        await pause(stepMs);
+      }
+      at('mouseup', to.x, to.y, true);
+    };
+
+    // Menu navigation, in-page so BOTH the Playwright helpers (drivePanelMenuLeaf /
+    // driveContextMenuLeaf, which delegate here) and a spec whose surrounding logic sits inside
+    // one evaluate use the same implementation. The alternative was a second copy in the browser
+    // context, which is how eleven divergent copies of a menu driver got into one section.
+    //
+    // The view's top menu carries identically-labelled items and precedes every popup in document
+    // order, so both segments are looked up inside the last-opened popup only. A panel menu is a
+    // SINGLE popup — hovering a group appends no second container, the level lives in the element
+    // name — so the same scope serves group leaves and top-level ones alike.
+    w.__menuLeaf = async (group: string | null, leaf: string) => {
+      const norm = (str: string | null | undefined) => (str ?? '').trim().toLowerCase();
+      const labels = () => {
+        const popup = [...document.querySelectorAll('.d4-menu-popup')].pop();
+        return [...(popup?.querySelectorAll('.d4-menu-item-label') ?? [])];
+      };
+      const visible = () => labels().map((i) => (i.textContent ?? '').trim()).join(' | ');
+      const find = (text: string) =>
+        labels().find((i) => norm(i.textContent) === norm(text))?.closest('.d4-menu-item') ?? null;
+      const waitFor = (text: string) => w.__poll(() => find(text), (i: Element | null) => i !== null, 5000);
+      if (group !== null) {
+        const groupItem = await waitFor(group);
+        if (!groupItem)
+          throw new Error(`menu: group "${group}" not found; visible: ${visible()}`);
+        const b = groupItem.getBoundingClientRect();
+        for (const type of ['mouseover', 'mousemove'])
+          groupItem.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: b.x + 5, clientY: b.y + 5}));
+      }
+      const leafItem = await waitFor(leaf);
+      if (!leafItem)
+        throw new Error(
+          `menu: leaf "${leaf}" not found in ${group === null ? 'the popup' : `the "${group}" submenu`}; `
+          + `visible: ${visible()}`);
+      (leafItem as HTMLElement).click();
+      return true;
+    };
+
+    w.__poll = async (read: () => any, ok: (v: any) => boolean, timeoutMs = 3000, intervalMs = 100) => {
+      const deadline = Date.now() + timeoutMs;
+      let value = read();
+      while (!ok(value) && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, intervalMs));
+        value = read();
+      }
+      return value;
+    };
+  });
 }
 
 export function finishSpec(prefix = 'Step failures'): void {

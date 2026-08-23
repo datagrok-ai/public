@@ -1,11 +1,9 @@
 ---
 feature: general
+realizes_atlas: []
+priority: p2
 target_layer: manual-only
 coverage_type: perf
-produced_from: split
-original_path: public/packages/UsageAnalysis/files/TestTrack/General/startup-time.md
-split_date: 2026-06-16
-related_bugs: []
 manual_only_reason: |
   This is a performance threshold check, not a functional test. The 2-4s budget
   is environment-dependent (cold vs warm cache, CI worker contention, network to
@@ -13,6 +11,7 @@ manual_only_reason: |
   encoding a hard 2-4s bound in a Playwright spec would be flaky and would fail
   for reasons unrelated to a real regression. Belongs to perf monitoring / a
   dedicated startup-time metric, not the functional regression suite.
+related_bugs: []
 ---
 
 # Platform startup time
@@ -31,5 +30,6 @@ Notes:
 
 ---
 {
-  "order": 9
+  "order": 9,
+  "datasets": []
 }

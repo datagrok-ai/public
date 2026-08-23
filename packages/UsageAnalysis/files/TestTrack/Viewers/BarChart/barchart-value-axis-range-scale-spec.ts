@@ -79,10 +79,8 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     };
 
     await v.setViewerProps(page, 'Bar chart', [{set: {showClippedBarIndicators: false}, wait: 700}]);
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-
-    await page.waitForTimeout(400);
-
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
     expect(settle.deltaPx).toBeLessThan(30);
@@ -124,10 +122,8 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     };
 
     await v.setViewerProps(page, 'Bar chart', [{set: {showClippedBarIndicators: false}, wait: 700}]);
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-
-    await page.waitForTimeout(400);
-
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
     expect(settle.deltaPx).toBeLessThan(30);

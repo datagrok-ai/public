@@ -1,9 +1,16 @@
+---
+feature: pcplot
+target_layer: manual-only
+coverage_type: smoke
+manual_only_reason: |
+  What remains here needs a human eye or trusted mouse input: hover colors and
+  tooltips, window operations, context-menu consistency, and the grid-to-plot
+  column drag.
+---
+
 # PC plot manual checklist
 
-Human-only visual and gesture checks for the PC Plot; automated coverage lives
-in the other scenarios in this folder. What remains here needs a human eye or
-trusted mouse input: hover colors and tooltips, window operations,
-context-menu consistency, and the grid-to-plot column drag.
+Human-only visual and gesture checks for the PC Plot.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -26,8 +33,13 @@ All scenarios should start with the following sequence of events:
 
 ## Context menu: General and Tooltip
 
-1. Right-click > **General** -- check all items
-2. Right-click > **Tooltip** -- check all items
+1. Right-click > **General** -- click through its items (Clone, Full Screen, Save to Gallery,
+   Save as PNG, Embed..., and Close — leave Close for last, it removes the viewer) and verify
+   each performs its named action; afterwards delete the gallery entry and discard the
+   downloaded PNG
+2. Right-click > **Tooltip** -- open **Edit...** and change the tooltip columns, then toggle
+   the show/hide tooltip item and the remaining Tooltip items (e.g. the row-group
+   tooltip) -- the hover tooltip follows each change
 3. Open the Context Panel
 4. Right-click > **Columns** -- verify the column set shown matches Context Panel > Value > Column Names
 

@@ -65,14 +65,15 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
     await setStackColumn(stackCol);
 
-    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900});
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     const pre = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       return {stackDefaultRel: bc.props.relativeValues};
     });
 
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
+
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-    await page.waitForTimeout(400); 
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(500);
@@ -163,8 +164,9 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
 
   await softStep('Scenario 1 Step 9: disabling Relative Values reverts bars to absolute widths (canvas delta)', async () => {
 
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
+
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-    await page.waitForTimeout(400); 
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0); 
     expect(settle.deltaPx).toBeLessThan(500);
@@ -259,8 +261,9 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   await softStep('Scenario 2 Step 5-6: setting a Stack column activates stacking — bars normalize to equal width (canvas delta), legend renders', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
 
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
+
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
-    await page.waitForTimeout(400); 
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
     expect(settle.deltaPx).toBeLessThan(500);

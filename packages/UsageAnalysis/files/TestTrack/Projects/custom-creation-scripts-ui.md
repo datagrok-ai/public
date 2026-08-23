@@ -1,27 +1,14 @@
 ---
 feature: projects
+realizes_atlas: [projects.cp.upload-save-reopen-golden]
 realizes: [views.projects]
-ui_only: true
-target_layer: manual
+priority: p0
+target_layer: manual-only
 coverage_type: regression
-produced_from: migrated
-original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/custom-creation-scripts.md
-migration_date: 2026-04-30
-moved_to_ui_at: 2026-05-01
-moved_to_ui_reason: |
-  All 3 in-scope scenario verifications (Step 1 run creation script,
-  Step 4 mutate System:DemoFiles/chem, Step 5 verify dynamic-data-
-  resolution on reopen) had only environmental/infra blockers per D3
-  classification (registered server function, per-test scratch folder,
-  test-account write perms on shared System: paths). Per 2026-05-01
-  decision: rather than tracking these as bucket-a gaps and waiting
-  for env/helper backlog to close, mark the entire scenario as
-  UI-only manual — the dynamic-data-resolution behavior is most
-  efficiently verified by human QA who can set up the chem folder
-  mutation, run the script via Tools > Scripting, and inspect the
-  result on reopen. The Playwright spec (custom-creation-scripts-spec.ts)
-  + verdict file (custom-creation-scripts-spec.verdict.yaml) were
-  deleted alongside this rename.
+manual_only_reason: |
+  The run mutates a shared server folder in a coordinated time window and
+  needs write permissions the automated test account lacks, so human QA sets
+  up the folder change and verifies the reopened project by hand.
 related_bugs: []
 ---
 
@@ -35,19 +22,6 @@ selects the CSV file with the highest numeric suffix from
 `System:DemoFiles/chem`; the test mutates that folder between save
 and reopen, then verifies the reopened project loads the new highest-
 suffixed file.
-
-This scenario is **UI-only manual** — there is no Playwright spec for
-it. Human QA runs it manually when validating dynamic-data-resolution
-behavior.
-
-This scenario is **self-contained**: it consumes no fixtures produced
-by other scenarios.
-
-The scenario contains a **destructive shared-state mutation** in
-step 4 (modifies `System:DemoFiles/chem`, which is a shared file-
-storage path). Manual QA must coordinate with concurrent test runs
-OR perform the mutation in a controlled time window, AND restore the
-folder afterwards (see Cleanup section below).
 
 ## Setup
 
@@ -148,21 +122,9 @@ After the manual run, restore environment to keep it idempotent:
 2. **Restore `System:DemoFiles/chem`** to its pre-mutation state:
    - If a new file was added in step 4, delete it.
    - If a file was renamed in step 4, rename it back.
-3. **Log the cleanup** in `custom-creation-scripts-run.md` under a
-   new dated entry (preserve the run record + cleanup confirmation).
 
-## Sign-off
-
-PASS — the project's dataframe on reopen reflects the post-mutation
-highest-suffixed file. No console errors. Folder restored.
-FAIL — list deviation (e.g., dataframe still reflects pre-mutation
-file, OR error balloon on reopen, OR script execution failure) +
-screenshot. Log in `custom-creation-scripts-run.md` under a new
-dated entry.
-
-## Notes
-
-- **Coverage scope.** This scenario covers only the
-  creation-script-rebuild-on-reopen behavior; it does not exercise
-  the URL-parameter + share aspects of dynamic creation scripts —
-  that would need separate coverage.
+---
+{
+  "order": 2,
+  "datasets": []
+}

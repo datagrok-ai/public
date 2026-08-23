@@ -29,6 +29,8 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
 
   await v.addViewerByIcon(page, 'pc-plot', 'PC-Plot', 15000);
 
+  await v.installEventWaits(page);
+
   const axisNames = (): Promise<string[]> => page.evaluate(() =>
     Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
       .map((e) => e.getAttribute('name')!.replace('axis-slider-', '')));
@@ -70,6 +72,7 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
     const fullCount = await filterCount();
 
     await page.evaluate(async () => {
+      const w = window as any;
 
       const svg = document.querySelector('[name="axis-slider-AGE"]')!;
       const maxHandle = svg.querySelector('[name="max-handle"]')!;
@@ -79,34 +82,13 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
       const mk = (x: number, y: number) =>
         ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
       maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-      await new Promise((r) => setTimeout(r, 50)); 
-      for (let dy = 20; dy <= 300; dy += 30) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-        await new Promise((r) => setTimeout(r, 20)); 
-      }
-      document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + 300)));
+      await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 300},
+        {steps: 10, stepMs: 20, holdMs: 50});
     });
     const filteredCount = await v.pollValue(filterCount, (n) => n < fullCount, 600, 100);
 
-    await page.evaluate(() => {
-      const canvas = document.querySelector('[name="viewer-PC-Plot"] canvas[name="canvas"]')!;
-      const crect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2,
-        clientX: crect.left + crect.width / 2, clientY: crect.top + crect.height / 2,
-      }));
-    });
-    await v.pollValue(
-      () => page.evaluate(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .some((el) => el.textContent!.trim() === 'Reset View')),
-      (present) => present, 500, 100);
-    await page.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-      const rv = items.find((el) => el.textContent!.trim() === 'Reset View');
-      if (rv)
-        (rv.closest('.d4-menu-item') as HTMLElement).click();
-    });
+    await v.driveContextMenuLeaf(page, 'PC-Plot', null, 'Reset View',
+      {canvasSelector: 'canvas[name="canvas"]'});
     const restoredCount = await v.pollValue(filterCount, (n) => n === fullCount, 600, 100);
 
     expect(filteredCount).toBeLessThan(fullCount);
@@ -338,7 +320,6 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
       return layout.id as string;
     });
     try {
-      await page.waitForTimeout(1000); 
       await page.evaluate(() => { grok.shell.tv.addViewer('Scatter plot'); });
       await v.pollValue(
         () => page.evaluate(() => grok.shell.tv.viewers.some((vw: any) => vw.type === 'Scatter plot')),

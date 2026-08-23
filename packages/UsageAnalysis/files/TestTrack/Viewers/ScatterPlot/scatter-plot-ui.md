@@ -1,12 +1,20 @@
+---
+feature: scatterplot
+target_layer: manual-only
+coverage_type: smoke
+manual_only_reason: |
+  What remains here needs a human eye or a real second table: switching the
+  viewer between several open tables, chemical structures used as markers and
+  as an axis, and keeping the plot's colors in step with the grid's color
+  coding.
+---
+
 # Scatter plot manual checklist
 
 Human-only checks for the Scatter plot; automated coverage lives in the other
 scenarios in this folder — axes and encoding, selection and zoom, zoom-driven
 filtering, the legend, regression and formula lines, labels and tooltip, plus
-the secondary settings in the main scatter plot scenario. What remains here
-needs a human eye or a real second table: switching the viewer between several
-open tables, chemical structures used as markers and as an axis, and keeping
-the plot's colors in step with the grid's color coding.
+the secondary settings in the main scatter plot scenario.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -63,6 +71,13 @@ All scenarios should start with the following sequence of events:
 6. Verify the scatter plot updates to match
 7. Remove the color coding from both grid columns and clear the plot's Color
    selector
+
+## Pick Up / Apply
+
+1. Customize the scatter plot: set X to AGE, Y to HEIGHT, Color to SEX, increase Marker Size
+2. Add a second Scatter plot with default settings
+3. Right-click the customized scatter plot and select Pick Up / Apply > Pick Up
+4. Right-click the second scatter plot and select Pick Up / Apply > Apply — the second viewer now matches the first (axes, color, marker size)
 
 ---
 {

@@ -84,9 +84,11 @@ const menuItemSized = (page: Page, name: string) => page.evaluate((n: string) =>
 async function commitColumn(page: Page, column: string): Promise<void> {
   const text = column.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150); 
+  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+    (n) => n > 0, 150, 50);
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200); 
+  await v.pollValue(() => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length),
+    (n) => n > 0, 200, 50);
   await page.keyboard.press('Enter');
   await waitFor(page, async () => (await viewerColumns(page)).markers === column, 4000);
   await settledLegend(page);
@@ -164,14 +166,7 @@ const readLegend = (page: Page): Promise<Legend> => page.evaluate(() => {
 });
 
 async function settledLegend(page: Page): Promise<Legend> {
-  let prev = await readLegend(page);
-  for (let i = 0; i < 30; i++) {
-    await page.waitForTimeout(100);
-    const cur = await readLegend(page);
-    if (JSON.stringify(cur) === JSON.stringify(prev)) return cur;
-    prev = cur;
-  }
-  return prev;
+  return v.pollStable(() => readLegend(page), (a, b) => JSON.stringify(a) === JSON.stringify(b), 3000, 100);
 }
 
 interface Ink {
@@ -210,14 +205,7 @@ const sameInk = (a: Ink, b: Ink) =>
 
 async function settledInk(page: Page): Promise<Ink> {
   await parkPointer(page);
-  let prev = await readInk(page);
-  for (let i = 0; i < 40; i++) {
-    await page.waitForTimeout(250);
-    const cur = await readInk(page);
-    if (sameInk(cur, prev)) return cur;
-    prev = cur;
-  }
-  return prev;
+  return v.pollStable(() => readInk(page), sameInk, 10000, 250);
 }
 
 async function settledInkAfterChange(page: Page, from: Ink): Promise<Ink> {

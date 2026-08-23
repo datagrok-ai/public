@@ -18,9 +18,10 @@ async function revealIcon(page: Page, iconName: string): Promise<{x: number; y: 
     return {x: c.x, y: c.y};
   });
   for (const [dx, dy] of [[35, 15], [40, 17], [30, 14], [45, 16]]) {
-    await page.mouse.move(origin.x + dx, origin.y + dy);
+    const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
 
-    await page.waitForTimeout(150);
+    await page.mouse.move(origin.x + dx, origin.y + dy);
+    await shown1();
   }
   return page.evaluate((name) => {
     const el = document.querySelector(`[name="${name}"]`) as HTMLElement;
@@ -56,7 +57,7 @@ async function driveSelect(page: Page, which: string, value: string): Promise<vo
     sel.dispatchEvent(new Event('input', {bubbles: true}));
   }, {which, value});
 
-  await page.waitForTimeout(1200);
+  await v.waitForViewerRendered(page, 'Box plot', 1200);
 }
 
 async function addComparisonTable(page: Page): Promise<string> {
@@ -96,7 +97,8 @@ async function addComparisonTable(page: Page): Promise<string> {
 
     await page.keyboard.press('Escape');
 
-    await page.waitForTimeout(300);
+    await v.pollStable(() => page.evaluate(() => document.querySelectorAll('.d4-menu-popup').length),
+    (a, b) => a === b, 300, 100);
   }
   if (!itemName)
     throw new Error(`Add-table item not reached; last menu: [${lastLabels.join(' | ')}]`);
@@ -145,7 +147,7 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     const pt = await revealIcon(page, 'show-group-stats');
     await page.mouse.click(pt.x, pt.y);
 
-    await page.waitForTimeout(1500);
+    await v.waitForViewerRendered(page, 'Box plot', 1500);
     expect(await bpProp(page, 'showGroupComparison')).toBe(true);
   });
 
@@ -300,31 +302,33 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
 
   await softStep('Scenario 2 Setup: WEIGHT / SEX, group comparison on', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-      bp.props.category2ColumnName = '';
-      bp.props.controlComparisons = false;
-      bp.props.controlGroup = '';
-      bp.props.covariateColumnName = '';
-      bp.props.category1ColumnName = 'SEX';
-      bp.props.valueColumnName = 'WEIGHT';
-
-      await new Promise((r) => setTimeout(r, 1000));
+      await w.__settled('viewer:Box plot.onViewerRendered', () => {
+        bp.props.category2ColumnName = '';
+        bp.props.controlComparisons = false;
+        bp.props.controlGroup = '';
+        bp.props.covariateColumnName = '';
+        bp.props.category1ColumnName = 'SEX';
+        bp.props.valueColumnName = 'WEIGHT';
+      }, 1000);
     });
     if (await bpProp(page, 'showGroupComparison') !== true) {
       const pt = await revealIcon(page, 'show-group-stats');
       await page.mouse.click(pt.x, pt.y);
 
-      await page.waitForTimeout(1200);
+      await v.waitForViewerRendered(page, 'Box plot', 1200);
     }
     expect(await bpProp(page, 'showGroupComparison')).toBe(true);
   });
 
   await softStep('Scenario 2 Step 2: covariate HEIGHT (regress-out default)', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-      bp.props.covariateColumnName = 'HEIGHT';
-
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__settled('viewer:Box plot.onViewerRendered', () => {
+        bp.props.covariateColumnName = 'HEIGHT';
+      }, 1500);
     });
     expect(await bpProp(page, 'adjustmentMode')).toBe('regressOut');
     const dom = await page.evaluate(() => {
@@ -359,10 +363,11 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
 
   await softStep('Scenario 2 Step 4: ANCOVA method', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-      bp.props.category1ColumnName = 'RACE';
-
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__settled('viewer:Box plot.onViewerRendered', () => {
+        bp.props.category1ColumnName = 'RACE';
+      }, 1200);
     });
     await driveSelect(page, 'control', 'Caucasian');
     await driveSelect(page, 'method', 'ANCOVA');
@@ -423,10 +428,11 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
 
   await softStep('Scenario 2 Step 6: matched-per-stratum baseline', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-      bp.props.category2ColumnName = 'SEX';
-
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__settled('viewer:Box plot.onViewerRendered', () => {
+        bp.props.category2ColumnName = 'SEX';
+      }, 1500);
     });
     await driveSelect(page, 'baseline', 'matched');
     expect(await bpProp(page, 'baselineMode')).toBe('matched');
@@ -447,12 +453,13 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
       expect(created).toContain('SIMPSON_VAL');
 
       await page.evaluate(async () => {
+        const w = window as any;
         const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-        bp.props.category1ColumnName = 'SEX';
-        bp.props.category2ColumnName = 'SIMPSON_STRAT';
-        bp.props.valueColumnName = 'SIMPSON_VAL';
-
-        await new Promise((r) => setTimeout(r, 1500));
+        await w.__settled('viewer:Box plot.onViewerRendered', () => {
+          bp.props.category1ColumnName = 'SEX';
+          bp.props.category2ColumnName = 'SIMPSON_STRAT';
+          bp.props.valueColumnName = 'SIMPSON_VAL';
+        }, 1500);
       });
 
       await page.waitForFunction(() => {
@@ -496,14 +503,15 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
     } finally {
 
       const names = await page.evaluate(async () => {
+        const w = window as any;
         const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-        if (bp) {
-          bp.props.valueColumnName = 'WEIGHT';
-          bp.props.category1ColumnName = 'RACE';
-          bp.props.category2ColumnName = 'SEX';
-        }
-
-        await new Promise((r) => setTimeout(r, 800));
+        await w.__settled('viewer:Box plot.onViewerRendered', () => {
+          if (bp) {
+            bp.props.valueColumnName = 'WEIGHT';
+            bp.props.category1ColumnName = 'RACE';
+            bp.props.category2ColumnName = 'SEX';
+          }
+        }, 800);
         const df = grok.shell.tv.dataFrame;
         for (const n of ['SIMPSON_STRAT', 'SIMPSON_VAL'])
           if (df.columns.names().includes(n)) df.columns.remove(n);
@@ -516,10 +524,11 @@ test('Box plot group comparison and covariate adjustment', async ({page}) => {
 
   await softStep('Scenario 2 Step 7: clear covariate', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
-      bp.props.covariateColumnName = '';
-
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__settled('viewer:Box plot.onViewerRendered', () => {
+        bp.props.covariateColumnName = '';
+      }, 1200);
     });
     expect(await bpProp(page, 'covariateColumnName')).toBe('');
     expect(await bpProp(page, 'adjustmentMode')).toBe('');

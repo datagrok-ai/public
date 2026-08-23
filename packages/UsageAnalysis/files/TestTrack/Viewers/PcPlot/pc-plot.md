@@ -124,8 +124,8 @@ All scenarios should start with the following sequence of events:
 3. Switch the AGE axis to log scale: in Context Panel > Value, mark AGE in the **Log Columns** selector (grouped with Column Names)
 4. Set **Color** (Context Panel > Color) to RACE and set **Legend Position** to **Left**
 5. Set title to "Source Plot"
-6. Right-click the first PC plot > **Pick up/Apply > Pick up**
-7. Right-click the second PC plot > **Pick up/Apply > Apply** -- second plot should match the first (axes, log scale, color, legend position, title)
+6. Right-click the first PC plot > **Pick Up / Apply > Pick Up**
+7. Right-click the second PC plot > **Pick Up / Apply > Apply** -- second plot should match the first (axes, log scale, color, legend position, title)
 8. Change the axes on the first PC plot -- the second plot should not be affected
 9. Adjust the range slider on the second PC plot -- it filters the shared table (the filtered row count drops), so the first plot updates to show the filtered lines while the second plot keeps its own axes
 

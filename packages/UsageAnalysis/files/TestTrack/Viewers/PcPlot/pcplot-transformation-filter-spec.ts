@@ -36,6 +36,8 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
+  await v.installEventWaits(page);
+
   await page.evaluate(() => {
     grok.shell.tv.getFiltersGroup();
   });
@@ -99,6 +101,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
 
   await softStep('Scenario 2 (GROK-18489) — second filter after DateTime color split works', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
       const pc = tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
@@ -116,8 +119,8 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
           bubbles: true, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
         }));
 
-        await new Promise((r) => setTimeout(r, 400));
-        return document.querySelector('[name="axis-slider-AGE"]')!;
+        return w.__poll(() => document.querySelector('[name="axis-slider-AGE"]'),
+          (el: Element | null) => el !== null, 400);
       };
       const dragHandle = async (handleName: string, dir: number, dist: number) => {
         const svg = await revealAndSlider();
@@ -127,12 +130,8 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
         const cy = hr.y + hr.height / 2;
 
         h.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-        await new Promise((r) => setTimeout(r, 50));
-        for (let d = 20; d <= dist; d += 30) {
-          document.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dir * d)));
-          svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dir * d)));
-          await new Promise((r) => setTimeout(r, 20));
-        }
+        await w.__drag(svg as HTMLElement, {x: cx, y: cy + dir * 20}, {x: cx, y: cy + dir * dist},
+          {steps: Math.max(1, Math.ceil((dist - 20) / 30)), stepMs: 20, holdMs: 50});
         await settle(df.onRowsFiltered, 600, () =>
           document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + dir * dist))));
       };
@@ -159,6 +158,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
 
   await softStep('Scenario 3 (github-972) — histogram column change does not reset PC filter', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
       const settle = (window as any).__settle;
@@ -173,8 +173,8 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
         bubbles: true, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
       }));
 
-      await new Promise((r) => setTimeout(r, 400));
-      const svg = document.querySelector('[name="axis-slider-AGE"]')!;
+      const svg: Element = await w.__poll(() => document.querySelector('[name="axis-slider-AGE"]'),
+        (el: Element | null) => el !== null, 400);
       const mh = svg.querySelector('[name="max-handle"]')!;
       const hr = mh.getBoundingClientRect();
       const cx = hr.x + hr.width / 2;
@@ -183,18 +183,13 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
         ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
 
       mh.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-      await new Promise((r) => setTimeout(r, 50));
-      for (let dy = 20; dy <= 300; dy += 30) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-        await new Promise((r) => setTimeout(r, 20));
-      }
+      await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 300},
+        {steps: 10, stepMs: 20, holdMs: 50});
       await settle(df.onRowsFiltered, 600, () =>
         document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + 300))));
       const filteredCount = df.filter.trueCount;
-      hist.props.valueColumnName = 'HEIGHT';
-
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__settled('viewer:Histogram.onViewerRendered',
+        () => { hist.props.valueColumnName = 'HEIGHT'; }, 500);
       return {
         filteredCount,
         histColAfter: hist.props.valueColumnName,
@@ -212,6 +207,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
     const bugErrsBefore =
       pageErrors.filter(isBugRelevantError).length + consoleErrors.filter(isBugRelevantError).length;
     const state = await page.evaluate(async () => {
+      const w = window as any;
       const tv = grok.shell.tv;
       const df = tv.dataFrame;
       const pc = tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
@@ -224,9 +220,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
       const fp = document.querySelector('[name="viewer-Filters"]')!;
       const closeIcon = fp.querySelector('[name="icon-times"]') as HTMLElement;
       if (closeIcon)
-        closeIcon.click();
-
-      await new Promise((r) => setTimeout(r, 500));
+        await w.__settled('grok.events.onViewerClosed', () => closeIcon.click(), 500);
 
       const pcStillPresent =
         !!tv.viewers.find((vw: any) => vw.type === 'PC Plot') &&

@@ -37,6 +37,8 @@ test('Bar chart tests', async ({page}) => {
 
   await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
 
+  await v.installEventWaits(page);
+
   await page.evaluate(() => {
     const bcEl = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
     const panelBase = bcEl.closest('.panel-base') as HTMLElement;
@@ -46,8 +48,8 @@ test('Bar chart tests', async ({page}) => {
   await v.pollValue(() => page.locator('.property-grid').count(), (n) => n > 0, 500, 100);
 
   async function canvasBaseline(): Promise<number> {
+    await v.waitForCanvasQuiet(page, 'Bar chart', {timeoutMs: 900, optional: true});
     await v.snapshotCanvasColors(page, 'Bar chart');
-    await page.waitForTimeout(500);
     return (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
   }
   async function canvasDelta(): Promise<number> {
@@ -79,8 +81,6 @@ test('Bar chart tests', async ({page}) => {
       {set: {colorAggrType: 'max'}, wait: 200, read: 'colorAggrType'},
       {set: {colorAggrType: 'med'}, wait: 200, read: 'colorAggrType'},
     ]);
-
-    await page.waitForTimeout(400);
 
     const preInvert = await canvasBaseline();
     await page.evaluate(() => {
@@ -292,14 +292,15 @@ test('Bar chart tests', async ({page}) => {
 
   await softStep('Legend position', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const old = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      if (old) old.close();
-      await new Promise((r) => setTimeout(r, 400));
+      if (old) await w.__settled('grok.events.onViewerClosed', () => old.close(), 400);
     });
     await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
-    await page.waitForTimeout(500);
+    await v.waitForViewerRendered(page, 'Bar chart', 500);
 
     const legend = await page.evaluate(async () => {
+      const w = window as any;
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const root = bc.root as HTMLElement;
       const laidOut = () => {
@@ -308,29 +309,33 @@ test('Bar chart tests', async ({page}) => {
       };
       const items = () => root.querySelectorAll('[name="legend"] .d4-legend-item').length;
 
-      bc.props.splitColumnName = 'RACE';
-      bc.props.valueColumnName = 'AGE';
-      bc.props.stackColumnName = '';
-      bc.props.legendVisibility = 'Always';
-      await new Promise((r) => setTimeout(r, 800));
-      const before = laidOut();
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.splitColumnName = 'RACE';
+        bc.props.valueColumnName = 'AGE';
+        bc.props.stackColumnName = '';
+        bc.props.legendVisibility = 'Always';
+      }, 800);
+      const before = await w.__poll(laidOut, (v: boolean) => v === false, 800);
 
-      bc.props.stackColumnName = 'SEX';
-      await new Promise((r) => setTimeout(r, 1500));
-      const after = laidOut();
-      const afterItems = items();
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.stackColumnName = 'SEX';
+      }, 1500);
+      const after = await w.__poll(laidOut, (v: boolean) => v === true, 1500);
+      const afterItems = await w.__poll(items, (n: number) => n >= 2, 1500);
 
       const positions: string[] = [];
       for (const pos of ['Left', 'Right', 'Top', 'Bottom']) {
-        bc.props.legendPosition = pos;
-        await new Promise((r) => setTimeout(r, 200));
+        await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+          bc.props.legendPosition = pos;
+        }, 200);
         positions.push(bc.props.legendPosition);
       }
 
-      bc.props.stackColumnName = '';
-      await new Promise((r) => setTimeout(r, 1500));
-      const clearedLaidOut = laidOut();
-      const clearedItems = items();
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.stackColumnName = '';
+      }, 1500);
+      const clearedLaidOut = await w.__poll(laidOut, (v: boolean) => v === false, 1500);
+      const clearedItems = await w.__poll(items, (n: number) => n === 0, 1500);
 
       return {before, after, afterItems, positions, clearedLaidOut, clearedItems};
     });
@@ -345,11 +350,13 @@ test('Bar chart tests', async ({page}) => {
 
   await softStep('Title and description', async () => {
     const info = await page.evaluate(async () => {
+      const w = window as any;
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
-      bc.props.showTitle = true;
-      bc.props.title = 'Demographics';
-      bc.props.description = 'By race';
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.showTitle = true;
+        bc.props.title = 'Demographics';
+        bc.props.description = 'By race';
+      }, 400);
       const root = bc.root as HTMLElement;
 
       const panel = (root.closest('.panel-base') as HTMLElement) ?? root;
@@ -360,14 +367,16 @@ test('Bar chart tests', async ({page}) => {
 
       const positions: string[] = [];
       for (const pos of ['Top', 'Bottom', 'Left', 'Right']) {
-        bc.props.descriptionPosition = pos;
-        await new Promise((res) => setTimeout(res, 150));
+        await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+          bc.props.descriptionPosition = pos;
+        }, 150);
         positions.push(bc.props.descriptionPosition);
       }
       r.positions = positions;
 
-      bc.props.descriptionVisibilityMode = 'Never';
-      await new Promise((res) => setTimeout(res, 300));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.descriptionVisibilityMode = 'Never';
+      }, 300);
       r.hidden = bc.props.descriptionVisibilityMode;
 
       const rootTextHidden = root.innerText ?? root.textContent ?? '';
@@ -421,24 +430,36 @@ test('Bar chart tests', async ({page}) => {
 
   await softStep('Context menu', async () => {
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const bc = Array.from(grok.shell.tv.viewers).find((view: any) => view.type === 'Bar chart') as any;
-      bc.props.splitColumnName = 'RACE';
-      bc.props.valueColumnName = 'AGE';
-      bc.props.stackColumnName = 'SEX';
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.splitColumnName = 'RACE';
+        bc.props.valueColumnName = 'AGE';
+        bc.props.stackColumnName = 'SEX';
+      }, 600);
       const canvas = bc.root.querySelector('canvas')!;
       const rect = canvas.getBoundingClientRect();
       canvas.dispatchEvent(new MouseEvent('contextmenu', {
         bubbles: true, cancelable: true, button: 2,
         clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
       }));
-      await new Promise((r) => setTimeout(r, 600));
-      const items = Array.from(document.querySelectorAll('.d4-menu-item-label')).map((e) => e.textContent!.trim());
+      // mechanism-under-test: the step asserts what the menu CONTAINS; drivePanelMenuLeaf drives to one leaf
+      // onContextMenu fires when the menu is REQUESTED and the tree fills in after, so the settle is
+      // the label count going quiet, not the event.
+      let seen = -1;
+      const items: string[] = await w.__poll(
+        () => Array.from(document.querySelectorAll('.d4-menu-item-label')).map((e) => e.textContent!.trim()),
+        (a: string[]) => {
+          const quiet = a.length > 0 && a.length === seen;
+          seen = a.length;
+          return quiet;
+        }, 600);
       const before = bc.props.showValueAxis;
       const sva = Array.from(document.querySelectorAll('.d4-menu-item-label'))
         .find((e) => e.textContent!.trim() === 'Show Value Axis');
-      if (sva) (sva.closest('.d4-menu-item') as HTMLElement).click();
-      await new Promise((r) => setTimeout(r, 500));
+      if (sva)
+        await w.__settled('viewer:Bar chart.onViewerRendered',
+          () => (sva.closest('.d4-menu-item') as HTMLElement).click(), 500);
       const after = bc.props.showValueAxis;
       bc.props.showValueAxis = before;
       return {items, before, after};
@@ -452,10 +473,10 @@ test('Bar chart tests', async ({page}) => {
   });
 
   await softStep('Data panel', async () => {
-    const result = await page.evaluate(async () => {
-      grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+    await v.closeAllAndWait(page);
 
+    const result = await page.evaluate(async () => {
+      const w = window as any;
       const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       grok.shell.addTableView(df);
       await new Promise((resolve) => {
@@ -473,47 +494,45 @@ test('Bar chart tests', async ({page}) => {
 
       const views = Array.from(grok.shell.views).filter((view: any) => view.type === 'TableView');
       const demogView = views.find((view: any) => view.dataFrame.name !== 'SPGI') as any;
-      if (demogView) grok.shell.v = demogView;
-      await new Promise((r) => setTimeout(r, 500));
+      if (demogView)
+        await w.__settled('grok.events.onCurrentViewChanged', () => { grok.shell.v = demogView; }, 500);
 
       const icon = document.querySelector('[name="icon-bar-chart"]') as HTMLElement;
-      icon.click();
-      await new Promise((r) => setTimeout(r, 1000));
+      await w.__settled('grok.events.onViewerAdded', () => icon.click(), 1000);
 
       const bc = Array.from(grok.shell.tv.viewers).find((view: any) => view.type === 'Bar chart') as any;
       const r: any[] = [];
 
       for (const src of ['Filtered', 'Selected', 'All']) {
-        bc.props.rowSource = src;
-        await new Promise((res) => setTimeout(res, 200));
+        await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+          bc.props.rowSource = src;
+        }, 200);
         r.push(bc.props.rowSource);
       }
       bc.props.rowSource = 'All';
 
       const spgi = Array.from(grok.shell.tables).find((t: any) => t.name === 'SPGI') as any;
-      bc.dataFrame = spgi;
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => { bc.dataFrame = spgi; }, 500);
       r.push(bc.dataFrame.name);
 
-      bc.props.filter = '${CAST Idea ID} < 634835';
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.filter = '${CAST Idea ID} < 634835';
+      }, 500);
       r.push(bc.props.filter);
 
-      bc.props.colorColumnName = 'Chemical Space Y';
-      await new Promise((res) => setTimeout(res, 300));
+      await w.__settled('viewer:Bar chart.onViewerRendered', () => {
+        bc.props.colorColumnName = 'Chemical Space Y';
+      }, 300);
       r.push(bc.props.colorColumnName);
 
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
-      await new Promise((res) => setTimeout(res, 1000));
 
-      bc.close();
-      await new Promise((res) => setTimeout(res, 500));
+      await w.__settled('grok.events.onViewerClosed', () => bc.close(), 500);
 
       const saved = await grok.dapi.layouts.find(layoutId);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise((res) => setTimeout(res, 3000));
+      await w.__settled('grok.events.onViewLayoutApplied', () => grok.shell.tv.loadLayout(saved), 3000);
 
       const bc2 = Array.from(grok.shell.tv.viewers).find((view: any) => view.type === 'Bar chart') as any;
       r.push(bc2 ? bc2.props.colorColumnName : 'NOT_RESTORED');

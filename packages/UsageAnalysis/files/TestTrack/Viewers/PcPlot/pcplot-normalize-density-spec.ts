@@ -33,6 +33,8 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
+  await v.installEventWaits(page);
+
   await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}], 500);
 
   const readRootInDom = () => page.evaluate(() => {
@@ -41,15 +43,8 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
   });
 
   const settledPx = async () => {
-    let prev = (await v.countCanvasPixels(page, 'PC Plot')).total;
-    let cur = prev;
-    for (let i = 0; i < 5; i++) {
-      await page.waitForTimeout(300);   
-      cur = (await v.countCanvasPixels(page, 'PC Plot')).total;
-      if (Math.abs(cur - prev) < 200) break;
-      prev = cur;
-    }
-    return cur;
+    await v.waitForCanvasQuiet(page, 'PC Plot', {timeoutMs: 1500, optional: true});
+    return (await v.countCanvasPixels(page, 'PC Plot')).total;
   };
 
   const setAllLines = async (on: boolean) => {
@@ -135,7 +130,7 @@ test('PC Plot — Normalization and Density Overlay', async ({page}) => {
     await setAllLines(true);
     await v.setViewerProps(page, 'PC Plot', [{set: {logColumnsColumnNames: ['AGE']}}], 400);
 
-    const alive = await page.evaluate(() => new Promise((r) => setTimeout(() => r(true), 10)));
+    const alive = await page.evaluate(() => document.body.isConnected);
     await v.setViewerProps(page, 'PC Plot', [
       {set: {logColumnsColumnNames: []}, wait: 300},
       {set: {showDensity: false}, wait: 300},

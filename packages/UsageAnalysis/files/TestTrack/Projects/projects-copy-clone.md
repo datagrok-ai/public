@@ -1,5 +1,7 @@
 ---
 feature: projects
+ui_coverage_split_to:
+  - projects-copy-clone-ui.md
 target_layer: playwright
 coverage_type: regression
 priority: p1

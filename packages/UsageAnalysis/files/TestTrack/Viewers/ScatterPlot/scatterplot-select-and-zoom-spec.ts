@@ -33,9 +33,10 @@ const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
 
 async function hoverPlot(page: Page): Promise<void> {
   const r = await canvasRect(page);
-  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 200);
 
-  await page.waitForTimeout(200);
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2);
+  await shown1();
 }
 
 const pickOnViewer = (page: Page, role: string, column: string) =>
@@ -140,14 +141,7 @@ const sameRect = (a: Rect, b: Rect) =>
   a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 
 async function settledViewport(page: Page): Promise<Rect> {
-  let prev = await viewport(page);
-  for (let i = 0; i < 24; i++) {
-    await page.waitForTimeout(150);
-    const cur = await viewport(page);
-    if (sameRect(cur, prev)) return cur;
-    prev = cur;
-  }
-  return prev;
+  return v.pollStable(() => viewport(page), sameRect, 3600, 150);
 }
 
 async function settledViewportAfterChange(page: Page, from: Rect): Promise<Rect> {
@@ -214,13 +208,15 @@ async function dragCanvas(page: Page, from: Frac, to: Frac, mods: string[] = [])
   const p1 = at(r, from);
   const p2 = at(r, to);
 
+  const shown2 = await v.armEvent(page, 'grok.events.onTooltipShown', 100);
   await page.mouse.move(p1.x, p1.y);
-  await page.waitForTimeout(100);
+  await shown2();
   for (const m of mods) await page.keyboard.down(m);
   await page.mouse.down();
   await page.mouse.move((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, {steps: 8});
+  const shown3 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
   await page.mouse.move(p2.x, p2.y, {steps: 8});
-  await page.waitForTimeout(150);
+  await shown3();
   await page.mouse.up();
   for (const m of [...mods].reverse()) await page.keyboard.up(m);
   await v.waitForViewerRendered(page, 'Scatter plot', 300);
@@ -230,16 +226,18 @@ async function lassoCanvas(page: Page, points: Frac[], mods: string[] = ['Shift'
   const r = await canvasRect(page);
   const path = points.map((p) => at(r, p));
 
+  const shown4 = await v.armEvent(page, 'grok.events.onTooltipShown', 100);
   await page.mouse.move(path[0].x, path[0].y);
-  await page.waitForTimeout(100);
+  await shown4();
   for (const m of mods) await page.keyboard.down(m);
   await page.mouse.down();
   for (const p of path.slice(1)) {
     await page.mouse.move(p.x, p.y, {steps: 6});
     await page.waitForTimeout(40);
   }
+  const shown5 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
   await page.mouse.move(path[0].x, path[0].y, {steps: 6});
-  await page.waitForTimeout(150);
+  await shown5();
   await page.mouse.up();
   for (const m of [...mods].reverse()) await page.keyboard.up(m);
   await v.waitForViewerRendered(page, 'Scatter plot', 400);
@@ -395,7 +393,7 @@ test('Scatter Plot — Point Selection and Viewport Navigation', async ({page}: 
     await setSliderProp(page, 'prop-jitter-size', 'marker', JITTER_X_CHANGED);
     expect((await viewerProps(page)).jitter).toBe(JITTER_X_CHANGED);
 
-    await page.waitForTimeout(1500);
+    await v.waitForViewerRendered(page, 'Scatter plot', 1500);
 
     expect(await settledSelection(page)).toBe(selected);
 
@@ -452,12 +450,14 @@ test('Scatter Plot — Point Selection and Viewport Navigation', async ({page}: 
     expect(handle).not.toBeNull();
     const beforeSlider = await viewport(page);
 
+    const shown6 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
     await page.mouse.move(handle!.x, handle!.y);
-    await page.waitForTimeout(150);
+    await shown6();
     await page.mouse.down();
     await page.mouse.move(handle!.x + 15, handle!.y, {steps: 6});
+    const shown7 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
     await page.mouse.move(handle!.x + 30, handle!.y, {steps: 6});
-    await page.waitForTimeout(150);
+    await shown7();
     await page.mouse.up();
     const afterSlider = await settledViewportAfterChange(page, beforeSlider);
 

@@ -34,54 +34,49 @@ test('PC Plot tests', async ({page}) => {
   });
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 10000});
 
+  await v.installEventWaits(page);
+
   await softStep('Menu Ribbon and To Script', async () => {
     const viewerExists = await page.evaluate(() => !!grok.shell.tv.viewers.find(v => v.type === 'PC Plot'));
     expect(viewerExists).toBe(true);
 
     await page.evaluate(async () => {
+      const w = window as any;
       const canvas = document.querySelector('[name="viewer-PC-Plot"] canvas[name="canvas"]')!;
       const rect = canvas.getBoundingClientRect();
       canvas.dispatchEvent(new MouseEvent('contextmenu', {
         bubbles: true, cancelable: true, button: 2,
         clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
 
-      await new Promise(r => setTimeout(r, 500));
+      await w.__poll(() => document.querySelectorAll('.d4-menu-item-label').length,
+        (n: number) => n > 0, 500);
       document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-      await new Promise(r => setTimeout(r, 800));
+      await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length,
+        (n: number) => n === 0, 800);
     });
 
     const balloon = await page.evaluate(async () => {
+      const w = window as any;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
       const rect = canvas.getBoundingClientRect();
 
       const reset = async () => {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-        await new Promise(r => setTimeout(r, 500));
+        await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length,
+          (n: number) => n === 0, 500);
       };
       const attempt = async () => {
         canvas.dispatchEvent(new MouseEvent('contextmenu', {
           bubbles: true, cancelable: true, button: 2,
           clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
         }));
-        await new Promise(r => setTimeout(r, 700));
-        const toScript = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-          .find(el => el.textContent!.trim() === 'To Script');
-        if (!toScript) { await reset(); return ''; }
-        const parent = toScript.closest('.d4-menu-item')!;
-        parent.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        parent.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 500));
-        const js = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-          .find(el => el.textContent!.trim() === 'To JavaScript');
-        if (!js) { await reset(); return ''; }
-        js.closest('.d4-menu-item')!.click();
-
-        for (let i = 0; i < 24; i++) {
-          const b = document.querySelector('.d4-balloon');
-          if (b && ((b as HTMLElement).innerText || '').length > 0) return (b as HTMLElement).innerText;
-          await new Promise(r => setTimeout(r, 250));
-        }
+        const opened = await w.__menuLeaf('To Script', 'To JavaScript').catch(() => false);
+        if (!opened) { await reset(); return ''; }
+        const balloonText = await w.__poll(
+          () => (document.querySelector('.d4-balloon') as HTMLElement | null)?.innerText ?? '',
+          (t: string) => t.length > 0, 6000, 250);
+        if (balloonText.length > 0) return balloonText;
         await reset();
         return '';
       };
@@ -110,6 +105,7 @@ test('PC Plot tests', async ({page}) => {
 
   await softStep('Axis scale via the context menu', async () => {
     const menuResult = await page.evaluate(async () => {
+      const w = window as any;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
       const rect = canvas.getBoundingClientRect();
@@ -119,22 +115,11 @@ test('PC Plot tests', async ({page}) => {
           bubbles: true, cancelable: true, button: 2,
           clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
         }));
-        await new Promise(r => setTimeout(r, 500));
+        await w.__poll(() => document.querySelectorAll('.d4-menu-item-label').length,
+          (n: number) => n > 0, 500);
       };
-      const clickSub = async (parent: string, child: string) => {
-        const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const p = items.find(el => el.textContent!.trim() === parent);
-        if (!p) return false;
-        const pm = p.closest('.d4-menu-item')!;
-        pm.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        pm.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 300));
-        const sub = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const c = sub.find(el => el.textContent!.trim() === child);
-        if (c) c.closest('.d4-menu-item')!.click();
-        await new Promise(r => setTimeout(r, 300));
-        return !!c;
-      };
+      const clickSub = (parent: string, child: string) =>
+        w.__menuLeaf(parent, child).then(() => true, () => false);
       await openMenu();
       await clickSub('Y Axis', 'Global');
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
@@ -164,6 +149,7 @@ test('PC Plot tests', async ({page}) => {
     expect(errorCount()).toBe(errBefore);
 
     const menu = await page.evaluate(async () => {
+      const w = window as any;
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
@@ -174,16 +160,7 @@ test('PC Plot tests', async ({page}) => {
           bubbles: true, cancelable: true, button: 2,
           clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
         }));
-        await new Promise(r => setTimeout(r, 500));
-        const p = Array.from(document.querySelectorAll('.d4-menu-item-label')).find(el => el.textContent!.trim() === parent);
-        if (!p) return false;
-        const pm = p.closest('.d4-menu-item')!;
-        pm.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        pm.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 350));
-        const c = Array.from(document.querySelectorAll('.d4-menu-item-label')).find(el => el.textContent!.trim() === child);
-        if (c) { c.closest('.d4-menu-item')!.click(); await new Promise(r => setTimeout(r, 350)); }
-        return !!c;
+        return w.__menuLeaf(parent, child).then(() => true, () => false);
       };
       const curBefore = pc.props.showCurrentLine;
       await clickSub('Selection', 'Show Current Line');
@@ -203,11 +180,10 @@ test('PC Plot tests', async ({page}) => {
     expect(menu.allRestored).toBe(menu.allBefore);
 
     const settledPx = async () => {
+      await v.waitForCanvasQuiet(page, 'PC Plot', {timeoutMs: 1500, optional: true});
       let prev = (await v.countCanvasPixels(page, 'PC Plot')).total;
       let cur = prev;
-      for (let i = 0; i < 5; i++) {
-
-        await page.waitForTimeout(300);
+      for (let i = 0; i < 1; i++) {
         cur = (await v.countCanvasPixels(page, 'PC Plot')).total;
         if (Math.abs(cur - prev) < 200) break;
         prev = cur;
@@ -277,6 +253,7 @@ test('PC Plot tests', async ({page}) => {
   await softStep('Show Filters from the context menu', async () => {
     await v.setViewerProps(page, 'PC Plot', [{set: {columnNames: ['AGE', 'HEIGHT', 'WEIGHT']}}], 800);
     const result = await page.evaluate(async () => {
+      const w = window as any;
       const pc = grok.shell.tv.viewers.find(v => v.type === 'PC Plot')!;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
@@ -286,16 +263,7 @@ test('PC Plot tests', async ({page}) => {
         canvas.dispatchEvent(new MouseEvent('contextmenu', {
           bubbles: true, cancelable: true, button: 2,
           clientX: cr.left + cr.width / 2, clientY: cr.top + cr.height / 2}));
-        await new Promise(r => setTimeout(r, 500));
-        const p = Array.from(document.querySelectorAll('.d4-menu-item-label')).find(el => el.textContent!.trim() === 'Filter');
-        if (!p) return false;
-        const pm = p.closest('.d4-menu-item')!;
-        pm.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        pm.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 350));
-        const c = Array.from(document.querySelectorAll('.d4-menu-item-label')).find(el => el.textContent!.trim() === child);
-        if (c) { c.closest('.d4-menu-item')!.click(); await new Promise(r => setTimeout(r, 400)); }
-        return !!c;
+        return w.__menuLeaf('Filter', child).then(() => true, () => false);
       };
       const showBefore = pc.props.showFilters;
       await clickFilterSub('Show Filters');
@@ -356,6 +324,7 @@ test('PC Plot tests', async ({page}) => {
       (n) => n >= 2, 500, 100);
 
     await page.evaluate(async () => {
+      const w = window as any;
       const pcs = () => grok.shell.tv.viewers.filter(v => v.type === 'PC Plot');
 
       const clickSub = async (idx: number, parent: string, child: string) => {
@@ -365,18 +334,7 @@ test('PC Plot tests', async ({page}) => {
           bubbles: true, cancelable: true, button: 2,
           clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2
         }));
-        await new Promise(r => setTimeout(r, 500));
-        const items = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const p = items.find(el => el.textContent!.trim() === parent);
-        if (!p) return;
-        const pm = p.closest('.d4-menu-item')!;
-        pm.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
-        pm.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 300));
-        const sub = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-        const c = sub.find(el => el.textContent!.trim() === child);
-        if (c) c.closest('.d4-menu-item')!.click();
-        await new Promise(r => setTimeout(r, 500));
+        await w.__menuLeaf(parent, child).catch(() => {});
       };
       await clickSub(0, 'Pick Up / Apply', 'Pick Up');
       await clickSub(1, 'Pick Up / Apply', 'Apply');
@@ -416,6 +374,7 @@ test('PC Plot tests', async ({page}) => {
       !!document.querySelectorAll('[name="viewer-PC-Plot"]')[1]?.querySelector('[name="axis-slider-AGE"]')),
     (present) => present, 400, 100);
     const draggedPc2 = await page.evaluate(async () => {
+      const w = window as any;
       const pc2El = document.querySelectorAll('[name="viewer-PC-Plot"]')[1] as HTMLElement;
       const svg = pc2El.querySelector('[name="axis-slider-AGE"]');
       if (!svg) return false;
@@ -424,14 +383,8 @@ test('PC Plot tests', async ({page}) => {
       const cx = hr.x + hr.width / 2, cy = hr.y + hr.height / 2;
       const mk = (x: number, y: number) => ({bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0});
       maxHandle.dispatchEvent(new MouseEvent('mousedown', mk(cx, cy)));
-
-      await new Promise(r => setTimeout(r, 50));
-      for (let dy = 20; dy <= 200; dy += 30) {
-        document.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-        svg.dispatchEvent(new MouseEvent('mousemove', mk(cx, cy + dy)));
-        await new Promise(r => setTimeout(r, 20));
-      }
-      document.dispatchEvent(new MouseEvent('mouseup', mk(cx, cy + 200)));
+      await w.__drag(svg as HTMLElement, {x: cx, y: cy + 20}, {x: cx, y: cy + 200},
+        {steps: 6, stepMs: 20, holdMs: 50});
       return true;
     });
     const filteredByPc2 = await v.pollValue(

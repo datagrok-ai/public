@@ -58,11 +58,9 @@ async function clickMainMenuLeaf(page: Page, leafName: string): Promise<boolean>
     const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
     const cv = bp.root.querySelector('canvas[name="canvas"]') as HTMLCanvasElement;
     cv.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, clientX: cx, clientY: cy, button: 2}));
-    let leaf: HTMLElement | null = null;
-    for (let i = 0; i < 40 && !leaf; i++) {
-      await new Promise((res) => setTimeout(res, 100));
-      leaf = document.querySelector(`[name="${name}"]`) as HTMLElement | null;
-    }
+    const leaf: HTMLElement | null = await (window as any).__poll(
+      () => document.querySelector(`[name="${name}"]`),
+      (el: HTMLElement | null) => el !== null, 4000, 100);
     if (leaf) leaf.click();
     return !!leaf;
   }, {name: leafName, cx: r.x + r.w * 0.5, cy: r.y + r.h * 0.5});
@@ -77,13 +75,13 @@ async function menuItemsAt(page: Page, fx: number, fy: number): Promise<
     const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
     const cv = bp.root.querySelector('canvas[name="canvas"]') as HTMLCanvasElement;
     cv.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, clientX: cx, clientY: cy, button: 2}));
+    const w = window as any;
     let prev = -1;
-    for (let i = 0; i < 30; i++) {
-      await new Promise((res) => setTimeout(res, 150));
-      const n = document.querySelectorAll('.d4-menu-item').length;
-      if (n > 0 && n === prev) break;
+    await w.__poll(() => document.querySelectorAll('.d4-menu-item').length, (n: number) => {
+      const quiet = n > 0 && n === prev;
       prev = n;
-    }
+      return quiet;
+    }, 4500, 150);
     return Array.from(document.querySelectorAll('.d4-menu-item')).map((i) => ({
       name: i.getAttribute('name'),
       d4name: i.getAttribute('d4-name'),
@@ -101,9 +99,9 @@ async function clickRevealIcon(page: Page, iconName: string): Promise<void> {
     return {x: c.x, y: c.y};
   });
   for (const [dx, dy] of [[35, 15], [40, 17], [30, 14], [45, 16]]) {
+    const shown1 = await v.armEvent(page, 'grok.events.onTooltipShown', 150);
     await page.mouse.move(origin.x + dx, origin.y + dy);
-
-    await page.waitForTimeout(150);
+    await shown1();
   }
   const pt = await page.evaluate((name) => {
     const el = document.querySelector(`[name="${name}"]`) as HTMLElement;
@@ -162,8 +160,8 @@ async function verticalSliderHandles(
       const fy = 0.15 + (i % 5) * 0.15;
       await page.mouse.move(s.rect.x + s.rect.w / 2, s.rect.y + s.rect.h * fy, {steps: 4});
     }
-
-    await page.waitForTimeout(300);
+    await v.pollStable(readSlider,
+      (a, b) => JSON.stringify(a) === JSON.stringify(b), 300, 100);
   }
   throw new Error('vertical range slider handles did not lay out to a usable span');
 }
@@ -186,6 +184,8 @@ test('Box plot property surface smoke', async ({page}) => {
     bp.props.category1ColumnName = 'SEX';
   });
   await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
+
+  await v.installEventWaits(page);
   await v.waitForViewerRendered(page, 'Box plot', 1500);
   await v.waitForCanvasQuiet(page, 'Box plot');
 
@@ -242,23 +242,19 @@ test('Box plot property surface smoke', async ({page}) => {
     const rs = await canvasRect(page);
     await page.mouse.click(rs.x + rs.w * 0.5, rs.y + rs.h * 0.93, {button: 'right'});
     const groupPt = await page.evaluate(async () => {
-      for (let i = 0; i < 30; i++) {
-        const b = document.querySelector('[name="div-Group-Comparison"]')?.getBoundingClientRect();
-        if (b && b.width > 0) return {x: b.x + b.width / 2, y: b.y + b.height / 2};
-        await new Promise((res) => setTimeout(res, 150));
-      }
-      return null;
+      const b: DOMRect | undefined = await (window as any).__poll(
+        () => document.querySelector('[name="div-Group-Comparison"]')?.getBoundingClientRect(),
+        (r: DOMRect | undefined) => !!r && r.width > 0, 4500, 150);
+      return b && b.width > 0 ? {x: b.x + b.width / 2, y: b.y + b.height / 2} : null;
     });
     expect(groupPt).not.toBeNull();
     await page.mouse.move(groupPt!.x, groupPt!.y);
     const leafPt = await page.evaluate(async () => {
-      for (let i = 0; i < 30; i++) {
-        const b = document.querySelector('[name="div-Group-Comparison---Show-Assumption-Checks"]')
-          ?.getBoundingClientRect();
-        if (b && b.width > 0) return {x: b.x + b.width / 2, y: b.y + b.height / 2};
-        await new Promise((res) => setTimeout(res, 150));
-      }
-      return null;
+      const b: DOMRect | undefined = await (window as any).__poll(
+        () => document.querySelector('[name="div-Group-Comparison---Show-Assumption-Checks"]')
+          ?.getBoundingClientRect(),
+        (r: DOMRect | undefined) => !!r && r.width > 0, 4500, 150);
+      return b && b.width > 0 ? {x: b.x + b.width / 2, y: b.y + b.height / 2} : null;
     });
     expect(leafPt).not.toBeNull();
     await page.mouse.move(leafPt!.x, leafPt!.y);
@@ -275,15 +271,13 @@ test('Box plot property surface smoke', async ({page}) => {
       const rp = await canvasRect(page);
       await page.mouse.click(rp.x + dx, rp.y + dy, {button: 'right'});
       const shape = await page.evaluate(async () => {
-        for (let i = 0; i < 20; i++) {
-          await new Promise((res) => setTimeout(res, 150));
-          const b = document.querySelector('[name="div-Show-P-Value"]')?.getBoundingClientRect();
-          if (b && b.width > 0) {
-            return {statsFormatCount: document.querySelectorAll(
-              '[name="div-Statistics-Format"], [name="div-Statistics---Statistics-Format"]').length};
-          }
-        }
-        return null;
+        const b: DOMRect | undefined = await (window as any).__poll(
+          () => document.querySelector('[name="div-Show-P-Value"]')?.getBoundingClientRect(),
+          (r: DOMRect | undefined) => !!r && r.width > 0, 3000, 150);
+        return b && b.width > 0
+          ? {statsFormatCount: document.querySelectorAll(
+            '[name="div-Statistics-Format"], [name="div-Statistics---Statistics-Format"]').length}
+          : null;
       });
       await dismissMenu(page, 300);
       if (shape) { pMenu = shape; break; }
@@ -356,8 +350,7 @@ test('Box plot property surface smoke', async ({page}) => {
       root.style.width = s.w;
       window.dispatchEvent(new Event('resize'));
     });
-
-    await page.waitForTimeout(1000);
+    await v.waitForViewerRendered(page, 'Box plot', 1000);
     const errDelta = consoleErrors.slice(errBefore);
     const pageErrDelta = pageErrors.slice(pageErrBefore);
     console.log('GROK-18677 narrow-resize error deltas:', JSON.stringify(errDelta), JSON.stringify(pageErrDelta));
@@ -379,12 +372,10 @@ test('Box plot property surface smoke', async ({page}) => {
     expect(inkNoMarkers).toBeLessThan(inkWithMarkers);
     await page.evaluate(() => { grok.shell.o = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot'); });
     const markerRowOpacity = await page.evaluate(async () => {
-      for (let i = 0; i < 40; i++) {
-        const row = document.querySelector('.property-grid tr[name="prop-marker-type"]') as HTMLElement | null;
-        if (row) return getComputedStyle(row).opacity;
-        await new Promise((r) => setTimeout(r, 250));
-      }
-      return null;
+      const row: HTMLElement | null = await (window as any).__poll(
+        () => document.querySelector('.property-grid tr[name="prop-marker-type"]'),
+        (el: HTMLElement | null) => el !== null, 10000, 250);
+      return row ? getComputedStyle(row).opacity : null;
     });
     console.log('Marker group prop-marker-type opacity (showMarkers off):', markerRowOpacity);
     expect(markerRowOpacity).not.toBeNull();
@@ -641,8 +632,7 @@ test('Box plot property surface smoke', async ({page}) => {
       const bp = grok.shell.tv.viewers.find((x: any) => x.type === 'Box plot');
       bp.props.table = 'spgi-100';
     });
-
-    await page.waitForTimeout(2000);
+    await v.waitForViewerRendered(page, 'Box plot', 2000);
 
     const afterCat2 = await bpProp(page, 'category2ColumnName');
     const spgiHasCat2 = await page.evaluate((c) => {

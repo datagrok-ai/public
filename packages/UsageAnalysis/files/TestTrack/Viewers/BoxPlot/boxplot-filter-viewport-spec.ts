@@ -78,7 +78,7 @@ async function averageMassFilterCanvas(page: Page): Promise<{x: number; y: numbe
     const sig = JSON.stringify(rect);
     if (rect && rect.w > 0 && rect.h > 0 && sig === prev) break;
     prev = sig;
-    await page.waitForTimeout(400);
+    await v.pollStable(readRect, (a, b) => JSON.stringify(a) === JSON.stringify(b), 400, 100);
   }
   if (!rect) throw new Error('Average Mass histogram filter canvas not found');
   return rect;
@@ -119,7 +119,8 @@ async function dragFilterHandle(
 ): Promise<boolean> {
   await page.mouse.move(rect.x + rect.w * 0.5, rect.y + rect.h * 0.5);
 
-  await page.waitForTimeout(400);
+  await v.pollStable(() => page.evaluate(() => getComputedStyle(document.body).cursor),
+    (a, b) => a === b, 400, 60);
   const cursorNow = () => page.evaluate(() => {
     const filtersRoot = document.querySelector('[name="viewer-Filters"]')!;
     const cards = Array.from(filtersRoot.querySelectorAll('.d4-filter'));
@@ -133,7 +134,8 @@ async function dragFilterHandle(
       const x = side === 'min' ? rect.x + px : rect.x + rect.w - px;
       const y = rect.y + rect.h * fy;
       await page.mouse.move(x, y);
-      await page.waitForTimeout(60); 
+      await v.pollStable(() => page.evaluate(() => getComputedStyle(document.body).cursor),
+        (a, b) => a === b, 60, 20);
       if (await cursorNow() === 'ew-resize') {
         const before = await filterTrueCount(page);
         await page.mouse.down();
@@ -395,7 +397,6 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     await v.snapshotCanvasColors(page, 'Box plot', OVERLAY);
     await resetFilter(page);
 
-    await page.waitForTimeout(1200);
     await v.waitForCanvasQuiet(page, 'Box plot');
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot', OVERLAY);
     console.log('S5 overlay scale deltaPx on filter widen:', deltaPx);

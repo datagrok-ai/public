@@ -1,6 +1,9 @@
 ---
 realizes_atlas: []
 realizes: [grid.column-resizing, grid.row-col-resizing, grid.column-reordering, grid.block-selection, grid.tooltip, grid.column-tools, grid.column-groups, grid.special-rows, powergrid.action.smart-form]
+priority: p2
+target_layer: manual-only
+coverage_type: smoke
 ---
 
 # Grid — Manual Test Checklist
@@ -152,6 +155,21 @@ All scenarios should start with the following sequence of events:
 2. Expand and collapse the group from its band — the member columns hide and reappear
 3. Change the group's name and color — the band reflects both
 4. Ungroup from the header context menu — the band disappears and the columns stay in place
+
+## Pick Up / Apply — Cross-Grid Visual Match
+
+*(Visual verification of color match between two grid instances)*
+
+*Dataset: spgi-100*
+
+1. Open spgi-100 and add a second Grid viewer on the same table (Add viewer > Grid)
+2. On the main grid, set a linear Color Coding on Average Mass and edit the color scheme
+3. Right-click the main grid and select Pick Up / Apply > Pick Up
+4. Right-click the added Grid viewer and select Pick Up / Apply > Apply — the Average Mass color coding, formatting, and style on both grids match visually
+
+## Cleanup
+
+Close all 
 
 ---
 {

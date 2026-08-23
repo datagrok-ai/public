@@ -2,36 +2,11 @@
 feature: powerpack
 target_layer: manual-only
 coverage_type: smoke
-pyramid_layer: ui-smoke
-ui_coverage_responsibility:
-  - add-new-column-function-drag-drop
-  - add-new-column-auto-bound-column-parameter
-ui_coverage_delegated_to: add-new-column.md
 companion_to: input-functions.md
-produced_from: ui-affordance-split
-split_date: 2026-05-27
-split_rationale: |
-  Two owned ui-smoke flows on the parent `input-functions.md` proved
-  empirically unscriptable from outside the Dart runtime per MCP recon
-  (cycle 2026-05-26-powerpack-automate-03, Round-2): drag-drop of a
-  function entry onto the formula editor, and selection of a column row
-  in the dialog's column-grid widget (private `columnsDf`). All
-  JS-accessible paths refuted (DG.Grid.fromRoot stub, columnsDf not in
-  grok.shell.tables, DG.Dialog wrapper carries no columnsDf, source-df
-  currentCol does not propagate to dialog selectedColumn, synthetic
-  mouse events absorbed by overlay canvas, keyboard arrow events
-  Dart-event-bus-bound). The parent spec had to fall back to JS-API
-  substitution (`document.execCommand('insertText', ...)` + source-df
-  `currentCol` setter with `usedFallback: true` annotation), which
-  violates the pyramid_layer: ui-smoke rule "JS API substitution NOT
-  permitted for flows in ui_coverage_responsibility". This companion
-  carries those affordances as manual-only coverage; the parent retains
-  the `add-new-column-function-plus-icon` flow (trusted `.click()` on
-  `[name="icon-plus"]` — Gate B PASSED).
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities: []
-scope_reductions: []
+manual_only_reason: |
+  Dragging a function onto the formula editor and selecting a column in the
+  dialog's canvas column list do not respond to scripted input — both must be
+  performed by hand.
 related_bugs: []
 ---
 
@@ -113,11 +88,9 @@ function's parameter type results in the parameter placeholder
 - The plus-icon insertion path is covered by the automated test in
   `input-functions.md`; only the drag-and-drop and column-list-selection
   triggers require manual verification.
-- If a future PowerPack build exposes the dialog's internals (column
-  selection, or the formula editor) via a public API, these flows could
-  be automated and moved back into `input-functions.md`.
 
 ---
 {
-  "order": 99
+  "order": 99,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

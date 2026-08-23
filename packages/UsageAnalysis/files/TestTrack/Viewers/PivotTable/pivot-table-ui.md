@@ -1,6 +1,12 @@
+---
+feature: pivottable
+target_layer: manual-only
+coverage_type: smoke
+---
+
 # Pivot table — manual checklist
 
-Manual checklist. Not included in Playwright automation.
+Manual checklist — only items not covered by the automated tests.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -27,5 +33,5 @@ All scenarios should start with the following sequence of events:
 ---
 {
   "order": 101,
-  "datasets": ["System:DemoFiles/demog.csv", "System:AppData/Chem/tests/spgi-100.csv"]
+  "datasets": ["System:DemoFiles/demog.csv"]
 }
