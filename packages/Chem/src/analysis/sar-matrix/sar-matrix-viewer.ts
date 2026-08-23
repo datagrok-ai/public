@@ -824,9 +824,11 @@ export class SarMatrixViewer extends DG.JsViewer {
         threshold: this.threshold,
         rankScheme: this.rankScheme as SarRankScheme,
       };
-      // A set carried in by a layout is the analysis already; rebuilding it would cost minutes.
-      const matrices = this.matricesData && !this.matrices.length ?
-        JSON.parse(this.matricesData) as SarMatrix[] :
+      // A set carried in by a layout is the analysis already; rebuilding it would cost minutes. An
+      // empty one is not a set: restoring it would leave the settings that produced it unable to run.
+      const carried = this.matricesData && !this.matrices.length ?
+        JSON.parse(this.matricesData) as SarMatrix[] : null;
+      const matrices = carried?.length ? carried :
         await runSarMatrix(molecules, activity as DG.Column<number>, params);
       // Closed while the workers ran; rendering now would build a grid nothing releases.
       if (this.detached)
