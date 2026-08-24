@@ -583,13 +583,33 @@ export async function saveQuery(page: Page, friendlyName: string): Promise<void>
   // landed — a lingering dialog or the preloader swallows it, and the spec then waits out
   // the whole timeout with nothing saved. Re-click until the query is actually on the
   // server. Save is idempotent on an existing query, so a repeat is an update, not a copy.
-  await expect(async () => {
-    if (await findQueryByFriendlyName(page, friendlyName)) return;
-    await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
-    await expect.poll(async () =>
-      (await findQueryByFriendlyName(page, friendlyName)) !== null,
-    { timeout: 20_000 }).toBe(true);
-  }).toPass({ timeout: 90_000 });
+  try {
+    await expect(async () => {
+      if (await findQueryByFriendlyName(page, friendlyName)) return;
+      await page.locator('[name="button-Save"]').first().click({ timeout: 5_000 });
+      await expect.poll(async () =>
+        (await findQueryByFriendlyName(page, friendlyName)) !== null,
+      { timeout: 20_000 }).toBe(true);
+    }).toPass({ timeout: 90_000 });
+  } catch (e) {
+    // A bare timeout cannot tell "Save never committed" from "committed under a different
+    // name", and those have different owners. Report what the server and the editor actually
+    // hold so the next occurrence is diagnosable from the CI log alone.
+    const state = await page.evaluate(async (fn) => {
+      const g = (window as unknown as { grok: any }).grok;
+      const byName = await g.dapi.queries.filter(`name = "${fn}"`).list().catch(() => []);
+      const nameInput = document.querySelector('[name="input-Name"]') as HTMLInputElement | null;
+      const save = document.querySelector('[name="button-Save"]') as HTMLElement | null;
+      return {
+        foundByName: byName.map((q: any) => ({name: q.name, friendlyName: q.friendlyName})),
+        nameInputValue: nameInput?.value ?? '(no name input)',
+        saveButton: save ? save.className : '(absent)',
+        dialogsOpen: document.querySelectorAll('.d4-dialog').length,
+      };
+    }, friendlyName).catch((err) => ({probeFailed: String(err).slice(0, 200)}));
+    throw new Error(`saveQuery("${friendlyName}") never appeared with that friendlyName.\n` +
+      `Editor/server state at give-up: ${JSON.stringify(state)}\n${String(e).slice(0, 400)}`);
+  }
 }
 
 /** Find a saved query by the user-facing name (stored server-side as `friendlyName`). */

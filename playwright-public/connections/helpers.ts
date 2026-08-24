@@ -407,7 +407,19 @@ export async function clickConnectionTest(page: Page, timeout = 60_000): Promise
 /** Click the OK button in the connection dialog and wait for the dialog to detach. */
 export async function clickConnectionOk(page: Page): Promise<void> {
   await page.locator('.d4-dialog [name="button-OK"]').click();
-  await page.locator('.d4-dialog').waitFor({ state: 'detached', timeout: 15_000 });
+  try {
+    // Saving a connection is a server round trip and 15s is not always enough on a loaded agent.
+    await page.locator('.d4-dialog').waitFor({ state: 'detached', timeout: 60_000 });
+  } catch (e) {
+    // A dialog that never closes is either a slow save or a rejected one; the balloon says which,
+    // and without it the failure is an anonymous locator timeout.
+    const why = await page.evaluate(() => ({
+      dialogs: Array.from(document.querySelectorAll('.d4-dialog')).map((d) => d.getAttribute('name')),
+      balloons: Array.from(document.querySelectorAll('.grok-balloon, .d4-balloon'))
+        .map((b) => (b.textContent || '').trim()).filter(Boolean),
+    })).catch(() => null);
+    throw new Error(`the connection dialog did not close after OK: ${JSON.stringify(why)}`);
+  }
 }
 
 /** Click the SAVE button inside the connection dialog (used by Edit... in some versions). */

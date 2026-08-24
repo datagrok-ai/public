@@ -220,8 +220,10 @@ test.describe.serial('Connections / Browser (Postgres / browser_new_test_postgre
     await showContextPanel(page);
 
     const { paneTextContent } = await clickContextPanelSection(page, 'Activity');
-    const text = await paneTextContent();
-    expect(text).toMatch(/created|edited|shared|test/i);
+    // The pane paints its header and entry count first and fills the rows in afterwards, so a
+    // single read can catch it at "Activity3" — the count without the entries.
+    await expect.poll(paneTextContent, { timeout: 20_000, intervals: [500, 1000, 2000] })
+      .toMatch(/created|edited|shared|test/i);
   });
 
   test('5. Chats — send a message via the chat box', async ({ page }) => {
