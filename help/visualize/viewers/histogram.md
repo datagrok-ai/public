@@ -56,7 +56,7 @@ Distribution lines help visualize and compare the distribution patterns across d
 | **Data** | | |
 | Show Filtered Out Rows | boolean | Whether the filtered out rows should be shown with the semi-transparent color See also *Filtered Out Color* |
 | Filtering Enabled | boolean | Allows to filter table using the range slider on the bottom. |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **X Axis** | | |
 | Value Column Name | string | A numerical column used to calculate the distribution of values. |
@@ -108,7 +108,7 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Allow Dynamic Menus | boolean |  |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Selection** | | |
@@ -140,8 +140,8 @@ Distribution lines help visualize and compare the distribution patterns across d
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

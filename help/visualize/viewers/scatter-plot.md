@@ -243,9 +243,9 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | **Data** | | |
 | Filter Out Invalid | boolean | Invalid are null values and not positive numbers if axis is logarithmic. |
 | Show Filtered Out Points | boolean | When true, filtered out points are rendered using *Filtered Out Rows Color*. |
-| Axes Follow Filter | boolean | When true, scatter plot will zoom to an area defined by the range filters for X and Y columns, even if *Zoom And Filter* property is not set to Zoom by Filter. |
+| Axes Follow Filter | boolean | When true, scatter plot will zoom to an area defined by the range filters for X and Y columns, even if *Zoom And Filter* property is not set to "Zoom by Filter". |
 | Zoom And Filter | string | Determines the relationship between table filter and scatter plot area: * No action: they are disconnected * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out * Zoom by filter: scatter plot focuses on the filtered points as the filter changes * Pack and zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes. |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **X Axis** | | |
 | X Column Name | string | A column to use on the X axis. Could be numerical or categorical. |
@@ -289,7 +289,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Size Column Name | string | A numerical column to use for size-coding markers. See also *Marker Min Size* and *Marker Max Size*. |
 | Show Size Selector | boolean |  |
 | Show Markers With Empty Size | boolean | When a *Size* column is set, show rows with empty values instead of hiding them. |
-| Size Axis Type | string | Linear or logarithmic scale for the *Size* column. |
+| Marker Size Scaling | string | Linear or logarithmic scale for the *Size* column. |
 | **Marker** | | |
 | Markers Column Name | string | A categorical column that determines the shape of the markers. |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
@@ -312,7 +312,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Label As Marker Size | number | Marker size in which label is inscribed. |
 | Label Content Size | number | Label inner content size. |
 | **Lines** | | |
-| Lines Order Column Name | string | When defined, a line would be drawn for each series (defined by the categorical color column) using the order specified by Lines Order |
+| Lines Order Column Name | string | When defined, a line would be drawn for each series (defined by the categorical color column) using the order specified by "Lines Order" |
 | Lines By Column Name | string | When defined, lines are split into separate series by this categorical column instead of the color column. |
 | Lines Width | number | Defines the width of the lines connecting the markers. See **Lines Width**. |
 | Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
@@ -322,7 +322,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Mean Absolute Error | boolean |  |
 | Show Root Mean Square Error | boolean |  |
 | Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
-| Regression Common Slope | boolean | Fit the per-category regression lines by ANCOVA: one common (pooled) slope, each line through its group''s adjusted mean, with a *Regression Confidence Level* band. Needs numerical X and Y. |
+| Regression Common Slope | boolean | Fit the per-category regression lines by ANCOVA: one common (pooled) slope, each line through its group's adjusted mean, with a *Regression Confidence Level* band. Needs numerical X and Y. |
 | Regression Confidence Level | number | Confidence level (%) of the band around each common-slope line. |
 | Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
 | Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
@@ -332,7 +332,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | **Selection** | | |
 | Show Current Point | boolean | Controls the indication of the current row |
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
-| Show Mouse Over Row Group | boolean | Highlight ''mouse-over'' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
+| Show Mouse Over Row Group | boolean | Highlight 'mouse-over' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
 | Show Selected Rows | boolean | When checked, selected markers are highlighted using the selected rows color. When unchecked, selected markers use their regular color coding. |
 | Reset Selection On Background Click | boolean | When true, clicking on the background (no point hit) clears the current selection. Set to false to preserve the selection when accidentally clicking outside of the markers. |
 | **General** | | |
@@ -346,7 +346,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Style** | | |
@@ -362,8 +362,8 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Grid Line Color | number |  |
 | Whisker Color | number |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
-| Axes Use Column Format | boolean | Determines whether the axes should follow the non-precision-related format (such as money) set for the corresponding column. |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column's color coding is used. |
+| Axes Use Column Format | boolean | Determines whether the axes should follow the non-precision-related format (such as "money") set for the corresponding column. |
 | Auto Axis Size | boolean | If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision. If false, the specified *X Axis Height* and *Y Axis Width* properties are used. |
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
 | Y Axis Width | number | Requires *Auto Axis Size* to be turned off. |
@@ -391,8 +391,8 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 
 
 See also:
