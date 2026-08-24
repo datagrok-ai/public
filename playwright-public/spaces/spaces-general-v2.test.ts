@@ -698,10 +698,12 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     // already selected would clear it.
     if (!/View and use/.test(await permLabel.textContent() ?? ''))
       await permTree.locator('[name="tree-View-and-use"] input[type="checkbox"]').check();
-    await page.keyboard.press('Escape');
+    // Escape closes the whole Share dialog and leaves the popup orphaned, so dismiss it the
+    // way a user would — by clicking on into the recipient field.
+    const userInput = page.locator('input[placeholder*="User"]').first();
+    await userInput.click();
     await expect(permTree).toBeHidden({ timeout: 5_000 });
     await expect(permLabel).toHaveText(/View and use/);
-    const userInput = page.locator('input[placeholder*="User"]').first();
     await userInput.fill(SHARING_LOGIN);
     await page.waitForTimeout(1000);
     // Select the user from autocomplete dropdown
