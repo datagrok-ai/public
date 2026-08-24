@@ -684,14 +684,23 @@ test('7. Share dialog: UI structure, share with permission, verify, delete remov
     await rightClickSpace(page, SPACE);
     await clickMenuItem(page, 'Share...');
     await expect(page.locator('input[placeholder*="User"]').first()).toBeVisible({ timeout: 8_000 });
-    const permSelect = page.locator('select').first();
-    await expect(permSelect).toBeVisible({ timeout: 5_000 });
-    await expect(permSelect.locator('option', { hasText: /Full access/i })).toHaveCount(1);
-    await expect(permSelect.locator('option', { hasText: /View and use/i })).toHaveCount(1);
+    const permSelector = page.locator('[name="div-share-selector"]');
+    const permLabel = permSelector.locator('.grok-privilege-selector-label');
+    await expect(permSelector).toBeVisible({ timeout: 5_000 });
+    await permSelector.locator('.grok-privilege-selector').click();
+    const permTree = page.locator('.grok-privilege-selector-tree');
+    await expect(permTree).toBeVisible({ timeout: 5_000 });
+    await expect(permTree.locator('[name="tree-Full-access"]')).toHaveCount(1);
+    await expect(permTree.locator('[name="tree-View-and-use"]')).toHaveCount(1);
 
     // Part B: select "View and use" permission explicitly, share with second user
-    await permSelect.selectOption({ label: 'View and use' });
-    const selectedValue = await permSelect.inputValue();
+    // "View and use" is the default, and the tree items are checkboxes — clicking one that is
+    // already selected would clear it.
+    if (!/View and use/.test(await permLabel.textContent() ?? ''))
+      await permTree.locator('[name="tree-View-and-use"] input[type="checkbox"]').check();
+    await page.keyboard.press('Escape');
+    await expect(permTree).toBeHidden({ timeout: 5_000 });
+    await expect(permLabel).toHaveText(/View and use/);
     const userInput = page.locator('input[placeholder*="User"]').first();
     await userInput.fill(SHARING_LOGIN);
     await page.waitForTimeout(1000);
