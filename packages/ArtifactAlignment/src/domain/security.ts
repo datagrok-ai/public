@@ -21,14 +21,8 @@ async function allUsers(): Promise<DG.Group> {
   return grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
 }
 
-/** One-time (idempotent) security setup for the schema: umbrella groups, registry
- * visibility, and per-column write gating on the approval/curation columns.
- *
- * Column security is table-wide, so Edit on the approval columns goes to an umbrella
- * group containing every program's approvers. Per-program authority (an Alpha approver
- * must not approve Beta rows) additionally requires Edit on the row's delegate program
- * row, and the service re-checks membership in the row's own approvers group before
- * flipping status. */
+/** One-time (idempotent) security setup: umbrella groups, registry visibility, column
+ * gating — docs/artifact-alignment.html § Permissions (as implemented). */
 export async function setupSchemaSecurity():
     Promise<{viewers: DG.Group, approvers: DG.Group, contributors: DG.Group}> {
   const viewers = await ensureGroup(UMBRELLA_VIEWERS);
@@ -36,21 +30,8 @@ export async function setupSchemaSecurity():
   const contributors = await ensureGroup(UMBRELLA_CONTRIBUTORS);
   const all = await allUsers();
 
-  // Table gate: without a table-level View grant the server refuses ANY access
-  // for non-admins — row shares alone never surface rows (core ask: per-row
-  // visibility trimming), and a table View grant exposes every row of the
-  // table. So the catalog tables are gated to the artifact audience umbrellas:
-  // any program's audience sees the whole registry, while WRITES stay
-  // per-program — the insert/update predicate checks Edit on the row's
-  // delegate program row, which only that program's contributors and approvers
-  // hold.
-  // Writes are authorized at TABLE level only — verified: a delegate-row Edit
-  // share alone cannot insert, and a table Edit grant writes into every
-  // program. So the umbrellas get table Edit, and per-program isolation is
-  // enforced service-side through the platform's effective row permission
-  // (publish/curate require Edit on the program row; approve/reject
-  // additionally check approvers-group membership); a master-row-scoped
-  // insert/update predicate stays a core ask.
+  // Grants are table-wide by platform necessity; per-program isolation is
+  // service-side — doc § Permissions and § Known design gaps.
   for (const table of [T_PROGRAM, T_STUDY, T_ALIGNMENT, T_HISTORY,
     T_PROGRAM_COMPOUND, T_ALIGNMENT_COMPOUND, T_ALIGNMENT_TAG]) {
     const client = grok.dapi.domains.table(table);
@@ -71,13 +52,8 @@ export async function setupSchemaSecurity():
   // publish creates missing compounds by registration code, same as tags
   await compound.grant(contributors.id, 'Edit');
 
-  // Archiving a superseded draft (republish, approve-over) deletes its live
-  // alignment row, and Delete is a grant level of its own — Edit alone leaves
-  // archiving admin-only. Deletes are authorized against the SECURING entity,
-  // which for the master-mode alignment table is the program table (verified:
-  // an alignment-table Delete grant leaves canDelete false and the delete
-  // forbidden; a program-table grant flips both) — same accepted breadth as
-  // the table-wide Edit above.
+  // The archive delete authorizes against the SECURING program table, not the
+  // alignment table (verified) — doc § Permissions.
   const programs = grok.dapi.domains.table(T_PROGRAM);
   for (const group of [contributors, approvers])
     await programs.grant(group.id, 'Delete');
@@ -118,10 +94,8 @@ export interface ProgramInfo {
   approvers: DG.Group;
 }
 
-/** Idempotently creates a program with its three audience groups and row grants:
- * viewers get View on the program row (alignment rows inherit it through the master
- * delegate); contributors and approvers get Edit (write-coupling accepted per the
- * design — inserting a version row routes through the delegate). */
+/** Idempotently creates a program with its audience groups, umbrella nesting, and
+ * row grants — doc § Permissions (as implemented). */
 export async function ensureProgram(spec: ProgramSpec): Promise<ProgramInfo> {
   const names = programGroupNames(spec.code);
   const viewers = await ensureGroup(names.viewers);

@@ -31,9 +31,8 @@ async function ensureRegistryRows(table: string, names: string[], column: string
 const joinNames = (links?: {name: string}[]) =>
   (links ?? []).map((l) => l.name).join(',');
 
-/** Transaction ops copying a live version row into alignment_history and removing
- * it — always combined with the write they make room for, so the catalog never
- * exposes an intermediate state. */
+/** History copy + live-row delete; always runs in the same transaction as the write
+ * it makes room for — doc § Publish & republish flow. */
 function archiveOps(row: AlignmentRow, supersededOn: dayjs.Dayjs): DG.DomainTransactionOp[] {
   return [
     {op: 'insert', table: 'alignment_history', values: {
@@ -84,8 +83,7 @@ export interface PublishRequest {
   /** Free tag names; created when missing. Defaults to the previous version's tags. */
   tags?: string[];
   path?: string;
-  /** Leaves the new version pending even though the gate is off — the explicit-review
-   * path (and the way tests exercise the pending state). */
+  /** Leaves the new version pending even though the gate is off. */
   skipAutoApprove?: boolean;
 }
 
@@ -98,14 +96,9 @@ export interface PublishResult {
   status: PublicationStatus;
 }
 
-/** Publishes a saved Compute2 run — a workflow run, or a single function run (an RFV
- * model run or an individually saved step) — into a program: freezes it into a
- * stamped catalog copy, then inserts the next version row of the publication addressed
- * by the (program, study, name) republish key. The previous approved version stays
- * live until this version is approved; a stale in-review row (rejected or superseded
- * draft) is archived first. The review gate is OFF for workflow runs, so the service
- * approves in the same breath — unless the caller lacks approval rights, in which
- * case the version stays pending. */
+/** Freezes a saved or live Compute2 run and inserts the next version row of the
+ * (program, study, name) publication — docs/artifact-alignment.html § Publish &
+ * republish flow. */
 export async function publishWorkflowRun(req: PublishRequest): Promise<PublishResult> {
   const source = req.sourceCall ?? req.sourceMetaCallId;
   if (source == null)
@@ -155,10 +148,7 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
   if (!ins.created)
     throw new Error(`Version row was not created (${ins.status})`);
 
-  // Gate off for workflow runs: auto-approve with the same audit trail as a human
-  // approval. Under the emulated service identity this runs as the publishing user,
-  // so it succeeds only when they hold approval rights; otherwise the version stays
-  // pending for a real approver.
+  // gate-off auto-approve runs as the acting user: sticks only with approval rights
   let status: PublicationStatus = 'pending';
   if (req.skipAutoApprove !== true) {
     try {
@@ -170,10 +160,9 @@ export async function publishWorkflowRun(req: PublishRequest): Promise<PublishRe
   return {publicationId, revision, rowId: ins.id, artifactId: clone.metaCall.id, status};
 }
 
-/** Flips a pending version to approved: archives the previously approved version and
- * stamps the approval columns in one transaction, so the publication always shows
- * exactly one approved row. Human approvals enforce approvers-group membership and
- * author != approver service-side; `auto` marks the gate-off same-breath approval. */
+/** Flips a pending version to approved, archiving the previous approved version in the
+ * same transaction; `auto` marks the gate-off same-breath approval — doc § Publish &
+ * republish flow. */
 export async function approvePublication(rowId: string, options?: {auto?: boolean}): Promise<void> {
   await DG.retryOnVersionConflict(async () => {
     const row = await alignment().get(rowId);
@@ -200,9 +189,8 @@ export async function approvePublication(rowId: string, options?: {auto?: boolea
   });
 }
 
-/** Rejects a pending version with a reason. The rejected row stays live (occupying
- * the single in-review slot) until the author resubmits, which archives it; the
- * audience keeps seeing the last approved version throughout. */
+/** Rejects a pending version with a reason; the rejected row stays live until a
+ * resubmission archives it — doc § Publish & republish flow. */
 export async function rejectPublication(rowId: string, reason: string,
   options?: {auto?: boolean}): Promise<void> {
   await DG.retryOnVersionConflict(async () => {
@@ -225,24 +213,17 @@ export async function rejectPublication(rowId: string, reason: string,
   });
 }
 
-/** Per-program write authority: transitive membership in the program's
- * contributors or approvers group — the same groups the program row's Edit is
- * shared to. Resolved through the acting user's session (holds under
- * impersonation, unlike DomainRow.permissions(), whose client-side admin
- * fast-path always answers true in an admin browser session). The table-level
- * umbrella grants are wider (a master-row-scoped write predicate is a core
- * ask), so the services enforce per-program isolation themselves. */
+/** Per-program write authority via transitive group membership — NOT
+ * DomainRow.permissions(), whose client-side admin fast-path ignores the acting
+ * identity under impersonation (doc § Platform tasks, row-permission probes). */
 async function requireProgramWriter(
   groups: {contributors: DG.Group | null, approvers: DG.Group | null}, action: string): Promise<void> {
   if (!await currentUserIn(groups.contributors) && !await currentUserIn(groups.approvers))
     throw new Error(`Only members of the program contributors or approvers groups can ${action} it`);
 }
 
-/** Post-publish curation of a live version row — the informational columns only
- * (tags, path, compounds, description, workstream); identity (name, program,
- * study, revision, artifact refs) and the approval columns are not editable
- * here. Requires program-group membership; the tags/path writes additionally
- * need the curation column grants (contributors umbrella). */
+/** Post-publish curation of the informational columns only — doc § Model
+ * (curation columns) and § Permissions. */
 export async function updateCuration(rowId: string,
   curation: {tags?: string[], path?: string, compounds?: string[],
     description?: string, workstream?: string}): Promise<void> {
@@ -272,8 +253,7 @@ export async function getPublicationHistory(publicationId: string): Promise<Hist
   return history().query({filter: DG.cond('publication_id', '=', publicationId), sort: '!revision'});
 }
 
-/** The discovery slice: approved rows only, security-trimmed by the caller's
- * program-row access; exactly one row per publication by construction. */
+/** The discovery slice: approved rows only, one per publication by construction. */
 export async function discover(programId?: string): Promise<AlignmentRow[]> {
   const conds: DG.DomainCondition[] = [DG.cond('status', '=', 'approved')];
   if (programId != null)

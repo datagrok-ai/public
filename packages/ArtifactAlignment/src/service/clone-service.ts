@@ -34,9 +34,8 @@ export interface CloneResult {
   sourceAuthorId?: string;
 }
 
-/** The catalog options every frozen call carries. Compute2's history listings filter
- * out runs carrying OPT_FROZEN, so frozen copies stay reachable by id only (how the
- * catalog addresses them); proper hiding awaits core sub-entity handling. */
+/** Options every frozen call carries; Compute2's history listings filter on OPT_FROZEN
+ * (doc § Platform tasks, sub-entity handling). */
 function frozenOptions(publicationId: string): Record<string, string> {
   return {
     [OPT_FROZEN]: 'true',
@@ -44,18 +43,11 @@ function frozenOptions(publicationId: string): Record<string, string> {
   };
 }
 
-/** Freezes a Compute2 run into a catalog artifact through the same save paths the
- * personal history uses. A saved run whose options carry a serialized pipeline
- * config is a workflow run: a new stamped meta call is saved over the SAME config —
- * step calls and their dataframes are shared with the source run, not copied, and
- * stay runnable (no readonly forcing), so a new run can be started from the artifact.
- * Any other source — a saved run without a config, or a live in-memory FuncCall
- * (an RFV model run or a workflow step, never mutated) — is a function run: a deep
- * copy is saved with the audience-scoped dataframe grants.
- *
- * The shared step calls and the frozen call itself remain author-owned and mutable —
- * accepted until FuncCall becomes a full entity (per-run ACL, ownership transfer);
- * see the commented grants in historyUtils.saveRun. */
+/** Freezes a run into a catalog artifact via the personal-history save paths. A saved
+ * run whose options carry a pipeline config is a workflow run (a stamped meta call
+ * over the SAME config — steps shared, not copied); anything else is a function run
+ * (deep copy, audience-granted dataframes) — docs/artifact-alignment.html § Publish &
+ * republish flow and § Known design gaps. */
 export async function cloneRun(source: string | DG.FuncCall, options: CloneOptions): Promise<CloneResult> {
   const sourceCall = typeof source === 'string' ? await historyUtils.loadRun(source) : source;
   return sourceCall.options[CONFIG_PATH] != null ?

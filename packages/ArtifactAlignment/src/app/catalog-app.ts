@@ -5,8 +5,7 @@ import {SCHEMA, T_ALIGNMENT, T_COMPOUND, T_PROGRAM, T_PROGRAM_COMPOUND, T_STUDY}
 import {approvePublication, getPublicationHistory} from '../service/publication-service';
 import {showCurateDialog, showProgramDialog, showRejectDialog} from './admin-dialogs';
 
-/** Opens the frozen workflow or function run in Compute2. The tree opens runnable —
- * a new run can be started from the artifact's state. */
+/** Opens the frozen run in Compute2, runnable from the artifact's state. */
 export async function openArtifact(frozenMetaCallId: string): Promise<void> {
   try {
     const func = DG.Func.byName('Compute2:OpenWorkflowRun');
@@ -16,8 +15,7 @@ export async function openArtifact(frozenMetaCallId: string): Promise<void> {
   }
 }
 
-/** Internal bookkeeping columns kept out of the catalog grid; all of them stay
- * reachable through the row's context panel (History pane, Open artifact). */
+/** Bookkeeping columns kept out of the grid; still reachable via the context panel. */
 export const HIDDEN_GRID_COLUMNS = ['publication_id', 'artifact_id', 'source_artifact_id',
   'approved_by', 'approved_on', 'reject_reason'];
 
@@ -80,8 +78,6 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
           renderDetail();
         }).catch(() => {});
     }
-    // deliberately NOT ui.bind: the gallery wrapper already selects the row on
-    // click, and a second binding turns one left click into select + open
     const name = values['name'] ?? row.displayName ?? '';
     return ui.divV([
       ui.divText(values['revision'] != null ? `${name} · v${values['revision']}` : name,
@@ -95,8 +91,7 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
     const values = this.rowOf(x)?.values ?? {};
     const pane = ui.divV([], {style: {marginTop: '8px'}});
     pane.appendChild(ui.button('Open artifact', () => openArtifact(values['artifact_id'])));
-    // The service re-checks approvers-group membership and author != approver, so the
-    // buttons need no client-side gating for correctness.
+    // no client-side gating needed: the service re-checks reviewer authority
     if (values['status'] === 'pending') {
       pane.appendChild(ui.divH([
         ui.bigButton('Approve', async () => {
@@ -137,10 +132,9 @@ export class AlignmentHandler extends DG.DomainObjectHandler {
   }
 }
 
-/** URL base of the app's views when the package sets an absolute address itself
- * (tree navigation); views returned from the app function get this prefix from
- * the platform and carry a RELATIVE path instead — never both, that duplicates
- * the suffix. */
+/** URL base for tree-created views, which need an ABSOLUTE path; views returned from
+ * the app function get this prefix from the platform and must stay RELATIVE — setting
+ * both duplicates the suffix. */
 const APP_BASE = 'apps/ArtifactAlignment';
 
 function alignmentView(permanentFilter: string, name: string): DG.ViewBase {
@@ -171,9 +165,7 @@ function registryView(table: string, name: string): DG.ViewBase {
   return view;
 }
 
-/** Resolves the app's `path` URL input (everything after the app base) to the view
- * it addresses. The paths set here are relative — the platform prefixes the app
- * base for views returned from the app function. */
+/** Resolves the app's `path` URL input to the view it addresses (relative paths). */
 export function routeView(path?: string): DG.ViewBase {
   const seg = (path ?? '').split('?')[0].split('/').filter((s) => s !== '').map(decodeURIComponent);
   const routed = (view: DG.ViewBase, route: string): DG.ViewBase => {
@@ -193,9 +185,7 @@ export function routeView(path?: string): DG.ViewBase {
   return catalogView();
 }
 
-/** Shows [view] as the Browse preview and publishes its address. The path is
- * absolute here: a tree-created view has no app call behind it, so nothing else
- * supplies the prefix. */
+/** Shows [view] as the Browse preview; absolute path — no app call supplies a prefix. */
 function preview(view: DG.ViewBase, route: string): void {
   grok.shell.preview = view as DG.View;
   view.path = `${APP_BASE}/${route}`;
@@ -222,15 +212,13 @@ export async function buildTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void
     for (const program of programs) {
       const item = programsNode.item(program.code);
       nodePrograms.set(item.root, program);
-      // session-truth row permission gates the edit affordance; the save path
-      // re-checks server-side, so this is presentation only
+      // presentation only; the save path re-checks server-side
       void programHandler.rowFrom(program).permissions()
         .then((p) => p.edit && editableIds.add(program.id))
         .catch(() => {/* no edit affordance */});
       item.onSelected.subscribe(() => {
         preview(programView(program.code), `programs/${encodeURIComponent(program.code)}`);
-        // the program's context panel renders the audience group columns as
-        // clickable links — the member-management entry point for admins
+        // context panel shows the audience group links (member management)
         grok.shell.o = programHandler.rowFrom(program);
         grok.shell.windows.showContextPanel = true;
       });

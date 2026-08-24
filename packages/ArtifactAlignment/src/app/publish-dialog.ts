@@ -11,10 +11,8 @@ interface ProgramChoice {
   name: string;
 }
 
-/** The "Publish to program" dialog over a Compute2 run — a saved run's meta FuncCall
- * id, or a live in-memory FuncCall (published without a prior history save). The
- * republish key is (program, study, name): a key match publishes the next version
- * of that publication, a new key creates a new publication. */
+/** The "Publish to program" dialog over a saved or live Compute2 run — doc § Publish
+ * & republish flow. */
 export async function showPublishDialog(source: string | DG.FuncCall, defaultName?: string):
   Promise<DG.Dialog | null> {
   const programs: ProgramChoice[] =

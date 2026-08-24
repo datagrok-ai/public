@@ -15,9 +15,8 @@ export interface SavedRunFixture {
   stepCallId: string;
 }
 
-/** Every FuncCall a test creates registers here (fixtures do it automatically;
- * tests that clone or publish outside the fixtures call {@link trackCalls}), so
- * cleanup deletes exactly this run's artifacts by id — no server-wide listing. */
+/** Every FuncCall a test creates registers here so cleanup deletes exactly this
+ * run's artifacts by id — no server-wide listing. */
 const trackedCallIds = new Set<string>();
 
 export function trackCalls(...ids: string[]): void {
@@ -33,9 +32,8 @@ export async function publishRun(req: PublishRequest): Promise<PublishResult> {
   return result;
 }
 
-/** A genuine saved compute2-style workflow run, built headlessly: one executed step
- * FuncCall with a dataframe output plus a meta call carrying the serialized pipeline
- * state that references it. */
+/** A genuine saved compute2-style workflow run, built headlessly: an executed step
+ * plus a meta call carrying the pipeline state that references it. */
 export async function makeSavedRun(a: number = 3): Promise<SavedRunFixture> {
   const stepFunc = DG.Func.byName(STEP_NQ);
   const fc = stepFunc.prepare({a});
@@ -109,18 +107,16 @@ async function deleteTrackedRun(callId: string): Promise<void> {
     throw new Error(`tracked run ${callId} survived its delete`);
 }
 
-/** Deletes every run the tests tracked (sources and frozen clones) by id.
- * Frozen workflow clones share their source's step calls and dataframes, so
- * deleting sources + frozen call ids covers everything a run created. */
+/** Deletes every tracked run by id; frozen workflow clones share their source's
+ * steps and dataframes, so sources + frozen ids cover everything. */
 export async function cleanupTrackedRuns(): Promise<void> {
   const ids = [...trackedCallIds];
   trackedCallIds.clear();
   await Promise.all(ids.map((id) => deleteTrackedRun(id)));
 }
 
-/** Server-wide sweep of ALL fixture-function runs — the old cleanup, kept as a
- * manual utility for draining artifacts that escaped tracking (e.g. from runs
- * predating id-tracking or aborted mid-test). Not wired into any category. */
+/** Manual utility draining fixture runs that escaped tracking; not wired into any
+ * category. */
 export async function sweepFixtureBacklog(budgetMs: number = 45000): Promise<number> {
   const started = Date.now();
   let deleted = 0;
@@ -176,15 +172,10 @@ export async function addToTier(memberGroupId: string, program: ProgramInfo,
 }
 
 /** Runs [body] with a throwaway restricted user (adapted from ApiTests'
- * domain-lifecycle helper — packages cannot share test code).
- *
- * The session cookie is HttpOnly, so script can neither read nor overwrite it:
- * impersonation goes through `grok.dapi.impersonationToken`, which puts the
- * probe's token in the Authorization header the server reads ahead of the
- * cookie. Clearing it restores the admin session. The finally clears it again
- * and BLOCKS the user (users are not API-deletable; blocking revokes their
- * sessions). Throws where self-signup is unavailable (SSO-only or
- * email-confirm setups) — a multiuser test must fail loudly, not pass vacuously. */
+ * domain-lifecycle helper — packages cannot share test code). Impersonation goes
+ * through `grok.dapi.impersonationToken` (the session cookie is HttpOnly); the
+ * finally BLOCKS the user (not API-deletable). Throws where self-signup is
+ * unavailable — a multiuser test must fail loudly, not pass vacuously. */
 export async function withRestrictedUser<T>(prefix: string,
   body: (user: RestrictedUser) => Promise<T>): Promise<T> {
   const restoreAdmin = () => grok.dapi.impersonationToken = null;
