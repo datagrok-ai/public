@@ -2,6 +2,7 @@
 
 ## v.next
 
+* TestTrack: Fixed the relative imports in 28 specs nested two levels deep (`../spec-login`, `../helpers/viewers`) — Playwright aborts collection when any spec fails to import, so the whole 284-spec suite had been producing zero results in CI
 * GROK-20624: Context panes: Show 0 instead of the empty-stats sentinel when a summary query returns no rows
 * GROK-6166: Query viewers: Surface query-load failures in the UI — missing/failing queries now clear the loader spinner and show an inline error message instead of silently swallowing the rejection
 * GROK-20479: Set the Reports DataFrame name so it is not listed as "null" in the Table selector

@@ -144,6 +144,44 @@ function rowsToCsv(rows: FlatRow[]): string {
   return Papa.unparse({fields: header, data: rows.map((r) => header.map((h) => (r as any)[h]))});
 }
 
+function writePlaywrightCsv(pkgDir: string, csv: string): void {
+  // Persist a Playwright-only CSV so the pipeline can ship it to the Datlas
+  // 'playwright' bucket, separate from the merged Puppeteer+Playwright
+  // test-report.csv that feeds the legacy 'package' bucket and JUnit.
+  try {
+    fs.writeFileSync(path.join(pkgDir, 'test-report-playwright.csv'), csv, 'utf-8');
+  } catch (e: any) {
+    color.warn(`Playwright: failed to write test-report-playwright.csv: ${e.message || e}`);
+  }
+}
+
+// A pass that dies before running specs still has to report a failure. Returning an empty CSV
+// let the caller drop it whenever the Puppeteer pass had rows, so a suite that never launched
+// (a config that fails to load, an unreachable host) was reported as a clean run.
+function runnerFailure(pkgDir: string, args: PlaywrightArgs, message: string): ResultObject {
+  const rows: FlatRow[] = [{
+    date: new Date().toISOString(),
+    category: 'playwright',
+    name: 'Playwright suite',
+    success: false,
+    result: message,
+    ms: 0,
+    skipped: false,
+    logs: '',
+    owner: '',
+    package: process.env.TARGET_PACKAGE || args.package || '',
+    widgetsDifference: '',
+    flaking: false,
+  }];
+  const csv = rowsToCsv(rows);
+  writePlaywrightCsv(pkgDir, csv);
+  color.error(`Playwright: ${message}`);
+  return {
+    failed: true, passedAmount: 0, failedAmount: 1, skippedAmount: 0,
+    verbosePassed: '', verboseSkipped: '', verboseFailed: `Playwright: ${message}\n`, csv: csv,
+  };
+}
+
 export async function runPlaywrightTests(
   pkgDir: string,
   testDir: string,
@@ -159,16 +197,14 @@ export async function runPlaywrightTests(
   try {
     ({url, key} = testUtils.getDevKey(hostKey));
   } catch (e: any) {
-    color.error(`Playwright: cannot resolve host '${hostKey}': ${e.message || e}`);
-    return {...empty, failed: true, failedAmount: 1, verboseFailed: `Playwright: ${e.message || e}\n`};
+    return runnerFailure(pkgDir, args, `cannot resolve host '${hostKey}': ${e.message || e}`);
   }
 
   let token: string;
   try {
     token = await testUtils.getToken(url, key);
   } catch (e: any) {
-    color.error(`Playwright: cannot exchange dev key for token: ${e.message || e}`);
-    return {...empty, failed: true, failedAmount: 1, verboseFailed: `Playwright: ${e.message || e}\n`};
+    return runnerFailure(pkgDir, args, `cannot exchange dev key for token: ${e.message || e}`);
   }
 
   let webUrl: string;
@@ -190,10 +226,8 @@ export async function runPlaywrightTests(
   }
 
   const configPath = path.join(testDir, 'playwright.config.ts');
-  if (!fs.existsSync(configPath)) {
-    color.error(`Playwright: ${configPath} not found.`);
-    return {...empty, failed: true, failedAmount: 1, verboseFailed: 'Playwright: missing playwright.config.ts\n'};
-  }
+  if (!fs.existsSync(configPath))
+    return runnerFailure(pkgDir, args, `${configPath} not found`);
 
   const reportFile = path.join(pkgDir, 'test-playwright-report.json');
   if (fs.existsSync(reportFile))
@@ -277,12 +311,8 @@ export async function runPlaywrightTests(
   }
 
   if (!report) {
-    color.error('Playwright: no JSON report produced.');
     const tail = Buffer.concat(stderrChunks).toString('utf-8').slice(-2000);
-    return {
-      ...empty, failed: true, failedAmount: 1,
-      verboseFailed: `Playwright: no JSON report. stderr tail:\n${tail}\n`,
-    };
+    return runnerFailure(pkgDir, args, `no JSON report produced — the suite never ran. stderr tail:\n${tail}`);
   }
 
   const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf-8'));
@@ -291,6 +321,11 @@ export async function runPlaywrightTests(
 
   const rows: FlatRow[] = [];
   flattenSuites(report.suites, testDir, pkgName, typeof owner === 'string' ? owner : '', args.verbose === true, rows);
+
+  // A report with no specs is the same non-event as no report at all: the config loaded but
+  // collection found nothing, or died on a spec that cannot be imported.
+  if (rows.length === 0)
+    return runnerFailure(pkgDir, args, 'the run produced a report with no specs — check the spec imports and testMatch');
 
   let passedAmount = 0;
   let failedAmount = 0;
@@ -306,14 +341,7 @@ export async function runPlaywrightTests(
   }
 
   const csv = rowsToCsv(rows);
-  // Persist a Playwright-only CSV so the pipeline can ship it to the Datlas
-  // 'playwright' bucket, separate from the merged Puppeteer+Playwright
-  // test-report.csv that feeds the legacy 'package' bucket and JUnit.
-  try {
-    fs.writeFileSync(path.join(pkgDir, 'test-report-playwright.csv'), csv, 'utf-8');
-  } catch (e: any) {
-    color.warn(`Playwright: failed to write test-report-playwright.csv: ${e.message || e}`);
-  }
+  writePlaywrightCsv(pkgDir, csv);
 
   return {
     failed: failedAmount > 0,

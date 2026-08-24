@@ -2,6 +2,7 @@
 
 ## 6.5.6 (WIP)
 
+* `grok test` — a Playwright pass that fails before running specs now reports a failing test instead of nothing. It returned an empty CSV, and the caller drops an empty Playwright result whenever the Puppeteer pass produced rows, so a suite whose config would not load (or that collected zero specs) was indistinguishable from a clean run — Build-Deploy #1277 printed "Playwright: no JSON report produced" and then "Tests passed", exit 0, for six packages. Every early exit now writes one failing row to `test-report-playwright.csv` and the merged report, and a report containing no specs is treated as a failure rather than a pass.
 * `grok report` (`ticket`, `comment`, `label`, `attach`) — support Atlassian **service-account** tokens alongside user API tokens, chosen by the token itself. A user token (`ATATT...`) keeps HTTP Basic with `JIRA_USER` + `JIRA_TOKEN` against the site. A service-account token (`ATSTT...`, minted at admin.atlassian.com) is a scoped token that the site host will not accept — Basic returns 401 and Bearer returns 403 `"Failed to parse Connect Session Auth Token"` — so it is sent as Bearer to the API gateway at `api.atlassian.com/ex/jira/<cloudId>`, with the cloud id read once from the site's public `/_edge/tenant_info` (override with `$JIRA_CLOUD_ID`). `$JIRA_URL` and `--jira-url` still mean the SITE; the gateway address is derived from it, never substituted for it. A service token needs no `JIRA_USER`, so the credential checks no longer demand one.
 
 ## 6.5.5 (WIP)
