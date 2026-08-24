@@ -65,7 +65,7 @@ public class BufferAccessor {
         view = new ByteData(buf);
     }
 
-    void writeString(String value) {
+    public void writeString(String value) {
         byte[] bytes = value == null ? null : value.getBytes(StandardCharsets.UTF_8);
         writeUint8List(bytes);
     }

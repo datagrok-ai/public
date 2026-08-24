@@ -297,7 +297,7 @@ public class D42ReaderRoundTripTest {
         Assertions.assertEquals(3, observed.get("grouped").intValue());
         Assertions.assertEquals(4, observed.get("small").intValue());
         Assertions.assertEquals(1, observed.get("entropy").intValue());
-        Assertions.assertEquals(0, observed.get("plates").intValue());
+        Assertions.assertEquals(4, observed.get("plates").intValue()); // PLT-0004 tokenizes (GROK-20761)
         Assertions.assertEquals(3, IntColumnEncoderSelectionTest.indexEncoderId(new StringColumn("plates", plates)));
         Assertions.assertEquals(3, observed.get("ids").intValue());
         Assertions.assertEquals(1, observed.get("wide").intValue());

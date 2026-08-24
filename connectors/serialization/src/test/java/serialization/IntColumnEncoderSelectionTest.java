@@ -25,11 +25,16 @@ public class IntColumnEncoderSelectionTest {
         return new BufferAccessor(bytes).readInt32();
     }
 
-    // Encoder id of the nested index column of a string:categories payload.
+    // Encoder id of the nested index column of a string payload (id 0 or 4).
     static int indexEncoderId(StringColumn col) {
         BufferAccessor buf = new BufferAccessor(encode(col));
-        Assertions.assertEquals(0, buf.readInt32());
-        buf.readStringList();
+        int id = buf.readInt32();
+        if (id == 4)
+            serialization.codecs.StringTokens.decode(buf, "");
+        else {
+            Assertions.assertEquals(0, id);
+            buf.readStringList();
+        }
         return buf.readInt32();
     }
 
@@ -112,8 +117,10 @@ public class IntColumnEncoderSelectionTest {
 
     @Test
     public void smallRangePicksBitIntList() {
+        // 4-bit values pack identically in bitIntList and bitPacked; the tie keeps the legacy id.
         assertEncodes(smallRange(100000, 10, 1), 4);
-        assertEncodes(smallRange(1000, 24, 2), 4);
+        // 5-bit values waste 2 bits/word in bitIntList; dense int:bitPacked (GROK-20761) wins.
+        assertEncodes(smallRange(1000, 24, 2), 5);
     }
 
     @Test

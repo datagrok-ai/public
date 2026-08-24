@@ -52,9 +52,36 @@ public class StringColumn extends AbstractColumn<String> {
     public void encode(BufferAccessor buf) {
         materialize();
         categorize();
-        buf.writeInt32(0);
-        buf.writeStringList(categories.toArray(new String[0]));
+        // string:tokens (id 4, GROK-20761) vs plain categories (id 0): the row->category index
+        // column costs the same either way, so compare the category payloads only.
+        serialization.codecs.StringTokens tokens =
+                IntColumn.ADVANCED_ENCODERS ? serialization.codecs.StringTokens.analyze(categories) : null;
+        if (tokens != null && tokens.estimate() < categoriesPayloadSize()) {
+            buf.writeInt32(4);
+            tokens.encode(buf);
+        }
+        else {
+            buf.writeInt32(0);
+            buf.writeStringList(categories.toArray(new String[0]));
+        }
         new IntColumn("", idxs).encode(buf);
+    }
+
+    // Mirrors Dart's _StringCategoriesEncoder.estimate (StringList framing + per-category cost),
+    // minus the shared index column.
+    private int categoriesPayloadSize() {
+        int size = 26;
+        for (String c : categories)
+            size += c.length() + 4;
+        return size;
+    }
+
+    // The id-0 payload estimate for this column used as a nested string:tokens part:
+    // categories + best index encoding (the nested payload carries its own index column).
+    public int estimateCategoriesPayload() {
+        materialize();
+        categorize();
+        return categoriesPayloadSize() + 4 + IntColumn.Encoding.choose(idxs, idxs.length).size;
     }
 
     @Override
@@ -73,6 +100,9 @@ public class StringColumn extends AbstractColumn<String> {
                 break;
             case 3: // zlib (write-disabled, read-supported for old blobs).
                 cats = decodeZlib(buf);
+                break;
+            case 4: // tokens: literal / int / long-int / string parts (GROK-20761).
+                cats = serialization.codecs.StringTokens.decode(buf, name);
                 break;
             default:
                 throw new RuntimeException("decoding " + name + ": string encoder " + id + " not supported");

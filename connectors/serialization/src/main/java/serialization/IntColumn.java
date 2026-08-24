@@ -1,6 +1,7 @@
 package serialization;
 
 import serialization.codecs.BitIntList;
+import serialization.codecs.BitPacking;
 import serialization.codecs.IntRle;
 import serialization.codecs.IntSequencePattern;
 
@@ -8,7 +9,7 @@ public class IntColumn extends AbstractColumn<Integer> {
     private static final String TYPE = Types.INT;
     public static final int None = -2147483648;
 
-    // Best-encoder selection (ids 2/3/4) as in Dart; false restores int:raw only.
+    // Best-encoder selection (ids 2/3/4, level-2 ids 5/6 - GROK-20761) as in Dart; false restores int:raw only.
     public static boolean ADVANCED_ENCODERS =
             Boolean.parseBoolean(System.getProperty("grok.connect.advancedEncoders", "true"));
 
@@ -63,6 +64,9 @@ public class IntColumn extends AbstractColumn<Integer> {
         private final IntSequencePattern pattern;
         private final IntRle rle;
         private final int min;
+        private long[] packMinMax;   // id 5: [min, max, hasNone]
+        private long[] deltaRange;   // id 6: [dMin, dMax, 0]
+        private int none;            // id 6: the None substitute (min - 1)
 
         private Encoding(int id, int size, IntSequencePattern pattern, IntRle rle, int min) {
             this.id = id;
@@ -87,25 +91,81 @@ public class IntColumn extends AbstractColumn<Integer> {
 
             long min = Long.MAX_VALUE;
             long max = Long.MIN_VALUE;
+            long hasNone = 0;
             for (int i = 0; i < length; i++) {
-                if (data[i] == None)
+                if (data[i] == None) {
+                    hasNone = 1;
                     continue;
+                }
                 min = Math.min(min, data[i]);
                 max = Math.max(max, data[i]);
             }
-            if (max < min)
-                return raw(length);
+            long[] packMinMax = max < min ? null : new long[]{min, max, hasNone};
 
-            int best = length * 4;
-            int bitListSize = BitIntList.sizeInBytes(length, min, max);
+            // Dart iteration order (raw, rle, bitIntList, bitPacked, delta), strict-min wins.
+            int bestSize = length * 4;
+            int bestId = 1;
+            int bitListSize = max < min ? Integer.MAX_VALUE : BitIntList.sizeInBytes(length, min, max);
             // Range >= 2^30: bitIntList cannot beat raw and rle's deltas (up to twice the range) rarely fit its 31 bits, so skip its O(n) estimate.
-            IntRle rle = BitIntList.msb(max - min) >= 31 ? null : new IntRle();
+            IntRle rle = max < min || BitIntList.msb(max - min) >= 31 ? null : new IntRle();
             int rleSize = rle == null ? -1 : rle.estimate(data, length, (int) min);
-            if (rleSize != -1 && rleSize < best && rleSize <= bitListSize)
-                return new Encoding(3, 3 * 4 + 2 * BIT_LIST_HEADER + rleSize, null, rle, (int) min);
-            if (bitListSize < best)
-                return new Encoding(4, BIT_LIST_HEADER + bitListSize, null, null, 0);
-            return raw(length);
+            if (rleSize != -1 && rleSize < bestSize) {
+                bestId = 3;
+                bestSize = rleSize;
+            }
+            if (bitListSize < bestSize) {
+                bestId = 4;
+                bestSize = bitListSize;
+            }
+            int bpBits = BitPacking.bitsFor(packMinMax);
+            if (bpBits >= 0 && BitPacking.sizeInBytes(length, bpBits) < bestSize) {
+                bestId = 5;
+                bestSize = BitPacking.sizeInBytes(length, bpBits);
+            }
+            long[] deltaRange = null;
+            int none = packMinMax == null ? 0 : (int) (min - 1);
+            if (length >= 2) {
+                long dMin = 0, dMax = 0;
+                boolean any = false;
+                boolean fits = true;
+                long prev = data[0] == None ? none : data[0];
+                for (int i = 1; i < length && fits; i++) {
+                    long v = data[i] == None ? none : data[i];
+                    long d = v - prev;
+                    fits = d >= Integer.MIN_VALUE && d <= Integer.MAX_VALUE;
+                    prev = v;
+                    dMin = any ? Math.min(dMin, d) : d;
+                    dMax = any ? Math.max(dMax, d) : d;
+                    any = true;
+                }
+                long[] range = new long[]{dMin, dMax, 0};
+                int dBits = fits ? BitPacking.bitsFor(range) : -1;
+                if (dBits >= 0 && 8 + BitPacking.sizeInBytes(length - 1, dBits) < bestSize) {
+                    bestId = 6;
+                    bestSize = 8 + BitPacking.sizeInBytes(length - 1, dBits);
+                    deltaRange = range;
+                }
+            }
+
+            switch (bestId) {
+                case 3:
+                    return new Encoding(3, 3 * 4 + 2 * BIT_LIST_HEADER + rleSize, null, rle, (int) min);
+                case 4:
+                    return new Encoding(4, BIT_LIST_HEADER + bitListSize, null, null, 0);
+                case 5: {
+                    Encoding e = new Encoding(5, bestSize, null, null, 0);
+                    e.packMinMax = packMinMax;
+                    return e;
+                }
+                case 6: {
+                    Encoding e = new Encoding(6, bestSize, null, null, 0);
+                    e.deltaRange = deltaRange;
+                    e.none = none;
+                    return e;
+                }
+                default:
+                    return raw(length);
+            }
         }
 
         public void write(BufferAccessor buf, int[] data, int length) {
@@ -120,6 +180,23 @@ public class IntColumn extends AbstractColumn<Integer> {
                 case 4:
                     BitIntList.fromList(data, 0, length).serialize(buf);
                     break;
+                case 5:
+                    BitPacking.write(buf, data, 0, length, packMinMax);
+                    break;
+                case 6: {
+                    int first = data[0] == None ? none : data[0];
+                    buf.writeInt32(first);
+                    buf.writeInt32(none);
+                    int[] deltas = new int[length - 1];
+                    int prev = first;
+                    for (int i = 1; i < length; i++) {
+                        int v = data[i] == None ? none : data[i];
+                        deltas[i - 1] = v - prev;
+                        prev = v;
+                    }
+                    BitPacking.write(buf, deltas, 0, deltas.length, deltaRange);
+                    break;
+                }
                 default:
                     buf.writeInt8((byte) 0);
                     buf.writeInt32List(data, 0, length);
@@ -146,6 +223,22 @@ public class IntColumn extends AbstractColumn<Integer> {
             case 4: // bitIntList
                 data = serialization.codecs.BitIntList.fromBuffer(buf).toInt32List();
                 break;
+            case 5: // bitPacked (dense FOR packing, GROK-20761)
+                data = BitPacking.read(buf);
+                break;
+            case 6: { // delta (first + bit-packed deltas, GROK-20761)
+                int first = buf.readInt32();
+                int none = buf.readInt32();
+                int[] deltas = BitPacking.read(buf);
+                data = new int[deltas.length + 1];
+                int acc = first;
+                data[0] = acc == none ? None : acc;
+                for (int i = 0; i < deltas.length; i++) {
+                    acc += deltas[i];
+                    data[i + 1] = acc == none ? None : acc;
+                }
+                break;
+            }
             default:
                 throw new RuntimeException("decoding " + name + ": int encoder " + id + " not found");
         }

@@ -71,7 +71,11 @@ public class D42JavaFixtureWriterTest {
     }
 
     private static Spec strings(String name, String[] values) {
-        return new Spec(new StringColumn(name, values.clone()), "string", 0, values.clone());
+        return strings(name, values, 0);
+    }
+
+    private static Spec strings(String name, String[] values, int expectedId) {
+        return new Spec(new StringColumn(name, values.clone()), "string", expectedId, values.clone());
     }
 
     private static Fixture intEncoders() {
@@ -131,9 +135,9 @@ public class D42JavaFixtureWriterTest {
             unique[i] = i % 3 == 0 ? "c" + i : (i % 3 == 1 ? CJK + i : EMOJI + i);
         }
         Fixture fx = new Fixture("java_strings");
-        fx.specs.add(strings("plate", plate));
+        fx.specs.add(strings("plate", plate, 4)); // PLT-0004 tokenizes (GROK-20761)
         fx.specs.add(strings("few", few));
-        fx.specs.add(strings("unique", unique));
+        fx.specs.add(strings("unique", unique, 4)); // letters+digits tokenize (GROK-20761)
         return fx;
     }
 
