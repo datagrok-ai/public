@@ -31,7 +31,9 @@ be on.
 
 ## Tests
 
-`grok test` covers versioning semantics, the clone, curation, security provisioning, the
-drift check, and the platform mechanics the design doc marks as verified; platform gaps
-(funccall ACL, service-identity ownership, second-user denial checks) are skipped tests with
-explicit reasons.
+`grok test` covers versioning semantics, the clone, curation, security provisioning,
+multi-user workflows under cumulative role tiers (viewer ⊂ contributor ⊂ approver) with
+permission-denial checks, and the platform mechanics the design doc marks as verified.
+Platform gaps (funccall ACL, author-mutable frozen copies, cross-program raw writes,
+world-readable workflow step dataframes) are canary tests that fail loudly when the
+platform closes them.

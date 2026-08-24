@@ -228,8 +228,9 @@
         <td class="gap">Partial — audit trail exists; no retention/hold or edit-prevention features</td>
         <td>Platform</td></tr>
     <tr><td>Enforced segregation of duties (author ≠ approver)</td>
-        <td class="gap">Convention only — needs a service-side check now, platform value-conditional
-        column rules eventually</td>
+        <td class="gap">Partial — the service-side check is implemented (reviewer ≠ author +
+        approvers-group membership, verified by multi-user tests) but bypassable via raw REST;
+        platform value-conditional column rules remain the enforced path</td>
         <td>Plugin (interim) / Platform</td></tr>
     <tr><td>Review-queue escalation / SLA (reminders, aging, auto-escalation)</td>
         <td class="gap">Missing — depends on platform notification infrastructure (the domain watch
@@ -468,13 +469,20 @@
   <ul>
     <li><b>Umbrella groups</b> — three schema-wide groups (Artifacts: Viewers / Contributors /
       Approvers) hold the table-level grants: all three get View on the catalog tables, contributors
-      and approvers additionally get Edit. The <code>compound</code> and <code>tag</code> registries
+      and approvers additionally get Edit, plus Delete on <code>program</code> — the securing entity
+      for the master chain, which is what authorizes the archive's row delete (verified: a Delete
+      grant on the alignment table itself does not reach rows). The <code>compound</code> and
+      <code>tag</code> registries
       are View for all users (and Edit for contributors — publish creates missing entries by
       name).</li>
     <li><b>Per-program groups</b> — each program gets its own viewers / contributors / approvers
       groups, nested into the matching umbrellas; the program row is shared View to its viewers and
       Edit to its contributors and approvers. Because the table gate is umbrella-wide, any program's
-      audience sees the whole registry; per-row trimming is a core ask.</li>
+      audience sees the whole registry; per-row trimming is a core ask. <b>Tiers are cumulative by
+      convention</b>: an approver must also be a member of the program's contributors and viewers
+      groups (and a contributor of the viewers group) — the curation column grants sit on the
+      contributors umbrella, so an approver outside it would pass the service checks yet fail the
+      column write. Membership provisioning must assign the lower tiers along with the role.</li>
     <li><b>Column security</b> on <code>alignment</code> — the approval columns (status,
       approved_by, approved_on, reject_reason) are View for everyone and Edit for the approvers
       umbrella only; the curation column (path) is Edit for the contributors umbrella. A
@@ -484,7 +492,8 @@
       membership and reviewer ≠ author; the auto-approve on publish runs as the acting user, so
       column security decides whether it sticks.</li>
     <li><b>Frozen data</b> — the dataframes a function-run freeze uploads are granted View to the
-      program viewers group only.</li>
+      program viewers group only. Workflow freezes share the source run's dataframes instead, which
+      keep their personal-history default grants — see Known design gaps.</li>
     <li><b>Restricted scopes</b> — audiences are exact per-artifact grants. Blinded-study metadata:
       publish-on-unblind by default (version rows delegate to the program, so their existence is
       visible to program viewers).</li>
@@ -494,11 +503,20 @@
   <ul>
     <li><b>Registry-wide write authority</b> — domain writes are authorized at table level, so any
       contributors/approvers-umbrella member can write rows of <i>any</i> program via raw REST; the
-      per-program guard is service-side and bypassable. Blocked on Core tasks: row-scoped write
-      authorization.</li>
+      per-program guard is service-side and bypassable. This includes <b>deletes</b>: archiving
+      requires Delete, which is authorized against the securing entity (the <code>program</code>
+      table), so the writer umbrellas hold table-wide Delete there — via raw REST that reaches every
+      program-secured row, including studies and the <code>alignment_history</code> archive, whose
+      append-only property is therefore service-side convention. Blocked on Core tasks: row-scoped
+      write authorization.</li>
     <li><b>Frozen copies are neither audience-gated nor immutable</b> — a run is loadable by id by
       anyone and stays the author's to edit or delete; only its dataframes carry audience grants.
       Blocked on Core tasks: FuncCall as a full entity.</li>
+    <li><b>Workflow-run data is not audience-gated</b> — a workflow freeze shares the source run's
+      step calls and dataframes (no re-upload), so those dataframes keep their personal-history
+      default grant and are readable by any user who learns their id; only function-run freezes
+      re-upload with viewers-only grants. A plugin-side fix (copy or re-grant the step dataframes at
+      publish) trades away the shared-steps design; pinned by a canary test until scoped.</li>
   </ul>
 
 
@@ -664,8 +682,10 @@
       <span class="pill pill-imp">improvement</span><br>
       Entity permission granting is binary View/Edit while Share/Delete are checkable but not
       grantable. The typed permissions API refuses promoted domain rows; the shares route accepts
-      them but addresses groups by name only. Promoted-row grants need a typed, id-addressed
-      surface. The shares route is a workable interim.</li>
+      them but addresses groups by name only — and it also accepts non-grantable access levels
+      (e.g. <code>access=Delete</code>) silently, reporting success with no authorizing effect.
+      Promoted-row grants need a typed, id-addressed surface. The shares route is a workable
+      interim.</li>
   </ol>
 
 </section>
