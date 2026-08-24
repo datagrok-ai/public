@@ -940,6 +940,8 @@ The **SAR Matrix** tool organizes a compound set into analog series and lays eac
 out as related cores (rows) against the substituents they share (columns), coloring
 every cell by potency.
 
+![SAR Matrix](img/sar_matrix_overview.png)
+
 The series come from cutting each compound into a core and a substituent, so the compounds
 sharing a core vary at one position. Related cores are then grouped into a single matrix by
 cutting the cores a second time and collecting those that leave the same remainder, or
@@ -958,6 +960,8 @@ core or its substituent. More reference points means a better-supported predicti
 whose core and substituent are both well measured rests on more evidence than one sitting at
 the sparse edge of the matrix.
 
+![Virtual analog in the Context Panel](img/sar_matrix_context_panel.png)
+
 Series are nested. **L1** is the finest view: one matrix per cut site, each row a single
 core with its substituents. **L2** folds the L1 matrices whose cores agree one cut deeper
 into a single, broader matrix, **L3** folds those again, and so on. The same compounds
@@ -966,12 +970,14 @@ so start at L1 for a tight series and move up to see how it relates to its neigh
 
 Predicted analogs do not have to stay in the matrix. The **Design action** in the context
 panel adds the selected one to a separate table of virtual analogs, and the right-click menu
-exports a whole matrix, or every matrix at once, into that table - a make-list to triage for
+exports a whole matrix, or every matrix at once as a new table - a make-list to triage for
 synthesis.
 
 A dedicated **SAR transfer** view finds pairs of cores whose potency trends run in
 parallel across the substituents they have both explored. Where the trends track, an
 optimization learned on one scaffold is expected to carry to the other.
+
+![SAR transfer between series](img/sar_matrix_transfer.png)
 
 The results are presented as a ranked list of series alongside the selected matrix,
 allowing you to:
@@ -990,6 +996,8 @@ To run SAR Matrix analysis:
 2. Select the **Table**, the **Molecules** column, and a numerical **Activity** column.
 3. Choose the activity **Scaling** (_none_, _log10_, or _-log10_). Use _-log10_ for IC50 or Ki values so that higher numbers mean more potent.
 4. Click **OK**. The analysis opens with a ranked list of matrices on the left and the selected matrix on the right.
+
+![SAR Matrix walkthrough](img/sar_matrix_demo.gif)
 
 Click a cell to inspect a measured compound or a predicted analog in the **Context Panel**.
 

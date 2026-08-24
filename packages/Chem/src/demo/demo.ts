@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset,
   openSketcher, scrollTable} from '../utils/demo-utils';
@@ -188,21 +189,124 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 }
 
 
+interface SarHint {
+  anchor: string;
+  position: `${ui.hints.POSITION}`;
+  title: string;
+  text: string;
+}
+
+interface SarHintStep {
+  awaits?: string;
+  hints: SarHint[];
+}
+
+const SAR_HINT_STEPS: SarHintStep[] = [
+  {
+    hints: [
+      {
+        anchor: '.chem-sar-nav-list',
+        position: ui.hints.POSITION.RIGHT,
+        title: 'Pick a series',
+        text: 'Every card is an analog series: compounds sharing a core and varying at one position. ' +
+          'An L1 card is a single core with its substituents. L2 folds together the L1 cores that ' +
+          'agree one cut deeper, and L3 folds those again, so a higher level trades more rows for a ' +
+          'wider view of the same chemistry - open the nested ones with the chevron. Rank by reorders ' +
+          'the list.',
+      },
+      {
+        anchor: '.chem-sar-grid-host',
+        position: ui.hints.POSITION.RIGHT,
+        title: 'Then click a cell',
+        text: 'Cores run down the rows, substituents across the columns. A solid cell is a measured ' +
+          'compound; a pale cell with a dashed outline is one nobody has made yet. Click either to ' +
+          'inspect it.',
+      },
+    ],
+  },
+  {
+    awaits: '.chem-sar-cp-generate',
+    hints: [{
+      anchor: '.grok-prop-panel',
+      position: ui.hints.POSITION.LEFT,
+      title: 'A virtual analog',
+      text: 'This core and substituent were never combined, so there is no measurement. Its potency is ' +
+        'predicted from how that core and that substituent perform elsewhere in the matrix, with the ' +
+        'compounds behind each term listed as reference points. Add to make-list collects the ones worth ' +
+        'making into a separate table.',
+    }],
+  },
+  {
+    awaits: '.chem-sar-xfer-stats',
+    hints: [{
+      anchor: '.chem-sar-xfer-stats',
+      position: ui.hints.POSITION.RIGHT,
+      title: 'Carry the SAR across scaffolds',
+      text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
+        'they share. Where the correlation holds, an optimization found on one scaffold is expected to ' +
+        'carry to the other, and the analogs it argues for are marked in the matrix.',
+    }],
+  },
+];
+
+function sarHintWait(done: () => boolean): Promise<boolean> {
+  return new Promise((resolve) => {
+    const timer = setInterval(() => {
+      if (!document.querySelector('[class*="chem-sar-"]')) {
+        clearInterval(timer);
+        resolve(false);
+      } else if (done()) {
+        clearInterval(timer);
+        resolve(true);
+      }
+    }, 250);
+  });
+}
+
+async function showSarHints(): Promise<void> {
+  let shown: HTMLElement[] = [];
+  const clear = (): void => {
+    shown.forEach((popup) => popup.remove());
+    shown = [];
+  };
+  const show = (step: SarHintStep): void => {
+    clear();
+    for (const hint of step.hints) {
+      const anchor = document.querySelector(hint.anchor);
+      if (anchor instanceof HTMLElement) {
+        shown.push(ui.hints.addHint(anchor,
+          ui.divV([ui.h3(hint.title), ui.divText(hint.text)]), hint.position));
+      }
+    }
+  };
+
+  if (!await sarHintWait(() => document.querySelector('.chem-sar-grid-host') !== null))
+    return;
+  show(SAR_HINT_STEPS[0]);
+
+  const pending = SAR_HINT_STEPS.slice(1);
+  const armed = (): number => pending.findIndex((s) => document.querySelector(s.awaits!) !== null);
+  while (pending.length) {
+    if (!await sarHintWait(() => armed() >= 0)) {
+      clear();
+      return;
+    }
+    const i = armed();
+    show(pending[i]);
+    pending.splice(0, i + 1);
+  }
+  await sarHintWait(() => false);
+  clear();
+}
+
 export async function _demoSarMatrix(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
-  const df = DG.DataFrame.fromCsv(await _package.files.readAsText('demo_files/sar_matrix_demo.csv'),
-    {columnImportOptions: [{name: 'smiles', semType: DG.SEMTYPE.MOLECULE}]});
-  df.name = 'SAR Matrix';
-  const layout = DG.ViewLayout.fromJson(await _package.files.readAsText('demo_files/sar_matrix_demo.layout'));
-  const tv = grok.shell.addTableView(df);
-  await DG.delay(100);
-  tv.loadLayout(layout, true);
-  df.currentRowIdx = 0;
-
-  setTimeout(() => {
-    grok.shell.windows.showHelp = true;
-    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix');
-  }, 1000);
+  grok.shell.windows.showHelp = true;
+  const p = await grok.functions.eval('Chem:SarMatrixDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  showSarHints();
+  setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix'), 1000);
 }
 
 export async function _demoMMPA(): Promise<void> {

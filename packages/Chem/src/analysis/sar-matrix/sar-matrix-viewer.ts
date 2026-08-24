@@ -402,7 +402,9 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** "Vary" filter: show only this R-position's column group, or all when empty. */
   private varyPosition = '';
   columnCaption: string;
-  /** The assembled set, serialized so a saved layout restores it instead of spending minutes rebuilding. */
+  /** The assembled set, serialized so a saved project restores it instead of spending minutes
+   *  rebuilding. Kept out of layouts: it is megabytes and only lines up with the table it was built
+   *  from, while a layout is meant to stay small and portable across tables. */
   matricesData: string;
   private contextCell: {matrix: SarMatrix, ri: number, ci: number} | null = null;
   /** Per-SMILES "SAR analysis" panel builders; cleared on recompute and detach. */
@@ -506,7 +508,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       {choices: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred],
         friendlyName: 'Rank by', description: 'How the navigator orders the matrices'});
     this.columnCaption = this.string('columnCaption', COLSORT_POTENCY, {choices: COLUMN_SORTS});
-    this.matricesData = this.string('matricesData', '', {userEditable: false, includeInLayout: true});
+    this.matricesData = this.string('matricesData', '', {userEditable: false, includeInLayout: false});
     this.host.style.height = '100%';
     this.transferHost.style.height = '100%';
 
