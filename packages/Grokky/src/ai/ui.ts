@@ -290,6 +290,24 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
+function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
+  return ui.divV([
+    ui.divText(input.action ?? 'Confirm action', 'grokky-strip grokky-strip-danger'),
+    ui.divV([
+      ui.tableFromMap({
+        ...(input.name ? {Name: input.name} : {}),
+        ...(input.owner ? {Owner: input.owner} : {}),
+        ...(input.created ? {Created: input.created} : {}),
+        ...(input.details ? {Details: input.details} : {}),
+      }),
+      ui.divH([
+        ui.bigButton('OK', () => resolve(true)),
+        ui.button('CANCEL', () => resolve(false)),
+      ]),
+    ], 'grokky-auth-body'),
+  ], 'grokky-auth-widget');
+}
+
 function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
   const errorDiv = ui.divText('', 'grokky-auth-error');
 
@@ -323,12 +341,12 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
   const pendingStrip = ui.divV([
     ui.divText('Session expired'),
     ui.divText('Open the auth page and paste the code below'),
-  ], 'grokky-auth-strip-pending');
+  ], 'grokky-strip grokky-strip-pending');
 
   const successStrip = ui.divV([
     ui.divText('Session renewed'),
     ui.divText('Re-send your message to continue'),
-  ], 'grokky-auth-strip-success');
+  ], 'grokky-strip grokky-strip-success');
   successStrip.style.display = 'none';
 
   const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
@@ -550,6 +568,16 @@ async function streamOnce(
             ...(observed !== undefined ? {observed} : {}),
             ...(error ? {error} : {}),
           });
+          return;
+        }
+        // datagrok_confirm: render the approval card and hold the round-trip until a button is clicked.
+        if (evt.toolName === 'datagrok_confirm') {
+          const confirmed = await new Promise<boolean>((resolve) => {
+            panel.appendStreamedElement(buildConfirmCard(evt.input ?? {}, resolve));
+          });
+          segmentStart = accumulated.length;
+          toolStatus = '';
+          client.respondToInput(sessionId, evt.requestId, {confirmed});
           return;
         }
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.

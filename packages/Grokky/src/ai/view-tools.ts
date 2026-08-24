@@ -242,6 +242,18 @@ const invocationSchema = {
   required: ['name'],
 };
 
+const confirmSchema = {
+  type: 'object',
+  properties: {
+    action: {type: 'string', description: 'Short imperative label, at most three words, e.g. "Delete project" — the card title.'},
+    name: {type: 'string', description: 'Entity name shown to the user.'},
+    owner: {type: 'string', description: 'Owner login or display name.'},
+    created: {type: 'string', description: 'Creation date as YYYY-MM-DD.'},
+    details: {type: 'string', description: 'Any other user-facing facts, e.g. "3 tables; shared with Chemists". Never ids.'},
+  },
+  required: ['action', 'name'],
+};
+
 /** The meta-tools are static — same defs every turn (prompt-cache friendly);
  * the runners resolve the live current view (and optional widget ref) at call time. */
 const VIEW_TOOL_DEFS: ViewToolDef[] = [
@@ -282,6 +294,14 @@ const VIEW_TOOL_DEFS: ViewToolDef[] = [
     description: 'Invoke a state-changing function of the current view or one of its widgets ' +
       '(e.g. setQueryAndRun, addFlowNode). Function name and parameters come from list_view_functions.',
     inputSchema: invocationSchema,
+  },
+  {
+    name: 'datagrok_confirm',
+    description: 'Ask the user to approve a destructive action (delete, overwrite) after a dryRun ' +
+      'tool response, before repeating that call with its confirm token. The card presents the ' +
+      'facts — do NOT restate them in your message text. Returns {confirmed: boolean}; treat a ' +
+      'timeout or error as not confirmed.',
+    inputSchema: confirmSchema,
   },
 ];
 
