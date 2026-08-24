@@ -1,10 +1,25 @@
-import {test, expect} from '@playwright/test';
+import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {openTableFromFile, assertProvenanceScript} from '../helpers/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {WARNING_BALLOON, proveBalloonChannel} from '../helpers/balloons';
 
 test.use(specTestOptions);
+
+// Reads the absence claim first — a balloon raised by the action under test is still on
+// screen at this point — then probes, so that "no warning balloon" is backed by evidence the
+// channel could have shown one.
+async function assertNoWarningBalloon(page: Page, what: string): Promise<void> {
+  // Read instantaneously, not via toHaveCount(0): that form retries for the default timeout,
+  // and a real balloon autohides after 5 s (balloon.dart), so retrying could wait one out.
+  const warn = page.locator(WARNING_BALLOON);
+  const n = await warn.count();
+  const seen = n > 0 ? await warn.first().innerText() : '';
+  expect(n, `${what} must not raise a warning balloon; first warning: "${seen}"`).toBe(0);
+
+  await proveBalloonChannel(page, 'formula-refreshing');
+}
 
 test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info panel edits + GROK-17109 save+reopen persistence', async ({page}) => {
   test.setTimeout(600_000);
@@ -138,10 +153,9 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       expect(Number.isFinite(post.w4)).toBe(true);
       expect(post.w4).toBeCloseTo(Math.log10(post.w3) - 0.2, 3);
       expect(post.w2Tag).toContain('+ 200');
-      const warnings = await page.evaluate(() => {
-        try { return ((window as any).grok.shell.warnings || []).length; } catch { return 0; }
-      });
-      expect(warnings).toBe(0);
+      // Absence is read first, while a balloon raised by the edit would still be standing; the
+      // probe that follows it proves the channel live.
+      await assertNoWarningBalloon(page, 'editing the Weight2 formula');
     });
 
     await softStep('B2.3: edit Weight3 formula via Formula info panel; Weight3/Weight4 recompute, Weight2 unaffected', async () => {
@@ -170,10 +184,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       expect(Number.isFinite(post.w4)).toBe(true);
       expect(post.w4).toBeCloseTo(Math.log10(post.w3) - 0.2, 3);
       expect(post.w3Tag).toContain('+ 50');
-      const warnings = await page.evaluate(() => {
-        try { return ((window as any).grok.shell.warnings || []).length; } catch { return 0; }
-      });
-      expect(warnings).toBe(0);
+      await assertNoWarningBalloon(page, 'editing the Weight3 formula');
     });
 
     await softStep('B2.4: edit Weight4 formula via Formula info panel; Weight4 recomputes, Weight2/Weight3 unaffected', async () => {
@@ -203,10 +214,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       expect(post.w4).toBeCloseTo(Math.log10(post.w3) - 0.1, 3);
       expect(post.w4).not.toBeCloseTo(pre.w4, 3);
       expect(post.w4Tag).toContain('- 0.1');
-      const warnings = await page.evaluate(() => {
-        try { return ((window as any).grok.shell.warnings || []).length; } catch { return 0; }
-      });
-      expect(warnings).toBe(0);
+      await assertNoWarningBalloon(page, 'editing the Weight4 formula');
     });
 
     let preSaveSnapshot: {w: number; w2: number; w3: number; w4: number} | null = null;
@@ -279,7 +287,6 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
           w2v: w2?.get?.(0) ?? null,
           w3v: w3?.get?.(0) ?? null,
           w4v: w4?.get?.(0) ?? null,
-          warnings: (() => { try { return (grok.shell.warnings || []).length; } catch { return 0; } })(),
         };
       }, projectId);
       expect(reopen.ok).toBe(true);
@@ -300,7 +307,7 @@ test('PowerPack: Formula refreshing — 3-step calc-column chain + Formula info 
       expect(reopen.w2v).toBeCloseTo(reopen.w + 200, 1);
       expect(reopen.w3v).toBeCloseTo(reopen.w2v + 50, 1);
       expect(reopen.w4v).toBeCloseTo(Math.log10(reopen.w3v) - 0.1, 3);
-      expect(reopen.warnings).toBe(0);
+      await assertNoWarningBalloon(page, 'reopening the saved project');
     });
   } finally {
     await deleteProjectWithCleanup(page, {
@@ -410,6 +417,11 @@ async function waitForColumnPresent(page: any, columnName: string): Promise<void
   expect(added).toBe(true);
 }
 
+// AddNewColumnDialog picks its CodeMirror host class by MODE — `add-new-column-widget-cm-div`
+// when constructed with a widget, `add-new-column-dialog-cm-div` otherwise (add-new-column.ts:211).
+// PowerPack:formulaWidget builds it in widget mode (package.ts:195-210), so the panel-hosted editor
+// carries the widget class; the dialog helper above keeps the dialog one. Polling for the dialog class
+// here matched nothing on either path, which is why the panel fallback appeared to fail too.
 async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula: string): Promise<void> {
 
   await page.evaluate((n: string) => {
@@ -440,7 +452,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     for (let i = 0; i < 25; i++) {
       widgetCmFound = await page.evaluate(() => {
         const propPanel = document.querySelector('.grok-prop-panel');
-        return !!propPanel?.querySelector('.add-new-column-dialog-cm-div .cm-content');
+        return !!propPanel?.querySelector('.add-new-column-widget-cm-div .cm-content');
       });
       if (widgetCmFound) break;
       await page.waitForTimeout(200);
@@ -465,7 +477,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     for (let i = 0; i < 25; i++) {
       widgetCmFound = await page.evaluate(() => {
         const propPanel = document.querySelector('.grok-prop-panel');
-        return !!propPanel?.querySelector('.add-new-column-dialog-cm-div .cm-content');
+        return !!propPanel?.querySelector('.add-new-column-widget-cm-div .cm-content');
       });
       if (widgetCmFound) break;
       await page.waitForTimeout(200);
@@ -473,12 +485,12 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   }
 
   if (!widgetCmFound)
-    throw new Error(`editFormulaViaInfoPanel: Formula widget CM host (.grok-prop-panel .add-new-column-dialog-cm-div .cm-content) did not render for column "${columnName}"`);
+    throw new Error(`editFormulaViaInfoPanel: Formula widget CM host (.grok-prop-panel .add-new-column-widget-cm-div .cm-content) did not render for column "${columnName}"`);
 
   await page.evaluate(() => {
     const pp = document.querySelector('.grok-prop-panel');
     if (!pp) return;
-    const cm = pp.querySelector('.add-new-column-dialog-cm-div .cm-content') as HTMLElement | null;
+    const cm = pp.querySelector('.add-new-column-widget-cm-div .cm-content') as HTMLElement | null;
     if (cm && cm.offsetWidth === 0 && cm.offsetHeight === 0) {
       const headers = Array.from(pp.querySelectorAll('.d4-accordion-pane-header, .d4-accordion-title'));
       const formulaHeader = headers.find((h) => (h.textContent || '').trim() === 'Formula') as HTMLElement | undefined;
@@ -487,7 +499,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   });
   await page.waitForTimeout(400);
   const panelCm = page.locator(
-    '.grok-prop-panel .add-new-column-dialog-cm-div .cm-content').first();
+    '.grok-prop-panel .add-new-column-widget-cm-div .cm-content').first();
   await panelCm.waitFor({timeout: 15_000, state: 'visible'});
   await panelCm.click({force: true});
   await page.waitForTimeout(200);
@@ -496,7 +508,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     composed = await page.evaluate((f: string) => {
       const propPanel = document.querySelector('.grok-prop-panel');
       const cmContent = propPanel?.querySelector(
-        '.add-new-column-dialog-cm-div .cm-content') as HTMLElement | null;
+        '.add-new-column-widget-cm-div .cm-content') as HTMLElement | null;
       if (!cmContent) return {ok: false};
       const view = (cmContent as any).cmTile?.view ?? null;
       if (!view) return {ok: false};
@@ -517,7 +529,7 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     composed = await page.evaluate(() => {
       const propPanel = document.querySelector('.grok-prop-panel');
       const cmContent = propPanel?.querySelector(
-        '.add-new-column-dialog-cm-div .cm-content') as HTMLElement | null;
+        '.add-new-column-widget-cm-div .cm-content') as HTMLElement | null;
       if (!cmContent) return {ok: false};
       const view = (cmContent as any).cmTile?.view ?? null;
       const doc = view ? view.state.doc.toString() : (cmContent.innerText || '');
