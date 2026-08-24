@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: unmarked the `Benchmarks` category as `stressTest`. Each of those tests fires 25-100 sequential queries by design, so at 91 concurrent threads they time out - build 171 measured `Performance: TestNormal` at 100% failure, `TestLong` 94%, `TestWide` 88%, `Sequential select 1` 62%, EXECUTION TIMEOUT throughout, and they accounted for essentially every failure in the sweep. The mark was inert until DBTests joined the stress suite.
 * Tests: marked the read-only Postgres categories (`Connections` queries, `TableQueryBuilder`) as `stressTest` - 12 tests, so the nightly Stress-Tests sweep exercises grok_connect query load and not only the platform API. Excluded: `Docker connection` (the stress stand runs no grok_spawner), `Server cache` (shared cache state) and `Database Meta: *` (its tests annotate and clear shared schema metadata - measured at 19-56% pass under concurrency in build 169, all of it threads overwriting each other rather than real failures).
 * Tests: Fixed `Docker connection / Connection test` timing out at exactly 300s — its budget equalled datlas' own containerStatusTimeout, so a slow on-demand container start left nothing for the connection test
 * Tests: annotated API-only categories (queries, TableQueryBuilder, server cache, benchmarks, DB annotations, provider connectivity) with `node: true` — `grok test` now runs them headless in Node; the data-sync view test and the IndexedDB-backed client cache stay in the browser
