@@ -11,7 +11,7 @@ import type {SpecEditor, SpecPatch} from '../../spec/editor.js';
 import type {SpecInstance, SpecNode} from '../../spec/spec.js';
 import {place, resolveDrop} from './dnd.js';
 import type {DropTarget} from './dnd.js';
-import {dropNode} from './drop.js';
+import {bindTable, dropNode} from './drop.js';
 import type {DropReading} from './drop.js';
 import {nodeLabel} from './node-ref.js';
 import type {Tray} from './tray.js';
@@ -206,8 +206,10 @@ export class DragLayer {
       return;
     }
     const tag = drag.tag!;
+    const instance = this._host.instance();
     const unique = editor.uniqueNames();
-    const node = seedNode(this._host.instance()?.registry.get(tag), tag, unique(nameForTag(tag)), unique);
+    const seeded = seedNode(instance?.registry.get(tag), tag, unique(nameForTag(tag)), unique);
+    const node = instance === undefined ? seeded : bindTable(seeded, instance);
     this._host.pending(node);
     this._host.apply({op: 'add', parent: target.parent, index: target.index, node});
   }

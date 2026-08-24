@@ -40,6 +40,13 @@ export function bindTree(instance: SpecInstance): BindTreeNode[] {
   return roots;
 }
 
+/** The tray sources a path stopping at them binds to a frame — what a dropped viewer may take its
+ * `table` from without asking. */
+export function frameSources(instance: SpecInstance): SpecNode[] {
+  return (instance.spec.components ?? []).filter((node) => sourceOf(instance, node)?.bindProps()
+    .some((prop) => prop.default === true && (prop.propertyType ?? prop.type) === 'dataframe') === true);
+}
+
 /** A broken component maps the placeholder ELEMENT, not a component — the guard is what keeps the
  * tray's failures out of the picker instead of throwing at it. */
 function sourceOf(instance: SpecInstance, node: SpecNode): BindSource | undefined {

@@ -1,7 +1,7 @@
-/* viewerOf / viewerControl / viewers.* / viewerSettings (VP-8, VP-18, VP-19) over the viewer
-   doubles: the empty-frame start and the repoint by frame identity, named keys over `look`, the
-   renderer's signals peeked and never linked, the fluent factories' two-way links, and the settings
-   form over the look. */
+/* viewerOf / viewerControl / viewers.* / viewerSettings (VP-8, VP-18, VP-19, VP-23, VP-32) over the
+   viewer doubles: the empty-frame start and the repoint by frame identity (marked in REPOINTING),
+   named keys over `look`, the renderer's signals peeked and never linked, the fluent factories'
+   two-way links through `fromType`, and the settings form over the look. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +13,7 @@ import {Control} from '../src/core/component.js';
 import {DataFrame, FilterGroup, Grid, Property, Viewer, WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
-const {viewerOf, viewerControl} = await import('../src/dg/viewers/viewer-control.js');
+const {viewerOf, viewerControl, REPOINTING} = await import('../src/dg/viewers/viewer-control.js');
 const {viewers, viewerSettings} = await import('../src/dg/viewers/viewers.js');
 
 const demog = () => new DataFrame([{name: 'age', type: 'int'}, {name: 'weight', type: 'double'}],
@@ -21,7 +21,8 @@ const demog = () => new DataFrame([{name: 'age', type: 'int'}, {name: 'weight', 
 
 const descriptors = () => [
   new WidgetDescriptor('Grid', [new Property('allowEdit', 'bool', {defaultValue: false})]),
-  new WidgetDescriptor('Filters', [new Property('columnNames', 'list', {subType: 'string'})]),
+  new WidgetDescriptor('Filters', [new Property('columnNames', 'list', {subType: 'string'}),
+    new Property('filters', 'list', {subType: 'map'})]),
   new WidgetDescriptor('Form', []),
   new WidgetDescriptor('Scatter plot', [
     new Property('xColumnName', 'string'), new Property('yColumnName', 'string'),
@@ -136,6 +137,53 @@ scoped('a repoint re-applies the construction-time literal look, never a bound o
   w.dispose();
 });
 
+scoped('a `filters` literal waits for the frame: not in the construction look over the placeholder, applied once ' +
+  'by the repoint (B1)', () => {
+  const fromType = Viewer.fromType;
+  const construction = [];
+  Viewer.fromType = (type, table, options) => {
+    construction.push(options);
+    return fromType(type, table, options);
+  };
+  const filters = [{type: 'categorical', column: 'city'}];
+  let fg;
+  try {
+    fg = viewerControl('Filters', {table: signal(undefined), filters, columnNames: ['city']});
+  } finally {
+    Viewer.fromType = fromType;
+  }
+  assert.deepEqual(construction, [{columnNames: ['city']}], 'the look minus `filters`');
+  assert.equal(fg.props.filters, null);
+  const writes = [];
+  fg.onPropertyValueChanged.subscribe((e) => writes.push(e.args.property.name));
+  const table = signal(undefined);
+  const late = viewerControl('Filters', {table, filters});
+  late.onPropertyValueChanged.subscribe((e) => writes.push(e.args.property.name));
+  table.value = demog();
+  assert.deepEqual(late.props.filters, filters, 'the literal, over the real frame');
+  assert.deepEqual(writes, ['filters'], 'one write');
+  const bound = viewerControl('Filters', {table: signal(demog()), filters});
+  assert.deepEqual(bound.props.filters, filters, 'a frame known at construction takes the whole look');
+  fg.dispose();
+  late.dispose();
+  bound.dispose();
+});
+
+scoped('a viewer is in REPOINTING for the repoint and the re-applied literal look, and out right after', () => {
+  const table = signal(undefined);
+  const v = viewerControl('Grid', {table, allowEdit: true});
+  const seen = [];
+  v.onDataFrameChanged.subscribe(() => seen.push(['repoint', REPOINTING.has(v)]));
+  v.onPropertyValueChanged.subscribe((e) => seen.push([e.args.property.name, REPOINTING.has(v)]));
+  assert.equal(REPOINTING.has(v), false, 'construction is not a repoint');
+  table.value = demog();
+  assert.deepEqual(seen, [['repoint', true], ['allowEdit', true]]);
+  assert.equal(REPOINTING.has(v), false);
+  v.props.allowEdit = false;
+  assert.deepEqual(seen.at(-1), ['allowEdit', false], 'an edit outside the effect is not marked');
+  v.dispose();
+});
+
 scoped('viewerControl: a named key wins over look, and a bound signal is peeked, never linked', () => {
   const x = signal('age');
   const v = viewerControl('Scatter plot', {table: signal(demog()), xColumnName: x,
@@ -197,6 +245,27 @@ scoped('viewers.*: one-liners over the js-api statics', () => {
   for (const v of [grid, filters, form, byType])
     v.dispose();
   assert.equal(platform.kills.length, 4);
+});
+
+scoped('viewers.* build through fromType — the cached wrapper — never the statics that mint a second one', () => {
+  const statics = {grid: Viewer.grid, filters: Viewer.filters, form: Viewer.form, scatterPlot: Viewer.scatterPlot};
+  for (const name of Object.keys(statics))
+    Viewer[name] = () => { throw new Error(`Viewer.${name} mints an uncached wrapper`); };
+  try {
+    const df = demog();
+    const filters = viewers.filters(df);
+    assert.ok(filters instanceof FilterGroup && Control.is(filters));
+    const grid = viewers.grid(df, {allowEdit: true});
+    assert.ok(grid instanceof Grid);
+    assert.equal(grid.props.allowEdit, true);
+    const plot = viewers.scatterPlot(df, {xColumnName: 'age'});
+    assert.equal(plot.type, 'Scatter plot');
+    assert.equal(plot.props.xColumnName, 'age');
+    for (const v of [filters, grid, plot])
+      v.dispose();
+  } finally {
+    Object.assign(Viewer, statics);
+  }
 });
 
 scoped('viewerSettings builds a form whose fields read and write the look', () => {

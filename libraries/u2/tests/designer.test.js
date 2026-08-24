@@ -1840,3 +1840,21 @@ designer('the selection adorner follows the lead element\'s size: one ResizeObse
       globalThis.ResizeObserver = Real;
     }
   });
+
+/* Final fixer (V-2.5) U6 — the ref the selection issues carries the designer's verbs over the node,
+   so the panel can surface a tag's own actions as buttons through the same path its menus use. */
+designer('the selection\'s ref answers the designer\'s actions over the selected node', async () => {
+  const warn = console.warn;
+  console.warn = () => {};
+  const view = new SpecDesigner(SPEC);
+  try {
+    view._select(find(view._instance.spec, 'nameInput'));
+    await flush();
+    assert.equal(typeof shell.o.actions, 'function');
+    assert.deepEqual(shell.o.actions().map((a) => a.name).slice(0, 4), ['Delete', 'Move Up', 'Move Down', 'Duplicate']);
+  } finally {
+    console.warn = warn;
+    shell.o = null;
+    view.dispose();
+  }
+});

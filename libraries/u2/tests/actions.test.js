@@ -18,7 +18,7 @@ import {dfBindings} from '../src/sources/df-bindings.js';
 import {DataFrame, FilterGroup, Property, WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
-const {ADD_FILTER, registerPlatformComponents} = await import('../src/dg/viewers/registrations.js');
+const {ADD_FILTER, REMOVE_FILTER, registerPlatformComponents} = await import('../src/dg/viewers/registrations.js');
 const {Ribbon} = await import('../src/dg/designer/ribbon.js');
 const {SAMPLES} = await import('../src/dg/designer/samples.js');
 const {shell} = await import('datagrok-api/grok');
@@ -240,6 +240,63 @@ designer('ADD_FILTER: with no table bound it warns once and resolves null, askin
     assert.equal(document.querySelector('.u2-dialog'), null);
     assert.deepEqual(warnings,
       ['Add filter for column…: no table to pick a column from — bind `table` to a source first']);
+    instance.dispose();
+  });
+
+designer('REMOVE_FILTER: the picked entry leaves the document\'s filters as a set-prop; the last one removes the key',
+  async ({filters, warnings, reg}) => {
+    const df = ORDERS();
+    const instance = filters({tag: 'u2-viewer-filters', name: 'filters', bind: {table: '$.orders'},
+      props: {filters: [{type: 'categorical', column: 'city'}, {type: 'histogram', column: 'total'}]}}, df);
+    const node = instance.spec.root;
+    const fg = instance.node('filters');
+    assert.deepEqual(reg.get('u2-viewer-filters').designerActions.map((a) => a.name),
+      ['Add filter for column…', 'Remove filter…'], 'beside Add');
+
+    const pending = REMOVE_FILTER.produce(node, fg);
+    const dialog = document.querySelector('.u2-dialog');
+    assert.ok(dialog, 'the action asks first');
+    const select = dialog.querySelector('select');
+    assert.deepEqual([...select.querySelectorAll('option')].map((o) => o.textContent).filter((v) => v !== ''),
+      ['city', 'total'], 'the document\'s filters, by column');
+    assert.equal(dialogButton('OK').disabled, true, 'nothing picked yet');
+    select.value = '0';
+    fire(select, 'change');
+    fire(dialogButton('OK'), 'click');
+    assert.deepEqual(await pending, {op: 'set-prop', name: 'filters', value: [{type: 'histogram', column: 'total'}]});
+    assert.equal(node.props.filters.length, 2, 'pure: the node is the view\'s to patch');
+    assert.equal(document.querySelector('.u2-dialog'), null);
+
+    node.props.filters = [{type: 'histogram', column: 'total'}];
+    const last = REMOVE_FILTER.produce(node, fg);
+    const only = document.querySelector('.u2-dialog select');
+    only.value = '0';
+    fire(only, 'change');
+    fire(dialogButton('OK'), 'click');
+    assert.deepEqual(await last, {op: 'set-prop', name: 'filters', value: undefined}, 'the key goes');
+    assert.deepEqual(warnings, []);
+    instance.dispose();
+  });
+
+designer('REMOVE_FILTER: Cancel resolves null; with nothing in the document it warns once, asking nothing',
+  async ({filters, warnings}) => {
+    const df = ORDERS();
+    const instance = filters({tag: 'u2-viewer-filters', name: 'filters', bind: {table: '$.orders'},
+      props: {filters: [{type: 'categorical', column: 'city'}]}}, df);
+    const node = instance.spec.root;
+    const fg = instance.node('filters');
+    const pending = REMOVE_FILTER.produce(node, fg);
+    fire(dialogButton('CANCEL'), 'click');
+    assert.equal(await pending, null);
+    assert.equal(document.querySelector('.u2-dialog'), null);
+    assert.deepEqual(warnings, []);
+
+    // the panes the platform built from `columnNames` are live, not the document's to remove
+    fg.props.filters = [{type: 'categorical', column: 'city'}];
+    delete node.props.filters;
+    assert.equal(await REMOVE_FILTER.produce(node, fg), null);
+    assert.equal(document.querySelector('.u2-dialog'), null);
+    assert.deepEqual(warnings, ['Remove filter…: the form names no filters — "Add filter for column…" adds one']);
     instance.dispose();
   });
 

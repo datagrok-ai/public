@@ -420,6 +420,17 @@ export class DartWidget extends Widget {
   getFunctions() { return this.dart.functions; }
 }
 
+/** The core property grid (js-api widgets/data-widgets.ts:177): every update is recorded on the
+ * handle — `update` here, `grok_PropertyGrid_Update` with the table when a caller goes to the global. */
+export class PropertyGrid extends DartWidget {
+  constructor() {
+    super({root: document.createElement('div'), updates: []});
+    this.root.classList.add('d4-property-grid-widget');
+  }
+
+  update(src, props) { this.dart.updates.push({src, props, table: undefined}); }
+}
+
 /** A look's owner — the viewer whose `onPropertyValueChanged` a property write fires — and the
  * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError (P6). */
 const LOOKS = new WeakMap();

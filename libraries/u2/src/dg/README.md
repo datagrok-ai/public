@@ -340,10 +340,17 @@ target, and both throw — so use `viewerSettings(viewer)` (`dg/viewers/viewers.
 const form = viewerSettings(scatter);   // propertyForm(userEditable props, grok_Viewer_Get_Look(scatter.dart))
 ```
 
-The designer panel shows an `object`-typed prop such as `filters` read-only; the write paths are
-*Add filter for column…* and a spec `set-prop`. Note that `FilterGroup.props.columnNames` reads
-`[]` once panes exist — the platform converts it into `filters`, so read
-`getOptions(true).look.filters`.
+The same fact drives the property tier: an adopted widget's `propertyTarget` is what `prop.get`/
+`prop.set` are handed — the look for a Dart viewer, `dart` for a `DartWidget`, the widget itself
+otherwise (`dg/viewers/adopt.ts`). The designer does not build its own editors for a viewer node:
+`lookGrid(x, panel, funnel)` (`dg/designer/look-grid.ts`) mounts the platform `PropertyGrid` over
+the live look with the viewer's frame (`grok_PropertyGrid_Update(pg, look, props, df.dart)` — the
+frame is what gives `*ColumnName` rows a column picker) and turns each Design-mode commit
+(`onPropertyValueChanged`) into one `set-prop` patch; an `object`-typed prop such as `filters` is
+not captured — its write paths are *Add filter for column…*, a spec `set-prop`, or a live
+`fg.props.filters = [...]`, which is the whole truth (panes are added, updated in place and
+removed to match it). Note that `FilterGroup.props.columnNames` reads `[]` once panes exist —
+the platform converts it into `filters`, so read `getOptions(true).look.filters`.
 
 Other Dart-backed widgets (`DartWidget`, `DG.ViewBase`) read and write through their dart handle:
 `propertyForm(widget.getProperties(), widget.dart)`.

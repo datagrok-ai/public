@@ -147,3 +147,63 @@ test('a drag carrying nothing we know is not ours, but one we must refuse is', (
   assert.equal(wired.acceptDrag({dragObject: file('a/report.pdf')}), true,
     'refusing at acceptDrag would make the drop fall through in silence');
 });
+
+/* U1b of the viewers acceptance pass — a dropped viewer wants its frame, and the document that has
+   exactly one frame source answers that without a dialog: `bindTable` seeds `bind.table` onto the
+   seeded node, so the drop's own `add` patch carries it (one undo step); with none or several
+   sources the Bindings row is where the user picks. Pure over a rendered instance. */
+const {Registry} = await import('../src/spec/registry.js');
+const {SpecContext, renderSpec} = await import('../src/spec/spec.js');
+const {seedNode} = await import('../src/spec/editor.js');
+const {Control} = await import('../src/core/component.js');
+const {bindTable} = await import('../src/dg/designer/drop.js');
+
+/** A source whose default step is a frame (`$.name` binds the frame itself), and one whose
+ * default step is not. */
+const frameSource = (tag, type) => ({
+  tag, visual: false, description: 'Fake source', example: {tag},
+  createComponent: () => Object.assign(new Control(), {
+    bindStep: () => null, bindProps: () => [{name: 'df', type, default: true}]}),
+  props: [],
+});
+
+const FRAME = frameSource('u2-e-frame', 'dataframe');
+const ITEMS = frameSource('u2-e-items', 'object');
+const VIEWER = {tag: 'u2-e-viewer', create: () => new Control(), description: 'Fake viewer', example: {tag: 'u2-e-viewer'},
+  props: [{name: 'table', type: 'dataframe', bindable: true}, {name: 'xColumnName', type: 'string', bindable: true}]};
+const INPUT = {tag: 'u2-e-input', create: () => new Control(), description: 'Fake input', example: {tag: 'u2-e-input'},
+  props: [{name: 'value', type: 'string', bindable: true}]};
+const BOX = {tag: 'u2-e-box', create: () => new Control(), description: 'Fake box', example: {tag: 'u2-e-box'},
+  props: [], acceptsChildren: true};
+
+function rendered(components) {
+  const reg = new Registry();
+  for (const meta of [FRAME, ITEMS, VIEWER, INPUT, BOX])
+    reg.register(meta);
+  return renderSpec({$schema: 'dg-ui/1', components, root: {tag: 'u2-e-box', name: 'layout'}}, new SpecContext(), reg);
+}
+
+const dropped = (instance, tag) => bindTable(seedNode(instance.registry.get(tag), tag, 'dropped'), instance);
+
+test('bindTable: the only frame source becomes the dropped viewer\'s `table`; a non-frame source does not count', () => {
+  const instance = rendered([{tag: 'u2-e-frame', name: 'orders'}, {tag: 'u2-e-items', name: 'users'}]);
+  try {
+    assert.deepEqual(dropped(instance, 'u2-e-viewer'), {tag: 'u2-e-viewer', name: 'dropped', bind: {table: '$.orders'}});
+    assert.deepEqual(dropped(instance, 'u2-e-input'), {tag: 'u2-e-input', name: 'dropped'},
+      'a tag with no bind-only table is left alone');
+  } finally {
+    instance.dispose();
+  }
+});
+
+test('bindTable: no frame source, or two, seeds nothing — the user picks', () => {
+  const none = rendered([{tag: 'u2-e-items', name: 'users'}]);
+  const two = rendered([{tag: 'u2-e-frame', name: 'orders'}, {tag: 'u2-e-frame', name: 'returns'}]);
+  try {
+    assert.deepEqual(dropped(none, 'u2-e-viewer'), {tag: 'u2-e-viewer', name: 'dropped'});
+    assert.deepEqual(dropped(two, 'u2-e-viewer'), {tag: 'u2-e-viewer', name: 'dropped'});
+  } finally {
+    none.dispose();
+    two.dispose();
+  }
+});

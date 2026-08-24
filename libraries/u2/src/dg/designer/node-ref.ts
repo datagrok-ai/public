@@ -3,6 +3,7 @@
    both are testable without the shell; only the handler and the view below need datagrok-api. */
 import {Component} from '../../core/component.js';
 import type {ComponentMetaLike} from '../../core/widget-like.js';
+import type {Action} from '../../components/actions/actions.js';
 import type {TreeNode} from '../../components/collections/tree.js';
 import type {SpecEditor} from '../../spec/editor.js';
 import {SpecInstance} from '../../spec/spec.js';
@@ -21,9 +22,11 @@ export interface SpecTree {
 /** The designer's selection handle: what `grok.shell.o` carries, and what the node ObjectHandler
  * renders the context panel from. */
 export class SpecNodeRef {
-  /** Without an `editor` the panel renders read-only: the absence of the channel is the mode. */
+  /** Without an `editor` the panel renders read-only: the absence of the channel is the mode.
+   * `actions` answers the designer's verbs over the node as selected — what its context menu
+   * offers — so the panel can surface a tag's own designer actions as buttons. */
   constructor(readonly instance: SpecInstance, readonly node: SpecNode,
-    readonly editor?: SpecEditor) {}
+    readonly editor?: SpecEditor, readonly actions?: () => Action[]) {}
 
   parent(): SpecNode | null {
     return this.instance.parentOf(this.node);

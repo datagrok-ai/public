@@ -483,3 +483,12 @@ export const gridCellCenter = (page, name, column, row) => page.evaluate(({name,
   const r = root.getBoundingClientRect();
   return {x: r.left + b.x + b.width / 2, y: r.top + b.y + b.height / 2};
 }, {name, column, row});
+
+/** One row of the platform property grid a viewer node's panel shows (VP-35): `data-prop-name` is
+ * the Dart lib's stable automation id — the row's `name` attribute is label-derived. */
+export const lookRow = (page, name) =>
+  page.locator(`.u2-designer-properties .u2-designer-look tr[data-prop-name="${name}"]`).first();
+
+/** The row's own editor — the checkbox of a bool, the spinner of a choice. A string row shows a
+ * label until clicked and a column row a `.d4-column-selector`: neither is an input. */
+export const lookField = (page, name) => lookRow(page, name).locator('input, select').first();

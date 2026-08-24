@@ -5,6 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import {div} from '../../core/elements.js';
 import type {ReadonlySignal} from '../../core/signals.js';
+import type {Action} from '../../components/actions/actions.js';
 import {Accordion} from '../../components/containers/accordion.js';
 import {TabStrip} from '../../components/containers/tabs.js';
 import type {VirtualTree} from '../../components/collections/tree.js';
@@ -26,6 +27,7 @@ export interface SelectionHost {
   instance(): SpecInstance | undefined;
   model(): SpecTree | undefined;
   dragged(): boolean;
+  actions(): Action[];
   report(): void;
   touch(): void;
   own(dispose: () => void): void;
@@ -159,7 +161,7 @@ export class Selection {
   }
 
   private _issue(instance: SpecInstance, node: SpecNode): void {
-    const ref = new SpecNodeRef(instance, node, this._host.editor.peek());
+    const ref = new SpecNodeRef(instance, node, this._host.editor.peek(), () => this._host.actions());
     this._shownBroken = ref.error() !== null;
     grok.shell.o = ref;
   }

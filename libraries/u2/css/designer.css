@@ -418,3 +418,33 @@
 .u2-func-picker .u2-picker-empty {
   height: 240px;
 }
+
+/* the viewer node's Properties section: the platform property grid (its own sheet is global) filling the pane */
+.u2-designer-look {
+  width: 100%;
+}
+
+.u2-designer-look .property-grid-category td {
+  font-size: var(--dg-font-size);
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2-designer-look .property-grid td:first-child {
+  width: 55%;
+}
+
+/* the rows the document carries a value for, apart from the ones showing the viewer's default */
+.u2-designer-look-set td:first-child {
+  font-weight: var(--dg-font-weight-medium);
+}
+
+/* a string row keeps focus after its commit (the editor is gone): the name cell already marks it */
+.u2-designer-look tr[data-prop-name]:focus {
+  outline: none;
+}
+
+/* the tag's own designer verbs, under the Node table */
+.u2-designer-verbs {
+  flex-wrap: wrap;
+  gap: var(--dg-space-xs);
+}

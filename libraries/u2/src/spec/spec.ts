@@ -55,6 +55,16 @@ interface Mount {
   release(): void;
 }
 
+/** A bind whose target is a visual node declared later in the document: the component took a
+ * proxy signal at construction, and the link to the real signal waits for the render pass to end. */
+interface Deferred {
+  node: SpecNode;
+  component: Control;
+  name: string;
+  path: string;
+  twoWay: boolean;
+}
+
 const HTML_TAGS = new Set(['div', 'span', 'p', 'h1', 'h2', 'h3', 'a', 'img']);
 const HTML_PROPS = new Set(['text', 'cls', 'href', 'src']);
 const JSON_TYPES = new Set(['object', 'string', 'number', 'boolean']);
@@ -115,6 +125,7 @@ export class SpecInstance extends Control {
    * for the same reason — a param bound to an input must resolve against the input the re-render
    * leaves behind, not the one it replaced. */
   private readonly _pending: SpecNode[] = [];
+  private readonly _deferred: Deferred[] = [];
   private _cycle: string[] | null;
   private _designTime: boolean;
   private _batching = false;
@@ -134,6 +145,7 @@ export class SpecInstance extends Control {
       for (const node of spec.components ?? [])
         this._mountComponent(node);
       this.root.append(SpecInstance._element(this._render(spec.root)));
+      this._flushLinks();
       for (const node of spec.components ?? [])
         this._start(node);
     });
@@ -145,6 +157,7 @@ export class SpecInstance extends Control {
     this._named.clear();
     this._elements.clear();
     this._mounts.clear();
+    this._deferred.length = 0;
   }
 
   get spec(): Spec {
@@ -188,8 +201,9 @@ export class SpecInstance extends Control {
     return this._designTime;
   }
 
-  /** The spec back out, with live values folded in: bound props keep their `bind` entry, plain
-   * ones report what the component holds now. Rendering the result reproduces this UI. */
+  /** The document as it is: bound props keep their `bind`, plain ones their literal — a Run-mode
+   * edit of a control is never folded in; the designer's Design-mode panel edits are patches and
+   * therefore in the document. Rendering the result reproduces this UI. */
   dump(): object {
     const components = this._spec.components ?? [];
     const out: Record<string, unknown> = {$schema: SPEC_SCHEMA};
@@ -277,22 +291,49 @@ export class SpecInstance extends Control {
     if (named !== undefined) {
       if (isBindSource(named))
         return named;
+      if (SpecInstance._isPlaceholder(named))
+        throw new Error(`component "${first}" is declared but not built`);
       throw new Error(`"${first}" is not a bind source`);
     }
     const data = this.ctx.data[first];
     if (data !== undefined)
       return data;
-    if (SpecInstance._declared(this._spec.root, first)) {
-      this._warn(`"${first}" is not built yet — node-to-node binds resolve in document order`);
-      throw new Error(`"${first}" is declared after this node — move "${first}" before it in the ` +
-        'structure tree, or bind through a state variable (u2-state)');
-    }
+    if (SpecInstance._declared(this._spec.root, first))
+      throw new Error(`component "${first}" is declared but not built`);
     throw new Error(`nothing bound at "${path}"`);
   }
 
   /** Whether the document declares a node of this name at all, built or not. */
   private static _declared(root: SpecNode, name: string): boolean {
     return root.name === name || (root.children ?? []).some((child) => SpecInstance._declared(child, name));
+  }
+
+  /** A later-declared visual node: the one first segment {@link resolveBinding} cannot answer yet. */
+  private _forwardRef(path: string): boolean {
+    const first = parsePath(path)?.[0];
+    return first !== undefined && !this._named.has(first) && this.ctx.data[first] === undefined &&
+      !(this._spec.components ?? []).some((c) => c.name === first) && SpecInstance._declared(this._spec.root, first);
+  }
+
+  /** The render pass is over: every forward reference links to what the document built — or
+   * warns, leaving the referencing node built and unlinked (the target's own placeholder names
+   * the real problem). */
+  private _flushLinks(): void {
+    for (const d of this._deferred.splice(0)) {
+      const mount = this._mounts.get(d.node);
+      if (mount === undefined || mount.scope.isDisposed)
+        continue;
+      if (this._nodes.get(d.node) !== d.component)
+        continue;
+      try {
+        const {signal: source, writable} = this.resolveBinding(d.path);
+        if (d.twoWay && !writable)
+          this._warn(`bind "${d.path}" is read-only — edits will not flow back`);
+        Scope.runWith(mount.scope, () => d.component.link(d.name, source, d.twoWay && writable));
+      } catch (e) {
+        this._warn(`${d.node.tag}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
   }
 
   /** Disposes what `node` rendered — its whole subtree, scopes, components, listeners and map
@@ -321,6 +362,8 @@ export class SpecInstance extends Control {
     const meta = parent ? this._registry.get(parent.tag) : undefined;
     const built = Scope.runWith(scope, () => this._render(node, meta));
     oldEl.replaceWith(SpecInstance._element(built));
+    if (!this._batching)
+      this._flushStarts();
   }
 
   /** Renders each node again at its render root, nested targets collapsed into the outermost —
@@ -397,6 +440,8 @@ export class SpecInstance extends Control {
   }
 
   private _flushStarts(): void {
+    // links before starts: a source param bound to an input that is itself forward-bound sees a live value
+    this._flushLinks();
     const pending = this._pending.splice(0);
     for (const node of pending) {
       // a component the same patch removed again has nothing to start
@@ -527,6 +572,7 @@ export class SpecInstance extends Control {
     const props = this._props(node, meta, parent);
 
     const twoWay: [string, Signal<unknown>, boolean][] = [];
+    const deferred: [string, string, boolean][] = [];
     for (const [name, path] of Object.entries(node.bind ?? {})) {
       const dot = name.indexOf('.');
       // a sub-bind ('params.days') delivers raw through the components engine's env, never here
@@ -535,6 +581,11 @@ export class SpecInstance extends Control {
       const prop = SpecInstance._prop(meta, name);
       if (!prop || !prop.bindable)
         throw new Error(`prop "${name}" is not bindable`);
+      if (this._forwardRef(path)) {
+        props[name] = signal(undefined);
+        deferred.push([name, path, prop.twoWay === true]);
+        continue;
+      }
       const {signal: source, writable} = this.resolveBinding(path);
       props[name] = source;
       if (prop.twoWay) {
@@ -549,6 +600,8 @@ export class SpecInstance extends Control {
       this._adopt(node, meta, meta.create!(props));
     for (const [name, source, writable] of twoWay)
       component.link(name, source, writable);
+    for (const [name, path, twoWay] of deferred)
+      this._deferred.push({node, component, name, path, twoWay});
     return component;
   }
 
@@ -694,7 +747,7 @@ export class SpecInstance extends Control {
     if (node.name !== undefined)
       out.name = node.name;
     if (node.props)
-      out.props = this._dumpProps(node);
+      out.props = {...node.props};
     if (node.bind)
       out.bind = {...node.bind};
     if (node.on) {
@@ -706,26 +759,6 @@ export class SpecInstance extends Control {
     if (node.children)
       out.children = node.children.map((child) => this._dump(child));
     return out;
-  }
-
-  private _dumpProps(node: SpecNode): Record<string, unknown> {
-    const live = this._liveValue(node);
-    const props: Record<string, unknown> = {};
-    for (const [name, value] of Object.entries(node.props ?? {}))
-      props[name] = live && name === 'value' ? live.current : value;
-    return props;
-  }
-
-  /** The component's own `value` signal, but only where the spec's prop — not a binding — feeds it. */
-  private _liveValue(node: SpecNode): {current: unknown} | null {
-    const meta = this._registry.get(node.tag);
-    const component = this._nodes.get(node);
-    if (!meta || !Control.is(component) || (node.bind && 'value' in node.bind))
-      return null;
-    if (!meta.props.some((p) => p.name === 'value'))
-      return null;
-    const own = (component as unknown as {value?: unknown}).value;
-    return own instanceof Signal ? {current: own.peek()} : null;
   }
 
   private _warn(message: string): void {
@@ -781,6 +814,10 @@ export class SpecInstance extends Control {
     el.className = 'u2-spec-error';
     el.textContent = message;
     return el;
+  }
+
+  private static _isPlaceholder(built: Component | HTMLElement): boolean {
+    return !Component.is(built) && built.classList.contains('u2-spec-error');
   }
 }
 

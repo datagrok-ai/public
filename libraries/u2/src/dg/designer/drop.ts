@@ -4,8 +4,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {nameForTag} from '../../spec/editor.js';
+import {segmentsToPath} from '../../spec/path.js';
 import type {Registry} from '../../spec/registry.js';
-import type {SpecNode} from '../../spec/spec.js';
+import type {SpecInstance, SpecNode} from '../../spec/spec.js';
+import {frameSources} from './bind-model.js';
+import {BIND_ONLY, typeOf} from './prop-model.js';
 import {sourceNode, specName} from './tray.js';
 
 /** The core function that reads a server file as a table: `fullPath`, `sheetName`, and one
@@ -84,6 +87,18 @@ export function dropNode(item: DropItem, registry: Registry,
     props.params = item.params;
   return sourceNode(registry.get(FUNC_SOURCE), FUNC_SOURCE,
     unique(specName(item.label, nameForTag(FUNC_SOURCE))), props);
+}
+
+/** A dropped node that takes a frame through its bind-only `table` gets it from the document's
+ * only frame source, in the same patch as the drop — one undo step; with none or several, the
+ * Bindings row is where the user picks. */
+export function bindTable(node: SpecNode, instance: SpecInstance): SpecNode {
+  const wants = instance.registry.get(node.tag)?.props
+    .some((prop) => prop.name === 'table' && typeOf(prop) === BIND_ONLY) === true;
+  const sources = frameSources(instance);
+  if (wants && sources.length === 1 && node.bind?.table === undefined)
+    node.bind = {...node.bind, table: segmentsToPath([sources[0].name!])};
+  return node;
 }
 
 export interface DesignerDropOptions {

@@ -15,6 +15,10 @@ export type TableRef = DG.DataFrame | ReadonlySignal<DG.DataFrame | undefined>;
 
 type Look = Record<string, unknown>;
 
+/** The viewers mid-repoint — `dataFrame = df` then the literal look re-applied — whose property
+ * events are the construction-time look coming back, not an edit (VP-23). */
+export const REPOINTING = new WeakSet<DG.Viewer>();
+
 /** `make` over the table — or an empty frame while the table signal reads undefined, so the viewer
  * shows its own empty state until the first frame repoints it — adopted, repointed whenever the
  * signal changes frame identity, signal options linked two-way where writable. */
@@ -61,9 +65,12 @@ function build<V extends DG.Viewer, S>(make: (df: DG.DataFrame, look: Partial<S>
   look: Look, literal: Look, bound: [string, Signal<unknown>][], type = 'This viewer'): V & Control {
   const frame = (table instanceof Signal ? table : signal(table)) as ReadonlySignal<DG.DataFrame | undefined>;
   const initial = frame.peek();
+  // a `filters` literal over the placeholder is one platform error per entry, and the panes come
+  // twice once the frame arrives: the repoint's `setOptions(literal)` applies it over the real frame
+  const {filters: _filters, ...placeholderLook} = look;
   let made: V;
   try {
-    made = make(initial ?? DG.DataFrame.create(0), look as Partial<S>);
+    made = make(initial ?? DG.DataFrame.create(0), (initial == null ? placeholderLook : look) as Partial<S>);
   } catch (e) {
     if (initial != null)
       throw e;
@@ -74,8 +81,13 @@ function build<V extends DG.Viewer, S>(make: (df: DG.DataFrame, look: Partial<S>
     const df = frame.value;
     if (df == null || viewer.dataFrame?.dart === df.dart)
       return;
-    viewer.dataFrame = df;
-    viewer.setOptions(literal);
+    REPOINTING.add(viewer);
+    try {
+      viewer.dataFrame = df;
+      viewer.setOptions(literal);
+    } finally {
+      REPOINTING.delete(viewer);
+    }
   });
   viewer.run(() => {
     for (const [name, source] of bound)

@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import './dom-shim.js';
 import {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  Grid, JsViewer, Package, Property, Script, Shell, TableQuery, UnreadableFileInfo, User, Viewer,
+  Grid, JsViewer, Package, Property, PropertyGrid, Script, Shell, TableQuery, UnreadableFileInfo, User, Viewer,
   ViewerMetaHelper, Widget, WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
@@ -50,7 +50,7 @@ const doubles = () => {
     new Entity('alice'), new User('alice'), new Package('Chem'), new Shell(),
     descriptor, descriptor.events[0], grid, grid.meta, new FilterGroup({type: 'Filters', descriptor}),
     new Viewer({type: 'Form', descriptor}), new JsViewer(), new Widget(document.createElement('div')),
-    new DartWidget({type: 'Legend'}),
+    new DartWidget({type: 'Legend'}), new PropertyGrid(),
   ];
 };
 
@@ -361,6 +361,25 @@ test('a widget registers through toDart; a Dart widget\'s properties take the ha
   assert.equal(legend.root.getAttribute('data-widget'), null);
 });
 
+test('a property grid records every update on its handle — the table too through the global; toDart answers the handle', () => {
+  const grid = new PropertyGrid();
+  assert.ok(grid instanceof DartWidget && grid instanceof Widget && !(grid instanceof Viewer));
+  assert.ok(grid.root.classList.contains('d4-property-grid-widget'));
+  assert.deepEqual([grid.getProperties(), grid.dart.updates], [[], []]);
+  assert.equal(grid.getProperties(), grid.dart.properties, 'the properties stay over the handle');
+  const look = {allowEdit: false};
+  const props = [new Property('allowEdit', 'bool')];
+  const df = demog();
+  grid.update(look, props);
+  globalThis.grok_PropertyGrid_Update(grid.dart, look, props, df);
+  assert.deepEqual(grid.dart.updates, [{src: look, props, table: undefined}, {src: look, props, table: df}]);
+  assert.ok(grid.dart.updates.every((u) => u.src === look && u.props === props), 'recorded by identity');
+  assert.equal(DG.toDart(props[0]), props[0].dart);
+  assert.equal(DG.toDart(grid), grid.dart);
+  assert.deepEqual([DG.toDart(null), DG.toDart(undefined), DG.toDart('x'), DG.toDart(look)], [null, undefined, 'x', look],
+    'what carries no handle is its own');
+});
+
 test('the kill-walk runs the cleanups under the element, then detaches every widget under it (P9)', () => {
   WidgetDescriptor.registry = descriptors();
   platform.reset();
@@ -412,11 +431,14 @@ test('the loader hook serves the same classes, not a second copy', () => {
   assert.equal(DG.Grid, Grid);
   assert.equal(DG.FilterGroup, FilterGroup);
   assert.equal(DG.JsViewer, JsViewer);
+  assert.equal(DG.PropertyGrid, PropertyGrid);
   assert.equal(DG.WidgetDescriptor, WidgetDescriptor);
   assert.equal(DG.EventType, EventType);
   assert.equal(DG.platform, platform);
   assert.ok(['grok_Widget_Kill', 'grok_Widget_RegisterCleanup', 'grok_Property_Get_PropertySubType',
-    'grok_Viewer_Get_Look'].every((name) => typeof globalThis[name] === 'function'), 'the globals are installed with DG');
+    'grok_Viewer_Get_Look', 'grok_PropertyGrid_Update'].every((name) => typeof globalThis[name] === 'function'),
+  'the globals are installed with DG');
+  assert.equal(typeof DG.toDart, 'function');
   assert.ok(grok.shell instanceof Shell);
   assert.ok(new DG.FileInfo('a.csv') instanceof FileInfo, 'so an instanceof in the module under test holds');
 });

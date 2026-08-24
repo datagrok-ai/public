@@ -417,7 +417,7 @@ spec('manifest: the child hooks stay out of it, the metadata they need stays in'
   assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object']);
 });
 
-spec('dump: a splitter of a form and an accordion round-trips', () => {
+spec('dump: a splitter of a form and an accordion round-trips the document, not the live values', () => {
   const reg = registry();
   const source = {
     $schema: 'dg-ui/1',
@@ -433,10 +433,11 @@ spec('dump: a splitter of a form and an accordion round-trips', () => {
 
   type(instance.root.querySelector('input'), 'Ibuprofen');
   const dumped = instance.dump();
-  assert.equal(dumped.root.children[0].children[0].props.value, 'Ibuprofen');
+  assert.equal(dumped.root.children[0].children[0].props.value, 'Aspirin', 'a Run-mode edit never folds in');
+  assert.deepEqual(dumped, source);
 
   const restored = renderSpec(dumped, new SpecContext(), reg);
-  assert.equal(restored.root.querySelector('input').value, 'Ibuprofen');
+  assert.equal(restored.root.querySelector('input').value, 'Aspirin');
   assert.deepEqual(restored.dump(), dumped);
   instance.dispose();
   restored.dispose();

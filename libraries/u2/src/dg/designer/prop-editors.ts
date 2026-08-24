@@ -14,17 +14,23 @@ import type {FieldOverride, ObjectForm} from '../forms/object-form.js';
 import type {SpecEditor, SpecPatch} from '../../spec/editor.js';
 import type {SpecNodeRef} from './node-ref.js';
 import {refreshPanel} from './handler.js';
+import {lookGrid} from './look-grid.js';
+import type {LookGrid} from './look-grid.js';
 import {bindPicker, bindPickerButton} from './bind-picker.js';
 import {eventEntry, eventPick, funcPicker, paramProps} from './func-picker.js';
-import {bindRowsOf, bindsOf, commitOnChange, eventsOf, missingTable, paramBinds, paramValuesOf, paramsOf,
-  propertyTier, shownCommand, stringProps, unboundOf} from './prop-model.js';
-import type {PropSection} from './prop-model.js';
+import {bindRowsOf, bindsOf, commitOnChange, eventsOf, missingTable, paramBinds, paramValuesOf,
+  paramsOf, propertyTier, propsFor, shownCommand, stringProps, unboundOf} from './prop-model.js';
 
 /** {@link PropertyGrid.same}'s comparison — element-wise where both values are lists, identity
  * otherwise — for values the document may carry as arrays. */
 const LISTY: PropDescriptor = {name: '', type: 'string_list'};
 /** The automation handle of the "Add binding…" row and its picker button. */
 const ADD_BINDING = 'add-binding';
+/** Under the grid in Run mode, where an edit changes the live viewer and nothing else (R-c). */
+const RUN_HINT = 'Edits here change the running view only and are not saved to the form — ' +
+  'switch to Design to edit the form.';
+/** What a bindable prop's name reads as in the "Add binding…" list: `xColumnName` → `X Column Name`. */
+const words = (name: string): string => name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
 
 /** One editable section of the panel — the form, the snapshot behind it, and the patch a field
  * edit becomes. */
@@ -46,8 +52,8 @@ export interface PanelEditors {
 
 /** The writable panel: a form per section, each field committing through the engine — and a
  * refusal putting the field back and saying why, as every canvas gesture does. */
-export function propEditors(x: SpecNodeRef, editor: SpecEditor, model: PropSection[],
-  events: Record<string, string>, panel: Scope): PanelEditors {
+export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<string, string>,
+  panel: Scope): PanelEditors {
   const node = x.node;
   const owner = Scope.ambient!;
   const channels: FormChannel[] = [];
@@ -89,19 +95,42 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, model: PropSecti
     return channel;
   };
 
-  // a set-prop re-creates a platform viewer (VP-13): typed per keystroke, a column name would
-  // build one viewer per letter, so a property-tier node's sections commit on blur/Enter — and
-  // fold past the first, as the platform panel folds a viewer's forty props
+  // a property-tier node's look is edited in the platform's own grid (VP-21): one grid commit is
+  // one undo entry, its members pre-checked so a refused one is dropped alone, with a warning;
+  // the commit runs from a microtask, so what the apply throws is owned here
   const tier = propertyTier(x);
-  for (const [i, section] of model.entries()) {
-    add(section.title, section.props, section.values, section.read, (name, value) => {
-      const current = node.props?.[name];
-      // a component that reports '' for a prop the spec never carried would write that noise
-      // into the document the moment the empty field is touched
-      if (PropertyGrid.same(LISTY, current, value) || (value === '' && current === undefined))
-        return null;
-      return {op: 'set-prop', node, name, value};
-    }, tier ? commitOnChange(section.values) : undefined, tier ? i === 0 : undefined);
+  let look: LookGrid | undefined;
+  if (tier) {
+    look = lookGrid(x, panel, (patches) => {
+      try {
+        const accepted: SpecPatch[] = [];
+        for (const patch of patches) {
+          const refusal = editor.canApply(patch);
+          if (refusal === null)
+            accepted.push(patch);
+          else
+            grok.shell.warning(refusal);
+        }
+        editor.applyAll(accepted);
+      } catch (e) {
+        grok.shell.error(e instanceof Error ? e.message : String(e));
+      }
+    });
+    if (x.instance.designTime)
+      sections.push(h3('Properties'), look.root);
+    else
+      sections.push(h3('Properties (live)'), span(RUN_HINT, 'u2-designer-hint'), look.root);
+  } else {
+    for (const section of propsFor(x)) {
+      add(section.title, section.props, section.values, section.read, (name, value) => {
+        const current = node.props?.[name];
+        // a component that reports '' for a prop the spec never carried would write that noise
+        // into the document the moment the empty field is touched
+        if (PropertyGrid.same(LISTY, current, value) || (value === '' && current === undefined))
+          return null;
+        return {op: 'set-prop', node, name, value};
+      });
+    }
   }
 
   // what the function this source names is called with: one typed editor per declared param, and
@@ -159,7 +188,8 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, model: PropSecti
     // a property-tier node lists what it binds, not its forty bindable props: the next one is
     // picked here, and the row it lands on becomes the binding's — the section is drawn again
     if (tier) {
-      const pick = new ChoiceInput({label: 'Add binding…', items: unboundOf(x), nullable: true,
+      const pick = new ChoiceInput({label: 'Add binding…', nullable: true,
+        items: unboundOf(x).map((name) => ({value: name, label: words(name)})),
         tooltipText: 'The property to bind; … picks what it follows'});
       pick.root.setAttribute('data-u2-prop', ADD_BINDING);
       channel.form.add(pick);
@@ -226,6 +256,9 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, model: PropSecti
   // would drop the input the user is typing in (D-4)
   panel.effect(() => {
     const applied = editor.onDidApply.value;
+    // before the node gate: a patch on the source re-renders the viewer too, and the grid would
+    // otherwise edit a dead look
+    look?.refresh();
     if (!applied || applied.structural || !applied.patches.some((p) => p.node === x.node))
       return;
     for (const channel of channels) {
@@ -233,7 +266,10 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, model: PropSecti
       channel.form.refresh();
     }
   });
-  return {sections, refresh};
+  return {sections, refresh: () => {
+    refresh();
+    look?.refresh();
+  }};
 }
 
 function commit(editor: SpecEditor, channel: FormChannel, name: string, value: unknown): void {

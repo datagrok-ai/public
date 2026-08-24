@@ -6,7 +6,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Component} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
-import {divV, h3, span} from '../../core/elements.js';
+import {button, divH, divV, h3, span} from '../../core/elements.js';
 import {text} from '../../core/text.js';
 import {tableFromMap} from '../../components/collections/table.js';
 import type {SpecNode} from '../../spec/spec.js';
@@ -70,25 +70,23 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
     const status = (at: SpecNodeRef): HTMLElement[] => {
       statusScope?.dispose();
       statusScope = scope === undefined ? undefined : new Scope();
-      return SpecNodeHandler._status(at, statusScope);
+      return [...SpecNodeHandler._hint(at), ...SpecNodeHandler._status(at, statusScope)];
     };
 
     // the panel carries its own header: the platform shows one only for entities it knows
     const caption = this.renderMarkup(x);
     let identity = SpecNodeHandler._identity(x);
     let shown = status(x);
-    const sections: HTMLElement[] = [caption, h3('Node'), identity, ...shown];
-    const model = propsFor(x);
+    const sections: HTMLElement[] = [caption, h3('Node'), identity, ...shown, ...SpecNodeHandler._verbs(x)];
     const events = eventsOf(x);
     let edited: PanelEditors | undefined;
     if (editor === undefined)
-      sections.push(...SpecNodeHandler._tables(model, events, {...x.node.bind}));
+      sections.push(...SpecNodeHandler._tables(propsFor(x), events, {...x.node.bind}));
     else {
-      edited = Scope.runWith(scope!, () => propEditors(x, editor, model, events, scope!));
+      edited = Scope.runWith(scope!, () => propEditors(x, editor, events, scope!));
       sections.push(...edited.sections);
     }
-    live = {node: x.node, refresh: (at) => {
-      edited?.refresh();
+    const redraw = (at: SpecNodeRef): void => {
       caption.textContent = this.getCaption(at);
       const table = SpecNodeHandler._identity(at);
       identity.replaceWith(table);
@@ -99,7 +97,21 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
       const next = identity.nextSibling;
       for (const el of shown)
         identity.parentElement!.insertBefore(el, next);
+    };
+    live = {node: x.node, refresh: (at) => {
+      edited?.refresh();
+      redraw(at);
     }};
+    // a patch on the node redraws what reads its state: the bind typed into the Bindings field
+    // takes the table hint away with no re-issue of the panel
+    if (editor !== undefined) {
+      const seen = editor.onDidApply.peek();
+      scope!.effect(() => {
+        const applied = editor.onDidApply.value;
+        if (applied !== seen && applied?.patches.some((p) => p.node === x.node) && identity.parentElement !== null)
+          redraw(x);
+      });
+    }
     return divV(sections, 'u2-designer-properties');
   }
 
@@ -109,6 +121,22 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
     if (error !== null)
       identity.Error = missingTable(x) ? divV([span(error), span(TABLE_HINT, 'u2-designer-hint')]) : error;
     return tableFromMap(identity);
+  }
+
+  /** A node built over the empty placeholder has no Error row to carry the hint: it sits right
+   * under the Node table, where the platform's own "Column null" error is explained before the
+   * fold — never at the end of Bindings. */
+  private static _hint(x: SpecNodeRef): HTMLElement[] {
+    return x.error() === null && missingTable(x) ? [span(TABLE_HINT, 'u2-designer-hint')] : [];
+  }
+
+  /** The tag's own designer verbs (the filter group's "Add filter for column…") as buttons: the
+   * same actions its context menus offer, run through the same path, for whoever never opens a
+   * menu on a tree row. */
+  private static _verbs(x: SpecNodeRef): HTMLElement[] {
+    const own = new Set((x.instance.registry.get(x.node.tag)?.designerActions ?? []).map((a) => a.name));
+    const verbs = (x.actions?.() ?? []).filter((a) => own.has(a.name));
+    return verbs.length === 0 ? [] : [divH(verbs.map((a) => button(a.name, a.run)), 'u2-designer-verbs')];
   }
 
   /** A data source's pulse: the one LIVE section of the panel, because a source runs on its own

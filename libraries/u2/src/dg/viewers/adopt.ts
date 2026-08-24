@@ -17,6 +17,7 @@ import {specWarn} from '../../spec/spec.js';
 const api = globalThis as {
   grok_Widget_Kill?: (element: Element) => void;
   grok_Widget_RegisterCleanup?: (element: Element, cleanup: () => void) => void;
+  grok_Viewer_Get_Look?: (dart: unknown) => unknown;
 };
 
 type Adopted = DG.Widget & Control & {_u2: ComponentState};
@@ -72,7 +73,8 @@ function descriptorOn(proto: object | null, name: string): PropertyDescriptor | 
   return undefined;
 }
 
-/** The u2 members the platform class lacks, plus the forced overrides of VP-6/VP-7 for its kind. */
+/** The u2 members the platform class lacks, plus the forced overrides of VP-6/VP-7 for its kind;
+ * computed once per prototype (`MIXED`), so the no-look skip and its warning are memoised with it. */
 function facets(proto: object, widget: DG.Widget): PropertyDescriptorMap {
   const out: PropertyDescriptorMap = {};
   for (const source of [Component.prototype, Control.prototype]) {
@@ -84,7 +86,9 @@ function facets(proto: object, widget: DG.Widget): PropertyDescriptorMap {
   const viewer = widget instanceof DG.Viewer;
   const dart = dartOwned(widget);
   const forced: Facets[] = [common(proto, viewer)];
-  if (dart)
+  if (dart && viewer && api.grok_Viewer_Get_Look === undefined)
+    specWarn('viewers: grok_Viewer_Get_Look is not available on this client — Dart viewer properties are not bindable');
+  else if (dart)
     forced.push(DART);
   if (viewer)
     forced.push(VIEWER);
@@ -124,23 +128,10 @@ function common(proto: object, viewer: boolean): Facets {
 }
 
 /** A viewer's property lives on its look, which the `props` bag is over (P6); a Dart widget's
- * takes the dart handle. */
+ * takes the dart handle. Read per call: a viewer's look is settable. */
 const DART: Facets = {
-  readProperty(name: string) {
-    return this instanceof DG.Viewer ? (this.props as Record<string, unknown>)[name] :
-      this.getProperties().find((p) => p.name === name)?.get?.(this.dart);
-  },
-  writeProperty(name: string, value: unknown) {
-    if (this instanceof DG.FilterGroup && name === 'filters') {
-      // the only `filters` write that rebuilds the panel (P14)
-      for (const state of value as DG.FilterState[])
-        this.updateOrAdd(state);
-      return;
-    }
-    if (this instanceof DG.Viewer)
-      (this.props as Record<string, unknown>)[name] = value;
-    else
-      this.getProperties().find((p) => p.name === name)?.set?.(this.dart, value);
+  get propertyTarget() {
+    return this instanceof DG.Viewer ? api.grok_Viewer_Get_Look!(this.dart) : this.dart;
   },
 };
 

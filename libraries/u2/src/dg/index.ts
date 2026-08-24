@@ -97,7 +97,7 @@ export function leakReport(): {liveScopes: number, liveWidgets: number} {
   return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length};
 }
 export {adopt, dartOwned, TABLE_STEP} from './viewers/adopt.js';
-export {viewerOf, viewerControl} from './viewers/viewer-control.js';
+export {viewerOf, viewerControl, REPOINTING} from './viewers/viewer-control.js';
 export type {Bindable, TableRef} from './viewers/viewer-control.js';
 export {viewers, viewerSettings} from './viewers/viewers.js';
 export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, VIEWER_USAGE}

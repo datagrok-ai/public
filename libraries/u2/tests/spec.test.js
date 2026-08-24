@@ -318,7 +318,7 @@ spec('renderSpec: a missing command warns once instead of throwing', () => {
   bad.dispose();
 });
 
-spec('dump: round-trips the spec with live values folded in', () => {
+spec('dump: the document as it is — a Run-mode edit never folds in, a bound prop stays a binding', () => {
   const reg = new Registry();
   registerFake(reg);
   const ctx = new SpecContext({data: {alias: 'ASA'}, commands: {touch: () => {}}});
@@ -336,12 +336,14 @@ spec('dump: round-trips the spec with live values folded in', () => {
   type(editors(instance)[0], 'Ibuprofen');
   ctx.data.alias.value = 'IBU';
   const dumped = instance.dump();
-  assert.equal(dumped.root.children[1].props.value, 'Ibuprofen', 'the edited value is in the dump');
+  assert.equal(dumped.root.children[1].props.value, 'Aspirin', 'the document is the authority, not the live value');
+  assert.deepEqual(dumped, source);
+  assert.notEqual(dumped.root.children[1].props, source.root.children[1].props, 'a copy, not the document object');
   assert.deepEqual(dumped.root.children[2].bind, {value: '$.alias'}, 'a bound prop stays a binding');
   assert.equal('value' in dumped.root.children[2].props, false);
 
   const restored = renderSpec(dumped, ctx, reg);
-  assert.deepEqual(editors(restored).map((e) => e.value), ['Ibuprofen', 'IBU']);
+  assert.deepEqual(editors(restored).map((e) => e.value), ['Aspirin', 'IBU'], 'restored from the document');
   assert.deepEqual(restored.dump(), dumped, 'and the restored tree dumps the same again');
   instance.dispose();
   restored.dispose();
@@ -656,24 +658,164 @@ spec('resolveBinding: a default step that answers its own source is bounded, not
   instance.dispose();
 });
 
-spec('resolveBinding: a bind to a later sibling is contained with the document-order message', () => {
+spec('resolveBinding: a plain HTML node is not a bind source, before or after the node binding it', () => {
+  const reg = new Registry();
+  registerEcho(reg);
+  let instance;
+  const warnings = captureWarnings(() => {
+    instance = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'div', children: [
+        {tag: 'u2-fake-echo', name: 'toLater', bind: {value: '$.later'}},
+        {tag: 'span', name: 'static', props: {text: 'x'}},
+        {tag: 'u2-fake-echo', name: 'toHtml', bind: {value: '$.static'}},
+        {tag: 'span', name: 'later', props: {text: 'y'}},
+      ]},
+    }, new SpecContext(), reg);
+  });
+  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /"static" is not a bind source/, 'a plain HTML node has no signals');
+  assert.deepEqual(warnings, ['u2 spec: u2-fake-echo: "later" is not a bind source'],
+    'declared later: the node builds, the link is refused at the flush');
+  assert.equal(editors(instance).length, 1);
+  instance.dispose();
+});
+
+/* R-a (VP-26) — forward references: a bind to a visual node declared later links after the render
+   pass; document-order-valid specs take exactly the construction-time path they always did. */
+
+const FORWARD = {
+  $schema: 'dg-ui/1',
+  root: {tag: 'div', children: [
+    {tag: 'u2-fake-input', name: 'early', props: {label: 'Early'}, bind: {value: '$.late.value'}},
+    {tag: 'u2-fake-input', name: 'late', props: {label: 'Late', value: 'Aspirin'}},
+  ]},
+};
+
+spec('forward reference: a two-way bind to a later sibling links after the render pass, both ways', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  let instance;
+  const warnings = captureWarnings(() => {
+    instance = renderSpec(FORWARD, new SpecContext(), reg);
+  });
+  assert.deepEqual(warnings, []);
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  const [early, late] = editors(instance);
+  assert.equal(early.value, 'Aspirin', 'seeded from the later node once the pass is over');
+  type(late, 'Ibuprofen');
+  assert.equal(early.value, 'Ibuprofen', 'the later node drives the earlier one');
+  type(early, 'Back');
+  assert.equal(late.value, 'Back', 'twoWay: the edit reaches the later node');
+  assert.deepEqual(instance.dump(), FORWARD, 'the document is untouched');
+  instance.dispose();
+});
+
+spec('forward reference: a one-way bind follows the later node and never writes back', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  reg.register({...FAKE_INPUT, tag: 'u2-fake-view',
+    props: [{name: 'label', type: 'string'}, {name: 'value', type: 'string', bindable: true}],
+    create: (props) => new TextInput({bind: props.value})});
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-fake-view', name: 'view', bind: {value: '$.late'}},
+      {tag: 'u2-fake-input', name: 'late', props: {value: 'A'}},
+    ]},
+  }, new SpecContext(), reg);
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  const [view, late] = editors(instance);
+  assert.equal(view.value, 'A');
+  type(late, 'B');
+  assert.equal(view.value, 'B', 'the forward direction is live');
+  type(view, 'C');
+  assert.equal(late.value, 'B', 'nothing flows back');
+  type(late, 'D');
+  assert.equal(view.value, 'D');
+  instance.dispose();
+});
+
+spec('forward reference: a target that fails to build leaves the referencing node built, with one warning', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  let instance;
+  const warnings = captureWarnings(() => {
+    instance = renderSpec({
+      $schema: 'dg-ui/1',
+      root: {tag: 'div', children: [
+        {tag: 'u2-fake-input', name: 'early', bind: {value: '$.broken.value'}},
+        {tag: 'u2-fake-input', name: 'broken', props: {label: 42}},
+      ]},
+    }, new SpecContext(), reg);
+  });
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /not built/);
+  assert.equal(instance.node('early') instanceof TextInput, true, 'built, unlinked');
+  const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
+  assert.equal(errors.length, 1, 'the target\'s own placeholder names the real problem');
+  assert.match(errors[0], /prop "label" expects string/);
+  instance.dispose();
+});
+
+spec('forward reference: a loop through a later node is still a cycle — both members placeholders', () => {
   const reg = new Registry();
   registerEcho(reg);
   const instance = renderSpec({
     $schema: 'dg-ui/1',
     root: {tag: 'div', children: [
-      {tag: 'u2-fake-echo', name: 'early', bind: {value: '$.late'}},
-      {tag: 'u2-fake-echo', name: 'late'},
-      {tag: 'span', name: 'static', props: {text: 'x'}},
-      {tag: 'u2-fake-echo', name: 'toHtml', bind: {value: '$.static'}},
+      {tag: 'u2-fake-echo', name: 'a', bind: {value: '$.c'}},
+      {tag: 'u2-fake-echo', name: 'b'},
+      {tag: 'u2-fake-echo', name: 'c', bind: {value: '$.a'}},
     ]},
   }, new SpecContext(), reg);
   const errors = instance.root.querySelectorAll('.u2-spec-error').map((el) => el.textContent);
   assert.equal(errors.length, 2);
-  assert.match(errors[0], /"late" is declared after this node — move "late" before it in the structure tree, or bind through a state variable \(u2-state\)/,
-    'the placeholder names the move; the document-order clause is the console warning\'s');
-  assert.match(errors[1], /"static" is not a bind source/, 'a plain HTML node has no signals');
-  assert.equal(editors(instance).length, 1, 'the later sibling renders fine');
+  assert.match(errors[0], /binding cycle: a → c → a/);
+  assert.match(errors[1], /binding cycle: a → c → a/);
+  assert.equal(editors(instance).length, 1, 'the node off the loop renders');
+  instance.dispose();
+});
+
+spec('forward reference: rerender of the referencing node alone links it again', () => {
+  const reg = new Registry();
+  registerFake(reg);
+  const source = JSON.parse(JSON.stringify(FORWARD));
+  const instance = renderSpec(source, new SpecContext(), reg);
+  const live = Scope.liveCount;
+  const old = instance.node('early');
+  instance.rerender(source.root.children[0]);
+  assert.notEqual(instance.node('early'), old);
+  assert.equal(Scope.liveCount, live, 'a re-render accumulates nothing');
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  const [early, late] = editors(instance);
+  assert.equal(early.value, 'Aspirin');
+  type(late, 'Ibuprofen');
+  assert.equal(early.value, 'Ibuprofen', 'the later node still reaches the re-rendered one');
+  type(early, 'Back');
+  assert.equal(late.value, 'Back');
+  instance.dispose();
+});
+
+spec('forward reference: a node re-rendered again before the flush links only its live component', () => {
+  const reg = new Registry();
+  const seen = [];
+  registerFake(reg, seen);
+  const source = JSON.parse(JSON.stringify(FORWARD));
+  const instance = renderSpec(source, new SpecContext(), reg);
+  instance._batching = true;
+  instance.rerender(source.root);
+  const corpse = seen.at(-2).value;
+  instance.rerender(source.root.children[0]);
+  instance._batching = false;
+  instance.rerenderAll([]);
+  const [early, late] = editors(instance);
+  assert.equal(early.value, 'Aspirin', 'the live component is linked');
+  assert.equal(corpse.peek(), undefined, 'the corpse is not');
+  type(late, 'Ibuprofen');
+  assert.equal(early.value, 'Ibuprofen');
+  assert.equal(corpse.peek(), undefined);
   instance.dispose();
 });
 
@@ -883,6 +1025,28 @@ spec('renderSpec: a property-tier prop binds two-way through link', () => {
   instance.node('gauge').bindStep('level').value = 8;
   assert.equal(ctx.data.lvl.value, 8, 'and the step writes back');
   assert.equal(instance.resolveBinding('$.gauge.level').writable, true);
+  instance.dispose();
+});
+
+spec('forward reference: a property-tier step follows a later input after the flush, both ways', () => {
+  const reg = new Registry();
+  const target = {level: 1};
+  registerGauge(reg, target);
+  registerFake(reg);
+  const instance = renderSpec({
+    $schema: 'dg-ui/1',
+    root: {tag: 'div', children: [
+      {tag: 'u2-gauge', name: 'gauge', bind: {level: '$.late.value'}},
+      {tag: 'u2-fake-input', name: 'late', props: {value: '7'}},
+    ]},
+  }, new SpecContext(), reg);
+  assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0);
+  assert.equal(target.level, '7', 'the later input reached the object');
+  const [late] = editors(instance);
+  type(late, '9');
+  assert.equal(target.level, '9');
+  instance.node('gauge').bindStep('level').value = '3';
+  assert.equal(late.value, '3', 'and the step writes back');
   instance.dispose();
 });
 

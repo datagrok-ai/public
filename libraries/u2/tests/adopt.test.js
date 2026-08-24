@@ -2,8 +2,8 @@
    of tests/platform-doubles.mjs and the kill-walk globals of tests/dg-stub.mjs. Pinned: identity
    and the per-class mixed prototype, the platform members winning, the `meta` accessor, the
    lifecycle by kind both ways, the ambient-scope adoption, and the property tier over a Dart viewer
-   — the look-backed read/write, the `filters` write through `updateOrAdd`, the echo suppression
-   and the walkable `table` step. */
+   — the look as `propertyTarget`, `filters` written to the look like any property, the echo
+   suppression and the walkable `table` step. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,8 +14,8 @@ import {Signal, isWritableSignal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
 import {isBindSource} from '../src/spec/bind-source.js';
 import {Registry} from '../src/spec/registry.js';
-import {DataFrame, FilterGroup, Grid, JsViewer, Property, Viewer, ViewerMetaHelper, WidgetDescriptor,
-  platform} from './platform-doubles.mjs';
+import {DartWidget, DataFrame, FilterGroup, Grid, JsViewer, Property, Viewer, ViewerMetaHelper,
+  WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const {adopt, dartOwned} = await import('../src/dg/viewers/adopt.js');
@@ -90,8 +90,9 @@ adopted('the adopted widget is the same object, under one mixed prototype per js
   assert.equal(v.onEvent, Viewer.prototype.onEvent);
   assert.equal(v.root, grid.dart.root);
   assert.equal(v.propertyTier, true);
-  for (const member of ['run', 'effect', 'own', 'dispose', 'link', 'bindStep', 'bindProps', 'readProperty', 'writeProperty'])
+  for (const member of ['run', 'effect', 'own', 'dispose', 'link', 'bindStep', 'bindProps'])
     assert.equal(typeof v[member], 'function', member);
+  assert.equal(v.propertyTarget, globalThis.grok_Viewer_Get_Look(v.dart), 'a viewer\'s properties are over its look');
   assert.ok(v.scope instanceof Scope && v._u2 !== undefined);
 
   v.dispose();
@@ -189,11 +190,53 @@ adopted('without the kill globals a Dart-owned widget is adopted, warned about o
   }
 });
 
+adopted('propertyTarget is the look for a Dart viewer, the handle for a DartWidget, the widget itself for a JsViewer', () => {
+  const v = adopt(Viewer.grid(demog()));
+  assert.equal(v.propertyTarget, v.dart.look);
+  assert.equal(v.bindStep('allowEdit').value, true, 'read off the look');
+
+  const w = adopt(new DartWidget({n: 1, properties: [Property.create('n', 'int', (d) => d.n, (d, x) => d.n = x, 1)]}));
+  assert.equal(w.propertyTarget, w.dart);
+  const n = w.bindStep('n');
+  assert.equal(n.value, 1, 'read off the handle');
+  n.value = 2;
+  assert.equal(w.dart.n, 2, 'written to the handle');
+
+  const j = adopt(new Gauge());
+  assert.equal(j.propertyTarget, j);
+  assert.equal(j.bindStep('level').value, 1, 'read off the widget');
+  v.dispose();
+  w.dispose();
+  j.dispose();
+});
+
+adopted('without grok_Viewer_Get_Look a Dart viewer is adopted, warned about once, and keeps the default target', () => {
+  const look = globalThis.grok_Viewer_Get_Look;
+  const warnings = [];
+  const warn = console.warn;
+  console.warn = (m) => warnings.push(m);
+  class Lone extends Grid {}
+  const lone = () => new Lone({type: 'Grid', descriptor: WidgetDescriptor.getByName('Grid'), dataFrame: demog()});
+  try {
+    delete globalThis.grok_Viewer_Get_Look;
+    const v = adopt(lone());
+    const w = adopt(lone());
+    assert.equal(warnings.filter((m) => m.includes('grok_Viewer_Get_Look')).length, 1);
+    assert.equal(v.propertyTarget, v);
+    assert.equal(w.propertyTarget, w);
+    v.dispose();
+    w.dispose();
+  } finally {
+    globalThis.grok_Viewer_Get_Look = look;
+    console.warn = warn;
+  }
+});
+
 adopted('the property tier reads and writes the look through the props bag', async () => {
   const v = adopt(Viewer.grid(demog()));
   const events = [];
   v.onPropertyValueChanged.subscribe((e) => events.push(e.args.property.name));
-  assert.equal(v.readProperty('allowEdit'), true);
+  assert.equal(v.props.allowEdit, true);
 
   const allowEdit = v.bindStep('allowEdit');
   assert.ok(allowEdit instanceof Signal && isWritableSignal(allowEdit));
@@ -221,16 +264,20 @@ adopted('the property tier reads and writes the look through the props bag', asy
   v.dispose();
 });
 
-adopted('filters on a FilterGroup are written through updateOrAdd', async () => {
+adopted('filters on a FilterGroup are written to the look like any property', async () => {
   const fg = adopt(Viewer.filters(demog()));
+  const events = [];
+  fg.onPropertyValueChanged.subscribe((e) => events.push(e.args.property.name));
   const filters = fg.bindStep('filters');
   assert.equal(filters.value, null);
   filters.value = [{type: 'categorical', column: 'sex'}];
   assert.deepEqual(fg.props.filters, [{type: 'categorical', column: 'sex'}]);
-  filters.value = [{type: 'categorical', column: 'sex'}, {type: 'histogram', column: 'age'}];
-  assert.deepEqual(fg.props.filters, [{type: 'categorical', column: 'sex'}, {type: 'histogram', column: 'age'}]);
+  filters.value = [{type: 'histogram', column: 'age'}];
+  assert.deepEqual(fg.props.filters, [{type: 'histogram', column: 'age'}], 'the list replaces, never merges');
+  assert.deepEqual(events, ['filters', 'filters'], 'one platform event per write');
   await flush();
-  assert.deepEqual(filters.value, fg.props.filters, 'converged, the list a new array on every read');
+  assert.deepEqual(filters.value, fg.props.filters, 'the step equals the look after the refresh');
+  assert.deepEqual(events, ['filters', 'filters'], 'and the refresh echoes no write back');
   fg.dispose();
 });
 
@@ -272,7 +319,7 @@ adopted('two grids under the one mixed prototype keep their own table step', () 
   b.dispose();
 });
 
-adopted('a JS-owned widget\'s properties announce through onPropertyChanged', () => {
+adopted('a JS-owned widget\'s properties announce through onPropertyChanged', async () => {
   const g = adopt(new Gauge());
   const level = g.bindStep('level');
   assert.equal(level.value, 1);
@@ -280,6 +327,7 @@ adopted('a JS-owned widget\'s properties announce through onPropertyChanged', ()
   assert.equal(g.level, 3);
   assert.deepEqual(g.changes, ['level'], 'the class\'s own hook still runs');
   g.props.level = 7;
+  await flush();
   assert.equal(level.value, 7, 'the tier follows an outside write');
   g.dispose();
 });

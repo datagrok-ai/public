@@ -60,7 +60,7 @@ import {DESIGNER_SPEC, appendRunLog, designerContext} from './designer';
 
 export * from './package.g';
 // not a package function: what the e2e leak check reads after closing every view
-export {leakReport} from '@datagrok-libraries/u2/src/dg/index.js';
+export {leakReport, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
 
 export const _package = new DG.Package();
 

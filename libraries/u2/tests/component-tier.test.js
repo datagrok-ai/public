@@ -36,8 +36,8 @@ function tier(name, body) {
   });
 }
 
-/** A property-tier control over a plain object: `level` writable (the object clamps it to 10),
- * `unit` read-only, changes announced through a stream. */
+/** A property-tier control over a plain object: `level` writable (the object clamps it to 10 and,
+ * like the platform, announces every write — P7), `unit` read-only, changes through a stream. */
 class Gauge extends Control {
   constructor(target, changes = null) {
     super();
@@ -54,7 +54,10 @@ class Gauge extends Control {
     this.reads++;
     return [
       {name: 'level', type: 'int', get: () => this.target.level,
-        set: (_t, v) => this.target.level = Math.min(v, 10)},
+        set: (_t, v) => {
+          this.target.level = Math.min(v, 10);
+          this.changes?.fire('level');
+        }},
       {name: 'unit', type: 'string', get: () => this.target.unit},
     ];
   }
@@ -103,16 +106,18 @@ tier('sameValue: arrays element-wise, plain objects key-wise, everything else by
   assert.equal(Component.sameValue(date, date), true);
 });
 
-tier('readProperty / writeProperty on a meta-stamped component reach its signal', () => {
+tier('propertyTarget: a meta-stamped component is its own target, and its property reaches its signal', () => {
   const reg = new Registry();
   reg.register({tag: 'u2-ti', description: '', props: [{name: 'value', type: 'string'}],
     create: () => new TextInput({value: 'x'}), example: {tag: 'u2-ti'}});
   const input = reg.get('u2-ti').create({});
   assert.equal(input.propertyTier, false, 'the tier is off for a plain component');
-  assert.equal(input.readProperty('value'), input.value.value);
-  input.writeProperty('value', 'y');
+  assert.equal(input.propertyTarget, input);
+  const [value] = input.getProperties();
+  assert.equal(value.get(input.propertyTarget), input.value.value);
+  value.set(input.propertyTarget, 'y');
   assert.equal(input.value.value, 'y');
-  assert.equal(input.readProperty('nope'), undefined);
+  assert.equal(input.getProperties().find((p) => p.name === 'nope'), undefined);
   assert.deepEqual(input.bindProps().map((p) => p.name), ['value'], 'bindProps unchanged with the tier off');
   input.dispose();
 });
@@ -133,7 +138,7 @@ tier('property tier: cached steps, read-only as computed, notifications, no allo
   assert.equal(isWritableSignal(level), true);
   assert.equal(level.value, 1);
   level.value = 5;
-  assert.equal(target.level, 5, 'a write goes through writeProperty');
+  assert.equal(target.level, 5, 'a write goes through the property on propertyTarget');
 
   const unit = gauge.bindStep('unit');
   assert.equal(isWritableSignal(unit), false, 'no set: a computed');
@@ -149,13 +154,17 @@ tier('property tier: cached steps, read-only as computed, notifications, no allo
   assert.equal(runs, 1);
   target.level = 7;
   changes.fire('level');
-  assert.equal(level.value, 7, 'a named notification refreshes the step');
+  assert.equal(level.value, 5, 'a notification never refreshes inside the event');
+  await flush();
+  assert.equal(level.value, 7, 'a named notification refreshes the step in a microtask');
   assert.equal(runs, 2);
   changes.fire('level');
+  await flush();
   assert.equal(runs, 2, 'a same-value notification does not re-fire dependents');
   target.unit = 'kg';
   target.level = 8;
   changes.fire(null);
+  await flush();
   assert.equal(unit.value, 'kg', 'null refreshes every cached step');
   assert.equal(level.value, 8);
   assert.equal(runs, 3);
@@ -163,7 +172,7 @@ tier('property tier: cached steps, read-only as computed, notifications, no allo
 
   level.value = 50;
   assert.equal(target.level, 10, 'the object normalized the write');
-  assert.equal(level.value, 50, 'the step converges after the effect, never inside it');
+  assert.equal(level.value, 50, 'the step converges on the platform\'s notification, never inside the effect');
   await flush();
   assert.equal(level.value, 10);
   assert.equal(runs, 5);
@@ -217,7 +226,7 @@ tier('propertyFields copies the named fields of a getter-backed property', () =>
     description: 'd', category: 'Data', nullable: true, choices: ['a']});
 });
 
-tier('propsFor: a property-tier node reads its live values through readProperty', () => {
+tier('propsFor: a property-tier node reads its live values through propertyTarget', () => {
   const reg = new Registry();
   const target = {level: 3, unit: 'mg'};
   reg.register({...GAUGE, create: () => new Gauge(target)});
@@ -310,36 +319,115 @@ tier('property tier: a list property answering a new array per read never loops'
   assert.equal(runs, 2, 'one write, one dependent run — no echo');
   changes.fire('list');
   changes.fire(null);
+  await flush();
   assert.equal(runs, 2, 'equal-content arrays refresh nothing');
   assert.ok(reads < 10, `bounded reads (${reads})`);
   gauge.dispose();
 });
 
-tier('property tier: a property answering a fresh wrapper per read converges in one round, never loops', async () => {
+tier('property tier: a property answering a fresh wrapper per read writes once per user write, never at bind, never loops', async () => {
   class Level {
     constructor(n) {
       this.n = n;
     }
   }
   const target = {level: 1};
-  const gauge = new Gauge(target);
+  const changes = new Stream();
+  const gauge = new Gauge(target, changes);
   let writes = 0;
   gauge.getProperties = () => [{name: 'level', type: 'object',
     get: () => new Level(target.level),
     set: (_t, v) => {
       writes++;
       target.level = v.n;
+      changes.fire('level');
     }}];
   const level = gauge.bindStep('level');
   await flush();
-  assert.ok(writes <= 2, `the bind-time effect run converges in one round too (${writes})`);
-  writes = 0;
+  assert.equal(writes, 0, 'the tier compares against what it last observed, not a fresh wrapper');
   level.value = new Level(5);
   for (let i = 0; i < 5; i++)
     await flush();
   assert.equal(target.level, 5);
-  assert.ok(writes <= 2, `bounded writes (${writes})`);
-  assert.equal(level.value.n, 5, 'the step stays one refresh behind a value that never settles');
-  assert.equal(gauge._u2.converging.size, 0, 'the converge round is closed');
+  assert.equal(writes, 1, 'one write per user write — the notification it triggers writes nothing back');
+  assert.equal(level.value.n, 5);
+  changes.fire('level');
+  await flush();
+  assert.equal(writes, 1, 'a refresh answering a new wrapper is no write either');
   gauge.dispose();
+});
+
+/** A gauge whose property reads are counted per name, both steps cached, the counters zeroed. */
+function countedGauge(target, changes) {
+  const gauge = new Gauge(target, changes);
+  const gets = {level: 0, unit: 0};
+  gauge.getProperties = () => [
+    {name: 'level', type: 'int', get: () => {
+      gets.level++;
+      return target.level;
+    }, set: (_t, v) => target.level = v},
+    {name: 'unit', type: 'string', get: () => {
+      gets.unit++;
+      return target.unit;
+    }},
+  ];
+  const level = gauge.bindStep('level');
+  const unit = gauge.bindStep('unit');
+  gets.level = 0;
+  gets.unit = 0;
+  return {gauge, gets, level, unit};
+}
+
+tier('property tier: two notifications of one name in one tick are one read, in a microtask', async () => {
+  const target = {level: 1, unit: 'mg'};
+  const changes = new Stream();
+  const {gauge, gets, level} = countedGauge(target, changes);
+  target.level = 2;
+  changes.fire('level');
+  changes.fire('level');
+  assert.deepEqual(gets, {level: 0, unit: 0}, 'nothing is read inside the event');
+  assert.equal(level.value, 1);
+  await flush();
+  assert.deepEqual(gets, {level: 1, unit: 0});
+  assert.equal(level.value, 2);
+  changes.fire('nope');
+  await flush();
+  assert.deepEqual(gets, {level: 1, unit: 0}, 'a name without a cached step reads nothing');
+  gauge.dispose();
+});
+
+tier('property tier: a null notification refreshes every cached step once, whatever else the tick marked', async () => {
+  const target = {level: 1, unit: 'mg'};
+  const changes = new Stream();
+  const {gauge, gets, level, unit} = countedGauge(target, changes);
+  target.level = 2;
+  target.unit = 'kg';
+  changes.fire('level');
+  changes.fire(null);
+  changes.fire('unit');
+  changes.fire(null);
+  await flush();
+  assert.deepEqual(gets, {level: 1, unit: 1});
+  assert.equal(level.value, 2);
+  assert.equal(unit.value, 'kg');
+  gauge.dispose();
+});
+
+tier('property tier: a notification in flight when the component is disposed reads nothing', async () => {
+  const target = {level: 1, unit: 'mg'};
+  const changes = new Stream();
+  const gauge = new Gauge(target, changes);
+  let gets = 0;
+  gauge.getProperties = () => [{name: 'level', type: 'int', get: () => {
+    gets++;
+    return target.level;
+  }}];
+  gauge.bindStep('level');
+  gets = 0;
+  changes.fire('level');
+  gauge.dispose();
+  assert.equal(changes.count, 0, 'the subscription died with the scope');
+  changes.fire('level');
+  await flush();
+  assert.equal(gets, 0);
 });

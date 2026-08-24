@@ -312,21 +312,15 @@ export class SpecEditor {
     return clone;
   }
 
+  /** Whatever references the patched node captured its signals at its own render, and a rebuilt —
+   * or removed — node leaves them wired to the corpse: the references render again after it, in
+   * the same batch. Read after the mutation, so a rename finds them under the new name. */
   private _execute(patch: SpecPatch): void {
     const targets = this._targets(patch);
-    // membership has to be read before the mutation: a removed component is off the tray after it
-    const component = this._componentOf(patch);
     targets.push(...this._mutate(patch));
-    if (component !== null && component.name !== undefined)
-      targets.push(...referencesOf(this.instance.spec, component.name));
+    if (patch.node.name !== undefined)
+      targets.push(...referencesOf(this.instance.spec, patch.node.name));
     this.instance.rerenderAll(targets);
-  }
-
-  /** The tray component a patch acts on, if any: whatever references it captured its signals at
-   * its own render, and a rebuilt — or removed — component leaves them wired to the corpse. */
-  private _componentOf(patch: SpecPatch): SpecNode | null {
-    return patch.op === 'add-component' || patch.op === 'remove-component' ? patch.node :
-      this._components().includes(patch.node) ? patch.node : null;
   }
 
   private _components(): SpecNode[] {

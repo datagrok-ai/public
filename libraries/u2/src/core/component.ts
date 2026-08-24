@@ -9,6 +9,15 @@ import type {BindPropLike, BindSourceLike, ComponentMetaLike, FuncLike, Observab
  * several changed at once (or the widget cannot say which). Structural — nothing platform-typed. */
 export type PropertyChange = string | null;
 
+/** One property-tier step: `inner` is what the step reads, `known` the value the tier last
+ * observed — read in a refresh or written by the effect — so the write effect never compares
+ * against a fresh read (a read answering a new wrapper per call would spin otherwise). */
+interface PropertyEntry {
+  inner: Signal<unknown>;
+  step: Signal<unknown>;
+  known: unknown;
+}
+
 /** The per-instance u2 state, kept under one own field so that {@link Component.init} can be
  * applied to a foreign object (an adopted `DG.Widget`) without clobbering its own fields. */
 export interface ComponentState {
@@ -18,12 +27,12 @@ export interface ComponentState {
   propertiesMeta?: ComponentMetaLike;
   functions: FuncLike[];
   listeners: {id: string | null, next: (x: unknown) => void}[];
-  propertySignals: Map<string, {inner: Signal<unknown>, step: Signal<unknown>}>;
+  propertySignals: Map<string, PropertyEntry>;
   propertyIndex?: Map<string, PropertyLike>;
   warned?: Set<string>;
   changesWired: boolean;
-  writing: boolean;
-  converging: Set<string>;
+  /** Names a notification marked since the last refresh; 'all' for an anonymous change. */
+  stale?: Set<string> | 'all';
   table?: unknown;
   detaching?: boolean;
   platformKilled?: boolean;
@@ -56,7 +65,7 @@ export class Component implements WidgetLike, BindSourceLike {
     const it = self as {scope: Scope, _u2: ComponentState};
     it.scope = scope ?? new Scope();
     it._u2 = {aiDescription: null, properties: null, functions: [], listeners: [],
-      propertySignals: new Map(), changesWired: false, writing: false, converging: new Set()};
+      propertySignals: new Map(), changesWired: false};
     const owner = Scope.ambient;
     if (owner && owner !== it.scope)
       owner.own(() => self.dispose());
@@ -182,18 +191,16 @@ export class Component implements WidgetLike, BindSourceLike {
   }
 
   /** The second binding tier is on: every property {@link getProperties} declares is a bind step,
-   * read through {@link readProperty} and written through {@link writeProperty}. Off for a plain
-   * u2 component, whose signal-less meta props are construction-time options. */
+   * read and written on {@link propertyTarget}. Off for a plain u2 component, whose signal-less
+   * meta props are construction-time options. */
   get propertyTier(): boolean {
     return false;
   }
 
-  readProperty(name: string): unknown {
-    return this._property(name)?.get?.(this);
-  }
-
-  writeProperty(name: string, value: unknown): void {
-    this._property(name)?.set?.(this, value);
+  /** What this component's properties are read from and written to — `prop.get(target)` /
+   * `prop.set(target, v)`: the component itself, unless an adoption says otherwise. */
+  get propertyTarget(): unknown {
+    return this;
   }
 
   /** What refreshes the property tier's cached signals from outside: null where nothing announces
@@ -280,33 +287,23 @@ export class Component implements WidgetLike, BindSourceLike {
     const prop = this._property(name);
     if (prop === undefined)
       return null;
-    const inner = signal(this.readProperty(name));
-    let step: Signal<unknown> = inner;
+    const entry = {known: prop.get?.(this.propertyTarget)} as PropertyEntry;
+    entry.inner = signal(entry.known);
     if (prop.set == null)
-      step = computed(() => inner.value) as unknown as Signal<unknown>;
+      entry.step = computed(() => entry.inner.value) as unknown as Signal<unknown>;
     else {
+      entry.step = entry.inner;
       this.scope.effect(() => {
-        const value = inner.value;
-        if (Component.sameValue(this.readProperty(name), value))
+        const value = entry.inner.value;
+        if (Component.sameValue(entry.known, value))
           return;
-        const was = u2.writing;
-        u2.writing = true;
-        try {
-          this.writeProperty(name, value);
-        } finally {
-          u2.writing = was;
-        }
-        // the platform may normalize what it was given ('nope' → ''): converge without a cycle, and
-        // one round at most — a read answering a fresh wrapper per call would otherwise spin forever
-        if (!Component.sameValue(this.readProperty(name), value) && !u2.converging.has(name)) {
-          u2.converging.add(name);
-          queueMicrotask(() => this._refreshProperty(name));
-        }
+        entry.known = value;
+        prop.set!(this.propertyTarget, value);
       });
     }
-    u2.propertySignals.set(name, {inner, step});
+    u2.propertySignals.set(name, entry);
     this._wireChanges();
-    return step;
+    return entry.step;
   }
 
   private _wireChanges(): void {
@@ -317,33 +314,43 @@ export class Component implements WidgetLike, BindSourceLike {
     const changes = this.propertyChanges();
     if (changes === null)
       return;
-    const subscription = changes.subscribe((name) => {
-      const refresh = () => name === null ? this._refreshAll() : this._refreshProperty(name);
-      if (u2.writing)
-        queueMicrotask(refresh);
-      else
-        refresh();
-    });
+    const subscription = changes.subscribe((name) => this._stale(name));
     this.scope.own(() => subscription.unsubscribe());
   }
 
-  private _refreshProperty(name: string): void {
+  /** A notification never refreshes inside the event: the names pile up and one microtask reads
+   * them back — the platform fires on every write, the effect's own included. */
+  private _stale(name: PropertyChange): void {
     const u2 = this._u2;
-    const entry = u2.propertySignals.get(name);
-    if (entry === undefined || this.scope.isDisposed)
-      return;
-    try {
-      const value = this.readProperty(name);
-      if (!Component.sameValue(entry.inner.peek(), value))
-        entry.inner.value = value;
-    } finally {
-      u2.converging.delete(name);
-    }
+    const first = u2.stale === undefined;
+    if (name === null)
+      u2.stale = 'all';
+    else if (u2.stale === undefined)
+      u2.stale = new Set([name]);
+    else if (u2.stale !== 'all')
+      u2.stale.add(name);
+    if (first)
+      queueMicrotask(() => this._refreshStale());
   }
 
-  private _refreshAll(): void {
-    for (const name of this._u2.propertySignals.keys())
+  private _refreshStale(): void {
+    const u2 = this._u2;
+    const stale = u2.stale;
+    u2.stale = undefined;
+    if (stale === undefined || this.scope.isDisposed)
+      return;
+    for (const name of stale === 'all' ? u2.propertySignals.keys() : stale)
       this._refreshProperty(name);
+  }
+
+  private _refreshProperty(name: string): void {
+    const entry = this._u2.propertySignals.get(name);
+    if (entry === undefined)
+      return;
+    const value = this._property(name)?.get?.(this.propertyTarget);
+    entry.known = value;
+    if (!Component.sameValue(entry.inner.peek(), value))
+      entry.inner.value = value;
   }
 
   private _warnOnce(key: string, message: string): void {

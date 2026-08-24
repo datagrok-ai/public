@@ -27,15 +27,10 @@ export function keyDown(e: KeyboardEvent, host: KeyHost): void {
   if (!editor)
     return;
   const ctrl = e.ctrlKey || e.metaKey;
-  const key = e.key.toLowerCase();
-  let run: (() => void) | undefined;
-  if (ctrl && key === 'z' && !e.shiftKey)
-    run = () => editor.undo();
-  else if (ctrl && (key === 'y' || (key === 'z' && e.shiftKey)))
-    run = () => editor.redo();
-  else if (e.key === 'Delete' && !ctrl)
+  let run = historyKey(e, editor);
+  if (run === undefined && e.key === 'Delete' && !ctrl)
     run = () => host.run(DELETE);
-  else if (e.key === 'Escape' && !host.inDrag()) {
+  else if (run === undefined && e.key === 'Escape' && !host.inDrag()) {
     // a drag in flight owns Escape (the document-level `dragKey` cancels it); a
     // multi-selection collapses to its lead first, the walk to the parent comes after (F5)
     if (host.multi().length > 1)
@@ -52,6 +47,15 @@ export function keyDown(e: KeyboardEvent, host: KeyHost): void {
   e.preventDefault();
   e.stopPropagation();
   run();
+}
+
+/** The undo/redo chord — Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z — as the call it makes; undefined for any other key. */
+export function historyKey(e: KeyboardEvent, editor: SpecEditor): (() => void) | undefined {
+  const ctrl = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
+  if (ctrl && key === 'z' && !e.shiftKey)
+    return () => editor.undo();
+  return ctrl && (key === 'y' || (key === 'z' && e.shiftKey)) ? () => editor.redo() : undefined;
 }
 
 export function dragKey(e: KeyboardEvent, host: Pick<KeyHost, 'inDrag' | 'endDrag'>): void {

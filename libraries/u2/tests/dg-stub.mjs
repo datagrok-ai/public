@@ -10,8 +10,9 @@
    The entities, the widgets, the viewers and the shell are the getter-backed doubles of
    tests/platform-doubles.mjs, served here so an `instanceof` in the module under test and a `new`
    in the test meet the same class; the kill-walk globals u2 feature-detects (`grok_Widget_Kill`,
-   `grok_Widget_RegisterCleanup`, `grok_Property_Get_PropertySubType`, `grok_Viewer_Get_Look`) are
-   installed when `datagrok-api/dg` loads, and what they did is on `DG.platform`.
+   `grok_Widget_RegisterCleanup`, `grok_Property_Get_PropertySubType`, `grok_Viewer_Get_Look`,
+   `grok_PropertyGrid_Update`) are installed when `datagrok-api/dg` loads, and what they did is on
+   `DG.platform`; `toDart` answers a double's handle, as js-api's does.
    Everything on `dapi`, `shell` and `ui` is a field a test replaces with its own function.
 
    Register it with `register('./dg-stub.mjs', import.meta.url)` before importing the module under
@@ -22,8 +23,10 @@ const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 const STUB = `
 import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
 export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  Grid, JsViewer, ObjectPropertyBag, Package, Property, Script, TableQuery, User, Viewer, ViewerMetaHelper,
-  Widget, WidgetDescriptor, platform} from '${DOUBLES}';
+  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Script, TableQuery, User, Viewer,
+  ViewerMetaHelper, Widget, WidgetDescriptor, platform} from '${DOUBLES}';
+
+export const toDart = (x) => x?.dart ?? x;
 
 export const TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
@@ -63,6 +66,7 @@ Object.assign(globalThis, {
   grok_Widget_RegisterCleanup(element, cleanup) { platform.cleanups.push({element, cleanup}); },
   grok_Property_Get_PropertySubType: (dart) => dart.subType ?? null,
   grok_Viewer_Get_Look: (dart) => dart.look,
+  grok_PropertyGrid_Update: (dart, src, props, table) => dart.updates.push({src, props, table}),
 });
 
 /** The base a handler subclasses (js-api ui.ts:1687): what it must override throws, what it may

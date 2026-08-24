@@ -5,10 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import {computed} from '../../core/signals.js';
+import {Component} from '../../core/component.js';
 import type {Control} from '../../core/component.js';
 import {Dialog} from '../../components/containers/dialog.js';
+import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {Registry, registry as globalRegistry} from '../../spec/registry.js';
-import type {ComponentMeta, DesignerAction, DesignerActionPatch, SpecPropMeta} from '../../spec/registry.js';
+import type {ComponentMeta, DesignerAction, SpecPropMeta} from '../../spec/registry.js';
 import {registerAll} from '../../spec/registrations.js';
 import {specWarn} from '../../spec/spec.js';
 import type {SpecNode} from '../../spec/spec.js';
@@ -101,10 +103,39 @@ function filterSeed(node: SpecNode, built: DG.Viewer): DG.FilterState[] {
   return [...(live != null && live.length > 0 ? live : node.props?.filters as DG.FilterState[] | undefined ?? [])];
 }
 
+/** One choice, OK'd in a modal dialog: the pick, or null on Cancel — and when `owner` (the viewer's
+ * scope) goes away first, which cancels the dialog with the node or its view. */
+function ask(title: string, owner: Scope | undefined, make: () => ChoiceInput): Promise<string | null> {
+  return new Promise((resolve) => {
+    const scope = new Scope();
+    const finish = (picked: string | null) => {
+      scope.dispose();
+      resolve(picked);
+    };
+    const cancel = () => finish(null);
+    owner?.own(cancel);
+    scope.own(() => owner?.disown(cancel));
+    try {
+      Scope.runWith(scope, () => {
+        const input = make();
+        new Dialog(title)
+          .add(input)
+          .onOK(() => finish(input.value.peek()))
+          .onCancel(cancel)
+          .okEnabled(computed(() => input.value.value !== null))
+          .show({modal: true, width: 360});
+      });
+    } catch (e) {
+      scope.dispose();
+      throw e;
+    }
+  });
+}
+
 export const ADD_FILTER: DesignerAction = {
   name: 'Add filter for column…',
   icon: 'filter',
-  produce: (node, built) => {
+  produce: async (node, built) => {
     const viewer = built instanceof DG.Viewer ? built : null;
     if (viewer?.dataFrame == null || viewer.dataFrame.columns.names().length === 0) {
       grok.shell.warning(`${ADD_FILTER.name}: no table to pick a column from — bind \`table\` to a source first`);
@@ -113,37 +144,33 @@ export const ADD_FILTER: DesignerAction = {
     const df = viewer.dataFrame;
     const filters = filterSeed(node, viewer);
     const filtered = new Set(filters.map((f) => f.column));
-    return new Promise((resolve) => {
-      const scope = new Scope();
-      const finish = (patch: DesignerActionPatch | null) => {
-        scope.dispose();
-        resolve(patch);
-      };
-      // the viewer's scope cancels the dialog when the node or its view goes away first
-      const owner = (viewer as unknown as Control).scope;
-      const cancel = () => finish(null);
-      owner.own(cancel);
-      scope.own(() => owner.disown(cancel));
-      try {
-        Scope.runWith(scope, () => {
-          const column = columnInput('Column', df, {filter: (c) => !filtered.has(c.name)});
-          new Dialog('Add filter')
-            .add(column)
-            .onOK(() => {
-              const name = column.value.peek();
-              const col = name === null ? null : df.columns.byName(name);
-              finish(col === null ? null : {op: 'set-prop', name: 'filters',
-                value: [...filters, {type: col.isNumerical ? 'histogram' : 'categorical', column: name}]});
-            })
-            .onCancel(() => finish(null))
-            .okEnabled(computed(() => column.value.value !== null))
-            .show({modal: true, width: 360});
-        });
-      } catch (e) {
-        scope.dispose();
-        throw e;
-      }
-    });
+    const name = await ask('Add filter', (viewer as unknown as Control).scope,
+      () => columnInput('Column', df, {filter: (c) => !filtered.has(c.name)}));
+    const col = name === null ? null : df.columns.byName(name);
+    return col === null ? null : {op: 'set-prop', name: 'filters',
+      value: [...filters, {type: col.isNumerical ? 'histogram' : 'categorical', column: name}]};
+  },
+};
+
+/** 'Remove filter…' on `u2-viewer-filters`: one of the DOCUMENT's `filters` entries picked in a
+ * dialog leaves the list — the key itself when it was the last; the panes the platform built from
+ * `columnNames` are not the document's to remove. */
+export const REMOVE_FILTER: DesignerAction = {
+  name: 'Remove filter…',
+  icon: 'filter',
+  produce: async (node, built) => {
+    const filters = node.props?.filters as DG.FilterState[] | undefined ?? [];
+    if (filters.length === 0) {
+      grok.shell.warning(`${REMOVE_FILTER.name}: the form names no filters — "${ADD_FILTER.name}" adds one`);
+      return null;
+    }
+    const picked = await ask('Remove filter', Component.is(built) ? built.scope : undefined,
+      () => new ChoiceInput({label: 'Filter', nullable: true,
+        items: filters.map((f, i) => ({value: String(i), label: f.column ?? `#${i + 1}`}))}));
+    if (picked === null)
+      return null;
+    const rest = filters.filter((_, i) => i !== Number(picked));
+    return {op: 'set-prop', name: 'filters', value: rest.length > 0 ? rest : undefined};
   },
 };
 
@@ -159,7 +186,7 @@ function viewerMeta(d: DG.WidgetDescriptor, tag: string): ComponentMeta {
     events: [...new Set(['d4-data-event', ...d.events.map((e) => e.name)])],
     create: (props) => viewerControl(d.name, props),
     example: {tag, bind: {table: '$.orders'}},
-    designerActions: d.name === 'Filters' ? [ADD_FILTER] : undefined,
+    designerActions: d.name === 'Filters' ? [ADD_FILTER, REMOVE_FILTER] : undefined,
   };
 }
 

@@ -503,6 +503,38 @@ edit('rename: a node whose references were rewritten is rendered again, and so i
   instance.dispose();
 });
 
+edit('a patch on a named visual node renders the nodes bound to it again, wired to the new one — and so does undo', () => {
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-fake-box', name: 'layout', children: [
+      {tag: 'u2-fake-input', name: 'pick', props: {label: 'Pick', value: 'A'}},
+      {tag: 'u2-fake-input', name: 'follower', bind: {value: '$.pick'}},
+    ]},
+  };
+  const {instance, editor} = open(source);
+  const pick = find(source, 'pick');
+  const follower = find(source, 'follower');
+  const built = instance.nodes().get(follower);
+  assert.equal(built.value.peek(), 'A');
+
+  created.length = 0;
+  editor.apply({op: 'set-prop', node: pick, name: 'label', value: 'Picked'});
+  assert.deepEqual(created, ['u2-fake-input', 'u2-fake-input'], 'the input, then its dependent');
+  const rewired = instance.nodes().get(follower);
+  assert.notEqual(rewired, built, 'the dependent came back with the node it binds to');
+  assert.equal(errors(instance), 0);
+  instance.nodes().get(pick).value.value = 'B';
+  assert.equal(rewired.value.peek(), 'B', 'wired to the new input, not to the corpse');
+
+  editor.undo();
+  const undone = instance.nodes().get(follower);
+  assert.notEqual(undone, rewired, 'undo renders both again');
+  assert.equal(instance.dump().root.children[0].props.label, 'Pick');
+  instance.nodes().get(pick).value.value = 'C';
+  assert.equal(undone.value.peek(), 'C');
+  instance.dispose();
+});
+
 edit('rename: a context data key or a command is not a free name — the rewrite would capture it', () => {
   const {source, instance, editor} = open(fresh(), {orders: 'x'}, {refresh: () => {}});
   const input = find(source, 'nameInput');
