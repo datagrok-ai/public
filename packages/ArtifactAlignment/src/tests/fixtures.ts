@@ -159,6 +159,22 @@ export async function addToGroup(memberGroupId: string, group: DG.Group): Promis
   await grok.dapi.groups.saveRelations(g);
 }
 
+export type ProgramRole = 'viewer' | 'contributor' | 'approver';
+
+/** Assigns [role] the way production does: the role's group plus every lower
+ * tier (viewer ⊂ contributor ⊂ approver), so an approver probe is also a
+ * contributor and a viewer. */
+export async function addToTier(memberGroupId: string, program: ProgramInfo,
+  role: ProgramRole): Promise<void> {
+  const tiers: DG.Group[] = [program.viewers];
+  if (role !== 'viewer')
+    tiers.push(program.contributors);
+  if (role === 'approver')
+    tiers.push(program.approvers);
+  for (const group of tiers)
+    await addToGroup(memberGroupId, group);
+}
+
 /** Runs [body] with a throwaway restricted user (adapted from ApiTests'
  * domain-lifecycle helper — packages cannot share test code).
  *

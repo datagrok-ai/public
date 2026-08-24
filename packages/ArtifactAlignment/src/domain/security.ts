@@ -71,6 +71,17 @@ export async function setupSchemaSecurity():
   // publish creates missing compounds by registration code, same as tags
   await compound.grant(contributors.id, 'Edit');
 
+  // Archiving a superseded draft (republish, approve-over) deletes its live
+  // alignment row, and Delete is a grant level of its own — Edit alone leaves
+  // archiving admin-only. Deletes are authorized against the SECURING entity,
+  // which for the master-mode alignment table is the program table (verified:
+  // an alignment-table Delete grant leaves canDelete false and the delete
+  // forbidden; a program-table grant flips both) — same accepted breadth as
+  // the table-wide Edit above.
+  const programs = grok.dapi.domains.table(T_PROGRAM);
+  for (const group of [contributors, approvers])
+    await programs.grant(group.id, 'Delete');
+
   const alignment = grok.dapi.domains.table(T_ALIGNMENT);
   for (const column of APPROVAL_COLUMNS) {
     await alignment.shareColumn(column, all.id, 'View');

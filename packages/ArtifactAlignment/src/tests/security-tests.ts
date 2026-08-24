@@ -1,11 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {APPROVAL_COLUMNS, CURATION_COLUMNS, T_ALIGNMENT, T_PROGRAM} from '../domain/constants';
-import {currentUserIn, ensureProgram, findGroup, setupSchemaSecurity} from '../domain/security';
-import {approvePublication, rejectPublication} from '../service/publication-service';
 import {
-  addToGroup, cleanupTestPrograms, makeSavedRun, makeTestProgram, publishRun, withRestrictedUser,
+  APPROVAL_COLUMNS, CURATION_COLUMNS, T_ALIGNMENT, T_COMPOUND, T_HISTORY, T_PROGRAM, T_STUDY, T_TAG,
+} from '../domain/constants';
+import {currentUserIn, ensureProgram, findGroup, setupSchemaSecurity} from '../domain/security';
+import {
+  approvePublication, discover, getPublicationHistory, rejectPublication,
+} from '../service/publication-service';
+import {
+  addToTier, cleanupTestPrograms, makeSavedRun, makeTestProgram, makeTestStudy, publishRun,
+  withRestrictedUser,
 } from './fixtures';
 
 const alignment = () => grok.dapi.domains.table(T_ALIGNMENT);
@@ -85,8 +90,8 @@ category('ArtifactAlignment: security', () => {
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'OutsiderApprove',
       skipAutoApprove: true});
     await withRestrictedUser('aaoutappr', async (probe) => {
-      // viewers member: can read the row, holds no approval authority
-      await addToGroup(probe.group, program.viewers);
+      // viewer tier: can read the row, holds no approval authority
+      await addToTier(probe.group, program, 'viewer');
       let error = '';
       try {
         await probe.asUser(() => approvePublication(result.rowId));
@@ -106,7 +111,7 @@ category('ArtifactAlignment: security', () => {
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'ColumnGate',
       skipAutoApprove: true});
     await withRestrictedUser('aacolsec', async (probe) => {
-      await addToGroup(probe.group, program.contributors);
+      await addToTier(probe.group, program, 'contributor');
       // a curation column IS writable for the contributor — what follows is the
       // column gate on the approval columns, not a blanket write denial
       await probe.asUser(() => alignment().update(result.rowId, {path: 'probe/ok'} as any));
@@ -135,7 +140,7 @@ category('ArtifactAlignment: security', () => {
         (await alignment().query({filter: DG.cond('id', '=', pub.rowId)})).length);
       expect(await programsSeen(), 0, 'an outsider must not see the program');
       expect(await versionsSeen(), 0, 'an outsider must not see its publications');
-      await addToGroup(probe.group, program.viewers);
+      await addToTier(probe.group, program, 'viewer');
       expect(await programsSeen(), 1, 'a viewers member must see the program');
       expect(await versionsSeen(), 1, 'a viewers member must see its publications');
     });
@@ -158,7 +163,7 @@ category('ArtifactAlignment: security', () => {
         outsiderRead = await readTable();
       } catch (_) {/* denied */}
       expect(outsiderRead == null, true, 'an outsider must not read the frozen dataframe');
-      await addToGroup(probe.group, program.viewers);
+      await addToTier(probe.group, program, 'viewer');
       expect((await readTable()).rowCount, 4, 'a viewers member must read the frozen dataframe');
     });
   });
@@ -170,7 +175,7 @@ category('ArtifactAlignment: security', () => {
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'TwoActorApprove',
       skipAutoApprove: true});
     await withRestrictedUser('aaappr', async (probe) => {
-      await addToGroup(probe.group, program.approvers);
+      await addToTier(probe.group, program, 'approver');
       await probe.asUser(() => approvePublication(pub.rowId));
       const row: any = await alignment().get(pub.rowId);
       expect(row.status, 'approved');
@@ -185,12 +190,102 @@ category('ArtifactAlignment: security', () => {
       sourceMetaCallId: run.metaCallId, programId: program.id, name: 'TwoActorReject',
       skipAutoApprove: true});
     await withRestrictedUser('aarej', async (probe) => {
-      await addToGroup(probe.group, program.approvers);
+      await addToTier(probe.group, program, 'approver');
       await probe.asUser(() => rejectPublication(pub.rowId, 'not aligned'));
       const row: any = await alignment().get(pub.rowId);
       expect(row.status, 'rejected');
       expect(row.reject_reason, 'not aligned');
       expect(row.approved_by, probe.id, 'the rejection must stamp the acting reviewer');
+    });
+  });
+
+  test('outsider gets an empty discovery slice and empty history', async () => {
+    const program = await makeTestProgram();
+    const run = await makeSavedRun();
+    const v1 = await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'OutDisc'});
+    await publishRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'OutDisc'});
+    await withRestrictedUser('aaodisc', async (probe) => {
+      expect((await probe.asUser(() => discover(program.id))).length, 0,
+        'discovery must be empty for an outsider');
+      expect((await probe.asUser(() => getPublicationHistory(v1.publicationId))).length, 0,
+        'history must be empty for an outsider');
+    });
+  });
+
+  test('outsider cannot read the study registry', async () => {
+    const program = await makeTestProgram();
+    const study = await makeTestStudy(program.id);
+    await withRestrictedUser('aastdy', async (probe) => {
+      const seen = await probe.asUser(() => grok.dapi.domains.table(T_STUDY)
+        .query({filter: DG.cond('id', '=', study.id)}));
+      expect(seen.length, 0, 'the study registry must be hidden from outsiders');
+    });
+  });
+
+  test('outsider cannot read alignment_history', async () => {
+    const program = await makeTestProgram();
+    const run = await makeSavedRun();
+    const v1 = await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'OutHist'});
+    await publishRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'OutHist'});
+    expect((await getPublicationHistory(v1.publicationId)).length, 1, 'admin must see the archived row');
+    await withRestrictedUser('aahist', async (probe) => {
+      const seen = await probe.asUser(() => grok.dapi.domains.table(T_HISTORY)
+        .query({filter: DG.cond('publication_id', '=', v1.publicationId)}));
+      expect(seen.length, 0, 'the archive must be hidden from outsiders');
+    });
+  });
+
+  test('compound and tag registries stay readable for everyone (by design)', async () => {
+    const program = await makeTestProgram();
+    const run = await makeSavedRun();
+    const marker = `pub${Date.now()}`;
+    await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'OpenReg',
+      tags: [`${marker}-tag`], compounds: [`GRK-${marker}`]});
+    await withRestrictedUser('aaoreg', async (probe) => {
+      const tag = await probe.asUser(() =>
+        grok.dapi.domains.table(T_TAG).getByKey({name: `${marker}-tag`}));
+      expect(tag != null, true, 'tags are all-users readable by design');
+      const compound = await probe.asUser(() => grok.dapi.domains.table(T_COMPOUND)
+        .getByKey({registration_code: `GRK-${marker}`}));
+      expect(compound != null, true, 'compounds are all-users readable by design');
+    });
+  });
+
+  test('cross-program raw table write is open — canary until core row-scoped predicates', async () => {
+    // Table Edit is umbrella-wide: a contributor of program A can raw-insert a row
+    // into program B; per-program isolation exists only in the services (a
+    // master-row-scoped write predicate is a core ask). When this canary fails, the
+    // predicate landed: turn it into a denial test.
+    const program = await makeTestProgram();
+    const foreign = await makeTestProgram();
+    await withRestrictedUser('aaxw', async (probe) => {
+      await addToTier(probe.group, program, 'contributor');
+      const inserted = await probe.asUser(() => alignment().insert({
+        publication_id: crypto.randomUUID(), revision: 1, name: 'CrossWrite',
+        artifact_id: crypto.randomUUID(), program_id: foreign.id})).catch(() => null);
+      expect(inserted != null, true, 'cross-program raw writes are now denied — ' +
+        'core row-scoped predicate landed; write the real denial test');
+    });
+  });
+
+  test('workflow-run step dataframes are open to outsiders — canary until scoped step grants', async () => {
+    // Workflow freezes share the source run's step calls; their dataframes keep the
+    // personal-history default grant. When this canary fails, step dataframes got
+    // audience-scoped: write the real denial test mirroring the function-run one above.
+    const program = await makeTestProgram();
+    const run = await makeSavedRun(3);
+    await publishRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'StepTables'});
+    const step = await grok.dapi.functions.calls.allPackageVersions()
+      .include('inputs, outputs').find(run.stepCallId);
+    const tableId = Object.values(step.outputs).find((v) => typeof v === 'string') as string;
+    expect(tableId != null, true, 'the shared step must reference an uploaded table');
+    await withRestrictedUser('aastep', async (probe) => {
+      const table = await probe.asUser(() => grok.dapi.tables.getTable(tableId)).catch(() => null);
+      expect(table != null, true, 'step dataframes are no longer world-readable — ' +
+        'scoped grants landed; write the real denial test');
     });
   });
 

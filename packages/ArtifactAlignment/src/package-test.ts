@@ -10,6 +10,7 @@ import './tests/platform-mechanics-tests';
 import './tests/function-run-tests';
 import './tests/ui-forms-tests';
 import './tests/restricted-publish-tests';
+import './tests/multiuser-versioning-tests';
 
 export const _package = new DG.Package();
 export {tests};
