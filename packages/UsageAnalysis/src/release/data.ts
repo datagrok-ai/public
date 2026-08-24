@@ -39,6 +39,27 @@ export async function fetchTestBranches(): Promise<string[]> {
   return [DEFAULT_BRANCH, ...branches.filter((b) => b !== DEFAULT_BRANCH), ALL_BRANCHES];
 }
 
+/** Descending semver order over `release/X.Y.Z` names; anything unparseable sorts last. */
+function releaseRank(branch: string): number[] {
+  const parts = branch.slice('release/'.length).split('.').map((p) => parseInt(p, 10));
+  return [0, 1, 2].map((i) => (Number.isFinite(parts[i]) ? parts[i] : -1));
+}
+
+/** The branch an instance is expected to be running: dev tracks trunk, every other instance
+ * runs a release, so default it to the highest `release/X.Y.Z` that has reported results.
+ * Falls back to master when no release branch has (a fresh database, or a stale window). */
+export function defaultBranchForEnv(env: string, branches: string[]): string {
+  if (env === DEFAULT_ENV)
+    return DEFAULT_BRANCH;
+  const releases = branches.filter((b) => b.startsWith('release/'));
+  if (releases.length === 0)
+    return DEFAULT_BRANCH;
+  return releases.sort((a, b) => {
+    const [ra, rb] = [releaseRank(a), releaseRank(b)];
+    return (rb[0] - ra[0]) || (rb[1] - ra[1]) || (rb[2] - ra[2]) || a.localeCompare(b);
+  })[0];
+}
+
 // Version-bound test muting. A test is muted for a specific release version; the mute list lives in its
 // own sticky-meta schema (semtype=autotest) so it never touches the shared 'Autotests' schema.
 export const RELEASE_MUTES_SCHEMA = 'ReleaseMutes';
