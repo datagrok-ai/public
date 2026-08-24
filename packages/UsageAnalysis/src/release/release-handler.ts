@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {UaView} from '../tabs/ua';
@@ -8,7 +9,7 @@ import {ReleaseOverviewView} from './overview';
 import {TestsView} from './tests';
 import {ManualTestsView} from './manual';
 import {ReleaseTicketsView} from './tickets';
-import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV} from './data';
+import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV, DEFAULT_BRANCH, ALL_BRANCHES, fetchTestBranches} from './data';
 
 // Assembles the focused /release dashboard: a MultiView of Overview + Tests + Stress +
 // Vulnerabilities + Tickets. Stress and Vulnerabilities are reused verbatim from the main app; all
@@ -18,6 +19,7 @@ export class ReleaseHandler {
   public view: DG.MultiView;
   private ctx = new ReleaseContext();
   private envInput: DG.InputBase;
+  private branchInput: DG.InputBase;
   private refreshIcon: HTMLElement;
 
   constructor(path?: string) {
@@ -28,6 +30,15 @@ export class ReleaseHandler {
     this.envInput = ui.input.choice('Environment', {value: this.ctx.env.value, items: ENV_CHOICES,
       onValueChanged: () => this.ctx.env.next(this.envInput.value ?? DEFAULT_ENV)});
     this.envInput.setTooltip('Filter builds by the instance they ran on (applies to Overview and Tests)');
+    // Master by default: an ad-hoc run on a branch used to land in the same column as the nightly
+    // and read as trunk (GROK-20760). The list is filled in once the branches query answers.
+    this.branchInput = ui.input.choice('Branch', {value: this.ctx.branch.value,
+      items: [this.ctx.branch.value, ALL_BRANCHES],
+      onValueChanged: () => this.ctx.branch.next(this.branchInput.value ?? DEFAULT_BRANCH)});
+    this.branchInput.setTooltip('Filter builds by the branch they were produced from (applies to Overview and Tests)');
+    fetchTestBranches()
+      .then((branches) => (this.branchInput as DG.ChoiceInput<string>).items = branches)
+      .catch((e) => grok.log.warning(`Release: could not list test branches: ${e}`));
     this.refreshIcon = ui.iconFA('sync-alt', () => this.ctx.refresh.next(), 'Refresh the current data');
     this.refreshIcon.classList.add('ua-release-ribbon-refresh');
 
@@ -48,7 +59,7 @@ export class ReleaseHandler {
     // controls in their own in-view header (empty ribbon), so re-assert the global env picker each time.
     this.view.tabs.onTabChanged.subscribe(() => {
       this.view.path = `/${this.view.currentView.name}`.toLowerCase();
-      this.view.setRibbonPanels([[this.envInput.root, this.refreshIcon]]);
+      this.view.setRibbonPanels([[this.envInput.root, this.branchInput.root, this.refreshIcon]]);
     });
 
     let startTab = 'Overview';

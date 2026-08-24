@@ -2,11 +2,15 @@
 --friendlyName: Release | Tests
 --connection: System:Datagrok
 --input: string instanceFilter = "dev" {choices: ["dev", "release", "public", "release-ec2"]}
+--input: string branchFilter = "master" {nullable: true; choices: Query("SELECT DISTINCT branch FROM builds WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch")}
 --input: int lastBuildsNum = 5
 WITH recent AS (
-  SELECT b.name AS build_name, b.build_date, b.commit
+  -- Branch-scoped: any pipeline can run on any branch, and an unscoped window let an ad-hoc
+  -- branch run sit in the trunk column and read as master (GROK-20760).
+  SELECT b.name AS build_name, b.build_date, b.commit, b.branch
   FROM builds b
-  WHERE EXISTS (
+  WHERE (@branchFilter IS NULL OR b.branch = @branchFilter)
+    AND EXISTS (
     SELECT 1 FROM test_runs r
     JOIN tests t ON r.test_name = t.name
     WHERE t.type = 'package'
@@ -19,7 +23,7 @@ WITH recent AS (
   LIMIT @lastBuildsNum
 ),
 indexed_builds AS (
-  SELECT build_name, build_date, commit,
+  SELECT build_name, build_date, commit, branch,
          CAST(row_number() OVER (ORDER BY build_date) AS int) AS build_index
   FROM recent
 ),
@@ -79,6 +83,7 @@ SELECT
   b.build_index,
   b.build_name AS build,
   b.commit AS build_commit,
+  b.branch AS branch,
   b.build_date,
   r.instance,
   act.last_run,

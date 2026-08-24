@@ -27,6 +27,7 @@ export class TestsView extends UaView {
     super(uaToolbox);
     this.name = 'Tests';
     this.ctx.env.subscribe(() => { if (this.initialized) this.refresh(); });
+    this.ctx.branch.subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 
@@ -64,7 +65,7 @@ export class TestsView extends UaView {
     this.summaryHost.append(ui.loader());
     this.gridHost.innerHTML = '';
     try {
-      this.pivot = await fetchReleaseTests(this.ctx.env.value, this.lastBuildsInput.value ?? 5);
+      this.pivot = await fetchReleaseTests(this.ctx.env.value, this.lastBuildsInput.value ?? 5, this.ctx.branch.value);
       if (!this.pivot) {
         this.summaryHost.innerHTML = '';
         this.summaryHost.append(ui.divText('No package test runs reported for this instance.', 'ua-metrics-degraded'));

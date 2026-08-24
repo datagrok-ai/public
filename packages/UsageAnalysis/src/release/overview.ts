@@ -25,6 +25,7 @@ export class ReleaseOverviewView extends UaView {
     super(uaToolbox);
     this.name = 'Overview';
     this.ctx.env.subscribe(() => { if (this.initialized) this.refresh(); });
+    this.ctx.branch.subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 
@@ -76,7 +77,7 @@ export class ReleaseOverviewView extends UaView {
     const alerts: AlertNode[] = [];
 
     const [testsR, stressR, vexR, ticketsR] = await Promise.allSettled([
-      fetchReleaseTests(this.ctx.env.value, 5),
+      fetchReleaseTests(this.ctx.env.value, 5, this.ctx.branch.value),
       queries.stressTestsSummary(20),
       fetchVexIndex(),
       fetchReleaseTickets(defaultNextVersion()),

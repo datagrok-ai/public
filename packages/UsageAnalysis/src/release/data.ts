@@ -14,16 +14,29 @@ const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test i
 /** Instances the dashboard can inspect; each maps to a `test_runs.instance` host (see release_tests.sql). */
 export const ENV_CHOICES = ['dev', 'release', 'public', 'release-ec2'];
 export const DEFAULT_ENV = 'dev';
+export const DEFAULT_BRANCH = 'master';
+/** Branch picker entry meaning "do not filter" — the pre-branch behaviour, kept for comparing runs. */
+export const ALL_BRANCHES = '(all branches)';
 
-/** Dashboard-wide state shared by every tab. The ribbon env picker (ReleaseHandler) writes `env`;
- * env-scoped tabs (Overview, Tests) read `env.value` and re-fetch when it changes. The ribbon Refresh
- * button fires `refresh`; every tab re-fetches on it. */
+/** Dashboard-wide state shared by every tab. The ribbon env and branch pickers (ReleaseHandler) write
+ * `env` and `branch`; scoped tabs (Overview, Tests) read `.value` and re-fetch when either changes. The
+ * ribbon Refresh button fires `refresh`; every tab re-fetches on it. */
 export class ReleaseContext {
   readonly env: BehaviorSubject<string>;
+  readonly branch: BehaviorSubject<string>;
   readonly refresh = new Subject<void>();
-  constructor(env: string = DEFAULT_ENV) {
+  constructor(env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
     this.env = new BehaviorSubject(env);
+    this.branch = new BehaviorSubject(branch);
   }
+}
+
+/** Branches that reported results recently, newest first, with master pinned to the top. */
+export async function fetchTestBranches(): Promise<string[]> {
+  const df = await queries.testBranches(60);
+  const col = df.columns.byIndex(0);
+  const branches = Array.from({length: col.length}, (_, i) => col.get(i) as string).filter((b) => b);
+  return [DEFAULT_BRANCH, ...branches.filter((b) => b !== DEFAULT_BRANCH), ALL_BRANCHES];
 }
 
 // Version-bound test muting. A test is muted for a specific release version; the mute list lives in its
@@ -198,8 +211,10 @@ function renameCol(df: DG.DataFrame, from: string, to: string): void {
 }
 
 /** Runs ReleaseTests and pivots it client-side into one row per test with per-build columns. */
-export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: number): Promise<ReleasePivot | null> {
-  const raw: DG.DataFrame = await queries.releaseTests(instanceFilter, lastBuildsNum);
+export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: number,
+  branchFilter: string = DEFAULT_BRANCH): Promise<ReleasePivot | null> {
+  const raw: DG.DataFrame = await queries.releaseTests(instanceFilter,
+    branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum);
   if (raw.rowCount === 0)
     return null;
 
