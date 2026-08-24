@@ -297,7 +297,7 @@ public class StringTokens {
     // every string encoder and cancels out of the id-4 vs id-0 comparison). Builds the nested
     // part columns; encode() reuses them.
     public int estimate() {
-        int size = 13;
+        int size = 17;
         for (StringTokenPart part : parts) {
             size += 1;
             if (part.kind == StringTokenPart.LITERAL)
@@ -414,7 +414,7 @@ public class StringTokens {
             else if (part.kind == StringTokenPart.INT)
                 part.intColumn.encode(buf);
             else
-                part.stringColumn.encode(buf);
+                part.stringColumn.encodeCategories(buf);
         }
     }
 

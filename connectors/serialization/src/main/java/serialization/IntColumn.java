@@ -13,6 +13,10 @@ public class IntColumn extends AbstractColumn<Integer> {
     public static boolean ADVANCED_ENCODERS =
             Boolean.parseBoolean(System.getProperty("grok.connect.advancedEncoders", "true"));
 
+    // Mirrors Dart's ColumnTypeMeta.writerLevel: 1 writes only the ids every historical reader
+    // decodes (int 1-4, string 0-3), 2 (default) adds int:bitPacked/int:delta/string:tokens.
+    public static int WRITER_LEVEL = Integer.getInteger("grok.connect.writerLevel", 2);
+
     private int[] data;
 
     public IntColumn(String name) {
@@ -117,14 +121,14 @@ public class IntColumn extends AbstractColumn<Integer> {
                 bestId = 4;
                 bestSize = bitListSize;
             }
-            int bpBits = BitPacking.bitsFor(packMinMax);
+            int bpBits = WRITER_LEVEL >= 2 ? BitPacking.bitsFor(packMinMax) : -1;
             if (bpBits >= 0 && BitPacking.sizeInBytes(length, bpBits) < bestSize) {
                 bestId = 5;
                 bestSize = BitPacking.sizeInBytes(length, bpBits);
             }
             long[] deltaRange = null;
             int none = packMinMax == null ? 0 : (int) (min - 1);
-            if (length >= 2) {
+            if (WRITER_LEVEL >= 2 && length >= 2) {
                 long dMin = 0, dMax = 0;
                 boolean any = false;
                 boolean fits = true;

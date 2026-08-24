@@ -54,8 +54,8 @@ public class StringColumn extends AbstractColumn<String> {
         categorize();
         // string:tokens (id 4, GROK-20761) vs plain categories (id 0): the row->category index
         // column costs the same either way, so compare the category payloads only.
-        serialization.codecs.StringTokens tokens =
-                IntColumn.ADVANCED_ENCODERS ? serialization.codecs.StringTokens.analyze(categories) : null;
+        serialization.codecs.StringTokens tokens = IntColumn.ADVANCED_ENCODERS && IntColumn.WRITER_LEVEL >= 2
+                ? serialization.codecs.StringTokens.analyze(categories) : null;
         if (tokens != null && tokens.estimate() < categoriesPayloadSize()) {
             buf.writeInt32(4);
             tokens.encode(buf);
@@ -82,6 +82,16 @@ public class StringColumn extends AbstractColumn<String> {
         materialize();
         categorize();
         return categoriesPayloadSize() + 4 + IntColumn.Encoding.choose(idxs, idxs.length).size;
+    }
+
+    // Plain id-0 payload; used for nested string:tokens parts, which are never tokens
+    // themselves (mirrors Dart's StringTokensEncoder._nesting guard).
+    public void encodeCategories(BufferAccessor buf) {
+        materialize();
+        categorize();
+        buf.writeInt32(0);
+        buf.writeStringList(categories.toArray(new String[0]));
+        new IntColumn("", idxs).encode(buf);
     }
 
     @Override

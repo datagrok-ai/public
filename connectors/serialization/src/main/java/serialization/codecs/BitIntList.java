@@ -43,7 +43,7 @@ public class BitIntList {
         return b;
     }
 
-    // What fromList writes; deliberately not bit_int_list.dart:52's msb(max - min), which is one bit short on power-of-two ranges.
+    // What fromList writes; bit_int_list.dart:52 matches since GROK-20761.
     public static int sizeInBytes(int count, long min, long max) {
         int bitsPerInt = count == 0 ? 0 : msb(max - min + 1);
         return (bitsPerInt == 0 ? 0 : wordCount(count, bitsPerInt)) * 4;
