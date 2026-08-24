@@ -8,6 +8,8 @@ import {fetchReleaseTests, computeTestAlerts, ReleasePivot, ReleaseContext, JENK
   COLOR_FAIL_TEXT, DIM_STATUS_BACK, COLOR_DIM_TEXT, NOT_RUN_BACK, waitForWidth, openInWorkspaceIcon,
   getReleaseMutesSchema, MUTED_VERSIONS, STALE_MUTED_VERSIONS, MUTE_ON, MUTE_OFF,
   parseMutedVersions, isMutedForVersion} from './data';
+import {combineLatest} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
 export class TestsView extends UaView {
   private lastBuildsInput!: DG.InputBase;
@@ -26,8 +28,9 @@ export class TestsView extends UaView {
   constructor(private ctx: ReleaseContext, uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Tests';
-    this.ctx.env.subscribe(() => { if (this.initialized) this.refresh(); });
-    this.ctx.branch.subscribe(() => { if (this.initialized) this.refresh(); });
+    // Switching instance re-points the branch too, so debounce the pair into one re-fetch.
+    combineLatest([this.ctx.env, this.ctx.branch]).pipe(debounceTime(0))
+      .subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 

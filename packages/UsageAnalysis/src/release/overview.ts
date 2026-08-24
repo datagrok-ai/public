@@ -7,6 +7,8 @@ import {queries} from '../package-api';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
 import {fetchReleaseTests, computeTestAlerts, stressRegression, defaultNextVersion, ReleaseContext, STALE_DAYS} from './data';
 import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
+import {combineLatest} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
 const BAND_CLASS: Record<Band, string> = {
@@ -24,8 +26,9 @@ export class ReleaseOverviewView extends UaView {
   constructor(private ctx: ReleaseContext, uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Overview';
-    this.ctx.env.subscribe(() => { if (this.initialized) this.refresh(); });
-    this.ctx.branch.subscribe(() => { if (this.initialized) this.refresh(); });
+    // Switching instance re-points the branch too, so debounce the pair into one re-fetch.
+    combineLatest([this.ctx.env, this.ctx.branch]).pipe(debounceTime(0))
+      .subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 
