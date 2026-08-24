@@ -54,7 +54,7 @@ Year - Month' and 'Year - Quarter':
 | **Data** | | |
 | Row Source | string | Determines the rows shown on the scatter plot. |
 | On Click | string | Determines what happens when you click on a bar. |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **X Axis** | | |
 | Split Column Name | string | A categorical column to split data on (each bar represents a category) |
@@ -66,7 +66,7 @@ Year - Month' and 'Year - Quarter':
 | Value Column Name | string | Value column. See *Value Aggr Type* for aggregation options. |
 | Value Aggr Type | string | Value aggregation. |
 | Relative Values | boolean | When true, each outermost bar is of the same width. This mode is useful for comparing relative value frequency when the *Stack* column is specified. |
-| Include Nulls | boolean | Indicates whether the no data bar should appear when the *Split* value is not present. |
+| Include Nulls | boolean | Indicates whether the "no data" bar should appear when the *Split* value is not present. |
 | Bar Sort Type | string | Whether to sort bars *by category* or *by value*. See also *Bar Sort Order* |
 | Bar Sort Order | string | Whether the bars should be sorted in ascending or descending order. See also *Bar Sort Type*. |
 | Axis Type | string |  |
@@ -97,7 +97,7 @@ Year - Month' and 'Year - Quarter':
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Color** | | |
@@ -137,8 +137,8 @@ Year - Month' and 'Year - Quarter':
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 
