@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+AI viewers: Fixed the two legend-visibility tests that had never passed. `legendPresent` asked whether a `.d4-legend` element exists, but hiding a legend that has already been shown collapses it to zero width instead of detaching it — so every "legend is now hidden" assertion after a toggle was doomed, while the same assertion at creation time passed because the element had never been built. It now measures rendered width, and lives in `helpers.ts` so BarChart and BoxPlot share one definition.
+
 Node runner: The stress suite now also loads a sibling package's node tests - `extraTestPackages` merges DBTests' registry into the one the runner filters, so the sweep covers read-only Postgres queries through grok_connect alongside the platform API. Each package resolves its own copy of the test library, so the merge is by registry object rather than by import.
 
 Node runner: Fixed the `datagrok-api/{dg,grok,ui}` aliasing for the ESM graph — `Module._resolveFilename` returned a `dg-runtime:` sentinel that is not a real path, and whichever resolver saw it (tsx's or Node's) read it as a directory import and threw. 25 of the 49 eligible test files (every `dataframe/`, `functions/`, `bitset/`, `stats/`, `property/`, `valuematcher/` file and four `dapi/domain-*` ones) never loaded and their tests never ran. `bindRuntimeGlobals()` now generates a real module per global once `startDatagrok()` has produced them and resolves the specifiers to that, so the alias no longer depends on which resolver wins.
