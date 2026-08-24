@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Tests: marked the read-only Postgres categories (`Connections` queries, `TableQueryBuilder`, `Database Meta: *`) as `stressTest` - 20 tests, so the nightly Stress-Tests sweep exercises grok_connect query load and not only the platform API. `Docker connection` is excluded (the stress stand runs no grok_spawner) and `Server cache` is excluded (shared cache state across concurrent threads).
+* Tests: marked the read-only Postgres categories (`Connections` queries, `TableQueryBuilder`) as `stressTest` - 12 tests, so the nightly Stress-Tests sweep exercises grok_connect query load and not only the platform API. Excluded: `Docker connection` (the stress stand runs no grok_spawner), `Server cache` (shared cache state) and `Database Meta: *` (its tests annotate and clear shared schema metadata - measured at 19-56% pass under concurrency in build 169, all of it threads overwriting each other rather than real failures).
 * Tests: Fixed `Docker connection / Connection test` timing out at exactly 300s — its budget equalled datlas' own containerStatusTimeout, so a slow on-demand container start left nothing for the connection test
 * Tests: annotated API-only categories (queries, TableQueryBuilder, server cache, benchmarks, DB annotations, provider connectivity) with `node: true` — `grok test` now runs them headless in Node; the data-sync view test and the IndexedDB-backed client cache stay in the browser
 * Tests: the query `-- test:` auto tests (~200) also run headless now that the Node runtime provides the shared `OpenFile` fallback

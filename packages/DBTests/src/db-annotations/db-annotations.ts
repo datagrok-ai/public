@@ -28,7 +28,7 @@ category('Database Meta: DbInfo', async () => {
         expect(dbInfo.llmComment, testLlmComment);
         updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         expect(updated.llmComment, testLlmComment);
-    }, {stressTest: true});
+    });
 
     test('Add relation 1', async () => {
         const fromTable: string = 'orders';
@@ -57,7 +57,7 @@ category('Database Meta: DbInfo', async () => {
         let all = await dbInfo.getRelations();
         const found = all.find(r => r.fromTable === fromTable);
         expect(found !== null, true);
-    }, {stressTest: true});
+    });
 
     test('Add relation 2', async () => {
         const fromTable: string = 'orders';
@@ -80,7 +80,7 @@ category('Database Meta: DbInfo', async () => {
         let all = await dbInfo.getRelations();
         const found = all.find(r => r.fromTable === fromTable);
         expect(found !== null, true);
-    }, {stressTest: true});
+    });
 
     test('Clear properties', async () => {
         await dbInfo.setComment(testComment);
@@ -100,7 +100,7 @@ category('Database Meta: DbInfo', async () => {
         expect(updated.comment == null, true);
         const rels = await dbInfo.getRelations();
         expect(rels.length, 0);
-    }, {stressTest: true});
+    });
 
     after(async () => {
         try {
@@ -142,7 +142,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         updated = (await grok.data.db.getInfo(conn, 'public'))[0];
         updatedSchema = (await updated.getSchemas()).find((s) => s.name === 'public')!;
         expect(updatedSchema.llmComment, testLlmComment);
-    }, {stressTest: true});
+    });
 
     test('Annotate table', async () => {
         const schemas = await dbInfo.getSchemas();
@@ -170,7 +170,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
         expect(t3.tags[DG.Tags.DbComment], 'table-comment');
         expect(t3.tags[DG.Tags.DbTableRowCount], 123);
-    }, {stressTest: true});
+    });
 
     test('Annotate column', async () => {
         const schemas = await dbInfo.getSchemas();
@@ -204,7 +204,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         expect(c3.tags[DG.Tags.DbColumnMin], props.min);
         expect(c3.tags[DG.Tags.DbColumnMax], props.max);
         expect(c3.tags[DG.Tags.DbComment], props.comment);
-    }, {stressTest: true});
+    });
 
     after(async () => {
         try {
@@ -250,7 +250,7 @@ category('Database Meta: DbRelationInfo', async () => {
         expect(rel.llmComment, 'test llm comment');
         expect(rel.cardinality, 'one-to-many');
         expect(rel.isPrimaryPath, true);
-    }, {stressTest: true});
+    });
 
     after(async () => {
         try {
