@@ -32,6 +32,12 @@ const testsExclude = [
 // and utils/ stay browser-only (Dart client / DOM dependencies).
 const nodeTestDirs = ['dapi', 'dataframe', 'functions', 'bitset', 'valuematcher', 'property', 'stats', 'shell'];
 
+// Sibling packages whose node-marked tests join this suite, so the sweep covers more than
+// the platform API — DBTests contributes read-only Postgres queries through grok_connect.
+// Each package resolves its own copy of the test library, so their categories land in a
+// different registry object and have to be merged into the one this runner filters.
+const extraTestPackages = ['DBTests'];
+
 // 'functional': run every loaded test (UI-dependent ones self-skip via skipReason);
 // 'stress': only stressTest-marked tests — the concurrency-sweep baseline.
 // Defaults to 'stress': `grok stresstest` (the nightly Stress-Tests baseline) invokes
@@ -233,6 +239,19 @@ async function loadTestFiles(): Promise<void> {
                     console.error(`❌ Failed to load ${dir}/${baseName} (its tests will not run): ${e?.message ?? e}`);
                 }
             }
+        }
+    }
+    const {tests} = await import('@datagrok-libraries/test/src/test');
+    for (const pkg of extraTestPackages) {
+        try {
+            const entry = pathToFileURL(join(srcDir, '..', '..', pkg, 'src', 'package-test.ts')).href;
+            const loaded: any = await import(entry);
+            const added = Object.keys(loaded.tests ?? {});
+            Object.assign(tests, loaded.tests);
+            console.log(`Loaded ${added.length} categories from ${pkg}: ${added.join(', ')}`);
+        } catch (e: any) {
+            loadFailures.push(pkg);
+            console.error(`❌ Failed to load ${pkg} (its tests will not run): ${e?.message ?? e}`);
         }
     }
 }

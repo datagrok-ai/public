@@ -15,7 +15,7 @@ category('TableQueryBuilder', () => {
         const df: DG.DataFrame = await tq.executeTable();
         expect(df.rowCount, 77);
         expect(df.columns.length, 10);
-    });
+    }, {stressTest: true});
 
     test('fields limit', async () => {
         const tq = northwind.buildQuery(testTableName)
@@ -25,7 +25,7 @@ category('TableQueryBuilder', () => {
         const df: DG.DataFrame = await tq.executeTable();
         expect(df.rowCount, 10);
         expect(df.columns.length, 2);
-    });
+    }, {stressTest: true});
 
     test('fields where double pattern limit', async () => {
         const tq = northwind.buildQuery(testTableName)
@@ -36,7 +36,7 @@ category('TableQueryBuilder', () => {
         const df: DG.DataFrame = await tq.executeTable();
         expect(df.rowCount, 3);
         expect(df.columns.length, 2);
-    });
+    }, {stressTest: true});
 
     test('fields where datetime pattern', async () => {
         const tq = northwind.buildQuery('orders')
@@ -46,7 +46,7 @@ category('TableQueryBuilder', () => {
         const df: DG.DataFrame = await tq.executeTable();
         expect(df.rowCount, 42);
         expect(df.columns.length, 3);
-    });
+    }, {stressTest: true});
 
     test('fields where string pattern', async () => {
         const tq = northwind.buildQuery('customers')
@@ -55,7 +55,7 @@ category('TableQueryBuilder', () => {
         const df: DG.DataFrame = await tq.executeTable();
         expect(df.rowCount, 31);
         expect(df.columns.length, 11);
-    });
+    }, {stressTest: true});
 
     test('aggregation max sort', async () => {
         // translates to select * from products
@@ -68,7 +68,7 @@ category('TableQueryBuilder', () => {
         expect(df.rowCount, 73);
         expect(df.columns.length, 3);
         expect(df.getCol('max price').get(0), 263.50);
-    });
+    }, {stressTest: true});
 
     test('aggregation max sort left join', async () => {
         // translates to select * from products
@@ -82,7 +82,7 @@ category('TableQueryBuilder', () => {
         expect(df.rowCount, 73);
         expect(df.columns.length, 3);
         expect(df.getCol('categoryname').get(0), 'Beverages');
-    });
+    }, {stressTest: true});
 
     test('aggregation max sort left join having', async () => {
         // translates to select * from products
@@ -97,7 +97,7 @@ category('TableQueryBuilder', () => {
         expect(df.rowCount, 2);
         expect(df.columns.length, 3);
         expect(df.getCol('categoryname').get(0), 'Beverages');
-    });
+    }, {stressTest: true});
 
     test('aggregation max left inner joins having', async () => {
         // translates to select * from products
@@ -111,5 +111,5 @@ category('TableQueryBuilder', () => {
         const df: DG.DataFrame = await tq.executeTable();
         expect(df.rowCount, 6);
         expect(df.columns.length, 4);
-    });
+    }, {stressTest: true});
 }, {node: true});

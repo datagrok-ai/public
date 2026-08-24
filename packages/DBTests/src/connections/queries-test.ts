@@ -29,13 +29,13 @@ category('Connections', () => {
   test('External Provider: grok.data.query no params', async () => {
     const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAll', null, true);
     expect(result?.rowCount ?? 0, 30);
-  });
+  }, {stressTest: true});
 
   test('External Provider: grok.data.query with params', async () => {
     const result: DG.DataFrame = await grok.data.query('DbTests:PostgresqlPatternsAllParams', {'first_name': 'starts with p', 'id': '>1', 'bool': false,
       'email': 'contains com', 'some_number': '>20', 'country': 'in (Indonesia)', 'date': 'before 1/1/2022'});
     expect(result?.rowCount ?? 0, 1);
-  });
+  }, {stressTest: true});
 }, {node: true});
 
 category('Docker connection', () => {

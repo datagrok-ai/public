@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Node runner: The stress suite now also loads a sibling package's node tests - `extraTestPackages` merges DBTests' registry into the one the runner filters, so the sweep covers read-only Postgres queries through grok_connect alongside the platform API. Each package resolves its own copy of the test library, so the merge is by registry object rather than by import.
+
 Node runner: Fixed the `datagrok-api/{dg,grok,ui}` aliasing for the ESM graph — the CommonJS resolver's `dg-runtime:` sentinel escaped into ESM resolution and Node rejected it as a directory import, so 25 of the 49 eligible test files (every `dataframe/`, `functions/`, `bitset/`, `stats/`, `property/`, `valuematcher/` file and four `dapi/domain-*` ones) never loaded and their tests never ran. The loader hooks now resolve those specifiers to a synthetic module bound to the runtime globals, with the export names handed over after `startDatagrok()`.
 
 GROK-20752: `ProgressIndicator` covers `onLogUpdated` delivering plain `{level, message, flag, params, time}` objects — a debug-mode call of an ad-hoc JS script, asserting the client `CALL DURATION` start event's types and params.
