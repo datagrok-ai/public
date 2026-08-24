@@ -262,21 +262,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                             statement.setString(n + i + 1, s);
                     }
                     else {
-                        if (param.value == null) {
-                            switch (param.propertyType) {
-                                case Types.INT:
-                                case Types.FLOAT:
-                                    statement.setNull(n + i + 1, java.sql.Types.NUMERIC);
-                                    break;
-                                case Types.BIG_INT:
-                                    statement.setNull(n + i + 1, java.sql.Types.BIGINT);
-                                case Types.BOOL:
-                                    statement.setNull(n + i + 1, java.sql.Types.BOOLEAN);
-                                default:
-                                    statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-                                    break;
-                            }
-                        }
+                        if (param.value == null)
+                            setNullParameter(statement, n + i + 1, param.propertyType);
                         else
                             statement.setObject(n + i + 1, param.value);
                     }
@@ -453,6 +440,23 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer
                 .append("@")
                 .append(paramName); // there are no such FuncParam, so it means that it is not a param
+    }
+
+    protected void setNullParameter(PreparedStatement statement, int index, String propertyType) throws SQLException {
+        switch (propertyType) {
+            case Types.INT:
+            case Types.FLOAT:
+                statement.setNull(index, java.sql.Types.NUMERIC);
+                break;
+            case Types.BIG_INT:
+                statement.setNull(index, java.sql.Types.BIGINT);
+                break;
+            case Types.BOOL:
+                statement.setNull(index, java.sql.Types.BOOLEAN);
+                break;
+            default:
+                statement.setNull(index, java.sql.Types.VARCHAR);
+        }
     }
 
     protected String interpolateString(FuncParam param) {
