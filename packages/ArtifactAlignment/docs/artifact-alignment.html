@@ -604,11 +604,18 @@
       cluttering every user's run listings with system-generated garbage; hiding them relies on
       every listing UI filtering on a call option client-side. A server-side sub-entity flag
       would hide them from all listings at the source.</li>
-    <li><b>Per-table UI affordance control in domain views.</b>
+    <li><b>Per-table UI affordance control in domain views: create button, row click,
+      context menu.</b>
       <span class="pill pill-imp">improvement</span><br>
       The automatic "New &lt;singular&gt;" row-create button cannot be suppressed through the
-      manifest, and revoking insert permission instead would break services that insert rows on the
-      user's behalf. Needed: a manifest flag controlling per-table create/edit affordances.</li>
+      manifest (revoking insert permission instead would break services that insert rows on the
+      user's behalf) — and the same holds for the row's click/open behavior and its context
+      menu: a JS handler may only ADD actions, never replace the platform's
+      Edit/Delete/History commands or the row-open handler. Overriding is possible today only
+      through the global <code>onContextMenu</code> hook, removing items by their label text —
+      verified working, but off-contract and fragile across platform versions. Needed:
+      manifest- or handler-level control over per-table create/edit affordances, the row click
+      handler, and the platform context-menu items.</li>
   </ol>
 
   <h3>Normal</h3>
