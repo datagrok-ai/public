@@ -38,7 +38,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  * Push a step's flux distribution into the builder's sampling distribution, mutating the
  * same object the tooltip holds (set once at first load) so hovering shows this step's histogram.
  */
-function applyStepDistribution(builder: BuilderType, dist: SamplingFunctionResult) {
+export function applyStepDistribution(builder: BuilderType, dist: SamplingFunctionResult) {
   const target = builder.reaction_sampling_distribution;
   if (!target)
     return;
@@ -60,6 +60,11 @@ export function clearTimeCourseSlider() {
     activeSlider.remove();
     activeSlider = null;
   }
+}
+
+/** Whether a time-course slider/animation is currently shown. */
+export function isTimeCourseActive(): boolean {
+  return activeSlider != null;
 }
 
 function showTimeCourseSlider(builder: BuilderType, steps: TimeCourseStep[], originalBounds: {[id: string]: ReactionBounds}) {
@@ -597,10 +602,10 @@ export function openTimeCourseDialog(cobraModel: CobraModelData | null, builder:
 // --------------------------------------------------------------------------
 // Runner: interpolate bounds, sample every step, then show the slider
 // --------------------------------------------------------------------------
-async function runTimeCourseSampling(
+export async function runTimeCourseSampling(
   cobraModel: CobraModelData, builder: BuilderType,
   bounds1: StepBounds, bounds2: StepBounds, steps: number, params: TimeCourseSamplingParams,
-) {
+): Promise<{succeeded: boolean, failedSteps: number[]}> {
   clearTimeCourseSlider();
   const reactionNames = [...bounds1.keys()];
 
@@ -665,7 +670,7 @@ async function runTimeCourseSampling(
     if (Object.keys(original).length)
       builder.set_reaction_bounds(original);
     grok.shell.error('Time-course sampling failed for every step — check that the interpolated bounds are feasible');
-    return;
+    return {succeeded: false, failedSteps: failed};
   }
 
   // Keep exactly `steps` slider positions: fill a failed step with the nearest sampled one.
@@ -697,4 +702,5 @@ async function runTimeCourseSampling(
 
   // expose the managed scrubber; it selects step 1 (applying its bounds, histograms and colors)
   showTimeCourseSlider(builder, stepResults, original);
+  return {succeeded: true, failedSteps: failed};
 }

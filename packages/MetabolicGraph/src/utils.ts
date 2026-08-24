@@ -25,7 +25,16 @@ export type MetabolicAnalysisState = {
   description?: string,
 } & Record<string, any>;
 
+/** Name of the analysis last saved/loaded per builder — the single source the UI dialogs,
+ * the URL path loader, and the AI view functions all report and update. */
+const currentAnalysisByBuilder = new WeakMap<BuilderType, string>();
+
+export function getCurrentAnalysis(builder: BuilderType): string | null {
+  return currentAnalysisByBuilder.get(builder) ?? null;
+}
+
 export async function saveStateDialog(builder: BuilderType, currentCampaign?: string) {
+  currentCampaign ??= getCurrentAnalysis(builder) ?? undefined;
   const dialog = ui.dialog('Save Analysis');
   const existingCampaigns: string[] = [];
   let currentExists = false;
@@ -93,11 +102,8 @@ export async function saveStateDialog(builder: BuilderType, currentCampaign?: st
       grok.shell.warning('Name is required for analysis');
       return;
     }
-    const state = builder.getSavingState();
-    state.description = descriptionInput.value;
-    await _package.files.writeAsText(`campaigns/${name}.json`, JSON.stringify(state));
+    await saveAnalysisState(builder, name, descriptionInput.value);
     grok.shell.info(`Analysis ${name} saved`);
-    replaceUrlPath(name);
   });
   dialog.show();
   dialog.root.addEventListener('keydown', (e) => {
@@ -122,7 +128,7 @@ function replaceUrlPath(curAnalysisName: string) {
   }
 }
 
-async function loadCampaigns() {
+export async function loadCampaigns() {
   // ui.setUpdateIndicator(dialog.root, true);
   const pg = DG.TaskBarProgressIndicator.create('Loading analysis list');
   try {
@@ -138,6 +144,22 @@ async function loadCampaigns() {
   return null;
 }
 
+export function analysisExists(name: string): Promise<boolean> {
+  return _package.files.exists(`campaigns/${name}.json`);
+}
+
+export function readAnalysis(name: string): Promise<string> {
+  return _package.files.readAsText(`campaigns/${name}.json`);
+}
+
+export async function saveAnalysisState(builder: BuilderType, name: string, description?: string | null) {
+  const state = builder.getSavingState();
+  state.description = description ?? '';
+  await _package.files.writeAsText(`campaigns/${name}.json`, JSON.stringify(state));
+  currentAnalysisByBuilder.set(builder, name);
+  replaceUrlPath(name);
+}
+
 export async function loadAnalisisDialog(builder: BuilderType) {
   const campList = await loadCampaigns();
   if (!campList || campList.length < 1) {
@@ -150,16 +172,16 @@ export async function loadAnalisisDialog(builder: BuilderType) {
   dialog.addButton('Load', async () => {
     dialog.close();
     const camp = campList.find((c) => c === campaignChoicInput.value);
-    if (camp) {
-      const campJSON = await _package.files.readAsText(`campaigns/${camp}.json`);
-      loadStateProxy(builder, campJSON, camp);
-    }
+    if (camp)
+      loadStateProxy(builder, await readAnalysis(camp), camp);
   });
   dialog.show();
 }
 
 export async function loadStateProxy(builder: BuilderType, campJSON: string, path?: string) {
   builder.loadSavingState(campJSON);
+  if (path)
+    currentAnalysisByBuilder.set(builder, path);
   replaceUrlPath(path ?? '');
   builder.settings.set('loadAction', () => loadAnalisisDialog(builder));
   builder.settings.set('saveAction', () => saveStateDialog(builder, path));
@@ -407,16 +429,19 @@ export async function runReactionSamplingPython(cobraModel: CobraModelData, buil
   }
 }
 
-export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
+export function handleReactionDataUpload(view: DG.ViewBase, builder: BuilderType) {
   // // @ts-ignore
   // window.currentBuilder = builder; // for debugging purposes, to access the builder from the console
 
   // // @ts-ignore
   // window.solver = WorkerCobraSolver;
 
-  grok.events.onFileImportRequest.subscribe(async (ff) => {
+  view.subs.push(grok.events.onFileImportRequest.subscribe(async (ff) => {
     const f = ff as unknown as DG.EventData<DG.FileImportArgs>;
-    if ((grok.shell.v as DG.View)?.id !== view.id || (!f.args.file?.name?.endsWith('.json') && !f.args.file?.name?.endsWith('.csv')))
+    // the current view can be the JS view itself or the Dart host wrapping it
+    const cur = grok.shell.v as any;
+    const isCurrent = cur != null && (cur === view || cur.jsView === view);
+    if (!isCurrent || (!f.args.file?.name?.endsWith('.json') && !f.args.file?.name?.endsWith('.csv')))
       return;
     f.preventDefault();
     clearTimeCourseSlider(); // dropping new data supersedes any time-course animation
@@ -479,7 +504,7 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
         return;
       }
     }
-  });
+  }));
 }
 
 export async function runFBADialog(builder: BuilderType) {

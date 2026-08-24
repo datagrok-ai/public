@@ -2530,7 +2530,7 @@ export class EscherMap {
     }
   }
 
-  findAndHighlightShortest(inc = 0) {
+  findAndHighlightShortest(inc: string | number = 0) {
     this.last_action = null;
 
     const nodes = Array.from(new Set(Object.values(this.getSelectedNodes())
