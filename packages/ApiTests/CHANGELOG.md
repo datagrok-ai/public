@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Node runner: Fixed the `datagrok-api/{dg,grok,ui}` aliasing for the ESM graph — the CommonJS resolver's `dg-runtime:` sentinel escaped into ESM resolution and Node rejected it as a directory import, so 25 of the 49 eligible test files (every `dataframe/`, `functions/`, `bitset/`, `stats/`, `property/`, `valuematcher/` file and four `dapi/domain-*` ones) never loaded and their tests never ran. The loader hooks now resolve those specifiers to a synthetic module bound to the runtime globals, with the export names handed over after `startDatagrok()`.
+
 GROK-20752: `ProgressIndicator` covers `onLogUpdated` delivering plain `{level, message, flag, params, time}` objects — a debug-mode call of an ad-hoc JS script, asserting the client `CALL DURATION` start event's types and params.
 
 Build: Fixed the local build — `@datagrok-libraries/domain-ui` now takes `datagrok-api` from `../../js-api` instead of the registry, so its types are the same ones ApiTests compiles against. `build-js-api-tests-local` builds js-api and domain-ui only; the `link-*` scripts are gone.
