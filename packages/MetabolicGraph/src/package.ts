@@ -3,13 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {parsePath, loadStateProxy, sampleReactions, saveStateDialog, loadAnalisisDialog, handleReactionDataUpload, runFBADialog} from './utils';
+import {clearTimeCourseSlider} from './timeCourse';
 import map from './maps/E_coli_Core_metabolism_map.json';
 import model from './maps/E_coli_core_cobra.json';
 import type {MapData, CobraModelData, SettingsType} from '../escher_src/src/ts/types';
 import type {BuilderType, BuilderConstructor} from '../escher_src/src/Builder';
-import { modelFromJsonData } from './FBA/cobra-model';
-import { WorkerCobraSolver } from './cobra';
-import { sampleReactionsWasm } from './cobra/sampler-wrapper';
+import {modelFromJsonData} from './FBA/cobraSolver';
+import {WorkerCobraSolver} from './cobra';
+import {sampleReactionsWasm} from './cobra/sampler-wrapper';
 
 export const _package = new DG.Package();
 
@@ -43,10 +44,14 @@ export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
         samplingFunction: (mp: CobraModelData) => sampleReactions(mp, b),
         saveAction: () => saveStateDialog(b, undefined),
         loadAction: () => loadAnalisisDialog(b),
-        runFBA: async () => {runFBADialog(b)},
+        runFBA: async () => { runFBADialog(b); },
         pathFindingDisabled: true,
       });
     handleReactionDataUpload(view, b);
+    // remove the time-course animation slider whenever the map/model is replaced or cleared
+    b.callback_manager?.set('load_map.timecourse', () => clearTimeCourseSlider());
+    b.callback_manager?.set('load_model.timecourse', () => clearTimeCourseSlider());
+    b.callback_manager?.set('clear_map.timecourse', () => clearTimeCourseSlider());
     setTimeout(async () => {
       if (!b.map)
         return;
@@ -93,9 +98,13 @@ export async function escherFileViewer(file: DG.FileInfo) {
         samplingFunction: (mp: CobraModelData) => sampleReactions(mp, b),
         saveAction: () => saveStateDialog(b, undefined),
         loadAction: () => loadAnalisisDialog(b),
-        runFBA: async () => {runFBADialog(b)},
+        runFBA: async () => { runFBADialog(b); },
         pathFindingDisabled: true,
       });
+    // remove the time-course animation slider whenever the map/model is replaced or cleared
+    b.callback_manager?.set('load_map.timecourse', () => clearTimeCourseSlider());
+    b.callback_manager?.set('load_model.timecourse', () => clearTimeCourseSlider());
+    b.callback_manager?.set('clear_map.timecourse', () => clearTimeCourseSlider());
   }, 500);
   return view;
 }

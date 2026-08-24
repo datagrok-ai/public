@@ -23,9 +23,15 @@ class SamplerWasm {
   }
 }
 
-export async function sampleReactionsWasm(mp: CobraModelData, samplesCount: number = 1000, thinning: number = 20): Promise<Float32Array> {
+export type PrecomputedExtremePoints = {
+  solutions: Float32Array[];
+  reactionNames: string[];
+};
+
+export async function sampleReactionsWasm(mp: CobraModelData, samplesCount: number = 1000, thinning: number = 20, precomputedExtremes?: PrecomputedExtremePoints): Promise<Float32Array> {
   const wasmInstance = await SamplerWasm.getInstance();
   const getSamples = wasmInstance.cwrap('sample', 'number', ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number']);
+  debugger;
   // arguments:
   // int sampleCount
   // int thinning
@@ -55,7 +61,8 @@ export async function sampleReactionsWasm(mp: CobraModelData, samplesCount: numb
   });
 
   // run initial optimization to get a starting point
-  const optiExtremes = await WorkerCobraSolver.get_extreme_points(mp);
+  const optiExtremes = precomputedExtremes ?? await WorkerCobraSolver.get_extreme_points(mp);
+  console.log(precomputedExtremes);
   console.log('got extremes');
   const initOpt = new Float32Array(reactionCount * optiExtremes.solutions.length);
   for (let i = 0; i < optiExtremes.solutions.length; i++)
@@ -82,7 +89,9 @@ export async function sampleReactionsWasm(mp: CobraModelData, samplesCount: numb
     lbsPointer, ubsPointer, sDataPointer, optiExtremes.solutions.length, initOptPointer, outputPointer
   );
 
-  const getSamplesResult = new Float32Array(outputHeap.buffer, outputHeap.byteOffset, samplesCount * reactionCount);
+  // Copy data out of WASM heap before freeing - the view into HEAPU8.buffer
+  // becomes invalid after _free calls (detached ArrayBuffer), especially for large allocations
+  const getSamplesResult = new Float32Array(outputHeap.buffer, outputHeap.byteOffset, samplesCount * reactionCount).slice();
 
   wasmInstance._free(lbsPointer);
   wasmInstance._free(ubsPointer);

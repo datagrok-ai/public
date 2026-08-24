@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
-import {dummy} from './dummy';
 import type {CobraModelData} from '../../escher_src/src/ts/types';
+import type {PrecomputedExtremePoints} from './sampler-wrapper';
+import {dummy} from './dummy';
 
 export class WorkerCobraSolver {
   private static _lastOptimizationPromise: Promise<{fluxes: Float32Array, reactionNames: string[]} | null> = Promise.resolve(null);
@@ -86,7 +87,7 @@ export class WorkerCobraSolver {
     return {solutions: allFluxes, reactionNames};
   }
 
-  static async runSampling(model_data: CobraModelData | null, samplesCount: number = 1000, thinning: number = 20) {
+  static async runSampling(model_data: CobraModelData | null, samplesCount: number = 1000, thinning: number = 20, precomputedExtremes?: PrecomputedExtremePoints) {
     if (!model_data)
       throw new Error('Cannot run optimization without a model loaded');
     const worker = new Worker(new URL('./sampler-worker', import.meta.url));
@@ -102,7 +103,7 @@ export class WorkerCobraSolver {
             reject(e);
           }
         };
-        worker.postMessage({model: model_data, samples: samplesCount, thinning});
+        worker.postMessage({model: model_data, samples: samplesCount, thinning, precomputedExtremes});
       } catch (e) {
         reject(e);
       }

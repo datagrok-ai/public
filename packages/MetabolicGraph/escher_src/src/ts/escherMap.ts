@@ -2283,7 +2283,7 @@ export class EscherMap {
   /**
    * Rescale the canvas and save as svg/png.
    */
-  saveMap(callbackBefore: string, callbackAfter: string, mapType: 'svg' | 'png') {
+  saveMap(callbackBefore: string, callbackAfter: string, mapType: 'svg' | 'png', name: string = 'saved_map') {
     // Run the before callback
     this.callback_manager.run(callbackBefore);
 
@@ -2313,9 +2313,9 @@ export class EscherMap {
 
         // do the export
         if ( mapType === 'svg')
-          utils.downloadSvg('saved_map', this.svg as D3Selection<any>, true);
+          utils.downloadSvg(name, this.svg as D3Selection<any>, true);
         else if (mapType === 'png')
-          utils.downloadPng('saved_map', this.svg);
+          utils.downloadPng(name, this.svg);
 
 
         // revert everything
@@ -2335,12 +2335,12 @@ export class EscherMap {
     );
   }
 
-  save_svg() {
-    this.saveMap('before_svg_export', 'after_svg_export', 'svg');
+  save_svg(name: string = 'saved_map') {
+    this.saveMap('before_svg_export', 'after_svg_export', 'svg', name);
   }
 
-  save_png() {
-    this.saveMap('before_png_export', 'after_png_export', 'png');
+  save_png(name: string = 'saved_map') {
+    this.saveMap('before_png_export', 'after_png_export', 'png', name);
   }
 
   /**
