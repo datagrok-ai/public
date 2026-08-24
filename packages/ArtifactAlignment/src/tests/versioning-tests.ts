@@ -98,6 +98,29 @@ category('ArtifactAlignment: versioning', () => {
     expect((await discover(program.id)).length, 2);
   });
 
+  test('history accumulates every superseded revision', async () => {
+    const program = await makeTestProgram();
+    const run = await makeSavedRun();
+    const v1 = await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'HistAcc'});
+    await publishRun({sourceMetaCallId: run.metaCallId, programId: program.id, name: 'HistAcc'});
+    const v3 = await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'HistAcc'});
+    expect(v3.revision, 3);
+    const archived = await getPublicationHistory(v1.publicationId);
+    expect(archived.map((h) => h.revision).join(','), '2,1',
+      'v3 live must leave BOTH v1 and v2 in the archive');
+    expect(archived.every((h) => h.final_status === 'approved'), true);
+    const draft = await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'HistAcc', skipAutoApprove: true});
+    expect(draft.revision, 4);
+    await publishRun({
+      sourceMetaCallId: run.metaCallId, programId: program.id, name: 'HistAcc', skipAutoApprove: true});
+    const withDraft = await getPublicationHistory(v1.publicationId);
+    expect(withDraft.map((h) => `${h.revision}:${h.final_status}`).join(','),
+      '4:pending,2:approved,1:approved', 'a superseded draft must archive alongside approved versions');
+  });
+
   test('server-enforced singleton — a second pending row of the same publication is rejected', async () => {
     const program = await makeTestProgram();
     const run = await makeSavedRun();
