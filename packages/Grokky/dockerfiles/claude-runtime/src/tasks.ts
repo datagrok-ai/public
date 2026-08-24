@@ -47,7 +47,8 @@ function getOrCreate(taskId: string, sessionId: string): Task {
   return t;
 }
 
-/** One worker long-poll leg: claim (idempotent), then wait up to CLAIM_POLL_MS for the turn to end; {status: 'running'} means re-poll. */
+/** One worker long-poll leg: claim (idempotent), then wait up to CLAIM_POLL_MS for the turn to end;
+ * {status: 'running'} means re-poll. */
 export function claimTask(taskId: string, sessionId: string): Promise<TaskEnd | {status: 'running'}> {
   lastWorkerPollAt = Date.now();
   const t = getOrCreate(taskId, sessionId);

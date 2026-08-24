@@ -132,7 +132,8 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
     return;
   }
 
-  console.log(`package-agents: syncing ${packages.length} published package(s), skipping ${wsPackages.size} workspace package(s)`);
+  console.log(`package-agents: syncing ${packages.length} published package(s), ` +
+    `skipping ${wsPackages.size} workspace package(s)`);
   for (const pkg of packages) {
     if (wsPackages.has(pkg.name.toLowerCase())) {
       console.log(`package-agents: skipping workspace package ${pkg.name}`);

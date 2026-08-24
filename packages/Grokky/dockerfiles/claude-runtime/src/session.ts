@@ -7,11 +7,13 @@ import {emit, emitFiltered, flushFenceState, clearFenceState,
   isRevising, beginRevision, endRevision} from './stream-filter';
 import type {WsSender} from './stream-filter';
 import {syncUserFiles} from './sync/orchestrator';
-import {ensureUserDir} from './user/user-dir';
+import {userDirs} from './user/user-dir';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
 import {Verifier, bareToolName} from './verify';
 import {GroundingGate, isSmallTalk} from './grounding';
-import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions,
+  apiUrlFromMcpUrl} from './query-options';
+import {rewriteForDocker} from './constants';
 import {waitForClaim, endTask} from './tasks';
 
 // Re-exported so server.ts keeps importing the transport surface from one place.
@@ -71,69 +73,69 @@ const NO_REVISION_RE = /^`?NO_REVISION`?\.?$/;
 function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: Verifier): void {
   const e = event as any;
   switch (event.type) {
-  case 'assistant':
-    if (e.error === 'authentication_failed')
-      authFailed.add(sid);
-    if (e.uuid)
-      pendingUuid.set(sid, e.uuid);
-    for (const block of e.message?.content ?? []) {
-      if (block.type === 'tool_use') {
-        emit(ws, {type: 'tool_activity', sessionId: sid, name: bareToolName(block.name),
-          summary: toolSummary(block.name, block.input ?? {})});
+    case 'assistant':
+      if (e.error === 'authentication_failed')
+        authFailed.add(sid);
+      if (e.uuid)
+        pendingUuid.set(sid, e.uuid);
+      for (const block of e.message?.content ?? []) {
+        if (block.type === 'tool_use') {
+          emit(ws, {type: 'tool_activity', sessionId: sid, name: bareToolName(block.name),
+            summary: toolSummary(block.name, block.input ?? {})});
+        }
       }
-    }
-    break;
-  case 'stream_event':
-    if (e.event?.delta?.type === 'text_delta' && e.event.delta.text) {
+      break;
+    case 'stream_event':
+      if (e.event?.delta?.type === 'text_delta' && e.event.delta.text) {
       // The grounding gate reads this at Stop to decide whether the answer makes platform
       // how-to claims — only the pre-revision visible answer counts, so stop accumulating
       // once a revision is underway.
-      if (!isRevising(sid))
-        turnText.set(sid, (turnText.get(sid) ?? '') + e.event.delta.text);
-      emitFiltered(ws, sid, e.event.delta.text);
-    }
-    break;
-  case 'tool_progress':
-    emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
-    break;
-  case 'tool_use_summary':
-    emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
-    break;
-  case 'result': {
-    const revising = endRevision(sid);
-    flushFenceState(ws, sid);
-    if (authFailed.delete(sid)) {
-      emit(ws, {type: 'auth_required', sessionId: sid});
+        if (!isRevising(sid))
+          turnText.set(sid, (turnText.get(sid) ?? '') + e.event.delta.text);
+        emitFiltered(ws, sid, e.event.delta.text);
+      }
+      break;
+    case 'tool_progress':
+      emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
+      break;
+    case 'tool_use_summary':
+      emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
+      break;
+    case 'result': {
+      const revising = endRevision(sid);
+      flushFenceState(ws, sid);
+      if (authFailed.delete(sid)) {
+        emit(ws, {type: 'auth_required', sessionId: sid});
+        break;
+      }
+      if (e.subtype === 'success') {
+      // Commit the resume point only on clean completion — aborted turns never reach here.
+        if (e.session_id)
+          storeSession(sid, e.session_id, pendingUuid.get(sid));
+        pendingUuid.delete(sid);
+        const noRevision = revising && NO_REVISION_RE.test((e.result ?? '').trim());
+        emit(ws, {
+          type: 'final', sessionId: sid, content: noRevision ? '' : (e.result || ''),
+          ...(revising ? {revision: noRevision ? 'kept' as const : 'replaced' as const} : {}),
+          ...(e.structured_output ? {structured_output: e.structured_output} : {}),
+          ...(verifier?.exhausted ? {unverified: true} : {}),
+          // Turn metrics the SDK already computed on the result message — surfaced for the
+          // latency benchmark harness (see docs/BENCHMARK.md). All optional; older runtimes omit them.
+          metrics: {
+            inputTokens: e.usage?.input_tokens ?? null,
+            outputTokens: e.usage?.output_tokens ?? null,
+            cacheReadTokens: e.usage?.cache_read_input_tokens ?? null,
+            cacheCreationTokens: e.usage?.cache_creation_input_tokens ?? null,
+            costUsd: e.total_cost_usd ?? null,
+            numTurns: e.num_turns ?? null,
+            durationMs: e.duration_ms ?? null,
+            durationApiMs: e.duration_api_ms ?? null,
+          },
+        });
+      } else
+        emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
       break;
     }
-    if (e.subtype === 'success') {
-      // Commit the resume point only on clean completion — aborted turns never reach here.
-      if (e.session_id)
-        storeSession(sid, e.session_id, pendingUuid.get(sid));
-      pendingUuid.delete(sid);
-      const noRevision = revising && NO_REVISION_RE.test((e.result ?? '').trim());
-      emit(ws, {
-        type: 'final', sessionId: sid, content: noRevision ? '' : (e.result || ''),
-        ...(revising ? {revision: noRevision ? 'kept' as const : 'replaced' as const} : {}),
-        ...(e.structured_output ? {structured_output: e.structured_output} : {}),
-        ...(verifier?.exhausted ? {unverified: true} : {}),
-        // Turn metrics the SDK already computed on the result message — surfaced for the
-        // latency benchmark harness (see docs/BENCHMARK.md). All optional; older runtimes omit them.
-        metrics: {
-          inputTokens: e.usage?.input_tokens ?? null,
-          outputTokens: e.usage?.output_tokens ?? null,
-          cacheReadTokens: e.usage?.cache_read_input_tokens ?? null,
-          cacheCreationTokens: e.usage?.cache_creation_input_tokens ?? null,
-          costUsd: e.total_cost_usd ?? null,
-          numTurns: e.num_turns ?? null,
-          durationMs: e.duration_ms ?? null,
-          durationApiMs: e.duration_api_ms ?? null,
-        },
-      });
-    } else
-      emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
-    break;
-  }
   }
 }
 
@@ -150,7 +152,9 @@ interface ActiveQuery {
 
 // Round-trips a tool call to the browser: emits input_request, resolves on the matching
 // input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
-function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any, timeoutMs?: number): Promise<any> {
+function awaitBrowserInput(
+  ws: WsSender, sid: string, active: ActiveQuery, toolName: string, input: any, timeoutMs?: number,
+): Promise<any> {
   if (active.abortController.signal.aborted)
     return Promise.reject(new Error('aborted'));
   const requestId = randomUUID();
@@ -302,9 +306,9 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     if (abortController.signal.aborted)
       return;
 
-    const userDir = data.apiKey ? await ensureUserDir(data.apiKey) : undefined;
-
     const apiUrl = apiUrlFromMcpUrl(mcpUrl);
+    const userDir = data.apiKey ? await userDirs.ensureDir(data.apiKey, apiUrl) : undefined;
+
     if (apiUrl && data.apiKey) {
       // Fire-and-forget: file sync writes to disk in userDir; the model reads from disk on demand.
       syncUserFiles(apiUrl, data.apiKey).catch((e: any) =>
@@ -336,7 +340,8 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       new GroundingGate(onGateBlock, () => turnText.get(sid) ?? '') : undefined;
 
     const rec = getSession(sid);
-    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,
+    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl,
+      data.systemPromptMode, userDir, data.model,
       rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate, viewToolsServer);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion') {
@@ -352,8 +357,10 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       }
       return {behavior: 'allow' as const, updatedInput: input};
     };
-    const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
-    const q = query({prompt: promptStream(message, images), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
+    const outputFormat = data.outputSchema ?
+      {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
+    const q = query({prompt: promptStream(message, images),
+      options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
     active.queryHandle = q;
     // Iterate by hand rather than `for await`, so a turn that goes silent is bounded. A wedged
     // CLI emits no events at all, which `for await` would wait on forever (see watchdog.ts).

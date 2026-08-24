@@ -5,11 +5,11 @@ import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {syncUserFiles} from './sync/orchestrator';
-import {ensureUserDir} from './user/user-dir';
+import {userDirs} from './user/user-dir';
 import {startWorkspaceSync} from './sync/workspace';
 import {buildHelpIndex} from './help-index';
-import {WORKSPACE} from './constants';
-import {rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+import {WORKSPACE, rewriteForDocker} from './constants';
+import {apiUrlFromMcpUrl} from './query-options';
 import {emit, handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
 import {setAuthPid} from './watchdog';
@@ -123,8 +123,10 @@ app.get('/ws', upgradeWebSocket(() => {
         return emit(sender, {type: 'error', sessionId: '', message: 'Invalid JSON'});
       }
 
-      if (data.apiKey)
-        ensureUserDir(data.apiKey).catch((e: any) => console.warn('user-dir pre-hook:', e.message));
+      if (data.apiKey && (data.type === 'user_message' || data.type === 'sync_user_files')) {
+        userDirs.ensureDir(data.apiKey, apiUrlFromMcpUrl(rewriteForDocker(data.mcpServerUrl || ''))).catch((e: any) =>
+          console.warn(`user-dir pre-hook (${data.type}, session ${data.sessionId ?? '?'}):`, e.message));
+      }
 
       if (data.type === 'abort') {
         handleAbort(sender, data);
@@ -225,8 +227,7 @@ function applyProviderConfig(): void {
       e['AWS_SESSION_TOKEN'] = e['awsSessionToken'];
     if (!e['awsBearerToken'] && !(e['awsAccessKeyId'] && e['awsSecretAccessKey']))
       problems.push('Bedrock selected but no credentials — set awsBearerToken, or awsAccessKeyId + awsSecretAccessKey');
-  }
-  else if (provider === 'Microsoft Foundry') {
+  } else if (provider === 'Microsoft Foundry') {
     e['CLAUDE_CODE_USE_FOUNDRY'] = '1';
     if (e['foundryResource'])
       e['ANTHROPIC_FOUNDRY_RESOURCE'] = e['foundryResource'];
@@ -234,10 +235,11 @@ function applyProviderConfig(): void {
       e['ANTHROPIC_FOUNDRY_API_KEY'] = e['foundryApiKey'];
     if (!e['foundryResource'])
       problems.push('Microsoft Foundry selected but foundryResource is missing — required to reach the endpoint');
-    if (!e['foundryApiKey'])
-      problems.push('Microsoft Foundry selected without foundryApiKey — falls back to Entra ID, which is not configured in this container');
-  }
-  else {
+    if (!e['foundryApiKey']) {
+      problems.push('Microsoft Foundry selected without foundryApiKey — falls back to Entra ID, ' +
+        'which is not configured in this container');
+    }
+  } else {
     if (e['apiKey'])
       e['ANTHROPIC_API_KEY'] = e['apiKey'];
   }
@@ -249,7 +251,7 @@ function applyProviderConfig(): void {
   if (e['haikuModel'])
     e['ANTHROPIC_DEFAULT_HAIKU_MODEL'] = e['haikuModel'];
 
-  for (var p of problems)
+  for (const p of problems)
     console.warn(`[provider-config] ${p}`);
 }
 
@@ -268,8 +270,10 @@ else if (hasApiKey)
   console.log('Claude auth: using ANTHROPIC_API_KEY');
 else if (hasSubscription)
   console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
-else
-  console.warn('Claude auth: no provider configured (no Bedrock/Foundry/ANTHROPIC_API_KEY and no ~/.claude/.credentials.json) — API calls will fail');
+else {
+  console.warn('Claude auth: no provider configured ' +
+    '(no Bedrock/Foundry/ANTHROPIC_API_KEY and no ~/.claude/.credentials.json) — API calls will fail');
+}
 
 // ---------------------------------------------------------------------------
 // Startup
@@ -286,6 +290,11 @@ try {
   buildHelpIndex(WORKSPACE);
 } catch (e: any) {
   console.warn('help-index: build failed:', e.message);
+}
+
+if (!process.env.DATAGROK_API_URL) {
+  console.warn('DATAGROK_API_URL is not set: ' +
+    'identity verification will trust the first client-supplied URL (dev only)');
 }
 
 console.log(`claude-runtime listening on :${PORT}`);

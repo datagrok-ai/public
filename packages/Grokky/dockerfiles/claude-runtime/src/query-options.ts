@@ -44,10 +44,6 @@ export function makeAccessGuard(userDir?: string): HookCallback {
 // URL plumbing — container-to-host rewrites and MCP request headers
 // ---------------------------------------------------------------------------
 
-export function rewriteForDocker(url: string): string {
-  return url.replace('//localhost', '//host.docker.internal');
-}
-
 function buildMcpHeaders(apiKey?: string, apiUrl?: string): Record<string, string> {
   const headers: Record<string, string> = {};
   if (apiKey) {
@@ -171,7 +167,8 @@ export function createBrowserExecServer(awaitInput: AwaitInput) {
         'never list entities as plain text, markdown links, or a fenced block.',
         {entities: z.array(entityRefSchema).describe(
           'Array of entity refs. Each entry: ' +
-          'type (file|script|query|connection|project|space|group|user) or the raw #type string from the MCP result — the tool normalizes it; ' +
+          'type (file|script|query|connection|project|space|group|user) or the raw #type string ' +
+          'from the MCP result — the tool normalizes it; ' +
           'name (for users, use friendlyName); ' +
           'id (required for all types except file); ' +
           'connector + path (required for files; connector is the connection name, e.g. "System:DemoFiles"); ' +
@@ -205,10 +202,10 @@ function zodShapeFromJsonSchema(schema: any): Record<string, z.ZodType> {
   for (const [key, p] of Object.entries<any>(schema?.properties ?? {})) {
     let t: z.ZodType =
       p?.type === 'string' ? (Array.isArray(p.enum) && p.enum.length ? z.enum(p.enum) : z.string()) :
-      p?.type === 'number' || p?.type === 'integer' ? z.number() :
-      p?.type === 'boolean' ? z.boolean() :
-      p?.type === 'array' ? z.array(z.any()) :
-      z.any();
+        p?.type === 'number' || p?.type === 'integer' ? z.number() :
+          p?.type === 'boolean' ? z.boolean() :
+            p?.type === 'array' ? z.array(z.any()) :
+              z.any();
     if (p?.description)
       t = t.describe(p.description);
     if (!required.has(key))
@@ -317,7 +314,8 @@ export function buildOptions(
       ...(stopHooks.length ? {Stop: [{hooks: stopHooks}]} : {}),
     },
     // Only the turn after an abort forks (off resumeAt); normal turns resume in place.
-    ...(resume ? {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
+    ...(resume ?
+      {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
   };
 }
 
@@ -354,7 +352,8 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   datagrok_platform: domainSummary('platform'),
   datagrok_exec: (_i) => 'Execute in browser',
   datagrok_verify: (i) => `Verify: ${i.description ?? 'action outcome'}`,
-  datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
+  datagrok_show_entities: (i) =>
+    `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
 };
 
 export function toolSummary(name: string, input: Record<string, unknown>): string {
