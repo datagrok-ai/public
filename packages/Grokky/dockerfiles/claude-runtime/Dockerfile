@@ -29,7 +29,7 @@ RUN groupadd -g 2001 grok && \
 # get CVE-flagged; npm 12+ ships a clean tree. npm is a runtime dependency here
 # (the agent shells out to it in the workspace), so it cannot be removed like elsewhere.
 RUN npm install -g npm@latest && \
-    npm install -g @anthropic-ai/claude-code && \
+    npm install -g @anthropic-ai/claude-code@2.1.231 && \
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" && \
     claude --version && \
     npm cache clean --force
