@@ -1,6 +1,14 @@
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../helpers/balloons';
 test.use(specTestOptions);
+
+// Every "no error balloon" claim below covers the whole action window, not the instant it is read:
+// openBioDataset settles for ~5 s and the Bio transforms wait on a re-dispatch, while a
+// plugin-raised balloon auto-hides at 5 s — so a balloon raised at readCsv or detector time is gone
+// before any count taken afterwards. The recorder is armed before the action and read after it, and
+// the probe is raised inside that same window, so an empty reading means nothing was raised rather
+// than nothing was watching.
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const MSA_PATH = 'System:AppData/Bio/tests/filter_MSA.csv';
 async function openBioDataset(page: import('@playwright/test').Page, path: string) {
@@ -51,19 +59,17 @@ async function waitForSequenceCellTypeBind(page: import('@playwright/test').Page
 }
 async function inspectMacroCol(page: import('@playwright/test').Page):
     Promise<{name: string | null, semType: string | null, units: string | null,
-             gridCellType: string | null, hasErrorBalloon: boolean}> {
+             gridCellType: string | null}> {
   return await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
     const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
     const gridCol = (grok.shell.tv as any).grid?.col?.(macro?.name);
-    const hasErrorBalloon = !!document.querySelector('.d4-balloon-error');
     return {
       name: macro?.name ?? null,
       semType: macro?.semType ?? null,
       units: macro?.getTag?.('units') ?? macro?.meta?.units ?? null,
       gridCellType: gridCol?.cellType ?? null,
-      hasErrorBalloon,
     };
   });
 }
@@ -72,6 +78,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await softStep('Open filter_HELM.csv — units=helm, bilnSequenceCellRenderer dispatch', async () => {
+    await armBalloonRecorderProved(page, 'bio renderer-dispatch HELM');
     await openBioDataset(page, HELM_PATH);
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
@@ -80,9 +87,10 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     expect(info.gridCellType).not.toBeNull();
     expect(BIO_SEQUENCE_CELL_TYPES, `cellType ${info.gridCellType} must be a Bio sequence-family value`)
       .toContain(info.gridCellType!);
-    expect(info.hasErrorBalloon).toBe(false);
+    await expectNoBalloonSinceArmed(page, 'opening the dataset and binding the sequence renderer');
   });
   await softStep('Open filter_MSA.csv — units=separator (separatorSequenceCellRenderer dispatch)', async () => {
+    await armBalloonRecorderProved(page, 'bio renderer-dispatch MSA');
     await openBioDataset(page, MSA_PATH);
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
@@ -90,7 +98,7 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     expect(info.units).toBe('separator');
     expect(info.gridCellType).not.toBeNull();
     expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
-    expect(info.hasErrorBalloon).toBe(false);
+    await expectNoBalloonSinceArmed(page, 'opening the dataset and binding the sequence renderer');
     const sepTag: string | null = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -156,6 +164,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     await page.locator('[name="dialog-Convert-Sequence-Notation"]').waitFor({timeout: 60_000});
   });
   await softStep('Set Convert-to=separator, Separator=-, click OK', async () => {
+    await armBalloonRecorderProved(page, 'bio renderer-dispatch convert');
     const dlg = page.locator('[name="dialog-Convert-Sequence-Notation"]');
     await dlg.locator('[name="input-host-Convert-to"] select').selectOption('separator');
     await dlg.locator('[name="input-host-Separator"] select').selectOption('-');
@@ -208,8 +217,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     expect(newSeparator!.gridCellType,
       'GROK-12164: new SEPARATOR column must not retain HELM dispatch (cellType !== "helm")')
       .not.toBe('helm');
-    const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
-    expect(hasErrorBalloon).toBe(false);
+    await expectNoBalloonSinceArmed(page, 'the renderer-dispatch step');
   });
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
@@ -228,6 +236,7 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
     expect(info.units).toBe('separator');
   });
   await softStep('Bio > Transform > Split to Monomers... — OK adds Monomer columns', async () => {
+    await armBalloonRecorderProved(page, 'bio renderer-dispatch split');
     const beforeMonCount: number = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -278,8 +287,7 @@ test('Bio | Rendering — Split to Monomers produces Monomer columns (monomerCel
       expect(m.semType, `column ${m.name} should be semType='Monomer'`).toBe('Monomer');
     const anyMonomerDispatched = monomerColInfo.some((m) => m.gridCellType === 'Monomer');
     expect(anyMonomerDispatched, 'at least one Monomer column should have grid.cellType=Monomer').toBe(true);
-    const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
-    expect(hasErrorBalloon).toBe(false);
+    await expectNoBalloonSinceArmed(page, 'the renderer-dispatch step');
   });
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
@@ -300,6 +308,7 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     expect(BIO_SEQUENCE_CELL_TYPES).toContain(info.gridCellType!);
   });
   await softStep('setTag units=custom + detectSemanticTypes — re-dispatches to customSequenceCellRenderer', async () => {
+    await armBalloonRecorderProved(page, 'bio renderer-dispatch custom');
     const colName: string | null = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
@@ -331,8 +340,7 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     expect(BIO_SEQUENCE_CELL_TYPES,
       `cellType ${result.postCellType} must be in bio sequence family after units=custom rebind`)
       .toContain(result.postCellType!);
-    const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
-    expect(hasErrorBalloon).toBe(false);
+    await expectNoBalloonSinceArmed(page, 'the renderer-dispatch step');
   });
   if (stepErrors.length > 0) {
     const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');

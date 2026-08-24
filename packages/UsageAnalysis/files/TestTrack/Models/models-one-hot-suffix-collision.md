@@ -8,6 +8,18 @@ realizes: [views.models, eda.model.linear-regression, ml.menu.models.train-model
 realized_as:
   - models-one-hot-suffix-collision-spec.ts
 related_bugs: [GROK-846]
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-24-models-one-hot-suffix-collision-instrumented
+    timestamp: 2026-08-23T21:12:09Z
+    spec_runs:
+      - spec: models-one-hot-suffix-collision-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 21
+        failure_keys: []
+        run_mode: headless-cold
 ---
 
 # Models — One-hot suffix collision (edge: `<name>=<category>` namespacing)

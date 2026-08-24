@@ -1,5 +1,7 @@
 ﻿import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {armBalloonRecorder, expectNoBalloonSinceArmed, expectNoErrorBalloon, proveBalloonChannel}
+  from '../helpers/balloons';
 
 test.use(specTestOptions);
 
@@ -152,8 +154,11 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
         const noModelsMsg = Array.from(root?.querySelectorAll('span') ?? [])
           .find((s) => /No models reg/i.test(s.textContent || ''))?.textContent ?? null;
 
-        const warnings = (((window as any).grok.shell.warnings) ?? []).slice(-10)
-          .map((w: any) => typeof w === 'string' ? w.slice(0, 200) : JSON.stringify(w).slice(0, 200));
+        // Diagnostic only (this runs while building a failure message). Read the balloons
+        // off the DOM — grok.shell.warnings does not exist (js-api/src/shell.ts:176), so the
+        // previous read always contributed an empty list to the report.
+        const warnings = Array.from(document.querySelectorAll('.d4-balloon'))
+          .slice(-10).map((b) => (b.textContent || '').trim().slice(0, 200));
         return {insights, hosts, noModelsMsg, warnings};
       });
       throw new Error(`Model Engine select did not mount within 180s. ` +
@@ -360,23 +365,20 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
 
   await softStep('3.3 Click Run Evaluation — re-runs on CSV trainedOn', async () => {
 
-    const warnBefore = await page.evaluate(() =>
-      ((window as any).grok.shell.warnings ?? []).length);
+    // The channel is proved BEFORE the action here, which is the safe order: the click is
+    // inside this step, so the probe cannot wait out a balloon the click itself raises.
+    await proveBalloonChannel(page, 'run-evaluation');
+
     await page.locator('[name="button-Run-Evaluation"]').click();
     await page.waitForTimeout(3_000);
-    const evidence = await page.evaluate((prevCount: number) => {
-      const w: any[] = (window as any).grok.shell.warnings ?? [];
-      const errors = w.slice(prevCount).filter((x) =>
-        /error|fail|exception/i.test(JSON.stringify(x)));
+    await expectNoErrorBalloon(page, 'Run Evaluation must complete without error balloons');
+    const evidence = await page.evaluate(() => {
       const panel = document.querySelector('.grok-prop-panel') ||
         document.querySelector('.d4-accordion');
       const widgetCanvases = panel?.querySelectorAll('canvas').length ?? 0;
       const widgetImgs = panel?.querySelectorAll('img').length ?? 0;
-      return {errors, widgetCanvases, widgetImgs};
-    }, warnBefore);
-    expect(evidence.errors.length,
-      `Run Evaluation must complete without error balloons. Errors seen: ${JSON.stringify(evidence.errors)}`)
-      .toBe(0);
+      return {widgetCanvases, widgetImgs};
+    });
     if (evidence.widgetCanvases === 0 && evidence.widgetImgs === 0) {
       console.warn(`Run Evaluation completed without errors but no canvas/img ` +
         `widget surfaced in the property panel. Stored-metrics-only render is ` +
@@ -499,19 +501,31 @@ test('Models lifecycle on CSV-backed trainedOn (trained_on_csv_table)', async ({
 
   await softStep(`6.2 Confirm delete — ${MODEL_NAME} removed via dapi.ml.delete`, async () => {
     const dlg = page.locator('.d4-dialog').filter({hasText: /delete|are you sure|remove/i }).first();
-    const balloonsBefore = await page.locator('.grok-balloon-error, .d4-balloon-error').count();
+    // The claim covers the whole delete, which outlives the 5 s auto-hide of a plugin-raised
+    // balloon, so the recorder is armed and read back rather than counted at one instant.
+    await armBalloonRecorder(page);
     const ok = dlg.locator('[name="button-OK"]').first();
     if (await ok.count() > 0)
       await ok.click();
     else
       await dlg.locator('button:has-text("DELETE"), button:has-text("Delete"), button:has-text("OK")')
         .first().click();
-    await dlg.waitFor({state: 'detached', timeout: 15_000});
+    try {
+      await dlg.waitFor({state: 'detached', timeout: 15_000});
+    }
+    catch (stuck) {
+      // Modal.confirmDelete closes only after `await action()` returns, and on a throw raises a
+      // Dart-side Balloon.error, which is sticky (dialog.dart:208-223). So a dialog still standing
+      // here has two causes and this read separates them: an error balloon names the exception,
+      // and its absence says the delete future hung rather than threw. Diagnostic only — it runs
+      // on the failing path, costs nothing on a green run, and the failure is rethrown unchanged.
+      const standing = await page.evaluate(() => Array.from(document.querySelectorAll('.d4-balloon.error'))
+        .map((b) => String(b.textContent || '').slice(0, 300)));
+      console.log(`[delete-dialog-stuck] standing error balloons = ${JSON.stringify(standing)}`);
+      throw stuck;
+    }
     await page.waitForTimeout(1_500);
-    const balloonsAfter = await page.locator('.grok-balloon-error, .d4-balloon-error').count();
-    expect(balloonsAfter,
-      `No new error balloon should surface during delete (before=${balloonsBefore}, after=${balloonsAfter}).`)
-      .toBeLessThanOrEqual(balloonsBefore);
+    await expectNoBalloonSinceArmed(page, 'no error balloon may surface while the model is deleted');
   });
 
   await softStep('6.3 Cleanup verification — model absent from dapi.ml + /models', async () => {

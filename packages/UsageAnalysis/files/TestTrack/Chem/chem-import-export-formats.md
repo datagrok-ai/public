@@ -255,13 +255,13 @@ scope_reductions:
 gate_verdicts:
   b:
     verdict: PASS
-    cycle_id: direct-gate-b-2026-08-22-chem-import-export-formats-r9
-    timestamp: 2026-08-22T15:05:00Z
+    cycle_id: direct-gate-b-2026-08-23-chem-import-export-formats-proved
+    timestamp: 2026-08-23T18:20:00Z
     spec_runs:
       - spec: chem-import-export-formats-spec.ts
         result: passed
         attempts: 3
-        duration_seconds: 55
+        duration_seconds: 52
         run_mode: headless-cold
         failure_keys: []
   a:

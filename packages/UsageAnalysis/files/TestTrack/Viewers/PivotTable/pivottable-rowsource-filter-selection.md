@@ -62,6 +62,18 @@ expected_results:
       key) with df.filter untouched and no warning, while the pivot config
       (Group by DIS_POP, Aggregate avg(AGE)) survives the rebuild (asserted via
       durable caption text).
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-23-pivottable-rowsource-filter-selection-proved
+    timestamp: 2026-08-23T21:00:00Z
+    spec_runs:
+      - spec: pivottable-rowsource-filter-selection-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 18
+        run_mode: headless-cold
+        failure_keys: []
 ---
 
 # Pivot Table — Row Source, filter and selection links

@@ -109,6 +109,18 @@ expected_results:
       render fault).
 realized_as:
   - boxplot-pointer-select-spec.ts
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-23-boxplot-pointer-select-proved
+    timestamp: 2026-08-23T20:47:00Z
+    spec_runs:
+      - spec: boxplot-pointer-select-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 32
+        run_mode: headless-cold
+        failure_keys: []
 ---
 
 # Box Plot — Pointer Selection and Highlight

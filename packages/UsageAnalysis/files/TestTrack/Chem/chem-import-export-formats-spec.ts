@@ -4,6 +4,7 @@ realizes: []
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {armBalloonRecorderProved, readRecordedBalloons, expectNoBalloonSinceArmed} from '../helpers/balloons';
 
 declare const grok: any;
 declare const DG: any;
@@ -250,40 +251,6 @@ function expectStructureInk(r: {molecule: ColumnColourReading; control: ColumnCo
     .toBe(0);
 }
 
-// Balloons auto-hide after roughly 5 s, so a count taken after an unbounded wait reads empty
-// whether or not one appeared. These two record additions as they happen and classify them at
-// read time — the class is read off the live node, so a balloon whose class is set after
-// insertion is still classified correctly.
-async function installBalloonRecorder(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const w = window as any;
-    if (w.__balloonObs) w.__balloonObs.disconnect();
-    w.__balloonNodes = [];
-    w.__balloonObs = new MutationObserver((muts: MutationRecord[]) => {
-      for (const m of muts)
-        for (const n of Array.from(m.addedNodes)) {
-          if (n.nodeType !== 1) continue;
-          const el = n as Element;
-          if (el.parentNode === document.body || String(el.className).indexOf('d4-balloon') >= 0)
-            w.__balloonNodes.push(el);
-        }
-    });
-    w.__balloonObs.observe(document.body, {childList: true, subtree: true});
-  });
-}
-
-async function readRecordedBalloons(page: Page): Promise<Array<{cls: string; text: string}>> {
-  return await page.evaluate(() => {
-    const nodes = ((window as any).__balloonNodes ?? []) as Element[];
-    const out: Array<{cls: string; text: string}> = [];
-    for (const n of nodes) {
-      const b = n.classList && n.classList.contains('d4-balloon') ? n : n.querySelector('.d4-balloon');
-      // textContent, not innerText: a balloon that already auto-hid is detached and has no layout.
-      if (b) out.push({cls: String(b.className), text: String(b.textContent || '').slice(0, 200)});
-    }
-    return out;
-  });
-}
 
 // The zero-assertions consume the TOTAL captured count minus the named exclusions below; the
 // rdkit patterns only classify what survived exclusion, so an error outside them is not invisible
@@ -639,29 +606,13 @@ test('Chem: Import/Export Formats (SDF/mol import, Save as SDF round-trip, InChI
   await softStep('Scenario 2 Step 3: confirm the export (OK) — the dialog closes, the SDF artefact is written, and no error notification appears', async () => {
     const dlg = page.locator('.d4-dialog:has([name="input-host-Molecules"])');
     // There is no grok.shell.warnings collection — shell.warning() only raises a balloon
-    // (js-api/src/shell.ts:176), so the earlier read of that property could never be
-    // anything but absent. Warnings are observable as .d4-balloon.warning, and the channel
-    // is proved live here before it is used as evidence of absence: raise a known warning,
-    // watch it appear, wait it out, and only then assert that the export raises none.
-    // The probe proves the recorder as well as the channel: the same recorder that reports
-    // "no balloon" after the export must be seen reporting one here first.
-    await installBalloonRecorder(page);
-    const warnBalloon = page.locator('.d4-balloon.warning');
-    await page.evaluate(() => grok.shell.warning('export-probe'));
-    await expect(warnBalloon.first(),
-      'the warning-balloon channel must be observable, or "no warning was raised" proves nothing')
-      .toBeVisible({timeout: 10_000});
-    const probed = await readRecordedBalloons(page);
-    console.log(`[balloon-probe] recorded=${JSON.stringify(probed)}`);
-    expect(probed.filter((b) => /warning/.test(b.cls)).length,
-      'the balloon recorder must catch the probe warning, or its silence after the export proves nothing')
-      .toBeGreaterThan(0);
-    await expect(warnBalloon,
-      'the probe warning must clear before the export, so any balloon seen afterwards belongs to the export')
-      .toHaveCount(0, {timeout: 30_000});
-
-    // Re-armed here, so everything it holds afterwards belongs to the export itself.
-    await installBalloonRecorder(page);
+    // (js-api/src/shell.ts:176), so the earlier read of that property could never be anything
+    // but absent. The probe raises a warning carrying its own token, waits for THAT balloon
+    // through a DOM subscription and dismisses it with a click rather than waiting out the 5 s
+    // auto-hide. It is raised INSIDE the window the export is judged in: arming disconnects the
+    // previous observer, so a proof bound to an earlier one never reaches this claim. The probe's
+    // own balloon carries a marker the absence reads filter out.
+    await armBalloonRecorderProved(page, 'chem-import-export-formats export');
 
     // The exporter's last act is DG.Utils.download (Chem/src/utils/sdf-utils.ts:154),
     // so the artefact leaves through the browser download channel. Reading it here is
@@ -681,14 +632,9 @@ test('Chem: Import/Export Formats (SDF/mol import, Save as SDF round-trip, InChI
     expect(exportedSdf.length, 'the exported SDF file must not be empty').toBeGreaterThan(0);
     expect(dollar, 'the exported SDF file must carry one "$$$$" record per exported row').toBe(exportedFromRows);
 
-    const raised = await readRecordedBalloons(page);
-    const errBalloons = raised.filter((b) => /\berror\b/.test(b.cls));
-    const warnBalloons = raised.filter((b) => /\bwarning\b/.test(b.cls));
-    console.log(`[export-balloons] recorded=${raised.length} error=${errBalloons.length} warning=${warnBalloons.length}`);
-    expect(errBalloons.length,
-      `confirming Save as SDF must not raise an error balloon; first: ${JSON.stringify(errBalloons[0] ?? null)}`).toBe(0);
-    expect(warnBalloons.length,
-      `Save as SDF export must not raise a warning balloon; first: ${JSON.stringify(warnBalloons[0] ?? null)}`).toBe(0);
+    console.log(`[export-balloons] recorded=${JSON.stringify(await readRecordedBalloons(page))}`);
+    await expectNoBalloonSinceArmed(page, 'confirming Save as SDF', /error/);
+    await expectNoBalloonSinceArmed(page, 'confirming Save as SDF', /warning/);
   });
 
   await softStep('Scenario 2 Step 4: round-trip — re-importing the exported SDF file reproduces the source row count, and three spot-check rows (first, middle, last) survive as matching canonical SMILES; the 997 rows between them are not read (SR-09)', async () => {

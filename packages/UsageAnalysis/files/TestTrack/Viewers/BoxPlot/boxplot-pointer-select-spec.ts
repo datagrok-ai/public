@@ -4,6 +4,7 @@ realizes: [boxplot.cp.pointer-select-highlight]
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../../helpers/balloons';
 
 declare const grok: any;
 
@@ -35,7 +36,8 @@ async function selectionCount(page: Page): Promise<number> {
 
 async function clearSelection(page: Page): Promise<void> {
   await page.evaluate(() => grok.shell.t.selection.setAll(false));
-  await v.waitForViewerRendered(page, 'Box plot', 300);
+
+  await page.waitForTimeout(300);
 }
 
 async function raceCatCount(page: Page, cat: string): Promise<number> {
@@ -319,7 +321,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.mouse.move(r.x + r.w * 0.62, r.y + r.h * 0.55);
 
-    await v.waitForCanvasQuiet(page, 'Box plot', {timeoutMs: 700, optional: true});
+    await page.waitForTimeout(700);
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
 
     expect(deltaPx).toBeGreaterThanOrEqual(0);
@@ -349,7 +351,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     });
     await page.mouse.move(barRect.x + barRect.w * 0.3, barRect.y + barRect.h * 0.6);
 
-    await v.waitForCanvasQuiet(page, 'Box plot', {timeoutMs: 900, optional: true});
+    await page.waitForTimeout(900);
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
     expect(deltaPx).toBeGreaterThanOrEqual(0);
     expect(deltaPx).toBeLessThan(300);
@@ -376,7 +378,12 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await v.waitForViewerRendered(page, 'Box plot', 700);
     const selForDelete = await selectionCount(page);
     expect(selForDelete).toBeGreaterThan(0);
-    const warnBefore = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
+    // The probe is raised INSIDE the window this arm opens, so an empty reading below means nothing
+    // was raised rather than nothing was watching. grok.shell.warnings does not exist (js-api/src/shell.ts:176 exposes only
+    // warning()), so a before/after count on it is not an alternative — it compares undefined with
+    // undefined. The probe's own balloon carries a marker the absence read filters out.
+    await armBalloonRecorderProved(page, 'boxplot row-deletion');
+
     const rowsBefore = await page.evaluate(() => grok.shell.t.rowCount);
 
     await page.evaluate(() => {
@@ -389,10 +396,9 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const rowsAfter = await page.evaluate(() => grok.shell.t.rowCount);
     expect(rowsAfter).toBe(rowsBefore - selForDelete);
 
-    const warnAfter = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
     const px = await v.countCanvasPixels(page, 'Box plot', {canvasSelector: 'canvas[name="canvas"]'});
     expect(px.total).toBeGreaterThan(0);
-    expect(warnAfter).toBe(warnBefore);
+    await expectNoBalloonSinceArmed(page, 'deleting the selected rows', /warning/);
     expect(await bpProp(page, 'markerColorColumnName')).toBe('RACE');
   });
 

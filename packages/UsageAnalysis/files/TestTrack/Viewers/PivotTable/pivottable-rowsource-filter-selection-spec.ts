@@ -4,6 +4,7 @@ realizes: [pivottable.cp.rowsource-filter-selection-links, pivottable.int.filter
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../../helpers/balloons';
 
 declare const grok: any;
 
@@ -303,7 +304,12 @@ test('Pivot Table — Row Source, filter and selection links', async ({page}) =>
     expect(await pivotRowCaptions(page, 'Group by')).toEqual(['DIS_POP']);
     expect(await pivotRowCaptions(page, 'Aggregate')).toEqual(['avg(AGE)']);
     const filterBefore = await srcFilterCount(page);
-    const warningsBefore = await page.evaluate(() => (grok.shell.warnings || []).length);
+    // grok.shell.warnings does not exist (js-api/src/shell.ts:176 exposes only warning()), so a
+    // before/after count on it is not an alternative — it compares undefined with undefined. The
+    // probe is raised INSIDE the window this arm opens, so an empty reading afterwards means the
+    // click raised nothing rather than that nothing was watching; the probe's own balloon carries a
+    // marker the absence read filters out.
+    await armBalloonRecorderProved(page, 'pivottable ctrl-click');
 
     await ctrlClickAggregateCell(page, 0);
 
@@ -315,8 +321,7 @@ test('Pivot Table — Row Source, filter and selection links', async ({page}) =>
       for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) selected.add(disPop.get(i));
       return {sel: df.selection.trueCount, keys: [...selected], filt: df.filter.trueCount};
     }), (s) => s.sel > 0 && s.keys.length === 1, 3000, 150);
-    const warningsAfter = await page.evaluate(() => (grok.shell.warnings || []).length);
-    expect(warningsAfter).toBe(warningsBefore);
+    await expectNoBalloonSinceArmed(page, 'a Ctrl+click on an aggregate row', /warning/);
     expect(after.sel).toBeGreaterThan(0);          
     expect(after.keys.length).toBe(1);             
     expect(after.sel).toBe(await groupSourceCount(page, after.keys[0]));  
@@ -338,7 +343,7 @@ test('Pivot Table — Row Source, filter and selection links', async ({page}) =>
     expect(await pivotRowCaptions(page, 'Group by')).toEqual(['DIS_POP']);
     expect(await pivotRowCaptions(page, 'Aggregate')).toEqual(['avg(AGE)']);
     const filterBefore = await srcFilterCount(page);
-    const warningsBefore = await page.evaluate(() => (grok.shell.warnings || []).length);
+    await armBalloonRecorderProved(page, 'pivottable ctrl-click');
 
     await ctrlClickAggregateCell(page, 1);
     const after = await v.pollValue(() => page.evaluate(() => {
@@ -348,8 +353,7 @@ test('Pivot Table — Row Source, filter and selection links', async ({page}) =>
       for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) selected.add(disPop.get(i));
       return {sel: df.selection.trueCount, keys: [...selected], filt: df.filter.trueCount};
     }), (s) => s.sel > 0 && s.keys.length === 1, 3000, 150);
-    const warningsAfter = await page.evaluate(() => (grok.shell.warnings || []).length);
-    expect(warningsAfter).toBe(warningsBefore);
+    await expectNoBalloonSinceArmed(page, 'a Ctrl+click on an aggregate row', /warning/);
     expect(after.sel).toBeGreaterThan(0);          
     expect(after.keys.length).toBe(1);             
     expect(after.sel).toBe(await groupSourceCount(page, after.keys[0]));  

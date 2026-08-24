@@ -8,6 +8,18 @@ realizes: [views.models, eda.model.linear-regression, ml.menu.models.train-model
 realized_as:
   - models-lifecycle-csv-table-spec.ts
 related_bugs: []
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-24-models-lifecycle-csv-table-instrumented
+    timestamp: 2026-08-24T00:10:00Z
+    spec_runs:
+      - spec: models-lifecycle-csv-table-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 43
+        failure_keys: []
+        run_mode: headless-cold
 ---
 
 # Models — CSV-backed model: train, apply, evaluate, edit, share & delete

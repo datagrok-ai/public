@@ -1,5 +1,6 @@
 ﻿import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {expectNoErrorBalloon, proveBalloonChannel} from '../helpers/balloons';
 
 test.use(specTestOptions);
 
@@ -238,11 +239,10 @@ test('GROK-3525 regression: target nulls surface in validator tip + Ignore missi
       const btn = document.querySelector('[name="button-Save"]') as HTMLElement | null;
       return !!btn && !btn.className.includes('d4-disabled');
     }, null, {timeout: 180_000});
-    const errCount = await page.evaluate(() => {
-      const w: any[] = (window as any).grok.shell.warnings ?? [];
-      return w.filter((x) => /error|fail/i.test(JSON.stringify(x))).length;
-    });
-    expect(errCount).toBe(0);
+    // Read the absence first, while any product balloon is still on screen; the probe
+    // below then proves the channel could have shown one.
+    await expectNoErrorBalloon(page, 'enabling the ignore-column option must not raise an error balloon');
+    await proveBalloonChannel(page, 'grok-3525');
   });
 
   await softStep('2.7 Post-ignore tip no longer cites Y as a missing-values column', async () => {

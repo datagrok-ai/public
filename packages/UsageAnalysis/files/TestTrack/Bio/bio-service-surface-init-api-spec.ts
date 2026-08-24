@@ -8,6 +8,13 @@
 --- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {armBalloonRecorderProved, expectNoBalloonSinceArmed} from '../helpers/balloons';
+
+// Each step below resolves Bio services and loads datasets, which takes far longer than the 5 s
+// after which a plugin-raised balloon auto-hides — so the "no error balloon" claim is about the
+// step's window and is read from the recorder armed at its start, never from a count taken at the
+// end. The probe is raised inside that same window, so an empty reading means nothing was raised
+// rather than nothing was watching.
 test.use(specTestOptions);
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const FASTA_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
@@ -38,9 +45,10 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
   try {
 
     await softStep('S1: Bio:getSeqHelper + Bio:getMonomerLibHelper + Bio:getBioLib resolve after init', async () => {
+      await armBalloonRecorderProved(page, 'bio service-surface S1');
       const out = await page.evaluate(async () => {
         const g = (window as any).grok;
-        const result: any = {seqHelper: null, monomerLibHelper: null, bioLib: null, errBalloons: 0};
+        const result: any = {seqHelper: null, monomerLibHelper: null, bioLib: null};
 
         async function tryCall(candidates: string[], params: Record<string, unknown>): Promise<{ok: boolean; value: any; name: string | null; err: string | null}> {
           let lastErr: string | null = null;
@@ -98,7 +106,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           result.bioLib = {err: r3.err};
         }
 
-        result.errBalloons = document.querySelectorAll('.d4-balloon-error').length;
         return result;
       });
 
@@ -112,13 +119,14 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
       expect(out.bioLib?.resolved, `getBioLib err: ${out.bioLib?.err ?? ''}`).toBe(true);
       expect(out.bioLib?.methods).toContain('getMonomer');
 
-      expect(out.errBalloons, 'error balloon count after S1').toBe(0);
+      await expectNoBalloonSinceArmed(page, 'resolving the Bio service surface in S1');
     });
 
     await softStep('S2: Bio:getSeqHandler returns notation-correct per-column handlers (HELM + FASTA distinct)', async () => {
+      await armBalloonRecorderProved(page, 'bio service-surface S2');
       const out = await page.evaluate(async ([helmPath, fastaPath]) => {
         const g = (window as any).grok;
-        const result: any = {helm: null, fasta: null, distinctInstances: null, errBalloons: 0};
+        const result: any = {helm: null, fasta: null, distinctInstances: null};
 
         const dfHelm = await g.dapi.files.readCsv(helmPath);
         const tvHelm = g.shell.addTableView(dfHelm);
@@ -194,7 +202,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
           const fh = await g.functions.call('Bio:getSeqHandler', {sequence: fastaCol});
           result.distinctInstances = hh !== fh;
         }
-        result.errBalloons = document.querySelectorAll('.d4-balloon-error').length;
         return result;
       }, [HELM_PATH, FASTA_PATH]);
 
@@ -209,13 +216,14 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
 
       expect(out.distinctInstances, 'handlers should be distinct instances per column').toBe(true);
 
-      expect(out.errBalloons, 'error balloon count after S2').toBe(0);
+      await expectNoBalloonSinceArmed(page, 'resolving per-column sequence handlers in S2');
     });
 
     await softStep('S3: Bio:getHelmMonomers returns the HELM-column monomer list (set consistency)', async () => {
+      await armBalloonRecorderProved(page, 'bio service-surface S3');
       const out = await page.evaluate(async (helmPath) => {
         const g = (window as any).grok;
-        const result: any = {monomers: null, columnSymbols: null, errBalloons: 0};
+        const result: any = {monomers: null, columnSymbols: null};
 
         let dfHelm: any = null;
         for (const tv of (g.shell.tableViews ?? [])) {
@@ -307,7 +315,6 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         }
         result.columnSymbols.missingInReturned = missingInReturned;
         result.columnSymbols.extraInReturned = extraInReturned.slice(0, 20);
-        result.errBalloons = document.querySelectorAll('.d4-balloon-error').length;
         return result;
       }, HELM_PATH);
 
@@ -321,7 +328,7 @@ test('Bio service-surface init — getSeqHelper / getMonomerLibHelper / getBioLi
         `column ⊆ returned violated; column-symbols absent from returned list: ${JSON.stringify(out.columnSymbols?.missingInReturned)}`,
       ).toEqual([]);
 
-      expect(out.errBalloons, 'error balloon count after S3').toBe(0);
+      await expectNoBalloonSinceArmed(page, 'listing HELM-column monomers in S3');
     });
   } finally {
 

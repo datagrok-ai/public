@@ -25,13 +25,13 @@ gate_verdicts:
     review_round: 1
   b:
     verdict: PASS
-    cycle_id: direct-gate-b-2026-08-22-chem-molecule-cell-actions-r4
-    timestamp: 2026-08-22T12:41:00Z
+    cycle_id: direct-gate-b-2026-08-23-chem-molecule-cell-actions-helper
+    timestamp: 2026-08-23T19:27:10Z
     spec_runs:
       - spec: chem-molecule-cell-actions-spec.ts
         result: passed
         attempts: 3
-        duration_seconds: 32
+        duration_seconds: 36
         failure_keys: []
         run_mode: headless-cold
   e:

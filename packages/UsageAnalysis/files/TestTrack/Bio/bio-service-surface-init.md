@@ -26,13 +26,14 @@ gate_verdicts:
     failure_keys: []
   b:
     verdict: PASS
-    cycle_id: 2026-06-01-bio-migrate-02
-    timestamp: 2026-06-02T08:30:00Z
+    cycle_id: direct-gate-b-2026-08-23-bio-service-surface-init-proved
+    timestamp: 2026-08-23T20:42:30Z
     spec_runs:
       - spec: bio-service-surface-init-api-spec.ts
         result: passed
         attempts: 3
-        duration_seconds: 61
+        duration_seconds: 26
+        run_mode: headless-cold
         failure_keys: []
   a:
     verdict: PASS

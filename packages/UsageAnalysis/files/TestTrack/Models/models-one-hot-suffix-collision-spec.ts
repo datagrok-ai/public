@@ -1,5 +1,6 @@
 ﻿import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {expectNoErrorBalloon, proveBalloonChannel} from '../helpers/balloons';
 
 test.use(specTestOptions);
 
@@ -158,11 +159,10 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       return !!btn && !btn.className.includes('d4-disabled');
     }, null, {timeout: 180_000});
 
-    const errCount = await page.evaluate(() => {
-      const w: any[] = (window as any).grok.shell.warnings ?? [];
-      return w.filter((x: any) => /error|fail/i.test(JSON.stringify(x))).length;
-    });
-    expect(errCount).toBe(0);
+    // Absence is read first, while any product balloon is still up; the probe below then
+    // proves the channel could have shown one.
+    await expectNoErrorBalloon(page, 'training the one-hot model must not raise an error balloon');
+    await proveBalloonChannel(page, 'one-hot train');
   });
 
   await softStep(`5. Save the model as ${MODEL_NAME}`, async () => {
@@ -291,8 +291,21 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       '[name="dialog-Apply-predictive-model"] [name="input-host-Inputs"]'))
       .toContainText('(2/2)', {timeout: 10_000});
     await page.locator('[name="dialog-Apply-predictive-model"] [name="button-OK"]').click();
-    await page.locator('[name="dialog-Apply-predictive-model"]')
-      .waitFor({state: 'detached', timeout: 30_000});
+    try {
+      await page.locator('[name="dialog-Apply-predictive-model"]')
+        .waitFor({state: 'detached', timeout: 30_000});
+    }
+    catch (stuck) {
+      // A confirm-style dialog closes only after its action future returns, and on a throw the
+      // client raises a sticky Dart-side Balloon.error (dialog.dart:195-206). So a dialog still
+      // standing here has two causes and this read separates them: an error balloon names the
+      // exception, and its absence says the apply future hung rather than threw. Diagnostic only —
+      // it runs on the failing path, costs nothing on a green run, and rethrows unchanged.
+      const standing = await page.evaluate(() => Array.from(document.querySelectorAll('.d4-balloon.error'))
+        .map((b) => String(b.textContent || '').slice(0, 300)));
+      console.log(`[apply-dialog-stuck] standing error balloons = ${JSON.stringify(standing)}`);
+      throw stuck;
+    }
   });
 
   await softStep('9. Apply reconstruction — prediction column appended to OneHotSuffixApply', async () => {
@@ -326,11 +339,9 @@ test('One-hot suffix collision: namespaced <name>=<category> columns survive tra
       console.warn(`Apply: ${result.newCols.length} new column(s) appended ` +
         `(${JSON.stringify(result.newCols)}) but none carry Tags.PredictiveModel.`);
     }
-    const errCount = await page.evaluate(() => {
-      const w: any[] = (window as any).grok.shell.warnings ?? [];
-      return w.filter((x: any) => /error|fail/i.test(JSON.stringify(x))).length;
-    });
-    expect(errCount).toBe(0);
+    // Absence first, then the probe — same order as the training step above.
+    await expectNoErrorBalloon(page, 'applying the one-hot model must not raise an error balloon');
+    await proveBalloonChannel(page, 'one-hot apply');
   });
 
   await softStep('10. Teardown — delete OneHotSuffixCollision_test from the server', async () => {

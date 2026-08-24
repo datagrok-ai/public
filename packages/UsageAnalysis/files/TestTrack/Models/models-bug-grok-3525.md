@@ -8,6 +8,18 @@ realizes: [ml.menu.models.train-model]
 realized_as:
   - models-bug-grok-3525-spec.ts
 related_bugs: [GROK-3525]
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-23-models-bug-grok-3525-helper
+    timestamp: 2026-08-23T19:57:10Z
+    spec_runs:
+      - spec: models-bug-grok-3525-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 23
+        failure_keys: []
+        run_mode: headless-cold
 ---
 
 # Models — GROK-3525 regression: target nulls blocked by validation

@@ -4,6 +4,7 @@ realizes: [chem.cp.molecule-cell-actions]
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {armBalloonRecorder, readRecordedBalloons} from '../helpers/balloons';
 
 declare const grok: any;
 declare const DG: any;
@@ -231,37 +232,28 @@ async function readClipboardImageBytes(page: Page): Promise<number> {
   });
 }
 
-// technical: installed once, before any action — balloons auto-hide, see chem.md
-async function installBalloonRecorder(page: Page): Promise<void> {
+// technical: installed once, before any action — grok.shell.info runs after writeText, so a
+// console error recorded before it means the copy handler threw
+async function installConsoleErrorRecorder(page: Page): Promise<void> {
   await page.evaluate(() => {
     const w = window as any;
-    if (w.__balloonLog) return;
-    w.__balloonLog = [];
+    if (w.__consoleErrLog) return;
     w.__consoleErrLog = [];
     const origErr = console.error;
     console.error = function (...args: any[]) {
       w.__consoleErrLog.push({t: Date.now(), text: args.map((a: any) => String(a)).join(' ')});
       origErr.apply(console, args as any);
     };
-    new MutationObserver((muts: any) => {
-      for (const m of muts) for (const n of m.addedNodes) {
-        if (n.nodeType !== 1) continue;
-        const el = n as Element;
-        const hit = (el.classList?.contains('d4-balloon') ? el : el.querySelector?.('.d4-balloon')) as Element | null;
-        if (hit) w.__balloonLog.push({t: Date.now(), text: (hit.textContent || '').trim()});
-      }
-    }).observe(document.body, {childList: true, subtree: true});
   });
 }
 
-async function readActionTrace(page: Page, sinceMs: number): Promise<{balloons: any[]; errors: any[]}> {
-  return page.evaluate((since) => {
-    const w = window as any;
-    return {
-      balloons: (w.__balloonLog ?? []).filter((b: any) => b.t >= since),
-      errors: (w.__consoleErrLog ?? []).filter((e: any) => e.t >= since),
-    };
-  }, sinceMs);
+async function readConsoleErrors(page: Page, sinceMs: number): Promise<any[]> {
+  return page.evaluate((since) => ((window as any).__consoleErrLog ?? [])
+    .filter((e: any) => e.t >= since), sinceMs);
+}
+
+async function readBalloonTexts(page: Page): Promise<string[]> {
+  return (await readRecordedBalloons(page)).map((b) => b.text);
 }
 
 async function canonicalize(page: Page, smiles: string): Promise<string> {
@@ -278,7 +270,7 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
 
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await loginToDatagrok(page);
-  await installBalloonRecorder(page);
+  await installConsoleErrorRecorder(page);
 
   const clip: Record<string, string> = {};
   const queryRow = 2;
@@ -315,13 +307,15 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
   await softStep('Scenario 1 Step 4-5: Copy as SMILES — balloon + valid round-tripping SMILES on clipboard', async () => {
     await clearClipboard(page);
     const t0 = await page.evaluate(() => Date.now());
+    await armBalloonRecorder(page);
     await clickCellMenuItem(page, 0, 'Copy as SMILES');
-    const trace = await readActionTrace(page, t0);
-    console.log(`[cell-actions] Copy as SMILES trace = ${JSON.stringify(trace)}`);
-    const balloons = trace.balloons.map((b: any) => b.text);
-    expect(trace.errors.length,
+    const errors = await readConsoleErrors(page, t0);
+    const balloons = await readBalloonTexts(page);
+    console.log(`[cell-actions] Copy as SMILES balloons = ${JSON.stringify(balloons)}, ` +
+      `errors = ${JSON.stringify(errors)}`);
+    expect(errors.length,
       `Copy as SMILES raised console errors — grok.shell.info runs unconditionally after ` +
-      `writeText, so an error before it means the handler threw: ${JSON.stringify(trace.errors)}`)
+      `writeText, so an error before it means the handler threw: ${JSON.stringify(errors)}`)
       .toBe(0);
     expect(balloons.some((t: string) => /smiles copied to clipboard/i.test(t)),
       `expected "Smiles copied to clipboard" balloon, recorder saw ${JSON.stringify(balloons)}`).toBe(true);
@@ -353,8 +347,10 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
   await softStep('Scenario 1 Step 6: Copy as MOLFILE V2000 — blank-header V2000 molblock ending M  END', async () => {
     await clearClipboard(page);
     const t0 = await page.evaluate(() => Date.now());
+    await armBalloonRecorder(page);
     await clickCellMenuItem(page, 0, 'Copy as MOLFILE V2000');
-    console.log(`[cell-actions] Copy as MOLFILE V2000 trace = ${JSON.stringify(await readActionTrace(page, t0))}`);
+    console.log(`[cell-actions] Copy as MOLFILE V2000 balloons = ${JSON.stringify(await readBalloonTexts(page))}, ` +
+      `errors = ${JSON.stringify(await readConsoleErrors(page, t0))}`);
     const mol = await readClipboardText(page);
     clip.v2000 = mol;
     expect(mol.length, 'clipboard V2000 molfile must be non-empty').toBeGreaterThan(0);
@@ -367,8 +363,10 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
   await softStep('Scenario 1 Step 7: Copy as MOLFILE V3000 — V3000 molblock distinct from the V2000 text', async () => {
     await clearClipboard(page);
     const t0 = await page.evaluate(() => Date.now());
+    await armBalloonRecorder(page);
     await clickCellMenuItem(page, 0, 'Copy as MOLFILE V3000');
-    console.log(`[cell-actions] Copy as MOLFILE V3000 trace = ${JSON.stringify(await readActionTrace(page, t0))}`);
+    console.log(`[cell-actions] Copy as MOLFILE V3000 balloons = ${JSON.stringify(await readBalloonTexts(page))}, ` +
+      `errors = ${JSON.stringify(await readConsoleErrors(page, t0))}`);
     const mol = await readClipboardText(page);
     clip.v3000 = mol;
     expect(mol.length, 'clipboard V3000 molfile must be non-empty').toBeGreaterThan(0);
@@ -380,8 +378,10 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
   await softStep('Scenario 1 Step 8: Copy as SMARTS — SMARTS token present, distinct from the copied SMILES', async () => {
     await clearClipboard(page);
     const t0 = await page.evaluate(() => Date.now());
+    await armBalloonRecorder(page);
     await clickCellMenuItem(page, 0, 'Copy as SMARTS');
-    console.log(`[cell-actions] Copy as SMARTS trace = ${JSON.stringify(await readActionTrace(page, t0))}`);
+    console.log(`[cell-actions] Copy as SMARTS balloons = ${JSON.stringify(await readBalloonTexts(page))}, ` +
+      `errors = ${JSON.stringify(await readConsoleErrors(page, t0))}`);
     const smarts = await readClipboardText(page);
     clip.smarts = smarts;
     expect(smarts.length, 'clipboard SMARTS must be non-empty').toBeGreaterThan(0);
@@ -395,12 +395,12 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
 
   await softStep('Scenario 1 Step 9: Copy as Image — balloon + non-trivial PNG blob on clipboard', async () => {
     await clearClipboard(page);
-    const t0 = await page.evaluate(() => Date.now());
+    await armBalloonRecorder(page);
     await clickCellMenuItem(page, 0, 'Copy as Image');
-    await page.waitForFunction((since) => ((window as any).__balloonLog ?? [])
-      .some((b: any) => b.t >= since && /image copied to clipboard/i.test(b.text)),
-    t0, {timeout: 10_000}).catch(() => {});
-    const balloons = (await readActionTrace(page, t0)).balloons.map((b: any) => b.text);
+    await page.waitForFunction(() => ((window as any).__balloonSeen ?? [])
+      .some((b: any) => /image copied to clipboard/i.test(b.text)),
+    undefined, {timeout: 10_000}).catch(() => {});
+    const balloons = await readBalloonTexts(page);
     console.log(`[cell-actions] Copy as Image balloons = ${JSON.stringify(balloons)}`);
     expect(balloons.some((t: string) => /image copied to clipboard/i.test(t)),
       `expected "Image copied to clipboard" balloon, saw ${JSON.stringify(balloons)}`).toBe(true);
@@ -414,9 +414,9 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
     // would otherwise reject unhandled 15 s later and tear down the browser context mid-run
     const downloadPromise = page.waitForEvent('download', {timeout: 15_000});
     downloadPromise.catch(() => {});
-    const t0 = await page.evaluate(() => Date.now());
+    await armBalloonRecorder(page);
     await clickCellMenuItem(page, 0, 'Export as SVG');
-    const svgBalloons = (await readActionTrace(page, t0)).balloons.map((b: any) => b.text);
+    const svgBalloons = await readBalloonTexts(page);
     console.log(`[cell-actions] Export as SVG balloons = ${JSON.stringify(svgBalloons)}`);
     expect(svgBalloons.filter((t: string) => /failed to export structure as svg/i.test(t)),
       'exportAsSvg raises the "Failed to export structure as SVG" warning balloon and returns without ' +
