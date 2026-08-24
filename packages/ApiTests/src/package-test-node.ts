@@ -1,6 +1,5 @@
 import { readdir } from 'fs/promises';
 import { writeFileSync } from 'fs';
-import { register } from 'node:module';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -54,17 +53,12 @@ async function main(): Promise<void> {
     // named exports through cjs-module-lexer instead of failing at link time.
     const { startDatagrok } = await import('datagrok-api/datagrok');
     await startDatagrok({apiUrl, apiToken});
-    // The ESM loader hooks alias datagrok-api/{dg,grok,ui} to these runtime objects, but they
-    // run on their own thread and cannot read globalThis, so hand them the export names now
-    // that the runtime has produced them. Must precede any test-file import.
-    register('./node-test-loader/hooks.mjs', {
-        parentURL: pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json')).href,
-        data: {runtimeExports: {
-            DG: Object.keys(DG),
-            grok: Object.keys(grok),
-            ui: Object.keys((globalThis as any).ui ?? {}),
-        }},
-    });
+    // Bind datagrok-api/{dg,grok,ui} to the runtime objects startDatagrok() just produced,
+    // so every test file shares one copy of the js-api classes. Must precede any test-file
+    // import. Same module instance the --import already loaded.
+    const loader = await import(pathToFileURL(
+        join(dirname(fileURLToPath(import.meta.url)), '..', 'node-test-loader', 'register.mjs')).href);
+    loader.bindRuntimeGlobals();
     _package = await grok.dapi.packages.filter('shortName = "ApiTests"').first();
     if (!_package)
         throw new Error('ApiTests package should be installed.');
