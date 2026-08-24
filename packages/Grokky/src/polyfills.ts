@@ -79,6 +79,14 @@
       return this.reduce((acc: any[], v, i, a) => acc.concat(fn.call(thisArg, v, i, a)), []);
     };
 
+  // Node.isConnected — Chrome 51+
+  const N: any = (typeof Node !== 'undefined') ? Node.prototype : undefined;
+  if (N && !('isConnected' in N))
+    Object.defineProperty(N, 'isConnected', {
+      get: function (this: Node) { return document.contains(this); },
+      configurable: true,
+    });
+
   // ChildNode.replaceWith / ParentNode.append / ParentNode.prepend — Chrome 54+
   const E: any = (typeof Element !== 'undefined') ? Element.prototype : undefined;
   if (E) {

@@ -132,7 +132,10 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
             durationApiMs: e.duration_api_ms ?? null,
           },
         });
-      } else
+      } else if (e.subtype === 'error_max_turns' || e.subtype === 'error_max_budget_usd')
+        emit(ws, {type: 'error', sessionId: sid,
+          message: `This request hit its ${e.subtype === 'error_max_turns' ? 'turn' : 'cost'} limit and was stopped. Try a narrower request.`});
+      else
         emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
       break;
     }

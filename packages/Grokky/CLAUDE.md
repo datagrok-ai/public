@@ -34,7 +34,7 @@ plugin's TS/CSS — must work there. Verify before reporting UI work as done.
   from `package.ts` / `package-test.ts`). Already polyfilled: `crypto.randomUUID`,
   `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`/`matchAll`,
   `Array.prototype.flatMap`, `Promise.prototype.finally`,
-  `Element.prototype.append`/`prepend`/`replaceWith`. If you need another
+  `Element.prototype.append`/`prepend`/`replaceWith`, `Node.isConnected`. If you need another
   missing API, add it to `polyfills.ts` rather than to call sites.
 - **Clipboard**: use `copyToClipboard()` from `src/utils.ts` — never `navigator.clipboard.writeText`
   directly (undefined in Chrome 50 and in insecure contexts).

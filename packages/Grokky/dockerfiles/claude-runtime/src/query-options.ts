@@ -265,6 +265,11 @@ function buildMcpServers(
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
 
+const TURN_LIMITS = {
+  full: {maxTurns: 100, maxBudgetUsd: 2.5},
+  bash: {maxTurns: 10, maxBudgetUsd: 0.25},
+};
+
 export function buildOptions(
   browserExecServer: ReturnType<typeof createBrowserExecServer>,
   resume?: string, apiKey?: string, mcpServerUrl?: string,
@@ -303,6 +308,7 @@ export function buildOptions(
     ...(mcpServers ? {mcpServers} : {}),
     strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
+    ...TURN_LIMITS[fullMode ? 'full' : 'bash'],
     model: model ?? ClaudeModel.Sonnet,
     effort: fullMode ? 'high' as const : 'low' as const,
     thinking: fullMode ? {type: 'enabled' as const, budgetTokens: 1500} : {type: 'disabled' as const},

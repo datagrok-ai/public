@@ -214,7 +214,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleRun();
     }, 'Send');
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && this._skillMenu) {
+      if ((event.key === 'Escape' || event.keyCode === 27) && this._skillMenu) {
         this._skillMenu.hide();
         this._skillMenu = null;
         return;

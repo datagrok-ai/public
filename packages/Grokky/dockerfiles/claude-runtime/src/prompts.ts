@@ -135,7 +135,8 @@ function loadInlinedSkills(): string {
       // silently matches nothing and inlines each skill's YAML frontmatter into the system prompt.
       const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, '').trim();
       sections.push(`### ${name}\n\n${body}`);
-    } catch {
+    } catch (e: any) {
+      console.error(`inlined skill '${name}' failed to load from ${skillPath} — system prompt ships without it:`, e.message);
     }
   }
   return sections.join('\n\n---\n\n');
