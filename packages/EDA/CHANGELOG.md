@@ -1,5 +1,9 @@
 # EDA changelog
 
+## v.next
+
+* GROK-20754: Added SVM (libsvm) support for classification and regression
+
 ## 1.8.0 (2026-08-14)
 
 Improved ML features:

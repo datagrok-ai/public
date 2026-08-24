@@ -18,6 +18,8 @@ import {SoftmaxClassifier} from '../softmax-classifier';
 import {getLinearRegressionParams, getPredictionByLinearRegression,
   packLinearRegressionModel, unpackLinearRegressionModel} from '../regression';
 import {PlsModel} from '../pls/pls-ml';
+import {SVM, SvmFitOptions} from '../svm';
+import {KernelType} from '../../wasm/svm';
 import {accuracy, madError} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
@@ -119,6 +121,46 @@ async function plsRoundTrip(target: DG.Column, features: DG.ColumnList, r2Floor:
   expect(score > r2Floor, true, `PLS R² too low: ${score} (expected > ${r2Floor})`);
 }
 
+// ── SVM (libsvm) ─────────────────────────────────────────────────────
+
+const SVM_OPTS: SvmFitOptions = {kernelType: KernelType.Rbf, C: 1, gamma: 0, degree: 3, coef0: 0, epsilon: 0.1};
+// SMO is superlinear in the sample count; cap large datasets for the SVM tests.
+const SVM_MAX_ROWS = 1500;
+
+/** Up to `n` rows of `df`, evenly strided across the set (a prefix would lose a
+ *  class in ordered data like winequality, where all rows of one type come first). */
+function sampleRows(df: DG.DataFrame, n: number): DG.DataFrame {
+  if (df.rowCount <= n)
+    return df;
+  const stride = Math.ceil(df.rowCount / n);
+  return df.clone(DG.BitSet.create(df.rowCount, (i) => i % stride === 0));
+}
+
+async function svmClassifyRoundTrip(target: DG.Column, features: DG.ColumnList,
+  accuracyFloor: number): Promise<void> {
+  const model = new SVM();
+  await model.fit(features, target, SVM_OPTS);
+  const before = model.predict(features);
+
+  const after = new SVM(model.toBytes()).predict(features);
+
+  expect(accuracy(before, after), 1, 'SVM pack/unpack changed predictions');
+  const acc = accuracy(target, before);
+  expect(acc > accuracyFloor, true, `SVM accuracy too low: ${acc} (expected > ${accuracyFloor})`);
+}
+
+async function svmRegressRoundTrip(target: DG.Column, features: DG.ColumnList, r2Floor: number): Promise<void> {
+  const model = new SVM();
+  await model.fit(features, target, SVM_OPTS);
+  const before = model.predict(features);
+
+  const after = new SVM(model.toBytes()).predict(features);
+
+  expect(madError(before, after) < ROUNDTRIP_EPS, true, 'SVM pack/unpack changed predictions');
+  const score = r2(target, before);
+  expect(score > r2Floor, true, `SVM R² too low: ${score} (expected > ${r2Floor})`);
+}
+
 category('Model serialization', () => {
   test('Softmax — iris', async () => {
     const df = await grok.dapi.files.readCsv(IRIS);
@@ -160,5 +202,26 @@ category('Model serialization', () => {
     const target = df.col('quality')!;
     const features = numericFeatures(df, 'quality');
     await plsRoundTrip(target, features, 0.1);
+  }, {timeout: TIMEOUT});
+
+  test('SVM — iris', async () => {
+    const df = await grok.dapi.files.readCsv(IRIS);
+    const target = df.col('Species')!;
+    const features = numericFeatures(df, 'Species', ['col 1']);
+    await svmClassifyRoundTrip(target, features, 0.8);
+  }, {timeout: TIMEOUT});
+
+  test('SVM — winequality (type)', async () => {
+    const df = sampleRows(await grok.dapi.files.readCsv(WINE), SVM_MAX_ROWS);
+    const target = df.col('type')!;
+    const features = numericFeatures(df, 'type', ['quality']);
+    await svmClassifyRoundTrip(target, features, 0.8);
+  }, {timeout: TIMEOUT});
+
+  test('SVM — winequality (quality)', async () => {
+    const df = sampleRows(await grok.dapi.files.readCsv(WINE), SVM_MAX_ROWS);
+    const target = df.col('quality')!;
+    const features = numericFeatures(df, 'quality');
+    await svmRegressRoundTrip(target, features, 0.3);
   }, {timeout: TIMEOUT});
 }); // Model serialization

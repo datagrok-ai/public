@@ -10,6 +10,8 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {classificationDataset, accuracy, madError, mulberry32} from './utils';
 import {SoftmaxClassifier} from '../softmax-classifier';
 import {XGBooster} from '../xgbooster';
+import {SVM, SvmFitOptions} from '../svm';
+import {KernelType} from '../../wasm/svm';
 
 /** Expect that an async action throws (validation must reject before wasm). */
 async function expectThrows(action: () => Promise<unknown>, label: string): Promise<void> {
@@ -432,3 +434,206 @@ category('XGBoost', () => {
     expect(accuracy(first, after), 1, 'predict after dispose differs');
   }, {timeout: TIMEOUT});
 }); // XGBoost
+
+// SMO is superlinear in the sample count, so the SVM tests use smaller sets and
+// a longer timeout than the tree-based ones above.
+const SVM_TIMEOUT = 30000;
+
+/** Default SVM hyperparameters for tests (gamma 0 = 1/features). */
+function svmOpts(kernelType: KernelType = KernelType.Rbf): SvmFitOptions {
+  return {kernelType, C: 1, gamma: 0, degree: 3, coef0: 0, epsilon: 0.1};
+}
+
+/** Coefficient of determination R² of `pred` against `target`. */
+function rSquared(target: DG.Column, pred: DG.Column): number {
+  const n = target.length;
+  const t = target.getRawData();
+  const p = pred.getRawData();
+  let mean = 0;
+  for (let i = 0; i < n; ++i)
+    mean += t[i];
+  mean /= n;
+  let ssRes = 0; let ssTot = 0;
+  for (let i = 0; i < n; ++i) {
+    ssRes += (t[i] - p[i]) ** 2;
+    ssTot += (t[i] - mean) ** 2;
+  }
+  return ssTot === 0 ? 0 : 1 - ssRes / ssTot;
+}
+
+category('SVM', () => {
+  test('Correctness (classification)', async () => {
+    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const features = df.columns;
+    const target = features.byIndex(MIN_COLS);
+    features.remove(target.name);
+
+    const model = new SVM();
+    await model.fit(features, target, svmOpts());
+    const unpacked = new SVM(model.toBytes());
+    const prediction = unpacked.predict(features);
+
+    const acc = accuracy(target, prediction);
+    expect(acc > MIN_ACCURACY, true, `SVM accuracy too small: ${acc}; expected > ${MIN_ACCURACY}`);
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Multiclass (3+ categories)', async () => {
+    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const features = df.columns;
+    const target = features.byIndex(MIN_COLS);
+    features.remove(target.name);
+    expect(target.categories.length >= 3, true, 'dataset is expected to have 3+ categories');
+
+    const model = new SVM();
+    await model.fit(features, target, svmOpts());
+    const prediction = model.predict(features);
+
+    expect(prediction.type, DG.COLUMN_TYPE.STRING, 'multiclass prediction must be a string column');
+    for (const cat of prediction.categories) {
+      expect(target.categories.includes(cat), true,
+        `predicted category "${cat}" is not among the target categories`);
+    }
+    expect(accuracy(target, prediction) > MIN_ACCURACY, true, 'multiclass accuracy too small');
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Bool target', async () => {
+    // Synthetic separable set (demog HEIGHT/WEIGHT have nulls, which SVM rejects).
+    const rows = 300;
+    const rng = mulberry32(CORRECTNESS_SEED);
+    const x0 = new Float32Array(rows); const x1 = new Float32Array(rows);
+    const y = new Array<boolean>(rows);
+    for (let i = 0; i < rows; ++i) {
+      x0[i] = rng(); x1[i] = rng(); y[i] = (x0[i] + x1[i]) > 1;
+    }
+    const features = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array('x0', x0), DG.Column.fromFloat32Array('x1', x1)]).columns;
+    const target = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'y', y);
+
+    const model = new SVM();
+    await model.fit(features, target, svmOpts());
+    const before = model.predict(features);
+    expect(before.type, DG.COLUMN_TYPE.BOOL, 'prediction of a bool target must be a BOOL column');
+
+    const after = new SVM(model.toBytes()).predict(features);
+    expect(after.type, DG.COLUMN_TYPE.BOOL, 'unpacked model must also predict a BOOL column');
+    expect(accuracy(before, after), 1, 'SVM bool pack/unpack changed predictions');
+    expect(accuracy(target, before) > MIN_ACCURACY, true, 'bool training accuracy too low');
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Regression (float)', async () => {
+    const rows = 300;
+    const rng = mulberry32(CORRECTNESS_SEED);
+    const x0 = new Float32Array(rows); const x1 = new Float32Array(rows); const y = new Float32Array(rows);
+    for (let i = 0; i < rows; ++i) {
+      x0[i] = rng(); x1[i] = rng(); y[i] = 2 * x0[i] + 3 * x1[i];
+    }
+    const features = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array('x0', x0), DG.Column.fromFloat32Array('x1', x1)]).columns;
+    const target = DG.Column.fromFloat32Array('y', y);
+
+    const model = new SVM();
+    await model.fit(features, target, svmOpts());
+    const before = model.predict(features);
+    expect(before.type, DG.COLUMN_TYPE.FLOAT, 'regression prediction must be a float column');
+    expect(rSquared(target, before) > 0.5, true, 'SVM regression training fit too poor');
+
+    // Round-trip must reproduce predictions exactly.
+    const after = new SVM(model.toBytes()).predict(features);
+    for (let i = 0; i < before.length; ++i) {
+      if (before.get(i) !== after.get(i))
+        throw new Error(`regression pack/unpack changed prediction at row ${i}`);
+    }
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Standardization is applied', async () => {
+    // A feature scaled by 1000 must not hurt accuracy: the model standardizes.
+    const df = classificationDataset(200, MIN_COLS, true, CORRECTNESS_SEED);
+    const features = df.columns;
+    const target = features.byIndex(MIN_COLS);
+    features.remove(target.name);
+
+    const n = target.length;
+    const raw0 = features.byIndex(0).getRawData();
+    const raw1 = features.byIndex(1).getRawData();
+    const scaled = new Float32Array(n); const copy1 = new Float32Array(n);
+    for (let i = 0; i < n; ++i) {
+      scaled[i] = raw0[i] * 1000; copy1[i] = raw1[i];
+    }
+    const scaledFeatures = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array('big', scaled), DG.Column.fromFloat32Array('f1', copy1)]).columns;
+
+    const model = new SVM();
+    await model.fit(scaledFeatures, target, svmOpts());
+    const acc = accuracy(target, model.predict(scaledFeatures));
+    expect(acc > MIN_ACCURACY, true, `standardization not applied: accuracy ${acc}`);
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Kernel round-trip (RBF & linear)', async () => {
+    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const features = df.columns;
+    const target = features.byIndex(MIN_COLS);
+    features.remove(target.name);
+
+    for (const kernel of [KernelType.Rbf, KernelType.Linear]) {
+      const model = new SVM();
+      await model.fit(features, target, svmOpts(kernel));
+      const before = model.predict(features);
+      const after = new SVM(model.toBytes()).predict(features);
+      expect(accuracy(before, after), 1, `kernel ${kernel} pack/unpack changed predictions`);
+    }
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Validation rejects bad inputs', async () => {
+    const df = classificationDataset(100, MIN_COLS, true, CORRECTNESS_SEED);
+    const features = df.columns;
+    const target = features.byIndex(MIN_COLS);
+    features.remove(target.name);
+
+    await expectThrows(() => new SVM().fit(features, target, {...svmOpts(), C: 0}), 'C = 0');
+
+    // Missing value in the target must be rejected before wasm.
+    const holedTarget = DG.Column.fromFloat32Array('y', new Float32Array(target.length).fill(1));
+    holedTarget.set(0, null);
+    await expectThrows(() => new SVM().fit(features, holedTarget, svmOpts()), 'missing in target');
+
+    // Missing value in a feature must be rejected (SVM has no missing handling).
+    const misFeat = DG.Column.fromFloat32Array('mf', new Float32Array(target.length).fill(1));
+    misFeat.set(0, null);
+    const badFeatures = DG.DataFrame.fromColumns([misFeat]).columns;
+    await expectThrows(() => new SVM().fit(badFeatures, target, svmOpts()), 'missing in feature');
+
+    // Single-category classification target is meaningless.
+    const oneCat = DG.Column.fromStrings('y', new Array(target.length).fill('only'));
+    await expectThrows(() => new SVM().fit(features, oneCat, svmOpts()), 'single category');
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Raw buffer longer than column (capacity)', async () => {
+    const rows = 100;
+    const capacity = 256;
+    const rng = mulberry32(CORRECTNESS_SEED);
+
+    const exactX = new Float32Array(rows);
+    const y = new Array<string>(rows);
+    for (let i = 0; i < rows; ++i) {
+      exactX[i] = rng(); y[i] = exactX[i] > 0.5 ? 'A' : 'B';
+    }
+    const target = DG.Column.fromStrings('y', y);
+
+    const bigX = new Float32Array(capacity).fill(1e6);
+    bigX.set(exactX);
+    const overFeatures = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', bigX, rows)]).columns;
+    const exactFeatures = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', exactX, rows)]).columns;
+
+    const overModel = new SVM();
+    await overModel.fit(overFeatures, target, svmOpts());
+    const overPred = overModel.predict(overFeatures);
+
+    const exactModel = new SVM();
+    await exactModel.fit(exactFeatures, target, svmOpts());
+    const exactPred = exactModel.predict(exactFeatures);
+
+    // Identical logical data -> identical predictions; any difference means the
+    // capacity tail leaked into training or prediction.
+    expect(accuracy(overPred, exactPred), 1, 'capacity tail leaked into computation');
+  }, {timeout: SVM_TIMEOUT});
+}); // SVM

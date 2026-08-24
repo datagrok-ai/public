@@ -58,6 +58,17 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - Packed model container v2 (objective in the header); pre-upgrade v1 models (no Version field in the header) are rejected with a clear error — they must be retrained
 - Requires initialization via `initXgboost()` in package init
 
+#### SVM (`svm.ts`)
+- **SVM** via a C++/Emscripten wasm module wrapping **LIBSVM v3.37** (`wasm/SVMAPI.*`, glue `wasm/svm.ts`, worker `wasm/workers/svmWorker.ts`, C wrapper `wasm/libsvm/svm-api.cpp`)
+- Two tasks by target type: string/bool → classification (`C_SVC`, one-vs-one for 3+ classes; libsvm returns the class label directly, so no 0.5 threshold), numeric → regression (`EPSILON_SVR`). Kernels: linear/poly/RBF/sigmoid (default RBF)
+- Training runs in a long-lived worker; prediction is synchronous on the main thread over a cached handle (`dispose()` frees it). Requires `initSvm()` in package init
+- **Do not revert (libsvm-specific):**
+  - **Serialization goes through Emscripten MEMFS** (`svm_save_model`/`svm_load_model` are file-based; libsvm has no in-memory (de)serialization). `-sFORCE_FILESYSTEM=1` is mandatory.
+  - **`svm_train` does NOT copy the support vectors** (`model->SV` point into the input `svm_node` buffers). The C wrapper does a save+load round-trip through MEMFS right after training to get a self-contained model (`free_sv=1`) before freeing the input buffers.
+  - **Standardization is done in TS** (variant B; `avgs`/`stdevs` stored in the container) — RBF is scale-sensitive and the kernel never normalizes.
+  - **`isInteractive` thresholds are far below XGBoost** (SMO is superlinear: RBF ~ O(n²)–O(n³)).
+- Packed model container v1 (Type/Categories/standardization stats/libsvm bytes; no legacy). See `wasm/libsvm/README.md` for rebuild. Regression tests: `category 'SVM'`
+
 #### Other Supervised Machine Techniques
 - **Softmax Classifier** (`softmax-classifier.ts`): Multinomial logistic regression
   - Training on the Rust+WASM backend (`_fitSoftmax` in `eda-api.ts`, main thread); prediction in TypeScript
@@ -146,8 +157,8 @@ Bundled into the artifact (not external):
 Tests are organized by feature in `src/tests/`:
 - `dim-reduction-tests.ts`: PCA, UMAP, t-SNE, SPE
 - `linear-methods-tests.ts`: Linear regression, PLS
-- `classifiers-tests.ts`: softmax, XGBoost
-- `model-serialization-tests.ts`: model pack/unpack round-trip (softmax, linear regression, PLS) on iris/cars/winequality
+- `classifiers-tests.ts`: softmax, XGBoost, SVM
+- `model-serialization-tests.ts`: model pack/unpack round-trip (softmax, linear regression, PLS, SVM) on iris/cars/winequality
 - `mis-vals-imputation-tests.ts`: KNN imputation
 - `anova-tests.ts`: One-way ANOVA
 - `ttest-tests.ts`: Two-sample t-test
@@ -175,7 +186,7 @@ category('Feature Name', () => {
 
 ### Adding a New ML Method
 
-1. Implement the algorithm in TypeScript (or Rust in the `sci-comp-rust` repo for a WASM backend; XGBoost is the only remaining C++/Emscripten kernel)
+1. Implement the algorithm in TypeScript (or Rust in the `sci-comp-rust` repo for a WASM backend; the C++/Emscripten kernels are XGBoost and SVM/libsvm)
 2. Add function registration with `@grok.decorators.func()`
 3. Create tests in appropriate test file
 4. Run `grok api` to generate wrappers
@@ -185,6 +196,7 @@ category('Feature Name', () => {
 
 - **sci-comp-ml** (PCA/PLS/softmax/linreg): Rust source lives in the separate `sci-comp-rust` repo; the built `sci_comp_ml.js` + `sci_comp_ml_bg.wasm` are committed in `wasm/`. Loaded via `src/wasm-loader.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts` (the worker `init`s the wasm from a URL passed by the main thread).
 - **XGBoost**: C++/Emscripten (`wasm/XGBoostAPI.*`), rebuilt via `wasm/xgboost/build.ps1` (XGBoost sources come from an external clone, any location; api-test gate). See 'Rebuilding the XGBoost wasm module' below. Glue `wasm/xgbooster.ts`, worker `wasm/workers/xgboostWorker.ts`. When copying `col.getRawData()` in bulk, ALWAYS slice to `col.length` first (`raw.subarray(0, col.length)`) - the raw array may be longer (capacity mechanism).
+- **SVM (libsvm)**: C++/Emscripten (`wasm/SVMAPI.*`), rebuilt via `wasm/libsvm/build.ps1` (libsvm source from an external clone; api-test gate). Glue `wasm/svm.ts`, worker `wasm/workers/svmWorker.ts`, C wrapper `wasm/libsvm/svm-api.cpp`. Serialization round-trips through MEMFS (`-sFORCE_FILESYSTEM=1`); see the SVM core-module notes above. Same capacity-slice rule applies.
 - The `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js` emit `sci_comp_ml_bg.wasm` to `dist/` with its original name.
 
 ### Rebuilding the XGBoost wasm module

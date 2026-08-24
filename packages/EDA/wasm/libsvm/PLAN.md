@@ -203,12 +203,12 @@ A block of 4 functions with `meta.mlname: 'SVM'` (modeled on XGBoost). The model
 
 | Parameter | type / options | description |
 |---|---|---|
-| kernel | string, `choices:['Linear','Polynomial','RBF','Sigmoid']`, `initialValue:'RBF'` | `Kernel function: linear, polynomial, RBF, or sigmoid.` |
-| cost | double, `min:0.001 max:1000 initialValue:1` | `Regularization strength C. Higher C fits the training data more tightly.` |
-| gamma | double, `min:0 max:100 initialValue:0` | `Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels; 0 = 1/features.` |
-| degree | int, `min:1 max:10 initialValue:3` | `Degree of the polynomial kernel. Used by the polynomial kernel only.` |
-| coef0 | double, `min:-100 max:100 initialValue:0` | `Independent kernel term. Used by the polynomial and sigmoid kernels only.` |
-| epsilon | double, `min:0 max:10 initialValue:0.1` | `Epsilon in the SVR loss. Used for regression targets only.` |
+| kernel | string, `choices:['Linear','Polynomial','RBF','Sigmoid']`, `initialValue:'RBF'` | `Kernel function: linear, polynomial, RBF (radial basis function), or sigmoid.` |
+| cost (caption "Penalty") | double, `min:0.001 max:1000 initialValue:1` | `Penalty for misclassifying training points. Higher values fit the training data more tightly and risk overfitting, lower values give a smoother, more general model.` |
+| gamma | double, `min:0 max:100 initialValue:0` | `Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels. Leave 0 to use 1/number-of-features.` |
+| degree | int, `min:1 max:10 initialValue:3` | `Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.` |
+| coef0 (caption "Offset") | double, `min:-100 max:100 initialValue:0` | `Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.` |
+| epsilon | double, `min:0 max:10 initialValue:0.1` | `Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.` |
 
 **6.2 `applySVM` (mlrole: apply)** — copy of `applyXGBooster`: `new SVM(model).predict(df.columns)` → DataFrame.
 **6.3 `isApplicableSVM` / `isInteractiveSVM`** — delegate to the class's static methods.

@@ -22,6 +22,7 @@ EDA is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok
   * [Softmax](https://en.wikipedia.org/wiki/Multinomial_logistic_regression) classifier
   * [PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression) regression
   * [Gradient Boosting](https://en.wikipedia.org/wiki/Gradient_boosting)
+  * [Support vector machine](https://en.wikipedia.org/wiki/Support-vector_machine) (SVM) classification and regression
 * Group comparison
   * Two-sample [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) (Welch and Student)
   * One-way analysis of variances ([ANOVA](https://en.wikipedia.org/wiki/One-way_analysis_of_variance))
