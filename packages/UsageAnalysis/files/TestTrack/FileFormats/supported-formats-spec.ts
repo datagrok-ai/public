@@ -14,7 +14,7 @@ const FORMATS = process.env.FORMATS_SUBSET
   ? process.env.FORMATS_SUBSET.split(',').map((s) => s.trim()).filter(Boolean)
   : ALL_FORMATS;
 
-const FOLDER_LABEL = 'all_formats';
+const FOLDER_LABEL = 'all formats';
 const OPEN_TIMEOUT_MS = 90_000; 
 
 async function resolveFiles(page: Page): Promise<{folderPath: string; byExt: Record<string, string>}> {
@@ -99,7 +99,7 @@ async function returnToFolder(page: Page): Promise<void> {
       null, {timeout: 10_000}).catch(() => {});
 }
 
-test('File formats: preview and open from My Files / all_formats', async ({page}) => {
+test('File formats: preview and open from My Files / all formats', async ({page}) => {
 
   test.setTimeout(480_000);
   stepErrors.length = 0;
@@ -108,7 +108,7 @@ test('File formats: preview and open from My Files / all_formats', async ({page}
   await openFolderUi(page);
 
   const {folderPath, byExt} = await resolveFiles(page);
-  expect(folderPath.length > 0, 'Could not resolve the My Files/all_formats folder path').toBe(true);
+  expect(folderPath.length > 0, 'Could not resolve the My Files/all formats folder path').toBe(true);
 
   for (const ext of FORMATS) {
     await softStep(`Open ${ext}: platform handler parses the file without error`, async () => {

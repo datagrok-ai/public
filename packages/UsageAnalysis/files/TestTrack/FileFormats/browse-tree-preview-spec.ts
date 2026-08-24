@@ -1,5 +1,6 @@
 import {test, expect, Page} from '@playwright/test';
 import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {armBalloonRecorder, readRecordedBalloons, proveBalloonChannel} from '../helpers/balloons';
 
 test.use({...specTestOptions, viewport: {width: 1280, height: 2400}});
 
@@ -23,7 +24,7 @@ async function expandToAllFormats(page: Page): Promise<string[]> {
       if (tri && !tri.classList.contains('d4-tree-view-tri-expanded')) tri.click();
     };
     let scope: ParentNode = document;
-    for (const [label, next] of [['Files', 'My files'], ['My files', 'all_formats']] as [string, string][]) {
+    for (const [label, next] of [['Files', 'My files'], ['My files', 'all formats']] as [string, string][]) {
       const grp = findChildGroupByLabel(scope, label);
       if (!grp) throw new Error(`Tree node not found: ${label}`);
       expandGroup(grp);
@@ -32,8 +33,8 @@ async function expandToAllFormats(page: Page): Promise<string[]> {
       if (!findChildGroupByLabel(grp, next)) throw new Error(`Expand of ${label} did not reveal ${next}`);
       scope = grp;
     }
-    const allFormats = findChildGroupByLabel(scope, 'all_formats');
-    if (!allFormats) throw new Error('all_formats not found under My files');
+    const allFormats = findChildGroupByLabel(scope, 'all formats');
+    if (!allFormats) throw new Error('all formats not found under My files');
     expandGroup(allFormats);
 
     const collect = () => (Array.from(allFormats.querySelectorAll('.d4-tree-view-item-label')) as HTMLElement[])
@@ -94,7 +95,7 @@ test('File formats: preview every file by clicking through the Browse tree', asy
   await page.waitForTimeout(2000);
 
   let files = await expandToAllFormats(page);
-  expect(files.length > 0, 'No files found under My files / all_formats in the Browse tree').toBe(true);
+  expect(files.length > 0, 'No files found under My files / all formats in the Browse tree').toBe(true);
 
   if (process.env.FILES_SUBSET) {
     const want = process.env.FILES_SUBSET.split(',').map((s) => s.trim()).filter(Boolean);
@@ -107,6 +108,8 @@ test('File formats: preview every file by clicking through the Browse tree', asy
       if (v?.type !== 'datagrok' && (v?.name ?? '') !== 'Home') { try { v.close(); } catch (e) {  } }
   });
 
+  await proveBalloonChannel(page, 'browse-tree-preview');
+
   for (const name of files) {
     await softStep(`Preview ${name}: open its preview from the tree`, async () => {
       await closeToHome();
@@ -114,6 +117,8 @@ test('File formats: preview every file by clicking through the Browse tree', asy
       await page.waitForFunction(() => Array.from((window as any).grok.shell.views)
         .every((v: any) => v?.type === 'datagrok' || (v?.name ?? '') === 'Home'),
       undefined, {timeout: 10_000}).catch(() => {});
+      // Armed per file, so what is read back belongs to this preview and to no earlier one.
+      await armBalloonRecorder(page);
       const clicked = await clickFileNode(page, name);
       expect(clicked, `Tree node not found for ${name}`).toBe(true);
 
@@ -129,17 +134,29 @@ test('File formats: preview every file by clicking through the Browse tree', asy
 
       await page.waitForTimeout(DWELL_MS);
 
+      // .d4-error is an inline error element (d4 ui.dart:358), not a balloon: it has no auto-hide
+      // timer, so it is still standing after the dwell above and an instantaneous read is honest
+      // about it. Balloons are read from the recorder instead — the dwell is longer than the 5 s
+      // auto-hide, so one raised by the preview would be gone by now.
       const diag = await page.evaluate(() => {
         const g = (window as any).grok;
-        const err = !!document.querySelector('.d4-balloon-error') ||
-          Array.from(document.querySelectorAll('.d4-balloon, .d4-error')).some((e) =>
-            /error|failed|cannot|unable/i.test((e as HTMLElement).textContent ?? ''));
-        return {curView: `${g.shell.v?.name ?? ''}|${g.shell.v?.type ?? ''}`, err};
+        const hits = Array.from(document.querySelectorAll('.d4-error'));
+        return {
+          curView: `${g.shell.v?.name ?? ''}|${g.shell.v?.type ?? ''}`,
+          err: hits.length > 0,
+          errText: (hits[0] as HTMLElement | undefined)?.textContent?.trim() ?? '',
+        };
       });
+      const balloons = await readRecordedBalloons(page);
+      const bad = balloons.filter((b) => /error/.test(b.cls) ||
+        /error|failed|cannot|unable/i.test(b.text));
 
       console.log(`[PREVIEW ${name}] previewOpened=${previewed} curView=${diag.curView} error=${diag.err}`);
       expect(previewed, `No preview opened for ${name}`).toBe(true);
-      expect(diag.err, `Error balloon appeared while previewing ${name}`).toBe(false);
+      expect(diag.err,
+        `Inline error appeared while previewing ${name}: "${diag.errText}"`).toBe(false);
+      expect(bad, `Error balloon appeared while previewing ${name}; `
+        + `the recorder saw ${JSON.stringify(balloons)}`).toEqual([]);
     });
   }
 
