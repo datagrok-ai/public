@@ -1,5 +1,5 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, login, password} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, login, password} from '../../spec-login';
 
 test.use(specTestOptions);
 
