@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Tests: Removed non-browser test execution — DBTests runs in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, so `grok test` skips the Node pass, and every `{node: true}` annotation is gone.
+* Tests: Removed the `grok test` Node pass — `grok test` runs DBTests in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, and every `{node: true}` annotation is gone. ApiTests' standalone stress runner still merges these categories into its Node sweep via `extraTestPackages`.
 * Tests: unmarked the `Benchmarks` category as `stressTest`. Each of those tests fires 25-100 sequential queries by design, so at 91 concurrent threads they time out - build 171 measured `Performance: TestNormal` at 100% failure, `TestLong` 94%, `TestWide` 88%, `Sequential select 1` 62%, EXECUTION TIMEOUT throughout, and they accounted for essentially every failure in the sweep. The mark was inert until DBTests joined the stress suite.
 * Tests: marked the read-only Postgres categories (`Connections` queries, `TableQueryBuilder`) as `stressTest` - 12 tests, so the nightly Stress-Tests sweep exercises grok_connect query load and not only the platform API. Excluded: `Docker connection` (the stress stand runs no grok_spawner), `Server cache` (shared cache state) and `Database Meta: *` (its tests annotate and clear shared schema metadata - measured at 19-56% pass under concurrency in build 169, all of it threads overwriting each other rather than real failures).
 * Tests: Fixed `Docker connection / Connection test` timing out at exactly 300s — its budget equalled datlas' own containerStatusTimeout, so a slow on-demand container start left nothing for the connection test

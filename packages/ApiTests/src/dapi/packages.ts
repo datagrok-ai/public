@@ -22,7 +22,7 @@ category('Dapi: packages', () => {
   test('webRoot content', async () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
     expect(apiTestsPackage.webRoot + '/', _package.webRoot);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'under Node the test package is a dapi entity (no client webRoot)' : undefined});
 
   test('readCsv error', async () => {
     await expectExceptionAsync(() => _package.files.readCsv('datasets/noFile.csv').then());

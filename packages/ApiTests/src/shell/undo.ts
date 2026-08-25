@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 category('Undo', () => {
+  const nodeSkip = typeof process !== 'undefined' ? 'NodeJS environment' : undefined;
   let view: DG.TableView;
   let df: DG.DataFrame;
 
@@ -39,7 +40,7 @@ category('Undo', () => {
 
     grok.shell.undo();
     expect(column.get(0), before);
-  });
+  }, { skipReason: nodeSkip });
 
   test('multi-level LIFO', async () => {
     // UndoService.contextCheck only applies records whose context is the current table, so
@@ -63,7 +64,7 @@ category('Undo', () => {
     grok.shell.undo();
     expect(column.get(1), original);
     expect(grok.shell.canUndo, false);
-  });
+  }, { skipReason: nodeSkip });
 
   test('onUndo fires', async () => {
     grok.shell.v = view;
@@ -77,7 +78,7 @@ category('Undo', () => {
     } finally {
       sub.unsubscribe();
     }
-  });
+  }, { skipReason: nodeSkip });
 
   test('records are dropped when the table is closed', async () => {
     DG.UndoService.clear();
@@ -90,12 +91,12 @@ category('Undo', () => {
     grok.shell.closeTable(temp);
     // closing the view pushes its own record, so assert the table's record is gone by name
     expect(DG.UndoService.undoName !== 'Temp op', true);
-  });
+  }, { skipReason: nodeSkip });
 
   test('no redo without a forward action', async () => {
     DG.UndoService.clear();
     DG.UndoService.push('One way', () => {}, { context: df });
     grok.shell.undo();
     expect(grok.shell.canRedo, false);
-  });
+  }, { skipReason: nodeSkip });
 });

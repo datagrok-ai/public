@@ -2,7 +2,9 @@
 
 ## 1.10.3 (WIP)
 
-Tests: Removed non-browser test execution — ApiTests runs in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, so `grok test` skips the Node pass, and every `{node: true/false}` annotation is gone along with the `typeof process` self-skips that paired with them. The standalone Node runner goes too: `src/package-test-node.ts`, `node-test-loader/`, `NODE_RUNNER.md`, the `start-node`/`stress-node` scripts and the `tsx`/`yargs` dependencies. `grok stresstest` and the Jenkins Stress-Tests job have no runner until one is written.
+Tests: Removed the `grok test` Node pass — the suite runs in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, which are the two things `grok test` probes to decide whether to run tests headless, and every `{node: true/false}` annotation is gone. Two workarounds that existed only so the test bundle would evaluate under that pass went with it: `benchmarks.ts` closes its table unconditionally, and `js-viewer.ts` extends `DG.JsViewer` directly instead of a dummy base.
+
+Tests: The standalone Node runner (`package-test-node.ts`) is unaffected and still drives `grok stresstest` and the nightly Stress-Tests job. It selects by `{stressTest: true}`, not by `{node: true}`, so it keeps the `typeof process` self-skips that let browser-bound tests opt out under Node — including four stress-marked ones whose loss would have dropped the sweep off its 100% baseline.
 
 AI viewers: Fixed the two legend-visibility tests that had never passed. `legendPresent` asked whether a `.d4-legend` element exists, but hiding a legend that has already been shown collapses it to zero width instead of detaching it — so every "legend is now hidden" assertion after a toggle was doomed, while the same assertion at creation time passed because the element had never been built. It now measures rendered width, and lives in `helpers.ts` so BarChart and BoxPlot share one definition.
 
