@@ -124,7 +124,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
   });
   await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
-  await v.waitForCanvasQuiet(page, 'Box plot');
+  await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('Scenario 1 / Step 3: marker click sets currentRowIdx and fires d4-boxplot-point-click', async () => {
     await page.evaluate(() => {
@@ -169,7 +169,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await clearSelection(page);
 
     await v.setViewerProps(page, 'Box plot', [{set: {markerColorColumnName: 'SEX'}, wait: 800}]);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const hueNoSel = await v.countSelectionHuePixels(page, 'Box plot');
     const r = await canvasRect(page);
     await shiftDragBand(page, r, 0.55, 0.30, 0.72, 0.80);
@@ -255,7 +255,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
       df.filter.init((i: number) => col.get(i) !== cat);
     }, leftMost);
     await v.waitForViewerRendered(page, 'Box plot', 800);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
 
     const r = await canvasRect(page);
     await page.keyboard.down('Shift');
@@ -282,7 +282,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const labelY = await findLabelYFrac(page);
     await clearSelection(page);
     await v.setViewerProps(page, 'Box plot', [{set: {markerColorColumnName: 'RACE'}, wait: 800}]);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
 
     const hueBaseline = await v.countSelectionHuePixels(page, 'Box plot');
     await page.evaluate(() => (window as any).__hueBaseline = null);
@@ -292,7 +292,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const cauCount = await raceCatCount(page, cats[cauIdx]);
     await page.mouse.click(r.x + r.w * (await catCenter(page, cauIdx)), r.y + r.h * labelY);
     await v.waitForViewerRendered(page, 'Box plot', 800);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     expect(await selectionCount(page)).toBe(cauCount);
     const hueSelected = await v.countSelectionHuePixels(page, 'Box plot');
     expect(hueSelected).toBeGreaterThan(hueBaseline + 2000);
@@ -303,7 +303,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const hueBaseline = await page.evaluate(() => (window as any).__hueBaseline);
     const hueWithSel = await v.countSelectionHuePixels(page, 'Box plot');
     await v.setViewerProps(page, 'Box plot', [{set: {showSelectedRows: false}, wait: 800}]);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const hueSuppressed = await v.countSelectionHuePixels(page, 'Box plot');
 
     expect(hueSuppressed).toBeLessThan(hueWithSel);
@@ -316,7 +316,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
 
   await softStep('Scenario 5 / Step 15: rowSource=Selected suppresses hue via showSelectedRows dependsOn gate (GROK-19950)', async () => {
     await v.setViewerProps(page, 'Box plot', [{set: {rowSource: 'Selected'}, wait: 900}]);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
 
     expect(await v.countSelectionHuePixels(page, 'Box plot')).toBe(0);
     await v.setViewerProps(page, 'Box plot', [{set: {rowSource: 'All', markerColorColumnName: ''}, wait: 600}]);
@@ -342,7 +342,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     await v.setViewerProps(page, 'Box plot', [{set: {showMouseOverPoint: false}, wait: 600}]);
     const r = await canvasRect(page);
     await page.mouse.move(r.x + r.w * 0.5, r.y - 40);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.mouse.move(r.x + r.w * 0.62, r.y + r.h * 0.55);
 
@@ -367,7 +367,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     });
     await page.locator('[name="viewer-Bar-chart"]').waitFor({timeout: 10000});
     await v.waitForViewerRendered(page, 'Box plot', 1200);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     const barRect = await page.evaluate(() => {
       const root = document.querySelector('[name="viewer-Bar-chart"]')!;
@@ -395,7 +395,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const labelY = await findLabelYFrac(page);
     await clearSelection(page);
     await v.setViewerProps(page, 'Box plot', [{set: {markerColorColumnName: 'RACE'}, wait: 800}]);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const cats = await raceCategoriesInAxisOrder(page);
     const r = await canvasRect(page);
     const cauIdx = cats.indexOf('Caucasian') >= 0 ? cats.indexOf('Caucasian') : cats.length - 1;
@@ -417,7 +417,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
       df.rows.removeWhereIdx((i: number) => set.has(i));
     });
     await v.waitForViewerRendered(page, 'Box plot', 1000);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const rowsAfter = await page.evaluate(() => grok.shell.t.rowCount);
     expect(rowsAfter).toBe(rowsBefore - selForDelete);
 

@@ -1213,10 +1213,39 @@ export async function waitForViewerRendered(page: Page, viewerType: string, capM
 export async function waitForViewerQuiet(
   page: Page, viewerType: string, opts: {gapMs?: number; capMs?: number} = {},
 ): Promise<number> {
-  await installEventWaits(page);
-  return page.evaluate(({type, gap, cap}) =>
-    (window as any).__quiet(`viewer:${type}.onViewerRendered`, gap, cap),
-  {type: viewerType, gap: opts.gapMs ?? 300, cap: opts.capMs ?? 3000});
+  return page.evaluate(({type, gap, cap}) => new Promise<number>((resolve) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok.shell.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(type)) as any;
+    if (!v) return resolve(0);
+
+    // Stamped, not subscribed-on-demand: callers settle AFTER the action, and a
+    // subscription opened at that point has already missed the burst it is waiting for.
+    // The stamp is installed once per viewer and survives, so "when did it last paint"
+    // is answerable retroactively. Same reason waitForViewerRendered stamps.
+    w.__renderCount = w.__renderCount ?? {};
+    w.__lastRender = w.__lastRender ?? {};
+    if (!v.__quietStamped) {
+      try {
+        v.onViewerRendered.subscribe(() => {
+          w.__lastRender[type] = Date.now();
+          w.__renderCount[type] = (w.__renderCount[type] ?? 0) + 1;
+        });
+        v.__quietStamped = true;
+      } catch (_) { return resolve(0); }
+    }
+    const before = w.__renderCount[type] ?? 0;
+    const t0 = Date.now();
+    const tick = () => {
+      const last = w.__lastRender[type] ?? 0;
+      const seen = (w.__renderCount[type] ?? 0) - before;
+      if (last && Date.now() - last >= gap) return resolve(seen);
+      if (Date.now() - t0 >= cap) return resolve(seen);
+      setTimeout(tick, 50);
+    };
+    tick();
+  }), {type: viewerType, gap: opts.gapMs ?? 300, cap: opts.capMs ?? 3000});
 }
 
 /**
@@ -1432,9 +1461,14 @@ export async function installEventWaits(page: Page): Promise<void> {
         resolve(seen);
       };
       const cap = setTimeout(done, capMs);
-      const arm = () => { clearTimeout(timer); timer = setTimeout(done, gapMs); };
-      sub = stream.subscribe(() => { seen++; arm(); });
-      arm();
+      // The gap timer only starts once something has actually fired. Arming it up front
+      // makes the no-event case resolve after gapMs — a sleep with an event's name on it,
+      // which is what the first version did and what the probe caught.
+      sub = stream.subscribe(() => {
+        seen++;
+        clearTimeout(timer);
+        timer = setTimeout(done, gapMs);
+      });
     });
 
     // In-page twin of pollValue, for state with no event behind it — a viewer

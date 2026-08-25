@@ -215,13 +215,13 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   });
   await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
-  await v.waitForCanvasQuiet(page, 'Box plot');
+  await v.waitForViewerQuiet(page, 'Box plot');
 
   await openFilterPanelWithBudget(page);
 
   await softStep('Scenario 1 Step 4: narrowing the filter narrows the viewport; trueCount < 100; zoomValuesByFilter reads true', async () => {
     await resetFilter(page);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     expect(await filterTrueCount(page)).toBe(100);
     expect(await bpProp(page, 'zoomValuesByFilter')).toBe(true);
     const baseline = await viewportRect(page);
@@ -234,7 +234,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
       console.log('S1 range-handle drags (min/max found):', minDragged, maxDragged);
       tc = await filterTrueCount(page);
     }
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const narrowed = await viewportRect(page);
     console.log('S1 viewport height baseline/narrowed:', baseline.height, narrowed.height, 'trueCount:', tc);
     expect(narrowed.height).toBeLessThan(baseline.height);
@@ -244,11 +244,11 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
   await softStep('Scenario 2 Step 6: with zoomValuesByFilter false and an active filter the viewport is unchanged', async () => {
     await setBpProp(page, 'zoomValuesByFilter', false);
     await resetFilter(page);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const baseline = await viewportRect(page);
     const tc = await narrowAverageMass(page, 300, 400);
     await v.waitForViewerRendered(page, 'Box plot', 1400);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const after = await viewportRect(page);
     console.log('S2 zoom-off viewport height baseline/after:', baseline.height, after.height, 'trueCount:', tc);
     expect(tc).toBeLessThan(100);
@@ -260,7 +260,7 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
 
     const before = await viewportRect(page);
     await setBpProp(page, 'zoomValuesByFilter', true);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const after = await viewportRect(page);
     console.log('S2 switch-back viewport height before/after:', before.height, after.height);
     expect(after.height).toBeLessThan(before.height);
@@ -270,11 +270,11 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     await resetFilter(page);
     const tcBefore = await narrowAverageMass(page, 300, 400);
     await v.waitForViewerRendered(page, 'Box plot', 1200);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
 
     await setBpProp(page, 'filter', '${Average Mass} > 350', 1500);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const tcAfter = await filterTrueCount(page);
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
     console.log('S3 trueCount before/after:', tcBefore, tcAfter, 'canvas deltaPx:', deltaPx);
@@ -313,13 +313,13 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
       if (fx.added)
         await setBpProp(page, 'valueColumnName', 'AverageMassFixture', 1200);
       await setBpProp(page, 'showEmptyCategories', true, 1200);
-      await v.waitForCanvasQuiet(page, 'Box plot');
+      await v.waitForViewerQuiet(page, 'Box plot');
 
       expect(await hasEmptyValuedCategory(page)).toBe(true);
       await v.snapshotCanvasColors(page, 'Box plot');
       const bandBefore = await categoryBandColors(page);
       await setBpProp(page, 'showEmptyCategories', false, 1400);
-      await v.waitForCanvasQuiet(page, 'Box plot');
+      await v.waitForViewerQuiet(page, 'Box plot');
       const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
       const bandDelta = bandColorsDelta(bandBefore, await categoryBandColors(page));
       console.log('S4 re-layout deltaPx (off):', deltaPx, 'label-band delta:', bandDelta);
@@ -331,11 +331,11 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     });
 
     await softStep('Scenario 4 Step 7: re-enabling showEmptyCategories restores the empty-valued category (axis re-layout)', async () => {
-      await v.waitForCanvasQuiet(page, 'Box plot');
+      await v.waitForViewerQuiet(page, 'Box plot');
       await v.snapshotCanvasColors(page, 'Box plot');
       const bandBefore = await categoryBandColors(page);
       await setBpProp(page, 'showEmptyCategories', true, 1400);
-      await v.waitForCanvasQuiet(page, 'Box plot');
+      await v.waitForViewerQuiet(page, 'Box plot');
       const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
       const bandDelta = bandColorsDelta(bandBefore, await categoryBandColors(page));
       console.log('S4 re-layout deltaPx (back on):', deltaPx, 'label-band delta:', bandDelta);
@@ -360,11 +360,11 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     await resetFilter(page);
     await narrowAverageMass(page, 300, 400);
     await v.waitForViewerRendered(page, 'Box plot', 1200);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     const errBefore = consoleErrors.length + pageErrors.length;
     await setBpProp(page, 'markerColorColumnName', 'TPSA', 1500);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot');
     const errAfter = consoleErrors.length + pageErrors.length;
 
@@ -393,11 +393,11 @@ test('Box Plot filter semantics and viewport response', async ({page}) => {
     });
     console.log('S5 TPSA visible range vs full:', JSON.stringify(ranges));
     expect(ranges.visMin !== ranges.fullMin || ranges.visMax !== ranges.fullMax).toBe(true);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot', OVERLAY);
     await resetFilter(page);
 
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const {deltaPx} = await v.diffCanvasColors(page, 'Box plot', OVERLAY);
     console.log('S5 overlay scale deltaPx on filter widen:', deltaPx);
     expect(deltaPx).toBeGreaterThan(1000);

@@ -85,7 +85,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
   await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 10000});
   await v.waitForViewerRendered(page, 'Box plot', 1500);
-  await v.waitForCanvasQuiet(page, 'Box plot');
+  await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('[anchor: Scenario 1 Step 2] Box coloring baseline: whiskerColor=null gives per-category sequential hues', async () => {
 
@@ -136,7 +136,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     await setBpProp(page, 'showStdev', true, 300);
     await setBpProp(page, 'showQ1', true, 300);
     await setBpProp(page, 'showQ3', true, 500);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     expect(await bpProp(page, 'showTotalCount')).toBe(true);
     expect(await bpProp(page, 'showInliersCount')).toBe(true);
     expect(await bpProp(page, 'showOutliersCount')).toBe(true);
@@ -167,7 +167,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   });
 
   await softStep('[anchor: Scenario 1 Step 9] Explicit whiskerColor repaints the boxes to one uniform color (settle-gated canvas diff)', async () => {
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'whiskerColor', 0xFF1F77B4, 300);
     const deltaPx = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 2000, timeoutMs: 15000});
@@ -273,7 +273,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   await softStep('[anchor: Scenario 3 Step 3] Plot Style violin: large canvas diff and both SEX distributions present (github-2966)', async () => {
     await setBpProp(page, 'category1ColumnName', 'SEX', 800);
     await setBpProp(page, 'plotStyle', 'box', 600);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'plotStyle', 'violin', 300);
     const deltaPx = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 5000, timeoutMs: 15000});
@@ -305,14 +305,14 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
 
   await softStep('[anchor: Scenario 3 Step 5] Bins 50→500 and Interquartile Line Width each yield a canvas diff (GROK-18245)', async () => {
     await setBpProp(page, 'bins', 50, 800);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'bins', 500, 300);
     const binsDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
     console.log('Scenario 3 Step 5 bins 50→500 deltaPx:', binsDelta);
     expect(binsDelta).toBeGreaterThanOrEqual(0);
     expect(binsDelta).toBeGreaterThan(0);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'interquartileLineWidth', 10, 300);
     const iqrDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
@@ -327,14 +327,14 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     await setBpProp(page, 'plotStyle', 'violin', 900);
     expect(await bpProp(page, 'plotStyle')).toBe('violin');
     await setBpProp(page, 'violinLineWidth', 1, 700);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'violinLineWidth', 4, 300);
     const vlwDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
     console.log('Scenario 3 Step 7 violinLineWidth deltaPx:', vlwDelta);
     expect(vlwDelta).toBeGreaterThanOrEqual(0);
     expect(vlwDelta).toBeGreaterThan(0);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'violinWhiskerColor', 0xFF00AA00, 300);
     const vwcDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
@@ -353,7 +353,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     });
     await setBpProp(page, 'markerColorColumnName', 'WEIGHT', 1200);
     expect(await bpProp(page, 'markerColorColumnName')).toBe('WEIGHT');
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.evaluate(() => {
       const weight = grok.shell.t.col('WEIGHT');
@@ -380,7 +380,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
       (n) => n > 0, 800, 100);
     console.log('Scenario 4 Step 6 selection count:', selCount);
     expect(selCount).toBeGreaterThan(0);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.evaluate(() => {
       const weight = grok.shell.t.col('WEIGHT');
@@ -403,7 +403,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
   await softStep('[anchor: Scenario 4 Step 8] Marker Color=SEX (categorical); changing a category color repaints the box plot (palette sync)', async () => {
     await setBpProp(page, 'markerColorColumnName', 'SEX', 1000);
     expect(await bpProp(page, 'markerColorColumnName')).toBe('SEX');
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await page.evaluate(() => {
       const sex = grok.shell.t.col('SEX');
@@ -426,7 +426,7 @@ test('Box Plot rendering, statistics, and grid color synchronization', async ({p
     const pageErrBefore = pageErrors.length;
     await setBpProp(page, 'valueColumnName', 'STARTED', 1500);
     expect(await bpProp(page, 'valueColumnName')).toBe('STARTED');
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
 
     const errDelta = consoleErrors.slice(errBefore);
     const pageErrDelta = pageErrors.slice(pageErrBefore);

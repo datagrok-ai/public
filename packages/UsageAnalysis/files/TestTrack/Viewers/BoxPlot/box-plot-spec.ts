@@ -187,7 +187,7 @@ test('Box plot property surface smoke', async ({page}) => {
 
   await v.installEventWaits(page);
   await v.waitForViewerRendered(page, 'Box plot', 1500);
-  await v.waitForCanvasQuiet(page, 'Box plot');
+  await v.waitForViewerQuiet(page, 'Box plot');
 
   await softStep('[anchor: Context menus as property paths] Misc menu Show Inside/Outside Values flip the prop AND the drawn points; Markers menu Size grays with a size column', async () => {
     expect(await bpProp(page, 'showInsideValues')).toBe(true);
@@ -203,7 +203,7 @@ test('Box plot property surface smoke', async ({page}) => {
     await v.waitForViewerRendered(page, 'Box plot', 900);
     expect(outsideClicked).toBe(true);
     expect(await bpProp(page, 'showOutsideValues')).toBe(false);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const inkNeither = await canvasInk(page);
     console.log('Misc Show Outside Values ink off:', inkNeither);
     expect(inkNeither).toBeLessThan(inkNoInside);
@@ -360,7 +360,7 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Marker gate and size scaling] Disabling Show Markers removes the points and grays the Marker group; Size Scaling linear/log repaints the markers', async () => {
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const inkWithMarkers = await canvasInk(page);
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'showMarkers', false, 300);
@@ -384,14 +384,14 @@ test('Box plot property surface smoke', async ({page}) => {
     const inkReturned = await v.pollValue(() => canvasInk(page), (n) => n > inkNoMarkers, 3000, 150);
     expect(inkReturned).toBeGreaterThan(inkNoMarkers);
     await setBpProp(page, 'markerSizeColumnName', 'WEIGHT', 800);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'markerSizeScaling', 'logarithmic', 300);
     const scalingDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
     console.log('Size Scaling linear→log canvas delta:', scalingDelta);
     expect(scalingDelta).toBeGreaterThanOrEqual(0);
     expect(scalingDelta).toBeGreaterThan(0);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'markerSizeScaling', 'linear', 300);
     const scalingBackDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
@@ -403,14 +403,14 @@ test('Box plot property surface smoke', async ({page}) => {
 
   await softStep('[anchor: Whisker and control-band style] Whisker line width / width ratio each repaint; Control Band Color sets without error', async () => {
 
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'whiskerLineWidth', 4, 300);
     const lwDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
     console.log('Whisker Line Width canvas delta:', lwDelta);
     expect(lwDelta).toBeGreaterThanOrEqual(0);
     expect(lwDelta).toBeGreaterThan(0);
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'whiskerWidthRatio', 0.3, 300);
     const wrDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
@@ -453,7 +453,7 @@ test('Box plot property surface smoke', async ({page}) => {
     expect(colorOff.display).toBe('none');
 
     const canvasToggle = async (prop: string, value: boolean) => {
-      await v.waitForCanvasQuiet(page, 'Box plot');
+      await v.waitForViewerQuiet(page, 'Box plot');
       await v.snapshotCanvasColors(page, 'Box plot');
       await setBpProp(page, prop, value, 300);
       const delta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 2000, timeoutMs: 15000});
@@ -535,7 +535,7 @@ test('Box plot property surface smoke', async ({page}) => {
   await softStep('[anchor: Date category mapping] Category 1 Map Month then Quarter restructures the datetime category axis; returning to a categorical column restores plain categories', async () => {
     await setBpProp(page, 'category1ColumnName', 'STARTED', 1200);
     expect(await bpProp(page, 'category1ColumnName')).toBe('STARTED');
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'category1Map', 'month', 300);
     const monthDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
@@ -543,7 +543,7 @@ test('Box plot property surface smoke', async ({page}) => {
     expect(monthDelta).toBeGreaterThanOrEqual(0);
     expect(monthDelta).toBeGreaterThan(0);
     expect(await bpProp(page, 'category1Map')).toBe('month');
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     await v.snapshotCanvasColors(page, 'Box plot');
     await setBpProp(page, 'category1Map', 'quarter', 300);
     const quarterDelta = await v.waitForCanvasChange(page, 'Box plot', {minDelta: 1, timeoutMs: 15000});
@@ -661,7 +661,7 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Legend minimum under coloring] A legend-bearing coloring keeps the render valid: canvas keeps ink, warnings delta zero, markerColorColumnName stays applied', async () => {
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const errBefore = consoleErrors.length;
     const pageErrBefore = pageErrors.length;
     await setBpProp(page, 'markerColorColumnName', 'RACE', 1000);
@@ -679,7 +679,7 @@ test('Box plot property surface smoke', async ({page}) => {
   });
 
   await softStep('[anchor: Double-click resets the view] Range-slider zoom narrows the viewport; double-clicking empty plot space fires d4-boxplot-reset-view AND restores the full range', async () => {
-    await v.waitForCanvasQuiet(page, 'Box plot');
+    await v.waitForViewerQuiet(page, 'Box plot');
     const vpFull = await viewportRect(page);
     const handles = await verticalSliderHandles(page);
     await page.mouse.move(handles.top.x, handles.top.y);
