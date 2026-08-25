@@ -4,7 +4,7 @@ realizes: [scatterplot.cp.legend, viewers.scatter-plot]
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 
@@ -148,11 +148,21 @@ const readLegend = (page: Page): Promise<Legend> => page.evaluate(() => {
   const empty = {present: false, all: 0, coloring: 0, extra: 0, labels: [] as string[],
     colorLabels: [] as string[], glyphLabels: [] as string[], current: [] as string[], dimmed: [] as string[]};
   if (!root) return empty;
-  const items = [...root.querySelectorAll('[name="legend"] .d4-legend-item')] as HTMLElement[];
+  // legendVisibility: Never sets display:none on the host rather than removing it from the
+  // DOM (LegendHost.apply, legend_host.dart) — presence must check visibility, not mere
+  // querySelector existence, or "hidden" reads as "present" forever
+  const host = root.querySelector('[name="legend"]') as HTMLElement | null;
+  const hostVisible = !!host && getComputedStyle(host).display !== 'none';
+  const items = hostVisible
+    ? [...root.querySelectorAll('[name="legend"] .d4-legend-item')] as HTMLElement[]
+    : [];
   const txt = (i: Element) => (i.querySelector('.d4-legend-value')?.textContent ?? '').trim();
-  const colorItems = items.filter((i) => i.classList.contains('d4-legend-item-coloring'));
+  // the DOM has no "-coloring" class (see legend.dart createItemElement) — only the base
+  // .d4-legend-item plus .d4-legend-item-extra on extra/marker items, so a main/color item
+  // is identified by the ABSENCE of the extra class
+  const colorItems = items.filter((i) => !i.classList.contains('d4-legend-item-extra'));
   return {
-    present: !!root.querySelector('[name="legend"]'),
+    present: hostVisible,
     all: items.length,
     coloring: colorItems.length,
     extra: items.filter((i) => i.classList.contains('d4-legend-item-extra')).length,
@@ -305,7 +315,11 @@ const viewerColumns = (page: Page) => page.evaluate(() => {
 const legendHostCount = (page: Page) => page.evaluate(() => {
   const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
     .find((e) => !e.closest('.d4-dialog'));
-  return root ? root.querySelectorAll('[name="legend"]').length : 0;
+  if (!root) return 0;
+  // legendVisibility: Never sets display:none on the host rather than removing it
+  // (LegendHost.apply, legend_host.dart) — count only VISIBLE hosts
+  return [...root.querySelectorAll('[name="legend"]')]
+    .filter((el) => getComputedStyle(el as HTMLElement).display !== 'none').length;
 });
 
 const legendVisibility = (page: Page) => page.evaluate(() => {
@@ -435,25 +449,25 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     const errBefore = errCount();
 
     await pickOnViewer(page, 'color', 'RACE');
-    const colorOnly = await readLegend(page);
+    const colorOnly = await settledLegend(page);
     expect(colorOnly.present).toBe(true);
     expect(colorOnly.colorLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
     expect(colorOnly.all).toBe(RACE_CATEGORIES.length);
 
     await pickMarkerColumn(page, 'SEX');
-    const joint = await readLegend(page);
+    const joint = await settledLegend(page);
     expect(joint.coloring).toBe(RACE_CATEGORIES.length);
     expect(joint.extra).toBe(SEX_CATEGORIES.length);
     expect(joint.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
     expect(joint.all).toBe(RACE_CATEGORIES.length + SEX_CATEGORIES.length);
 
     await pickOnViewer(page, 'color', 'AGE');
-    const numericColor = await readLegend(page);
+    const numericColor = await settledLegend(page);
     expect(numericColor.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
     expect(numericColor.extra).toBe(SEX_CATEGORIES.length);
 
     await pickOnViewer(page, 'color', 'RACE');
-    const back = await readLegend(page);
+    const back = await settledLegend(page);
     expect(back.coloring).toBe(RACE_CATEGORIES.length);
     expect(back.extra).toBe(SEX_CATEGORIES.length);
     expect(back.all).toBe(RACE_CATEGORIES.length + SEX_CATEGORIES.length);
@@ -461,7 +475,7 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     expect(new Set(back.labels).size).toBe(back.labels.length);
 
     await pickMarkerColumn(page, 'RACE');
-    const same = await readLegend(page);
+    const same = await settledLegend(page);
     expect(same.colorLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
     expect(same.glyphLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
     expect(same.all).toBe(RACE_CATEGORIES.length);
@@ -475,12 +489,12 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
     const errBefore = errCount();
     await pickOnViewer(page, 'color', 'SEX');
     await pickMarkerColumn(page, 'SEX');
-    const before = await readLegend(page);
+    const before = await settledLegend(page);
     expect(before.colorLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
     expect(before.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
 
     await clearMarkerColumn(page);
-    const after = await readLegend(page);
+    const after = await settledLegend(page);
 
     expect((await viewerColumns(page)).markers).toBe('');
     expect(after.glyphLabels).toEqual([]);
@@ -735,19 +749,23 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
 
     try {
       await setLegendVisibility(page, 'Never');
-      expect(await legendHostCount(page)).toBe(0);
-      expect((await readLegend(page)).present).toBe(false);
+      // setLegendVisibility only confirms the PROP took; the legend host's removal from
+      // the DOM is a separate, async effect — poll for the actual target state, not just
+      // stability (two consecutive reads can be "stable" on a not-yet-updated DOM)
+      const hidden = await v.pollValue(() => readLegend(page), (l) => l.present === false, 3000, 100);
+      expect(hidden.present).toBe(false);
 
       await setLegendVisibility(page, 'Always');
-      expect(await legendHostCount(page)).toBe(1);
-      const shown = await readLegend(page);
+      const shown = await v.pollValue(() => readLegend(page),
+        (l) => l.present && l.all === before.all, 3000, 100);
       expect(shown.present).toBe(true);
       expect(shown.all).toBe(before.all);
       expect(shown.colorLabels.sort()).toEqual([...before.colorLabels].sort());
       expect(shown.glyphLabels.sort()).toEqual([...before.glyphLabels].sort());
 
       await setLegendVisibility(page, initial);
-      const restored = await readLegend(page);
+      const restored = await v.pollValue(() => readLegend(page),
+        (l) => l.present && l.all === before.all, 3000, 100);
       expect(restored.present).toBe(true);
       expect(restored.all).toBe(before.all);
       expect(restored.colorLabels.sort()).toEqual([...before.colorLabels].sort());
@@ -813,7 +831,10 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       expect(result.color).toBe('RACE');
       expect(result.markers).toBe('SEX');
 
-      const legend = await settledLegend(page);
+      // poll for the actual restored content, not mere read-to-read stability — the legend
+      // rebuild lags one frame behind the prop restore waitFor above confirmed
+      const legend = await v.pollValue(() => readLegend(page),
+        (l) => l.present && l.coloring === RACE_CATEGORIES.length, 3000, 100);
       expect(legend.present).toBe(true);
       expect(legend.colorLabels.sort()).toEqual([...RACE_CATEGORIES].sort());
       expect(legend.glyphLabels.sort()).toEqual([...SEX_CATEGORIES].sort());
@@ -833,7 +854,7 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
       let projectId: string | null = null;
       inProjectSaveWindow = true;
       try {
-        const saved = await saveProjectViaUI(page, projName);
+        const saved = await saveProjectViaApi(page, projName);
         projectId = saved.projectId;
         expect(projectId).toBeTruthy();
 
@@ -850,11 +871,13 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay, Persistence', async (
           }
           const items = sp ? [...sp.root.querySelectorAll('[name="legend"] .d4-legend-item')] : [];
           const txt = (i: Element) => (i.querySelector('.d4-legend-value')?.textContent ?? '').trim();
+          // no "-coloring" class exists (see legend.dart createItemElement) — a main/color
+          // item is identified by the absence of the extra/marker class
           return {
             found: !!sp,
             color: sp?.props.colorColumnName, markers: sp?.props.markersColumnName,
             legendPresent: !!sp?.root.querySelector('[name="legend"]'),
-            colorLabels: items.filter((i) => i.classList.contains('d4-legend-item-coloring')).map(txt),
+            colorLabels: items.filter((i) => !i.classList.contains('d4-legend-item-extra')).map(txt),
             glyphLabels: items.filter((i) => i.querySelector('i[name="legend-icon-color-picker"]')).map(txt),
           };
         }, projectId);

@@ -4,7 +4,7 @@ realizes: [densityplot.cp.setup-binning-color, viewers.density-plot]
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 
@@ -93,14 +93,14 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
 
   await softStep('Scenario 1 — pick axis columns through the on-viewer selectors (GROK-16612)', async () => {
     const errBefore = errCount();
-    const pick = (axis: 'x' | 'y', col: string) => v.pickColumnViaSelector(page, {
-      comboboxSuffix: axis,
+    // the on-viewer column combobox ignores a synthetic mousedown, so the non-trusted
+    // picker silently leaves the column unchanged — drive it with a real click
+    const pick = (axis: 'x' | 'y', col: string) => v.pickColumnViaSelectorTrusted(page, {
+      role: axis,
       columnName: col,
       scopeSelector: '[name="viewer-Density-plot"]',
-      popupWaitStrategy: 'backdrop',
       viewerType: 'Density plot',
       propName: axis === 'x' ? 'xColumnName' : 'yColumnName',
-      allowFallback: false,
     });
 
     await pick('x', 'WEIGHT');
@@ -348,7 +348,7 @@ test('Density Plot — Setup, Axis Columns, Binning, Color Mapping, Persistence'
     const projName = 'zz-densityplot-persistence-probe-' + Date.now();
     let projectId: string | null = null;
     try {
-      const saved = await saveProjectViaUI(page, projName);
+      const saved = await saveProjectViaApi(page, projName);
       projectId = saved.projectId;
       expect(projectId).toBeTruthy();
 

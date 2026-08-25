@@ -4,7 +4,7 @@ realizes: [matrixplot.cp.configure-axes-inner-type, matrixplot.int.axes-drive-in
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 
@@ -245,7 +245,7 @@ test('Matrix Plot — Column Sets, Cell Plot Type, Persistence', async ({page}: 
     let projectId: string | null = null;
     inProjectSaveWindow = true;
     try {
-      const saved = await saveProjectViaUI(page, projName);
+      const saved = await saveProjectViaApi(page, projName);
       projectId = saved.projectId;
       expect(projectId).toBeTruthy();
 

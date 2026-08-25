@@ -4,7 +4,7 @@ realizes: [filters.cp.panel-core-ladder, filters.int.and-combination, filters.in
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 import {addCardViaColumnSelector, cardCount, clickResetCriteriaIcon, driveOpenMenuLeaf,
   expectHeaderCounter, expectHeaderCounterNow, expectHeaderCounterQuiet, headerCounterTarget,
   trueCount} from '../../helpers/filter-panel';
@@ -750,7 +750,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         return df.filter.trueCount;
       }, RACE_CATEGORY);
 
-      const saved = await saveProjectViaUI(page, projectName);
+      const saved = await saveProjectViaApi(page, projectName);
       projectId = saved.projectId;
 
       await page.evaluate(async () => { grok.shell.closeAll(); await new Promise((r) => setTimeout(r, 800)); });

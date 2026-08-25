@@ -4,7 +4,7 @@ realizes: [filters.cp.hierarchical-and-combined-boolean]
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 declare const DG: any;
@@ -737,7 +737,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
         'the combined boolean reset left the table filtered — the project would be saved narrowed')
         .toBe(5850);
 
-      const saved = await saveProjectViaUI(page, probeProject);
+      const saved = await saveProjectViaApi(page, probeProject);
       boolProjectId = saved.projectId;
 
       await page.evaluate(async (id: string) => {

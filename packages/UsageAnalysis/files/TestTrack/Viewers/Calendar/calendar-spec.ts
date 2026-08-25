@@ -1,6 +1,5 @@
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
-import {knownOpenBug} from '../../helpers/known-open-bug';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -76,14 +75,17 @@ async function findDayCell(page: Page): Promise<{hit: Hit; at: {x: number; y: nu
   throw new Error('no day cell with rows found on the calendar');
 }
 
-function dateCounts(page: Page, column: string) {
-  return page.evaluate((col) => {
+/** [filteredOnly] counts only rows passing the current filter — the calendar draws the
+ *  filtered set, so a reference built over every row is wrong once a filter is applied. */
+function dateCounts(page: Page, column: string, filteredOnly = false) {
+  return page.evaluate(({col, filtered}) => {
     const t = (window as any).grok.shell.t;
     const c = t.col(col);
     const byDay: Record<string, number> = {};
     const byMonth: Record<string, number> = {};
     const byWeekday: number[] = [0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < t.rowCount; i++) {
+      if (filtered && !t.filter.get(i)) continue;
       const value = c.get(i);
       if (value == null) continue;
       const day = value.format ? value.format('YYYY-MM-DD') : String(value).slice(0, 10);
@@ -92,7 +94,7 @@ function dateCounts(page: Page, column: string) {
       byWeekday[new Date(day).getUTCDay()]++;
     }
     return {byDay, byMonth, byWeekday};
-  }, column);
+  }, {col: column, filtered: filteredOnly});
 }
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -138,17 +140,12 @@ test('Calendar', async ({page}) => {
     const sunday = await hover(page, r.weekday(0));
     expect(sunday).not.toBeNull();
     expect(sunday!.caption).toBe(WEEKDAYS[0]);
-    await knownOpenBug('GROK-20634', () => {
-      expect(sunday!.rows).toBe(counts.byWeekday[0]);
-    });
+    expect(sunday!.rows).toBe(counts.byWeekday[0]);
   });
 
   await softStep('The auto-picked date column is reflected in the property grid', async () => {
-
-    await knownOpenBug('GROK-20636', async () => {
-      expect(await page.evaluate(() => (window as any).grok.shell.tv.viewers
-        .find((x: any) => x.type === 'Calendar').props.dateColumnName)).toBe(DATE_COLUMN);
-    });
+    expect(await page.evaluate(() => (window as any).grok.shell.tv.viewers
+      .find((x: any) => x.type === 'Calendar').props.dateColumnName)).toBe(DATE_COLUMN);
   });
 
   await softStep('Clicking a day, a month and a weekday selects their rows', async () => {
@@ -253,7 +250,7 @@ test('Calendar', async ({page}) => {
     expect(filteredCount).toBeLessThan(total);
     await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 200});
 
-    const counts = await dateCounts(page, DATE_COLUMN);
+    const counts = await dateCounts(page, DATE_COLUMN, true);
     const {hit} = await findDayCell(page);
     expect(hit.rows).toBe(counts.byDay[hit.caption.slice(0, 10)]);
 
@@ -261,9 +258,7 @@ test('Calendar', async ({page}) => {
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);
     await v.snapshotCanvasColors(page, VIEWER_TYPE);
     await v.setPropertyGridCheckbox(page, 'show-filtered-only', false, 'misc');
-    await knownOpenBug('GROK-20635', async () => {
-      await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 200, timeoutMs: 8000});
-    });
+    await v.waitForCanvasChange(page, VIEWER_TYPE, {minDelta: 200, timeoutMs: 8000});
     await v.setPropertyGridCheckbox(page, 'show-filtered-only', true, 'misc');
 
     await v.waitForCanvasQuiet(page, VIEWER_TYPE);

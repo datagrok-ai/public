@@ -53,22 +53,47 @@ async function raceCategoriesInAxisOrder(page: Page): Promise<string[]> {
   return page.evaluate(() => grok.shell.t.col('RACE').categories.slice());
 }
 
-async function findLabelYFrac(page: Page): Promise<number> {
-  if (labelYFrac > 0) return labelYFrac;
-  const cats = await raceCategoriesInAxisOrder(page);
-  const cat0Count = await raceCatCount(page, cats[0]);
-  const r = await canvasRect(page);
-  for (const frac of LABEL_Y_FRACS) {
-    await clearSelection(page);
-    await page.mouse.click(r.x + r.w * (0.5 / cats.length), r.y + r.h * frac);
+/** Category slots do NOT span the full canvas — the value axis takes a left margin, so
+ *  `(i + 0.5) / cats.length` lands outside the plot area. Measured once by clicking each
+ *  candidate centre in the label band and keeping the offsets that select a whole category. */
+let catCenters: number[] = [];
 
-    const selected = await v.pollValue(() => selectionCount(page), (n) => n === cat0Count, 500, 50);
-    if (selected === cat0Count) { labelYFrac = frac; break; }
+async function measureGeometry(page: Page): Promise<void> {
+  if (labelYFrac > 0 && catCenters.length > 0) return;
+  const cats = await raceCategoriesInAxisOrder(page);
+  const counts = await Promise.all(cats.map((c) => raceCatCount(page, c)));
+  const r = await canvasRect(page);
+
+  for (const frac of LABEL_Y_FRACS) {
+    // the plot area starts after the value-axis margin; scan plausible left edges
+    for (const left of [0.15, 0.12, 0.18, 0.10, 0.20, 0.0]) {
+      const width = 1 - left - 0.05;
+      const centers = cats.map((_, i) => left + width * ((i + 0.5) / cats.length));
+      await clearSelection(page);
+      await page.mouse.click(r.x + r.w * centers[0], r.y + r.h * frac);
+      const selected = await v.pollValue(() => selectionCount(page), (n) => n === counts[0], 600, 50);
+      if (selected === counts[0]) {
+        labelYFrac = frac;
+        catCenters = centers;
+        break;
+      }
+    }
+    if (catCenters.length > 0) break;
   }
   await clearSelection(page);
-  if (labelYFrac === 0)
+  if (labelYFrac === 0 || catCenters.length === 0)
     throw new Error('category-label band not found: no candidate Y fraction selected the full first category');
+}
+
+async function findLabelYFrac(page: Page): Promise<number> {
+  await measureGeometry(page);
   return labelYFrac;
+}
+
+/** X fraction of category [i]'s centre, measured rather than assumed. */
+async function catCenter(page: Page, i: number): Promise<number> {
+  await measureGeometry(page);
+  return catCenters[i];
 }
 
 async function shiftDragBand(
@@ -163,7 +188,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     expect(cats.length).toBeGreaterThanOrEqual(2);
 
     const r = await canvasRect(page);
-    const firstCenter = 0.5 / cats.length;
+    const firstCenter = await catCenter(page, 0);
     let baseline = 0;
     for (const [dx, y0, y1] of [[0.05, 0.42, 0.60], [0.08, 0.30, 0.80], [0.10, 0.20, 0.85]]) {
       await shiftDragBand(page, r, firstCenter - dx, y0, firstCenter + dx, y1);
@@ -174,7 +199,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const secondCat = cats[1];
     const secondCount = await raceCatCount(page, secondCat);
     expect(secondCount).toBeGreaterThan(0);
-    const cx = r.x + r.w * ((1 + 0.5) / cats.length);
+    const cx = r.x + r.w * (await catCenter(page, 1));
     await page.keyboard.down('Control');
     await page.mouse.click(cx, r.y + r.h * labelY);
     await page.keyboard.up('Control');
@@ -187,7 +212,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const cats = await raceCategoriesInAxisOrder(page);
     const firstCount = await raceCatCount(page, cats[0]);
     const r = await canvasRect(page);
-    const cx = r.x + r.w * ((0 + 0.5) / cats.length);
+    const cx = r.x + r.w * (await catCenter(page, 0));
     await page.mouse.click(cx, r.y + r.h * labelY);
     await v.waitForViewerRendered(page, 'Box plot', 700);
     expect(await selectionCount(page)).toBe(firstCount);
@@ -265,7 +290,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const r = await canvasRect(page);
     const cauIdx = cats.indexOf('Caucasian') >= 0 ? cats.indexOf('Caucasian') : cats.length - 1;
     const cauCount = await raceCatCount(page, cats[cauIdx]);
-    await page.mouse.click(r.x + r.w * ((cauIdx + 0.5) / cats.length), r.y + r.h * labelY);
+    await page.mouse.click(r.x + r.w * (await catCenter(page, cauIdx)), r.y + r.h * labelY);
     await v.waitForViewerRendered(page, 'Box plot', 800);
     await v.waitForCanvasQuiet(page, 'Box plot');
     expect(await selectionCount(page)).toBe(cauCount);
@@ -374,7 +399,7 @@ test('Box plot pointer selection and highlight', async ({page}) => {
     const cats = await raceCategoriesInAxisOrder(page);
     const r = await canvasRect(page);
     const cauIdx = cats.indexOf('Caucasian') >= 0 ? cats.indexOf('Caucasian') : cats.length - 1;
-    await page.mouse.click(r.x + r.w * ((cauIdx + 0.5) / cats.length), r.y + r.h * labelY);
+    await page.mouse.click(r.x + r.w * (await catCenter(page, cauIdx)), r.y + r.h * labelY);
     await v.waitForViewerRendered(page, 'Box plot', 700);
     const selForDelete = await selectionCount(page);
     expect(selForDelete).toBeGreaterThan(0);

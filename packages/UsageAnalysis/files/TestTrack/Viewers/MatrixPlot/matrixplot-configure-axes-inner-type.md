@@ -202,15 +202,23 @@ Expected:
   ratio) — scale coordinates by `rect.width / canvas.width`.
 - Scenario 5: the layout is saved and re-applied via the JS API
   (`tv.saveLayout()` / `grok.dapi.layouts.save` / `tv.loadLayout`); the
-  project is saved through the real ribbon Save button
-  (`[name="button-Save"]`) because only the UI Save captures the view
-  layout; the Share dialog is dismissed via its CANCEL button. Probe names
-  carry a `Date.now()` suffix; the probe layout and project are deleted in
+  project is saved via the JS API too — `saveProjectViaApi` from
+  `helpers/projects.ts` — no ribbon click, no Save/Share dialogs, no fixed
+  sleeps or polling. The round-trip assertions (viewer presence,
+  xColumnNames, yColumnNames, cellPlotType — GROK-10925 guard) are ordinary
+  viewer `@Prop` state, which `tv.getInfo()`'s `ViewInfo` restores the same
+  as the ribbon Save does; `saveProjectViaUI` (real ribbon Save) is still
+  required when a round-trip asserts state outside `@Prop`/layout
+  serialization or the dialog UI itself is under test. Probe names carry a
+  `Date.now()` suffix; the probe layout and project are deleted in
   `finally` teardowns (`grok.dapi.layouts.delete` /
   `grok.dapi.projects.delete`).
-- The project-publish preview clones the live view into an offscreen iframe;
-  that clone emits "Unable to find element in cloned iframe" plus the Dart
-  "NullError: method not found ... on null" + "Stack trace" pair against the
+- The project-publish preview clone/iframe console pair described below is a
+  ribbon-Save-specific artifact and does not occur on Scenario 5's API save
+  path; it would apply to a different scenario in this spec that still
+  drives the ribbon Save. That clone emits "Unable to find element in cloned
+  iframe" plus the Dart "NullError: method not found ... on null" + "Stack
+  trace" pair against the
   detached ProjectMeta view. The console guard whitelists this class only
   inside the ribbon project-save window (a flag around `saveProjectViaUI`);
   everywhere else — notably the GROK-16473 set-cycling scenario — the same

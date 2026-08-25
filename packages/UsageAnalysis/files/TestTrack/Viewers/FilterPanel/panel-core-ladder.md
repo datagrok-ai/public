@@ -462,9 +462,9 @@ Clean up: delete both probe layouts even if the scenario fails.
 ### Scenario 3: Persistence peak — project round-trip (mandatory close of p0)
 
 **Step 12 — configure and save project.** From the filtered state (RACE narrowed to Black,
-AGE max ~60, two-filter row count from Step 10), save the current view as a project using the
-ribbon **Save** button, fill in the name "probe-filters-ladder-project", and dismiss any
-follow-up dialog.
+AGE max ~60, two-filter row count from Step 10), save the current view as a project (see
+Automation notes for the mechanism this scenario actually scripts) under the name
+"probe-filters-ladder-project".
 
 **Step 13 — close and reopen.** Close all views. Then reopen the project from the
 **Projects** browser. Wait until the Filter Panel is visible — regression guard for
@@ -519,11 +519,19 @@ anatomy are in `.claude/skills/grok-browser/references/viewers/filters.md`.
   an unrelated viewer.
 - **Readiness after a layout apply (Steps 11, 11-negative):** do not sleep — both rungs share the
   one polling barrier.
-- **Project round-trip (Steps 12, 13):** save with `saveProjectViaUI` (helpers/projects.ts:1196);
-  reopen via `grok.dapi.projects.find(projectId)` → `project.open()`. GROK-19152 guard: the
-  readiness barrier keys on `[name="viewer-Filters"]` becoming visible with a non-zero bounding
-  box, never on a fixed delay — a fixed sleep satisfies readiness on small datasets and hides the
-  bug on large ones.
+- **Project round-trip (Steps 12, 13):** save with `saveProjectViaApi` (`helpers/projects.ts`) —
+  `DG.Project.create()` + `df.getTableInfo()` + `tv.getInfo()` as project children,
+  `dapi.tables.uploadDataFrame`/`save`, `dapi.views.save(viewInfo)` before
+  `dapi.projects.save(project)` — no ribbon click, no dialogs, no fixed sleeps or polling; the
+  round-trip assertions (RACE/AGE filter card presence and criteria, row count) are ordinary
+  Filters-viewer state, which `tv.getInfo()`'s `ViewInfo` restores the same as the ribbon Save
+  does (verified live: a TableView carrying Grid + Pie chart + Filters round-trips all three
+  viewers correctly via this path). `saveProjectViaUI` (real ribbon Save) is still required when
+  a round-trip asserts state outside `@Prop`/layout serialization or the Save/Share dialog UI
+  itself is under test. Reopen via `grok.dapi.projects.find(projectId)` → `project.open()`.
+  GROK-19152 guard: the readiness barrier keys on `[name="viewer-Filters"]` becoming visible with
+  a non-zero bounding box, never on a fixed delay — a fixed sleep satisfies readiness on small
+  datasets and hides the bug on large ones.
 - **Counter tooltip (Step 6):** assert the tooltip's cell list is non-empty before asserting what
   it does not contain. `fg.getFilterSummary()` returns the same table without proving it ever
   reached the screen.

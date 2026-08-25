@@ -49,7 +49,16 @@ const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
 const pickOnViewer = (page: Page, role: string, column: string) =>
   v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 
-async function openSettings(page: Page): Promise<void> {
+/** [rebind] re-opens the gear even when a panel is already built: after openTable adds a
+ *  NEW view + viewer, the existing panel still edits the PREVIOUS view's viewer, so writes
+ *  silently land on a viewer nothing is asserting against. */
+async function openSettings(page: Page, rebind = false): Promise<void> {
+  if (rebind) {
+    await v.openViewerGear(page, 'Scatter plot');
+    await v.pollValue(() => page.evaluate(() => !!document.querySelector('[name="prop-category-data"]')),
+      (b) => b, 2500, 100);
+    return;
+  }
   for (let i = 0; i < 4; i++) {
     const built = await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'));
     if (built) return;
@@ -428,7 +437,10 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
 
   await softStep('Labels for the selected rows', async () => {
     const errBefore = errCount();
-    await clickCanvas(page, {fx: 0.02, fy: 0.02});
+    // a corner click is not a reliable "clear selection": earlier steps can leave a row
+    // selected and (0.02, 0.02) may still land on a marker. Clear it outright, then confirm.
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await v.waitForViewerRendered(page, 'Scatter plot', 300);
     expect(await settledCount(page, 'selection')).toBe(0);
     const baseline = await settledInk(page, 'overlay');
 
@@ -471,6 +483,9 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
     expect(fullRows).toBeGreaterThan(0);
     await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
     await v.waitForViewerRendered(page, 'Scatter plot', 600);
+    // this is a NEW view + viewer; rebind the settings panel or later prop writes go to
+    // the previous view's scatter plot and this one keeps its defaults
+    await openSettings(page, true);
     await pickOnViewer(page, 'x', SPGI_X);
     await pickOnViewer(page, 'y', SPGI_Y);
     expect(await readProp(page, 'xColumnName')).toBe(SPGI_X);

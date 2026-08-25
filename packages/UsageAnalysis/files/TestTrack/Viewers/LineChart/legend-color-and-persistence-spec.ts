@@ -4,6 +4,7 @@ realizes: [linechart.cp.legend-color-and-persistence]
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 declare const DG: any;
@@ -152,22 +153,12 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
     }, splitColumn);
     const expected = await v.pollValue(() => readROneColor(page), (c) => c === 0xFF00AAFF, 500, 50);
 
-    await page.locator('[name="button-Save"]').first().click();
-    await page.locator('.d4-dialog input[type="text"]').first().waitFor({timeout: 8000});
-    await page.locator('.d4-dialog input[type="text"]').first().fill(projName);
-    await page.locator('.d4-dialog .ui-btn-ok, .d4-dialog-footer button').filter({hasText: /^OK$/i}).first().click({force: true});
+    // every assertion below is @Prop / column-tag state, so the API save path applies (see
+    // helpers-registry.yaml for the saveProjectViaApi / saveProjectViaUI boundary)
+    const saved = await saveProjectViaApi(page, projName);
+    const projId = saved.projectId;
 
-    const cancel = page.locator('.d4-dialog .ui-btn, .d4-dialog button').filter({hasText: /^CANCEL$/i}).first();
-    await v.pollValue(() => cancel.count(), (n) => n > 0, 3000, 150);
-    if (await cancel.count() > 0) await cancel.click({force: true});
-    await v.pollValue(() => cancel.count(), (n) => n === 0, 800, 50);
-
-    const projId = await v.pollValue(() => page.evaluate(async (name) => {
-      try { return (await grok.dapi.projects.filter('name = "' + name + '"').first())?.id ?? null; }
-      catch (e) { return null; }
-    }, projName), (id) => id !== null, 7200, 1200);
-
-    const found = projId !== null;
+    const found = !!projId;
     let color: number | null = null;
     let legendDom = false;
     let lcRestored = false;
@@ -181,6 +172,12 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
         const tv = grok.shell.tv;
         return !!tv && Array.from(tv.viewers).some((x: any) => x.type === 'Line chart');
       }), (restored) => restored, 4500, 150);
+      // the reopened view builds its legend a frame after the viewer itself lands, so a
+      // one-shot read here races the render and sees no legend at all
+      legendDom = (await v.pollValue(() => page.evaluate(() => {
+        const el = document.querySelector('[name="viewer-Line-chart"] [name="legend"]') as HTMLElement | null;
+        return !!el && getComputedStyle(el).display !== 'none';
+      }), (visible) => visible, 4500, 150)) === true;
       const state = await page.evaluate((col) => {
         const tv = grok.shell.tv;
         let c = null;
@@ -191,16 +188,12 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
         }
         return {
           color: c,
-          legendDom: !!document.querySelector('[name="viewer-Line-chart"] [name="legend"]'),
           lcRestored: (tv ? Array.from(tv.viewers) : []).some((x: any) => x.type === 'Line chart'),
         };
       }, splitColumn);
       color = state.color;
-      legendDom = state.legendDom;
       lcRestored = state.lcRestored;
-      await page.evaluate(async (id) => {
-        await grok.dapi.projects.delete(await grok.dapi.projects.find(id));
-      }, projId);
+      await deleteProjectWithCleanup(page, {projectId: projId});
     }
 
     expect(found).toBe(true);

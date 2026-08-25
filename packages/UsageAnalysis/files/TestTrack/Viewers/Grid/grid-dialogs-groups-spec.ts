@@ -50,16 +50,19 @@ async function synthClick(page: Page, selector: string): Promise<boolean> {
 }
 
 async function pickSortColumn(page: Page, rowIdx: number, colName: string): Promise<void> {
-  await page.evaluate((idx) => {
+  // a synthetic mousedown does not open an ALREADY-POPULATED combobox (row 0 arrives
+  // pre-filled with the first column), so the pick silently kept the default — use a
+  // trusted click at the label's real coordinates
+  const at = await page.evaluate((idx) => {
     const dlg = document.querySelector('[name="dialog-Sort-Table"]') as HTMLElement;
     const table = dlg.querySelector('.d4-item-table') ?? dlg.querySelector('table');
     const trs = Array.from(table!.querySelectorAll('tr'));
     const combo = trs[idx].querySelector('[name="div-column-combobox-"]') as HTMLElement;
     const label = (combo.querySelector('.d4-column-selector-column') as HTMLElement) ?? combo;
     const r = label.getBoundingClientRect();
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    label.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2}));
+    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
   }, rowIdx);
+  await page.mouse.click(at.x, at.y);
 
   await page.waitForTimeout(500);
   await page.keyboard.press(colName[0].toLowerCase());

@@ -9,11 +9,14 @@ realized_as:
   - calendar-spec.ts
 related_bugs:
   - id: GROK-20634
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
   - id: GROK-20635
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
   - id: GROK-20636
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
 ---
 
 # Calendar (Playwright)

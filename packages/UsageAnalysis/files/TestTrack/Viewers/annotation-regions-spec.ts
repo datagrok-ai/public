@@ -6,16 +6,12 @@ test.use(specTestOptions);
 
 declare const grok: any;
 
+// a synthetic contextmenu event bypasses the Dart canvas hit-test and always opens the
+// whole-viewer menu; only a trusted click resolves the axis/region under the pointer
 async function rightClick(page: Page, selector: string, dx = 100, dy = 100) {
-  await page.evaluate(({sel, x, y}) => {
-    const el = document.querySelector(sel) as HTMLElement;
-    if (!el) throw new Error(`no element: ${sel}`);
-    const r = el.getBoundingClientRect();
-    el.dispatchEvent(new MouseEvent('contextmenu', {
-      bubbles: true, cancelable: true, button: 2,
-      clientX: r.left + x, clientY: r.top + y,
-    }));
-  }, {sel: selector, x: dx, y: dy});
+  const box = await page.locator(selector).first().boundingBox();
+  if (!box) throw new Error(`no element: ${selector}`);
+  await page.mouse.click(box.x + dx, box.y + dy, {button: 'right'});
   await page.waitForTimeout(300);
 }
 

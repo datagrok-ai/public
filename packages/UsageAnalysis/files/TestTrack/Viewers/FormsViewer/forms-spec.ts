@@ -85,16 +85,39 @@ async function sizeCheck(page: Page, col: string):
   }, {sel: CURRENT, c: col});
 }
 
-async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | 'large'): Promise<void> {
-  await v.ensurePropertyCategory(page, 'Forms', 'misc', 'renderer-size');
-  const sel = page.locator('[name="prop-renderer-size"] select').first();
+const rendererSizeProp = (page: Page): Promise<string | null> => page.evaluate(() => {
+  const vw = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'FormsViewer');
+  return (vw?.props?.rendererSize as string) ?? null;
+});
 
-  if (!(await sel.isVisible().catch(() => false))) {
-    await page.locator('[name="prop-view-renderer-size"]').first().click();
-    await sel.waitFor({state: 'visible', timeout: 5000});
+async function setRendererSizeViaPanel(page: Page, value: 'small' | 'normal' | 'large'): Promise<void> {
+  // re-open the gear for the CURRENT Forms viewer: a new openTable/addViewer leaves the
+  // property grid bound to the previous view's viewer, so edits never reach this one
+  await v.clickViewerTitlebarIcon(page, 'Forms', 'icon-font-icon-settings').catch(() => {});
+  await page.waitForTimeout(600);
+  await v.ensurePropertyCategory(page, 'Forms', 'misc', 'renderer-size');
+  // the row can sit in a COLLAPSED category: display stays 'table-row' but the box is 0x0,
+  // so isVisible()-style gating passes while clicks and selectOption reach nothing. Expand
+  // every header until the row has a real box before touching the editor.
+  const row = page.locator('.property-grid tr[name="prop-renderer-size"]').first();
+  const sized = () => page.evaluate(() => {
+    const r = document.querySelector('.property-grid tr[name="prop-renderer-size"]') as HTMLElement | null;
+    if (!r) return false;
+    const b = r.getBoundingClientRect();
+    return b.width > 0 && b.height > 0;
+  });
+  if (!await sized()) {
+    for (const h of await page.locator('[name^="prop-category-"]').all())
+      if (await h.isVisible().catch(() => false)) await h.click().catch(() => {});
+    await v.pollValue(sized, (ok) => ok, 3000, 100);
   }
+
+  await row.locator('td').last().click();
+  const sel = page.locator('[name="prop-renderer-size"] select').first();
+  await sel.waitFor({state: 'visible', timeout: 5000});
   await sel.selectOption(value);
-  await page.waitForTimeout(300);
+  await v.pollValue(() => rendererSizeProp(page), (s) => s === value, 3000, 100);
+  expect(await rendererSizeProp(page), `rendererSize did not commit to "${value}"`).toBe(value);
 }
 
 async function setColorCodeViaPanel(page: Page, on: boolean): Promise<void> {

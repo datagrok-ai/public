@@ -430,7 +430,7 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
     expect(baseline).toBeGreaterThan(0);
 
     await openSettings(page);
-    await revealPropEditor(page, '[name="prop-view-x-axis-type"]', 'x');
+    await revealPropEditor(page, '[name="prop-view-x-axis-type"]', 'x-axis');
     expect(await rowOpacity(page, 'prop-x-axis-type')).toBe('0.5');
 
     expect((await viewerProps(page)).xAxisType).toBe('linear');
@@ -492,7 +492,7 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
       await setFilterOutInvalid(page, false);
       expect(await settledFilterCountUnchanged(page)).toBe(fullRowCount);
 
-      await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'logarithmic');
+      await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'logarithmic');
       expect((await viewerProps(page)).yAxisType).toBe('logarithmic');
       expect(await settledFilterCountUnchanged(page)).toBe(fullRowCount);
 
@@ -504,13 +504,13 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
       expect(await settledFilterCountAfterChange(page, fullRowCount - fixture.nonPositive))
         .toBe(fullRowCount);
 
-      await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'linear');
+      await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'linear');
       await setFilterOutInvalid(page, true);
       expect(await settledFilterCountUnchanged(page)).toBe(fullRowCount);
       expect(errCount()).toBe(errBefore);
     } finally {
       await setFilterOutInvalid(page, false);
-      await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'linear');
+      await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'linear');
       await pickOnViewer(page, 'x', 'WEIGHT');
       await pickOnViewer(page, 'y', 'HEIGHT');
       await page.evaluate((names: string[]) => {
@@ -560,13 +560,13 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
     expect(jittered.jitter).toBe(JITTER_X);
     expect(jittered.jitterY).toBe(JITTER_Y);
 
-    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'logarithmic');
+    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'logarithmic');
     expect((await viewerProps(page)).yAxisType).toBe('logarithmic');
 
     expect(await settledFilterCountUnchanged(page)).toBe(spgiRowCount);
     expect(errCount()).toBe(errBefore);
 
-    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'linear');
+    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'linear');
     await setSliderProp(page, 'prop-jitter-size', 'marker', 0);
     await setSliderProp(page, 'prop-jitter-size-y', 'marker', 0);
     const back = await viewerProps(page);

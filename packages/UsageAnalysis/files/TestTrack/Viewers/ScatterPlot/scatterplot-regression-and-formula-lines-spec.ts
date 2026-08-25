@@ -413,13 +413,12 @@ async function chooseTimeUnit(page: Page, unit: string): Promise<boolean> {
 test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({page}: {page: Page}) => {
   test.setTimeout(1_500_000);
 
-  const pageErrors: string[] = [];
-  page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
-  const consoleErrors: string[] = [];
+  const errors: string[] = [];
+  page.on('pageerror', (e) => { if (!isBenignError(String(e))) errors.push(String(e)); });
   page.on('console', (m) => {
-    if (m.type() === 'error' && !isBenignError(m.text())) consoleErrors.push(m.text());
+    if (m.type() === 'error' && !isBenignError(m.text())) errors.push(m.text());
   });
-  const errCount = () => pageErrors.length + consoleErrors.length;
+  const errCount = () => errors.length;
 
   await loginToDatagrok(page);
   await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
@@ -445,7 +444,7 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
 
   await softStep('Regression line on a logarithmic Y axis', async () => {
     const errBefore = errCount();
-    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'logarithmic', 'yAxisType');
+    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'logarithmic', 'yAxisType');
     expect((await viewerProps(page)).yAxisType).toBe('logarithmic');
 
     const base = await settledInk(page, 'overlay');
@@ -456,10 +455,10 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
     console.log(`regression overlay ink: logBase=${base} logOn=${drawn}`);
 
     expect(Math.abs(drawn - base)).toBeGreaterThan(REGRESSION_OVERLAY_DELTA);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     await setCheckboxProp(page, 'prop-show-regression-line', 'lines', 'showRegressionLine', false);
-    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'linear', 'yAxisType');
+    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'linear', 'yAxisType');
     const restored = await settledInk(page, 'overlay', drawn);
     console.log(`regression overlay ink: restored=${restored}`);
     const back = await viewerProps(page);
@@ -476,11 +475,11 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
 
     await setCheckboxProp(page, 'prop-regression-per-category', 'lines', 'regressionPerCategory', true);
     expect(await settledInk(page, 'overlay')).toBeGreaterThan(0);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     await setCheckboxProp(page, 'prop-regression-per-category', 'lines', 'regressionPerCategory', false);
     expect(await settledInk(page, 'overlay')).toBeGreaterThan(0);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     await pickOnViewer(page, 'x', DATETIME_X);
     expect((await viewerProps(page)).x).toBe(DATETIME_X);
@@ -490,7 +489,7 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
     expect(await chooseTimeUnit(page, TIME_UNIT)).toBe(true);
     expect((await viewerProps(page)).xMap).toBe(TIME_UNIT);
     expect(await settledInk(page, 'canvas')).toBeGreaterThan(0);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     expect(await chooseTimeUnit(page, '')).toBe(true);
     await pickOnViewer(page, 'x', SETUP_X);
@@ -561,13 +560,13 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
     expect(withBand!.some((l: any) => String(l.type).includes('band'))).toBe(true);
 
     const errBefore = errCount();
-    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'logarithmic', 'yAxisType');
+    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'logarithmic', 'yAxisType');
     expect((await viewerProps(page)).yAxisType).toBe('logarithmic');
     expect(await settledInk(page, 'canvas')).toBeGreaterThan(0);
-    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y', 'linear', 'yAxisType');
+    await setChoiceProp(page, 'prop-y-axis-type', 'prop-view-y-axis-type', 'y-axis', 'linear', 'yAxisType');
     expect((await viewerProps(page)).yAxisType).toBe('linear');
     expect(await settledInk(page, 'canvas')).toBeGreaterThan(0);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     await deleteAllFormulaLines(page);
     expect(await formulaLines(page)).toEqual([]);
@@ -598,7 +597,7 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
       await shown1();
     }
     expect(tooltips).toBeGreaterThan(0);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     await deleteAllFormulaLines(page);
     expect(await formulaLines(page)).toEqual([]);
@@ -652,7 +651,7 @@ test('Scatter Plot — Regression Line, Formula Lines, Moving Average', async ({
 
     for (const reading of [lineOn, widened, perCategory, deviation])
       expect(Math.abs(reading.overlay - baseline.overlay)).toBeLessThan(OVERLAY_STABLE_TOLERANCE);
-    expect(errCount()).toBe(errBefore);
+    expect(errors.slice(errBefore)).toEqual([]);
 
     await setCheckboxProp(page, 'prop-show-moving-average-deviation', 'lines',
       'showMovingAverageDeviation', false);

@@ -69,7 +69,13 @@ async function chemReadiness(page: Page, column: string): Promise<ChemReadiness>
       detail = `semType(${col})=${semType}; Chem:substructureFilter registered=${!!factory}; ` +
         `factory applicable=${applicable}${applyErr ? ` (apply threw: ${applyErr})` : ''}; ` +
         `Chem meta.action "Use as filter" registered=${!!action}`;
-      if (semType === 'Molecule' && factory && applicable && action) return {ok: true, detail};
+      if (semType === 'Molecule' && factory && applicable && action) {
+        // dev's stored sketcher preference is ChemDraw, whose licence is unavailable: the host then
+        // renders a licence notice instead of an editor, so a typed SMILES never becomes a molecule
+        // and OK commits an empty structure. Pin in memory only — userSettings is shared.
+        DG.chem.currentSketcherType = 'OpenChemLib';
+        return {ok: true, detail: `${detail}; sketcher pinned to OpenChemLib`};
+      }
       await new Promise((r) => setTimeout(r, 500));
     }
     return {ok: false, detail};
@@ -735,7 +741,10 @@ async function openSketcherDialog(page: Page): Promise<void> {
 
 async function enterSmiles(page: Page, smiles: string, dialog = SKETCHER_DIALOG): Promise<void> {
   const input = page.locator(`${dialog} input[placeholder*="SMILES"]`).first();
-  await input.fill(smiles);
+  // typed through real key events, the path the sketcher's SMILES field is measured on
+  await input.click();
+  await input.fill('');
+  await page.keyboard.type(smiles, {delay: 15});
   await input.press('Enter');
   await page.waitForFunction((probe) => {
     const dlg = [...document.querySelectorAll('.d4-dialog')]

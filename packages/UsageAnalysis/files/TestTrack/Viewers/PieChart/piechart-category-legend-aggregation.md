@@ -36,8 +36,9 @@ expected_results:
       Asian legend swatch; the probe layout is deleted afterwards even on
       failure"
   - anchor: "Project save / Close All / reopen"
-    expectation: "after saving the view as a project through the ribbon Save
-      button, Close All, and reopening the saved project, a Pie chart viewer is
+    expectation: "after saving the view as a project (scripted via the JS API —
+      see Automation notes; equivalent end state to the ribbon Save button),
+      Close All, and reopening the saved project, a Pie chart viewer is
       present AND its category, angle column, aggregation, Show Value, and
       title equal the persisted values AND the Asian legend swatch is still
       rgb(214, 39, 40) with the column color tag intact (a cross-session
@@ -81,7 +82,7 @@ Steps:
 7. Set the title to "Pie Persistence Probe".
 8. Throughout steps 1-7 the viewer stays attached and no errors appear.
 9. Layout round-trip: save the view layout, add a Scatter plot viewer, then re-apply the saved layout. Verify the view's viewer set equals the SAVED set — the Pie chart is present AND the later-added Scatter plot is absent — and the restored pie still carries the category, angle column, aggregation sum, Show Value, title, and the red Asian legend item. Delete the probe layout.
-10. Project round-trip: save the view as a project through the ribbon Save button, dismiss the Share dialog, Close All, then reopen the saved project. Verify the Pie chart is present with the same category, angle column, aggregation, Show Value, title, and the red Asian swatch with the custom color still recorded on the column. Delete the probe project.
+10. Project round-trip: save the view as a project (real end-user path: ribbon Save button, dismiss the resulting Share dialog — the automation notes below describe the faster equivalent this scenario actually scripts), Close All, then reopen the saved project. Verify the Pie chart is present with the same category, angle column, aggregation, Show Value, title, and the red Asian swatch with the custom color still recorded on the column. Delete the probe project.
 
 Expected:
 - Each setting stacks on the previous ones and stays on: the legend equals the RACE categories, Show Value repaints the pie, both aggregation switches repaint it again, the legend-dialog color change turns the Asian swatch red and records the color on the column
@@ -118,9 +119,22 @@ Expected:
   the same dialog — the right-click path is the scripted one.)
 - Steps 9-10: the layout is saved and re-applied via the JS API
   (`tv.saveLayout()` / `grok.dapi.layouts.save` / `tv.loadLayout`). The
-  project is saved through the real ribbon Save button (`[name="button-Save"]`,
-  dialog `dialog-Save-project`) because only the UI Save captures the view
-  layout; the "Share" dialog that follows is dismissed via its CANCEL button.
+  project is saved via the JS API too — `saveProjectViaApi`
+  (`helpers/projects.ts`): `DG.Project.create()` + `df.getTableInfo()` +
+  `tv.getInfo()` (a `ViewInfo`, which carries the viewer's `@Prop` state —
+  category/aggregation/Show Value/title — the same as the ribbon Save)
+  attached as project children, `dapi.tables.uploadDataFrame` /
+  `dapi.tables.save`, then `dapi.views.save(viewInfo)` **before**
+  `dapi.projects.save(project)` (the relation target must already exist
+  server-side, or `projects.save` throws "Unable to add entity"). No ribbon
+  click, no Save/Share dialogs, no fixed sleeps or polling — the `await` on
+  `projects.save()` is the completion signal (measured 18.3s → 2.8-4.0s on
+  dev.datagrok.ai vs. the old `saveProjectViaUI` path). This scenario's
+  assertions are all ordinary viewer `@Prop` state, so the API path is
+  sufficient; `saveProjectViaUI` (real ribbon Save) is still required for a
+  scenario whose assertions reach outside `@Prop`/layout serialization (e.g.
+  a `@Prop(includeInLayout: false)` viewport, or the Save/Share dialog UI
+  itself under test) — see `helpers-registry.yaml`'s entries for both.
   The probe project name carries a `Date.now()` suffix. The custom color
   survives both round-trips because it lives in the dataframe column tag,
   which the layout leaves untouched and the project serializes. The probe

@@ -550,13 +550,20 @@ Expected:
   selected after pinning.
 - **Step 3 confirms the `showSelectedRows` default by reading it BEFORE any write** —
   setting it true then reading it back is a tautology.
-- **The project part of the persistence peak (Step 7c) goes ONLY through
-  `saveProjectViaUI`** (the real ribbon Save button) — only the UI save captures
-  the view layout (viewers + their settings). Substituting `DG.Project.create()`
-  + `addChild` + `grok.dapi.projects.save` persists an empty project that reopens
-  as a bare Grid, so the step passes without proving anything: that is false
-  green, not a persistence check. Reopen via `reopenAndAssertProvenance` and clean
-  up via `deleteProjectWithCleanup` in `finally`.
+- **The project part of the persistence peak (Step 7c) now goes through
+  `saveProjectViaApi`** (`helpers/projects.ts`) — the naive substitution this
+  note used to warn against (`DG.Project.create()` + `addChild(tableInfo)` +
+  `grok.dapi.projects.save`, no `ViewInfo`) really did persist an empty
+  project that reopened as a bare Grid — that failure mode is real and still
+  applies to any hand-rolled save that skips the view. `saveProjectViaApi`
+  fixes it by also attaching `tv.getInfo()`'s `ViewInfo` and saving it via
+  `dapi.views.save(viewInfo)` **before** `dapi.projects.save(project)` — the
+  same restore path the ribbon Save uses internally, verified against this
+  spec's own fields/pinned-row/sort-indicator assertions on dev.datagrok.ai.
+  `saveProjectViaUI` (real ribbon Save) is still required when a round-trip
+  asserts state outside `@Prop`/layout serialization or the dialog UI itself
+  is under test. Reopen via `reopenAndAssertProvenance` and clean up via
+  `deleteProjectWithCleanup` in `finally`.
 - **Every `page.evaluate` returns primitives or JSON** (avoids the "object
   reference chain is too long" serialization failure) — never return a DG object.
 - **Sort By is a DECLARED ACTUATION SUBSTITUTION.** The steps prescribe setting it in

@@ -101,9 +101,15 @@ test('Histogram tests', async ({page}) => {
     const result = await page.evaluate(async () => {
       const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
       const legend = () => {
-        const items = Array.from(h.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
+        // a hidden legend keeps its element in the DOM with display:none (LegendHost.apply,
+        // legend_host.dart) — presence must check the computed style, not existence
+        const host = Array.from(h.root.querySelectorAll('[name="legend"]'))
+          .find((e: any) => getComputedStyle(e).display !== 'none') as HTMLElement | undefined;
+        const items = host
+          ? Array.from(host.querySelectorAll('.d4-legend-item')) as HTMLElement[]
+          : [];
         return {
-          rendered: !!h.root.querySelector('[name="legend"]'),
+          rendered: !!host,
           labels: items.map(it => (it.querySelector('.d4-legend-value')?.textContent ?? '').trim()),
         };
       };

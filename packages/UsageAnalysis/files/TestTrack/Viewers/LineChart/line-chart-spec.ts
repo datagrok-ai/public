@@ -344,7 +344,10 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
 
   await softStep('Legend', async () => {
     const legend = () => page.evaluate(() => {
-      const el = document.querySelector('[name="viewer-Line-chart"] .d4-legend') as HTMLElement | null;
+      // a hidden legend keeps its element in the DOM with display:none (LegendHost.apply,
+      // legend_host.dart) — presence must check the computed style, not existence
+      const el = (Array.from(document.querySelectorAll('[name="viewer-Line-chart"] .d4-legend'))
+        .find((e) => getComputedStyle(e as HTMLElement).display !== 'none') ?? null) as HTMLElement | null;
       return {
         present: !!el,
         labels: el ? (el.innerText || '').split('\n').map(s => s.trim()).filter(Boolean) : [],

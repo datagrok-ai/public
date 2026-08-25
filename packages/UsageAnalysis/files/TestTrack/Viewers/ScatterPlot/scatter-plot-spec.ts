@@ -149,7 +149,7 @@ async function commitColumn(page: Page, column: string): Promise<void> {
 }
 
 const settingsBuilt = (page: Page) =>
-  page.evaluate(() => !!document.querySelector('[name="prop-category-axes"]'));
+  page.evaluate(() => !!document.querySelector('[name="prop-category-x-axis"]'));
 
 async function openSettings(page: Page): Promise<void> {
   for (let i = 0; i < 4; i++) {
@@ -173,6 +173,13 @@ async function revealPropEditor(page: Page, editorSelector: string, category: st
     if (await header.count() > 0 && await header.isVisible()) await header.click();
     if (await waitUntil(ready, 1000)) return;
   }
+  // the named category is a hint, not a contract — property rows move between categories
+  // (histogram/grid-line/whisker rows do not sit under the category the caller guesses).
+  // Expanding every header reaches the row wherever it actually lives.
+  const headers = await page.locator('[name^="prop-category-"]').all();
+  for (const h of headers)
+    if (await h.isVisible()) await h.click();
+  if (await waitUntil(ready, 2000)) return;
   throw new Error(`property editor ${editorSelector} never became reachable`);
 }
 
@@ -347,20 +354,20 @@ test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page})
     const errBefore = errCount();
     await captureBaseline(page, 'hist-base');
 
-    await setCheckboxProp(page, 'prop-show-x-histogram', 'axes', 'showXHistogram', true);
+    await setCheckboxProp(page, 'prop-show-x-histogram', 'x-axis', 'showXHistogram', true);
     expect(await settledCanvasDiff(page, 'hist-base', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
     expect(await captureCanvas(page, 'hist-x')).toBe(true);
-    await setCheckboxProp(page, 'prop-show-y-histogram', 'axes', 'showYHistogram', true);
+    await setCheckboxProp(page, 'prop-show-y-histogram', 'x-axis', 'showYHistogram', true);
     expect(await settledCanvasDiff(page, 'hist-x', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
     expect(await captureCanvas(page, 'hist-xy')).toBe(true);
-    await setNumericProp(page, 'prop-histogram-bins', 'axes', 'histogramBins', HISTOGRAM_BINS);
+    await setNumericProp(page, 'prop-histogram-bins', 'x-axis', 'histogramBins', HISTOGRAM_BINS);
     expect(await settledCanvasDiff(page, 'hist-xy', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
-    await setCheckboxProp(page, 'prop-show-x-histogram', 'axes', 'showXHistogram', false);
-    await setCheckboxProp(page, 'prop-show-y-histogram', 'axes', 'showYHistogram', false);
-    await setNumericProp(page, 'prop-histogram-bins', 'axes', 'histogramBins', DEFAULT_HISTOGRAM_BINS);
+    await setCheckboxProp(page, 'prop-show-x-histogram', 'x-axis', 'showXHistogram', false);
+    await setCheckboxProp(page, 'prop-show-y-histogram', 'x-axis', 'showYHistogram', false);
+    await setNumericProp(page, 'prop-histogram-bins', 'x-axis', 'histogramBins', DEFAULT_HISTOGRAM_BINS);
     expect(await settledCanvasDiff(page, 'hist-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
     expect(errCount()).toBe(errBefore);

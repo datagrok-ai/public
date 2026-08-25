@@ -205,7 +205,7 @@ Expected:
 Steps:
 1. With the settings from Scenario 2 active on the Correlation Plot (Spearman, Show Pearson R = false,
    X = [AGE, HEIGHT, WEIGHT], Y = [AGE, HEIGHT]), save a project named
-   "CP-matrix-persist-project" using the ribbon Save button.
+   "CP-matrix-persist-project" (see Automation notes for the mechanism this scenario actually scripts).
 2. Use Close All to close all open tables and viewers.
 3. Reopen the saved project via File > Recent Projects or the Projects panel.
 4. Locate the Correlation Plot in the reopened view.
@@ -233,6 +233,14 @@ Expected:
 - WASM tolerance: Pearson value assertions compare to a runtime-computed Stats.corr / Stats.pearson
   reference, never to a hardcoded number, because the Pearson branch may route through GrokML WASM.
   Tolerance is 1e-3 (conservative); tighten to 1e-6 if live recon shows stable agreement.
+- Scenario 6's project save is via the JS API — `saveProjectViaApi` from
+  `helpers/projects.ts` — no ribbon click, no Save/Share dialogs, no fixed
+  sleeps or polling. The round-trip assertions (Correlation Type, Show
+  Pearson R, X/Y Columns, the Spearman spot-check) are ordinary viewer
+  `@Prop` state, which `tv.getInfo()`'s `ViewInfo` restores the same as the
+  ribbon Save does; `saveProjectViaUI` (real ribbon Save) is still required
+  when a round-trip asserts state outside `@Prop`/layout serialization or
+  the dialog UI itself is under test.
 - Viewer-local filter invariant (Scenario 3 Step 5): the formula filter is viewer-local
   (props.filter feeds combinedFilter, not df.filter). The test MUST assert df.filter.trueCount
   is unchanged from the baseline; if it changes, the viewer has leaked the formula to the global

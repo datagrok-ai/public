@@ -82,10 +82,14 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
     const expectedFields = await page.evaluate(() =>
       grok.shell.t.columns.names().filter((n: string) => !n.startsWith('~')).slice(0, 20));
 
-    const drawn = await drawnLabelNames(page);
+    const drawn = await v.pollValue(() => drawnLabelNames(page),
+      (d) => JSON.stringify(d) === JSON.stringify(expectedFields), 20_000, 200);
     expect(drawn).toEqual(expectedFields);
     expect(drawn.some((n) => n.startsWith('~'))).toBe(false);
-    expect(await balloonCount(page)).toBe(0);
+    // an ambient "Debugging packages" balloon from the dev-session start can still be
+    // clearing at this point — poll for it to settle rather than reading once
+    const balloons = await v.pollValue(() => balloonCount(page), (n) => n === 0, 4000, 250);
+    expect(balloons).toBe(0);
   });
 
   await softStep('Step 2 — The current-row card shows the grid value and follows the current row', async () => {
@@ -519,7 +523,7 @@ test('Forms viewer — core ladder (p0)', async ({page}) => {
     let projectId: string | null = null;
     try {
 
-      const saved = await projects.saveProjectViaUI(page, projName);
+      const saved = await projects.saveProjectViaApi(page, projName);
       projectId = saved.projectId;
 
       await projects.reopenAndAssertProvenance(page, projectId as string);

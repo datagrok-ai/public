@@ -294,7 +294,7 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
     const errBefore = errCount();
     const errIndexBefore = allErrors().length;
     await v.openViewerGear(page, 'Scatter plot');
-    await setChoiceProp(page, 'prop-x-axis-type', 'prop-view-x-axis-type', 'x', 'logarithmic', 'xAxisType');
+    await setChoiceProp(page, 'prop-x-axis-type', 'prop-view-x-axis-type', 'x-axis', 'logarithmic', 'xAxisType');
     await page.locator('[name="prop-invert-x-axis"] input[type="checkbox"]').click();
     await propIs(page, 'invertXAxis', true, 2500);
 
@@ -335,7 +335,7 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
     await setAxisBound(page, 'prop-view-x-max', null, 'xMax');
     await page.locator('[name="prop-invert-x-axis"] input[type="checkbox"]').click();
     await propIs(page, 'invertXAxis', false, 2500);
-    await setChoiceProp(page, 'prop-x-axis-type', 'prop-view-x-axis-type', 'x', 'linear', 'xAxisType');
+    await setChoiceProp(page, 'prop-x-axis-type', 'prop-view-x-axis-type', 'x-axis', 'linear', 'xAxisType');
     const back = await page.evaluate(() => {
       const sp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Scatter plot') as any;
       return {axisType: sp.props.xAxisType, invert: sp.props.invertXAxis,
@@ -349,7 +349,7 @@ test('Scatter Plot — Axes, Encodings, Persistence', async ({page}: {page: Page
 
   await softStep('Scenario 4 — Axis type control disabled for a datetime axis (GROK-20395)', async () => {
     const errBefore = errCount();
-    await revealPropEditor(page, '[name="prop-view-x-axis-type"]', 'x');
+    await revealPropEditor(page, '[name="prop-view-x-axis-type"]', 'x-axis');
 
     await pickOnViewer(page, 'x', 'STARTED');
     await waitUntil(async () => await rowOpacity(page, 'prop-x-axis-type') === '0.5', 3000);

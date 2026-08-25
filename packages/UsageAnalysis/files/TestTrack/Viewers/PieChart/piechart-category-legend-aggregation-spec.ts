@@ -4,7 +4,7 @@ realizes: [piechart.cp.setup-aggregation-legend-persistence, piechart.int.catego
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 
@@ -43,8 +43,12 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
   await softStep('Configuration ladder — category, Show Value, aggregations, legend color, title', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
 
+    console.time('step: category + legendVisibility');
     await v.setViewerProps(page, 'Pie chart', [{set: {categoryColumnName: 'RACE', legendVisibility: 'Always'}}]);
     await v.waitForViewerRendered(page, 'Pie chart', 1000);
+    console.timeEnd('step: category + legendVisibility');
+
+    console.time('step: read legend labels');
     const legend = await page.evaluate(() => {
       const pie = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pie chart') as any;
       const df = grok.shell.tv.dataFrame;
@@ -52,27 +56,39 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
         .map((e: any) => (e.textContent ?? '').trim());
       return {labels, cats: df.col('RACE').categories.slice()};
     });
+    console.timeEnd('step: read legend labels');
     expect(legend.labels.length).toBeGreaterThan(0);
     expect([...legend.labels].sort()).toEqual([...legend.cats].sort());
 
+    console.time('step: showValue toggle');
     await v.snapshotCanvasColors(page, 'Pie chart');
     await v.setViewerProps(page, 'Pie chart', [{set: {showValue: true}}]);
     const valueOn = await v.waitForCanvasChange(page, 'Pie chart', {minDelta: 500, timeoutMs: 8000});
+    console.timeEnd('step: showValue toggle');
 
+    console.time('step: segmentAngle = count(AGE)');
     await v.setViewerProps(page, 'Pie chart', [{set: {segmentAngleColumnName: 'AGE', segmentAngleAggrType: 'count'}}]);
     await v.waitForViewerRendered(page, 'Pie chart', 1000);
+    console.timeEnd('step: segmentAngle = count(AGE)');
+
+    console.time('step: aggr count -> avg');
     await v.snapshotCanvasColors(page, 'Pie chart');
     await v.setViewerProps(page, 'Pie chart', [{set: {segmentAngleAggrType: 'avg'}}]);
     const countToAvg = await v.waitForCanvasChange(page, 'Pie chart', {minDelta: 10000, timeoutMs: 8000});
+    console.timeEnd('step: aggr count -> avg');
+
+    console.time('step: aggr avg -> sum');
     await v.snapshotCanvasColors(page, 'Pie chart');
     await v.setViewerProps(page, 'Pie chart', [{set: {segmentAngleAggrType: 'sum'}}]);
     const avgToSum = await v.waitForCanvasChange(page, 'Pie chart', {minDelta: 10000, timeoutMs: 8000});
+    console.timeEnd('step: aggr avg -> sum');
 
     console.log(`Repaint px: valueOn=${valueOn} countToAvg=${countToAvg} avgToSum=${avgToSum}`);
     expect(valueOn).toBeGreaterThan(500);
     expect(countToAvg).toBeGreaterThan(10000);
     expect(avgToSum).toBeGreaterThan(10000);
 
+    console.time('step: legend color change (dialog)');
     await v.changeLegendItemColor(page, {
       viewerType: 'Pie chart',
       category: 'Asian',
@@ -91,26 +107,32 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
         dialogGone: !document.querySelector('.d4-dialog[name="dialog-Asian"]'),
       };
     });
+    console.timeEnd('step: legend color change (dialog)');
     expect(colorResult.legendItemFound).toBe(true);
     expect(colorResult.swatchColor).toBe('rgb(214, 39, 40)');
     expect(colorResult.tag).toContain('"Asian":"#d62728"');
     expect(colorResult.dialogGone).toBe(true);
 
+    console.time('step: title set');
     await v.setViewerProps(page, 'Pie chart', [{set: {showTitle: true, title: 'Pie Persistence Probe'}}]);
     await v.waitForViewerRendered(page, 'Pie chart', 1000);
+    console.timeEnd('step: title set');
 
     expect(await readRootInDom()).toBe(true);
     expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
   });
 
   await softStep('Layout round-trip — saved layout restores the configured pie and viewer set', async () => {
+    console.time('step: saveLayout + dapi.layouts.save');
     const layoutId = await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const layout = tv.saveLayout();
       await grok.dapi.layouts.save(layout);
       return layout.id as string;
     });
+    console.timeEnd('step: saveLayout + dapi.layouts.save');
     try {
+      console.time('step: addViewer + loadLayout + verify');
       const result = await page.evaluate(async (id) => {
         const w = window as any;
         const tv = grok.shell.tv;
@@ -139,6 +161,7 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
           asianSwatch: item ? item.style.color : null,
         };
       }, layoutId);
+      console.timeEnd('step: addViewer + loadLayout + verify');
 
       expect(result.hasScatter).toBe(false);
       expect(result.hasPie).toBe(true);
@@ -165,11 +188,16 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
     const projName = 'zz-piechart-persistence-probe-' + Date.now();
     let projectId: string | undefined;
     try {
-      const saved = await saveProjectViaUI(page, projName);
+      console.time('step: save project via API');
+      const saved = await saveProjectViaApi(page, projName);
       projectId = saved.projectId;
+      console.timeEnd('step: save project via API');
 
+      console.time('step: Close All');
       await v.closeAllAndWait(page);
+      console.timeEnd('step: Close All');
 
+      console.time('step: reopen project + verify');
       const result = await page.evaluate(async (id) => {
         const w = window as any;
         await w.__settled('grok.events.onProjectOpened',
@@ -201,6 +229,7 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
           tag: tv ? (tv.dataFrame.col('RACE').tags['.color-coding-categorical'] ?? null) : null,
         };
       }, projectId);
+      console.timeEnd('step: reopen project + verify');
 
       expect(projectId).toBeTruthy();
       expect(result.pieRestored).toBe(true);

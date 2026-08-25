@@ -211,8 +211,10 @@ test('Density Plot — Bin Selection, Zoom, Bin To Range, Axis Configuration', a
 
   await v.pollValue(() => page.evaluate(() => !!document.querySelector('.property-grid')),
     (open) => open, 1000, 50);
-  await expandCategory(page, 'x');
-  await expandCategory(page, 'y');
+  // the real category names are 'x-axis'/'y-axis' — 'x'/'y' match no header, and
+  // expandCategory's guard silently no-ops, leaving the bound rows display:none
+  await expandCategory(page, 'x-axis');
+  await expandCategory(page, 'y-axis');
   await expandCategory(page, 'misc');
 
   await softStep('Scenario 3 — Bin To Range toggled while zoomed', async () => {

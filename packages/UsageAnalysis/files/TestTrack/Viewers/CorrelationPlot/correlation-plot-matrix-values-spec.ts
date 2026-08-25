@@ -4,7 +4,7 @@ realizes: [correlationplot.cp.matrix-values-scope-persist, correlationplot.int.n
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 declare const DG: any;
@@ -424,7 +424,7 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
         cp.props.filter = '';
         cp.props.rowSource = 'Filtered';
       });
-      const saved = await saveProjectViaUI(page, projectName);
+      const saved = await saveProjectViaApi(page, projectName);
       savedProjectId = saved.projectId;
 
       await v.closeAllAndWait(page);

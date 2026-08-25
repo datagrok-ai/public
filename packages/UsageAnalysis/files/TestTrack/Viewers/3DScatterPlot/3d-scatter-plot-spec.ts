@@ -223,6 +223,15 @@ test('3D scatter plot', async ({page}) => {
   });
 
   await softStep('Legend position moves the legend', async () => {
+    // an earlier step left Color = AGE (numeric), which renders NO legend element at all —
+    // there is nothing to move, so the repaint could never happen. Colour by a CATEGORICAL
+    // column first so a legend exists to reposition.
+    await v.pickColumnViaSelectorTrusted(page, {
+      role: 'color', columnName: 'SEX', viewerType: VIEWER_TYPE, propName: 'colorColumnName',
+    });
+    await expect.poll(async () => (await v.readLegend(page, VIEWER_TYPE)).legendRendered,
+      {timeout: 10_000}).toBe(true);
+
     await category(page, 'legend', 'legend-position');
     await v.selectPropertyGridChoice(page, 'legend-visibility', 'Always');
     const before = await signature(page);

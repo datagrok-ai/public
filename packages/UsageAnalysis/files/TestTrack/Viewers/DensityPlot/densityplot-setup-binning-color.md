@@ -312,12 +312,17 @@ outside-click listener is on document mousedown).
 Scenario 6: the layout is saved and re-applied via the JS API
 (`tv.saveLayout()` / `grok.dapi.layouts.save` / `tv.loadLayout`) — the View >
 Layout menu path has no headless handles; the round-trip end-state is the
-same. The project is saved through the real ribbon Save button
-(`[name="button-Save"]`) via the `saveProjectViaUI` helper from
-`helpers/projects.ts`, because only the UI Save captures the view layout; the
-"Share <project>" dialog that pops up after a successful save is dismissed via
-its CANCEL button, and the save emits the benign console pair whitelisted per
-canon. The probe layout and project names carry a `Date.now()` suffix so
+same. The project is saved via the JS API — `saveProjectViaApi` from
+`helpers/projects.ts` (`DG.Project.create()` + `df.getTableInfo()` +
+`tv.getInfo()` as project children, `dapi.tables.uploadDataFrame`/`save`,
+`dapi.views.save(viewInfo)` before `dapi.projects.save(project)`) — no
+ribbon click, no Share dialog, no fixed sleeps or polling; the assertions
+here are ordinary viewer `@Prop` state, which `tv.getInfo()`'s `ViewInfo`
+restores the same as the ribbon Save does. `saveProjectViaUI` (real ribbon
+Save) is still required when a round-trip asserts state outside
+`@Prop`/layout serialization or the Save/Share dialog UI itself is under
+test — see `helpers-registry.yaml`'s entries for both. The probe layout and
+project names carry a `Date.now()` suffix so
 concurrent runs never collide, and both are deleted in `finally` teardowns
 (`grok.dapi.layouts.delete` / `grok.dapi.projects.delete`) so they are removed
 even when an assertion fails.

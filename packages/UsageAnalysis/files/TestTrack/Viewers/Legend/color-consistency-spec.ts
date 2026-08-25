@@ -119,11 +119,22 @@ test('Legend color consistency', async ({page}) => {
     const res = await page.evaluate(async () => {
       let projectId: string | null = null;
       try {
+        const grok = (window as any).grok;
         const DG = (window as any).DG;
+        const tv = grok.shell.tv;
+        const df = tv.dataFrame;
         const proj = DG.Project.create();
         proj.name = 'ColorConsistProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
-        const saved = await (window as any).grok.dapi.projects.save(proj);
+        const tableInfo = df.getTableInfo();
+        const viewInfo = tv.getInfo();
+        proj.addChild(tableInfo);
+        proj.addChild(viewInfo);
+        // a relation must point at an entity already persisted server-side, or projects.save
+        // throws a project_relations FK violation — upload/save the table and view first
+        await grok.dapi.tables.uploadDataFrame(df);
+        await grok.dapi.tables.save(tableInfo);
+        await grok.dapi.views.save(viewInfo);
+        const saved = await grok.dapi.projects.save(proj);
         projectId = saved.id;
       } catch (e: any) {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};

@@ -48,11 +48,22 @@ test('Tile Viewer tests', async ({page}) => {
     await page.waitForTimeout(300);
   };
 
-  const clickTile = async (displayIdx: number, modifiers: string[] = []): Promise<void> => {
+  // tiles stack far below the fold (y grows past 2000px), so a tile's box can sit outside
+  // the viewport entirely — scroll it in before taking coordinates, or the click misses
+  const tileBox = async (displayIdx: number) => {
     const tiles = await page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-form').all();
-    const box = await tiles[displayIdx].boundingBox();
+    const tile = tiles[displayIdx];
+    if (!tile) throw new Error(`tile ${displayIdx} does not exist (only ${tiles.length} rendered)`);
+    await tile.scrollIntoViewIfNeeded();
+    const box = await tile.boundingBox();
+    if (!box) throw new Error(`tile ${displayIdx} has no bounding box after scrolling into view`);
+    return box;
+  };
+
+  const clickTile = async (displayIdx: number, modifiers: string[] = []): Promise<void> => {
+    const box = await tileBox(displayIdx);
     for (const m of modifiers) await page.keyboard.down(m);
-    await page.mouse.click(box!.x + 15, box!.y + 15);
+    await page.mouse.click(box.x + 15, box.y + 15);
     for (const m of [...modifiers].reverse()) await page.keyboard.up(m);
 
     await page.waitForTimeout(300);
@@ -165,9 +176,9 @@ test('Tile Viewer tests', async ({page}) => {
     expect(plain.currentTiles).toBe(1);
     expect(plain.idx).toBe(firstTileRow);
 
-    const box2 = await tiles[2].boundingBox();
+    const box2 = await tileBox(2);
     await page.keyboard.down('Shift');
-    await page.mouse.click(box2!.x + 10, box2!.y + 10);
+    await page.mouse.click(box2.x + 10, box2.y + 10);
     await page.keyboard.up('Shift');
 
     await page.waitForTimeout(300);
@@ -194,9 +205,9 @@ test('Tile Viewer tests', async ({page}) => {
   await softStep('Row selection: Ctrl-click adds the fifth tile to the selection', async () => {
     const tiles = await page.locator('[name="viewer-Tile-Viewer"] .d4-tile-viewer-form').all();
     const before = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    const box = await tiles[4].boundingBox();
+    const box = await tileBox(4);
     await page.keyboard.down('Control');
-    await page.mouse.click(box!.x + 10, box!.y + 10);
+    await page.mouse.click(box.x + 10, box.y + 10);
     await page.keyboard.up('Control');
 
     await page.waitForTimeout(300);

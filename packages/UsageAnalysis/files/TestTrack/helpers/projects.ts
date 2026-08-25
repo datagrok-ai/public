@@ -629,6 +629,53 @@ export async function reopenAndAssertProvenance(
   return result;
 }
 
+/**
+ * Saves the active TableView as a project entirely through the JS API — no ribbon click,
+ * no Save/Share dialogs, no polling. `tv.getInfo()` captures the view state (viewer configs
+ * included) the same way the ribbon Save does internally; `await`ing `dapi.projects.save()`
+ * IS the completion signal, so there is nothing left to poll for afterwards.
+ */
+export async function saveProjectViaApi(
+  page: Page,
+  name: string,
+): Promise<{projectId: string; resolvedName: string}> {
+  const result = await page.evaluate(async (n) => {
+    const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    const errAt = (step: string, e: any) =>
+      `at ${step}: ${e?.message ?? e?.toString?.() ?? e} | stack=${String(e?.stack ?? '').slice(0, 300)}`;
+    const tv = grok.shell.tv;
+    if (!tv?.dataFrame)
+      return {error: 'no active TableView'};
+    const df = tv.dataFrame;
+    let project: any, tableInfo: any, viewInfo: any;
+    try { project = DG.Project.create(); project.name = n; }
+    catch (e) { return {error: errAt('Project.create', e)}; }
+    try { tableInfo = df.getTableInfo(); }
+    catch (e) { return {error: errAt('df.getTableInfo', e)}; }
+    try { viewInfo = tv.getInfo(); }
+    catch (e) { return {error: errAt('tv.getInfo', e)}; }
+    try { project.addChild(tableInfo); }
+    catch (e) { return {error: errAt('addChild(tableInfo)', e)}; }
+    try { project.addChild(viewInfo); }
+    catch (e) { return {error: errAt('addChild(viewInfo)', e)}; }
+    try { await grok.dapi.tables.uploadDataFrame(df); }
+    catch (e) { return {error: errAt('tables.uploadDataFrame', e)}; }
+    try { await grok.dapi.tables.save(tableInfo); }
+    catch (e) { return {error: errAt('tables.save', e)}; }
+    // a project relation must point at an entity that already exists server-side —
+    // the ViewInfo needs its own save, the same way a linked ViewLayout does
+    try { await grok.dapi.views.save(viewInfo); }
+    catch (e) { return {error: errAt('views.save', e)}; }
+    try { await grok.dapi.projects.save(project); }
+    catch (e) { return {error: errAt('projects.save', e)}; }
+    return {projectId: String(project.id), resolvedName: String(project.name)};
+  }, name);
+  if ('error' in result)
+    throw new Error(`saveProjectViaApi failed ${result.error}`);
+  return result;
+}
+
 export async function saveProjectViaUI(
   page: Page,
   name: string,

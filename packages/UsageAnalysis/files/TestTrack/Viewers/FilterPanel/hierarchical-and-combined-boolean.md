@@ -418,8 +418,8 @@ Steps:
     state (both the true and the false checkbox on, on both columns), so the reopened project starts
     at the full row count and the re-arming below is the only thing narrowing it. Record the current
     filtered row count before saving.
-    Save the project using the ribbon Save button (use the `saveProjectViaUI` helper). Reopen the
-    project. Wait for the Filter Panel to appear.
+    Save the project (see Automation notes for the mechanism this scenario actually scripts).
+    Reopen the project. Wait for the Filter Panel to appear.
     Verify after reopen: the combined boolean filter card is present. Put it into a filtering state
     (toggle the first boolean column's true-condition) and verify the filtered row count drops to
     that column's true-row count, so the removal has something to undo. Click the card's remove icon
@@ -503,7 +503,13 @@ must be looked up inside the filter viewer's own `.panel-titlebar` — are in
 - **A boolean column counts as applied only when its true/false checkboxes differ** — both checked
   means "no constraint", both unchecked contributes nothing. The expected row counts are derived
   from the columns' own values rather than hardcoded.
-- **Step 17 project round-trip:** `saveProjectViaUI`, then wait for the panel keyed to
-  `[name="viewer-Filters"]` DOM presence (GROK-19152). The console-error claim window here is the
-  X-click plus 800 ms — under ~1% of the ~85 s test — which is what makes the signature-only
-  whitelist of the project-save emitters safe. Do not stretch that window to span a whole phase.
+- **Step 17 project round-trip:** save via `saveProjectViaApi` (`helpers/projects.ts`) — no
+  ribbon click, no dialogs, no fixed sleeps or polling; the round-trip assertions (Filter Panel
+  presence, the combined boolean card, its filtering state, remove-button behavior — GROK-16488)
+  are ordinary Filters-viewer state, which `tv.getInfo()`'s `ViewInfo` restores the same as the
+  ribbon Save does. `saveProjectViaUI` is still required when a round-trip asserts state outside
+  `@Prop`/layout serialization or the dialog UI itself is under test. The global `isAmbientNoise`
+  whitelist (`ProjectMeta.publish` / `project_meta.dart` / `could not be cloned`) targets the
+  ribbon Save's publish-preview iframe-clone noise, which the API path never emits — it now
+  simply never matches for this step, harmlessly. Reopen: wait for the panel keyed to
+  `[name="viewer-Filters"]` DOM presence (GROK-19152).

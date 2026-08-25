@@ -580,7 +580,9 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
       const t = newTv.table;
       const cols: string[] = Array.from({length: t.columns.length}, (_: any, i: number) => t.columns.byIndex(i).name);
 
-      const nameCol = t.col('name');
+      // the opened correlation table names its label column "__name" (with "__t" alongside),
+      // not "name" — resolve either so the row lookup below actually finds HEIGHT
+      const nameCol = t.col('__name') ?? t.col('name');
       let hAge: number | null = null;
       if (nameCol && t.col('AGE')) {
         for (let i = 0; i < t.rowCount; i++) {

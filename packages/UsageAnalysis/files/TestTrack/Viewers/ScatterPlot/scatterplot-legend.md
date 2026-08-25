@@ -407,17 +407,21 @@ Expected:
   `.d4-dialog` — the Formula Lines dialog embeds a second viewer with the same
   name.
 - Legend reads, all inside the viewer root: the container is
-  `[name="legend"]`; `.d4-legend-item` counts all entries,
-  `.d4-legend-item-coloring` the color categories (each with a
-  `span.d4-legend-value` carrying the category text and a `span.d4-legend-cross`),
-  `.d4-legend-item-extra` the marker glyph entries when Color and Markers are on
+  `[name="legend"]`; `.d4-legend-item` counts all entries (each with a
+  `span.d4-legend-value` carrying the category text and a `span.d4-legend-cross`).
+  There is no `-coloring` class (see `legend.dart` `createItemElement`) — a
+  color category is identified by the ABSENCE of `.d4-legend-item-extra`, which
+  marks the marker glyph entries when Color and Markers are on
   DIFFERENT columns. CAVEAT: when they are on the SAME column the legend renders
   JOINTLY — `-extra` is 0 and the glyph sits on the coloring entries themselves,
   so a `-extra` count is vacuous there. Define marker entries uniformly as
   entries CARRYING a glyph (`i[name="legend-icon-color-picker"]`), which is
   correct in both configurations. Assert counts and the category-name set, never
-  a screenshot. `legendVisibility: Never` removes the container from
-  the markup, so presence is a valid assert for that property only.
+  a screenshot. `legendVisibility: Never` does NOT remove the `[name="legend"]`
+  container from the markup — `LegendHost.apply` (`legend_host.dart`) sets
+  `display: none` on it and leaves it in the DOM, so a presence assert must
+  check the computed `display` style, not mere `querySelector` existence, or
+  "hidden" reads as "present" indefinitely.
 - Scenario 6, Legend Visibility: the property is `legendVisibility`
   (`Auto | Always | Never`), settings-panel row
   `[name="prop-legend-visibility"]` with view cell
@@ -519,16 +523,20 @@ Expected:
 - Scenario 7: the layout is saved and re-applied via the JS API
   (`tv.saveLayout()` / `grok.dapi.layouts.save` / `tv.loadLayout`) — the
   View > Layout menu path has no headless handles and the round-trip end state
-  is the same; the project is saved through the real ribbon Save button
-  (`[name="button-Save"]` → `[name="dialog-Save-project"]` → `input#name` →
-  OK), because only the UI Save captures the view layout, and the Share dialog
-  that follows is dismissed via its CANCEL button. Probe names carry a
-  timestamp suffix so concurrent runs never collide, and both the probe layout
-  and the probe project are deleted in `finally` teardowns
-  (`grok.dapi.layouts.delete` / `grok.dapi.projects.delete`).
-- The project-publish preview clones the live view into an offscreen frame and
-  emits a benign "Unable to find element in cloned iframe" plus a Dart null
-  error pair against the detached view. Whitelist that class ONLY inside the
+  is the same; the project is saved via the JS API — `saveProjectViaApi` from
+  `helpers/projects.ts` — no ribbon click, no Save/Share dialogs, no fixed
+  sleeps or polling. The assertions here (color/marker columns, legend entry
+  composition) are ordinary viewer `@Prop` state, which `tv.getInfo()`'s
+  `ViewInfo` restores the same as the ribbon Save does; `saveProjectViaUI`
+  (real ribbon Save) is still required when a round-trip asserts state
+  outside `@Prop`/layout serialization or the dialog UI itself is under test.
+  Probe names carry a timestamp suffix so concurrent runs never collide, and
+  both the probe layout and the probe project are deleted in `finally`
+  teardowns (`grok.dapi.layouts.delete` / `grok.dapi.projects.delete`).
+- The project-publish preview clone/iframe console pair described below is a
+  ribbon-Save-specific artifact and does not occur on the API save path used
+  by Scenario 7; the whitelist note applies to any OTHER scenario in this
+  spec that still drives the ribbon Save. Whitelist that class ONLY inside a
   ribbon project-save window; everywhere else — notably the legend-click
   console guards — the same error class is the regression signal and must
   reach the guard. Console guards must also filter the shared dev server's

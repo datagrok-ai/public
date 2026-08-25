@@ -948,7 +948,14 @@ test('Filter Panel — Add, Reorder, and Remove Entry Points', async ({page}) =>
     await removeAllViaHamburger(page);
     expect(await cardCount(page), 'the picker is measured from an empty panel, so Remove All must '
       + 'leave zero cards or the "All" result below would not be attributable').toBe(0);
-    baselineTrueCount = await trueCount(page);
+    // Remove All drops the cards first and RELEASES their filters a moment later — reading
+    // the baseline immediately captures the still-filtered count, which then never matches
+    // the (correctly unfiltered) count the picker leaves behind
+    // Remove All empties the PANEL but does not release a criterion the previous scenario
+    // restored — the dataframe filter survives with zero cards present, so the baseline
+    // must be taken from an explicitly cleared filter or the picker's no-op reads as a change
+    await page.evaluate(() => (window as any).grok.shell.tv.dataFrame.filter.setAll(true));
+    baselineTrueCount = await v.pollStable(() => trueCount(page), (a, b) => a === b, 5000, 200);
     expect(baselineTrueCount, 'the row count at the start of this scenario must be a positive '
       + `number to compare the picker's effect against; got ${baselineTrueCount}`).toBeGreaterThan(0);
 
