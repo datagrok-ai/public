@@ -9,7 +9,9 @@ import * as v from '../../helpers/viewers';
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
+// only used as a second, differently-named table for the switching step — nothing
+// asserts its size, so the 100-row copy the rest of the section uses does the job
+const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test('Pie chart tests', async ({page}) => {
   test.setTimeout(600_000);
@@ -437,8 +439,7 @@ test('Pie chart tests', async ({page}) => {
     expect(selection.rowSource).toBe('Selected');
     expect(selection.selCount).toBe(100);
 
-    await page.evaluate(() => { grok.shell.tv.getFiltersGroup(); });
-    await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
+    await v.openFilterPanel(page);
     const filtered = await page.evaluate(async () => {
       const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;

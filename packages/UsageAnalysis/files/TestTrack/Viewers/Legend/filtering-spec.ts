@@ -12,7 +12,10 @@ test('Legend filtering', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.installEventWaits(page);
-  await v.openTable(page, {withFilterPanel: true});
+  // no withFilterPanel: every step here reaches the filters through getFiltersGroup(),
+  // and opening the panel up front raced the substructure filter this dataset's molecule
+  // column builds — the .d4-filter wait then timed out before any assertion ran
+  await v.openTable(page);
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
