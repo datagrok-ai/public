@@ -414,7 +414,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     case Types.BOOL:
                         queryBuffer.append(interpolateBool(param));
                         return;
-                    case Types.STRING: //todo: support escaping
+                    case Types.STRING:
                         queryBuffer.append(interpolateString(param));
                         return;
                     case Types.LIST: //todo: extract submethod
@@ -422,7 +422,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             @SuppressWarnings(value = "unchecked")
                             ArrayList<String> value = ((ArrayList<String>) param.value);
                             for (int i = 0; i < value.size(); i++) {
-                                queryBuffer.append(String.format("'%s'", value.get(i)));
+                                queryBuffer.append(String.format("'%s'", escapeSqlString(value.get(i))));
                                 if (i < value.size() - 1)
                                     queryBuffer.append(",");
                             }
@@ -432,7 +432,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             throw new UnsupportedOperationException("Non-string lists are not implemented for manual param interpolation providers");
                         }
                     default:
-                        queryBuffer.append(param.value.toString());
+                        queryBuffer.append(sqlNumericLiteral(param.value));
                 }
                 return;
             }
@@ -459,8 +459,23 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
+    private static final Pattern NUMERIC_LITERAL = Pattern.compile("[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
+
+    /** Escape a value for a single-quoted SQL string literal (standard single-quote doubling). */
+    public static String escapeSqlString(String value) {
+        return value == null ? null : value.replace("'", "''");
+    }
+
+    /** A value that will be emitted unquoted into SQL as a number; rejects anything that is not numeric. */
+    protected String sqlNumericLiteral(Object value) {
+        String s = String.valueOf(value);
+        if (!NUMERIC_LITERAL.matcher(s).matches())
+            throw new IllegalArgumentException("Non-numeric value for numeric parameter: " + s);
+        return s;
+    }
+
     protected String interpolateString(FuncParam param) {
-        return String.format("'%s'", param.value.toString());
+        return String.format("'%s'", escapeSqlString(param.value.toString()));
     }
 
     protected String interpolateBool(FuncParam param) {
@@ -847,9 +862,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
+        String close = brackets.substring(brackets.length() - 1);
         return Arrays.stream(name.split("\\."))
                 .map((str) -> str.startsWith(brackets.substring(0, 1)) ? str
-                        : brackets.charAt(0) + str + brackets.substring(brackets.length() - 1))
+                        : brackets.charAt(0) + str.replace(close, close + close) + close)
                 .collect(Collectors.joining("."));
     }
 
@@ -1317,7 +1333,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public String castParamValueToSqlDateTime(FuncParam param) {
-        return "datetime('" + param.value.toString() + "')";
+        return "datetime('" + escapeSqlString(param.value.toString()) + "')";
     }
 
     public java.util.Properties defaultConnectionProperties(DataConnection conn) {

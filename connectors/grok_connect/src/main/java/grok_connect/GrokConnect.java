@@ -219,6 +219,7 @@ public class GrokConnect {
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                validateSchemaIdentifiers(provider, connection);
                 DataFrame dataFrame = provider.getForeignKeys(connection, connection.get("schema"));
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
@@ -235,6 +236,7 @@ public class GrokConnect {
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                validateSchemaIdentifiers(provider, connection);
                 List<String> uniqueColumns = provider.getUniqueColumns(connection, connection.get("schema"), connection.get("table"));
                 response.status(200);
                 response.body(gson.toJson(uniqueColumns));
@@ -285,6 +287,7 @@ public class GrokConnect {
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 JdbcDataProvider provider = providerManager.getByName(connection.dataSource);
+                validateSchemaIdentifiers(provider, connection);
                 DataFrame dataFrame = provider.getComments(connection, connection.get("schema"));
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
@@ -303,6 +306,7 @@ public class GrokConnect {
                 boolean includeKeyInfo = request.queryParams("includeKeyInfo") != null && request.queryParams("includeKeyInfo").equals("true");
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
+                validateSchemaIdentifiers(provider, connection);
                 DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"), includeKeyInfo);
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
@@ -360,6 +364,21 @@ public class GrokConnect {
             PARENT_LOGGER.debug("Endpoint {} call was proceeded", request.pathInfo());
             PARENT_LOGGER.debug(getStringLogMemory());
         }));
+    }
+
+    private static void validateSchemaIdentifiers(DataProvider provider, DataConnection connection) throws GrokConnectException {
+        if (!(provider instanceof JdbcDataProvider))
+            return;
+        JdbcDataProvider jdbc = (JdbcDataProvider) provider;
+        for (String id : new String[] {connection.get("schema"), connection.get("table"), connection.getDb()}) {
+            if (GrokConnectUtil.isNotEmpty(id)) {
+                try {
+                    jdbc.validateMutationIdentifier(id);
+                } catch (MutationValidationException e) {
+                    throw new GrokConnectException(e.getMessage());
+                }
+            }
+        }
     }
 
     private static BufferAccessor packDataFrame(DataQueryRunResult result, DataFrame dataFrame) {
