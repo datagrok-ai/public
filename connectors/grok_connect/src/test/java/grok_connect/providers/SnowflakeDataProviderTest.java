@@ -22,6 +22,7 @@ import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
+@Disabled("Connects to a live Snowflake account - enable only against a dedicated test instance with credentials supplied out-of-band")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnowflakeDataProviderTest {
     private static final Provider type = Provider.SNOWFLAKE;
