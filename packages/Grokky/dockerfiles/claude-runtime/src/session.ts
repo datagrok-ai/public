@@ -313,8 +313,9 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     const userDir = data.apiKey ? await userDirs.ensureDir(data.apiKey, apiUrl) : undefined;
 
     if (apiUrl && data.apiKey) {
-      // Fire-and-forget: file sync writes to disk in userDir; the model reads from disk on demand.
-      syncUserFiles(apiUrl, data.apiKey).catch((e: any) =>
+      // First sync per user blocks so workspace/ exists for this turn; warm turns return
+      // straight from disk (see orchestrator.ts).
+      await syncUserFiles(apiUrl, data.apiKey).catch((e: any) =>
         console.warn('handleMessage: failed to sync user files:', e.message));
     }
 

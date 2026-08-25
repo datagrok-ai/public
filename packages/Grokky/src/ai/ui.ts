@@ -211,13 +211,13 @@ export function setupSearchUI() {
     });
   }
 
-  const retries = 0;
+  let retries = 0;
   const intervalId = setInterval(() => {
     const searchInput = searchForSearchBox();
     if (searchInput) {
       clearInterval(intervalId);
       initInput(searchInput);
-    } else if (retries >= maxRetries) {
+    } else if (++retries >= maxRetries) {
       clearInterval(intervalId);
       console.warn('Search input box not found after maximum retries.');
     }

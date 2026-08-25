@@ -22,6 +22,8 @@ interface CacheEntry {
 // In-memory only — /users is container-ephemeral, so persisting it would buy nothing.
 const cache = new Map<string, Map<string, CacheEntry>>();
 
+const SYNC_CONCURRENCY = 8;
+
 let workspacePackages: Set<string> | null = null;
 
 async function getWorkspacePackages(): Promise<Set<string>> {
@@ -132,17 +134,11 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
     return;
   }
 
-  console.log(`package-agents: syncing ${packages.length} published package(s), ` +
-    `skipping ${wsPackages.size} workspace package(s)`);
-  for (const pkg of packages) {
-    if (wsPackages.has(pkg.name.toLowerCase())) {
-      console.log(`package-agents: skipping workspace package ${pkg.name}`);
-      continue;
-    }
-    try {
-      await syncSinglePackage(userDir, pkg, userCache);
-    } catch (e: any) {
-      console.warn(`package-agents: failed to sync ${pkg.name}: ${e.message}`);
-    }
-  }
+  const toSync = packages.filter((pkg) => !wsPackages.has(pkg.name.toLowerCase()));
+  console.log(`package-agents: syncing ${toSync.length} published package(s), ` +
+    `skipping ${packages.length - toSync.length} workspace package(s)`);
+  for (let i = 0; i < toSync.length; i += SYNC_CONCURRENCY)
+    await Promise.all(toSync.slice(i, i + SYNC_CONCURRENCY).map((pkg) =>
+      syncSinglePackage(userDir, pkg, userCache).catch((e: any) =>
+        console.warn(`package-agents: failed to sync ${pkg.name}: ${e.message}`))));
 }

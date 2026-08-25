@@ -25,6 +25,7 @@ const AUTH_TIMEOUT_MS = 2 * 60_000;
 
 let authProc: ChildProcess | null = null;
 let authTimer: NodeJS.Timeout | null = null;
+let authOwner: WsSender | null = null;
 
 function killAuth(): void {
   authProc?.removeAllListeners('exit');
@@ -33,11 +34,17 @@ function killAuth(): void {
     clearTimeout(authTimer);
   authTimer = null;
   authProc = null;
+  authOwner = null;
   setAuthPid(null);
 }
 
 function handleAuthStart(ws: WsSender): void {
+  if (authProc && authOwner !== ws) {
+    emit(ws, {type: 'auth_error', message: 'Another authentication is already in progress'});
+    return;
+  }
   killAuth();
+  authOwner = ws;
   authProc = spawn('claude', ['auth', 'login'], {
     env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -77,7 +84,7 @@ function handleAuthStart(ws: WsSender): void {
 }
 
 function handleAuthCode(ws: WsSender, code: string): void {
-  if (!authProc?.stdin) {
+  if (!authProc?.stdin || authOwner !== ws) {
     emit(ws, {type: 'auth_error', message: 'No authentication in progress'});
     return;
   }
@@ -113,9 +120,11 @@ app.post('/task/release', async (c) => {
 
 app.get('/ws', upgradeWebSocket(() => {
   const sessionIds = new Set<string>();
+  let conn: WsSender | null = null;
   return {
     onMessage(evt: any, ws: any) {
       const sender = ws as unknown as WsSender;
+      conn = sender;
       let data: any;
       try {
         data = JSON.parse(String(evt.data));
@@ -181,9 +190,13 @@ app.get('/ws', upgradeWebSocket(() => {
         emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}));
     },
     onClose() {
+      if (authOwner && authOwner === conn)
+        killAuth();
       handleDisconnect(sessionIds);
     },
     onError() {
+      if (authOwner && authOwner === conn)
+        killAuth();
       handleDisconnect(sessionIds);
     },
   };
