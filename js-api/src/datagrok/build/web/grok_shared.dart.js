@@ -4818,7 +4818,7 @@
     },
     Primitives_dateNow: [function() {
       return Date.now();
-    }, "call$0", "_js_helper_Primitives_dateNow$closure", 0, 0, 632],
+    }, "call$0", "_js_helper_Primitives_dateNow$closure", 0, 0, 633],
     Primitives_initTicker: function() {
       var $window, performance;
       if ($.Primitives_timerFrequency != null)
@@ -8393,22 +8393,22 @@
     }, 48, 46, 47, 19],
     _rootErrorCallback: [function($self, $parent, zone, error, stackTrace) {
       return;
-    }, "call$5", "async___rootErrorCallback$closure", 10, 0, 635, 48, 46, 47, 37, 30],
+    }, "call$5", "async___rootErrorCallback$closure", 10, 0, 636, 48, 46, 47, 37, 30],
     _rootScheduleMicrotask: [function($self, $parent, zone, f) {
       var t1 = C.C__RootZone !== zone;
       if (t1)
         f = zone.bindCallback$2$runGuarded(f, !(!t1 || C.C__RootZone.get$errorZone() === zone.get$errorZone()));
       P._scheduleAsyncCallback(f);
-    }, "call$4", "async___rootScheduleMicrotask$closure", 8, 0, 636, 48, 46, 47, 19],
+    }, "call$4", "async___rootScheduleMicrotask$closure", 8, 0, 637, 48, 46, 47, 19],
     _rootCreateTimer: [function($self, $parent, zone, duration, callback) {
       return P.Timer__createTimer(duration, C.C__RootZone !== zone ? zone.bindCallback$1(callback) : callback);
-    }, "call$5", "async___rootCreateTimer$closure", 10, 0, 637, 48, 46, 47, 247, 163],
+    }, "call$5", "async___rootCreateTimer$closure", 10, 0, 638, 48, 46, 47, 247, 163],
     _rootCreatePeriodicTimer: [function($self, $parent, zone, duration, callback) {
       return P.Timer__createPeriodicTimer(duration, C.C__RootZone !== zone ? zone.bindUnaryCallback$1(callback) : callback);
-    }, "call$5", "async___rootCreatePeriodicTimer$closure", 10, 0, 638, 48, 46, 47, 247, 163],
+    }, "call$5", "async___rootCreatePeriodicTimer$closure", 10, 0, 639, 48, 46, 47, 247, 163],
     _rootPrint: [function($self, $parent, zone, line) {
       H.printString(H.S(line));
-    }, "call$4", "async___rootPrint$closure", 8, 0, 639, 48, 46, 47, 61],
+    }, "call$4", "async___rootPrint$closure", 8, 0, 640, 48, 46, 47, 61],
     _printToZone: [function(line) {
       J.print$1$x($.Zone__current, line);
     }, "call$1", "async___printToZone$closure", 2, 0, 101],
@@ -8451,7 +8451,7 @@
       t2 = specification.handleUncaughtError;
       t1._handleUncaughtError = t2 != null ? new P._ZoneFunction(t1, t2, [{func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}]) : zone.get$_handleUncaughtError();
       return t1;
-    }, "call$5", "async___rootFork$closure", 10, 0, 640, 48, 46, 47, 374, 523],
+    }, "call$5", "async___rootFork$closure", 10, 0, 641, 48, 46, 47, 374, 523],
     runZoned: function(body, onError, zoneSpecification, zoneValues) {
       var t1, errorHandler, zone;
       t1 = onError != null;
@@ -11724,7 +11724,7 @@
         }
       }, function(error) {
         return this._handleError$2(error, null);
-      }, "_handleError$1", "call$2", "call$1", "get$_handleError", 2, 2, 490, 1, 37, 30],
+      }, "_handleError$1", "call$2", "call$1", "get$_handleError", 2, 2, 491, 1, 37, 30],
       _handleDone$0: [function() {
         var e, s, exception;
         try {
@@ -12342,7 +12342,7 @@
       }, null, null, 2, 0, null, 62, "call"]
     },
     runZoned_closure: {
-      "^": "Closure:614;onError",
+      "^": "Closure:615;onError",
       call$5: [function($self, $parent, zone, error, stackTrace) {
         var e, s, t1, exception;
         try {
@@ -12571,7 +12571,7 @@
     },
     ListMixin__compareAny: [function(a, b) {
       return J.compareTo$1$ns(a, b);
-    }, "call$2", "collection_ListMixin__compareAny$closure", 4, 0, 641],
+    }, "call$2", "collection_ListMixin__compareAny$closure", 4, 0, 642],
     Maps_mapToString: function(m) {
       var t1, result, t2;
       t1 = {};
@@ -15913,7 +15913,7 @@
         if (typeof t3 !== "number")
           return H.iae(t3);
         this._bufferIndex = t4 + t3;
-      }, "call$1", "get$add", 2, 0, 691, 499],
+      }, "call$1", "get$add", 2, 0, 692, 499],
       close$0: [function(_) {
         this._callback.call$1(C.NativeUint8List_methods.sublist$2(this._convert$_buffer, 0, this._bufferIndex));
       }, "call$0", "get$close", 0, 0, 6]
@@ -17289,7 +17289,7 @@
     },
     Comparable_compare: [function(a, b) {
       return J.compareTo$1$ns(a, b);
-    }, "call$2", "core_Comparable_compare$closure", 4, 0, 642, 14, 11],
+    }, "call$2", "core_Comparable_compare$closure", 4, 0, 643, 14, 11],
     Error_safeToString: function(object) {
       if (typeof object === "number" || typeof object === "boolean" || null == object)
         return J.toString$0$(object);
@@ -17308,10 +17308,10 @@
     },
     identical: [function(a, b) {
       return a == null ? b == null : a === b;
-    }, "call$2", "core__identical$closure", 4, 0, 643],
+    }, "call$2", "core__identical$closure", 4, 0, 644],
     identityHashCode: [function(object) {
       return H.objectHashCode(object);
-    }, "call$1", "core__identityHashCode$closure", 2, 0, 644],
+    }, "call$1", "core__identityHashCode$closure", 2, 0, 645],
     Iterable_Iterable$generate: function(count, generator, $E) {
       if (J.$le$n(count, 0) === true)
         return new H.EmptyIterable([$E]);
@@ -23705,7 +23705,7 @@
         return receiver.start(timeslice);
       }, function($receiver) {
         return $receiver.start();
-      }, "start$0", "call$1", "call$0", "get$start", 0, 2, 436, 1, 494],
+      }, "start$0", "call$1", "call$0", "get$start", 0, 2, 437, 1, 494],
       stop$0: [function(receiver) {
         return receiver.stop();
       }, "call$0", "get$stop", 0, 0, 6],
@@ -24190,7 +24190,7 @@
       },
       contains$1: [function(receiver, other) {
         return receiver.contains(other);
-      }, "call$1", "get$contains", 2, 0, 452, 117],
+      }, "call$1", "get$contains", 2, 0, 453, 117],
       insertBefore$2: function(receiver, node, child) {
         return receiver.insertBefore(node, child);
       },
@@ -24666,7 +24666,7 @@
       "^": "Interceptor;",
       result$0: [function(receiver) {
         return receiver.result();
-      }, "call$0", "get$result", 0, 0, 514],
+      }, "call$0", "get$result", 0, 0, 515],
       "%": "RTCStatsResponse"
     },
     Screen: {
@@ -25135,10 +25135,10 @@
       },
       $get$1: [function(receiver, property) {
         return receiver.get(property);
-      }, "call$1", "get$get", 2, 0, 533, 252],
+      }, "call$1", "get$get", 2, 0, 534, 252],
       $set$2: [function(receiver, property, value) {
         return receiver.set(property, value);
-      }, "call$2", "get$set", 4, 0, 591],
+      }, "call$2", "get$set", 4, 0, 592],
       "%": "StylePropertyMap"
     },
     StyleSheet: {
@@ -25567,7 +25567,7 @@
       "^": "Interceptor;filter=,root=",
       parentNode$0: [function(receiver) {
         return receiver.parentNode();
-      }, "call$0", "get$parentNode", 0, 0, 648],
+      }, "call$0", "get$parentNode", 0, 0, 649],
       filter$0: function($receiver) {
         return $receiver.filter.call$0();
       },
@@ -25596,7 +25596,7 @@
       },
       start$1: [function(receiver, stream) {
         return receiver.start(stream);
-      }, "call$1", "get$start", 2, 0, 680, 250],
+      }, "call$1", "get$start", 2, 0, 681, 250],
       "%": "UnderlyingSourceBase"
     },
     Url: {
@@ -26754,7 +26754,7 @@
       }
     },
     _WrappedList_sort_closure: {
-      "^": "Closure:697;compare",
+      "^": "Closure:698;compare",
       call$2: function(a, b) {
         return this.compare.call$2(a, b);
       }
@@ -27584,7 +27584,7 @@
         else
           return P._wrapToDart(o);
       }
-    }, "call$1", "js___convertToDart$closure", 2, 0, 645, 58],
+    }, "call$1", "js___convertToDart$closure", 2, 0, 646, 58],
     _wrapToDart: function(o) {
       if (typeof o == "function")
         return P._getDartProxy(o, $.$get$DART_CLOSURE_PROPERTY_NAME(), new P._wrapToDart_closure());
@@ -34086,7 +34086,7 @@
       return N.joinTables(table1, table2, keys1, keys2, values1, values2, inPlace, joinType, null).result;
     }, function(table1, table2, keys1, keys2, values1, values2) {
       return N.join(table1, table2, keys1, keys2, values1, values2, false, "inner");
-    }, "call$8$inPlace$joinType", "call$6", "ddt__join$closure", 12, 5, 650, 479, 23, 478, 477, 197, 201, 257, 209, 203, 202],
+    }, "call$8$inPlace$joinType", "call$6", "ddt__join$closure", 12, 5, 651, 479, 23, 478, 477, 197, 201, 257, 209, 203, 202],
     _mutationPredicateFromMap: function(w) {
       var matcherMap, t1, predicate, t2;
       matcherMap = J.$index$asx(w, "matcher");
@@ -34690,7 +34690,7 @@
       return t;
     }, function(table) {
       return N.Aggregate(table, null, null, null, null, null, null, null);
-    }, "call$8$aggregations$fields$filter$groupByFields$joins$pivots$whereClauses", "call$1", "ddt__Aggregate$closure", 2, 15, 651, 1, 1, 1, 1, 1, 1, 1, 15, 87, 200, 161, 192, 164, 122, 219],
+    }, "call$8$aggregations$fields$filter$groupByFields$joins$pivots$whereClauses", "call$1", "ddt__Aggregate$closure", 2, 15, 652, 1, 1, 1, 1, 1, 1, 1, 15, 87, 200, 161, 192, 164, 122, 219],
     unpivot: [function(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName) {
       var t1, t2, t3, result, t4, colName, copyColumn, t5, mergeCols, dataTypes, dataType, coercion;
       t1 = J.getInterceptor$asx(mergeColumns);
@@ -34724,7 +34724,7 @@
       return result;
     }, function(table, copyColumns, mergeColumns) {
       return N.unpivot(table, copyColumns, mergeColumns, "Category", "Value");
-    }, "call$5$categoryColumnName$valueColumnName", "call$3", "ddt__unpivot$closure", 6, 5, 652, 475, 474, 15, 473, 466, 246, 248],
+    }, "call$5$categoryColumnName$valueColumnName", "call$3", "ddt__unpivot$closure", 6, 5, 653, 475, 474, 15, 473, 466, 246, 248],
     binBySpecificLimits: [function(x, limits) {
       var t1, t2, i, t3;
       if (x == null || J.get$isEmpty$asx(limits) === true)
@@ -34747,7 +34747,7 @@
         ++i;
       }
       throw H.wrapException("Incorrect limits: " + H.S(t1.join$1(limits, ", ")));
-    }, "call$2", "ddt__binBySpecificLimits$closure", 4, 0, 653, 0, 454],
+    }, "call$2", "ddt__binBySpecificLimits$closure", 4, 0, 654, 0, 454],
     binByDateTime: [function(dt, levels, levelIndex) {
       var p, t1;
       if (dt == null || J.get$isEmpty$asx(levels) === true || levelIndex == null)
@@ -34785,13 +34785,13 @@
       if (t1.$eq(p, "ms") === true)
         return dt.get$millisecond();
       throw H.wrapException("Incorrect DateTime level");
-    }, "call$3", "ddt__binByDateTime$closure", 6, 0, 654, 52, 452, 451],
+    }, "call$3", "ddt__binByDateTime$closure", 6, 0, 655, 52, 452, 451],
     renameColumnImpl: [function(table, oldColName, newColName) {
       var t1 = J.getInterceptor$asx(table);
       if (t1.$index(table, oldColName) == null)
         return;
       J.set$name$x(t1.$index(table, oldColName), newColName);
-    }, "call$3", "ddt__renameColumnImpl$closure", 6, 0, 655, 15, 446, 445],
+    }, "call$3", "ddt__renameColumnImpl$closure", 6, 0, 656, 15, 446, 445],
     extractNumbers: [function(table, column, decimalSeparator, useKMMultipliers) {
       var t1, rex, strings, multipliers, t2, t3, n, t4, matches, $length, n0, list, m, mul, t5, col, multiplier, t6, t7;
       t1 = useKMMultipliers === true;
@@ -34919,12 +34919,12 @@
       }
     }, function(table, column) {
       return N.extractNumbers(table, column, ".", false);
-    }, "call$4$decimalSeparator$useKMMultipliers", "call$2", "ddt__extractNumbers$closure", 4, 5, 656, 23, 444, 15, 70, 443, 442],
+    }, "call$4$decimalSeparator$useKMMultipliers", "call$2", "ddt__extractNumbers$closure", 4, 5, 657, 23, 444, 15, 70, 443, 442],
     subsetTable: [function(table, columns, rows) {
       var t1 = rows == null ? null : N.BitSet$(table.get$rowCount(), false);
       t1.init$1(0, rows.makePredicate$0().call$1(table));
       return J.clone$2$colFilter$rowMask$x(table, columns.makePredicate$0(), t1);
-    }, "call$3", "ddt__subsetTable$closure", 6, 0, 657, 15, 121, 42],
+    }, "call$3", "ddt__subsetTable$closure", 6, 0, 658, 15, 121, 42],
     extractValueImpl: [function(table, column, $function) {
       N.ValueFunction_byName($function).addDerivedColumn$2(table, column);
     }, "call$3", "ddt__extractValueImpl$closure", 6, 0, 247, 15, 70, 123],
@@ -35022,7 +35022,7 @@
       return P._asyncStart($async$addNewColumn, $async$completer);
     }, function(table, expression, $name) {
       return N.addNewColumn(table, expression, $name, null, null, null, null, true, false, "auto");
-    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumn$closure", 6, 15, 660, 1, 1, 244, 23, 51, 1, 1, 15, 178, 10, 27, 180, 64, 255, 283, 275, 277],
+    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumn$closure", 6, 15, 661, 1, 1, 244, 23, 51, 1, 1, 15, 178, 10, 27, 180, 64, 255, 283, 275, 277],
     addNewColumnList: [function(table, expression, $name, context, currentCall, errorBehavior, progress, subscribeOnChanges, treatAsString, type) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
       var $async$addNewColumnList = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -35048,7 +35048,7 @@
       return P._asyncStart($async$addNewColumnList, $async$completer);
     }, function(table, expression, $name) {
       return N.addNewColumnList(table, expression, $name, null, null, null, null, true, false, "auto");
-    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumnList$closure", 6, 15, 661, 1, 1, 244, 23, 51, 1, 1, 15, 178, 10, 27, 180, 64, 255, 283, 275, 277],
+    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumnList$closure", 6, 15, 662, 1, 1, 244, 23, 51, 1, 1, 15, 178, 10, 27, 180, 64, 255, 283, 275, 277],
     applyFormula: function(column, expression, processed, treatAsString, type, updateDependent) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, table, c, result, t1, newColumn;
       var $async$applyFormula = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -35844,20 +35844,20 @@
         t1.get$current().set$isSelected(flag);
     }, function(table, columnFilter) {
       return N.selectTableColumns(table, columnFilter, true);
-    }, "call$3$flag", "call$2", "ddt__selectTableColumns$closure", 4, 3, 662, 51, 15, 135, 97],
+    }, "call$3$flag", "call$2", "ddt__selectTableColumns$closure", 4, 3, 663, 51, 15, 135, 97],
     tagColumns: [function(table, columnFilter, tag, tagValue) {
       var t1;
       for (t1 = J.get$iterator$ax(J.where$1$ax(J.get$columns$x(table), columnFilter.makePredicate$0())); t1.moveNext$0() === true;)
         J.$indexSet$ax(t1.get$current().get$tags(), tag, tagValue);
     }, function(table, columnFilter, tag) {
       return N.tagColumns(table, columnFilter, tag, null);
-    }, "call$4$tagValue", "call$3", "ddt__tagColumns$closure", 6, 3, 663, 1, 15, 135, 71, 439],
+    }, "call$4$tagValue", "call$3", "ddt__tagColumns$closure", 6, 3, 664, 1, 15, 135, 71, 439],
     __date: [function(year, month, day) {
       return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(year, month, day, 0, 0, 0, 0, true)), true);
-    }, "call$3", "ddt____date$closure", 6, 0, 664, 235, 224, 278],
+    }, "call$3", "ddt____date$closure", 6, 0, 665, 235, 224, 278],
     __dateTime: [function(year, month, day, hours, minutes, seconds, milliseconds) {
       return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(year, month, day, hours, minutes, seconds, J.$add$ns(milliseconds, 0), true)), true);
-    }, "call$7", "ddt____dateTime$closure", 14, 0, 665, 235, 224, 278, 205, 199, 198, 134],
+    }, "call$7", "ddt____dateTime$closure", 14, 0, 666, 235, 224, 278, 205, 199, 198, 134],
     __dateNow: [function() {
       return new P.DateTime(Date.now(), false);
     }, "call$0", "ddt____dateNow$closure", 0, 0, 249],
@@ -35870,7 +35870,7 @@
       t2 = new P.DateTime(t1, false);
       t2.DateTime$_withValue$2$isUtc(t1, false);
       return t2;
-    }, "call$1", "ddt____dateFromUnixTimestamp$closure", 2, 0, 667, 432],
+    }, "call$1", "ddt____dateFromUnixTimestamp$closure", 2, 0, 668, 432],
     __unixTimestamp: [function(dt) {
       return dt.get$microsecondsSinceEpoch();
     }, "call$1", "ddt____unixTimestamp$closure", 2, 0, 28, 52],
@@ -35937,17 +35937,17 @@
       H.interceptedTypeCast(column, "$isDateTimeColumn");
       getDurationPart = $.$get$DurationUnits_partExtractors().$index(0, units);
       J.init$1$x(J.get$columns$x(table).addNewInt$1(newName), new N.dateDifference_closure(date, column, getDurationPart));
-    }, "call$5", "ddt__dateDifference$closure", 10, 0, 669, 15, 70, 22, 196, 273],
+    }, "call$5", "ddt__dateDifference$closure", 10, 0, 670, 15, 70, 22, 196, 273],
     dateDifferenceWithColumn: [function(table, column1, column2, newName, units) {
       var getDurationPart;
       H.interceptedTypeCast(column1, "$isDateTimeColumn");
       H.interceptedTypeCast(column2, "$isDateTimeColumn");
       getDurationPart = $.$get$DurationUnits_partExtractors().$index(0, units);
       J.init$1$x(J.get$columns$x(table).addNewInt$1(newName), new N.dateDifferenceWithColumn_closure(column1, column2, getDurationPart));
-    }, "call$5", "ddt__dateDifferenceWithColumn$closure", 10, 0, 670, 15, 429, 427, 196, 273],
+    }, "call$5", "ddt__dateDifferenceWithColumn$closure", 10, 0, 671, 15, 429, 427, 196, 273],
     __timeSpan: [function(days, hours, minutes, seconds, milliseconds) {
       return J.$add$ns(J.$add$ns(J.$add$ns(J.$add$ns(J.$mul$ns(days, 86400000), J.$mul$ns(hours, 3600000)), J.$mul$ns(minutes, 60000)), J.$mul$ns(seconds, 1000)), milliseconds);
-    }, "call$5", "ddt____timeSpan$closure", 10, 0, 671, 426, 205, 199, 198, 134],
+    }, "call$5", "ddt____timeSpan$closure", 10, 0, 672, 426, 205, 199, 198, 134],
     __inDays: [function(ts) {
       return J.$tdiv$n(ts, 86400000);
     }, "call$1", "ddt____inDays$closure", 2, 0, 32, 66],
@@ -35983,10 +35983,10 @@
     }, "call$2", "ddt____dateDiff$closure", 4, 0, 177, 425, 423],
     __dateAdd: [function(dt, ts) {
       return J.add$1$ax(dt, P.Duration$(0, 0, 0, ts, 0, 0));
-    }, "call$2", "ddt____dateAdd$closure", 4, 0, 672, 52, 66],
+    }, "call$2", "ddt____dateAdd$closure", 4, 0, 673, 52, 66],
     __time: [function(hours, minutes, seconds, milliseconds) {
       return P.DateTime_parse("0000-01-01 " + H.S(J.padLeft$2$s(J.toString$0$(hours), 2, "0")) + ":" + H.S(J.padLeft$2$s(J.toString$0$(minutes), 2, "0")) + ":" + H.S(J.padLeft$2$s(J.toString$0$(seconds), 2, "0")) + "." + H.S(J.padLeft$2$s(J.toString$0$(milliseconds), 3, "0")));
-    }, "call$4", "ddt____time$closure", 8, 0, 673, 205, 199, 198, 134],
+    }, "call$4", "ddt____time$closure", 8, 0, 674, 205, 199, 198, 134],
     __timeParse: [function(s) {
       return N.parseDateTime("0001-01-01 " + H.S(s), null);
     }, "call$1", "ddt____timeParse$closure", 2, 0, 15, 4],
@@ -36021,7 +36021,7 @@
       table.get$eventBus().fire$1(C.EventType_mOu);
     }, function(table, columnFilter, mode) {
       return N.roundNumbers(table, columnFilter, mode, 0);
-    }, "call$4$decimalPlaces", "call$3", "ddt__roundNumbers$closure", 6, 3, 674, 106, 15, 135, 422, 146],
+    }, "call$4$decimalPlaces", "call$3", "ddt__roundNumbers$closure", 6, 3, 675, 106, 15, 135, 422, 146],
     normalizeColumn: [function(table, column, method) {
       var t1, normalized;
       if (column.get$isNumerical() === true) {
@@ -36040,7 +36040,7 @@
       }
     }, function(table, column) {
       return N.normalizeColumn(table, column, "Min-max");
-    }, "call$3$method", "call$2", "ddt__normalizeColumn$closure", 4, 3, 675, 416, 15, 70, 415],
+    }, "call$3$method", "call$2", "ddt__normalizeColumn$closure", 4, 3, 676, 416, 15, 70, 415],
     randBetween: [function(a, b) {
       var t1, t2;
       if (a == null || b == null)
@@ -36184,14 +36184,14 @@
         throw H.wrapException(message == null ? 'Value "' + H.S(J.toString$0$(value)) + '" is not equal to "' + H.S(J.toString$0$(expected)) + '"' : message);
     }, function(value, expected) {
       return N.expectMethod(value, expected, null);
-    }, "call$3$message", "call$2", "ddt__expectMethod$closure", 4, 3, 678, 1, 13, 412, 40],
+    }, "call$3$message", "call$2", "ddt__expectMethod$closure", 4, 3, 679, 1, 13, 412, 40],
     delay: [function(milliseconds) {
       var t1 = new P._Future(0, $.Zone__current, null, [null]);
       if (typeof milliseconds !== "number")
         return H.iae(milliseconds);
       P.Timer_Timer(new P.Duration(0 + 1000 * milliseconds + 0), new N.delay_closure(new P._AsyncCompleter(t1, [null])));
       return t1;
-    }, "call$1", "ddt__delay$closure", 2, 0, 679, 134],
+    }, "call$1", "ddt__delay$closure", 2, 0, 680, 134],
     gsPrint: [function(context, msg) {
       return context.info$1(msg);
     }, "call$2", "ddt__gsPrint$closure", 4, 0, 103, 27, 89],
@@ -36206,7 +36206,7 @@
     }, "call$2", "ddt__gsInfo$closure", 4, 0, 103, 27, 89],
     gsVar: [function(context) {
       context.info$1(context.printVariables$0());
-    }, "call$1", "ddt__gsVar$closure", 2, 0, 681, 27],
+    }, "call$1", "ddt__gsVar$closure", 2, 0, 682, 27],
     gsDescribe: [function(context, object) {
       var t1, t2, _i, prop, t3;
       if (object == null)
@@ -36219,7 +36219,7 @@
           context.info$1(H.S(t3.get$name(prop)) + ":\t " + H.S(t3.$get$1(prop, object)));
         }
       }
-    }, "call$2", "ddt__gsDescribe$closure", 4, 0, 682, 27, 90],
+    }, "call$2", "ddt__gsDescribe$closure", 4, 0, 683, 27, 90],
     checkMacroExpression: function(context, expression) {
       var result, parser, parsed, t1, exception, varName;
       result = new N.CheckMacroExpressionResult(null, null);
@@ -36277,7 +36277,7 @@
       return P._asyncStart($async$batchCall, $async$completer);
     }, function(table, expression) {
       return N.batchCall(table, expression, null, null);
-    }, "call$4$context$progress", "call$2", "ddt__batchCall$closure", 4, 5, 683, 1, 1, 15, 178, 27, 180],
+    }, "call$4$context$progress", "call$2", "ddt__batchCall$closure", 4, 5, 684, 1, 1, 15, 178, 27, 180],
     deleteRowsImpl: [function(table, where) {
       var mask = N.BitSet$(table.get$rowCount(), false);
       mask.init$1(0, where.makePredicate$0().call$1(table));
@@ -36296,7 +36296,7 @@
       table.get$selection().setWhere$3$clear$value(where.makePredicate$0().call$1(table), clear, flag);
     }, function(table, where) {
       return N.selectRows(table, where, false, true);
-    }, "call$4$clear$flag", "call$2", "ddt__selectRows$closure", 4, 5, 685, 51, 23, 15, 93, 97, 411],
+    }, "call$4$clear$flag", "call$2", "ddt__selectRows$closure", 4, 5, 686, 51, 23, 15, 93, 97, 411],
     selectNone: [function(table) {
       J.setAll$1$ax(table.get$selection(), false);
     }, "call$1", "ddt__selectNone$closure", 2, 0, 141, 15],
@@ -36335,7 +36335,7 @@
     }, "call$1", "ddt___toLowerCase$closure", 2, 0, 16, 4],
     _substring: [function(s, start, end) {
       return J.substring$2$s(s, start, end);
-    }, "call$3", "ddt___substring$closure", 6, 0, 687, 4, 113, 139],
+    }, "call$3", "ddt___substring$closure", 6, 0, 688, 4, 113, 139],
     _trim: [function(s) {
       return J.trim$0$s(s);
     }, "call$1", "ddt___trim$closure", 2, 0, 16, 4],
@@ -36344,7 +36344,7 @@
     }, "call$3", "ddt___replaceAll$closure", 6, 0, 104, 4, 409, 408],
     _splitString: [function(s, separator, i) {
       return J.$index$asx(J.split$1$s(s, separator), i);
-    }, "call$3", "ddt___splitString$closure", 6, 0, 689, 4, 407, 5],
+    }, "call$3", "ddt___splitString$closure", 6, 0, 690, 4, 407, 5],
     _padLeft: [function(s, width, padding) {
       return J.padLeft$2$s(s, width, padding == null ? " " : padding);
     }, function(s, width) {
@@ -36383,13 +36383,13 @@
     }, "call$1", "ddt___ln$closure", 2, 0, 27, 14],
     _log: [function(a, base) {
       return a == null || base == null ? null : Math.log(N._checkNum(a)) / Math.log(N._checkNum(base));
-    }, "call$2", "ddt___log$closure", 4, 0, 65, 14, 397],
+    }, "call$2", "ddt___log$closure", 4, 0, 64, 14, 397],
     _log10: [function(a) {
       return a == null ? null : Math.log(N._checkNum(a)) / 2.302585092994046;
     }, "call$1", "ddt___log10$closure", 2, 0, 27, 14],
     _atan2: [function(a, b) {
       return a == null || b == null ? null : Math.atan2(N._checkNum(a), N._checkNum(b));
-    }, "call$2", "ddt___atan2$closure", 4, 0, 65, 14, 11],
+    }, "call$2", "ddt___atan2$closure", 4, 0, 64, 14, 11],
     _pow: [function(x, exponent) {
       return x == null || exponent == null ? null : Math.pow(N._checkNum(x), N._checkNum(exponent));
     }, "call$2", "ddt___pow$closure", 4, 0, 109, 0, 440],
@@ -36456,7 +36456,7 @@
     }, "call$2", "ddt___add$closure", 4, 0, 1, 0, 59],
     _round10: [function(x, decimalPlaces) {
       return N._roundFloat(x, decimalPlaces);
-    }, "call$2", "ddt___round10$closure", 4, 0, 65, 0, 146],
+    }, "call$2", "ddt___round10$closure", 4, 0, 64, 0, 146],
     _roundFloat: [function(x, decimalPlaces) {
       var d;
       if (x == null)
@@ -36465,12 +36465,12 @@
       if (J.$gt$n(decimalPlaces, 0) === true)
         return C.JSNumber_methods.round$0(N._checkNum(x) * d) / d;
       return C.JSDouble_methods.round$0(N._checkNum(x) / d) * d + 0;
-    }, "call$2", "ddt___roundFloat$closure", 4, 0, 65, 0, 146],
+    }, "call$2", "ddt___roundFloat$closure", 4, 0, 64, 0, 146],
     _formatFloat: [function(x, format) {
       if (x == null)
         return;
       return N.fmt(x, null, null, null, format, 2);
-    }, "call$2", "ddt___formatFloat$closure", 4, 0, 695, 0, 159],
+    }, "call$2", "ddt___formatFloat$closure", 4, 0, 696, 0, 159],
     _fixed: [function(x, decimalPlaces) {
       var t1, t2;
       if (decimalPlaces == null)
@@ -36490,7 +36490,7 @@
         }
       }
       return N._formatFloat(x, t1);
-    }, "call$2", "ddt___fixed$closure", 4, 0, 696, 0, 146],
+    }, "call$2", "ddt___fixed$closure", 4, 0, 697, 0, 146],
     _greater: [function(x, y) {
       return x == null || y == null ? false : N._checkNum(x) > N._checkNum(y);
     }, "call$2", "ddt___greater$closure", 4, 0, 99, 0, 59],
@@ -36700,10 +36700,10 @@
       if (t1 < 0 || t1 >= sortedNums.length)
         return H.ioore(sortedNums, t1);
       return sortedNums[t1];
-    }, "call$2", "ddt____percentile$closure", 4, 0, 701, 44, 230],
+    }, "call$2", "ddt____percentile$closure", 4, 0, 702, 44, 230],
     CloneTable: [function(table) {
       return J.clone$1$saveSelection$x(table, true);
-    }, "call$1", "ddt__CloneTable$closure", 2, 0, 702, 15],
+    }, "call$1", "ddt__CloneTable$closure", 2, 0, 703, 15],
     splitColumn: function(table, column, splitBy, prefix, autoDetectTypes, byChars, consecutiveAsOne, rows, trim) {
       var splits, t1, resultRowCount, t2, t3, t4, t5, t6, t7, t8, i, t9, chars, pattern, values, t10, col, splitCol, value, r;
       if (prefix == null)
@@ -36841,14 +36841,14 @@
       }
     }, function(table, col, regExp) {
       return N.splitColumnByRegExp(table, col, regExp, "r");
-    }, "call$4$prefix", "call$3", "ddt__splitColumnByRegExp$closure", 6, 3, 703, 17, 15, 6, 377, 240],
+    }, "call$4$prefix", "call$3", "ddt__splitColumnByRegExp$closure", 6, 3, 704, 17, 15, 6, 377, 240],
     transformString: [function(table, columnFilter, action) {
       var t1, col;
       for (t1 = J.get$iterator$ax(J.where$1$ax(J.get$columns$x(table), columnFilter.makePredicate$0())); t1.moveNext$0() === true;) {
         col = t1.get$current();
         J.init$1$x(col, new N.transformString_closure(action, col));
       }
-    }, "call$3", "ddt__transformString$closure", 6, 0, 704, 15, 135, 186],
+    }, "call$3", "ddt__transformString$closure", 6, 0, 705, 15, 135, 186],
     strFind: [function(s, sub) {
       var t1 = J.getInterceptor$asx(s);
       if (t1.get$isEmpty(s) === true || J.get$isEmpty$asx(sub) === true)
@@ -36889,7 +36889,7 @@
       return t1;
     }, function(s, pattern, i) {
       return N.regExpExtract(s, pattern, i, 0);
-    }, "call$4$group", "call$3", "ddt__regExpExtract$closure", 6, 3, 705, 106, 4, 36, 5, 376],
+    }, "call$4$group", "call$3", "ddt__regExpExtract$closure", 6, 3, 706, 106, 4, 36, 5, 376],
     regExpContains: [function(s, pattern) {
       return J.contains$1$asx(s, P.RegExp_RegExp(pattern, true, false));
     }, "call$2", "ddt__regExpContains$closure", 4, 0, 108, 4, 36],
@@ -38900,7 +38900,7 @@
       return t1 ? C.JSString_methods.$add('"', s) + '"' : s;
     }, function(s) {
       return N.csvQuote(s, ",");
-    }, "call$2$delimiter", "call$1", "ddt__csvQuote$closure", 2, 3, 706, 375, 4, 373],
+    }, "call$2$delimiter", "call$1", "ddt__csvQuote$closure", 2, 3, 707, 375, 4, 373],
     _parseLinesImpl: function(s, onLine, delim, mergeDelimiters, guessDelimiter) {
       var x, t1, t2, t3, lastColCount, state, start, i, t4, i0, i1, hasEscapedQuotes, value, t5, t6, q;
       x = H.setRuntimeTypeInfo([], [P.String]);
@@ -59857,7 +59857,7 @@
             return;
           else
             return N.BigInt_parse(J.trim$0$s(text));
-        }, "call$1", "ddt_BigIntColumn_parse$closure", 2, 0, 647, 84]
+        }, "call$1", "ddt_BigIntColumn_parse$closure", 2, 0, 648, 84]
       }
     },
     Column_ColumnIterableMixin: {
@@ -59955,7 +59955,7 @@
         if (b == null)
           return 1;
         return J.compareTo$1$ns(a, b);
-      }, "call$2", "get$comparator", 4, 0, 604, 14, 11],
+      }, "call$2", "get$comparator", 4, 0, 605, 14, 11],
       getMatcher$1: function(expression) {
         return N.BigIntMatcher_BigIntMatcher$parse(expression, true, null);
       },
@@ -60325,7 +60325,7 @@
       comparator$2: [function(a, b) {
         var t1 = a === true ? 1 : 0;
         return t1 - (b === true ? 1 : 0);
-      }, "call$2", "get$comparator", 4, 0, 633, 14, 11],
+      }, "call$2", "get$comparator", 4, 0, 634, 14, 11],
       getMatcher$1: function(expression) {
         return N.BoolMatcher_BoolMatcher$parse(expression, true, null);
       },
@@ -60676,7 +60676,7 @@
         else if (J.$lt$n(t1.get$length(a), t3.get$length(b)) === true)
           return -1;
         return 0;
-      }, "call$2", "get$comparator", 4, 0, 666, 14, 11],
+      }, "call$2", "get$comparator", 4, 0, 667, 14, 11],
       get$defaultEncoder: function() {
         return new N.ByteArrayRawEncoder();
       },
@@ -60942,7 +60942,7 @@
         if (J.$eq$(J.get$length$asx(J.get$columns$x(a)), J.get$length$asx(J.get$columns$x(b))) !== true)
           return J.$sub$n(a.get$rowCount(), b.get$rowCount());
         return 1;
-      }, "call$2", "get$comparator", 4, 0, 677, 14, 11],
+      }, "call$2", "get$comparator", 4, 0, 678, 14, 11],
       parse$3: function(_, s, orElse, format) {
         var t1, exception;
         if (s == null || J.$eq$(s, "") === true)
@@ -68945,7 +68945,7 @@
       }, null, null, 2, 0, null, 7, "call"]
     },
     fail: {
-      "^": "Closure:427;_box_0,orElse,acceptColumnName",
+      "^": "Closure:428;_box_0,orElse,acceptColumnName",
       call$0: function() {
         var t1, t2, m, cn, matcher;
         if (this.acceptColumnName) {
@@ -69229,7 +69229,7 @@
       }
     },
     fail0: {
-      "^": "Closure:431;orElse",
+      "^": "Closure:432;orElse",
       call$0: function() {
         return;
       }
@@ -69677,7 +69677,7 @@
           t2.reportChange$1(notify === true ? C.EventType_mOu : null);
       }, function(values) {
         return this.setValues$2$notify(values, true);
-      }, "setValues$1", "call$2$notify", "call$1", "get$setValues", 2, 3, 438, 51, 28, 25],
+      }, "setValues$1", "call$2$notify", "call$1", "get$setValues", 2, 3, 439, 51, 28, 25],
       get$values: function(_) {
         var t1, t2, t3, values, t4, i, t5;
         t1 = this._dataFrame;
@@ -69710,7 +69710,7 @@
       cell$1: [function(columnId) {
         var t1 = this._dataFrame;
         return new N.Cell(t1, J.$index$asx(t1, columnId), this.idx, null, null);
-      }, "call$1", "get$cell", 2, 0, 441, 63],
+      }, "call$1", "get$cell", 2, 0, 442, 63],
       getField$1: function(columnId) {
         var t1 = J.getInterceptor(columnId);
         if (!!t1.$isColumn)
@@ -69993,7 +69993,7 @@
         return this.indexes$2$onlyFiltered$onlySelected(false, false);
       }, "indexes$0", function(onlyFiltered) {
         return this.indexes$2$onlyFiltered$onlySelected(onlyFiltered, false);
-      }, "indexes$1$onlyFiltered", "call$2$onlyFiltered$onlySelected", "call$0", "call$1$onlyFiltered", "get$indexes", 0, 5, 457, 23, 23, 213, 214],
+      }, "indexes$1$onlyFiltered", "call$2$onlyFiltered$onlySelected", "call$0", "call$1$onlyFiltered", "get$indexes", 0, 5, 458, 23, 23, 213, 214],
       select$1: function(_, rowPredicate) {
         J.init$1$x(this.dataFrame.get$selection(), rowPredicate);
         return this;
@@ -70001,7 +70001,7 @@
       filter$1: [function(_, rowPredicate) {
         J.init$1$x(J.get$filter$x(this.dataFrame), rowPredicate);
         return this;
-      }, "call$1", "get$filter", 2, 0, 465, 353],
+      }, "call$1", "get$filter", 2, 0, 466, 353],
       clear$1$notify: function(_, notify) {
         var t1;
         this.dataFrame.get$selection().beginUpdate$0();
@@ -70332,7 +70332,7 @@
           t2.colName = t1[2];
           t2.aggType = aggType;
           return t2;
-        }, "call$1", "ddt_GroupAggregation_fromSql$closure", 2, 0, 649, 187]
+        }, "call$1", "ddt_GroupAggregation_fromSql$closure", 2, 0, 650, 187]
       }
     },
     PropMixin_$GroupAggregation: {
@@ -70452,7 +70452,7 @@
         var t1 = N._Range$(this.dataFrame.get$rowCount(), null, null);
         this._indexes = new H.WhereIterable(t1, check, [H.getRuntimeTypeArgument(t1, "Iterable", 0)]);
         return this;
-      }, "call$1", "get$where", 2, 0, 497, 101],
+      }, "call$1", "get$where", 2, 0, 498, 101],
       aggregate$3$autoName$getColumnName$groupIndexes: function(autoName, getColumnName, groupIndexes) {
         var context, t1, join, $name, t2, rightTable, agg, t3;
         context = J.$index$asx($.Zone__current, C.Symbol_rootFuncCall);
@@ -70615,7 +70615,7 @@
       }, null, null, 2, 0, null, 3, "call"]
     },
     _mergeJoin_addRow: {
-      "^": "Closure:500;_box_1,_box_0,order1,order2,srcCols1,srcCols2,map",
+      "^": "Closure:501;_box_1,_box_0,order1,order2,srcCols1,srcCols2,map",
       call$4: function(keyCols, keyRow, val1, val2) {
         var t1, row, copyValues;
         t1 = this._box_1;
@@ -70628,7 +70628,7 @@
       }
     },
     _mergeJoin_addRow_closure: {
-      "^": "Closure:502;map,row",
+      "^": "Closure:503;map,row",
       call$2: function(srcCols, srcRow) {
         var t1, t2, t3, col;
         for (t1 = J.get$iterator$ax(srcCols), t2 = this.map, t3 = this.row; t1.moveNext$0() === true;) {
@@ -71136,7 +71136,7 @@
         t1.push(matcher);
       }, function(columnName, pattern) {
         return this._addMatcher$3$throwOnError(columnName, pattern, true);
-      }, "_addMatcher$2", "call$3$throwOnError", "call$2", "get$_addMatcher", 4, 3, 515, 51, 177, 36, 351],
+      }, "_addMatcher$2", "call$3$throwOnError", "call$2", "get$_addMatcher", 4, 3, 516, 51, 177, 36, 351],
       match$1: [function(_, row) {
         var t1, t2;
         t1 = this.and;
@@ -71716,7 +71716,7 @@
         return this;
       }, function($receiver, field, pattern) {
         return this.where$3$dataType($receiver, field, pattern, null);
-      }, "where$2", "call$3$dataType", "call$2", "get$where", 4, 3, 517, 1, 80, 36, 99],
+      }, "where$2", "call$3$dataType", "call$2", "get$where", 4, 3, 518, 1, 80, 36, 99],
       whereAll$1: function(clauses) {
         C.JSArray_methods.addAll$1(this._where, clauses);
         this._whereOp = "and";
@@ -71832,7 +71832,7 @@
       }
     },
     _pivot_keyColName: {
-      "^": "Closure:519;keyNameMap",
+      "^": "Closure:520;keyNameMap",
       call$1: function(keyCol) {
         var t1, t2;
         t1 = J.getInterceptor$x(keyCol);
@@ -71841,7 +71841,7 @@
       }
     },
     _pivot_toColList: {
-      "^": "Closure:526;_box_0,df",
+      "^": "Closure:527;_box_0,df",
       call$1: function(type) {
         return J.get$columns$x(this.df).toColumnList$1(J.toList$0$ax(J.map$1$ax(J.where$1$ax(this._box_0.aggs, new N._pivot_toColList_closure(type)), new N._pivot_toColList_closure0())));
       }
@@ -71878,7 +71878,7 @@
       }
     },
     _pivot_addColumn: {
-      "^": "Closure:536;_box_0,df,result",
+      "^": "Closure:537;_box_0,df,result",
       call$2: function(agg, pivotValues) {
         var valueCol, aggrMethod, t1, colName, t2, t3, col;
         valueCol = J.$index$asx(this.df, agg.get$colName());
@@ -72577,7 +72577,7 @@
       limit$1: [function(n) {
         this.query.set$limit(n);
         return this;
-      }, "call$1", "get$limit", 2, 0, 617, 68],
+      }, "call$1", "get$limit", 2, 0, 618, 68],
       join$6$leftTable$rightTableAlias: function(_, rightTable, joinType, leftTableKeys, rightTableKeys, leftTable, rightTableAlias) {
         var t1, t2;
         t1 = this.query.get$joins();
@@ -73778,7 +73778,7 @@
         return this.run$5$context$processed$queue$report($call, null, null, null, null);
       }, "run$1", function($call, processed, report) {
         return this.run$5$context$processed$queue$report($call, null, processed, null, report);
-      }, "run$3$processed$report", "call$5$context$processed$queue$report", "call$1", "call$3$processed$report", "get$run", 2, 9, 634, 1, 1, 1, 1, 9, 27, 72, 207, 236],
+      }, "run$3$processed$report", "call$5$context$processed$queue$report", "call$1", "call$3$processed$report", "get$run", 2, 9, 635, 1, 1, 1, 1, 9, 27, 72, 207, 236],
       resolve$1: ["super$Func$resolve", function($call) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this;
         var $async$resolve$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -74186,7 +74186,7 @@
       }, null, null, 2, 0, null, 2, "call"]
     },
     Func__runBatch_callBatch: {
-      "^": "Closure:668;_box_0,$this,table,batchCall,result,filter,tableCallParam,names",
+      "^": "Closure:669;_box_0,$this,table,batchCall,result,filter,tableCallParam,names",
       call$2: function(start, end) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, segment, hashId, t3, t4, param, t5, src, dst, t6, n, t7;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -74260,7 +74260,7 @@
       }
     },
     Func__runBatch_callBatch_hashId: {
-      "^": "Closure:676;table,start,end",
+      "^": "Closure:677;table,start,end",
       call$1: function(col) {
         J.$indexSet$ax(col.get$tags(), ".id", F.Uuid$().v5$2(this.table.getTag$1(".id"), H.S(J.get$name$x(col)) + H.S(this.start) + H.S(this.end)));
       }
@@ -74823,7 +74823,7 @@
         return this.run$4$context$processed$queue$report(null, processed, null, report);
       }, "run$2$processed$report", function(processed, queue, report) {
         return this.run$4$context$processed$queue$report(null, processed, queue, report);
-      }, "run$3$processed$queue$report", "call$4$context$processed$queue$report", "call$0", "call$1$report", "call$2$processed$report", "call$1$processed", "call$1$context", "call$2$context$report", "call$2$processed$report", "call$3$processed$queue$report", "get$run", 0, 9, 684, 1, 1, 1, 1, 27, 72, 207, 236],
+      }, "run$3$processed$queue$report", "call$4$context$processed$queue$report", "call$0", "call$1$report", "call$2$processed$report", "call$1$processed", "call$1$context", "call$2$context$report", "call$2$processed$report", "call$3$processed$queue$report", "get$run", 0, 9, 685, 1, 1, 1, 1, 27, 72, 207, 236],
       _setAppPath$0: function() {
         var t1, t2;
         if (this._func.hasTagOrRole$1("app") === true) {
@@ -75581,7 +75581,7 @@
         return this;
       }, function(values) {
         return this.setValues$2$optional(values, null);
-      }, "setValues$1", "call$2$optional", "call$1", "get$setValues", 2, 3, 688, 1, 28, 321],
+      }, "setValues$1", "call$2$optional", "call$1", "get$setValues", 2, 3, 689, 1, 28, 321],
       setResult$1: function(result) {
         var t1, t2, dfName;
         if (J.$gt$n(J.get$length$asx(this.get$outputParams()), 0) === true)
@@ -76052,7 +76052,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     FuncCall_setValues_getValue: {
-      "^": "Closure:693;",
+      "^": "Closure:694;",
       call$2: function(p, x) {
         return J.$eq$(p.get$propertyType(), "datetime") === true && x != null && typeof x === "string" ? N.parseDateTime(x, null) : x;
       }
@@ -76300,7 +76300,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     CompilableFunc_processCompilableFunc_getValues: {
-      "^": "Closure:699;",
+      "^": "Closure:700;",
       call$3: function(vals, funcs, funcLists) {
         funcs.forEach$1(0, new N.CompilableFunc_processCompilableFunc_getValues_closure(vals));
         funcLists.forEach$1(0, new N.CompilableFunc_processCompilableFunc_getValues_closure0(vals));
@@ -77472,7 +77472,7 @@
           return t1;
         }
         return;
-      }, "call$1", "get$semValue", 2, 0, 700, 10],
+      }, "call$1", "get$semValue", 2, 0, 701, 10],
       containsVar$1: function($name) {
         return this.constants.delegate.containsKey$1(0, $name) || this.properties.delegate.containsKey$1(0, $name) || this.variables.delegate.containsKey$1(0, $name);
       },
@@ -81884,7 +81884,7 @@
       $isCompilableFunc: 1
     },
     closure4688: {
-      "^": "Closure:429;",
+      "^": "Closure:430;",
       call$1: [function(context) {
         var t1 = H.interceptedTypeCast(J.$index$asx(context, "currentTable"), "$isDataFrame");
         return t1 == null ? t1 : t1._ddt$_name;
@@ -81971,7 +81971,7 @@
       }
     },
     ResolveTableFunc_runImplSync_resolve: {
-      "^": "Closure:447;_box_0,run",
+      "^": "Closure:448;_box_0,run",
       call$1: function($name) {
         var x;
         $name = G.unescapeName($name, true);
@@ -82021,7 +82021,7 @@
       }
     },
     ResolveColumnFunc_runImplSync_resolveColumn: {
-      "^": "Closure:448;run,pTable",
+      "^": "Closure:449;run,pTable",
       call$1: function(columnName) {
         var t1, t2, x, t3, t4;
         columnName = G.unescapeName(columnName, null);
@@ -82867,7 +82867,7 @@
       }, null, null, 2, 0, null, 2, "call"]
     },
     FuncBatchRunner_vectorCall_processColumn: {
-      "^": "Closure:455;$this,preCalcColumns",
+      "^": "Closure:456;$this,preCalcColumns",
       call$2: function($call, column) {
         var t1, t2, t3;
         t1 = this.$this;
@@ -83803,7 +83803,7 @@
         return t1;
       }, function(fieldId) {
         return this.boolean$2(fieldId, false);
-      }, "boolean$1", "call$2", "call$1", "get$boolean", 2, 2, 466, 23, 259, 303],
+      }, "boolean$1", "call$2", "call$1", "get$boolean", 2, 2, 467, 23, 259, 303],
       int16$2: function(fieldId, def) {
         var o, t1;
         o = this._slot$1(fieldId);
@@ -83859,7 +83859,7 @@
         if (typeof t2 !== "number")
           return H.iae(t2);
         return new N._FlatBufTable(this.bytes, t1, p + t2);
-      }, "call$1", "get$table", 2, 0, 479, 259],
+      }, "call$1", "get$table", 2, 0, 480, 259],
       string$1: function(fieldId) {
         var o, p, t1, t2, t3, s, len;
         o = this._slot$1(fieldId);
@@ -84392,7 +84392,7 @@
           buffer.writeUint32List$1(t2);
       }, function(buffer) {
         return this.serialize$2$archive(buffer, 0);
-      }, "serialize$1", "call$2$archive", "call$1", "get$serialize", 2, 3, 658, 106, 100, 302],
+      }, "serialize$1", "call$2$archive", "call$1", "get$serialize", 2, 3, 659, 106, 100, 302],
       _ddt$_writeToList$1: function(list) {
         var t1, i, t2;
         t1 = list.length;
@@ -84969,7 +84969,7 @@
       "^": "Object;fcmPredictor,dfcmPredictor",
       estimate$1: [function(values) {
         return -1;
-      }, "call$1", "get$estimate", 2, 0, 659, 28],
+      }, "call$1", "get$estimate", 2, 0, 660, 28],
       encode$2: function(buf, values) {
         var t1, lenM2, i, t2, t3, t4, dBits, diff1d, t5, diff2d, predictor1BetterForD, eBits, diff1e, diff2e, predictor1BetterForE, code;
         this.fcmPredictor = N._FcmPredictor$(17);
@@ -85326,7 +85326,7 @@
           this.lengthSymbols = t2;
         }
         return t2 * (this.symbolsDataType === 41218 ? 4 : 8) + t1;
-      }, "call$1", "get$estimate", 2, 0, 694, 28],
+      }, "call$1", "get$estimate", 2, 0, 695, 28],
       encode$3: function(buffer, values, archive) {
         var t1, t2, symbols, repeats, t3, prev, t4, idxSymbols, idxRepeats, cntSymbols, isBlock, n, t5, curr, idxRepeats0, idxSymbols0;
         t1 = this.lengthSymbols;
@@ -85721,7 +85721,7 @@
         if (N.mostSignificantBitIndex(J.$sub$n(max, min)) > 31)
           return -1;
         return J.$add$ns(N.BitIntList_sizeInBytes(this.lengthRepeats, 0, 65534), N.BitIntList_sizeInBytes(this.lengthSymbols, min, max));
-      }, "call$2", "get$estimate", 4, 0, 708, 28, 301],
+      }, "call$2", "get$estimate", 4, 0, 709, 28, 301],
       encode$4: function(buffer, values, minimum, archive) {
         var repeats, t1, symbols, none, replaceNone, t2, vn, vnm1, prev, t3, idxSymbols, idxRepeats, cntSymbols, isBlock, n, t4, curr, idxRepeats0, idxSymbols0;
         if (this.lengthSymbols == null) {
@@ -90853,7 +90853,7 @@
       }
     },
     TestData_carsFull__rand: {
-      "^": "Closure:65;",
+      "^": "Closure:64;",
       call$2: function(min, max) {
         return min + $.$get$TestData_rnd().nextDouble$0() * (max - min);
       }
@@ -90955,7 +90955,7 @@
       }, null, null, 2, 0, null, 5, "call"]
     },
     TestData_demog__rand: {
-      "^": "Closure:65;",
+      "^": "Closure:64;",
       call$2: function(min, max) {
         return min + $.$get$TestData_rnd().nextDouble$0() * (max - min);
       }
@@ -95086,7 +95086,7 @@
       return P._asyncStart($async$_DbTableMutations_insert, $async$completer);
     }, function(connectionId, tableName, df, optionsJson) {
       return X._DbTableMutations_insert(connectionId, tableName, df, optionsJson, false);
-    }, "call$5$upsert", "call$4", "grok_api__DbTableMutations_insert$closure", 8, 3, 707, 23, 105, 81, 102, 285, 284],
+    }, "call$5$upsert", "call$4", "grok_api__DbTableMutations_insert$closure", 8, 3, 708, 23, 105, 81, 102, 285, 284],
     _DbTableMutations_upsert: [function(connectionId, tableName, df, optionsJson) {
       return X._DbTableMutations_insert(connectionId, tableName, df, optionsJson, true);
     }, "call$4", "grok_api__DbTableMutations_upsert$closure", 8, 0, 220],
@@ -95200,7 +95200,7 @@
           }
       });
       return P._asyncStart($async$_DbTableMutations_ddlExecute, $async$completer);
-    }, "call$2", "grok_api__DbTableMutations_ddlExecute$closure", 4, 0, 709],
+    }, "call$2", "grok_api__DbTableMutations_ddlExecute$closure", 4, 0, 710],
     _DbTableMutations_update: [function(connectionId, tableName, setJson, whereJson) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, setMap, whereMap, setColumns, t1, setValues, setTypes, t2;
       var $async$_DbTableMutations_update = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -95241,7 +95241,7 @@
           }
       });
       return P._asyncStart($async$_DbTableMutations_update, $async$completer);
-    }, "call$4", "grok_api__DbTableMutations_update$closure", 8, 0, 710],
+    }, "call$4", "grok_api__DbTableMutations_update$closure", 8, 0, 711],
     _DbTableMutations_delete: [function(connectionId, tableName, whereJson, allowFullTable) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, whereMap, t1, t2, t3;
       var $async$_DbTableMutations_delete = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -95276,7 +95276,7 @@
           }
       });
       return P._asyncStart($async$_DbTableMutations_delete, $async$completer);
-    }, "call$4", "grok_api__DbTableMutations_delete$closure", 8, 0, 711],
+    }, "call$4", "grok_api__DbTableMutations_delete$closure", 8, 0, 712],
     _wrapParamValue: function(param) {
       if (param == null)
         return;
@@ -95410,7 +95410,7 @@
     },
     reg: [function($name, f) {
       window["grok_" + H.S($name)] = P.allowInterop(f);
-    }, "call$2", "grok_api__reg$closure", 4, 0, 712, 10, 19],
+    }, "call$2", "grok_api__reg$closure", 4, 0, 713, 10, 19],
     ra0: function($name, execute) {
       window["grok_" + $name] = P.allowInterop(new X.ra0_closure(execute));
       return;
@@ -95506,7 +95506,7 @@
           }
       });
       return P._asyncStart($async$domainInteropCall, $async$completer);
-    }, "call$1", "grok_api__domainInteropCall$closure", 2, 0, 713, 186],
+    }, "call$1", "grok_api__domainInteropCall$closure", 2, 0, 714, 186],
     initJsApi: function() {
       var t1, jsUtils, _floatArray, t2, t3;
       t1 = {};
@@ -96134,335 +96134,336 @@
       window.grok_Project_AddRelation = P.allowInterop(new X.initJsApi_closure612());
       window.grok_Project_RemoveRelation = P.allowInterop(new X.initJsApi_closure613());
       window.grok_Project_Description = P.allowInterop(new X.initJsApi_closure614());
-      window.grok_Project_IsDirty = P.allowInterop(new X.initJsApi_closure615());
-      window.grok_Project_IsEmpty = P.allowInterop(new X.initJsApi_closure616());
-      window.grok_Project_IsDashboard = P.allowInterop(new X.initJsApi_closure617());
-      window.grok_Project_IsPackage = P.allowInterop(new X.initJsApi_closure618());
-      window.grok_Project_Get_IsSpace = P.allowInterop(new X.initJsApi_closure619());
-      window.grok_Project_ToMarkup = P.allowInterop(new X.initJsApi_closure620());
-      window.grok_TableInfo_Get_DataFrame = P.allowInterop(new X.initJsApi_closure621());
-      window.grok_TableInfo_Get_Columns = P.allowInterop(new X.initJsApi_closure622());
-      window.grok_TableInfo_Get_Tags = P.allowInterop(new X.initJsApi_closure623());
-      X.ra2("TableInfo_SaveCreationScript", new X.initJsApi_closure624());
-      window.grok_ColumnInfo_Get_Type = P.allowInterop(new X.initJsApi_closure625());
-      window.grok_ColumnInfo_Get_SemType = P.allowInterop(new X.initJsApi_closure626());
-      window.grok_ColumnInfo_Get_LayoutColumnId = P.allowInterop(new X.initJsApi_closure627());
-      window.grok_ColumnInfo_Get_Tags = P.allowInterop(new X.initJsApi_closure628());
-      window.grok_HistoryEntry_Get_Object = P.allowInterop(new X.initJsApi_closure629());
-      window.grok_HistoryEntry_Get_Time = P.allowInterop(new X.initJsApi_closure630());
-      window.grok_Entity_Get_Id = P.allowInterop(new X.initJsApi_closure631());
-      window.grok_Entity_Set_Id = P.allowInterop(new X.initJsApi_closure632());
-      window.grok_Entity_New_Id = P.allowInterop(new X.initJsApi_closure633());
-      window.grok_Entity_Path = P.allowInterop(new X.initJsApi_closure634());
-      window.grok_Query_Query = P.allowInterop(new X.initJsApi_closure635());
-      window.grok_Query_Set_Query = P.allowInterop(new X.initJsApi_closure636());
-      window.grok_Query_Get_AdHoc = P.allowInterop(new X.initJsApi_closure637());
-      window.grok_Query_Set_AdHoc = P.allowInterop(new X.initJsApi_closure638());
-      window.grok_Query_Get_Connection = P.allowInterop(new X.initJsApi_closure639());
-      window.grok_Query_Set_Connection = P.allowInterop(new X.initJsApi_closure640());
-      window.grok_Query_Get_PostProcessScript = P.allowInterop(new X.initJsApi_closure641());
-      window.grok_Query_Set_PostProcessScript = P.allowInterop(new X.initJsApi_closure642());
-      X.ra1("Query_ExecuteTable", new X.initJsApi_closure643());
-      window.grok_TableQuery_Create = P.allowInterop(new X.initJsApi_closure644());
-      window.grok_TableQuery_SetTable = P.allowInterop(new X.initJsApi_closure645());
-      window.grok_TableQuery_GetTable = P.allowInterop(new X.initJsApi_closure646());
-      window.grok_TableQuery_SetFields = P.allowInterop(new X.initJsApi_closure647());
-      window.grok_TableQuery_GetFields = P.allowInterop(new X.initJsApi_closure648());
-      X.ra1("TableQuery_ExecuteTable", new X.initJsApi_closure649());
-      window.grok_TableQuery_Get_WhereClausesDB = P.allowInterop(new X.initJsApi_closure650());
-      window.grok_TableQuery_Set_WhereClausesDB = P.allowInterop(new X.initJsApi_closure651());
-      window.grok_TableQuery_Get_AggregationsDB = P.allowInterop(new X.initJsApi_closure652());
-      window.grok_TableQuery_Set_AggregationsDB = P.allowInterop(new X.initJsApi_closure653());
-      window.grok_TableQuery_Get_HavingDB = P.allowInterop(new X.initJsApi_closure654());
-      window.grok_TableQuery_Set_HavingDB = P.allowInterop(new X.initJsApi_closure655());
-      window.grok_TableQuery_Get_OrderByDB = P.allowInterop(new X.initJsApi_closure656());
-      window.grok_TableQuery_Set_OrderByDB = P.allowInterop(new X.initJsApi_closure657());
-      window.grok_TableQuery_Get_Limit = P.allowInterop(new X.initJsApi_closure658());
-      window.grok_TableQuery_Set_Limit = P.allowInterop(new X.initJsApi_closure659());
-      window.grok_TableQuery_Get_Joins = P.allowInterop(new X.initJsApi_closure660());
-      window.grok_TableQuery_Set_Joins = P.allowInterop(new X.initJsApi_closure661());
-      window.grok_TableQuery_From = P.allowInterop(new X.initJsApi_closure662());
-      window.grok_TableQuery_FromTable = P.allowInterop(new X.initJsApi_closure663());
-      window.grok_DbTableQueryBuilder_From = P.allowInterop(new X.initJsApi_closure664());
-      window.grok_DbTableQueryBuilder_FromTable = P.allowInterop(new X.initJsApi_closure665());
-      window.grok_DbTableQueryBuilder_SelectAll = P.allowInterop(new X.initJsApi_closure666());
-      window.grok_DbTableQueryBuilder_Select = P.allowInterop(new X.initJsApi_closure667());
-      window.grok_DbTableQueryBuilder_SelectAggr = P.allowInterop(new X.initJsApi_closure668());
-      window.grok_DbTableQueryBuilder_SelectAggrAll = P.allowInterop(new X.initJsApi_closure669());
-      window.grok_DbTableQueryBuilder_GroupBy = P.allowInterop(new X.initJsApi_closure670());
-      window.grok_DbTableQueryBuilder_PivotOn = P.allowInterop(new X.initJsApi_closure671());
-      window.grok_DbTableQueryBuilder_Where = P.allowInterop(new X.initJsApi_closure672());
-      window.grok_DbTableQueryBuilder_Having = P.allowInterop(new X.initJsApi_closure673());
-      window.grok_DbTableQueryBuilder_WhereAll = P.allowInterop(new X.initJsApi_closure674());
-      window.grok_DbTableQueryBuilder_WhereAny = P.allowInterop(new X.initJsApi_closure675());
-      window.grok_DbTableQueryBuilder_SortBy = P.allowInterop(new X.initJsApi_closure676());
-      window.grok_DbTableQueryBuilder_Limit = P.allowInterop(new X.initJsApi_closure677());
-      window.grok_DbTableQueryBuilder_Join = P.allowInterop(new X.initJsApi_closure678());
-      window.grok_DbTableQueryBuilder_Build = P.allowInterop(new X.initJsApi_closure679());
+      window.grok_Project_Set_Description = P.allowInterop(new X.initJsApi_closure615());
+      window.grok_Project_IsDirty = P.allowInterop(new X.initJsApi_closure616());
+      window.grok_Project_IsEmpty = P.allowInterop(new X.initJsApi_closure617());
+      window.grok_Project_IsDashboard = P.allowInterop(new X.initJsApi_closure618());
+      window.grok_Project_IsPackage = P.allowInterop(new X.initJsApi_closure619());
+      window.grok_Project_Get_IsSpace = P.allowInterop(new X.initJsApi_closure620());
+      window.grok_Project_ToMarkup = P.allowInterop(new X.initJsApi_closure621());
+      window.grok_TableInfo_Get_DataFrame = P.allowInterop(new X.initJsApi_closure622());
+      window.grok_TableInfo_Get_Columns = P.allowInterop(new X.initJsApi_closure623());
+      window.grok_TableInfo_Get_Tags = P.allowInterop(new X.initJsApi_closure624());
+      X.ra2("TableInfo_SaveCreationScript", new X.initJsApi_closure625());
+      window.grok_ColumnInfo_Get_Type = P.allowInterop(new X.initJsApi_closure626());
+      window.grok_ColumnInfo_Get_SemType = P.allowInterop(new X.initJsApi_closure627());
+      window.grok_ColumnInfo_Get_LayoutColumnId = P.allowInterop(new X.initJsApi_closure628());
+      window.grok_ColumnInfo_Get_Tags = P.allowInterop(new X.initJsApi_closure629());
+      window.grok_HistoryEntry_Get_Object = P.allowInterop(new X.initJsApi_closure630());
+      window.grok_HistoryEntry_Get_Time = P.allowInterop(new X.initJsApi_closure631());
+      window.grok_Entity_Get_Id = P.allowInterop(new X.initJsApi_closure632());
+      window.grok_Entity_Set_Id = P.allowInterop(new X.initJsApi_closure633());
+      window.grok_Entity_New_Id = P.allowInterop(new X.initJsApi_closure634());
+      window.grok_Entity_Path = P.allowInterop(new X.initJsApi_closure635());
+      window.grok_Query_Query = P.allowInterop(new X.initJsApi_closure636());
+      window.grok_Query_Set_Query = P.allowInterop(new X.initJsApi_closure637());
+      window.grok_Query_Get_AdHoc = P.allowInterop(new X.initJsApi_closure638());
+      window.grok_Query_Set_AdHoc = P.allowInterop(new X.initJsApi_closure639());
+      window.grok_Query_Get_Connection = P.allowInterop(new X.initJsApi_closure640());
+      window.grok_Query_Set_Connection = P.allowInterop(new X.initJsApi_closure641());
+      window.grok_Query_Get_PostProcessScript = P.allowInterop(new X.initJsApi_closure642());
+      window.grok_Query_Set_PostProcessScript = P.allowInterop(new X.initJsApi_closure643());
+      X.ra1("Query_ExecuteTable", new X.initJsApi_closure644());
+      window.grok_TableQuery_Create = P.allowInterop(new X.initJsApi_closure645());
+      window.grok_TableQuery_SetTable = P.allowInterop(new X.initJsApi_closure646());
+      window.grok_TableQuery_GetTable = P.allowInterop(new X.initJsApi_closure647());
+      window.grok_TableQuery_SetFields = P.allowInterop(new X.initJsApi_closure648());
+      window.grok_TableQuery_GetFields = P.allowInterop(new X.initJsApi_closure649());
+      X.ra1("TableQuery_ExecuteTable", new X.initJsApi_closure650());
+      window.grok_TableQuery_Get_WhereClausesDB = P.allowInterop(new X.initJsApi_closure651());
+      window.grok_TableQuery_Set_WhereClausesDB = P.allowInterop(new X.initJsApi_closure652());
+      window.grok_TableQuery_Get_AggregationsDB = P.allowInterop(new X.initJsApi_closure653());
+      window.grok_TableQuery_Set_AggregationsDB = P.allowInterop(new X.initJsApi_closure654());
+      window.grok_TableQuery_Get_HavingDB = P.allowInterop(new X.initJsApi_closure655());
+      window.grok_TableQuery_Set_HavingDB = P.allowInterop(new X.initJsApi_closure656());
+      window.grok_TableQuery_Get_OrderByDB = P.allowInterop(new X.initJsApi_closure657());
+      window.grok_TableQuery_Set_OrderByDB = P.allowInterop(new X.initJsApi_closure658());
+      window.grok_TableQuery_Get_Limit = P.allowInterop(new X.initJsApi_closure659());
+      window.grok_TableQuery_Set_Limit = P.allowInterop(new X.initJsApi_closure660());
+      window.grok_TableQuery_Get_Joins = P.allowInterop(new X.initJsApi_closure661());
+      window.grok_TableQuery_Set_Joins = P.allowInterop(new X.initJsApi_closure662());
+      window.grok_TableQuery_From = P.allowInterop(new X.initJsApi_closure663());
+      window.grok_TableQuery_FromTable = P.allowInterop(new X.initJsApi_closure664());
+      window.grok_DbTableQueryBuilder_From = P.allowInterop(new X.initJsApi_closure665());
+      window.grok_DbTableQueryBuilder_FromTable = P.allowInterop(new X.initJsApi_closure666());
+      window.grok_DbTableQueryBuilder_SelectAll = P.allowInterop(new X.initJsApi_closure667());
+      window.grok_DbTableQueryBuilder_Select = P.allowInterop(new X.initJsApi_closure668());
+      window.grok_DbTableQueryBuilder_SelectAggr = P.allowInterop(new X.initJsApi_closure669());
+      window.grok_DbTableQueryBuilder_SelectAggrAll = P.allowInterop(new X.initJsApi_closure670());
+      window.grok_DbTableQueryBuilder_GroupBy = P.allowInterop(new X.initJsApi_closure671());
+      window.grok_DbTableQueryBuilder_PivotOn = P.allowInterop(new X.initJsApi_closure672());
+      window.grok_DbTableQueryBuilder_Where = P.allowInterop(new X.initJsApi_closure673());
+      window.grok_DbTableQueryBuilder_Having = P.allowInterop(new X.initJsApi_closure674());
+      window.grok_DbTableQueryBuilder_WhereAll = P.allowInterop(new X.initJsApi_closure675());
+      window.grok_DbTableQueryBuilder_WhereAny = P.allowInterop(new X.initJsApi_closure676());
+      window.grok_DbTableQueryBuilder_SortBy = P.allowInterop(new X.initJsApi_closure677());
+      window.grok_DbTableQueryBuilder_Limit = P.allowInterop(new X.initJsApi_closure678());
+      window.grok_DbTableQueryBuilder_Join = P.allowInterop(new X.initJsApi_closure679());
+      window.grok_DbTableQueryBuilder_Build = P.allowInterop(new X.initJsApi_closure680());
       X.ra4("DbTable_Insert", X.grok_api__DbTableMutations_insert$closure());
       X.ra4("DbTable_Upsert", X.grok_api__DbTableMutations_upsert$closure());
       X.ra4("DbTable_Update", X.grok_api__DbTableMutations_update$closure());
       X.ra4("DbTable_Delete", X.grok_api__DbTableMutations_delete$closure());
       X.ra4("DbTable_UploadAs", X.grok_api__DbTableMutations_uploadAs$closure());
       X.ra2("Db_DdlExecute", X.grok_api__DbTableMutations_ddlExecute$closure());
-      window.grok_Entity_Get_FriendlyName = P.allowInterop(new X.initJsApi_closure680());
-      window.grok_Entity_Set_FriendlyName = P.allowInterop(new X.initJsApi_closure681());
-      window.grok_Entity_Has_Tag = P.allowInterop(new X.initJsApi_closure682());
-      window.grok_Entity_Tag = P.allowInterop(new X.initJsApi_closure683());
-      window.grok_Entity_UnTag = P.allowInterop(new X.initJsApi_closure684());
-      window.grok_Entity_Get_EntityType = P.allowInterop(new X.initJsApi_closure685());
-      window.grok_Entity_Get_Name = P.allowInterop(new X.initJsApi_closure686());
-      window.grok_Entity_Set_Name = P.allowInterop(new X.initJsApi_closure687());
-      window.grok_Entity_Get_CreatedOn = P.allowInterop(new X.initJsApi_closure688());
-      window.grok_Entity_Get_UpdatedOn = P.allowInterop(new X.initJsApi_closure689());
-      window.grok_Entity_Get_Author = P.allowInterop(new X.initJsApi_closure690());
-      window.grok_Entity_Get_nqName = P.allowInterop(new X.initJsApi_closure691());
-      X.ra3("Entity_Share", new X.initJsApi_closure692());
-      window.grok_DataConnection_Create = P.allowInterop(new X.initJsApi_closure693());
-      window.grok_DataConnection_Get_Parameters = P.allowInterop(new X.initJsApi_closure694());
-      window.grok_DataConnection_Query = P.allowInterop(new X.initJsApi_closure695());
-      window.grok_DataConnection_Get_Credentials = P.allowInterop(new X.initJsApi_closure696());
-      window.grok_DataConnection_Get_DataSource = P.allowInterop(new X.initJsApi_closure697());
-      X.ra1("DataConnection_Test", new X.initJsApi_closure698());
-      window.grok_Credentials_Parameters = P.allowInterop(new X.initJsApi_closure699());
-      window.grok_Credentials_OpenParameters = P.allowInterop(new X.initJsApi_closure700());
-      window.grok_Credentials_Create = P.allowInterop(new X.initJsApi_closure701());
-      window.grok_ScriptEnvironment_Create = P.allowInterop(new X.initJsApi_closure702());
-      window.grok_ScriptEnvironment_Environment = P.allowInterop(new X.initJsApi_closure703());
-      window.grok_ProgressIndicator_Get_Canceled = P.allowInterop(new X.initJsApi_closure704());
-      window.grok_ProgressIndicator_Get_Percent = P.allowInterop(new X.initJsApi_closure705());
-      window.grok_ProgressIndicator_Get_Description = P.allowInterop(new X.initJsApi_closure706());
-      window.grok_ProgressIndicator_Set_Description = P.allowInterop(new X.initJsApi_closure707());
-      window.grok_ProgressIndicator_Update = P.allowInterop(new X.initJsApi_closure708());
-      window.grok_ProgressIndicator_Log = P.allowInterop(new X.initJsApi_closure709());
-      window.grok_ProgressIndicator_Create = P.allowInterop(new X.initJsApi_closure710());
-      window.grok_Progress_Updated = P.allowInterop(new X.initJsApi_closure711());
-      window.grok_Progress_Log_Updated = P.allowInterop(new X.initJsApi_closure712());
-      window.grok_Progress_Canceled = P.allowInterop(new X.initJsApi_closure713());
-      X.ra1("Log_TranslateStackTrace", new X.initJsApi_closure714());
-      window.grok_StringUtils_ToSentenceCase = P.allowInterop(new X.initJsApi_closure715());
-      window.grok_StringUtils_CamelCaseToSentence = P.allowInterop(new X.initJsApi_closure716());
-      window.grok_Context_Create = P.allowInterop(new X.initJsApi_closure717());
-      window.grok_Context_CloneDefault = P.allowInterop(new X.initJsApi_closure718());
-      window.grok_Context_Get_Variable = P.allowInterop(new X.initJsApi_closure719());
-      window.grok_Context_Set_Variable = P.allowInterop(new X.initJsApi_closure720());
-      window.grok_FuncCall_Edit = P.allowInterop(new X.initJsApi_closure721());
-      window.grok_Func_Get_Options = P.allowInterop(new X.initJsApi_closure722());
-      window.grok_Func_Get_Aux = P.allowInterop(new X.initJsApi_closure723());
-      window.grok_FuncCall_Get_Options = P.allowInterop(new X.initJsApi_closure724());
-      window.grok_FuncCall_Get_Aux = P.allowInterop(new X.initJsApi_closure725());
-      window.grok_FuncCall_Set_Aux_Value = P.allowInterop(new X.initJsApi_closure726());
-      window.grok_FuncCall_Get_Params = P.allowInterop(new X.initJsApi_closure727());
-      window.grok_FuncCall_Get_Func = P.allowInterop(new X.initJsApi_closure728());
-      window.grok_FuncCall_Set_Func = P.allowInterop(new X.initJsApi_closure729());
-      window.grok_FuncCall_Get_Started = P.allowInterop(new X.initJsApi_closure730());
-      window.grok_FuncCall_Set_Started = P.allowInterop(new X.initJsApi_closure731());
-      window.grok_FuncCall_Get_Finished = P.allowInterop(new X.initJsApi_closure732());
-      window.grok_FuncCall_Get_Status = P.allowInterop(new X.initJsApi_closure733());
-      window.grok_FuncCall_Set_Status = P.allowInterop(new X.initJsApi_closure734());
-      window.grok_FuncCall_Get_ErrorMessage = P.allowInterop(new X.initJsApi_closure735());
-      window.grok_FuncCall_Get_ErrorStackTrace = P.allowInterop(new X.initJsApi_closure736());
-      window.grok_FuncCall_Get_Author = P.allowInterop(new X.initJsApi_closure737());
-      window.grok_FuncCall_Get_ParentCall = P.allowInterop(new X.initJsApi_closure738());
-      window.grok_FuncCall_Set_ParentCall = P.allowInterop(new X.initJsApi_closure739());
-      window.grok_FuncCall_Get_Context = P.allowInterop(new X.initJsApi_closure740());
-      window.grok_FuncCall_Set_Context = P.allowInterop(new X.initJsApi_closure741());
-      window.grok_FuncCall_Set_Param_Value = P.allowInterop(new X.initJsApi_closure742());
-      window.grok_FuncCall_Clone = P.allowInterop(new X.initJsApi_closure743());
-      window.grok_FuncCall_Get_AdHoc = P.allowInterop(new X.initJsApi_closure744());
-      window.grok_FuncCall_Set_AdHoc = P.allowInterop(new X.initJsApi_closure745());
-      window.grok_FuncCall_Get_DebugLogger = P.allowInterop(new X.initJsApi_closure746());
-      window.grok_FuncCallParam_Get_Aux = P.allowInterop(new X.initJsApi_closure747());
-      window.grok_FuncCallParam_Get_Param = P.allowInterop(new X.initJsApi_closure748());
-      window.grok_FuncCallParam_Get_Value = P.allowInterop(new X.initJsApi_closure749());
-      window.grok_FuncCallParam_OnChanged = P.allowInterop(new X.initJsApi_closure750());
-      window.grok_FuncCall_Get_Param_Value = P.allowInterop(new X.initJsApi_closure751());
-      window.grok_FuncCall_Get_Output_Param_Value = P.allowInterop(new X.initJsApi_closure752());
-      window.grok_ParseCsv = P.allowInterop(new X.initJsApi_closure753());
-      window.grok_TestData = P.allowInterop(new X.initJsApi_closure754());
-      window.grok_LinkTables = P.allowInterop(new X.initJsApi_closure755());
-      window.grok_JoinTables = P.allowInterop(new X.initJsApi_closure756());
-      window.grok_Subscription_Cancel = P.allowInterop(new X.initJsApi_closure757());
-      X.ra3("CallQuery", new X.initJsApi_closure758());
-      window.grok_GetCurrentCall = P.allowInterop(new X.initJsApi_closure759());
+      window.grok_Entity_Get_FriendlyName = P.allowInterop(new X.initJsApi_closure681());
+      window.grok_Entity_Set_FriendlyName = P.allowInterop(new X.initJsApi_closure682());
+      window.grok_Entity_Has_Tag = P.allowInterop(new X.initJsApi_closure683());
+      window.grok_Entity_Tag = P.allowInterop(new X.initJsApi_closure684());
+      window.grok_Entity_UnTag = P.allowInterop(new X.initJsApi_closure685());
+      window.grok_Entity_Get_EntityType = P.allowInterop(new X.initJsApi_closure686());
+      window.grok_Entity_Get_Name = P.allowInterop(new X.initJsApi_closure687());
+      window.grok_Entity_Set_Name = P.allowInterop(new X.initJsApi_closure688());
+      window.grok_Entity_Get_CreatedOn = P.allowInterop(new X.initJsApi_closure689());
+      window.grok_Entity_Get_UpdatedOn = P.allowInterop(new X.initJsApi_closure690());
+      window.grok_Entity_Get_Author = P.allowInterop(new X.initJsApi_closure691());
+      window.grok_Entity_Get_nqName = P.allowInterop(new X.initJsApi_closure692());
+      X.ra3("Entity_Share", new X.initJsApi_closure693());
+      window.grok_DataConnection_Create = P.allowInterop(new X.initJsApi_closure694());
+      window.grok_DataConnection_Get_Parameters = P.allowInterop(new X.initJsApi_closure695());
+      window.grok_DataConnection_Query = P.allowInterop(new X.initJsApi_closure696());
+      window.grok_DataConnection_Get_Credentials = P.allowInterop(new X.initJsApi_closure697());
+      window.grok_DataConnection_Get_DataSource = P.allowInterop(new X.initJsApi_closure698());
+      X.ra1("DataConnection_Test", new X.initJsApi_closure699());
+      window.grok_Credentials_Parameters = P.allowInterop(new X.initJsApi_closure700());
+      window.grok_Credentials_OpenParameters = P.allowInterop(new X.initJsApi_closure701());
+      window.grok_Credentials_Create = P.allowInterop(new X.initJsApi_closure702());
+      window.grok_ScriptEnvironment_Create = P.allowInterop(new X.initJsApi_closure703());
+      window.grok_ScriptEnvironment_Environment = P.allowInterop(new X.initJsApi_closure704());
+      window.grok_ProgressIndicator_Get_Canceled = P.allowInterop(new X.initJsApi_closure705());
+      window.grok_ProgressIndicator_Get_Percent = P.allowInterop(new X.initJsApi_closure706());
+      window.grok_ProgressIndicator_Get_Description = P.allowInterop(new X.initJsApi_closure707());
+      window.grok_ProgressIndicator_Set_Description = P.allowInterop(new X.initJsApi_closure708());
+      window.grok_ProgressIndicator_Update = P.allowInterop(new X.initJsApi_closure709());
+      window.grok_ProgressIndicator_Log = P.allowInterop(new X.initJsApi_closure710());
+      window.grok_ProgressIndicator_Create = P.allowInterop(new X.initJsApi_closure711());
+      window.grok_Progress_Updated = P.allowInterop(new X.initJsApi_closure712());
+      window.grok_Progress_Log_Updated = P.allowInterop(new X.initJsApi_closure713());
+      window.grok_Progress_Canceled = P.allowInterop(new X.initJsApi_closure714());
+      X.ra1("Log_TranslateStackTrace", new X.initJsApi_closure715());
+      window.grok_StringUtils_ToSentenceCase = P.allowInterop(new X.initJsApi_closure716());
+      window.grok_StringUtils_CamelCaseToSentence = P.allowInterop(new X.initJsApi_closure717());
+      window.grok_Context_Create = P.allowInterop(new X.initJsApi_closure718());
+      window.grok_Context_CloneDefault = P.allowInterop(new X.initJsApi_closure719());
+      window.grok_Context_Get_Variable = P.allowInterop(new X.initJsApi_closure720());
+      window.grok_Context_Set_Variable = P.allowInterop(new X.initJsApi_closure721());
+      window.grok_FuncCall_Edit = P.allowInterop(new X.initJsApi_closure722());
+      window.grok_Func_Get_Options = P.allowInterop(new X.initJsApi_closure723());
+      window.grok_Func_Get_Aux = P.allowInterop(new X.initJsApi_closure724());
+      window.grok_FuncCall_Get_Options = P.allowInterop(new X.initJsApi_closure725());
+      window.grok_FuncCall_Get_Aux = P.allowInterop(new X.initJsApi_closure726());
+      window.grok_FuncCall_Set_Aux_Value = P.allowInterop(new X.initJsApi_closure727());
+      window.grok_FuncCall_Get_Params = P.allowInterop(new X.initJsApi_closure728());
+      window.grok_FuncCall_Get_Func = P.allowInterop(new X.initJsApi_closure729());
+      window.grok_FuncCall_Set_Func = P.allowInterop(new X.initJsApi_closure730());
+      window.grok_FuncCall_Get_Started = P.allowInterop(new X.initJsApi_closure731());
+      window.grok_FuncCall_Set_Started = P.allowInterop(new X.initJsApi_closure732());
+      window.grok_FuncCall_Get_Finished = P.allowInterop(new X.initJsApi_closure733());
+      window.grok_FuncCall_Get_Status = P.allowInterop(new X.initJsApi_closure734());
+      window.grok_FuncCall_Set_Status = P.allowInterop(new X.initJsApi_closure735());
+      window.grok_FuncCall_Get_ErrorMessage = P.allowInterop(new X.initJsApi_closure736());
+      window.grok_FuncCall_Get_ErrorStackTrace = P.allowInterop(new X.initJsApi_closure737());
+      window.grok_FuncCall_Get_Author = P.allowInterop(new X.initJsApi_closure738());
+      window.grok_FuncCall_Get_ParentCall = P.allowInterop(new X.initJsApi_closure739());
+      window.grok_FuncCall_Set_ParentCall = P.allowInterop(new X.initJsApi_closure740());
+      window.grok_FuncCall_Get_Context = P.allowInterop(new X.initJsApi_closure741());
+      window.grok_FuncCall_Set_Context = P.allowInterop(new X.initJsApi_closure742());
+      window.grok_FuncCall_Set_Param_Value = P.allowInterop(new X.initJsApi_closure743());
+      window.grok_FuncCall_Clone = P.allowInterop(new X.initJsApi_closure744());
+      window.grok_FuncCall_Get_AdHoc = P.allowInterop(new X.initJsApi_closure745());
+      window.grok_FuncCall_Set_AdHoc = P.allowInterop(new X.initJsApi_closure746());
+      window.grok_FuncCall_Get_DebugLogger = P.allowInterop(new X.initJsApi_closure747());
+      window.grok_FuncCallParam_Get_Aux = P.allowInterop(new X.initJsApi_closure748());
+      window.grok_FuncCallParam_Get_Param = P.allowInterop(new X.initJsApi_closure749());
+      window.grok_FuncCallParam_Get_Value = P.allowInterop(new X.initJsApi_closure750());
+      window.grok_FuncCallParam_OnChanged = P.allowInterop(new X.initJsApi_closure751());
+      window.grok_FuncCall_Get_Param_Value = P.allowInterop(new X.initJsApi_closure752());
+      window.grok_FuncCall_Get_Output_Param_Value = P.allowInterop(new X.initJsApi_closure753());
+      window.grok_ParseCsv = P.allowInterop(new X.initJsApi_closure754());
+      window.grok_TestData = P.allowInterop(new X.initJsApi_closure755());
+      window.grok_LinkTables = P.allowInterop(new X.initJsApi_closure756());
+      window.grok_JoinTables = P.allowInterop(new X.initJsApi_closure757());
+      window.grok_Subscription_Cancel = P.allowInterop(new X.initJsApi_closure758());
+      X.ra3("CallQuery", new X.initJsApi_closure759());
+      window.grok_GetCurrentCall = P.allowInterop(new X.initJsApi_closure760());
       X.ra4("CallFunc", X.grok_api__callFuncFromJs$closure());
-      X.ra1("Files_OpenTable", new X.initJsApi_closure760());
-      X.ra1("Files_OpenTables", new X.initJsApi_closure761());
-      X.ra0("Func_LoadQueriesScripts", new X.initJsApi_closure762());
-      window.grok_Func_Get_Type = P.allowInterop(new X.initJsApi_closure763());
-      window.grok_Func_Get_Path = P.allowInterop(new X.initJsApi_closure764());
-      window.grok_Func_Get_HelpUrl = P.allowInterop(new X.initJsApi_closure765());
-      window.grok_Func_Set_HelpUrl = P.allowInterop(new X.initJsApi_closure766());
-      window.grok_Func_Get_Package = P.allowInterop(new X.initJsApi_closure767());
-      window.grok_Func_Get_IsVectorFunc = P.allowInterop(new X.initJsApi_closure768());
-      window.grok_Func_Get_Description = P.allowInterop(new X.initJsApi_closure769());
-      window.grok_Func_Set_Description = P.allowInterop(new X.initJsApi_closure770());
-      window.grok_Func_Get_InputParams = P.allowInterop(new X.initJsApi_closure771());
-      window.grok_Func_Get_OutputParams = P.allowInterop(new X.initJsApi_closure772());
-      window.grok_Func_Get_Tags = P.allowInterop(new X.initJsApi_closure773());
-      window.grok_Func_Set_Tags = P.allowInterop(new X.initJsApi_closure774());
-      window.grok_Func_Prepare = P.allowInterop(new X.initJsApi_closure775());
-      X.ra2("Func_PrepareAsync", new X.initJsApi_closure776());
-      window.grok_Func_Find = P.allowInterop(new X.initJsApi_closure777());
-      X.ra5("FuncCall_Call", new X.initJsApi_closure778());
-      window.grok_FuncCall_Cancel = P.allowInterop(new X.initJsApi_closure779());
-      window.grok_FuncCall_Call_Sync = P.allowInterop(new X.initJsApi_closure780());
-      window.grok_Script_Create = P.allowInterop(new X.initJsApi_closure781());
-      window.grok_Script_FromParams = P.allowInterop(new X.initJsApi_closure782());
-      window.grok_Script_GetScript = P.allowInterop(new X.initJsApi_closure783());
-      window.grok_Script_SetScript = P.allowInterop(new X.initJsApi_closure784());
-      window.grok_Script_ClientCode = P.allowInterop(new X.initJsApi_closure785());
-      window.grok_Script_GetLanguage = P.allowInterop(new X.initJsApi_closure786());
-      window.grok_Script_SetLanguage = P.allowInterop(new X.initJsApi_closure787());
-      window.grok_Script_Get_IsVectorFunc = P.allowInterop(new X.initJsApi_closure788());
-      window.grok_Script_Get_Environment = P.allowInterop(new X.initJsApi_closure789());
-      window.grok_Script_Set_Environment = P.allowInterop(new X.initJsApi_closure790());
-      window.grok_Script_Get_Reference = P.allowInterop(new X.initJsApi_closure791());
-      window.grok_Script_Set_Reference = P.allowInterop(new X.initJsApi_closure792());
-      window.grok_Script_Get_Sample = P.allowInterop(new X.initJsApi_closure793());
-      window.grok_Script_Set_Sample = P.allowInterop(new X.initJsApi_closure794());
-      window.grok_Script_Get_Tags = P.allowInterop(new X.initJsApi_closure795());
-      window.grok_Script_Set_Tags = P.allowInterop(new X.initJsApi_closure796());
-      X.ra2("EvalFunc", new X.initJsApi_closure797());
-      window.grok_OnObjectEvent = P.allowInterop(new X.initJsApi_closure798());
-      window.grok_FileInfo_FromBytes = P.allowInterop(new X.initJsApi_closure799());
-      window.grok_FileInfo_FromString = P.allowInterop(new X.initJsApi_closure800());
-      window.grok_FileInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure801());
-      window.grok_FileInfo_Get_Path = P.allowInterop(new X.initJsApi_closure802());
-      window.grok_FileInfo_Get_FullPath = P.allowInterop(new X.initJsApi_closure803());
-      window.grok_FileInfo_Get_ViewPath = P.allowInterop(new X.initJsApi_closure804());
-      window.grok_FileInfo_Get_Extension = P.allowInterop(new X.initJsApi_closure805());
-      window.grok_FileInfo_Get_FileName = P.allowInterop(new X.initJsApi_closure806());
-      window.grok_FileInfo_Get_Url = P.allowInterop(new X.initJsApi_closure807());
-      window.grok_FileInfo_Get_IsFile = P.allowInterop(new X.initJsApi_closure808());
-      window.grok_FileInfo_Get_IsDirectory = P.allowInterop(new X.initJsApi_closure809());
-      window.grok_FileInfo_Get_Data = P.allowInterop(new X.initJsApi_closure810());
-      window.grok_FileInfo_Get_UpdatedOn = P.allowInterop(new X.initJsApi_closure811());
-      X.ra1("FileInfo_ReadAsBytes", new X.initJsApi_closure812());
-      X.ra1("FileInfo_ReadAsString", new X.initJsApi_closure813());
-      X.ra1("FileInfo_Save", new X.initJsApi_closure814());
-      window.grok_Dapi_Root = P.allowInterop(new X.initJsApi_closure815());
-      window.grok_Dapi_Set_Root = P.allowInterop(new X.initJsApi_closure816());
-      window.grok_Dapi_Set_Token = P.allowInterop(new X.initJsApi_closure817());
-      window.grok_Dapi_Get_Token = P.allowInterop(new X.initJsApi_closure818());
-      window.grok_Dapi_Set_ImpersonationToken = P.allowInterop(new X.initJsApi_closure819());
-      window.grok_Dapi_Get_ImpersonationToken = P.allowInterop(new X.initJsApi_closure820());
-      window.grok_Dapi_WS_Root = P.allowInterop(new X.initJsApi_closure821());
-      window.grok_Dapi_OpenAI_Proxy = P.allowInterop(new X.initJsApi_closure822());
-      window.grok_Clear_LastError = P.allowInterop(new X.initJsApi_closure823());
-      window.grok_CloseAll = P.allowInterop(new X.initJsApi_closure824());
+      X.ra1("Files_OpenTable", new X.initJsApi_closure761());
+      X.ra1("Files_OpenTables", new X.initJsApi_closure762());
+      X.ra0("Func_LoadQueriesScripts", new X.initJsApi_closure763());
+      window.grok_Func_Get_Type = P.allowInterop(new X.initJsApi_closure764());
+      window.grok_Func_Get_Path = P.allowInterop(new X.initJsApi_closure765());
+      window.grok_Func_Get_HelpUrl = P.allowInterop(new X.initJsApi_closure766());
+      window.grok_Func_Set_HelpUrl = P.allowInterop(new X.initJsApi_closure767());
+      window.grok_Func_Get_Package = P.allowInterop(new X.initJsApi_closure768());
+      window.grok_Func_Get_IsVectorFunc = P.allowInterop(new X.initJsApi_closure769());
+      window.grok_Func_Get_Description = P.allowInterop(new X.initJsApi_closure770());
+      window.grok_Func_Set_Description = P.allowInterop(new X.initJsApi_closure771());
+      window.grok_Func_Get_InputParams = P.allowInterop(new X.initJsApi_closure772());
+      window.grok_Func_Get_OutputParams = P.allowInterop(new X.initJsApi_closure773());
+      window.grok_Func_Get_Tags = P.allowInterop(new X.initJsApi_closure774());
+      window.grok_Func_Set_Tags = P.allowInterop(new X.initJsApi_closure775());
+      window.grok_Func_Prepare = P.allowInterop(new X.initJsApi_closure776());
+      X.ra2("Func_PrepareAsync", new X.initJsApi_closure777());
+      window.grok_Func_Find = P.allowInterop(new X.initJsApi_closure778());
+      X.ra5("FuncCall_Call", new X.initJsApi_closure779());
+      window.grok_FuncCall_Cancel = P.allowInterop(new X.initJsApi_closure780());
+      window.grok_FuncCall_Call_Sync = P.allowInterop(new X.initJsApi_closure781());
+      window.grok_Script_Create = P.allowInterop(new X.initJsApi_closure782());
+      window.grok_Script_FromParams = P.allowInterop(new X.initJsApi_closure783());
+      window.grok_Script_GetScript = P.allowInterop(new X.initJsApi_closure784());
+      window.grok_Script_SetScript = P.allowInterop(new X.initJsApi_closure785());
+      window.grok_Script_ClientCode = P.allowInterop(new X.initJsApi_closure786());
+      window.grok_Script_GetLanguage = P.allowInterop(new X.initJsApi_closure787());
+      window.grok_Script_SetLanguage = P.allowInterop(new X.initJsApi_closure788());
+      window.grok_Script_Get_IsVectorFunc = P.allowInterop(new X.initJsApi_closure789());
+      window.grok_Script_Get_Environment = P.allowInterop(new X.initJsApi_closure790());
+      window.grok_Script_Set_Environment = P.allowInterop(new X.initJsApi_closure791());
+      window.grok_Script_Get_Reference = P.allowInterop(new X.initJsApi_closure792());
+      window.grok_Script_Set_Reference = P.allowInterop(new X.initJsApi_closure793());
+      window.grok_Script_Get_Sample = P.allowInterop(new X.initJsApi_closure794());
+      window.grok_Script_Set_Sample = P.allowInterop(new X.initJsApi_closure795());
+      window.grok_Script_Get_Tags = P.allowInterop(new X.initJsApi_closure796());
+      window.grok_Script_Set_Tags = P.allowInterop(new X.initJsApi_closure797());
+      X.ra2("EvalFunc", new X.initJsApi_closure798());
+      window.grok_OnObjectEvent = P.allowInterop(new X.initJsApi_closure799());
+      window.grok_FileInfo_FromBytes = P.allowInterop(new X.initJsApi_closure800());
+      window.grok_FileInfo_FromString = P.allowInterop(new X.initJsApi_closure801());
+      window.grok_FileInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure802());
+      window.grok_FileInfo_Get_Path = P.allowInterop(new X.initJsApi_closure803());
+      window.grok_FileInfo_Get_FullPath = P.allowInterop(new X.initJsApi_closure804());
+      window.grok_FileInfo_Get_ViewPath = P.allowInterop(new X.initJsApi_closure805());
+      window.grok_FileInfo_Get_Extension = P.allowInterop(new X.initJsApi_closure806());
+      window.grok_FileInfo_Get_FileName = P.allowInterop(new X.initJsApi_closure807());
+      window.grok_FileInfo_Get_Url = P.allowInterop(new X.initJsApi_closure808());
+      window.grok_FileInfo_Get_IsFile = P.allowInterop(new X.initJsApi_closure809());
+      window.grok_FileInfo_Get_IsDirectory = P.allowInterop(new X.initJsApi_closure810());
+      window.grok_FileInfo_Get_Data = P.allowInterop(new X.initJsApi_closure811());
+      window.grok_FileInfo_Get_UpdatedOn = P.allowInterop(new X.initJsApi_closure812());
+      X.ra1("FileInfo_ReadAsBytes", new X.initJsApi_closure813());
+      X.ra1("FileInfo_ReadAsString", new X.initJsApi_closure814());
+      X.ra1("FileInfo_Save", new X.initJsApi_closure815());
+      window.grok_Dapi_Root = P.allowInterop(new X.initJsApi_closure816());
+      window.grok_Dapi_Set_Root = P.allowInterop(new X.initJsApi_closure817());
+      window.grok_Dapi_Set_Token = P.allowInterop(new X.initJsApi_closure818());
+      window.grok_Dapi_Get_Token = P.allowInterop(new X.initJsApi_closure819());
+      window.grok_Dapi_Set_ImpersonationToken = P.allowInterop(new X.initJsApi_closure820());
+      window.grok_Dapi_Get_ImpersonationToken = P.allowInterop(new X.initJsApi_closure821());
+      window.grok_Dapi_WS_Root = P.allowInterop(new X.initJsApi_closure822());
+      window.grok_Dapi_OpenAI_Proxy = P.allowInterop(new X.initJsApi_closure823());
+      window.grok_Clear_LastError = P.allowInterop(new X.initJsApi_closure824());
+      window.grok_CloseAll = P.allowInterop(new X.initJsApi_closure825());
       t1.lastError = null;
-      X.ra0("Get_LastError", new X.initJsApi_closure825(t1));
-      window.grok_Clear_LastError = P.allowInterop(new X.initJsApi_closure826(t1));
-      window.grok_Set_LastError = P.allowInterop(new X.initJsApi_closure827(t1));
-      X.ra1("Dapi_UserFiles_Exists", new X.initJsApi_closure828());
-      X.ra1("Dapi_UserFiles_Delete", new X.initJsApi_closure829());
-      X.ra2("Dapi_UserFiles_Move", new X.initJsApi_closure830());
-      X.ra4("Dapi_UserFiles_List", new X.initJsApi_closure831());
-      X.ra1("Dapi_UserFiles_ReadAsText", new X.initJsApi_closure832());
-      X.ra1("Dapi_UserFiles_ReadAsBytes", new X.initJsApi_closure833());
-      X.ra2("Dapi_UserFiles_Write", new X.initJsApi_closure834());
-      X.ra2("Dapi_UserFiles_WriteAsText", new X.initJsApi_closure835());
-      X.ra2("Dapi_UserFiles_Rename", new X.initJsApi_closure836());
-      X.ra1("Dapi_UserFiles_ReadBinaryDataFrames", new X.initJsApi_closure837());
-      X.ra2("Dapi_UserFiles_WriteBinaryDataFrames", new X.initJsApi_closure838());
-      X.ra1("Dapi_UserFiles_CreateDirectory", new X.initJsApi_closure839());
-      window.grok_Iterable_Get_Iterator = P.allowInterop(new X.initJsApi_closure840());
-      window.grok_Iterator_MoveNext = P.allowInterop(new X.initJsApi_closure841());
-      window.grok_Iterator_Current = P.allowInterop(new X.initJsApi_closure842());
-      window.grok_LogEventType_Get_Name = P.allowInterop(new X.initJsApi_closure843());
-      window.grok_LogEventType_Get_Comment = P.allowInterop(new X.initJsApi_closure844());
-      window.grok_LogEventType_Set_Comment = P.allowInterop(new X.initJsApi_closure845());
-      window.grok_LogEventType_Get_IsError = P.allowInterop(new X.initJsApi_closure846());
-      window.grok_LogEventType_Set_IsError = P.allowInterop(new X.initJsApi_closure847());
-      window.grok_LogEvent_Get_Description = P.allowInterop(new X.initJsApi_closure848());
-      window.grok_LogEvent_Get_Name = P.allowInterop(new X.initJsApi_closure849());
-      window.grok_LogEvent_Get_Session = P.allowInterop(new X.initJsApi_closure850());
-      window.grok_LogEvent_Get_Parameters = P.allowInterop(new X.initJsApi_closure851());
-      window.grok_LogEvent_Get_Type = P.allowInterop(new X.initJsApi_closure852());
-      window.grok_LogEvent_Get_EventTime = P.allowInterop(new X.initJsApi_closure853());
-      window.grok_LogEventParameter_Get_Name = P.allowInterop(new X.initJsApi_closure854());
-      window.grok_LogEventParameter_Get_Type = P.allowInterop(new X.initJsApi_closure855());
-      window.grok_LogEventParameterValue_Get_Event = P.allowInterop(new X.initJsApi_closure856());
-      window.grok_LogEventParameterValue_Get_Parameter = P.allowInterop(new X.initJsApi_closure857());
-      window.grok_LogEventParameterValue_Get_Value = P.allowInterop(new X.initJsApi_closure858());
-      window.grok_PropMixin_GetProperties = P.allowInterop(new X.initJsApi_closure859());
-      window.grok_PropMixin_GetPropertyValue = P.allowInterop(new X.initJsApi_closure860());
-      window.grok_PropMixin_SetPropertyValue = P.allowInterop(new X.initJsApi_closure861());
-      X.ra2("Dapi_TablesDataSource_UploadDataFrame", new X.initJsApi_closure862());
-      X.ra2("Dapi_TablesDataSource_GetTable", new X.initJsApi_closure863());
-      X.ra2("Dapi_DockerImagesDataSource_Rebuild", new X.initJsApi_closure864());
-      X.ra3("Dapi_DockerContainersDataSource_Run", new X.initJsApi_closure865());
-      X.ra3("Dapi_DockerContainersDataSource_Stop", new X.initJsApi_closure866());
-      X.ra3("Dapi_DockerContainersDataSource_GetContainerLogs", new X.initJsApi_closure867());
-      X.ra2("Dapi_DockersDataSource_GetServiceLogs", new X.initJsApi_closure868());
-      X.ra0("Dapi_DockersDataSource_GetAvailableServices", new X.initJsApi_closure869());
-      window.grok_DockerContainer_Status = P.allowInterop(new X.initJsApi_closure870());
-      window.grok_MathActions_GetDensity = P.allowInterop(new X.initJsApi_closure871());
-      window.grok_DayJs_To_DateTime = P.allowInterop(new X.initJsApi_closure872());
-      window.grok_Test_GetTestDataGeneratorByType = P.allowInterop(new X.initJsApi_closure873());
-      X.ra1("Reports_Get", new X.initJsApi_closure874());
-      X.ra1("Reports_Find", new X.initJsApi_closure875());
-      window.grok_UserReport_FromJson = P.allowInterop(new X.initJsApi_closure876());
-      window.grok_UserReport_Id = P.allowInterop(new X.initJsApi_closure877());
-      window.grok_UserReport_IsResolved = P.allowInterop(new X.initJsApi_closure878());
-      window.grok_UserReport_JiraTicket = P.allowInterop(new X.initJsApi_closure879());
-      window.grok_UserReport_Assignee = P.allowInterop(new X.initJsApi_closure880());
-      window.grok_UserReport_Reporter = P.allowInterop(new X.initJsApi_closure881());
-      window.grok_UserReport_Description = P.allowInterop(new X.initJsApi_closure882());
-      window.grok_UserReport_CreatedOn = P.allowInterop(new X.initJsApi_closure883());
-      window.grok_UserNotification_User = P.allowInterop(new X.initJsApi_closure884());
-      window.grok_UserNotification_Name = P.allowInterop(new X.initJsApi_closure885());
-      window.grok_UserNotification_FriendlyName = P.allowInterop(new X.initJsApi_closure886());
-      window.grok_UserNotification_Text = P.allowInterop(new X.initJsApi_closure887());
-      window.grok_UserNotification_Data = P.allowInterop(new X.initJsApi_closure888());
-      window.grok_UserNotification_Sender = P.allowInterop(new X.initJsApi_closure889());
-      window.grok_UserNotification_CreatedAt = P.allowInterop(new X.initJsApi_closure890());
-      window.grok_UserNotification_ReadAt = P.allowInterop(new X.initJsApi_closure891());
-      window.grok_UserNotification_IsRead = P.allowInterop(new X.initJsApi_closure892());
-      window.grok_UserNotification_Id = P.allowInterop(new X.initJsApi_closure893());
-      window.grok_Get_StackTrace_Hash = P.allowInterop(new X.initJsApi_closure894());
-      window.grok_Get_Simple_StackTrace_Hash = P.allowInterop(new X.initJsApi_closure895());
-      window.grok_GetLogger = P.allowInterop(new X.initJsApi_closure896());
-      window.grok_Logger_OnLog = P.allowInterop(new X.initJsApi_closure897());
-      window.grok_Log = P.allowInterop(new X.initJsApi_closure898());
-      window.grok_Package_Get_Meta = P.allowInterop(new X.initJsApi_closure899());
-      window.grok_Package_GetModuleName = P.allowInterop(new X.initJsApi_closure900());
-      window.grok_Package_Get_Version = P.allowInterop(new X.initJsApi_closure901());
-      window.grok_Package_Set_Version = P.allowInterop(new X.initJsApi_closure902());
-      window.grok_Package_Get_WebRoot = P.allowInterop(new X.initJsApi_closure903());
-      window.grok_Package_Get_Package_Author = P.allowInterop(new X.initJsApi_closure904());
-      window.grok_DbInfo_Get_Name = P.allowInterop(new X.initJsApi_closure905());
-      window.grok_DbInfo_Get_Prop = P.allowInterop(new X.initJsApi_closure906());
-      X.ra1("DbInfo_Get_Schemas", new X.initJsApi_closure907());
-      X.ra1("DbInfo_Get_Relations", new X.initJsApi_closure908());
-      window.grok_DbInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure909());
-      X.ra3("DbInfo_Set_Prop", new X.initJsApi_closure910());
-      X.ra6("DbInfo_AddRelation", new X.initJsApi_closure911());
-      X.ra1("DbInfo_ClearProperties", new X.initJsApi_closure912());
-      window.grok_DbRelationInfo_Get_Prop = P.allowInterop(new X.initJsApi_closure913());
-      window.grok_DbRelationInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure914());
-      window.grok_DbSchemaInfo_Get_Name = P.allowInterop(new X.initJsApi_closure915());
-      window.grok_DbSchemaInfo_Get_Catalog = P.allowInterop(new X.initJsApi_closure916());
-      window.grok_DbSchemaInfo_Get_Prop = P.allowInterop(new X.initJsApi_closure917());
-      X.ra3("DbSchemaInfo_Set_Prop", new X.initJsApi_closure918());
-      X.ra1("DbSchemaInfo_Get_Tables", new X.initJsApi_closure919());
-      window.grok_DbSchemaInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure920());
-      X.ra3("DbSchemaInfo_AnnotateTable", new X.initJsApi_closure921());
-      X.ra4("DbSchemaInfo_AnnotateColumn", new X.initJsApi_closure922());
-      X.ra4("AI_SearchEntities", new X.initJsApi_closure923());
-      window.grok_ConnectionDataSource_ByType = P.allowInterop(new X.initJsApi_closure924());
-      window.grok_ConnectionDataSource_Type = P.allowInterop(new X.initJsApi_closure925());
-      window.grok_ConnectionDataSource_Category = P.allowInterop(new X.initJsApi_closure926());
-      window.grok_ConnectionDataSource_RequiresServer = P.allowInterop(new X.initJsApi_closure927());
-      window.grok_ConnectionDataSource_Description = P.allowInterop(new X.initJsApi_closure928());
-      window.grok_ConnectionDataSource_CommentStart = P.allowInterop(new X.initJsApi_closure929());
-      window.grok_ConnectionDataSource_NameBrackets = P.allowInterop(new X.initJsApi_closure930());
-      window.grok_ConnectionDataSource_CanBrowseSchema = P.allowInterop(new X.initJsApi_closure931());
-      window.grok_ConnectionDataSource_SupportCatalogs = P.allowInterop(new X.initJsApi_closure932());
-      window.grok_ConnectionDataSource_QueryLanguage = P.allowInterop(new X.initJsApi_closure933());
-      window.grok_ConnectionDataSource_ConnectionTemplate = P.allowInterop(new X.initJsApi_closure934());
-      window.grok_ConnectionDataSource_CredentialsTemplate = P.allowInterop(new X.initJsApi_closure935());
+      X.ra0("Get_LastError", new X.initJsApi_closure826(t1));
+      window.grok_Clear_LastError = P.allowInterop(new X.initJsApi_closure827(t1));
+      window.grok_Set_LastError = P.allowInterop(new X.initJsApi_closure828(t1));
+      X.ra1("Dapi_UserFiles_Exists", new X.initJsApi_closure829());
+      X.ra1("Dapi_UserFiles_Delete", new X.initJsApi_closure830());
+      X.ra2("Dapi_UserFiles_Move", new X.initJsApi_closure831());
+      X.ra4("Dapi_UserFiles_List", new X.initJsApi_closure832());
+      X.ra1("Dapi_UserFiles_ReadAsText", new X.initJsApi_closure833());
+      X.ra1("Dapi_UserFiles_ReadAsBytes", new X.initJsApi_closure834());
+      X.ra2("Dapi_UserFiles_Write", new X.initJsApi_closure835());
+      X.ra2("Dapi_UserFiles_WriteAsText", new X.initJsApi_closure836());
+      X.ra2("Dapi_UserFiles_Rename", new X.initJsApi_closure837());
+      X.ra1("Dapi_UserFiles_ReadBinaryDataFrames", new X.initJsApi_closure838());
+      X.ra2("Dapi_UserFiles_WriteBinaryDataFrames", new X.initJsApi_closure839());
+      X.ra1("Dapi_UserFiles_CreateDirectory", new X.initJsApi_closure840());
+      window.grok_Iterable_Get_Iterator = P.allowInterop(new X.initJsApi_closure841());
+      window.grok_Iterator_MoveNext = P.allowInterop(new X.initJsApi_closure842());
+      window.grok_Iterator_Current = P.allowInterop(new X.initJsApi_closure843());
+      window.grok_LogEventType_Get_Name = P.allowInterop(new X.initJsApi_closure844());
+      window.grok_LogEventType_Get_Comment = P.allowInterop(new X.initJsApi_closure845());
+      window.grok_LogEventType_Set_Comment = P.allowInterop(new X.initJsApi_closure846());
+      window.grok_LogEventType_Get_IsError = P.allowInterop(new X.initJsApi_closure847());
+      window.grok_LogEventType_Set_IsError = P.allowInterop(new X.initJsApi_closure848());
+      window.grok_LogEvent_Get_Description = P.allowInterop(new X.initJsApi_closure849());
+      window.grok_LogEvent_Get_Name = P.allowInterop(new X.initJsApi_closure850());
+      window.grok_LogEvent_Get_Session = P.allowInterop(new X.initJsApi_closure851());
+      window.grok_LogEvent_Get_Parameters = P.allowInterop(new X.initJsApi_closure852());
+      window.grok_LogEvent_Get_Type = P.allowInterop(new X.initJsApi_closure853());
+      window.grok_LogEvent_Get_EventTime = P.allowInterop(new X.initJsApi_closure854());
+      window.grok_LogEventParameter_Get_Name = P.allowInterop(new X.initJsApi_closure855());
+      window.grok_LogEventParameter_Get_Type = P.allowInterop(new X.initJsApi_closure856());
+      window.grok_LogEventParameterValue_Get_Event = P.allowInterop(new X.initJsApi_closure857());
+      window.grok_LogEventParameterValue_Get_Parameter = P.allowInterop(new X.initJsApi_closure858());
+      window.grok_LogEventParameterValue_Get_Value = P.allowInterop(new X.initJsApi_closure859());
+      window.grok_PropMixin_GetProperties = P.allowInterop(new X.initJsApi_closure860());
+      window.grok_PropMixin_GetPropertyValue = P.allowInterop(new X.initJsApi_closure861());
+      window.grok_PropMixin_SetPropertyValue = P.allowInterop(new X.initJsApi_closure862());
+      X.ra2("Dapi_TablesDataSource_UploadDataFrame", new X.initJsApi_closure863());
+      X.ra2("Dapi_TablesDataSource_GetTable", new X.initJsApi_closure864());
+      X.ra2("Dapi_DockerImagesDataSource_Rebuild", new X.initJsApi_closure865());
+      X.ra3("Dapi_DockerContainersDataSource_Run", new X.initJsApi_closure866());
+      X.ra3("Dapi_DockerContainersDataSource_Stop", new X.initJsApi_closure867());
+      X.ra3("Dapi_DockerContainersDataSource_GetContainerLogs", new X.initJsApi_closure868());
+      X.ra2("Dapi_DockersDataSource_GetServiceLogs", new X.initJsApi_closure869());
+      X.ra0("Dapi_DockersDataSource_GetAvailableServices", new X.initJsApi_closure870());
+      window.grok_DockerContainer_Status = P.allowInterop(new X.initJsApi_closure871());
+      window.grok_MathActions_GetDensity = P.allowInterop(new X.initJsApi_closure872());
+      window.grok_DayJs_To_DateTime = P.allowInterop(new X.initJsApi_closure873());
+      window.grok_Test_GetTestDataGeneratorByType = P.allowInterop(new X.initJsApi_closure874());
+      X.ra1("Reports_Get", new X.initJsApi_closure875());
+      X.ra1("Reports_Find", new X.initJsApi_closure876());
+      window.grok_UserReport_FromJson = P.allowInterop(new X.initJsApi_closure877());
+      window.grok_UserReport_Id = P.allowInterop(new X.initJsApi_closure878());
+      window.grok_UserReport_IsResolved = P.allowInterop(new X.initJsApi_closure879());
+      window.grok_UserReport_JiraTicket = P.allowInterop(new X.initJsApi_closure880());
+      window.grok_UserReport_Assignee = P.allowInterop(new X.initJsApi_closure881());
+      window.grok_UserReport_Reporter = P.allowInterop(new X.initJsApi_closure882());
+      window.grok_UserReport_Description = P.allowInterop(new X.initJsApi_closure883());
+      window.grok_UserReport_CreatedOn = P.allowInterop(new X.initJsApi_closure884());
+      window.grok_UserNotification_User = P.allowInterop(new X.initJsApi_closure885());
+      window.grok_UserNotification_Name = P.allowInterop(new X.initJsApi_closure886());
+      window.grok_UserNotification_FriendlyName = P.allowInterop(new X.initJsApi_closure887());
+      window.grok_UserNotification_Text = P.allowInterop(new X.initJsApi_closure888());
+      window.grok_UserNotification_Data = P.allowInterop(new X.initJsApi_closure889());
+      window.grok_UserNotification_Sender = P.allowInterop(new X.initJsApi_closure890());
+      window.grok_UserNotification_CreatedAt = P.allowInterop(new X.initJsApi_closure891());
+      window.grok_UserNotification_ReadAt = P.allowInterop(new X.initJsApi_closure892());
+      window.grok_UserNotification_IsRead = P.allowInterop(new X.initJsApi_closure893());
+      window.grok_UserNotification_Id = P.allowInterop(new X.initJsApi_closure894());
+      window.grok_Get_StackTrace_Hash = P.allowInterop(new X.initJsApi_closure895());
+      window.grok_Get_Simple_StackTrace_Hash = P.allowInterop(new X.initJsApi_closure896());
+      window.grok_GetLogger = P.allowInterop(new X.initJsApi_closure897());
+      window.grok_Logger_OnLog = P.allowInterop(new X.initJsApi_closure898());
+      window.grok_Log = P.allowInterop(new X.initJsApi_closure899());
+      window.grok_Package_Get_Meta = P.allowInterop(new X.initJsApi_closure900());
+      window.grok_Package_GetModuleName = P.allowInterop(new X.initJsApi_closure901());
+      window.grok_Package_Get_Version = P.allowInterop(new X.initJsApi_closure902());
+      window.grok_Package_Set_Version = P.allowInterop(new X.initJsApi_closure903());
+      window.grok_Package_Get_WebRoot = P.allowInterop(new X.initJsApi_closure904());
+      window.grok_Package_Get_Package_Author = P.allowInterop(new X.initJsApi_closure905());
+      window.grok_DbInfo_Get_Name = P.allowInterop(new X.initJsApi_closure906());
+      window.grok_DbInfo_Get_Prop = P.allowInterop(new X.initJsApi_closure907());
+      X.ra1("DbInfo_Get_Schemas", new X.initJsApi_closure908());
+      X.ra1("DbInfo_Get_Relations", new X.initJsApi_closure909());
+      window.grok_DbInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure910());
+      X.ra3("DbInfo_Set_Prop", new X.initJsApi_closure911());
+      X.ra6("DbInfo_AddRelation", new X.initJsApi_closure912());
+      X.ra1("DbInfo_ClearProperties", new X.initJsApi_closure913());
+      window.grok_DbRelationInfo_Get_Prop = P.allowInterop(new X.initJsApi_closure914());
+      window.grok_DbRelationInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure915());
+      window.grok_DbSchemaInfo_Get_Name = P.allowInterop(new X.initJsApi_closure916());
+      window.grok_DbSchemaInfo_Get_Catalog = P.allowInterop(new X.initJsApi_closure917());
+      window.grok_DbSchemaInfo_Get_Prop = P.allowInterop(new X.initJsApi_closure918());
+      X.ra3("DbSchemaInfo_Set_Prop", new X.initJsApi_closure919());
+      X.ra1("DbSchemaInfo_Get_Tables", new X.initJsApi_closure920());
+      window.grok_DbSchemaInfo_Get_Connection = P.allowInterop(new X.initJsApi_closure921());
+      X.ra3("DbSchemaInfo_AnnotateTable", new X.initJsApi_closure922());
+      X.ra4("DbSchemaInfo_AnnotateColumn", new X.initJsApi_closure923());
+      X.ra4("AI_SearchEntities", new X.initJsApi_closure924());
+      window.grok_ConnectionDataSource_ByType = P.allowInterop(new X.initJsApi_closure925());
+      window.grok_ConnectionDataSource_Type = P.allowInterop(new X.initJsApi_closure926());
+      window.grok_ConnectionDataSource_Category = P.allowInterop(new X.initJsApi_closure927());
+      window.grok_ConnectionDataSource_RequiresServer = P.allowInterop(new X.initJsApi_closure928());
+      window.grok_ConnectionDataSource_Description = P.allowInterop(new X.initJsApi_closure929());
+      window.grok_ConnectionDataSource_CommentStart = P.allowInterop(new X.initJsApi_closure930());
+      window.grok_ConnectionDataSource_NameBrackets = P.allowInterop(new X.initJsApi_closure931());
+      window.grok_ConnectionDataSource_CanBrowseSchema = P.allowInterop(new X.initJsApi_closure932());
+      window.grok_ConnectionDataSource_SupportCatalogs = P.allowInterop(new X.initJsApi_closure933());
+      window.grok_ConnectionDataSource_QueryLanguage = P.allowInterop(new X.initJsApi_closure934());
+      window.grok_ConnectionDataSource_ConnectionTemplate = P.allowInterop(new X.initJsApi_closure935());
+      window.grok_ConnectionDataSource_CredentialsTemplate = P.allowInterop(new X.initJsApi_closure936());
     },
     toJs: [function(x) {
       return $.javaScriptRunner.toJs$1(x);
@@ -96555,7 +96556,7 @@
           }
       });
       return P._asyncStart($async$callFuncFromJs, $async$completer);
-    }, "call$4", "grok_api__callFuncFromJs$closure", 8, 0, 714],
+    }, "call$4", "grok_api__callFuncFromJs$closure", 8, 0, 715],
     _DbTableMutations__fillDataFrameRows_closure: {
       "^": "Closure:0;",
       call$1: [function(c) {
@@ -96986,7 +96987,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure38: {
-      "^": "Closure:430;",
+      "^": "Closure:431;",
       call$1: function(ids) {
         var t1 = new Q.EntitiesClient(null, true, "entities", C.Map_794C7, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
         t1.types = new Q.EntityTypesClient("entities/types", C.Map_794C7, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
@@ -97000,7 +97001,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure40: {
-      "^": "Closure:432;",
+      "^": "Closure:433;",
       call$4: function(adminClient, messageType, message, sessionIds) {
         return $.$get$admin().pushMessage$3$sessionIds(messageType, message, sessionIds);
       }
@@ -97012,7 +97013,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure42: {
-      "^": "Closure:435;",
+      "^": "Closure:436;",
       call$1: function(c) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1;
         var $async$call$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97046,7 +97047,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure44: {
-      "^": "Closure:443;",
+      "^": "Closure:444;",
       call$5: [function(logClient, entityId, start, end, favoritesOnly) {
         return J.filter$4$end$entityId$favoritesOnly$start$x(logClient, end, entityId, favoritesOnly, start);
       }, null, null, 10, 0, null, 293, 130, 113, 139, 267, "call"]
@@ -97124,7 +97125,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure57: {
-      "^": "Closure:445;",
+      "^": "Closure:446;",
       call$4: [function(activityClient, userId, start, end) {
         return J.filter$3$end$start$userId$x(activityClient, end, start, userId);
       }, null, null, 8, 0, null, 296, 266, 113, 139, "call"]
@@ -97184,13 +97185,13 @@
       }
     },
     initJsApi_closure67: {
-      "^": "Closure:467;",
+      "^": "Closure:468;",
       call$3: function(s, p, saveRelations) {
         return J.save$2$saveRelations$x(s, p, saveRelations);
       }
     },
     initJsApi_closure68: {
-      "^": "Closure:477;",
+      "^": "Closure:478;",
       call$3: function(s, c, saveCredentials) {
         return J.save$2$saveCredentials$x(s, c, saveCredentials);
       }
@@ -97208,13 +97209,13 @@
       }
     },
     initJsApi_closure71: {
-      "^": "Closure:484;",
+      "^": "Closure:486;",
       call$5: function(s, c, schema, table, catalog) {
         return s.getSchema$4$catalog$schema$tableName(c, catalog, schema, table);
       }
     },
     initJsApi_closure72: {
-      "^": "Closure:496;",
+      "^": "Closure:497;",
       call$4: function(s, c, schema, table) {
         return s.getUniqueColumnsNames$3(c, schema, table);
       }
@@ -97226,7 +97227,7 @@
       }
     },
     initJsApi_closure74: {
-      "^": "Closure:501;",
+      "^": "Closure:502;",
       call$2: function(s, e) {
         return J.save$2$saveRelations$x(s, e, true);
       }
@@ -97240,7 +97241,7 @@
       }
     },
     initJsApi_closure76: {
-      "^": "Closure:509;",
+      "^": "Closure:510;",
       call$1: function(s) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97267,7 +97268,7 @@
       }
     },
     initJsApi_closure77: {
-      "^": "Closure:518;",
+      "^": "Closure:519;",
       call$2: function(s, group) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97294,7 +97295,7 @@
       }
     },
     initJsApi_closure78: {
-      "^": "Closure:521;",
+      "^": "Closure:522;",
       call$2: function(s, groups) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97322,7 +97323,7 @@
       }
     },
     initJsApi_closure79: {
-      "^": "Closure:542;",
+      "^": "Closure:543;",
       call$2: function(s, props) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97349,7 +97350,7 @@
       }
     },
     initJsApi_closure80: {
-      "^": "Closure:546;",
+      "^": "Closure:547;",
       call$2: function(s, e) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97377,7 +97378,7 @@
       }
     },
     initJsApi_closure81: {
-      "^": "Closure:552;",
+      "^": "Closure:553;",
       call$3: function(s, e, props) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, map;
         var $async$call$3 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97411,7 +97412,7 @@
       }, null, null, 2, 0, null, 24, "call"]
     },
     initJsApi_closure82: {
-      "^": "Closure:592;",
+      "^": "Closure:593;",
       call$2: function(s, props) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -97438,7 +97439,7 @@
       }
     },
     initJsApi_closure83: {
-      "^": "Closure:595;",
+      "^": "Closure:596;",
       call$2: function(s, e) {
         return s.forEntity$2$includeEntity(e, true);
       }
@@ -97450,7 +97451,7 @@
       }
     },
     initJsApi_closure85: {
-      "^": "Closure:618;",
+      "^": "Closure:619;",
       call$4: function($name, key, value, currentUser) {
         return $.$get$userDataStorage().postValue$4$currentUser($name, key, value, currentUser);
       }
@@ -97468,7 +97469,7 @@
       }
     },
     initJsApi_closure88: {
-      "^": "Closure:646;",
+      "^": "Closure:647;",
       call$2: function($name, currentUser) {
         return $.$get$userDataStorage().$get$2$currentUser(0, $name, currentUser);
       }
@@ -97544,7 +97545,7 @@
       }
     },
     initJsApi_closure96: {
-      "^": "Closure:686;",
+      "^": "Closure:687;",
       call$3: function(e, g, edit) {
         return O.runForEntityProject(e, new X.initJsApi__closure72(g, edit));
       }
@@ -97559,7 +97560,7 @@
       }
     },
     initJsApi_closure97: {
-      "^": "Closure:690;",
+      "^": "Closure:691;",
       call$2: function(e, g) {
         return O.runForEntityProject(e, new X.initJsApi__closure71(g));
       }
@@ -97571,7 +97572,7 @@
       }
     },
     initJsApi_closure98: {
-      "^": "Closure:692;",
+      "^": "Closure:693;",
       call$2: function(s, t) {
         return s.getSuggestedLayouts$1(O.TableInfo_TableInfo$fromTable(t, true));
       }
@@ -97607,7 +97608,7 @@
       }, null, null, 4, 0, null, 4, 41, "call"]
     },
     initJsApi_closure104: {
-      "^": "Closure:698;",
+      "^": "Closure:699;",
       call$3: [function(s, $name, desc) {
         return J.order$2$desc$x(s, $name, desc);
       }, null, null, 6, 0, null, 4, 10, 299, "call"]
@@ -97637,7 +97638,7 @@
       }
     },
     initJsApi_closure109: {
-      "^": "Closure:721;",
+      "^": "Closure:722;",
       call$3: function(s, childSpace, link) {
         return s.addSubspace$2$link(childSpace, link == null ? false : link);
       }
@@ -100424,7 +100425,7 @@
       }, null, null, 2, 0, null, 229, "call"]
     },
     initJsApi_closure382: {
-      "^": "Closure:728;",
+      "^": "Closure:729;",
       call$1: [function(bigint) {
         return bigint == null ? bigint : J.toString$0$(bigint);
       }, null, null, 2, 0, null, 229, "call"]
@@ -101568,7 +101569,7 @@
       }, null, null, 4, 0, null, 13, 88, "call"]
     },
     initJsApi_closure546: {
-      "^": "Closure:64;",
+      "^": "Closure:63;",
       call$1: [function(v) {
         return J.get$value$x(v);
       }, null, null, 2, 0, null, 7, "call"]
@@ -101581,7 +101582,7 @@
       }, null, null, 4, 0, null, 7, 0, "call"]
     },
     initJsApi_closure548: {
-      "^": "Closure:64;",
+      "^": "Closure:63;",
       call$1: [function(v) {
         return v.get$units();
       }, null, null, 2, 0, null, 7, "call"]
@@ -101594,13 +101595,13 @@
       }, null, null, 4, 0, null, 7, 0, "call"]
     },
     initJsApi_closure550: {
-      "^": "Closure:64;",
+      "^": "Closure:63;",
       call$1: [function(v) {
         return J.get$dataType$x(v);
       }, null, null, 2, 0, null, 7, "call"]
     },
     initJsApi_closure551: {
-      "^": "Closure:64;",
+      "^": "Closure:63;",
       call$1: [function(v) {
         return v.get$semType();
       }, null, null, 2, 0, null, 7, "call"]
@@ -101613,7 +101614,7 @@
       }, null, null, 4, 0, null, 7, 4, "call"]
     },
     initJsApi_closure553: {
-      "^": "Closure:64;",
+      "^": "Closure:63;",
       call$1: [function(v) {
         var t1 = v.get$cell();
         return self.DG.toJs(t1);
@@ -101627,7 +101628,7 @@
       }, null, null, 4, 0, null, 7, 85, "call"]
     },
     initJsApi_closure555: {
-      "^": "Closure:64;",
+      "^": "Closure:63;",
       call$1: [function(v) {
         return v.get$tags();
       }, null, null, 2, 0, null, 7, "call"]
@@ -101964,7 +101965,7 @@
       }, null, null, 6, 0, null, 11, 5, 0, "call"]
     },
     initJsApi_closure592: {
-      "^": "Closure:74;",
+      "^": "Closure:75;",
       call$3: [function(b1, b2, notify) {
         b1.beginUpdate$0();
         b1.copyFrom$1(b2);
@@ -102022,25 +102023,25 @@
       }, null, null, 4, 0, null, 100, 83, "call"]
     },
     initJsApi_closure600: {
-      "^": "Closure:74;",
+      "^": "Closure:75;",
       call$3: [function(a, b, notify) {
         return a.and$2$notify(b, notify);
       }, null, null, 6, 0, null, 14, 11, 25, "call"]
     },
     initJsApi_closure601: {
-      "^": "Closure:74;",
+      "^": "Closure:75;",
       call$3: [function(a, b, notify) {
         return a.or$2$notify(b, notify);
       }, null, null, 6, 0, null, 14, 11, 25, "call"]
     },
     initJsApi_closure602: {
-      "^": "Closure:74;",
+      "^": "Closure:75;",
       call$3: [function(a, b, notify) {
         return a.andNot$2$notify(b, notify);
       }, null, null, 6, 0, null, 14, 11, 25, "call"]
     },
     initJsApi_closure603: {
-      "^": "Closure:74;",
+      "^": "Closure:75;",
       call$3: [function(a, b, notify) {
         return a.xor$2$notify(b, notify);
       }, null, null, 6, 0, null, 14, 11, 25, "call"]
@@ -102133,177 +102134,184 @@
       }, null, null, 2, 0, null, 2, "call"]
     },
     initJsApi_closure615: {
+      "^": "Closure:427;",
+      call$2: [function(p, x) {
+        J.set$description$x(p, x);
+        return x;
+      }, null, null, 4, 0, null, 2, 0, "call"]
+    },
+    initJsApi_closure616: {
       "^": "Closure:39;",
       call$1: [function(p) {
         return J.get$isDirty$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure616: {
+    initJsApi_closure617: {
       "^": "Closure:39;",
       call$1: [function(p) {
         return J.get$isEmpty$asx(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure617: {
+    initJsApi_closure618: {
       "^": "Closure:39;",
       call$1: [function(p) {
         return p.get$isDashboard();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure618: {
+    initJsApi_closure619: {
       "^": "Closure:39;",
       call$1: [function(p) {
         return p.get$isPackage();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure619: {
+    initJsApi_closure620: {
       "^": "Closure:39;",
       call$1: [function(p) {
         return p.get$isSpace();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure620: {
+    initJsApi_closure621: {
       "^": "Closure:39;",
       call$1: [function(p) {
         return J.toMarkup$0$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure621: {
+    initJsApi_closure622: {
       "^": "Closure:76;",
       call$1: [function(ti) {
         return ti.get$dataFrame();
       }, null, null, 2, 0, null, 156, "call"]
     },
-    initJsApi_closure622: {
+    initJsApi_closure623: {
       "^": "Closure:76;",
       call$1: [function(ti) {
         return J.get$columns$x(ti);
       }, null, null, 2, 0, null, 156, "call"]
     },
-    initJsApi_closure623: {
+    initJsApi_closure624: {
       "^": "Closure:76;",
       call$1: [function(ti) {
         return ti.get$metaParams();
       }, null, null, 2, 0, null, 156, "call"]
     },
-    initJsApi_closure624: {
-      "^": "Closure:428;",
+    initJsApi_closure625: {
+      "^": "Closure:429;",
       call$2: function(ti, script) {
         return ti.saveCreationScript$1(script);
       }
     },
-    initJsApi_closure625: {
-      "^": "Closure:75;",
+    initJsApi_closure626: {
+      "^": "Closure:88;",
       call$1: [function(ci) {
         return J.get$type$x(ci);
       }, null, null, 2, 0, null, 141, "call"]
     },
-    initJsApi_closure626: {
-      "^": "Closure:75;",
+    initJsApi_closure627: {
+      "^": "Closure:88;",
       call$1: [function(ci) {
         return ci.get$semType();
       }, null, null, 2, 0, null, 141, "call"]
     },
-    initJsApi_closure627: {
-      "^": "Closure:75;",
+    initJsApi_closure628: {
+      "^": "Closure:88;",
       call$1: [function(ci) {
         return ci.get$layoutColumnId();
       }, null, null, 2, 0, null, 141, "call"]
     },
-    initJsApi_closure628: {
-      "^": "Closure:75;",
+    initJsApi_closure629: {
+      "^": "Closure:88;",
       call$1: [function(ci) {
         return ci.get$metaParams();
       }, null, null, 2, 0, null, 141, "call"]
     },
-    initJsApi_closure629: {
+    initJsApi_closure630: {
       "^": "Closure:256;",
       call$1: [function(e) {
         return e.get$object();
       }, null, null, 2, 0, null, 12, "call"]
     },
-    initJsApi_closure630: {
+    initJsApi_closure631: {
       "^": "Closure:256;",
       call$1: [function(e) {
         return J.get$time$x(e);
       }, null, null, 2, 0, null, 12, "call"]
     },
-    initJsApi_closure631: {
+    initJsApi_closure632: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return J.get$id$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure632: {
+    initJsApi_closure633: {
       "^": "Closure:94;",
       call$2: [function(p, id) {
         J.set$id$x(p, id);
         return id;
       }, null, null, 4, 0, null, 2, 31, "call"]
     },
-    initJsApi_closure633: {
+    initJsApi_closure634: {
       "^": "Closure:37;",
       call$1: [function(e) {
         return e.generateId$0();
       }, null, null, 2, 0, null, 12, "call"]
     },
-    initJsApi_closure634: {
+    initJsApi_closure635: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return p.getUrl$0();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure635: {
+    initJsApi_closure636: {
       "^": "Closure:105;",
       call$1: [function(q) {
         return J.get$query$x(q);
       }, null, null, 2, 0, null, 77, "call"]
     },
-    initJsApi_closure636: {
+    initJsApi_closure637: {
       "^": "Closure:221;",
       call$2: [function(q, s) {
         J.set$query$x(q, s);
         return s;
       }, null, null, 4, 0, null, 77, 4, "call"]
     },
-    initJsApi_closure637: {
+    initJsApi_closure638: {
       "^": "Closure:105;",
       call$1: [function(q) {
         return false;
       }, null, null, 2, 0, null, 77, "call"]
     },
-    initJsApi_closure638: {
-      "^": "Closure:433;",
+    initJsApi_closure639: {
+      "^": "Closure:434;",
       call$2: [function(q, adHoc) {
       }, null, null, 4, 0, null, 77, 194, "call"]
     },
-    initJsApi_closure639: {
+    initJsApi_closure640: {
       "^": "Closure:105;",
       call$1: [function(q) {
         return J.get$connection$x(q);
       }, null, null, 2, 0, null, 77, "call"]
     },
-    initJsApi_closure640: {
-      "^": "Closure:434;",
+    initJsApi_closure641: {
+      "^": "Closure:435;",
       call$2: [function(q, dc) {
         J.set$connection$x(q, dc);
         return dc;
       }, null, null, 4, 0, null, 77, 191, "call"]
     },
-    initJsApi_closure641: {
+    initJsApi_closure642: {
       "^": "Closure:105;",
       call$1: [function(q) {
         return q.get$postProcessScript();
       }, null, null, 2, 0, null, 77, "call"]
     },
-    initJsApi_closure642: {
+    initJsApi_closure643: {
       "^": "Closure:221;",
       call$2: [function(q, script) {
         q.set$postProcessScript(script);
         return script;
       }, null, null, 4, 0, null, 77, 35, "call"]
     },
-    initJsApi_closure643: {
+    initJsApi_closure644: {
       "^": "Closure:222;",
       call$1: function(q) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
@@ -102330,7 +102338,7 @@
         return P._asyncStart($async$call$1, $async$completer);
       }
     },
-    initJsApi_closure644: {
+    initJsApi_closure645: {
       "^": "Closure:79;",
       call$1: [function(dc) {
         var t1 = N.TableQuery$create();
@@ -102338,34 +102346,34 @@
         return t1;
       }, null, null, 2, 0, null, 191, "call"]
     },
-    initJsApi_closure645: {
-      "^": "Closure:437;",
+    initJsApi_closure646: {
+      "^": "Closure:438;",
       call$2: [function(tc, tableName) {
         tc.set$tableName(tableName);
         return tableName;
       }, null, null, 4, 0, null, 45, 81, "call"]
     },
-    initJsApi_closure646: {
+    initJsApi_closure647: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$tableName();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure647: {
-      "^": "Closure:439;",
+    initJsApi_closure648: {
+      "^": "Closure:440;",
       call$2: [function(tc, fields) {
         tc.set$fields(fields);
         return fields;
       }, null, null, 4, 0, null, 45, 87, "call"]
     },
-    initJsApi_closure648: {
+    initJsApi_closure649: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$fields();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure649: {
-      "^": "Closure:440;",
+    initJsApi_closure650: {
+      "^": "Closure:441;",
       call$1: function(tc) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -102391,268 +102399,268 @@
         return P._asyncStart($async$call$1, $async$completer);
       }
     },
-    initJsApi_closure650: {
+    initJsApi_closure651: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$whereClausesDb();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure651: {
+    initJsApi_closure652: {
       "^": "Closure:87;",
       call$2: [function(tc, wl) {
         tc.set$whereClausesDb(wl);
         return wl;
       }, null, null, 4, 0, null, 45, 165, "call"]
     },
-    initJsApi_closure652: {
+    initJsApi_closure653: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$aggregationsDb();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure653: {
+    initJsApi_closure654: {
       "^": "Closure:87;",
       call$2: [function(tc, wl) {
         tc.set$aggregationsDb(wl);
         return wl;
       }, null, null, 4, 0, null, 45, 165, "call"]
     },
-    initJsApi_closure654: {
+    initJsApi_closure655: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$havingDb();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure655: {
+    initJsApi_closure656: {
       "^": "Closure:87;",
       call$2: [function(tc, wl) {
         tc.set$havingDb(wl);
         return wl;
       }, null, null, 4, 0, null, 45, 165, "call"]
     },
-    initJsApi_closure656: {
+    initJsApi_closure657: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$orderByDb();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure657: {
+    initJsApi_closure658: {
       "^": "Closure:87;",
       call$2: [function(tc, wl) {
         tc.set$orderByDb(wl);
         return wl;
       }, null, null, 4, 0, null, 45, 165, "call"]
     },
-    initJsApi_closure658: {
+    initJsApi_closure659: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$limit();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure659: {
-      "^": "Closure:442;",
+    initJsApi_closure660: {
+      "^": "Closure:443;",
       call$2: [function(tc, limit) {
         tc.set$limit(limit);
         return limit;
       }, null, null, 4, 0, null, 45, 158, "call"]
     },
-    initJsApi_closure660: {
+    initJsApi_closure661: {
       "^": "Closure:54;",
       call$1: [function(tc) {
         return tc.get$joinsDb();
       }, null, null, 2, 0, null, 45, "call"]
     },
-    initJsApi_closure661: {
+    initJsApi_closure662: {
       "^": "Closure:87;",
       call$2: [function(tc, joins) {
         tc.set$joinsDb(joins);
         return joins;
       }, null, null, 4, 0, null, 45, 164, "call"]
     },
-    initJsApi_closure662: {
+    initJsApi_closure663: {
       "^": "Closure:3;",
       call$1: [function(table) {
         return N.DbTableQueryBuilder_DbTableQueryBuilder$from(table, null);
       }, null, null, 2, 0, null, 15, "call"]
     },
-    initJsApi_closure663: {
+    initJsApi_closure664: {
       "^": "Closure:76;",
       call$1: [function(table) {
         return N.DbTableQueryBuilder_DbTableQueryBuilder$fromTable(table);
       }, null, null, 2, 0, null, 15, "call"]
     },
-    initJsApi_closure664: {
+    initJsApi_closure665: {
       "^": "Closure:58;",
       call$2: [function(table, connection) {
         return N.DbTableQueryBuilder_DbTableQueryBuilder$from(table, connection);
       }, null, null, 4, 0, null, 15, 226, "call"]
     },
-    initJsApi_closure665: {
+    initJsApi_closure666: {
       "^": "Closure:76;",
       call$1: [function(table) {
         return N.DbTableQueryBuilder_DbTableQueryBuilder$fromTable(table);
       }, null, null, 2, 0, null, 15, "call"]
     },
-    initJsApi_closure666: {
+    initJsApi_closure667: {
       "^": "Closure:223;",
       call$1: [function(dtqb) {
         return dtqb.selectAll$0();
       }, null, null, 2, 0, null, 49, "call"]
     },
-    initJsApi_closure667: {
-      "^": "Closure:444;",
+    initJsApi_closure668: {
+      "^": "Closure:445;",
       call$2: [function(dtqb, fields) {
         return J.select$1$x(dtqb, fields);
       }, null, null, 4, 0, null, 49, 87, "call"]
     },
-    initJsApi_closure668: {
+    initJsApi_closure669: {
       "^": "Closure:116;",
       call$4: [function(dtqb, func, field, alias) {
         return dtqb.selectAggr$3$as(func, field, alias);
       }, null, null, 8, 0, null, 49, 34, 80, 379, "call"]
     },
-    initJsApi_closure669: {
-      "^": "Closure:446;",
+    initJsApi_closure670: {
+      "^": "Closure:447;",
       call$2: [function(dtqb, aggregations) {
         return dtqb.selectAggrAll$1(aggregations);
       }, null, null, 4, 0, null, 49, 161, "call"]
     },
-    initJsApi_closure670: {
+    initJsApi_closure671: {
       "^": "Closure:225;",
       call$2: [function(dtqb, fields) {
         return dtqb.groupBy$1(fields);
       }, null, null, 4, 0, null, 49, 87, "call"]
     },
-    initJsApi_closure671: {
+    initJsApi_closure672: {
       "^": "Closure:225;",
       call$2: [function(dtqb, fields) {
         return dtqb.pivotOn$1(fields);
       }, null, null, 4, 0, null, 49, 87, "call"]
     },
-    initJsApi_closure672: {
+    initJsApi_closure673: {
       "^": "Closure:116;",
       call$4: [function(dtqb, field, pattern, dataType) {
         return J.where$3$dataType$ax(dtqb, field, pattern, dataType);
       }, null, null, 8, 0, null, 49, 80, 36, 99, "call"]
     },
-    initJsApi_closure673: {
+    initJsApi_closure674: {
       "^": "Closure:116;",
       call$4: [function(dtqb, field, pattern, dataType) {
         return dtqb.having$3$dataType(field, pattern, dataType);
       }, null, null, 8, 0, null, 49, 80, 36, 99, "call"]
     },
-    initJsApi_closure674: {
+    initJsApi_closure675: {
       "^": "Closure:226;",
       call$2: [function(dtqb, whereClauses) {
         return dtqb.whereAll$1(whereClauses);
       }, null, null, 4, 0, null, 49, 122, "call"]
     },
-    initJsApi_closure675: {
+    initJsApi_closure676: {
       "^": "Closure:226;",
       call$2: [function(dtqb, whereClauses) {
         return dtqb.whereAny$1(whereClauses);
       }, null, null, 4, 0, null, 49, 122, "call"]
     },
-    initJsApi_closure676: {
-      "^": "Closure:449;",
+    initJsApi_closure677: {
+      "^": "Closure:450;",
       call$3: [function(dtqb, field, asc) {
         return dtqb.sortBy$2$asc(field, asc);
       }, null, null, 6, 0, null, 49, 80, 380, "call"]
     },
-    initJsApi_closure677: {
-      "^": "Closure:450;",
+    initJsApi_closure678: {
+      "^": "Closure:451;",
       call$2: [function(dtqb, n) {
         return dtqb.limit$1(n);
       }, null, null, 4, 0, null, 49, 68, "call"]
     },
-    initJsApi_closure678: {
-      "^": "Closure:451;",
+    initJsApi_closure679: {
+      "^": "Closure:452;",
       call$7: [function(dtqb, rightTable, joinType, leftTableKeys, rightTableKeys, rightTableAlias, leftTable) {
         return J.join$6$leftTable$rightTableAlias$ax(dtqb, rightTable, joinType, leftTableKeys, rightTableKeys, leftTable, rightTableAlias);
       }, null, null, 14, 0, null, 49, 381, 203, 382, 383, 384, 385, "call"]
     },
-    initJsApi_closure679: {
+    initJsApi_closure680: {
       "^": "Closure:223;",
       call$1: [function(dtqb) {
         return dtqb.build$0();
       }, null, null, 2, 0, null, 49, "call"]
     },
-    initJsApi_closure680: {
+    initJsApi_closure681: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return p.get$friendlyName();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure681: {
+    initJsApi_closure682: {
       "^": "Closure:94;",
       call$2: [function(p, $name) {
         p.set$friendlyName($name);
         return $name;
       }, null, null, 4, 0, null, 2, 10, "call"]
     },
-    initJsApi_closure682: {
+    initJsApi_closure683: {
       "^": "Closure:117;",
       call$2: [function(e, tag) {
         return e.hasTag$1(tag);
       }, null, null, 4, 0, null, 12, 71, "call"]
     },
-    initJsApi_closure683: {
+    initJsApi_closure684: {
       "^": "Closure:117;",
       call$2: [function(e, tag) {
         return J.tag$1$x(e, tag);
       }, null, null, 4, 0, null, 12, 71, "call"]
     },
-    initJsApi_closure684: {
+    initJsApi_closure685: {
       "^": "Closure:117;",
       call$2: [function(e, tag) {
         return e.unTag$1(tag);
       }, null, null, 4, 0, null, 12, 71, "call"]
     },
-    initJsApi_closure685: {
+    initJsApi_closure686: {
       "^": "Closure:37;",
       call$1: [function(e) {
         return e.getType$0();
       }, null, null, 2, 0, null, 12, "call"]
     },
-    initJsApi_closure686: {
+    initJsApi_closure687: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return J.get$name$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure687: {
+    initJsApi_closure688: {
       "^": "Closure:94;",
       call$2: [function(p, $name) {
         J.set$name$x(p, $name);
         return $name;
       }, null, null, 4, 0, null, 2, 10, "call"]
     },
-    initJsApi_closure688: {
+    initJsApi_closure689: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return !!J.getInterceptor(p).$isAuthorMixin ? p.AuthorMixin_createdOn : null;
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure689: {
+    initJsApi_closure690: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return !!J.getInterceptor(p).$isAuthorMixin ? p.AuthorMixin_updatedOn : null;
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure690: {
+    initJsApi_closure691: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return !!J.getInterceptor(p).$isAuthorMixin ? p.AuthorMixin_author : null;
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure691: {
+    initJsApi_closure692: {
       "^": "Closure:37;",
       call$1: [function(p) {
         return p.get$nqName();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure692: {
-      "^": "Closure:453;",
+    initJsApi_closure693: {
+      "^": "Closure:454;",
       call$3: function(e, g, full) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), t1;
         var $async$call$3 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -102675,7 +102683,7 @@
         return P._asyncStart($async$call$3, $async$completer);
       }
     },
-    initJsApi_closure693: {
+    initJsApi_closure694: {
       "^": "Closure:158;",
       call$3: [function($name, dataSource, options) {
         var t1 = O.DataConnection_DataConnection$create(dataSource, O.jsToMap(options, false));
@@ -102683,49 +102691,49 @@
         return t1;
       }, null, null, 6, 0, null, 10, 386, 124, "call"]
     },
-    initJsApi_closure694: {
+    initJsApi_closure695: {
       "^": "Closure:79;",
       call$1: [function(c) {
         return c.get$parameters();
       }, null, null, 2, 0, null, 3, "call"]
     },
-    initJsApi_closure695: {
-      "^": "Closure:454;",
+    initJsApi_closure696: {
+      "^": "Closure:455;",
       call$3: [function(c, $name, sql) {
         return J.query$2$name$sql$x(c, $name, sql);
       }, null, null, 6, 0, null, 3, 10, 187, "call"]
     },
-    initJsApi_closure696: {
+    initJsApi_closure697: {
       "^": "Closure:79;",
       call$1: [function(c) {
         return J.get$credentials$x(c);
       }, null, null, 2, 0, null, 3, "call"]
     },
-    initJsApi_closure697: {
+    initJsApi_closure698: {
       "^": "Closure:79;",
       call$1: [function(c) {
         return c.get$dataSource();
       }, null, null, 2, 0, null, 3, "call"]
     },
-    initJsApi_closure698: {
+    initJsApi_closure699: {
       "^": "Closure:79;",
       call$1: function(c) {
         return c.test$0();
       }
     },
-    initJsApi_closure699: {
+    initJsApi_closure700: {
       "^": "Closure:227;",
       call$1: [function(c) {
         return c.get$parameters();
       }, null, null, 2, 0, null, 3, "call"]
     },
-    initJsApi_closure700: {
+    initJsApi_closure701: {
       "^": "Closure:227;",
       call$1: [function(c) {
         return O.mapToJs(c.get$openParameters(), null, false);
       }, null, null, 2, 0, null, 3, "call"]
     },
-    initJsApi_closure701: {
+    initJsApi_closure702: {
       "^": "Closure:0;",
       call$1: [function(json) {
         var t1 = new O.Credentials(null, null, null, null, null, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), false, null, null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false);
@@ -102733,7 +102741,7 @@
         return t1;
       }, null, null, 2, 0, null, 126, "call"]
     },
-    initJsApi_closure702: {
+    initJsApi_closure703: {
       "^": "Closure:3;",
       call$1: [function($name) {
         var t1 = [];
@@ -102742,50 +102750,50 @@
         return t1;
       }, null, null, 2, 0, null, 10, "call"]
     },
-    initJsApi_closure703: {
-      "^": "Closure:456;",
+    initJsApi_closure704: {
+      "^": "Closure:457;",
       call$1: [function(e) {
         return e.get$environment();
       }, null, null, 2, 0, null, 12, "call"]
     },
-    initJsApi_closure704: {
+    initJsApi_closure705: {
       "^": "Closure:61;",
       call$1: [function(pi) {
         return pi.get$canceled();
       }, null, null, 2, 0, null, 76, "call"]
     },
-    initJsApi_closure705: {
+    initJsApi_closure706: {
       "^": "Closure:61;",
       call$1: [function(pi) {
         return J.get$percent$x(pi);
       }, null, null, 2, 0, null, 76, "call"]
     },
-    initJsApi_closure706: {
+    initJsApi_closure707: {
       "^": "Closure:61;",
       call$1: [function(pi) {
         return J.get$description$x(pi);
       }, null, null, 2, 0, null, 76, "call"]
     },
-    initJsApi_closure707: {
-      "^": "Closure:458;",
+    initJsApi_closure708: {
+      "^": "Closure:459;",
       call$2: [function(pi, s) {
         J.set$description$x(pi, s);
         return s;
       }, null, null, 4, 0, null, 76, 4, "call"]
     },
-    initJsApi_closure708: {
-      "^": "Closure:459;",
+    initJsApi_closure709: {
+      "^": "Closure:460;",
       call$3: [function(pi, x, d) {
         return J.update$2$description$x(pi, x, d);
       }, null, null, 6, 0, null, 76, 0, 103, "call"]
     },
-    initJsApi_closure709: {
-      "^": "Closure:460;",
+    initJsApi_closure710: {
+      "^": "Closure:461;",
       call$2: [function(pi, x) {
         return pi.log$1(x);
       }, null, null, 4, 0, null, 76, 0, "call"]
     },
-    initJsApi_closure710: {
+    initJsApi_closure711: {
       "^": "Closure:2;",
       call$0: [function() {
         var t1 = new N.EventBus(false, null, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), new P._SyncBroadcastStreamController(null, null, 0, null, null, null, null, [null]), true, "");
@@ -102794,31 +102802,31 @@
         return new O.ProgressIndicator(t1, null, null, false, null, [], null);
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure711: {
+    initJsApi_closure712: {
       "^": "Closure:61;",
       call$1: [function(pi) {
         return pi.get$onProgressUpdated();
       }, null, null, 2, 0, null, 76, "call"]
     },
-    initJsApi_closure712: {
+    initJsApi_closure713: {
       "^": "Closure:61;",
       call$1: [function(pi) {
         return J.map$1$ax(pi.get$onLogUpdated(), new X.initJsApi__closure9());
       }, null, null, 2, 0, null, 76, "call"]
     },
     initJsApi__closure9: {
-      "^": "Closure:461;",
+      "^": "Closure:462;",
       call$1: [function(m) {
         return m.toJson$0();
       }, null, null, 2, 0, null, 38, "call"]
     },
-    initJsApi_closure713: {
+    initJsApi_closure714: {
       "^": "Closure:61;",
       call$1: [function(pi) {
         return pi.get$onCancel();
       }, null, null, 2, 0, null, 76, "call"]
     },
-    initJsApi_closure714: {
+    initJsApi_closure715: {
       "^": "Closure:77;",
       call$1: function(s) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1;
@@ -102846,107 +102854,107 @@
         return P._asyncStart($async$call$1, $async$completer);
       }
     },
-    initJsApi_closure715: {
+    initJsApi_closure716: {
       "^": "Closure:3;",
       call$1: [function(s) {
         return N.StringUtils_toSentenceCase(s);
       }, null, null, 2, 0, null, 4, "call"]
     },
-    initJsApi_closure716: {
-      "^": "Closure:462;",
+    initJsApi_closure717: {
+      "^": "Closure:463;",
       call$4: [function(s, capitalizeFirst, capitalizeNext, capitalizeConjunctions) {
         return G.camelCaseToWords(s, capitalizeConjunctions, capitalizeFirst, capitalizeNext, " ");
       }, null, null, 8, 0, null, 4, 388, 389, 390, "call"]
     },
-    initJsApi_closure717: {
+    initJsApi_closure718: {
       "^": "Closure:2;",
       call$0: [function() {
         return N.Context$(true);
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure718: {
+    initJsApi_closure719: {
       "^": "Closure:2;",
       call$0: [function() {
         return J.clone$0$x($.$get$Context_getDefaultContext().call$1(null));
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure719: {
-      "^": "Closure:463;",
+    initJsApi_closure720: {
+      "^": "Closure:464;",
       call$2: [function(context, $name) {
         return J.$index$asx(context, $name);
       }, null, null, 4, 0, null, 27, 10, "call"]
     },
-    initJsApi_closure720: {
-      "^": "Closure:464;",
+    initJsApi_closure721: {
+      "^": "Closure:465;",
       call$3: [function(context, $name, value) {
         J.$indexSet$ax(context, $name, value);
         return value;
       }, null, null, 6, 0, null, 27, 10, 13, "call"]
     },
-    initJsApi_closure721: {
+    initJsApi_closure722: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.edit$0();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure722: {
+    initJsApi_closure723: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return J.get$options$x(func);
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure723: {
+    initJsApi_closure724: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return func.get$aux();
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure724: {
+    initJsApi_closure725: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return J.get$options$x($call);
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure725: {
+    initJsApi_closure726: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.get$aux();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure726: {
+    initJsApi_closure727: {
       "^": "Closure:228;",
       call$3: [function($call, $name, value) {
         J.$indexSet$ax($call.get$aux(), $name, value);
         return value;
       }, null, null, 6, 0, null, 9, 10, 13, "call"]
     },
-    initJsApi_closure727: {
+    initJsApi_closure728: {
       "^": "Closure:229;",
       call$2: [function($call, input) {
         return input === true ? $call.get$inputParamMap() : $call.get$outputParamMap();
       }, null, null, 4, 0, null, 9, 391, "call"]
     },
-    initJsApi_closure728: {
+    initJsApi_closure729: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.get$func();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure729: {
-      "^": "Closure:468;",
+    initJsApi_closure730: {
+      "^": "Closure:469;",
       call$2: [function($call, func) {
         $call.set$func(func);
         return func;
       }, null, null, 4, 0, null, 9, 34, "call"]
     },
-    initJsApi_closure730: {
+    initJsApi_closure731: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.get$started().get$millisecondsSinceEpoch();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure731: {
-      "^": "Closure:469;",
+    initJsApi_closure732: {
+      "^": "Closure:470;",
       call$2: [function($call, millisecondSinceEpoch) {
         var t1, t2;
         if (typeof millisecondSinceEpoch !== "number")
@@ -102958,133 +102966,133 @@
         return t2;
       }, null, null, 4, 0, null, 9, 392, "call"]
     },
-    initJsApi_closure732: {
+    initJsApi_closure733: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return J.get$finished$x($call).get$millisecondsSinceEpoch();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure733: {
+    initJsApi_closure734: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return J.get$status$x($call);
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure734: {
+    initJsApi_closure735: {
       "^": "Closure:56;",
       call$2: [function($call, $status) {
         J.set$status$x($call, $status);
         return $status;
       }, null, null, 4, 0, null, 9, 231, "call"]
     },
-    initJsApi_closure735: {
+    initJsApi_closure736: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.get$errorMessage();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure736: {
+    initJsApi_closure737: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.get$errorStackTrace();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure737: {
+    initJsApi_closure738: {
       "^": "Closure:13;",
       call$1: [function($call) {
         var t1 = J.get$session$x($call);
         return t1 == null ? t1 : t1.get$user();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure738: {
+    initJsApi_closure739: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return $call.get$parentCall();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure739: {
-      "^": "Closure:470;",
+    initJsApi_closure740: {
+      "^": "Closure:471;",
       call$2: [function($call, c) {
         $call.set$parentCall(c);
         return c;
       }, null, null, 4, 0, null, 9, 3, "call"]
     },
-    initJsApi_closure740: {
+    initJsApi_closure741: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return J.get$context$x($call);
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure741: {
-      "^": "Closure:471;",
+    initJsApi_closure742: {
+      "^": "Closure:472;",
       call$2: [function($call, context) {
         J.set$context$x($call, context);
         return context;
       }, null, null, 4, 0, null, 9, 27, "call"]
     },
-    initJsApi_closure742: {
+    initJsApi_closure743: {
       "^": "Closure:228;",
       call$3: [function($call, $name, value) {
         J.set$value$x(J.$index$asx($call.get$paramMap(), $name), value);
         return value;
       }, null, null, 6, 0, null, 9, 10, 13, "call"]
     },
-    initJsApi_closure743: {
+    initJsApi_closure744: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return J.clone$0$x($call).toJs$0();
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure744: {
+    initJsApi_closure745: {
       "^": "Closure:13;",
       call$1: [function(f) {
         return f.get$adHoc();
       }, null, null, 2, 0, null, 19, "call"]
     },
-    initJsApi_closure745: {
+    initJsApi_closure746: {
       "^": "Closure:229;",
       call$2: [function(f, adHoc) {
         f.set$adHoc(adHoc);
         return adHoc;
       }, null, null, 4, 0, null, 19, 194, "call"]
     },
-    initJsApi_closure746: {
+    initJsApi_closure747: {
       "^": "Closure:13;",
       call$1: [function(c) {
         return c.get$debugLogger();
       }, null, null, 2, 0, null, 3, "call"]
     },
-    initJsApi_closure747: {
+    initJsApi_closure748: {
       "^": "Closure:22;",
       call$1: [function(p) {
         return p.get$aux();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure748: {
+    initJsApi_closure749: {
       "^": "Closure:22;",
       call$1: [function(p) {
         return p.get$param();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure749: {
+    initJsApi_closure750: {
       "^": "Closure:22;",
       call$1: [function(p) {
         return J.get$value$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure750: {
-      "^": "Closure:472;",
+    initJsApi_closure751: {
+      "^": "Closure:473;",
       call$2: [function(p, f) {
         return J.get$onChanged$x(p).listen$1(f);
       }, null, null, 4, 0, null, 2, 19, "call"]
     },
-    initJsApi_closure751: {
+    initJsApi_closure752: {
       "^": "Closure:84;",
       call$2: [function($call, $name) {
         return X._wrapParamValue(J.$index$asx($call.get$paramMap(), $name));
       }, null, null, 4, 0, null, 9, 10, "call"]
     },
-    initJsApi_closure752: {
+    initJsApi_closure753: {
       "^": "Closure:0;",
       call$1: [function($call) {
         return X._wrapParamValue(J.firstWhere$2$orElse$ax($call.get$outputParams(), new X.initJsApi__closure7(), new X.initJsApi__closure8()));
@@ -103102,21 +103110,21 @@
         return;
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure753: {
+    initJsApi_closure754: {
       "^": "Closure:58;",
       call$2: [function(s, options) {
         var t1 = X.cvmImportOptionsFromJs(options);
         return new N.CsvParser("#", null, P.HashMap_HashMap(null, null, null, N.StringColumn, [P.List, P.String]), 0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false).parse$2$options(0, s, t1);
       }, null, null, 4, 0, null, 4, 124, "call"]
     },
-    initJsApi_closure754: {
-      "^": "Closure:473;",
+    initJsApi_closure755: {
+      "^": "Closure:474;",
       call$3: [function(s, rows, columns) {
         return N.TestData_make(s, rows, columns);
       }, null, null, 6, 0, null, 4, 42, 121, "call"]
     },
-    initJsApi_closure755: {
-      "^": "Closure:474;",
+    initJsApi_closure756: {
+      "^": "Closure:475;",
       call$7: [function(t1, t2, keys1, keys2, linkTypes, initialSync, filterAllOnNoRowsSelected) {
         var link = new N.DataFrameLink(true, false, null, null, null, true, keys1, keys2, t1, t2, [], null, null, false, false, []);
         link.filterAllOnNoRowsSelected = filterAllOnNoRowsSelected == null ? false : filterAllOnNoRowsSelected;
@@ -103130,43 +103138,43 @@
         }
       }, null, null, 14, 0, null, 171, 172, 197, 201, 394, 395, 396, "call"]
     },
-    initJsApi_closure756: {
-      "^": "Closure:475;",
+    initJsApi_closure757: {
+      "^": "Closure:476;",
       call$8: [function(t1, t2, keys1, keys2, values1, values2, joinType, inPlace) {
         return N.joinTables(t1, t2, keys1, keys2, values1, values2, inPlace, joinType, null).result;
       }, null, null, 16, 0, null, 171, 172, 197, 201, 257, 209, 203, 202, "call"]
     },
-    initJsApi_closure757: {
-      "^": "Closure:476;",
+    initJsApi_closure758: {
+      "^": "Closure:477;",
       call$1: [function(sub) {
         return J.cancel$0$x(sub);
       }, null, null, 2, 0, null, 166, "call"]
     },
-    initJsApi_closure758: {
+    initJsApi_closure759: {
       "^": "Closure:135;",
       call$3: function(queryName, queryParameters, adHoc) {
         return O.callQuery(queryName, queryParameters == null ? P.LinkedHashMap__makeEmpty() : O.jsToMap(queryParameters, false), adHoc, null, null, true, null, null);
       }
     },
-    initJsApi_closure759: {
+    initJsApi_closure760: {
       "^": "Closure:2;",
       call$0: [function() {
         return J.$index$asx($.Zone__current, C.Symbol_currentFuncCall);
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure760: {
+    initJsApi_closure761: {
       "^": "Closure:3;",
       call$1: function($name) {
         return N.Funcs_byName("OpenFile", null).apply$2$processed$values(true, [$name]);
       }
     },
-    initJsApi_closure761: {
+    initJsApi_closure762: {
       "^": "Closure:3;",
       call$1: function($name) {
         return N.Funcs_byName("OpenServerFile", null).apply$2$processed$values(true, [$name]);
       }
     },
-    initJsApi_closure762: {
+    initJsApi_closure763: {
       "^": "Closure:4;",
       call$0: function() {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), queries, t1, t2, $async$temp1, $async$temp2;
@@ -103213,32 +103221,32 @@
         return P._asyncStart($async$call$0, $async$completer);
       }
     },
-    initJsApi_closure763: {
+    initJsApi_closure764: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return J.get$source$x(func);
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure764: {
+    initJsApi_closure765: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return func.getUrl$0();
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure765: {
+    initJsApi_closure766: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return J.get$helpUrl$x(func);
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure766: {
+    initJsApi_closure767: {
       "^": "Closure:230;",
       call$2: [function(func, x) {
         J.set$helpUrl$x(func, x);
         return x;
       }, null, null, 4, 0, null, 34, 0, "call"]
     },
-    initJsApi_closure767: {
+    initJsApi_closure768: {
       "^": "Closure:40;",
       call$1: [function(func) {
         var t1;
@@ -103250,65 +103258,65 @@
         return t1;
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure768: {
+    initJsApi_closure769: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return func.get$isVectorFunc();
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure769: {
+    initJsApi_closure770: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return J.get$description$x(func);
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure770: {
+    initJsApi_closure771: {
       "^": "Closure:230;",
       call$2: [function(func, x) {
         J.set$description$x(func, x);
         return x;
       }, null, null, 4, 0, null, 34, 0, "call"]
     },
-    initJsApi_closure771: {
+    initJsApi_closure772: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return func.get$inputParams();
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure772: {
+    initJsApi_closure773: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return func.get$outputParams();
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure773: {
+    initJsApi_closure774: {
       "^": "Closure:40;",
       call$1: [function(func) {
         return J.toList$0$ax(func.get$tags());
       }, null, null, 2, 0, null, 34, "call"]
     },
-    initJsApi_closure774: {
-      "^": "Closure:478;",
+    initJsApi_closure775: {
+      "^": "Closure:479;",
       call$2: [function(func, tags) {
         var t1 = P.LinkedHashSet_LinkedHashSet$from(tags, null);
         func.set$tags(t1);
         return t1;
       }, null, null, 4, 0, null, 34, 56, "call"]
     },
-    initJsApi_closure775: {
+    initJsApi_closure776: {
       "^": "Closure:231;",
       call$2: [function(func, parameters) {
         return func.prepare$1$paramValues(O.jsToMap(parameters, false));
       }, null, null, 4, 0, null, 34, 398, "call"]
     },
-    initJsApi_closure776: {
+    initJsApi_closure777: {
       "^": "Closure:231;",
       call$2: function(func, parameters) {
         return func.prepareAsync$1$paramValues(O.jsToMap(parameters, false));
       }
     },
-    initJsApi_closure777: {
-      "^": "Closure:480;",
+    initJsApi_closure778: {
+      "^": "Closure:481;",
       call$6: [function(packageName, functionName, tags, meta, resultType, resultSemType) {
         var t1 = N.Funcs_find(functionName, O.jsToMap(meta, false), packageName, resultSemType, resultType, null, tags);
         t1 = H.MappedIterable_MappedIterable(t1, new X.initJsApi__closure6(), H.getRuntimeTypeArgument(t1, "Iterable", 0), null);
@@ -103321,8 +103329,8 @@
         return f.toJs$0();
       }, null, null, 2, 0, null, 19, "call"]
     },
-    initJsApi_closure778: {
-      "^": "Closure:481;",
+    initJsApi_closure779: {
+      "^": "Closure:482;",
       call$5: function($call, showProgress, progress, processed, report) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, t1, t2, t3, t4;
         var $async$call$5 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -103352,46 +103360,46 @@
         return P._asyncStart($async$call$5, $async$completer);
       }
     },
-    initJsApi_closure779: {
+    initJsApi_closure780: {
       "^": "Closure:13;",
       call$1: [function($call) {
         return J.cancel$0$x($call);
       }, null, null, 2, 0, null, 9, "call"]
     },
-    initJsApi_closure780: {
-      "^": "Closure:482;",
+    initJsApi_closure781: {
+      "^": "Closure:483;",
       call$3: [function($call, processed, report) {
         var t1 = processed == null ? true : processed;
         return $call.runSync$2$processed$report(t1, report == null ? true : report).toJs$0();
       }, null, null, 6, 0, null, 9, 207, 72, "call"]
     },
-    initJsApi_closure781: {
+    initJsApi_closure782: {
       "^": "Closure:3;",
       call$1: [function(script) {
         return O.ScriptParser_parse(script, false, true, null);
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure782: {
-      "^": "Closure:483;",
+    initJsApi_closure783: {
+      "^": "Closure:484;",
       call$3: [function(inputs, outputs, script) {
         return O.Script_fromParams(inputs, outputs, script);
       }, null, null, 6, 0, null, 404, 405, 35, "call"]
     },
-    initJsApi_closure783: {
+    initJsApi_closure784: {
       "^": "Closure:0;",
       call$1: [function(script) {
         return script.get$script();
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure784: {
-      "^": "Closure:88;",
+    initJsApi_closure785: {
+      "^": "Closure:74;",
       call$2: [function(script, s) {
         script.set$script(s);
         return s;
       }, null, null, 4, 0, null, 35, 4, "call"]
     },
-    initJsApi_closure785: {
-      "^": "Closure:63;",
+    initJsApi_closure786: {
+      "^": "Closure:65;",
       call$1: [function(script) {
         var t1 = J.get$language$x(script);
         t1 = $.$get$ScriptHandler__handlers().$index(0, t1);
@@ -103399,80 +103407,80 @@
         return script.getClientCode$1(t1 == null ? "#" : t1);
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure786: {
+    initJsApi_closure787: {
       "^": "Closure:0;",
       call$1: [function(script) {
         return J.get$language$x(script);
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure787: {
-      "^": "Closure:88;",
+    initJsApi_closure788: {
+      "^": "Closure:74;",
       call$2: [function(script, s) {
         J.set$language$x(script, s);
         return s;
       }, null, null, 4, 0, null, 35, 4, "call"]
     },
-    initJsApi_closure788: {
-      "^": "Closure:63;",
+    initJsApi_closure789: {
+      "^": "Closure:65;",
       call$1: [function(script) {
         return script.get$isVectorFunc();
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure789: {
-      "^": "Closure:63;",
+    initJsApi_closure790: {
+      "^": "Closure:65;",
       call$1: [function(script) {
         return J.$index$asx(J.get$options$x(script), "environment");
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure790: {
-      "^": "Closure:88;",
+    initJsApi_closure791: {
+      "^": "Closure:74;",
       call$2: [function(script, s) {
         J.$indexSet$ax(J.get$options$x(script), "environment", s);
         return s;
       }, null, null, 4, 0, null, 35, 4, "call"]
     },
-    initJsApi_closure791: {
-      "^": "Closure:63;",
+    initJsApi_closure792: {
+      "^": "Closure:65;",
       call$1: [function(script) {
         return J.$index$asx(J.get$options$x(script), "reference");
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure792: {
-      "^": "Closure:88;",
+    initJsApi_closure793: {
+      "^": "Closure:74;",
       call$2: [function(script, s) {
         J.$indexSet$ax(J.get$options$x(script), "reference", s);
         return s;
       }, null, null, 4, 0, null, 35, 4, "call"]
     },
-    initJsApi_closure793: {
-      "^": "Closure:63;",
+    initJsApi_closure794: {
+      "^": "Closure:65;",
       call$1: [function(script) {
         return script.get$sample();
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure794: {
-      "^": "Closure:88;",
+    initJsApi_closure795: {
+      "^": "Closure:74;",
       call$2: [function(script, s) {
         script.set$sample(s);
         return s;
       }, null, null, 4, 0, null, 35, 4, "call"]
     },
-    initJsApi_closure795: {
-      "^": "Closure:63;",
+    initJsApi_closure796: {
+      "^": "Closure:65;",
       call$1: [function(script) {
         return J.toList$0$ax(script.get$tags());
       }, null, null, 2, 0, null, 35, "call"]
     },
-    initJsApi_closure796: {
-      "^": "Closure:486;",
+    initJsApi_closure797: {
+      "^": "Closure:487;",
       call$2: [function(script, tags) {
         var t1 = P.LinkedHashSet_LinkedHashSet$from(tags, null);
         script.set$tags(t1);
         return t1;
       }, null, null, 4, 0, null, 35, 56, "call"]
     },
-    initJsApi_closure797: {
-      "^": "Closure:487;",
+    initJsApi_closure798: {
+      "^": "Closure:488;",
       call$2: function(text, context) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -103498,176 +103506,176 @@
         return P._asyncStart($async$call$2, $async$completer);
       }
     },
-    initJsApi_closure798: {
-      "^": "Closure:488;",
+    initJsApi_closure799: {
+      "^": "Closure:489;",
       call$3: [function(obj, eventName, f) {
         return obj.get$eventBus().onEventName$1(eventName).listen$1(f);
       }, null, null, 6, 0, null, 225, 238, 19, "call"]
     },
-    initJsApi_closure799: {
-      "^": "Closure:489;",
+    initJsApi_closure800: {
+      "^": "Closure:490;",
       call$2: [function(path, data) {
         var t1 = O.FileInfo_FileInfo$fromContent(path, data);
         return $.javaScriptRunner.toJs$1(t1);
       }, null, null, 4, 0, null, 173, 33, "call"]
     },
-    initJsApi_closure800: {
+    initJsApi_closure801: {
       "^": "Closure:48;",
       call$2: [function(path, data) {
         var t1 = O.FileInfo_FileInfo$fromContent(path, C.Utf8Codec_false.get$encoder().convert$1(data));
         return $.javaScriptRunner.toJs$1(t1);
       }, null, null, 4, 0, null, 173, 33, "call"]
     },
-    initJsApi_closure801: {
+    initJsApi_closure802: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$connection$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure802: {
+    initJsApi_closure803: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$path$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure803: {
+    initJsApi_closure804: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$fullPath$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure804: {
+    initJsApi_closure805: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return fi.get$viewPath();
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure805: {
+    initJsApi_closure806: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return fi.get$extension();
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure806: {
+    initJsApi_closure807: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return fi.get$fileName();
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure807: {
+    initJsApi_closure808: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$url$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure808: {
+    initJsApi_closure809: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$isFile$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure809: {
+    initJsApi_closure810: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$isDirectory$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure810: {
+    initJsApi_closure811: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return J.get$data$x(fi);
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure811: {
+    initJsApi_closure812: {
       "^": "Closure:21;",
       call$1: [function(fi) {
         return fi.get$updatedOn();
       }, null, null, 2, 0, null, 67, "call"]
     },
-    initJsApi_closure812: {
+    initJsApi_closure813: {
       "^": "Closure:21;",
       call$1: function(fi) {
         return fi.getBytesData$1(new Q.FilesClient(null).get$readAsBytes());
       }
     },
-    initJsApi_closure813: {
+    initJsApi_closure814: {
       "^": "Closure:21;",
       call$1: function(fi) {
         return fi.getStringData$1(new Q.FilesClient(null).get$readAsBytes());
       }
     },
-    initJsApi_closure814: {
+    initJsApi_closure815: {
       "^": "Closure:21;",
       call$1: function(fi) {
         return J.save$0$x(fi);
       }
     },
-    initJsApi_closure815: {
+    initJsApi_closure816: {
       "^": "Closure:2;",
       call$0: [function() {
         var t1 = J.$index$asx($.Zone__current, C.Symbol_IKb);
         return t1 == null ? $._root : t1;
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure816: {
+    initJsApi_closure817: {
       "^": "Closure:3;",
       call$1: [function(root) {
         $._root = root;
         return root;
       }, null, null, 2, 0, null, 251, "call"]
     },
-    initJsApi_closure817: {
+    initJsApi_closure818: {
       "^": "Closure:3;",
       call$1: [function(token) {
         $._token = token;
         return token;
       }, null, null, 2, 0, null, 181, "call"]
     },
-    initJsApi_closure818: {
+    initJsApi_closure819: {
       "^": "Closure:2;",
       call$0: [function() {
         return B.token();
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure819: {
+    initJsApi_closure820: {
       "^": "Closure:3;",
       call$1: [function(token) {
         $.impersonationToken = token;
         return token;
       }, null, null, 2, 0, null, 181, "call"]
     },
-    initJsApi_closure820: {
-      "^": "Closure:2;",
-      call$0: [function() {
-        return $.impersonationToken;
-      }, null, null, 0, 0, null, "call"]
-    },
     initJsApi_closure821: {
       "^": "Closure:2;",
       call$0: [function() {
-        var t1 = J.$index$asx($.Zone__current, C.Symbol_IKb);
-        return J.replaceAll$2$s(J.replaceAll$2$s(t1 == null ? $._root : t1, "http://", "ws://"), "https://", "wss://");
+        return $.impersonationToken;
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure822: {
       "^": "Closure:2;",
       call$0: [function() {
         var t1 = J.$index$asx($.Zone__current, C.Symbol_IKb);
-        return H.S(t1 == null ? $._root : t1) + "/ai/proxy";
+        return J.replaceAll$2$s(J.replaceAll$2$s(t1 == null ? $._root : t1, "http://", "ws://"), "https://", "wss://");
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure823: {
       "^": "Closure:2;",
       call$0: [function() {
+        var t1 = J.$index$asx($.Zone__current, C.Symbol_IKb);
+        return H.S(t1 == null ? $._root : t1) + "/ai/proxy";
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure824: {
       "^": "Closure:2;",
       call$0: [function() {
-        return P.LinkedHashMap__makeEmpty();
       }, null, null, 0, 0, null, "call"]
     },
     initJsApi_closure825: {
+      "^": "Closure:2;",
+      call$0: [function() {
+        return P.LinkedHashMap__makeEmpty();
+      }, null, null, 0, 0, null, "call"]
+    },
+    initJsApi_closure826: {
       "^": "Closure:4;_box_1",
       call$0: function() {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this;
@@ -103690,287 +103698,287 @@
         return P._asyncStart($async$call$0, $async$completer);
       }
     },
-    initJsApi_closure826: {
+    initJsApi_closure827: {
       "^": "Closure:2;_box_1",
       call$0: [function() {
         this._box_1.lastError = null;
         return;
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure827: {
+    initJsApi_closure828: {
       "^": "Closure:0;_box_1",
       call$1: [function(_) {
         this._box_1.lastError = null;
         return;
       }, null, null, 2, 0, null, 21, "call"]
     },
-    initJsApi_closure828: {
+    initJsApi_closure829: {
       "^": "Closure:0;",
       call$1: function(fi) {
         return new Q.FilesClient(null).exists$1(fi);
       }
     },
-    initJsApi_closure829: {
+    initJsApi_closure830: {
       "^": "Closure:0;",
       call$1: function(fi) {
         return new Q.FilesClient(null).deleteAll$1([fi]);
       }
     },
-    initJsApi_closure830: {
-      "^": "Closure:491;",
+    initJsApi_closure831: {
+      "^": "Closure:492;",
       call$2: function(filesOrDirs, fi) {
         return new Q.FilesClient(null).move$2(filesOrDirs, fi);
       }
     },
-    initJsApi_closure831: {
-      "^": "Closure:492;",
+    initJsApi_closure832: {
+      "^": "Closure:493;",
       call$4: function(fi, recursive, ext, root) {
         return new Q.FilesClient(null).list$4$ext$recursive$root(0, fi, ext, recursive, root);
-      }
-    },
-    initJsApi_closure832: {
-      "^": "Closure:0;",
-      call$1: function(fi) {
-        return new Q.FilesClient(null).readAsString$1(fi);
       }
     },
     initJsApi_closure833: {
       "^": "Closure:0;",
       call$1: function(fi) {
-        return new Q.FilesClient(null).readAsBytes$1(fi);
+        return new Q.FilesClient(null).readAsString$1(fi);
       }
     },
     initJsApi_closure834: {
-      "^": "Closure:493;",
+      "^": "Closure:0;",
+      call$1: function(fi) {
+        return new Q.FilesClient(null).readAsBytes$1(fi);
+      }
+    },
+    initJsApi_closure835: {
+      "^": "Closure:494;",
       call$2: function(fi, data) {
         return new Q.FilesClient(null).upload$2(0, fi, data);
       }
     },
-    initJsApi_closure835: {
+    initJsApi_closure836: {
       "^": "Closure:84;",
       call$2: function(fi, data) {
         return new Q.FilesClient(null).upload$2(0, fi, C.Utf8Codec_false.get$encoder().convert$1(data));
       }
     },
-    initJsApi_closure836: {
+    initJsApi_closure837: {
       "^": "Closure:84;",
       call$2: function(fi, newName) {
         return Q.FilesClient_client(fi).renameFile$2(fi, newName);
       }
     },
-    initJsApi_closure837: {
+    initJsApi_closure838: {
       "^": "Closure:0;",
       call$1: function(fi) {
         return new Q.FilesClient(null).readBinaryDataFrames$1(fi);
       }
     },
-    initJsApi_closure838: {
-      "^": "Closure:494;",
+    initJsApi_closure839: {
+      "^": "Closure:495;",
       call$2: function(fi, dfList) {
         return new Q.FilesClient(null).writeBinaryDataFrames$2(fi, dfList);
       }
     },
-    initJsApi_closure839: {
+    initJsApi_closure840: {
       "^": "Closure:0;",
       call$1: function(fi) {
         return new Q.FilesClient(null).createDirectory$1(0, fi);
       }
     },
-    initJsApi_closure840: {
-      "^": "Closure:495;",
+    initJsApi_closure841: {
+      "^": "Closure:496;",
       call$1: [function(iterable) {
         return J.get$iterator$ax(iterable);
       }, null, null, 2, 0, null, 410, "call"]
     },
-    initJsApi_closure841: {
+    initJsApi_closure842: {
       "^": "Closure:233;",
       call$1: [function(iterator) {
         return iterator.moveNext$0();
       }, null, null, 2, 0, null, 253, "call"]
     },
-    initJsApi_closure842: {
+    initJsApi_closure843: {
       "^": "Closure:233;",
       call$1: [function(iterator) {
         return iterator.get$current();
       }, null, null, 2, 0, null, 253, "call"]
     },
-    initJsApi_closure843: {
+    initJsApi_closure844: {
       "^": "Closure:122;",
       call$1: [function(logEventType) {
         return J.get$name$x(logEventType);
       }, null, null, 2, 0, null, 125, "call"]
     },
-    initJsApi_closure844: {
+    initJsApi_closure845: {
       "^": "Closure:122;",
       call$1: [function(logEventType) {
         return logEventType.get$comment();
       }, null, null, 2, 0, null, 125, "call"]
     },
-    initJsApi_closure845: {
-      "^": "Closure:498;",
+    initJsApi_closure846: {
+      "^": "Closure:499;",
       call$2: [function(logEventType, comment) {
         logEventType.set$comment(comment);
         return comment;
       }, null, null, 4, 0, null, 125, 413, "call"]
     },
-    initJsApi_closure846: {
+    initJsApi_closure847: {
       "^": "Closure:122;",
       call$1: [function(logEventType) {
         return logEventType.get$isError();
       }, null, null, 2, 0, null, 125, "call"]
     },
-    initJsApi_closure847: {
-      "^": "Closure:499;",
+    initJsApi_closure848: {
+      "^": "Closure:500;",
       call$2: [function(logEventType, isError) {
         logEventType.set$isError(isError);
         return isError;
       }, null, null, 4, 0, null, 125, 414, "call"]
     },
-    initJsApi_closure848: {
+    initJsApi_closure849: {
       "^": "Closure:72;",
       call$1: [function(logEvent) {
         return J.get$description$x(logEvent);
       }, null, null, 2, 0, null, 109, "call"]
     },
-    initJsApi_closure849: {
+    initJsApi_closure850: {
       "^": "Closure:72;",
       call$1: [function(logEvent) {
         return J.get$name$x(logEvent);
       }, null, null, 2, 0, null, 109, "call"]
     },
-    initJsApi_closure850: {
+    initJsApi_closure851: {
       "^": "Closure:72;",
       call$1: [function(logEvent) {
         return J.get$session$x(logEvent);
       }, null, null, 2, 0, null, 109, "call"]
     },
-    initJsApi_closure851: {
+    initJsApi_closure852: {
       "^": "Closure:72;",
       call$1: [function(logEvent) {
         return logEvent.get$parameters();
       }, null, null, 2, 0, null, 109, "call"]
     },
-    initJsApi_closure852: {
+    initJsApi_closure853: {
       "^": "Closure:72;",
       call$1: [function(logEvent) {
         return logEvent.get$eventType();
       }, null, null, 2, 0, null, 109, "call"]
     },
-    initJsApi_closure853: {
+    initJsApi_closure854: {
       "^": "Closure:72;",
       call$1: [function(logEvent) {
         return logEvent.get$eventTime();
       }, null, null, 2, 0, null, 109, "call"]
     },
-    initJsApi_closure854: {
+    initJsApi_closure855: {
       "^": "Closure:234;",
       call$1: [function(p) {
         return J.get$name$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure855: {
+    initJsApi_closure856: {
       "^": "Closure:234;",
       call$1: [function(p) {
         return J.get$type$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure856: {
+    initJsApi_closure857: {
       "^": "Closure:112;",
       call$1: [function(v) {
         return v.get$event();
       }, null, null, 2, 0, null, 7, "call"]
     },
-    initJsApi_closure857: {
+    initJsApi_closure858: {
       "^": "Closure:112;",
       call$1: [function(v) {
         return v.get$parameter();
       }, null, null, 2, 0, null, 7, "call"]
     },
-    initJsApi_closure858: {
+    initJsApi_closure859: {
       "^": "Closure:112;",
       call$1: [function(v) {
         return J.get$value$x(v);
       }, null, null, 2, 0, null, 7, "call"]
     },
-    initJsApi_closure859: {
-      "^": "Closure:503;",
+    initJsApi_closure860: {
+      "^": "Closure:504;",
       call$1: [function(target) {
         return target.get$properties();
       }, null, null, 2, 0, null, 179, "call"]
     },
-    initJsApi_closure860: {
-      "^": "Closure:504;",
+    initJsApi_closure861: {
+      "^": "Closure:505;",
       call$2: [function(target, propertyName) {
         return J.getPropertyValue$1$x(target, propertyName);
       }, null, null, 4, 0, null, 179, 140, "call"]
     },
-    initJsApi_closure861: {
-      "^": "Closure:505;",
+    initJsApi_closure862: {
+      "^": "Closure:506;",
       call$3: [function(target, propertyName, x) {
         return target.setPropertyValue$2(propertyName, x);
       }, null, null, 6, 0, null, 179, 140, 0, "call"]
     },
-    initJsApi_closure862: {
-      "^": "Closure:506;",
+    initJsApi_closure863: {
+      "^": "Closure:507;",
       call$2: function(c, df) {
         return c.uploadDataFrame$1(df);
       }
     },
-    initJsApi_closure863: {
-      "^": "Closure:507;",
+    initJsApi_closure864: {
+      "^": "Closure:508;",
       call$2: function(c, id) {
         return c.getTable$1(id);
       }
     },
-    initJsApi_closure864: {
-      "^": "Closure:508;",
+    initJsApi_closure865: {
+      "^": "Closure:509;",
       call$2: function(s, id) {
         return s.revalidate$1(id);
       }
     },
-    initJsApi_closure865: {
+    initJsApi_closure866: {
       "^": "Closure:235;",
       call$3: function(s, id, awaitStart) {
         return s.run$2(id, awaitStart);
       }
     },
-    initJsApi_closure866: {
+    initJsApi_closure867: {
       "^": "Closure:235;",
       call$3: function(s, id, awaitStop) {
         return J.stop$2$x(s, id, awaitStop);
       }
     },
-    initJsApi_closure867: {
-      "^": "Closure:510;",
+    initJsApi_closure868: {
+      "^": "Closure:511;",
       call$3: function(s, id, limit) {
         return s.getContainerLogs$2$limit(id, limit);
       }
     },
-    initJsApi_closure868: {
-      "^": "Closure:511;",
+    initJsApi_closure869: {
+      "^": "Closure:512;",
       call$2: function(serviceName, limit) {
         return Q.DockersClient$().getServiceLogs$2$limit(serviceName, limit);
       }
     },
-    initJsApi_closure869: {
+    initJsApi_closure870: {
       "^": "Closure:2;",
       call$0: function() {
         return Q.DockersClient$().getAvailableServices$0();
       }
     },
-    initJsApi_closure870: {
-      "^": "Closure:512;",
+    initJsApi_closure871: {
+      "^": "Closure:513;",
       call$1: [function(dc) {
         return J.get$status$x(dc);
       }, null, null, 2, 0, null, 191, "call"]
     },
-    initJsApi_closure871: {
-      "^": "Closure:513;",
+    initJsApi_closure872: {
+      "^": "Closure:514;",
       call$5: [function(dataFrame, xBins, yBins, xColName, yColName) {
         return N.getDensity(dataFrame, xBins, yBins, xColName, yColName, null, null, null, null, null, false, false);
       }, null, null, 10, 0, null, 417, 418, 419, 420, 421, "call"]
     },
-    initJsApi_closure872: {
+    initJsApi_closure873: {
       "^": "Closure:12;",
       call$1: [function(milliseconds) {
         var t1, t2;
@@ -103982,25 +103990,25 @@
         return t2;
       }, null, null, 2, 0, null, 134, "call"]
     },
-    initJsApi_closure873: {
+    initJsApi_closure874: {
       "^": "Closure:3;",
       call$1: [function(type) {
         return P.allowInterop($.$get$Types_testDataGenerators().$index(0, type));
       }, null, null, 2, 0, null, 64, "call"]
     },
-    initJsApi_closure874: {
+    initJsApi_closure875: {
       "^": "Closure:12;",
       call$1: function(num) {
         return Q.ReportsClient$().getDataFrame$1(num);
       }
     },
-    initJsApi_closure875: {
+    initJsApi_closure876: {
       "^": "Closure:3;",
       call$1: function(id) {
         return Q.ReportsClient$().find$1(0, id);
       }
     },
-    initJsApi_closure876: {
+    initJsApi_closure877: {
       "^": "Closure:3;",
       call$1: [function(json) {
         var t1, t2;
@@ -104014,109 +104022,109 @@
         return t1;
       }, null, null, 2, 0, null, 126, "call"]
     },
-    initJsApi_closure877: {
+    initJsApi_closure878: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return J.get$id$x(report);
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure878: {
+    initJsApi_closure879: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return report.get$isResolved();
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure879: {
+    initJsApi_closure880: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return report.get$jiraTicket();
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure880: {
+    initJsApi_closure881: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return report.get$assignee();
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure881: {
+    initJsApi_closure882: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return report.get$reporter();
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure882: {
+    initJsApi_closure883: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return report.get$correctedDescription();
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure883: {
+    initJsApi_closure884: {
       "^": "Closure:59;",
       call$1: [function(report) {
         return report.get$createdOn().get$millisecondsSinceEpoch();
       }, null, null, 2, 0, null, 72, "call"]
     },
-    initJsApi_closure884: {
+    initJsApi_closure885: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$user();
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure885: {
+    initJsApi_closure886: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$name$x(notification);
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure886: {
+    initJsApi_closure887: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$friendlyName();
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure887: {
+    initJsApi_closure888: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$text$x(notification);
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure888: {
+    initJsApi_closure889: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$data$x(notification);
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure889: {
+    initJsApi_closure890: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$sender();
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure890: {
+    initJsApi_closure891: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$createdAt();
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure891: {
+    initJsApi_closure892: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$readAt();
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure892: {
+    initJsApi_closure893: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$isRead();
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure893: {
+    initJsApi_closure894: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$id$x(notification);
       }, null, null, 2, 0, null, 73, "call"]
     },
-    initJsApi_closure894: {
+    initJsApi_closure895: {
       "^": "Closure:3;",
       call$1: [function(stackTrace) {
         var t1;
@@ -104127,19 +104135,19 @@
         return F.Uuid$().v5$2($.NamedModel_idNamespace, t1);
       }, null, null, 2, 0, null, 30, "call"]
     },
-    initJsApi_closure895: {
+    initJsApi_closure896: {
       "^": "Closure:3;",
       call$1: [function(stackTrace) {
         return O.LogEvent_getSimpleStackTrace(stackTrace);
       }, null, null, 2, 0, null, 30, "call"]
     },
-    initJsApi_closure896: {
+    initJsApi_closure897: {
       "^": "Closure:30;",
       call$1: [function(params) {
         return $.$get$log();
       }, null, null, 2, 0, null, 78, "call"]
     },
-    initJsApi_closure897: {
+    initJsApi_closure898: {
       "^": "Closure:2;",
       call$0: [function() {
         var t1 = J.map$1$ax($.$get$log().eventBus.onEventName$1("grok-log"), new X.initJsApi__closure5());
@@ -104152,62 +104160,62 @@
         return self.DG.toJs(param);
       }, null, null, 2, 0, null, 169, "call"]
     },
-    initJsApi_closure898: {
-      "^": "Closure:516;",
+    initJsApi_closure899: {
+      "^": "Closure:517;",
       call$6: [function(logger, level, message, params, auditType, stackTrace) {
         return (logger == null ? $.$get$log() : logger).log$5$auditType$params$stackTrace(level, message, auditType, params, stackTrace);
       }, null, null, 12, 0, null, 424, 256, 40, 78, 260, 30, "call"]
     },
-    initJsApi_closure899: {
+    initJsApi_closure900: {
       "^": "Closure:102;",
       call$1: [function(p) {
         return p.get$meta();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure900: {
+    initJsApi_closure901: {
       "^": "Closure:236;",
       call$2: [function(p, file) {
         return p.getModuleName$1(file);
       }, null, null, 4, 0, null, 2, 268, "call"]
     },
-    initJsApi_closure901: {
+    initJsApi_closure902: {
       "^": "Closure:102;",
       call$1: [function(p) {
         return J.get$version$x(p);
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure902: {
+    initJsApi_closure903: {
       "^": "Closure:236;",
       call$2: [function(p, version) {
         J.set$version$x(p, version);
         return version;
       }, null, null, 4, 0, null, 2, 428, "call"]
     },
-    initJsApi_closure903: {
+    initJsApi_closure904: {
       "^": "Closure:102;",
       call$1: [function(p) {
         return p.get$packageRootUrl();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure904: {
+    initJsApi_closure905: {
       "^": "Closure:102;",
       call$1: [function(p) {
         return p.get$packageAuthor();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure905: {
+    initJsApi_closure906: {
       "^": "Closure:128;",
       call$1: [function(db) {
         return J.get$name$x(db);
       }, null, null, 2, 0, null, 189, "call"]
     },
-    initJsApi_closure906: {
-      "^": "Closure:520;",
+    initJsApi_closure907: {
+      "^": "Closure:521;",
       call$2: [function(db, propName) {
         return db.getProp$1(propName);
       }, null, null, 4, 0, null, 189, 430, "call"]
     },
-    initJsApi_closure907: {
+    initJsApi_closure908: {
       "^": "Closure:237;",
       call$1: function(db) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1, $async$temp2;
@@ -104242,7 +104250,7 @@
         return s.toJs$0();
       }, null, null, 2, 0, null, 4, "call"]
     },
-    initJsApi_closure908: {
+    initJsApi_closure909: {
       "^": "Closure:237;",
       call$1: function(db) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1, $async$temp2;
@@ -104277,21 +104285,21 @@
         return r.toJs$0();
       }, null, null, 2, 0, null, 17, "call"]
     },
-    initJsApi_closure909: {
+    initJsApi_closure910: {
       "^": "Closure:128;",
       call$1: [function(db) {
         var t1 = J.get$connection$x(db);
         return self.DG.toJs(t1);
       }, null, null, 2, 0, null, 189, "call"]
     },
-    initJsApi_closure910: {
-      "^": "Closure:522;",
+    initJsApi_closure911: {
+      "^": "Closure:523;",
       call$3: function(db, propName, value) {
         return db.setProp$2(propName, value);
       }
     },
-    initJsApi_closure911: {
-      "^": "Closure:523;",
+    initJsApi_closure912: {
+      "^": "Closure:524;",
       call$6: function(db, fromTable, fromColumns, toTable, toColumns, props) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
         var $async$call$6 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -104317,51 +104325,51 @@
         return P._asyncStart($async$call$6, $async$completer);
       }
     },
-    initJsApi_closure912: {
+    initJsApi_closure913: {
       "^": "Closure:128;",
       call$1: function(db) {
         return db.clearProperties$0();
       }
     },
-    initJsApi_closure913: {
-      "^": "Closure:524;",
+    initJsApi_closure914: {
+      "^": "Closure:525;",
       call$2: [function(rel, $name) {
         return rel.getProp$1($name);
       }, null, null, 4, 0, null, 274, 10, "call"]
     },
-    initJsApi_closure914: {
-      "^": "Closure:525;",
+    initJsApi_closure915: {
+      "^": "Closure:526;",
       call$1: [function(rel) {
         var t1 = J.get$connection$x(rel);
         return self.DG.toJs(t1);
       }, null, null, 2, 0, null, 274, "call"]
     },
-    initJsApi_closure915: {
+    initJsApi_closure916: {
       "^": "Closure:129;",
       call$1: [function(info) {
         return J.get$name$x(info);
       }, null, null, 2, 0, null, 57, "call"]
     },
-    initJsApi_closure916: {
+    initJsApi_closure917: {
       "^": "Closure:129;",
       call$1: [function(info) {
         return info.get$catalog();
       }, null, null, 2, 0, null, 57, "call"]
     },
-    initJsApi_closure917: {
-      "^": "Closure:527;",
+    initJsApi_closure918: {
+      "^": "Closure:528;",
       call$2: [function(info, $name) {
         return info.getProp$1($name);
       }, null, null, 4, 0, null, 57, 10, "call"]
     },
-    initJsApi_closure918: {
-      "^": "Closure:528;",
+    initJsApi_closure919: {
+      "^": "Closure:529;",
       call$3: function(info, propName, value) {
         return info.setProp$2(propName, value);
       }
     },
-    initJsApi_closure919: {
-      "^": "Closure:529;",
+    initJsApi_closure920: {
+      "^": "Closure:530;",
       call$1: function(info) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$temp1, $async$temp2;
         var $async$call$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -104395,32 +104403,32 @@
         return r.toJs$0();
       }, null, null, 2, 0, null, 17, "call"]
     },
-    initJsApi_closure920: {
+    initJsApi_closure921: {
       "^": "Closure:129;",
       call$1: [function(info) {
         var t1 = J.get$connection$x(info);
         return self.DG.toJs(t1);
       }, null, null, 2, 0, null, 57, "call"]
     },
-    initJsApi_closure921: {
-      "^": "Closure:530;",
+    initJsApi_closure922: {
+      "^": "Closure:531;",
       call$3: function(info, tableName, props) {
         return info.annotateTable$2(tableName, O.jsToMap(props, false));
       }
     },
-    initJsApi_closure922: {
-      "^": "Closure:531;",
+    initJsApi_closure923: {
+      "^": "Closure:532;",
       call$4: function(info, tableName, colName, props) {
         return info.annotateColumn$3(tableName, colName, O.jsToMap(props, false));
       }
     },
-    initJsApi_closure923: {
-      "^": "Closure:532;",
+    initJsApi_closure924: {
+      "^": "Closure:533;",
       call$4: function(text, threshold, limit, types) {
         return $.$get$ai().searchEntities$4$limit$threshold$types(text, limit, threshold, types);
       }
     },
-    initJsApi_closure924: {
+    initJsApi_closure925: {
       "^": "Closure:3;",
       call$1: [function(type) {
         return O.DataSource_byType(type, new X.initJsApi__closure1());
@@ -104432,61 +104440,61 @@
         return;
       }, null, null, 0, 0, null, "call"]
     },
-    initJsApi_closure925: {
+    initJsApi_closure926: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return J.get$type$x(ds);
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure926: {
+    initJsApi_closure927: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$category();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure927: {
+    initJsApi_closure928: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$requiresServer();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure928: {
+    initJsApi_closure929: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return J.get$description$x(ds);
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure929: {
+    initJsApi_closure930: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$commentStart();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure930: {
+    initJsApi_closure931: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$nameBrackets();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure931: {
+    initJsApi_closure932: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$canBrowseSchema();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure932: {
+    initJsApi_closure933: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$supportCatalogs();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure933: {
+    initJsApi_closure934: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         return ds.get$queryLanguage();
       }, null, null, 2, 0, null, 65, "call"]
     },
-    initJsApi_closure934: {
+    initJsApi_closure935: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         var t1 = ds.get$connectionTemplate();
@@ -104501,7 +104509,7 @@
         return p.toJs$0();
       }, null, null, 2, 0, null, 2, "call"]
     },
-    initJsApi_closure935: {
+    initJsApi_closure936: {
       "^": "Closure:33;",
       call$1: [function(ds) {
         var t1 = ds.get$credentialsTemplate();
@@ -104717,7 +104725,7 @@
         return P._asyncStart($async$sendEmail$6$attachments$bcc$html$text, $async$completer);
       }, function(subject, to) {
         return this.sendEmail$6$attachments$bcc$html$text(subject, to, null, null, null, null);
-      }, "sendEmail$2", "call$6$attachments$bcc$html$text", "call$2", "get$sendEmail", 4, 9, 534, 1, 1, 1, 1, 434, 435, 84, 436, 437, 438],
+      }, "sendEmail$2", "call$6$attachments$bcc$html$text", "call$2", "get$sendEmail", 4, 9, 728, 1, 1, 1, 1, 434, 435, 84, 436, 437, 438],
       pushMessage$3$sessionIds: function(messageType, message, sessionIds) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, body, t1, t2, $async$temp1, $async$temp2;
         var $async$pushMessage$3$sessionIds = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -106119,7 +106127,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 727, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 69, 107, 56],
+      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 536, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 69, 107, 56],
       $asObjectDataSource: function() {
         return [O.DataConnection];
       },
@@ -106473,7 +106481,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 537, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 69, 107, 56],
+      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 538, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 69, 107, 56],
       $asObjectDataSource: function() {
         return [O.DataQuery];
       },
@@ -106573,7 +106581,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 538, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 69, 107, 56],
+      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 539, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 69, 107, 56],
       $asObjectDataSource: function() {
         return [O.DataJob];
       }
@@ -106602,7 +106610,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 539, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 107, 56],
+      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 540, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 107, 56],
       $asObjectDataSource: function() {
         return [N.FuncCall];
       },
@@ -106660,7 +106668,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 540, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 107, 56],
+      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 541, 1, 1, 1, 1, 1, 1, 1, 1, 1, 119, 105, 95, 92, 108, 138, 91, 107, 56],
       $asObjectDataSource: function() {
         return [N.FuncCall];
       },
@@ -106834,7 +106842,7 @@
       }, null, null, 2, 0, null, 57, "call"]
     },
     ConnectClient__getDataSources_closure0: {
-      "^": "Closure:541;",
+      "^": "Closure:542;",
       call$2: [function(a, b) {
         return J.compareTo$1$ns(J.get$type$x(a), J.get$type$x(b));
       }, null, null, 4, 0, null, 14, 11, "call"]
@@ -107269,11 +107277,11 @@
       schema$1: [function($name) {
         var t1 = this._grok_http_client_impl$_schemas;
         return t1 == null ? t1 : J.firstWhere$2$orElse$ax(t1, new Q.DomainRegistry_schema_closure($name), new Q.DomainRegistry_schema_closure0());
-      }, "call$1", "get$schema", 2, 0, 543, 10],
+      }, "call$1", "get$schema", 2, 0, 544, 10],
       table$2: [function(schemaName, tableName) {
         var t1 = this._tables;
         return t1 == null ? null : t1.$index(0, H.S(schemaName) + "." + H.S(tableName));
-      }, "call$2", "get$table", 4, 0, 544, 114, 81],
+      }, "call$2", "get$table", 4, 0, 545, 114, 81],
       _grok_http_client_impl$_resolve$2: function(label, $find) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, e, t1, t2;
         var $async$_grok_http_client_impl$_resolve$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -107332,7 +107340,7 @@
         var t1 = this._tables;
         t1 = t1 == null ? null : t1.$index(0, H.S(schemaName) + "." + H.S(tableName));
         return t1 == null ? t1 : t1.get$businessKey();
-      }, "call$2", "get$businessKey", 4, 0, 545, 114, 81],
+      }, "call$2", "get$businessKey", 4, 0, 546, 114, 81],
       nameColumn$2: [function(schemaName, tableName) {
         var t1 = this._tables;
         t1 = t1 == null ? null : t1.$index(0, H.S(schemaName) + "." + H.S(tableName));
@@ -107543,7 +107551,7 @@
             }
         });
         return P._asyncStart($async$list$0, $async$completer);
-      }, "call$0", "get$list", 0, 0, 547],
+      }, "call$0", "get$list", 0, 0, 548],
       single$0: [function(_) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, t3, row, rows;
         var $async$single$0 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -107591,7 +107599,7 @@
             }
         });
         return P._asyncStart($async$single$0, $async$completer);
-      }, "call$0", "get$single", 0, 0, 548],
+      }, "call$0", "get$single", 0, 0, 549],
       count$0: function(_) {
         return this._client.count$3(0, this.schemaName, this.tableName, this.get$_grok_http_client_impl$_filter(this));
       },
@@ -107731,7 +107739,7 @@
         return P._asyncStart($async$query$3, $async$completer);
       }, function($receiver, schema, table) {
         return this.query$3($receiver, schema, table, null);
-      }, "query$2", "call$3", "call$2", "get$query", 4, 2, 549, 1, 175, 15, 453],
+      }, "query$2", "call$3", "call$2", "get$query", 4, 2, 550, 1, 175, 15, 453],
       _postDf$2: function(path, spec) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, body, t1, response;
         var $async$_postDf$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -107930,7 +107938,7 @@
       },
       rows$2: [function(_, schema, table) {
         return new Q.DomainRowsDataSource(schema, table, new Q.DomainsClient(C.Map_794C7, null), null, null, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
-      }, "call$2", "get$rows", 4, 0, 550, 175, 15],
+      }, "call$2", "get$rows", 4, 0, 551, 175, 15],
       _decodeError$1: function(response) {
         var err, t1, exception, message;
         err = null;
@@ -109112,7 +109120,7 @@
         return P._asyncStart($async$watch$3$id, $async$completer);
       }, function(schema, table) {
         return this.watch$3$id(schema, table, null);
-      }, "watch$2", "call$3$id", "call$2", "get$watch", 4, 3, 551, 1, 175, 15, 31],
+      }, "watch$2", "call$3$id", "call$2", "get$watch", 4, 3, 552, 1, 175, 15, 31],
       unwatch$3$id: function(schema, table, id) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, res, $async$temp1;
         var $async$unwatch$3$id = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -109208,7 +109216,7 @@
       }, "call$0", "get$list", 0, 0, 240],
       where$1: [function(_, filters) {
         return this.super$ObjectDataSource$where(0, filters);
-      }, "call$1", "get$where", 2, 0, 553, 204],
+      }, "call$1", "get$where", 2, 0, 554, 204],
       order$2$desc: function(_, $name, desc) {
         return this.super$ObjectDataSource$order(0, $name, desc);
       },
@@ -109982,7 +109990,7 @@
       id$1: [function(_, id) {
         this.where$1(0, P.LinkedHashMap__makeLiteral(["id", id]));
         return this;
-      }, "call$1", "get$id", 2, 0, 554, 31],
+      }, "call$1", "get$id", 2, 0, 555, 31],
       $asObjectDataSource: function() {
         return [O.ScriptEnvironment];
       },
@@ -110116,7 +110124,7 @@
         return P._asyncStart($async$readAsBytes$2$format, $async$completer);
       }, function(file) {
         return this.readAsBytes$2$format(file, null);
-      }, "readAsBytes$1", "call$2$format", "call$1", "get$readAsBytes", 2, 3, 555, 1, 268, 159],
+      }, "readAsBytes$1", "call$2$format", "call$1", "get$readAsBytes", 2, 3, 556, 1, 268, 159],
       readBinaryDataFrames$1: function(file) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, $async$temp1;
         var $async$readBinaryDataFrames$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -110316,7 +110324,7 @@
         return this.list$4$ext$recursive$root($receiver, folderPathOrFileInfo, null, false, "");
       }, "list$1", function($receiver, folderPathOrFileInfo, ext, recursive) {
         return this.list$4$ext$recursive$root($receiver, folderPathOrFileInfo, ext, recursive, "");
-      }, "list$3$ext$recursive", "call$4$ext$recursive$root", "call$1", "call$3$ext$recursive", "get$list", 2, 7, 556, 23, 1, 455, 456, 457, 458, 251],
+      }, "list$3$ext$recursive", "call$4$ext$recursive$root", "call$1", "call$3$ext$recursive", "get$list", 2, 7, 557, 23, 1, 455, 456, 457, 458, 251],
       saveFileInfo$1: function(f) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1, $async$temp2;
         var $async$saveFileInfo$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111251,7 +111259,7 @@
             }
         });
         return P._asyncStart($async$status$0, $async$completer);
-      }, "call$0", "get$status", 0, 0, 557],
+      }, "call$0", "get$status", 0, 0, 558],
       getStorageStats$0: function() {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
         var $async$getStorageStats$0 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111325,7 +111333,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 558, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 559, 1, 1, 56, 69],
       $asObjectDataSource: function() {
         return [O.ViewLayout];
       },
@@ -111453,12 +111461,12 @@
             }
         });
         return P._asyncStart($async$list$0, $async$completer);
-      }, "call$0", "get$list", 0, 0, 559],
+      }, "call$0", "get$list", 0, 0, 560],
       filter$1$name: [function(_, $name) {
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["name", $name]));
       }, function($receiver) {
         return this.filter$1$name($receiver, null);
-      }, "filter$0", "call$1$name", "call$0", "get$filter", 0, 3, 560, 1, 10],
+      }, "filter$0", "call$1$name", "call$0", "get$filter", 0, 3, 561, 1, 10],
       run$1: [function(run) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, response;
         var $async$run$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111491,7 +111499,7 @@
             }
         });
         return P._asyncStart($async$run$1, $async$completer);
-      }, "call$1", "get$run", 2, 0, 561, 129],
+      }, "call$1", "get$run", 2, 0, 562, 129],
       lastRun$1: [function(id) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, lastCall, t1, t2, exception, $async$exception;
         var $async$lastRun$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111596,7 +111604,7 @@
         return this.filter$3$end$start$userId($receiver, null, null, null);
       }, "filter$0", function($receiver, end) {
         return this.filter$3$end$start$userId($receiver, end, null, null);
-      }, "filter$1$end", "call$3$end$start$userId", "call$0", "call$1$end", "get$filter", 0, 7, 562, 1, 1, 1, 266, 113, 139],
+      }, "filter$1$end", "call$3$end$start$userId", "call$0", "call$1$end", "get$filter", 0, 7, 563, 1, 1, 1, 266, 113, 139],
       $asObjectDataSource: function() {
         return [O.LogEvent];
       },
@@ -111615,10 +111623,10 @@
       id$1: [function(_, id) {
         this.where$1(0, P.LinkedHashMap__makeLiteral(["id", id]));
         return this;
-      }, "call$1", "get$id", 2, 0, 563, 31],
+      }, "call$1", "get$id", 2, 0, 564, 31],
       last$0: [function(_) {
         return this.find$1(0, "last");
-      }, "call$0", "get$last", 0, 0, 564],
+      }, "call$0", "get$last", 0, 0, 565],
       filter$4$end$entityId$favoritesOnly$start: [function(_, end, entityId, favoritesOnly, start) {
         var t1, t2;
         t1 = start == null ? start : J.toString$0$(start);
@@ -111628,7 +111636,7 @@
         return this.filter$4$end$entityId$favoritesOnly$start($receiver, null, null, false, null);
       }, "filter$0", function($receiver, end) {
         return this.filter$4$end$entityId$favoritesOnly$start($receiver, end, null, false, null);
-      }, "filter$1$end", "call$4$end$entityId$favoritesOnly$start", "call$0", "call$1$end", "get$filter", 0, 9, 565, 1, 1, 1, 23, 130, 113, 139, 267],
+      }, "filter$1$end", "call$4$end$entityId$favoritesOnly$start", "call$0", "call$1$end", "get$filter", 0, 9, 566, 1, 1, 1, 23, 130, 113, 139, 267],
       audit$1: [function(audit) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, t1, t2, exception, $async$exception;
         var $async$audit$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111685,7 +111693,7 @@
             }
         });
         return P._asyncStart($async$audit$1, $async$completer);
-      }, "call$1", "get$audit", 2, 0, 566, 460],
+      }, "call$1", "get$audit", 2, 0, 567, 460],
       saveLog$2: [function(funcCallId, logs) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this, t1, t2;
         var $async$saveLog$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111708,7 +111716,7 @@
             }
         });
         return P._asyncStart($async$saveLog$2, $async$completer);
-      }, "call$2", "get$saveLog", 4, 0, 567, 461, 462],
+      }, "call$2", "get$saveLog", 4, 0, 568, 461, 462],
       LogClient$0: function() {
         var t1, t2, t3;
         t1 = this.name;
@@ -111745,7 +111753,7 @@
       id$1: [function(_, id) {
         this.where$1(0, P.LinkedHashMap__makeLiteral(["id", id]));
         return this;
-      }, "call$1", "get$id", 2, 0, 568, 31],
+      }, "call$1", "get$id", 2, 0, 569, 31],
       run$2$columnNamesMap: [function(tableId, columnNamesMap) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, t3, $async$temp1, $async$temp2, $async$temp3;
         var $async$run$2$columnNamesMap = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111781,7 +111789,7 @@
         return P._asyncStart($async$run$2$columnNamesMap, $async$completer);
       }, function(tableId) {
         return this.run$2$columnNamesMap(tableId, null);
-      }, "run$1", "call$2$columnNamesMap", "call$1", "get$run", 2, 3, 569, 1, 91, 463],
+      }, "run$1", "call$2$columnNamesMap", "call$1", "get$run", 2, 3, 570, 1, 91, 463],
       save$2$update: function(_, model, update) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
         var $async$save$2$update = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -111934,12 +111942,12 @@
             }
         });
         return P._asyncStart($async$isAvailable$0, $async$completer);
-      }, "call$0", "get$isAvailable", 0, 0, 570],
+      }, "call$0", "get$isAvailable", 0, 0, 571],
       filter$2$projectId$tags: [function(_, projectId, tags) {
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 571, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 572, 1, 1, 56, 69],
       $asObjectDataSource: function() {
         return [O.PredictiveModelInfo];
       },
@@ -111962,7 +111970,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 572, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 573, 1, 1, 56, 69],
       $asObjectDataSource: function() {
         return [O.Notebook];
       },
@@ -112363,12 +112371,12 @@
             }
         });
         return P._asyncStart($async$path$2, $async$completer);
-      }, "call$2", "get$path", 4, 0, 573, 69, 130],
+      }, "call$2", "get$path", 4, 0, 574, 69, 130],
       filter$3$entityId$projectId$type: [function(_, entityId, projectId, type) {
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "entityId", entityId, "type", type]));
       }, function($receiver) {
         return this.filter$3$entityId$projectId$type($receiver, null, null, null);
-      }, "filter$0", "call$3$entityId$projectId$type", "call$0", "get$filter", 0, 7, 574, 1, 1, 1, 69, 130, 64],
+      }, "filter$0", "call$3$entityId$projectId$type", "call$0", "get$filter", 0, 7, 575, 1, 1, 1, 69, 130, 64],
       $asObjectDataSource: function() {
         return [O.ProjectRelation];
       },
@@ -112445,7 +112453,7 @@
       id$1: [function(_, id) {
         this.where$1(0, P.LinkedHashMap__makeLiteral(["id", id]));
         return this;
-      }, "call$1", "get$id", 2, 0, 575, 31],
+      }, "call$1", "get$id", 2, 0, 576, 31],
       get$files: function(_) {
         var t1, t2;
         t1 = this.name + "/";
@@ -112491,7 +112499,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["authorId", authorId, "entityId", entityId, "tableId", tableId, "projectId", projectId, "includeRoot", t1, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$6$authorId$entityId$includeRoot$projectId$tableId$tags($receiver, null, null, null, null, null, null);
-      }, "filter$0", "call$6$authorId$entityId$includeRoot$projectId$tableId$tags", "call$0", "get$filter", 0, 13, 576, 1, 1, 1, 1, 1, 1, 464, 130, 69, 91, 56, 465],
+      }, "filter$0", "call$6$authorId$entityId$includeRoot$projectId$tableId$tags", "call$0", "get$filter", 0, 13, 577, 1, 1, 1, 1, 1, 1, 464, 130, 69, 91, 56, 465],
       tags$1$query: [function(query) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
         var $async$tags$1$query = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -112527,7 +112535,7 @@
         return P._asyncStart($async$tags$1$query, $async$completer);
       }, function() {
         return this.tags$1$query(null);
-      }, "tags$0", "call$1$query", "call$0", "get$tags", 0, 3, 577, 1, 167],
+      }, "tags$0", "call$1$query", "call$0", "get$tags", 0, 3, 578, 1, 167],
       ProjectClient$1: function(url) {
         this.relations = new Q.ProjectRelationClient("projects/relations", C.Map_794C7, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
         this.namespaces = new Q.NamespacesClient("projects/namespaces", C.Map_794C7, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
@@ -112838,7 +112846,7 @@
       id$1: [function(_, id) {
         this.where$1(0, P.LinkedHashMap__makeLiteral(["id", id]));
         return this;
-      }, "call$1", "get$id", 2, 0, 578, 31],
+      }, "call$1", "get$id", 2, 0, 579, 31],
       $asObjectDataSource: function() {
         return [N.FuncCall];
       },
@@ -112861,7 +112869,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 579, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 580, 1, 1, 56, 69],
       lastRun$1: [function(id) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, t1, t2, t3, exception, $async$exception, $async$temp1, $async$temp2;
         var $async$lastRun$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -112989,7 +112997,7 @@
       },
       id$1: [function(_, id) {
         return new Q.SpaceClient(id, null);
-      }, "call$1", "get$id", 2, 0, 580, 31],
+      }, "call$1", "get$id", 2, 0, 581, 31],
       createRootSpace$1: function($name) {
         var t1, t2, space;
         t1 = new N.EventBus(false, null, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), new P._SyncBroadcastStreamController(null, null, 0, null, null, null, null, [null]), true, "");
@@ -113157,7 +113165,7 @@
       }, "call$0", "get$list", 0, 0, 240],
       where$1: [function(_, filters) {
         return this.super$ObjectDataSource$where(0, filters);
-      }, "call$1", "get$where", 2, 0, 581, 204],
+      }, "call$1", "get$where", 2, 0, 582, 204],
       order$2$desc: function(_, $name, desc) {
         return this.super$ObjectDataSource$order(0, $name, desc);
       },
@@ -113165,7 +113173,7 @@
         return this.super$ObjectDataSource$where(0, P.LinkedHashMap__makeLiteral(["types", types, "includeLinked", J.$eq$(includeLinked, true) === true ? "true" : "false"]));
       }, function($receiver) {
         return this.filter$2$includeLinked$types($receiver, null, null);
-      }, "filter$0", "call$2$includeLinked$types", "call$0", "get$filter", 0, 5, 582, 1, 1, 263, 262],
+      }, "filter$0", "call$2$includeLinked$types", "call$0", "get$filter", 0, 5, 583, 1, 1, 263, 262],
       $asObjectDataSource: function() {
         return [O.EntityRecord];
       },
@@ -113550,7 +113558,7 @@
       },
       runs$1: [function(id) {
         return new Q.FuncCallsClient("entity_sync_funcs/" + H.S(id) + "/runs", C.Map_794C7, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
-      }, "call$1", "get$runs", 2, 0, 583, 31],
+      }, "call$1", "get$runs", 2, 0, 584, 31],
       $asHttpDataSource: function() {
         return [O.EntitySyncFunc];
       },
@@ -113597,7 +113605,7 @@
       id$1: [function(_, id) {
         this.where$1(0, P.LinkedHashMap__makeLiteral(["id", id]));
         return this;
-      }, "call$1", "get$id", 2, 0, 584, 31],
+      }, "call$1", "get$id", 2, 0, 585, 31],
       delete$2$call: function(_, id, $call) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
         var $async$delete$2$call = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -113792,7 +113800,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["text", text, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$7$jobId$jobRunId$projectId$queryId$queryRunId$tags$text($receiver, null, null, null, null, null, null, null);
-      }, "filter$0", "call$7$jobId$jobRunId$projectId$queryId$queryRunId$tags$text", "call$0", "get$filter", 0, 15, 585, 1, 1, 1, 1, 1, 1, 1, 84, 95, 92, 108, 107, 69, 56],
+      }, "filter$0", "call$7$jobId$jobRunId$projectId$queryId$queryRunId$tags$text", "call$0", "get$filter", 0, 15, 586, 1, 1, 1, 1, 1, 1, 1, 84, 95, 92, 108, 107, 69, 56],
       $asObjectDataSource: function() {
         return [O.TableInfo];
       },
@@ -113817,7 +113825,7 @@
       }, null, null, 0, 0, null, "call"]
     },
     TablesClient_uploadDataFrame_closure: {
-      "^": "Closure:586;_box_0,$this,dataFrame,saveInfo",
+      "^": "Closure:587;_box_0,$this,dataFrame,saveInfo",
       call$1: function(progress) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, socket, t1, t2, t3, exception, $async$exception;
         var $async$call$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114028,7 +114036,7 @@
             }
         });
         return P._asyncStart($async$current$0, $async$completer);
-      }, "call$0", "get$current", 0, 0, 587],
+      }, "call$0", "get$current", 0, 0, 588],
       $asHttpDataSource: function() {
         return [O.UserSession];
       },
@@ -114067,7 +114075,7 @@
             }
         });
         return P._asyncStart($async$current$0, $async$completer);
-      }, "call$0", "get$current", 0, 0, 588],
+      }, "call$0", "get$current", 0, 0, 589],
       instance$0: function() {
         var t1 = [];
         return new O.User(null, false, null, null, null, null, false, null, null, null, null, null, null, [], null, null, null, null, null, false, null, null, null, null, null, null, "", null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
@@ -114262,7 +114270,7 @@
         return P._asyncStart($async$$get$2$currentUser, $async$completer);
       }, function($receiver, $name) {
         return this.$get$2$currentUser($receiver, $name, true);
-      }, "$get$1", "call$2$currentUser", "call$1", "get$get", 2, 3, 589, 51, 10, 237],
+      }, "$get$1", "call$2$currentUser", "call$1", "get$get", 2, 3, 590, 51, 10, 237],
       getValue$3$currentUser: [function($name, key, currentUser) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, data, t1, t2, exception, $async$exception;
         var $async$getValue$3$currentUser = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114327,7 +114335,7 @@
         return P._asyncStart($async$getValue$3$currentUser, $async$completer);
       }, function($name, key) {
         return this.getValue$3$currentUser($name, key, true);
-      }, "getValue$2", "call$3$currentUser", "call$2", "get$getValue", 4, 3, 590, 51, 10, 16, 237],
+      }, "getValue$2", "call$3$currentUser", "call$2", "get$getValue", 4, 3, 591, 51, 10, 16, 237],
       delete$3$currentUser: function(_, $name, key, currentUser) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this, t1, t2;
         var $async$delete$3$currentUser = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114583,7 +114591,7 @@
     },
     testMethod: [function(column, parameter1) {
       return parameter1;
-    }, "call$2", "grok_shared__testMethod$closure", 4, 0, 715, 70, 467],
+    }, "call$2", "grok_shared__testMethod$closure", 4, 0, 716, 70, 467],
     setConnectionCache: function(records, common) {
       var l, t1, t2;
       if (common.get$cache() === true && J.get$isNotEmpty$asx(records) === true) {
@@ -114905,7 +114913,7 @@
           }
       });
       return P._asyncStart($async$gsEchoDataFrame, $async$completer);
-    }, "call$1", "grok_shared__gsEchoDataFrame$closure", 2, 0, 716, 15],
+    }, "call$1", "grok_shared__gsEchoDataFrame$closure", 2, 0, 717, 15],
     gsEchoBlob: [function(data) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$gsEchoBlob = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114921,7 +114929,7 @@
           }
       });
       return P._asyncStart($async$gsEchoBlob, $async$completer);
-    }, "call$1", "grok_shared__gsEchoBlob$closure", 2, 0, 717, 33],
+    }, "call$1", "grok_shared__gsEchoBlob$closure", 2, 0, 718, 33],
     dropConnectionCache: [function(connection) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$dropConnectionCache = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114940,7 +114948,7 @@
           }
       });
       return P._asyncStart($async$dropConnectionCache, $async$completer);
-    }, "call$1", "grok_shared__dropConnectionCache$closure", 2, 0, 718, 226],
+    }, "call$1", "grok_shared__dropConnectionCache$closure", 2, 0, 719, 226],
     gsOpenFile: [function(fullPath) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, tables, t1;
       var $async$gsOpenFile = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114966,7 +114974,7 @@
           }
       });
       return P._asyncStart($async$gsOpenFile, $async$completer);
-    }, "call$1", "grok_shared__gsOpenFile$closure", 2, 0, 719, 468],
+    }, "call$1", "grok_shared__gsOpenFile$closure", 2, 0, 720, 468],
     dropQueryCache: [function(query) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$dropQueryCache = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -114998,7 +115006,7 @@
           }
       });
       return P._asyncStart($async$dropFuncCache, $async$completer);
-    }, "call$1", "grok_shared__dropFuncCache$closure", 2, 0, 720, 167],
+    }, "call$1", "grok_shared__dropFuncCache$closure", 2, 0, 721, 167],
     gsStorageStats: [function() {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$gsStorageStats = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -115048,7 +115056,7 @@
       return P._asyncStart($async$gsCallQuery, $async$completer);
     }, function(queryName, queryParameters) {
       return O.gsCallQuery(queryName, queryParameters, false);
-    }, "call$3$adHoc", "call$2", "grok_shared__gsCallQuery$closure", 4, 3, 722, 23, 469, 470, 194],
+    }, "call$3$adHoc", "call$2", "grok_shared__gsCallQuery$closure", 4, 3, 723, 23, 469, 470, 194],
     gsJob: [function(context, jobName, jobParameters) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, t1, job, run, $async$temp1;
       var $async$gsJob = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -115088,7 +115096,7 @@
           }
       });
       return P._asyncStart($async$gsJob, $async$completer);
-    }, "call$3", "grok_shared__gsJob$closure", 6, 0, 723, 27, 471, 472],
+    }, "call$3", "grok_shared__gsJob$closure", 6, 0, 724, 27, 471, 472],
     gsDbQuery: [function(conn, tableName, aggregations, fields, groupByFields, having, havingOp, joins, limit, orderBy, pivots, schemaName, whereClauses, whereOp) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, q, t1, t2;
       var $async$gsDbQuery = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -115144,7 +115152,7 @@
       return O.gsDbQuery(conn, tableName, null, null, null, null, null, null, null, null, null, null, null, "and");
     }, function(conn, tableName, limit) {
       return O.gsDbQuery(conn, tableName, null, null, null, null, null, null, limit, null, null, null, null, "and");
-    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbQuery$closure", 4, 25, 724, 1, 1, 1, 160, 1, 1, 1, 1, 1, 1, 1, 1, 228, 81, 114, 87, 200, 227, 122, 161, 192, 212, 217, 221, 158, 164],
+    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbQuery$closure", 4, 25, 725, 1, 1, 1, 160, 1, 1, 1, 1, 1, 1, 1, 1, 228, 81, 114, 87, 200, 227, 122, 161, 192, 212, 217, 221, 158, 164],
     gsDbScalarQuery: [function(conn, tableName, aggregations, fields, groupByFields, having, havingOp, joins, limit, orderBy, pivots, schemaName, whereClauses, whereOp) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, q, t1, t2;
       var $async$gsDbScalarQuery = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -115200,7 +115208,7 @@
       return O.gsDbScalarQuery(conn, tableName, null, null, null, null, null, null, null, null, null, null, null, "and");
     }, function(conn, tableName, limit) {
       return O.gsDbScalarQuery(conn, tableName, null, null, null, null, null, null, limit, null, null, null, null, "and");
-    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbScalarQuery$closure", 4, 25, 725, 1, 1, 1, 160, 1, 1, 1, 1, 1, 1, 1, 1, 228, 81, 114, 87, 200, 227, 122, 161, 192, 212, 217, 221, 158, 164],
+    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbScalarQuery$closure", 4, 25, 726, 1, 1, 1, 160, 1, 1, 1, 1, 1, 1, 1, 1, 228, 81, 114, 87, 200, 227, 122, 161, 192, 212, 217, 221, 158, 164],
     SqlAnnotator_annotate: function(query, table) {
       var _box_0, put, sql, t1, _i, t2, idx, exclude, tableNamesRegexp, columnNamesRegexp, tableMatches, columnMatch, tableAliases, t3, t4, t5, fullTableName, tableParts, tableName, t6, tableAlias, columnAliases, columns, parts, columnName, columnAlias, dbPath, column, dbColumnName;
       _box_0 = {};
@@ -139742,7 +139750,7 @@
       },
       log$1: [function($event) {
         this.eventBus.fire$2(C.EventType_ezg, $event);
-      }, "call$1", "get$log", 2, 0, 593, 170],
+      }, "call$1", "get$log", 2, 0, 594, 170],
       cancel$0: function(_) {
         this.canceled = true;
         this.eventBus.fire$1(C.EventType_c4R);
@@ -140215,7 +140223,7 @@
         return this.query$4$name$params$shortName$sql($receiver, $name, null, null, sql);
       }, "query$2$name$sql", function($receiver, $name) {
         return this.query$4$name$params$shortName$sql($receiver, $name, null, null, null);
-      }, "query$1$name", "call$4$name$params$shortName$sql", "call$0", "call$2$name$sql", "call$1$name", "get$query", 0, 9, 594, 1, 1, 1, 1, 10, 486, 187, 78],
+      }, "query$1$name", "call$4$name$params$shortName$sql", "call$0", "call$2$name$sql", "call$1$name", "get$query", 0, 9, 595, 1, 1, 1, 1, 10, 486, 187, 78],
       toString$0: function(_) {
         var t1 = this._friendlyName;
         if (t1 == null) {
@@ -141365,7 +141373,7 @@
       }
     },
     SqlAnnotator__annotateTableQuery_registerTableKey: {
-      "^": "Closure:596;mainCatalog,tables",
+      "^": "Closure:597;mainCatalog,tables",
       call$3: function(tableKey, schema, tableName) {
         if (tableKey == null || J.$eq$(tableKey, "") === true || tableName == null || J.$eq$(tableName, "") === true)
           return;
@@ -141373,13 +141381,13 @@
       }
     },
     SqlAnnotator__annotateTableQuery_dbPath: {
-      "^": "Closure:597;",
+      "^": "Closure:598;",
       call$2: function(t, column) {
         return H.S(t.catalog) + "." + H.S(t.schema) + "." + H.S(t.table) + "." + H.S(column);
       }
     },
     SqlAnnotator__annotateTableQuery_resolveTableRef: {
-      "^": "Closure:598;mainTable,tables",
+      "^": "Closure:599;mainTable,tables",
       call$1: function(field) {
         var parts, t1, t2, t3;
         parts = J.split$1$s(field, ".");
@@ -143961,7 +143969,7 @@
       }
     },
     EntitySyncFunc_runImpl_addItem: {
-      "^": "Closure:599;items",
+      "^": "Closure:600;items",
       call$5: function($name, type, action, reason, detail) {
         var t1, t2, t3;
         t1 = $name == null ? "" : $name;
@@ -144171,7 +144179,7 @@
       }
     },
     EntitySyncFunc__reconcileGrants_visibleGroup: {
-      "^": "Closure:600;",
+      "^": "Closure:601;",
       call$1: function(g) {
         var t1;
         if ((g == null ? g : J.get$id$x(g)) != null) {
@@ -146778,7 +146786,7 @@
         }
       }, function($receiver, tag) {
         return this.tag$3$owner$type($receiver, tag, null, null);
-      }, "tag$1", "call$3$owner$type", "call$1", "get$tag", 2, 5, 601, 1, 1, 71, 487, 64],
+      }, "tag$1", "call$3$owner$type", "call$1", "get$tag", 2, 5, 602, 1, 1, 71, 487, 64],
       unTag$1: function(tag) {
         this.TagsMixin__tags = null;
         J.removeWhere$1$ax(this.TagsMixin_entityTags, new O.TagsMixin_unTag_closure(tag));
@@ -149398,7 +149406,7 @@
       }, null, null, 2, 0, null, 234, "call"]
     },
     PackageScriptHandler$create_closure0: {
-      "^": "Closure:602;packageHandlerFunc",
+      "^": "Closure:603;packageHandlerFunc",
       call$1: [function(script) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, makeName, make;
         var $async$call$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -149598,7 +149606,7 @@
       }, null, null, 2, 0, null, 2, "call"]
     },
     ScriptParser_parseParamLine_stringToList: {
-      "^": "Closure:603;",
+      "^": "Closure:604;",
       call$1: function(s) {
         var t1, inner;
         s = J.trim$0$s(s);
@@ -150778,7 +150786,7 @@
           this._friendlyName = t1;
         }
         return N.DbTableQueryBuilder_DbTableQueryBuilder$from(t1, null);
-      }, "call$0", "get$query", 0, 0, 605],
+      }, "call$0", "get$query", 0, 0, 606],
       execDataSync$2: function(context, clearVariables) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, errors, $call, e, s, t1, script, variableName, scriptLines, t2, exception, t3, t4, stackTrace, tableName, $async$exception;
         var $async$execDataSync$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -151107,7 +151115,7 @@
       }, null, null, 2, 0, null, 3, "call"]
     },
     TableInfo_operator$index_closure: {
-      "^": "Closure:75;_box_0",
+      "^": "Closure:88;_box_0",
       call$1: [function(c) {
         var t1 = J.get$name$x(c);
         t1 = t1 == null ? t1 : J.toLowerCase$0$s(t1);
@@ -152907,7 +152915,7 @@
       }, null, null, 2, 0, null, 169, "call"]
     },
     WebQuery_run_getProperty: {
-      "^": "Closure:606;",
+      "^": "Closure:607;",
       call$2: function(schema, $name) {
         var t1, t2, key, property;
         for (t1 = J.getInterceptor$x(schema), t2 = J.get$iterator$ax(t1.get$keys(schema)); t2.moveNext$0() === true;) {
@@ -156006,7 +156014,7 @@
       return map;
     }, function(jsObject) {
       return O.jsToMap(jsObject, false);
-    }, "call$2$deep", "call$1", "js_utils__jsToMap$closure", 2, 3, 726, 23, 491, 492],
+    }, "call$2$deep", "call$1", "js_utils__jsToMap$closure", 2, 3, 727, 23, 491, 492],
     mapToJs: function(a, assignTo, deep) {
       var json, object;
       if (a == null)
@@ -156198,7 +156206,7 @@
         return this.info$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time(message, null, null, null, flag, null, null, null, null, null, null);
       }, "info$2$flag", function(message, canPrint, flag, params) {
         return this.info$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time(message, null, canPrint, null, flag, null, null, null, null, params, null);
-      }, "info$4$canPrint$flag$params", "call$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$info", 2, 21, 607, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 40, 78, 97, 133, 195, 120, 112, 131, 136, 132, 115],
+      }, "info$4$canPrint$flag$params", "call$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$info", 2, 21, 608, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 40, 78, 97, 133, 195, 120, 112, 131, 136, 132, 115],
       debug$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time: [function(message, canPost, canPrint, canSave, flag, includeTime, mustPost, mustPrint, mustSave, params, stackTrace, time) {
         return this.log$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace("debug", J.toString$0$(message), canPost, canPrint, canSave, flag, includeTime, mustPost, mustPrint, mustSave, params, stackTrace);
       }, function(message) {
@@ -156209,7 +156217,7 @@
         return this.debug$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time(message, null, null, null, flag, null, null, null, null, null, null, null);
       }, "debug$2$flag", function(message, canPrint, flag, params) {
         return this.debug$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time(message, null, canPrint, null, flag, null, null, null, null, params, null, null);
-      }, "debug$4$canPrint$flag$params", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$debug", 2, 23, 608, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 40, 78, 97, 258, 30, 133, 120, 112, 131, 136, 132, 115],
+      }, "debug$4$canPrint$flag$params", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$debug", 2, 23, 609, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 40, 78, 97, 258, 30, 133, 120, 112, 131, 136, 132, 115],
       warning$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time: [function(message, canPost, canPrint, canSave, flag, local, mustPost, mustPrint, mustSave, params, severity, stackTrace, time) {
         return this.log$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace("warning", message, canPost, canPrint, canSave, flag, local, mustPost, mustPrint, mustSave, params, severity, stackTrace);
       }, function(message) {
@@ -156220,12 +156228,12 @@
         return this.warning$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time(message, null, null, null, flag, null, null, null, null, null, "normal", null, null);
       }, "warning$2$flag", function(message, canPrint, flag, params) {
         return this.warning$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time(message, null, canPrint, null, flag, null, null, null, null, params, "normal", null, null);
-      }, "warning$4$canPrint$flag$params", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$warning", 2, 25, 609, 1, 1, 261, 1, 1, 1, 1, 1, 1, 1, 1, 1, 40, 78, 97, 188, 30, 133, 195, 120, 112, 131, 136, 132, 115],
+      }, "warning$4$canPrint$flag$params", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$warning", 2, 25, 610, 1, 1, 261, 1, 1, 1, 1, 1, 1, 1, 1, 1, 40, 78, 97, 188, 30, 133, 195, 120, 112, 131, 136, 132, 115],
       error$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time: [function(_, exception, stackTrace, canPost, canPrint, canSave, mustPost, mustPrint, mustSave, params, remote, severity, time) {
         return this.log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", exception, canPost, canPrint, canSave, mustPost, mustPrint, mustSave, params, remote, severity, stackTrace);
       }, function($receiver, exception, stackTrace) {
         return this.error$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time($receiver, exception, stackTrace, null, null, null, null, null, null, null, null, "normal", null);
-      }, "error$2", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time", "call$2", "get$error", 4, 21, 610, 1, 261, 1, 1, 1, 1, 1, 1, 1, 1, 504, 30, 78, 188, 272, 133, 120, 112, 131, 136, 132, 115],
+      }, "error$2", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time", "call$2", "get$error", 4, 21, 611, 1, 261, 1, 1, 1, 1, 1, 1, 1, 1, 504, 30, 78, 188, 272, 133, 120, 112, 131, 136, 132, 115],
       log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time: [function(level, messageOrException, auditType, canPost, canPrint, canSave, flag, includeTime, local, mustPost, mustPrint, mustSave, params, remote, severity, stackTrace, time) {
         if (stackTrace == null && !!J.getInterceptor(messageOrException).$isError)
           stackTrace = messageOrException.get$stackTrace();
@@ -156244,12 +156252,12 @@
         return this.log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time(level, messageOrException, auditType, null, null, null, null, null, null, null, null, null, params, null, null, null, null);
       }, "log$4$auditType$params", function(level, messageOrException, auditType, params, stackTrace) {
         return this.log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time(level, messageOrException, auditType, null, null, null, null, null, null, null, null, null, params, null, null, stackTrace, null);
-      }, "log$5$auditType$params$stackTrace", "call$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time", "call$2", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace", "call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$4$auditType$params", "call$5$auditType$params$stackTrace", "get$log", 4, 31, 611, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 256, 506, 78, 97, 188, 30, 260, 272, 258, 133, 195, 120, 112, 131, 136, 132, 115],
+      }, "log$5$auditType$params$stackTrace", "call$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time", "call$2", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace", "call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$4$auditType$params", "call$5$auditType$params$stackTrace", "get$log", 4, 31, 612, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 256, 506, 78, 97, 188, 30, 260, 272, 258, 133, 195, 120, 112, 131, 136, 132, 115],
       audit$3: [function(type, message, params) {
         return this.log$4$auditType$params("audit", message, type, params);
       }, function(type, message) {
         return this.audit$3(type, message, null);
-      }, "audit$2", "call$3", "call$2", "get$audit", 4, 2, 612, 1, 64, 40, 78],
+      }, "audit$2", "call$3", "call$2", "get$audit", 4, 2, 613, 1, 64, 40, 78],
       postMessage$2: function(_, message, settings) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
         var $async$postMessage$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -156448,7 +156456,7 @@
         return this._sendUnstreamed$3("GET", url, headers);
       }, function($receiver, url) {
         return this.$get$2$headers($receiver, url, null);
-      }, "$get$1", "call$2$headers", "call$1", "get$get", 2, 3, 613, 1, 143, 118],
+      }, "$get$1", "call$2$headers", "call$1", "get$get", 2, 3, 614, 1, 143, 118],
       post$4$body$encoding$headers: ["super$BaseClient$post", function(url, body, encoding, headers) {
         return this._sendUnstreamed$5("POST", url, headers, body, encoding);
       }],
@@ -157285,7 +157293,7 @@
         return result;
       }, function($receiver) {
         return this.read$1($receiver, 1);
-      }, "read$0", "call$1", "call$0", "get$read", 0, 2, 615, 183, 513],
+      }, "read$0", "call$1", "call$0", "get$read", 0, 2, 616, 183, 513],
       startsWith$1: function(_, pattern) {
         var t1 = this.contents;
         if (typeof t1 === "string")
@@ -159863,7 +159871,7 @@
       }
     },
     GrammarDefinition__resolve__dereference: {
-      "^": "Closure:616;mapping",
+      "^": "Closure:617;mapping",
       call$1: function(reference) {
         var t1, parser, references, t2, t3, _i;
         t1 = this.mapping;
@@ -162273,10 +162281,10 @@
         return Y._FileSpan$(this, start, end == null ? this._decodedChars.length : end);
       }, function($receiver, start) {
         return this.span$2($receiver, start, null);
-      }, "span$1", "call$2", "call$1", "get$span", 2, 2, 619, 1],
+      }, "span$1", "call$2", "call$1", "get$span", 2, 2, 620, 1],
       location$1: [function(_, offset) {
         return Y.FileLocation$_(this, offset);
-      }, "call$1", "get$location", 2, 0, 620],
+      }, "call$1", "get$location", 2, 0, 621],
       getLine$1: function(offset) {
         var t1, t2;
         t1 = J.getInterceptor$n(offset);
@@ -163199,7 +163207,7 @@
         return t1.charCodeAt(0) == 0 ? t1 : t1;
       }, function($receiver, message) {
         return this.message$2$color($receiver, message, null);
-      }, "message$1", "call$2$color", "call$1", "get$message", 2, 3, 621, 1, 40, 521],
+      }, "message$1", "call$2$color", "call$1", "get$message", 2, 3, 622, 1, 40, 521],
       highlight$1$color: [function(_, color) {
         var t1, newSpan, t2, t3, t4;
         t1 = !!this.$isSourceSpanWithContext;
@@ -163229,7 +163237,7 @@
         return new U.Highlighter(newSpan, color, t1 == null ? t2 != null : t1 !== t2, J.toString$0$(t3.get$line(t3)).length + 1, new P.StringBuffer("")).highlight$0(0);
       }, function($receiver) {
         return this.highlight$1$color($receiver, null);
-      }, "highlight$0", "call$1$color", "call$0", "get$highlight", 0, 3, 622, 1],
+      }, "highlight$0", "call$1$color", "call$0", "get$highlight", 0, 3, 623, 1],
       $eq: ["super$SourceSpanMixin$$eq", function(_, other) {
         var t1;
         if (other == null)
@@ -163893,7 +163901,7 @@
         return this.error$4$length$match$position($receiver, message, null, null, null);
       }, "error$1", function($receiver, message, $length, position) {
         return this.error$4$length$match$position($receiver, message, $length, null, position);
-      }, "error$3$length$position", "call$4$length$match$position", "call$1", "call$3$length$position", "get$error", 2, 7, 623, 1, 1, 1, 40, 96, 524, 83]
+      }, "error$3$length$position", "call$4$length$match$position", "call$1", "call$3$length$position", "get$error", 2, 7, 624, 1, 1, 1, 40, 96, 524, 83]
     }
   }], ["", "package:term_glyph/src/generated/unicode_glyph_set.dart",, K, {
     "^": "",
@@ -164931,12 +164939,12 @@
       "^": "XmlGrammarDefinition;",
       createQualified$1: [function($name) {
         return L.XmlName_XmlName$fromString($name);
-      }, "call$1", "get$createQualified", 2, 0, 624, 10],
+      }, "call$1", "get$createQualified", 2, 0, 625, 10],
       createText$1: [function(text) {
         var t1 = new V.XmlText(null, null);
         t1.set$text(0, text);
         return t1;
-      }, "call$1", "get$createText", 2, 0, 625, 84],
+      }, "call$1", "get$createText", 2, 0, 626, 84],
       $asXmlGrammarDefinition: function() {
         return [V.XmlNode, L.XmlName];
       }
@@ -165768,7 +165776,7 @@
         t1 = this._xmlstream$_controller;
         t1.toString;
         return new P._ControllerStream(t1, [H.getTypeArgumentByIndex(t1, 0)]);
-      }, "call$0", "get$read", 0, 0, 626],
+      }, "call$0", "get$read", 0, 0, 627],
       _processRawChar$3: function(ch, prev, $event) {
         var t1, t2, value;
         t1 = $event.state;
@@ -166107,7 +166115,7 @@
       }
     },
     main_closure1: {
-      "^": "Closure:627;",
+      "^": "Closure:628;",
       call$2$headers: function(url, headers) {
         return X.NodeWebSocketChannel$(url, headers);
       },
@@ -166148,7 +166156,7 @@
       }, null, null, 4, 0, null, 10, 13, "call"]
     },
     main_closure7: {
-      "^": "Closure:628;",
+      "^": "Closure:629;",
       call$2: [function(eventName, f) {
         return $.$get$_nodeEventBus().onEventName$1(eventName).listen$1(f);
       }, null, null, 4, 0, null, 238, 19, "call"]
@@ -166160,8 +166168,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "84322be0eb9f14ae06b4ae4fa9adf449f1a669f1");
-        t2.set$date(t1, "2026-08-25T15:02:16.784Z");
+        t2.set$commit(t1, "54024ff6f3859af219db5c7c807bcdc89a5d85c2");
+        t2.set$date(t1, "2026-08-25T22:48:12.857Z");
         t2.set$version(t1, "1.27.9");
         return t1;
       }, null, null, 0, 0, null, "call"]
@@ -166391,7 +166399,7 @@
       }, null, null, 2, 0, null, 33, "call"]
     },
     NodeWebSocketChannel_closure1: {
-      "^": "Closure:629;$this",
+      "^": "Closure:630;$this",
       call$2: [function(message, isBinary) {
         var t1, s;
         t1 = this.$this._grok_shared0$_controller;
@@ -166504,7 +166512,7 @@
       }
     },
     NodeJsFuncMixin_init_getParam: {
-      "^": "Closure:630;",
+      "^": "Closure:631;",
       call$2: function($name, combinedType) {
         var types, t1, propType;
         types = J.split$1$s(combinedType, "/");
@@ -166681,7 +166689,7 @@
       }
     },
     initFuncs_registerFunc: {
-      "^": "Closure:631;_box_0",
+      "^": "Closure:632;_box_0",
       call$2$override: function(f, override) {
         var t1, namespace, t2, t3;
         f.set$isOnServer(true);
@@ -183908,7 +183916,7 @@
   Isolate = Isolate.$finishIsolateConstructor(Isolate);
   $ = new Isolate();
   init.metadata = ["x", null, "p", "c", "s", "i", "col", "v", "t", "call", "name", "b", "e", "value", "a", "table", "key", "r", "idx", "f", "each", "_", "date", false, "k", "notify", "element", "context", "values", "cols", "stackTrace", "id", "list", "data", "func", "script", "pattern", "error", "m", "g", "message", "w", "rows", "u", "nums", "tc", "parent", "zone", "self", "dtqb", "result", true, "dt", "as", "resultColName", "row", "tags", "info", "o", "y", "num", "line", "arg", "columnId", "type", "ds", "ts", "fi", "n", "projectId", "column", "tag", "report", "notification", "map", "items", "pi", "q", "params", "index", "field", "tableName", "args", "length", "text", "cell", "reject", "fields", "semType", "msg", "object", "tableId", "queryId", "where", "resolve", "jobId", "match", "flag", "agg", "dataType", "buffer", "check", "df", "d", "p1", "connectionId", 0, "queryRunId", "jobRunId", "logEvent", "test", "layout", "canPost", "start", "schemaName", "mustPrint", "pp", "other", "headers", "datasource", "canSave", "columns", "whereClauses", "function", "options", "logEventType", "json", "et", "p2", "run", "entityId", "canPrint", "mustPost", "time", "milliseconds", "columnFilter", "mustSave", "ed", "datasetId", "end", "propertyName", "ci", "p3", "url", "node", "state", "decimalPlaces", "trace", "response", "count", "colName", "l", "when", "h", "cat", "frame", "ti", "admin", "limit", "format", "and", "aggregations", "ri", "callback", "joins", "wl", "sub", "query", "eventArgs", "param", "event", "t1", "t2", "path", "j", "schema", "invocation", "columnName", "expression", "target", "progress", "token", "pair", 1, "cc", "relativeSelectors", "action", "sql", "severity", "db", "p4", "dc", "groupByFields", "bitset", "adHoc", "local", "newName", "keys1", "seconds", "minutes", "pivots", "keys2", "inPlace", "joinType", "filters", "hours", "mask", "processed", "dp", "values2", "lcv", "sum", "havingOp", "onlyFiltered", "onlySelected", "b2", "pos", "having", "link", "filter", "nca", "orderBy", "arg2", "fc", "month", "obj", "connection", "whereOp", "conn", "bigint", "part", "status", "cap", "elem", "code", "year", "queue", "currentUser", "eventName", "fp", "prefix", "padding", "width", " ", "auto", "arguments", "categoryColumnName", "duration", "valueColumnName", "newType", "stream", "root", "property", "iterator", "arg1", "treatAsString", "level", "values1", "includeTime", "fieldId", "auditType", "normal", "includeLinked", "types", "needle", "rowCount", "userId", "favoritesOnly", "file", "p5", "s1", "s2", "remote", "units", "rel", "currentCall", "onTimeout", "errorBehavior", "day", "timeLimit", "number", "range", "predicates", "subscribeOnChanges", "upsert", "optionsJson", "suppressException", "candidate", "whenNull", "p6", "js", "stack", "onData", "logClient", "stat", 26789344063684636e-50, "activityClient", "rowCellCount", "include", "desc", 10, "minimum", "archive", "def", "strings", "val", "rowIdx", "grid", "colNames", "copyColumnNames", "mergeColumnNames", "rowMask", "columnIds", "saveSelection", "saveTags", "calcCol", "funcList", "fcp", "columnsToAppend", "sortByColumnIds", "sortOrders", "optional", "bytes", "compress", "autoName", "paramName", "qnum", "qualifier", "getValue", "setValue", "columnToReplace", "newColumn", "desiredTags", "choices", "columnNames", "typedEventArgs", "categories", "indexes", "rawData", "order", "indexToValue", "valueComparer", "aggrType", "doublePrecision", "aggr", "arr", "valueColumn", "catColumn", "join", "pc", "ga", "throwOnError", "reason", "rowPredicate", "getter", "setter", "defaultValue", "uri", "propertyValue", "typeName", "regexp", "description", "matching", "groups_", "propType", "b1", "group_", "handler", "metric", "zeroOnes", "groups", "logScale", "bins", "delimiter", "specification", ",", "group", "regExp", "string", "alias", "asc", "rightTable", "leftTableKeys", "rightTableKeys", "rightTableAlias", "leftTable", "dataSource", "sender", "capitalizeFirst", "capitalizeNext", "capitalizeConjunctions", "input", "millisecondSinceEpoch", "lst", "linkTypes", "initialSync", "filterAllOnNoRowsSelected", "base", "parameters", "packageName", "functionName", "meta", "resultType", "resultSemType", "inputs", "outputs", "postfix", "separator", "replace", "from", "iterable", "clear", "expected", "comment", "isError", "method", "Min-max", "dataFrame", "xBins", "yBins", "xColName", "yColName", "mode", "dt2", "logger", "dt1", "days", "column2", "version", "column1", "propName", "parameter", "timestamp", "cio", "subject", "to", "html", "bcc", "attachments", "tagValue", "exponent", "arg4", "decimalSeparator", "useKMMultipliers", ".", "newColName", "oldColName", "r1", "r2", "awaitStart", "awaitStop", "levelIndex", "levels", "spec", "limits", "", "folderPathOrFileInfo", "recursive", "ext", "request", "audit", "funcCallId", "logs", "columnNamesMap", "authorId", "includeRoot", "mergeColumns", "parameter1", "fullPath", "queryName", "queryParameters", "jobName", "jobParameters", "copyColumns", "Value", "Category", "arg3", "table2", "table1", "inner", "rp", "str", "onFinish", "cancelable", "pausable", "spinner", "shortName", "owner", "grainDuration", "grainOffset", "captureThis", "jsObject", "deep", "permission", "timeslice", "title", "numberOfArguments", "encodedComponent", "isolate", "chunk", "closure", "dispatch", "st", "startIndex", "exception", "errorMessage", "messageOrException", "key1", "key2", "body", "attribute", "theStackTrace", "impliedDigits", "howMany", "digit expected", "letter expected", "theError", "elements", "errorCode", "end of input expected", "item", "color", "onError", "zoneValues", "position", "visitable", "statusText", "isBinary", "delim"];
-  init.types = [{func: 1, args: [,]}, {func: 1, args: [,,]}, {func: 1}, {func: 1, args: [P.String]}, {func: 1, ret: P.Future}, {func: 1, args: [G.Property]}, {func: 1, v: true}, {func: 1, args: [N.Column]}, {func: 1, args: [P.DateTime]}, {func: 1, args: [G.Property,,]}, {func: 1, ret: P.Future, args: [,]}, {func: 1, args: [N.DataFrame]}, {func: 1, args: [P.int]}, {func: 1, args: [N.FuncCall]}, {func: 1, ret: Q.Parser}, {func: 1, ret: P.DateTime, args: [P.String]}, {func: 1, ret: P.String, args: [P.String]}, {func: 1, ret: P.double, args: [P.int]}, {func: 1, ret: P.bool, args: [P.int]}, {func: 1, args: [P.List]}, {func: 1, args: [N.Stats]}, {func: 1, args: [O.FileInfo]}, {func: 1, args: [N.FuncCallParam]}, {func: 1, ret: P.int, args: [P.int, P.int]}, {func: 1, ret: P.bool, args: [P.Object]}, {func: 1, args: [N.BitSet]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String}}, {func: 1, ret: P.double, args: [P.num]}, {func: 1, ret: P.int, args: [P.DateTime]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String]}, {func: 1, args: [P.Map]}, {func: 1, args: [O.DockerImage]}, {func: 1, ret: P.int, args: [P.int]}, {func: 1, args: [O.DataSource]}, {func: 1, args: [N.Cell]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {resultColName: P.String}}, {func: 1, args: [N.Column, P.String]}, {func: 1, args: [O.Entity]}, {func: 1, args: [O.DomainRow]}, {func: 1, args: [O.Project]}, {func: 1, args: [N.Func]}, {func: 1, ret: P.double, args: [,]}, {func: 1, ret: P.double, args: [N.BitSet, N.BitSet]}, {func: 1, args: [O.User]}, {func: 1, args: [G.Property, P.String]}, {func: 1, args: [O.UserNotification]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,]}, {func: 1, v: true, args: [P.Object]}, {func: 1, args: [P.String, P.String]}, {func: 1, args: [O.DockerImage, P.String]}, {func: 1, args: [N.ColumnList]}, {func: 1, ret: P.bool, args: [P.String]}, {func: 1, args: [P.Duration]}, {func: 1, args: [P.num]}, {func: 1, args: [N.TableQuery]}, {func: 1, ret: P.bool, args: [,]}, {func: 1, args: [N.FuncCall, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall]}, {func: 1, args: [P.String,,]}, {func: 1, args: [O.UserReport]}, {func: 1, v: true, args: [,]}, {func: 1, args: [O.ProgressIndicator]}, {func: 1, ret: P.int, args: [P.String]}, {func: 1, args: [O.Script]}, {func: 1, args: [O.SemanticValue]}, {func: 1, ret: P.double, args: [P.num, P.num]}, {func: 1, args: [N.Column, P.int]}, {func: 1, args: [P.bool]}, {func: 1, args: [P.double], opt: [P.String]}, {func: 1, ret: N.EncodingEstimate, args: [N.IntColumn]}, {func: 1, v: true, args: [N.BufferAccessor]}, {func: 1, ret: P.String, args: [P.int]}, {func: 1, args: [O.LogEvent]}, {func: 1, args: [Q.SpaceFilesClient,,]}, {func: 1, args: [N.BitSet, N.BitSet, P.bool]}, {func: 1, args: [O.ColumnInfo]}, {func: 1, args: [O.TableInfo]}, {func: 1, ret: P.Future, args: [P.String]}, {func: 1, args: [P.int, P.int]}, {func: 1, args: [O.DataConnection]}, {func: 1, args: [O.ObjectDataSource]}, {func: 1, ret: N.EncodingEstimate, args: [N.FloatColumn]}, {func: 1, args: [O.User, P.String]}, {func: 1, ret: P.int, args: [,]}, {func: 1, args: [, P.String]}, {func: 1, args: [N.EventData]}, {func: 1, ret: N.EncodingEstimate, args: [N.StringColumn]}, {func: 1, args: [N.TableQuery, [P.List, P.Map]]}, {func: 1, args: [O.Script, P.String]}, {func: 1, args: [O.DomainTable]}, {func: 1, ret: P.double, args: [P.String]}, {func: 1, args: [O.DomainSchema]}, {func: 1, args: [Q.DomainsClient, P.String]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String]}, {func: 1, args: [O.Entity, P.String]}, {func: 1, args: [N.ColumnList, P.String]}, {func: 1, args: [O.UserGroup]}, {func: 1, ret: P.String, args: [P.String, P.int]}, {func: 1, args: [N.RowMatcher]}, {func: 1, ret: P.bool, args: [P.num, P.num]}, {func: 1, v: true, args: [P.Object], opt: [P.StackTrace]}, {func: 1, v: true, args: [P.String]}, {func: 1, args: [O.GrokPublishedPackage]}, {func: 1, v: true, args: [N.Context1, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.String]}, {func: 1, args: [O.DataQuery]}, {func: 1, args: [[P.Iterable, P.String]]}, {func: 1, args: [P.Match]}, {func: 1, ret: P.bool, args: [P.String, P.String]}, {func: 1, ret: P.num, args: [P.num, P.num]}, {func: 1, args: [O.ViewInfo]}, {func: 1, ret: P.String, args: [,]}, {func: 1, args: [O.LogEventParameterValue]}, {func: 1, args: [,], opt: [,]}, {func: 1, v: true, args: [, P.StackTrace]}, {func: 1, args: [O.UserSession]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, P.String]}, {func: 1, args: [O.TagsMixin, P.String]}, {func: 1, ret: P.bool, args: [P.bool, P.bool]}, {func: 1, args: [P.Iterable, N.Column, N.GroupAggregation]}, {func: 1, args: [N.RowList]}, {func: 1, args: [P.Map,,]}, {func: 1, args: [O.LogEventType]}, {func: 1, args: [N.DataFrame, P.String]}, {func: 1, args: [G.Property, P.bool]}, {func: 1, ret: N.QueryBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [O.ViewLayout]}, {func: 1, args: [N.EventType]}, {func: 1, args: [O.DbInfo]}, {func: 1, args: [O.DbSchemaInfo]}, {func: 1, ret: N.EncodingEstimate, args: [N.DateTimeColumn]}, {func: 1, ret: N.EncodingEstimate, args: [N.BigIntColumn]}, {func: 1, args: [Q.SpacesClient, P.String]}, {func: 1, args: [,,,,]}, {func: 1, args: [N.DataFrame, P.Function]}, {func: 1, args: [P.String,, P.bool]}, {func: 1, args: [O.EntityPropertySchema]}, {func: 1, v: true, args: [{func: 1, v: true}]}, {func: 1, ret: P.String}, {func: 1, ret: P.DateTime, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String]}, {func: 1, v: true, args: [N.DataFrame]}, {func: 1, args: [O.ObjectDataSource, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, args: [[X.DartHandle, P.List]]}, {func: 1, ret: P.String, args: [[P.Iterable, P.String]]}, {func: 1, ret: P.int, args: [P.num]}, {func: 1, ret: W.Element, args: [P.String]}, {func: 1, ret: Q.Parser, opt: [P.String]}, {func: 1, args: [N.ValueMatcher,,]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {function: P.String, resultColName: P.String}}, {func: 1, v: true, args: [P.String, P.String]}, {func: 1, args: [Q.Parser]}, {func: 1, args: [,,,]}, {func: 1, ret: P.bool, args: [,,]}, {func: 1, args: [P.String, P.String, N.Context1]}, {func: 1, v: true, opt: [P.num]}, {func: 1, args: [P.int, P.String]}, {func: 1, args: [P.String, P.String,,]}, {func: 1, ret: P.bool, args: [P.bool]}, {func: 1, v: true, args: [P.double]}, {func: 1, v: true, args: [N.Func], named: {override: P.bool}}, {func: 1, v: true, args: [, P.String]}, {func: 1, args: [Q._NodeStats]}, {func: 1, ret: [P.Future, P.String], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [, P.EventSink]}, {func: 1, args: [[X.DartHandle, P.List], P.int,,]}, {func: 1, args: [[X.DartHandle, P.List],,]}, {func: 1, args: [P.Object]}, {func: 1, args: [P.Symbol0,,]}, {func: 1, args: [O.ObjectDataSource, O.Entity]}, {func: 1, ret: P.String, args: [N.Column, P.int]}, {func: 1, args: [Q.UserClient]}, {func: 1, ret: [P.List, P.String], args: [[P.List, P.int]]}, {func: 1, args: [P.String, P.String, P.bool]}, {func: 1, args: [P.bool], opt: [P.String]}, {func: 1, args: [O.ObjectDataSource, P.int]}, {func: 1, ret: P.int, args: [P.DateTime, P.DateTime]}, {func: 1, args: [Q.SpaceClient, P.String]}, {func: 1, args: [Q.SpaceClient]}, {func: 1, args: [Q.SpaceFilesClient,, P.String]}, {func: 1, ret: P.int, args: [P.double, P.double]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,]}, {func: 1, args: [Q.DomainsClient, P.String,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String]}, {func: 1, ret: P.int, args: [P.Object, P.Object]}, {func: 1, args: [N.TypedEventArgs]}, {func: 1, ret: P.int, args: [P.String, P.String]}, {func: 1, args: [O.ViewLayout, P.String]}, {func: 1, args: [O.ViewInfo, P.String]}, {func: 1, v: true, args: [P.Uint8List, P.String, P.int]}, {func: 1, args: [N.DataFrame, P.int]}, {func: 1, args: [N.Row]}, {func: 1, args: [N.DataFrame, P.num]}, {func: 1, args: [, P.StackTrace]}, {func: 1, args: [N.FuncCall, P.String, N.FuncCallParam]}, {func: 1, args: [N.Column, N.BitSet]}, {func: 1, args: [N.Stats, N.Column]}, {func: 1, args: [N.RowList, P.int], opt: [P.int, P.bool]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.RowList,,]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.ValueMatcher]}, {func: 1, ret: P.Int16List}, {func: 1, ret: P.Int8List}, {func: 1, v: true, args: [P.Int16List]}, {func: 1, v: true, args: [P.Int8List]}, {func: 1, args: [O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup]}, {func: 1, args: [O.UserGroup,,]}, {func: 1, args: [O.SemanticValue,,]}, {func: 1, args: [O.SemanticValue, P.String]}, {func: 1, args: [O.EntityType]}, {func: 1, args: [O.EntityType, P.String]}, {func: 1, args: [O.EntityPropertySchema, P.List]}, {func: 1, args: [N.BitSet, P.int, P.bool]}, {func: 1, ret: P.bool, args: [P.DateTime, P.bool]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String]}, {func: 1, args: [O.DataQuery, P.String]}, {func: 1, ret: P.Future, args: [O.DataQuery]}, {func: 1, args: [N.DbTableQueryBuilder]}, {func: 1, ret: P.double}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, P.String]]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.FieldPredicate]]}, {func: 1, args: [O.Credentials]}, {func: 1, args: [N.FuncCall, P.String,,]}, {func: 1, args: [N.FuncCall, P.bool]}, {func: 1, args: [N.Func, P.String]}, {func: 1, args: [N.Func,,]}, {func: 1, ret: P.Future, args: [P.Map]}, {func: 1, args: [P.Iterator]}, {func: 1, args: [O.LogEventParameter]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.bool]}, {func: 1, args: [O.GrokPublishedPackage, P.String]}, {func: 1, ret: P.Future, args: [O.DbInfo]}, {func: 1, ret: P.Future, args: [P.String], opt: [P.bool]}, {func: 1, ret: P.String, args: [P.String, P.String]}, {func: 1, ret: [P.Future, [P.List, O.Entity]]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String, function: P.String}}, {func: 1, v: true, args: [P.String,,]}, {func: 1, ret: [P.Future, N.DataFrame]}, {func: 1, args: [N.FieldPredicate]}, {func: 1, ret: P.String, args: [P.Match]}, {func: 1, args: [N.FuncParam]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall]}, {func: 1, ret: P.DateTime}, {func: 1, ret: N.Column, args: [N.DataFrame, P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, ret: P.String, args: [P.String, P.int], named: {padding: P.String}}, {func: 1, v: true, args: [P.Map]}, {func: 1, ret: P.num, args: [P.num]}, {func: 1, ret: P.String, args: [P.num]}, {func: 1, args: [O.HistoryEntry]}, {func: 1, args: [P.String, P.String, P.List]}, {func: 1, ret: P.int, args: [[P.List, P.String]]}, {func: 1, args: [Q.SpaceClient, P.String, P.bool]}, {func: 1, v: true, args: [P.int]}, {func: 1, args: [Q.SpaceChildrenClient, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.int]}, {func: 1, args: [Q.SpaceFilesClient,, [P.List, P.int]]}, {func: 1, v: true, args: [P.int, P.int, P.int, P.int]}, {func: 1, args: [Q.SpaceFilesClient, P.List,,]}, {func: 1, args: [Q.SpaceFilesClient, P.List, P.String]}, {func: 1, args: [Q.DomainsClient]}, {func: 1, ret: P.int, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [P.int, [P.Map, P.int, N.BigInt]]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.bool]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.int]}, {func: 1, v: true, args: [P.num]}, {func: 1, ret: P.List, args: [P.List]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.String,,]}, {func: 1, v: true, args: [P.String], opt: [,]}, {func: 1, args: [Q.DomainsClient, P.String,, P.bool]}, {func: 1, v: true, args: [[P.List, P.String]]}, {func: 1, ret: N.FuncCall, args: [,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.String]}, {func: 1, args: [{func: 1, v: true}]}, {func: 1, ret: P.String, args: [P.double]}, {func: 1, args: [P.int, [P.List, P.String]]}, {func: 1, args: [P.String], named: {rowCount: P.int}}, {func: 1, args: [P.int, N.DataFrame]}, {func: 1, v: true, args: [P.Uint8List, P.int, P.int]}, {func: 1, args: [N.Column, N.BitSet, P.bool, P.int, P.bool]}, {func: 1, ret: P.Uint8List, args: [,,]}, {func: 1, args: [O.ViewLayout, P.String, P.String]}, {func: 1, ret: P.String, args: [P.int, P.String]}, {func: 1, ret: N.FuncCall, args: [P.List]}, {func: 1, args: [O.ViewInfo, P.String, P.String]}, {func: 1, v: true, args: [P.num], opt: [P.num, P.num]}, {func: 1, v: true, args: [N.MapChangeArgs]}, {func: 1, args: [[P.List, N.Column]]}, {func: 1, ret: N.Cell, args: [, P.int]}, {func: 1, args: [N.DataFrame, P.String,,]}, {func: 1, ret: P.double, args: [P.String], named: {whenNull: P.double}}, {func: 1, args: [N.DataFrame, N.Column]}, {func: 1, args: [N.DataFrame, N.Cell]}, {func: 1, args: [N.DataFrame, P.int, P.String]}, {func: 1, args: [N.DataFrame,,,]}, {func: 1, args: [N.DataFrame, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, args: [N.DataFrame, N.BitSet, [P.List, N.Column], P.bool, P.bool]}, {func: 1, ret: [P.Future, P.bool], args: [P.Object]}, {func: 1, args: [N.DataFrame, P.String, P.Function]}, {func: 1, args: [N.DataFrame, P.List, P.String, P.String]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.bool, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [N.DataFrame, P.List, P.List, N.BitSet]}, {func: 1, args: [P.Uint8List]}, {func: 1, args: [N.DataFrame, P.bool]}, {func: 1, v: true, args: [N.BitSet, N.BitSet]}, {func: 1, args: [P.Map,,,]}, {func: 1, ret: P.int, args: [, P.int]}, {func: 1, args: [P.int,,]}, {func: 1, ret: N.FuncCall, args: [P.String]}, {func: 1, args: [N.GroupByBuilder, P.bool]}, {func: 1, args: [N.GroupByBuilder, N.BitSet]}, {func: 1, args: [N.GroupByBuilder, P.String, P.String, P.String]}, {func: 1, args: [N.GroupByBuilder]}, {func: 1, args: [N.GroupByBuilder,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.BoolColumn]}, {func: 1, args: [N.ColumnList, P.int]}, {func: 1, ret: N.EncodingEstimate, args: [N.ByteArrayColumn]}, {func: 1, args: [N.ColumnList, N.Column, P.bool]}, {func: 1, args: [N.ColumnList, N.Column, P.int, P.bool]}, {func: 1, args: [N.ColumnList, P.String, P.String]}, {func: 1, args: [N.QNumColumn, N.Column, N.Column]}, {func: 1, args: [N.ColumnList, P.String, P.String, P.String, P.bool, P.bool]}, {func: 1, ret: P.Future, args: [N.ColumnList, P.String, P.String, P.String, P.bool]}, {func: 1, args: [N.ColumnList, P.String, {func: 1, args: [P.int]}, {func: 1, v: true, args: [P.int,,]}, P.String]}, {func: 1, args: [N.ColumnList, P.String, P.bool]}, {func: 1, args: [N.ColumnList,, N.Column, P.bool]}, {func: 1, args: [N.ColumnList,,]}, {func: 1, args: [N.ColumnList, P.String, [P.List, P.String]]}, {func: 1, args: [N.ColumnList, [P.List, P.String]]}, {func: 1, args: [P.String, [P.List, P.String]]}, {func: 1, args: [P.String, P.Int32List, P.int]}, {func: 1, args: [P.String, P.Float32List, P.int]}, {func: 1, args: [P.String, P.Float64List, P.int]}, {func: 1, v: true, opt: [P.Object]}, {func: 1, args: [P.String, [P.List, P.String], P.Int32List]}, {func: 1, args: [P.String, P.String, P.int]}, {func: 1, args: [P.String, N.BitSet]}, {func: 1, args: [N.Column,,], opt: [P.bool]}, {func: 1, ret: P.Future, opt: [P.Map]}, {func: 1, args: [N.Column, P.int,, P.bool]}, {func: 1, args: [N.Column, P.int, P.String, P.bool]}, {func: 1, args: [N.Column, P.String,,]}, {func: 1, args: [N.StringColumn, [P.List, P.String]]}, {func: 1, args: [N.StringColumn]}, {func: 1, args: [N.Column, P.String, P.String]}, {func: 1, args: [N.Column, {func: 1, args: [P.int]}]}, {func: 1, ret: P.double, args: [P.double]}, {func: 1, args: [N.Column,,]}, {func: 1, args: [N.Column, {func: 1, ret: P.int, args: [,,]}]}, {func: 1, args: [N.Column, P.String, P.String, P.bool]}, {func: 1, args: [N.FloatColumn]}, {func: 1, args: [N.FloatColumn, P.bool]}, {func: 1, args: [N.BigIntColumn, P.int]}, {func: 1, args: [N.BigIntColumn, P.int, P.String, P.bool]}, {func: 1, args: [Q.CredentialsClient, O.Credentials]}, {func: 1, args: [N.DateTimeColumn, P.int]}, {func: 1, args: [N.DateTimeColumn, P.int,, P.bool]}, {func: 1, args: [N.ColumnsArgs]}, {func: 1, args: [N.ColumnsArgs,,]}, {func: 1, args: [[P.Iterable, P.double]]}, {func: 1, ret: N.Cell, args: [P.int]}, {func: 1, args: [N.Column, N.Column]}, {func: 1, ret: P.double, args: [P.double, P.double]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [N.Row]}]}, {func: 1, ret: P.double, args: [[P.List, P.double], P.double]}, {func: 1, args: [N.RowList], opt: [P.List, P.bool]}, {func: 1, args: [N.RowList, P.int, P.List, P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.DataFrameColumn]}, {func: 1, ret: [P.List, P.double], args: [[P.List, P.double]]}, {func: 1, args: [P.String, {func: 1, args: [,]}, P.String]}, {func: 1, args: [N.RowList, P.bool, P.bool]}, {func: 1, ret: P.bool, args: [P.Pattern], opt: [P.int]}, {func: 1, args: [N.RowGroup]}, {func: 1, v: true, args: [N.Column, P.String]}, {func: 1, ret: N.Column, args: [N.Column, P.String]}, {func: 1, args: [N.Cell,,]}, {func: 1, ret: N.Column}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String], suppressException: P.bool}}, {func: 1, args: [P.String, P.Match]}, {func: 1, args: [P.EventSink]}, {func: 1, args: [,,,,,]}, {func: 1, args: [,,,,,,]}, {func: 1, v: true, args: [P.int, P.int]}, {func: 1, args: [P.String, P.String, P.Function, P.Function,,]}, {func: 1, ret: P.Int16List, args: [P.Int16List, P.int]}, {func: 1, ret: P.Int8List, args: [P.Int8List, P.int]}, {func: 1, ret: P.Object, opt: [P.Object]}, {func: 1, args: [G.Property, P.String,,]}, {func: 1, args: [P.String, G.Property]}, {func: 1, ret: P.Object, args: [P.String]}, {func: 1, args: [[X.DartHandle, P.List], P.int]}, {func: 1, v: true, args: [P.String,,], opt: [,]}, {func: 1, args: [O.SemanticValue, N.Cell]}, {func: 1, args: [O.SemanticValue, P.String,,]}, {func: 1, args: [P.String, P.String, P.String]}, {func: 1, args: [P.String, N.Context1]}, {func: 1, args: [P.Completer,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.ObjectColumn]}, {func: 1, args: [P.Completer,,,]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema, N.Column]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema]}, {func: 1, args: [N.BitSet, P.Uint32List]}, {func: 1, args: [N.BitSet, P.bool]}, {func: 1, args: [N.BitSet, P.bool, P.bool]}, {func: 1, args: [N.BitSet, P.int]}, {func: 1, args: [N.BitSet, P.int, P.bool, P.bool]}, {func: 1, args: [P.Stream, {func: 1, v: true, args: [,]}]}, {func: 1, ret: N.EncodingEstimate, args: [N.QNumColumn]}, {func: 1, args: [N.BitSet, P.Function]}, {func: 1, args: [N.BitSet, N.BitSet, P.String]}, {func: 1, args: [P.ByteBuffer, P.int]}, {func: 1, args: [N.BitSet, P.Uint32List, P.bool]}, {func: 1, args: [O.PictureMixin]}, {func: 1, v: true, args: [P.String,,], opt: [P.String]}, {func: 1, args: [O.Project, P.bool]}, {func: 1, args: [O.Project, O.Entity, P.bool]}, {func: 1, args: [O.Project, O.Entity]}, {func: 1, ret: N.DateTimeMatcher}, {func: 1, args: [O.TableInfo, P.String]}, {func: 1, args: [N.Context1]}, {func: 1, args: [[P.List, P.String]]}, {func: 1, ret: N.NumericMatcher}, {func: 1, args: [Q.AdminClient, P.String, P.Map, [P.List, P.String]]}, {func: 1, args: [O.DataQuery, P.bool]}, {func: 1, args: [O.DataQuery, O.DataConnection]}, {func: 1, ret: P.Future, args: [Q.InfoClient]}, {func: 1, v: true, opt: [P.int]}, {func: 1, args: [N.TableQuery, P.String]}, {func: 1, v: true, args: [P.List], named: {notify: P.bool}}, {func: 1, args: [N.TableQuery, [P.List, P.String]]}, {func: 1, ret: P.Future, args: [N.TableQuery]}, {func: 1, ret: N.Cell, args: [,]}, {func: 1, args: [N.TableQuery, P.int]}, {func: 1, args: [Q.LogClient, P.String, P.DateTime, P.DateTime, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, [P.Iterable, P.String]]}, {func: 1, args: [Q.ActivityClient, P.String, P.DateTime, P.DateTime]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.GroupAggregation]]}, {func: 1, ret: N.DataFrame, args: [P.String]}, {func: 1, ret: N.Column, args: [P.String]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, P.int]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, ret: P.bool, args: [W.Node]}, {func: 1, ret: P.Future, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.DataConnection, P.String, P.String]}, {func: 1, v: true, args: [N.FuncCall, N.Column]}, {func: 1, args: [O.ScriptEnvironment]}, {func: 1, ret: [P.Iterable, P.int], named: {onlyFiltered: P.bool, onlySelected: P.bool}}, {func: 1, args: [O.ProgressIndicator, P.String]}, {func: 1, args: [O.ProgressIndicator,,,]}, {func: 1, args: [O.ProgressIndicator,,]}, {func: 1, args: [S.LogMessage]}, {func: 1, args: [P.String, P.bool, P.bool,,]}, {func: 1, args: [N.Context1, P.String]}, {func: 1, args: [N.Context1, P.String,,]}, {func: 1, ret: N.RowList, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, ret: P.bool, args: [P.int], opt: [P.bool]}, {func: 1, args: [Q.ProjectClient, O.Project, P.bool]}, {func: 1, args: [N.FuncCall, N.Func]}, {func: 1, args: [N.FuncCall, P.int]}, {func: 1, args: [N.FuncCall, N.FuncCall]}, {func: 1, args: [N.FuncCall, N.Context1]}, {func: 1, args: [N.FuncCallParam, P.Function]}, {func: 1, args: [P.String, P.int, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], P.bool, P.bool]}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], [P.List, P.String], P.String, P.bool]}, {func: 1, args: [P.StreamSubscription]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.bool]}, {func: 1, args: [N.Func, P.List]}, {func: 1, ret: N._FlatBufTable, args: [P.int]}, {func: 1, args: [P.String, P.String, [P.List, P.String], P.JsObject, P.String, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall,, O.ProgressIndicator, P.bool, P.bool]}, {func: 1, args: [N.FuncCall, P.bool, P.bool]}, {func: 1, args: [[P.List, G.Property], [P.List, G.Property], P.String]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String, P.String]}, {func: 1, args: [, G.Property]}, {func: 1, args: [O.Script, P.List]}, {func: 1, ret: P.Future, args: [P.String, N.Context1]}, {func: 1, args: [N.EventBusProvider, P.String, P.Function]}, {func: 1, args: [P.String, P.Uint8List]}, {func: 1, v: true, args: [,], opt: [,]}, {func: 1, args: [P.List,,]}, {func: 1, args: [, P.bool, P.String, P.String]}, {func: 1, args: [, [P.List, P.int]]}, {func: 1, args: [, [P.List, N.DataFrame]]}, {func: 1, args: [P.Iterable]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String]}, {func: 1, ret: N.GroupByBuilder, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [O.LogEventType, P.String]}, {func: 1, args: [O.LogEventType, P.bool]}, {func: 1, v: true, args: [[P.List, N.Column], P.int, P.bool, P.bool]}, {func: 1, args: [Q.GroupClient, O.UserGroup]}, {func: 1, args: [[P.List, N.Column], P.int]}, {func: 1, args: [G.PropMixin]}, {func: 1, args: [G.PropMixin, P.String]}, {func: 1, args: [G.PropMixin, P.String,,]}, {func: 1, args: [Q.TablesClient, N.DataFrame]}, {func: 1, args: [Q.TablesClient, P.String]}, {func: 1, args: [Q.DockerImagesClient, P.String]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.int]}, {func: 1, args: [P.String, P.int]}, {func: 1, args: [O.DockerContainer]}, {func: 1, args: [N.DataFrame, P.int, P.int, P.String, P.String]}, {func: 1, ret: [P.List, W.RtcStatsReport]}, {func: 1, v: true, args: [P.String, P.String], named: {throwOnError: P.bool}}, {func: 1, args: [S.Logger, P.String, P.String, P.Map, P.String, P.String]}, {func: 1, ret: N.TableMutationBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.UserGroup]}, {func: 1, ret: P.String, args: [N.Column]}, {func: 1, args: [O.DbInfo, P.String]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, O.UserGroup]]}, {func: 1, args: [O.DbInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbInfo, P.String, [P.List, P.String], P.String, [P.List, P.String], P.Object]}, {func: 1, args: [O.DbRelationInfo, P.String]}, {func: 1, args: [O.DbRelationInfo]}, {func: 1, ret: [P.List, N.Column], args: [P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbSchemaInfo]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.Object]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.String, P.Object]}, {func: 1, args: [P.String, P.double, P.int, [P.List, P.String]]}, {func: 1, ret: W.StyleValue, args: [P.String]}, {func: 1, ret: P.Future, args: [P.String, [P.List, P.String]], named: {attachments: [P.List, O.FileInfo], bcc: [P.List, P.String], html: P.String, text: P.String}}, {func: 1, ret: P.String, args: [B.NumberSymbols]}, {func: 1, ret: N.Column, args: [N.GroupAggregation, P.Iterable]}, {func: 1, ret: Q.QueriesClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.QueryRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [O.DataSource, O.DataSource]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, P.Map]]}, {func: 1, ret: O.DomainSchema, args: [P.String]}, {func: 1, ret: O.DomainTable, args: [P.String, P.String]}, {func: 1, ret: [P.List, P.String], args: [P.String, P.String]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity]}, {func: 1, ret: [P.Future, [P.List, O.DomainRow]]}, {func: 1, ret: [P.Future, O.DomainRow]}, {func: 1, ret: [P.Future, P.List], args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: Q.DomainRowsDataSource, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.bool], args: [P.String, P.String], named: {id: P.String}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity,,]}, {func: 1, ret: Q.EntitiesClient, args: [P.Map]}, {func: 1, ret: Q.EnvironmentsClient, args: [P.String]}, {func: 1, ret: [P.Future, P.Uint8List], args: [,], named: {format: P.String}}, {func: 1, ret: [P.Future, [P.List, O.FileInfo]], args: [,], named: {ext: P.String, recursive: P.bool, root: P.String}}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]]}, {func: 1, ret: Q.LayoutClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, N.Func]]}, {func: 1, ret: Q.FunctionsClient, named: {name: P.String}}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall]}, {func: 1, ret: Q.ActivityClient, named: {end: P.DateTime, start: P.DateTime, userId: P.String}}, {func: 1, ret: Q.LogClient, args: [P.String]}, {func: 1, ret: [P.Future, O.LogEvent]}, {func: 1, ret: Q.LogClient, named: {end: P.DateTime, entityId: P.String, favoritesOnly: P.bool, start: P.DateTime}}, {func: 1, ret: [P.Future, P.bool], args: [O.LogAudit]}, {func: 1, ret: P.Future, args: [P.String, N.DataFrame]}, {func: 1, ret: Q.MLClient, args: [P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String], named: {columnNamesMap: [P.Map, P.String, P.String]}}, {func: 1, ret: [P.Future, P.bool]}, {func: 1, ret: Q.MLClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.NotebooksClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, [P.List, P.String]]], args: [P.String, P.String]}, {func: 1, ret: Q.ProjectRelationClient, named: {entityId: P.String, projectId: P.String, type: P.String}}, {func: 1, ret: Q.ProjectClient, args: [P.String]}, {func: 1, ret: Q.ProjectClient, named: {authorId: P.String, entityId: P.String, includeRoot: P.bool, projectId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, P.String]], named: {query: P.String}}, {func: 1, ret: Q.ScriptRunsClient, args: [P.String]}, {func: 1, ret: Q.ScriptingClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.SpaceClient, args: [P.String]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.Map]}, {func: 1, ret: Q.SpaceChildrenClient, named: {includeLinked: P.bool, types: P.String}}, {func: 1, ret: Q.FuncCallsClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, named: {jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tags: [P.List, P.String], text: P.String}}, {func: 1, ret: P.Future, args: [O.ProgressIndicator]}, {func: 1, ret: [P.Future, O.UserSession]}, {func: 1, ret: [P.Future, O.User]}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]], args: [P.String], named: {currentUser: P.bool}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String], named: {currentUser: P.bool}}, {func: 1, v: true, args: [P.String, P.Object]}, {func: 1, ret: P.Future, args: [, [P.List, P.Map]]}, {func: 1, v: true, args: [S.LogMessage]}, {func: 1, ret: O.DataQuery, named: {name: P.String, params: [P.Map, P.String, P.String], shortName: P.String, sql: P.String}}, {func: 1, args: [Q.CredentialsClient, O.Entity]}, {func: 1, v: true, args: [P.String, P.String, P.String]}, {func: 1, ret: P.String, args: [O._TableRef, P.String]}, {func: 1, ret: O._TableRef, args: [P.String]}, {func: 1, v: true, args: [P.String, P.String, P.String], opt: [P.String, P.String]}, {func: 1, ret: P.bool, args: [O.UserGroup]}, {func: 1, v: true, args: [P.String], named: {owner: O.UserGroup, type: P.String}}, {func: 1, ret: P.Future, args: [O.Script]}, {func: 1, ret: [P.List, P.String], args: [P.String]}, {func: 1, ret: P.int, args: [N.BigInt, N.BigInt]}, {func: 1, ret: N.DbTableQueryBuilder}, {func: 1, ret: [P.Map, P.String,,], args: [[P.Map, P.String,,], P.String]}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, severity: P.String, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [,,], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String,,], named: {auditType: P.String, canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, stackTrace: null, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}, {func: 1, opt: [P.int]}, {func: 1, ret: Q.Parser, args: [L.Reference]}, {func: 1, ret: N.QueryBuilder, args: [P.int]}, {func: 1, args: [P.String, P.String, P.String, P.bool]}, {func: 1, ret: Y.FileSpan, args: [P.int], opt: [P.int]}, {func: 1, ret: Y.FileLocation, args: [P.int]}, {func: 1, ret: P.String, args: [P.String], named: {color: null}}, {func: 1, ret: P.String, named: {color: null}}, {func: 1, v: true, args: [P.String], named: {length: P.int, match: P.Match, position: P.int}}, {func: 1, ret: L.XmlName, args: [P.String]}, {func: 1, ret: V.XmlText, args: [P.String]}, {func: 1, ret: [P.Stream, M.XmlEvent]}, {func: 1, args: [,], named: {headers: null}}, {func: 1, args: [P.String, P.Function]}, {func: 1, args: [,], opt: [P.bool]}, {func: 1, ret: N.FuncParam, args: [P.String, P.String]}, {func: 1, ret: P.bool, args: [N.Func], named: {override: P.bool}}, {func: 1, ret: P.num}, {func: 1, ret: P.int, args: [P.bool, P.bool]}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, ret: P.AsyncError, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Object, P.StackTrace]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true, args: [P.Timer]}]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, P.String]}, {func: 1, ret: P.Zone, args: [P.Zone, P.ZoneDelegate, P.Zone, P.ZoneSpecification, P.Map]}, {func: 1, ret: P.int, args: [,,]}, {func: 1, ret: P.int, args: [P.Comparable, P.Comparable]}, {func: 1, ret: P.bool, args: [P.Object, P.Object]}, {func: 1, ret: P.int, args: [P.Object]}, {func: 1, ret: P.Object, args: [,]}, {func: 1, args: [P.String, P.bool]}, {func: 1, ret: N.BigInt, args: [P.String]}, {func: 1, ret: W.Node}, {func: 1, ret: N.GroupAggregation, args: [P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.DataFrame, P.Iterable, P.Iterable, P.Iterable, P.Iterable], named: {inPlace: P.bool, joinType: P.String}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame], named: {aggregations: [P.List, N.GroupAggregation], fields: [P.List, P.String], filter: N.TableRowFilterCall, groupByFields: [P.List, P.String], joins: [P.List, N.TableJoin], pivots: [P.List, P.String], whereClauses: [P.List, N.FieldPredicate]}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, [P.List, P.String], [P.List, P.String]], named: {categoryColumnName: P.String, valueColumnName: P.String}}, {func: 1, ret: P.String, args: [P.num, [P.List, P.num]]}, {func: 1, ret: P.int, args: [P.DateTime, P.String, P.int]}, {func: 1, v: true, args: [N.DataFrame, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {decimalSeparator: P.String, useKMMultipliers: P.bool}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.ColFilterCall, N.TableRowFilterCall]}, {func: 1, v: true, args: [N.BufferAccessor], named: {archive: P.int}}, {func: 1, ret: P.int, args: [P.Float32List]}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: N.CalcColErrorBehavior, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, [P.List, N.Column]], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: N.CalcColErrorBehavior, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall], named: {flag: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {tagValue: P.String}}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.int, args: [P.Uint8List, P.Uint8List]}, {func: 1, ret: P.DateTime, args: [P.int]}, {func: 1, ret: P.Future, args: [P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.DateTime, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column, N.Column, P.String, P.String]}, {func: 1, ret: P.int, args: [P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.DateTime, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {decimalPlaces: P.int}}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {method: P.String}}, {func: 1, v: true, args: [N.Column]}, {func: 1, ret: P.int, args: [N.DataFrame, N.DataFrame]}, {func: 1, v: true, args: [,,], named: {message: P.String}}, {func: 1, ret: P.Future, args: [P.int]}, {func: 1, ret: P.Future, args: [P.Object]}, {func: 1, v: true, args: [N.Context1]}, {func: 1, v: true, args: [N.Context1,,]}, {func: 1, ret: P.Future, args: [N.DataFrame, P.String], named: {context: N.Context1, progress: O.ProgressIndicator}}, {func: 1, ret: [P.Future, N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall], named: {clear: P.bool, flag: P.bool}}, {func: 1, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, ret: P.String, args: [P.String, P.int, P.int]}, {func: 1, ret: N.FuncCall, args: [P.List], named: {optional: P.Map}}, {func: 1, ret: P.String, args: [P.String, P.String, P.int]}, {func: 1, args: [O.Entity, O.UserGroup]}, {func: 1, v: true, args: [[P.Iterable, P.int]]}, {func: 1, args: [Q.LayoutClient, N.DataFrame]}, {func: 1, args: [N.FuncParam,,]}, {func: 1, ret: P.int, args: [[P.List, P.double]]}, {func: 1, ret: P.String, args: [P.num, P.String]}, {func: 1, ret: P.String, args: [P.num, P.num]}, {func: 1, args: [W.Node, W.Node]}, {func: 1, args: [O.ObjectDataSource, P.String, P.bool]}, {func: 1, args: [, [P.Map,, P.Function], [P.Map,, [P.Map, P.int, P.Function]]]}, {func: 1, ret: O.SemanticValue, args: [P.String]}, {func: 1, ret: P.num, args: [[P.List, P.num], P.num]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame]}, {func: 1, v: true, args: [N.DataFrame, N.StringColumn, P.String], named: {prefix: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int], named: {group: P.int}}, {func: 1, ret: P.String, args: [P.String], named: {delimiter: P.String}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String], named: {upsert: P.bool}}, {func: 1, ret: P.int, args: [[P.List, P.int], P.int]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.Function]}, {func: 1, ret: P.Future, args: [{func: 1, ret: P.Future}]}, {func: 1, ret: P.Future, args: [P.String,,, O.ProgressIndicator]}, {func: 1, ret: P.String, args: [O.ColumnInfo, P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.DataFrame]}, {func: 1, ret: [P.Future, P.Uint8List], args: [P.Uint8List]}, {func: 1, ret: P.Future, args: [O.DataConnection]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String]}, {func: 1, ret: P.Future, args: [N.Func]}, {func: 1, args: [Q.SpaceClient,, P.bool]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String, P.Map], named: {adHoc: P.bool}}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.Context1, P.String, P.Map]}, {func: 1, ret: [P.Future, N.DataFrame], args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Future, args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Map, args: [,], named: {deep: P.bool}}, {func: 1, ret: Q.ConnectionsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [N.BigInt]}];
+  init.types = [{func: 1, args: [,]}, {func: 1, args: [,,]}, {func: 1}, {func: 1, args: [P.String]}, {func: 1, ret: P.Future}, {func: 1, args: [G.Property]}, {func: 1, v: true}, {func: 1, args: [N.Column]}, {func: 1, args: [P.DateTime]}, {func: 1, args: [G.Property,,]}, {func: 1, ret: P.Future, args: [,]}, {func: 1, args: [N.DataFrame]}, {func: 1, args: [P.int]}, {func: 1, args: [N.FuncCall]}, {func: 1, ret: Q.Parser}, {func: 1, ret: P.DateTime, args: [P.String]}, {func: 1, ret: P.String, args: [P.String]}, {func: 1, ret: P.double, args: [P.int]}, {func: 1, ret: P.bool, args: [P.int]}, {func: 1, args: [P.List]}, {func: 1, args: [N.Stats]}, {func: 1, args: [O.FileInfo]}, {func: 1, args: [N.FuncCallParam]}, {func: 1, ret: P.int, args: [P.int, P.int]}, {func: 1, ret: P.bool, args: [P.Object]}, {func: 1, args: [N.BitSet]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String}}, {func: 1, ret: P.double, args: [P.num]}, {func: 1, ret: P.int, args: [P.DateTime]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String]}, {func: 1, args: [P.Map]}, {func: 1, args: [O.DockerImage]}, {func: 1, ret: P.int, args: [P.int]}, {func: 1, args: [O.DataSource]}, {func: 1, args: [N.Cell]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {resultColName: P.String}}, {func: 1, args: [N.Column, P.String]}, {func: 1, args: [O.Entity]}, {func: 1, args: [O.DomainRow]}, {func: 1, args: [O.Project]}, {func: 1, args: [N.Func]}, {func: 1, ret: P.double, args: [,]}, {func: 1, ret: P.double, args: [N.BitSet, N.BitSet]}, {func: 1, args: [O.User]}, {func: 1, args: [G.Property, P.String]}, {func: 1, args: [O.UserNotification]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,]}, {func: 1, v: true, args: [P.Object]}, {func: 1, args: [P.String, P.String]}, {func: 1, args: [O.DockerImage, P.String]}, {func: 1, args: [N.ColumnList]}, {func: 1, ret: P.bool, args: [P.String]}, {func: 1, args: [P.Duration]}, {func: 1, args: [P.num]}, {func: 1, args: [N.TableQuery]}, {func: 1, ret: P.bool, args: [,]}, {func: 1, args: [N.FuncCall, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall]}, {func: 1, args: [P.String,,]}, {func: 1, args: [O.UserReport]}, {func: 1, v: true, args: [,]}, {func: 1, args: [O.ProgressIndicator]}, {func: 1, ret: P.int, args: [P.String]}, {func: 1, args: [O.SemanticValue]}, {func: 1, ret: P.double, args: [P.num, P.num]}, {func: 1, args: [O.Script]}, {func: 1, args: [N.Column, P.int]}, {func: 1, args: [P.bool]}, {func: 1, args: [P.double], opt: [P.String]}, {func: 1, ret: N.EncodingEstimate, args: [N.IntColumn]}, {func: 1, v: true, args: [N.BufferAccessor]}, {func: 1, ret: P.String, args: [P.int]}, {func: 1, args: [O.LogEvent]}, {func: 1, args: [Q.SpaceFilesClient,,]}, {func: 1, args: [O.Script, P.String]}, {func: 1, args: [N.BitSet, N.BitSet, P.bool]}, {func: 1, args: [O.TableInfo]}, {func: 1, ret: P.Future, args: [P.String]}, {func: 1, args: [P.int, P.int]}, {func: 1, args: [O.DataConnection]}, {func: 1, args: [O.ObjectDataSource]}, {func: 1, ret: N.EncodingEstimate, args: [N.FloatColumn]}, {func: 1, args: [O.User, P.String]}, {func: 1, ret: P.int, args: [,]}, {func: 1, args: [, P.String]}, {func: 1, args: [N.EventData]}, {func: 1, ret: N.EncodingEstimate, args: [N.StringColumn]}, {func: 1, args: [N.TableQuery, [P.List, P.Map]]}, {func: 1, args: [O.ColumnInfo]}, {func: 1, args: [O.DomainTable]}, {func: 1, ret: P.double, args: [P.String]}, {func: 1, args: [O.DomainSchema]}, {func: 1, args: [Q.DomainsClient, P.String]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String]}, {func: 1, args: [O.Entity, P.String]}, {func: 1, args: [N.ColumnList, P.String]}, {func: 1, args: [O.UserGroup]}, {func: 1, ret: P.String, args: [P.String, P.int]}, {func: 1, args: [N.RowMatcher]}, {func: 1, ret: P.bool, args: [P.num, P.num]}, {func: 1, v: true, args: [P.Object], opt: [P.StackTrace]}, {func: 1, v: true, args: [P.String]}, {func: 1, args: [O.GrokPublishedPackage]}, {func: 1, v: true, args: [N.Context1, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.String]}, {func: 1, args: [O.DataQuery]}, {func: 1, args: [[P.Iterable, P.String]]}, {func: 1, args: [P.Match]}, {func: 1, ret: P.bool, args: [P.String, P.String]}, {func: 1, ret: P.num, args: [P.num, P.num]}, {func: 1, args: [O.ViewInfo]}, {func: 1, ret: P.String, args: [,]}, {func: 1, args: [O.LogEventParameterValue]}, {func: 1, args: [,], opt: [,]}, {func: 1, v: true, args: [, P.StackTrace]}, {func: 1, args: [O.UserSession]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, P.String]}, {func: 1, args: [O.TagsMixin, P.String]}, {func: 1, ret: P.bool, args: [P.bool, P.bool]}, {func: 1, args: [P.Iterable, N.Column, N.GroupAggregation]}, {func: 1, args: [N.RowList]}, {func: 1, args: [P.Map,,]}, {func: 1, args: [O.LogEventType]}, {func: 1, args: [N.DataFrame, P.String]}, {func: 1, args: [G.Property, P.bool]}, {func: 1, ret: N.QueryBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [O.ViewLayout]}, {func: 1, args: [N.EventType]}, {func: 1, args: [O.DbInfo]}, {func: 1, args: [O.DbSchemaInfo]}, {func: 1, ret: N.EncodingEstimate, args: [N.DateTimeColumn]}, {func: 1, ret: N.EncodingEstimate, args: [N.BigIntColumn]}, {func: 1, args: [Q.SpacesClient, P.String]}, {func: 1, args: [,,,,]}, {func: 1, args: [N.DataFrame, P.Function]}, {func: 1, args: [P.String,, P.bool]}, {func: 1, args: [O.EntityPropertySchema]}, {func: 1, v: true, args: [{func: 1, v: true}]}, {func: 1, ret: P.String}, {func: 1, ret: P.DateTime, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String]}, {func: 1, v: true, args: [N.DataFrame]}, {func: 1, args: [O.ObjectDataSource, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, args: [[X.DartHandle, P.List]]}, {func: 1, ret: P.String, args: [[P.Iterable, P.String]]}, {func: 1, ret: P.int, args: [P.num]}, {func: 1, ret: W.Element, args: [P.String]}, {func: 1, ret: Q.Parser, opt: [P.String]}, {func: 1, args: [N.ValueMatcher,,]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {function: P.String, resultColName: P.String}}, {func: 1, v: true, args: [P.String, P.String]}, {func: 1, args: [Q.Parser]}, {func: 1, args: [,,,]}, {func: 1, ret: P.bool, args: [,,]}, {func: 1, args: [P.String, P.String, N.Context1]}, {func: 1, v: true, opt: [P.num]}, {func: 1, args: [P.int, P.String]}, {func: 1, args: [P.String, P.String,,]}, {func: 1, ret: P.bool, args: [P.bool]}, {func: 1, v: true, args: [P.double]}, {func: 1, v: true, args: [N.Func], named: {override: P.bool}}, {func: 1, v: true, args: [, P.String]}, {func: 1, args: [Q._NodeStats]}, {func: 1, ret: [P.Future, P.String], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [, P.EventSink]}, {func: 1, args: [[X.DartHandle, P.List], P.int,,]}, {func: 1, args: [[X.DartHandle, P.List],,]}, {func: 1, args: [P.Object]}, {func: 1, args: [P.Symbol0,,]}, {func: 1, args: [O.ObjectDataSource, O.Entity]}, {func: 1, ret: P.String, args: [N.Column, P.int]}, {func: 1, args: [Q.UserClient]}, {func: 1, ret: [P.List, P.String], args: [[P.List, P.int]]}, {func: 1, args: [P.String, P.String, P.bool]}, {func: 1, args: [P.bool], opt: [P.String]}, {func: 1, args: [O.ObjectDataSource, P.int]}, {func: 1, ret: P.int, args: [P.DateTime, P.DateTime]}, {func: 1, args: [Q.SpaceClient, P.String]}, {func: 1, args: [Q.SpaceClient]}, {func: 1, args: [Q.SpaceFilesClient,, P.String]}, {func: 1, ret: P.int, args: [P.double, P.double]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,]}, {func: 1, args: [Q.DomainsClient, P.String,,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String]}, {func: 1, ret: P.int, args: [P.Object, P.Object]}, {func: 1, args: [N.TypedEventArgs]}, {func: 1, ret: P.int, args: [P.String, P.String]}, {func: 1, args: [O.ViewLayout, P.String]}, {func: 1, args: [O.ViewInfo, P.String]}, {func: 1, v: true, args: [P.Uint8List, P.String, P.int]}, {func: 1, args: [N.DataFrame, P.int]}, {func: 1, args: [N.Row]}, {func: 1, args: [N.DataFrame, P.num]}, {func: 1, args: [, P.StackTrace]}, {func: 1, args: [N.FuncCall, P.String, N.FuncCallParam]}, {func: 1, args: [N.Column, N.BitSet]}, {func: 1, args: [N.Stats, N.Column]}, {func: 1, args: [N.RowList, P.int], opt: [P.int, P.bool]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.RowList,,]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.ValueMatcher]}, {func: 1, ret: P.Int16List}, {func: 1, ret: P.Int8List}, {func: 1, v: true, args: [P.Int16List]}, {func: 1, v: true, args: [P.Int8List]}, {func: 1, args: [O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup]}, {func: 1, args: [O.UserGroup,,]}, {func: 1, args: [O.SemanticValue,,]}, {func: 1, args: [O.SemanticValue, P.String]}, {func: 1, args: [O.EntityType]}, {func: 1, args: [O.EntityType, P.String]}, {func: 1, args: [O.EntityPropertySchema, P.List]}, {func: 1, args: [N.BitSet, P.int, P.bool]}, {func: 1, ret: P.bool, args: [P.DateTime, P.bool]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String]}, {func: 1, args: [O.DataQuery, P.String]}, {func: 1, ret: P.Future, args: [O.DataQuery]}, {func: 1, args: [N.DbTableQueryBuilder]}, {func: 1, ret: P.double}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, P.String]]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.FieldPredicate]]}, {func: 1, args: [O.Credentials]}, {func: 1, args: [N.FuncCall, P.String,,]}, {func: 1, args: [N.FuncCall, P.bool]}, {func: 1, args: [N.Func, P.String]}, {func: 1, args: [N.Func,,]}, {func: 1, ret: P.Future, args: [P.Map]}, {func: 1, args: [P.Iterator]}, {func: 1, args: [O.LogEventParameter]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.bool]}, {func: 1, args: [O.GrokPublishedPackage, P.String]}, {func: 1, ret: P.Future, args: [O.DbInfo]}, {func: 1, ret: P.Future, args: [P.String], opt: [P.bool]}, {func: 1, ret: P.String, args: [P.String, P.String]}, {func: 1, ret: [P.Future, [P.List, O.Entity]]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String, function: P.String}}, {func: 1, v: true, args: [P.String,,]}, {func: 1, ret: [P.Future, N.DataFrame]}, {func: 1, args: [N.FieldPredicate]}, {func: 1, ret: P.String, args: [P.Match]}, {func: 1, args: [N.FuncParam]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall]}, {func: 1, ret: P.DateTime}, {func: 1, ret: N.Column, args: [N.DataFrame, P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, ret: P.String, args: [P.String, P.int], named: {padding: P.String}}, {func: 1, v: true, args: [P.Map]}, {func: 1, ret: P.num, args: [P.num]}, {func: 1, ret: P.String, args: [P.num]}, {func: 1, args: [O.HistoryEntry]}, {func: 1, args: [P.String, P.String, P.List]}, {func: 1, ret: P.int, args: [[P.List, P.String]]}, {func: 1, args: [Q.SpaceClient, P.String, P.bool]}, {func: 1, v: true, args: [P.int]}, {func: 1, args: [Q.SpaceChildrenClient, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.int]}, {func: 1, args: [Q.SpaceFilesClient,, [P.List, P.int]]}, {func: 1, v: true, args: [P.int, P.int, P.int, P.int]}, {func: 1, args: [Q.SpaceFilesClient, P.List,,]}, {func: 1, args: [Q.SpaceFilesClient, P.List, P.String]}, {func: 1, args: [Q.DomainsClient]}, {func: 1, ret: P.int, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [P.int, [P.Map, P.int, N.BigInt]]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.bool]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.int]}, {func: 1, v: true, args: [P.num]}, {func: 1, ret: P.List, args: [P.List]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.String,,]}, {func: 1, v: true, args: [P.String], opt: [,]}, {func: 1, args: [Q.DomainsClient, P.String,, P.bool]}, {func: 1, v: true, args: [[P.List, P.String]]}, {func: 1, ret: N.FuncCall, args: [,]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.String]}, {func: 1, args: [{func: 1, v: true}]}, {func: 1, ret: P.String, args: [P.double]}, {func: 1, args: [P.int, [P.List, P.String]]}, {func: 1, args: [P.String], named: {rowCount: P.int}}, {func: 1, args: [P.int, N.DataFrame]}, {func: 1, v: true, args: [P.Uint8List, P.int, P.int]}, {func: 1, args: [N.Column, N.BitSet, P.bool, P.int, P.bool]}, {func: 1, ret: P.Uint8List, args: [,,]}, {func: 1, args: [O.ViewLayout, P.String, P.String]}, {func: 1, ret: P.String, args: [P.int, P.String]}, {func: 1, ret: N.FuncCall, args: [P.List]}, {func: 1, args: [O.ViewInfo, P.String, P.String]}, {func: 1, v: true, args: [P.num], opt: [P.num, P.num]}, {func: 1, v: true, args: [N.MapChangeArgs]}, {func: 1, args: [[P.List, N.Column]]}, {func: 1, ret: N.Cell, args: [, P.int]}, {func: 1, args: [N.DataFrame, P.String,,]}, {func: 1, ret: P.double, args: [P.String], named: {whenNull: P.double}}, {func: 1, args: [N.DataFrame, N.Column]}, {func: 1, args: [N.DataFrame, N.Cell]}, {func: 1, args: [N.DataFrame, P.int, P.String]}, {func: 1, args: [N.DataFrame,,,]}, {func: 1, args: [N.DataFrame, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, args: [N.DataFrame, N.BitSet, [P.List, N.Column], P.bool, P.bool]}, {func: 1, ret: [P.Future, P.bool], args: [P.Object]}, {func: 1, args: [N.DataFrame, P.String, P.Function]}, {func: 1, args: [N.DataFrame, P.List, P.String, P.String]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.bool, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [N.DataFrame, P.List, P.List, N.BitSet]}, {func: 1, args: [P.Uint8List]}, {func: 1, args: [N.DataFrame, P.bool]}, {func: 1, v: true, args: [N.BitSet, N.BitSet]}, {func: 1, args: [P.Map,,,]}, {func: 1, ret: P.int, args: [, P.int]}, {func: 1, args: [P.int,,]}, {func: 1, ret: N.FuncCall, args: [P.String]}, {func: 1, args: [N.GroupByBuilder, P.bool]}, {func: 1, args: [N.GroupByBuilder, N.BitSet]}, {func: 1, args: [N.GroupByBuilder, P.String, P.String, P.String]}, {func: 1, args: [N.GroupByBuilder]}, {func: 1, args: [N.GroupByBuilder,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.BoolColumn]}, {func: 1, args: [N.ColumnList, P.int]}, {func: 1, ret: N.EncodingEstimate, args: [N.ByteArrayColumn]}, {func: 1, args: [N.ColumnList, N.Column, P.bool]}, {func: 1, args: [N.ColumnList, N.Column, P.int, P.bool]}, {func: 1, args: [N.ColumnList, P.String, P.String]}, {func: 1, args: [N.QNumColumn, N.Column, N.Column]}, {func: 1, args: [N.ColumnList, P.String, P.String, P.String, P.bool, P.bool]}, {func: 1, ret: P.Future, args: [N.ColumnList, P.String, P.String, P.String, P.bool]}, {func: 1, args: [N.ColumnList, P.String, {func: 1, args: [P.int]}, {func: 1, v: true, args: [P.int,,]}, P.String]}, {func: 1, args: [N.ColumnList, P.String, P.bool]}, {func: 1, args: [N.ColumnList,, N.Column, P.bool]}, {func: 1, args: [N.ColumnList,,]}, {func: 1, args: [N.ColumnList, P.String, [P.List, P.String]]}, {func: 1, args: [N.ColumnList, [P.List, P.String]]}, {func: 1, args: [P.String, [P.List, P.String]]}, {func: 1, args: [P.String, P.Int32List, P.int]}, {func: 1, args: [P.String, P.Float32List, P.int]}, {func: 1, args: [P.String, P.Float64List, P.int]}, {func: 1, v: true, opt: [P.Object]}, {func: 1, args: [P.String, [P.List, P.String], P.Int32List]}, {func: 1, args: [P.String, P.String, P.int]}, {func: 1, args: [P.String, N.BitSet]}, {func: 1, args: [N.Column,,], opt: [P.bool]}, {func: 1, ret: P.Future, opt: [P.Map]}, {func: 1, args: [N.Column, P.int,, P.bool]}, {func: 1, args: [N.Column, P.int, P.String, P.bool]}, {func: 1, args: [N.Column, P.String,,]}, {func: 1, args: [N.StringColumn, [P.List, P.String]]}, {func: 1, args: [N.StringColumn]}, {func: 1, args: [N.Column, P.String, P.String]}, {func: 1, args: [N.Column, {func: 1, args: [P.int]}]}, {func: 1, ret: P.double, args: [P.double]}, {func: 1, args: [N.Column,,]}, {func: 1, args: [N.Column, {func: 1, ret: P.int, args: [,,]}]}, {func: 1, args: [N.Column, P.String, P.String, P.bool]}, {func: 1, args: [N.FloatColumn]}, {func: 1, args: [N.FloatColumn, P.bool]}, {func: 1, args: [N.BigIntColumn, P.int]}, {func: 1, args: [N.BigIntColumn, P.int, P.String, P.bool]}, {func: 1, args: [Q.CredentialsClient, O.Credentials]}, {func: 1, args: [N.DateTimeColumn, P.int]}, {func: 1, args: [N.DateTimeColumn, P.int,, P.bool]}, {func: 1, args: [N.ColumnsArgs]}, {func: 1, args: [N.ColumnsArgs,,]}, {func: 1, args: [[P.Iterable, P.double]]}, {func: 1, ret: N.Cell, args: [P.int]}, {func: 1, args: [N.Column, N.Column]}, {func: 1, ret: P.double, args: [P.double, P.double]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [N.Row]}]}, {func: 1, ret: P.double, args: [[P.List, P.double], P.double]}, {func: 1, args: [N.RowList], opt: [P.List, P.bool]}, {func: 1, args: [N.RowList, P.int, P.List, P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.DataFrameColumn]}, {func: 1, ret: [P.List, P.double], args: [[P.List, P.double]]}, {func: 1, args: [P.String, {func: 1, args: [,]}, P.String]}, {func: 1, args: [N.RowList, P.bool, P.bool]}, {func: 1, ret: P.bool, args: [P.Pattern], opt: [P.int]}, {func: 1, args: [N.RowGroup]}, {func: 1, v: true, args: [N.Column, P.String]}, {func: 1, ret: N.Column, args: [N.Column, P.String]}, {func: 1, args: [N.Cell,,]}, {func: 1, ret: N.Column}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String], suppressException: P.bool}}, {func: 1, args: [P.String, P.Match]}, {func: 1, args: [P.EventSink]}, {func: 1, args: [,,,,,]}, {func: 1, args: [,,,,,,]}, {func: 1, v: true, args: [P.int, P.int]}, {func: 1, args: [P.String, P.String, P.Function, P.Function,,]}, {func: 1, ret: P.Int16List, args: [P.Int16List, P.int]}, {func: 1, ret: P.Int8List, args: [P.Int8List, P.int]}, {func: 1, ret: P.Object, opt: [P.Object]}, {func: 1, args: [G.Property, P.String,,]}, {func: 1, args: [P.String, G.Property]}, {func: 1, ret: P.Object, args: [P.String]}, {func: 1, args: [[X.DartHandle, P.List], P.int]}, {func: 1, v: true, args: [P.String,,], opt: [,]}, {func: 1, args: [O.SemanticValue, N.Cell]}, {func: 1, args: [O.SemanticValue, P.String,,]}, {func: 1, args: [P.String, P.String, P.String]}, {func: 1, args: [P.String, N.Context1]}, {func: 1, args: [P.Completer,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.ObjectColumn]}, {func: 1, args: [P.Completer,,,]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema, N.Column]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema]}, {func: 1, args: [N.BitSet, P.Uint32List]}, {func: 1, args: [N.BitSet, P.bool]}, {func: 1, args: [N.BitSet, P.bool, P.bool]}, {func: 1, args: [N.BitSet, P.int]}, {func: 1, args: [N.BitSet, P.int, P.bool, P.bool]}, {func: 1, args: [P.Stream, {func: 1, v: true, args: [,]}]}, {func: 1, ret: N.EncodingEstimate, args: [N.QNumColumn]}, {func: 1, args: [N.BitSet, P.Function]}, {func: 1, args: [N.BitSet, N.BitSet, P.String]}, {func: 1, args: [P.ByteBuffer, P.int]}, {func: 1, args: [N.BitSet, P.Uint32List, P.bool]}, {func: 1, args: [O.PictureMixin]}, {func: 1, v: true, args: [P.String,,], opt: [P.String]}, {func: 1, args: [O.Project, P.bool]}, {func: 1, args: [O.Project, O.Entity, P.bool]}, {func: 1, args: [O.Project, O.Entity]}, {func: 1, args: [O.Project, P.String]}, {func: 1, ret: N.DateTimeMatcher}, {func: 1, args: [O.TableInfo, P.String]}, {func: 1, args: [N.Context1]}, {func: 1, args: [[P.List, P.String]]}, {func: 1, ret: N.NumericMatcher}, {func: 1, args: [Q.AdminClient, P.String, P.Map, [P.List, P.String]]}, {func: 1, args: [O.DataQuery, P.bool]}, {func: 1, args: [O.DataQuery, O.DataConnection]}, {func: 1, ret: P.Future, args: [Q.InfoClient]}, {func: 1, v: true, opt: [P.int]}, {func: 1, args: [N.TableQuery, P.String]}, {func: 1, v: true, args: [P.List], named: {notify: P.bool}}, {func: 1, args: [N.TableQuery, [P.List, P.String]]}, {func: 1, ret: P.Future, args: [N.TableQuery]}, {func: 1, ret: N.Cell, args: [,]}, {func: 1, args: [N.TableQuery, P.int]}, {func: 1, args: [Q.LogClient, P.String, P.DateTime, P.DateTime, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, [P.Iterable, P.String]]}, {func: 1, args: [Q.ActivityClient, P.String, P.DateTime, P.DateTime]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.GroupAggregation]]}, {func: 1, ret: N.DataFrame, args: [P.String]}, {func: 1, ret: N.Column, args: [P.String]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, P.int]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, ret: P.bool, args: [W.Node]}, {func: 1, ret: P.Future, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.DataConnection, P.String, P.String]}, {func: 1, v: true, args: [N.FuncCall, N.Column]}, {func: 1, args: [O.ScriptEnvironment]}, {func: 1, ret: [P.Iterable, P.int], named: {onlyFiltered: P.bool, onlySelected: P.bool}}, {func: 1, args: [O.ProgressIndicator, P.String]}, {func: 1, args: [O.ProgressIndicator,,,]}, {func: 1, args: [O.ProgressIndicator,,]}, {func: 1, args: [S.LogMessage]}, {func: 1, args: [P.String, P.bool, P.bool,,]}, {func: 1, args: [N.Context1, P.String]}, {func: 1, args: [N.Context1, P.String,,]}, {func: 1, ret: N.RowList, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, ret: P.bool, args: [P.int], opt: [P.bool]}, {func: 1, args: [Q.ProjectClient, O.Project, P.bool]}, {func: 1, args: [N.FuncCall, N.Func]}, {func: 1, args: [N.FuncCall, P.int]}, {func: 1, args: [N.FuncCall, N.FuncCall]}, {func: 1, args: [N.FuncCall, N.Context1]}, {func: 1, args: [N.FuncCallParam, P.Function]}, {func: 1, args: [P.String, P.int, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], P.bool, P.bool]}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], [P.List, P.String], P.String, P.bool]}, {func: 1, args: [P.StreamSubscription]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.bool]}, {func: 1, args: [N.Func, P.List]}, {func: 1, ret: N._FlatBufTable, args: [P.int]}, {func: 1, args: [P.String, P.String, [P.List, P.String], P.JsObject, P.String, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall,, O.ProgressIndicator, P.bool, P.bool]}, {func: 1, args: [N.FuncCall, P.bool, P.bool]}, {func: 1, args: [[P.List, G.Property], [P.List, G.Property], P.String]}, {func: 1, args: [, G.Property]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String, P.String]}, {func: 1, args: [O.Script, P.List]}, {func: 1, ret: P.Future, args: [P.String, N.Context1]}, {func: 1, args: [N.EventBusProvider, P.String, P.Function]}, {func: 1, args: [P.String, P.Uint8List]}, {func: 1, v: true, args: [,], opt: [,]}, {func: 1, args: [P.List,,]}, {func: 1, args: [, P.bool, P.String, P.String]}, {func: 1, args: [, [P.List, P.int]]}, {func: 1, args: [, [P.List, N.DataFrame]]}, {func: 1, args: [P.Iterable]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String]}, {func: 1, ret: N.GroupByBuilder, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [O.LogEventType, P.String]}, {func: 1, args: [O.LogEventType, P.bool]}, {func: 1, v: true, args: [[P.List, N.Column], P.int, P.bool, P.bool]}, {func: 1, args: [Q.GroupClient, O.UserGroup]}, {func: 1, args: [[P.List, N.Column], P.int]}, {func: 1, args: [G.PropMixin]}, {func: 1, args: [G.PropMixin, P.String]}, {func: 1, args: [G.PropMixin, P.String,,]}, {func: 1, args: [Q.TablesClient, N.DataFrame]}, {func: 1, args: [Q.TablesClient, P.String]}, {func: 1, args: [Q.DockerImagesClient, P.String]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.int]}, {func: 1, args: [P.String, P.int]}, {func: 1, args: [O.DockerContainer]}, {func: 1, args: [N.DataFrame, P.int, P.int, P.String, P.String]}, {func: 1, ret: [P.List, W.RtcStatsReport]}, {func: 1, v: true, args: [P.String, P.String], named: {throwOnError: P.bool}}, {func: 1, args: [S.Logger, P.String, P.String, P.Map, P.String, P.String]}, {func: 1, ret: N.TableMutationBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.UserGroup]}, {func: 1, ret: P.String, args: [N.Column]}, {func: 1, args: [O.DbInfo, P.String]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, O.UserGroup]]}, {func: 1, args: [O.DbInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbInfo, P.String, [P.List, P.String], P.String, [P.List, P.String], P.Object]}, {func: 1, args: [O.DbRelationInfo, P.String]}, {func: 1, args: [O.DbRelationInfo]}, {func: 1, ret: [P.List, N.Column], args: [P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbSchemaInfo]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.Object]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.String, P.Object]}, {func: 1, args: [P.String, P.double, P.int, [P.List, P.String]]}, {func: 1, ret: W.StyleValue, args: [P.String]}, {func: 1, ret: P.String, args: [B.NumberSymbols]}, {func: 1, ret: Q.ConnectionsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: N.Column, args: [N.GroupAggregation, P.Iterable]}, {func: 1, ret: Q.QueriesClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.QueryRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [O.DataSource, O.DataSource]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, P.Map]]}, {func: 1, ret: O.DomainSchema, args: [P.String]}, {func: 1, ret: O.DomainTable, args: [P.String, P.String]}, {func: 1, ret: [P.List, P.String], args: [P.String, P.String]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity]}, {func: 1, ret: [P.Future, [P.List, O.DomainRow]]}, {func: 1, ret: [P.Future, O.DomainRow]}, {func: 1, ret: [P.Future, P.List], args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: Q.DomainRowsDataSource, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.bool], args: [P.String, P.String], named: {id: P.String}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity,,]}, {func: 1, ret: Q.EntitiesClient, args: [P.Map]}, {func: 1, ret: Q.EnvironmentsClient, args: [P.String]}, {func: 1, ret: [P.Future, P.Uint8List], args: [,], named: {format: P.String}}, {func: 1, ret: [P.Future, [P.List, O.FileInfo]], args: [,], named: {ext: P.String, recursive: P.bool, root: P.String}}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]]}, {func: 1, ret: Q.LayoutClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, N.Func]]}, {func: 1, ret: Q.FunctionsClient, named: {name: P.String}}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall]}, {func: 1, ret: Q.ActivityClient, named: {end: P.DateTime, start: P.DateTime, userId: P.String}}, {func: 1, ret: Q.LogClient, args: [P.String]}, {func: 1, ret: [P.Future, O.LogEvent]}, {func: 1, ret: Q.LogClient, named: {end: P.DateTime, entityId: P.String, favoritesOnly: P.bool, start: P.DateTime}}, {func: 1, ret: [P.Future, P.bool], args: [O.LogAudit]}, {func: 1, ret: P.Future, args: [P.String, N.DataFrame]}, {func: 1, ret: Q.MLClient, args: [P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String], named: {columnNamesMap: [P.Map, P.String, P.String]}}, {func: 1, ret: [P.Future, P.bool]}, {func: 1, ret: Q.MLClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.NotebooksClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, [P.List, P.String]]], args: [P.String, P.String]}, {func: 1, ret: Q.ProjectRelationClient, named: {entityId: P.String, projectId: P.String, type: P.String}}, {func: 1, ret: Q.ProjectClient, args: [P.String]}, {func: 1, ret: Q.ProjectClient, named: {authorId: P.String, entityId: P.String, includeRoot: P.bool, projectId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, P.String]], named: {query: P.String}}, {func: 1, ret: Q.ScriptRunsClient, args: [P.String]}, {func: 1, ret: Q.ScriptingClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.SpaceClient, args: [P.String]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.Map]}, {func: 1, ret: Q.SpaceChildrenClient, named: {includeLinked: P.bool, types: P.String}}, {func: 1, ret: Q.FuncCallsClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, named: {jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tags: [P.List, P.String], text: P.String}}, {func: 1, ret: P.Future, args: [O.ProgressIndicator]}, {func: 1, ret: [P.Future, O.UserSession]}, {func: 1, ret: [P.Future, O.User]}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]], args: [P.String], named: {currentUser: P.bool}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String], named: {currentUser: P.bool}}, {func: 1, v: true, args: [P.String, P.Object]}, {func: 1, ret: P.Future, args: [, [P.List, P.Map]]}, {func: 1, v: true, args: [S.LogMessage]}, {func: 1, ret: O.DataQuery, named: {name: P.String, params: [P.Map, P.String, P.String], shortName: P.String, sql: P.String}}, {func: 1, args: [Q.CredentialsClient, O.Entity]}, {func: 1, v: true, args: [P.String, P.String, P.String]}, {func: 1, ret: P.String, args: [O._TableRef, P.String]}, {func: 1, ret: O._TableRef, args: [P.String]}, {func: 1, v: true, args: [P.String, P.String, P.String], opt: [P.String, P.String]}, {func: 1, ret: P.bool, args: [O.UserGroup]}, {func: 1, v: true, args: [P.String], named: {owner: O.UserGroup, type: P.String}}, {func: 1, ret: P.Future, args: [O.Script]}, {func: 1, ret: [P.List, P.String], args: [P.String]}, {func: 1, ret: P.int, args: [N.BigInt, N.BigInt]}, {func: 1, ret: N.DbTableQueryBuilder}, {func: 1, ret: [P.Map, P.String,,], args: [[P.Map, P.String,,], P.String]}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, severity: P.String, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [,,], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String,,], named: {auditType: P.String, canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, stackTrace: null, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}, {func: 1, opt: [P.int]}, {func: 1, ret: Q.Parser, args: [L.Reference]}, {func: 1, ret: N.QueryBuilder, args: [P.int]}, {func: 1, args: [P.String, P.String, P.String, P.bool]}, {func: 1, ret: Y.FileSpan, args: [P.int], opt: [P.int]}, {func: 1, ret: Y.FileLocation, args: [P.int]}, {func: 1, ret: P.String, args: [P.String], named: {color: null}}, {func: 1, ret: P.String, named: {color: null}}, {func: 1, v: true, args: [P.String], named: {length: P.int, match: P.Match, position: P.int}}, {func: 1, ret: L.XmlName, args: [P.String]}, {func: 1, ret: V.XmlText, args: [P.String]}, {func: 1, ret: [P.Stream, M.XmlEvent]}, {func: 1, args: [,], named: {headers: null}}, {func: 1, args: [P.String, P.Function]}, {func: 1, args: [,], opt: [P.bool]}, {func: 1, ret: N.FuncParam, args: [P.String, P.String]}, {func: 1, ret: P.bool, args: [N.Func], named: {override: P.bool}}, {func: 1, ret: P.num}, {func: 1, ret: P.int, args: [P.bool, P.bool]}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, ret: P.AsyncError, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Object, P.StackTrace]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true, args: [P.Timer]}]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, P.String]}, {func: 1, ret: P.Zone, args: [P.Zone, P.ZoneDelegate, P.Zone, P.ZoneSpecification, P.Map]}, {func: 1, ret: P.int, args: [,,]}, {func: 1, ret: P.int, args: [P.Comparable, P.Comparable]}, {func: 1, ret: P.bool, args: [P.Object, P.Object]}, {func: 1, ret: P.int, args: [P.Object]}, {func: 1, ret: P.Object, args: [,]}, {func: 1, args: [P.String, P.bool]}, {func: 1, ret: N.BigInt, args: [P.String]}, {func: 1, ret: W.Node}, {func: 1, ret: N.GroupAggregation, args: [P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.DataFrame, P.Iterable, P.Iterable, P.Iterable, P.Iterable], named: {inPlace: P.bool, joinType: P.String}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame], named: {aggregations: [P.List, N.GroupAggregation], fields: [P.List, P.String], filter: N.TableRowFilterCall, groupByFields: [P.List, P.String], joins: [P.List, N.TableJoin], pivots: [P.List, P.String], whereClauses: [P.List, N.FieldPredicate]}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, [P.List, P.String], [P.List, P.String]], named: {categoryColumnName: P.String, valueColumnName: P.String}}, {func: 1, ret: P.String, args: [P.num, [P.List, P.num]]}, {func: 1, ret: P.int, args: [P.DateTime, P.String, P.int]}, {func: 1, v: true, args: [N.DataFrame, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {decimalSeparator: P.String, useKMMultipliers: P.bool}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.ColFilterCall, N.TableRowFilterCall]}, {func: 1, v: true, args: [N.BufferAccessor], named: {archive: P.int}}, {func: 1, ret: P.int, args: [P.Float32List]}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: N.CalcColErrorBehavior, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, [P.List, N.Column]], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: N.CalcColErrorBehavior, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall], named: {flag: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {tagValue: P.String}}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.int, args: [P.Uint8List, P.Uint8List]}, {func: 1, ret: P.DateTime, args: [P.int]}, {func: 1, ret: P.Future, args: [P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.DateTime, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column, N.Column, P.String, P.String]}, {func: 1, ret: P.int, args: [P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.DateTime, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {decimalPlaces: P.int}}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {method: P.String}}, {func: 1, v: true, args: [N.Column]}, {func: 1, ret: P.int, args: [N.DataFrame, N.DataFrame]}, {func: 1, v: true, args: [,,], named: {message: P.String}}, {func: 1, ret: P.Future, args: [P.int]}, {func: 1, ret: P.Future, args: [P.Object]}, {func: 1, v: true, args: [N.Context1]}, {func: 1, v: true, args: [N.Context1,,]}, {func: 1, ret: P.Future, args: [N.DataFrame, P.String], named: {context: N.Context1, progress: O.ProgressIndicator}}, {func: 1, ret: [P.Future, N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall], named: {clear: P.bool, flag: P.bool}}, {func: 1, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, ret: P.String, args: [P.String, P.int, P.int]}, {func: 1, ret: N.FuncCall, args: [P.List], named: {optional: P.Map}}, {func: 1, ret: P.String, args: [P.String, P.String, P.int]}, {func: 1, args: [O.Entity, O.UserGroup]}, {func: 1, v: true, args: [[P.Iterable, P.int]]}, {func: 1, args: [Q.LayoutClient, N.DataFrame]}, {func: 1, args: [N.FuncParam,,]}, {func: 1, ret: P.int, args: [[P.List, P.double]]}, {func: 1, ret: P.String, args: [P.num, P.String]}, {func: 1, ret: P.String, args: [P.num, P.num]}, {func: 1, args: [W.Node, W.Node]}, {func: 1, args: [O.ObjectDataSource, P.String, P.bool]}, {func: 1, args: [, [P.Map,, P.Function], [P.Map,, [P.Map, P.int, P.Function]]]}, {func: 1, ret: O.SemanticValue, args: [P.String]}, {func: 1, ret: P.num, args: [[P.List, P.num], P.num]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame]}, {func: 1, v: true, args: [N.DataFrame, N.StringColumn, P.String], named: {prefix: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int], named: {group: P.int}}, {func: 1, ret: P.String, args: [P.String], named: {delimiter: P.String}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String], named: {upsert: P.bool}}, {func: 1, ret: P.int, args: [[P.List, P.int], P.int]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.Function]}, {func: 1, ret: P.Future, args: [{func: 1, ret: P.Future}]}, {func: 1, ret: P.Future, args: [P.String,,, O.ProgressIndicator]}, {func: 1, ret: P.String, args: [O.ColumnInfo, P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.DataFrame]}, {func: 1, ret: [P.Future, P.Uint8List], args: [P.Uint8List]}, {func: 1, ret: P.Future, args: [O.DataConnection]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String]}, {func: 1, ret: P.Future, args: [N.Func]}, {func: 1, args: [Q.SpaceClient,, P.bool]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String, P.Map], named: {adHoc: P.bool}}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.Context1, P.String, P.Map]}, {func: 1, ret: [P.Future, N.DataFrame], args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Future, args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Map, args: [,], named: {deep: P.bool}}, {func: 1, ret: P.Future, args: [P.String, [P.List, P.String]], named: {attachments: [P.List, O.FileInfo], bcc: [P.List, P.String], html: P.String, text: P.String}}, {func: 1, args: [N.BigInt]}];
   function convertToFastObject(properties) {
     function MyClass() {
     }
