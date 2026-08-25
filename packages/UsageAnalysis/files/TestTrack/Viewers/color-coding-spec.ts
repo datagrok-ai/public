@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.grid]
+--- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import * as v from '../helpers/viewers';

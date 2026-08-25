@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import * as v from '../helpers/viewers';

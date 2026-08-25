@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.box-plot, viewers.pc-plot]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -9,10 +12,12 @@ test.describe.configure({retries: 1});
 
 async function cleanupAll(page: any, layoutId?: string | null, projectId?: string | null): Promise<void> {
   await page.evaluate(async ([lid, pid]: [string | null | undefined, string | null | undefined]) => {
+    const w = window as any;
     if (lid) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}
     if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
     (window as any).grok.shell.closeAll();
-    await new Promise((r) => setTimeout(r, 500));
+    await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+      (c: number) => c === 0, 500);
   }, [layoutId ?? null, projectId ?? null]);
 }
 
@@ -22,17 +27,22 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Sc1 steps 2-4: Color=Series + Marker=Series → combined legend', async () => {
     const items = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 600);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.colorColumnName = 'Series';
       sp.props.markersColumnName = 'Series';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      let prev = -1;
+      await w.__poll(() => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1500);
       return sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(items).toBeGreaterThanOrEqual(5);
@@ -70,6 +80,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   let layoutId: string | null = null;
   await softStep('Sc1 steps 6-7: save+reapply layout, color persists', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const withTimeout = <T>(p: Promise<T>, ms: number, label: string): Promise<T> => {
         let t: any;
         return Promise.race([
@@ -84,8 +95,17 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         const saved = await withTimeout((window as any).grok.dapi.layouts.save(layout), 30000, 'layouts.save');
         await new Promise((r) => setTimeout(r, 1000));
         const found = await withTimeout((window as any).grok.dapi.layouts.find(saved.id), 15000, 'layouts.find');
-        tv.loadLayout(found);
-        await new Promise((r) => setTimeout(r, 3500));
+        await w.__settled('grok.events.onViewLayoutApplied', () => tv.loadLayout(found), 3500);
+        // the event announces the layout was applied; the viewers still have to rebuild
+        // their legends after it, which is the half the fixed sleep used to cover
+        // the assertion below needs EVERY scatter plot's legend, so settle on the
+        // weakest one — a sum goes stable while a second legend is still empty
+        let after = -1;
+        await w.__poll(() => {
+          const sp = (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot');
+          if (sp.length === 0) return 0;
+          return Math.min(...sp.map((x: any) => x.root.querySelectorAll('[name="legend"] .d4-legend-item').length));
+        }, (c: number) => { const settled = c > 0 && c === after; after = c; return settled; }, 3500);
         return {layoutId: saved.id, ok: true};
       } catch (e: any) {
         return {layoutId: null, ok: false, error: String(e?.message ?? e).slice(0, 200)};
@@ -100,6 +120,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
   let projectId: string | null = null;
   await softStep('Sc1 steps 8-9: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let pid: string | null = null;
       try {
         const grok = (window as any).grok;
@@ -123,7 +144,8 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
@@ -140,24 +162,29 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
 
   await softStep('Sc1 step 10: categorical formula → categorical legend', async () => {
     const count = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       if (!tv) {
         (window as any).grok.shell.closeAll();
-        const df2 = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
+        const df2 = await (window as any).grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
         (window as any).grok.shell.addTableView(df2);
-        await new Promise((r) => setTimeout(r, 3000));
+        await w.__poll(() => (window as any).grok.shell.tv?.dataFrame?.rowCount ?? 0,
+          (c: number) => c > 0, 3000);
         (window as any).grok.shell.tv.addViewer('Scatter plot');
-        await new Promise((r) => setTimeout(r, 800));
+        await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+          (c: number) => c > 0, 800);
       }
       const tv2 = (window as any).grok.shell.tv;
       const df = tv2.dataFrame;
       try { await df.columns.addNewCalculated('testCat', "if(${Stereo Category}=='S_UNKN', null, ${Series})"); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => !!df.col('testCat'), (ok: boolean) => ok, 1500);
       const sp = tv2.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.markersColumnName = '';
       sp.props.colorColumnName = 'testCat';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      let prev = -1;
+      await w.__poll(() => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1500);
       return sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(count).toBeGreaterThan(0);
@@ -165,10 +192,13 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
 
   await softStep('Sc1 step 11: Color=ID, Marker=Core', async () => {
     const count = await page.evaluate(async () => {
+      const w = window as any;
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.colorColumnName = 'ID';
       sp.props.markersColumnName = 'Core';
-      await new Promise((r) => setTimeout(r, 1800));
+      let prev = -1;
+      await w.__poll(() => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1800);
       return sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(count).toBeGreaterThan(0);
@@ -185,21 +215,26 @@ test('Legend scatterplot — axis change', async ({page}) => {
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Sc2 steps 2-5: setup col1/col2 + scatter Color=Stereo Category, X=col1', async () => {
     const a = await page.evaluate(async () => {
+      const w = window as any;
       const df = (window as any).grok.shell.tv.dataFrame;
       await df.columns.addNewCalculated('col1', "if(${Stereo Category}!='S_UNKN', null, ${Average Mass})");
       await df.columns.addNewCalculated('col2', "if(${Stereo Category}=='S_UNKN', null, ${Average Mass})");
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => !!df.col('col2'), (ok: boolean) => ok, 1500);
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 600);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.xColumnName = 'col1';
       sp.props.colorColumnName = 'Stereo Category';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      let prev = -1;
+      await w.__poll(() => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1500);
       return sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(a).toBeGreaterThan(0);
@@ -219,11 +254,14 @@ test('Legend scatterplot — axis change', async ({page}) => {
 
   await softStep('Sc2 steps 8-9: filter narrows subset, legend stays consistent', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
       const df = (window as any).grok.shell.tv.dataFrame;
       const cats = df.col('Stereo Category').categories.filter((c: string) => c !== 'S_UNKN').slice(0, 1);
       const DG = (window as any).DG;
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: cats});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 1500));
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
@@ -244,12 +282,15 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Sc3 steps 2-5: scatter + Marker=Stereo Category + filter to R_ONE/S_UNKN', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 600);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.markersColumnName = 'Stereo Category';
       sp.props.colorColumnName = 'Stereo Category';
@@ -263,9 +304,11 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
 
   await softStep('Sc3 step 6: add second scatter with same filter', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 600);
       const sps = tv.viewers.filter((x: any) => x.type === 'Scatter plot');
       const sp2 = sps[sps.length - 1];
       sp2.props.markersColumnName = 'Stereo Category';
@@ -281,13 +324,23 @@ test('Legend scatterplot — in-viewer filter', async ({page}) => {
   let layoutId: string | null = null;
   await softStep('Sc3 steps 7-8: save+reapply layout, both legends survive', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'ScatterInViewerFilter_' + Date.now();
       const saved = await (window as any).grok.dapi.layouts.save(layout);
       await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      await w.__settled('grok.events.onViewLayoutApplied', async () => tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id)), 3500);
+      // the event announces the layout was applied; the viewers still have to rebuild
+      // their legends after it, which is the half the fixed sleep used to cover
+      // the assertion below needs EVERY scatter plot's legend, so settle on the
+      // weakest one — a sum goes stable while a second legend is still empty
+      let after = -1;
+      await w.__poll(() => {
+        const sp = (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot');
+        if (sp.length === 0) return 0;
+        return Math.min(...sp.map((x: any) => x.root.querySelectorAll('[name="legend"] .d4-legend-item').length));
+      }, (c: number) => { const settled = c > 0 && c === after; after = c; return settled; }, 3500);
       const tvAfter = (window as any).grok.shell.tv;
       const sps = tvAfter.viewers.filter((x: any) => x.type === 'Scatter plot');
       const counts = sps.map((sp: any) => sp.root.querySelectorAll('[name="legend"] .d4-legend-item').length);
@@ -309,12 +362,15 @@ test('Legend scatterplot — filter panel + click-to-filter', async ({page}) => 
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Sc4 steps 2-4: scatter + Chemical Space X/Y, Color=Primary Scaffold Name, Marker=Stereo Category', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 600));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 600);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.xColumnName = 'Chemical Space X';
       sp.props.yColumnName = 'Chemical Space Y';
@@ -416,14 +472,17 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
   stepErrors.length = 0;
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Sc5 steps 2-3: scatter + box + PC plots, scatter Color=Chemical Space X', async () => {
     await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
       tv.addViewer('Box plot');
       tv.addViewer('PC Plot');
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'PC Plot').length,
+        (c: number) => c > 0, 1500);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.colorColumnName = 'Chemical Space X';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
@@ -475,13 +534,23 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
   let layoutId: string | null = null;
   await softStep('Sc5 steps 8-9: save+reapply layout, scheme + text-apply persist', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'ScatterGridColor_' + Date.now();
       const saved = await (window as any).grok.dapi.layouts.save(layout);
       await new Promise((r) => setTimeout(r, 1000));
-      tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise((r) => setTimeout(r, 3500));
+      await w.__settled('grok.events.onViewLayoutApplied', async () => tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id)), 3500);
+      // the event announces the layout was applied; the viewers still have to rebuild
+      // their legends after it, which is the half the fixed sleep used to cover
+      // the assertion below needs EVERY scatter plot's legend, so settle on the
+      // weakest one — a sum goes stable while a second legend is still empty
+      let after = -1;
+      await w.__poll(() => {
+        const sp = (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot');
+        if (sp.length === 0) return 0;
+        return Math.min(...sp.map((x: any) => x.root.querySelectorAll('[name="legend"] .d4-legend-item').length));
+      }, (c: number) => { const settled = c > 0 && c === after; after = c; return settled; }, 3500);
       const col2 = (window as any).grok.shell.tv.dataFrame.col('Chemical Space X');
       return {
         layoutId: saved.id,
@@ -532,6 +601,7 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
   let projectId: string | null = null;
   await softStep('Sc5 steps 12-13: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let pid: string | null = null;
       try {
         const grok = (window as any).grok;
@@ -555,7 +625,8 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();

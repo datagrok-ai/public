@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 // github-3132: each legend color change persists independently; changing B must not reset A.
 
 import {test, expect} from '@playwright/test';

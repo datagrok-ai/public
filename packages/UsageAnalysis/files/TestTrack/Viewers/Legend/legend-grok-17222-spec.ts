@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot, viewers.filters.histogram, viewers.filters.categorical, chem.filter.substructure-filter]
+--- */
 // GROK-17222: legend item count must update under FP, in-viewer, and Pie/Bar click-to-filter.
 
 import {test, expect} from '@playwright/test';

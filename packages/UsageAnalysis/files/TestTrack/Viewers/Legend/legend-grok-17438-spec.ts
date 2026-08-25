@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 // GROK-17438: color change on one viewer keeps the legend visible on shared-legend viewers.
 
 import {test, expect} from '@playwright/test';

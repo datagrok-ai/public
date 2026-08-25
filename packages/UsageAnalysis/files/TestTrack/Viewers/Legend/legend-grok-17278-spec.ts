@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.line-chart]
+--- */
 // GROK-17278: legend color customizations serialize into both layout and project state.
 
 import {test, expect} from '@playwright/test';
@@ -12,16 +15,21 @@ test('GROK-17278: line chart legend color persists across layout + project round
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Steps 2-3: add Line chart, Split = Stereo Category', async () => {
     const items = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Line chart');
-      await new Promise((r) => setTimeout(r, 1000));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Line chart').length,
+        (c: number) => c > 0, 1000);
       const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
       lc.props.splitColumnName = 'Stereo Category';
       try { lc.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      let prev = -1;
+      await w.__poll(() => lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1500);
       return lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(items).toBeGreaterThan(0);
@@ -71,6 +79,7 @@ test('GROK-17278: line chart legend color persists across layout + project round
   let projectId: string | null = null;
   await softStep('Steps 6-8 + Step 8 invariant: project save+closeAll+reopen, R_ONE remains blue', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let pid: string | null = null;
       try {
         const grok = (window as any).grok;
@@ -94,7 +103,8 @@ test('GROK-17278: line chart legend color persists across layout + project round
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
@@ -118,10 +128,12 @@ test('GROK-17278: line chart legend color persists across layout + project round
 
   await softStep('Cleanup', async () => {
     await page.evaluate(async ([lid, pid]: [string | null, string | null]) => {
+      const w = window as any;
       if (lid) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(lid)); } catch (_) {}
       if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, [layoutId, projectId]);
   });
 

@@ -3,6 +3,7 @@ realizes: [linechart.cp.analytical-overlays]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -49,26 +50,8 @@ test('Line Chart — Analytical Overlays', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  await page.evaluate(async (path) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-
-      setTimeout(resolve, 3000);
-    });
-    for (let i = 0; i < 50; i++) {
-      if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-      await new Promise((r) => setTimeout(r, 200));
-    }
-
-    await new Promise((r) => setTimeout(r, 5000));
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 60000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
+  await v.installEventWaits(page);
 
   await page.locator('[name="icon-line-chart"]').click();
   await page.locator('[name="viewer-Line-chart"]').waitFor({timeout: 15000});

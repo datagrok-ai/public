@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.line-chart]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -9,16 +12,21 @@ test('Line chart legend', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Setup + Sc1 steps 1-2: add Line chart, Split=Series → categorical legend', async () => {
     const items = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Line chart');
-      await new Promise((r) => setTimeout(r, 1000));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Line chart').length,
+        (c: number) => c > 0, 1000);
       const lc = tv.viewers.find((x: any) => x.type === 'Line chart');
       lc.props.splitColumnName = 'Series';
       try { lc.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1500));
+      let prev = -1;
+      await w.__poll(() => lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length,
+        (c: number) => { const settled = c > 0 && c === prev; prev = c; return settled; }, 1500);
       return lc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
     });
     expect(items).toBeGreaterThan(0);
@@ -106,6 +114,7 @@ test('Line chart legend', async ({page}) => {
   let projectId: string | null = null;
   await softStep('Sc3 steps 4-5 / Sc4 steps 6-7: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let pid: string | null = null;
       try {
         const grok = (window as any).grok;
@@ -129,7 +138,8 @@ test('Line chart legend', async ({page}) => {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
@@ -155,12 +165,14 @@ test('Line chart legend', async ({page}) => {
 
   await softStep('Cleanup', async () => {
     await page.evaluate(async ([lid1, lid2, pid]: [string | null, string | null, string | null]) => {
+      const w = window as any;
       for (const id of [lid1, lid2]) {
         if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
       }
       if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, [layoutId1, layoutId2, projectId]);
   });
 

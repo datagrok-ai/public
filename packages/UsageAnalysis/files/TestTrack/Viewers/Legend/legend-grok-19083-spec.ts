@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 // GROK-19083: legend marker entries must react to deselecting markers on the host viewer.
 
 import {test, expect} from '@playwright/test';
@@ -12,12 +15,15 @@ test('GROK-19083: legend marker entries sync with markersColumnName deselect', a
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Steps 2-4: Color=Series + Marker=Series → combined legend with markers', async () => {
     const items = await page.evaluate(async () => {
+      const w = window as any;
       const tv = (window as any).grok.shell.tv;
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((x: any) => x.type === 'Scatter plot');
       sp.props.colorColumnName = 'Series';
       sp.props.markersColumnName = 'Series';

@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.bar-chart, viewers.pie-chart, viewers.line-chart]
+--- */
 // Frontmatter extraction (Edit X7):
 //   target_layer: apitest
 //   pyramid_layer: integration
@@ -22,11 +25,14 @@
 // Closes documented follow-up from modernize-legacy-specs.md §4.
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
 const demogPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
+// the 100-row copy the rest of the section was repointed to: the four scenarios below
+// only need a molecule column with <100 categories, and the full SPGI cost them ~9s each
+const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test('Legend — JS API contract', async ({page}) => {
   // Validator B 2026-05-09 run 2 timed out at 318s on Scenario 8 (300_000 budget too tight
@@ -46,6 +52,7 @@ test('Legend — JS API contract', async ({page}) => {
   page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
 
   await loginToDatagrok(page);
+  await v.installEventWaits(page);
 
   // E-LAYER-COMPLIANCE-01 sub-rule for apitest: spec body MUST NOT contain
   // DOM-driving calls. The page.locator below is in spec-login (loginToDatagrok),
@@ -61,12 +68,13 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 1: legend.column round-trip across Scatter/Histogram/Bar/Pie/Line', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       const out: Record<string, any> = {};
       const configs: Array<[string, string, string]> = [
         ['Scatter plot', 'colorColumnName', 'RACE'],
@@ -78,12 +86,10 @@ test('Legend — JS API contract', async ({page}) => {
       for (const [vtype, prop, val] of configs) {
         try {
           tv.addViewer(vtype);
-          await new Promise((r) => setTimeout(r, 600));
           const v = tv.viewers.find((x: any) => x.type === vtype);
           if (!v) { out[vtype] = {error: 'viewer not attached'}; continue; }
           (v.props as any)[prop] = val;
           try { v.props.legendVisibility = 'Always'; } catch (_) {}
-          await new Promise((r) => setTimeout(r, 800));
           let echoed: any = null;
           try { echoed = (v.props as any)[prop]; } catch (_) {}
           out[vtype] = {prop, expected: val, echoed};
@@ -109,27 +115,27 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 2: legend.extra-column markersColumnName round-trip + deselect', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (!sp) return {ok: false, error: 'no scatter'};
       sp.props.colorColumnName = 'RACE';
       sp.props.markersColumnName = 'SEX';
       try { sp.props.legendVisibility = 'Always'; } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1000));
       let colorEchoed: any = null;
       let markersEchoed: any = null;
       try { colorEchoed = sp.props.colorColumnName; } catch (_) {}
       try { markersEchoed = sp.props.markersColumnName; } catch (_) {}
       // Deselect markers (GROK-19083 path).
       sp.props.markersColumnName = '';
-      await new Promise((r) => setTimeout(r, 800));
       let markersAfterDeselect: any = null;
       try { markersAfterDeselect = sp.props.markersColumnName; } catch (_) {}
       return {ok: true, colorEchoed, markersEchoed, markersAfterDeselect};
@@ -144,14 +150,16 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 3: numerical color-scale tag round-trip on AGE', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (!sp) return {ok: false};
       sp.props.colorColumnName = 'AGE';
@@ -160,7 +168,6 @@ test('Legend — JS API contract', async ({page}) => {
       col.tags['.color-coding-type'] = 'Linear';
       col.tags['.color-coding-scheme'] = '[1, 8388607, 16711680]';
       try { sp.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1000));
       return {
         ok: true,
         codingType: col.tags['.color-coding-type'],
@@ -176,14 +183,16 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 4: setCategorical round-trip via JSON tag', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (!sp) return {ok: false};
       sp.props.colorColumnName = 'Stereo Category';
@@ -196,7 +205,6 @@ test('Legend — JS API contract', async ({page}) => {
         {fallbackColor: '#808080'},
       );
       try { sp.invalidate?.(); } catch (_) {}
-      await new Promise((r) => setTimeout(r, 1000));
       let parsed: Record<string, any> = {};
       try { parsed = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}'); } catch (_) {}
       return {
@@ -216,17 +224,19 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 5: includeNulls round-trip on Histogram + Bar chart', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       const out: Record<string, any> = {};
       // Histogram
       try {
         tv.addViewer('Histogram');
-        await new Promise((r) => setTimeout(r, 700));
+        await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Histogram').length,
+          (c: number) => c > 0, 700);
         const h = tv.viewers.find((v: any) => v.type === 'Histogram');
         if (h) {
           h.props.splitColumnName = 'Primary Scaffold Name';
@@ -235,7 +245,6 @@ test('Legend — JS API contract', async ({page}) => {
           await new Promise((r) => setTimeout(r, 500));
           const trueEcho = h.props.includeNulls;
           h.props.includeNulls = false;
-          await new Promise((r) => setTimeout(r, 500));
           const falseEcho = h.props.includeNulls;
           out.Histogram = {trueEcho, falseEcho};
         }
@@ -243,7 +252,8 @@ test('Legend — JS API contract', async ({page}) => {
       // Bar chart
       try {
         tv.addViewer('Bar chart');
-        await new Promise((r) => setTimeout(r, 700));
+        await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Bar chart').length,
+          (c: number) => c > 0, 700);
         const bc = tv.viewers.find((v: any) => v.type === 'Bar chart');
         if (bc) {
           bc.props.splitColumnName = 'Primary Scaffold Name';
@@ -252,7 +262,6 @@ test('Legend — JS API contract', async ({page}) => {
           await new Promise((r) => setTimeout(r, 500));
           const trueEcho = bc.props.includeNulls;
           bc.props.includeNulls = false;
-          await new Promise((r) => setTimeout(r, 500));
           const falseEcho = bc.props.includeNulls;
           out.BarChart = {trueEcho, falseEcho};
         }
@@ -273,9 +282,10 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 6: setCategorical does not throw on <100 cats', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
       await new Promise((r) => setTimeout(r, 1500));
@@ -304,14 +314,16 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 7: addNewCalculated + re-bind colorColumnName resolves new column', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (!sp) return {ok: false};
       sp.props.colorColumnName = 'SEX';
@@ -322,7 +334,6 @@ test('Legend — JS API contract', async ({page}) => {
       } catch (_) {}
       await new Promise((r) => setTimeout(r, 1500));
       sp.props.colorColumnName = 'SEX_alt';
-      await new Promise((r) => setTimeout(r, 1000));
       let echoed: any = null;
       try { echoed = sp.props.colorColumnName; } catch (_) {}
       const col = df.col('SEX_alt');
@@ -339,14 +350,16 @@ test('Legend — JS API contract', async ({page}) => {
 
   await softStep('Scenario 8: Filter Panel filter then df.filter.setAll(true) resets fully', async () => {
     const result = await page.evaluate(async (path) => {
+      const w = window as any;
       const grok = (window as any).grok;
       grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 400));
+      await w.__poll(() => Array.from(grok.shell.tableViews).length, (n: number) => n === 0, 400);
       const df = await grok.dapi.files.readCsv(path);
       const tv = grok.shell.addTableView(df);
-      await new Promise((r) => setTimeout(r, 1500));
+      await w.__poll(() => grok.shell.tv?.dataFrame?.rowCount ?? 0, (n: number) => n > 0, 1500);
       tv.addViewer('Scatter plot');
-      await new Promise((r) => setTimeout(r, 800));
+      await w.__poll(() => (window as any).grok.shell.tv.viewers.filter((x: any) => x.type === 'Scatter plot').length,
+        (c: number) => c > 0, 800);
       const sp = tv.viewers.find((v: any) => v.type === 'Scatter plot');
       if (!sp) return {ok: false};
       sp.props.colorColumnName = 'Stereo Category';
@@ -358,6 +371,8 @@ test('Legend — JS API contract', async ({page}) => {
       const rowCount = df.rowCount;
       // ApiSamples reference: scripts/ui/viewers/filters/filter-group.js
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: subset});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 1500));
       const filteredCount = df.filter.trueCount;
       df.filter.setAll(true);

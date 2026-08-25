@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot, viewers.filters.histogram, viewers.filters.categorical, chem.filter.substructure-filter]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -8,21 +11,33 @@ test('Legend filtering', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
+  await v.installEventWaits(page);
   await v.openTable(page, {withFilterPanel: true});
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Scatter plot', 'Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
   });
 
-  await softStep('Numerical filter: Average Mass > 400 (≈1588)', async () => {
-    const count = await page.evaluate(async () => {
+  await softStep('Numerical filter: Average Mass in [400, 10000]', async () => {
+    const res = await page.evaluate(async () => {
+      const df = (window as any).grok.shell.tv.dataFrame;
+      const col = df.col('Average Mass');
+      // counted off the column rather than nailed to a constant: the spec was pinned to
+      // the full SPGI's ~1588 and kept asserting it after the dataset moved to spgi-100
+      let inRange = 0;
+      for (let i = 0; i < df.rowCount; i++)
+        if (!col.isNone(i) && col.get(i) >= 400 && col.get(i) <= 10000) inRange++;
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 1500));
-      return (window as any).grok.shell.tv.dataFrame.filter.trueCount;
+      return {inRange, filtered: df.filter.trueCount, rowCount: df.rowCount as number};
     });
-    expect(count).toBeGreaterThan(1500);
-    expect(count).toBeLessThan(1700);
+    expect(res.filtered).toBe(res.inRange);
+    // the range has to actually divide the table, or the comparison above is free
+    expect(res.inRange).toBeGreaterThan(0);
+    expect(res.inRange).toBeLessThan(res.rowCount);
   });
 
   await softStep('Categorical filter: R_ONE, S_UNKN only (legend=2)', async () => {
@@ -33,11 +48,14 @@ test('Legend filtering', async ({page}) => {
 
   await softStep('Structure filter on Core — platform API available (env-dependent)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const df = (window as any).grok.shell.tv.dataFrame;
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
       const firstSmiles = df.col('Core').get(0);
       try {
         fg.updateOrAdd({type: 'Chem:substructureFilter', column: 'Core', columnName: 'Core', molBlock: firstSmiles});
+        // technical: the filter group debounces, so onRowsFiltered fires on an
+        // intermediate row set — no channel marks the settled one
         await new Promise((r) => setTimeout(r, 2000));
         return {applied: true, filterCount: df.filter.trueCount};
       } catch (e: any) {
@@ -50,13 +68,18 @@ test('Legend filtering', async ({page}) => {
 
   await softStep('Save + re-apply layout (filter state + ≥3s settle)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
       for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
       (window as any).grok.shell.tv.dataFrame.filter.setAll(true);
       const DG = (window as any).DG;
       fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 400, max: 10000});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 500));
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 1500));
       const before = (window as any).grok.shell.tv.dataFrame.filter.trueCount;
       const tv = (window as any).grok.shell.tv;
@@ -88,8 +111,11 @@ test('Legend filtering', async ({page}) => {
 
   await softStep('Add Filter Panel filter Average Mass > 300 (composed)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
       fg.updateOrAdd({type: 'histogram', column: 'Average Mass', min: 300, max: 10000});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 1500));
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       const items = sp.root.querySelectorAll('[name="legend"] .d4-legend-item');
@@ -191,10 +217,13 @@ test('Legend filtering', async ({page}) => {
 
   await softStep('Scatter plot Row Source cycles', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
       const DG = (window as any).DG;
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Stereo Category', selected: ['R_ONE', 'S_UNKN']});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 800));
       const results: any = {};
       for (const src of ['All', 'Filtered', 'FilteredSelected', 'Selected']) {
@@ -211,6 +240,7 @@ test('Legend filtering', async ({page}) => {
   // Bar chart Stack with includeNulls=false — legend lists only still-drawn categories.
   await softStep('Bar chart stack edge case — includeNulls=false', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       const df = (window as any).grok.shell.tv.dataFrame;
       df.filter.setAll(true);
       const fg = (window as any).grok.shell.tv.getFiltersGroup();
@@ -225,6 +255,8 @@ test('Legend filtering', async ({page}) => {
       const scaffolds = df.col('Primary Scaffold Name').categories;
       const DG = (window as any).DG;
       fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'Primary Scaffold Name', selected: scaffolds.slice(0, 2)});
+      // technical: the filter group debounces, so onRowsFiltered fires on an
+      // intermediate row set — no channel marks the settled one
       await new Promise((r) => setTimeout(r, 1500));
       const legend = bc.root.querySelector('[name="legend"]');
       const items = legend?.querySelectorAll('.d4-legend-item') ?? [];
@@ -235,12 +267,14 @@ test('Legend filtering', async ({page}) => {
 
   await softStep('Cleanup', async () => {
     await page.evaluate(async ([id1, id2]) => {
+      const w = window as any;
       for (const id of [id1, id2]) {
         if (!id) continue;
         try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, [(globalThis as any).__filtLayoutId, (globalThis as any).__filtClickLayoutId]);
   });
 

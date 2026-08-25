@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -11,6 +14,7 @@ test('Legend structure rendering', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Add 7 viewers, set legend column to Core, Always visible', async () => {
     await v.addLegendViewers(page, {
@@ -134,9 +138,11 @@ test('Legend structure rendering', async ({page}) => {
 
   await softStep('Cleanup', async () => {
     await page.evaluate(async (id) => {
+      const w = window as any;
       if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, (globalThis as any).__srLayoutId);
   });
 

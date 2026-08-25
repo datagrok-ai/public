@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -9,6 +12,7 @@ test('Legend visibility and positioning', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
 
   await softStep('Setup steps 2-4: 7 viewers + Stereo Category legend on each', async () => {
     await v.addLegendViewers(page, {
@@ -355,6 +359,7 @@ test('Legend visibility and positioning', async ({page}) => {
   let projectId: string | null = null;
   await softStep('Sc11 steps 1-3: project save+close+reopen (FK graceful-degrade)', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let pid: string | null = null;
       try {
         const grok = (window as any).grok;
@@ -378,7 +383,8 @@ test('Legend visibility and positioning', async ({page}) => {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(pid);
         await reopened.open();
@@ -400,12 +406,14 @@ test('Legend visibility and positioning', async ({page}) => {
 
   await softStep('Cleanup: drop layouts/projects + closeAll', async () => {
     await page.evaluate(async ([l1, l2, l3, pid]: [string | null, string | null, string | null, string | null]) => {
+      const w = window as any;
       for (const id of [l1, l2, l3]) {
         if (id) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch (_) {}
       }
       if (pid) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(pid)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, [layoutId1, layoutId2, layoutId3, projectId]);
   });
 

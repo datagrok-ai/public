@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.map-viewer, gis.import.kml, gis.import.geo-json, gis.import.kmz]
+--- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';

@@ -69,7 +69,9 @@ export async function openTable(page: Page, options?: OpenTableOptions): Promise
 
 export async function openFilterPanel(page: Page): Promise<void> {
   await page.evaluate(() => (window as any).grok.shell.tv.getFiltersGroup());
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15000});
+  // a molecule column builds a substructure filter here, which has been seen to take
+  // longer than 15s on dev — the wait exits on the element, so the higher cap is free
+  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 30000});
 
   await page.locator('[name="viewer-Filters"] .d4-filter').first().hover();
 }

@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
+--- */
 // Scenario 2 picker UI runs on Histogram: Bar chart legend needs a color edit to render.
 
 import {test, expect} from '@playwright/test';
@@ -11,6 +14,7 @@ test('Legend color consistency', async ({page}) => {
 
   await loginToDatagrok(page);
   await v.openTable(page);
+  await v.installEventWaits(page);
   await v.addLegendViewers(page, {
     column: 'Stereo Category',
     viewers: ['Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
@@ -117,6 +121,7 @@ test('Legend color consistency', async ({page}) => {
 
   await softStep('Project round-trip — save + close + reopen + verify palette', async () => {
     const res = await page.evaluate(async () => {
+      const w = window as any;
       let projectId: string | null = null;
       try {
         const grok = (window as any).grok;
@@ -140,7 +145,8 @@ test('Legend color consistency', async ({page}) => {
         return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
       }
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 1200));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 1200);
       try {
         const reopened = await (window as any).grok.dapi.projects.find(projectId);
         await reopened.open();
@@ -175,10 +181,12 @@ test('Legend color consistency', async ({page}) => {
 
   await softStep('Cleanup', async () => {
     await page.evaluate(async ([layoutId, projectId]) => {
+      const w = window as any;
       if (layoutId) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(layoutId)); } catch (_) {}
       if (projectId) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(projectId)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise((r) => setTimeout(r, 500));
+      await w.__poll(() => Array.from((window as any).grok.shell.tableViews).length,
+        (c: number) => c === 0, 500);
     }, [(globalThis as any).__ccLayoutId, (globalThis as any).__ccProjectId]);
   });
 

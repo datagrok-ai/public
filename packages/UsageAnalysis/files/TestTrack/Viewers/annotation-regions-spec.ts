@@ -1,3 +1,6 @@
+/* ---
+realizes: [viewers.scatter-plot, viewers.line-chart, viewers.density-plot, viewers.box-plot, viewers.histogram, viewers.bar-chart, powerpack.dialogs.formula-lines]
+--- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import * as v from '../helpers/viewers';
