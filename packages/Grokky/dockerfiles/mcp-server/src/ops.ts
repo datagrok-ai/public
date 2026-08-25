@@ -213,7 +213,8 @@ export const DOMAINS: Domain[] = [
         },
         run: (a) => api.listSpaceChildren(a.spaceId, a.types, a.includeLinked),
       },
-      create: {desc: 'Create a root space.', params: {name: str('Space name', true)}, run: (a) => api.createRootSpace(a.name)},
+      create: {desc: 'Create a root space.', params: {name: str('Space name', true)},
+        run: (a) => api.createRootSpace(a.name)},
       delete: {
         desc: 'Delete a space.' + DRY_RUN_DESC,
         params: {id: str('Space ID', true), confirm: CONFIRM},
