@@ -16,6 +16,7 @@ import {HitBaseView} from './base-view';
 import {saveCampaignDialog} from './dialogs/save-campaign-dialog';
 import {calculateColumns} from './utils/calculate-single-cell';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
+import {attachHitInfoAi, attachHitCampaignAi} from './ai/view-functions';
 // @ts-ignore
 import '../../css/hit-triage.css';
 
@@ -26,6 +27,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
   get infoView(): InfoView {return this._infoView;}
   private _pickView?: DG.TableView;
   private _submitView?: SubmitView;
+  get submitView(): SubmitView | undefined {return this._submitView;}
 
   private _filterViewName = 'Hit Triage | Pick';
   private _friendlyName?: string;
@@ -51,6 +53,7 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
         (this.multiView.currentView as HitBaseView<HitTriageTemplate, HitTriageApp>).onActivated();
     });
     this.multiView.parentCall = c;
+    attachHitInfoAi(this.multiView, this);
     //grok.shell.addView(this.multiView);
 
     grok.events.onCurrentViewChanged.subscribe(() => {
@@ -177,7 +180,11 @@ export class HitTriageApp extends HitAppBase<HitTriageTemplate> {
 
   get campaignId(): string | undefined {return this._campaignId;}
 
-  get pickView(): DG.TableView {return this._pickView = this.getFilterView();}
+  get pickView(): DG.TableView {
+    const view = this.getFilterView();
+    attachHitCampaignAi(view, this, 'pick');
+    return this._pickView = view;
+  }
 
   get molColName() {return this._molColName ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;}
 

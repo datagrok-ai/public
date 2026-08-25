@@ -21,6 +21,7 @@ import {createTemplateAccordeon} from '../accordeons/new-template-accordeon';
 import {HitBaseView} from '../base-view';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {defaultPermissions, PermissionsDialog} from '../dialogs/permissions-dialog';
+import {hitInfoAiDescription} from '../ai/view-functions';
 
 export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   public readmePath = _package.webRoot + 'README_HT.md';
@@ -31,6 +32,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
+    this.aiDescription = hitInfoAiDescription(app.appName);
     this._appHeader = this.getAppHeader();
     this.root.appendChild(ui.div([this._appHeader], {style: {marginLeft: '10px'}}));
     this.root.appendChild(this._contentRoot);
@@ -324,9 +326,7 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
         ui.dialog('Delete campaign')
           .add(ui.divText(`Are you sure you want to delete campaign ${info.friendlyName ?? info.name}?`))
           .onOK(async () => {
-            await this.deleteCampaign(this.app.appName, info.name);
-            this.deletedCampaigns.push(info.name);
-            await this.init();
+            await this.deleteCampaignAndRefresh(this.app.appName, info.name);
           })
           .show();
       }, 'Delete campaign');

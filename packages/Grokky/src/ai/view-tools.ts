@@ -161,12 +161,13 @@ function matchScore(query: string, ...haystacks: (string | null | undefined)[]):
 }
 
 /** Compact, LLM-friendly description of a function: name, description, and inputs
- * (the `view` input is injected automatically at call time, so it is not listed). */
+ * (the `view`/`widget` inputs are injected automatically at call time, so they are not listed). */
 function funcBrief(f: DG.Func): object {
   let inputs: object[] = [];
   try {
     inputs = f.inputs
-      .filter((p) => p.name !== 'view' && (p.propertyType as string) !== 'view')
+      .filter((p) => p.name !== 'view' && (p.propertyType as string) !== 'view' &&
+        p.name !== 'widget' && (p.propertyType as string) !== 'widget')
       .map((p) => ({
         name: p.name,
         type: p.propertyType,
@@ -220,9 +221,16 @@ async function invokeViewFunction(args: any): Promise<any> {
     };
   }
   const params: {[key: string]: any} = {...(args?.parameters ?? {})};
+  // the targeted widget (when a ref was passed) — injected into `widget`-typed inputs,
+  // the calling convention of shared widget-action vocabularies (see DomainGrid)
+  const targetWidget = args?.widget != null && args.widget !== '' ? resolveWidgetRef(view, args.widget) : null;
   for (const inp of f.inputs) {
-    if (!(inp.name in params) && (inp.name === 'view' || (inp.propertyType as string) === 'view'))
+    if (inp.name in params)
+      continue;
+    if (inp.name === 'view' || (inp.propertyType as string) === 'view')
       params[inp.name] = view;
+    else if (inp.name === 'widget' || (inp.propertyType as string) === 'widget')
+      params[inp.name] = targetWidget ?? view;
   }
   const result = await f.apply(params);
   return {success: true, ...(result != null ? {result: serializeResult(result)} : {})};

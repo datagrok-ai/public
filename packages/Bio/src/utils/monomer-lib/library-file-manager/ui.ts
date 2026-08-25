@@ -21,6 +21,7 @@ import {_package} from '../../../package';
 import {MonomerManager} from '../monomer-manager/monomer-manager';
 import {DuplicateMonomerManager} from '../monomer-manager/duplicate-monomer-manager';
 import {MonomerLibManager} from '../lib-manager';
+import {attachMonomerLibrariesAi} from '../ai-functions';
 // @ts-ignore
 import './style.css';
 
@@ -156,10 +157,13 @@ class LibraryControlsManager {
   private constructor(
     private readonly libHelper: IMonomerLibHelper,
     private readonly userLibSettings: UserLibSettings,
+    subscribeToProviders: boolean = true,
   ) {
-    this.libHelper.providersDataChanged.subscribe(async () => {
-      await this.updateControlsForm();
-    });
+    if (subscribeToProviders) {
+      this.libHelper.providersDataChanged.subscribe(async () => {
+        await this.updateControlsForm();
+      });
+    }
   }
 
   private toLog(): string {
@@ -187,6 +191,13 @@ class LibraryControlsManager {
   public async updateControlsForm(): Promise<void> {
     const updatedForm = await this._createControlsForm();
     $('.monomer-lib-controls-form').replaceWith(updatedForm);
+  }
+
+  /** Rebuilds the library checkbox form wherever it is shown (dialog or view),
+   * without subscribing another manager to provider changes. */
+  static async refreshControlsForm(): Promise<void> {
+    const manager = new LibraryControlsManager(await getMonomerLibHelper(), await getUserLibSettings(), false);
+    await manager.updateControlsForm();
   }
 
   private async createLibraryControls(): Promise<DG.InputBase<boolean | null>[]> {
@@ -219,14 +230,7 @@ class LibraryControlsManager {
     dialog.add(ui.divText(`Are you sure you want to delete library "${fileName}"?`))
       .onOK(async () => {
         try {
-          const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
-          await updateLibrarySelectionStatus(false, fileName);
-          const provider = await findProviderWithLibraryName(await this.libHelper.getProviders(), fileName);
-          if (!provider)
-            throw new Error(`Cannot find provider for library ${fileName}`);
-          await provider.deleteLibrary(fileName);
-          // await this.fileManager.deleteLibraryFile(fileName);
-          progressIndicator.close();
+          await deleteMonomerLibraryByName(fileName);
         } catch (e) {
           console.error(e);
           grok.shell.error(`Failed to delete ${fileName} library`);
@@ -234,6 +238,44 @@ class LibraryControlsManager {
       })
       .showModal(false);
   }
+}
+
+/** Deselects and permanently deletes a monomer library file. */
+export async function deleteMonomerLibraryByName(fileName: string): Promise<void> {
+  const libHelper = await getMonomerLibHelper();
+  const progressIndicator = DG.TaskBarProgressIndicator.create(`Deleting ${fileName} library`);
+  try {
+    await updateLibrarySelectionStatus(false, fileName);
+    const provider = await findProviderWithLibraryName(await libHelper.getProviders(), fileName);
+    if (!provider)
+      throw new Error(`Cannot find provider for library ${fileName}`);
+    await provider.deleteLibrary(fileName);
+  } finally {
+    progressIndicator.close();
+  }
+}
+
+export async function refreshLibraryControlsForm(): Promise<void> {
+  await LibraryControlsManager.refreshControlsForm();
+}
+
+/** Saves the merged content of the active libraries as [fileName] and switches to it:
+ * the previous libraries are deactivated and the merged one becomes the active set. */
+export async function mergeActiveLibrariesInto(fileName: string, providerName?: string): Promise<void> {
+  const libManager = await MonomerLibManager.getInstance();
+  await libManager.awaitLoaded();
+  const libJSON = libManager.getBioLib().toJSON();
+  const providers = await libManager.getProviders();
+  const provider = providerName ? providers.find((p) => p.name === providerName) : providers[0];
+  if (!provider)
+    throw new Error(providerName ? `No storage provider '${providerName}'` : 'No monomer library providers available');
+  const prevLibs = await libManager.getAvaliableLibraryNames();
+  await provider.addOrUpdateLibraryString(fileName, JSON.stringify(libJSON));
+  const settings = await getUserLibSettings();
+  settings.exclude = prevLibs;
+  await setUserLibSettings(settings);
+  await libManager.loadMonomerLib(true);
+  await MonomerLibraryManagerWidget.reloadWidget();
 }
 
 async function updateLibrarySelectionStatus(
@@ -341,6 +383,7 @@ class LibManagerView {
     }
     this._view = DG.View.fromRoot(v);
     this._view.name = LibManagerView.viewName;
+    attachMonomerLibrariesAi(this._view);
     if (addView)
       grok.shell.addView(this._view);
 
@@ -451,16 +494,9 @@ class LibManagerView {
         }
         dialog.close();
         const fileName = newFileNameInput.value!;
-        const content = JSON.stringify(libJSON);
         this._view && ui.setUpdateIndicator(this._view.root, true);
         try {
-          const provider = providers.find((p) => p.name === providersInput.value)!; // should not be null
-          await provider.addOrUpdateLibraryString(fileName, content); // we will reload after updating settings
-          const settings = await getUserLibSettings();
-          settings.exclude = validLibPaths; // exclude all previous libraries
-          await setUserLibSettings(settings);
-          await this.libManager.loadMonomerLib(true);
-          await MonomerLibraryManagerWidget.reloadWidget();
+          await mergeActiveLibrariesInto(fileName, providersInput.value!);
         } catch (e) {
           grok.shell.error(`Failed to save library ${fileName}. see console for details.`);
           console.error(e);
