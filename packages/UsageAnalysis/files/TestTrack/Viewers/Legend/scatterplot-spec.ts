@@ -1,7 +1,7 @@
 /* ---
 realizes: [viewers.scatter-plot, viewers.box-plot, viewers.pc-plot]
 --- */
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

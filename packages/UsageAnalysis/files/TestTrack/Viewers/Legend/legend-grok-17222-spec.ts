@@ -3,7 +3,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 --- */
 // GROK-17222: legend item count must update under FP, in-viewer, and Pie/Bar click-to-filter.
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

@@ -3,7 +3,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 --- */
 // GROK-19083: legend marker entries must react to deselecting markers on the host viewer.
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

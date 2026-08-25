@@ -3,7 +3,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 --- */
 // github-3132: each legend color change persists independently; changing B must not reset A.
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

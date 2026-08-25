@@ -3,7 +3,7 @@ realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.
 --- */
 // GROK-17438: color change on one viewer keeps the legend visible on shared-legend viewers.
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

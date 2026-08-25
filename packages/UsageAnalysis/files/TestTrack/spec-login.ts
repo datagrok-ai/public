@@ -83,6 +83,13 @@ export async function loginToDatagrok(page: Page) {
   const token = process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)
     throw new Error('DATAGROK_AUTH_TOKEN is not set. Run via `grok test`, which derives the token from ~/.grok/config.yaml.');
+  // Idempotent so a spec running on the worker-scoped booted page (shared-page.ts) can keep
+  // its own login call: re-injecting would re-navigate and pay the ~10s boot this exists to
+  // avoid. A page that is not up yet reports false and takes the full path.
+  const alreadyUp = await page.evaluate(() =>
+    !!(window as any).grok?.shell && document.querySelector('.grok-preloader') == null,
+  ).catch(() => false);
+  if (alreadyUp) return;
   await injectToken(page, token);
 }
 

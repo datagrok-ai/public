@@ -3,7 +3,7 @@ realizes: [viewers.line-chart]
 --- */
 // GROK-17278: legend color customizations serialize into both layout and project state.
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

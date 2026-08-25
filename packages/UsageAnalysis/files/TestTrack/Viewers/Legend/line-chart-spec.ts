@@ -1,7 +1,7 @@
 /* ---
 realizes: [viewers.line-chart]
 --- */
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 

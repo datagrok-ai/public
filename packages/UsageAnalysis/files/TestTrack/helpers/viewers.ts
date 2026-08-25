@@ -1202,6 +1202,64 @@ export async function waitForViewerRendered(page: Page, viewerType: string, capM
   }), {type: viewerType, capMs});
 }
 
+/**
+ * Waits until a viewer stops repainting — gapMs with no further onViewerRendered.
+ *
+ * The event-driven replacement for waitForCanvasQuiet, which polls getImageData over the
+ * whole canvas every 300ms and hashes every pixel in JS to decide the same thing. Returns
+ * the number of renders observed: 0 means the cap expired with no repaint at all, which is
+ * a different fact from "it settled", and usually means the action never reached the viewer.
+ */
+export async function waitForViewerQuiet(
+  page: Page, viewerType: string, opts: {gapMs?: number; capMs?: number} = {},
+): Promise<number> {
+  await installEventWaits(page);
+  return page.evaluate(({type, gap, cap}) =>
+    (window as any).__quiet(`viewer:${type}.onViewerRendered`, gap, cap),
+  {type: viewerType, gap: opts.gapMs ?? 300, cap: opts.capMs ?? 3000});
+}
+
+/**
+ * Waits for a viewer property to actually take, racing the viewer's own
+ * onPropertyValueChanged rather than polling props in a loop.
+ *
+ * Returns the value seen at the end, so the caller asserts on it — a cap that expires
+ * returns the current value, not a throw.
+ */
+export async function waitForPropChange(
+  page: Page, viewerType: string, prop: string, expected: unknown, capMs = 2000,
+): Promise<unknown> {
+  await installEventWaits(page);
+  return page.evaluate(async ({type, p, want, cap}) => {
+    const w = window as any;
+    const read = () => {
+      const v = Array.from(w.grok.shell.tv.viewers).find((x: any) => x.type === type) as any;
+      return v ? (v.props as any)[p] ?? null : null;
+    };
+    if (read() === want) return read();
+    const deadline = Date.now() + cap;
+    while (Date.now() < deadline) {
+      await w.__eventFired(`viewer:${type}.onPropertyValueChanged`, deadline - Date.now());
+      if (read() === want) break;
+    }
+    return read();
+  }, {type: viewerType, p: prop, want: expected, cap: capMs});
+}
+
+/**
+ * Waits for the grid to finish painting its cells (onAfterDrawContent), quiet-gap style.
+ *
+ * The grid repaints in a burst like any other viewer, so the first event is not the last.
+ */
+export async function waitForGridPainted(
+  page: Page, opts: {gapMs?: number; capMs?: number} = {},
+): Promise<number> {
+  await installEventWaits(page);
+  return page.evaluate(({gap, cap}) =>
+    (window as any).__quiet('viewer:Grid.onAfterDrawContent', gap, cap),
+  {gap: opts.gapMs ?? 250, cap: opts.capMs ?? 3000});
+}
+
 export async function waitForViewerEvent(
   page: Page, viewerType: string, eventProp: string, capMs = 3000,
 ): Promise<void> {
@@ -1356,6 +1414,28 @@ export async function installEventWaits(page: Page): Promise<void> {
     };
 
     w.__eventFired = (channel: string, capMs = 2000) => w.__armed(channel, capMs);
+
+    // "Settled", as opposed to "fired once": resolves after gapMs passes with no further
+    // event on the channel. A repaint arrives as a BURST of onViewerRendered — racing the
+    // first one lands mid-render, which is why the canvas readers ended up hashing pixels
+    // on a timer instead. Resolves with the number of events seen, so a caller can tell a
+    // real settle (>0) from a cap with nothing at all (0).
+    w.__quiet = (channel: string, gapMs = 300, capMs = 3000) => new Promise<number>((resolve) => {
+      const stream = w.__stream(channel);
+      let seen = 0;
+      let timer: any = null;
+      let sub: any = null;
+      const done = () => {
+        clearTimeout(timer);
+        try { sub?.unsubscribe(); } catch (_) {}
+        clearTimeout(cap);
+        resolve(seen);
+      };
+      const cap = setTimeout(done, capMs);
+      const arm = () => { clearTimeout(timer); timer = setTimeout(done, gapMs); };
+      sub = stream.subscribe(() => { seen++; arm(); });
+      arm();
+    });
 
     // In-page twin of pollValue, for state with no event behind it — a viewer
     // appearing in tv.viewers after a project opens, a legend item rendering.

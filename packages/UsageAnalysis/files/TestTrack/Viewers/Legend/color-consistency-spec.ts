@@ -3,7 +3,7 @@ realizes: [viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie
 --- */
 // Scenario 2 picker UI runs on Histogram: Bar chart legend needs a color edit to render.
 
-import {test, expect} from '@playwright/test';
+import {test, expect} from '../../shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
