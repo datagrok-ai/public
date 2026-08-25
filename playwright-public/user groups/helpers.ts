@@ -95,7 +95,11 @@ export async function clearGallerySearch(page: Page, kind: 'users' | 'groups' | 
 export async function searchAndWaitCard(
   page: Page, kind: 'users' | 'groups' | 'roles', search: string, matchName: string = search,
 ): Promise<void> {
-  for (let i = 0; i < 8; i++) {
+  // A fixed attempt count spends about half a minute and then gives up; on a loaded CI agent the
+  // search index sometimes takes longer than that, which is the only way this has ever failed.
+  // Bound the wait by time instead, so a slow indexer costs patience rather than a red run.
+  const deadline = Date.now() + 120_000;
+  for (let i = 0; i === 0 || Date.now() < deadline; i++) {
     await searchGallery(page, kind, search);
     const card = galleryCardByName(page, matchName);
     if (await card.isVisible().catch(() => false)) {
