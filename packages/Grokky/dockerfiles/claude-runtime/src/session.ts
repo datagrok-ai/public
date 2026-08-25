@@ -14,6 +14,7 @@ import {GroundingGate, isSmallTalk} from './grounding';
 import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions,
   apiUrlFromMcpUrl} from './query-options';
 import {rewriteForDocker} from './constants';
+import {getProviderInfo, registerMcpSession} from './broker/broker-client';
 import {waitForClaim, endTask} from './tasks';
 
 // Re-exported so server.ts keeps importing the transport surface from one place.
@@ -344,7 +345,13 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       new GroundingGate(onGateBlock, () => turnText.get(sid) ?? '') : undefined;
 
     const rec = getSession(sid);
-    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl,
+    const providerInfo = await getProviderInfo();
+    if (providerInfo.authRequired) {
+      emit(ws, {type: 'auth_required', sessionId: sid});
+      return;
+    }
+    const datagrokMcpUrl = mcpUrl ? await registerMcpSession(mcpUrl, data.apiKey, apiUrl) : undefined;
+    const opts = buildOptions(browserExecServer, providerInfo, rec?.sdkId, datagrokMcpUrl,
       data.systemPromptMode, userDir, data.model,
       rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate, viewToolsServer);
     const canUseTool = async (toolName: string, input: any) => {

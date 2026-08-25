@@ -4,6 +4,7 @@ import {z} from 'zod/v4';
 import type {ToolInputs, McpInputs, ToolName, McpName, ClientToolDef} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
+import {buildCliEnv, ProviderInfo} from './broker/provider-env';
 import type {Verifier} from './verify';
 import type {GroundingGate} from './grounding';
 import {buildSystemPrompt} from './prompts';
@@ -43,17 +44,6 @@ export function makeAccessGuard(userDir?: string): HookCallback {
 // ---------------------------------------------------------------------------
 // URL plumbing — container-to-host rewrites and MCP request headers
 // ---------------------------------------------------------------------------
-
-function buildMcpHeaders(apiKey?: string, apiUrl?: string): Record<string, string> {
-  const headers: Record<string, string> = {};
-  if (apiKey) {
-    headers['Authorization'] = apiKey;
-    headers['x-user-api-key'] = apiKey;
-  }
-  if (apiUrl)
-    headers['x-datagrok-api-url'] = apiUrl;
-  return headers;
-}
 
 export function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   const idx = mcpUrl.indexOf('/docker/containers/proxy/');
@@ -243,7 +233,7 @@ export function createViewToolsServer(awaitInput: AwaitInput, tools: ClientToolD
 // ---------------------------------------------------------------------------
 
 function buildMcpServers(
-  browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string,
+  browserExecServer: ReturnType<typeof createBrowserExecServer>, datagrokMcpUrl?: string,
   viewToolsServer?: ReturnType<typeof createViewToolsServer>,
 ): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
@@ -252,15 +242,8 @@ function buildMcpServers(
   if (viewToolsServer)
     servers['datagrok-view'] = viewToolsServer;
 
-  const mcpUrl = mcpServerUrl || '';
-  if (mcpUrl) {
-    const apiUrl = apiUrlFromMcpUrl(mcpUrl);
-    servers['datagrok'] = {
-      type: 'http' as const,
-      url: mcpUrl,
-      headers: buildMcpHeaders(apiKey, apiUrl),
-    };
-  }
+  if (datagrokMcpUrl)
+    servers['datagrok'] = {type: 'http' as const, url: datagrokMcpUrl};
 
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
@@ -272,7 +255,8 @@ const TURN_LIMITS = {
 
 export function buildOptions(
   browserExecServer: ReturnType<typeof createBrowserExecServer>,
-  resume?: string, apiKey?: string, mcpServerUrl?: string,
+  providerInfo: ProviderInfo,
+  resume?: string, datagrokMcpUrl?: string,
   systemPromptMode?: string, userDir?: string,
   model?: ClaudeModel,
   forkSession?: boolean, resumeAt?: string,
@@ -281,7 +265,7 @@ export function buildOptions(
   viewToolsServer?: ReturnType<typeof createViewToolsServer>,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
-  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, viewToolsServer);
+  const mcpServers = buildMcpServers(browserExecServer, datagrokMcpUrl, viewToolsServer);
   // Bash and 'none' modes are minimal — no output-format skills, no reasoning. Full-prompt turns
   // get thinking + higher effort so the "ground answers in sources, don't answer from memory" rule
   // has a deliberation step to fire in (see DATAGROK_PROMPT) before the model commits an answer.
@@ -302,6 +286,7 @@ export function buildOptions(
     'AskUserQuestion', 'Skill'];
   return {
     systemPrompt,
+    env: buildCliEnv(providerInfo),
     tools: BUILTIN_TOOLS,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
     ...(fullMode ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),

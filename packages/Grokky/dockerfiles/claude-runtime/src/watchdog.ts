@@ -58,10 +58,13 @@ export function childProcesses(parentPid = process.pid): {pid: number; command: 
 let authPid: number | null = null;
 export function setAuthPid(pid: number | null): void { authPid = pid; }
 
+const brokerPid = Number(process.env['BROKER_PID']) || -1;
+const isProtected = (pid: number) => pid === authPid || pid === brokerPid;
+
 /** Last resort after an abort the wedged process never acted on. Kills our direct children,
  * which is the agent CLI and anything it spawned. Returns how many were signalled. */
 export function killStrayChildren(reason: string): number {
-  const children = childProcesses().filter((c) => c.pid !== authPid);
+  const children = childProcesses().filter((c) => !isProtected(c.pid));
   for (const c of children) {
     try {
       process.kill(c.pid, 'SIGKILL');
@@ -90,7 +93,7 @@ export function startOrphanReaper(activeCount: () => number, intervalMs = 30000)
     // it is cleaning up after.
     try {
       const agents = childProcesses()
-        .filter((c) => /claude/.test(c.command) && c.pid !== authPid)
+        .filter((c) => /claude/.test(c.command) && !isProtected(c.pid))
         .sort((a, b) => a.startTime - b.startTime);
       const surplus = agents.length - Math.max(0, activeCount());
       if (surplus <= 0) return;

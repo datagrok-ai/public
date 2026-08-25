@@ -273,12 +273,15 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 ## Subscription authorization (UI)
 
-On a Claude **subscription** (mounted `~/.claude/.credentials.json`, not an API key) the token
+On a Claude **subscription** (OAuth token in `.credentials.json`, not an API key) the token
 expires periodically. The panel renews it inline via a browser-relayed `claude auth login`: the user
 opens the OAuth page, pastes the returned code, and clicks **Submit**; on success the strip turns
-green and the message can be re-sent. Handlers `handleAuthStart` / `handleAuthCode` in
-[`server.ts`](dockerfiles/claude-runtime/src/server.ts) drive the CLI; UI in
+green and the message can be re-sent. `handleAuthStart` / `handleAuthCode` in
+[`server.ts`](dockerfiles/claude-runtime/src/server.ts) relay this to the **broker** (which runs the
+login as its own uid and owns `/home/broker/.claude/.credentials.json`, 0600 — unreadable by the
+agent uid); the broker injects the Bearer token at egress and refreshes it on 401. UI in
 [`src/ai/ui.ts`](src/ai/ui.ts); `auth_*` messages in [CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md).
+See the credential-broker design in [`docs/`](docs/) for the full isolation model.
 
 | Session expired | Code pasted | Session renewed |
 |---|---|---|
