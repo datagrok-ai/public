@@ -3,7 +3,7 @@ export type {ReadonlySignal} from './signals.js';
 export {Scope} from './scope.js';
 export {propertyFields} from './property-like.js';
 export type {PropertyLike} from './property-like.js';
-export type {ObservableLike, EventTypeLike, RectBoundsLike, InputStatusLike, WidgetStatusLike, FuncLike,
+export type {ObservableLike, IEventType, IRectBounds, IInputStatus, IWidgetStatus, FuncLike,
   WidgetLike, BindPropLike, BindSourceLike, ComponentMetaLike} from './widget-like.js';
 export {Component, Control} from './component.js';
 export type {PropertyChange, ComponentState} from './component.js';

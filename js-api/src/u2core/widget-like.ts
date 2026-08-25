@@ -13,29 +13,32 @@ export interface ObservableLike<T> {
   subscribe(next: (x: T) => void): {unsubscribe(): void};
 }
 
-/** Mirrors js-api `IEventType`. */
-export interface EventTypeLike {
+/** Event type descriptor a widget reports. */
+export interface IEventType {
   name: string;
   eventName: string;
   description: string;
 }
 
-/** Mirrors js-api `IRectBounds`. */
-export interface RectBoundsLike {
+/** Bounding rectangle of a named hit area. */
+export interface IRectBounds {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-/** Mirrors js-api `IInputStatus`: the live state of ONE named input, read on demand. */
-export interface InputStatusLike {
+/** Live state of ONE named input of a widget — the machine-readable counterpart of what the
+ * user sees in a form. Values and validation are read on demand, never cached; `name` is the
+ * name the widget's properties address the input by, so `props[name] = value` writes exactly
+ * what typing into it would. */
+export interface IInputStatus {
   name: string;
   caption?: string;
   type: string;
   semType?: string;
-  value: unknown;
-  choices?: unknown[];
+  value: any;
+  choices?: any[];
   required: boolean;
   valid: boolean;
   error?: string;
@@ -43,15 +46,15 @@ export interface InputStatusLike {
   ref?: string;
 }
 
-/** Mirrors js-api `IWidgetStatus`: the runtime snapshot the automated testing system reads. */
-export interface WidgetStatusLike {
+/** Runtime snapshot of a widget's structure, read by the automated testing system. */
+export interface IWidgetStatus {
   parts: {[name: string]: Element};
-  hitAreas: {[name: string]: RectBoundsLike};
+  hitAreas: {[name: string]: IRectBounds};
   shortcuts: {[key: string]: string};
-  events: EventTypeLike[];
+  events: IEventType[];
   description: string | null;
   error: string | null;
-  inputs?: InputStatusLike[];
+  inputs?: IInputStatus[];
 }
 
 /** A callable a component exposes, params as properties. The invocation is named after
@@ -71,7 +74,7 @@ export interface WidgetLike {
   getFunctions(): FuncLike[];
   onEvent(eventId?: string | null): ObservableLike<unknown>;
   aiDescription: string | null;
-  getWidgetStatus(): WidgetStatusLike;
+  getWidgetStatus(): IWidgetStatus;
 }
 
 /** Mirrors the spec layer's `BindProp` (structural, as {@link ComponentMetaLike} is): one

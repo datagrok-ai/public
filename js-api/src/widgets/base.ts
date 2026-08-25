@@ -14,10 +14,8 @@ import {MapProxy} from "../proxies";
 import {IDartApi} from "../api/grok_api.g";
 // The .js suffix keeps webpack on the same module instance the DG.U2 barrel loads —
 // an extensionless import resolves to the .ts twin and bundles a second Control.
-import {Control} from "../u2core/component.js";
-import type {PropertyChange} from "../u2core/component.js";
-import type {Scope} from "../u2core/scope.js";
-import type {ObservableLike} from "../u2core/widget-like.js";
+import {Control} from "../u2core/index.js";
+import type {PropertyChange, Scope, ObservableLike, IWidgetStatus} from "../u2core/index.js";
 
 declare let DG: any;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -199,73 +197,7 @@ export class ObjectPropertyBag {
 }
 
 
-/** Event type descriptor as returned by {@link IWidgetStatus.events}. */
-export interface IEventType {
-  name: string;
-  eventName: string;
-  description: string;
-}
-
-/** Bounding rectangle returned by {@link IWidgetStatus.hitAreas}. */
-export interface IRectBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-/**
- * Live state of ONE named input of a widget, as reported by
- * {@link IWidgetStatus.inputs} — the machine-readable counterpart of what the user
- * sees in a form. Values and validation are read on demand, never cached: a widget
- * reports whatever it holds at the moment {@link Widget.getWidgetStatus} is called.
- *
- * {@link name} is the name the widget's properties address the input by, so
- * `widget.props[status.name] = value` writes exactly what typing into it would.
- */
-export interface IInputStatus {
-  /** Name of the input — also its property name in {@link Widget.props}. */
-  name: string;
-  /** Human-facing label. */
-  caption?: string;
-  /** Value type: a {@link TYPE} name ('string', 'int', 'datetime'...), or 'ref' when
-   * the value addresses another object (see {@link ref}). */
-  type: string;
-  semType?: string;
-  value: any;
-  /** Allowed values, when the input is a closed vocabulary. */
-  choices?: any[];
-  /** Whether an empty value is a validation error. */
-  required: boolean;
-  valid: boolean;
-  /** Validation message; absent while {@link valid}. */
-  error?: string;
-  description?: string;
-  /** What a `'ref'` value points at (a domain table address, 'User', 'Group'...). */
-  ref?: string;
-}
-
-/**
- * Runtime snapshot of a widget's structure, used by the automated testing system.
- * Returned by {@link Widget.getWidgetStatus}.
- */
-export interface IWidgetStatus {
-  /** Named UI parts: part name → root DOM Element. */
-  parts: { [name: string]: Element };
-  /** Named interactive regions: region name → bounding rectangle. */
-  hitAreas: { [name: string]: IRectBounds };
-  /** Keyboard shortcuts: key combo string → human-readable description. */
-  shortcuts: { [key: string]: string };
-  /** Events fired by this widget. */
-  events: IEventType[];
-  /** Free-form description of the widget's current state. */
-  description: string | null;
-  /** Validation error message; null means the widget is in a valid state. */
-  error: string | null;
-  /** Live state of the widget's named inputs — present on widgets that edit named
-   * values (forms), absent on the ones that do not. */
-  inputs?: IInputStatus[];
-}
+export type {IEventType, IRectBounds, IInputStatus, IWidgetStatus} from "../u2core/index.js";
 
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget<TSettings = any> extends Control {

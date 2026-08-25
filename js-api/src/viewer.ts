@@ -18,12 +18,8 @@ import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
 import {ViewerEvent} from './api/d4.api.g';
-import {signal} from './u2core/signals.js';
-import type {Signal} from './u2core/signals.js';
-import {dfBindings} from './u2core/df-bindings.js';
-import type {DataFrameLike} from './u2core/df-bindings.js';
-import type {BindPropLike, BindSourceLike, ObservableLike} from './u2core/widget-like.js';
-import type {PropertyChange} from './u2core/component.js';
+import {signal, dfBindings} from './u2core/index.js';
+import type {Signal, DataFrameLike, BindPropLike, BindSourceLike, ObservableLike, PropertyChange} from './u2core/index.js';
 
 declare let DG: any;
 declare let ui: any;

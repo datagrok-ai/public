@@ -3,7 +3,7 @@ import {Signal, computed, isWritableSignal, signal} from './signals.js';
 import {propertyFields} from './property-like.js';
 import type {PropertyLike} from './property-like.js';
 import type {BindPropLike, BindSourceLike, ComponentMetaLike, FuncLike, ObservableLike, WidgetLike,
-  WidgetStatusLike} from './widget-like.js';
+  IWidgetStatus} from './widget-like.js';
 
 /** What a widget announces when one of its properties changed: the property's name, or null when
  * several changed at once (or the widget cannot say which). Structural — nothing platform-typed. */
@@ -202,7 +202,7 @@ export class Component implements WidgetLike, BindSourceLike {
     };
   }
 
-  getWidgetStatus(): WidgetStatusLike {
+  getWidgetStatus(): IWidgetStatus {
     return {
       parts: {},
       hitAreas: {},

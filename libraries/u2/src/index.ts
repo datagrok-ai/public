@@ -3,8 +3,8 @@ export type {ReadonlySignal} from './core/signals.js';
 export {Scope} from './core/scope.js';
 export {Component, Control} from './core/component.js';
 export type {PropertyLike} from './core/property-like.js';
-export type {WidgetLike, FuncLike, ObservableLike, WidgetStatusLike, InputStatusLike, EventTypeLike,
-  RectBoundsLike, ComponentMetaLike} from './core/widget-like.js';
+export type {WidgetLike, FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IEventType,
+  IRectBounds, ComponentMetaLike} from './core/widget-like.js';
 export {bindText, bindValue} from './core/bind.js';
 export {AsyncSource} from './core/async-source.js';
 export type {AsyncState} from './core/async-source.js';
