@@ -1,10 +1,5 @@
-// SVM (LIBSVM) modeling tools.
-//
-// Structure mirrors src/xgbooster.ts (packed container, cached handle,
-// prediction decoding); feature standardization mirrors src/softmax-classifier.ts
-// (the kernel never normalizes - "variant B"). Two tasks are chosen from the
-// target column - string/bool gives classification (C_SVC, one-vs-one for 3+
-// classes), numeric gives regression (EPSILON_SVR).
+// SVM (LIBSVM). Structure mirrors xgbooster.ts; variant-B standardization.
+// Target type picks the task - string/bool → C_SVC, numeric → EPSILON_SVR.
 
 import * as DG from 'datagrok-api/dg';
 
@@ -18,10 +13,9 @@ enum DEFAULT {
   NU = 0.5, // for nu-variants (unused in v1)
 }
 
-/** Interactivity thresholds. SMO is superlinear in the sample count
- *  (RBF ~ O(n^2)-O(n^3)), so these are far below the XGBoost thresholds. */
+/** SMO ~O(n²)–O(n³), so thresholds are below XGBoost (covers winequality ~6.5k). */
 enum INTERACTIVITY {
-  MAX_SAMPLES = 5000,
+  MAX_SAMPLES = 10000,
   MAX_FEATURES = 50,
 }
 
@@ -40,6 +34,8 @@ enum TITLES {
   MODEL_SIZE = 'Model size',
   CATS = 'Categories',
   CATS_SIZE = 'Categories size',
+  FEATURES = 'Features',
+  FEATURES_SIZE = 'Features size',
   STATS_SIZE = 'Stats size',
   WAS_BOOL = 'Was bool',
   VERSION = 'Version',
@@ -57,8 +53,7 @@ export interface SvmFitOptions {
   epsilon: number; // SVR loss epsilon
 }
 
-/** Column view sliced to the column length: col.getRawData() may be LONGER
- *  than col.length (capacity mechanism) - never copy it unsliced. */
+/** Sliced to col.length — the raw array may be longer. */
 function columnView(col: DG.Column): ColumnView {
   return (col.getRawData() as ColumnView).subarray(0, col.length) as ColumnView;
 }
@@ -87,6 +82,8 @@ export class SVM {
   private targetWasBool = false;
   private avgs: Float32Array = new Float32Array(0);
   private stdevs: Float32Array = new Float32Array(0);
+  /** Feature names (training order), used to match apply-time columns by name. */
+  private featureNames: string[] | undefined = undefined;
   private featuresCount = 0;
   /** Cached live wasm handle; recreated lazily from modelBytes. */
   private handle = 0;
@@ -112,6 +109,8 @@ export class SVM {
 
       this.targetType = headerDf.get(TITLES.TYPE, 0) as string;
       const categoriesBytesSize = headerDf.get(TITLES.CATS_SIZE, 0) as number;
+      const featuresBytesCol = headerDf.col(TITLES.FEATURES_SIZE);
+      const featuresBytesSize = (featuresBytesCol !== null) ? (featuresBytesCol.get(0) as number) : 0;
       const statsBytesSize = headerDf.get(TITLES.STATS_SIZE, 0) as number;
       const modelBytesSize = headerDf.get(TITLES.MODEL_SIZE, 0) as number;
       const wasBoolCol = headerDf.col(TITLES.WAS_BOOL);
@@ -124,6 +123,14 @@ export class SVM {
         this.targetCategories = categoriesDf.col(TITLES.CATS)?.toList();
       }
       offset += categoriesBytesSize;
+
+      // Feature names (training order)
+      if (featuresBytesSize > 0) {
+        const featuresDf = DG.DataFrame.fromByteArray(
+          new Uint8Array(packedModel.buffer, packedModel.byteOffset + offset, featuresBytesSize));
+        this.featureNames = featuresDf.col(TITLES.FEATURES)?.toList();
+      }
+      offset += featuresBytesSize;
 
       // Standardization stats
       const statsDf = DG.DataFrame.fromByteArray(
@@ -147,8 +154,7 @@ export class SVM {
   public async fit(features: DG.ColumnList, target: DG.Column, options: SvmFitOptions): Promise<void> {
     this.validateFitInputs(features, target, options);
 
-    // Ensure the main-thread module (used by the synchronous predict) is up.
-    // Idempotent; needed where package init does not run (package-test bundle).
+    // Idempotent init for the main-thread predict module.
     await initSvm();
 
     // A boolean target is converted to a 2-class string target ('true'/'false').
@@ -172,8 +178,9 @@ export class SVM {
     }
 
     this.featuresCount = features.length;
+    this.featureNames = features.names();
     this.extractStats(features);
-    const cols = this.standardizedColumns(features);
+    const cols = this.standardizedColumns(features.toList());
 
     const hyper: SvmHyperParams = {
       svmType,
@@ -198,11 +205,10 @@ export class SVM {
   public predict(features: DG.ColumnList): DG.Column {
     if (this.modelBytes === undefined)
       throw new Error('Failed to apply non-trained model');
-    if (features.length !== this.featuresCount)
-      throw new Error('SVM: prediction feature count differs from the trained model');
 
-    const nRows = features.byIndex(0).length;
-    const cols = this.standardizedColumns(features);
+    const ordered = this.orderedFeatures(features);
+    const nRows = ordered[0].length;
+    const cols = this.standardizedColumns(ordered);
 
     let prediction: Float32Array;
     try {
@@ -210,8 +216,7 @@ export class SVM {
         this.handle = loadSvmModel(this.modelBytes);
       prediction = predictSvm(this.handle, cols, nRows);
     } catch (err) {
-      // On a module crash the cached handle is dead; drop it so the next call
-      // reloads the model into the re-initialized module.
+      // A crash invalidates the handle; reset for reload.
       this.invalidateHandle();
       throw err;
     }
@@ -237,6 +242,12 @@ export class SVM {
     ]).toByteArray() : undefined;
     const categoriesBytesSize = (categoriesBytes !== undefined) ? categoriesBytes.length : 0;
 
+    // Feature names (training order)
+    const featuresBytes = (this.featureNames !== undefined) ? DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, TITLES.FEATURES, this.featureNames),
+    ]).toByteArray() : undefined;
+    const featuresBytesSize = (featuresBytes !== undefined) ? featuresBytes.length : 0;
+
     // Standardization stats
     const statsBytes = DG.DataFrame.fromColumns([
       DG.Column.fromFloat32Array(TITLES.AVGS, this.avgs),
@@ -249,6 +260,7 @@ export class SVM {
       DG.Column.fromStrings(TITLES.TYPE, [this.targetType]),
       DG.Column.fromInt32Array(TITLES.MODEL_SIZE, new Int32Array([this.modelBytes.length])),
       DG.Column.fromInt32Array(TITLES.CATS_SIZE, new Int32Array([categoriesBytesSize])),
+      DG.Column.fromInt32Array(TITLES.FEATURES_SIZE, new Int32Array([featuresBytesSize])),
       DG.Column.fromInt32Array(TITLES.STATS_SIZE, new Int32Array([statsBytesSize])),
       DG.Column.fromInt32Array(TITLES.WAS_BOOL, new Int32Array([this.targetWasBool ? 1 : 0])),
       DG.Column.fromInt32Array(TITLES.VERSION, new Int32Array([CONTAINER_VERSION])),
@@ -256,7 +268,7 @@ export class SVM {
     const headerBytesSize = headerBytes.length;
 
     const reservedSize = Math.ceil((SIZE_BYTES + headerBytesSize + categoriesBytesSize +
-      statsBytesSize + this.modelBytes.length + PACK_RESERVE) / BLOCK_SIZE) * BLOCK_SIZE;
+      featuresBytesSize + statsBytesSize + this.modelBytes.length + PACK_RESERVE) / BLOCK_SIZE) * BLOCK_SIZE;
     const packedModel = new Uint8Array(reservedSize);
 
     let offset = 0;
@@ -270,6 +282,10 @@ export class SVM {
     if (categoriesBytesSize > 0)
       packedModel.set(categoriesBytes!, offset);
     offset += categoriesBytesSize;
+
+    if (featuresBytesSize > 0)
+      packedModel.set(featuresBytes!, offset);
+    offset += featuresBytesSize;
 
     packedModel.set(statsBytes, offset);
     offset += statsBytesSize;
@@ -326,13 +342,30 @@ export class SVM {
     }
   }
 
+  /** Apply-time columns in training order, matched by name (legacy: positional). */
+  private orderedFeatures(features: DG.ColumnList): DG.Column[] {
+    if (this.featureNames === undefined) {
+      if (features.length !== this.featuresCount)
+        throw new Error('SVM: prediction feature count differs from the trained model');
+      return features.toList();
+    }
+    const byName = new Map<string, DG.Column>();
+    for (const col of features)
+      byName.set(col.name, col);
+    return this.featureNames.map((name) => {
+      const col = byName.get(name);
+      if (col === undefined)
+        throw new Error(`SVM: model feature is missing in the table: "${name}"`);
+      return col;
+    });
+  }
+
   /** One standardized float32 view per feature column (zero when stdev == 0). */
-  private standardizedColumns(features: DG.ColumnList): Float32Array[] {
-    const nRows = features.byIndex(0).length;
-    const out = new Array<Float32Array>(features.length);
-    let j = 0;
-    for (const col of features) {
-      const raw = columnView(col);
+  private standardizedColumns(cols: DG.Column[]): Float32Array[] {
+    const nRows = cols[0].length;
+    const out = new Array<Float32Array>(cols.length);
+    for (let j = 0; j < cols.length; ++j) {
+      const raw = columnView(cols[j]);
       const avg = this.avgs[j];
       const stdev = this.stdevs[j];
       const c = new Float32Array(nRows);
@@ -341,7 +374,6 @@ export class SVM {
           c[i] = (raw[i] - avg) / stdev;
       }
       out[j] = c;
-      ++j;
     }
     return out;
   }

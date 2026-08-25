@@ -1,24 +1,9 @@
-// Thin wasm wrapper over the LIBSVM C API for the EDA package.
-//
-// Design constraints (mirror wasm/xgboost/xgboost-api.cpp):
-//  - Input is columnar float32, exactly as Datagrok stores columns: one
-//    contiguous buffer where column j occupies [j*nRows, (j+1)*nRows). Each
-//    row is converted to a dense svm_node vector (1-based indices, -1
-//    terminator) here; no DG access on this side.
-//  - Models live in a handle table and survive between calls; prediction
-//    never re-parses model bytes.
-//  - C++ exceptions stay disabled (Emscripten default). LIBSVM's core never
-//    throws and never calls exit(); svm_check_parameter is the second line of
-//    defense, the first being TypeScript validation.
-//
-// Two LIBSVM-specific points that differ from XGBoost:
+// Thin wasm wrapper over the LIBSVM C API. Two LIBSVM-specific points:
 //  1. No in-memory (de)serialization: svm_save_model / svm_load_model are
 //     file-based, so we round-trip through Emscripten MEMFS (kModelPath).
-//  2. svm_train does NOT copy the support vectors — model->SV point into the
-//     input svm_node buffers. So right after training we save+load through
-//     MEMFS to obtain a self-contained model (free_sv=1) and then free the
-//     input buffers. The handle table therefore always holds self-contained
-//     models.
+//  2. svm_train does NOT copy the support vectors (model->SV point into the
+//     input buffers), so right after training we save+load through MEMFS to
+//     obtain a self-contained model (free_sv=1) before freeing the inputs.
 #include "svm.h"
 
 #include <cstdint>
@@ -35,8 +20,7 @@
 
 namespace {
 
-// Single MEMFS scratch path for save/load. Access is strictly sequential
-// (the TypeScript side runs one training job at a time in a worker).
+// Sequential MEMFS scratch path.
 const char* const kModelPath = "/svm.model";
 
 // Silence LIBSVM's SMO progress output (stdout is meaningless in wasm).
@@ -101,12 +85,7 @@ bool writeFile(const char* path, const uint8_t* data, int n) {
 
 extern "C" {
 
-// Train a model. Returns a model handle (> 0) on success, 0 on failure.
-// colMajor: nRows*nCols float32, column j at [j*nRows, (j+1)*nRows).
-// labels: nRows float32 (classification: category codes 0..K-1; regression: y).
-// svmType / kernelType use the enum codes from svm.h. Unused-for-task
-// parameters (e.g. epsilon for classification) are accepted and ignored by
-// LIBSVM, so the TypeScript side may always pass them.
+// Train a model → handle (>0) or 0. Columnar float32 in; unused params ignored.
 EMSCRIPTEN_KEEPALIVE
 int svmTrain(const float* colMajor, int nRows, int nCols, const float* labels,
              int svmType, int kernelType, double C, double gamma, int degree,
@@ -185,8 +164,7 @@ int svmModelSize(int handle) {
   return static_cast<int>(slot->bytes.size());
 }
 
-// Copy the serialized model (cached by svmModelSize) into dst; returns byte
-// count or -1 (no cache / dst too small).
+// Copy serialized model into dst; returns bytes or -1.
 EMSCRIPTEN_KEEPALIVE
 int svmModelCopy(int handle, uint8_t* dst, int dstSize) {
   ModelSlot* slot = GetSlot(handle);
@@ -196,8 +174,7 @@ int svmModelCopy(int handle, uint8_t* dst, int dstSize) {
   return static_cast<int>(slot->bytes.size());
 }
 
-// Load a model from serialized bytes (LIBSVM text format). Returns a handle
-// (> 0) or 0. The bytes are cached in the slot for later svmModelSize/Copy.
+// Load model from LIBSVM text bytes → handle (>0) or 0; bytes cached.
 EMSCRIPTEN_KEEPALIVE
 int svmLoadModel(const uint8_t* bytes, int size) {
   if (bytes == nullptr || size <= 0) return 0;
@@ -209,9 +186,7 @@ int svmLoadModel(const uint8_t* bytes, int size) {
                                 static_cast<size_t>(size)));
 }
 
-// Predict over columnar data. out receives nRows floats (classification:
-// the class label as a category code; regression: the predicted value).
-// Returns 0 on success, -1 on failure.
+// Predict over columnar data; 0 on success, -1 on failure.
 EMSCRIPTEN_KEEPALIVE
 int svmPredict(int handle, const float* colMajor, int nRows, int nCols,
                float* out, int outLen) {

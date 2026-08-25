@@ -156,6 +156,22 @@ category('XGBoost', () => {
     );
   }, {timeout: TIMEOUT});
 
+  test('Feature column order', async () => {
+    // Column order must not matter — matched by name.
+    const df = classificationDataset(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+    const features = df.columns;
+    const target = features.byIndex(MIN_COLS);
+    features.remove(target.name);
+
+    const model = new XGBooster();
+    await model.fit(features, target);
+    const before = model.predict(features);
+
+    const unpacked = new XGBooster(model.toBytes());
+    const reversed = DG.DataFrame.fromColumns(features.toList().slice().reverse()).columns;
+    expect(accuracy(before, unpacked.predict(reversed)), 1, 'XGBoost prediction depends on column order');
+  }, {timeout: TIMEOUT});
+
   test('Bool target', async () => {
     // demog has a boolean column CONTROL — use it as a classification target
     const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
@@ -435,8 +451,7 @@ category('XGBoost', () => {
   }, {timeout: TIMEOUT});
 }); // XGBoost
 
-// SMO is superlinear in the sample count, so the SVM tests use smaller sets and
-// a longer timeout than the tree-based ones above.
+// SVM tests are sized down (superlinear SMO).
 const SVM_TIMEOUT = 30000;
 
 /** Default SVM hyperparameters for tests (gamma 0 = 1/features). */
@@ -632,8 +647,28 @@ category('SVM', () => {
     await exactModel.fit(exactFeatures, target, svmOpts());
     const exactPred = exactModel.predict(exactFeatures);
 
-    // Identical logical data -> identical predictions; any difference means the
-    // capacity tail leaked into training or prediction.
+    // Identical data → identical predictions; a diff means the capacity tail leaked.
     expect(accuracy(overPred, exactPred), 1, 'capacity tail leaked into computation');
+  }, {timeout: SVM_TIMEOUT});
+
+  test('Interactive on winequality', async () => {
+    // Full winequality (~6.5k rows) must be flagged interactive, and fit in time.
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/winequality.csv');
+    const numeric = (exclude: string[]) => DG.DataFrame.fromColumns(
+      df.columns.toList().filter((c) =>
+        (c.type === DG.COLUMN_TYPE.INT || c.type === DG.COLUMN_TYPE.FLOAT) && !exclude.includes(c.name))).columns;
+
+    const classifyFeatures = numeric(['quality']);
+    const classifyTarget = df.col('type')!;
+    console.log(`winequality: ${df.rowCount} rows, ${classifyFeatures.length} numeric features`);
+
+    expect(SVM.isInteractive(classifyFeatures, classifyTarget), true,
+      `winequality classification must be interactive (${df.rowCount} rows)`);
+    expect(SVM.isInteractive(numeric([]), df.col('quality')!), true,
+      `winequality regression must be interactive (${df.rowCount} rows)`);
+
+    const t0 = Date.now();
+    await new SVM().fit(classifyFeatures, classifyTarget, svmOpts());
+    console.log(`winequality classification fit: ${Date.now() - t0} ms`);
   }, {timeout: SVM_TIMEOUT});
 }); // SVM

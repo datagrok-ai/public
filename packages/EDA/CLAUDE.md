@@ -67,7 +67,8 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
   - **`svm_train` does NOT copy the support vectors** (`model->SV` point into the input `svm_node` buffers). The C wrapper does a save+load round-trip through MEMFS right after training to get a self-contained model (`free_sv=1`) before freeing the input buffers.
   - **Standardization is done in TS** (variant B; `avgs`/`stdevs` stored in the container) — RBF is scale-sensitive and the kernel never normalizes.
   - **`isInteractive` thresholds are far below XGBoost** (SMO is superlinear: RBF ~ O(n²)–O(n³)).
-- Packed model container v1 (Type/Categories/standardization stats/libsvm bytes; no legacy). See `wasm/libsvm/README.md` for rebuild. Regression tests: `category 'SVM'`
+  - **Prediction matches features by NAME, not position** (`orderedFeatures`): the platform does not hand `apply` the feature columns in the training order, and both the standardization stats and libsvm's feature indices are positional — a mismatch silently corrupts every prediction (scrambled classes / a saturated near-constant regression). Feature names are stored in the container; the round-trip serialization test alone misses this (it re-feeds the same ColumnList), so `model-serialization-tests.ts` also asserts a reversed-column apply reproduces the prediction.
+- Packed model container v1 (Type/Categories/**feature names**/standardization stats/libsvm bytes; no legacy). See `wasm/libsvm/README.md` for rebuild. Regression tests: `category 'SVM'`
 
 #### Other Supervised Machine Techniques
 - **Softmax Classifier** (`softmax-classifier.ts`): Multinomial logistic regression
@@ -158,7 +159,7 @@ Tests are organized by feature in `src/tests/`:
 - `dim-reduction-tests.ts`: PCA, UMAP, t-SNE, SPE
 - `linear-methods-tests.ts`: Linear regression, PLS
 - `classifiers-tests.ts`: softmax, XGBoost, SVM
-- `model-serialization-tests.ts`: model pack/unpack round-trip (softmax, linear regression, PLS, SVM) on iris/cars/winequality
+- `model-serialization-tests.ts`: model pack/unpack round-trip **and apply-time feature matching** (softmax, linear regression, PLS, SVM, XGBoost) on iris/cars/winequality/demog. `expectFeatureMatching` checks each unpacked model is invariant to reversed / rotated column order and to extra ("decoy") columns in the table, and throws when a feature is missing — the round-trip alone misses this (it re-feeds the same ColumnList)
 - `mis-vals-imputation-tests.ts`: KNN imputation
 - `anova-tests.ts`: One-way ANOVA
 - `ttest-tests.ts`: Two-sample t-test

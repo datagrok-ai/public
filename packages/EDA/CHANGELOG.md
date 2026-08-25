@@ -1,8 +1,9 @@
 # EDA changelog
 
-## v.next
+## 1.9.0 (2026-08-28)
 
-* GROK-20754: Added SVM (libsvm) support for classification and regression
+* Added SVM (classification and regression)
+* Fixed saved Softmax and XGBoost prediction on reordered feature columns
 
 ## 1.8.0 (2026-08-14)
 

@@ -1,24 +1,7 @@
-// JS/TS glue for the SVM wasm module (wasm/SVMAPI.js + .wasm).
-//
-// Design (mirrors wasm/xgbooster.ts):
-//  - DG-free layer: callers pass typed-array views + dimensions; all
-//    DG.Column access happens in src/svm.ts. Column views MUST already be
-//    sliced to the column length (col.getRawData() may be longer than
-//    col.length - capacity mechanism).
-//  - Training runs in a long-lived web worker (transferable buffers, promise
-//    queue); prediction is synchronous on the main thread over a cached
-//    model handle.
-//  - The wasm build has C++ exceptions disabled: a library abort kills the
-//    instance. Inputs are validated upstream; on a crash the worker (or the
-//    main-thread module) is re-created and model handles become invalid.
-//
-// LIBSVM has no `missing` sentinel (unlike XGBoost); missing values are
-// rejected in TypeScript before any wasm call.
+// SVM wasm glue (mirrors xgbooster.ts): DG-free views in, model bytes out.
+// Worker-trained, sync predict; exceptions disabled → validate upstream.
 
-// The .js extension is REQUIRED: webpack's resolve.extensions puts .wasm
-// first, so an extensionless './SVMAPI' would resolve to SVMAPI.wasm (a
-// file-loader URL string), not the loader script. Types come from the sidecar
-// SVMAPI.d.ts.
+// Keep .js: extensionless resolves to the .wasm URL, not the loader.
 import SVMFactory, {SvmWasmModule} from './SVMAPI.js';
 
 /** svm_type codes, shared with the C wrapper (svm-api.cpp) and svm.h. */
@@ -121,8 +104,7 @@ const featuresArena = new WasmArena();
 const outputArena = new WasmArena();
 const bytesArena = new WasmArena();
 
-/** Copy column views into the wasm heap col-major; returns the base pointer.
- *  Views of any numeric type are converted by TypedArray.set(). */
+/** Column views → wasm heap (col-major); returns base ptr. */
 function writeColumns(m: SvmWasmModule, arena: WasmArena, cols: ColumnView[], nRows: number): number {
   const ptr = arena.ensureBytes(m, cols.length * nRows * FLOAT_BYTES);
   // Re-read the heap view after ensureBytes: malloc may have grown memory.
@@ -150,8 +132,7 @@ export function freeSvmModel(handle: number): void {
     module_._svmFreeModel(handle);
 }
 
-/** Synchronous prediction over a live handle. Returns nRows floats
- *  (classification: the class label as a category code; regression: value). */
+/** Synchronous predict over a live handle. */
 export function predictSvm(handle: number, cols: ColumnView[], nRows: number): Float32Array {
   const m = getModule();
   try {
@@ -216,13 +197,10 @@ function runFitJob(req: FitRequest): Promise<Uint8Array> {
   });
 }
 
-/** Train in the long-lived worker; jobs are queued (one wasm instance there).
- *  Returns the serialized model (LIBSVM text format). */
+/** Train in the worker; returns the serialized model. */
 export function fitSvm(cols: ColumnView[], labels: ColumnView, nRows: number,
   hyper: SvmHyperParams): Promise<Uint8Array> {
-  // One contiguous col-major copy: it is transferred (zero-copy) to the
-  // worker, so DG's own buffers are never detached. TypedArray.set converts
-  // int/double views to float32 on the fly.
+  // Col-major copy transferred to the worker (DG buffers untouched).
   const data = new Float32Array(cols.length * nRows);
   for (let j = 0; j < cols.length; ++j)
     data.set(cols[j], j * nRows);

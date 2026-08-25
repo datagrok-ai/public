@@ -1,16 +1,7 @@
-// Web worker that runs SVM (LIBSVM) training off the UI thread.
-//
-// The main thread (wasm/svm.ts) does all DG.Column access and ships a
-// col-major Float32Array + labels here as transferables; the worker owns its
-// own wasm instance and returns the serialized model bytes (transferable).
-//
-// The wasm URL is passed in (a worker has no document.currentScript); the
-// module is initialised once per worker. The build has C++ exceptions
-// disabled: if a call aborts, the instance is dead - the main thread
-// terminates and recreates this worker on any error.
+// Worker that runs LIBSVM training off the UI thread: receives a col-major
+// Float32Array + labels (transferables), returns serialized model bytes.
 
-// The .js extension is REQUIRED (webpack resolves extensionless names to
-// .wasm first); types come from the sidecar SVMAPI.d.ts.
+// .js extension required.
 import SVMFactory from '../SVMAPI.js';
 import type {SvmWasmModule} from '../SVMAPI.js';
 import type {SvmHyperParams} from '../svm';
