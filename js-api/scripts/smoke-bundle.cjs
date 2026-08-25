@@ -95,4 +95,12 @@ const missing = REQUIRED.filter((name) => typeof DG[name] !== 'function');
 if (missing.length)
   fail('DG is missing expected classes: ' + missing.join(', '));
 
+if (typeof DG.U2?.Control !== 'function' || typeof DG.U2?.signal !== 'function')
+  fail('DG.U2 is missing its u2core exports (Control, signal)');
+
+for (const name of ['Widget', 'Viewer']) {
+  if (typeof DG[name] !== 'function' || !(DG[name].prototype instanceof DG.U2.Control))
+    fail('DG.' + name + ' does not extend DG.U2.Control');
+}
+
 console.log(`js-api bundle smoke test passed (${REQUIRED.length} core exports present)`);

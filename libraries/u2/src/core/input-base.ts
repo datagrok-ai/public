@@ -39,7 +39,6 @@ export type Validator<T> = (value: T) => string | null;
 export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> extends Control {
   readonly value: Signal<T>;
   readonly validity: ReadonlySignal<string | null>;
-  readonly name: string | undefined;
 
   protected readonly options: O;
   private static _systemWrites = 0;

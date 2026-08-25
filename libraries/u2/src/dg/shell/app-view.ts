@@ -2,16 +2,14 @@
    so a u2 app never rebuilds it. Chrome lives outside the view root, where the Dart kill-walk never
    reaches, which is why components passed as chrome are disposed with the content instead. */
 import * as DG from 'datagrok-api/dg';
-import {Subscription} from 'rxjs';
 import {Control} from '../../core/component.js';
 import {Signal, ReadonlySignal, rawEffect} from '../../core/signals.js';
-import {host} from './widget-host.js';
 
 type ChromeItem = Control | HTMLElement;
 
 export interface AppViewOptions {
   name: string;
-  /** The view content — hosted as a `DG.Widget`, so view close disposes it (see {@link host}). */
+  /** The view content — disposed through the platform kill channel when the view closes. */
   content: Control;
   /** Ribbon panel groups → `view.setRibbonPanels`. Main view controls (filter, refresh, mode
    * switches, menu bar) belong here, not inside the content area. */
@@ -24,18 +22,21 @@ export interface AppViewOptions {
 }
 
 export function appView(options: AppViewOptions): DG.ViewBase {
-  const w = host(options.content);
-  const view = DG.View.fromRoot(options.content.root);
+  const content = options.content;
+  const view = DG.View.fromRoot(content.root);
   view.name = options.name;
+  // core contract (2026-08): a docked pane's ✕ kills elements carrying this attribute
+  content.root.setAttribute('data-kill-on-close', 'true');
+  DG.Widget.registerCleanup(content.root, () => content.dispose());
 
-  const adopt = (item: ChromeItem): HTMLElement => {
+  const place = (item: ChromeItem): HTMLElement => {
     if (!Control.is(item))
       return item;
-    w.subs.push(new Subscription(() => item.dispose()));
+    content.own(() => item.dispose());
     return item.root;
   };
   const panel = (item: ChromeItem): HTMLDivElement => {
-    const el = adopt(item);
+    const el = place(item);
     if (el instanceof HTMLDivElement)
       return el;
     const wrap = document.createElement('div');
@@ -44,15 +45,15 @@ export function appView(options: AppViewOptions): DG.ViewBase {
   };
 
   if (options.ribbon)
-    view.setRibbonPanels(options.ribbon.map((group) => group.map(adopt)));
+    view.setRibbonPanels(options.ribbon.map((group) => group.map(place)));
   if (options.toolbox)
-    view.toolbox = adopt(options.toolbox);
+    view.toolbox = place(options.toolbox);
   const status = options.status;
   if (status instanceof Signal) {
     const el = document.createElement('div');
-    w.subs.push(new Subscription(rawEffect(() => {
+    content.own(rawEffect(() => {
       el.textContent = status.value;
-    })));
+    }));
     view.statusBarPanels = [el];
   } else if (status != null) {
     const items = (Array.isArray(status) ? status : [status]) as ChromeItem[];

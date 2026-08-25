@@ -1,12 +1,12 @@
 # u2/dg — the platform layer
 
-The only part of u2 that imports `datagrok-api` — eslint enforces it (D3 in the u2 plan,
-`core/docs/features/ui2/PLAN.md`). Everything here bridges the platform-free core onto Datagrok
-lifecycle, events, and value editors.
+The only part of u2 that imports the platform surface of `datagrok-api` — eslint enforces it
+(D3 in the u2 plan, `core/docs/features/ui2/PLAN.md`; since V-4 the core files re-export the
+platform-free `datagrok-api/u2core`, the one allowed exception). Everything here bridges the
+core onto Datagrok lifecycle, events, and value editors.
 
 | Export | What it does |
 |---|---|
-| `host(component, closeIn?)` | Control → a `DG.Widget` subclass delegating the whole introspection surface; disposal joins `Widget.subs` |
 | `toSignal` / `toObservable` | rxjs ↔ signals, both directions |
 | `leakReport()` | live u2 scopes vs registered widgets |
 | `appView({name, content, ribbon?, toolbox?, status?})` | a u2 component tree as a platform view, riding the shell's own chrome |
@@ -137,21 +137,20 @@ dialog's OK stays enabled.
 
 ## Lifecycle
 
-`host()` makes a component a `DG.Widget` so the Dart kill-walk (view close) disposes its effects.
-Pass `closeIn` when docking ad hoc — the pane ✕ fires `dockManager.onClosed` and never
-`Widget.kill`:
+Since V-4 every `DG.Widget` IS a u2 `Control` (`DG.Widget extends DG.U2.Control`): the Dart
+kill-walk (view close) disposes its scope, and disposing the scope kills the widget. To put a
+plain component under the kill-walk, give its root the channel `appView` uses:
 
 ```ts
-const w = host(component, grok.shell.dockManager);
-grok.shell.dockManager.dock(w.root, DG.DOCK_TYPE.RIGHT);
+component.root.setAttribute('data-kill-on-close', 'true');
+DG.Widget.registerCleanup(component.root, () => component.dispose());
+grok.shell.dockManager.dock(component.root, DG.DOCK_TYPE.RIGHT);
 ```
 
-A hosted component IS a widget, introspection included: `getProperties()` (the registry props over
-the component's signals), `getFunctions()`, `onEvent()`, `aiDescription` and `getWidgetStatus()` all
-delegate to it, so the shell, the context panel and the copilot interrogate it with the calls they
-already use on every platform widget. Functions are minted through `grok.functions.register` on
-first ask (namespace `U2`, params positional in declared order) and cached; a component that
-declares none registers nothing.
+Introspection is inherited, not delegated: `getProperties()`, `onEvent()`, `aiDescription` and
+`getWidgetStatus()` are one surface on `DG.Widget`/`Control`, so the shell, the context panel and
+the copilot interrogate a u2 component with the calls they already use on every platform widget.
+(`host()` and its `grok.functions.register` minting were dropped in V-4.)
 
 **Components that are never mounted are yours to dispose.** The kill-walk only reaches roots that
 made it into the DOM — a lazily-built container (a collapsed accordion pane, a tab never opened)
@@ -340,9 +339,9 @@ target, and both throw — so use `viewerSettings(viewer)` (`dg/viewers/viewers.
 const form = viewerSettings(scatter);   // propertyForm(userEditable props, grok_Viewer_Get_Look(scatter.dart))
 ```
 
-The same fact drives the property tier: an adopted widget's `propertyTarget` is what `prop.get`/
+The same fact drives the property tier: a widget's `propertyTarget` is what `prop.get`/
 `prop.set` are handed — the look for a Dart viewer, `dart` for a `DartWidget`, the widget itself
-otherwise (`dg/viewers/adopt.ts`). The designer does not build its own editors for a viewer node:
+otherwise (ordinary overrides in js-api `viewer.ts`/`widgets/base.ts` since V-4). The designer does not build its own editors for a viewer node:
 `lookGrid(x, panel, funnel)` (`dg/designer/look-grid.ts`) mounts the platform `PropertyGrid` over
 the live look with the viewer's frame (`grok_PropertyGrid_Update(pg, look, props, df.dart)` — the
 frame is what gives `*ColumnName` rows a column picker) and turns each Design-mode commit

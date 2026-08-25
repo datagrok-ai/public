@@ -46,6 +46,8 @@ export * from './src/proxies';
 export * from './src/utils_convert';
 export * from './src/ui/tree-view';
 
+export * as U2 from './src/u2core/index.js';
+
 import * as grok from './grok';
 import * as ui from './ui';
 

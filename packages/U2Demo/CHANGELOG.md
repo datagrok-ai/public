@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: added the `datagrok-api/u2core` → `DG.U2` webpack external, so the plugin shares the platform’s u2 core instance
+* GROK-20753: updated the platform-bridge hint to the unified story (every `DG.Widget` is a u2 `Control`) instead of the removed `host()`
+
 * U2 Designer: the app registers the platform viewer tags (u2-viewer-*) and imports viewers.css; Master–detail (grid) sample
 * Inputs: added an `IconInput` row to the Inputs tab; the package imports `grid.css` and `icon-input.css`
 * Added `u2Record(text)` — the published function to wire a button to from the designer: it takes a literal argument and leaves a trace that outlives the balloon by appending to the demo form's Run log. Nothing published both took an argument and showed anything, so `wire a button with a literal argument` could not be completed at all: `info` and `balloons` take nothing, `test` runs the test harness, and the `u2Record` the e2e checks used was registered client-side by the check itself

@@ -23,7 +23,7 @@ const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
 const STUB = `
 import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
 export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Script, TableQuery, User, Viewer,
+  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Script, TableQuery, User, View, Viewer,
   ViewerMetaHelper, Widget, WidgetDescriptor, platform} from '${DOUBLES}';
 
 export const toDart = (x) => x?.dart ?? x;

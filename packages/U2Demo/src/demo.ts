@@ -268,8 +268,8 @@ function platformPage(): HTMLElement {
   const leaks = signal('(press the button)');
 
   return divV([
-    span('The dg entry point is the only layer that touches datagrok-api: ' +
-      'host() joins the DG.Widget kill-walk, asDartInput() makes any u2 input a DG.InputBase.', 'u2demo-hint'),
+    span('The u2 core lives in datagrok-api (DG.U2): every DG.Widget is a u2 Control, ' +
+      'asDartInput() makes any u2 input a DG.InputBase.', 'u2demo-hint'),
     h3('Pickers'),
     table, column,
     readout('table', table.value), readout('column', column.value),

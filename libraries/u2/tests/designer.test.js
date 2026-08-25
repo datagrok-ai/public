@@ -1619,8 +1619,9 @@ designer('the Design/Run toggle re-issues the panel for the selected node — on
       'the ref reads what Run mode built — the Status section the old panel kept reading is gone with it');
 
     // the platform's own gear, clicked on a viewer in Run mode, puts that viewer on the panel
+    const gear = new DG.Viewer({type: 'Grid'});
     const toDesign = await shellWrites(async () => {
-      shell.o = new DG.Viewer({type: 'Grid'});
+      shell.o = gear;
       view._mode.selected.value = ['design'];
       await flush();
     });
@@ -1633,6 +1634,7 @@ designer('the Design/Run toggle re-issues the panel for the selected node — on
       await flush();
     });
     assert.equal(same.length, 0, 'the mode it is already in is no toggle');
+    gear.dispose();
     view.dispose();
   });
 

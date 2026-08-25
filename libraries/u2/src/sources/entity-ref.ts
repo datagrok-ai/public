@@ -47,7 +47,7 @@ export class EntityRef extends Component implements BindSource, ComponentStart {
       }});
     this.own(() => this._async.dispose());
     this._status = new AsyncSteps(this._async, live, this.designData,
-      () => this.sample ?? this.meta?.designPreview ?? undefined);
+      () => this.sample ?? this.componentMeta?.designPreview ?? undefined);
     this._entity = computed(() => {
       const at = this._status.state.value;
       return at.kind === 'ready' ? at.value : undefined;

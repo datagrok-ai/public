@@ -77,21 +77,19 @@ const GAUGE = {
   example: {tag: 'u2-gauge'},
 };
 
-tier('Component.is / Control.is are structural', () => {
-  const scope = new Scope();
+tier('Component.is / Control.is are structural, by methods — never the minting scope accessor', () => {
   const el = document.createElement('div');
-  const plain = {scope, bindStep() {}, bindProps() {}, root: el};
+  const plain = {own() {}, dispose() {}, bindStep() {}, bindProps() {}, root: el};
   assert.equal(Control.is(plain), true);
   assert.equal(Component.is(plain), true);
   assert.equal(Control.is({...plain, root: undefined}), false);
-  assert.equal(Component.is({bindStep() {}, bindProps() {}}), false, 'a bare bind source has no scope');
+  assert.equal(Component.is({bindStep() {}, bindProps() {}}), false, 'a bind-source shape has no own/dispose');
   const source = new StateSource();
   assert.equal(Component.is(source), true);
   assert.equal(Control.is(source), false);
   assert.equal(Component.is(el), false);
   assert.equal(Component.is(null), false);
   source.dispose();
-  scope.dispose();
 });
 
 tier('sameValue: arrays element-wise, plain objects key-wise, everything else by identity', () => {

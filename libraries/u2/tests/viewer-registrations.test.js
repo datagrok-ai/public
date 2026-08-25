@@ -220,7 +220,7 @@ scoped('a spec renders a viewer over a bound table, links a look prop two-way an
   assert.equal(grid.dataFrame, df);
   assert.equal(grid.props.allowEdit, true);
   assert.equal(grid.root.dataset.u2Name, 'grid');
-  assert.equal(grid.meta.tag, 'u2-viewer-grid');
+  assert.equal(grid.componentMeta.tag, 'u2-viewer-grid');
 
   const plot = instance.node('plot');
   assert.deepEqual([plot.props.xColumnName, plot.props.yColumnName, plot.props.markerMinSize], ['total', 'orderId', 3]);

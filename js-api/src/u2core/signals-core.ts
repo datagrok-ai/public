@@ -977,7 +977,7 @@ function effect(fn: EffectFn, options?: EffectOptions): DisposeFn {
 	// Return a bound function instead of a wrapper like `() => effect._dispose()`,
 	// because bound functions seem to be just as fast and take up a lot less memory.
 	const dispose = effect._dispose.bind(effect);
-	(dispose as any)[Symbol.dispose] = dispose;
+	(dispose as any)[(Symbol as any).dispose] = dispose;
 	return dispose as DisposeFn;
 }
 
@@ -1108,7 +1108,7 @@ function createModel<TModel, TFactoryArgs extends any[] = []>(
 
 		wrapInAction(model);
 
-		model[Symbol.dispose] = action(function disposeModel() {
+		(model as any)[(Symbol as any).dispose] = action(function disposeModel() {
 			if (modelEffects) {
 				for (let i = 0; i < modelEffects.length; i++) {
 					modelEffects[i].dispose();

@@ -18,10 +18,20 @@ import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
 import {ViewerEvent} from './api/d4.api.g';
+import {signal} from './u2core/signals.js';
+import type {Signal} from './u2core/signals.js';
+import {dfBindings} from './u2core/df-bindings.js';
+import type {DataFrameLike} from './u2core/df-bindings.js';
+import type {BindPropLike, BindSourceLike, ObservableLike} from './u2core/widget-like.js';
+import type {PropertyChange} from './u2core/component.js';
 
 declare let DG: any;
 declare let ui: any;
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
+
+/** The walkable `table` step every viewer answers first: the DataFrame binding surface over
+ * the viewer's frame, repointing with it. */
+const TABLE_STEP: BindPropLike = Object.freeze({name: 'table', type: 'dataframe', walkable: true});
 
 
 /**
@@ -201,6 +211,48 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   getProperties(): Property[] {
     return api.grok_Viewer_Get_Properties(this.dart);
+  }
+
+  /** A viewer's property lives on its look, which the `props` bag is over. Read per call:
+   * a viewer's look is settable. */
+  get propertyTarget(): unknown { return api.grok_Viewer_Get_Look(this.dart); }
+
+  protected propertyChanges(): ObservableLike<PropertyChange> {
+    return {
+      subscribe: (next: (x: PropertyChange) => void) => {
+        const subscription = this.onPropertyValueChanged.subscribe((e: unknown) =>
+          next((e as {args?: {property?: {name?: string}}})?.args?.property?.name ?? null));
+        return {unsubscribe: () => subscription.unsubscribe()};
+      },
+    };
+  }
+
+  protected _wireLifecycle(): void {
+    if (this instanceof JsViewer)
+      this._wireJsLifecycle();
+    else
+      this._wireDartLifecycle();
+  }
+
+  bindStep(name: string): Signal<unknown> | BindSourceLike | null {
+    if (name !== 'table')
+      return super.bindStep(name);
+    const u2 = this._u2;
+    if (u2.table === undefined) {
+      const frame = signal(this._frameOf());
+      const subscription = this.onDataFrameChanged.subscribe(() => frame.value = this._frameOf());
+      this.scope.own(() => subscription.unsubscribe());
+      u2.table = dfBindings(frame, this.scope);
+    }
+    return u2.table as BindSourceLike;
+  }
+
+  bindProps(): BindPropLike[] {
+    return [TABLE_STEP, ...super.bindProps()];
+  }
+
+  private _frameOf(): DataFrameLike | undefined {
+    return (this.dataFrame ?? undefined) as unknown as DataFrameLike | undefined;
   }
 
   /** Closes and detaches the viewer. */
@@ -467,12 +519,22 @@ export class JsViewer extends Viewer {
   get root(): HTMLElement { return this._root; }
   set root(r: HTMLElement) { this._root = r; }
 
+  get propertyTarget(): unknown { return this; }
+
+  protected propertyChanges(): ObservableLike<PropertyChange> {
+    return this._ownPropertyChanges();
+  }
+
   /** Gets called when a table is attached to the viewer. */
   onTableAttached(): void { }
 
-  /** Gets called when this viewer is detached. */
+  /** Gets called when this viewer is detached. It deliberately never unregisters —
+   * the registration belongs to the Dart lifecycle. */
   detach(): void {
+    this._u2.detaching = true;
     this.subs.forEach((sub) => sub.unsubscribe());
+    this.isDetached = true;
+    this._u2.scope?.dispose();
   }
 
   /** Gets property by name (case-sensitive).

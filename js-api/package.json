@@ -69,6 +69,10 @@
     "./src/const": {
       "types": "./src/const.d.ts",
       "default": "./src/const.js"
+    },
+    "./u2core": {
+      "types": "./src/u2core/index.d.ts",
+      "default": "./src/u2core/index.js"
     }
   },
   "dependencies": {

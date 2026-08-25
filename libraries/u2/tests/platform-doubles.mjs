@@ -11,6 +11,8 @@
    as `datagrok-api/dg` and `datagrok-api/grok`; dg-stub also installs the kill-walk globals over
    {@link platform}. */
 
+import {Control, dfBindings, signal} from 'datagrok-api/u2core';
+
 /** Prototype getters over the handle — what every field of a real entity is. */
 function getters(cls, ...keys) {
   for (const key of keys)
@@ -353,19 +355,29 @@ export class ObjectPropertyBag {
   }
 }
 
-/** The base widget contract (js-api widgets/base.ts:265), its state behind the handle: the root,
- * the subscriptions `detach` cancels, the properties `addProperty` declares and the bag over them. */
-export class Widget {
+/** The table step every viewer answers first (js-api viewer.ts keeps it module-private). */
+const TABLE_STEP = Object.freeze({name: 'table', type: 'dataframe', walkable: true});
+
+/** The base widget contract (js-api widgets/base.ts:265): a real u2 `Control` by inheritance, as
+ * the platform's is — so `_u2` and `_root` are own fields, as on the real Widget (`scope` is the
+ * lazily-minting accessor, never an own field) — with the platform state behind the handle: the
+ * root, the subscriptions `detach` cancels, the properties `addProperty` declares and the bag over
+ * them. Ambient adoption is off; the lifecycle is wired at the first scope mint, as in js-api. */
+export class Widget extends Control {
   constructor(root) {
-    this.dart = {root, subs: [], temp: {}, _properties: [], _functions: [], aiDescription: null, isDetached: false};
+    super(root);
+    this.dart = {root, subs: [], temp: {}, _properties: [], _functions: [], isDetached: false};
   }
 
   static fromRoot(root) { return new Widget(root); }
 
+  /** Registers a cleanup to run when `element` is killed (base.ts:310). */
+  static registerCleanup(element, cleanup) { globalThis.grok_Widget_RegisterCleanup(element, cleanup); }
+
   get type() { return 'Unknown'; }
-  get root() { return this.dart.root; }
-  set root(r) { this.dart.root = r; }
   get props() { return this.dart.props ??= new ObjectPropertyBag(this); }
+  get ambientAdoption() { return false; }
+  get propertyTier() { return true; }
 
   /** Registers the widget with the platform — what the kill-walk finds (`grok_Widget_Wrap`). */
   toDart() {
@@ -374,16 +386,38 @@ export class Widget {
   }
 
   sub(subscription) { this.subs.push(subscription); }
-  getProperties() { return this._properties; }
+  getProperties() { return [...super.getProperties(), ...this._properties]; }
   getFunctions() { return this._functions; }
-  onPropertyChanged(_property) {}
 
-  /** Declares a property over the field of that name; its setter tells {@link onPropertyChanged}. */
+  /** The virtual notify site: a subclass override that never calls super is covered by the
+   * setter site in {@link addProperty}, exactly as in js-api. */
+  onPropertyChanged(property) { this._notifyPropertyChange(property); }
+
+  _notifyPropertyChange(p) {
+    for (const next of this._u2.propertyChangeListeners ?? [])
+      next(p?.name ?? null);
+  }
+
+  _ownPropertyChanges() {
+    return {
+      subscribe: (next) => {
+        const listeners = this._u2.propertyChangeListeners ??= new Set();
+        listeners.add(next);
+        return {unsubscribe: () => listeners.delete(next)};
+      },
+    };
+  }
+
+  propertyChanges() { return this._ownPropertyChanges(); }
+
+  /** Declares a property over the field of that name; its setter notifies the tier, then
+   * {@link onPropertyChanged} — the two-site seam of js-api base.ts. */
   addProperty(propertyName, propertyType, defaultValue = null, options = null) {
     const fieldName = options?.fieldName ?? propertyName;
     const p = Property.create(propertyName, propertyType, () => this[fieldName], null, defaultValue);
     p.set = (_, x) => {
       this[fieldName] = x;
+      this._notifyPropertyChange(p);
       this.onPropertyChanged(p);
     };
     for (const [key, value] of Object.entries(options ?? {}))
@@ -400,14 +434,40 @@ export class Widget {
   }
 
   detach() {
+    this._u2.detaching = true;
     for (const s of this.subs)
       s.unsubscribe();
     this.isDetached = true;
+    this._u2.scope?.dispose();
+  }
+
+  _scopeMinted() { this._wireLifecycle(); }
+
+  _wireLifecycle() { this._wireJsLifecycle(); }
+
+  _wireJsLifecycle() {
+    this.scope.own(() => {
+      if (!this.isDetached && !this._u2.detaching)
+        this.detach();
+    });
+  }
+
+  _wireDartLifecycle() {
+    const root = this.root;
+    globalThis.grok_Widget_RegisterCleanup?.(root, () => {
+      this._u2.platformKilled = true;
+      this.scope.dispose();
+    });
+    this.scope.own(() => {
+      if (!this._u2.platformKilled)
+        globalThis.grok_Widget_Kill?.(root);
+    });
   }
 }
-fields(Widget, 'subs', 'temp', '_properties', '_functions', 'aiDescription', 'isDetached');
+fields(Widget, 'subs', 'temp', '_properties', '_functions', 'isDetached');
 
-/** A widget implemented in Dart (widgets/base.ts:443): its properties' `get`/`set` take the handle. */
+/** A widget implemented in Dart (widgets/base.ts): its properties' `get`/`set` take the handle,
+ * and its lifecycle is the platform's. */
 export class DartWidget extends Widget {
   constructor(dart) {
     super(dart.root ?? document.createElement('div'));
@@ -416,6 +476,8 @@ export class DartWidget extends Widget {
 
   get type() { return this.dart.type; }
   get props() { return this.dart.props ??= new ObjectPropertyBag(this, this.dart); }
+  get propertyTarget() { return this.dart; }
+  _wireLifecycle() { this._wireDartLifecycle(); }
   getProperties() { return this.dart.properties; }
   getFunctions() { return this.dart.functions; }
 }
@@ -430,6 +492,17 @@ export class PropertyGrid extends DartWidget {
 
   update(src, props) { this.dart.updates.push({src, props, table: undefined}); }
 }
+
+/** A platform view over a root (js-api view.ts): what `appView` builds on. */
+export class View {
+  constructor(root) { this.dart = {root, name: '', ribbonPanels: [], statusBarPanels: [], toolbox: null}; }
+
+  static fromRoot(root) { return new View(root); }
+
+  setRibbonPanels(panels) { this.dart.ribbonPanels = panels; }
+}
+getters(View, 'root', 'ribbonPanels');
+fields(View, 'name', 'toolbox', 'statusBarPanels');
 
 /** A look's owner — the viewer whose `onPropertyValueChanged` a property write fires — and the
  * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError (P6). */
@@ -477,7 +550,10 @@ export class ViewerMetaHelper {
 getters(ViewerMetaHelper, 'formulaLines', 'annotationRegions');
 
 /** A platform viewer (viewer.ts:82): the handle carries the type, the LOOK its properties are
- * defined over, the frame, one event stream per id and the descriptor it was built from. */
+ * defined over, the frame, one event stream per id and the descriptor it was built from. The
+ * V-4 overrides are the real ones: `propertyTarget` is the look, `propertyChanges` the platform
+ * property event, `bindStep('table')` the frame's binding surface, and the lifecycle is Dart's —
+ * disposing the scope kills the viewer through the kill-walk, and vice versa. */
 export class Viewer extends Widget {
   constructor(dart, root) {
     super(root ?? dart.root ?? Viewer._root());
@@ -527,6 +603,41 @@ export class Viewer extends Widget {
 
   /** The bag over the LOOK (viewer.ts:154) — why `viewer.props.x` works where `prop.get(viewer.dart)` throws. */
   get props() { return this.dart.props ??= new ObjectPropertyBag(this, this.dart.look); }
+
+  /** A viewer's property lives on its look, which the `props` bag is over (viewer.ts:219). */
+  get propertyTarget() { return this.dart.look; }
+
+  propertyChanges() {
+    return {
+      subscribe: (next) => {
+        const s = this.onPropertyValueChanged.subscribe((e) => next(e?.args?.property?.name ?? null));
+        return {unsubscribe: () => s.unsubscribe()};
+      },
+    };
+  }
+
+  _wireLifecycle() {
+    if (this instanceof JsViewer)
+      this._wireJsLifecycle();
+    else
+      this._wireDartLifecycle();
+  }
+
+  /** The walkable `table` step (viewer.ts): the frame's binding surface, repointing with it. */
+  bindStep(name) {
+    if (name !== 'table')
+      return super.bindStep(name);
+    const u2 = this._u2;
+    if (u2.table === undefined) {
+      const frame = signal(this.dataFrame ?? undefined);
+      const s = this.onDataFrameChanged.subscribe(() => frame.value = this.dataFrame ?? undefined);
+      this.scope.own(() => s.unsubscribe());
+      u2.table = dfBindings(frame, this.scope);
+    }
+    return u2.table;
+  }
+
+  bindProps() { return [TABLE_STEP, ...super.bindProps()]; }
 
   /** The descriptor's properties, a fresh list per call as the platform answers; counted on the handle. */
   getProperties() {
@@ -584,8 +695,9 @@ export class FilterGroup extends Viewer {
   }
 }
 
-/** A viewer implemented in JS (viewer.ts:423) — JS-owned: its properties are the ones
- * `addProperty` declared, over the viewer itself, and `detach()` is the real thing. */
+/** A viewer implemented in JS (viewer.ts:478) — JS-owned: its properties are the ones
+ * `addProperty` declared, over the viewer itself, and `detach()` is the real thing — it also
+ * disposes the scope and deliberately never unregisters. */
 export class JsViewer extends Viewer {
   constructor() {
     super({type: 'JsViewer', descriptor: null, dataFrame: null}, document.createElement('div'));
@@ -594,7 +706,17 @@ export class JsViewer extends Viewer {
   get root() { return this.dart.root; }
   set root(r) { this.dart.root = r; }
   get props() { return this.dart.props ??= new ObjectPropertyBag(this); }
+  get propertyTarget() { return this; }
+  propertyChanges() { return this._ownPropertyChanges(); }
   getProperties() { return this._properties; }
+
+  detach() {
+    this._u2.detaching = true;
+    for (const s of this.subs)
+      s.unsubscribe();
+    this.isDetached = true;
+    this._u2.scope?.dispose();
+  }
 }
 
 /** The js-api class a type wraps into: `Viewer.grid` and `heatMap` answer a `Grid`, `filters` a `FilterGroup`. */

@@ -49,7 +49,11 @@
        dependency leaves in node_modules goes stale on every u2 change until a reinstall. */
     "paths": {
       "@datagrok-libraries/u2": ["../../libraries/u2"],
-      "@datagrok-libraries/u2/*": ["../../libraries/u2/*"]
+      "@datagrok-libraries/u2/*": ["../../libraries/u2/*"],
+      "datagrok-api/dg": ["./node_modules/datagrok-api/dg"],
+      "datagrok-api/grok": ["./node_modules/datagrok-api/grok"],
+      "datagrok-api/ui": ["./node_modules/datagrok-api/ui"],
+      "datagrok-api/u2core": ["./node_modules/datagrok-api/src/u2core/index"]
     },
     // "rootDirs": [],                              /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [],                             /* List of folders to include type definitions from. */

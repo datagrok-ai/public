@@ -35,7 +35,6 @@ export {columnsInput, ColumnsInput, columnsMapInput, ColumnsMapInput, aggregated
   AggregatedColumnsInput, aggregationsFor, defaultAggregation} from './inputs/columns.js';
 export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggregation,
   AggregatedColumnsInputOptions} from './inputs/columns.js';
-export {host, U2Widget} from './shell/widget-host.js';
 export {appView} from './shell/app-view.js';
 export type {AppViewOptions} from './shell/app-view.js';
 export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
@@ -96,7 +95,6 @@ export function toObservable<T>(source: ReadonlySignal<T>): Observable<T> {
 export function leakReport(): {liveScopes: number, liveWidgets: number} {
   return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length};
 }
-export {adopt, dartOwned, TABLE_STEP} from './viewers/adopt.js';
 export {viewerOf, viewerControl, REPOINTING} from './viewers/viewer-control.js';
 export type {Bindable, TableRef} from './viewers/viewer-control.js';
 export {viewers, viewerSettings} from './viewers/viewers.js';

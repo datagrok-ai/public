@@ -47,7 +47,7 @@ export class SpecNodeRef {
    * for a node that failed to build and has no component to ask. */
   meta(): ComponentMetaLike | undefined {
     const built = this.built();
-    return (Component.is(built) ? built.meta : undefined) ?? this.instance.registry.get(this.node.tag);
+    return (Component.is(built) ? built.componentMeta : undefined) ?? this.instance.registry.get(this.node.tag);
   }
 
   /** Why the node renders as a placeholder, or null when it built. */

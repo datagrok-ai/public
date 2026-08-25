@@ -2,6 +2,10 @@
 
 ## v.next
 
+* GROK-20753: moved the platform-free core (signals, `Scope`, `Component`/`Control`, `dfBindings`) into datagrok-api as `DG.U2` / `datagrok-api/u2core`; the u2 core files became re-export shims, and `datagrok-api` became a peerDependency (`>=1.28.0`)
+* GROK-20753: removed `adopt`, `host` and `U2Widget` — every `DG.Widget` is now a u2 `Control` by inheritance
+* GROK-20753: renamed `Component.meta` to `componentMeta` (it would shadow `Viewer.meta`)
+
 * IconInput: added `IconInput` — a Font Awesome picker: a button-like control showing the glyph and name, and an anchored popup with a search box over a virtualized grid of every icon the platform ships (1853 + 456 brands, generated into `icon-names.ts` by `npm run icons`); a pick commits and closes, Esc / outside click cancel, Backspace clears
 * VirtualGrid: added `VirtualGrid` — the fixed-cell, two-dimensional sibling of `VirtualList`: columns follow the width, arrows/Page/Home/End move by cell, row and viewport, click/Enter/Space activate, `keyOf` keeps the selection across `setItems`
 * Icons: `icon()` renders a brand name in the `fab` face on its own; `IconVariant` gained `brands`

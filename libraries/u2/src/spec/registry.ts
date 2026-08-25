@@ -160,7 +160,7 @@ export class Registry {
 
   private static _stamp<T extends Component>(component: T, meta: ComponentMeta,
     props: Record<string, unknown>): T {
-    component.meta = meta;
+    component.componentMeta = meta;
     component.specProps = props;
     return component;
   }

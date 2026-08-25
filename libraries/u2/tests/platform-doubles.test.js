@@ -54,11 +54,15 @@ const doubles = () => {
   ];
 };
 
-// stricter than the real DataFrame, which also keeps columns/rows/filter/temp/tags as own fields — none read by u2
+// stricter than the real DataFrame, which also keeps columns/rows/filter/temp/tags as own fields — none read
+// by u2. A widget-kind double also carries the real Control's own fields (_u2, _root), as the platform
+// Widget does since V-4; `scope` is a lazily-minting accessor and `name` an accessor over _u2 —
+// neither is an own field, so neither is spread-copied.
 test('spreading any double copies the dart handle and nothing else', () => {
   for (const double of doubles()) {
-    assert.deepEqual(Object.keys({...double}), ['dart'], double.constructor.name);
-    assert.deepEqual(Object.keys(double), ['dart'], double.constructor.name);
+    const keys = double instanceof Widget ? ['_u2', '_root', 'dart'] : ['dart'];
+    assert.deepEqual(Object.keys({...double}), keys, double.constructor.name);
+    assert.deepEqual(Object.keys(double), keys, double.constructor.name);
   }
 });
 
@@ -351,7 +355,7 @@ test('a widget registers through toDart; a Dart widget\'s properties take the ha
   w.temp.x = 1;
   assert.deepEqual([w.type, w.dart.temp.x, w.getProperties(), w.getFunctions(), w.aiDescription], ['Unknown', 1, [], [], null]);
   w.aiDescription = 'briefed';
-  assert.equal(w.dart.aiDescription, 'briefed');
+  assert.equal(w.aiDescription, 'briefed', 'kept in _u2, as the real Widget inherits from Component');
 
   const x = Property.create('x', 'int', (d) => d.x, (d, v) => { d.x = v; }, 0);
   const legend = new DartWidget({type: 'Legend', properties: [x], x: 1});
@@ -401,14 +405,15 @@ test('the kill-walk runs the cleanups under the element, then detaches every wid
   grid.onDetached.subscribe(() => log.push(['grid detached']));
   js.onDetached.subscribe(() => log.push(['js detached']));
   hosted.subs.push({unsubscribe: () => log.push(['hosted unsubscribed'])});
-  assert.deepEqual([platform.cleanups.length, platform.widgets.size], [3, 4]);
+  assert.deepEqual([platform.cleanups.length, platform.widgets.size], [3, 4],
+    'the three registered by hand — an unengaged wrapper wires no Dart-lifecycle cleanup');
 
   globalThis.grok_Widget_Kill(parent);
   assert.deepEqual(platform.kills, [parent]);
   assert.deepEqual(log, [['cleanup grid', false], ['cleanup pane', false], ['grid detached'], ['js detached'],
     ['hosted unsubscribed']], 'cleanups first, with the viewer still attached; then the detaches');
   assert.deepEqual([grid.isDetached, js.isDetached, hosted.isDetached, outside.isDetached], [true, true, true, false]);
-  assert.equal(platform.cleanups.length, 1, 'the cleanups that ran are gone; the one outside stays');
+  assert.equal(platform.cleanups.length, 1, 'the cleanups that ran are gone; the outside one stays');
 
   globalThis.grok_Widget_Kill(parent);
   assert.deepEqual([log.length, platform.kills], [5, [parent, parent]], 'a second kill is recorded and does nothing');
@@ -441,4 +446,12 @@ test('the loader hook serves the same classes, not a second copy', () => {
   assert.equal(typeof DG.toDart, 'function');
   assert.ok(grok.shell instanceof Shell);
   assert.ok(new DG.FileInfo('a.csv') instanceof FileInfo, 'so an instanceof in the module under test holds');
+});
+
+test('datagrok-api/u2core is the very core the shims re-export', async () => {
+  const core = await import('datagrok-api/u2core');
+  const shim = await import('../src/core/component.js');
+  assert.equal(core.Component, shim.Component);
+  assert.equal(core.Control, shim.Control);
+  assert.ok(Widget.prototype instanceof core.Control, 'the doubles Widget extends the real Control');
 });

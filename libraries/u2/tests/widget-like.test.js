@@ -65,7 +65,7 @@ const GAUGE_META = {
 
 function gauge() {
   const g = new Gauge();
-  g.meta = GAUGE_META;
+  g.componentMeta = GAUGE_META;
   return g;
 }
 
@@ -99,12 +99,12 @@ widget('the registry stamps the metadata of the tag it built', () => {
   reg.register(GAUGE_META);
   const meta = reg.get('u2-gauge');
   const loose = meta.create({});
-  assert.equal(loose.meta, meta, 'every registry-driven construction is stamped');
+  assert.equal(loose.componentMeta, meta, 'every registry-driven construction is stamped');
   loose.dispose();
 
   const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-gauge', name: 'g'}}, undefined, reg);
   const built = instance.node('g');
-  assert.equal(built.meta, meta);
+  assert.equal(built.componentMeta, meta);
   assert.deepEqual(built.getProperties().map((p) => p.name), ['value', 'caption']);
   instance.dispose();
 });
@@ -249,9 +249,9 @@ widget('the status snapshot reports the declared events and description', () => 
 widget('the AI briefing falls back to usage, then description, and is overridable', () => {
   const c = new Component();
   assert.equal(c.aiDescription, null);
-  c.meta = {props: [], description: 'A gauge'};
+  c.componentMeta = {props: [], description: 'A gauge'};
   assert.equal(c.aiDescription, 'A gauge');
-  c.meta = {props: [], description: 'A gauge', usage: 'Reach for it to show one number.'};
+  c.componentMeta = {props: [], description: 'A gauge', usage: 'Reach for it to show one number.'};
   assert.equal(c.aiDescription, 'Reach for it to show one number.');
   c.aiDescription = 'Set by hand';
   assert.equal(c.aiDescription, 'Set by hand');

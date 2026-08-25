@@ -188,7 +188,7 @@ export class FuncSource extends Component implements BindSource, ComponentStart 
    * bare array of rows for a single-output function. Rows become a frame, so the canvas previews
    * exactly what a live run would show. */
   private _sampleOutputs(): Record<string, unknown> {
-    const sample = this.sample ?? this.meta?.designPreview;
+    const sample = this.sample ?? this.componentMeta?.designPreview;
     if (sample === null || sample === undefined)
       return {};
     const single = this._defaultOutput();

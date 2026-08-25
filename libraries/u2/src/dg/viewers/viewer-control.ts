@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Signal, signal, isWritableSignal} from '../../core/signals.js';
 import type {ReadonlySignal} from '../../core/signals.js';
 import type {Control} from '../../core/component.js';
-import {adopt} from './adopt.js';
+import {Scope} from '../../core/scope.js';
 
 /** A viewer's options, each either a value or a signal the viewer follows — and writes back to,
  * where the signal is writable. */
@@ -76,7 +76,9 @@ function build<V extends DG.Viewer, S>(make: (df: DG.DataFrame, look: Partial<S>
       throw e;
     throw new Error(`${type} needs a table — bind \`table\` to a data source`, {cause: e});
   }
-  const viewer = adopt(made);
+  const viewer = made as unknown as V & Control;
+  Scope.ambient?.own(() => viewer.dispose());
+  viewer.root.classList.add('u2-viewer');
   viewer.effect(() => {
     const df = frame.value;
     if (df == null || viewer.dataFrame?.dart === df.dart)

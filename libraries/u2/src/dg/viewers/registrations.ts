@@ -6,7 +6,6 @@ import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import {computed} from '../../core/signals.js';
 import {Component} from '../../core/component.js';
-import type {Control} from '../../core/component.js';
 import {Dialog} from '../../components/containers/dialog.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {Registry, registry as globalRegistry} from '../../spec/registry.js';
@@ -144,7 +143,7 @@ export const ADD_FILTER: DesignerAction = {
     const df = viewer.dataFrame;
     const filters = filterSeed(node, viewer);
     const filtered = new Set(filters.map((f) => f.column));
-    const name = await ask('Add filter', (viewer as unknown as Control).scope,
+    const name = await ask('Add filter', viewer.scope,
       () => columnInput('Column', df, {filter: (c) => !filtered.has(c.name)}));
     const col = name === null ? null : df.columns.byName(name);
     return col === null ? null : {op: 'set-prop', name: 'filters',

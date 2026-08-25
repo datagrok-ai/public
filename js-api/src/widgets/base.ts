@@ -12,6 +12,12 @@ import {DataFrame} from "../dataframe";
 import {Type} from "../const";
 import {MapProxy} from "../proxies";
 import {IDartApi} from "../api/grok_api.g";
+// The .js suffix keeps webpack on the same module instance the DG.U2 barrel loads —
+// an extensionless import resolves to the .ts twin and bundles a second Control.
+import {Control} from "../u2core/component.js";
+import type {PropertyChange} from "../u2core/component.js";
+import type {Scope} from "../u2core/scope.js";
+import type {ObservableLike} from "../u2core/widget-like.js";
 
 declare let DG: any;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -262,7 +268,7 @@ export interface IWidgetStatus {
 }
 
 /** Base class for controls that have a visual root and a set of properties. */
-export class Widget<TSettings = any> {
+export class Widget<TSettings = any> extends Control {
 
   public get type(): string { return 'Unknown'; }
 
@@ -272,7 +278,6 @@ export class Widget<TSettings = any> {
   /** Constructor function. No parameters, returns [Widget]. */
   factory: Func | null = null;
 
-  protected _root: HTMLElement;
   protected _properties: Property[] = [];
   protected _functions: Func[] = [];
   props: TSettings & ObjectPropertyBag; //ObjectPropertyBag;
@@ -282,7 +287,7 @@ export class Widget<TSettings = any> {
 
   /** @constructs Widget and initializes its root. */
   constructor(widgetRoot: HTMLElement) {
-    this._root = widgetRoot;
+    super(widgetRoot);
     // @ts-ignore
     this.props = new ObjectPropertyBag(this);
     this.subs = [];
@@ -331,27 +336,26 @@ export class Widget<TSettings = any> {
     return this;
   }
 
-  /** Returns all properties of this widget. */
-  getProperties(): Property[] { return this._properties; }
+  /** A widget wrapper minted inside somebody's effect scope must not be auto-disposed with it. */
+  protected get ambientAdoption(): boolean { return false; }
+
+  /** Every property {@link getProperties} declares is a bind step, read and written on
+   * {@link propertyTarget}. */
+  get propertyTier(): boolean { return true; }
+
+  /** Returns all properties of this widget: the meta-generated ones plus {@link addProperty}'s. */
+  getProperties(): Property[] { return (super.getProperties() as Property[]).concat(this._properties); }
 
   /** Functions that are applicable to this particular widget.
     Used in the UI to display context actions, and for the AI integrations. */
   getFunctions(): Func[] { return this._functions;  }
 
-  private _aiDescription: string | null = null;
-
-  /** A short AI-facing briefing: what this widget is, what its functions do, and how the
-   * assistant should approach it (e.g. which {@link getFunctions} entries to call first).
-   * Shown to the AI assistant as part of the workspace context. */
-  get aiDescription(): string | null { return this._aiDescription; }
-  set aiDescription(x: string | null) { this._aiDescription = x; }
-
   /** Gets called when viewer's property is changed.
    * @param {Property} property - or null, if multiple properties were changed. */
-  onPropertyChanged(property: Property | null): void {}
+  onPropertyChanged(property: Property | null): void { this._notifyPropertyChange(property); }
 
   getDartProperties(): any[] {
-    return this.getProperties().map((p) => p.dart);
+    return this.getProperties().filter((p) => p.dart != null).map((p) => p.dart);
   }
 
   sourceRowsChanged(): void {};
@@ -367,21 +371,68 @@ export class Widget<TSettings = any> {
   /** Parent widget up the DOM tree, or null. */
   get children(): Widget[] { return api.grok_Widget_Get_Children(this.toDart()); }
 
-  /** Widget's visual root.
-   * @type {HTMLElement} */
-  get root(): HTMLElement { return this._root; }
-  set root(r: HTMLElement) { this._root = r; }
-
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
   detach(): void {
+    this._u2.detaching = true;
     this.subs.forEach((s) => s.unsubscribe());
     this.isDetached = true;
+    this._u2.scope?.dispose();
     // A detached widget must stop showing up in Widget.getAll(): drop the Dart
     // wrapper {@link toDart} registered. Dart-owned widgets ({@link DartWidget})
     // keep their registration - it belongs to the Dart lifecycle.
     if (this.dart != null)
       api.grok_Widget_Unregister(this.dart);
+  }
+
+  protected _scopeMinted(_scope: Scope): void { this._wireLifecycle(); }
+
+  protected _wireLifecycle(): void {
+    this._wireJsLifecycle();
+  }
+
+  /** JS-owned lifecycle: disposing the scope detaches the widget, and vice versa. */
+  protected _wireJsLifecycle(): void {
+    this.scope.own(() => {
+      if (!this.isDetached && !this._u2.detaching)
+        this.detach();
+    });
+  }
+
+  /** Dart-owned lifecycle: the platform kill disposes the scope, and disposing the scope
+   * kills the widget through the kill-walk. */
+  protected _wireDartLifecycle(): void {
+    const root = this.root;
+    api.grok_Widget_RegisterCleanup(root, () => {
+      this._u2.platformKilled = true;
+      this.scope.dispose();
+    });
+    this.scope.own(() => {
+      if (!this._u2.platformKilled)
+        api.grok_Widget_Kill(root);
+    });
+  }
+
+  /** Notifies the property tier. Called from both the {@link addProperty} setter (overrides that skip
+   * super would otherwise lose `props.x =` writes) and {@link onPropertyChanged} (direct calls);
+   * the double notify collapses into one microtask refresh. */
+  protected _notifyPropertyChange(p: Property | null): void {
+    for (const next of this._u2.propertyChangeListeners ?? [])
+      next(p?.name ?? null);
+  }
+
+  protected _ownPropertyChanges(): ObservableLike<PropertyChange> {
+    return {
+      subscribe: (next: (x: PropertyChange) => void) => {
+        const listeners = this._u2.propertyChangeListeners ??= new Set();
+        listeners.add(next);
+        return {unsubscribe: () => listeners.delete(next)};
+      },
+    };
+  }
+
+  protected propertyChanges(): ObservableLike<PropertyChange> {
+    return this._ownPropertyChanges();
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
@@ -404,6 +455,7 @@ export class Widget<TSettings = any> {
     p.set = function (_: any, x: any) {
       // @ts-ignore
       obj[fieldName] = x;
+      obj._notifyPropertyChange(p);
       obj.onPropertyChanged(p);
     };
 
@@ -449,6 +501,8 @@ export class DartWidget extends Widget {
 
   get type(): string { return api.grok_Widget_Get_Type(this.dart); }
   get root(): HTMLElement { return api.grok_Widget_Get_Root(this.dart); }
+  get propertyTarget(): unknown { return this.dart; }
+  protected _wireLifecycle(): void { this._wireDartLifecycle(); }
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
   getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }

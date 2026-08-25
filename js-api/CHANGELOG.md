@@ -2,6 +2,12 @@
 
 ## v.next
 
+* GROK-20753: Introduced the `DG.U2` namespace — the u2 reactive core (signals, `Scope`, `Component`/`Control`, `dfBindings`) now ships inside datagrok-api (`import 'datagrok-api/u2core'`; plugins map it to `DG.U2` via a webpack externals entry so one instance is shared with the platform).
+* GROK-20753: `DG.Widget` now extends `DG.U2.Control` — every widget gains `scope`, `own`, `bindStep`/`bindProps`, `componentMeta`, `specProps` and the property tier (`propertyTier`/`propertyTarget`); `detach()` also disposes the widget's scope.
+* GROK-20753: `Widget.scope` is minted on first access — a wrapper that never engages u2 owns nothing, and reading `.scope` (not just `own`/`effect`) engages the widget's lifecycle (for a Dart-owned widget: the kill-walk cleanup and `own(kill)`).
+* GROK-20753: Behavior change: `detach()`/`dispose()` on a Dart-owned viewer now kills it through the platform kill-walk (previously the Dart side was left alive).
+* GROK-20753: Compile-compat change: `Widget.name` (via `Component.name`) is now an accessor pair — a `Widget` subclass declaring `name` as a plain field fails with TS2611 against this version; declare it as accessors instead.
+
 * GROK-20752: Rebuilt the Node.js dart2js runtime bundle (`src/datagrok/build/web/grok_shared.dart.js`) from core master. It predated the `dateTime:raw`/`dateTime:int` None fix, so once grok_connect started choosing the component encoder (id 2), any query result with a datetime column holding empty values died under Node with `NullError: method not found: '_value' on null`. Any change to `ddt`/`grok_shared` decoding needs this bundle rebuilt in the same commit — the browser gets the freshly compiled client, Node gets this committed artifact.
 
 * Added `grok.dapi.impersonationToken` — act as another user with a token you already hold (a signup response, a service token). The browser session is an HttpOnly cookie that script can neither read nor overwrite, so assigning `grok.dapi.token` same-origin does nothing; this sends the token in the `Authorization` header, which the server reads ahead of the cookie. It can only use a token already in hand, never the session's own JWT. Always clear it in a `finally` — while set, every call runs as that user.
