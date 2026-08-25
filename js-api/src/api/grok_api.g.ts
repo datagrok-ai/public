@@ -1727,6 +1727,7 @@ export interface IDartApi {
   grok_Project_AddRelation(p: any, e: any, link: Bool): any;
   grok_Project_RemoveRelation(p: any, e: any): any;
   grok_Project_Description(p: any): any;
+  grok_Project_Set_Description(p: any, x: String): any;
   grok_Project_IsDirty(p: any): any;
   grok_Project_IsEmpty(p: any): any;
   grok_Project_IsDashboard(p: any): any;
