@@ -47,12 +47,14 @@ const pickOnViewer = (page: Page, role: string, column: string) =>
 
 async function openSettings(page: Page): Promise<void> {
   for (let i = 0; i < 4; i++) {
-    const built = await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'));
-    if (built) return;
+    // Never return early on an already-built panel: once a second view is open it can
+    // still be showing the FIRST view's scatter plot, and every edit below would land
+    // there while the assertions read grok.shell.tv — the jitter step failed that way.
     await v.openViewerGear(page, 'Scatter plot');
 
     await v.pollValue(() => page.evaluate(() => document.querySelectorAll('[name^="prop-"]').length),
       (n) => n > 0, 1000, 200);
+    if (await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'))) return;
   }
   throw new Error('the scatter plot settings panel did not build');
 }
@@ -161,9 +163,10 @@ async function clickContextMenuLeaf(page: Page, groups: string[], leaf: string):
   await dismissPlotMenu(page, 500);
 }
 
-const X_AXIS_TYPE_MENU = ['div-Properties...', 'div-Properties...---X', 'div-Properties...---X---X-Axis-Type'];
+const X_AXIS_TYPE_MENU = ['div-Properties...', 'div-Properties...---X-Axis',
+  'div-Properties...---X-Axis---X-Axis-Type'];
 const xAxisTypeLeaf = (choice: 'Linear' | 'Logarithmic') =>
-  `div-Properties...---X---X-Axis-Type---${choice}`;
+  `div-Properties...---X-Axis---X-Axis-Type---${choice}`;
 
 async function wheelZoomIn(page: Page, steps = 1): Promise<void> {
   const r = await canvasRect(page);
@@ -271,6 +274,11 @@ const filteredIndicator = (page: Page) => page.evaluate(() => {
   const el = document.querySelector('[name="span-filtered"]') as HTMLElement | null;
   return {present: !!el, text: el ? (el.innerText ?? '').trim() : null};
 });
+
+// The status-bar indicator is written a frame after the row count settles, so a one-shot
+// read races it — as `present` and as text, since it is built once with the count in it.
+const settledIndicator = (page: Page, present: boolean) =>
+  v.pollValue(() => filteredIndicator(page), (r) => r.present === present, 2000, 100);
 
 async function closeFilterPanel(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -398,19 +406,30 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
   await softStep('Filter Panel reset clears the scatter plot\'s contribution', async () => {
     const errBefore = errCount();
     await v.openFilterPanel(page);
+    // opening the panel clears the plot's own zoom contribution a beat AFTER the panel
+    // itself appears (4891 -> 5850 observed). Zooming into that window makes the count
+    // dip and bounce back: the dip satisfies the "changed" wait, then the reset lands
+    // and takes the indicator with it, so the assertion below sees no indicator at all
+    expect(await settledFilterCountUnchanged(page)).toBe(fullRowCount);
 
     await wheelZoomIn(page, 2);
     const zoomed = await settledFilterCountAfterChange(page, fullRowCount);
     expect(zoomed).toBeLessThan(fullRowCount);
 
-    const reported = await filteredIndicator(page);
-    expect(reported.present).toBe(true);
+    const reported = await settledIndicator(page, true);
+    // one consolidated read: when the indicator is missing, the mode and the count are
+    // what say whether the zoom actually filtered or the step inherited the wrong state
+    expect({
+      present: reported.present,
+      mode: (await viewerProps(page)).zoomAndFilter,
+      filtered: zoomed < fullRowCount,
+    }).toEqual({present: true, mode: 'filter by zoom', filtered: true});
     expect(reported.text).toContain(String(zoomed));
 
     await page.locator('[name="viewer-Filters"] [name="icon-arrow-rotate-left"]').click();
     expect(await settledFilterCountAfterChange(page, zoomed)).toBe(fullRowCount);
 
-    expect((await filteredIndicator(page)).present).toBe(false);
+    expect((await settledIndicator(page, false)).present).toBe(false);
     expect(errCount()).toBe(errBefore);
 
     await closeFilterPanel(page);

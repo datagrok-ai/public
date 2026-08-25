@@ -252,9 +252,8 @@ export async function pickColumnViaSelectorTrusted(
   }, rootName);
   if (!canvas) throw new Error(`pickColumnViaSelectorTrusted: no ${viewerType} root on the page`);
   await page.mouse.move(canvas.x, canvas.y);
-  await page.waitForTimeout(400);
 
-  const point = await page.evaluate(({rn, r, t, sc}: {rn: string; r: string; t: string; sc: string | null}) => {
+  const locate = ({rn, r, t, sc}: {rn: string; r: string; t: string; sc: string | null}) => {
     const root = sc
       ? document.querySelector(sc)
       : [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
@@ -274,7 +273,12 @@ export async function pickColumnViaSelectorTrusted(
       if (b.width > 0 && b.height > 0) return {x: b.x + b.width / 2, y: b.y + b.height / 2};
     }
     return null;
-  }, {rn: rootName, r: opts.role, t: target, sc: opts.scopeSelector ?? null});
+  };
+  // the on-canvas selectors are hover-revealed, so the settle after mouse.move IS
+  // "the selector became clickable" — which this lookup already reports
+  const point = await pollValue(
+    () => page.evaluate(locate, {rn: rootName, r: opts.role, t: target, sc: opts.scopeSelector ?? null}),
+    (p) => p !== null, 400, 50);
   if (!point)
     throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} selector exposes no clickable text`);
 
@@ -291,18 +295,20 @@ export async function pickColumnViaSelectorTrusted(
     throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} column popup did not open`);
   }
 
+  const comboItems = () => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length);
   const text = opts.columnName.toLowerCase();
   await page.keyboard.press(text[0]);
-  await page.waitForTimeout(150);
+  await pollValue(comboItems, (n) => n > 0, 150, 50);
   if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await page.waitForTimeout(200);
+  await pollValue(comboItems, (n) => n > 0, 200, 50);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(opts.commitSettleMs ?? 900);
 
-  const applied = await page.evaluate(({vt, prop}: {vt: string; prop: string}) => {
+  const readApplied = () => page.evaluate(({vt, prop}: {vt: string; prop: string}) => {
     const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
     return view ? ((view.props as any)[prop] ?? null) : null;
   }, {vt: viewerType, prop: propName});
+  const applied = await pollValue(readApplied, (a) => a === opts.columnName,
+    opts.commitSettleMs ?? 900, 50);
   if (applied !== opts.columnName) {
     throw new Error(`pickColumnViaSelectorTrusted: ${opts.role} did not take — ` +
       `${propName} expected "${opts.columnName}", got "${applied}"`);
@@ -316,9 +322,17 @@ export async function openViewerGear(page: Page, viewerType: string): Promise<vo
       `[name="viewer-${vt}"]`,
       `[name="viewer-${vt.replace(/\s+/g, '-')}"]`,
     ];
+    // A closed table view leaves its viewers in the DOM at zero size, ahead of the
+    // current view's. querySelector would pick that one and click a gear nobody can
+    // see, so every property edit that followed landed on the wrong viewer.
+    const sized = (e: Element) => {
+      const b = e.getBoundingClientRect();
+      return b.width > 0 && b.height > 0;
+    };
     let vEl: HTMLElement | null = null;
     for (const c of candidates) {
-      vEl = document.querySelector(c) as HTMLElement | null;
+      const all = [...document.querySelectorAll(c)] as HTMLElement[];
+      vEl = all.find(sized) ?? all[0] ?? null;
       if (vEl) break;
     }
     if (!vEl) return;
@@ -326,7 +340,14 @@ export async function openViewerGear(page: Page, viewerType: string): Promise<vo
     const gear = panel?.querySelector('.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
     gear?.click();
   }, viewerType);
-  await page.waitForTimeout(1000);
+  // The property panel is a shared surface: switching viewers keeps .property-grid
+  // in the DOM and even the same leading prop rows, so its presence says nothing
+  // about WHICH viewer is showing. shell.o is what actually changes.
+  await pollValue(() => page.evaluate((vt: string) => {
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const o = (window as any).grok?.shell?.o;
+    return !!document.querySelector('.property-grid') && !!o?.type && norm(o.type) === norm(vt);
+  }, viewerType), (ready) => ready, 1000, 50);
 }
 
 export async function clickViewerTitlebarIcon(
@@ -350,7 +371,7 @@ export async function openViewerProperties(
   if (await page.locator(probeSelector).count() > 0) return;
   await clickViewerTitlebarIcon(page, viewerName, 'icon-font-icon-settings');
   await page.locator(probeSelector).first().waitFor({timeout: 10_000});
-  await page.waitForTimeout(500);
+  await pollValue(() => page.locator(`${probeSelector} tr[name^="prop-"]`).count(), (n) => n > 0, 500, 50);
 }
 
 export async function ensurePropertyCategory(
@@ -420,11 +441,11 @@ export async function setPropertyGridValue(
 ): Promise<void> {
   const row = await propertyRow(page, prop, category);
   await row.locator('td').last().click();
-  await page.waitForTimeout(400);
+  await pollValue(() => row.locator('input:not([type="checkbox"])').count(), (n) => n > 0, 400, 50);
   await page.keyboard.press('Control+a');
   await page.keyboard.type(value);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(700);
+  await pollValue(() => propertyGridValue(page, prop, category), (v) => v === value, 700, 50);
 }
 
 export async function selectPropertyGridChoice(
@@ -433,7 +454,9 @@ export async function selectPropertyGridChoice(
   const row = await propertyRow(page, prop, category);
   await row.locator('td').last().click();
   await row.locator('select').selectOption(value);
-  await page.waitForTimeout(900);
+  // the cap, not an assertion: a choice whose display text differs from its option
+  // value never settles equal, and this helper has never been the one to fail on it
+  await pollValue(() => propertyGridValue(page, prop, category), (v) => v === value, 900, 50);
 }
 
 export async function setPropertyGridCheckbox(
@@ -443,7 +466,7 @@ export async function setPropertyGridCheckbox(
   const box = row.locator('input[type="checkbox"]').first();
   if (await box.isChecked() === desired) return;
   await box.click();
-  await page.waitForTimeout(700);
+  await pollValue(() => box.isChecked(), (c) => c === desired, 700, 50);
   expect(await box.isChecked()).toBe(desired);
 }
 
@@ -452,8 +475,9 @@ export async function togglePropertyGridCheckbox(
 ): Promise<boolean> {
   const row = await propertyRow(page, prop, category);
   const box = row.locator('input[type="checkbox"]').first();
+  const before = await box.isChecked();
   await box.click();
-  await page.waitForTimeout(700);
+  await pollValue(() => box.isChecked(), (c) => c !== before, 700, 50);
   return box.isChecked();
 }
 
@@ -766,6 +790,12 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
   ];
   const rgbStr = `rgb(${opts.rgb[0]}, ${opts.rgb[1]}, ${opts.rgb[2]})`;
   const lowerHex = opts.hex.toLowerCase();
+  const readTag = () => page.evaluate(({c, col}) => {
+    const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
+    const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
+    return String(t[c] ?? '').toLowerCase();
+  }, {c: opts.category, col: opts.column});
+  const committed = (tag: string) => tag === lowerHex || tag.includes(lowerHex.slice(1));
   let okCommitted = false;
   try {
     let item = page.locator(`[name="${containers[0]}"] [name="legend"] .d4-legend-item`)
@@ -790,13 +820,7 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
     }, {dn: dlgName, rgb: rgbStr});
     await page.waitForTimeout(200);
     await page.locator(`.d4-dialog[name="${dlgName}"] [name="button-OK"]`).click({timeout: 5000});
-    await page.waitForTimeout(700);
-    const tag = await page.evaluate(({c, col}) => {
-      const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
-      const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
-      return String(t[c] ?? '').toLowerCase();
-    }, {c: opts.category, col: opts.column});
-    okCommitted = tag === lowerHex || tag.includes(lowerHex.slice(1));
+    okCommitted = committed(await pollValue(readTag, committed, 700, 50));
   } catch (_) {
     okCommitted = false;
   }
@@ -812,15 +836,10 @@ export async function changeLegendItemColor(page: Page, opts: ChangeColorOptions
       for (const v of (window as any).grok.shell.tv.viewers)
         if (v.type !== 'Grid') try { v.invalidate?.(); } catch (_) {}
     }, {col: opts.column, add: additive});
-    await page.waitForTimeout(800);
+    await pollValue(readTag, (t) => t === lowerHex, 800, 50);
   }
 
-  const final = await page.evaluate(({c, col}) => {
-    const dfCol = (window as any).grok.shell.tv.dataFrame.col(col);
-    const t = JSON.parse(dfCol.tags['.color-coding-categorical'] ?? '{}');
-    return String(t[c] ?? '').toLowerCase();
-  }, {c: opts.category, col: opts.column});
-  expect(final).toBe(lowerHex);
+  expect(await readTag()).toBe(lowerHex);
 }
 
 /**
