@@ -107,10 +107,35 @@ export const test = base.extend<{page: Page}, {shared: {page: Page | null}}>({
 async function revive(page: Page): Promise<void> {
   try {
     await resetShell(page);
+    await drainErrors(page);
     return;
   } catch (_) { /* fall through to a re-boot */ }
   await loginToDatagrok(page).catch(() => {});
   await resetShell(page).catch(() => {});
+}
+
+/**
+ * Waits until the page stops emitting errors, so the previous test's fallout is not
+ * charged to the next one.
+ *
+ * closeAll() cancels work that is still in flight, and the resulting console errors land
+ * a beat later — after the next test has registered its own `page.on('console')` guard.
+ * Specs then failed on `expect(errCount()).toBe(errBefore)` with counts they never caused,
+ * which is what "Expected: 0, Received: 2" was in the shared-page run.
+ */
+async function drainErrors(page: Page, quietMs = 500, capMs = 3000): Promise<void> {
+  let last = Date.now();
+  const bump = () => { last = Date.now(); };
+  page.on('console', bump);
+  page.on('pageerror', bump);
+  try {
+    const deadline = Date.now() + capMs;
+    while (Date.now() < deadline && Date.now() - last < quietMs)
+      await page.waitForTimeout(50);
+  } finally {
+    page.off('console', bump);
+    page.off('pageerror', bump);
+  }
 }
 
 export {expect} from '@playwright/test';
