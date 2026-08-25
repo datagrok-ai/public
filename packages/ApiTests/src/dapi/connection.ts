@@ -89,7 +89,7 @@ FROM generate_series(1, 10) AS s(i);
       } catch (_) {}
     }
   });
-}, { owner: 'ppolovyi@datagrok.ai', node: true});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: connection cache', () => {
   const testFilePath1: string = 'System:AppData/ApiTests/test_files.txt';
@@ -125,7 +125,7 @@ category('Dapi: connection cache', () => {
     await grok.dapi.files.delete(testFilePath2);
     list = await grok.dapi.files.list('System:AppData/ApiTests');
     expect(list.every((f) => f.name !== 'renamed_test_files.txt'));
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+  });
 
   test('Dataframe: Ids', async () => {
     // not from cache
@@ -134,7 +134,7 @@ category('Dapi: connection cache', () => {
     const table2 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
     // id should be absent when we read as csv, and second time from cache
     expect(!table1.id && !table2.id, true);
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined });
+  });
 
   test('Sequential stress test', async () => {
     const times = DG.Test.isInBenchmark ? 100 : 10;
@@ -169,7 +169,7 @@ category('Dapi: connection cache', () => {
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
     expect(cars2Median < cars1Median * 5, true);
-  }, { benchmark: true, timeout: 120000, skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined });
+  }, { benchmark: true, timeout: 120000 });
 
   after(async () => {
     try {
@@ -179,7 +179,7 @@ category('Dapi: connection cache', () => {
       await grok.dapi.files.delete(testFilePath2);
     } catch (_) { }
   });
-}, { owner: 'ppolovyi@datagrok.ai', node: true});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: TableQuery', () => {
   let dc: _DG.DataConnection;
@@ -271,7 +271,7 @@ category('Dapi: TableQuery', () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
   });
-}, { owner: 'ppolovyi@datagrok.ai', node: true});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 /*
 category('Dapi: TableQueryBuilder', () => {

@@ -44,7 +44,7 @@ category('Benchmarks', () => {
     const compressionOffTime = await getDataQueryTime('PostgresqlCompressionIntOff');
     expect(compressionOnTime < compressionOffTime * 2, true);
   }, {skipReason: 'Feature of compression in development', benchmark: true});
-}, {node: true});
+});
 
 function getTestResult(times: number[], expectedCount: number): object {
   const totalTime = times.reduce((acc, currentValue) => acc + currentValue, 0);
