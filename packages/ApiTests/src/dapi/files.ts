@@ -131,7 +131,9 @@ category('Dapi: files: formats', () => {
       const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
       expect(df.rowCount, 10, 'wrong rows number');
       expect(df.columns.length, 10, 'wrong columns number');
-    }, {skipReason: ['kmz', 'kml'].includes(ext) ? 'GROK-13263' : undefined});
+    }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment'
+          : ['kmz', 'kml'].includes(ext) ? 'GROK-13263'
+              : undefined});
   }
 }, {owner: 'aparamonov@datagrok.ai'});
 

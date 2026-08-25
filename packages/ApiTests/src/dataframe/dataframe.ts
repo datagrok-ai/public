@@ -156,7 +156,7 @@ category('DataFrame: Methods', () => {
     expect(t2.columns.byName('x').getNumber(0) === 9);
     expect(t2.columns.byName('z').getNumber(1) === 7);
     expect(t2.columns.byName('y').getNumber(2) === 6);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('toJson | fromJson', async () => {
     const t = createDf();

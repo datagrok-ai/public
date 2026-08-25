@@ -4,3 +4,6 @@ dist/
 dist-node/
 test-report.html
 test-console-output.log
+
+
+node-test-loader/.runtime/
