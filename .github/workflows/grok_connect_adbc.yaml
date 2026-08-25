@@ -82,6 +82,14 @@ jobs:
           branch=$(echo ${GITHUB_REF#refs/heads/})
           echo "commit_sha=${commit_sha}" >> $GITHUB_OUTPUT
           echo "branch=${branch}" >> $GITHUB_OUTPUT
+          # Only master/release runs publish. Everything gated on this must stay off for
+          # pull_request runs: a PR that writes cache-to would push layers to the shared
+          # registry cache tag from an unmerged (and on a fork, untrusted) branch.
+          if [[ "${GITHUB_REF}" == "refs/heads/master" || "${GITHUB_REF}" == refs/heads/release/* ]]; then
+            echo "publishes=true" >> $GITHUB_OUTPUT
+          else
+            echo "publishes=false" >> $GITHUB_OUTPUT
+          fi
           if [[ ${{ steps.check.outputs.image_exists }} == 'true' ]]; then
             platform='linux/amd64'
             echo "platform=${platform}" >> $GITHUB_OUTPUT
@@ -93,7 +101,9 @@ jobs:
           else
             echo "platform=linux/amd64" >> $GITHUB_OUTPUT
             if [[ ${{ steps.check.outputs.latest }} == 'true' ]]; then
-              echo "cache_to=type=registry,ref=datagrok/grok_connect_adbc:cache,mode=max" >> $GITHUB_OUTPUT
+              if [[ "${GITHUB_REF}" == "refs/heads/master" || "${GITHUB_REF}" == refs/heads/release/* ]]; then
+                echo "cache_to=type=registry,ref=datagrok/grok_connect_adbc:cache,mode=max" >> $GITHUB_OUTPUT
+              fi
               echo "tags=datagrok/grok_connect_adbc:latest,datagrok/grok_connect_adbc:${{ steps.get_version.outputs.version }}" >> $GITHUB_OUTPUT
             else
               echo "tags=datagrok/grok_connect_adbc:${{ steps.get_version.outputs.version }}" >> $GITHUB_OUTPUT
@@ -158,7 +168,10 @@ jobs:
           emails: "ppolovyi@datagrok.ai"
       - name: Prepare Slack Message
         id: slack-prepare
-        if: steps.docker-artifact.outcome == 'skipped' && (steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success')
+        # Gate on the ref, not on the artifact step: a pull_request run skips the artifact
+        # upload whenever the version tag is unpublished, which would otherwise announce a
+        # publish that never happened (push: false on PRs).
+        if: steps.param.outputs.publishes == 'true' && (steps.build-push.outcome == 'success' || steps.bleeding-edge.outcome == 'success')
         shell: bash
         run: |
           if [[ "${{ steps.bleeding-edge.outcome == 'success' }}" == "true" ]]; then
