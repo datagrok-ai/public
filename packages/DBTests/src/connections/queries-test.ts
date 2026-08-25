@@ -36,7 +36,7 @@ category('Connections', () => {
       'email': 'contains com', 'some_number': '>20', 'country': 'in (Indonesia)', 'date': 'before 1/1/2022'});
     expect(result?.rowCount ?? 0, 1);
   }, {stressTest: true});
-}, {node: true});
+});
 
 category('Docker connection', () => {
   let testConnection: DG.DataConnection | null;
@@ -73,4 +73,4 @@ category('Docker connection', () => {
     const result: DG.DataFrame = call.getOutputParamValue();
     expect(result.rowCount, 4079);
   });
-}, {node: true});
+});

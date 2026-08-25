@@ -121,7 +121,7 @@ category('Dapi: files', () => {
     expect(!!res);
   }, {stressTest: true});
 
-}, {owner: 'aparamonov@datagrok.ai', node: true});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {
   const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip', 'kmz', 'kml'];
@@ -131,11 +131,9 @@ category('Dapi: files: formats', () => {
       const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
       expect(df.rowCount, 10, 'wrong rows number');
       expect(df.columns.length, 10, 'wrong columns number');
-    }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment'
-          : ['kmz', 'kml'].includes(ext) ? 'GROK-13263'
-              : undefined});
+    }, {skipReason: ['kmz', 'kml'].includes(ext) ? 'GROK-13263' : undefined});
   }
-}, {owner: 'aparamonov@datagrok.ai', node: true});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 async function safeDeleteFile(path: string): Promise<void> {
   try {

@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@types/wu": "^2.1.42",
-    "@types/yargs": "^17.0.34",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
     "eslint": "^8.16.0",
@@ -38,7 +37,6 @@
     "ts-loader": "^9.2.6",
     "tsconfig-paths": "^4.2.0",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "tsx": "^4.20.6",
     "typescript": "^5.0.4",
     "webpack": "^5.59.1",
     "webpack-cli": "^4.9.1"
@@ -63,9 +61,7 @@
     "debug-js-api-tests-local": "grok publish local",
     "release-js-api-tests-local": "webpack && grok publish localhost --release",
     "debug-js-api-tests-localhost": "grok publish localhost",
-    "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release",
-    "start-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --mode=functional",
-    "stress-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --mode=stress --concurrencyRange=10-100 --step=5"
+    "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release"
   },
   "canEdit": [
     "Administrators"
@@ -99,8 +95,5 @@
       "defaultValue": "value1",
       "nullable": false
     }
-  ],
-  "optionalDependencies": {
-    "yargs": "^18.0.0"
-  }
+  ]
 }
