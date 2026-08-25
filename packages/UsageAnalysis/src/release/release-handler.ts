@@ -7,6 +7,7 @@ import {StressView} from '../tabs/stress-tests';
 import {VulnerabilitiesView} from '../tabs/vulnerabilities';
 import {ReleaseOverviewView} from './overview';
 import {TestsView} from './tests';
+import {BenchmarksView} from './benchmarks';
 import {ManualTestsView} from './manual';
 import {ReleaseTicketsView} from './tickets';
 import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV, DEFAULT_BRANCH, ALL_BRANCHES, fetchTestBranches,
@@ -52,9 +53,9 @@ export class ReleaseHandler {
 
     const overview = new ReleaseOverviewView(this.ctx);
     overview.switchTab = (name) => this.changeTab(name);
-    const views: UaView[] = [overview, new TestsView(this.ctx), new ManualTestsView(this.ctx),
-      new StressView(undefined, this.ctx), new VulnerabilitiesView(undefined, this.ctx),
-      new ReleaseTicketsView(this.ctx)];
+    const views: UaView[] = [overview, new TestsView(this.ctx), new BenchmarksView(this.ctx),
+      new ManualTestsView(this.ctx), new StressView(undefined, this.ctx),
+      new VulnerabilitiesView(undefined, this.ctx), new ReleaseTicketsView(this.ctx)];
     for (const v of views) {
       v.markToolboxReady();
       this.view.addView(v.name, () => {

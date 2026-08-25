@@ -410,6 +410,20 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ReleaseTests', { instanceFilter, branchFilter, lastBuildsNum });
   }
 
+  /**
+   * @param {string} instanceFilter
+   *   choices: ["dev", "release", "public", "release-ec2"]
+   * @param {string} branchFilter
+   *   choices: Query("SELECT DISTINCT branch FROM builds WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch")
+   */
+  export async function releaseBenchmarks(instanceFilter: string , branchFilter: string | null, lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseBenchmarks', { instanceFilter, branchFilter, lastBuildsNum });
+  }
+
+  export async function releaseBenchmarkVersions(lastVersionsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseBenchmarkVersions', { lastVersionsNum });
+  }
+
   export async function releaseManualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ReleaseManualTests', { lastBatchesNum });
   }
