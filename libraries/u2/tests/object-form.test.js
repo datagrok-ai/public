@@ -1,5 +1,5 @@
 /* Schema-driven form tests. datagrok-api cannot load in node, so the properties here are minimal
-   fakes of the `PropertyLike` shape the generator consumes — a real DG.Property satisfies it
+   fakes of the `IProperty` shape the generator consumes — a real DG.Property satisfies it
    structurally (checked at compile time, see src/dg/README.md). */
 
 import {test} from 'node:test';
@@ -24,7 +24,7 @@ function form(name, body) {
   });
 }
 
-/** A `PropertyLike` over a plain field, as `DG.Property.js` builds one. */
+/** An `IProperty` over a plain field, as `DG.Property.js` builds one. */
 function prop(name, propertyType, options = {}) {
   return {
     name, propertyType,

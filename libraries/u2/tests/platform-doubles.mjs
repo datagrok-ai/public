@@ -90,7 +90,7 @@ export class TableQuery extends DataQuery {
 }
 
 /** What a function declares its inputs and outputs as, and what the widget host mints out of a u2
- * PropertyLike: `create`'s arguments plus the options record `fromOptions` refines it with. */
+ * IProperty: `create`'s arguments plus the options record `fromOptions` refines it with. */
 export class Property {
   constructor(name, propertyType, options = {}) { this.dart = {name, propertyType, ...options}; }
 

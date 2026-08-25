@@ -2,6 +2,10 @@
 
 ## v.next
 
+* GROK-20753: Introduced `DG.IPropertyMeta` — the pure property-metadata vocabulary (name, type, propertyType, inputType, min/max/step, choices, editor, category, format, friendlyName, …); `DG.IProperty` now extends it, adding the accessors (`get`/`set`) and behavior options, and both live in `entities/property-meta.ts` as the one canonical shape (`DG.U2` re-exports them; the u2 core's `PropertyLike` is gone).
+* GROK-20753: `Property.js(name, type, options)` and `Widget.addProperty(..., options)` now honor `options.get`/`options.set`: they become the property's real accessors instead of the default `x[name]`/field closures (and are no longer pushed into the Dart property mixin as plain values). `addProperty`'s change notification (`onPropertyChanged`) still fires around a custom setter, and a `{get}`-only options keeps the default `fieldName` write.
+* GROK-20753: u2core protocol cleanup: `WidgetLike` is deleted — its contract is `DG.U2.Component`'s own surface, which `DG.Widget` answers by inheritance; `BindPropLike`/`BindSourceLike` are renamed to `BindProp`/`BindSource`; `ComponentMetaLike` is renamed to `ComponentMetaBase` (u2's spec-layer `ComponentMeta` extends it).
+
 * GROK-20753: Introduced the `DG.U2` namespace — the u2 reactive core (signals, `Scope`, `Component`/`Control`, `dfBindings`) now ships inside datagrok-api (`import 'datagrok-api/u2core'`; plugins map it to `DG.U2` via a webpack externals entry so one instance is shared with the platform).
 * GROK-20753: `DG.Widget` now extends `DG.U2.Control` — every widget gains `scope`, `own`, `bindStep`/`bindProps`, `componentMeta`, `specProps` and the property tier (`propertyTier`/`propertyTarget`); `detach()` also disposes the widget's scope.
 * GROK-20753: `IEventType`/`IRectBounds`/`IInputStatus`/`IWidgetStatus` now live in `DG.U2` (u2core) as the single canonical definitions, re-exported unchanged from `datagrok-api/dg` (the `*Like` duplicates are gone; `value`/`choices` stay `any`).

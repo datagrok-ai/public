@@ -8,7 +8,7 @@ import {Accordion} from '../../components/containers/accordion.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {PropertyGrid} from '../../components/forms/property-grid.js';
 import type {PropDescriptor} from '../../components/forms/property-grid.js';
-import type {PropertyLike} from '../../core/property-like.js';
+import type {NamedProperty} from '../../core/widget-like.js';
 import {propertyForm} from '../forms/object-form.js';
 import type {FieldOverride, ObjectForm} from '../forms/object-form.js';
 import type {SpecEditor, SpecPatch} from '../../spec/editor.js';
@@ -61,7 +61,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
   // the wiring sections fold: one row per bindable prop is a lot of panel for a node that binds
   // nothing, and it is what pushed the events off the bottom of the platform's pane
   let folds: Accordion | undefined;
-  const channelOf = (props: PropertyLike[], values: Record<string, unknown>,
+  const channelOf = (props: NamedProperty[], values: Record<string, unknown>,
     read: () => Record<string, unknown>, patch: FormChannel['patch'],
     overrides?: Record<string, FieldOverride>): FormChannel => {
     // built before the form: a commit fired during construction must find its channel
@@ -87,7 +87,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     // they must exist whether or not the pane was ever opened
     folds.addPane(title, content, expanded);
   };
-  const add = (title: string, props: PropertyLike[], values: Record<string, unknown>,
+  const add = (title: string, props: NamedProperty[], values: Record<string, unknown>,
     read: () => Record<string, unknown>, patch: FormChannel['patch'],
     overrides?: Record<string, FieldOverride>, expanded?: boolean): FormChannel => {
     const channel = channelOf(props, values, read, patch, overrides);

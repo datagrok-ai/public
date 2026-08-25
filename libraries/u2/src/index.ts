@@ -2,9 +2,9 @@ export {signal, computed, batch, untracked, Signal} from './core/signals.js';
 export type {ReadonlySignal} from './core/signals.js';
 export {Scope} from './core/scope.js';
 export {Component, Control} from './core/component.js';
-export type {PropertyLike} from './core/property-like.js';
-export type {WidgetLike, FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IEventType,
-  IRectBounds, ComponentMetaLike} from './core/widget-like.js';
+export type {IProperty, IPropertyMeta} from './core/property-like.js';
+export type {FuncLike, ObservableLike, IWidgetStatus, IInputStatus, IEventType,
+  IRectBounds, NamedProperty, ComponentMetaBase} from './core/widget-like.js';
 export {bindText, bindValue} from './core/bind.js';
 export {AsyncSource} from './core/async-source.js';
 export type {AsyncState} from './core/async-source.js';
@@ -122,7 +122,6 @@ export {isBindSource} from './spec/bind-source.js';
 export type {BindSource, BindProp} from './spec/bind-source.js';
 export {isWritableSignal} from './core/signals.js';
 export type {SpecEventEntry} from './spec/spec.js';
-export type {BindSourceLike, BindPropLike} from './core/widget-like.js';
 export {FuncSource, DESIGN_ROWS} from './sources/func-source.js';
 export type {FuncSourceOptions, DesignData} from './sources/func-source.js';
 export {EntitySource} from './sources/entity-source.js';

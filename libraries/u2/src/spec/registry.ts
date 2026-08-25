@@ -1,6 +1,7 @@
 import {Component, Control} from '../core/component.js';
 import type {Signal} from '../core/signals.js';
-import type {PropertyLike} from '../core/property-like.js';
+import type {NamedProperty} from '../core/widget-like.js';
+import type {ComponentMetaBase} from '../core/widget-like.js';
 import type {SpecNode} from './spec.js';
 
 /** Envelope version of the JSON spec: `{"$schema": "dg-ui/1", "root": {…}}`. */
@@ -10,7 +11,7 @@ export const SPEC_SCHEMA = 'dg-ui/1';
  * grid, validation and the manifest all read one shape. `type` carries a platform TYPE string
  * ('string', 'int', 'double', 'bool', 'string_list', 'object'); `object` takes any
  * JSON-serializable payload — the escape hatch for structured options. */
-export interface SpecPropMeta extends PropertyLike {
+export interface SpecPropMeta extends NamedProperty {
   type: string;
   /** Accepts a `bind` entry; the resolved context signal is passed to `create` as this prop. */
   bindable?: boolean;
@@ -55,7 +56,7 @@ export interface ComponentStart {
   start(): void;
 }
 
-export interface ComponentMeta {
+export interface ComponentMeta extends ComponentMetaBase {
   /** `u2-*`. */
   tag: string;
   /** What the palette shows for the tag ('Scatter plot'); the tag's suffix where absent. */

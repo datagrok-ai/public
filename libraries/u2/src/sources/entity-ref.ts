@@ -84,7 +84,7 @@ export class EntityRef extends Component implements BindSource, ComponentStart {
     const value = this._entity.peek();
     if (value !== null && typeof value === 'object') {
       for (const name of EntityRef._readable(value as object))
-        props.push({name, type: null});
+        props.push({name});
     }
     return props;
   }

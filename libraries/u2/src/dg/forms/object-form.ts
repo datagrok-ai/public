@@ -1,9 +1,9 @@
 /* Schema-driven forms — GOAL.md's priority #1: a whole form derived from Property metadata, with
-   per-field overrides. Everything the generator reads off a property is declared by PropertyLike,
+   per-field overrides. Everything the generator reads off a property is declared by IProperty,
    which DG.Property satisfies structurally; the platform itself is only reached by `editors:
    'auto'`, through the global the bundler binds `datagrok-api/dg` to. */
 import {batch} from '../../core/signals.js';
-import type {PropertyLike} from '../../core/property-like.js';
+import type {IProperty} from '../../core/property-like.js';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {text} from '../../core/text.js';
 import {Form} from '../../components/forms/form.js';
@@ -52,7 +52,7 @@ export interface ObjectFormOptions {
  * ones; `DG.Entity` is NOT, and Dart-backed objects need their dart handle as the target — see
  * src/dg/README.md. */
 export interface PropertySource {
-  getProperties(): PropertyLike[];
+  getProperties(): IProperty[];
 }
 
 /** The value type a field is read and written in — what the editor is built from is decided
@@ -61,13 +61,13 @@ type Kind = 'string' | 'int' | 'float' | 'bigint' | 'qnum' | 'bool' | 'choice' |
   'list' | 'map' | 'file' | 'readonly';
 
 interface Field {
-  prop: PropertyLike;
+  prop: IProperty;
   /** Null for a platform editor, which reads and writes the property in its own native type. */
   kind: Kind | null;
   input: Input<any>;
 }
 
-export type InputFactory = (prop: PropertyLike, options: InputOptions<any>) => Input<any>;
+export type InputFactory = (prop: IProperty, options: InputOptions<any>) => Input<any>;
 
 /** Editors the router routes to but cannot import: this module has to load without the platform
  * (its own tests, `editors` and `from-dart-input` run headless), while `FileInput` reaches for
@@ -85,7 +85,7 @@ export class PlatformInputs {
     };
   }
 
-  static create(kind: string, prop: PropertyLike, options: InputOptions<any>): Input<any> | null {
+  static create(kind: string, prop: IProperty, options: InputOptions<any>): Input<any> | null {
     const factory = PlatformInputs._factories[kind];
     return factory ? factory(prop, options) : null;
   }
@@ -142,7 +142,7 @@ const EDITOR_TYPES: Record<string, (type: string | null | undefined) => boolean>
   slider: (type) => type !== 'bool',
 };
 
-function kindOf(prop: PropertyLike, assumeWritable = false): Kind {
+function kindOf(prop: IProperty, assumeWritable = false): Kind {
   if (!prop.set && !assumeWritable)
     return 'readonly';
   const type = prop.propertyType ?? prop.type;
@@ -177,7 +177,7 @@ function kindOf(prop: PropertyLike, assumeWritable = false): Kind {
 }
 
 /** The editor the property's own hints ask for, before its type gets a say. */
-function routeFor(prop: PropertyLike, options: InputOptions<any>): Input<any> | null {
+function routeFor(prop: IProperty, options: InputOptions<any>): Input<any> | null {
   const byInputType = prop.inputType ? BY_INPUT_TYPE[prop.inputType] : undefined;
   if (byInputType)
     return byInputType(prop, options);
@@ -187,12 +187,12 @@ function routeFor(prop: PropertyLike, options: InputOptions<any>): Input<any> | 
     byEditor(prop, options) : null;
 }
 
-function sliderFor(prop: PropertyLike, options: InputOptions<any>): Input<any> {
+function sliderFor(prop: IProperty, options: InputOptions<any>): Input<any> {
   return new SliderInput({...options, min: finite(prop.min) ?? 0, max: finite(prop.max) ?? 100,
     step: finite(prop.step)});
 }
 
-function fileInputFor(prop: PropertyLike, options: InputOptions<any>): Input<any> {
+function fileInputFor(prop: IProperty, options: InputOptions<any>): Input<any> {
   return PlatformInputs.create('file', prop, options) ?? readonlyText(options);
 }
 
@@ -208,7 +208,7 @@ function finite(value: number | null | undefined): number | undefined {
 
 /** `DG.format` where the platform is loaded (the same global `editors: 'auto'` reaches for);
  * without it the input keeps its own precision rules. */
-function formatter(prop: PropertyLike): ((value: number) => string) | undefined {
+function formatter(prop: IProperty): ((value: number) => string) | undefined {
   const format = prop.format;
   const dgFormat = (globalThis as any).DG?.format as ((x: number, f: string) => string) | undefined;
   if (format == null || format === '' || typeof dgFormat !== 'function')
@@ -219,7 +219,7 @@ function formatter(prop: PropertyLike): ((value: number) => string) | undefined 
 /** What `NumberInput.bindProperty` applies Dart-side (`number_input.dart:119-129`): bounds, step
  * and format from the property, a clicker on bounded ints, a slider on floats or on explicit
  * `showSlider`, units as the postfix. */
-function numberOptions(prop: PropertyLike, kind: 'int' | 'float',
+function numberOptions(prop: IProperty, kind: 'int' | 'float',
   options: InputOptions<any>): NumberInputOptions {
   const min = finite(prop.min);
   const max = finite(prop.max);
@@ -245,7 +245,7 @@ export interface PropertyInputOptions extends InputOptions<any> {
 /** The editor {@link propertyForm} generates for a property, with the platform's own metadata
  * mapping applied. Exported for value-editor builders (`dartInputFor`), which learn the property
  * only after the platform binds it; a null property — nothing bound — gets a plain text editor. */
-export function inputForProperty(prop: PropertyLike | null,
+export function inputForProperty(prop: IProperty | null,
   options: PropertyInputOptions = {}): Input<any> {
   const {assumeWritable, ...rest} = options;
   if (prop == null)
@@ -295,18 +295,18 @@ export class ObjectForm extends Form {
   private readonly _auto: boolean;
   private _refreshing = false;
 
-  constructor(props: PropertyLike[], target: object, options: ObjectFormOptions = {}) {
+  constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
     super({condensed: options.condensed});
     this.target = target;
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';
     this.root.dataset.u2 = 'object-form';
     for (const prop of ObjectForm._select(props, options))
-      this._addField(prop, options.overrides?.[prop.name] ?? {});
+      this._addField(prop, options.overrides?.[prop.name!] ?? {});
   }
 
   /** The properties the form renders, in layout order. */
-  get properties(): ReadonlyArray<PropertyLike> {
+  get properties(): ReadonlyArray<IProperty> {
     return this._fields.map((f) => f.prop);
   }
 
@@ -332,7 +332,7 @@ export class ObjectForm extends Form {
     }
   }
 
-  private _addField(prop: PropertyLike, override: FieldOverride): void {
+  private _addField(prop: IProperty, override: FieldOverride): void {
     const kind = kindOf(prop);
     const {input: custom, ...rest} = override;
     const options: InputOptions<any> = {
@@ -363,7 +363,7 @@ export class ObjectForm extends Form {
         if (initial)
           initial = false;
         else if (!this._refreshing)
-          this._onChanged?.(prop.name, value);
+          this._onChanged?.(prop.name!, value);
       });
       return;
     }
@@ -378,13 +378,13 @@ export class ObjectForm extends Form {
       if (ObjectForm._same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
-      this._onChanged?.(prop.name, value);
+      this._onChanged?.(prop.name!, value);
     });
   }
 
   /** The platform's own editor for a real `DG.Property`, or null wherever it has none — a property
    * u2 declared itself, an older core, an editor that refuses the property. */
-  private _platformInput(prop: PropertyLike): Input<any> | null {
+  private _platformInput(prop: IProperty): Input<any> | null {
     const dg = (globalThis as any).DG as DgApi | undefined;
     if (!this._auto || dg == null || (prop as {dart?: unknown}).dart == null)
       return null;
@@ -396,19 +396,19 @@ export class ObjectForm extends Form {
     }
   }
 
-  private _read(prop: PropertyLike, kind: Kind | null): any {
+  private _read(prop: IProperty, kind: Kind | null): any {
     const value = prop.get ? prop.get(this.target) : undefined;
     return kind === null ? value : ObjectForm._coerce(kind, value);
   }
 
-  private static _select(props: PropertyLike[], options: ObjectFormOptions): PropertyLike[] {
+  private static _select(props: IProperty[], options: ObjectFormOptions): IProperty[] {
     let selected = props;
     if (options.include) {
       const byName = new Map(props.map((p) => [p.name, p]));
-      selected = options.include.map((name) => byName.get(name)).filter((p): p is PropertyLike => p !== undefined);
+      selected = options.include.map((name) => byName.get(name)).filter((p): p is IProperty => p !== undefined);
     }
     const exclude = options.exclude;
-    return exclude ? selected.filter((p) => !exclude.includes(p.name)) : selected;
+    return exclude ? selected.filter((p) => !exclude.includes(p.name!)) : selected;
   }
 
   private static _coerce(kind: Kind, value: unknown): any {
@@ -480,7 +480,7 @@ export class ObjectForm extends Form {
 /** Generates a form over `props`, editing `source` in place. The primary schema-driven surface:
  * `props` come from wherever the caller has them — `DG.Property.fromOptions`, a viewer's
  * `getProperties()`, `grok.dapi.domains` row properties, `grok.dapi.entities.getProperties()`. */
-export function propertyForm(props: PropertyLike[], source: object, options?: ObjectFormOptions): ObjectForm {
+export function propertyForm(props: IProperty[], source: object, options?: ObjectFormOptions): ObjectForm {
   return new ObjectForm(props, source, options);
 }
 

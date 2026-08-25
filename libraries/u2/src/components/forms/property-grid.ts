@@ -11,7 +11,7 @@ import {ListInput} from '../inputs/list-input.js';
 
 export interface PropDescriptor {
   name: string;
-  /** Platform TYPE strings, as the registry and `PropertyLike` use them; `choice` is the one
+  /** Platform TYPE strings, as the registry and `IProperty` use them; `choice` is the one
    * addition — a string constrained to {@link choices}. */
   type: 'string' | 'int' | 'double' | 'bool' | 'choice' | 'string_list';
   /** Rows sharing a category sit under one collapsible header; uncategorized rows come first. */

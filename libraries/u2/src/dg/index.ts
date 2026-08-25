@@ -5,7 +5,7 @@ export type {DartInputOptions, PropertyInputBuilder} from './inputs/input-bridge
 export {columnInput, tableInput, tablesInput, ColumnPicker} from './inputs/pickers.js';
 export type {ColumnInputOptions, ColumnPickerOptions} from './inputs/pickers.js';
 export {ObjectForm, propertyForm, objectForm, inputForProperty, PlatformInputs} from './forms/object-form.js';
-export type {PropertyLike} from '../core/property-like.js';
+export type {IProperty} from '../core/property-like.js';
 export type {PropertySource, ObjectFormOptions, FieldOverride,
   PropertyInputOptions, InputFactory} from './forms/object-form.js';
 export {propertyEditor, PropertyEditor} from './forms/property-editor.js';

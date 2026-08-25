@@ -6,6 +6,8 @@ Tests: Removed the `grok test` Node pass — the suite runs in the browser only.
 
 Tests: The standalone Node runner (`package-test-node.ts`) is unaffected and still drives `grok stresstest` and the nightly Stress-Tests job. It selects by `{stressTest: true}`, not by `{node: true}`, so it keeps the `typeof process` self-skips that let browser-bound tests opt out under Node — including four stress-marked ones whose loss would have dropped the sweep off its 100% baseline.
 
+GROK-20774: `Property: Accessors` covers custom `get`/`set` on `DG.Property.js` (accessors win over the default field closures, options metadata still applied, the Dart options push does not clobber them) and a custom `set` on `Widget.addProperty` (the write lands through the setter and `onPropertyChanged` still fires).
+
 AI viewers: Fixed the two legend-visibility tests that had never passed. `legendPresent` asked whether a `.d4-legend` element exists, but hiding a legend that has already been shown collapses it to zero width instead of detaching it — so every "legend is now hidden" assertion after a toggle was doomed, while the same assertion at creation time passed because the element had never been built. It now measures rendered width, and lives in `helpers.ts` so BarChart and BoxPlot share one definition.
 
 Node runner: The stress suite now also loads a sibling package's node tests - `extraTestPackages` merges DBTests' registry into the one the runner filters, so the sweep covers read-only Postgres queries through grok_connect alongside the platform API. Each package resolves its own copy of the test library, so the merge is by registry object rather than by import.

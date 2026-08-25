@@ -1,7 +1,7 @@
 /* The platform seam of the v1 data sources (Q5): dg fills it at import, headless tests fake it.
    Type skeleton only — the source implementations and the dg filling arrive with WO-14. */
-import type {PropertyLike} from '../core/property-like.js';
-import type {ObservableLike} from '../core/widget-like.js';
+import type {IProperty} from '../core/property-like.js';
+import type {NamedProperty, ObservableLike} from '../core/widget-like.js';
 import type {DapiPagerSourceLike} from '../dg/entities/dapi-source.js';
 import type {DataFrameLike} from './df-bindings.js';
 
@@ -11,8 +11,8 @@ export interface FuncDescriptorLike {
    * read, and the only one the row cap can reach. 'query' is a hand-written one, which the
    * connector executes as written, DML and DDL included. */
   kind: 'table-query' | 'query' | 'script' | 'function' | 'unknown';
-  inputs: PropertyLike[];
-  outputs: PropertyLike[];
+  inputs: NamedProperty[];
+  outputs: IProperty[];
 }
 
 export interface FuncRunnerLike {

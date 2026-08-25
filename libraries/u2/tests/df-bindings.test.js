@@ -244,7 +244,7 @@ smoke('laziness: bindProps enumerates columns without allocating signals or read
   const rowProps = source.bindStep('currentRow').bindProps();
   assert.deepEqual(rowProps, [
     {name: 'name', type: 'string', semType: 'Text', writable: true},
-    {name: 'total', type: 'double', semType: null, writable: true},
+    {name: 'total', type: 'double', semType: undefined, writable: true},
     {name: 'Mol Weight', type: 'double', semType: 'Molecule Weight', writable: true},
   ]);
   assert.equal(df.dart.reads, 0, 'enumeration never read a cell — no column signal was allocated');

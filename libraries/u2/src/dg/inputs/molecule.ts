@@ -42,5 +42,5 @@ export function moleculeRenderer(options: MoleculeRendererOptions = {}): ObjectR
 
 Editors.register({
   match: (prop) => prop.semType === 'Molecule',
-  create: (prop, options) => moleculeInput(options.label ?? prop.name, {name: options.name}),
+  create: (prop, options) => moleculeInput(options.label ?? prop.name!, {name: options.name}),
 });

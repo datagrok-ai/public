@@ -7,11 +7,11 @@
    bound property are not safely mutable, so the caller rebuilds instead
    (`DG.Property.fromOptions`) — see plan.md §5. */
 import type {IProperty} from 'datagrok-api/dg';
+import type {NamedProperty} from '../../core/widget-like.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {signal, Signal} from '../../core/signals.js';
 import {ObjectForm, propertyForm} from './object-form.js';
-import type {PropertyLike} from '../../core/property-like.js';
 
 /** The types the editor offers, and the ones the convergence matrix covers (plan.md §"full input
  * matrix"). */
@@ -23,7 +23,7 @@ const TYPES = ['string', 'int', 'double', 'num', 'bigint', 'qnum', 'bool', 'date
  * no bounds. */
 const NUMERICAL = ['int', 'double', 'num', 'float'];
 
-interface FieldMeta extends PropertyLike {
+interface FieldMeta extends NamedProperty {
   /** Property types this field applies to; shown for every type when absent. */
   applicableTo?: string;
 }
@@ -180,7 +180,7 @@ export class PropertyEditor extends Control {
     return field.applicableTo === 'numerical' ? NUMERICAL.includes(type) : field.applicableTo === type;
   }
 
-  private static _propertyFor(field: FieldMeta): PropertyLike {
+  private static _propertyFor(field: FieldMeta): IProperty {
     const name = field.name;
     return {caption: PropertyEditor._caption(name), ...field,
       get: (x: any) => x[name], set: (x: any, value: any) => x[name] = value};

@@ -2,7 +2,8 @@
    honors, the parameters of the function a source names, its bindings and its events — one model
    read by the writable panel and the read-only one alike. */
 import {Component} from '../../core/component.js';
-import type {PropertyLike} from '../../core/property-like.js';
+import type {IProperty} from '../../core/property-like.js';
+import type {NamedProperty} from '../../core/widget-like.js';
 import type {FieldOverride} from '../forms/object-form.js';
 import {htmlProps, isHtmlTag} from '../../spec/spec.js';
 import type {SpecEventEntry, SpecNode} from '../../spec/spec.js';
@@ -29,7 +30,7 @@ export interface PropSection {
   title: string;
   /** The declared metadata with get/set closures over {@link values}; a bound or structured prop
    * gets no set, so the form routes it to the read-only field. */
-  props: PropertyLike[];
+  props: NamedProperty[];
   values: Record<string, unknown>;
   read: () => Record<string, unknown>;
 }
@@ -42,7 +43,7 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
   const node = ref.node;
   const meta = ref.meta();
   const declared = meta ? meta.props : isHtmlTag(node.tag) ? htmlProps(node.tag) : [];
-  const groups = new Map<string, PropertyLike[]>();
+  const groups = new Map<string, NamedProperty[]>();
   for (const prop of declared) {
     if (typeOf(prop) === BIND_ONLY)
       continue;
@@ -64,8 +65,9 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
       const live = liveValues(ref);
       const values: Record<string, unknown> = {};
       for (const prop of props) {
-        const value = live[prop.name] ?? node.props?.[prop.name];
-        values[prop.name] = EDITABLE.has(typeOf(prop)) ? value : json(value);
+        const name = prop.name;
+        const value = live[name] ?? node.props?.[name];
+        values[name] = EDITABLE.has(typeOf(prop)) ? value : json(value);
       }
       return values;
     };
@@ -94,10 +96,10 @@ export function missingTable(x: SpecNodeRef): boolean {
  * node binds is the context's to change — the Bindings field is where it is edited — and a
  * structured value has no editor yet: neither gets a set, so the form renders them read-only.
  * `string_list` is spoken as the form's `list`, which routes it to the list editor. */
-function editable(prop: PropertyLike, node: SpecNode): PropertyLike {
+function editable(prop: NamedProperty, node: SpecNode): NamedProperty {
   const name = prop.name;
   const type = typeOf(prop);
-  return {...prop, propertyType: null, type: type === 'string_list' ? 'list' : type,
+  return {...prop, propertyType: undefined, type: type === 'string_list' ? 'list' : type,
     get: (t) => t[name],
     set: node.bind?.[name] === undefined && EDITABLE.has(type) ? (t, v) => t[name] = v : undefined};
 }
@@ -112,7 +114,7 @@ function liveValues(ref: SpecNodeRef): Record<string, unknown> {
   return live;
 }
 
-export function typeOf(prop: PropertyLike): string {
+export function typeOf(prop: IProperty): string {
   return prop.propertyType ?? prop.type ?? 'string';
 }
 
@@ -120,7 +122,7 @@ function json(value: unknown): string {
   return value === undefined ? '' : JSON.stringify(value);
 }
 
-export function stringProps(values: Record<string, string>, description: string): PropertyLike[] {
+export function stringProps(values: Record<string, string>, description: string): NamedProperty[] {
   return Object.keys(values).map((name) => ({name, type: 'string', description,
     get: (t: any) => t[name], set: (t: any, v: any) => t[name] = v}));
 }
@@ -134,7 +136,7 @@ export function commitOnChange(values: Record<string, unknown>): Record<string, 
 
 /** What a source that names a function is called with: the prop its params live under, and the
  * function's own inputs — properties, so the panel edits them as it edits everything else. */
-export function paramsOf(x: SpecNodeRef): {prop: string, inputs: PropertyLike[]} | null {
+export function paramsOf(x: SpecNodeRef): {prop: string, inputs: NamedProperty[]} | null {
   const prop = x.instance.registry.get(x.node.tag)?.props.find((p) => p.subBindable);
   const func = x.node.props?.func;
   if (prop === undefined || typeof func !== 'string' || func === '')

@@ -9,7 +9,7 @@ import {
   Menu, Dialog, Tooltip, Form, PropertyGrid,
 } from '@datagrok-libraries/u2';
 import * as DG from 'datagrok-api/dg';
-import {asDartInput, tableInput, columnInput, leakReport, propertyForm, PropertyLike,
+import {asDartInput, tableInput, columnInput, leakReport, propertyForm, IProperty,
   userInput, entityInput, chip, EntityChip, entityCard, handlerRenderer,
   moleculeInput, moleculeRenderer, fileInput, filesInput, rsaInput, tablesInput,
   columnsInput, columnsMapInput, aggregatedColumnsInput}
@@ -336,7 +336,7 @@ function dgInputsPage(): HTMLElement {
 
 function objectFormPage(): HTMLElement {
   const group = DG.Group.create(`u2demo-${Math.random().toString(36).slice(2, 8)}`);
-  const props: PropertyLike[] = [
+  const props: IProperty[] = [
     {name: 'friendlyName', caption: 'Name', type: 'string', nullable: false,
       get: (g) => (g as DG.Group).friendlyName, set: (g, v) => (g as DG.Group).friendlyName = v as string},
     {name: 'personal', caption: 'Personal', type: 'bool',
@@ -371,7 +371,7 @@ function objectFormPage(): HTMLElement {
       }));
   });
   return divV([
-    span('propertyForm(): everything below is generated from PropertyLike metadata over a real DG.Group — ' +
+    span('propertyForm(): everything below is generated from IProperty metadata over a real DG.Group — ' +
       'editors chosen by type, required from nullable: false, edits write through to the entity, ' +
       'SAVE persists it via grok.dapi.groups.', 'u2demo-hint'),
     span('SAVE and Delete need a server: in local mode dapi has nobody to talk to, so both fail — ' +
@@ -479,7 +479,7 @@ function moleculesPage(): HTMLElement {
   structure.value.value = DRUGS[0].smiles;
 
   const compound = {name: 'Aspirin', smiles: DRUGS[0].smiles, mw: 180.16};
-  const props: PropertyLike[] = [
+  const props: IProperty[] = [
     {name: 'name', caption: 'Name', type: 'string', nullable: false,
       get: (o) => (o as typeof compound).name, set: (o, v) => (o as typeof compound).name = v as string},
     {name: 'smiles', caption: 'Structure', type: 'string', semType: 'Molecule',

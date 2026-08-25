@@ -3,9 +3,11 @@
    structural DataFrameLike; DG.DataFrame satisfies it. */
 import {signal, computed, batch, Signal, ReadonlySignal} from './signals.js';
 import type {Scope} from './scope.js';
-import type {ObservableLike} from './widget-like.js';
-import type {BindPropLike, BindSourceLike} from './widget-like.js';
+import type {ObservableLike} from './protocol.js';
+import type {BindProp, BindSource} from './protocol.js';
 
+/** Deliberately structural, not `DG.Column`/`DG.DataFrame`: every real frame satisfies these,
+ * while the headless suite feeds plain fakes — a Dart-handle class could never type them. */
 export interface ColumnLike {
   name: string;
   type: string;
@@ -30,7 +32,7 @@ export interface DataFrameLike {
 
 /** The seven steps every DataFrame answers — static, so a source that IS a frame enumerates them
  * without building the frame's bindings first. */
-export const DF_STEPS: BindPropLike[] = [
+export const DF_STEPS: BindProp[] = [
   {name: 'df', type: 'dataframe', default: true},
   {name: 'currentRowIdx', type: 'int', writable: true},
   {name: 'currentRow', type: 'object', walkable: true},
@@ -61,12 +63,12 @@ function liveSignal(): {sig: Signal<unknown>, set(v: unknown): void} {
   };
 }
 
-/** The {@link BindSourceLike} over a DataFrame signal. Subscriptions and signals live on `scope`.
+/** The {@link BindSource} over a DataFrame signal. Subscriptions and signals live on `scope`.
  * Lazy: a `currentRow.<col>` signal is created on first bindStep and cached; a repoint (the
  * frame signal changing identity) resubscribes events and refreshes every cached signal.
  * A column step always answers a signal — an absent frame or column reads `undefined` and
  * refuses writes, so bound inputs show empty instead of breaking (the containment posture). */
-export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope: Scope): BindSourceLike {
+export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope: Scope): BindSource {
   const columnSigs = new Map<string, Signal<unknown>>();
   const rowIdx = signal(-1);
   const dataVersion = signal(0);
@@ -167,20 +169,20 @@ export function dfBindings(df: ReadonlySignal<DataFrameLike | undefined>, scope:
     return sig;
   };
 
-  const currentRow: BindSourceLike = {
+  const currentRow: BindSource = {
     bindStep: (name) => name === '' ? null : columnSignal(name),
     bindProps: () => {
       const d = df.peek();
       if (d === undefined)
         return [];
-      return d.columns.names().map((name): BindPropLike => {
+      return d.columns.names().map((name): BindProp => {
         const col = d.columns.byName(name);
-        return {name, type: col?.type ?? null, semType: col?.semType ?? null, writable: true};
+        return {name, type: col?.type, semType: col?.semType ?? undefined, writable: true};
       });
     },
   };
 
-  const steps: Record<string, Signal<unknown> | BindSourceLike> = {
+  const steps: Record<string, Signal<unknown> | BindSource> = {
     df: dfIdentity,
     currentRowIdx: rowIdx as unknown as Signal<unknown>,
     currentRow,

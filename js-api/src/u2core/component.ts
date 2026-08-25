@@ -1,9 +1,9 @@
 import {Scope} from './scope.js';
 import {Signal, computed, isWritableSignal, signal} from './signals.js';
-import {propertyFields} from './property-like.js';
-import type {PropertyLike} from './property-like.js';
-import type {BindPropLike, BindSourceLike, ComponentMetaLike, FuncLike, ObservableLike, WidgetLike,
-  IWidgetStatus} from './widget-like.js';
+import {propertyFields} from './property-fields.js';
+import type {IProperty} from './property-fields.js';
+import type {BindProp, BindSource, ComponentMetaBase, FuncLike, NamedProperty, ObservableLike,
+  IWidgetStatus} from './protocol.js';
 
 /** What a widget announces when one of its properties changed: the property's name, or null when
  * several changed at once (or the widget cannot say which). Structural — nothing platform-typed. */
@@ -19,16 +19,16 @@ interface PropertyEntry {
 }
 
 /** The per-instance u2 state, kept under one own field so that {@link Component.init} can be
- * applied to a foreign object (an adopted `DG.Widget`) without clobbering its own fields. */
+ * applied to a platform `DG.Widget` (a Component by inheritance) without clobbering its own fields. */
 export interface ComponentState {
   scope?: Scope;
   aiDescription: string | null;
-  properties: PropertyLike[] | null;
-  propertiesMeta?: ComponentMetaLike;
+  properties: NamedProperty[] | null;
+  propertiesMeta?: ComponentMetaBase;
   functions: FuncLike[];
   listeners: {id: string | null, next: (x: unknown) => void}[];
   propertySignals: Map<string, PropertyEntry>;
-  propertyIndex?: Map<string, PropertyLike>;
+  propertyIndex?: Map<string, NamedProperty>;
   warned?: Set<string>;
   changesWired: boolean;
   /** Names a notification marked since the last refresh; 'all' for an anonymous change. */
@@ -41,11 +41,13 @@ export interface ComponentState {
 }
 
 /** Base of every u2 component, visual or not: a name, an effect/cleanup scope, and the widget
- * introspection surface (DD7) generated from {@link componentMeta}. A component constructed inside
- * another's scope is disposed with it. Platform-free; in Datagrok, `u2/dg`'s `host()` wires
- * {@link dispose} into the existing `DG.Widget` kill channel and delegates the introspection to a
- * real `DG.Widget`. Standalone hosts (gallery, tests) call {@link dispose} directly. */
-export class Component implements WidgetLike, BindSourceLike {
+ * introspection surface (DD7) generated from {@link componentMeta} — what the shell, the context
+ * panel, automation and the copilot ask of a widget, implemented by `DG.Widget` through
+ * inheritance. A component constructed inside
+ * another's scope is disposed with it. Platform-free; in Datagrok, `DG.Widget extends Control`,
+ * so the kill channel and the introspection surface are this class's own — nothing wires or
+ * delegates. Standalone hosts (gallery, tests) call {@link dispose} directly. */
+export class Component implements BindSource {
   /** Minted on first use; assigned before {@link _scopeMinted} fires, so the hook's own
    * `this.scope.own(...)` reads the stored scope instead of re-entering the mint. */
   get scope(): Scope {
@@ -66,7 +68,7 @@ export class Component implements WidgetLike, BindSourceLike {
   set name(x: string | undefined) { this._u2.name = x; }
   /** The registry metadata of the tag that built this component, stamped by the spec renderer —
    * the single source the introspection surface below is generated from. */
-  componentMeta?: ComponentMetaLike;
+  componentMeta?: ComponentMetaBase;
   /** The props the registry's `create` was handed, stamped alongside {@link componentMeta}: the last resort
    * of the property read below, for a component that keeps a prop under another name or not at all
    * (a `create` wrapping a bare element). Construction-time values — a live one always wins. */
@@ -156,7 +158,7 @@ export class Component implements WidgetLike, BindSourceLike {
    * declared `name` prop is its form key, a different thing that IS a property like any other.
    * A component never hand-writes its property list. The list is generated once per {@link componentMeta}:
    * the accessors read live state, so only a re-stamp invalidates it. */
-  getProperties(): PropertyLike[] {
+  getProperties(): NamedProperty[] {
     const u2 = this._u2;
     if (u2.properties && u2.propertiesMeta === this.componentMeta)
       return u2.properties;
@@ -164,10 +166,11 @@ export class Component implements WidgetLike, BindSourceLike {
     u2.propertiesMeta = this.componentMeta;
     u2.propertyIndex = undefined;
     u2.properties = (this.componentMeta?.props ?? []).map((p) => {
-      const prop: PropertyLike = {...p, get: () => Component._read(self, p.name)};
-      if (self[p.name] instanceof Signal) {
+      const name = p.name;
+      const prop: NamedProperty = {...p, get: () => Component._read(self, name)};
+      if (self[name] instanceof Signal) {
         prop.set = (_source: unknown, value: unknown) => {
-          (self[p.name] as Signal<unknown>).value = value;
+          (self[name] as Signal<unknown>).value = value;
         };
       }
       return prop;
@@ -268,7 +271,7 @@ export class Component implements WidgetLike, BindSourceLike {
    * bind source, generated off {@link componentMeta} the way {@link getProperties} is — then, under
    * {@link propertyTier}, a cached signal over the declared property. '' answers the default
    * binding: the component's own `value` signal, where one exists. */
-  bindStep(name: string): Signal<unknown> | BindSourceLike | null {
+  bindStep(name: string): Signal<unknown> | BindSource | null {
     const self = this as unknown as Record<string, unknown>;
     const member = name === '' ? self.value :
       this.componentMeta?.props?.some((p) => p.name === name) ? self[name] : undefined;
@@ -279,9 +282,9 @@ export class Component implements WidgetLike, BindSourceLike {
 
   /** The signal-backed subset of the meta props — what a binding picker offers on a named node —
    * plus, under {@link propertyTier}, every declared property. Allocates no signal. */
-  bindProps(): BindPropLike[] {
+  bindProps(): BindProp[] {
     const self = this as unknown as Record<string, unknown>;
-    const props: BindPropLike[] = (this.componentMeta?.props ?? [])
+    const props: BindProp[] = (this.componentMeta?.props ?? [])
       .filter((p) => self[p.name] instanceof Signal)
       .map((p) => ({...p, writable: isWritableSignal(self[p.name]),
         ...(p.name === 'value' ? {default: true} : {})}));
@@ -290,20 +293,20 @@ export class Component implements WidgetLike, BindSourceLike {
     const own = new Set(props.map((p) => p.name));
     for (const p of this._propertyIndex().values()) {
       if (!own.has(p.name))
-        props.push({...propertyFields(p), writable: p.set != null});
+        props.push({...propertyFields(p), name: p.name, writable: p.set != null});
     }
     return props;
   }
 
-  private _property(name: string): PropertyLike | undefined {
+  private _property(name: string): NamedProperty | undefined {
     return this.propertyTier ? this._propertyIndex().get(name) :
       this.getProperties().find((p) => p.name === name);
   }
 
-  private _propertyIndex(): Map<string, PropertyLike> {
+  private _propertyIndex(): Map<string, NamedProperty> {
     const u2 = this._u2;
     if (u2.propertyIndex === undefined)
-      u2.propertyIndex = new Map(this.getProperties().map((p) => [p.name, p]));
+      u2.propertyIndex = new Map(this.getProperties().map((p): [string, NamedProperty] => [p.name, p]));
     return u2.propertyIndex;
   }
 

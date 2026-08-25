@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: `PropertyLike` is gone — the canonical `IProperty`/`IPropertyMeta` from datagrok-api replace it across the library (`propertyForm`, `inputForProperty`, `SpecPropMeta`, sources, designer)
+* GROK-20753: removed `WidgetLike` (a widget's introspection surface is `Component`'s own); `BindProp`/`BindSource` are now the core's canonical shapes re-exported by the spec layer (`BindPropLike`/`BindSourceLike` deleted); `ComponentMeta` extends the core's `ComponentMetaBase` (was `ComponentMetaLike`)
+
 * GROK-20753: moved the platform-free core (signals, `Scope`, `Component`/`Control`, `dfBindings`) into datagrok-api as `DG.U2` / `datagrok-api/u2core`; the u2 core files became re-export shims, and `datagrok-api` became a peerDependency (`>=1.28.0`)
 * GROK-20753: removed `adopt`, `host` and `U2Widget` — every `DG.Widget` is now a u2 `Control` by inheritance
 * GROK-20753: renamed `Component.meta` to `componentMeta` (it would shadow `Viewer.meta`)

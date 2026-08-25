@@ -371,6 +371,10 @@ export class Widget<TSettings = any> extends Control {
    *  @see Registered property gets added to {@link properties}.
    *  Returns default value, thus allowing to combine registering a property with the initialization
    *
+   *  `options.get`/`options.set` override how the property reads/writes (instead of the default
+   *  `fieldName` field access); the change notification ({@link onPropertyChanged}) always fires
+   *  on write, and a `{get}`-only options yields a custom read with the default `fieldName` write.
+   *
    * @param {string} propertyName
    * @param {TYPE} propertyType
    * @param defaultValue
@@ -392,8 +396,18 @@ export class Widget<TSettings = any> extends Control {
     };
 
     if (options !== null) {
+      if (options.get)
+        p.get = options.get;
+      if (options.set) {
+        const custom = options.set;
+        p.set = function (t: any, x: any) {
+          custom(t, x);
+          obj._notifyPropertyChange(p);
+          obj.onPropertyChanged(p);
+        };
+      }
       for (let key of Object.keys(options))
-        if (key != 'fieldName')
+        if (key != 'fieldName' && key != 'get' && key != 'set')
           api.grok_PropMixin_SetPropertyValue(p.dart, key, options[key]);
     }
 

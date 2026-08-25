@@ -1,4 +1,4 @@
-/* WidgetLike (DD7): the introspection surface a component answers without the platform —
+/* The Component introspection surface (DD7): what a component answers without the platform —
    registry-generated properties over live signals, declared functions, component and DOM events,
    the AI briefing and the status snapshot. The dg half (a real DG.Widget delegating to all of it)
    is tests/widget-host.test.js. */

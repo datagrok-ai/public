@@ -83,3 +83,54 @@ category('Property: Header parsing', () => {
     expect(ui.input.forProperty(func.inputs[11]).caption, 'MIC O2 P/V exponent');
   }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 });
+
+category('Property: Accessors', () => {
+  test('js custom get/set', async () => {
+    const store: {backing: number, x?: number} = {backing: 1};
+    const p = DG.Property.js('x', DG.TYPE.INT, {
+      get: (o: any) => o.backing * 2,
+      set: (o: any, v: number) => { o.backing = v; },
+    });
+    expect(p.get(store), 2);
+    p.set(store, 21);
+    expect(store.backing, 21);
+    expect(store.x === undefined, true);
+  });
+
+  test('js options with accessors', async () => {
+    const p = DG.Property.js('y', DG.TYPE.FLOAT, {
+      units: 'cm', min: 0, max: 10,
+      get: (o: any) => o.raw,
+      set: (o: any, v: number) => { o.raw = v; },
+    });
+    expect(p.units, 'cm');
+    expect(p.min, 0);
+    expect(p.max, 10);
+    const target: {raw?: number, y?: number} = {raw: 7};
+    expect(p.get(target), 7);
+    p.set(target, 3);
+    expect(target.raw, 3);
+    expect(target.y === undefined, true);
+  });
+
+  test('addProperty custom setter notifies', async () => {
+    let changed: string | null = null;
+    const store: {v?: number} = {};
+    class TestWidget extends DG.Widget {
+      constructor() {
+        super(ui.div());
+        this.addProperty('v', DG.TYPE.INT, 0, {set: (_: any, x: number) => { store.v = x; }});
+      }
+      onPropertyChanged(p: DG.Property | null): void {
+        super.onPropertyChanged(p);
+        changed = p?.name ?? null;
+      }
+    }
+    const w = new TestWidget();
+    const p = w.getProperties().find((wp) => wp.name === 'v')!;
+    p.set(w, 42);
+    expect(store.v, 42);
+    expect(changed, 'v');
+    w.detach();
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+}, {owner: 'askalkin@datagrok.ai'});

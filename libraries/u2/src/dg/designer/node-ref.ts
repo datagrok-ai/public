@@ -2,7 +2,7 @@
    models derived from the node map — the structure tree and the breadcrumb path. Platform-free, so
    both are testable without the shell; only the handler and the view below need datagrok-api. */
 import {Component} from '../../core/component.js';
-import type {ComponentMetaLike} from '../../core/widget-like.js';
+import type {ComponentMetaBase} from '../../core/widget-like.js';
 import type {Action} from '../../components/actions/actions.js';
 import type {TreeNode} from '../../components/collections/tree.js';
 import type {SpecEditor} from '../../spec/editor.js';
@@ -45,7 +45,7 @@ export class SpecNodeRef {
 
   /** The registry metadata behind the tag: the component's own stamp, or the instance's registry
    * for a node that failed to build and has no component to ask. */
-  meta(): ComponentMetaLike | undefined {
+  meta(): ComponentMetaBase | undefined {
     const built = this.built();
     return (Component.is(built) ? built.componentMeta : undefined) ?? this.instance.registry.get(this.node.tag);
   }

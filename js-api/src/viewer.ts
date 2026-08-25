@@ -19,7 +19,7 @@ import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
 import {ViewerEvent} from './api/d4.api.g';
 import {signal, dfBindings} from './u2core/index.js';
-import type {Signal, DataFrameLike, BindPropLike, BindSourceLike, ObservableLike, PropertyChange} from './u2core/index.js';
+import type {Signal, DataFrameLike, BindProp, BindSource, ObservableLike, PropertyChange} from './u2core/index.js';
 
 declare let DG: any;
 declare let ui: any;
@@ -27,7 +27,7 @@ let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /** The walkable `table` step every viewer answers first: the DataFrame binding surface over
  * the viewer's frame, repointing with it. */
-const TABLE_STEP: BindPropLike = Object.freeze({name: 'table', type: 'dataframe', walkable: true});
+const TABLE_STEP: BindProp = Object.freeze({name: 'table', type: 'dataframe', walkable: true});
 
 
 /**
@@ -230,7 +230,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
       this._wireDartLifecycle();
   }
 
-  bindStep(name: string): Signal<unknown> | BindSourceLike | null {
+  bindStep(name: string): Signal<unknown> | BindSource | null {
     if (name !== 'table')
       return super.bindStep(name);
     const u2 = this._u2;
@@ -240,10 +240,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
       this.scope.own(() => subscription.unsubscribe());
       u2.table = dfBindings(frame, this.scope);
     }
-    return u2.table as BindSourceLike;
+    return u2.table as BindSource;
   }
 
-  bindProps(): BindPropLike[] {
+  bindProps(): BindProp[] {
     return [TABLE_STEP, ...super.bindProps()];
   }
 

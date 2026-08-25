@@ -9,7 +9,7 @@ import {VirtualList} from '../../components/collections/list.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {div, divV, span} from '../../core/elements.js';
 import {Scope} from '../../core/scope.js';
-import type {PropertyLike} from '../../core/property-like.js';
+import type {NamedProperty} from '../../core/widget-like.js';
 import {propertyForm} from '../forms/object-form.js';
 import {handlerRenderer} from '../entities/entity.js';
 import type {HandlerRenderer} from '../entities/entity.js';
@@ -22,7 +22,7 @@ export interface FuncLike {
   friendlyName?: string;
   description?: string;
   package?: {name?: string} | null;
-  inputs?: PropertyLike[];
+  inputs?: NamedProperty[];
 }
 
 /** One row of the picker: the platform object it renders, and the plain strings the search matches
@@ -89,9 +89,9 @@ export function filterFuncs(entries: FuncEntry[], query: string): FuncEntry[] {
 /** The func's inputs as the form edits them: get/set closures over `values`, and — for a param the
  * binding owns — the path it follows, read-only. An input whose type has no editor renders
  * read-only too, which is what leaves a binding as its only way in. */
-export function paramProps(inputs: PropertyLike[], values: Record<string, unknown>,
-  bound: Record<string, string> = {}): PropertyLike[] {
-  return inputs.map((prop): PropertyLike => {
+export function paramProps(inputs: NamedProperty[], values: Record<string, unknown>,
+  bound: Record<string, string> = {}): NamedProperty[] {
+  return inputs.map((prop): NamedProperty => {
     const name = prop.name;
     const caption = prop.caption ?? prop.friendlyName ?? name;
     const path = bound[name];
@@ -193,13 +193,14 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
     const form = Scope.runWith(pane, () =>
       propertyForm(paramProps(inputs, args, binds), args, {condensed: true}));
     for (const prop of inputs) {
-      const input = form.input(prop.name);
+      const name = prop.name;
+      const input = form.input(name);
       if (input === undefined)
         continue;
-      input.root.setAttribute('data-u2-prop', prop.name);
+      input.root.setAttribute('data-u2-prop', name);
       // owned by the dialog, not by the pane the pick rebuilds — the bind picker outlives it
-      bindPickerButton(input, prop.name, () => dialog.run(() => bindPicker(options.instance, (path) => {
-        binds[prop.name] = path;
+      bindPickerButton(input, name, () => dialog.run(() => bindPicker(options.instance, (path) => {
+        binds[name] = path;
         showParams();
       })));
     }

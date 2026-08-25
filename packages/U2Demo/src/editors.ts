@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {dartInputFor, inputForProperty, PropertyLike} from '@datagrok-libraries/u2/src/dg/index.js';
+import {dartInputFor, inputForProperty, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
 
 /** Property types a u2 editor can take over. The platform matches a `valueEditor` by
  * `options.propertyType`, and for these five that string is also the `DG.TYPE` the bridge has to
@@ -45,7 +45,7 @@ export function registerU2ValueEditors(types: string[]): void {
       options: {propertyType: type},
       // assumeWritable: a func parameter carries no setter (`FuncParam` never assigns
       // `Property.set`), and the value belongs to the platform proxy rather than to the property
-      run: () => dartInputFor((prop) => inputForProperty(prop as PropertyLike | null,
+      run: () => dartInputFor((prop) => inputForProperty(prop as IProperty | null,
         {assumeWritable: true}), {dataType: type}),
     });
   }
