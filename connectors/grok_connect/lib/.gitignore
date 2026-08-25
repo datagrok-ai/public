@@ -1,0 +1,10 @@
+# Superseded drivers now pulled from Maven (see CHANGELOG 2.8.0). These must never
+# live in lib/ again: they duplicate a driver already on the classpath and, in local
+# docker builds, bake two versions of the same driver into the image.
+AthenaJDBC42-*.jar
+DatabricksJDBC42*.jar
+cdata.jdbc.*.jar
+# Stale Jackson copies — Jackson is managed via the pom BOM, not lib/.
+jackson-annotations-2.14.3.jar
+jackson-databind-2.14.3.jar
+jackson-core-2.14.3.jar
