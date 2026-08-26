@@ -3,9 +3,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as jStat from 'jstat';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
-  RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
+  RESULT_NAMES, WASM_OUTPUT_IDX, ELLIPSES, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
   DEMO_INTRO_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
   MAX_ROWS_IN_PREDICTION_TOOLTIP, DELAY,
   MVA_MODEL_TAG, MVA_TRANSFORM_FUNC, MVA_INIT_FUNC} from './pls-constants';
@@ -89,34 +90,65 @@ function getModelFormulaTerms(model: MvaModel): Map<string, number> {
   return terms;
 }
 
-/** Return lines */
-export function getLines(names: string[]): DG.FormulaLine[] {
+/** Hotelling's T² limit for a 2D score plot at the given confidence (p = 2). */
+export function hotellingT2Limit(conf: number, n: number): number {
+  const p = 2;
+  return (p * (n - 1) / (n - p)) * jStat.centralF.inv(conf, p, n - p);
+}
+
+/** Axis-aligned Hotelling's T² ellipse for a score pair; DG variance is n-1, like R's var(). */
+export function hotellingEllipseParams(xCol: DG.Column, yCol: DG.Column, conf: number):
+  {cx: number, cy: number, a: number, b: number} {
+  const sx = xCol.stats;
+  const sy = yCol.stats;
+  const t2 = hotellingT2Limit(conf, xCol.length);
+  return {cx: sx.avg, cy: sy.avg, a: Math.sqrt(t2 * sx.variance), b: Math.sqrt(t2 * sy.variance)};
+}
+
+/** Decimal string for a formula-line expression — the parser rejects exponential notation. */
+function fmt(v: number): string {
+  return v.toLocaleString('en-US', {useGrouping: false, maximumFractionDigits: 20});
+}
+
+/** Scores-plot lines: an x=0 axis per component and the 95%/99% Hotelling's T² ellipses. */
+export function getLines(cols: DG.Column[]): DG.FormulaLine[] {
   const lines: DG.FormulaLine[] = [];
+  const n = cols.length > 0 ? cols[0].length : 0;
+  const stats = new Map(cols.map((c) => [c.name, c.stats]));
+  // T-squared is defined only for n - p > 0 (p = 2)
+  const limits = n > 2 ? ELLIPSES.map((e) => ({...e, t2: hotellingT2Limit(e.conf, n)})) : [];
 
-  const addLine = (formula: string, radius: number) => {
-    lines.push({
-      type: 'line',
-      formula: formula,
-      width: LINE_WIDTH,
-      visible: true,
-      title: ' ',
-      min: -radius,
-      max: radius,
-      color: COLOR.CIRCLE,
-    });
-  };
+  const ref = (name: string) => '${' + name + '}';
 
-  names.forEach((xName) => {
-    const x = '${' + xName + '}';
+  const addEllipseHalf = (formula: string, minX: number, maxX: number, color: string) =>
+    lines.push({type: 'line', formula, width: LINE_WIDTH, visible: true, title: ' ', min: minX, max: maxX, color});
+
+  cols.forEach((xCol) => {
+    const x = ref(xCol.name);
     lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
 
-    names.forEach((yName) => {
-      const y = '${' + yName + '}';
+    cols.forEach((yCol) => {
+      if (yCol.name === xCol.name)
+        return;
 
-      RADIUS.forEach((r) => {
-        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
-        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
-      });
+      const y = ref(yCol.name);
+      const sx = stats.get(xCol.name)!;
+      const sy = stats.get(yCol.name)!;
+      if (sx.variance <= 0 || sy.variance <= 0)
+        return;
+
+      // both orderings emitted: the y=f(x) and x=f(y) arcs fill each other's gaps
+      for (const {t2, color} of limits) {
+        const a = Math.sqrt(t2 * sx.variance);
+        const b = Math.sqrt(t2 * sy.variance);
+        const cx = sx.avg;
+        const cy = sy.avg;
+        // (x - cx)²/a² + (y - cy)²/b² = 1  ->  y = cy ± b·sqrt(1 - (x - cx)²/a²)
+        const dx = `(${x} - ${fmt(cx)})`;
+        const inner = `sqrt(1 - ${dx} * ${dx} / ${fmt(a * a)})`;
+        addEllipseHalf(`${y} = ${fmt(cy)} + ${fmt(b)} * ${inner}`, cx - a, cx + a, color);
+        addEllipseHalf(`${y} = ${fmt(cy)} - ${fmt(b)} * ${inner}`, cx - a, cx + a, color);
+      }
     });
   });
 
@@ -399,9 +431,10 @@ function addMvaViewers(input: MvaInput, names: MvaNames, analysisType: PLS_ANALY
     labelColumnNames: ((input.names !== undefined) && (input.names !== null)) ? [input.names?.name] : undefined,
   });
 
-  // create lines & circles
+  // create axes & Hotelling's T-squared confidence ellipses
   view.addViewer(scoresScatter);
-  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
+  const scoreCols = scoreNames.map((name) => sourceTable.col(name)).filter((c): c is DG.Column => c !== null);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreCols));
 
   // 5. Explained Variance Bar Chart
   const explVarsBar = view.addViewer(DG.Viewer.barChart(explVarsDF, {
