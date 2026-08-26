@@ -1,7 +1,7 @@
 /* Getter-backed doubles of the platform entities u2 reads — the one place the headless suite fakes
    a `DG.Property`, a `DG.Func`, a `DG.FileInfo`, a `DG.DataFrame` or an entity row. On the real
    entity every field is a PROTOTYPE getter over the `dart` handle, so a spread or `Object.keys` of
-   one yields nothing but `dart` — the property plain-object fakes lacked, which is how two P4
+   one yields nothing but `dart` — the property plain-object fakes lacked, which is how two
    defects survived 600 tests. Every double keeps its whole state on `dart` and answers it through
    getters; a test that needs to poke the state behind the handle goes through `dart` too. (The
    real `DG.DataFrame` also keeps `columns, rows, filter, temp, tags` as own fields, data-frame.ts:48-53;
@@ -74,7 +74,7 @@ export class Func extends Entity {
       Object.entries(query.meta ?? {}).every(([key, value]) => f.options?.[key] === value));
   }
 
-  prepare(params) { return {call: async () => ({outputs: await this.dart.run(params)})}; }
+  prepare(params) { return new FuncCall(this, params); }
 }
 getters(Func, 'package', 'description', 'inputs', 'outputs', 'options');
 
@@ -113,6 +113,79 @@ getters(Property, 'name', 'propertyType', 'semType', 'description', 'caption', '
   'nullable', 'defaultValue', 'category', 'userEditable', 'min', 'max', 'step', 'inputType', 'editor',
   'format', 'units', 'showSlider', 'showPlusMinus');
 fields(Property, 'get', 'set');
+
+/** A function's declared parameter (ddt FuncParam): its `options` is the LIVE map the platform
+ * answers for a tag-less FuncParam — a write through it reads back. */
+export class FuncParam extends Property {
+  constructor(name, propertyType, options = {}) {
+    super(name, propertyType, options);
+    this.dart.options ??= {};
+  }
+
+  get options() { return this.dart.options; }
+
+  get editor() { return this.dart.options['editor'] ?? null; }
+
+  get isOptional() { return this.dart.isOptional === true; }
+}
+
+export class FuncCallParam {
+  constructor(property, call) {
+    this.dart = {property, call, value: undefined, onChanged: new Stream()};
+  }
+
+  get name() { return this.dart.property.name; }
+
+  get property() { return this.dart.property; }
+
+  /** Optional-default substitution, as func_call_param.dart:78-88. */
+  get value() {
+    const v = this.dart.value;
+    return v == null && this.dart.property.isOptional ? this.dart.property.defaultValue ?? null : v;
+  }
+
+  get onChanged() { return this.dart.onChanged; }
+}
+
+/** What `Func.prepare` answers: params over the declared inputs (a plain-record input is adopted
+ * into a FuncParam), `setParamValue` the one write path, `call()` the back-compat run — it still
+ * resolves to an object whose `.outputs` are the run result. */
+export class FuncCall {
+  constructor(func, params = {}) {
+    this.dart = {func, outputs: null, params: (func?.inputs ?? []).map((p) =>
+      new FuncCallParam(p instanceof Property ? p : new FuncParam(p.name, p.propertyType ?? p.type, p), this))};
+    for (const [k, v] of Object.entries(params))
+      this.setParamValue(k, v);
+  }
+
+  get func() { return this.dart.func; }
+
+  get inputParams() {
+    const params = this.dart.params;
+    const map = Object.fromEntries(params.map((p) => [p.name, p]));
+    map.values = () => params.slice();
+    return map;
+  }
+
+  get inputs() { return Object.fromEntries(this.dart.params.map((p) => [p.name, p.value])); }
+
+  /** Same-value suppression at the source, as func_call_param.dart:194; the real setter's
+   * always-fire exception for List/ColFilterCall values is deliberately not modeled (W2+). */
+  setParamValue(name, value) {
+    const p = this.dart.params.find((x) => x.name === name);
+    if (p.dart.value === value)
+      return;
+    p.dart.value = value;
+    p.dart.onChanged.fire(p);
+  }
+
+  get outputs() { return this.dart.outputs; }
+
+  async call() {
+    this.dart.outputs = await this.dart.func.dart.run(this.inputs);
+    return this;
+  }
+}
 
 /** A file in a share carries the connection it lives on; one built out of local bytes does not. */
 export class FileInfo extends Entity {
@@ -309,7 +382,7 @@ export const platform = {
   },
 };
 
-/** An event a descriptor declares: `name` is the id `onEvent()` takes, `eventName` a label (P4). */
+/** An event a descriptor declares: `name` is the id `onEvent()` takes, `eventName` a label. */
 export class EventType {
   constructor(dart) { this.dart = dart; }
 }
@@ -345,7 +418,7 @@ export class ObjectPropertyBag {
 
   hasProperty(name) { return this.getProperties().some((p) => p.name === name); }
 
-  /** Over `source`, never the look — so on a viewer these throw (P6), as the platform's do. */
+  /** Over `source`, never the look — so on a viewer these throw, as the platform's do. */
   get(name) { return this.getProperty(name).get(this.source); }
   set(name, value) { this.getProperty(name).set(this.source, value); }
 
@@ -505,13 +578,13 @@ getters(View, 'root', 'ribbonPanels');
 fields(View, 'name', 'toolbox', 'statusBarPanels');
 
 /** A look's owner — the viewer whose `onPropertyValueChanged` a property write fires — and the
- * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError (P6). */
+ * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError. */
 const LOOKS = new WeakMap();
 
 /** What the platform knows about a viewer type without instantiating it (viewer.ts:32). The
  * registry is the test's to fill, as `Func.registry` is. A descriptor property's `get`/`set`,
  * unless given, are defined over the LOOK; a write fires the owning viewer's
- * `onPropertyValueChanged` with the property — for a same value too (P7). */
+ * `onPropertyValueChanged` with the property — for a same value too. */
 export class WidgetDescriptor {
   static registry = [];
 
@@ -647,7 +720,7 @@ export class Viewer extends Widget {
 
   getFunctions() { return []; }
 
-  /** Declared keys go through their property, one event each (P7); `type` and unknown keys are ignored. */
+  /** Declared keys go through their property, one event each; `type` and unknown keys are ignored. */
   setOptions(map) {
     for (const [name, value] of Object.entries(map))
       if (name !== 'type' && this.props.hasProperty(name))
@@ -666,10 +739,10 @@ export class Viewer extends Widget {
   get onPropertyValueChanged() { return this.onEvent('d4-property-value-changed'); }
   get onDataFrameChanged() { return this.onEvent('d4-data-frame-changed'); }
 
-  /** The Dart detach — the kill-walk's; JS `detach()` never reaches it (P9). */
+  /** The Dart detach — the kill-walk's; JS `detach()` never reaches it. */
   get onDetached() { return this.dart.detached; }
 
-  /** Getter-only, as the platform's (P8): `viewer.meta = x` throws. */
+  /** Getter-only, as the platform's: `viewer.meta = x` throws. */
   get meta() { return this.dart.meta ??= new ViewerMetaHelper(this); }
 
   liveSubscriptions() {

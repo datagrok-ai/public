@@ -16,6 +16,7 @@ import './functions/math-functions';
 import './functions/stats-functions';
 import './functions/text-functions';
 import './functions/cache';
+import './functions/param-eval';
 import './shell/shell';
 import './shell/undo';
 import './shell/ml';

@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+Functions: New `functions/param-eval.ts` covers the FuncCall parameter-source evaluators (`evalParamChoices` with `dependsOn` and the null `lookup`, `evalParamSuggestions` receiving the typed text, `evalParamDefault` including rejection on a broken command), `scriptSync` with a variables map (fresh-context isolation) plus its one-argument back-compat, and `Property.options` write-through for FuncParam-backed properties.
+
 Tests: Removed the `grok test` Node pass — the suite runs in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, which are the two things `grok test` probes to decide whether to run tests headless, and every `{node: true/false}` annotation is gone. Two workarounds that existed only so the test bundle would evaluate under that pass went with it: `benchmarks.ts` closes its table unconditionally, and `js-viewer.ts` extends `DG.JsViewer` directly instead of a dummy base.
 
 Tests: The standalone Node runner (`package-test-node.ts`) is unaffected and still drives `grok stresstest` and the nightly Stress-Tests job. It selects by `{stressTest: true}`, not by `{node: true}`, so it keeps the `typeof process` self-skips that let browser-bound tests opt out under Node — including four stress-marked ones whose loss would have dropped the sweep off its 100% baseline.

@@ -101,3 +101,5 @@ export {viewers, viewerSettings} from './viewers/viewers.js';
 export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, VIEWER_USAGE}
   from './viewers/registrations.js';
 export {VIEWER_SAMPLES, platformSamples} from './viewers/samples.js';
+export {funcForm, FuncCallForm} from './funcs/func-form.js';
+export type {FuncFormOptions, FuncCallLike, FuncCallParamLike} from './funcs/func-form.js';
