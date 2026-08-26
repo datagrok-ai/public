@@ -60,11 +60,9 @@ The **Scores** scatterplot shows the values of the latent factors for each obser
 
 Plot two T-scores against each other to explore the observations: nearby points are similar samples, and clusters, trends, or outliers show up as patterns. Plot a T-score against the matching U-score to check the model: points along a straight line mean the linear model fits, a curved pattern points to a nonlinear relationship.
 
+On the T-score plots, two **Hotelling's T² ellipses** mark confidence regions for the observations: the orange one at 95% and the blue one at 99%. Points inside stay within the expected variation, while points beyond the ellipses are outliers worth a closer look.
+
 ![Scores scatterplot](multivariate-analysis/pls-scores.png)
-
-Combine it with the [Observed vs. Predicted](#observed-vs-predicted) scatterplot to explore data samples:
-
-![Scores combined with Observed vs. Predicted](multivariate-analysis/pls-scores-n-model.gif)
 
 ### Loadings
 
