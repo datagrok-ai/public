@@ -15,6 +15,7 @@ import {asDartInput, tableInput, columnInput, leakReport, propertyForm, IPropert
   columnsInput, columnsMapInput, aggregatedColumnsInput}
   from '@datagrok-libraries/u2/src/dg/index.js';
 import {convergencePage} from './convergence';
+import {funcConvergencePage} from './func-convergence';
 
 const LAST_TAB = 'u2demo.tab';
 
@@ -554,6 +555,7 @@ export function buildDemo(): Control {
       {id: 'dg', label: 'Platform bridge', content: platformPage()},
       {id: 'dginputs', label: 'Files & columns', content: dgInputsPage()},
       {id: 'convergence', label: 'Input convergence', content: convergencePage()},
+      {id: 'func-convergence', label: 'FuncCall convergence', content: funcConvergencePage()},
     ];
     const tabs = new TabStrip({tabs: pages});
     tabs.root.classList.add('u2demo-tabs');

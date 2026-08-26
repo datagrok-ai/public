@@ -174,8 +174,12 @@ export class Functions {
     return (f instanceof Func) ? f : null;
   }
 
-  scriptSync(s: string): any {
-    return toJs(api.grok_ScriptSync(s));
+  /** Synchronously evaluates a GrokScript expression.
+   * When {@link variables} is provided, the expression is evaluated over a fresh context
+   * built from that map only (shell variables are not visible); when omitted, it is
+   * evaluated over the shell context, as before. */
+  scriptSync(s: string, variables?: {[name: string]: any}): any {
+    return toJs(api.grok_ScriptSync(s, variables));
   }
 
   getCurrentCall(): FuncCall {
@@ -364,6 +368,27 @@ export class FuncCall extends Entity {
 
   setParamValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Param_Value(this.dart, name, toDart(value));
+  }
+
+  /** Evaluates the parameter's `choices` source (GrokScript evaluation stays Dart-side).
+   * Keys of `values` and `lookup` are stringified choice keys. `dependsOn` names the params
+   * whose change should re-trigger the evaluation. `lookup` is null unless the parameter
+   * has `propagateChoice: all`. */
+  async evalParamChoices(name: string): Promise<{items: string[], values: {[key: string]: any},
+      lookup: {[key: string]: {[column: string]: any}} | null, dependsOn: string[]}> {
+    return toJs(await api.grok_FuncCall_EvalParamChoices(this.dart, name));
+  }
+
+  /** Evaluates the parameter's `suggestions` source for the typed text — both the Dart and
+   * the u2 editors now receive what the user typed. Keys of `tooltips` are stringified. */
+  async evalParamSuggestions(name: string, text: string): Promise<{items: string[], tooltips: {[key: string]: string}}> {
+    return toJs(await api.grok_FuncCall_EvalParamSuggestions(this.dart, name, text));
+  }
+
+  /** Evaluates the parameter's computed `default` command and returns the value.
+   * Evaluation failures reject the returned promise. */
+  async evalParamDefault(name: string): Promise<any> {
+    return toJs(await api.grok_FuncCall_EvalParamDefault(this.dart, name));
   }
 
   /** Executes the function call */

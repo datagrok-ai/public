@@ -28,6 +28,10 @@
   font-size: var(--dg-font-size-small);
 }
 
+.u2demo-status > span:first-child {
+  white-space: nowrap;
+}
+
 .u2demo-hint {
   color: var(--dg-text-color-light);
 }
@@ -184,6 +188,25 @@
 .u2demo-ab .ui-input-map table input {
   width: 100%;
   min-width: 0;
+}
+
+/* FuncCall convergence: the main and gate grids stack, so the name column is fixed rather than
+   min-content — otherwise their editor columns land at different x */
+.u2demo-ab-func {
+  grid-template-columns: 90px repeat(2, minmax(320px, 460px));
+}
+
+/* the standalone funcForm section: the native form layout at its natural single-column width */
+.u2demo-standalone {
+  max-width: 480px;
+}
+
+/* FuncCall convergence: the full-width category row both forms group their params under */
+.u2demo-ab-cat {
+  grid-column: 1 / -1;
+  font-weight: var(--dg-font-weight-medium);
+  color: var(--dg-text-color-light);
+  padding-top: var(--dg-space-m);
 }
 
 .u2demo-code {
