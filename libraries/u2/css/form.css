@@ -38,6 +38,18 @@
   min-width: 0;
 }
 
+/* the category heading FuncCallForm groups params under — a label row, not a collapsible header */
+.u2-form-category {
+  margin-top: var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-bold);
+  color: var(--dg-text-color-light);
+}
+
+.u2-form-rows > .u2-form-category:first-child {
+  margin-top: 0;
+}
+
 .u2-form-condensed .u2-form-rows {
   gap: var(--dg-space-xs);
 }

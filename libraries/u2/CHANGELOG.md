@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: added `funcForm`/`FuncCallForm` — a FuncCall parameter form over the propertyForm machinery (scalar routing, captions/units/tooltips, flat categories, validation, literal-default display, two-way echo-suppressed FuncCall binding); opened `kindOf` and `ObjectForm.coerce`/`same` for reuse
 * GROK-20753: `PropertyLike` is gone — the canonical `IProperty`/`IPropertyMeta` from datagrok-api replace it across the library (`propertyForm`, `inputForProperty`, `SpecPropMeta`, sources, designer)
 * GROK-20753: removed `WidgetLike` (a widget's introspection surface is `Component`'s own); `BindProp`/`BindSource` are now the core's canonical shapes re-exported by the spec layer (`BindPropLike`/`BindSourceLike` deleted); `ComponentMeta` extends the core's `ComponentMetaBase` (was `ComponentMetaLike`)
 

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added the FuncCall convergence tab — one shared FuncCall edited by `DG.InputForm.forFuncCall` (left) and u2's `funcForm` (right) over a client-registered function decorated after registration (choices, Radio/TextArea/Color/Slider input types, min/max, units, categories, literal numeric defaults), with per-direction sync counters, a live `inputs` readout, an `isValid` A/B over a required parameter, and the documented divergence list
 * GROK-20753: added the `datagrok-api/u2core` → `DG.U2` webpack external, so the plugin shares the platform’s u2 core instance
 * GROK-20753: updated the platform-bridge hint to the unified story (every `DG.Widget` is a u2 `Control`) instead of the removed `host()`
 

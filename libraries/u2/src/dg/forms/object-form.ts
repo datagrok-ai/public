@@ -57,7 +57,7 @@ export interface PropertySource {
 
 /** The value type a field is read and written in — what the editor is built from is decided
  * separately, by {@link routeFor}. */
-type Kind = 'string' | 'int' | 'float' | 'bigint' | 'qnum' | 'bool' | 'choice' | 'datetime' |
+export type Kind = 'string' | 'int' | 'float' | 'bigint' | 'qnum' | 'bool' | 'choice' | 'datetime' |
   'list' | 'map' | 'file' | 'readonly';
 
 interface Field {
@@ -142,7 +142,7 @@ const EDITOR_TYPES: Record<string, (type: string | null | undefined) => boolean>
   slider: (type) => type !== 'bool',
 };
 
-function kindOf(prop: IProperty, assumeWritable = false): Kind {
+export function kindOf(prop: IProperty, assumeWritable = false): Kind {
   if (!prop.set && !assumeWritable)
     return 'readonly';
   const type = prop.propertyType ?? prop.type;
@@ -343,14 +343,15 @@ export class ObjectForm extends Form {
       ...rest,
     };
     const registered = custom ? null : this.run(() => Editors.resolve(prop, options));
-    const platform = (custom ?? registered) != null ? null : this._platformInput(prop);
+    const platform = (custom ?? registered) != null ? null :
+      ObjectForm.platformInput(this, prop, this.target, this._auto);
     const input = custom ?? registered ?? platform ??
       this.run(() => inputForProperty(prop, options));
     const native = input === platform;
     if (!native) {
       input.value.value = this._read(prop, kind);
       if (prop.nullable === false)
-        input.addValidator((value) => ObjectForm._isEmpty(value) ? 'Value can\'t be empty' : null);
+        input.addValidator((value) => ObjectForm.isEmpty(value) ? 'Value can\'t be empty' : null);
     }
     this.add(input);
     this._fields.push({prop, kind: native ? null : kind, input});
@@ -375,22 +376,24 @@ export class ObjectForm extends Form {
     // after that effect returns, so a transient flag would already be down (as in PropertyGrid)
     this.effect(() => {
       const value = input.value.value;
-      if (ObjectForm._same(value, this._read(prop, kind)))
+      if (ObjectForm.same(value, this._read(prop, kind)))
         return;
       set(this.target, value);
       this._onChanged?.(prop.name!, value);
     });
   }
 
-  /** The platform's own editor for a real `DG.Property`, or null wherever it has none — a property
-   * u2 declared itself, an older core, an editor that refuses the property. */
-  private _platformInput(prop: IProperty): Input<any> | null {
+  /** The platform's own editor for a real `DG.Property` under `auto`, or null wherever it has
+   * none — a property u2 declared itself, an older core, an editor that refuses the property.
+   * The wrapper is owned by `form`'s scope, as its generated inputs are. */
+  static platformInput(form: Form, prop: IProperty, target: object,
+    auto: boolean): Input<any> | null {
     const dg = (globalThis as any).DG as DgApi | undefined;
-    if (!this._auto || dg == null || (prop as {dart?: unknown}).dart == null)
+    if (!auto || dg == null || (prop as {dart?: unknown}).dart == null)
       return null;
     try {
-      const input = dg.InputBase.forProperty(prop as any, this.target);
-      return input == null ? null : this.run(() => fromDartInput(input, prop.name));
+      const input = dg.InputBase.forProperty(prop as any, target);
+      return input == null ? null : form.run(() => fromDartInput(input, prop.name));
     } catch {
       return null;
     }
@@ -398,7 +401,7 @@ export class ObjectForm extends Form {
 
   private _read(prop: IProperty, kind: Kind | null): any {
     const value = prop.get ? prop.get(this.target) : undefined;
-    return kind === null ? value : ObjectForm._coerce(kind, value);
+    return kind === null ? value : ObjectForm.coerce(kind, value);
   }
 
   private static _select(props: IProperty[], options: ObjectFormOptions): IProperty[] {
@@ -411,7 +414,7 @@ export class ObjectForm extends Form {
     return exclude ? selected.filter((p) => !exclude.includes(p.name!)) : selected;
   }
 
-  private static _coerce(kind: Kind, value: unknown): any {
+  static coerce(kind: Kind, value: unknown): any {
     switch (kind) {
       case 'bool':
         return value === true;
@@ -453,10 +456,10 @@ export class ObjectForm extends Form {
     }
   }
 
-  /** Identity for echo suppression. `Object.is` decides the scalars, but {@link _coerce} builds a
+  /** Identity for echo suppression. `Object.is` decides the scalars, but {@link coerce} builds a
    * fresh `Date`, list or record on every read of an empty or foreign-shaped value, so identity
    * alone would report an edit — and fire `onChanged` — the moment the field is constructed. */
-  private static _same(a: unknown, b: unknown): boolean {
+  static same(a: unknown, b: unknown): boolean {
     if (a instanceof Date && b instanceof Date)
       return a.getTime() === b.getTime();
     if (Array.isArray(a) && Array.isArray(b))
@@ -472,7 +475,7 @@ export class ObjectForm extends Form {
     return typeof x === 'object' && x !== null && !Array.isArray(x) && !(x instanceof Date);
   }
 
-  private static _isEmpty(value: unknown): boolean {
+  static isEmpty(value: unknown): boolean {
     return value === null || value === undefined || value === '';
   }
 }
