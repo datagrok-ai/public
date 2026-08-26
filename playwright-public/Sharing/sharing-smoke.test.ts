@@ -210,7 +210,7 @@ test('Sharing — UI Smoke (Single-Actor): share dialog, context panel, permissi
     
     
     await softStep('Scenario 4: PermissionsView matrix opens at /permissions/<id>', async () => {
-      await evalJs(page, `window.grok.shell.route('/permissions/${projId}')`);
+      await evalJs(page, `void window.grok.shell.route('/permissions/${projId}')`);
       await page.waitForFunction(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href),
         null, {timeout: 15_000});
       const loaded = page.locator(

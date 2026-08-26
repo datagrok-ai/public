@@ -53,12 +53,21 @@ export async function openPlatformView(page: Page, name: PlatformView): Promise<
 
 /** Parse the "shown / total" gallery counter into numbers, polling until it settles. */
 export async function readGalleryCount(page: Page): Promise<{ shown: number; total: number }> {
+  // The counter is parseable long before it is final — a gallery still loading reads "2 / 2" and
+  // only later "3 / 3" — so wait for the same text twice rather than taking the first match.
   const counter = page.locator(GALLERY_COUNTS).first();
   let m: RegExpMatchArray | null = null;
-  for (let i = 0; i < 20; i++) {
+  let last = '';
+  let repeats = 0;
+  for (let i = 0; i < 40; i++) {
     const text = (await counter.textContent().catch(() => ''))?.trim() ?? '';
-    m = text.match(/(\d+)\s*\/\s*(\d+)/);
-    if (m) break;
+    const parsed = text.match(/(\d+)\s*\/\s*(\d+)/);
+    if (parsed) {
+      m = parsed;
+      repeats = text === last ? repeats + 1 : 0;
+      if (repeats >= 2) break;
+    }
+    last = text;
     await page.waitForTimeout(250);
   }
   if (!m) return { shown: NaN, total: NaN };

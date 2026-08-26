@@ -70,7 +70,7 @@ async function pollPermission(
 }
 
 async function openPermissionsView(page: Page, tableId: string) {
-  await page.evaluate((id) => grok.shell.route(`/permissions/${id}`), tableId);
+  await page.evaluate((id) => { grok.shell.route(`/permissions/${id}`); }, tableId);
   await page.waitForFunction(() => /\/permissions\/[0-9a-f-]+/.test(window.location.href),
     null, {timeout: 15_000});
 }
