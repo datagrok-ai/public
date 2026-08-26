@@ -95,6 +95,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       'Similar cars sit close together, dissimilar ones far apart:\n\n' +
       '* `Volvos` are close to each other\n' +
       '* `Porsche` and `Mercedes` are far apart',
+      '* points beyond the orange 95% and blue 99% Hotelling\'s T² ellipses are outliers, like `Porsche` and `Jaguar`',
       '# Loadings\n\n' +
       'How strongly each latent factor describes each feature. Features sitting together carry the same information, ' +
       'features on opposite sides are inversely related:\n\n' +
