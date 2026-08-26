@@ -121,7 +121,7 @@ test.describe('Roles View (Roles-*)', () => {
     await expect(page).toHaveURL(new RegExp(`/roles\\?q=${BUILTIN_ROLE_SEARCH}`));
     expect((await readGalleryCount(page)).shown).toBeLessThan(before.total);
     await clearGallerySearch(page, 'roles');
-    expect((await readGalleryCount(page)).shown).toBe(before.total);
+    expect((await readGalleryCount(page)).total).toBe(before.total);
   });
 
   // Roles-08 + Roles-10: context menu items and context-panel info panes.

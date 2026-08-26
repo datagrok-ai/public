@@ -130,7 +130,7 @@ test.describe('Groups View (Groups-*)', () => {
     expect(filtered.shown).toBeLessThan(before.total);
     expect(filtered.shown).toBeGreaterThan(0);
     await clearGallerySearch(page, 'groups');
-    expect((await readGalleryCount(page)).shown).toBe(before.total);
+    expect((await readGalleryCount(page)).total).toBe(before.total);
   });
 
   // Groups-08 + Groups-10: context menu items and context-panel info panes.

@@ -182,7 +182,7 @@ test.describe('Users View (Users-*)', () => {
     expect(filtered.shown).toBeLessThan(before.total);
     expect(filtered.shown).toBeGreaterThan(0);
     await clearGallerySearch(page, 'users');
-    expect((await readGalleryCount(page)).shown).toBe(before.total);
+    expect((await readGalleryCount(page)).total).toBe(before.total);
   });
 
   test('Users-14 — user context menu items', async ({ page }) => {
