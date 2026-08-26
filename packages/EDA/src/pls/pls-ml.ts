@@ -414,7 +414,7 @@ export class PlsModel {
       showViewerFormulaLines: true,
     });
 
-    scatter.meta.formulaLines.addAll(getLines(names));
+    scatter.meta.formulaLines.addAll(getLines(this.specn.scores.columns.toList()));
 
     return scatter;
   }
