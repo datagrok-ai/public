@@ -131,5 +131,7 @@ export type {TableSourceOptions} from './sources/table-source.js';
 export {EntityRef} from './sources/entity-ref.js';
 export type {EntityRefOptions} from './sources/entity-ref.js';
 export {registerDataSources, COLLECTIONS} from './sources/registrations.js';
+export {SuggestInput} from './components/inputs/suggest-input.js';
+export type {SuggestInputOptions} from './components/inputs/suggest-input.js';
 
 export const VERSION = '0.0.1';

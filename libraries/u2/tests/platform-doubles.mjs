@@ -169,14 +169,87 @@ export class FuncCall {
 
   get inputs() { return Object.fromEntries(this.dart.params.map((p) => [p.name, p.value])); }
 
-  /** Same-value suppression at the source, as func_call_param.dart:194; the real setter's
-   * always-fire exception for List/ColFilterCall values is deliberately not modeled (W2+). */
+  /** Same-value suppression at the source (func_call_param.dart:194) — EXCEPT a List value: the
+   * real setter always fires for List/ColFilterCall values, a same-reference write included. */
   setParamValue(name, value) {
     const p = this.dart.params.find((x) => x.name === name);
-    if (p.dart.value === value)
+    if (p.dart.value === value && !Array.isArray(value))
       return;
     p.dart.value = value;
     p.dart.onChanged.fire(p);
+  }
+
+  /** The `options['choices']` command, answered in the propagate shape: an array becomes
+   * stringified items with identity `values` (the interop stringification, P-W2-1b) and no
+   * lookup; a provider answering `{values, lookup}` passes through. */
+  async evalParamChoices(name) {
+    const p = this._findParam(name);
+    const {result, dependsOn} =
+      await this._evalCommand(p.property.options?.['choices'], name, () => p.value);
+    if (Array.isArray(result)) {
+      const items = result.map(String);
+      return {items, values: Object.fromEntries(items.map((k) => [k, k])), lookup: null, dependsOn};
+    }
+    return {items: Object.keys(result.values), values: result.values,
+      lookup: result.lookup ?? null, dependsOn};
+  }
+
+  /** The `options['suggestions']` command over the TYPED text — the fixed contract: a single
+   * provider input binds `text`, never the stored param value. An array answer carries no
+   * tooltips; an `{items, tooltips}` answer passes through. */
+  async evalParamSuggestions(name, text) {
+    const p = this._findParam(name);
+    const {result} = await this._evalCommand(p.property.options?.['suggestions'], name, () => text);
+    return Array.isArray(result) ? {items: result.map(String), tooltips: {}} :
+      {items: result.items.map(String), tooltips: result.tooltips ?? {}};
+  }
+
+  /** The `options['default']` command; sibling params never reach it in practice (P-W2-5). */
+  async evalParamDefault(name) {
+    const p = this._findParam(name);
+    return (await this._evalCommand(p.property.options?.['default'], name, () => p.value)).result;
+  }
+
+  /** Resolves an options command — `Name` or `Name(args)`, the parenthesized args accepted and
+   * ignored — against {@link Func.registry}: provider inputs bind to same-named host params (a
+   * single provider input matching none binds `fallback` — the param's own value, or the typed
+   * text for suggestions); `dependsOn` is the FOREIGN host params bound, never the param itself;
+   * an unknown func name rejects. Delivery is never synchronous: two microtasks by default,
+   * `dart.evalDelayMs` milliseconds when a test sets the knob. */
+  async _evalCommand(command, paramName, fallback) {
+    const delay = this.dart.evalDelayMs;
+    if (delay != null)
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    else {
+      await Promise.resolve();
+      await Promise.resolve();
+    }
+    const name = String(command ?? '').trim().replace(/\(.*\)$/s, '').trim();
+    const func = Func.find({name})[0];
+    if (func === undefined)
+      throw new Error(`Function not found: ${command}`);
+    const inputs = {};
+    const dependsOn = [];
+    let bound = 0;
+    for (const input of func.inputs) {
+      const host = this.dart.params.find((p) => p.name === input.name);
+      if (host === undefined)
+        continue;
+      inputs[input.name] = host.value;
+      bound++;
+      if (input.name !== paramName)
+        dependsOn.push(input.name);
+    }
+    if (bound === 0 && func.inputs.length === 1)
+      inputs[func.inputs[0].name] = fallback();
+    return {result: await func.dart.run(inputs), dependsOn};
+  }
+
+  _findParam(name) {
+    const p = this.dart.params.find((x) => x.name === name);
+    if (p === undefined)
+      throw new Error(`Parameter not found: ${name}`);
+    return p;
   }
 
   get outputs() { return this.dart.outputs; }

@@ -80,3 +80,31 @@
   gap: var(--dg-space-m);
   margin-top: var(--dg-space-l);
 }
+
+/* the async state riding a func-form field's input box: a spinner while its choices source or
+   computed default evaluates, the message and Retry after a failure (the spinner itself is
+   css/async.css's .u2-loader-spinner) */
+.u2-param-source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-param-source[hidden] {
+  display: none;
+}
+
+.u2-param-source-error {
+  color: var(--dg-error);
+  max-width: 260px;
+}
+
+/* the message wraps up to three lines so a long failure never blows up the row; the full text is its title */
+.u2-param-source-error .u2-param-source-message {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}

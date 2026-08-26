@@ -52,7 +52,8 @@ textarea.u2-input-editor,
 /* the widths the platform pins: 100px for a text box (ui.css:262-265), 140px for the numeric
    family (ui.css:244-254, which `IntInput` lends to its bigint and qnum siblings) */
 .u2-input-root[data-u2='text-input'] > .u2-input-box > input.u2-input-editor,
-.u2-input-root[data-u2='text-input'] > .u2-input-box > .u2-input-editor.u2-input-password {
+.u2-input-root[data-u2='text-input'] > .u2-input-box > .u2-input-editor.u2-input-password,
+.u2-input-root[data-u2='suggest-input'] > .u2-input-box > input.u2-input-editor {
   width: 100px;
   min-width: 0;
 }

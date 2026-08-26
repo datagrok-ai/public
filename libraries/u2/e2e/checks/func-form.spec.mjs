@@ -62,7 +62,7 @@ async function checkBoot(page) {
   }, PAGE);
   await shot(page, 'func-form-1-rest');
   ok('func-form/1a/the-tab-opens-with-both-columns-populated-11-fields-each',
-    fields === 'fields = Dart 11 · u2 11 · unsupported: (none)' && shape.dart === shape.u2 && shape.rows === 12 &&
+    fields === 'fields = Dart 11 · u2 11 · unsupported: (none)' && shape.dart === shape.u2 && shape.rows === 21 &&
     shape.cats.includes('Advanced'),
     `fields="${fields}" dart roots=${shape.dart} u2 roots=${shape.u2} rows=${shape.rows} ` +
     `cats=${JSON.stringify(shape.cats)}`);
