@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: added `SuggestInput` — a free-text input with an async suggestion popup over the typed text (the `u2-typeahead` skin reused; arrows/Enter/Esc/Tab keyboard map, Enter with the popup open contained from the hosting dialog; Esc with the popup closed reverts a type-over to the value at focus, the last pick, or the last external write)
+* GROK-20753: `FuncCallForm` gained the dynamic routes — a present `choices`/`suggestions` option evaluates through the call's `evalParamChoices`/`evalParamSuggestions` (dependency-driven refresh with abort/stale-drop, `propagateChoice: 'all'` lookup writes, `descriptions` tooltips, loading/error-with-Retry state on the field); computed `options['default']` commands are evaluated and written into the call (R6), with `skipDefaultInit` now live to suppress the writes
+* GROK-20753: added `FuncCallForm.settled` — resolves when the initial async population of the current source has landed (each choices source ready-or-error, each computed default written-or-failed); re-arms on `source` rebind, never rejects, never hangs on a dispose or rebind mid-flight
 * GROK-20753: added `funcForm`/`FuncCallForm` — a FuncCall parameter form over the propertyForm machinery (scalar routing, captions/units/tooltips, flat categories, validation, literal-default display, two-way echo-suppressed FuncCall binding); opened `kindOf` and `ObjectForm.coerce`/`same` for reuse
 * GROK-20753: `PropertyLike` is gone — the canonical `IProperty`/`IPropertyMeta` from datagrok-api replace it across the library (`propertyForm`, `inputForProperty`, `SpecPropMeta`, sources, designer)
 * GROK-20753: removed `WidgetLike` (a widget's introspection surface is `Component`'s own); `BindProp`/`BindSource` are now the core's canonical shapes re-exported by the spec layer (`BindPropLike`/`BindSourceLike` deleted); `ComponentMeta` extends the core's `ComponentMetaBase` (was `ComponentMetaLike`)

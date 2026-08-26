@@ -28,8 +28,11 @@ export function note(id, detail = '') {
   console.log(`NOTE  ${id}  ${String(detail).slice(0, 400)}`);
 }
 
-/** Resource and rendering chatter a healthy client emits anyway — anything else is a real error. */
-const NOISE = /Failed to load resource|favicon|ERR_CONNECTION|drawMolecule|Stack trace|^\s*packages\//;
+/** Resource and rendering chatter a healthy client emits anyway — anything else is a real error.
+ * `FormatException: []` and `get$publishedOn` are pre-existing Dart context-panel defects that fire
+ * whenever a Func or App becomes the current object (repro: `grok.shell.o = DG.Func.byName('Sin')`
+ * in local mode) — the funcs-pane checks select through the real widget, which sets it. */
+const NOISE = /Failed to load resource|favicon|ERR_CONNECTION|drawMolecule|Stack trace|^\s*packages\/|FormatException: \[\]|get\$publishedOn/;
 
 export function capture(page) {
   page.on('console', (m) => {

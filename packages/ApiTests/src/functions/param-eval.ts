@@ -35,6 +35,28 @@ for (const input of host.inputs) {
     input.options['default'] = 'paramEvalNoSuchFunc(1)';
 }
 
+grok.functions.register({
+  signature: 'dataframe paramEvalCars()',
+  run: () => DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'model', ['Mazda', 'Volvo']),
+    DG.Column.fromList('int', 'mpg', [21, 30]),
+    DG.Column.fromList('int', 'cyl', [6, 4]),
+  ]),
+});
+
+const carHost = grok.functions.register({
+  signature: 'string paramEvalCarHost(string model, string speed)',
+  run: () => '',
+});
+
+for (const input of carHost.inputs) {
+  if (input.name === 'model') {
+    input.options['choices'] = 'paramEvalCars()';
+    input.options['propagateChoice'] = 'all';
+  } else if (input.name === 'speed')
+    input.options['choices'] = '["slow", "fast"]';
+}
+
 async function expectRejection(action: () => Promise<any>): Promise<void> {
   try {
     await action();
@@ -66,6 +88,26 @@ category('Functions: ParamEval', () => {
     const r = await call.evalParamChoices('fruit');
     expectArray(r.items, ['apple', 'banana', 'cherry']);
     expect(r.values['banana'], 'banana');
+    expectArray(r.dependsOn, []);
+  });
+
+  test('propagate lookup from a dataframe provider', async () => {
+    const call = carHost.prepare();
+    const r = await call.evalParamChoices('model');
+    expectArray(r.items, ['Mazda', 'Volvo']);
+    expect(typeof r.items[0], 'string');
+    expect(r.values['Mazda'], 'Mazda');
+    expect(r.lookup!['Mazda']['mpg'], 21);
+    expect(r.lookup!['Mazda']['cyl'], 6);
+    expect(r.lookup!['Volvo']['mpg'], 30);
+    expect('model' in r.lookup!['Mazda'], false);
+    expectArray(r.dependsOn, []);
+  });
+
+  test('static list-literal choices', async () => {
+    const call = carHost.prepare();
+    const r = await call.evalParamChoices('speed');
+    expectArray(r.items, ['slow', 'fast']);
     expectArray(r.dependsOn, []);
   });
 
@@ -128,5 +170,21 @@ category('Functions: Property options', () => {
     const flavor = propHost.inputs.find((p) => p.name === 'flavor')!;
     flavor.choices = ['vanilla', 'mint'];
     expectArray(propHost.inputs.find((p) => p.name === 'flavor')!.choices, ['vanilla', 'mint']);
+  });
+
+  test('viewer property options include tags', async () => {
+    const viewer = DG.Viewer.scatterPlot(grok.data.demo.demog(20));
+    const color = viewer.getProperties().find((p) => p.name === 'colorColumnName')!;
+    try {
+      expect(color.options['.is-legend-property'] != null, true);
+      // viewer Look property descriptors are class-level and their wrapper (with its merged
+      // options map) is cached, so a write survives re-reads session-wide — treat as readonly
+      color.options['paramEvalProbe'] = 'x';
+      const reread = viewer.getProperties().find((p) => p.name === 'colorColumnName')!;
+      expect(reread.options['paramEvalProbe'], 'x');
+    } finally {
+      delete color.options['paramEvalProbe'];
+      viewer.detach();
+    }
   });
 }, {owner: 'askalkin@datagrok.ai'});

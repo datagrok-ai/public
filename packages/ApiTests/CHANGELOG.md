@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20753: `functions/param-eval.ts` adds the W2 pins — the tags∪options union on viewer properties (`.is-legend-property` on `colorColumnName`, writes into the merged copy do not survive a fresh `getProperties()` read), `evalParamChoices` propagate lookup over a client-registered DataFrame provider (`values` key→key, own column excluded from `lookup`), and static list-literal `choices` answering through the evaluator.
+
 Functions: New `functions/param-eval.ts` covers the FuncCall parameter-source evaluators (`evalParamChoices` with `dependsOn` and the null `lookup`, `evalParamSuggestions` receiving the typed text, `evalParamDefault` including rejection on a broken command), `scriptSync` with a variables map (fresh-context isolation) plus its one-argument back-compat, and `Property.options` write-through for FuncParam-backed properties.
 
 Tests: Removed the `grok test` Node pass — the suite runs in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, which are the two things `grok test` probes to decide whether to run tests headless, and every `{node: true/false}` annotation is gone. Two workarounds that existed only so the test bundle would evaluate under that pass went with it: `benchmarks.ts` closes its table unconditionally, and `js-viewer.ts` extends `DG.JsViewer` directly instead of a dummy base.

@@ -62,6 +62,46 @@ const GATE = 'A second function with one required parameter: `isValid` is read o
   'Before the first edit they disagree on purpose to observe: the platform answers valid until ' +
   'something makes it validate, u2 validates eagerly.';
 
+const DYN_INTRO = 'One shared FuncCall again, but every source is a function: `country` lists ' +
+  '`fceW2Countries()`, `city` re-asks `fceW2Cities(country)` after a country edit on EITHER ' +
+  'side, `model` comes off a DataFrame provider whose picked row fills `mpg`/`cyl` ' +
+  '(`propagateChoice: \'all\'`), `site` suggests from the typed text, `cohort` opens with its ' +
+  'computed default already written into the call, `seed`\'s default command is broken on ' +
+  'purpose, and `regions` runs the country provider through a multi-choice. `country` also ' +
+  'carries `descriptions` — hover the input for the selected item\'s.';
+
+const DEP_REFRESH = 'Change `country` on either side and both `city` dropdowns re-ask the ' +
+  'provider. u2 debounces every dependent re-eval at a unified 200 ms — the Dart editor ' +
+  'debounces list params only and re-runs string choices on every dependency edit — so a ' +
+  'propagate burst coalesces into one re-eval per source.';
+
+const PRUNE = 'Pick a city, then change `country`: the refreshed items no longer offer it, and ' +
+  'u2 prunes the stale value INTO the call — `city` reads null in `inputs` below. The Dart ' +
+  'select goes blank but the call keeps holding the invisible value (divergence #9).';
+
+const PROPAGATE = 'Pick a model on either side and that row\'s `mpg`/`cyl` land in the call: ' +
+  'u2 writes them through the sibling inputs, so their validation runs and a dependent source ' +
+  'downstream would re-fire once. The provider columns are ints on purpose — float32 noise is ' +
+  'what a double column would add.';
+
+const SUGGEST = 'Both sides now ask `fceW2Suggest` with the TYPED text (the W1 Dart-side fix; ' +
+  'the pre-fix editor evaluated the stored value). u2 renders the popup in its SuggestionList ' +
+  'vocabulary — loading, empty and error-with-Retry rows the platform popup does not have.';
+
+const DEFAULT_OK = '`options[\'default\'] = \'2 + 2\'` is a GrokScript command evaluated and ' +
+  'WRITTEN into the call at open (R6) — `cohort: 4` sits in `inputs` below before any edit. ' +
+  'Defaults run once per bind and never re-run on dependency edits: a default command cannot ' +
+  'reference sibling params.';
+
+const DEFAULT_BROKEN = '`seed`\'s default command names a variable that does not exist: the ' +
+  'platform balloons `Unable to calculate default value` at open and moves on; u2 keeps the ' +
+  'failure on the field — the message inline, with a Retry that re-runs just that one eval.';
+
+const LIST_DYN = 'The same provider through a multi-choice on both sides. Under ' +
+  '`skipDefaultInit` the Dart guard (`func_param_editor.dart:622`) skips the ITEMS write too ' +
+  'and leaves the dropdown permanently empty; u2 applies freshly loaded items either way — ' +
+  'items are not defaults (divergence #8).';
+
 const DIVERGENCES = [
   '`editor:` hints (`textarea`, `password`, `switch`, `slider`) — u2 honors them, type-guarded ' +
   'the way the property form does; the platform func form evaluates any such hint as a nested ' +
@@ -69,8 +109,9 @@ const DIVERGENCES = [
   'there. This bench therefore decorates via `inputType` only — and since no `Password` ' +
   'inputType exists, `secret` stays a plain text row on both sides for now.',
   'Suggestions: the platform editor used to evaluate `suggestions` against the parameter\'s ' +
-  'stored value instead of the typed text. That is fixed Dart-side (`evalParamSuggestions` ' +
-  'carries the text); the u2 typeahead consumes it in W2 — nothing to compare here yet.',
+  'stored value instead of the typed text. Fixed Dart-side (`evalParamSuggestions` carries the ' +
+  'text) and consumed here: the u2 typeahead on `site` queries with what was typed and shows ' +
+  'its own loading, empty and error-with-Retry rows.',
   'Lookups are name-keyed in u2: `getInput(\'doseLevel\')`, never `getInput(\'Dose Level\')` — ' +
   'the platform\'s caption-keyed lookups are not reproduced.',
   'One subscription per parameter, dropped on a source rebind — no listener accumulation, and ' +
@@ -83,12 +124,13 @@ const SIGNATURE = 'string fceDemo(string stage, string route, string notes, stri
 
 let demoFunc: DG.Func | null = null;
 let gateFunc: DG.Func | null = null;
+let dynFunc: DG.Func | null = null;
 
 /** Registered once per session (the `registerPropRowHandler` pattern): the platform keeps every
  * function it is given, and reopening the app would otherwise stack duplicates. The signature
  * parser takes only `type name` pairs, so every decoration lands after registration, through the
  * js-api Property setters and the live options map. */
-function ensureFuncs(): void {
+export function ensureFuncs(): void {
   if (demoFunc != null)
     return;
   demoFunc = grok.functions.register({
@@ -134,11 +176,51 @@ function ensureFuncs(): void {
     run: (batchId: string) => batchId != null && batchId !== '',
   });
   gateFunc.inputs[0].nullable = false;
+  grok.functions.register({
+    signature: 'List<String> fceW2Countries()',
+    run: () => ['FR', 'DE', 'US'],
+  });
+  grok.functions.register({
+    signature: 'List<String> fceW2Cities(String country)',
+    run: (c: string) => c == null || c === '' ? [] : [`${c}-1`, `${c}-2`],
+  });
+  grok.functions.register({
+    // int columns on purpose: a double column round-trips with float32 noise (22.8 → 22.7999…)
+    signature: 'dataframe fceW2CarsDf()',
+    run: () => DG.DataFrame.fromCsv('model,mpg,cyl\nMazda RX4,21,6\nDatsun 710,22,4\nHornet 4 Drive,18,8'),
+  });
+  grok.functions.register({
+    signature: 'List<String> fceW2Suggest(String s)',
+    run: (s: string) => [`${s}-1`, `${s}-2`],
+  });
+  dynFunc = grok.functions.register({
+    signature: 'string fceW2Dyn(string country, string city, string model, int mpg, int cyl, ' +
+      'string site, int cohort, int seed, list regions)',
+    run: (...args: any[]) => args.map((x) => String(x ?? '')).join(' '),
+  });
+  const dyn = new Map(dynFunc.inputs.map((p) => [p.name, p] as [string, DG.Property]));
+  const country = dyn.get('country')!;
+  country.options['choices'] = 'fceW2Countries()';
+  country.options['descriptions'] = {FR: 'France', DE: 'Germany', US: 'United States'};
+  dyn.get('city')!.options['choices'] = 'fceW2Cities';
+  const model = dyn.get('model')!;
+  model.options['choices'] = 'fceW2CarsDf()';
+  model.options['propagateChoice'] = 'all';
+  dyn.get('site')!.options['suggestions'] = 'fceW2Suggest';
+  dyn.get('cohort')!.options['default'] = '2 + 2';
+  dyn.get('seed')!.options['default'] = 'nosuchvar + 1';
+  dyn.get('regions')!.options['choices'] = 'fceW2Countries()';
+  for (const p of dynFunc.inputs)
+    p.nullable = true;
 }
 
-function fmt(v: any): string {
+export function fmt(v: any): string {
   if (v == null)
     return 'null';
+  if (Array.isArray(v))
+    return `[${v.join(', ')}]`;
+  if (v instanceof DG.DataFrame)
+    return `DataFrame, ${v.rowCount} rows × ${v.columns.length} columns`;
   if (typeof v?.toDate === 'function')
     return v.toDate().toISOString();
   return typeof v === 'string' ? `'${v}'` : String(v);
@@ -152,7 +234,7 @@ function inputsText(call: DG.FuncCall): string {
 }
 
 /** Page prose with `backticked` spans rendered as code rather than shown as backticks. */
-function prose(text: string): HTMLElement {
+export function prose(text: string): HTMLElement {
   const line = span('', 'u2demo-hint');
   const parts = text.split('`');
   for (let i = 0; i < parts.length; i++)
@@ -165,20 +247,30 @@ export function funcConvergencePage(): HTMLElement {
   ensureFuncs();
   const call = demoFunc!.prepare();
   const gateCall = gateFunc!.prepare();
+  // country preset so the dependent city source has something to ask with at open
+  const dynCall = dynFunc!.prepare({country: 'FR'});
 
   const toDart = signal(0);
   const toU2 = signal(0);
   const tick = signal(0);
+  const toDartDyn = signal(0);
+  const toU2Dyn = signal(0);
+  const tickDyn = signal(0);
   const fields = signal('…');
   const gateStatus = signal('…');
 
   const grid = div([], 'u2demo-ab u2demo-ab-func');
   const gateGrid = div([], 'u2demo-ab u2demo-ab-func');
+  const dynGrid = div([], 'u2demo-ab u2demo-ab-func');
   const plain = div([], 'u2demo-standalone');
 
-  async function build(): Promise<void> {
-    const dartForm = await DG.InputForm.forFuncCall(call, {twoWayBinding: true});
-    const dartGate = await DG.InputForm.forFuncCall(gateCall, {twoWayBinding: true});
+  /** One A/B section: both editors over one shared call, re-parented into a grid row per param
+   * with its notes, and a per-section honest counter pair. */
+  async function buildAb(abCall: DG.FuncCall, abGrid: HTMLElement,
+    toDartCount: {value: number}, toU2Count: {value: number}, tickCount: {value: number},
+    rowNotes: Map<string, string[]>, catNotes?: Map<string, string>):
+    Promise<{dart: DG.InputForm, form: FuncCallForm}> {
+    const dartForm = await DG.InputForm.forFuncCall(abCall, {twoWayBinding: true});
 
     // the honest Dart → u2 counter: subscribed BEFORE funcForm, so each handler still sees the
     // field value the form's own (later-subscribed) refresh is about to replace; the comparison
@@ -186,24 +278,86 @@ export function funcConvergencePage(): HTMLElement {
     // — and a u2-originated echo, whose field already holds the value, never counts
     let form: FuncCallForm | undefined;
     const kinds = new Map<string, Kind>();
-    for (const p of call.inputParams.values()) {
-      kinds.set(p.name, kindOf(p.property as unknown as IProperty, true));
+    for (const p of abCall.inputParams.values()) {
+      const prop = p.property as unknown as IProperty & {options?: Record<string, any>};
+      // a dynamic-choices param has no typed prop.choices, so kindOf would answer 'string',
+      // whose coerce turns null into '' — mirror the form's own routing instead
+      kinds.set(p.name, (prop.propertyType ?? prop.type) === 'string' &&
+        prop.options?.['choices'] != null ? 'choice' : kindOf(prop, true));
       const sub = p.onChanged.subscribe(() => {
-        tick.value++;
+        tickCount.value++;
         const input = form?.getInput(p.name);
         if (input == null)
           return;
         const value = ObjectForm.coerce(kinds.get(p.name)!, p.value);
         if (!ObjectForm.same(value, input.value.peek()))
-          toU2.value++;
+          toU2Count.value++;
       });
       scope.own(() => sub.unsubscribe());
     }
 
-    form = Scope.runWith(scope, () => funcForm(call, {
+    form = Scope.runWith(scope, () => funcForm(abCall, {
       twoWayBinding: true,
-      onInputChanged: () => toDart.value++,
+      onInputChanged: () => toDartCount.value++,
     }));
+
+    // one grid row per param, both sides' inputs re-parented into it (the convergence-page
+    // pattern), grouped the way both forms group: categories in first-appearance order
+    const categories: {name: string, params: DG.FuncCallParam[]}[] = [];
+    for (const p of abCall.inputParams.values()) {
+      const name = (p.property.category as string | null | undefined) ?? 'Misc';
+      let category = categories.find((c) => c.name === name);
+      if (category === undefined) {
+        category = {name, params: []};
+        categories.push(category);
+      }
+      category.params.push(p);
+    }
+    const dartByName = new Map<string, DG.InputBase>();
+    for (const input of dartForm.inputs) {
+      const prop = (input as any).property;
+      if (prop?.name != null)
+        dartByName.set(prop.name, input);
+    }
+    abGrid.append(span(''), h3('Dart — DG.InputForm.forFuncCall'), h3('u2 — funcForm'));
+    for (const category of categories) {
+      // the default group gets no invented header — only real categories announce themselves
+      if (category.name !== 'Misc') {
+        abGrid.append(div([category.name], 'u2demo-ab-cat'));
+        const catNote = catNotes?.get(category.name);
+        if (catNote != null)
+          abGrid.append(note(catNote));
+      }
+      for (const p of category.params) {
+        const u2Input = form.getInput(p.name);
+        const dartInput = dartByName.get(p.name);
+        if (u2Input == null || dartInput == null)
+          continue;
+        const cells = [span(p.name, 'u2demo-code'), dartInput.root, u2Input.root];
+        for (const cell of cells)
+          cell.dataset.row = p.name;
+        abGrid.append(...cells);
+        for (const text of rowNotes.get(p.name) ?? [])
+          abGrid.append(note(text));
+      }
+    }
+    return {dart: dartForm, form};
+  }
+
+  async function build(): Promise<void> {
+    const {dart: dartForm, form} = await buildAb(call, grid, toDart, toU2, tick,
+      new Map<string, string[]>([
+        ['route', [RADIO]],
+        ['notes', [STRING_DEFAULT]],
+        ['replicates', [VALID]],
+        ['doseLevel', [DEFAULTS, FRIENDLY]],
+        ['progress', [SLIDERS]],
+        ['started', [DATETIME]],
+      ]), new Map([['Style', STYLE]]));
+    fields.value = `Dart ${dartForm.inputs.length} · u2 ${form.inputs.length} · unsupported: ` +
+      (form.unsupported.length === 0 ? '(none)' : form.unsupported.join(', '));
+
+    const dartGate = await DG.InputForm.forFuncCall(gateCall, {twoWayBinding: true});
     const gateForm = Scope.runWith(scope, () => funcForm(gateCall, {
       twoWayBinding: true,
       onInputChanged: () => refreshGate(),
@@ -220,56 +374,6 @@ export function funcConvergencePage(): HTMLElement {
     scope.own(() => dartGateSub.unsubscribe());
     refreshGate();
 
-    // one grid row per param, both sides' inputs re-parented into it (the convergence-page
-    // pattern), grouped the way both forms group: categories in first-appearance order
-    const categories: {name: string, params: DG.FuncCallParam[]}[] = [];
-    for (const p of call.inputParams.values()) {
-      const name = (p.property.category as string | null | undefined) ?? 'Misc';
-      let category = categories.find((c) => c.name === name);
-      if (category === undefined) {
-        category = {name, params: []};
-        categories.push(category);
-      }
-      category.params.push(p);
-    }
-    const dartByName = new Map<string, DG.InputBase>();
-    for (const input of dartForm.inputs) {
-      const prop = (input as any).property;
-      if (prop?.name != null)
-        dartByName.set(prop.name, input);
-    }
-    const rowNotes = new Map<string, string[]>([
-      ['route', [RADIO]],
-      ['notes', [STRING_DEFAULT]],
-      ['replicates', [VALID]],
-      ['doseLevel', [DEFAULTS, FRIENDLY]],
-      ['progress', [SLIDERS]],
-      ['started', [DATETIME]],
-    ]);
-    grid.append(span(''), h3('Dart — DG.InputForm.forFuncCall'), h3('u2 — funcForm'));
-    for (const category of categories) {
-      // the default group gets no invented header — only real categories announce themselves
-      if (category.name !== 'Misc') {
-        grid.append(div([category.name], 'u2demo-ab-cat'));
-        if (category.name === 'Style')
-          grid.append(note(STYLE));
-      }
-      for (const p of category.params) {
-        const u2Input = form.getInput(p.name);
-        const dartInput = dartByName.get(p.name);
-        if (u2Input == null || dartInput == null)
-          continue;
-        const cells = [span(p.name, 'u2demo-code'), dartInput.root, u2Input.root];
-        for (const cell of cells)
-          cell.dataset.row = p.name;
-        grid.append(...cells);
-        for (const text of rowNotes.get(p.name) ?? [])
-          grid.append(note(text));
-      }
-    }
-    fields.value = `Dart ${dartForm.inputs.length} · u2 ${form.inputs.length} · unsupported: ` +
-      (form.unsupported.length === 0 ? '(none)' : form.unsupported.join(', '));
-
     const gateName = gateParam.name;
     gateGrid.append(span(''), h3('Dart'), h3('u2'));
     const gateCells = [span(gateName, 'u2demo-code'), dartGate.inputs[0].root,
@@ -279,7 +383,20 @@ export function funcConvergencePage(): HTMLElement {
     gateGrid.append(...gateCells);
     gateGrid.append(note(REQUIRED));
 
+    await buildAb(dynCall, dynGrid, toDartDyn, toU2Dyn, tickDyn, new Map<string, string[]>([
+      ['city', [DEP_REFRESH, PRUNE]],
+      ['model', [PROPAGATE]],
+      ['site', [SUGGEST]],
+      ['cohort', [DEFAULT_OK]],
+      ['seed', [DEFAULT_BROKEN]],
+      ['regions', [LIST_DYN]],
+    ]));
+
     plain.append(Scope.runWith(scope, () => funcForm(demoFunc!.prepare())).root);
+    // the Dart form writes computed defaults during forFuncCall, before the tick subscriptions
+    // exist — re-read the calls once so the `inputs` lines start honest
+    tick.value++;
+    tickDyn.value++;
   }
 
   const page = divV([
@@ -297,6 +414,15 @@ export function funcConvergencePage(): HTMLElement {
     prose(GATE),
     gateGrid,
     divH([span('isValid = '), span(gateStatus)], 'u2demo-status'),
+    h3('Dynamic sources'),
+    prose(DYN_INTRO),
+    dynGrid,
+    divH([span('sync = '), span(computed(() =>
+      `u2 → Dart ${toDartDyn.value} · Dart → u2 ${toU2Dyn.value}`))], 'u2demo-status'),
+    divH([span('inputs = '), span(computed(() => {
+      tickDyn.value;
+      return inputsText(dynCall);
+    }))], 'u2demo-status'),
     h3('Deliberate divergences'),
     ...DIVERGENCES.map(prose),
     h3('u2 form, unmodified'),
