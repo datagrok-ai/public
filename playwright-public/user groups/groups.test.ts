@@ -45,6 +45,7 @@ const GROUP = `qa_autotest_g_${STAMP}`;
 const GROUP_RENAMED = `${GROUP}_renamed`;
 const MEMBER_USER = 'opavlenko454';    // seeded user added as a member
 const CHILD_GROUP = 'UsersTest';        // seeded group nested into GROUP
+const SIBLING_GROUP = 'GroupsTest';     // second group so the Groups-06 search has something to narrow
 
 test.describe.configure({ mode: 'serial' });
 
@@ -55,6 +56,8 @@ test.describe('Groups View (Groups-*)', () => {
     try {
       await ensureUserSeeded(page, MEMBER_USER);
       await ensureGroupSeeded(page, CHILD_GROUP);
+      // Groups-06 asserts that searching narrows the list, which needs at least two groups to exist.
+      await ensureGroupSeeded(page, SIBLING_GROUP);
     } finally {
       await ctx.close();
     }
