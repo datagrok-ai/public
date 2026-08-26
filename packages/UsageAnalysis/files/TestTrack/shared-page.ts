@@ -14,7 +14,16 @@ import {loginToDatagrok, specTestOptions, stepErrors} from './spec-login';
  * the SERVER (projects, layouts) is still its own to delete — that has always been true.
  */
 
-const OVERLAYS = ['.d4-menu-popup', '.d4-column-selector-backdrop', '.d4-tooltip', '.d4-dialog'];
+// .d4-balloon earns its place: a balloon raised through Balloon.error/warning is STICKY
+// (helpers/balloons.ts), so one test's error toast sits over the next test's UI and its
+// container eats the clicks — "d4-balloon-container intercepts pointer events" was the
+// shared-page click timeout in scatter-plot, statistics and tile-viewer.
+const OVERLAYS = ['.d4-menu-popup', '.d4-tooltip', '.d4-dialog', '.d4-balloon'];
+
+// The column-selector backdrop is deliberately absent from OVERLAYS: the platform puts that
+// class on a wrapper AROUND the viewer, so removing the element removes the viewer. Left
+// stuck it also makes pickColumnViaSelectorTrusted believe a popup opened when none did,
+// so the class is stripped below instead.
 
 export async function resetShell(page: Page): Promise<void> {
   // Dismiss the platform's way first, and only rip nodes out if that fails: an overlay
@@ -45,6 +54,11 @@ export async function resetShell(page: Page): Promise<void> {
       tick();
     });
     for (const el of stuck()) el.remove();
+    for (const e of Array.from(document.querySelectorAll('.d4-column-selector-backdrop')))
+      e.classList.remove('d4-column-selector-backdrop');
+    // the container itself is what intercepts, and it outlives its children
+    for (const c of Array.from(document.querySelectorAll('.d4-balloon-container')))
+      (c as HTMLElement).innerHTML = '';
 
     grok.shell.closeAll();
     await new Promise<void>((resolve) => {

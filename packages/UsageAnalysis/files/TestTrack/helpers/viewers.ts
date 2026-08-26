@@ -245,20 +245,38 @@ export async function pickColumnViaSelectorTrusted(
   const target = opts.target ?? 'auto';
   const propName = opts.propName ?? `${opts.role}ColumnName`;
 
-  const canvas = await page.evaluate((rn: string) => {
-    const root = [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
+  // The element comes from the API, not from a DOM query: a closed view leaves viewers
+  // behind, and driving one of those silently edits a viewer nobody is looking at while
+  // the read-back below inspects grok.shell.tv — "expected WEIGHT, got AGE".
+  const canvas = await page.evaluate((vt: string) => {
+    const norm = (x: string) => x.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from((window as any).grok.shell.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const root = v?.root as HTMLElement | undefined;
     const el = root?.querySelector('canvas[name="canvas"]') ?? root;
     if (!el) return null;
+    (window as any).__pickRoot = root;
     const r = el.getBoundingClientRect();
     return {x: r.x + r.width / 2, y: r.y + r.height / 2};
-  }, rootName);
+  }, viewerType);
   if (!canvas) throw new Error(`pickColumnViaSelectorTrusted: no ${viewerType} root on the page`);
   await page.mouse.move(canvas.x, canvas.y);
 
   const locate = ({rn, r, t, sc}: {rn: string; r: string; t: string; sc: string | null}) => {
-    const root = sc
-      ? document.querySelector(sc)
-      : [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
+    // A scopeSelector must still resolve to the CURRENT view's viewer: querySelector takes
+    // the first match in the document, and a closed view leaves its own copy earlier in the
+    // tree. Prefer the element the API reported; fall back to a scoped one with size.
+    const api = (window as any).__pickRoot as Element | undefined;
+    let root: Element | null = api ?? null;
+    if (sc) {
+      const scoped = [...document.querySelectorAll(sc)];
+      root = scoped.find((e) => e === api || (api && e.contains(api)) || (api && api.contains(e)))
+        ?? scoped.find((e) => {
+          const b = e.getBoundingClientRect();
+          return b.width > 0 && b.height > 0;
+        })
+        ?? scoped[0] ?? null;
+    }
     const sel = root?.querySelector(`[name="div-column-combobox-${r}"]`) as HTMLElement | null;
     if (!sel) return null;
     const candidates: Element[] = [];
@@ -303,6 +321,20 @@ export async function pickColumnViaSelectorTrusted(
   await pollValue(comboItems, (n) => n > 0, 150, 50);
   if (text.length > 1) await page.keyboard.type(text.slice(1));
   await pollValue(comboItems, (n) => n > 0, 200, 50);
+  if (process.env.PICK_DEBUG) {
+    const st = await page.evaluate(() => {
+      const el = document.activeElement as HTMLInputElement | null;
+      return {
+        inputValue: el && el.tagName === 'INPUT' ? el.value : null,
+        activeEl: (document.activeElement?.tagName ?? '') + '.' + (document.activeElement?.className ?? ''),
+        comboLis: document.querySelectorAll('.d4-combo-popup li').length,
+        anyLis: document.querySelectorAll('.d4-column-selector-backdrop li').length,
+        backdropHtml: (document.querySelector('.d4-column-selector-backdrop') as HTMLElement | null)
+          ?.innerHTML?.slice(0, 220) ?? null,
+      };
+    });
+    console.log('[pick] before Enter ' + JSON.stringify(st));
+  }
   await page.keyboard.press('Enter');
 
   const readApplied = () => page.evaluate(({vt, prop}: {vt: string; prop: string}) => {
@@ -312,8 +344,22 @@ export async function pickColumnViaSelectorTrusted(
   const applied = await pollValue(readApplied, (a) => a === opts.columnName,
     opts.commitSettleMs ?? 900, 50);
   if (applied !== opts.columnName) {
+    // "expected WEIGHT, got AGE" on its own says nothing about which half broke: the
+    // popup not filtering, the wrong viewer being driven, or the commit not landing.
+    const why = await page.evaluate((vt: string) => {
+      const norm = (x: string) => x.replace(/[\s-]+/g, ' ').toLowerCase();
+      const w = window as any;
+      return {
+        viewersOfType: Array.from(w.grok.shell.tv?.viewers ?? [])
+          .filter((x: any) => norm(x.type) === norm(vt)).length,
+        rootInCurrentView: !!w.__pickRoot && document.contains(w.__pickRoot),
+        popupItems: [...document.querySelectorAll('.d4-combo-popup li')].map((e) => e.textContent?.trim()).slice(0, 6),
+        backdrops: document.querySelectorAll('.d4-column-selector-backdrop').length,
+        activeEl: document.activeElement?.tagName + '.' + (document.activeElement?.className ?? ''),
+      };
+    }, viewerType);
     throw new Error(`pickColumnViaSelectorTrusted: ${opts.role} did not take — ` +
-      `${propName} expected "${opts.columnName}", got "${applied}"`);
+      `${propName} expected "${opts.columnName}", got "${applied}" — ${JSON.stringify(why)}`);
   }
   return {popupOpened: true};
 }
