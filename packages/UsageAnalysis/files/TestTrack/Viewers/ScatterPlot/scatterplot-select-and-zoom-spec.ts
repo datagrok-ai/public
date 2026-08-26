@@ -43,14 +43,7 @@ const pickOnViewer = (page: Page, role: string, column: string) =>
   v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 
 async function openSettings(page: Page): Promise<void> {
-  for (let i = 0; i < 4; i++) {
-    const built = await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'));
-    if (built) return;
-    await v.openViewerGear(page, 'Scatter plot');
-    await page.waitForFunction(() => !!document.querySelector('[name="prop-category-data"]'),
-      null, {timeout: 2500}).catch(() => {});
-  }
-  throw new Error('the scatter plot settings panel did not build');
+  await v.openViewerSettings(page, 'Scatter plot');
 }
 
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {

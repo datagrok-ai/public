@@ -352,6 +352,29 @@ export async function openViewerGear(page: Page, viewerType: string): Promise<vo
   }, viewerType), (ready) => ready, 1000, 50);
 }
 
+/**
+ * Opens a viewer's settings in the property panel and waits for the panel to build.
+ *
+ * Never returns early on an already-built panel. The panel is a shared surface: once a
+ * second view or viewer is in play it can still be showing the previous one, and every
+ * edit made through it then lands on the wrong viewer while the assertions read
+ * grok.shell.tv. Five specs carried their own copy of this with an `if (built) return`,
+ * and each of them was one open panel away from editing something else — openViewerGear
+ * settles on shell.o, so re-targeting is both correct and cheap.
+ */
+export async function openViewerSettings(
+  page: Page, viewerType: string, probe = 'prop-category-data',
+): Promise<void> {
+  for (let i = 0; i < 4; i++) {
+    await openViewerGear(page, viewerType);
+    const built = await pollValue(
+      () => page.evaluate((p: string) => !!document.querySelector(`[name="${p}"]`), probe),
+      (b) => b, 2500, 100);
+    if (built) return;
+  }
+  throw new Error(`the ${viewerType} settings panel did not build`);
+}
+
 export async function clickViewerTitlebarIcon(
   page: Page, viewerName: string, iconName: string,
 ): Promise<void> {

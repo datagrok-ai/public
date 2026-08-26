@@ -163,16 +163,8 @@ async function clearOnViewer(page: Page, role: string): Promise<void> {
   }, 2500);
 }
 
-const settingsBuilt = (page: Page) =>
-  page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'));
-
 async function openSettings(page: Page): Promise<void> {
-  for (let i = 0; i < 4; i++) {
-    if (await settingsBuilt(page)) return;
-    await v.openViewerGear(page, 'Scatter plot');
-    await waitUntil(() => settingsBuilt(page), 2000);
-  }
-  throw new Error('the scatter plot settings panel did not build');
+  await v.openViewerSettings(page, 'Scatter plot');
 }
 
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {

@@ -148,16 +148,8 @@ async function commitColumn(page: Page, column: string): Promise<void> {
 
 }
 
-const settingsBuilt = (page: Page) =>
-  page.evaluate(() => !!document.querySelector('[name="prop-category-x-axis"]'));
-
 async function openSettings(page: Page): Promise<void> {
-  for (let i = 0; i < 4; i++) {
-    if (await settingsBuilt(page)) return;
-    await v.openViewerGear(page, 'Scatter plot');
-    await waitUntil(() => settingsBuilt(page), 2000);
-  }
-  throw new Error('the scatter plot settings panel did not build');
+  await v.openViewerSettings(page, 'Scatter plot');
 }
 
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {

@@ -52,21 +52,8 @@ const pickOnViewer = (page: Page, role: string, column: string) =>
 /** [rebind] re-opens the gear even when a panel is already built: after openTable adds a
  *  NEW view + viewer, the existing panel still edits the PREVIOUS view's viewer, so writes
  *  silently land on a viewer nothing is asserting against. */
-async function openSettings(page: Page, rebind = false): Promise<void> {
-  if (rebind) {
-    await v.openViewerGear(page, 'Scatter plot');
-    await v.pollValue(() => page.evaluate(() => !!document.querySelector('[name="prop-category-data"]')),
-      (b) => b, 2500, 100);
-    return;
-  }
-  for (let i = 0; i < 4; i++) {
-    const built = await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'));
-    if (built) return;
-    await v.openViewerGear(page, 'Scatter plot');
-    await v.pollValue(() => page.evaluate(() => !!document.querySelector('[name="prop-category-data"]')),
-      (b) => b, 2500, 100);
-  }
-  throw new Error('the scatter plot settings panel did not build');
+async function openSettings(page: Page, _rebind = false): Promise<void> {
+  await v.openViewerSettings(page, 'Scatter plot');
 }
 
 async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {

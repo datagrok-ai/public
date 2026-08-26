@@ -46,17 +46,7 @@ const pickOnViewer = (page: Page, role: string, column: string) =>
   v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
 
 async function openSettings(page: Page): Promise<void> {
-  for (let i = 0; i < 4; i++) {
-    // Never return early on an already-built panel: once a second view is open it can
-    // still be showing the FIRST view's scatter plot, and every edit below would land
-    // there while the assertions read grok.shell.tv — the jitter step failed that way.
-    await v.openViewerGear(page, 'Scatter plot');
-
-    await v.pollValue(() => page.evaluate(() => document.querySelectorAll('[name^="prop-"]').length),
-      (n) => n > 0, 1000, 200);
-    if (await page.evaluate(() => !!document.querySelector('[name="prop-category-data"]'))) return;
-  }
-  throw new Error('the scatter plot settings panel did not build');
+  await v.openViewerSettings(page, 'Scatter plot');
 }
 
 async function revealPropEditor(
