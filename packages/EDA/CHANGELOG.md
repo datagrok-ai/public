@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.9.0 (2026-08-28)
+## 1.9.0 (2026-08-26)
 
 * Added SVM (classification and regression)
 * PLS scores plot: replaced fixed-radius circles with Hotelling's T-squared confidence ellipses (95% and 99%)
