@@ -145,7 +145,10 @@ export function getLines(cols: DG.Column[]): DG.FormulaLine[] {
         const cy = sy.avg;
         // (x - cx)²/a² + (y - cy)²/b² = 1  ->  y = cy ± b·sqrt(1 - (x - cx)²/a²)
         const dx = `(${x} - ${fmt(cx)})`;
-        const inner = `sqrt(1 - ${dx} * ${dx} / ${fmt(a * a)})`;
+
+        // we use 0.99 instead of 1 to avoid numerical issues
+        const inner = `sqrt(0.99 - ${dx} * ${dx} / ${fmt(a * a)})`;
+
         addEllipseHalf(`${y} = ${fmt(cy)} + ${fmt(b)} * ${inner}`, cx - a, cx + a, color);
         addEllipseHalf(`${y} = ${fmt(cy)} - ${fmt(b)} * ${inner}`, cx - a, cx + a, color);
       }
