@@ -8,6 +8,7 @@ import {ComponentMeta, ComponentStart, SpecPropMeta, Registry, registry as globa
   SPEC_SCHEMA} from './registry.js';
 import {findBindingCycle, parsePath, referencesOf} from './path.js';
 import {BindProp, BindSource, isBindSource} from './bind-source.js';
+import {APPEARANCE_PROPS, applyAppearance} from './appearance.js';
 
 /** An event's wiring: `'cmd:name'`, or the structured form carrying arguments — values that are
  * strings starting `$.` are paths resolved when the event fires, `$$.` escapes a literal `$.`,
@@ -629,8 +630,14 @@ export class SpecInstance extends Control {
     if (node.bind)
       throw new Error('only registered components can be bound');
     const el = document.createElement(node.tag);
+    const appearance: Record<string, unknown> = {};
     for (const [name, value] of Object.entries(node.props ?? {})) {
       if (!HTML_PROPS.has(name)) {
+        const prop = APPEARANCE_PROPS.find((p) => p.name === name);
+        if (prop) {
+          appearance[name] = SpecInstance._checked(prop, value);
+          continue;
+        }
         if (!SpecInstance._childProp(parent, name))
           this._warn(`${node.tag}: unknown prop "${name}"`);
         continue;
@@ -644,6 +651,7 @@ export class SpecInstance extends Control {
       else
         el.setAttribute(name, value);
     }
+    applyAppearance(el, appearance, APPEARANCE_PROPS);
     for (const child of this._children(node, undefined, true))
       el.append(SpecInstance._element(child));
     return el;
@@ -881,6 +889,8 @@ export function htmlProps(tag: string): SpecPropMeta[] {
     props.push({name: 'href', type: 'string', description: 'Link target'});
   if (tag === 'img')
     props.push({name: 'src', type: 'string', description: 'Image source'});
+  // bindable stripped: _html refuses `bind`, so canApply must refuse a set-bind honestly
+  props.push(...APPEARANCE_PROPS.map((p) => ({...p, bindable: undefined})));
   return props;
 }
 

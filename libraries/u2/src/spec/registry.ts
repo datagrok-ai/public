@@ -1,5 +1,6 @@
 import {Component, Control} from '../core/component.js';
 import type {Signal} from '../core/signals.js';
+import {APPEARANCE_PROPS, appearanceFor, applyAppearance} from './appearance.js';
 import type {NamedProperty} from '../core/widget-like.js';
 import type {ComponentMetaBase} from '../core/widget-like.js';
 import type {SpecNode} from './spec.js';
@@ -66,6 +67,9 @@ export interface ComponentMeta extends ComponentMetaBase {
   /** False puts the tag on the non-visual tray: a data source, built through
    * {@link createComponent} and never appended to the canvas. */
   visual?: boolean;
+  /** False keeps the shared Appearance prop block off this tag — viewers, whose look has its own
+   * color semantics. */
+  appearance?: boolean;
   create?: (props: Record<string, unknown>) => Control;
   /** How a `visual: false` tag is built — no DOM, and the env carries the design-time mode and
    * the binds it resolves at {@link ComponentStart.start}. */
@@ -124,12 +128,21 @@ export class Registry {
       throw new Error(`u2 registry: "${meta.tag}" needs ${meta.visual === false ?
         'createComponent' : 'create or createWithChildren'}`);
     }
+    const injected = meta.visual === false || meta.appearance === false ? [] : appearanceFor(meta.props);
     const stamped: ComponentMeta = {
       ...meta,
-      create: create ? (props) => Registry._stamp(create(props), stamped, props) : undefined,
+      props: [...meta.props, ...injected],
+      create: create ? (props) => {
+        const built = Registry._stamp(create(props), stamped, props);
+        applyAppearance(built, props, injected);
+        return built;
+      } : undefined,
       createWithChildren: withChildren ?
-        (props, children, nodes) =>
-          Registry._stamp(withChildren(props, children, nodes), stamped, props) :
+        (props, children, nodes) => {
+          const built = Registry._stamp(withChildren(props, children, nodes), stamped, props);
+          applyAppearance(built, props, injected);
+          return built;
+        } :
         undefined,
       createComponent: component ?
         (props, env) => Registry._stamp(component(props, env), stamped, props) :
@@ -154,9 +167,10 @@ export class Registry {
     for (const meta of this._metas.values()) {
       const {create: _create, createWithChildren: _createWithChildren, createComponent: _createComponent,
         adopt: _adopt, designerActions: _designerActions, icon: _icon, ...rest} = meta;
+      rest.props = rest.props.filter((p) => !APPEARANCE_PROPS.includes(p));
       components.push(rest);
     }
-    return {schema: SPEC_SCHEMA, recipes: 'docs/recipes/', components};
+    return {schema: SPEC_SCHEMA, recipes: 'docs/recipes/', appearance: APPEARANCE_PROPS, components};
   }
 
   private static _stamp<T extends Component>(component: T, meta: ComponentMeta,

@@ -179,6 +179,7 @@ function viewerMeta(d: DG.WidgetDescriptor, tag: string): ComponentMeta {
     label: d.name,
     icon: () => d.createIcon() as HTMLElement,
     category: 'Viewers',
+    appearance: false,
     description: d.description,
     usage: VIEWER_USAGE[d.name],
     props: [TABLE, LOOK, ...d.properties.filter(isUserLook).map(toSpecProp)],

@@ -105,7 +105,8 @@ widget('the registry stamps the metadata of the tag it built', () => {
   const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-gauge', name: 'g'}}, undefined, reg);
   const built = instance.node('g');
   assert.equal(built.componentMeta, meta);
-  assert.deepEqual(built.getProperties().map((p) => p.name), ['value', 'caption']);
+  assert.deepEqual(built.getProperties().filter((p) => p.category !== 'Appearance').map((p) => p.name),
+    ['value', 'caption']);
   instance.dispose();
 });
 

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20783: Appearance props — shared per-node CSS prop group (13 props, bindable, injected at registration, HTML nodes included, viewers excluded), designer Appearance pane with count badge and clear-to-delete, manifest top-level `appearance` block
 * GROK-20753: added `notify` — the toast service (`notify.info/warning/error`, top-right stack): info auto-hides with a hover-paused countdown, warnings and errors stay until closed; `oneTimeKey` (localStorage), `singleKey` dedupe, copy/close on hover, click-to-dismiss; string content always renders as text, never as markup
 * GROK-20753: added `RangeSlider` — a two-handle range selector (`u2-range-slider`) with horizontal and vertical (bottom-to-top) orientations: relative handle drag (no teleport on grab), band pan preserving the span with the whole root height as its hit area, a press outside the selection jumps the nearer handle, per-handle keyboard (arrows/Page/Home/End) and ARIA slider semantics, `step` snapping (pans included), `minRange`, two-way `lo`/`hi` signals bindable from specs
 * GROK-20753: slider tooltips/`aria-valuetext` default to at most two decimals (`SliderInput` and `RangeSlider`); an explicit `format` overrides

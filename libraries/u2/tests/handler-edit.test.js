@@ -15,11 +15,15 @@ import {Signal, signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
 import {Registry} from '../src/spec/registry.js';
+import {APPEARANCE_PROPS} from '../src/spec/appearance.js';
 import {SpecContext, renderSpec} from '../src/spec/spec.js';
 import {SpecEditor} from '../src/spec/editor.js';
 import {backends} from '../src/sources/backends.js';
 import {dfBindings} from '../src/sources/df-bindings.js';
 import {DataFrame, Property, WidgetDescriptor, platform} from './platform-doubles.mjs';
+
+/** The shared injected group — filtered out where an assertion is about a tag's own props. */
+const APPEARANCE_NAMES = new Set(APPEARANCE_PROPS.map((p) => p.name));
 
 register('./dg-stub.mjs', import.meta.url);
 const {SpecNodeRef} = await import('../src/dg/designer/node-ref.js');
@@ -249,9 +253,11 @@ function edit(name, body) {
 edit('propsFor(): sections by category, editor routing, a bound prop and a structured value',
   ({ref}) => {
     const model = propsFor(ref('nameInput'));
-    assert.deepEqual(model.map((s) => s.title), ['Appearance', 'Properties']);
-    const [appearance, props] = model;
-    assert.deepEqual(appearance.props.map((p) => p.name), ['label']);
+    assert.deepEqual(model.map((s) => s.title), ['Properties', 'Appearance'],
+      'Appearance ranks after the first-seen sections');
+    const [props, appearance] = model;
+    assert.deepEqual(appearance.props.filter((p) => !APPEARANCE_NAMES.has(p.name)).map((p) => p.name),
+      ['label'], 'the own prop leads its section; the shared group joins it');
     assert.deepEqual(props.props.map((p) => p.name), ['value', 'stage', 'sizes', 'items', 'hint']);
     const by = (name) => props.props.find((p) => p.name === name);
     assert.equal(typeof by('value').set, 'function');
@@ -274,20 +280,20 @@ edit('propsFor(): sections by category, editor routing, a bound prop and a struc
 edit('propsFor(): a plain HTML node, a per-child prop, and a node that failed to build',
   ({ref}) => {
     const block = propsFor(ref('block'));
-    assert.deepEqual(block.map((s) => s.title), ['Properties']);
+    assert.deepEqual(block.map((s) => s.title), ['Properties', 'Appearance']);
     assert.deepEqual(block[0].props.map((p) => p.name), ['text', 'cls']);
     assert.deepEqual(block[0].values, {text: 'Hello', cls: 'greeting'});
     assert.deepEqual(propsFor(ref('docs'))[0].props.map((p) => p.name), ['text', 'cls', 'href']);
     assert.deepEqual(propsFor(ref('logo'))[0].props.map((p) => p.name), ['text', 'cls', 'src']);
 
     const pane = propsFor(ref('firstPane'));
-    assert.deepEqual(pane.map((s) => s.title), ['Parent (u2-e-tabs)'],
+    assert.deepEqual(pane.map((s) => s.title), ['Parent (u2-e-tabs)', 'Appearance'],
       'what the parent reads off the child, under the parent\'s own section');
-    assert.equal(pane[0].values.title, 'First');
+    assert.equal(pane.find((s) => s.title === 'Parent (u2-e-tabs)').values.title, 'First');
 
     const broken = propsFor(ref('brokenInput'));
     assert.deepEqual(broken.flatMap((s) => s.props.map((p) => p.name)),
-      INPUT.props.map((p) => p.name),
+      ['value', 'stage', 'sizes', 'items', 'hint', 'label', ...APPEARANCE_PROPS.map((p) => p.name)],
       'a node that failed to build still has the props that need fixing');
     assert.equal(broken.find((s) => s.title === 'Appearance').values.label, 'Ghost',
       'read from the node, since nothing was built');
@@ -309,6 +315,9 @@ edit('a field edit is one patch: the document, the canvas and the dump all follo
     type(shown, 'Properties', 'hint', '');
     assert.equal(patches.length, 1, 'clearing a prop the spec never carried is dump noise, not an edit');
     assert.equal('hint' in target.props, false);
+
+    type(shown, 'Appearance', 'label', '');
+    assert.equal(target.props.label, '', 'an own prop in the shared category reverts to \'\'-writing — delete-on-empty is the shared group\'s only');
   });
 
 edit('per-keystroke commits coalesce into a single undo entry', ({editor, node, panel}) => {
@@ -374,14 +383,17 @@ edit('a choice prop edits through a choice list, a string_list through the list 
 edit('without an editor the panel is read-only — and an HTML node still shows and edits its props',
   ({instance, node, panel, patches}) => {
     const readOnly = new SpecNodeHandler().renderProperties(new SpecNodeRef(instance, node('block')));
-    assert.deepEqual(sections(readOnly), ['Node', 'Properties']);
+    assert.deepEqual(sections(readOnly), ['Node', 'Properties'],
+      'no Appearance section for a node with nothing assigned');
     assert.equal(readOnly.querySelectorAll('input').length, 0, 'nothing to type into');
     assert.match(readOnly.textContent, /Hello/);
     assert.match(readOnly.textContent, /greeting/);
 
     const writable = panel('block');
-    assert.deepEqual(sections(writable), ['Node', 'Properties']);
-    assert.equal(writable.querySelectorAll('input').length, 2, 'the same model, with editors');
+    assert.deepEqual(sections(writable), ['Node', 'Properties'], 'the shared group folds instead');
+    assert.deepEqual(panes(writable), [['Appearance', 'false']]);
+    assert.equal(section(writable, 'Properties').querySelectorAll('input').length, 2,
+      'the same model, with editors');
     type(writable, 'Properties', 'text', 'Edited');
     assert.equal(node('block').props.text, 'Edited');
     assert.deepEqual(patches.map((p) => p.op), ['set-prop']);
@@ -483,7 +495,8 @@ edit('the Bindings section lists every bindable prop, bound or not — an empty 
   ({node, panel, patches}) => {
     const shown = panel('nameInput');
     assert.deepEqual([...section(shown, 'Bindings').querySelectorAll('[data-u2-prop]')]
-      .map((el) => el.dataset.u2Prop), ['value'], 'the tag\'s bindable prop, unbound');
+      .map((el) => el.dataset.u2Prop),
+    ['value', 'add-binding'], 'the tag\'s bindable prop unbound — the appearance group waits behind Add binding…');
     assert.equal(field(shown, 'Bindings', 'value').value, '');
 
     commit(shown, 'Bindings', 'value', '');
@@ -608,10 +621,13 @@ edit('a cycle picked in the tree is refused: the loop is named and nothing reach
 edit('Bindings folds until something is bound; Events, the section it was hiding, stays open',
   ({panel}) => {
     const unbound = panel('nameInput');
-    assert.deepEqual(panes(unbound), [['Bindings', 'false'], ['Events', 'true']]);
+    assert.deepEqual(panes(unbound),
+      [['Appearance', 'true'], ['Bindings', 'false'], ['Events', 'true']],
+      'Appearance opens: the meta declares its own prop into the shared section');
     assert.notEqual(field(unbound, 'Bindings', 'value'), null,
       'folded, never unbuilt — the fields refresh in place on every patch, opened or not');
-    assert.deepEqual(panes(panel('boundInput')), [['Bindings', 'true'], ['Events', 'true']],
+    assert.deepEqual(panes(panel('boundInput')),
+      [['Appearance', 'true'], ['Bindings', 'true'], ['Events', 'true']],
       'wiring that exists is shown');
   });
 
@@ -835,6 +851,7 @@ tier('"Add binding…" lists the props as words and commits the name (M8)', ({pa
 const VIEWER = {
   tag: 'u2-e-viewer',
   category: 'Viewers',
+  appearance: false,
   create: (props) => {
     if (props.table === undefined)
       throw new Error('u2-e-viewer needs a table');
