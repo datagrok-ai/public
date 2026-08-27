@@ -2,15 +2,19 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, div, divV, divH, span, h3, button} from '@datagrok-libraries/u2';
 import {funcForm, FuncCallForm} from '@datagrok-libraries/u2/src/dg/index.js';
-import {ensureFuncs, fmt, prose} from './func-convergence';
+import {ensureFuncs, ensureTable, fmt, prose} from './func-convergence';
 
 const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncCall` on the ' +
   'left, u2\'s `funcForm` on the right — both edit the same freshly prepared call, so an edit ' +
   'on either side shows up on the other. The showcase function opens preselected: static and ' +
   'dynamic choices, a dependent country/city pair, a DataFrame choice propagating `mpg`/`cyl`, ' +
-  'typed-text suggestions, a computed default, bounded numbers, sections. Type in the list on ' +
+  'typed-text suggestions, a computed default, bounded numbers, sections, and table/column ' +
+  'parameters auto-filled from an open demo table. Type in the list on ' +
   'the left (`#tag` terms work) to switch to any platform function; `Run` executes the shared ' +
-  'call with whatever the forms hold.';
+  'call with whatever the forms hold. The two forms may order the grouped column parameters ' +
+  'differently (the u2 side keeps declaration order), and changing a table parameter makes the ' +
+  'platform form log a known internal error that the red status indicator picks up — harmless, ' +
+  'the values on both sides stay correct.';
 
 let showcaseFunc: DG.Func | null = null;
 
@@ -18,13 +22,17 @@ let showcaseFunc: DG.Func | null = null;
  * the feature matrix both form generators support cleanly — the known Dart-side traps
  * (friendlyName captions, Radio, `editor:` hints, broken defaults) stay on the bench. */
 function ensureShowcase(): void {
+  // outside the registration guard: the pane comes up lively with a table for the `records`
+  // params even when a reopen finds the workspace emptied
+  ensureTable('fceShowcaseData', 'age,height,sex\n25,170,M\n31,166,F\n44,182,M');
   if (showcaseFunc != null)
     return;
   ensureFuncs();
   showcaseFunc = grok.functions.register({
     signature: 'string fceShowcase(string name, string stage, bool active, int replicates, ' +
       'double doseLevel, string country, string city, string model, int mpg, int cyl, ' +
-      'string site, int cohort, list regions, datetime started)',
+      'string site, int cohort, list regions, datetime started, dataframe records, ' +
+      'column ageCol, column_list metrics)',
     run: (...args: any[]) => args.map((x) => String(x ?? '')).join(' '),
   });
   const inputs = new Map(showcaseFunc.inputs.map((p) => [p.name, p] as [string, DG.Property]));
@@ -52,6 +60,16 @@ function ensureShowcase(): void {
   inputs.get('cohort')!.options['default'] = '2 + 2';
   inputs.get('regions')!.options['choices'] = 'fceW2Countries()';
   inputs.get('started')!.category = 'Advanced';
+  // signature registration cannot carry annotations, so the parent-table link is decorated
+  // through the raw metadata door the annotation linker itself writes — no js-api alternative
+  // exists by design (plan-w3.md FP-W3-1)
+  const link = (window as any).grok_Property_Set;
+  for (const name of ['records', 'ageCol', 'metrics']) {
+    const p = inputs.get(name)!;
+    p.category = 'Data';
+    if (name !== 'records' && typeof link === 'function')
+      link(p.dart, 'parentTableParamName', 'records');
+  }
   for (const p of showcaseFunc.inputs)
     p.nullable = true;
 }
@@ -131,13 +149,16 @@ export function funcsPage(): HTMLElement {
           const gate = form;
           const required = [...call.inputParams.values()].filter((p) =>
             p.property.isOptional !== true && gate.getInput(p.name) !== undefined);
-          const blocked = computed(() => gate.validity.value !== null || required.some((p) => {
+          const isEmpty = (p: DG.FuncCallParam) => {
             const v = gate.getInput(p.name)!.value.value;
             return Array.isArray(v) ? v.length === 0 : (v == null || v === '');
-          }));
+          };
+          const blocked = computed(() => gate.validity.value !== null || required.some(isEmpty));
           Scope.ambient!.effect(() => {
             run.disabled = blocked.value;
-            run.title = blocked.value ? 'Fix the highlighted fields to run' : '';
+            const empty = required.filter(isEmpty).map((p) => p.property.caption || p.name);
+            run.title = !blocked.value ? '' :
+              empty.length > 0 ? `Fill ${empty.join(', ')} to run` : 'Fix the invalid fields to run';
           });
         }
         const status = divH([span(computed(() => failed.value ? '' : 'result = ')), span(result)],

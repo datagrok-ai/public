@@ -157,6 +157,12 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._validate(this.value.peek());
   }
 
+  /** Re-runs the validators against the current value — for a validator whose verdict depends
+   * on state beyond the value itself, after that state moved under an unchanged value. */
+  revalidate(): void {
+    this._validate(this.value.peek());
+  }
+
   /** The editor together with its options rail — what the platform bridge hands to a Dart form,
    * and what a host that wants the control without the label should mount. */
   get box(): HTMLElement {

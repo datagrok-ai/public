@@ -16,7 +16,7 @@ const GROK_CORE = join(REPO, 'core/tools/grok-core/bin/grok-core.js');
  * closes every view and reopens the app: it stays last. */
 const FILES = ['view-and-panel', 'editing', 'metadata-and-navigation', 'multi-select-and-guards',
   'tray-and-sources', 'pickers', 'full-build', 'seeded-panes', 'platform-drop', 'icon-input', 'viewers',
-  'func-form', 'funcs-pane', 'func-form-async', 'leak'];
+  'func-form', 'funcs-pane', 'func-form-async', 'func-form-tables', 'pickers-parity', 'leak'];
 
 async function pubServeIsUp() {
   try {

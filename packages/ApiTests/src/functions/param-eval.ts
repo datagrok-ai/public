@@ -188,3 +188,115 @@ category('Functions: Property options', () => {
     }
   });
 }, {owner: 'askalkin@datagrok.ai'});
+
+category('Functions: TableParams', () => {
+  const tableHost = grok.functions.register({
+    signature: 'string paramEvalTableHost(dataframe df, column age, column_list cols)',
+    run: () => '',
+  });
+
+  const regHost = grok.functions.register({
+    signature: 'string paramEvalTableReg(dataframe data, column onCol)',
+    run: () => '',
+  });
+
+  const metaScript = () => DG.Script.create([
+    '//name: paramEvalTableMeta',
+    '//language: javascript',
+    '//input: dataframe df',
+    '//input: column age {type: numerical}',
+    '//input: column_list cols {type: categorical; table: df}',
+    'return;',
+  ].join('\n'));
+
+  test('dataframe write keeps identity, same-reference write fires onChanged once', async () => {
+    const df = DG.DataFrame.fromCsv('age,sex,height\n25,M,180\n31,F,165');
+    df.name = 'paramEvalTableDemog';
+    grok.shell.addTable(df);
+    try {
+      const call = tableHost.prepare();
+      let fired = 0;
+      const sub = call.inputParams.df.onChanged.subscribe(() => fired++);
+      try {
+        call.setParamValue('df', df);
+        call.setParamValue('df', df);
+      } finally {
+        sub.unsubscribe();
+      }
+      expect(call.inputs.df.dart === df.dart, true);
+      expect(fired, 1);
+    } finally {
+      grok.shell.closeTable(df);
+    }
+  });
+
+  test('string into a column param reads back as the resolver FuncCall', async () => {
+    const df = DG.DataFrame.fromCsv('age,sex,height\n25,M,180\n31,F,165');
+    df.name = 'paramEvalTableResolve';
+    grok.shell.addTable(df);
+    try {
+      const call = tableHost.prepare();
+      call.setParamValue('df', df);
+      call.setParamValue('age', 'height');
+      expect(call.inputs.age instanceof DG.FuncCall, true);
+      expect(call.inputs.age instanceof DG.Column, false);
+    } finally {
+      grok.shell.closeTable(df);
+    }
+  });
+
+  test('column array into a column_list reads back as a ColumnList', async () => {
+    const df = DG.DataFrame.fromCsv('age,sex,height\n25,M,180\n31,F,165');
+    df.name = 'paramEvalTableCols';
+    grok.shell.addTable(df);
+    try {
+      const call = tableHost.prepare();
+      call.setParamValue('df', df);
+      call.setParamValue('cols', [df.columns.byName('age'), df.columns.byName('height')]);
+      const v = call.inputs.cols;
+      expect(Array.isArray(v), false);
+      expect(v instanceof DG.ColumnList, true);
+      expectArray(v.names(), ['age', 'height']);
+      expect(v.length, 2);
+      const list = v.toList();
+      expect(list.length, 2);
+      expect(list[0] instanceof DG.Column, true);
+      expect(list[1] instanceof DG.Column, true);
+    } finally {
+      grok.shell.closeTable(df);
+    }
+  });
+
+  test('parentTableParamName answers both annotation link shapes', async () => {
+    const get = (window as any).grok_Property_Get;
+    expect(typeof get, 'function');
+    const s = metaScript();
+    const age = s.inputs.find((p) => p.name === 'age')!;
+    const cols = s.inputs.find((p) => p.name === 'cols')!;
+    expect(get(age.dart, 'parentTableParamName'), 'df');
+    expect(age.options['table'] == null, true);
+    expect(get(cols.dart, 'parentTableParamName'), 'df');
+    expect(cols.options['table'], 'df');
+  });
+
+  test('grok_Property_Set round-trips on a registered func param', async () => {
+    const get = (window as any).grok_Property_Get;
+    const set = (window as any).grok_Property_Set;
+    const onCol = regHost.inputs.find((p) => p.name === 'onCol')!;
+    expect(get(onCol.dart, 'parentTableParamName') == null, true);
+    try {
+      set(onCol.dart, 'parentTableParamName', 'data');
+      expect(get(onCol.dart, 'parentTableParamName'), 'data');
+    } finally {
+      // regHost is module-scope: a leftover link would fail the null expectation above on a
+      // second same-session run
+      set(onCol.dart, 'parentTableParamName', null);
+    }
+  });
+
+  test('columnTypeFilter derives from the type option', async () => {
+    const s = metaScript();
+    expect(s.inputs.find((p) => p.name === 'age')!.columnTypeFilter, 'numerical');
+    expect(s.inputs.find((p) => p.name === 'cols')!.columnTypeFilter, 'categorical');
+  });
+}, {owner: 'askalkin@datagrok.ai'});

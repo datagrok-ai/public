@@ -542,22 +542,28 @@ export function buildDemo(): Control {
       .item('About u2', () => status.value = 'u2: next-gen Datagrok UI library')
       .item('Gallery', () => window.open('https://github.com/datagrok-ai/public/tree/master/libraries/u2')));
 
+    // lazy: a page builds on first visit — the convergence bench's deliberately broken
+    // seed default otherwise balloons at app open on every tab. A runtime tab switch has
+    // no ambient scope, so factories run under the root scope captured here (same owner
+    // eager construction had)
+    const root = Scope.ambient!;
+    const lazy = (build: () => HTMLElement) => () => Scope.runWith(root, build);
     const pages = [
-      {id: 'inputs', label: 'Inputs', content: inputsPage()},
-      {id: 'async', label: 'Combobox & async', content: asyncPage()},
-      {id: 'lists', label: 'Lists & trees', content: listsPage()},
-      {id: 'layout', label: 'Layout', content: layoutPage()},
-      {id: 'popups', label: 'Popups', content: popupsPage(status)},
-      {id: 'form', label: 'Form & properties', content: formPage()},
-      {id: 'objectform', label: 'Object form', content: objectFormPage()},
-      {id: 'entities', label: 'Entities', content: entitiesPage()},
-      {id: 'spaces', label: 'Spaces & dashboards', content: spacesPage()},
-      {id: 'molecules', label: 'Molecules', content: moleculesPage()},
-      {id: 'dg', label: 'Platform bridge', content: platformPage()},
-      {id: 'dginputs', label: 'Files & columns', content: dgInputsPage()},
-      {id: 'convergence', label: 'Input convergence', content: convergencePage()},
-      {id: 'func-convergence', label: 'FuncCall convergence', content: funcConvergencePage()},
-      {id: 'funcs', label: 'Forms', content: funcsPage()},
+      {id: 'inputs', label: 'Inputs', content: lazy(() => inputsPage())},
+      {id: 'async', label: 'Combobox & async', content: lazy(() => asyncPage())},
+      {id: 'lists', label: 'Lists & trees', content: lazy(() => listsPage())},
+      {id: 'layout', label: 'Layout', content: lazy(() => layoutPage())},
+      {id: 'popups', label: 'Popups', content: lazy(() => popupsPage(status))},
+      {id: 'form', label: 'Form & properties', content: lazy(() => formPage())},
+      {id: 'objectform', label: 'Object form', content: lazy(() => objectFormPage())},
+      {id: 'entities', label: 'Entities', content: lazy(() => entitiesPage())},
+      {id: 'spaces', label: 'Spaces & dashboards', content: lazy(() => spacesPage())},
+      {id: 'molecules', label: 'Molecules', content: lazy(() => moleculesPage())},
+      {id: 'dg', label: 'Platform bridge', content: lazy(() => platformPage())},
+      {id: 'dginputs', label: 'Files & columns', content: lazy(() => dgInputsPage())},
+      {id: 'convergence', label: 'Input convergence', content: lazy(() => convergencePage())},
+      {id: 'func-convergence', label: 'FuncCall convergence', content: lazy(() => funcConvergencePage())},
+      {id: 'funcs', label: 'Forms', content: lazy(() => funcsPage())},
     ];
     const tabs = new TabStrip({tabs: pages});
     tabs.root.classList.add('u2demo-tabs');

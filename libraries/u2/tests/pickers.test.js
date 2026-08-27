@@ -13,7 +13,7 @@ import {DataFrame} from './platform-doubles.mjs';
 register('./platform-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
 const {Input} = await import('../src/core/input-base.js');
-const {columnInput, tableInput, tablesInput, ColumnPicker} = await import('../src/dg/inputs/pickers.js');
+const {columnInput, tableInput, tablesInput, ColumnPicker, TableInput} = await import('../src/dg/inputs/pickers.js');
 const {columnRenderer} = await import('../src/dg/entities/column-renderer.js');
 
 function picker(name, body) {
@@ -44,9 +44,16 @@ function localFile(name, text = 'a,b\n1,2') {
   return {name, text: async () => text, arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer};
 }
 
-/** Picks `file` through the import action's own hidden picker, as the OS dialog would. */
+/** Picks `file` through the import action's own hidden picker, as the OS dialog would. Under the
+ * action API the picker is transient (FP-P-2) — the open-file icon mints it — so when the rail
+ * carries no input yet, the drive goes through the icon first. */
 async function importFile(input, file) {
-  const picker = input.root.querySelector('.u2-input-options input');
+  let picker = input.root.querySelector('input[type=file]');
+  if (picker === null) {
+    fire(input.root.querySelector('.u2-input-options [aria-label="Open file"]'), 'click');
+    await flush();
+    picker = input.root.querySelector('input[type=file]') ?? document.querySelector('input[type=file]');
+  }
   picker.files = [file];
   fire(picker, 'change');
   await flush();
@@ -285,4 +292,207 @@ picker('columnRenderer: glyph per type, semType hint, and a name the table lost'
   assert.equal(renderer.tooltip('sex'), 'sex · string · Sex');
   assert.equal(renderer.tooltip('gone'), 'gone');
   assert.equal(renderer.caption('gone'), 'gone');
+});
+
+// --- the TableInput action rail (plan-pickers FP-P-2), written blind to the implementation ---
+
+function railIcons(input) {
+  return input.root.querySelectorAll('.u2-input-options [data-u2="icon-button"]');
+}
+
+/** Installs the fake platform doors for the body, sync or async, and removes them after. */
+function withGlobals(globals, body) {
+  Object.assign(globalThis, globals);
+  const clean = () => {
+    for (const name of Object.keys(globals))
+      delete globalThis[name];
+  };
+  let result;
+  try {
+    result = body();
+  } catch (e) {
+    clean();
+    throw e;
+  }
+  if (result instanceof Promise)
+    return result.finally(clean);
+  clean();
+  return result;
+}
+
+picker('tableInput: the headless rail is the open-file action alone', () => {
+  const input = tableInput('Table');
+  assert.ok(input instanceof TableInput, 'the factory narrows to the class');
+  assert.deepEqual(input.actions.map((a) => a.id), ['open-file'],
+    'no platform doors, no platform icons — every existing DOM stays');
+  const icons = railIcons(input);
+  assert.equal(icons.length, 1);
+  assert.ok(icons[0].querySelector('.fa-folder-open'));
+  assert.equal(icons[0].getAttribute('aria-label'), 'Open file');
+  input.dispose();
+});
+
+picker('tableInput: the platform doors put their icons on, in the platform order', () => {
+  withGlobals({grok_UI_PickTableFromFiles: async () => null, grok_UI_PickTableFromQuery: async () => null},
+    () => {
+      const input = tableInput('Table');
+      assert.deepEqual(input.actions.map((a) => a.id), ['open-file', 'add-from-files', 'query-db']);
+      const icons = railIcons(input);
+      assert.deepEqual(icons.map((el) => el.getAttribute('aria-label')),
+        ['Open file', 'Add file from Files', 'Query database'], 'the Dart tooltips, verbatim (P-P-1)');
+      assert.ok(icons[1].querySelector('.fa-folder-tree'));
+      assert.ok(icons[2].querySelector('.fa-database'));
+      input.dispose();
+    });
+});
+
+picker('tableInput: each door gates its own icon', () => {
+  withGlobals({grok_UI_PickTableFromFiles: async () => null}, () => {
+    const input = tableInput('Table');
+    assert.deepEqual(input.actions.map((a) => a.id), ['open-file', 'add-from-files']);
+    input.dispose();
+  });
+  withGlobals({grok_UI_PickTableFromQuery: async () => null}, () => {
+    const input = tableInput('Table');
+    assert.deepEqual(input.actions.map((a) => a.id), ['open-file', 'query-db']);
+    input.dispose();
+  });
+});
+
+picker('tableInput: options.actions replaces the defaults wholesale at construction', () => {
+  const input = tableInput('Table',
+    {actions: [{id: 'only', icon: 'bolt', tooltip: 'Only', run: () => {}}]});
+  assert.deepEqual(input.actions.map((a) => a.id), ['only']);
+  const icons = railIcons(input);
+  assert.equal(icons.length, 1);
+  assert.equal(icons[0].getAttribute('aria-label'), 'Only');
+  assert.equal(input.root.querySelector('.fa-folder-open'), null, 'no open-file default rides along');
+  input.dispose();
+});
+
+picker('TableInput.actions: the setter re-renders the rail; the getter answers a copy', () => {
+  const input = tableInput('Table');
+  const runs = [];
+  input.actions = [{id: 'mine', icon: 'star', tooltip: 'Mine', run: (i) => runs.push(i)}];
+  assert.deepEqual(railIcons(input).map((el) => el.getAttribute('aria-label')), ['Mine'],
+    'a set replaces the rail whole');
+  assert.equal(input.root.querySelector('.fa-folder-open'), null);
+  assert.ok(railIcons(input)[0].querySelector('.fa-star'));
+
+  fire(railIcons(input)[0], 'click');
+  assert.deepEqual(runs, [input], 'run receives the input itself');
+
+  input.actions.push({id: 'sneaky', icon: 'bug', tooltip: 'Nope', run: () => {}});
+  assert.deepEqual(input.actions.map((a) => a.id), ['mine'], 'the getter hands out a copy');
+  assert.equal(railIcons(input).length, 1);
+
+  input.actions = [...input.actions, {id: 'more', icon: 'plus', tooltip: 'More', run: () => {}}];
+  assert.deepEqual(railIcons(input).map((el) => el.getAttribute('aria-label')), ['Mine', 'More'],
+    'read-modify-write is the composition point');
+
+  input.actions = [];
+  assert.equal(railIcons(input).length, 0, 'and an empty set clears the rail');
+  input.dispose();
+});
+
+picker('TableInput.actions: two inputs keep their own sets', () => {
+  const a = tableInput('A');
+  const b = tableInput('B');
+  b.actions = [{id: 'b-only', icon: 'star', tooltip: 'B only', run: () => {}}];
+  assert.deepEqual(a.actions.map((x) => x.id), ['open-file'], 'the sibling is untouched');
+  assert.equal(a.root.querySelector('.fa-star'), null);
+  assert.ok(b.root.querySelector('.fa-star'));
+  a.dispose();
+  b.dispose();
+});
+
+picker('tableInput: the Files action adds the resolved frame to the workspace and picks it as a user edit',
+  async () => {
+    let resolve;
+    await withGlobals({grok_UI_PickTableFromFiles: () => new Promise((r) => resolve = r)},
+      async () => {
+        const input = tableInput('Table');
+        let systemic = null;
+        input.effect(() => {
+          input.value.value;
+          systemic = Input.isSystemWrite;
+        });
+        fire(input.root.querySelector('.u2-input-options [aria-label="Add file from Files"]'), 'click');
+        resolve(new DataFrame([{name: 'a', type: 'int'}], [], 'plates'));
+        await flush();
+        assert.deepEqual(grok.shell.tableNames, ['plates'],
+          'the frame joins the workspace (divergence #16 — u2, unlike Dart, adds it)');
+        assert.deepEqual(options(input), ['plates']);
+        assert.equal(input.value.value, 'plates');
+        assert.equal(systemic, false, 'picked the way a user picks one');
+        input.dispose();
+      });
+  });
+
+picker('tableInput: a cancelled dialog leaves the input alone', async () => {
+  await withGlobals({grok_UI_PickTableFromQuery: async () => null}, async () => {
+    grok.openTable('demog');
+    const input = tableInput('Table');
+    input.value.value = 'demog';
+    fire(input.root.querySelector('.u2-input-options [aria-label="Query database"]'), 'click');
+    await flush();
+    assert.deepEqual(grok.shell.tableNames, ['demog'], 'a null resolution adds nothing');
+    assert.equal(input.value.value, 'demog', 'and takes nothing away');
+    input.dispose();
+  });
+});
+
+picker('tableInput: a pick landing after dispose is dropped', async () => {
+  let resolve;
+  await withGlobals({grok_UI_PickTableFromFiles: () => new Promise((r) => resolve = r)},
+    async () => {
+      const input = tableInput('Table');
+      fire(input.root.querySelector('.u2-input-options [aria-label="Add file from Files"]'), 'click');
+      input.dispose();
+      resolve(new DataFrame([], [], 'late'));
+      await flush();
+      assert.deepEqual(grok.shell.tableNames, [], 'a disposed input adds nothing');
+    });
+});
+
+picker('tableInput: detection happens at construction — the setter renders what it was given', () => {
+  const input = withGlobals(
+    {grok_UI_PickTableFromFiles: async () => null, grok_UI_PickTableFromQuery: async () => null},
+    () => tableInput('Table'));
+  input.actions = input.actions;
+  assert.deepEqual(input.actions.map((a) => a.id), ['open-file', 'add-from-files', 'query-db'],
+    'the doors leaving does not thin what was already given');
+  assert.equal(railIcons(input).length, 3);
+
+  const late = tableInput('Late');
+  assert.deepEqual(late.actions.map((a) => a.id), ['open-file'], 'while a new input detects afresh');
+  input.dispose();
+  late.dispose();
+});
+
+picker('tableInput: a rejecting picker dialog is reported at the boundary, not unhandled', async () => {
+  const errors = [];
+  grok.shell.error = (m) => errors.push(m);
+  await withGlobals({grok_UI_PickTableFromFiles: async () => {
+    throw new Error('boom');
+  }}, async () => {
+    const input = tableInput('Table');
+    fire(input.root.querySelector('.u2-input-options [aria-label="Add file from Files"]'), 'click');
+    await flush();
+    assert.deepEqual(errors, ['Error: boom'], 'the rejection surfaces as a shell error');
+    assert.equal(input.value.peek(), null, 'a failed pick writes nothing');
+    assert.equal(input.scope.isDisposed, false, 'the input survives');
+    input.dispose();
+  });
+});
+
+picker('TableInput.actions: ten re-sets leave the input scope flat', () => {
+  const input = tableInput('Table');
+  const disposers = input.scope._disposers.length;
+  for (let i = 0; i < 10; i++)
+    input.actions = [{id: 'mine', icon: 'star', tooltip: 'Mine', run: () => {}}];
+  assert.equal(input.scope._disposers.length, disposers,
+    'no per-render cleanup piles up on the input');
+  assert.equal(railIcons(input).length, 1);
+  input.dispose();
 });

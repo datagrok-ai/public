@@ -19,15 +19,25 @@
    test. */
 
 const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
+/** The real compiled implementation (a dependency-free js-api module), so the auto-pick pins
+ * compute the SAME distances the platform does — requires a built datagrok-api. */
+const DISTANCES = new URL('../node_modules/datagrok-api/src/utils/string-distances.js',
+  import.meta.url).href;
 
 const STUB = `
 import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
+import {levenshteinDistance, jaroWinklerDistance} from '${DISTANCES}';
 export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
   Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Script, TableQuery, User, View, Viewer,
   ViewerMetaHelper, Widget, WidgetDescriptor, platform,
   FuncCall, FuncCallParam, FuncParam} from '${DOUBLES}';
 
 export const toDart = (x) => x?.dart ?? x;
+
+export class StringUtils {
+  static levenshteinDistance = levenshteinDistance;
+  static jaroWinklerDistance = jaroWinklerDistance;
+}
 
 export const TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
@@ -39,6 +49,14 @@ export const COLUMN_TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', BOOL: 'bool', BYTE_ARRAY: 'byte_array',
   DATE_TIME: 'datetime', BIG_INT: 'bigint', QNUM: 'qnum', DATA_FRAME: 'dataframe',
   OBJECT: 'object',
+};
+
+/** What the column selectors read at import (columns.ts:30-43), copied from js-api's const.ts. */
+export const AGG = {
+  KEY: 'key', PIVOT: 'pivot', FIRST: 'first', TOTAL_COUNT: 'count', VALUE_COUNT: 'values',
+  UNIQUE_COUNT: 'unique', MISSING_VALUE_COUNT: 'nulls', MIN: 'min', MAX: 'max', SUM: 'sum',
+  MED: 'med', AVG: 'avg', STDEV: 'stdev', VARIANCE: 'variance', SKEW: 'skew', KURT: 'kurt',
+  Q1: 'q1', Q2: 'q2', Q3: 'q3', SELECTED_ROWS_COUNT: '#selected',
 };
 
 /** The interop u2 reaches through feature-detected globals (P9, P10). A kill records the element,
@@ -66,6 +84,8 @@ Object.assign(globalThis, {
   },
   grok_Widget_RegisterCleanup(element, cleanup) { platform.cleanups.push({element, cleanup}); },
   grok_Property_Get_PropertySubType: (dart) => dart.subType ?? null,
+  // the generic metadata door (grok_api.dart:898): doubles carry the keys as own \`dart\` keys
+  grok_Property_Get: (dart, key) => dart?.[key] ?? null,
   grok_Viewer_Get_Look: (dart) => dart.look,
   grok_PropertyGrid_Update: (dart, src, props, table) => dart.updates.push({src, props, table}),
 });
@@ -111,10 +131,16 @@ export class JsInputBase {
 
   fireChanged() { this.fired.changed++; }
 }
+
+/** A test-installable stand-in for the platform ColumnGrid the column combo feature-detects
+ * (plan-pickers FP-P-4). Absent by default, so every suite exercises the native backend; the
+ * export is a live binding, so a swap mid-test reaches modules that imported the namespace. */
+export let ColumnGrid = undefined;
+export function _installColumnGrid(cls) { ColumnGrid = cls; }
 `;
 
 const GROK_STUB = `
-import {Func, Shell} from '${DOUBLES}';
+import {DataFrame, Func, Shell} from '${DOUBLES}';
 
 export const dapi = {
   files: {
@@ -125,6 +151,11 @@ export const dapi = {
 };
 
 export const shell = new Shell();
+
+/** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
+export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved};
+
+export const data = {parseCsv: () => new DataFrame()};
 
 /** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and
  * the Func it hands back — the platform's own is a dart wrapper over the same record. */

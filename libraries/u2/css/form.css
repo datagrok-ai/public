@@ -100,11 +100,27 @@
   max-width: 260px;
 }
 
+/* a transient note — a table switch cleared the column picks; the next interaction with the
+   field dismisses it */
+.u2-param-source-notice {
+  color: var(--dg-text-color-light);
+  max-width: 260px;
+}
+
 /* the message wraps up to three lines so a long failure never blows up the row; the full text is its title */
-.u2-param-source-error .u2-param-source-message {
+.u2-param-source-error .u2-param-source-message,
+.u2-param-source-notice .u2-param-source-message {
   min-width: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+}
+
+/* the guess mark on an auto-filled table or auto-picked column field, gone once the user edits */
+.u2-param-auto {
+  align-self: center;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  user-select: none;
 }

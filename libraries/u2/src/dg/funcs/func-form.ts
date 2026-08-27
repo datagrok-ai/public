@@ -4,7 +4,10 @@
    headless doubles and DG.FuncCall both fit; the platform itself is only reached by
    `editors: 'auto'`, through the global the bundler binds `datagrok-api/dg` to.
    Wave 2 adds the dynamic routes — async choices/suggestions through the `evalParam*` members
-   and computed defaults written into the call (R6) — with `settled` as the readiness member. */
+   and computed defaults written into the call (R6) — with `settled` as the readiness member.
+   Wave 3 adds the table routes — dataframe/column/column_list fields with auto-fill, the
+   default-column pick and dependent rewiring (param-tables.ts), all synchronous: the call holds
+   OBJECTS, the inputs hold names. */
 import {batch} from '../../core/signals.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input} from '../../core/input-base.js';
@@ -19,6 +22,13 @@ import type {FieldOverride, Kind} from '../forms/object-form.js';
 import {Editors} from '../forms/editors.js';
 import {ParamSource, ParamState} from './param-sources.js';
 import type {ChoicesResult} from './param-sources.js';
+import {tableInput} from '../inputs/pickers.js';
+import {ColumnInput} from '../inputs/column-combo.js';
+import {ColumnsInput} from '../inputs/columns.js';
+import {TableBinding, columnPredicate, parentTableName, tableByName, preferredTable,
+  asNamed, asTable, resolveTable, columnNamesOf, noMatchMessage,
+  markAuto, unmarkAuto} from './param-tables.js';
+import type {ColumnDependent} from './param-tables.js';
 import type * as DG from 'datagrok-api/dg';
 
 export interface FuncFormOptions {
@@ -29,6 +39,12 @@ export interface FuncFormOptions {
    * ITEMS still load and apply — items are not defaults (divergence #8). Literal defaults stay
    * display-only either way. */
   skipDefaultInit?: boolean;
+  /** Suppresses the table auto-fill write (the current-or-first open table into a null
+   * dataframe param, fpe:62-64) — the js-api option (forms.ts:226) reproduced. */
+  skipTableAutoFill?: boolean;
+  /** `false` hides the table-field roots (the `getEditor(condensed, showTableSelectors)`
+   * contract, functions.ts:412); auto-fill and dependent wiring still run (fpe:73). */
+  showTableSelectors?: boolean;
   condensed?: boolean;
   /** Fires on every non-echo input change — user or programmatic input write — after the
    * FuncCall has been updated. Mirrors DG.InputForm.onInputChanged. */
@@ -62,13 +78,13 @@ export interface FuncCallLike {
 /** The per-field seam the dynamic sources plug into. Null kind marks a platform editor, which
  * reads and writes the param in its own native type. Orphaned: the current `source` carries no
  * param of this name — the field is disabled and its write path is off. */
-interface FuncField {
+export interface FuncField {
   param: FuncCallParamLike;
   input: Input<any>;
   kind: Kind | null;
   /** The dynamic route the field was built for; 'field' for every static editor, including a
    * dynamic-routed param an override or a registered editor claimed (no dynamic wiring then). */
-  route: 'field' | 'choices' | 'suggestions' | 'multiChoices';
+  route: 'field' | 'choices' | 'suggestions' | 'multiChoices' | 'table' | 'column' | 'columns';
   orphaned: boolean;
   propagate: boolean;
   /** True while a choices result is being applied to the input — the batched flush of the
@@ -78,6 +94,24 @@ interface FuncField {
   lookup?: Record<string, Record<string, any>> | null;
   state?: ParamState;
   source?: ParamSource;
+  /** W3 converters: the call holds OBJECTS (a raw name write comes back as a pending Resolve\*
+   * FuncCall, P-W3-2), the input holds names. Installed only by the table/column/columns
+   * routes. */
+  fromParam?: (v: any) => any;
+  toParam?: (v: any) => any;
+  /** The table param a column/columns field resolves its objects against (FP-W3-2's
+   * association). */
+  parentName?: string;
+  /** The `ColumnFilter.fromProp`-parity predicate, built once per column/columns field and
+   * shared by its input and its {@link TableBinding} dependents. */
+  filter?: (c: DG.Column) => boolean;
+  /** The `auto` badge marking a value the binding guessed (table auto-fill, column auto-pick);
+   * created once by {@link markAuto} and kept for re-marking after {@link unmarkAuto}. */
+  autoBadge?: HTMLElement;
+  /** Set by the first user edit of the field — the guess mark never returns after it. */
+  userTouched?: boolean;
+  /** Dismisses the field's transient notice and its interaction listeners. */
+  noticeClear?: () => void;
 }
 
 /** The W1 scalar set; everything else lands in {@link FuncCallForm.unsupported}. */
@@ -111,7 +145,9 @@ export class FuncCallForm extends Form {
   private readonly _fields: FuncField[] = [];
   private readonly _unsupported: string[] = [];
   private _call: FuncCallLike;
+  private readonly _autoFilled = new Set<string>();
   private _paramSubs: (() => void)[] = [];
+  private _tableBindings: TableBinding[] = [];
   private _refreshing = false;
   private _generation = 0;
   private _settled: Promise<void> = Promise.resolve();
@@ -123,6 +159,8 @@ export class FuncCallForm extends Form {
     this.root.dataset.u2 = 'func-form';
     this._build();
     this._bind();
+    // before _arm: the auto-pick writes are sync and must land before the default evals read
+    this._bindTables();
     this._arm();
   }
 
@@ -151,13 +189,17 @@ export class FuncCallForm extends Form {
     }
     this._paramSubs = [];
     const params = new Map<string, FuncCallParamLike>();
+    const tables: FuncCallParamLike[] = [];
     this._unsupported.length = 0;
     for (const param of call.inputParams.values()) {
       params.set(param.name, param);
-      if (FuncCallForm._route(param.property) !== 'skip' &&
-          !this._fields.some((f) => f.param.name === param.name))
+      const route = FuncCallForm._route(param.property);
+      if (route === 'table')
+        tables.push(param);
+      if (route !== 'skip' && !this._fields.some((f) => f.param.name === param.name))
         this._unsupported.push(param.name);
     }
+    this._autoFill(tables);
     this._refreshing = true;
     try {
       batch(() => {
@@ -180,6 +222,9 @@ export class FuncCallForm extends Form {
     this._bind();
     for (const field of this._fields) {
       field.state?.set(1, {kind: 'idle'});
+      field.noticeClear?.();
+      if (field.route === 'table')
+        (this._autoFilled.has(field.param.name) ? markAuto : unmarkAuto)(field);
       if (field.route !== 'choices' && field.route !== 'multiChoices')
         continue;
       if (field.orphaned) {
@@ -190,6 +235,7 @@ export class FuncCallForm extends Form {
       else
         this._wireSource(field);
     }
+    this._bindTables();
     this._arm();
   }
 
@@ -215,11 +261,30 @@ export class FuncCallForm extends Form {
   }
 
   private _build(): void {
-    const categories: {name: string, params: {param: FuncCallParamLike, route: FuncField['route']}[]}[] = [];
-    for (const param of this._call.inputParams.values()) {
+    const params = [...this._call.inputParams.values()];
+    const routes = new Map<FuncCallParamLike, ReturnType<typeof FuncCallForm._route>>();
+    const tables = new Map<string, FuncCallParamLike>();
+    for (const param of params) {
       const route = FuncCallForm._route(param.property);
+      routes.set(param, route);
+      if (route === 'table')
+        tables.set(param.name, param);
+    }
+    this._autoFill(tables.values());
+    const categories: {name: string, entries: {param: FuncCallParamLike,
+      route: FuncField['route'], parent?: FuncCallParamLike}[]}[] = [];
+    for (const param of params) {
+      let route = routes.get(param)!;
       if (route === 'skip')
         continue;
+      let parent: FuncCallParamLike | undefined;
+      if (route === 'column' || route === 'columns') {
+        parent = tables.get(parentTableName(param.property) ?? '');
+        // divergence #13: an unassociated column param is LISTED, where Dart silently renders
+        // nothing for it (renderParam falls through every branch)
+        if (parent === undefined)
+          route = 'unsupported';
+      }
       if (route === 'unsupported') {
         this._unsupported.push(param.name);
         continue;
@@ -227,18 +292,36 @@ export class FuncCallForm extends Form {
       const name = param.property.category ?? 'Misc';
       let category = categories.find((c) => c.name === name);
       if (category === undefined) {
-        category = {name, params: []};
+        category = {name, entries: []};
         categories.push(category);
       }
-      category.params.push({param, route});
+      category.entries.push({param, route, parent});
     }
     const headers = categories.length > 1 ||
       (categories.length === 1 && categories[0].name !== 'Misc');
     for (const category of categories) {
       if (headers)
         this.addElement(div([category.name], 'u2-form-category'));
-      for (const {param, route} of category.params)
-        this._addField(param, route);
+      for (const {param, route, parent} of category.entries)
+        this._addField(param, route, parent);
+    }
+  }
+
+  /** Dart's table auto-fill (fpe:62-64, minus the Dart-only `applicableTable`): a real write
+   * into the call — the current table, else the first open one — before any field seeds its
+   * initial value, so the field opens showing it. */
+  private _autoFill(tables: Iterable<FuncCallParamLike>): void {
+    this._autoFilled.clear();
+    if (this._formOptions.skipTableAutoFill === true)
+      return;
+    for (const param of tables) {
+      if (param.value != null)
+        continue;
+      const table = preferredTable();
+      if (table != null) {
+        this._call.setParamValue(param.name, table);
+        this._autoFilled.add(param.name);
+      }
     }
   }
 
@@ -248,7 +331,8 @@ export class FuncCallForm extends Form {
    * garbage there for a dynamic source (scripting.dart:316), while the evaluator answers even
    * static list literals. A typed `prop.choices` with NO option keeps the W1 static path. */
   private static _route(prop: FuncCallParamLike['property']):
-      'skip' | 'unsupported' | 'field' | 'choices' | 'suggestions' | 'multiChoices' {
+      'skip' | 'unsupported' | 'field' | 'choices' | 'suggestions' | 'multiChoices' |
+      'table' | 'column' | 'columns' {
     const options = prop.options;
     const editor = options?.['editor'] ?? prop.editor ?? null;
     if (editor === 'none')
@@ -256,6 +340,17 @@ export class FuncCallForm extends Form {
     if (options?.['editorParam'] != null)
       return 'unsupported';
     const type = prop.propertyType ?? prop.type ?? '';
+    // guarded on a null editor: in Dart any non-null editor other than layout wins over the
+    // type branches (fpe:452/497/519), so an editor-carrying dataframe/column param — and
+    // `editor: columnsMap` (type map, P-W3-7) — stays unsupported
+    if (editor === null) {
+      if (type === 'dataframe')
+        return 'table';
+      if (type === 'column')
+        return 'column';
+      if (type === 'column_list')
+        return 'columns';
+    }
     if (type === 'string' && options?.['choices'] != null)
       return 'choices';
     if (type === 'string' && options?.['suggestions'] != null)
@@ -269,7 +364,8 @@ export class FuncCallForm extends Form {
     return editor === null || HINTS.has(String(editor).toLowerCase()) ? 'field' : 'unsupported';
   }
 
-  private _addField(param: FuncCallParamLike, routed: FuncField['route']): void {
+  private _addField(param: FuncCallParamLike, routed: FuncField['route'],
+    parent?: FuncCallParamLike): void {
     const prop = param.property;
     const {input: custom, ...rest} = this._formOptions.overrides?.[param.name] ?? {};
     const options: InputOptions<any> = {
@@ -283,6 +379,7 @@ export class FuncCallForm extends Form {
     const registered = custom ? null : this.run(() => Editors.resolve(prop, options));
     // a custom editor owns its field entirely and gets no dynamic wiring (the W1 override contract)
     const route: FuncField['route'] = (custom ?? registered) != null ? 'field' : routed;
+    const filter = route === 'column' || route === 'columns' ? columnPredicate(prop) : undefined;
     let input: Input<any>;
     let kind: Kind | null;
     if (route === 'choices') {
@@ -297,6 +394,21 @@ export class FuncCallForm extends Form {
       input = this._suggestInput(param.name, options);
       kind = 'string';
     }
+    else if (route === 'table') {
+      const {label: caption, ...tableOptions} = options;
+      input = this.run(() => tableInput(caption ?? param.name, tableOptions));
+      kind = 'string';
+    }
+    else if (route === 'column') {
+      input = this.run(() => new ColumnInput({...options,
+        table: asTable(parent?.value), filter}));
+      kind = 'string';
+    }
+    else if (route === 'columns') {
+      input = this.run(() => new ColumnsInput({...options,
+        table: asTable(parent?.value), filter}));
+      kind = 'list';
+    }
     else {
       const platform = (custom ?? registered) != null ? null :
         ObjectForm.platformInput(this, prop, this._call, this._formOptions.editors === 'auto');
@@ -304,15 +416,42 @@ export class FuncCallForm extends Form {
         this.run(() => inputForProperty(prop, {...options, assumeWritable: true}));
       kind = platform !== null && input === platform ? null : kindOf(prop, true);
     }
-    const field: FuncField = {param, input, kind, route, orphaned: false,
+    const field: FuncField = {param, input, kind, route, filter, orphaned: false,
       propagate: route === 'choices' && prop.options?.['propagateChoice'] === 'all',
       applying: false};
+    if (route === 'table') {
+      field.fromParam = (v) => asNamed(v)?.name ?? null;
+      field.toParam = (name) => name == null ? null : tableByName(name);
+    }
+    else if (route === 'column' || route === 'columns') {
+      field.parentName = parent!.name;
+      const table = () => resolveTable(this._parentField(field)?.param.value);
+      if (route === 'column') {
+        field.fromParam = (v) => asNamed(v)?.name ?? null;
+        field.toParam = (name) => name == null ? null : table()?.columns.byName(name) ?? null;
+      }
+      else {
+        field.fromParam = (v) => columnNamesOf(v);
+        field.toParam = (names: string[]) => {
+          const t = table();
+          return t == null ? [] : names.map((n) => t.columns.byName(n)).filter((c) => c != null);
+        };
+      }
+    }
     if (kind !== null) {
       input.value.value = this._initialValue(field);
+      // an empty column_list counts as empty too (isEmpty([]) is false; Dart's ColumnsInput
+      // enforces a non-empty pick)
       if (prop.nullable === false)
-        input.addValidator((value) => ObjectForm.isEmpty(value) ? 'Value can\'t be empty' : null);
+        input.addValidator((value) => ObjectForm.isEmpty(value) ||
+          (route === 'columns' && Array.isArray(value) && value.length === 0) ?
+          this._requiredMessage(field) : null);
     }
     this.add(input);
+    if (route === 'table' && this._formOptions.showTableSelectors === false)
+      input.root.hidden = true;
+    if (route === 'table' && this._autoFilled.has(param.name))
+      markAuto(field);
     this._fields.push(field);
     if (route === 'choices' || route === 'multiChoices')
       this._wireSource(field);
@@ -335,11 +474,15 @@ export class FuncCallForm extends Form {
       }
       if (this._refreshing || field.orphaned)
         return;
+      // a badge over nothing claims a value that is gone (a pruned table, a no-match clear)
+      if (value == null && field.autoBadge !== undefined)
+        unmarkAuto(field);
       // a platform editor is bound by `forProperty` and writes the param itself
       if (field.kind !== null) {
         if (ObjectForm.same(value, this._read(field)))
           return;
-        this._call.setParamValue(param.name, FuncCallForm._paramValue(field.kind, value));
+        this._call.setParamValue(param.name, field.toParam !== undefined ?
+          field.toParam(value) : FuncCallForm._paramValue(field.kind, value));
         if (field.propagate && !field.applying && !Input.isSystemWrite &&
             this._formOptions.skipDefaultInit !== true)
           this._propagate(field, value);
@@ -529,17 +672,98 @@ export class FuncCallForm extends Form {
   }
 
   private _read(field: FuncField): any {
+    if (field.fromParam !== undefined)
+      return field.fromParam(field.param.value);
     const value = field.param.value;
     return field.kind === null ? value : ObjectForm.coerce(field.kind, value);
   }
 
   /** The param's value; a null one with a literal default shows the default — display-only, never
-   * written into the FuncCall (the ApiTests `form without default initialization` contract). */
+   * written into the FuncCall (the ApiTests `form without default initialization` contract).
+   * W3 routes skip the default: a dataframe defaultValue is never serialized Dart-side
+   * (func_param.dart:190). */
   private _initialValue(field: FuncField): any {
     const value = this._read(field);
+    if (field.toParam !== undefined)
+      return value;
     const defaultValue = field.param.property.defaultValue;
     return value == null && defaultValue != null && field.kind !== null ?
       ObjectForm.coerce(field.kind, defaultValue) : value;
+  }
+
+  /** The required-error text, cause-aware for the column routes: a null parent table suppresses
+   * it — one root cause, one message, on the table field — and a table with no passing columns
+   * names the real reason. {@link TableBinding} revalidates on every retarget, so the verdict
+   * follows the table even under an unchanged (null) value. */
+  private _requiredMessage(field: FuncField): string | null {
+    if (field.route !== 'column' && field.route !== 'columns')
+      return 'Value can\'t be empty';
+    const table = resolveTable(this._parentField(field)?.param.value);
+    if (table === null)
+      return null;
+    return table.columns.toList().some((c) => field.filter!(c)) ? 'Value can\'t be empty' :
+      noMatchMessage(field.param.property, table.name);
+  }
+
+  /** By name alone, never by route: an override or a registered editor on the table param
+   * demotes its route to 'field', and the dependents keep working through the param stream. */
+  private _parentField(field: FuncField): FuncField | undefined {
+    return this._fields.find((f) => f.param.name === field.parentName);
+  }
+
+  /** One {@link TableBinding} per bound table param — every 'table'-routed field, plus an
+   * override-demoted one some dependent names — rebuilt whole on a `source` rebind. The binding
+   * rides the PARAM stream, so a custom table editor still drives its dependents. A dependent
+   * whose parent field is orphaned (or missing) orphans with it: its `toParam` would otherwise
+   * resolve names against the OLD call's table. */
+  private _bindTables(): void {
+    for (const binding of this._tableBindings)
+      binding.dispose();
+    this._tableBindings = [];
+    const dependents = new Map<FuncField, ColumnDependent[]>();
+    for (const f of this._fields) {
+      if (f.route !== 'column' && f.route !== 'columns')
+        continue;
+      const parent = this._parentField(f);
+      const orphaned = f.orphaned || parent === undefined || parent.orphaned;
+      if (orphaned !== f.orphaned) {
+        f.orphaned = orphaned;
+        this._applyEnabled(f);
+      }
+      if (orphaned)
+        continue;
+      const deps = dependents.get(parent!) ?? [];
+      deps.push({kind: f.route, field: f, filter: f.filter!});
+      dependents.set(parent!, deps);
+    }
+    for (const field of this._fields) {
+      if (field.orphaned || (field.route !== 'table' && !dependents.has(field)))
+        continue;
+      const binding = this.run(() => new TableBinding(this._call, field.param,
+        (name) => tableByName(name), dependents.get(field) ?? [],
+        (dep, oldTableName) => this._clearedNotice(dep.field, oldTableName)));
+      this._tableBindings.push(binding);
+      binding.start();
+    }
+  }
+
+  /** A table switch wiped a non-empty column selection (kept as the ruled `[]` write) — say so
+   * on the field, until the user's next interaction with it. */
+  private _clearedNotice(field: FuncField, oldTableName: string): void {
+    const state = this._stateOf(field);
+    state.notice(`Selection cleared — columns belonged to '${oldTableName}'`);
+    if (field.noticeClear !== undefined)
+      return;
+    const root = field.input.root;
+    const clear = () => {
+      state.notice(null);
+      root.removeEventListener('pointerdown', clear);
+      root.removeEventListener('keydown', clear);
+      field.noticeClear = undefined;
+    };
+    root.addEventListener('pointerdown', clear);
+    root.addEventListener('keydown', clear);
+    field.noticeClear = clear;
   }
 
   /** `camelCaseToWords` over the `friendlyName` when set, else over the name — the Dart rule

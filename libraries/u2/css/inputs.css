@@ -614,6 +614,19 @@ textarea.u2-list-area {
   border-top: 5px solid var(--dg-text-color-light);
 }
 
+/* a columns input with no table yet: visibly inert until one is picked (the popup stays closed) */
+.u2-input-editor.u2-columns[aria-disabled='true'] {
+  cursor: default;
+}
+
+.u2-columns[aria-disabled='true'] .u2-columns-summary {
+  color: var(--dg-text-color-disabled);
+}
+
+.u2-columns[aria-disabled='true'] .u2-columns-chevron {
+  border-top-color: var(--dg-text-color-disabled);
+}
+
 /* an invalid columns input reddens the summary and the triangle, not just the underline
    (`ui.css:306-313`) */
 .u2-columns.u2-invalid .u2-columns-summary {
@@ -678,6 +691,21 @@ textarea.u2-list-area {
 .u2-list-row.u2-columns-picked {
   background: var(--dg-selection-bg);
   color: var(--dg-selection-text);
+}
+
+/* the single-pick column combo: the platform grid only needs a framed host; the native popup
+   reuses the columns classes above, plus the nullable empty row */
+.u2-column-combo-host {
+  overflow: hidden;
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-column-combo-none {
+  flex: 1;
+  min-height: 100%;
 }
 
 .u2-input-editor.u2-columns-map,

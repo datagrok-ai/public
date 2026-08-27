@@ -103,3 +103,7 @@ export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, 
 export {VIEWER_SAMPLES, platformSamples} from './viewers/samples.js';
 export {funcForm, FuncCallForm} from './funcs/func-form.js';
 export type {FuncFormOptions, FuncCallLike, FuncCallParamLike} from './funcs/func-form.js';
+export {TableInput} from './inputs/pickers.js';
+export type {InputAction, TableInputOptions} from './inputs/pickers.js';
+export {ColumnInput} from './inputs/column-combo.js';
+export type {ColumnInputOptions2} from './inputs/column-combo.js';

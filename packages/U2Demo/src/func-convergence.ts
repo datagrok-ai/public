@@ -102,6 +102,72 @@ const LIST_DYN = 'The same provider through a multi-choice on both sides. Under 
   'and leaves the dropdown permanently empty; u2 applies freshly loaded items either way — ' +
   'items are not defaults (divergence #8).';
 
+const W3_INTRO = 'One shared call over a `DG.Script.create` fixture — annotation-true metadata ' +
+  '(`column num {type: numerical; caption: Numeric column}` — the caption reaches both labels — ' +
+  '`column cat {type: categorical}`, `column_list metrics ' +
+  '{type: numerical}`, all implicitly linked to `df`), no server round-trip. Two fixture tables ' +
+  'are opened for it: `fceW3Demog` (age, height, weight, sex) and `fceW3Alt` (weight, label). ' +
+  'Both forms auto-fill the SAME table into the call at open, and `num`/`cat` are auto-picked ' +
+  'by name similarity — real writes, visible in `inputs` below before any edit. Column lists ' +
+  'are never auto-picked. The call holds OBJECTS (a raw name write comes back as a pending ' +
+  'resolver call), the inputs hold names. One deliberate exception to the one-tick counter rule: ' +
+  'a table pick also re-defaults every dependent through its input, so the sync counter counts ' +
+  'the pick plus each re-defaulted column — a 3 here is expected, not ping-pong.';
+
+const W3_ORDER = 'Declaration order (divergence #10): u2 renders `df, num, cat, metrics` as ' +
+  'declared; the raw Dart form clusters dependents at the table\'s slot (`Df, Metrics, Num, ' +
+  'Cat`). This grid re-parents both sides into declaration-order rows, so the difference shows ' +
+  'only outside the bench.';
+
+const W3_AUTOPICK = 'The auto-pick runs regardless of `skipDefaultInit` — the Dart guard covers ' +
+  'only `options[\'default\']` (`func_param_editor.dart:558`) and u2 reproduces that. Picks ' +
+  'follow the Dart distance algorithms (Levenshtein for 1-character param names, Jaro-Winkler ' +
+  'otherwise); a semType-carrying param takes the molecule-named or first passing column instead.';
+
+const W3_NOMATCH = 'Switch to a table with no categorical column and `cat` re-defaults to NULL ' +
+  'written into the call, the u2 select left empty — Dart itself prunes to the call here, so ' +
+  'this is exact parity, not a divergence.';
+
+const W3_EXTERNAL = 'u2 subscribes the table PARAM, one subscription for all dependents ' +
+  '(divergence #12): an external `setParamValue` of another table retargets the column pickers ' +
+  'too. Dart wires the table INPUT and stacks one listener per dependent, so external table ' +
+  'writes never rewire its combos.';
+
+const W3_CLOSED = 'Close the table the call holds and u2 prunes the vanished value INTO the ' +
+  'call — `df` and the dependent columns read null below (divergence #11). The Dart form keeps ' +
+  'the closed frame in the call while its select silently displays a remaining table it does ' +
+  'not hold.';
+
+const W3_LIST = 'Pick columns through the u2 popup and a `DG.Column[]` goes into the call, ' +
+  'reading back as a `ColumnList` — `(2) …` on the Dart side, the names in `inputs` below. A ' +
+  'table switch clears the selection to `[]`; a pre-set value survives form construction. The ' +
+  'popup itself is now the platform ColumnsGrid in checkbox mode with dialog semantics: checks ' +
+  'buffer in the grid until OK commits ONE write; Cancel, Esc and an outside click discard them.';
+
+const W3_UNASSOC = 'Not on this grid by construction: a column param whose table param cannot ' +
+  'be resolved is LISTED under `unsupported` by u2 (divergence #13) — the Dart form silently ' +
+  'renders nothing for it. u2 resolves the annotation link first (`parentTableParamName`), then ' +
+  'the explicit `{table: …}` option, which also serves signature-registered funcs decorated at ' +
+  'runtime; `editor: columnsMap` params stay unsupported — the shipped Dart form crashes on ' +
+  'them (platform defect #9).';
+
+const P_ICONS = 'The u2 table field now carries the platform rail: \'Open file\' plus the ' +
+  'feature-detected \'Add file from Files\' and \'Query database\' icons, opening the REAL ' +
+  'platform dialogs through `ui.pickTableFromFiles`/`ui.pickTableFromQuery` — the promise ' +
+  'settles null on Cancel or Esc and the form stays untouched. One divergence (#16): a picked ' +
+  'frame joins the WORKSPACE and becomes the value as a user edit — the Dart icons feed the ' +
+  'input\'s private item list only, invisible to every other table input. The rail is ' +
+  'per-instance: read-modify-write the `TableInput.actions` list.';
+
+const P_COMBO = 'The column fields are now the grid combo: click (or type on) either one and ' +
+  'the platform\'s own ColumnsGrid drops under the field — the same `d4-column-grid` the Dart ' +
+  '`d4-column-selector` on the left opens, anchored in a u2 overlay, so both sides share one ' +
+  'dropdown experience. Three deliberate divergences: the search box is visible from open ' +
+  'instead of type-to-reveal (#15), hovering a row never previews the value into the call ' +
+  '(#14 — in a form each preview would fire the dependent cascade), and the mouse wheel does ' +
+  'not cycle the value over the closed field (#17) — the arrow keys still do. A popup pick is ' +
+  'a user edit even when it confirms the current value, so it clears the `auto` badge.';
+
 const DIVERGENCES = [
   '`editor:` hints (`textarea`, `password`, `switch`, `slider`) — u2 honors them, type-guarded ' +
   'the way the property form does; the platform func form evaluates any such hint as a nested ' +
@@ -125,6 +191,20 @@ const SIGNATURE = 'string fceDemo(string stage, string route, string notes, stri
 let demoFunc: DG.Func | null = null;
 let gateFunc: DG.Func | null = null;
 let dynFunc: DG.Func | null = null;
+let w3Func: DG.Func | null = null;
+
+/** Opens a named fixture table when the workspace does not already hold it — idempotent, so a
+ * reopened tab (or a user who closed the table) gets it back; `addTable` would dedupe the name
+ * into a copy otherwise. */
+export function ensureTable(name: string, csv: string): DG.DataFrame {
+  const open = grok.shell.tables.find((t) => t.name === name);
+  if (open != null)
+    return open;
+  const df = DG.DataFrame.fromCsv(csv);
+  df.name = name;
+  grok.shell.addTable(df);
+  return df;
+}
 
 /** Registered once per session (the `registerPropRowHandler` pattern): the platform keeps every
  * function it is given, and reopening the app would otherwise stack duplicates. The signature
@@ -212,6 +292,17 @@ export function ensureFuncs(): void {
   dyn.get('regions')!.options['choices'] = 'fceW2Countries()';
   for (const p of dynFunc.inputs)
     p.nullable = true;
+  // Script.create, not a signature registration: the annotation parser is what sets the implicit
+  // table link and the column filters — the Dart-parity path both forms must share
+  w3Func = DG.Script.create([
+    '//name: fceW3Bench',
+    '//language: javascript',
+    '//input: dataframe df',
+    '//input: column num {type: numerical; caption: Numeric column}',
+    '//input: column cat {type: categorical}',
+    '//input: column_list metrics {type: numerical}',
+    'return;',
+  ].join('\n'));
 }
 
 export function fmt(v: any): string {
@@ -220,7 +311,11 @@ export function fmt(v: any): string {
   if (Array.isArray(v))
     return `[${v.join(', ')}]`;
   if (v instanceof DG.DataFrame)
-    return `DataFrame, ${v.rowCount} rows × ${v.columns.length} columns`;
+    return `DataFrame '${v.name}', ${v.rowCount} rows × ${v.columns.length} columns`;
+  if (v instanceof DG.Column)
+    return `Column '${v.name}'`;
+  if (typeof v?.names === 'function')
+    return `[${v.names().join(', ')}]`;
   if (typeof v?.toDate === 'function')
     return v.toDate().toISOString();
   return typeof v === 'string' ? `'${v}'` : String(v);
@@ -245,10 +340,14 @@ export function prose(text: string): HTMLElement {
 export function funcConvergencePage(): HTMLElement {
   const scope = Scope.ambient!;
   ensureFuncs();
+  // before any form builds: both sides' table auto-fill reads the open-tables list
+  ensureTable('fceW3Demog', 'age,height,weight,sex\n25,170,70,M\n31,166,64,F\n44,182,80,M');
+  ensureTable('fceW3Alt', 'weight,label\n70,x\n80,y');
   const call = demoFunc!.prepare();
   const gateCall = gateFunc!.prepare();
   // country preset so the dependent city source has something to ask with at open
   const dynCall = dynFunc!.prepare({country: 'FR'});
+  const w3Call = w3Func!.prepare();
 
   const toDart = signal(0);
   const toU2 = signal(0);
@@ -256,12 +355,16 @@ export function funcConvergencePage(): HTMLElement {
   const toDartDyn = signal(0);
   const toU2Dyn = signal(0);
   const tickDyn = signal(0);
+  const toDartW3 = signal(0);
+  const toU2W3 = signal(0);
+  const tickW3 = signal(0);
   const fields = signal('…');
   const gateStatus = signal('…');
 
   const grid = div([], 'u2demo-ab u2demo-ab-func');
   const gateGrid = div([], 'u2demo-ab u2demo-ab-func');
   const dynGrid = div([], 'u2demo-ab u2demo-ab-func');
+  const w3Grid = div([], 'u2demo-ab u2demo-ab-func');
   const plain = div([], 'u2demo-standalone');
 
   /** One A/B section: both editors over one shared call, re-parented into a grid row per param
@@ -277,19 +380,32 @@ export function funcConvergencePage(): HTMLElement {
     // is the refresh's own coerce + same, so it counts exactly the refreshes that change a field
     // — and a u2-originated echo, whose field already holds the value, never counts
     let form: FuncCallForm | undefined;
-    const kinds = new Map<string, Kind>();
+    const reads = new Map<string, (v: any) => any>();
     for (const p of abCall.inputParams.values()) {
       const prop = p.property as unknown as IProperty & {options?: Record<string, any>};
-      // a dynamic-choices param has no typed prop.choices, so kindOf would answer 'string',
-      // whose coerce turns null into '' — mirror the form's own routing instead
-      kinds.set(p.name, (prop.propertyType ?? prop.type) === 'string' &&
-        prop.options?.['choices'] != null ? 'choice' : kindOf(prop, true));
+      const type = prop.propertyType ?? prop.type;
+      // the W3 routes hold OBJECTS in the call and names in the inputs — compare names, the way
+      // the form's own fromParam converters do (a pending resolver readback reads as null)
+      if (type === 'dataframe' || type === 'column')
+        reads.set(p.name, (v) =>
+          v != null && typeof v.name === 'string' && !('func' in v) ? v.name : null);
+      else if (type === 'column_list')
+        reads.set(p.name, (v) => v == null ? [] : typeof v.names === 'function' ? v.names() :
+          Array.isArray(v) ?
+            v.map((c: any) => c?.name).filter((n: any) => typeof n === 'string') : []);
+      else {
+        // a dynamic-choices param has no typed prop.choices, so kindOf would answer 'string',
+        // whose coerce turns null into '' — mirror the form's own routing instead
+        const kind: Kind = type === 'string' && prop.options?.['choices'] != null ?
+          'choice' : kindOf(prop, true);
+        reads.set(p.name, (v) => ObjectForm.coerce(kind, v));
+      }
       const sub = p.onChanged.subscribe(() => {
         tickCount.value++;
         const input = form?.getInput(p.name);
         if (input == null)
           return;
-        const value = ObjectForm.coerce(kinds.get(p.name)!, p.value);
+        const value = reads.get(p.name)!(p.value);
         if (!ObjectForm.same(value, input.value.peek()))
           toU2Count.value++;
       });
@@ -392,11 +508,20 @@ export function funcConvergencePage(): HTMLElement {
       ['regions', [LIST_DYN]],
     ]));
 
+    await buildAb(w3Call, w3Grid, toDartW3, toU2W3, tickW3, new Map<string, string[]>([
+      ['df', [P_ICONS, W3_CLOSED, W3_EXTERNAL]],
+      ['num', [W3_ORDER, W3_AUTOPICK, P_COMBO]],
+      ['cat', [W3_NOMATCH]],
+      ['metrics', [W3_LIST]],
+    ]));
+
     plain.append(Scope.runWith(scope, () => funcForm(demoFunc!.prepare())).root);
-    // the Dart form writes computed defaults during forFuncCall, before the tick subscriptions
-    // exist — re-read the calls once so the `inputs` lines start honest
+    // the Dart form writes computed defaults (and the table auto-fill and column auto-picks)
+    // during forFuncCall, before the tick subscriptions exist — re-read the calls once so the
+    // `inputs` lines start honest
     tick.value++;
     tickDyn.value++;
+    tickW3.value++;
   }
 
   const page = divV([
@@ -423,6 +548,16 @@ export function funcConvergencePage(): HTMLElement {
       tickDyn.value;
       return inputsText(dynCall);
     }))], 'u2demo-status'),
+    h3('Tables & columns'),
+    prose(W3_INTRO),
+    w3Grid,
+    divH([span('sync = '), span(computed(() =>
+      `u2 → Dart ${toDartW3.value} · Dart → u2 ${toU2W3.value}`))], 'u2demo-status'),
+    divH([span('inputs = '), span(computed(() => {
+      tickW3.value;
+      return inputsText(w3Call);
+    }))], 'u2demo-status'),
+    prose(W3_UNASSOC),
     h3('Deliberate divergences'),
     ...DIVERGENCES.map(prose),
     h3('u2 form, unmodified'),

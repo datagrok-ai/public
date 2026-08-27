@@ -127,6 +127,13 @@ export class FuncParam extends Property {
   get editor() { return this.dart.options['editor'] ?? null; }
 
   get isOptional() { return this.dart.isOptional === true; }
+
+  /** The `info ?? field` union DG.Property answers (`grok_api.dart:900`) — annotation `columns`
+   * or `type` keys. The parent-table link is NOT a wrapper getter: tests set
+   * `dart.parentTableParamName` directly and u2 reads it through `grok_Property_Get`. */
+  get columnTypeFilter() {
+    return this.dart.options['columns'] ?? this.dart.options['type'] ?? null;
+  }
 }
 
 export class FuncCallParam {
@@ -317,6 +324,15 @@ export class Column {
   }
 
   get isNumerical() { return NUMERICAL.has(this.dart.type); }
+
+  // string and bool are the categorical types (ddt string_column.dart / bool_column.dart)
+  get isCategorical() { return this.dart.type === 'string' || this.dart.type === 'bool'; }
+
+  /** Distinct values off the frame rows — read only under a maxCategories cap. */
+  get categories() {
+    const frame = this.dart.frame;
+    return frame == null ? [] : [...new Set(frame.dart.rows.map((r) => r[this.dart.name]))];
+  }
 }
 getters(Column, 'type', 'semType');
 
@@ -407,11 +423,18 @@ for (const event of EVENTS)
   Object.defineProperty(DataFrame.prototype, event, {get() { return this.dart.events[event]; }});
 
 /** The shell: the current object — which the platform rebuilds the property panel for on EVERY
- * assignment, so `dart.writes` is what a test counts — the balloons, and the open tables. */
+ * assignment, so `dart.writes` is what a test counts — the balloons, and the open tables. The
+ * tables are FRAMES on the handle (`dart.tables`); `tableNames` derives from them, and its
+ * setter keeps platform-stub's `resetShell` name-list reset clearing the same backing store. */
 export class Shell {
   constructor() {
-    this.dart = {o: null, writes: [], tableNames: [], tableAdded: new Stream(),
+    const dart = {o: null, writes: [], tables: [], t: null, tableAdded: new Stream(),
       tableRemoved: new Stream(), windows: {showContextPanel: false}};
+    Object.defineProperty(dart, 'tableNames', {
+      get: () => dart.tables.map((table) => table.name),
+      set: (names) => dart.tables = dart.tables.filter((table) => names.includes(table.name)),
+    });
+    this.dart = dart;
   }
 
   get o() { return this.dart.o; }
@@ -425,23 +448,30 @@ export class Shell {
   warning() {}
   error() {}
 
+  tableByName(name) { return this.dart.tables.find((table) => table.name === name) ?? null; }
+
   /** The platform never opens two tables under one name; the second becomes `demog (2)`. */
   addTable(table) {
     let unique = table.name;
     for (let n = 2; this.dart.tableNames.includes(unique); n++)
       unique = `${table.name} (${n})`;
     table.name = unique;
-    this.dart.tableNames = [...this.dart.tableNames, unique];
+    this.dart.tables = [...this.dart.tables, table];
     this.dart.tableAdded.fire();
     return table;
   }
 
-  closeTable(name) {
-    this.dart.tableNames = this.dart.tableNames.filter((n) => n !== name);
+  /** Takes the frame or its name; the current table never answers a closed frame. */
+  closeTable(x) {
+    const name = typeof x === 'string' ? x : x?.name;
+    this.dart.tables = this.dart.tables.filter((table) => table.name !== name);
+    if (this.dart.t !== null && this.dart.t.name === name)
+      this.dart.t = null;
     this.dart.tableRemoved.fire();
   }
 }
-getters(Shell, 'windows', 'tableNames');
+getters(Shell, 'windows', 'tableNames', 'tables');
+fields(Shell, 't');
 
 /** What the kill-walk globals of tests/dg-stub.mjs work over: the elements killed, the cleanups
  * registered and not yet run, and the widgets the platform knows of — every viewer built, every

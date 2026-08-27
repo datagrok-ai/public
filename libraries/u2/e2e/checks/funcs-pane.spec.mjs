@@ -130,13 +130,13 @@ async function checkRun(page) {
     `gated=${gated} ${(await detailText(page)).slice(-60)}`);
 }
 
-async function checkRebindAndUnsupported(page) {
+async function checkRebindAndTableParams(page) {
   await page.locator(`${LIST} input`).first().fill('join tables');
   await page.waitForFunction((sel) =>
     [...document.querySelectorAll(`${sel} .grok-actions-browser-table span`)]
       .some((s) => s.offsetParent != null && s.textContent.trim() === 'Join Tables'), LIST, {timeout: 8000});
   await clickRow(page, 'Join Tables');
-  await waitDetail(page, 'not supported by this form yet');
+  await waitDetail(page, 'core:JoinTables');
   await waitColumns(page);
   const dartState = await page.evaluate((dart) => {
     const col = document.querySelector(dart);
@@ -144,9 +144,10 @@ async function checkRebindAndUnsupported(page) {
       col?.querySelector('.u2demo-error') != null ? 'error' : 'none';
   }, DART_COL);
   const text = await detailText(page);
-  ok('funcs-pane/5a/reselection-rebinds-both-columns-and-non-scalar-params-are-marked-unsupported',
+  // dataframe/column_list params route to real fields since W3 — nothing left unsupported here
+  ok('funcs-pane/5a/reselection-rebinds-both-columns-and-the-w3-table-params-render-as-fields',
     text.includes('Join Tables') && !text.includes('Rand Between') &&
-    text.includes('not supported by this form yet') && text.includes('table1') &&
+    !text.includes('not supported by this form yet') && text.includes('Table1') &&
     text.includes('Join Type') && dartState !== 'none',
     `dart=${dartState} ${text.slice(0, 160)}`);
 }
@@ -156,5 +157,5 @@ export const checks = [
   {id: 'funcs-pane/2 an edit on the u2 side syncs to the Dart side via the shared call', run: checkSync},
   {id: 'funcs-pane/3 search filters, a click renders both forms', run: checkSearchAndSelect},
   {id: 'funcs-pane/4 Run executes the prepared call with the form values', run: checkRun},
-  {id: 'funcs-pane/5 reselection rebinds; the pane survives Join Tables in both columns', run: checkRebindAndUnsupported},
+  {id: 'funcs-pane/5 reselection rebinds; Join Tables renders fully in both columns', run: checkRebindAndTableParams},
 ];

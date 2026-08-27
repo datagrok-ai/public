@@ -32,6 +32,7 @@ export class ParamState {
   readonly busy: ReadonlySignal<boolean>;
   private readonly _slots = [signal<ParamStateSlot>({kind: 'idle'}),
     signal<ParamStateSlot>({kind: 'idle'})];
+  private readonly _notice = signal<string | null>(null);
   private readonly _grace = signal(false);
   private _timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -59,16 +60,30 @@ export class ParamState {
     this._slots[slot].value = state;
   }
 
+  /** A transient informational message — shown while nothing louder (an error, a grace-past
+   * loading) occupies the element; null clears it. */
+  notice(message: string | null): void {
+    this._notice.value = message;
+  }
+
   private _render(): void {
     const states = this._slots.map((s) => s.value);
+    const notice = this._notice.value;
     const shown = states.find((s) => s.kind === 'error') ??
       (this._grace.value ? states.find((s) => s.kind === 'loading') : undefined);
     const root = this.root;
     root.textContent = '';
     root.className = 'u2-param-source';
-    root.hidden = shown === undefined;
-    if (shown === undefined)
+    root.hidden = shown === undefined && notice === null;
+    if (root.hidden)
       return;
+    if (shown === undefined) {
+      root.classList.add('u2-param-source-notice');
+      const message = span(notice!, 'u2-param-source-message');
+      message.title = notice!;
+      root.append(message);
+      return;
+    }
     if (shown.kind === 'loading') {
       root.classList.add('u2-param-source-loading');
       root.append(span('', 'u2-loader-spinner'));

@@ -12,6 +12,9 @@ function itemLabel(item: ChoiceItem): string {
 
 export interface ChoiceInputOptions extends InputOptions<string | null> {
   items: ChoiceItem[];
+  /** Shown as a disabled placeholder option while the item list is empty, so a picker over a
+   * live collection reads as empty rather than broken. */
+  emptyText?: string;
 }
 
 /** Single choice over a styled native `<select>`, as `ui.input.choice` does — the platform look
@@ -71,6 +74,13 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   private _fill(): void {
     const select = this._select;
     select.textContent = '';
+    if (this._items.length === 0 && this.options.emptyText !== undefined) {
+      const placeholder = new Option(this.options.emptyText, '');
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      select.append(placeholder);
+      return;
+    }
     if (this.nullable)
       select.append(new Option('', ''));
     for (const item of this._items)

@@ -2,6 +2,12 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20753: New `utils/string-utils.ts` pins `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance` (pure-function values).
+
+GROK-20753: New `widgets/pickers.ts` pins the table-picker dialogs (`ui.pickTableFromFiles`/`ui.pickTableFromQuery` open their platform dialogs and resolve null on cancel) and the `ColumnGrid` popup surface (`Widgets: ColumnGrid`) — construction, `onCurrentRowChanged`/`currentColumn`, the search-box filter, `close()` detaching, and the wrapped-`DG.Column` filter-callback contract on both the `popup` option and the `filter` setter.
+
+GROK-20753: `functions/param-eval.ts` adds the W3 table-param pins (`Functions: TableParams`) — dataframe marshaling into a FuncCall (dart identity kept, same-reference writes collapse to one `onChanged`), the resolver readback shape (a string into a column param reads back as a `FuncCall`), the `ColumnList` surface of a column-array write (`names()`/`toList()`/`length`), the `grok_Property_Get`/`grok_Property_Set` `parentTableParamName` door (implicit annotation link with null `options['table']`, explicit `{table: df}`, set round-trip on a registered func), and `columnTypeFilter` derived from `{type: ...}`.
+
 GROK-20753: `functions/param-eval.ts` adds the W2 pins — the tags∪options union on viewer properties (`.is-legend-property` on `colorColumnName`, writes into the merged copy do not survive a fresh `getProperties()` read), `evalParamChoices` propagate lookup over a client-registered DataFrame provider (`values` key→key, own column excluded from `lookup`), and static list-literal `choices` answering through the evaluator.
 
 Functions: New `functions/param-eval.ts` covers the FuncCall parameter-source evaluators (`evalParamChoices` with `dependsOn` and the null `lookup`, `evalParamSuggestions` receiving the typed text, `evalParamDefault` including rejection on a broken command), `scriptSync` with a variables map (fresh-context isolation) plus its one-argument back-compat, and `Property.options` write-through for FuncParam-backed properties.

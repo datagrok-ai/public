@@ -2,6 +2,10 @@
 
 ## v.next
 
+* GROK-20753: Added `DG.StringUtils.levenshteinDistance(a, b)` / `jaroWinklerDistance(a, b)` — normalized string distances in [0, 1] (moved from `@datagrok-libraries/u2`)
+* GROK-20753: Added `ui.pickTableFromFiles()` / `ui.pickTableFromQuery()` — open the platform's table-picker dialogs ('Select a file' over the file shares tree / 'Select a database query'); resolve with the picked `DataFrame`, or `null` when the dialog is closed without a pick.
+* GROK-20753: Fixed `ColumnGrid` column callbacks receiving unwrapped Dart columns — the `create`/`popup`/`columnSelector` filters, `isColGrayedOut`, `isChecked` and the `filter` setter now receive a wrapped `DG.Column` (like `Menu.singleColumnSelector` already did).
+
 * GROK-20753: Added `DG.U2.Control.forElement(el)` — resolves a DOM element to the nearest u2 control owning it (every `Control` registers its root); the DOM → component door for inspectors, automation and tooling.
 * GROK-20753: `DG.U2.Component.getProperties()` gained the accessor tier — a meta-declared prop backed by an accessor with a setter is now writable through the generated property (the setter carries the live behavior); signal-backed props write as before, plain data fields stay read-only.
 

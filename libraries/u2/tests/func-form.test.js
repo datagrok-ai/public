@@ -113,11 +113,11 @@ form('editorParam, layout, foreign editors and non-scalar types get no field and
     fp('helper', 'string', {options: {editorParam: 'name'}}),
     fp('panel', 'string', {options: {editor: 'layout'}}),
     fp('molecule', 'string', {options: {editor: 'Chem:sketcher'}}),
-    fp('table', 'dataframe'),
+    fp('frames', 'dataframe_list'),
     fp('name', 'string'));
   const f = mount(funcForm(call));
   assert.deepEqual(f.inputs.map((i) => i.name), ['name']);
-  assert.deepEqual([...f.unsupported], ['helper', 'panel', 'molecule', 'table']);
+  assert.deepEqual([...f.unsupported], ['helper', 'panel', 'molecule', 'frames']);
   f.dispose();
 });
 
@@ -813,11 +813,11 @@ w2('a provider whose dependsOn names the param itself never self-subscribes', as
 
 w2('a dep param with no field still triggers the re-eval', async () => {
   let runs = 0;
-  provider('byTable', [{name: 'table', propertyType: 'dataframe'}], async () => {
+  provider('byTable', [{name: 'table', propertyType: 'dataframe_list'}], async () => {
     runs++;
     return [`c${runs}`];
   });
-  const call = callOf(fp('table', 'dataframe'), fp('city', 'string', {options: {choices: 'byTable()'}}));
+  const call = callOf(fp('table', 'dataframe_list'), fp('city', 'string', {options: {choices: 'byTable()'}}));
   const f = mount(funcForm(call));
   await f.settled;
   assert.deepEqual([...f.unsupported], ['table'], 'the dep param renders no field');
