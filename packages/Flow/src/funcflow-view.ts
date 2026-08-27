@@ -501,6 +501,9 @@ export class FuncFlowView extends DG.ViewBase {
       // In-node preview: the node component mounts the captured live viewer/widget root.
       getInlinePreviewContent: (nodeId: string) =>
         this.executionController?.inlinePreviewRoot(nodeId) ?? null,
+      isInlinePreviewPending: (nodeId: string) =>
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        (this.executionController?.inlinePreviewPending(nodeId) ?? false),
       onInlinePreviewToggled: (nodeId: string) => {
         this.executionController?.syncInlinePreviewOwnership(nodeId);
         // The bottom panel must swap between the live root and the hosted-note.
@@ -1311,11 +1314,22 @@ export class FuncFlowView extends DG.ViewBase {
     if (!this.autorunScheduler) return;
     const on = this.autorunScheduler.toggle();
     this.autorunIcon?.classList.toggle('ff-autorun-on', on);
+    // The mode saves with the flow (metadata.settings.autorun) so it reopens live.
+    if (on) this.flowSettings.autorun = true;
+    else delete this.flowSettings.autorun;
+    this.updateSaveButtonState();
     if (on) {
       const pending = this.executionController?.pendingNodes() ?? new Set<string>();
       if (pending.size > 0) this.autorunScheduler.kick(pending);
     }
     this.updateAutorunIndicator();
+  }
+
+  /** Drive the autorun toggle to a target state (applying a loaded flow's saved
+   *  mode) — turning it on kicks pending nodes exactly like a ribbon click. */
+  private applyAutorunSetting(on: boolean): void {
+    if (!this.autorunScheduler || this.autorunScheduler.enabled === on) return;
+    this.toggleAutorun();
   }
 
   /** Amber "waiting" badge on the bolt while autorun is on but can't run what's
@@ -2238,6 +2252,8 @@ export class FuncFlowView extends DG.ViewBase {
     await this.editorReady;
     await deserializeFlow(doc, this.flow);
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+    // A flow saved with autorun on reopens live (and vice versa).
+    this.applyAutorunSetting(this.flowSettings.autorun === true);
     // Output-view tabs: rebuild the tab set from the fresh graph, then stash
     // the saved layouts (keyed by paramName — node ids were just remapped);
     // each applies once its tab is activated with a value.

@@ -227,6 +227,16 @@ export class ExecutionController {
     return null;
   }
 
+  /** True while a run in progress still has this node ahead of it (part of the
+   *  run set, neither completed nor errored yet) — drives the in-node preview's
+   *  loader so an upstream computation never reads as a blank box. */
+  inlinePreviewPending(nodeId: string): boolean {
+    if (!this.state.isRunning) return false;
+    if (this.runNodeIds && !this.runNodeIds.has(nodeId)) return false;
+    const s = this.state.getNodeState(nodeId)?.status;
+    return s !== NodeExecStatus.completed && s !== NodeExecStatus.errored;
+  }
+
   /** Stamp/clear the hosted marker on the node's live root. A stamped root makes
    *  the bottom panel render a note instead of stealing the element the node
    *  preview is showing; stamping happens BEFORE any panel build so the outcome

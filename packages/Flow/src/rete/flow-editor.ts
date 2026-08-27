@@ -16,6 +16,7 @@ import {
 import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
@@ -68,6 +69,9 @@ export interface FlowEditorCallbacks {
   getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
   /** Live viewer/widget root captured for a node — the in-node preview mounts it. */
   getInlinePreviewContent?: (nodeId: string) => HTMLElement | null;
+  /** True while a run in progress still has this node ahead of it — the empty
+   *  preview shows a loader; a kept (stale) preview gets a recalculating overlay. */
+  isInlinePreviewPending?: (nodeId: string) => boolean;
   /** Fired after the in-node preview is toggled, BEFORE the node re-renders —
    *  the host re-stamps live-root ownership and refreshes the bottom panel.
    *  Cosmetic, like collapse — never a params change. */
@@ -296,6 +300,7 @@ export class FlowEditor {
     getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
     syncInlinePreview: (nodeId, host) => this.syncInlinePreview(nodeId, host),
     releaseInlinePreview: (nodeId) => this.releaseInlinePreview(nodeId),
+    isInlinePreviewPending: (nodeId) => this.callbacks.isInlinePreviewPending?.(nodeId) ?? false,
   };
 
   /** Reject incompatible connections at pick time, before they enter the data layer. */
@@ -3305,6 +3310,13 @@ export class FlowEditor {
       content.style.height = '100%';
       entry.portal.insertBefore(content, entry.portal.firstChild);
       entry.content = content;
+    }
+    // A kept (stale) preview whose node a run has not reached yet gets a
+    // recalculating overlay instead of silently showing outdated content.
+    const pending = this.callbacks.isInlinePreviewPending?.(nodeId) ?? false;
+    if (pending !== (entry.portal.dataset.pending === 'true')) {
+      entry.portal.dataset.pending = pending ? 'true' : 'false';
+      ui.setUpdateIndicator(entry.portal, pending, 'Recalculating...');
     }
     this.schedulePreviewPortalSync();
   }

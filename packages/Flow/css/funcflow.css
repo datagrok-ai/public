@@ -1669,7 +1669,8 @@
   opacity: 1;
 }
 
-.ff-node-inline-preview[data-empty="true"] {
+.ff-node-inline-preview[data-empty="true"],
+.ff-node-inline-preview[data-empty="loading"] {
   display: flex;
   align-items: center;
   justify-content: center;

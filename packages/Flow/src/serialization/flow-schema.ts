@@ -80,4 +80,6 @@ export interface FlowSettings {
   scriptName: string;
   scriptDescription: string;
   tags: string[];
+  /** Ribbon autorun toggle — saved with the flow so it reopens live. */
+  autorun?: boolean;
 }

@@ -166,7 +166,8 @@ function libraryManagerFunctions(): DG.Func[] {
 
 export function attachMonomerLibrariesAi(view: DG.ViewBase): void {
   const w = shellWrapperOf(view);
-  w.aiDescription = 'Manage Monomer Libraries — HELM monomer library management: activate/deactivate libraries, ' +
+  // temporary before api release
+  (w as any).aiDescription = 'Manage Monomer Libraries — HELM monomer library management: activate/deactivate libraries, ' +
     'upload, delete and merge them, and resolve monomer symbols duplicated across libraries. ' +
     'Act through the view functions (search list_view_functions with "monomer"): getMonomerLibrariesState ' +
     '(call first), setMonomerLibraryActive, resolveDuplicateMonomer, deleteMonomerLibrary (confirm with the ' +
@@ -310,7 +311,8 @@ function monomerManagerFunctions(): DG.Func[] {
 
 export function attachMonomerManagerAi(view: DG.TableView, manager: MonomerManager): void {
   managerByView.set(view, manager);
-  view.aiDescription = 'Manage Monomers — the monomer editor of one HELM library: a grid of its monomers plus an ' +
+  // temporary before api release
+  (view as any).aiDescription = 'Manage Monomers — the monomer editor of one HELM library: a grid of its monomers plus an ' +
     'edit form (structure sketcher, symbol, name, types, R-groups). Act through the view functions (search ' +
     'list_view_functions with "monomer"): getMonomerManagerState (call first), openMonomerLibrary, ' +
     'getMonomerDetails, editMonomerInForm / setMonomerFormFields / saveMonomerForm to create or change monomers, ' +
@@ -449,7 +451,8 @@ export function attachMonomerCollectionsAi(view: DG.ViewBase, mcView: MonomerCol
   collectionsViewByWrapper.set(w, mcView);
   if (w !== view)
     collectionsViewByWrapper.set(view, mcView);
-  w.aiDescription = 'Monomer Collections — named, tagged sets of monomer symbols curated from the monomer ' +
+  // temporary before api release
+  (w as any).aiDescription = 'Monomer Collections — named, tagged sets of monomer symbols curated from the monomer ' +
     'libraries. Act through the view functions (search list_view_functions with "collection"): ' +
     'getMonomerCollectionsState (call first), getMonomerCollectionDetails, createMonomerCollection, ' +
     'updateMonomerCollection, deleteMonomerCollection (confirm deletions with the user first).';
