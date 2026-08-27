@@ -74,6 +74,7 @@ import './stats/stats';
 import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
+import './u2/u2';
 import './utils/progressIndicator';
 import './ai/ai-tests';
 

@@ -12,6 +12,7 @@ import {BoolInput} from '../components/inputs/bool-input.js';
 import {NumberInput} from '../components/inputs/number-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../components/inputs/choice-input.js';
 import {SliderInput} from '../components/inputs/slider-input.js';
+import {RangeSlider} from '../components/inputs/range-slider.js';
 import {RadioInput} from '../components/inputs/radio-input.js';
 import {ColorInput} from '../components/inputs/color-input.js';
 import {ListInput} from '../components/inputs/list-input.js';
@@ -46,6 +47,7 @@ function inputOptions<T>(props: Props): InputOptions<T> {
     inline: props.inline as boolean | undefined,
     postfix: props.postfix as string | undefined,
     tooltipText: props.tooltipText as string | undefined,
+    enabled: props.enabled as boolean | undefined,
     value: bound ? undefined : value as T,
     bind: bound ? value as Signal<T> : undefined,
   };
@@ -70,6 +72,7 @@ function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
     {name: 'inline', type: 'bool', description: 'Compact one-row variant without a label.'},
     {name: 'postfix', type: 'string', description: 'Units or a short suffix shown after the editor.'},
     {name: 'tooltipText', type: 'string'},
+    {name: 'enabled', type: 'bool', description: 'false grays the input out and blocks edits.'},
     ...extra,
   ];
 }
@@ -323,6 +326,8 @@ const METAS: ComponentMeta[] = [
         tabs.addTab({id: `tab-${i}`, label: childTitle(nodes[i], `Tab ${i + 1}`), icon: childIcon(nodes[i]),
           content: element(children[i])});
       }
+      if (typeof props.activeTab === 'string')
+        tabs.activeTab.value = props.activeTab;
       return tabs;
     },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
@@ -331,6 +336,8 @@ const METAS: ComponentMeta[] = [
         description: '"horizontal" (default) or "vertical" — a header column on the left.'},
       {name: 'variant', type: 'string', choices: ['platform', 'document'],
         description: '"platform" (default) is the ui.tabControl look; "document" the IDE document-tab skin.'},
+      {name: 'activeTab', type: 'string', bindable: true, twoWay: true,
+        description: 'Id of the selected tab (spec children get tab-0, tab-1, …).'},
     ],
     childProps: [
       {name: 'title', type: 'string', description: 'Tab label; numbered when absent.'},
@@ -449,6 +456,37 @@ const METAS: ComponentMeta[] = [
       {name: 'step', type: 'double', description: '(max - min) / 100 by default.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-slider-input', props: {label: 'Opacity', value: 50, min: 0, max: 100}},
+  },
+  {
+    tag: 'u2-range-slider',
+    category: 'Inputs',
+    create: (props) => new RangeSlider({
+      min: props.min as number | undefined,
+      max: props.max as number | undefined,
+      step: props.step as number | undefined,
+      minRange: props.minRange as number | undefined,
+      vertical: props.vertical as boolean | undefined,
+      lo: props.lo as number | Signal<number> | undefined,
+      hi: props.hi as number | Signal<number> | undefined,
+    }),
+    description: 'Two-handle range selector: drag a handle to move one end, the band between ' +
+      'them to move the whole window.',
+    usage: 'For picking an interval within known bounds — filters, zoom windows, thresholds ' +
+      'with a low and a high end. A single number belongs in `u2-slider-input`.',
+    props: [
+      {name: 'lo', type: 'double', bindable: true, twoWay: true,
+        description: 'Lower end of the selected range.'},
+      {name: 'hi', type: 'double', bindable: true, twoWay: true,
+        description: 'Upper end of the selected range.'},
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: 'Snap increment for dragging; continuous when absent.'},
+      {name: 'minRange', type: 'double', description: 'Smallest allowed hi − lo; 0 by default.'},
+      {name: 'vertical', type: 'bool', description: 'Bottom-to-top track.'},
+    ],
+    defaults: {min: 0, max: 100, lo: 20, hi: 60},
+    events: ['input', 'change'],
+    example: {tag: 'u2-range-slider', props: {min: 0, max: 100, lo: 20, hi: 60}},
   },
   {
     tag: 'u2-radio-input',

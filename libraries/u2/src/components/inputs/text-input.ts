@@ -28,6 +28,14 @@ export class TextInput extends Input<string, TextInputOptions> {
     this.root.dataset.u2 = 'text-input';
   }
 
+  get placeholder(): string {
+    return this._input.placeholder;
+  }
+
+  set placeholder(x: string) {
+    this._input.placeholder = x;
+  }
+
   protected createEditor(): HTMLElement {
     const input = document.createElement('input');
     this._input = input;
@@ -110,6 +118,14 @@ export class TextArea extends Input<string, TextAreaOptions> {
   constructor(options: TextAreaOptions = {}) {
     super(options, '');
     this.root.dataset.u2 = 'text-area';
+  }
+
+  get placeholder(): string {
+    return this._area.placeholder;
+  }
+
+  set placeholder(x: string) {
+    this._area.placeholder = x;
   }
 
   protected createEditor(): HTMLElement {

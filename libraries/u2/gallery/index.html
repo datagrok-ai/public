@@ -13,6 +13,15 @@
     "datagrok-api/u2core":"../node_modules/datagrok-api/src/u2core/index.js"}}</script>
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/theme-dark.css">
+  <!-- the context panel's property grid; ids match the pages' injectOnce so nothing loads twice -->
+  <link rel="stylesheet" href="../css/elements.css" id="u2-elements-css">
+  <link rel="stylesheet" href="../css/inputs.css" id="u2-inputs-css">
+  <link rel="stylesheet" href="../css/choice.css" id="u2-choice-css">
+  <link rel="stylesheet" href="../css/number.css" id="u2-number-css">
+  <link rel="stylesheet" href="../css/property-grid.css" id="u2-property-grid-css">
+  <!-- the sidebar tree -->
+  <link rel="stylesheet" href="../css/list.css" id="u2-list-css">
+  <link rel="stylesheet" href="../css/tree.css" id="u2-tree-css">
   <style>
     body {
       margin: 0;
@@ -51,27 +60,45 @@
     .u2-gallery-nav {
       width: 220px;
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
       border-right: var(--dg-border-width) solid var(--dg-border);
       background: var(--dg-bg-secondary);
       padding: var(--dg-space-m) 0;
-      overflow-y: auto;
+      overflow: hidden;
     }
     .u2-gallery-nav .u2-gallery-title {
       font-weight: var(--dg-font-weight-bold);
       padding: var(--dg-space-s) var(--dg-space-l) var(--dg-space-m);
     }
-    .u2-gallery-nav a {
-      display: block;
-      padding: var(--dg-space-s) var(--dg-space-l);
-      color: var(--dg-text-color);
-      text-decoration: none;
+    .u2-gallery-nav-tree {
+      flex: 1;
+      min-height: 0;
+      padding: 0 var(--dg-space-s);
     }
-    .u2-gallery-nav a:hover { background: var(--dg-hover); }
-    .u2-gallery-nav a.current { background: var(--dg-steel-1); color: var(--dg-accent); }
+    .u2-gallery-nav-tree .u2-tree { height: 100%; }
+    .u2-gallery-nav-tree .u2-list {
+      border: none;
+      background: transparent;
+    }
     .u2-gallery-main {
       flex: 1;
       padding: var(--dg-space-xl) var(--dg-space-xxl);
       overflow-y: auto;
+    }
+    .u2-gallery-props {
+      width: 260px;
+      flex-shrink: 0;
+      border-left: var(--dg-border-width) solid var(--dg-border);
+      background: var(--dg-bg-secondary);
+      padding: var(--dg-space-m);
+      overflow-y: auto;
+    }
+    .u2-gallery-props-title {
+      font-weight: var(--dg-font-weight-bold);
+      font-family: var(--dg-font-family-mono);
+      font-size: var(--dg-font-size-small);
+      padding: var(--dg-space-s) var(--dg-space-s) var(--dg-space-m);
     }
     /* gap, not a trailing space in the label: HTML collapses that one away ('count =10') */
     .u2-gallery-status { color: var(--dg-text-color-light); font-size: var(--dg-font-size-small);
@@ -127,45 +154,7 @@
 <body>
   <nav class="u2-gallery-nav">
     <div class="u2-gallery-title">u2 gallery</div>
-    <a href="#tokens" data-page="tokens">Design tokens</a>
-    <a href="#signals" data-page="signals">Signals & lifecycle</a>
-    <a href="#list" data-page="list">Virtual list</a>
-    <a href="#combobox" data-page="combobox">Combobox</a>
-    <a href="#inputs" data-page="inputs">Inputs & primitives</a>
-    <a href="#tooltip" data-page="tooltip">Tooltip</a>
-    <a href="#splitter" data-page="splitter">Splitter</a>
-    <a href="#tabs" data-page="tabs">Tabs</a>
-    <a href="#menu" data-page="menu">Menu</a>
-    <a href="#tree" data-page="tree">Tree</a>
-    <a href="#select" data-page="select">Choice inputs</a>
-    <a href="#number" data-page="number">Number input</a>
-    <a href="#slider" data-page="slider">Slider input</a>
-    <a href="#radio" data-page="radio">Radio input</a>
-    <a href="#color" data-page="color">Color input</a>
-    <a href="#list-map" data-page="list-map">List & map inputs</a>
-    <a href="#date" data-page="date">Date & time</a>
-    <a href="#dialog" data-page="dialog">Dialog</a>
-    <a href="#accordion" data-page="accordion">Accordion</a>
-    <a href="#breadcrumbs" data-page="breadcrumbs">Breadcrumbs</a>
-    <a href="#toolbar" data-page="toolbar">Toolbar</a>
-    <a href="#form" data-page="form">Form</a>
-    <a href="#propgrid" data-page="propgrid">Property grid</a>
-    <a href="#async" data-page="async">Async states</a>
-    <a href="#perf" data-page="perf">Performance</a>
-    <a href="#spec" data-page="spec">Spec (dg-ui/1)</a>
-    <a href="#wizard" data-page="wizard">Wizard</a>
-    <a href="#typeahead" data-page="typeahead">Type-ahead</a>
-    <a href="#entities" data-page="entities">Object renderers</a>
-    <a href="#pager" data-page="pager">Async pager</a>
-    <a href="#icons" data-page="icons">Icons</a>
-    <a href="#buttons" data-page="buttons">Buttons & groups</a>
-    <a href="#badges" data-page="badges">Badges & progress</a>
-    <a href="#table" data-page="table">Table</a>
-    <a href="#multiselect" data-page="multiselect">Multi-select</a>
-    <a href="#bignum" data-page="bignum">Big &amp; qualified numbers</a>
-    <a href="#dynamic" data-page="dynamic">Dynamic input</a>
-    <a href="#font-image" data-page="font-image">Font &amp; image inputs</a>
-    <a href="#tags" data-page="tags">Tags input</a>
+    <div class="u2-gallery-nav-tree" id="nav-tree"></div>
     <label style="display: flex; align-items: center; gap: 6px; padding: 8px 12px;">theme
       <select id="theme">
         <option value="">default</option>
@@ -175,6 +164,10 @@
     <div class="u2-gallery-status" id="status" style="padding: 8px 12px;">Loading…</div>
   </nav>
   <main class="u2-gallery-main" id="main"></main>
+  <aside class="u2-gallery-props">
+    <div class="u2-gallery-props-title" id="props-title">Click a control to inspect it</div>
+    <div id="props-host"></div>
+  </aside>
   <script type="module">
     // the gallery is a standalone host: enables the vendored-FA icon shim (css/icons.css)
     document.documentElement.classList.add('u2-standalone');
@@ -190,13 +183,11 @@
     });
     const status = document.getElementById('status');
     const main = document.getElementById('main');
-    const links = [...document.querySelectorAll('.u2-gallery-nav a[data-page]')];
 
     let pageScope = null;
     async function route() {
       const page = location.hash.slice(1) || 'tokens';
-      for (const l of links)
-        l.classList.toggle('current', l.dataset.page === page);
+      syncNav(page);
       if (pageScope) pageScope.dispose();
       main.textContent = '';
       try {
@@ -206,11 +197,93 @@
         // components built synchronously inside render() are adopted by the page scope
         // and disposed on navigation; the page's own dispose demos stay idempotent
         await Scope.runWith(pageScope, () => mod.render(main));
+        const first = [...main.querySelectorAll('[data-u2]')]
+          .find((el) => Control.forElement(el)?.root === el);
+        selectControl(first ? Control.forElement(first) : null);
       }
       catch (e) {
         main.textContent = `Failed to render "${page}": ${e.message}`;
       }
     }
+
+    // context panel: every Control registers its root, so a click resolves to the component,
+    // whose registry meta makes getProperties() live — signal-backed props edit two-way
+    const {PropertyGrid, Control, Scope: U2Scope, registry, registerAll, VirtualTree} =
+      await import('../src/index.js');
+    registerAll();
+
+    // the sidebar is u2's own VirtualTree — the gallery chrome dogfoods the library
+    const NAV = [
+      ['Foundation', [['tokens', 'Design tokens'], ['signals', 'Signals & lifecycle'],
+        ['perf', 'Performance'], ['spec', 'Spec (dg-ui/1)']]],
+      ['Inputs', [['inputs', 'Inputs & primitives'], ['select', 'Choice inputs'],
+        ['number', 'Number input'], ['slider', 'Slider input'], ['range-slider', 'Range slider'],
+        ['radio', 'Radio input'], ['color', 'Color input'], ['date', 'Date & time'],
+        ['list-map', 'List & map inputs'], ['bignum', 'Big & qualified numbers'],
+        ['dynamic', 'Dynamic input'], ['font-image', 'Font & image inputs'],
+        ['tags', 'Tags input'], ['multiselect', 'Multi-select'], ['combobox', 'Combobox'],
+        ['typeahead', 'Type-ahead']]],
+      ['Containers', [['splitter', 'Splitter'], ['tabs', 'Tabs'], ['accordion', 'Accordion'],
+        ['dialog', 'Dialog'], ['form', 'Form'], ['wizard', 'Wizard']]],
+      ['Collections', [['list', 'Virtual list'], ['tree', 'Tree'], ['table', 'Table'],
+        ['propgrid', 'Property grid']]],
+      ['Navigation & actions', [['menu', 'Menu'], ['toolbar', 'Toolbar'],
+        ['breadcrumbs', 'Breadcrumbs'], ['buttons', 'Buttons & groups'], ['icons', 'Icons']]],
+      ['Feedback & display', [['tooltip', 'Tooltip'], ['notify', 'Notifications'],
+        ['badges', 'Badges & progress'], ['async', 'Async states']]],
+      ['Data', [['entities', 'Object renderers'], ['pager', 'Async pager']]],
+    ];
+    const navTree = new VirtualTree({itemHeight: 24});
+    navTree.setRoots(NAV.map(([group, pages]) => ({id: `g:${group}`, label: group,
+      children: pages.map(([id, label]) => ({id, label}))})));
+    navTree.expanded.value = new Set(NAV.map(([group]) => `g:${group}`));
+    document.getElementById('nav-tree').append(navTree.root);
+    const groupOf = (page) => NAV.find(([, pages]) => pages.some(([id]) => id === page));
+    let navSyncing = false;
+    const syncNav = (page) => {
+      const group = groupOf(page);
+      if (!group)
+        return;
+      navSyncing = true;
+      navTree.expandPath([`g:${group[0]}`, page]).finally(() => navSyncing = false);
+    };
+    new U2Scope().effect(() => {
+      const node = navTree.selectedNode.value;
+      if (!navSyncing && node && groupOf(node.id) && location.hash.slice(1) !== node.id)
+        location.hash = node.id;
+    });
+    const propsGrid = new PropertyGrid();
+    const propsTitle = document.getElementById('props-title');
+    document.getElementById('props-host').append(propsGrid.root);
+    const EDITABLE = new Set(['string', 'int', 'double', 'bool', 'string_list']);
+    let selected = null;
+    const selectControl = (control) => {
+      selected = control;
+      if (!control) {
+        propsTitle.textContent = 'Click a control to inspect it';
+        propsGrid.setProperties([], {});
+        return;
+      }
+      control.componentMeta ??= registry.get(`u2-${control.root.dataset.u2 ?? ''}`);
+      const props = control.getProperties();
+      propsTitle.textContent = control.componentMeta?.tag ?? control.root.dataset.u2 ?? 'control';
+      propsGrid.setProperties(
+        props.filter((p) => EDITABLE.has(p.type) || p.choices)
+          .map((p) => ({name: p.name, type: p.choices ? 'choice' : p.type, choices: p.choices,
+            min: p.min, max: p.max, category: p.category, description: p.description,
+            readonly: p.set == null})),
+        Object.fromEntries(props.map((p) => [p.name, p.get?.(control.propertyTarget)])));
+    };
+    main.addEventListener('click', (e) => {
+      const control = Control.forElement(e.target);
+      if (control)
+        selectControl(control);
+    });
+    new U2Scope().effect(() => {
+      const change = propsGrid.onChanged.value;
+      if (change && selected)
+        selected.getProperties().find((p) => p.name === change.name)?.set?.(selected.propertyTarget, change.value);
+    });
 
     window.addEventListener('hashchange', route);
     try {

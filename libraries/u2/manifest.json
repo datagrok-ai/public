@@ -38,6 +38,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "placeholder",
           "type": "string"
         },
@@ -104,6 +109,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "placeholder",
           "type": "string"
         },
@@ -160,6 +170,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "switch",
           "type": "bool",
           "description": "Compact toggle instead of a checkbox."
@@ -210,6 +225,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "mode",
@@ -298,6 +318,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "items",
           "type": "string_list",
           "bindable": true
@@ -364,6 +389,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "items",
@@ -666,6 +696,13 @@
             "document"
           ],
           "description": "\"platform\" (default) is the ui.tabControl look; \"document\" the IDE document-tab skin."
+        },
+        {
+          "name": "activeTab",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Id of the selected tab (spec children get tab-0, tab-1, …)."
         }
       ],
       "childProps": [
@@ -915,6 +952,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "min",
           "type": "double"
         },
@@ -939,6 +981,70 @@
           "value": 50,
           "min": 0,
           "max": 100
+        }
+      }
+    },
+    {
+      "tag": "u2-range-slider",
+      "category": "Inputs",
+      "description": "Two-handle range selector: drag a handle to move one end, the band between them to move the whole window.",
+      "usage": "For picking an interval within known bounds — filters, zoom windows, thresholds with a low and a high end. A single number belongs in `u2-slider-input`.",
+      "props": [
+        {
+          "name": "lo",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Lower end of the selected range."
+        },
+        {
+          "name": "hi",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Upper end of the selected range."
+        },
+        {
+          "name": "min",
+          "type": "double"
+        },
+        {
+          "name": "max",
+          "type": "double"
+        },
+        {
+          "name": "step",
+          "type": "double",
+          "description": "Snap increment for dragging; continuous when absent."
+        },
+        {
+          "name": "minRange",
+          "type": "double",
+          "description": "Smallest allowed hi − lo; 0 by default."
+        },
+        {
+          "name": "vertical",
+          "type": "bool",
+          "description": "Bottom-to-top track."
+        }
+      ],
+      "defaults": {
+        "min": 0,
+        "max": 100,
+        "lo": 20,
+        "hi": 60
+      },
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-range-slider",
+        "props": {
+          "min": 0,
+          "max": 100,
+          "lo": 20,
+          "hi": 60
         }
       }
     },
@@ -976,6 +1082,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "items",
@@ -1049,6 +1160,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "swatchOnly",
           "type": "bool",
           "description": "Swatch alone, no hex field."
@@ -1100,6 +1216,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         }
       ],
       "events": [
@@ -1147,6 +1268,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
@@ -1201,6 +1327,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         }
       ],
       "events": [
@@ -1253,6 +1384,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "placeholder",
           "type": "string"
         }
@@ -1303,6 +1439,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "families",
@@ -1359,6 +1500,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "alt",
