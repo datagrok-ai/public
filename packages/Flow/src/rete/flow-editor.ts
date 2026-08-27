@@ -28,7 +28,7 @@ import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSock
 import {InputValueControl} from './nodes/input-value-control';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
-import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES} from './annotation';
 import {
   FlowGroup, GroupDoc, GROUP_TITLE_H, GROUP_PAD, GROUP_DOT_TOP, GROUP_DOT_STEP,
 } from './node-group';
@@ -1618,6 +1618,23 @@ export class FlowEditor {
     return Array.from(this.annotations.values());
   }
 
+  /** Both setters fire onGraphChanged — a recolored/resized note is an unsaved change. */
+  setAnnotationColor(id: string, bg: string): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.color === bg) return;
+    ann.color = bg;
+    ann.applyColor();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  setAnnotationFontSize(id: string, size: number): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.fontSize === size) return;
+    ann.fontSize = size;
+    ann.applyFont();
+    this.callbacks.onGraphChanged?.();
+  }
+
   /** Everything an annotation drag carries. Computed at drag START — a stateless
    *  capture, so nothing has to be remembered or can go stale. */
   private annotationCargo(ann: FlowAnnotation): {
@@ -1685,13 +1702,13 @@ export class FlowEditor {
       ev.stopPropagation();
       const menu = DG.Menu.popup();
       const colorMenu = menu.group('Color');
-      for (const c of ANNOTATION_COLORS) {
-        colorMenu.item(c.name, () => {
-          ann.color = c.bg;
-          ann.applyColor();
-        });
-      }
-      colorMenu.endGroup()
+      for (const c of ANNOTATION_COLORS)
+        colorMenu.item(c.name, () => this.setAnnotationColor(ann.id, c.bg), null, {check: c.bg === ann.color});
+      colorMenu.endGroup();
+      const sizeMenu = menu.group('Title size');
+      for (const s of ANNOTATION_TITLE_SIZES)
+        sizeMenu.item(s.name, () => this.setAnnotationFontSize(ann.id, s.size), null, {check: s.size === ann.fontSize});
+      sizeMenu.endGroup()
         .separator()
         .item('Delete', () => this.removeAnnotation(ann.id))
         .show({causedBy: ev});

@@ -220,7 +220,7 @@ export function graphicsElement(imageData: string): HTMLElement {
   const img = ui.div([], {style: {
     width: '100%', minHeight: '200px',
     backgroundPosition: 'left', backgroundRepeat: 'no-repeat', backgroundSize: 'contain',
-    aspectRatio: '1',
+    aspectRatio: '1', height: '100%',
   }});
   if (imageData.startsWith('<svg')) img.innerHTML = imageData;
   else img.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;

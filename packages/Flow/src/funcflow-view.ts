@@ -55,6 +55,8 @@ import {FlowAIContext} from './ai-tools';
 const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
   {label: 'Workflow demo', file: 'Workflow Demo.flow', desc: 'A sample multi-step data workflow.'},
   {label: 'Bio Molecules', file: 'Sequence demo.flow', desc: 'A Peptides conversion and calculation.'},
+  {label: 'Interactive viewers', file: 'Interactive Viewers.flow',
+    desc: 'Live in-node viewers driven by a molecule sketcher.'},
 ];
 
 export class FuncFlowView extends DG.ViewBase {

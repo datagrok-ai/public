@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Added: The Interactive Viewers demo (sketcher-driven chem pipeline with seven live in-node viewers, opens with autorun on) as a home-screen template card and a bundled flow script
+* Added: `Flow:renderMolecule` — turns a molecule (SMILES/molfile, sketcher-compatible) into a widget drawn once on a large square canvas, so the in-node preview stays crisp at any size; autoruns by default
+* Improved: Annotations offer a 13-color palette (was 5) and a Title size submenu (Small–Huge) in their right-click menu; the title font size saves with the flow, and recoloring/resizing now lights the Save button
 * Improved: The autorun mode now saves with the flow — a flow saved with the bolt on reopens live and immediately completes anything without a fresh result
 * Improved: While a run is on its way to a previewed node, its in-node preview shows a loader (empty) or a "Recalculating..." overlay (stale content) instead of a blank box
 * Introduced: In-node preview for viewer-, widget- and graphics-producing nodes (e.g. Chem's Gasteiger Partial Charges) — a title-bar ⊞ toggle (also in the node context menu) mounts the live result right on the node in a resizable container (300×300 by default; the choice and size persist with the flow); while a node hosts its viewer, the bottom output panel shows a note instead of stealing it (graphics is copied, so both previews coexist); previews are hosted in screen-space portals that follow the cards' paint order and are clipped where an overlapping card sits above them (overlaps look and click exactly like plain cards), so canvas-based viewers keep true hit-testing at any zoom, their fixed-position popups (axis/color selectors) open at the viewer instead of far away, and right-clicking a previewed viewer opens the viewer's own context menu, not the node's

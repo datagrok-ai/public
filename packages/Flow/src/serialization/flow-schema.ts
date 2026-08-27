@@ -34,6 +34,8 @@ export interface FuncFlowAnnotation {
   size: {w: number; h: number};
   text: string;
   color: string;
+  /** Title font size in px; absent in older saves = the default (13). */
+  fontSize?: number;
 }
 
 export interface FuncFlowGroup {

@@ -206,6 +206,7 @@ export class ExecutionController {
         let el = this.graphicsPreviewEls.get(s);
         if (!el) {
           el = graphicsElement(s.value as string);
+          el && (el.style.removeProperty('min-height'));
           this.graphicsPreviewEls.set(s, el);
         }
         return el;
