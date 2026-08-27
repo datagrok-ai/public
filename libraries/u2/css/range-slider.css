@@ -1,0 +1,79 @@
+/* Range slider skin — DOM track/band/handles, both orientations. Tokens only; css/tokens.css
+   must be loaded alongside. */
+.u2-range-slider {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.u2-range-slider-vertical {
+  width: 16px;
+  height: 100%;
+  min-height: 60px;
+}
+
+.u2-range-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--dg-space-s);
+  transform: translateY(-50%);
+  background: var(--dg-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-range-band {
+  position: absolute;
+  top: 50%;
+  height: var(--dg-space-s);
+  transform: translateY(-50%);
+  background: var(--dg-accent);
+  border-radius: var(--dg-radius);
+  cursor: grab;
+}
+
+.u2-range-handle {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  background: var(--dg-white);
+  border: var(--dg-border-width) solid var(--dg-accent);
+  border-radius: 50%;
+  box-shadow: var(--dg-shadow-1);
+  cursor: ew-resize;
+}
+
+.u2-range-handle:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-xs);
+}
+
+.u2-range-slider-vertical .u2-range-track {
+  left: 50%;
+  right: auto;
+  top: 0;
+  bottom: 0;
+  height: auto;
+  width: var(--dg-space-s);
+  transform: translateX(-50%);
+}
+
+.u2-range-slider-vertical .u2-range-band {
+  left: 50%;
+  top: auto;
+  height: auto;
+  width: var(--dg-space-s);
+  transform: translateX(-50%);
+}
+
+.u2-range-slider-vertical .u2-range-handle {
+  left: 50%;
+  top: auto;
+  transform: translate(-50%, 50%);
+  cursor: ns-resize;
+}

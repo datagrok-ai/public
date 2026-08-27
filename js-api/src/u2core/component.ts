@@ -172,10 +172,26 @@ export class Component implements BindSource {
         prop.set = (_source: unknown, value: unknown) => {
           (self[name] as Signal<unknown>).value = value;
         };
+      } else if (Component._settable(self, name)) {
+        prop.set = (_source: unknown, value: unknown) => {
+          self[name] = value;
+        };
       }
       return prop;
     });
     return u2.properties;
+  }
+
+  /** A declared prop backed by an accessor with a setter is writable through it — the setter
+   * carries the live behavior. A plain data field stays read-only: a bare assignment would change
+   * nothing the component watches. */
+  private static _settable(self: object, name: string): boolean {
+    for (let at: object | null = self; at !== null; at = Object.getPrototypeOf(at)) {
+      const descriptor = Object.getOwnPropertyDescriptor(at, name);
+      if (descriptor !== undefined)
+        return descriptor.set !== undefined;
+    }
+    return false;
   }
 
   getFunctions(): FuncLike[] {
@@ -421,11 +437,13 @@ export class Component implements BindSource {
 /** A component that renders: everything visual in u2 is one. */
 export class Control extends Component {
   protected _root!: HTMLElement;
+  private static readonly _byRoot = new WeakMap<Element, Control>();
 
   constructor(root?: HTMLElement, scope?: Scope) {
     super(scope);
     this._root = root ?? document.createElement('div');
     this._root.classList.add('u2-component');
+    Control._byRoot.set(this._root, this);
   }
 
   get root(): HTMLElement {
@@ -434,6 +452,19 @@ export class Control extends Component {
 
   set root(x: HTMLElement) {
     this._root = x;
+    Control._byRoot.set(x, this);
+  }
+
+  /** The nearest control owning `el` — the DOM → component door for tooling, automation and
+   * inspectors (the u2 counterpart of the platform's `Widget.find`). Best-effort: the last
+   * control constructed on (or assigned) a root wins it. */
+  static forElement(el: Element | null): Control | undefined {
+    for (let node = el; node; node = node.parentElement) {
+      const control = Control._byRoot.get(node);
+      if (control)
+        return control;
+    }
+    return undefined;
   }
 
   static is(x: unknown): x is Control {

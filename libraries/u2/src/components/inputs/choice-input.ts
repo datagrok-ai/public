@@ -26,6 +26,14 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
     this.root.dataset.u2 = 'choice-input';
   }
 
+  get items(): ChoiceItem[] {
+    return this._items;
+  }
+
+  set items(x: ChoiceItem[]) {
+    this.setItems(x);
+  }
+
   /** Replaces the item list, keeping the current value if it is still one of the items. Dropping
    * a value whose item vanished is a {@link Input.system} write, not a user edit. */
   setItems(items: ChoiceItem[]): void {
@@ -81,10 +89,19 @@ export interface MultiChoiceInputOptions extends InputOptions<string[]> {
 export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
   private _list!: HTMLElement;
   private _boxes!: HTMLInputElement[];
+  private _items!: ChoiceItem[];
 
   constructor(options: MultiChoiceInputOptions) {
     super(options, []);
     this.root.dataset.u2 = 'multi-choice-input';
+  }
+
+  get items(): ChoiceItem[] {
+    return this._items;
+  }
+
+  set items(x: ChoiceItem[]) {
+    this.setItems(x);
   }
 
   /** Replaces the item list, keeping the items that are still there checked
@@ -120,6 +137,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
   }
 
   private _fill(items: ChoiceItem[]): void {
+    this._items = items;
     const selected = new Set(this.value.peek());
     this._list.textContent = '';
     this._boxes = [];

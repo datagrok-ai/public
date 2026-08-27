@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20753: Added `DG.U2.Control.forElement(el)` — resolves a DOM element to the nearest u2 control owning it (every `Control` registers its root); the DOM → component door for inspectors, automation and tooling.
+* GROK-20753: `DG.U2.Component.getProperties()` gained the accessor tier — a meta-declared prop backed by an accessor with a setter is now writable through the generated property (the setter carries the live behavior); signal-backed props write as before, plain data fields stay read-only.
+
 * GROK-20753: Added `FuncCall.evalParamChoices(name)` / `evalParamSuggestions(name, text)` / `evalParamDefault(name)` — evaluate a parameter's `choices` / `suggestions` / computed `default` sources Dart-side (suggestions receive the typed text; `evalParamChoices` also returns `dependsOn` and, for `propagateChoice: all`, a `lookup` map).
 * GROK-20753: `grok.functions.scriptSync(s, variables?)` — an optional variables map evaluates the expression over a fresh context built from the map (omitted keeps the shell-context behavior).
 * GROK-20753: Documented `Property.options` as the tags ∪ FuncParam-options union `InputBase.getOption` reads (tags win); treat as readonly — writes stick only for FuncParam-backed properties without tags.
