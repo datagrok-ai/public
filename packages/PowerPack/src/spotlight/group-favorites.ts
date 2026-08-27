@@ -8,18 +8,32 @@ export interface GroupFavorites {
   isAdmin: boolean;
 }
 
-let _userGroupPromise: Promise<DG.Group> | null = null;
+let _userGroupPromise: Promise<DG.Group | null> | null = null;
 
-/** Cached lookup of the current user's group. */
-export function getCurrentUserGroup(): Promise<DG.Group> {
-  if (!_userGroupPromise)
-    _userGroupPromise = grok.dapi.groups.find(DG.User.current().group.id);
-  return _userGroupPromise;
+/** Cached lookup of the current user's group; null when it cannot be retrieved.
+ *  A failed lookup is not cached, so a transient outage does not last the whole session. */
+export function getCurrentUserGroup(): Promise<DG.Group | null> {
+  return _userGroupPromise ??= loadCurrentUserGroup();
+}
+
+async function loadCurrentUserGroup(): Promise<DG.Group | null> {
+  try {
+    const group = await grok.dapi.groups.find(DG.User.current().group.id);
+    if (group != null)
+      return group;
+  }
+  catch (e) {
+    console.warn('Failed to load the current user group', e);
+  }
+  _userGroupPromise = null;
+  return null;
 }
 
 /** Returns all pinned objects across the current user's groups. */
 export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
   const userGroup = await getCurrentUserGroup();
+  if (userGroup == null)
+    return [];
   const adminIds = new Set(userGroup.adminMemberships.map((g) => g.id));
   const groups = [...userGroup.memberships, ...userGroup.adminMemberships]
     .filter((g) => !g.personal && g.friendlyName);
@@ -49,7 +63,7 @@ export async function getMyGroupFavorites(): Promise<GroupFavorites[]> {
 /** Returns groups the current user is an admin of (excluding personal groups). */
 export async function getAdminGroups(): Promise<DG.Group[]> {
   const userGroup = await getCurrentUserGroup();
-  return userGroup.adminMemberships.filter((g) => !g.personal && g.friendlyName);
+  return userGroup?.adminMemberships.filter((g) => !g.personal && g.friendlyName) ?? [];
 }
 
 /** Alphabetical sort by `friendlyName`; returns a new array. */
