@@ -2,8 +2,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subject} from 'rxjs';
 
-/** The shape shared by the `@datagrok-libraries/ml` dialog editors (DimReductionBaseEditor,
- * ActivityCliffsEditor, ...) and Bio's own getParams-style editors: a plain widget builder
+/** The shape shared by the `getParams()`-style dialog editors (`@datagrok-libraries/ml`'s
+ * DimReductionBaseEditor, ActivityCliffsEditor, and package-local ones): a plain widget builder
  * exposing `getParams()` plus optional history serialization. */
 export interface ParamsEditorLike<TParams> {
   getEditor(): HTMLElement;
@@ -102,7 +102,7 @@ export class FuncCallParamsEditor<TParams> extends DG.FuncCallEditor {
   }
 }
 
-/** A minimal invalid editor used when preconditions fail (e.g. no macromolecule column present):
+/** A minimal invalid editor used when preconditions fail (e.g. no suitable column present):
  * shows a message and keeps OK disabled. */
 export class MessageFuncCallEditor extends DG.FuncCallEditor {
   private inputChangedSubject: Subject<any> = new Subject<any>();
