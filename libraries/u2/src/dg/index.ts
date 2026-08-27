@@ -107,3 +107,5 @@ export {TableInput} from './inputs/pickers.js';
 export type {InputAction, TableInputOptions} from './inputs/pickers.js';
 export {ColumnInput} from './inputs/column-combo.js';
 export type {ColumnInputOptions2} from './inputs/column-combo.js';
+export {messageInput, userMentionProvider, USER_TOKEN} from './inputs/message-input.js';
+export type {MessageInputOptions, MentionProvider} from '../components/inputs/message-input.js';

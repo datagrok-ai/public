@@ -1645,6 +1645,117 @@
       }
     },
     {
+      "tag": "u2-card",
+      "category": "Containers",
+      "description": "Surface with optional header (title, subtitle, icon, actions), media image, body and footer.",
+      "usage": "For dashboard tiles and item previews; a card grid is a collection of these. A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "subtitle",
+          "type": "string"
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon"
+        },
+        {
+          "name": "media",
+          "type": "string",
+          "description": "Image URL shown above the body."
+        },
+        {
+          "name": "clickable",
+          "type": "bool",
+          "description": "The whole card acts as a button."
+        },
+        {
+          "name": "selectable",
+          "type": "bool",
+          "description": "Click toggles the selection ring."
+        },
+        {
+          "name": "selected",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        }
+      ],
+      "acceptsChildren": true,
+      "events": [
+        "click"
+      ],
+      "defaults": {
+        "title": "Card"
+      },
+      "example": {
+        "tag": "u2-card",
+        "props": {
+          "title": "Aspirin",
+          "subtitle": "NSAID"
+        },
+        "children": [
+          {
+            "tag": "p",
+            "props": {
+              "text": "Acetylsalicylic acid, 180.16 g/mol."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-stat-card",
+      "category": "Display",
+      "description": "KPI card: large formatted value, label, optional up/down delta and icon.",
+      "usage": "For dashboard metrics. Bind `value` to a source output for live numbers; loading states come from the source, not from this card.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "description": "Literal values are strings (\"1.2M\"); a bound signal may hold a number, formatted by the card."
+        },
+        {
+          "name": "delta",
+          "type": "double",
+          "bindable": true,
+          "description": "Fractional change; 0.12 renders \"+12%\" in the success color."
+        },
+        {
+          "name": "deltaInverted",
+          "type": "bool",
+          "description": "Negative is good (error rates)."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon"
+        }
+      ],
+      "defaults": {
+        "label": "Metric",
+        "value": "0"
+      },
+      "example": {
+        "tag": "u2-stat-card",
+        "props": {
+          "label": "Revenue",
+          "value": "1.2M",
+          "delta": 0.12,
+          "icon": "chart-line"
+        }
+      }
+    },
+    {
       "tag": "u2-state",
       "category": "Data",
       "visual": false,

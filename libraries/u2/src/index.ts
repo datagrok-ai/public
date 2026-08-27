@@ -137,5 +137,13 @@ export type {EntityRefOptions} from './sources/entity-ref.js';
 export {registerDataSources, COLLECTIONS} from './sources/registrations.js';
 export {SuggestInput} from './components/inputs/suggest-input.js';
 export type {SuggestInputOptions} from './components/inputs/suggest-input.js';
+export {Card} from './components/containers/card.js';
+export type {CardOptions} from './components/containers/card.js';
+export {StatCard} from './components/display/stat-card.js';
+export type {StatCardOptions, StatValue} from './components/display/stat-card.js';
+export {Tour} from './components/display/tour.js';
+export type {TourStep, TourOptions} from './components/display/tour.js';
+export {MessageInput} from './components/inputs/message-input.js';
+export type {MessageInputOptions, MentionProvider} from './components/inputs/message-input.js';
 
 export const VERSION = '0.0.1';

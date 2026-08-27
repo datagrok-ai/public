@@ -189,10 +189,10 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   const reg = new Registry();
   registerPlatformComponents(reg);
   const core = reg.metas().filter((m) => !m.tag.startsWith('u2-viewer-'));
-  assert.equal(core.length, 32);
-  assert.equal(reg.metas().length, 37);
+  assert.equal(core.length, 34);
+  assert.equal(reg.metas().length, 39);
   registerPlatformComponents(reg);
-  assert.equal(reg.metas().length, 37);
+  assert.equal(reg.metas().length, 39);
 
   registerAll();
   assert.ok(globalRegistry.metas().every((m) => !m.tag.startsWith('u2-viewer-')), 'the manifest stays platform-free');

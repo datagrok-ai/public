@@ -25,6 +25,8 @@ import {IconInput} from '../components/inputs/icon-input.js';
 import {Form} from '../components/forms/form.js';
 import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
+import {Card} from '../components/containers/card.js';
+import {StatCard} from '../components/display/stat-card.js';
 import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
 import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
@@ -104,6 +106,19 @@ function splitter(props: Props, children: Child[]): Splitter {
     direction: props.direction === 'vertical' ? 'vertical' : 'horizontal',
     sizes: props.sizes as number[] | undefined,
     minSize: props.minSize as number | undefined,
+  });
+}
+
+function card(props: Props, children: Child[]): Card {
+  return new Card({
+    title: props.title as string | undefined,
+    subtitle: props.subtitle as string | undefined,
+    icon: props.icon as string | undefined,
+    media: props.media as string | undefined,
+    clickable: props.clickable as boolean | undefined,
+    selectable: props.selectable as boolean | undefined,
+    selected: props.selected as boolean | Signal<boolean> | undefined,
+    children: children.map(element),
   });
 }
 
@@ -596,6 +611,54 @@ const METAS: ComponentMeta[] = [
     props: inputProps('string', {name: 'alt', type: 'string', description: 'Alternative text.'}),
     events: ['change'],
     example: {tag: 'u2-image-input', props: {label: 'Logo', value: 'https://datagrok.ai/img/logo.svg'}},
+  },
+  {
+    tag: 'u2-card',
+    category: 'Containers',
+    create: (props) => card(props, []),
+    createWithChildren: (props, children) => card(props, children),
+    description: 'Surface with optional header (title, subtitle, icon, actions), media image, body and footer.',
+    usage: 'For dashboard tiles and item previews; a card grid is a collection of these. ' +
+      'A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.',
+    props: [
+      {name: 'title', type: 'string'},
+      {name: 'subtitle', type: 'string'},
+      {name: 'icon', type: 'string', inputType: 'Icon'},
+      {name: 'media', type: 'string', description: 'Image URL shown above the body.'},
+      {name: 'clickable', type: 'bool', description: 'The whole card acts as a button.'},
+      {name: 'selectable', type: 'bool', description: 'Click toggles the selection ring.'},
+      {name: 'selected', type: 'bool', bindable: true, twoWay: true},
+    ],
+    acceptsChildren: true,
+    events: ['click'],
+    defaults: {title: 'Card'},
+    example: {tag: 'u2-card', props: {title: 'Aspirin', subtitle: 'NSAID'},
+      children: [{tag: 'p', props: {text: 'Acetylsalicylic acid, 180.16 g/mol.'}}]},
+  },
+  {
+    tag: 'u2-stat-card',
+    category: 'Display',
+    create: (props) => new StatCard({
+      label: (props.label as string) ?? '',
+      value: props.value as string | Signal<string | number | undefined> | undefined,
+      delta: props.delta as number | Signal<number | undefined> | undefined,
+      deltaInverted: props.deltaInverted as boolean | undefined,
+      icon: props.icon as string | undefined,
+    }),
+    description: 'KPI card: large formatted value, label, optional up/down delta and icon.',
+    usage: 'For dashboard metrics. Bind `value` to a source output for live numbers; ' +
+      'loading states come from the source, not from this card.',
+    props: [
+      {name: 'label', type: 'string'},
+      {name: 'value', type: 'string', bindable: true,
+        description: 'Literal values are strings ("1.2M"); a bound signal may hold a number, formatted by the card.'},
+      {name: 'delta', type: 'double', bindable: true,
+        description: 'Fractional change; 0.12 renders "+12%" in the success color.'},
+      {name: 'deltaInverted', type: 'bool', description: 'Negative is good (error rates).'},
+      {name: 'icon', type: 'string', inputType: 'Icon'},
+    ],
+    defaults: {label: 'Metric', value: '0'},
+    example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
   },
   {
     tag: 'u2-state',
