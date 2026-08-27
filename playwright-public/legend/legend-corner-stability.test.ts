@@ -29,7 +29,8 @@ async function openDemog(page: any) {
     const df = await grok.dapi.files.readCsv(path);
     grok.shell.addTableView(df);
   }, demogPath);
-  await page.waitForTimeout(2500);
+  await page.waitForFunction(() =>
+    (window as any).grok?.shell?.tv?.dataFrame?.rowCount > 0, null, {timeout: 30000});
 }
 
 async function recordPlacements(page: any) {
@@ -78,7 +79,7 @@ test('Pie and bar corner stability on repeated shrinks (demog)', async ({page}) 
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'RACE'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     const seen = await moves(page);
     const jumped = seen.some((m, i) => m.includes('->docked') &&
       seen.slice(i + 1).some((n) => n.includes('->corner')));
@@ -87,22 +88,18 @@ test('Pie and bar corner stability on repeated shrinks (demog)', async ({page}) 
 
   await softStep('Pie: shrinking height repeatedly never flaps corner<->docked', async () => {
     await page.evaluate(() => { (window as any).__legendMoves = []; });
-    for (const h of [700, 600, 500, 420, 340, 280]) {
+    for (const h of [700, 600, 500, 420, 340, 280])
       await v.resizeViewer(page, 'Pie chart', 1100, h);
-      await page.waitForTimeout(1300);
-    }
     expectNoOscillation(await moves(page), 'pie height shrink');
   });
 
   await softStep('Pie: a square viewer prefers the free rightTop corner', async () => {
     await v.resizeViewer(page, 'Pie chart', 620, 620);
-    await page.waitForTimeout(1500);
     const s = await legendState(page, 'Pie chart');
     expect(`${s.mode}/${s.slot}`).toBe('corner/rightTop');
     await page.evaluate(() => {
       (window as any).grok.shell.tv.viewers.find((q: any) => q.type === 'Pie chart')?.close();
     });
-    await page.waitForTimeout(500);
   });
 
   await softStep('Bar: full-height bars — no oscillation, corner never lands on the long top bars', async () => {
@@ -110,13 +107,12 @@ test('Pie and bar corner stability on repeated shrinks (demog)', async ({page}) 
       (window as any).grok.shell.tv.addViewer('Bar chart',
         {splitColumnName: 'DEMOG', stackColumnName: 'RACE'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Bar chart');
     await recordPlacements(page);
     await page.evaluate(() => { (window as any).__legendMoves = []; });
     for (const [w, h] of [[1100, 620], [900, 620], [700, 620], [500, 620],
       [1100, 620], [1100, 480], [1100, 340], [1100, 280]] as any) {
       await v.resizeViewer(page, 'Bar chart', w, h);
-      await page.waitForTimeout(1300);
       const s = await legendState(page, 'Bar chart');
       expect(s.slot, `legend on the longest bars at ${w}x${h}`).not.toBe('rightTop');
     }
@@ -141,9 +137,8 @@ test('Zoom stability, icon clipping, large-dataset gate (demog)', async ({page})
       {xColumnName: 'HEIGHT', yColumnName: 'WEIGHT', colorColumnName: 'RACE',
        zoomAndFilter: 'filter by zoom'});
   });
-  await page.waitForTimeout(2500);
+  await v.waitForLegendIdle(page, 'Scatter plot');
   await v.resizeViewer(page, 'Scatter plot', 950, 620);
-  await page.waitForTimeout(1500);
 
   await softStep('Zoom and pan under filter-by-zoom never move the legend, even as categories vanish', async () => {
     await recordPlacements(page);
@@ -180,7 +175,7 @@ test('Zoom stability, icon clipping, large-dataset gate (demog)', async ({page})
       x.props.markersColumnName = 'SEX';
       x.props.legendPosition = 'Right';
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const res = await page.evaluate(async () => {
       const x = (window as any).grok.shell.tv.viewers.find((q: any) => q.type === 'Scatter plot');
       const root = x.root.querySelector('[name="legend"]') as HTMLElement;
@@ -217,9 +212,8 @@ test('Zoom stability, icon clipping, large-dataset gate (demog)', async ({page})
       await new Promise((r) => setTimeout(r, 1500));
       (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'race'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     await v.resizeViewer(page, 'Pie chart', 1100, 500);
-    await page.waitForTimeout(1500);
     const auto = await legendState(page, 'Pie chart');
     expect(auto.mode, `25K pie went to ${auto.mode}/${auto.slot}`).toBe('docked');
     await v.setViewerProps(page, 'Pie chart', [{set: {legendPosition: 'RightTop'}, wait: 1500}]);
@@ -245,13 +239,13 @@ test('Floating pie: slow height growth at fractional DPR never flaps (SPGI)', as
       Object.defineProperty(window, 'devicePixelRatio', {get: () => 0.8999999, configurable: true});
       (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Primary Series Name'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Pie chart');
     await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Pie chart');
       tv.dockManager.findNode(x.root).container.float();
     });
-    await page.waitForTimeout(1500);
+    await v.waitForLegendIdle(page, 'Pie chart');
 
     // drag the SE corner handle so the floating dialog becomes exactly 395x513
     await page.evaluate(async () => {
@@ -272,7 +266,7 @@ test('Floating pie: slow height growth at fractional DPR never flaps (SPGI)', as
       }
       document.dispatchEvent(ev('mouseup', sx + dx, sy + dy));
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     await recordPlacements(page);
     await page.evaluate(() => { (window as any).__legendMoves = []; });
 
@@ -292,7 +286,7 @@ test('Floating pie: slow height growth at fractional DPR never flaps (SPGI)', as
       }
       document.dispatchEvent(ev('mouseup', sx, sy + 190));
     });
-    await page.waitForTimeout(1500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     expectNoOscillation(await moves(page), 'floating pie height growth');
   });
 

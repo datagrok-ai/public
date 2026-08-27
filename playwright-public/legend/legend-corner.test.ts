@@ -88,8 +88,6 @@ test('Corner legend — close icon, no phantom scroll, resize re-evaluation', as
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightBottom'}, wait: 1200}]);
     for (const [w, h] of [[500, 400], [1100, 500]]) {
       await v.resizeViewer(page, 'Scatter plot', w, h);
-      await page.waitForTimeout(800);
-      await v.waitForLegendIdle(page, 'Scatter plot');
       const {viewer, geom} = await page.evaluate(() => {
         const tv = (window as any).grok.shell.tv;
         const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
@@ -126,7 +124,6 @@ test('Corner legend — close icon, no phantom scroll, resize re-evaluation', as
       const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
       x.props.colorColumnName = 'Series';
     });
-    await page.waitForTimeout(1500);
     await v.waitForLegendIdle(page, 'Scatter plot');
     const entered = (await legendGeom(page, 'Scatter plot'))!;
     expect(entered.mode, 'a free corner was not taken').toBe('corner');
@@ -136,8 +133,6 @@ test('Corner legend — close icon, no phantom scroll, resize re-evaluation', as
     // of the clustered points — at 700x500 the honest estimate genuinely reaches them
     for (const [w, h] of [[900, 600], [1000, 600], [1100, 650]]) {
       await v.resizeViewer(page, 'Scatter plot', w, h);
-      await page.waitForTimeout(800);
-      await v.waitForLegendIdle(page, 'Scatter plot');
       modes.push((await legendGeom(page, 'Scatter plot'))!.mode!);
     }
     // the corners stay free through the sweep, so the settled answer stays corner —
@@ -167,7 +162,7 @@ test('Dual legend — the second section keeps at least its header and a row', a
     x.props.markersColumnName = 'Series';
   });
   await v.resizeViewer(page, 'Scatter plot', 900, 600);
-  await page.waitForTimeout(1200);
+  await v.waitForLegendIdle(page, 'Scatter plot');
 
   const checkSections = (g: any, where: string) => {
     const main = g.sections.find((s: any) => s.name === 'legend-section-main')!;
@@ -240,17 +235,27 @@ test('Tooltip legend — items survive the click/hide/rehover cycle', async ({pa
     return true;
   });
   expect(collapsed, 'the collapse icon never appeared').toBe(true);
-  await page.waitForTimeout(1000);
+  await page.waitForFunction(() =>
+    (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+    {timeout: 8000});
+  await v.waitForLegendIdle(page, 'Scatter plot');
 
   const hoverMini = async () => {
-    const mini = await page.evaluate(() => {
-      const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
-      const r = el.getBoundingClientRect();
-      return {x: r.x + r.width / 2, y: r.y + r.height / 2};
-    });
-    await page.mouse.move(mini.x - 40, mini.y + 40);
-    await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1200);
+    // re-read the icon position and re-hover on each attempt: right after the collapse the
+    // icon can still be repositioning, and a move aimed at its old spot opens nothing
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const mini = await page.evaluate(() => {
+        const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
+        const r = el.getBoundingClientRect();
+        return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+      });
+      await page.mouse.move(mini.x - 40, mini.y + 40);
+      await page.mouse.move(mini.x, mini.y, {steps: 5});
+      const shown = await page.waitForFunction(() =>
+        document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 4000})
+        .then(() => true).catch(() => false);
+      if (shown) break;
+    }
   };
 
   const state = async () => await page.evaluate(() => {
@@ -284,7 +289,9 @@ test('Tooltip legend — items survive the click/hide/rehover cycle', async ({pa
       it.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true,
         clientX: r.x + r.width / 2, clientY: r.y + r.height / 2}));
     });
-    await page.waitForTimeout(1500);
+    await page.waitForFunction((n) => (window as any).grok.shell.tv.viewers
+      .find((q: any) => q.type === 'Scatter plot').filter.trueCount < n, before,
+      {timeout: 8000}).catch(() => null);
     const s = await state();
     expect(s.rows, 'clicking the tooltip legend item did not filter').toBeLessThan(before);
     expect(s.visibleItems, 'the legend blanked after the click').toBeGreaterThan(0);
@@ -292,7 +299,8 @@ test('Tooltip legend — items survive the click/hide/rehover cycle', async ({pa
 
   await softStep('After hiding and re-hovering the legend is populated without scrolling', async () => {
     await page.mouse.move(200, 500);
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') == null, {timeout: 8000}).catch(() => null);
     await hoverMini();
     const s = await state();
     expect(s.tipShown, 'tooltip did not come back').toBe(true);
@@ -324,7 +332,7 @@ test('Markers selector — picking a column works, including after a tooltip cyc
     const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
     x.props.markersColumnName = 'Series';
   });
-  await page.waitForTimeout(1500);
+  await v.waitForLegendIdle(page, 'Scatter plot');
   await v.resizeViewer(page, 'Scatter plot', 600, 500);
   await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'Right'}, wait: 1500}]);
   await v.waitForLegendIdle(page, 'Scatter plot');
@@ -339,7 +347,8 @@ test('Markers selector — picking a column works, including after a tooltip cyc
     });
     expect(sel, `${where}: no markers selector in the legend`).not.toBeNull();
     await page.mouse.click(sel!.x, sel!.y);
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-column-selector-backdrop') != null, {timeout: 8000}).catch(() => null);
     const popup = await page.evaluate(() => {
       const backdrop = document.querySelector('.d4-column-selector-backdrop') as HTMLElement;
       if (!backdrop) return null;
@@ -349,7 +358,9 @@ test('Markers selector — picking a column works, including after a tooltip cyc
     expect(popup, `${where}: the column popup did not open`).not.toBeNull();
     // the third row of the column grid — any row works, it just has to differ from 'Series'
     await page.mouse.click(popup!.x + 80, popup!.y + 70);
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() => (window as any).grok.shell.tv.viewers
+      .find((q: any) => q.type === 'Scatter plot').props.markersColumnName !== 'Series',
+      {timeout: 8000}).catch(() => null);
     const markers = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       return tv.viewers.find((q: any) => q.type === 'Scatter plot').props.markersColumnName;
@@ -361,7 +372,7 @@ test('Markers selector — picking a column works, including after a tooltip cyc
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Scatter plot').props.markersColumnName = 'Series';
     });
-    await page.waitForTimeout(1200);
+    await v.waitForLegendIdle(page, 'Scatter plot');
   };
 
   await softStep('The selector applies a column pick while docked', async () =>
@@ -375,7 +386,9 @@ test('Markers selector — picking a column works, including after a tooltip cyc
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
     });
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     const mini = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       const r = el.getBoundingClientRect();
@@ -383,11 +396,13 @@ test('Markers selector — picking a column works, including after a tooltip cyc
     });
     await page.mouse.move(mini.x - 40, mini.y + 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1200);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
     await page.mouse.move(200, 500);
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') == null, {timeout: 8000}).catch(() => null);
     await page.evaluate(() => (document.querySelector('[name="mini-legend-icon"]') as HTMLElement).click());
-    await page.waitForTimeout(1200);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'Right'}, wait: 1500}]);
     await v.waitForLegendIdle(page, 'Scatter plot');
     await pickViaMouse('after tooltip');
@@ -398,7 +413,7 @@ test('Markers selector — picking a column works, including after a tooltip cyc
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Scatter plot').props.markersColumnName = '';
     });
-    await page.waitForTimeout(1200);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightTop'}, wait: 1500}]);
     await v.waitForLegendIdle(page, 'Scatter plot');
     await page.evaluate(() => {
@@ -406,7 +421,9 @@ test('Markers selector — picking a column works, including after a tooltip cyc
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
     });
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     const mini = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       const r = el.getBoundingClientRect();
@@ -414,7 +431,8 @@ test('Markers selector — picking a column works, including after a tooltip cyc
     });
     await page.mouse.move(mini.x - 40, mini.y + 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1200);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
 
     const before = await page.evaluate(() => {
       const legend = document.querySelector('[name="legend"]') as HTMLElement;
@@ -425,7 +443,7 @@ test('Markers selector — picking a column works, including after a tooltip cyc
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Scatter plot').props.markersColumnName = 'Series';
     });
-    await page.waitForTimeout(1500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const after = await page.evaluate(() => {
       const legend = document.querySelector('[name="legend"]') as HTMLElement;
       const r = legend.getBoundingClientRect();
@@ -482,7 +500,7 @@ test('Resize drag — no oscillation, and GROK-19041 equation avoidance', async 
         await new Promise((r) => setTimeout(r, 60));
       }
     });
-    await page.waitForTimeout(1500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const modes = await page.evaluate(() => (window as any).__modes);
     // placement is decided per frame now, so a monotone drag may legitimately pass through
     // the states its sizes settle to (mini icon exit while still narrow, then the vertical
@@ -555,7 +573,7 @@ test('Collapse persistence, corner clearance, tooltip transparency (demog)', asy
       if (s.textContent?.includes('.d4-tooltip'))
         s.textContent = s.textContent.replace(/\.d4-tooltip\s*{[^}]*}/g, '');
   });
-  await page.waitForTimeout(1500);
+  await v.waitForLegendIdle(page, 'Scatter plot');
   await v.resizeViewer(page, 'Scatter plot', 700, 620);
   await v.setViewerProps(page, 'Scatter plot', [
     {set: {legendVisibility: 'Auto', legendPosition: 'RightBottom'}, wait: 1500}]);
@@ -583,7 +601,9 @@ test('Collapse persistence, corner clearance, tooltip transparency (demog)', asy
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
     });
-    await page.waitForTimeout(1000);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'Auto'}, wait: 1200}]);
     for (const [w, h] of [[380, 300], [950, 700], [700, 620]]) {
       await v.resizeViewer(page, 'Scatter plot', w, h);
@@ -593,7 +613,7 @@ test('Collapse persistence, corner clearance, tooltip transparency (demog)', asy
       expect(mode, `collapsed legend popped open at ${w}x${h}`).toBe('miniIcon');
     }
     await page.evaluate(() => (document.querySelector('[name="mini-legend-icon"]') as HTMLElement).click());
-    await page.waitForTimeout(1200);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const mode = await page.evaluate(() =>
       document.querySelector('[name="legend"]')!.getAttribute('data-legend-mode'));
     expect(mode, 'the mini icon click did not restore the legend').not.toBe('miniIcon');
@@ -607,7 +627,9 @@ test('Collapse persistence, corner clearance, tooltip transparency (demog)', asy
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
     });
-    await page.waitForTimeout(1000);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     const mini = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       const r = el.getBoundingClientRect();
@@ -615,7 +637,8 @@ test('Collapse persistence, corner clearance, tooltip transparency (demog)', asy
     });
     await page.mouse.move(mini.x - 40, mini.y + 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
     const s = await page.evaluate(() => {
       const legend = document.querySelector('[name="legend"]') as HTMLElement;
       const tip = legend.closest('.d4-tooltip') as HTMLElement;
@@ -675,10 +698,8 @@ test('Docked-to-corner offset, dual stacking, corner/tooltip backgrounds (SPGI)'
       const vp = x.viewport;
       x.viewport = {x: vp.x, y: vp.y - vp.height * 1.5, width: vp.width * 2.5, height: vp.height * 2.5};
     });
-    await page.waitForTimeout(600);
-    await v.resizeViewer(page, 'Scatter plot', 660, 800);
-    await page.waitForTimeout(1000);
     await v.waitForLegendIdle(page, 'Scatter plot');
+    await v.resizeViewer(page, 'Scatter plot', 660, 800);
     const g = await legendGaps('Scatter plot');
     expect(g.mode, 'free right-top corner not taken').toBe('corner');
     expect(g.slot).toBe('rightTop');
@@ -692,9 +713,8 @@ test('Docked-to-corner offset, dual stacking, corner/tooltip backgrounds (SPGI)'
         yColumnNames: ['CAST Idea ID'],
         splitColumnNames: ['Primary Series Name', 'Scaffold Names', 'Series', 'Stereo Category']});
     });
-    await page.waitForTimeout(2000);
+    await v.waitForLegendIdle(page, 'Line chart');
     await v.resizeViewer(page, 'Line chart', 1400, 480);
-    await page.waitForTimeout(800);
     await v.setViewerProps(page, 'Line chart', [{set: {legendPosition: 'RightTop'}, wait: 1500}]);
     await v.waitForLegendIdle(page, 'Line chart');
     const g = await legendGaps('Line chart');
@@ -704,7 +724,6 @@ test('Docked-to-corner offset, dual stacking, corner/tooltip backgrounds (SPGI)'
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Line chart')?.close();
     });
-    await page.waitForTimeout(500);
   });
 
   await v.setViewerProps(page, 'Scatter plot', [
@@ -775,13 +794,14 @@ test('Docked-to-corner offset, dual stacking, corner/tooltip backgrounds (SPGI)'
     });
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightTop'}, wait: 1000}]);
     await v.resizeViewer(page, 'Scatter plot', 700, 500);
-    await page.waitForTimeout(1000);
     await page.evaluate(() => {
       const legend = document.querySelector('[name="legend"]') as HTMLElement;
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement).click();
     });
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     const mini = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       const r = el.getBoundingClientRect();
@@ -789,7 +809,8 @@ test('Docked-to-corner offset, dual stacking, corner/tooltip backgrounds (SPGI)'
     });
     await page.mouse.move(mini.x - 40, mini.y + 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
     const bgs = await page.evaluate(() => {
       const legend = document.querySelector('[name="legend"]') as HTMLElement;
       const tip = legend?.closest('.d4-tooltip') as HTMLElement;
@@ -801,7 +822,8 @@ test('Docked-to-corner offset, dual stacking, corner/tooltip backgrounds (SPGI)'
     for (const bg of bgs!)
       expect(bg, 'opaque list over the tooltip').toBe('rgba(0, 0, 0, 0)');
     await page.mouse.move(200, 900);
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') == null, {timeout: 8000}).catch(() => null);
   });
 
   expect(errors, `page errors: ${errors.join(' | ')}`).toHaveLength(0);
