@@ -9,4 +9,12 @@ public class CassandraIntColumnManager extends DefaultIntColumnManager {
         return !columnMeta.getTypeName().equalsIgnoreCase("varint")
                 && ((type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT));
     }
+
+    // The driver resolves a codec per CQL type and refuses the widening the typed getters ask for
+    // ("Codec not found ... [TINYINT <-> java.lang.Integer]"), so this provider reads through
+    // getObject and the converter chain instead.
+    @Override
+    public boolean canReadFast(ColumnMeta columnMeta) {
+        return false;
+    }
 }
