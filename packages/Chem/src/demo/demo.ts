@@ -13,6 +13,7 @@ import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {dockSarMatrixTabs} from '../analysis/sar-matrix/sar-matrix-viewer';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -189,114 +190,146 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
 }
 
 
+const SAR_MATRIX_VIEWER = 'SAR Matrix Viewer';
+
 interface SarHint {
-  anchor: string;
+  anchor: () => Element | null;
   position: `${ui.hints.POSITION}`;
   title: string;
   text: string;
 }
 
-interface SarHintStep {
-  awaits?: string;
-  hints: SarHint[];
-}
-
-const SAR_HINT_STEPS: SarHintStep[] = [
+const SAR_HINTS: SarHint[] = [
   {
-    hints: [
-      {
-        anchor: '.chem-sar-nav-list',
-        position: ui.hints.POSITION.RIGHT,
-        title: 'Pick a series',
-        text: 'Every card is an analog series: compounds sharing a core and varying at one position. ' +
-          'An L1 card is a single core with its substituents. L2 folds together the L1 cores that ' +
-          'agree one cut deeper, and L3 folds those again, so a higher level trades more rows for a ' +
-          'wider view of the same chemistry - open the nested ones with the chevron. Rank by reorders ' +
-          'the list.',
-      },
-      {
-        anchor: '.chem-sar-grid-host',
-        position: ui.hints.POSITION.RIGHT,
-        title: 'Then click a cell',
-        text: 'Cores run down the rows, substituents across the columns. A solid cell is a measured ' +
-          'compound; a pale cell with a dashed outline is one nobody has made yet. Click either to ' +
-          'inspect it.',
-      },
-    ],
+    anchor: () => document.querySelector('.chem-sar-nav-list'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Analog series',
+    text: 'Every card on the left is an analog series: compounds that share a core and vary at one ' +
+      'position, which is what makes their potencies comparable. The card shows the core, how many ' +
+      'cores and compounds it covers, and its score on the current ranking.',
   },
   {
-    awaits: '.chem-sar-cp-generate',
-    hints: [{
-      anchor: '.grok-prop-panel',
-      position: ui.hints.POSITION.LEFT,
-      title: 'A virtual analog',
-      text: 'This core and substituent were never combined, so there is no measurement. Its potency is ' +
-        'predicted from how that core and that substituent perform elsewhere in the matrix, with the ' +
-        'compounds behind each term listed as reference points. Add to make-list collects the ones worth ' +
-        'making into a separate table.',
-    }],
+    anchor: () => document.querySelector('.chem-sar-scaffold-card') ??
+      document.querySelector('.chem-sar-nav-list'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'One scaffold, several series',
+    text: 'A Scaffold row gathers the series built on the same scaffold, drawn above them with every ' +
+      'position it varies marked. They are listed rather than merged: each varies a different position, ' +
+      'and substituents at different positions do not belong in one column. Open them in turn to read ' +
+      'the same compounds from each position in turn.',
   },
   {
-    awaits: '.chem-sar-xfer-stats',
-    hints: [{
-      anchor: '.chem-sar-xfer-stats',
-      position: ui.hints.POSITION.RIGHT,
-      title: 'Carry the SAR across scaffolds',
-      text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
-        'they share. Where the correlation holds, an optimization found on one scaffold is expected to ' +
-        'carry to the other, and the analogs it argues for are marked in the matrix.',
-    }],
+    anchor: () => document.querySelector('.chem-sar-nav-controls .ui-input-root'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Rank by',
+    text: 'Reorders the list: Potent compounds puts the strongest series first, SAR discontinuity ' +
+      'the ones where a small change swings potency most, and Preferred substituent the ones a ' +
+      'single R-group dominates. The score on each card follows the scheme - best and mean potency ' +
+      'for Potent compounds, best R for Preferred substituent.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-nav-controls .chem-sar-struct-icon'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Filter the series',
+    text: 'This funnel narrows the list on the left. Filter by Best or Mean potency to keep only the ' +
+      'series worth reading, by Spread for the ones with the sharpest SAR, or by Compounds, Cores ' +
+      'and Level to drop the thin or over-folded ones. Core searches by substructure.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-nav-list'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Select and unfold',
+    text: 'Click a card to open that series in the matrix on the right. Levels nest: an L1 card is a ' +
+      'single core with its substituents, while L2 and L3 group the cores that agree one and two cuts ' +
+      'deeper - their badge reads "L2·6" for a level-2 matrix folding six in. Use the chevron to ' +
+      'unfold one into the matrices it groups, shown indented beneath it.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-struct-icon'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Filter the matrix',
+    text: 'This funnel filters the cells themselves. Reference points is the one to reach for - it ' +
+      'hides predictions resting on too little evidence, so what stays is what the data supports. ' +
+      'Potency, MW, Core and R narrow the grid the same way, and the dropdown next to this funnel ' +
+      'switches what each cell prints.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-grid-host'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Then click a cell',
+    text: 'Cores run down the rows, substituents across the columns. A solid cell is a measured ' +
+      'compound; a pale cell with a dashed outline is one nobody has made yet. Click either to ' +
+      'inspect it.',
+  },
+  {
+    anchor: () => document.querySelector('.grok-prop-panel'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'A virtual analog',
+    text: 'Select a dashed cell and the Context Panel explains it: the core and substituent were ' +
+      'never combined, so its potency is predicted from how each performs elsewhere in the matrix, ' +
+      'with the compounds behind every term listed as reference points. Add to make-list collects ' +
+      'the ones worth making into the Make list tab.',
+  },
+  {
+    anchor: () => Array.from(document.querySelectorAll('.d4-tab-header'))
+      .find((e) => e.textContent?.trim() === 'SAR Transfer') ?? null,
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'Carry the SAR across scaffolds',
+    text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
+      'they share. Where the correlation holds, an optimization found on one scaffold is expected to ' +
+      'carry to the other, and the analogs it argues for are marked in the matrix.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
+      Array.from(document.querySelectorAll('.d4-tab-header'))
+        .find((e) => e.textContent?.trim() === 'SAR Transfer') ?? null,
+    position: ui.hints.POSITION.LEFT,
+    title: 'Analogs the transfer argues for',
+    text: 'The two series are laid out over the substituents they share, and the columns captioned ' +
+      '"predicted" are the ones only one of them has tried. Those cells are dashed, exactly as in the ' +
+      'matrix: click one and the Context Panel gives the same Free-Wilson breakdown and the same Add ' +
+      'to make-list, so an analog suggested by a transfer joins the same synthesis list.',
+  },
+  {
+    anchor: () => Array.from(document.querySelectorAll('.d4-tab-header'))
+      .find((e) => e.textContent?.trim() === 'Make list') ?? null,
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'The make-list',
+    text: 'Everything collected lands here, each analog with its predicted potency, the support behind ' +
+      'it and the series it came from. Add selected takes whichever cell is selected in the matrix, so ' +
+      'the Context Panel is not the only way in. Open as table hands out a copy to save, export or ' +
+      'join; Clear empties the list.',
   },
 ];
 
-function sarHintWait(done: () => boolean): Promise<boolean> {
-  return new Promise((resolve) => {
-    const timer = setInterval(() => {
-      if (!document.querySelector('[class*="chem-sar-"]')) {
-        clearInterval(timer);
-        resolve(false);
-      } else if (done()) {
-        clearInterval(timer);
-        resolve(true);
-      }
-    }, 250);
-  });
+function showSarHint(i: number, previous?: HTMLElement): void {
+  previous?.remove();
+  if (i >= SAR_HINTS.length)
+    return;
+  const hint = SAR_HINTS[i];
+  const anchor = hint.anchor();
+  if (!(anchor instanceof HTMLElement)) {
+    showSarHint(i + 1);
+    return;
+  }
+  const content = ui.div();
+  content.append(ui.h3(hint.title));
+  content.append(ui.divText(hint.text));
+  const buttonHost = ui.divH([], {style: {justifyContent: 'flex-end'}});
+  content.append(buttonHost);
+  const popup = ui.hints.addHint(anchor, content, hint.position);
+  buttonHost.append(i === SAR_HINTS.length - 1 ? ui.button('Close', () => popup.remove()) :
+    ui.button('Next', () => showSarHint(i + 1, popup)));
 }
 
-async function showSarHints(): Promise<void> {
-  let shown: HTMLElement[] = [];
-  const clear = (): void => {
-    shown.forEach((popup) => popup.remove());
-    shown = [];
-  };
-  const show = (step: SarHintStep): void => {
-    clear();
-    for (const hint of step.hints) {
-      const anchor = document.querySelector(hint.anchor);
-      if (anchor instanceof HTMLElement) {
-        shown.push(ui.hints.addHint(anchor,
-          ui.divV([ui.h3(hint.title), ui.divText(hint.text)]), hint.position));
-      }
+function showSarHints(): void {
+  const timer = setInterval(() => {
+    if (document.querySelector('.chem-sar-grid-host')) {
+      clearInterval(timer);
+      showSarHint(0);
     }
-  };
-
-  if (!await sarHintWait(() => document.querySelector('.chem-sar-grid-host') !== null))
-    return;
-  show(SAR_HINT_STEPS[0]);
-
-  const pending = SAR_HINT_STEPS.slice(1);
-  const armed = (): number => pending.findIndex((s) => document.querySelector(s.awaits!) !== null);
-  while (pending.length) {
-    if (!await sarHintWait(() => armed() >= 0)) {
-      clear();
-      return;
-    }
-    const i = armed();
-    show(pending[i]);
-    pending.splice(0, i + 1);
-  }
-  await sarHintWait(() => false);
-  clear();
+  }, 250);
+  setTimeout(() => clearInterval(timer), 120000);
 }
 
 export async function _demoSarMatrix(): Promise<void> {
@@ -305,6 +338,14 @@ export async function _demoSarMatrix(): Promise<void> {
   const p = await grok.functions.eval('Chem:SarMatrixDemo');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
+  await DG.delay(300);
+  const tv = grok.shell.tv;
+  if (tv) {
+    for (const viewer of tv.viewers) {
+      if (viewer.type === SAR_MATRIX_VIEWER)
+        dockSarMatrixTabs(tv, viewer);
+    }
+  }
   showSarHints();
   setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix'), 1000);
 }
