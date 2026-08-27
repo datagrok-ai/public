@@ -1,6 +1,127 @@
 {
   "schema": "dg-ui/1",
   "recipes": "docs/recipes/",
+  "appearance": [
+    {
+      "name": "color",
+      "type": "string",
+      "inputType": "Color",
+      "description": "Text color; inherits down the subtree.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "backgroundColor",
+      "type": "string",
+      "inputType": "Color",
+      "description": "Background color.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "font",
+      "type": "string",
+      "inputType": "Font",
+      "description": "CSS font shorthand (\"bold 14px Roboto\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "opacity",
+      "type": "double",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "description": "0 transparent to 1 opaque.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "cursor",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "default",
+        "pointer",
+        "not-allowed",
+        "wait",
+        "help",
+        "text",
+        "move",
+        "grab"
+      ],
+      "description": "Mouse cursor over the node.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "textAlign",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "left",
+        "center",
+        "right"
+      ],
+      "description": "Horizontal text alignment.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "padding",
+      "type": "string",
+      "description": "CSS padding (\"8px 12px\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "margin",
+      "type": "string",
+      "description": "CSS margin.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "border",
+      "type": "string",
+      "description": "CSS border (\"1px solid var(--dg-border)\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "borderRadius",
+      "type": "string",
+      "description": "Corner radius (\"4px\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "description": "CSS width (\"200px\", \"50%\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "description": "CSS height.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "pointerEvents",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "auto",
+        "none"
+      ],
+      "description": "\"none\" makes the node click-through.",
+      "category": "Appearance",
+      "bindable": true
+    }
+  ],
   "components": [
     {
       "tag": "u2-text-input",
