@@ -1,8 +1,9 @@
 # Helm changelog
 
-## v.next
+## 3.0.3
 
 * Moved the Helm Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+* Improved HELM layout engine for conjugate cases
 
 ## 3.0.1 (2026-06-20)
 
