@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
@@ -12,6 +11,7 @@ import {
 } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
+import { FuncCallParamsEditor, MessageFuncCallEditor } from '@datagrok-libraries/utils/src/func-call-params-editor';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
 
@@ -72,29 +72,35 @@ export class PackageFunctions {
     await performChemicalPropertyPredictions(molecules, table, models);
   }
 
-  @grok.decorators.editor({name: 'AdmeticaEditor'})
-  static admeticaEditor(call: DG.FuncCall): void {
+  @grok.decorators.editor({
+    name: 'AdmeticaEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static admeticaEditor(call: DG.FuncCall): DG.Widget {
+    const dataFrame = grok.shell.tv?.dataFrame;
+    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length)
+      return new MessageFuncCallEditor('Admetica requires an open table with a Molecule column');
     const funcEditor = new AdmeticaBaseEditor();
-    ui.dialog({ title: 'Admetica' })
-      .add(funcEditor.getEditor())
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        call.func
-          .prepare({
-            table: params.table,
-            molecules: params.col,
-            template: params.templateContent,
-            models: params.models,
-            addPiechart: params.addPiechart,
-            addForm: params.addForm,
-          })
-          .call(true);
-      })
-      .show();
+    return new FuncCallParamsEditor(call, {
+      inner: funcEditor,
+      stableInputs: [funcEditor.tableInput, funcEditor.templatesInput,
+        funcEditor.addPiechartInput, funcEditor.addFormInput],
+      map: (p) => ({
+        table: p.table,
+        molecules: p.col,
+        template: p.templateContent,
+        models: p.models,
+        addPiechart: p.addPiechart,
+        addForm: p.addForm,
+      }),
+      isValid: (p) => !!p.table && !!p.col && p.models.length > 0,
+      inputFor: {table: funcEditor.tableInput},
+    });
   }
 
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
+    'friendlyName': 'Admetica',
     'description': 'Predicts ADMET properties and appends result columns.',
     'top-menu': 'Chem | Admetica | Calculate...',
     'editor': 'Admetica:AdmeticaEditor',
