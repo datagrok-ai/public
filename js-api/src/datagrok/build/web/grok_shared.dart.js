@@ -101518,7 +101518,13 @@
     initJsApi_closure537: {
       "^": "Closure:5;",
       call$1: [function(p) {
-        return p instanceof N.FuncParam ? p.options : P.LinkedHashMap__makeEmpty();
+        var options, t1;
+        options = p instanceof N.FuncParam ? p.options : P.LinkedHashMap__makeEmpty();
+        if (p.get$tags() == null || J.get$isEmpty$asx(p.get$tags()) === true)
+          return options;
+        t1 = P.LinkedHashMap_LinkedHashMap$from(options, null, null);
+        t1.addAll$1(0, p.get$tags());
+        return t1;
       }, null, null, 2, 0, null, 2, "call"]
     },
     initJsApi_closure538: {
@@ -166176,8 +166182,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "507b71f5c004b9fe8defb8ade950f0f91ca06eb2");
-        t2.set$date(t1, "2026-08-26T22:49:06.994Z");
+        t2.set$commit(t1, "88a4cf0580c183e69893227f7168c11beef88e3f");
+        t2.set$date(t1, "2026-08-27T22:48:58.683Z");
         t2.set$version(t1, "1.27.9");
         return t1;
       }, null, null, 0, 0, null, "call"]
