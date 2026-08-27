@@ -2029,6 +2029,49 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly?: boolean}): LogDataSource {
     return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end), options?.favoritesOnly ?? false));
   }
+
+  /**
+   * Names of the cloud log groups this instance can read.
+   *
+   * Admins only. Without a connection the server uses its own AWS role.
+   *
+   * @example
+   * const groups = await grok.dapi.log.getCloudLogGroups({prefix: '/datagrok/'});
+   */
+  getCloudLogGroups(options?: {connection?: string, prefix?: string}): Promise<string[]> {
+    return api.grok_Dapi_Log_CloudLogGroups(options?.connection ?? '', options?.prefix ?? '');
+  }
+
+  /**
+   * Events from a cloud log group — the hot, queryable tier (30 days).
+   *
+   * `filter` is a CloudWatch *filter pattern*, not a regular expression: a bare
+   * word matches a substring, `?a ?b` is OR, `-x` excludes.
+   *
+   * @example
+   * const df = await grok.dapi.log.getCloudLogEvents('/datagrok/public',
+   *   dayjs().subtract(1, 'hour'), dayjs(), {filter: 'error'});
+   */
+  getCloudLogEvents(group: string, start: dayjs.Dayjs, end: dayjs.Dayjs,
+    options?: {connection?: string, filter?: string, limit?: number}): Promise<DataFrame> {
+    return api.grok_Dapi_Log_CloudLogEvents(options?.connection ?? '', group,
+      toDart(start), toDart(end), options?.filter ?? '', options?.limit ?? 1000);
+  }
+
+  /**
+   * Objects in the write-once log archive under `prefix` — key, modified, size.
+   *
+   * Listing is the archive's only index; the keys carry the delivery date.
+   * `connection` is an S3 data connection pointing at the archive bucket.
+   */
+  getArchiveObjects(connection: string, options?: {prefix?: string, limit?: number}): Promise<DataFrame> {
+    return api.grok_Dapi_Log_ArchiveObjects(connection, options?.prefix ?? '', options?.limit ?? 1000);
+  }
+
+  /** Decodes one archived object into log events, same shape as {@link getCloudLogEvents}. */
+  getArchiveEvents(connection: string, key: string): Promise<DataFrame> {
+    return api.grok_Dapi_Log_ArchiveEvents(connection, key);
+  }
 }
 
 export class ActivityDataSource extends HttpDataSource<LogEvent> {
