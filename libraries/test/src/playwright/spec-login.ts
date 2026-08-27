@@ -66,6 +66,21 @@ async function injectToken(page: Page, token: string): Promise<void> {
   await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 }
 
+// Boot the client in local mode (`?mode=local`): no authenticated session, no server
+// calls — the whole API tree is answered from static files under `web/local/`
+// (core/docs/features/ui2/LOCAL_MODE.md). A spec that only exercises client-side behavior
+// (viewers, DataFrames, layouts held in memory) runs here with no token exchange and no
+// per-spec server round-trips. Anything server-backed (dapi persistence, file shares,
+// queries) degrades to an empty result rather than failing, so a spec that needs the
+// server must use loginToDatagrok instead.
+export async function openLocalDatagrok(page: Page): Promise<void> {
+  await page.goto(`${baseUrl}/?mode=local`);
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null && !!(window as any).grok?.shell,
+    null, {timeout: 120_000});
+  await page.addStyleTag({content: '.d4-tooltip { display: none !important; }'}).catch(() => {});
+}
+
 export async function loginToDatagrok(page: Page): Promise<void> {
   const token = process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)

@@ -1,6 +1,6 @@
 import {Page, expect} from '@playwright/test';
 import {createHash} from 'crypto';
-import {stepErrors, StepError} from '../spec-login';
+import {installCsvBridge, stepErrors, StepError} from '../spec-login';
 
 export interface OpenTableOptions {
 
@@ -18,6 +18,10 @@ export interface OpenTableOptions {
 }
 
 export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
+  // Most specs build their own page and never call openDatagrok, so the read seam has to be
+  // established here rather than assumed: on a server page it resolves to dapi.files.readCsv,
+  // which is what this helper always did.
+  await installCsvBridge(page);
   const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
   const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
@@ -44,7 +48,7 @@ export async function openTable(page: Page, options?: OpenTableOptions): Promise
       }
       if (!df) throw new Error(`OpenFile("${path}") did not produce a TableView (12s settle)`);
     } else {
-      df = await (window as any).grok.dapi.files.readCsv(path);
+      df = await (window as any).__readCsv(path);
       (window as any).grok.shell.addTableView(df);
     }
     await new Promise((resolve) => {
@@ -190,6 +194,23 @@ export async function pickColumnViaSelector(
       page.waitForTimeout(500),
     ]);
   }
+
+  // The combobox itself receives the keystrokes — it is focusable (tabIndex 0) and builds its
+  // search box from the first one, while the popup it opens is a canvas grid with nothing to
+  // type into. The mousedown moves focus there a beat later than it opens the popup, and a key
+  // sent in that window goes to the viewer canvas and is lost: the list never filters, Enter
+  // commits nothing, and the column silently stays as it was (~1 run in 4). Wait for the
+  // selector we clicked — by name, in this viewer, never the first one in the document — to
+  // actually hold focus.
+  await pollValue(
+    () => page.evaluate(({name, sc}) => {
+      const root: Document | Element = sc ? (document.querySelector(sc) as Element | null) ?? document : document;
+      const sel = root.querySelector(`[name="${name}"]`) as HTMLElement | null;
+      if (!sel) return false;
+      if (document.activeElement !== sel) sel.focus();
+      return document.activeElement === sel;
+    }, {name: selectorName, sc: scope}),
+    (focused) => focused === true, 1000, 50);
 
   await page.keyboard.press(opts.columnName[0].toLowerCase());
   await page.waitForTimeout(100);

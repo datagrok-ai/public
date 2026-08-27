@@ -1,5 +1,5 @@
 import {test as base, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, stepErrors} from './spec-login';
+import {openDatagrok, setLane, specTestOptions, stepErrors} from './spec-login';
 
 /**
  * A Datagrok that is booted once per worker instead of once per spec.
@@ -85,31 +85,47 @@ export async function resetShell(page: Page): Promise<void> {
   }, OVERLAYS);
 }
 
-export const test = base.extend<{page: Page}, {shared: {page: Page | null}}>({
-  // Worker-scoped holder rather than a worker-scoped page: the context has to be built
-  // from `contextOptions`, which is test-scoped, and building it by hand instead dropped
-  // every project-level `use` — the Desktop Chrome device settings among them, which
-  // changed how viewers rendered and failed specs that pass on their own.
-  shared: [async ({}, use) => {
-    const holder: {page: Page | null} = {page: null};
-    await use(holder);
-    await holder.page?.context().close().catch(() => {});
-  }, {scope: 'worker'}],
+function laneTest(lane: 'local' | 'server') {
+  return base.extend<{page: Page}, {shared: {page: Page | null}}>({
+    // Worker-scoped holder rather than a worker-scoped page: the context has to be built
+    // from `contextOptions`, which is test-scoped, and building it by hand instead dropped
+    // every project-level `use` — the Desktop Chrome device settings among them, which
+    // changed how viewers rendered and failed specs that pass on their own.
+    shared: [async ({}, use) => {
+      const holder: {page: Page | null} = {page: null};
+      await use(holder);
+      await holder.page?.context().close().catch(() => {});
+    }, {scope: 'worker'}],
 
-  page: async ({browser, contextOptions, shared}, use) => {
-    if (!shared.page) {
-      const context = await browser.newContext(contextOptions);
-      context.setDefaultTimeout(specTestOptions.actionTimeout);
-      context.setDefaultNavigationTimeout(specTestOptions.navigationTimeout);
-      shared.page = await context.newPage();
-      await loginToDatagrok(shared.page);
-    }
-    stepErrors.length = 0;
-    await revive(shared.page);
-    await use(shared.page);
-    await revive(shared.page);
-  },
-});
+    page: async ({browser, contextOptions, shared}, use) => {
+      if (!shared.page) {
+        const context = await browser.newContext(contextOptions);
+        context.setDefaultTimeout(specTestOptions.actionTimeout);
+        context.setDefaultNavigationTimeout(specTestOptions.navigationTimeout);
+        shared.page = await context.newPage();
+        setLane(shared.page, lane);
+        await openDatagrok(shared.page);
+      }
+      stepErrors.length = 0;
+      await revive(shared.page);
+      await use(shared.page);
+      await revive(shared.page);
+    },
+  });
+}
+
+/**
+ * The server lane: an authenticated client, one boot per worker. What every spec used
+ * before lanes existed, and what a spec whose subject is server state still needs.
+ */
+export const test = laneTest('server');
+
+/**
+ * The local lane: `?mode=local`, no session, no server (core/docs/features/ui2/LOCAL_MODE.md).
+ * For a spec whose subject is client behaviour. Its holder is separate from the server lane's,
+ * so a worker that runs both boots one page of each rather than re-navigating between them.
+ */
+export const localTest = laneTest('local');
 
 /**
  * Puts the shared page back into a usable state, re-booting it if it is past saving.
@@ -124,7 +140,7 @@ async function revive(page: Page): Promise<void> {
     await drainErrors(page);
     return;
   } catch (_) { /* fall through to a re-boot */ }
-  await loginToDatagrok(page).catch(() => {});
+  await openDatagrok(page).catch(() => {});
   await resetShell(page).catch(() => {});
 }
 

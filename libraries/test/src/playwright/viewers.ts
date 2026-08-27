@@ -686,9 +686,41 @@ export interface ViewerPropStep {
   /** Props to assign this step (one or many, in insertion order). */
   set: Record<string, any>;
   /** Settle delay in ms after the assignment (default `delayMs`). */
-  wait?: number;
+  wait?: number | 'render';
   /** Prop name → its value is collected; array → an object keyed by those names; omitted → nothing. */
   read?: string | string[];
+}
+
+/**
+ * Installs the page-side `__viewerRendered(viewerType, capMs)` wait: it resolves on the
+ * viewer's next `d4-viewer-rendered` rather than after a fixed sleep, which is what makes
+ * a property ladder cost a frame instead of 200 ms a step. The cap is a floor, not the
+ * expected path — it only fires for a property that repaints nothing (a title string, a
+ * tooltip-only flag), so a rising cap-hit count means the wait is watching the wrong signal.
+ */
+export async function installRenderWait(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as any).__renderWaitCaps = 0;
+    (window as any).__viewerRendered = (viewerType: string, capMs = 400) => new Promise((res) => {
+      const v = Array.from((window as any).grok.shell.tv.viewers).find((x: any) => x.type === viewerType) as any;
+      if (!v) return res(null);
+      let done = false;
+      const finish = (capped: boolean) => {
+        if (done) return;
+        done = true;
+        if (capped) (window as any).__renderWaitCaps++;
+        sub.unsubscribe();
+        res(null);
+      };
+      const sub = v.onViewerRendered.subscribe(() => finish(false));
+      setTimeout(() => finish(true), capMs);
+    });
+  });
+}
+
+/** How many render waits fell back to their cap — a spec whose count climbs is sleeping again. */
+export async function renderWaitCapHits(page: Page): Promise<number> {
+  return page.evaluate(() => (window as any).__renderWaitCaps ?? 0);
 }
 
 /**
@@ -699,15 +731,20 @@ export interface ViewerPropStep {
  * same set order, same per-step delay, read-back happens after the wait.
  */
 export async function setViewerProps(
-  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs = 300,
+  page: Page, viewerType: string, steps: ViewerPropStep[], delayMs: number | 'render' = 300,
 ): Promise<any[]> {
+  if (delayMs === 'render' || steps.some((s) => s.wait === 'render'))
+    await installRenderWait(page);
   return page.evaluate(async ({viewerType, steps, delayMs}) => {
     const h = Array.from((window as any).grok.shell.tv.viewers)
       .find((x: any) => x.type === viewerType) as any;
+    const settled = (wait: number | 'render') => wait === 'render'
+      ? (window as any).__viewerRendered(viewerType)
+      : new Promise((res) => setTimeout(res, wait));
     const out: any[] = [];
     for (var step of steps) {
       for (var k of Object.keys(step.set)) h.props[k] = step.set[k];
-      await new Promise((res) => setTimeout(res, step.wait ?? delayMs));
+      await settled(step.wait ?? delayMs);
       if (step.read === undefined) continue;
       if (Array.isArray(step.read)) {
         const obj: Record<string, any> = {};

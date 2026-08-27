@@ -79,6 +79,118 @@ async function injectToken(page: Page, token: string) {
   await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
 }
 
+// Local mode (`?mode=local`, core/docs/features/ui2/LOCAL_MODE.md): the client boots with no
+// authenticated session and answers every API call from static files. A spec whose subject is
+// client behaviour runs identically there, without the token exchange, the boot round-trips or
+// the per-spec dataset read — set DATAGROK_MODE=local to take that lane.
+export const localMode = process.env.DATAGROK_MODE === 'local';
+
+// Which client a page is running. The lane is declared per spec by the fixture it imports
+// (`test` = server, `localTest` = local), so one run can hold both; DATAGROK_MODE=local is
+// kept as a run-wide override for measuring the same spec both ways.
+const lanes = new WeakMap<Page, 'local' | 'server'>();
+
+export function setLane(page: Page, lane: 'local' | 'server') {
+  lanes.set(page, lane);
+}
+
+export function laneOf(page: Page): 'local' | 'server' {
+  // DATAGROK_MODE=server forces every lane onto a real server: local mode is a fast lane for
+  // building, and the discipline that goes with it is proving the same specs against a stand.
+  if (process.env.DATAGROK_MODE === 'server') return 'server';
+  return lanes.get(page) ?? (localMode ? 'local' : 'server');
+}
+
+// Datasets a local-mode run must not fetch from the server, mapped to the checked-in copy.
+// `packages/ApiTests/files/datasets/demog.csv` is byte-identical to System:DemoFiles/demog.csv,
+// so category counts, tooltips and legend labels assert the same values in both lanes.
+const LOCAL_DATASETS: Record<string, string> = {
+  'System:DemoFiles/demog.csv': '../../../ApiTests/files/datasets/demog.csv',
+  'System:AppData/Chem/tests/spgi-100.csv': '../../../UITests/files/SPGI_v2_100.csv',
+};
+
+/**
+ * Installs `__readCsv(path)`, the one seam a spec needs to run in either lane: on a server it is
+ * `dapi.files.readCsv`, in local mode it parses a CSV shipped into the page from LOCAL_DATASETS.
+ * An unmapped path throws by name rather than resolving to an empty table, which is how local
+ * mode degrades everything server-backed.
+ */
+let localCsvCache: Record<string, string> | null = null;
+
+export async function installCsvBridge(page: Page) {
+  const local = laneOf(page) === 'local';
+  let texts: Record<string, string> = {};
+  if (local) {
+    if (!localCsvCache) {
+      localCsvCache = {};
+      for (const serverPath of Object.keys(LOCAL_DATASETS)) {
+        const file = path.resolve(__dirname, LOCAL_DATASETS[serverPath]);
+        if (fs.existsSync(file)) localCsvCache[serverPath] = fs.readFileSync(file, 'utf8');
+      }
+    }
+    texts = localCsvCache;
+  }
+  await page.evaluate(({csv, local}) => {
+    const w = window as any;
+    w.__csv = csv;
+    w.__readCsv = async (p: string) => {
+      if (!local) return w.grok.dapi.files.readCsv(p);
+      if (!(p in w.__csv))
+        throw new Error(`No local copy of "${p}" — add it to LOCAL_DATASETS or run this spec on a server`);
+      return w.DG.DataFrame.fromCsv(w.__csv[p]);
+    };
+  }, {csv: texts, local});
+}
+
+/**
+ * Console noise a local-mode boot on dev produces that no spec caused: the deployed
+ * `web/local/api.json` lists a staged package whose bundle was never copied under
+ * `web/local/pkg/`, so the client 404s on it. Specs that assert a zero console-error count
+ * must not be charged for it; anything else still fails them.
+ */
+export function isLocalBootNoise(text: string): boolean {
+  return /Failed to load resource/.test(text) || /local\/pkg\//.test(text);
+}
+
+export async function openLocalDatagrok(page: Page) {
+  const alreadyUp = await page.evaluate(() =>
+    !!(window as any).grok?.shell && document.querySelector('.grok-preloader') == null,
+  ).catch(() => false);
+  if (alreadyUp) return;
+  await page.goto(`${baseUrl}/?mode=local`);
+  // A stand that does not serve local mode ignores the parameter and returns the LOGIN page
+  // (verified against public.datagrok.ai): `grok.shell` exists there, so waiting on the shell
+  // alone burns the full timeout and then reports a bare Playwright timeout. Race the two
+  // outcomes instead and name the real cause — local mode ships in the client, so the target
+  // stand has to be built from a revision that carries it.
+  const outcome = await page.waitForFunction(() => {
+    const w = window as any;
+    if (document.querySelector('input[type="password"], .grok-login')) return 'login';
+    return document.querySelector('.grok-preloader') == null && !!w.grok?.shell ? 'ready' : false;
+  }, null, {timeout: 120_000}).then((h) => h.jsonValue());
+  if (outcome === 'login')
+    throw new Error(`${baseUrl} does not serve local mode: ?mode=local returned the login page. ` +
+      'The client must be built from a revision that carries it (core/docs/features/ui2/LOCAL_MODE.md).');
+  // The deployed fixture registers a debugging package, so a local boot raises a sticky
+  // "Debugging packages" balloon — and a sticky balloon's container eats clicks (shared-page.ts).
+  // It arrives after the shell is up, i.e. after the first spec's resetShell has already run,
+  // which is what made that spec's column-selector pick fail 3 runs in 4. Wait it out here,
+  // once per boot, so no spec starts under it.
+  await page.waitForFunction(() => document.querySelectorAll('.d4-balloon').length > 0,
+    null, {timeout: 5_000}).catch(() => {});
+  await page.evaluate(() => {
+    for (const b of Array.from(document.querySelectorAll('.d4-balloon'))) b.remove();
+    for (const c of Array.from(document.querySelectorAll('.d4-balloon-container')))
+      (c as HTMLElement).innerHTML = '';
+  });
+}
+
+/** Boots whichever client the run asked for. */
+export async function openDatagrok(page: Page) {
+  await (laneOf(page) === 'local' ? openLocalDatagrok(page) : loginToDatagrok(page));
+  await installCsvBridge(page);
+}
+
 export async function loginToDatagrok(page: Page) {
   const token = process.env.DATAGROK_AUTH_TOKEN;
   if (!token || token.length === 0)
