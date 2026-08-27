@@ -13,6 +13,9 @@ export interface AnnotationDoc {
   color: string;
   /** Title font size in px; absent = the default (13). */
   fontSize?: number;
+  /** A pinned annotation cannot be moved or resized — dragging its body pans
+   *  the canvas instead. Absent = false. */
+  pinned?: boolean;
 }
 
 /** Material 100-level backgrounds paired with their 700-level borders. */
@@ -52,6 +55,7 @@ export class FlowAnnotation {
   text: string;
   color: string;
   fontSize: number;
+  pinned: boolean;
   /** Outer wrapper element — added to `area.content.holder` by the editor. */
   readonly element: HTMLElement;
   readonly titleEl: HTMLElement;
@@ -65,6 +69,7 @@ export class FlowAnnotation {
     this.color = opts.color ?? ANN_DEFAULT_COLOR;
     const fs = Number(opts.fontSize);
     this.fontSize = Number.isFinite(fs) && fs > 0 ? fs : ANN_DEFAULT_FONT_SIZE;
+    this.pinned = opts.pinned === true;
 
     this.element = document.createElement('div');
     this.element.className = 'ff-annotation';
@@ -92,6 +97,7 @@ export class FlowAnnotation {
     this.applySize();
     this.applyColor();
     this.applyFont();
+    this.applyPinned();
   }
   applyPos(): void {
     this.element.style.left = `${this.pos.x}px`;
@@ -108,6 +114,9 @@ export class FlowAnnotation {
   applyFont(): void {
     this.titleEl.style.fontSize = `${this.fontSize}px`;
   }
+  applyPinned(): void {
+    this.element.dataset.pinned = String(this.pinned);
+  }
 
   toDoc(): AnnotationDoc {
     return {
@@ -116,8 +125,9 @@ export class FlowAnnotation {
       size: {...this.size},
       text: this.text,
       color: this.color,
-      // Omitted at the default so untouched saves stay tidy (same pattern as autorun).
+      // Non-defaults omitted so untouched saves stay tidy (same pattern as autorun).
       ...(this.fontSize !== ANN_DEFAULT_FONT_SIZE ? {fontSize: this.fontSize} : {}),
+      ...(this.pinned ? {pinned: true} : {}),
     };
   }
 }

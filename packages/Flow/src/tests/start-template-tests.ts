@@ -15,7 +15,7 @@ import {deserializeFlow} from '../serialization/flow-serializer';
 import {_package} from '../package';
 import {makeEditor, destroyEditor, until} from './test-utils';
 
-const TEMPLATE_SLUGS = ['workflow-demo', 'sequence-demo', 'interactive-viewers'];
+const TEMPLATE_SLUGS = ['workflow-demo', 'interactive-viewers'];
 const IV_NODES = 16;
 const IV_CONNECTIONS = 13;
 
@@ -31,6 +31,9 @@ category('Flow: start templates', () => {
       await until(() => (view as any).flow != null, 10000);
       for (const slug of TEMPLATE_SLUGS)
         expect(!!view.root.querySelector(`[data-testid="ff-start-template-${slug}"]`), true, `${slug} card shown`);
+      expect(!!view.root.querySelector('[data-testid="ff-start-blank"]'), true, 'blank-canvas card shown');
+      expect(view.root.querySelector('[data-testid="ff-start-template-sequence-demo"]'), null,
+        'Bio Molecules is off the home screen');
     } finally {
       view.detach();
       view.root.remove();
@@ -56,6 +59,11 @@ category('Flow: start templates', () => {
     } finally {
       destroyEditor(e);
     }
+
+    // The other home-screen template ships live too.
+    const wd = flows.find((s) => (s.friendlyName === 'Workflow Demo' || s.name === 'WorkflowDemo'));
+    expect(wd != null, true, 'the bundled Workflow Demo script deployed');
+    expect(parseFlowBody(wd!.script).doc.metadata?.settings?.autorun, true, 'Workflow Demo carries autorun');
   }, {timeout: 30000});
 
   test('the card click loads the whole flow (needs AppData file serving)', async () => {

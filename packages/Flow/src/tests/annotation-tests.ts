@@ -233,12 +233,63 @@ category('Flow: annotations', () => {
       expect(changes, base + 2, 'resize is an unsaved change');
       flow.setAnnotationFontSize(ann.id, 20);
       expect(changes, base + 2, 'same size again is not');
+
+      flow.setAnnotationPinned(ann.id, true);
+      expect(ann.element.dataset.pinned, 'true', 'pin applied');
+      expect(changes, base + 3, 'pinning is an unsaved change');
+      flow.setAnnotationPinned(ann.id, true);
+      expect(changes, base + 3, 'same pin state again is not');
     } finally {
       try {
         flow.destroy();
       } finally {
         container.remove();
       }
+    }
+  });
+
+  test('a pinned annotation stays put — direct drags and carriers alike', async () => {
+    const e = makeEditor();
+    try {
+      const pinned = e.flow.addAnnotation({pos: {x: 40, y: 40}, size: {w: 100, h: 80}, pinned: true});
+      expect(pinned.element.dataset.pinned, 'true', 'the element carries the pinned mark');
+
+      drag(pinned.element, 60, 30);
+      expect(pinned.pos.x, 40, 'a direct drag does not move it');
+
+      drag(pinned.resizeHandle, 50, 50);
+      expect(pinned.size.w, 100, 'the resize handle is inert too');
+
+      const outer = e.flow.addAnnotation({pos: {x: 0, y: 0}, size: {w: 400, h: 300}});
+      const carried = e.flow.addAnnotation({pos: {x: 200, y: 40}, size: {w: 100, h: 80}});
+      drag(outer.element, 25, 15);
+      expect(carried.pos.x, 225, 'an unpinned contained annotation travels');
+      expect(pinned.pos.x, 40, 'the pinned one is left behind by a carrier');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('pinned round-trips through the .flow doc and toDoc omits false', async () => {
+    const e = makeEditor();
+    const e2 = makeEditor();
+    try {
+      e.flow.addAnnotation({text: 'locked', pinned: true});
+      e.flow.addAnnotation({text: 'free'});
+      const doc = serializeFlow(e.flow, SETTINGS);
+      expect(doc.annotations!.find((a) => a.text === 'locked')!.pinned, true, 'pinned serialized');
+      expect('pinned' in doc.annotations!.find((a) => a.text === 'free')!, false,
+        'an unpinned annotation saves without the key');
+
+      await deserializeFlow(doc, e2.flow);
+      const loaded = e2.flow.getAnnotations().find((a) => a.text === 'locked')!;
+      expect(loaded.pinned, true, 'pinned survives the load');
+      expect(loaded.element.dataset.pinned, 'true', 'and is applied');
+      drag(loaded.element, 60, 0);
+      expect(loaded.pos.x, 0, 'still immovable after the load');
+    } finally {
+      destroyEditor(e2);
+      destroyEditor(e);
     }
   });
 
@@ -251,7 +302,8 @@ category('Flow: annotations', () => {
       const labels = (): string[] => Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
         .map((el) => el.textContent?.trim() ?? '');
       expect(await until(() => labels().includes('Color') && labels().includes('Title size') &&
-        labels().includes('Delete')), true, `menu groups missing; saw: ${labels().join(', ')}`);
+        labels().includes('Pinned') && labels().includes('Delete')), true,
+      `menu items missing; saw: ${labels().join(', ')}`);
     } finally {
       for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
         el.remove();

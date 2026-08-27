@@ -862,6 +862,15 @@
   border-bottom-right-radius: 6px;
 }
 
+/* Pinned: not movable/resizable — body drags pan the canvas instead. */
+.ff-annotation[data-pinned="true"] {
+  cursor: default;
+}
+
+.ff-annotation[data-pinned="true"] .ff-annotation-resize {
+  display: none;
+}
+
 /* ---------- node groups (collapsible frames, see rete/node-group.ts) ---------- */
 
 /* Expanded: a background frame hugging the member bbox, under the nodes. */

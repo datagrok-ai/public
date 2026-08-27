@@ -36,6 +36,8 @@ export interface FuncFlowAnnotation {
   color: string;
   /** Title font size in px; absent in older saves = the default (13). */
   fontSize?: number;
+  /** Pinned = not movable/resizable (body drag pans the canvas). Absent = false. */
+  pinned?: boolean;
 }
 
 export interface FuncFlowGroup {
