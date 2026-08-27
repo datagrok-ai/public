@@ -23,6 +23,9 @@ export interface CoreCluster {
    *  folds groups of the level below into one. */
   level: number;
   parentId?: string;
+  /** Set only when the user grouped the series themselves: the value their column carried, used
+   *  verbatim as the matrix label so the names on screen are the ones they wrote. */
+  label?: string;
 }
 
 export type SarMatrixCellKind = 'real' | 'virtual' | 'empty';

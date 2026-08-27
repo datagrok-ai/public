@@ -4,6 +4,21 @@ import {logSarTime} from './sar-matrix-types';
 
 const MIN_ANCHOR_HEAVY_ATOMS = 4;
 export const MAX_SAR_CLUSTER_SIZE = 300;
+/**
+ * Bounds on what may be handed to an MCS, and the reason both are counted rather than timed.
+ *
+ * A cluster whose MCS overruns its budget costs more than itself: the worker running it is
+ * restarted, that slot stops drawing from the queue, and once every slot has stopped the clusters
+ * still queued are dropped unanalysed. How many get that far depends on how busy the machine is, so
+ * a time-based limit makes the set of matrices differ between two runs over identical data.
+ *
+ * Deciding from the molecules instead keeps that decision reproducible. The MCS is a subgraph of the
+ * cluster's smallest member, so that member's atom count — not how many molecules there are — is what
+ * makes a cluster unaffordable, and sampling caps the rest of the search. A cluster past the ceiling
+ * gets no anchor and is assembled through the single-position fallback, on every machine alike.
+ */
+const MCS_SAMPLE_SIZE = 8;
+const MAX_MCS_ANCHOR_ATOMS = 50;
 /** Permissive floor: anchoring on the ring scaffold makes the core a small fraction of a large
  *  molecule by design, so this only rejects a degenerate anchor (median coverage across cluster). */
 const MIN_MCS_COVERAGE = 0.2;
@@ -98,6 +113,25 @@ function canonicalCore(rdkit: ReturnType<typeof getRdKitModule>, coreRaw: string
   return coreSmiles;
 }
 
+/**
+ * The molecules a cluster's MCS is actually computed over: distinct structures, smallest first,
+ * capped at {@link MCS_SAMPLE_SIZE}. Smallest first because the MCS cannot exceed the smallest
+ * member, so those are the molecules that determine it while the larger ones only widen the search.
+ * The anchor this yields still faces `anchorIsUsable`, which measures it against every molecule in
+ * the cluster. Sorting by size then by string keeps one cluster's sample the same on every run.
+ */
+function mcsSample(smiles: string[], rdkit: ReturnType<typeof getRdKitModule>): string[] {
+  const ranked = [...new Set(smiles)].map((s) => ({s, atoms: heavyAtomCount(rdkit, s)}));
+  ranked.sort((a, b) => a.atoms - b.atoms || (a.s < b.s ? -1 : a.s > b.s ? 1 : 0));
+  return ranked.slice(0, MCS_SAMPLE_SIZE).map((r) => r.s);
+}
+
+/** Whether a sample from {@link mcsSample} is worth attempting: at least two structures to compare,
+ *  and a smallest member small enough to bound the search. */
+function mcsIsAffordable(sample: string[], rdkit: ReturnType<typeof getRdKitModule>): boolean {
+  return sample.length >= 2 && heavyAtomCount(rdkit, sample[0]) <= MAX_MCS_ANCHOR_ATOMS;
+}
+
 interface ClusterPrep {
   /** Index into the caller's cluster array, where this cluster's result lands. */
   idx: number;
@@ -178,10 +212,12 @@ function buildDecomposition(prep: ClusterPrep, res: IRGroupAnalysisResult | null
  * generic MCS of several related scaffolds; else the MCS of the whole molecules. Returns one entry
  * per input cluster, or null where no useful clean anchor exists (caller falls back to the
  * single-position construction). Batched through a worker-per-cluster queue so independent clusters
- * run in parallel and stuck MCS/RGD workers are killed after a timeout rather than hanging the run.
+ * run in parallel. `useMcsAnchors` false skips every MCS: that gives up the multi-position matrices,
+ * and is currently the only setting whose output does not depend on how long an MCS happened to run.
+ * The bounds below shrink the search but do not make it terminate within any particular budget.
  */
 export async function decomposeClusters(clusterMembers: number[][], molecules: string[],
-  scaffolds: string[] = []): Promise<(ClusterDecomposition | null)[]> {
+  scaffolds: string[] = [], useMcsAnchors: boolean = true): Promise<(ClusterDecomposition | null)[]> {
   const results = new Array<ClusterDecomposition | null>(clusterMembers.length).fill(null);
   const rdkit = getRdKitModule();
   const service = await getRdKitService();
@@ -202,31 +238,45 @@ export async function decomposeClusters(clusterMembers: number[][], molecules: s
       [...new Set(molIdx.map((k) => scaffolds[k]).filter((s) => s))] : [];
     if (clusterScaffolds.length === 1)
       prep.anchor = clusterScaffolds[0]; // concrete substructure, no MCS needed
+    else if (!useMcsAnchors)
+      continue; // no anchor without an MCS; the assembler builds this cluster from a single position
     else if (clusterScaffolds.length >= 2) {
       prep.anchorIsQuery = true;
-      scaffoldMcs.push({input: clusterScaffolds, prep});
+      scaffoldMcs.push({input: mcsSample(clusterScaffolds, rdkit), prep});
     } else {
-      prep.anchorIsQuery = true;
-      wholeMolMcs.push({input: prep.smiles, prep});
+      // Left without an anchor when the cluster is past the ceiling; the assembler then builds it
+      // from a single position rather than a shared core.
+      const sample = mcsSample(prep.smiles, rdkit);
+      if (mcsIsAffordable(sample, rdkit)) {
+        prep.anchorIsQuery = true;
+        wholeMolMcs.push({input: sample, prep});
+      }
     }
   }
 
-  // Phase 2 — MCS passes. `rawSmarts` (last arg): under Any-atom comparison the MCS is a query
-  // SMARTS whose generic atoms a SMILES round-trip would destroy.
+  // Phase 2 — MCS passes. Atoms are compared by element (2nd arg) rather than generically: matching
+  // any atom to any other is what makes this search explode, since the branching comes from how many
+  // atoms are interchangeable and not from how many molecules there are — bounding the input above
+  // does nothing about it, and an MCS that overruns costs the queue behind it. Comparing by element
+  // also states what a scaffold anchor means: a benzene ring anchors a benzene ring, not any 6-ring.
+  // `rawSmarts` (last arg) keeps RDKit's SMARTS, which a SMILES round-trip would not survive intact.
   if (scaffoldMcs.length > 0) {
     const t = performance.now();
-    const mcs = await service.clusterMCS(scaffoldMcs.map((q) => q.input), false, true, true);
+    const mcs = await service.clusterMCS(scaffoldMcs.map((q) => q.input), true, true, true);
     logSarTime(`MCS anchors over scaffolds (${scaffoldMcs.length} clusters)`, t);
     scaffoldMcs.forEach((q, j) => {
-      if (mcs[j])
+      if (mcs[j]) {
         q.prep.anchor = mcs[j];
-      else // scaffold MCS failed — retry over the whole molecules
-        wholeMolMcs.push({input: q.prep.smiles, prep: q.prep});
+        return;
+      }
+      const sample = mcsSample(q.prep.smiles, rdkit); // scaffold MCS failed — retry over the molecules
+      if (mcsIsAffordable(sample, rdkit))
+        wholeMolMcs.push({input: sample, prep: q.prep});
     });
   }
   if (wholeMolMcs.length > 0) {
     const t = performance.now();
-    const mcs = await service.clusterMCS(wholeMolMcs.map((q) => q.input), false, true, true);
+    const mcs = await service.clusterMCS(wholeMolMcs.map((q) => q.input), true, true, true);
     logSarTime(`MCS anchors over whole molecules (${wholeMolMcs.length} clusters)`, t);
     wholeMolMcs.forEach((q, j) => q.prep.anchor = mcs[j] || null);
   }

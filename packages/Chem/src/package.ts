@@ -65,7 +65,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
-import {SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
+import {dockSarMatrixTabs, SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -2519,6 +2519,18 @@ export class PackageFunctions {
     return new SarMatrixViewer();
   }
 
+  /** Column names offered for SAR Matrix's optional series grouping, led by a blank so "no grouping of
+   *  my own" is the value the dialog opens on. Read from the current table, which is the one the
+   *  dialog's Table input also defaults to; `sarMatrixAnalysis` re-resolves the name against whatever
+   *  table is actually chosen and reports it if the two disagree. */
+  @grok.decorators.func({
+    description: 'Column names available for SAR Matrix series grouping',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static sarSeriesColumnChoices(): string[] {
+    return ['', ...(grok.shell.t?.columns.names() ?? [])];
+  }
+
   @grok.decorators.func({
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
@@ -2551,6 +2563,19 @@ export class PackageFunctions {
         description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
     }) fragmentationLevels: number = 2,
     @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
+    @grok.decorators.param({
+      options: {initialValue: 'false', caption: 'Multi-position matrices',
+        description: 'Off gives the same matrices every run. On finds each series a shared core so one matrix can vary several positions at once, which is slower and can yield a different set of matrices each run'},
+    }) useMcsAnchors: boolean = false,
+    // Last, and picked by name rather than as a column: a column-typed input cannot start empty here,
+    // because the column selector always resolves to the first matching column — which would silently
+    // group every compound by its own structure for anyone who left the field alone.
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, initialValue: '', caption: 'Series column (Optional)',
+        choices: 'Chem:sarSeriesColumnChoices()',
+        description: 'Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure'},
+    }) seriesColumn: string = '',
   ): Promise<void> {
     // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
     // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
@@ -2561,11 +2586,22 @@ export class PackageFunctions {
         'Pick a numeric activity column (int, float, bigint or qnum).');
       return;
     }
+    // Omitted by a programmatic caller arrives as null, which is the same as "group by structure".
+    const seriesName = seriesColumn ?? '';
+    // The choices came from the current table; if a different one was picked the name may not exist
+    // there, and silently ignoring it would group by structure under a heading that says otherwise.
+    if (seriesName !== '' && !table.col(seriesName)) {
+      grok.shell.error(`SAR Matrix: "${seriesName}" is not a column of "${table.name}". ` +
+        'Pick a series column from that table, or leave it empty to group by structure.');
+      return;
+    }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
-    view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
+    const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
-      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual});
+      seriesColumnName: seriesName,
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
+    dockSarMatrixTabs(view, viewer);
   }
 
   @grok.decorators.func({

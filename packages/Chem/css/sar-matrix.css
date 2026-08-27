@@ -16,9 +16,10 @@
   position: relative;
 }
 
+/* Centred on the header row it sits over, rather than riding above it. */
 .chem-sar-nav-collapse {
   position: absolute;
-  top: 6px;
+  top: 14px;
   right: 6px;
   z-index: 2;
   cursor: pointer;
@@ -39,19 +40,24 @@
   transform: rotate(180deg);
 }
 
+/* Vertical padding matches .chem-sar-main-bar so the two panes' rules meet at the same height. The wide
+   right padding keeps the filter icon clear of the collapse chevron, which is absolutely positioned
+   over this corner. */
 .chem-sar-nav-header {
-  padding: 10px 12px 8px;
+  padding: 6px 26px 6px 12px;
   border-bottom: 1px solid var(--grey-2);
 }
 
 .chem-sar-nav-badge {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--green-2);
-  background: var(--green-1);
-  border-radius: 3px;
-  padding: 2px 5px;
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+  cursor: help;
 }
 
 .chem-sar-rank-tip {
@@ -71,19 +77,10 @@
   color: var(--grey-5);
 }
 
-.chem-sar-nav-header .ui-form {
-  padding: 0;
-  min-width: 0;
-}
-
-.chem-sar-nav-header .ui-input-root {
-  min-width: 0;
-}
-
-.chem-sar-nav-sub {
-  margin-top: 3px;
-  font-size: 11px;
-  color: var(--grey-5);
+/* Clearing an input's caption empties its label but still lays the box and its padding out, leaving a
+   gap before the editor. Matching on :empty leaves labelled controls alone. */
+.chem-sar-matrix .ui-input-label:empty {
+  display: none;
 }
 
 .chem-sar-nav-matches {
@@ -104,6 +101,20 @@
   border-left: 2px solid var(--grey-2);
 }
 
+/* Reads as a heading over the series it holds rather than as one of them: it is not selectable and
+   has no score, so it must not look like a card that can be opened. */
+.chem-sar-scaffold-card {
+  background: var(--grey-1);
+  cursor: default;
+}
+
+.chem-sar-scaffold-card .chem-sar-card-name {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  color: var(--grey-5);
+}
+
 /* Always occupies its width, empty on a leaf, so every card's core starts at the same x. */
 .chem-sar-card-twisty {
   flex: 0 0 11px;
@@ -118,9 +129,12 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-card {
+  --chem-sar-card-row: 17px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  /* The pane is a fixed 320px, and the core depiction and score column claim most of it. Anything
+     wider here and a folded card's descriptor no longer fits on one line. */
+  gap: 8px;
   padding: 6px 12px;
   cursor: pointer;
   border-left: 3px solid transparent;
@@ -146,9 +160,13 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
+/* Both body rows are pinned to the same height, and the score column repeats it, so the two stacks
+   line up row for row. Natural leading cannot do this: the rows carry different font sizes, and the
+   level badge's border makes row one taller than its text. */
 .chem-sar-card-title {
   font-weight: 600;
   font-size: 12px;
+  line-height: var(--chem-sar-card-row);
   color: var(--grey-6);
   white-space: nowrap;
   overflow: hidden;
@@ -167,6 +185,8 @@ i.chem-sar-card-twisty:hover {
 .chem-sar-card-level {
   flex: 0 0 auto;
   font-size: 9px;
+  /* Short enough that the badge plus its border stays inside the row it shares with the title. */
+  line-height: 13px;
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--grey-5);
@@ -176,42 +196,63 @@ i.chem-sar-card-twisty:hover {
   padding: 0 4px;
 }
 
+/* One line, clipped rather than wrapped: a second line pushes the card's rows out of step with the
+   score column beside it and makes the list ragged. */
 .chem-sar-card-desc {
-  margin-top: 1px;
   font-size: 11px;
+  line-height: var(--chem-sar-card-row);
   color: var(--grey-5);
-  display: flex;
-  align-items: center;
-  gap: 4px;
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chem-sar-card-score-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  min-width: 56px;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-auto-rows: var(--chem-sar-card-row);
+  align-items: baseline;
+  /* Right-aligned, which is also what keeps the values lined up from card to card: the caption column
+     has a fixed width per rank scheme, so a common right edge gives the values a common one too. */
+  justify-content: end;
+  column-gap: 4px;
   cursor: help;
 }
 
+/* Each value/caption pair becomes a grid item of the box rather than its own flex row, so every value
+   shares one column and every caption the next. Stacked lines stay aligned even when the values differ
+   in width, which a per-line flex row cannot do. */
 .chem-sar-card-score-line {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
+  display: contents;
+}
+
+/* Two tracks whether or not both are filled, matching the body beside it. Both boxes are centred in the
+   card, so equal heights are what puts the first score on the same line as the series name; a box that
+   shrank to one row would centre that row between the two. The transfer card omits this: its body is a
+   single row, and padding the score there would push it above the name. */
+.chem-sar-card-score-2row {
+  grid-template-rows: repeat(2, var(--chem-sar-card-row));
 }
 
 .chem-sar-card-score {
   font-weight: 600;
-  font-size: 13px;
-  color: var(--blue-1);
+  font-size: 11px;
+  line-height: var(--chem-sar-card-row);
+  color: var(--grey-6);
+  text-align: right;
+  /* Digits must occupy equal width, otherwise a 1 is narrower than a 9 and the decimal points in a
+     stacked best/mean pair fail to line up. */
+  font-variant-numeric: tabular-nums;
 }
 
 .chem-sar-card-score-cap {
   font-size: 9px;
+  line-height: var(--chem-sar-card-row);
   color: var(--grey-5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  text-align: left;
 }
 
 .chem-sar-main {
@@ -226,7 +267,37 @@ i.chem-sar-card-twisty:hover {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 6px 10px 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+/* Where a control bar still follows as its own row, the lower of the two carries the rule so the pane
+   is not underlined twice. */
+.chem-sar-main-bar:has(+ .chem-sar-control-bar) {
+  border-bottom: none;
+}
+
+/* The controls sit at the far end of the title row; the standalone bar keeps its own padding and rule
+   because the transfer pane still stacks it under a title of its own. */
+.chem-sar-control-bar.chem-sar-control-inline {
+  margin-left: auto;
+  padding: 0;
+  border-bottom: none;
+}
+
+/* Inline there is a single row, so nothing needs aligning to a label column, and the fixed 96px label
+   plus the platform's 200px editor would push the controls onto a line of their own. Both shrink to
+   their content instead. Doubled class beats the standalone rules below regardless of source order.
+   Safe only inline, where every control is a choice: a number input's box is sized to match its
+   slider, and overriding its width breaks that proportion. */
+.chem-sar-control-bar.chem-sar-control-inline .ui-input-label {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.chem-sar-control-bar.chem-sar-control-inline .ui-input-editor {
+  width: auto;
+  min-width: 0;
 }
 
 .chem-sar-control-bar {
@@ -538,11 +609,23 @@ i.chem-sar-card-twisty:hover {
 
 .chem-sar-nav-controls {
   display: flex;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
 }
 
-.chem-sar-nav-controls .ui-form {
+.chem-sar-nav-controls .ui-input-root {
   flex: 1;
   min-width: 0;
+  margin: 0;
+}
+
+/* Pushed to the far end of its bar, away from whatever sits at the near end. Qualified by the bar so it
+   outranks the platform's own margin on a button. */
+.chem-sar-main-bar > .chem-sar-bar-end {
+  margin-left: auto;
+}
+
+.chem-sar-makelist-grid {
+  flex: 1;
+  min-height: 0;
 }

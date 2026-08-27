@@ -40,6 +40,13 @@ export function buildMatchedSeries(frags: MmpFragments, fragmentCutoff: number):
       members.push({molIdx, substSmiles: idToName[substId]});
     series.push({coreSmiles: idToName[coreFragId], members});
   }
+  // Canonical order, keyed on the chemistry rather than on fragment ids. Those ids are minted as the
+  // workers discover fragments, so this map's order changes from one run to the next even though its
+  // contents do not — and every later stage that resolves a tie by "whichever came first" would inherit
+  // that, giving a different set of matrices for the same data. Ordering once here settles all of them.
+  for (const matched of series)
+    matched.members.sort((a, b) => a.molIdx - b.molIdx);
+  series.sort((a, b) => a.coreSmiles < b.coreSmiles ? -1 : a.coreSmiles > b.coreSmiles ? 1 : 0);
   return series;
 }
 
@@ -68,10 +75,41 @@ function isSubset(a: Set<number>, b: Set<number>): boolean {
  * the same remainder, with no fingerprint or threshold. A core joins one group per cuttable site (an
  * overlapping cover), and groups fully contained in a larger one are dropped.
  */
-export async function groupSeriesBySite(series: MatchedSeries[]): Promise<CoreCluster[]> {
-  if (series.length < 2)
-    return series.map((s, i) => ({id: `c${i}`, series: [s], siteKey: '', level: 2}));
+/**
+ * Group the series by a value the user supplies per compound: everything carrying the same value
+ * becomes one matrix, labelled with that value. A core whose compounds carry different values is split
+ * across them, so a compound follows the series it was assigned rather than the chemistry of its core —
+ * otherwise it would land in a matrix whose name contradicts its own column. Compounds with no value
+ * sit out; grouping them under one "blank" matrix would invent a series the user never named.
+ */
+export function groupSeriesByColumn(series: MatchedSeries[], values: (string | null)[]): CoreCluster[] {
+  const byValue = new Map<string, Map<string, MatchedSeries>>();
+  for (const matched of series) {
+    for (const member of matched.members) {
+      const value = values[member.molIdx];
+      if (value === null || value === '')
+        continue;
+      let cores = byValue.get(value);
+      if (cores === undefined)
+        byValue.set(value, cores = new Map<string, MatchedSeries>());
+      const core = cores.get(matched.coreSmiles);
+      if (core === undefined)
+        cores.set(matched.coreSmiles, {coreSmiles: matched.coreSmiles, members: [member]});
+      else
+        core.members.push(member);
+    }
+  }
+  return [...byValue.entries()].map(([value, cores], i) => ({
+    id: `u${i}`, series: [...cores.values()], siteKey: '', level: 2, label: value,
+  }));
+}
 
+/**
+ * Series indices per site: cutting each core once more, the remainder is the site its substituents
+ * hang off, and two cores leaving the same remainder vary at the same place. A core reachable by
+ * several cuts appears under each of them, so the sets overlap.
+ */
+async function seriesBySite(series: MatchedSeries[]): Promise<Map<string, Set<number>>> {
   const [frags] = await getMmpFrags(series.map((s) => s.coreSmiles.replace(/\[\*:\d+\]/g, SITE_MARKER)));
   const {fragCodes, idToName, sizes} = frags;
 
@@ -87,9 +125,21 @@ export async function groupSeriesBySite(series: MatchedSeries[]): Promise<CoreCl
       group.add(i);
     }
   }
+  return bySite;
+}
 
-  // Largest first, so a group survives only when it covers series the kept ones do not.
-  const groups = [...bySite.entries()].filter(([, g]) => g.size > 1).sort((a, b) => b[1].size - a[1].size);
+export async function groupSeriesBySite(series: MatchedSeries[]): Promise<CoreCluster[]> {
+  if (series.length < 2)
+    return series.map((s, i) => ({id: `c${i}`, series: [s], siteKey: '', level: 2}));
+
+  const bySite = await seriesBySite(series);
+
+  // Largest first, so a group survives only when it covers series the kept ones do not. Equal sizes are
+  // broken by key: which of two same-sized groups is kept decides the whole set below it, and leaving
+  // that to Map insertion order ties the result to the order fragments came back from the workers —
+  // stable within a page session, different in the next one, so the same data gave a different count.
+  const groups = [...bySite.entries()].filter(([, g]) => g.size > 1)
+    .sort((a, b) => b[1].size - a[1].size || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   const kept: {key: string, members: Set<number>}[] = [];
   for (const [key, members] of groups) {
     if (!kept.some((k) => isSubset(members, k.members)))
@@ -272,19 +322,48 @@ export async function clusterRelatedCores(series: MatchedSeries[],
   }
 
   // Group series by cluster id; anything unplaced becomes its own singleton.
-  const seriesByCluster = new Map<number, MatchedSeries[]>();
+  const seriesByCluster = new Map<number, number[]>();
   let singletonKey = -1;
   for (let i = 0; i < series.length; i++) {
     const cluster = assignment[i] < 0 ? singletonKey-- : assignment[i];
     let group = seriesByCluster.get(cluster);
     if (!group)
       seriesByCluster.set(cluster, group = []);
-    group.push(series[i]);
+    group.push(i);
   }
 
-  let n = 0;
+  // Similarity alone lets a cluster hold cores whose substituents hang off different places. Their
+  // vocabularies are then disjoint, and the matrix pools them into one axis: a column reads as one
+  // position on some rows and another on the rest, which no cell in it can be compared across. Each
+  // cluster is therefore split so its rows share a site, the largest share first.
+  const bySite = await seriesBySite(series);
   const clusters: CoreCluster[] = [];
-  for (const group of seriesByCluster.values())
-    clusters.push({id: `c${n++}`, series: group, siteKey: '', level: 2});
+  const emit = (members: number[], siteKey: string): void => {
+    clusters.push({id: `c${clusters.length}`, series: members.map((i) => series[i]), siteKey, level: 2});
+  };
+  for (const group of seriesByCluster.values()) {
+    if (group.length < 2) {
+      emit(group, '');
+      continue;
+    }
+    let remaining = new Set(group);
+    while (remaining.size > 1) {
+      let bestKey = '';
+      let best: number[] = [];
+      for (const [key, members] of bySite) {
+        const shared = [...remaining].filter((i) => members.has(i));
+        // Key breaks a tie so equally large shares always split the same way.
+        if (shared.length > best.length || (shared.length === best.length && shared.length > 1 &&
+          key < bestKey))
+          [best, bestKey] = [shared, key];
+      }
+      if (best.length < 2)
+        break;
+      emit(best.sort((a, b) => a - b), bestKey);
+      remaining = new Set([...remaining].filter((i) => !best.includes(i)));
+    }
+    for (const i of [...remaining].sort((a, b) => a - b))
+      emit([i], '');
+  }
   return clusters;
 }

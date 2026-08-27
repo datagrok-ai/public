@@ -3,12 +3,12 @@ import {category, test, expect, expectFloat, before} from '@datagrok-libraries/t
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
-import {buildMatchedSeries} from '../analysis/sar-matrix/sar-matrix-clustering';
+import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
 import {assembleSinglePositionMatrix, fitAdditiveModel} from '../analysis/sar-matrix/sar-matrix-assemble';
 import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
 import {rankMatrices, SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
-import {CoreCluster, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
+import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
   from '../analysis/sar-matrix/sar-matrix-types';
 
 /** Minimal fake fragmentation: ids 1=CoreA, 2=CoreB, 3=Me, 4=Et (0 is the empty fragment). */
@@ -474,4 +474,57 @@ category('SAR Matrix', () => {
   test('runSarMatrix end-to-end (fragmentation + clustering + assembly via workers)', async () => {
   }, {skipReason: 'GROK-TBD — needs the server-side Chem:MurckoScaffolds script plus MMP fragmentation ' +
     'workers; covered indirectly by the pure-function tests above and by manual QA of the SAR Matrix viewer.'});
+
+  // Fragment ids are minted as the workers discover fragments, so the same data reaches this stage
+  // under different ids from one run to the next. Anything downstream resolving a tie by "whichever
+  // came first" then yields a different set of matrices for identical input.
+  test('buildMatchedSeries: series order follows the chemistry, not the fragment ids', async () => {
+    // Same four molecules and the same two cores, with the core ids swapped and the rows reversed.
+    const asDiscovered: MmpFragments = {
+      idToName: ['', 'CoreA', 'CoreB', 'Me', 'Et'],
+      sizes: Uint32Array.from(['', 'CoreA', 'CoreB', 'Me', 'Et'].map((n) => n.length)),
+      fragCodes: [[[1, 3]], [[1, 4]], [[2, 3]], [[2, 4]]],
+    };
+    const asRediscovered: MmpFragments = {
+      idToName: ['', 'CoreB', 'CoreA', 'Et', 'Me'],
+      sizes: Uint32Array.from(['', 'CoreB', 'CoreA', 'Et', 'Me'].map((n) => n.length)),
+      fragCodes: [[[2, 4]], [[2, 3]], [[1, 4]], [[1, 3]]],
+    };
+    const shape = (frags: MmpFragments) => buildMatchedSeries(frags, 1)
+      .map((s) => `${s.coreSmiles}:${s.members.map((m) => m.molIdx).join(',')}`).join(' | ');
+    expect(shape(asDiscovered), shape(asRediscovered),
+      'the same molecules must give the same series whichever ids the workers assigned');
+  });
+
+  test('buildMatchedSeries: repeated calls on one input are identical', async () => {
+    const frags = fakeFrags();
+    const once = JSON.stringify(buildMatchedSeries(frags, 1));
+    const twice = JSON.stringify(buildMatchedSeries(fakeFrags(), 1));
+    expect(once, twice, 'a pure stage must not vary between calls');
+  });
+
+  // Clustering by core similarity alone will put cores whose substituents hang off different places
+  // into one matrix. Their substituent vocabularies are disjoint, so the column axis pools both and a
+  // column means one position on some rows and another on the rest.
+  test('clusterRelatedCores: every multi-row cluster varies at a shared site', async () => {
+    // One triazole, attachments at three different ring positions — near-identical by fingerprint.
+    const series: MatchedSeries[] = [
+      {coreSmiles: 'CCc1c([*:1])nnn1-c1ccc(F)cc1', members: [{molIdx: 0, substSmiles: 'C[*:1]'}]},
+      {coreSmiles: 'COc1c([*:1])nnn1-c1ccc(F)cc1', members: [{molIdx: 1, substSmiles: 'C[*:1]'}]},
+      {coreSmiles: 'COC(=O)c1nnn(-c2ccc(F)cc2)c1[*:1]', members: [{molIdx: 2, substSmiles: 'C[*:1]'}]},
+      {coreSmiles: 'N#Cc1nnn(-c2ccc(F)cc2)c1[*:1]', members: [{molIdx: 3, substSmiles: 'CC[*:1]'}]},
+    ] as MatchedSeries[];
+    const clusters = await clusterRelatedCores(series, 0.3);
+    const grouped = clusters.filter((c) => c.series.length > 1);
+    // Without this the assertion below is vacuous: all-singleton output would pass it having tested
+    // nothing, and singletons are exactly what a too-tight threshold produces.
+    expect(grouped.length > 0, true, 'these cores must cluster at all for the check to mean anything');
+    for (const cluster of grouped) {
+      expect(cluster.siteKey !== '', true,
+        'a cluster holding several cores must name the site they share, or its columns mix positions');
+      const sites = new Set(cluster.series.map((s) => s.coreSmiles.indexOf('[*:1]') >= 0 ?
+        s.coreSmiles.replace(/\[\*:\d+\]/g, '*') : ''));
+      expect(sites.size >= 1, true, 'every row of a cluster carries an attachment');
+    }
+  });
 });

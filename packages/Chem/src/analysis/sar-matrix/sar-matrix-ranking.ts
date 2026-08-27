@@ -63,7 +63,9 @@ export function rankMatrices(matrices: SarMatrix[], scheme: SarRankScheme,
     matrix.scores[SarRankScheme.Discontinuity] = discontinuityScore(matrix);
     matrix.scores[SarRankScheme.Preferred] = preferredScore(matrix, higherIsBetter);
   }
-  return [...matrices].sort((a, b) => (b.scores[scheme] ?? 0) - (a.scores[scheme] ?? 0));
+  // Id breaks a tie so equally scored matrices always list in the same order.
+  return [...matrices].sort((a, b) => ((b.scores[scheme] ?? 0) - (a.scores[scheme] ?? 0)) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 function observedMolecules(matrix: SarMatrix): Set<number> {

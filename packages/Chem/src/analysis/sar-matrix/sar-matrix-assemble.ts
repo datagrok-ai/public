@@ -66,7 +66,9 @@ function selectActivePositions(records: PositionRecord[], positions: string[]): 
   return positions
     .map((p) => ({p, n: new Set(records.map((r) => r.values[p]).filter((v) => v)).size}))
     .filter((d) => d.n >= 2)
-    .sort((a, b) => b.n - a.n)
+    // Position name breaks a tie: which of two equally rich positions becomes the column axis decides
+    // the whole matrix, and it must not depend on the order the records happened to arrive in.
+    .sort((a, b) => b.n - a.n || (a.p < b.p ? -1 : a.p > b.p ? 1 : 0))
     .map((d) => d.p);
 }
 
@@ -105,7 +107,10 @@ function topValues(records: PositionRecord[], position: string): string[] {
     if (v)
       counts.set(v, (counts.get(v) ?? 0) + 1);
   }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v);
+  // Equal counts are ordered by the substituent itself, so the columns come out the same every run.
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([v]) => v);
 }
 
 /**
@@ -143,7 +148,10 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   const rowGroups = selectRows(decomp.records, foldedPositions)
     .map((group) => ({group, score: group.members.filter((r) => observed(r) !== null).length}))
     .filter((ranked) => ranked.score > 0)
-    .sort((a, b) => b.score - a.score)
+    // Core then folded substituents break a tie, so rows of equal density keep a fixed order.
+    .sort((a, b) => b.score - a.score || (a.group.coreSmiles < b.group.coreSmiles ? -1 :
+      a.group.coreSmiles > b.group.coreSmiles ? 1 :
+        JSON.stringify(a.group.folded) < JSON.stringify(b.group.folded) ? -1 : 1))
     .map((ranked) => ranked.group);
 
   // Mirror of the row rule on the column axis: drop columns whose compounds all sit in dropped rows,
@@ -217,7 +225,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   }
 
   return {
-    id: cluster.id, label: '', rows, columns, cells,
+    id: cluster.id, label: cluster.label ?? '', rows, columns, cells,
     minActivity: realCount ? minActivity : 0, maxActivity: realCount ? maxActivity : 0,
     realCount, virtualCount, scores: {}, positions: [columnPosition], refValues,
     siteKey: cluster.siteKey,
@@ -354,7 +362,7 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
 
   return {
     id: cluster.id,
-    label: '',
+    label: cluster.label ?? '',
     rows,
     columns,
     cells,
