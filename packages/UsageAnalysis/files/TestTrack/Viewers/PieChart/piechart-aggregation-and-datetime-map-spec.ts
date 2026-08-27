@@ -1,8 +1,8 @@
 /* ---
 realizes: [piechart.cp.aggregation-tour-and-datetime-map]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -18,11 +18,11 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error')
+    if (m.type() === 'error' && !isLocalBootNoise(m.text()))
       consoleErrors.push(m.text());
   });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 

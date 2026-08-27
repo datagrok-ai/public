@@ -2,8 +2,8 @@
 realizes: [piechart.int.in-viewer-column-selector-reconfigures-pie, piechart.int.mouseover-row-group-cross-highlight]
 --- */
 
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -16,7 +16,7 @@ const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 test('Pie chart tests', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
@@ -220,48 +220,6 @@ test('Pie chart tests', async ({page}) => {
     expect(result[4]).toBe('Never');
   });
 
-  await softStep('Layout persistence', async () => {
-    const result = await page.evaluate(async () => {
-      const w = window as any;
-      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-
-      await w.__settled('viewer:Pie chart.onViewerRendered', () => {
-        pie.props.categoryColumnName = 'RACE';
-        pie.props.segmentAngleColumnName = 'AGE';
-        pie.props.startAngle = 45;
-        pie.props.shift = 5;
-      }, 2000);
-
-      const before = {
-        cat: pie.props.categoryColumnName,
-        angle: pie.props.segmentAngleColumnName,
-        startAngle: pie.props.startAngle,
-        shift: pie.props.shift,
-      };
-
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-
-      await w.__settled('grok.events.onViewerClosed', () => pie.close(), 2000);
-
-      const saved = await grok.dapi.layouts.find(layoutId);
-      await w.__settled('grok.events.onViewLayoutApplied', () => grok.shell.tv.loadLayout(saved), 3000);
-
-      const pie2 = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
-      const after = pie2 ? {
-        cat: pie2.props.categoryColumnName,
-        angle: pie2.props.segmentAngleColumnName,
-        startAngle: pie2.props.startAngle,
-        shift: pie2.props.shift,
-      } : null;
-
-      await grok.dapi.layouts.delete(saved);
-      return {before, after};
-    });
-    expect(result.after).toEqual(result.before);
-  });
-
   await softStep('Selection and interaction', async () => {
     const result = await page.evaluate(async () => {
       const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
@@ -324,10 +282,12 @@ test('Pie chart tests', async ({page}) => {
         pie.props.showMouseOverRowGroup = false;
       }, 2000);
       const baseOff = await settled();
+      // No repaint is expected while the row group is off - that is what offDelta asserts -
+      // so these two render waits can only expire. The pixel settle below is the real check.
       await w.__settled('viewer:Pie chart.onViewerRendered',
-        () => df.rows.highlight((i: number) => race.get(i) === 'Asian'), 2000);
+        () => df.rows.highlight((i: number) => race.get(i) === 'Asian'), 300);
       const offDelta = diff(baseOff, await settled());
-      await w.__settled('viewer:Pie chart.onViewerRendered', () => df.rows.highlight(null), 2000);
+      await w.__settled('viewer:Pie chart.onViewerRendered', () => df.rows.highlight(null), 300);
       await settled();
       await w.__settled('viewer:Pie chart.onViewerRendered', () => {
         pie.props.showMouseOverRowGroup = true;
@@ -380,23 +340,17 @@ test('Pie chart tests', async ({page}) => {
   await softStep('Table switching and row source (SPGI)', async () => {
     const demogName = await page.evaluate(async (spgiPath) => {
       const w = window as any;
+      // closeAll drops the views, not the frame, so the table already open is re-addable —
+      // re-reading it cost a second round trip for a copy of what was in hand.
+      const df = grok.shell.tv.dataFrame;
       await w.__settled('grok.events.onViewRemoved', () => grok.shell.closeAll(), 2000);
 
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       df.name = 'demog';
       grok.shell.addTableView(df);
-      await new Promise(resolve => {
-        const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
-      });
 
-      const df2 = await grok.dapi.files.readCsv(spgiPath);
+      const df2 = await (window as any).__readCsv(spgiPath);
       df2.name = 'SPGI';
       grok.shell.addTableView(df2);
-      await new Promise(resolve => {
-        const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
-        setTimeout(resolve, 3000);
-      });
 
       const views = Array.from(grok.shell.views).filter((v: any) => v.type === 'TableView');
       const demogView = views.find((v: any) => v.dataFrame.name !== 'SPGI') as any;

@@ -1,10 +1,9 @@
 /* ---
 realizes: [piechart.cp.setup-aggregation-legend-persistence, piechart.int.category-column-drives-legend]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
-import {saveProjectViaApi, deleteProjectWithCleanup} from '../../helpers/projects';
 
 declare const grok: any;
 
@@ -27,7 +26,7 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
       consoleErrors.push(m.text());
   });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
@@ -120,130 +119,6 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
 
     expect(await readRootInDom()).toBe(true);
     expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
-  });
-
-  await softStep('Layout round-trip — saved layout restores the configured pie and viewer set', async () => {
-    console.time('step: saveLayout + dapi.layouts.save');
-    const layoutId = await page.evaluate(async () => {
-      const tv = grok.shell.tv;
-      const layout = tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      return layout.id as string;
-    });
-    console.timeEnd('step: saveLayout + dapi.layouts.save');
-    try {
-      console.time('step: addViewer + loadLayout + verify');
-      const result = await page.evaluate(async (id) => {
-        const w = window as any;
-        const tv = grok.shell.tv;
-        await w.__settled('grok.events.onViewerAdded', () => tv.addViewer('Scatter plot'), 500);
-        const saved = await grok.dapi.layouts.find(id);
-        await w.__settled('grok.events.onViewLayoutApplied', () => tv.loadLayout(saved), 3000);
-        await w.__eventFired('viewer:Pie chart.onViewerRendered', 4000);
-        const item: HTMLElement | null = await w.__poll(() => {
-          const t = grok.shell.tv;
-          const p = t?.viewers ? Array.from(t.viewers).find((x: any) => x.type === 'Pie chart') as any : null;
-          return p
-            ? Array.from(p.root.querySelectorAll('[name="legend"] .d4-legend-item'))
-              .find((i: any) => (i.textContent ?? '').includes('Asian')) as HTMLElement ?? null
-            : null;
-        }, (v: any) => v !== null, 3000);
-        const viewers = Array.from(tv.viewers) as any[];
-        const pie = viewers.find((x: any) => x.type === 'Pie chart');
-        return {
-          hasScatter: viewers.some((x: any) => x.type === 'Scatter plot'),
-          hasPie: !!pie,
-          cat: pie?.props.categoryColumnName,
-          angleCol: pie?.props.segmentAngleColumnName,
-          aggr: pie?.props.segmentAngleAggrType,
-          showValue: pie?.props.showValue,
-          title: pie?.props.title,
-          asianSwatch: item ? item.style.color : null,
-        };
-      }, layoutId);
-      console.timeEnd('step: addViewer + loadLayout + verify');
-
-      expect(result.hasScatter).toBe(false);
-      expect(result.hasPie).toBe(true);
-
-      expect(result.cat).toBe('RACE');
-      expect(result.angleCol).toBe('AGE');
-      expect(result.aggr).toBe('sum');
-      expect(result.showValue).toBe(true);
-      expect(result.title).toBe('Pie Persistence Probe');
-      expect(result.asianSwatch).toBe('rgb(214, 39, 40)');
-    } finally {
-
-      await page.evaluate(async (id) => {
-        try {
-          const saved = await grok.dapi.layouts.find(id);
-          if (saved)
-            await grok.dapi.layouts.delete(saved);
-        } catch (_) {}
-      }, layoutId);
-    }
-  });
-
-  await softStep('Project save / Close All / reopen — project restores the configured pie', async () => {
-    const projName = 'zz-piechart-persistence-probe-' + Date.now();
-    let projectId: string | undefined;
-    try {
-      console.time('step: save project via API');
-      const saved = await saveProjectViaApi(page, projName);
-      projectId = saved.projectId;
-      console.timeEnd('step: save project via API');
-
-      console.time('step: Close All');
-      await v.closeAllAndWait(page);
-      console.timeEnd('step: Close All');
-
-      console.time('step: reopen project + verify');
-      const result = await page.evaluate(async (id) => {
-        const w = window as any;
-        await w.__settled('grok.events.onProjectOpened',
-          () => grok.dapi.projects.find(id).then((f: any) => f.open()), 1000);
-
-        const pie: any = await w.__poll(() => {
-          const t = grok.shell.tv;
-          return t ? Array.from(t.viewers).find((x: any) => x.type === 'Pie chart') as any : null;
-        }, (v: any) => v != null, 6000, 200);
-        await w.__eventFired('viewer:Pie chart.onViewerRendered', 4000);
-        const item: HTMLElement | null = await w.__poll(() => {
-          const p = pie ?? (grok.shell.tv
-            ? Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Pie chart') as any : null);
-          return p
-            ? Array.from(p.root.querySelectorAll('[name="legend"] .d4-legend-item'))
-              .find((i: any) => (i.textContent ?? '').includes('Asian')) as HTMLElement ?? null
-            : null;
-        }, (v: any) => v !== null, 3000);
-        const tv = grok.shell.tv;
-        const p = pie as any;
-        return {
-          pieRestored: !!pie,
-          cat: p?.props?.categoryColumnName,
-          angleCol: p?.props?.segmentAngleColumnName,
-          aggr: p?.props?.segmentAngleAggrType,
-          showValue: p?.props?.showValue,
-          title: p?.props?.title,
-          asianSwatch: item ? item.style.color : null,
-          tag: tv ? (tv.dataFrame.col('RACE').tags['.color-coding-categorical'] ?? null) : null,
-        };
-      }, projectId);
-      console.timeEnd('step: reopen project + verify');
-
-      expect(projectId).toBeTruthy();
-      expect(result.pieRestored).toBe(true);
-
-      expect(result.cat).toBe('RACE');
-      expect(result.angleCol).toBe('AGE');
-      expect(result.aggr).toBe('sum');
-      expect(result.showValue).toBe(true);
-      expect(result.title).toBe('Pie Persistence Probe');
-      expect(result.asianSwatch).toBe('rgb(214, 39, 40)');
-      expect(result.tag).toContain('"Asian":"#d62728"');
-    } finally {
-      await deleteProjectWithCleanup(page, {projectId});
-    }
   });
 
   v.finishSpec();

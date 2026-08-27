@@ -1,8 +1,8 @@
 /* ---
 realizes: [piechart.cp.segment-click-select-filter, piechart.int.segment-click-select-syncs-dataframe, piechart.int.segment-click-filter-multi-category]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -14,7 +14,7 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 test('Pie Chart — Segment Click Select and Filter Modes', async ({page}) => {
   test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
