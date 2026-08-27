@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20687: Added a Cloud Logs explorer (`/cloud-logs`, admin-only) over the three log tiers: this instance's own events, the CloudWatch hot tier (30 days, filterable by group and time range), and the write-once S3 archive — listed by key prefix, then decoded on selection. Backed by the new `grok.dapi.log.getCloudLogGroups`/`getCloudLogEvents`/`getArchiveObjects`/`getArchiveEvents`
 * GROK-20760: Tests dashboards: Scoped the build window to a branch, defaulting to `master` — every pipeline can run on any branch, so an ad-hoc run sat in the trunk column and read as master. `TestsDashboard` takes a `branchFilter` input; the `/release` dashboard gets a Branch picker in the ribbon beside Environment, backed by the new `TestBranches` query (branches that reported in the last 60 days, newest first). Pick "(all branches)" for the previous behaviour; both queries also return the branch, and `TestsDashboard` carries it as a per-build column tag alongside the instance. The `/release` branch follows the instance — `master` for dev, the highest `release/X.Y.Z` that has reported for release/public/release-ec2 — and switching instance re-picks it
 * TestTrack: Fixed the relative imports in 28 specs nested two levels deep (`../spec-login`, `../helpers/viewers`) — Playwright aborts collection when any spec fails to import, so the whole 284-spec suite had been producing zero results in CI
 * GROK-20624: Context panes: Show 0 instead of the empty-stats sentinel when a summary query returns no rows

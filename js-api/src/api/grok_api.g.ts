@@ -1157,6 +1157,10 @@ export interface IDartApi {
   grok_Dapi_Info_GetStorageStats(c: any): Promise<any>;
   grok_Dapi_Log(): any;
   grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any, favoritesOnly: Bool): any;
+  grok_Dapi_Log_CloudLogGroups(connection: String, prefix: String): Promise<any>;
+  grok_Dapi_Log_CloudLogEvents(connection: String, group: String, start: any, end: any, filter: String, limit: Num): Promise<any>;
+  grok_Dapi_Log_ArchiveObjects(connection: String, prefix: String, limit: Num): Promise<any>;
+  grok_Dapi_Log_ArchiveEvents(connection: String, key: String): Promise<any>;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
