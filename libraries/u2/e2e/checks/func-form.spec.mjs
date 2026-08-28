@@ -51,26 +51,28 @@ export async function fixture(page) {
 async function checkBoot(page) {
   const fields = await status(page, 'fields = ');
   const sync = await status(page, 'sync = ');
+  // scoped to the W1 matrix by content (only it carries the `secret` row): later waves keep
+  // appending sections with their own rows — W4's carries a deliberately Dart-less row (#18)
   const shape = await page.evaluate((sel) => {
-    const root = document.querySelector(sel);
+    const root = document.querySelector(`${sel} .u2demo-ab:has([data-row="secret"])`);
     return {
-      dart: root.querySelectorAll('.u2demo-ab .ui-input-root').length,
-      u2: root.querySelectorAll('.u2demo-ab .u2-input-root').length,
-      rows: root.querySelectorAll('.u2demo-ab .u2demo-code[data-row]').length,
+      dart: root.querySelectorAll('.ui-input-root').length,
+      u2: root.querySelectorAll('.u2-input-root').length,
+      rows: root.querySelectorAll('.u2demo-code[data-row]').length,
       cats: [...root.querySelectorAll('.u2demo-ab-cat')].map((c) => c.textContent),
     };
   }, PAGE);
   await shot(page, 'func-form-1-rest');
   ok('func-form/1a/the-tab-opens-with-both-columns-populated-11-fields-each',
-    fields === 'fields = Dart 11 · u2 11 · unsupported: (none)' && shape.dart === shape.u2 && shape.rows === 25 &&
+    fields === 'fields = Dart 11 · u2 11 · unsupported: (none)' && shape.dart === shape.u2 && shape.rows === 11 &&
     shape.cats.includes('Advanced'),
     `fields="${fields}" dart roots=${shape.dart} u2 roots=${shape.u2} rows=${shape.rows} ` +
     `cats=${JSON.stringify(shape.cats)}`);
 
   const inputs = await status(page, 'inputs = ');
-  ok('func-form/1b/rest-state-counters-zero-defaults-display-only-u2-shows-them-dart-does-not',
+  ok('func-form/1b/rest-state-counters-zero-numeric-defaults-not-in-the-call-neither-side-displays-them',
     sync === 'sync = u2 → Dart 0 · Dart → u2 0' &&
-    await value(page, u2Input('replicates')) === '3' && await value(page, u2Input('doseLevel')) === '250' &&
+    await value(page, u2Input('replicates')) === '' && await value(page, u2Input('doseLevel')) === '' &&
     await value(page, dartInput('replicates')) === '' && await value(page, dartInput('doseLevel')) === '' &&
     inputs.includes('replicates: null') && inputs.includes('doseLevel: null'),
     `sync="${sync}" u2 replicates="${await value(page, u2Input('replicates'))}" ` +

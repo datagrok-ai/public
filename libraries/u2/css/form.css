@@ -95,6 +95,12 @@
   display: none;
 }
 
+/* _applyEnabled keeps Retry live on a disabled field — undo the disabled root's children-wide
+   pointer-events: none for the state chrome */
+.u2-input-disabled .u2-param-source {
+  pointer-events: auto;
+}
+
 .u2-param-source-error {
   color: var(--dg-error);
   max-width: 260px;
@@ -123,4 +129,20 @@
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
   user-select: none;
+}
+
+/* the categoryGroups heading levels (fpe:840-860 renders plain hN headings) — l1 outranks l2:
+   13px bold dark over 12px regular light; headers auto-hide with their fields */
+.u2-form-category-l1 {
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+}
+
+.u2-form-category-l2 {
+  font-weight: var(--dg-font-weight-regular);
+}
+
+.u2-form-category-l3 {
+  margin-left: var(--dg-space-m);
+  font-weight: var(--dg-font-weight-regular);
 }

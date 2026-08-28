@@ -217,6 +217,47 @@ export class FuncCall {
     return (await this._evalCommand(p.property.options?.['default'], name, () => p.value)).result;
   }
 
+  /** The `validators:` run behind `FuncCall_EvalParamValidators`: builtins first, else the
+   * registry (a missing func rejects; one marked `{sync: false}` rejects with the Dart
+   * must-be-sync shape); each runs SYNC over the param's CURRENT value — `true`/`null` omitted,
+   * `false` the didn't-pass message, a string the message, a full `{message, isError, isHelper}`
+   * object passed through. Delivery is never synchronous (the `_evalCommand` clock). */
+  async evalParamValidators(name) {
+    const p = this._findParam(name);
+    const delay = this.dart.evalDelayMs;
+    if (delay != null)
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    else {
+      await Promise.resolve();
+      await Promise.resolve();
+    }
+    const results = [];
+    for (const vname of p.property.options?.['validators'] ?? []) {
+      let run = BUILTIN_VALIDATORS[vname];
+      let label = vname;
+      if (run === undefined) {
+        const func = Func.find({name: vname})[0];
+        if (func === undefined)
+          throw new Error(`Validator "${vname}" not found`);
+        if (func.dart.sync === false)
+          throw new Error(`Validator '${vname}' is a Script (async). Validators must be sync - ` +
+            'use a package.ts export or grok.functions.register().');
+        label = func.friendlyName ?? vname;
+        run = (v) => func.dart.run({[func.inputs[0]?.name ?? 'value']: v});
+      }
+      const r = run(p.value);
+      if (r == null || r === true)
+        continue;
+      if (r === false)
+        results.push({message: `Value didn't pass the ${label} check`, isError: true, isHelper: false});
+      else if (typeof r === 'string')
+        results.push({message: r, isError: true, isHelper: false});
+      else
+        results.push(r);
+    }
+    return results;
+  }
+
   /** Resolves an options command — `Name` or `Name(args)`, the parenthesized args accepted and
    * ignored — against {@link Func.registry}: provider inputs bind to same-named host params (a
    * single provider input matching none binds `fallback` — the param's own value, or the typed
@@ -265,6 +306,29 @@ export class FuncCall {
     this.dart.outputs = await this.dart.func.dart.run(this.inputs);
     return this;
   }
+}
+
+/** The Dart `namedValidators` builtins the doubles carry (vld:79-85) — the minimal `notEmpty`. */
+const BUILTIN_VALIDATORS = {
+  notEmpty: (v) => v != null && String(v) !== '' ? null : 'Value cannot be empty.',
+};
+
+/** Module-level knob for {@link scriptSyncStub} — `true` throws a generic failure, a string
+ * throws that message. */
+export const dart = {scriptSyncError: null};
+
+/** A test-only micro-translation of the DOCUMENTED expression forms — the production path never
+ * runs it (`grok_ScriptSync` is the platform's). NOT auto-installed: tests assign
+ * `globalThis.grok_ScriptSync = scriptSyncStub` in setup and `delete` it in teardown. */
+export function scriptSyncStub(expr, vars = {}) {
+  if (dart.scriptSyncError)
+    throw new Error(dart.scriptSyncError === true ? 'script failed' : String(dart.scriptSyncError));
+  // == before !=: the != rewrite mints a `!==` whose tail `==` the other rule must not touch
+  const js = String(expr)
+    .replace(/==(?!=)/g, '===').replace(/!=(?!=)/g, '!==')
+    .replace(/\band\b/g, '&&').replace(/\bor\b/g, '||').replace(/\bnot\b/g, '!');
+  const names = Object.keys(vars);
+  return new Function(...names, `'use strict'; return (${js});`)(...names.map((n) => vars[n]));
 }
 
 /** A file in a share carries the connection it lives on; one built out of local bytes does not. */

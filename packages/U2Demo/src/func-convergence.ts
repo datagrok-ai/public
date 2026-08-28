@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {signal, computed, Scope, div, divV, divH, span, h3} from '@datagrok-libraries/u2';
+import {signal, computed, Scope, button, div, divV, divH, span, h3} from '@datagrok-libraries/u2';
 import {funcForm, FuncCallForm, ObjectForm, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
 import {kindOf} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
 import type {Kind} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
@@ -17,11 +17,12 @@ const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncC
   'call itself holds. Each cross-edit bumps exactly one sync counter by exactly one — an echo ' +
   'never counts, so any extra increment is ping-pong.';
 
-const DEFAULTS = 'Literal numeric defaults ride the js-api `defaultValue` setter display-only ' +
-  'and, today, u2-only: `Replicates` and `Dose Level` open showing 3 and 250 on the u2 side ' +
-  'while the platform form leaves them empty — the platform func form reads defaults only from ' +
-  '`options[\'default\']` (`func_param_editor.dart:558`), a GrokScript command it evaluates and ' +
-  'writes into the call. Either way `inputs` reads null until you edit.';
+const DEFAULTS = 'Literal numeric defaults ride the js-api `defaultValue` setter into the ' +
+  'property but never into the call: both func forms read defaults only from ' +
+  '`options[\'default\']` (`func_param_editor.dart:558`), a GrokScript command evaluated and ' +
+  'written into the call — a non-string `defaultValue` never sets that option. So `Replicates` ' +
+  'and `Dose Level` open empty on BOTH sides and `inputs` reads null until you edit: a form ' +
+  'never displays a value the run would not use.';
 
 const STYLE = '`Color` sits under a `Style` header neither side asked for: with no category set, ' +
   'the platform derives one from the NAME (`property.dart:340` — anything ending in `color`), ' +
@@ -54,8 +55,8 @@ const FRIENDLY = 'The `friendlyName` decoration is u2-only for now: the platform
 
 const STRING_DEFAULT = 'A string `defaultValue` set through the js-api lands in ' +
   '`options[\'default\']`, which the platform evaluates as a GrokScript command — `"Dissolved ' +
-  'in saline."` balloons `Unable to calculate default value`. Numeric defaults stay literal and ' +
-  'display-only on both sides.';
+  'in saline."` balloons `Unable to calculate default value`. Numeric defaults never reach ' +
+  'that option, so both sides open empty.';
 
 const GATE = 'A second function with one required parameter: `isValid` is read off both forms ' +
   'after every edit. Type into `batchId` and both turn true; clear it and both turn false. ' +
@@ -168,6 +169,61 @@ const P_COMBO = 'The column fields are now the grid combo: click (or type on) ei
   'not cycle the value over the closed field (#17) — the arrow keys still do. A popup pick is ' +
   'a user edit even when it confirms the current value, so it clears the `auto` badge.';
 
+const W4_INTRO = 'One shared call over `fceW4Vehicle` — the W4 annotation rules: `visible:`/' +
+  '`enabled:` expressions, a regex and an expression `validator:`, a named `validators:` func, ' +
+  'and func-level `categoryGroups`. Every edit on either side re-evaluates every expression ' +
+  'per keystroke — the Dart form re-validates all inputs on any change, u2 mirrors it through ' +
+  'the signal graph — so flip `type` and watch both columns move at once.';
+
+const W4_VISIBLE = 'Flip `type` to Electric: the `Engine` rows hide and `batteryCapacity` ' +
+  'shows on BOTH sides — the same expressions over the same GrokScript seam. The hidden ' +
+  'fields keep their values in the call on both sides: hiding never clears.';
+
+const W4_ENABLED = '`enabled: tankVolume > 50` — type 60 into `tankVolume` and the checkbox ' +
+  'enables on both sides; a script failure keeps the previous state (Dart parity). While ' +
+  'disabled, hovering the u2 field — label and checkbox alike — says why: `Enabled when: ' +
+  'tankVolume > 50` (divergence #23); Dart shows nothing.';
+
+const W4_REGEX = '`validator: /^[^@]+@[^@]+$/` — the regex literal is parsed client-side on ' +
+  'both sides; a non-match reads `Value doesn\'t match /…/` inline on u2, a silent reddening ' +
+  'on Dart.';
+
+const W4_EXPR = '`validator: minAge > 18` — a false verdict\'s message IS the expression ' +
+  'text, deliberate parity with the Dart form: annotation authors return strings for friendly ' +
+  'messages. Type 15 to see it on both sides.';
+
+const W4_NAMED = '`validators: ["fceW4IsCode"]` — named validators resolve and run Dart-side ' +
+  '(the builtin map first, else a func by name); u2 asks through the shared call\'s ' +
+  '`evalParamValidators`, so its verdict lands a microtask later than Dart\'s synchronous ' +
+  'one. Type a code not starting with X.';
+
+const W4_NOTES = '`notes` sits in category `Extra`, which `categoryGroups` does not list: ' +
+  'the Dart form silently never renders it (platform defect #12) — u2 appends unlisted ' +
+  'categories after the grouped plan instead (divergence #18). Malformed `categoryGroups` ' +
+  'JSON likewise crashes the whole Dart build (defect #14); u2 falls back to the flat layout ' +
+  'with one console warning, and a category listed twice renders once, not twice ' +
+  '(divergence #22).';
+
+const W4_SLOW = '`validators: ["fceW4Async"]` where the func is registered `isAsync: true`: ' +
+  'validators must be sync, and the Dart form THROWS at form build — this row rides its own ' +
+  'call so the crash stays contained to the left cell. u2 keeps the form and reports ' +
+  '`Couldn\'t validate (validator \'fceW4Async\' is misconfigured)` inline after an edit, the ' +
+  'full reason on the message\'s tooltip (divergence #21).';
+
+const W4_GATE = 'The u2 Run gate is the form\'s own `missingRequired` + `invalidFields`: ' +
+  '`cylinders` is the one required field, so Run opens blocked with the tooltip naming it. ' +
+  'Flip `type` to Electric and Run unblocks — a field hidden by an expression is exempt from ' +
+  'validation and the gate while its value stays in the call (divergence #20). The Dart form ' +
+  'keeps validating invisible fields, so its OK/RUN can stay blocked by a cause the user ' +
+  'cannot see.';
+
+const W4_HEADERS = 'The same shared call rendered whole, no re-parenting: the platform form ' +
+  'left with its `<h1>/<h2>` plan headers, u2 right with the leveled `u2-form-category` ' +
+  'headers. Flip `type` to Electric (here or above) and u2\'s emptied `Engine` header hides ' +
+  'with its fields (divergence #19) — Dart\'s stays: its expression path bypasses the ' +
+  '`visible` setter, so its auto-hide machinery never runs (platform defect #13). `notes` is ' +
+  'also visibly missing from the Dart column here (#18).';
+
 const DIVERGENCES = [
   '`editor:` hints (`textarea`, `password`, `switch`, `slider`) — u2 honors them, type-guarded ' +
   'the way the property form does; the platform func form evaluates any such hint as a nested ' +
@@ -192,6 +248,8 @@ let demoFunc: DG.Func | null = null;
 let gateFunc: DG.Func | null = null;
 let dynFunc: DG.Func | null = null;
 let w3Func: DG.Func | null = null;
+let w4Func: DG.Func | null = null;
+let w4SlowFunc: DG.Func | null = null;
 
 /** Opens a named fixture table when the workspace does not already hold it — idempotent, so a
  * reopened tab (or a user who closed the table) gets it back; `addTable` would dedupe the name
@@ -303,6 +361,56 @@ export function ensureFuncs(): void {
     '//input: column_list metrics {type: numerical}',
     'return;',
   ].join('\n'));
+  grok.functions.register({
+    signature: 'string fceW4IsCode(string s)',
+    run: (s: string) => s != null && s.startsWith('X') ? null : 'Code must start with X',
+  });
+  grok.functions.register({
+    signature: 'bool fceW4Async(string s)',
+    isAsync: true,
+    run: async () => true,
+  });
+  w4Func = grok.functions.register({
+    signature: 'string fceW4Vehicle(string type, int cylinders, double tankVolume, ' +
+      'bool tankExtension, double batteryCapacity, string email, int minAge, string code, ' +
+      'string notes)',
+    run: (...args: any[]) => args.map((x) => String(x ?? '')).join(' '),
+  });
+  const w4 = new Map(w4Func.inputs.map((p) => [p.name, p] as [string, DG.Property]));
+  w4.get('type')!.choices = ['ICE', 'Electric'];
+  for (const name of ['cylinders', 'tankVolume', 'tankExtension']) {
+    w4.get(name)!.category = 'Engine';
+    w4.get(name)!.options['visible'] = 'type == "ICE"';
+  }
+  w4.get('tankExtension')!.options['enabled'] = 'tankVolume > 50';
+  const battery = w4.get('batteryCapacity')!;
+  battery.category = 'Battery';
+  battery.options['visible'] = 'type == "Electric"';
+  const email = w4.get('email')!;
+  email.category = 'Contact';
+  email.options['validator'] = '/^[^@]+@[^@]+$/';
+  const minAge = w4.get('minAge')!;
+  minAge.category = 'Contact';
+  minAge.options['validator'] = 'minAge > 18';
+  w4.get('code')!.options['validators'] = ['fceW4IsCode'];
+  w4.get('notes')!.category = 'Extra';
+  w4Func.options['categoryGroups'] =
+    '{"Power": ["Engine", "Battery"], "Details": ["Contact", "Misc"]}';
+  // `cylinders` is the one required field (the gate row's demo); everything else opts out of
+  // both the not-empty validator (nullable) and the Run gate (isOptional)
+  for (const p of w4Func.inputs)
+    if (p.name !== 'type' && p.name !== 'cylinders') {
+      p.nullable = true;
+      p.isOptional = true;
+    }
+  w4SlowFunc = grok.functions.register({
+    signature: 'string fceW4Slow(string slow)',
+    run: (s: string) => String(s ?? ''),
+  });
+  const slow = w4SlowFunc.inputs[0];
+  slow.nullable = true;
+  slow.isOptional = true;
+  slow.options['validators'] = ['fceW4Async'];
 }
 
 export function fmt(v: any): string {
@@ -328,6 +436,18 @@ function inputsText(call: DG.FuncCall): string {
   return `{${parts.join(', ')}}`;
 }
 
+/** The blocked-Run tooltip both gate consumers share: empty fields first, invalid ones next,
+ * either list truncated past three names (`Fill Name, Stage, Site and 9 more to run`). */
+export function gateTitle(blocked: boolean, empty: string[], invalid: string[]): string {
+  if (!blocked)
+    return '';
+  const names = (list: string[]) => list.length <= 3 ? list.join(', ') :
+    `${list.slice(0, 3).join(', ')} and ${list.length - 3} more`;
+  if (empty.length > 0)
+    return `Fill ${names(empty)} to run`;
+  return `Fix ${names(invalid)} to run`;
+}
+
 /** Page prose with `backticked` spans rendered as code rather than shown as backticks. */
 export function prose(text: string): HTMLElement {
   const line = span('', 'u2demo-hint');
@@ -348,6 +468,11 @@ export function funcConvergencePage(): HTMLElement {
   // country preset so the dependent city source has something to ask with at open
   const dynCall = dynFunc!.prepare({country: 'FR'});
   const w3Call = w3Func!.prepare();
+  // presets so every expression evaluates over defined values at open (a string
+  // `defaultValue` would balloon on the Dart side — defect #2; an empty tankVolume would
+  // put null into `tankVolume > 50`)
+  const w4Call = w4Func!.prepare({type: 'ICE', tankVolume: 40});
+  const w4SlowCall = w4SlowFunc!.prepare();
 
   const toDart = signal(0);
   const toU2 = signal(0);
@@ -358,14 +483,31 @@ export function funcConvergencePage(): HTMLElement {
   const toDartW3 = signal(0);
   const toU2W3 = signal(0);
   const tickW3 = signal(0);
+  const toDartW4 = signal(0);
+  const toU2W4 = signal(0);
+  const tickW4 = signal(0);
   const fields = signal('…');
   const gateStatus = signal('…');
+  const w4RunResult = signal('');
 
   const grid = div([], 'u2demo-ab u2demo-ab-func');
   const gateGrid = div([], 'u2demo-ab u2demo-ab-func');
   const dynGrid = div([], 'u2demo-ab u2demo-ab-func');
   const w3Grid = div([], 'u2demo-ab u2demo-ab-func');
+  const w4Grid = div([], 'u2demo-ab u2demo-ab-func');
+  const w4SlowGrid = div([], 'u2demo-ab u2demo-ab-func');
+  const w4Whole = divH([], 'u2demo-funcs-ab u2demo-w4-whole');
   const plain = div([], 'u2demo-standalone');
+  const w4Run = button('Run', async () => {
+    try {
+      await w4Call.call();
+      w4RunResult.value = 'result = ' + fmt(w4Call.getOutputParamValue());
+    }
+    catch (e: any) {
+      w4RunResult.value = 'Run failed: ' + String(e?.message ?? e);
+    }
+  }, {primary: true});
+  w4Run.disabled = true;
 
   /** One A/B section: both editors over one shared call, re-parented into a grid row per param
    * with its notes, and a per-section honest counter pair. */
@@ -447,12 +589,26 @@ export function funcConvergencePage(): HTMLElement {
       for (const p of category.params) {
         const u2Input = form.getInput(p.name);
         const dartInput = dartByName.get(p.name);
-        if (u2Input == null || dartInput == null)
+        if (u2Input == null)
           continue;
-        const cells = [span(p.name, 'u2demo-code'), dartInput.root, u2Input.root];
+        // a u2-only row (categoryGroups drops unlisted categories from the Dart form —
+        // defect #12, divergence #18) shows a placeholder instead of being skipped
+        const cells = [span(p.name, 'u2demo-code'),
+          dartInput?.root ?? span('— not rendered by the Dart form', 'u2demo-hint'),
+          u2Input.root];
         for (const cell of cells)
           cell.dataset.row = p.name;
         abGrid.append(...cells);
+        // a hidden u2 row takes its name and Dart cells with it: a display:none grid item
+        // leaves the flow, and one missing cell silently breaks the 3-column alignment
+        const syncRow = () => {
+          for (const cell of [cells[0], cells[1]])
+            cell.style.display = u2Input.root.hidden ? 'none' : '';
+        };
+        const observer = new MutationObserver(syncRow);
+        observer.observe(u2Input.root, {attributes: true, attributeFilter: ['hidden']});
+        scope.own(() => observer.disconnect());
+        syncRow();
         for (const text of rowNotes.get(p.name) ?? [])
           abGrid.append(note(text));
       }
@@ -515,6 +671,56 @@ export function funcConvergencePage(): HTMLElement {
       ['metrics', [W3_LIST]],
     ]));
 
+    const {form: w4Form} = await buildAb(w4Call, w4Grid, toDartW4, toU2W4, tickW4,
+      new Map<string, string[]>([
+        ['cylinders', [W4_VISIBLE]],
+        ['tankExtension', [W4_ENABLED]],
+        ['email', [W4_REGEX]],
+        ['minAge', [W4_EXPR]],
+        ['code', [W4_NAMED]],
+        ['notes', [W4_NOTES]],
+      ]));
+    Scope.runWith(scope, () => {
+      const blocked = computed(() =>
+        w4Form.missingRequired.value.length > 0 || w4Form.invalidFields.value.length > 0);
+      Scope.ambient!.effect(() => {
+        w4Run.disabled = blocked.value;
+        w4Run.title = gateTitle(blocked.value, w4Form.missingRequired.value,
+          w4Form.invalidFields.value);
+      });
+    });
+
+    // the slow row rides its OWN call: the async-validator fixture crashes the whole Dart
+    // form build (ib:296-298), and per-row isolation keeps the crash in the left cell (#21)
+    const slowForm = Scope.runWith(scope, () => funcForm(w4SlowCall, {twoWayBinding: true}));
+    const slowDartCell = div([]);
+    w4SlowGrid.append(span(''), h3('Dart'), h3('u2'));
+    const slowCells = [span('slow', 'u2demo-code'), slowDartCell,
+      slowForm.getInput('slow')!.root];
+    for (const cell of slowCells)
+      cell.dataset.row = 'slow';
+    w4SlowGrid.append(...slowCells);
+    w4SlowGrid.append(note(W4_SLOW));
+    try {
+      const dartSlow = await DG.InputForm.forFuncCall(w4SlowCall, {twoWayBinding: true});
+      slowDartCell.append(dartSlow.root);
+    }
+    catch (e: any) {
+      slowDartCell.append(span('form build failed: ' + String(e?.message ?? e), 'u2demo-error'));
+    }
+
+    const w4WholeDart = divV([h3('Dart — whole form')], 'u2demo-funcs-col');
+    const w4WholeU2 = divV([h3('u2 — whole form')], 'u2demo-funcs-col');
+    w4Whole.append(w4WholeDart, w4WholeU2);
+    w4WholeU2.append(Scope.runWith(scope, () => funcForm(w4Call, {twoWayBinding: true})).root);
+    try {
+      const w4WholeDartForm = await DG.InputForm.forFuncCall(w4Call, {twoWayBinding: true});
+      w4WholeDart.append(w4WholeDartForm.root);
+    }
+    catch (e: any) {
+      w4WholeDart.append(span(String(e?.message ?? e), 'u2demo-error'));
+    }
+
     plain.append(Scope.runWith(scope, () => funcForm(demoFunc!.prepare())).root);
     // the Dart form writes computed defaults (and the table auto-fill and column auto-picks)
     // during forFuncCall, before the tick subscriptions exist — re-read the calls once so the
@@ -522,6 +728,7 @@ export function funcConvergencePage(): HTMLElement {
     tick.value++;
     tickDyn.value++;
     tickW3.value++;
+    tickW4.value++;
   }
 
   const page = divV([
@@ -558,6 +765,23 @@ export function funcConvergencePage(): HTMLElement {
       return inputsText(w3Call);
     }))], 'u2demo-status'),
     prose(W3_UNASSOC),
+    h3('Expressions & validation'),
+    prose(W4_INTRO),
+    w4Grid,
+    // 'w4 ' prefixes: the func-form/async/tables e2e lanes address the plain 'sync = ' /
+    // 'inputs = ' lines positionally (first / second / last) — these must not join that list
+    divH([span('w4 sync = '), span(computed(() =>
+      `u2 → Dart ${toDartW4.value} · Dart → u2 ${toU2W4.value}`))], 'u2demo-status'),
+    divH([span('w4 inputs = '), span(computed(() => {
+      tickW4.value;
+      return inputsText(w4Call);
+    }))], 'u2demo-status'),
+    divH([w4Run, span(w4RunResult)], 'u2demo-row u2demo-w4-gate'),
+    prose(W4_GATE),
+    w4SlowGrid,
+    h3('Grouped layout & header auto-hide'),
+    prose(W4_HEADERS),
+    w4Whole,
     h3('Deliberate divergences'),
     ...DIVERGENCES.map(prose),
     h3('u2 form, unmodified'),

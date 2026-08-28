@@ -241,16 +241,27 @@ form('nullable: false becomes a required validator', () => {
   f.dispose();
 });
 
-form('a literal default is displayed without ever being written into the call', () => {
+form('a literal default the call does not hold is never displayed — display == call, run included', () => {
   const call = callOf(
     fp('count', 'int', {defaultValue: 3}),
     fp('stage', 'string', {isOptional: true, defaultValue: 'a'}));
   const {f, sets, changes} = wired(call);
-  assert.equal(f.getInput('count').value.value, 3, 'seeded from defaultValue');
-  assert.equal(f.getInput('stage').value.value, 'a', 'an optional param answers it through value already');
-  assert.deepEqual([sets, changes], [[], []], 'display-only: no setParamValue, no onInputChanged');
+  assert.equal(f.getInput('count').value.value, null, 'a defaulted nullable param shows what the run will use — nothing');
+  assert.equal(f.getInput('stage').value.value, 'a', 'an optional param answers it through value, so the run agrees');
+  assert.deepEqual([sets, changes], [[], []], 'no setParamValue, no onInputChanged');
   assert.equal(call.dart.params[0].dart.value, undefined);
   assert.equal(call.dart.params[1].dart.value, undefined);
+  f.dispose();
+});
+
+form('a source rebind seeds fields from the new call, never from defaultValue', () => {
+  const {f} = wired(callOf(fp('count', 'int', {defaultValue: 3})));
+  const filled = callOf(fp('count', 'int', {defaultValue: 3}));
+  filled.setParamValue('count', 7);
+  f.source = filled;
+  assert.equal(f.getInput('count').value.value, 7, 'refreshed from the new call');
+  f.source = callOf(fp('count', 'int', {defaultValue: 3}));
+  assert.equal(f.getInput('count').value.value, null, 'display == call after a rebind too');
   f.dispose();
 });
 

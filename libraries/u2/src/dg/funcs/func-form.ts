@@ -7,8 +7,12 @@
    and computed defaults written into the call (R6) — with `settled` as the readiness member.
    Wave 3 adds the table routes — dataframe/column/column_list fields with auto-fill, the
    default-column pick and dependent rewiring (param-tables.ts), all synchronous: the call holds
-   OBJECTS, the inputs hold names. */
-import {batch} from '../../core/signals.js';
+   OBJECTS, the inputs hold names.
+   Wave 4 adds the annotation rules — `visible:`/`enabled:`/`validator:` expressions through the
+   scriptSync seam and named validators through `evalParamValidators` (param-rules.ts), the
+   categoryGroups plan with header auto-hide, and `missingRequired` as the Run-gate member. */
+import {batch, computed, signal, Signal, ReadonlySignal} from '../../core/signals.js';
+import {Scope} from '../../core/scope.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input} from '../../core/input-base.js';
 import type {InputOptions} from '../../core/input-base.js';
@@ -29,6 +33,9 @@ import {TableBinding, columnPredicate, parentTableName, tableByName, preferredTa
   asNamed, asTable, resolveTable, columnNamesOf, noMatchMessage,
   markAuto, unmarkAuto} from './param-tables.js';
 import type {ColumnDependent} from './param-tables.js';
+import {WarnOnce, evalRule, evalValidatorExpression, expandCategoryGroups, plainMessage,
+  regexValidator} from './param-rules.js';
+import type {PlanItem} from './param-rules.js';
 import type * as DG from 'datagrok-api/dg';
 
 export interface FuncFormOptions {
@@ -36,8 +43,7 @@ export interface FuncFormOptions {
    * compatibility only: FuncCall edits then do not refresh the form. */
   twoWayBinding?: boolean;
   /** Suppresses computed-default evaluation and `propagateChoice` writes (R6). Dynamic choice
-   * ITEMS still load and apply — items are not defaults (divergence #8). Literal defaults stay
-   * display-only either way. */
+   * ITEMS still load and apply — items are not defaults (divergence #8). */
   skipDefaultInit?: boolean;
   /** Suppresses the table auto-fill write (the current-or-first open table into a null
    * dataframe param, fpe:62-64) — the js-api option (forms.ts:226) reproduced. */
@@ -60,7 +66,8 @@ export interface FuncCallParamLike {
   readonly name: string;
   /** Optional-default substitution included (`func_call_param.dart:78-88`). */
   readonly value: any;
-  readonly property: IProperty & {options?: Record<string, any>, dart?: unknown};
+  readonly property: IProperty & {options?: Record<string, any>, isOptional?: boolean,
+    dart?: unknown};
   onChanged: {subscribe(fn: (p: FuncCallParamLike) => void): {unsubscribe(): void}};
 }
 
@@ -69,10 +76,14 @@ export interface FuncCallParamLike {
 export interface FuncCallLike {
   inputParams: {values(): Iterable<FuncCallParamLike>};
   setParamValue(name: string, value: any): void;
+  /** The categoryGroups door — `func.options['categoryGroups']` is a JSON string (fpe:840-845). */
+  func?: {options?: Record<string, any>};
   evalParamChoices?(name: string): Promise<ChoicesResult>;
   evalParamSuggestions?(name: string, text: string): Promise<{items: string[],
     tooltips: Record<string, string>}>;
   evalParamDefault?(name: string): Promise<any>;
+  evalParamValidators?(name: string): Promise<{message: string, isError: boolean,
+    isHelper: boolean}[]>;
 }
 
 /** The per-field seam the dynamic sources plug into. Null kind marks a platform editor, which
@@ -112,6 +123,25 @@ export interface FuncField {
   userTouched?: boolean;
   /** Dismisses the field's transient notice and its interaction listeners. */
   noticeClear?: () => void;
+  /** The `visible:`/`enabled:` expression verdicts — single owners of root visibility and the
+   * expression term of `enabled`; kept (never re-evaluated) on a script failure (ib:328-331). */
+  exprVisible: boolean;
+  exprEnabled: boolean;
+  /** `exprVisible && exprEnabled` as a signal: while false the field is exempt from ALL value
+   * validation and the Run gate — its value stays in the call (divergence #20). */
+  active: Signal<boolean>;
+  /** The named-validator (`validators:` option) machinery: the async verdict slot a sync
+   * validator answers, moved by {@link FuncCallForm._runNamed}'s run counter. */
+  named?: boolean;
+  namedVerdict?: string | null;
+  namedRun?: number;
+  /** The full underlying failure behind a shortened `Couldn't validate` verdict — the error
+   * element's tooltip carries it while the plain verdict shows. */
+  namedDetail?: string;
+  /** The root title while disabled-by-expression (`Enabled when: …`, divergence #23) and the
+   * title it displaced — released, never clobbered, on re-enable. On the root, not the box:
+   * the label and a disabled checkbox are what the user actually hovers. */
+  enabledTitle?: {text: string, saved: string};
 }
 
 /** The W1 scalar set; everything else lands in {@link FuncCallForm.unsupported}. */
@@ -141,6 +171,14 @@ function camelCaseToWords(name: string): string {
  * runs `setParamValue`, a `param.onChanged` refreshes the field (echo-suppressed by value in both
  * directions). It edits the call and nothing else — running it stays with the caller. */
 export class FuncCallForm extends Form {
+  /** Non-optional params of the current call whose field is active and empty, by label — with
+   * {@link Form.validity} the two terms of the Run gate (visibility-aware: a hidden required
+   * field blocks nothing, and returns the moment its expression shows it again). */
+  readonly missingRequired: ReadonlySignal<string[]>;
+  /** Labels of rendered fields whose current validity is an error — visibility-aware like
+   * {@link missingRequired}; gate consumers name them in the blocked tooltip. */
+  readonly invalidFields: ReadonlySignal<string[]>;
+
   private readonly _formOptions: FuncFormOptions;
   private readonly _fields: FuncField[] = [];
   private readonly _unsupported: string[] = [];
@@ -151,6 +189,12 @@ export class FuncCallForm extends Form {
   private _refreshing = false;
   private _generation = 0;
   private _settled: Promise<void> = Promise.resolve();
+  private _rules: Scope | undefined;
+  private _plan: {name: string, level: number, el?: HTMLElement, fields: FuncField[]}[] = [];
+  private _namedStarts: Promise<void>[] = [];
+  private readonly _warnings = new WarnOnce();
+  /** Bumped on `source` rebinds — orphan flips are not signals (FP-W4-7). */
+  private readonly _genSig = signal(0);
 
   constructor(call: FuncCallLike, options: FuncFormOptions = {}) {
     super({condensed: options.condensed});
@@ -158,9 +202,33 @@ export class FuncCallForm extends Form {
     this._call = call;
     this.root.dataset.u2 = 'func-form';
     this._build();
+    this.missingRequired = computed(() => {
+      this._genSig.value;
+      const missing: string[] = [];
+      for (const field of this._fields) {
+        if (field.orphaned || field.param.property.isOptional === true || !field.active.value)
+          continue;
+        if (FuncCallForm._empty(field.input.value.value))
+          missing.push(field.input.label || field.param.name);
+      }
+      return missing;
+    });
+    this.invalidFields = computed(() => {
+      this._genSig.value;
+      const invalid: string[] = [];
+      for (const field of this._fields) {
+        if (field.orphaned || !field.active.value)
+          continue;
+        if (field.input.validity.value !== null)
+          invalid.push(field.input.label || field.param.name);
+      }
+      return invalid;
+    });
     this._bind();
     // before _arm: the auto-pick writes are sync and must land before the default evals read
     this._bindTables();
+    this._armRules();
+    this.own(() => this._rules?.dispose());
     this._arm();
   }
 
@@ -183,6 +251,7 @@ export class FuncCallForm extends Form {
   set source(call: FuncCallLike) {
     this._call = call;
     this._generation++;
+    this._genSig.value++;
     for (const off of this._paramSubs) {
       off();
       this.scope.disown(off);
@@ -213,7 +282,7 @@ export class FuncCallForm extends Form {
           if (param === undefined)
             continue;
           field.param = param;
-          field.input.value.value = this._initialValue(field);
+          field.input.value.value = this._read(field);
         }
       });
     } finally {
@@ -236,6 +305,7 @@ export class FuncCallForm extends Form {
         this._wireSource(field);
     }
     this._bindTables();
+    this._armRules();
     this._arm();
   }
 
@@ -245,6 +315,8 @@ export class FuncCallForm extends Form {
     return this._fields.find((f) => f.param.name === name)?.input;
   }
 
+  /** Deliberately un-exempt (visibility-blind), like Dart's `validateInputs`: a hidden field's
+   * parse/range verdict still counts. Gate on {@link missingRequired} + {@link invalidFields}. */
   get isValid(): boolean {
     return this.validity.peek() === null;
   }
@@ -299,12 +371,60 @@ export class FuncCallForm extends Form {
     }
     const headers = categories.length > 1 ||
       (categories.length === 1 && categories[0].name !== 'Misc');
-    for (const category of categories) {
-      if (headers)
-        this.addElement(div([category.name], 'u2-form-category'));
-      for (const {param, route, parent} of category.entries)
-        this._addField(param, route, parent);
+    this._plan = [];
+    // a categoryGroups parse failure falls back to the flat rendering, where the Dart build
+    // crashes whole (defect #14, divergence #22a)
+    let plan: PlanItem[] | null = null;
+    const raw = this._call.func?.options?.['categoryGroups'];
+    if (typeof raw === 'string' && raw !== '') {
+      try {
+        plan = expandCategoryGroups(JSON.parse(raw), 1);
+      } catch (e) {
+        console.warn('u2 func-form: malformed categoryGroups JSON — rendering flat: ' +
+          (e instanceof Error ? e.message : String(e)));
+      }
     }
+    const consumed = new Set<(typeof categories)[number]>();
+    // the FIRST not-yet-consumed matching category renders — a name listed twice renders once,
+    // where Dart duplicates the bound inputs (divergence #22b)
+    const render = (name: string, level: number, el: HTMLElement | undefined) => {
+      const category = categories.find((c) => c.name === name && !consumed.has(c));
+      const before = this._fields.length;
+      if (category !== undefined) {
+        consumed.add(category);
+        for (const {param, route, parent} of category.entries)
+          this._addField(param, route, parent);
+      }
+      this._plan.push({name, level, el, fields: this._fields.slice(before)});
+    };
+    for (const item of plan ?? []) {
+      let el: HTMLElement | undefined;
+      if (item.isHeader || headers) {
+        el = div([item.name], 'u2-form-category');
+        el.classList.add('u2-form-category-l' + Math.min(item.level, 3));
+        this.addElement(el);
+      }
+      render(item.name, item.level, el);
+    }
+    // every category the plan did not consume — the default `Misc` included — appends in
+    // first-appearance order, where Dart silently never renders it (defect #12, divergence #18)
+    for (const category of categories) {
+      if (consumed.has(category))
+        continue;
+      let el: HTMLElement | undefined;
+      if (headers) {
+        el = div([category.name], 'u2-form-category');
+        this.addElement(el);
+      }
+      render(category.name, 1, el);
+    }
+    this._updateHeaders();
+    // a consumer hiding a field root directly (`input.root.hidden = true`) bypasses
+    // `_applyVisible` — the headers must still follow (headers are not observed, so no loop)
+    const observer = new MutationObserver(() => this._updateHeaders());
+    for (const field of this._fields)
+      observer.observe(field.input.root, {attributeFilter: ['hidden']});
+    this.own(() => observer.disconnect());
   }
 
   /** Dart's table auto-fill (fpe:62-64, minus the Dart-only `applicableTable`): a real write
@@ -418,7 +538,7 @@ export class FuncCallForm extends Form {
     }
     const field: FuncField = {param, input, kind, route, filter, orphaned: false,
       propagate: route === 'choices' && prop.options?.['propagateChoice'] === 'all',
-      applying: false};
+      applying: false, exprVisible: true, exprEnabled: true, active: signal(true)};
     if (route === 'table') {
       field.fromParam = (v) => asNamed(v)?.name ?? null;
       field.toParam = (name) => name == null ? null : tableByName(name);
@@ -439,17 +559,45 @@ export class FuncCallForm extends Form {
       }
     }
     if (kind !== null) {
-      input.value.value = this._initialValue(field);
-      // an empty column_list counts as empty too (isEmpty([]) is false; Dart's ColumnsInput
-      // enforces a non-empty pick)
+      input.value.value = this._read(field);
       if (prop.nullable === false)
-        input.addValidator((value) => ObjectForm.isEmpty(value) ||
-          (route === 'columns' && Array.isArray(value) && value.length === 0) ?
+        input.addValidator((value) => field.active.peek() && FuncCallForm._empty(value) ?
           this._requiredMessage(field) : null);
+      const expr = prop.options?.['validator'];
+      if (expr != null) {
+        const regex = regexValidator(String(expr));
+        input.addValidator((v) => {
+          // ib:345/354 gating: empty values are the required validator's business alone
+          if (!field.active.peek() || FuncCallForm._empty(v))
+            return null;
+          return regex !== null ? regex(v) :
+            evalValidatorExpression(String(expr), this._variables(field, false),
+              param.name + ':validator', this._warnings);
+        });
+      }
+      if (prop.options?.['validators'] != null) {
+        field.named = true;
+        field.namedRun = 0;
+        input.addValidator(() => field.active.peek() ? field.namedVerdict ?? null : null);
+      }
     }
     this.add(input);
-    if (route === 'table' && this._formOptions.showTableSelectors === false)
-      input.root.hidden = true;
+    // input-base owns the verdict text; its element's tooltip is ours — the full text of a
+    // clamped message, or the underlying failure behind a shortened `Couldn't validate`
+    const errorEl = Array.prototype.find.call(input.root.children, (c: Element) =>
+      c.classList.contains('u2-input-error')) as HTMLElement | undefined;
+    if (errorEl !== undefined)
+      this.effect(() => {
+        const message = input.validity.value;
+        const title = message === null ? null :
+          field.namedDetail != null && message === field.namedVerdict ? field.namedDetail :
+            message;
+        if (title === null)
+          errorEl.removeAttribute('title');
+        else
+          errorEl.title = title;
+      });
+    this._applyVisible(field);
     if (route === 'table' && this._autoFilled.has(param.name))
       markAuto(field);
     this._fields.push(field);
@@ -486,6 +634,9 @@ export class FuncCallForm extends Form {
         if (field.propagate && !field.applying && !Input.isSystemWrite &&
             this._formOptions.skipDefaultInit !== true)
           this._propagate(field, value);
+        // explicit, never effect-ordering: the call already holds the fresh value here
+        if (field.named)
+          void this._runNamed(field);
       }
       // under `twoWayBinding: false` no param.onChanged refresh runs to clear a failed default
       if (field.param.value != null)
@@ -561,9 +712,54 @@ export class FuncCallForm extends Form {
     return state;
   }
 
-  /** The one owner of `input.enabled`: orphaned × initial loading (a refresh never disables). */
+  /** The one owner of root visibility: the `visible:` expression × the showTableSelectors
+   * contract (which used to write `root.hidden` inline at build). */
+  private _applyVisible(field: FuncField): void {
+    field.input.root.hidden = !field.exprVisible ||
+      (field.route === 'table' && this._formOptions.showTableSelectors === false);
+    this._updateHeaders();
+  }
+
+  /** The Dart category auto-hide (uib:278-341) over {@link _plan}: a header shows while any of
+   * its own fields — or any deeper item below it — is visible. Dart's expression path never
+   * reaches this machinery (ib:340 bypasses the visible setter — defect #13, divergence #19). */
+  private _updateHeaders(): void {
+    const items = this._plan;
+    const visible = new Array<boolean>(items.length).fill(false);
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      let vis = it.fields.some((f) => !f.input.root.hidden);
+      for (let j = i + 1; j < items.length && items[j].level > it.level; j++)
+        if (visible[j]) {
+          vis = true;
+          break;
+        }
+      visible[i] = vis;
+      if (it.el !== undefined)
+        it.el.hidden = !vis;
+    }
+  }
+
+  /** The one owner of `input.enabled`: orphaned × the `enabled:` expression × initial loading
+   * (a refresh never disables). While the `enabled:` expression is the cause, the root title
+   * says so — `Enabled when: <expr>` (divergence #23; Dart shows nothing) — displacing a
+   * pre-existing title (the description tooltip included) only for that while. */
   private _applyEnabled(field: FuncField): void {
-    field.input.enabled = !field.orphaned && !(field.state?.busy.peek() ?? false);
+    field.input.enabled = !field.orphaned && field.exprEnabled &&
+      !(field.state?.busy.peek() ?? false);
+    const root = field.input.root;
+    const expr = field.param.property.options?.['enabled'];
+    if (!field.orphaned && !field.exprEnabled && expr != null) {
+      if (field.enabledTitle === undefined) {
+        field.enabledTitle = {text: 'Enabled when: ' + String(expr), saved: root.title};
+        root.title = field.enabledTitle.text;
+      }
+    }
+    else if (field.enabledTitle !== undefined) {
+      if (root.title === field.enabledTitle.text)
+        root.title = field.enabledTitle.saved;
+      field.enabledTitle = undefined;
+    }
     // the disable sweeps every button under root — the state element's Retry must stay clickable
     if (!field.input.enabled) {
       const retry = field.state?.root.querySelector<HTMLButtonElement>('.u2-param-source-retry');
@@ -588,15 +784,133 @@ export class FuncCallForm extends Form {
     }
   }
 
+  /** One re-armable scope owning the expression effects: any field edit re-runs every
+   * `visible:`/`enabled:` rule and revalidates every expression validator — Dart's
+   * validate-all-on-any-change (ib:179 → uib:245-251) with the signal graph as the dispatcher.
+   * The effects write DOM and `active` only; nothing they write is read back by
+   * {@link _variables}, so there are no loops. */
+  private _armRules(): void {
+    this._warnings.clear();
+    this._rules?.dispose();
+    const rules = new Scope();
+    this._rules = rules;
+    for (const field of this._fields) {
+      const opts = field.param.property.options;
+      const hasV = opts?.['visible'] != null;
+      const hasE = opts?.['enabled'] != null;
+      if (hasV || hasE)
+        rules.effect(() => {
+          const vars = this._variables(field, true);
+          if (hasV)
+            field.exprVisible = evalRule(opts!['visible'], vars, field.exprVisible,
+              field.param.name + ':visible', this._warnings);
+          if (hasE)
+            field.exprEnabled = evalRule(opts!['enabled'], vars, field.exprEnabled,
+              field.param.name + ':enabled', this._warnings);
+          this._applyVisible(field);
+          this._applyEnabled(field);
+          const active = field.exprVisible && field.exprEnabled;
+          if (active !== field.active.peek()) {
+            field.active.value = active;
+            field.input.revalidate();
+            if (field.named)
+              void this._runNamed(field);
+          }
+        });
+      // sibling-driven revalidation for expression validators (the validator itself peeks)
+      if (opts?.['validator'] != null && field.kind !== null)
+        rules.effect(() => {
+          this._variables(field, true);
+          field.input.revalidate();
+        });
+    }
+    this._namedStarts = [];
+    for (const field of this._fields) {
+      if (field.named && !field.orphaned)
+        this._namedStarts.push(this._runNamed(field));
+    }
+  }
+
+  /** `getContext` parity (ib:195-201): every rendered field's input value keyed by PARAM name,
+   * the W3 object routes contributing the param OBJECT (P-W4-4), plus `value` — the field's
+   * own. Tracking is the {@link _armRules} effects' alone; validators peek. */
+  private _variables(self: FuncField, track: boolean): Record<string, unknown> {
+    const vars: Record<string, unknown> = {};
+    for (const f of this._fields) {
+      if (f.orphaned)
+        continue;
+      vars[f.param.name] = f.toParam !== undefined ? f.param.value :
+        (track ? f.input.value.value : f.input.value.peek());
+    }
+    vars['value'] = self.toParam !== undefined ? self.param.value : self.input.value.peek();
+    return vars;
+  }
+
+  /** Runs the field's named `validators:` through the call and lands the verdict in
+   * {@link FuncField.namedVerdict}: the run counter drops stale landings, a resolution failure
+   * becomes an inline `Couldn't validate (validator '…' is misconfigured)` — the underlying
+   * message warned once and carried on the error tooltip, never a form-build throw (divergence
+   * #21) — and a warning result rides the notice channel until a clean landing clears it. */
+  private async _runNamed(field: FuncField): Promise<void> {
+    const run = ++field.namedRun!;
+    const generation = this._generation;
+    const set = (verdict: string | null, detail?: string) => {
+      field.namedDetail = detail;
+      if (field.namedVerdict === verdict)
+        return;
+      field.namedVerdict = verdict;
+      field.input.revalidate();
+    };
+    const value = field.input.value.peek();
+    if (!field.active.peek() || FuncCallForm._empty(value)) {
+      set(null);
+      return;
+    }
+    const call = this._call;
+    if (typeof call.evalParamValidators !== 'function') {
+      this._warnings.warn(field.param.name + ':validators',
+        'call does not support validator evaluation');
+      set(null);
+      return;
+    }
+    try {
+      const rs = await call.evalParamValidators(field.param.name);
+      if (run !== field.namedRun || generation !== this._generation || this.scope.isDisposed)
+        return;
+      const error = rs.find((r) => r.isError !== false);
+      const warning = rs.find((r) => r.isError === false);
+      this._stateOf(field).notice(warning != null ? plainMessage(warning.message) : null);
+      set(error != null ? plainMessage(error.message) : null);
+    } catch (e) {
+      if (run !== field.namedRun || generation !== this._generation || this.scope.isDisposed)
+        return;
+      const detail = e instanceof Error ? e.message : String(e);
+      this._warnings.warn(field.param.name + ':validators', detail);
+      const names: unknown = field.param.property.options?.['validators'];
+      const name = Array.isArray(names) ?
+        names.find((n) => typeof n === 'string' && detail.includes(String(n))) ??
+          (names.length === 1 ? names[0] : null) : null;
+      set(name != null ? `Couldn't validate (validator '${name}' is misconfigured)` :
+        'Couldn\'t validate (a validator is misconfigured)', detail);
+    }
+  }
+
+  /** The ib `stringValue != ''` counterpart: null, undefined, `''` and the empty array (an
+   * empty column_list or multi-choice pick). */
+  private static _empty(v: unknown): boolean {
+    return ObjectForm.isEmpty(v) || (Array.isArray(v) && v.length === 0);
+  }
+
   /** {@link settled}'s producer, re-armed per bind: the computed-default evals plus each
-   * source's initial, immediate run. */
+   * source's initial, immediate run, plus the initial named-validator runs. */
   private _arm(): void {
     const starts: Promise<void>[] = [];
     for (const field of this._fields) {
       if (field.source !== undefined && !field.orphaned)
         starts.push(field.source.start());
     }
-    this._settled = Promise.allSettled([this._initDefaults(), ...starts]).then(() => undefined);
+    this._settled = Promise.allSettled([this._initDefaults(), ...starts, ...this._namedStarts])
+      .then(() => undefined);
   }
 
   /** Computed defaults (R6): evaluated once per bind, in parallel, each isolated onto its
@@ -669,6 +983,8 @@ export class FuncCallForm extends Form {
     } finally {
       this._refreshing = false;
     }
+    if (field.named)
+      void this._runNamed(field);
   }
 
   private _read(field: FuncField): any {
@@ -676,19 +992,6 @@ export class FuncCallForm extends Form {
       return field.fromParam(field.param.value);
     const value = field.param.value;
     return field.kind === null ? value : ObjectForm.coerce(field.kind, value);
-  }
-
-  /** The param's value; a null one with a literal default shows the default — display-only, never
-   * written into the FuncCall (the ApiTests `form without default initialization` contract).
-   * W3 routes skip the default: a dataframe defaultValue is never serialized Dart-side
-   * (func_param.dart:190). */
-  private _initialValue(field: FuncField): any {
-    const value = this._read(field);
-    if (field.toParam !== undefined)
-      return value;
-    const defaultValue = field.param.property.defaultValue;
-    return value == null && defaultValue != null && field.kind !== null ?
-      ObjectForm.coerce(field.kind, defaultValue) : value;
   }
 
   /** The required-error text, cause-aware for the column routes: a null parent table suppresses

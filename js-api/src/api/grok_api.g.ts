@@ -821,6 +821,7 @@ export interface IDartApi {
   grok_FuncCall_EvalParamChoices(call: any, name: String): Promise<any>;
   grok_FuncCall_EvalParamSuggestions(call: any, name: String, text: String): Promise<any>;
   grok_FuncCall_EvalParamDefault(call: any, name: String): Promise<any>;
+  grok_FuncCall_EvalParamValidators(call: any, name: String): Promise<any>;
   grok_Meta_Register(jsMeta: any): any;
   grok_Meta_List(): any;
   grok_Meta_ForEntity(entity: any): any;

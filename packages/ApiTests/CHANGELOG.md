@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20753: `functions/param-eval.ts` adds the W4 pins — `Functions: ParamValidators` (client-registered sync validators run via `FuncCall.evalParamValidators` against the call's current value: passing results omitted, `false` → the "didn't pass the <friendlyName> check" message with `isError: true`, a string result becomes the message, declaration-order results, unknown-name and async-registered rejections with the sync-required message) and a `ScriptSync` comparison-expression pin over a variables map.
+
 GROK-20753: New `utils/string-utils.ts` pins `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance` (pure-function values).
 
 GROK-20753: New `widgets/pickers.ts` pins the table-picker dialogs (`ui.pickTableFromFiles`/`ui.pickTableFromQuery` open their platform dialogs and resolve null on cancel) and the `ColumnGrid` popup surface (`Widgets: ColumnGrid`) — construction, `onCurrentRowChanged`/`currentColumn`, the search-box filter, `close()` detaching, and the wrapped-`DG.Column` filter-callback contract on both the `popup` option and the `filter` setter.

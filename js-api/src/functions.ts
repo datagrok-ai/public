@@ -391,6 +391,13 @@ export class FuncCall extends Entity {
     return toJs(await api.grok_FuncCall_EvalParamDefault(this.dart, name));
   }
 
+  /** Runs the parameter's named `validators:` against its CURRENT value in the call
+   * (resolution and evaluation stay Dart-side; passing validators are omitted). */
+  async evalParamValidators(name: string): Promise<{message: string, isError: boolean,
+      isHelper: boolean}[]> {
+    return toJs(await api.grok_FuncCall_EvalParamValidators(this.dart, name));
+  }
+
   /** Executes the function call */
   async call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
     await api.grok_FuncCall_Call(this.dart, showProgress, toDart(progress), options?.processed, options?.report);

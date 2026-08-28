@@ -92,10 +92,17 @@ textarea.u2-input-editor {
 
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
-   460px one would land off the pane on one row and under the field on the next */
+   460px one would land off the pane on one row and under the field on the next. Long verdicts
+   clamp to three lines, the W2 async channel's pattern (css/form.css); the full text rides the
+   element's title */
 .u2-input-error {
   flex: 1 0 100%;
   min-width: 0;
+  max-width: 260px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
   font-size: var(--dg-font-size-small);
   color: var(--dg-error);
 }
@@ -200,6 +207,11 @@ textarea.u2-input-editor {
 .u2-input-disabled,
 .u2-input-disabled .u2-input-editor {
   color: var(--dg-text-color-disabled);
+}
+
+/* events die on the CHILDREN, never on the root: the root must stay hit-testable or its title
+   tooltip (`Enabled when: …`) can never show on hover */
+.u2-input-disabled > * {
   pointer-events: none;
 }
 
@@ -257,8 +269,8 @@ textarea.u2-input-editor {
   cursor: pointer;
 }
 
-.u2-input-root:hover .u2-input-clear,
-.u2-input-box:hover .u2-input-clear {
+.u2-input-root:not(.u2-input-disabled):hover .u2-input-clear,
+:not(.u2-input-disabled) > .u2-input-box:hover .u2-input-clear {
   visibility: visible;
 }
 
@@ -740,4 +752,10 @@ textarea.u2-list-area {
 .u2-property-editor-typed:has(.u2-input-root) {
   padding-top: var(--dg-space-s);
   border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+/* author flex on the root defeats the UA [hidden] style — load-bearing for the func form's
+   visible: expressions and showTableSelectors */
+.u2-input-root[hidden] {
+  display: none;
 }

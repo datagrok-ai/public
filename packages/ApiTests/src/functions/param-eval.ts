@@ -57,14 +57,21 @@ for (const input of carHost.inputs) {
     input.options['choices'] = '["slow", "fast"]';
 }
 
-async function expectRejection(action: () => Promise<any>): Promise<void> {
+async function expectRejection(action: () => Promise<any>, messagePart?: string): Promise<void> {
   try {
     await action();
   } catch (e) {
+    if (messagePart != null)
+      expect(`${e}`.includes(messagePart), true, `rejection '${e}' does not mention '${messagePart}'`);
     return;
   }
   throw 'Expected a rejection';
 }
+
+// npm datagrok-api@1.27.9 typings predate the 1.28 FuncCall.evalParamValidators
+const evalValidators = (call: DG.FuncCall, name: string):
+  Promise<{message: string, isError: boolean, isHelper: boolean}[]> =>
+  (call as any).evalParamValidators(name);
 
 category('Functions: ParamEval', () => {
   test('choices from client-registered provider', async () => {
@@ -136,6 +143,11 @@ category('Functions: ScriptSync', () => {
 
   test('variables map', async () => {
     expect(grok.functions.scriptSync('a + b', {a: 2, b: 3}), 5);
+  });
+
+  test('comparison expression over a variables map', async () => {
+    expect(grok.functions.scriptSync('type == "ICE"', {type: 'ICE'}), true);
+    expect(grok.functions.scriptSync('type == "ICE"', {type: 'EV'}), false);
   });
 
   test('variables map evaluates over a fresh context', async () => {
@@ -298,5 +310,97 @@ category('Functions: TableParams', () => {
     const s = metaScript();
     expect(s.inputs.find((p) => p.name === 'age')!.columnTypeFilter, 'numerical');
     expect(s.inputs.find((p) => p.name === 'cols')!.columnTypeFilter, 'categorical');
+  });
+}, {owner: 'askalkin@datagrok.ai'});
+
+category('Functions: ParamValidators', () => {
+  grok.functions.register({
+    signature: 'bool paramEvalValidTrue(string s)',
+    run: () => true,
+  });
+
+  grok.functions.register({
+    signature: 'bool paramEvalValidNull(string s)',
+    run: () => null,
+  });
+
+  const validFalse = grok.functions.register({
+    signature: 'bool paramEvalValidFalse(string s)',
+    run: () => false,
+  });
+
+  grok.functions.register({
+    signature: 'string paramEvalValidLen(string s)',
+    run: (s: string) => s.length < 3 ? 'Too short' : null,
+  });
+
+  grok.functions.register({
+    signature: 'bool paramEvalValidAsync(string s)',
+    isAsync: true,
+    run: async () => true,
+  });
+
+  const validHost = grok.functions.register({
+    signature: 'string paramEvalValidHost(string ok, string bad, string code, string multi, string ghost, string slow, int age)',
+    run: () => '',
+  });
+
+  const decorations: {[name: string]: string[]} = {
+    ok: ['paramEvalValidTrue', 'paramEvalValidNull'],
+    bad: ['paramEvalValidFalse'],
+    code: ['paramEvalValidLen'],
+    multi: ['paramEvalValidFalse', 'paramEvalValidLen'],
+    ghost: ['paramEvalNoSuchValidator'],
+    slow: ['paramEvalValidAsync'],
+    age: ['paramEvalValidLen'],
+  };
+  for (const input of validHost.inputs)
+    input.options['validators'] = decorations[input.name];
+
+  test('passing validators are omitted', async () => {
+    const r = await evalValidators(validHost.prepare({ok: 'value'}), 'ok');
+    expect(r.length, 0);
+  });
+
+  test('false result maps to the didn\'t-pass message', async () => {
+    const r = await evalValidators(validHost.prepare({bad: 'value'}), 'bad');
+    expect(r.length, 1);
+    expect(r[0].message, `Value didn't pass the ${validFalse.friendlyName} check`);
+    expect(r[0].isError, true);
+    expect(r[0].isHelper, false);
+  });
+
+  test('string result becomes the message', async () => {
+    const call = validHost.prepare({code: 'ab'});
+    const r = await evalValidators(call, 'code');
+    expect(r.length, 1);
+    expect(r[0].message, 'Too short');
+    expect(r[0].isError, true);
+    call.setParamValue('code', 'abcd');
+    expect((await evalValidators(call, 'code')).length, 0);
+  });
+
+  test('multiple validators report in declaration order', async () => {
+    const r = await evalValidators(validHost.prepare({multi: 'ab'}), 'multi');
+    expect(r.length, 2);
+    expect(r[0].message, `Value didn't pass the ${validFalse.friendlyName} check`);
+    expect(r[1].message, 'Too short');
+  });
+
+  test('unknown validator name rejects', async () => {
+    await expectRejection(() => evalValidators(validHost.prepare({ghost: 'value'}), 'ghost'));
+  });
+
+  test('async-registered validator rejects with the sync-required message', async () => {
+    await expectRejection(() => evalValidators(validHost.prepare({slow: 'value'}), 'slow'), 'must be sync');
+  });
+
+  test('int param value reaches the validator stringified', async () => {
+    const call = validHost.prepare({age: 25});
+    const r = await evalValidators(call, 'age');
+    expect(r.length, 1);
+    expect(r[0].message, 'Too short');
+    call.setParamValue('age', 1234);
+    expect((await evalValidators(call, 'age')).length, 0);
   });
 }, {owner: 'askalkin@datagrok.ai'});

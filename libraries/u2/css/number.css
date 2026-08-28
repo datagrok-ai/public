@@ -146,10 +146,11 @@
   cursor: pointer;
 }
 
-.u2-input-root:hover .u2-number-slider,
-.u2-input-root:hover .u2-number-click,
-.u2-input-box:hover .u2-number-slider,
-.u2-input-box:hover .u2-number-click {
+.u2-input-root:not(.u2-input-disabled):hover .u2-number-slider,
+.u2-input-root:not(.u2-input-disabled):hover .u2-number-click,
+/* parent-guarded, not root-descendant-guarded: the bridged box has no u2 root above it */
+:not(.u2-input-disabled) > .u2-input-box:hover .u2-number-slider,
+:not(.u2-input-disabled) > .u2-input-box:hover .u2-number-click {
   visibility: visible;
 }
 
