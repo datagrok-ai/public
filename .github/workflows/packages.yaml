@@ -225,6 +225,7 @@ jobs:
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
     permissions:
       actions: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -673,12 +674,23 @@ jobs:
         id: check
         working-directory: packages/${{ matrix.package }}
 
+      # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
+      # toolchain only for the publish step so the build keeps its pinned Node.
+      - name: Setup Node for trusted publishing
+        uses: actions/setup-node@v4
+        if: matrix.publish == 'publish'
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm for trusted publishing
+        if: matrix.publish == 'publish'
+        run: npm install -g npm@latest
+
       - name: Publish to npm
         run: npm publish --access public
         id: publish
         working-directory: packages/${{ matrix.package }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: matrix.publish == 'publish' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.gen_checks.outcome == 'success' && (steps.check.outcome == 'success' || steps.check.outcome == 'skipped') && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || (contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples'))
 
       - name: Get actors slack

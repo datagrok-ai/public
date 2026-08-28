@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/codegen-async-to-sync",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "version": "0.1.0",
   "description": "Async-to-sync TypeScript codegen via ts-morph AST transform",
   "license": "MIT",
