@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/chem-meta",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
