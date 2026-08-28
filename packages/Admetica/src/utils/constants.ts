@@ -1,3 +1,5 @@
+import {DesirabilityMode} from '@datagrok-libraries/statistics/src/mpo/mpo';
+
 export const STORAGE_NAME = 'admet_models';
 export const KEY = 'selected';
 export const TEMPLATES_FOLDER = 'System:AppData/Admetica/templates';
@@ -41,6 +43,7 @@ export interface Model {
   line: any;
   weight: number;
   functionType: 'numerical';
+  mode: DesirabilityMode;
 }
 
 export interface Template {
