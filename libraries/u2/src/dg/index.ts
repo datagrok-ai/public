@@ -18,6 +18,8 @@ export type {DapiSourceLike, DapiSourceOptions, DapiPagerSourceLike, DapiPagerOp
 export {handlerRenderer, HandlerRenderer, chip, EntityChip, entityCard, EntityCard, entityInput}
   from './entities/entity.js';
 export type {ChipOptions, EntityInputOptions} from './entities/entity.js';
+export {functionsBrowser} from './entities/functions-browser.js';
+export type {DgFunctionsBrowserOptions} from './entities/functions-browser.js';
 export {Editors} from './forms/editors.js';
 export type {EditorRule} from './forms/editors.js';
 export {moleculeInput, moleculeRenderer} from './inputs/molecule.js';

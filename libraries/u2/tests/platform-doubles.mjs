@@ -76,7 +76,7 @@ export class Func extends Entity {
 
   prepare(params) { return new FuncCall(this, params); }
 }
-getters(Func, 'package', 'description', 'inputs', 'outputs', 'options');
+getters(Func, 'package', 'description', 'inputs', 'outputs', 'options', 'tags');
 
 export class DataQuery extends Func {}
 

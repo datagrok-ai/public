@@ -145,5 +145,7 @@ export {Tour} from './components/display/tour.js';
 export type {TourStep, TourOptions} from './components/display/tour.js';
 export {MessageInput} from './components/inputs/message-input.js';
 export type {MessageInputOptions, MentionProvider} from './components/inputs/message-input.js';
+export {FunctionsBrowser, filterFuncItems, tagCounts} from './components/collections/functions-browser.js';
+export type {FuncItem, FunctionsBrowserOptions} from './components/collections/functions-browser.js';
 
 export const VERSION = '0.0.1';

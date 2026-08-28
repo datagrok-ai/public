@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, div, divV, divH, span, h3, button} from '@datagrok-libraries/u2';
-import {funcForm, FuncCallForm} from '@datagrok-libraries/u2/src/dg/index.js';
+import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/src/dg/index.js';
 import {ensureFuncs, ensureTable, fmt, gateTitle, prose} from './func-convergence';
 
 const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncCall` on the ' +
@@ -183,13 +183,16 @@ export function funcsPage(): HTMLElement {
 
   void show(showcaseFunc!);
 
-  void (async () => {
-    const widget = await DG.Func.byName('FunctionsWidget').apply({}) as DG.FunctionsWidget;
-    list.append(widget.root);
-    const sub = widget.onActionClicked.subscribe((f: DG.Func) => void show(f));
-    scope.own(() => sub.unsubscribe());
-    scope.own(() => widget.detach());
-  })().catch((e: any) => list.append(span(String(e?.message ?? e), 'u2demo-hint')));
+  // the native u2 browser over the same registry the Dart FunctionsWidget read; the pane keeps
+  // its old surface — names only, no signatures or play icons, panes behind the filter icon
+  const fb = Scope.runWith(scope, () => functionsBrowser(
+    {showSignature: false, showRunButton: false, showTags: false}));
+  list.append(fb.root);
+  fb.effect(() => {
+    const item = fb.selected.value;
+    if (item != null)
+      void show(item.data as DG.Func);
+  });
 
   return divV([
     prose(INTRO),

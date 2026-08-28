@@ -250,8 +250,13 @@
 .u2demo-funcs-list {
   flex: none;
   width: 230px;
-  overflow: auto;
+  overflow: hidden;
   border-right: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* the browser fills the column; its own virtualized list is the scroller */
+.u2demo-funcs-list .u2-functions-browser {
+  height: 100%;
 }
 
 .u2demo-funcs-detail {

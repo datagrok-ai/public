@@ -51,6 +51,13 @@ export const COLUMN_TYPE = {
   OBJECT: 'object',
 };
 
+/** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
+ * roles pane is fed. */
+export const functionRoles = [
+  {role: 'app', description: 'An application that gets shown in the app store.'},
+  {role: 'panel', description: 'Context-specific widget that appears on the context panel.'},
+];
+
 /** What the column selectors read at import (columns.ts:30-43), copied from js-api's const.ts. */
 export const AGG = {
   KEY: 'key', PIVOT: 'pivot', FIRST: 'first', TOTAL_COUNT: 'count', VALUE_COUNT: 'values',
@@ -104,6 +111,8 @@ export class ObjectHandler {
   getCaption(x) { return \`\${x}\`; }
 
   static register(handler) { ObjectHandler.registered.push(handler); }
+
+  static forEntity(x) { return ObjectHandler.registered.find((h) => h.isApplicable(x)) ?? null; }
 }
 
 export class JsInputBase {

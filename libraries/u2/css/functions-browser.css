@@ -1,0 +1,182 @@
+/* FunctionsBrowser (src/components/collections/functions-browser.ts): search row on top, the
+   roles/tags filter panes left of the virtualized list. The signature span and the play icon are
+   hidden through root-level classes, so recycled rows follow the live show* signals with no
+   re-render. */
+.u2-functions-browser {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--dg-bg);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+/* flex containers ignore the hidden attribute's UA rule — the show* toggles rely on it */
+.u2-functions-browser [hidden] {
+  display: none !important;
+}
+
+.u2-fb-search {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-s) var(--dg-space-m);
+}
+
+.u2-fb-search .u2-input-root {
+  flex: 1 1 auto;
+}
+
+/* the input box and the search variant's editor wrapper are inline-sized by default; the inner
+   input is already flex:1, so these two are what must span the row */
+.u2-fb-search .u2-input-box {
+  width: 100%;
+}
+
+.u2-fb-search .u2-input-editor.u2-input-search {
+  width: 100%;
+}
+
+.u2-fb-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: stretch; /* over .u2-div-h's center — a centered column grows to content height */
+}
+
+/* max-width caps the panes in a narrow host (a 230px dock column) so the list keeps room;
+   the list column's own min-width is the other half of the containment */
+.u2-fb-panes {
+  flex: none;
+  width: 170px;
+  max-width: 45%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--dg-space-s) var(--dg-space-m);
+  border-right: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-fb-pane {
+  margin-bottom: var(--dg-space-l);
+}
+
+.u2-fb-pane-header {
+  margin-bottom: var(--dg-space-xs);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  font-weight: bold;
+}
+
+.u2-fb-pane-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-xs) 0;
+  cursor: pointer;
+}
+
+.u2-fb-pane-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.u2-fb-count {
+  margin-left: auto;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-fb-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 120px;
+  min-height: 0;
+}
+
+/* min-height 0: without it the flex child's min-height:auto keeps the list at content height,
+   which defeats virtualization (every row rendered) */
+.u2-fb-main .u2-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-fb-empty {
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-fb-status {
+  flex: none;
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+/* one line per function, the func-picker row idiom (css/designer.css .u2-func-row) */
+.u2-fb-row {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+  gap: var(--dg-space-s);
+  overflow: hidden;
+}
+
+.u2-fb-run {
+  flex: none;
+}
+
+/* the platform's runnable affordance: a green play */
+.u2-fb-run .grok-icon {
+  color: var(--dg-success);
+}
+
+.u2-fb-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.u2-fb-icon img,
+.u2-fb-icon svg,
+.u2-fb-icon i {
+  max-width: 16px;
+  max-height: 16px;
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-fb-label {
+  flex: 0 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-fb-sig {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-fb-no-signature .u2-fb-sig {
+  display: none;
+}
+
+.u2-fb-no-run .u2-fb-run {
+  display: none;
+}

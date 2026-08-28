@@ -1,27 +1,30 @@
-/* The U2Demo "Forms" pane (packages/U2Demo/src/funcs.ts): the platform's own searchable
-   DG.FunctionsWidget on the left drives an old-vs-new A/B on the right — the Dart
-   DG.InputForm.forFuncCall and the u2 funcForm over ONE shared call, so edits sync live.
-   A showcase function (fceShowcase) is preselected at boot. Selection goes through the REAL
-   Dart widget rows (the same click a user makes), so this also covers the FunctionsWidget
-   interop event round-trip. */
+/* The U2Demo "Forms" pane (packages/U2Demo/src/funcs.ts): the native u2 FunctionsBrowser on the
+   left (over the same client registry the Dart FunctionsWidget read) drives an old-vs-new A/B on
+   the right — the Dart DG.InputForm.forFuncCall and the u2 funcForm over ONE shared call, so
+   edits sync live. A showcase function (fceShowcase) is preselected at boot. Selection goes
+   through the real virtualized rows (the same click a user makes), through the browser's
+   `selected` signal. */
 import {ok, openApp, shot} from '../local.mjs';
 import {APP} from '../lib.mjs';
 
 const PAGE = '.u2demo-funcs';
 const LIST = `${PAGE} .u2demo-funcs-list`;
+const BROWSER = `${LIST} [data-u2="functions-browser"]`;
+const SEARCH = `${BROWSER} [data-u2="fb-search"] input`;
+const ROWS = `${BROWSER} .u2-list-row`;
 const DETAIL = `${PAGE} .u2demo-funcs-detail`;
 const AB = `${DETAIL} .u2demo-funcs-ab`;
 const DART_COL = `${AB} > :first-child`;
 const U2_COL = `${AB} > :last-child`;
 
 const clickRow = (page, name) => page.evaluate(({sel, name}) => {
-  const row = [...document.querySelectorAll(`${sel} .grok-actions-browser-table span`)]
-    .find((s) => s.textContent.trim() === name && s.offsetParent != null);
+  const row = [...document.querySelectorAll(sel)]
+    .find((r) => r.querySelector('.u2-fb-label')?.textContent.trim() === name && r.offsetParent != null);
   if (row == null)
     return false;
   row.click();
   return true;
-}, {sel: LIST, name});
+}, {sel: ROWS, name});
 
 const detailText = (page) => page.evaluate((sel) =>
   document.querySelector(sel)?.innerText ?? '', DETAIL);
@@ -30,9 +33,9 @@ const waitDetail = (page, fragment) => page.waitForFunction(({sel, fragment}) =>
   (document.querySelector(sel)?.innerText ?? '').includes(fragment), {sel: DETAIL, fragment}, {timeout: 8000});
 
 const visibleNames = (page) => page.evaluate((sel) =>
-  [...document.querySelectorAll(`${sel} .grok-actions-browser-table span`)]
+  [...document.querySelectorAll(`${sel} .u2-fb-label`)]
     .filter((s) => s.offsetParent != null && s.textContent.trim() !== '')
-    .map((s) => s.textContent.trim()), LIST);
+    .map((s) => s.textContent.trim()), ROWS);
 
 /** Both columns of the current selection have settled: the Dart form landed (or failed inline)
  * and the u2 form rendered. */
@@ -45,7 +48,7 @@ const waitColumns = (page) => page.waitForFunction(({dart, u2}) =>
 export async function fixture(page) {
   await page.evaluate(() => localStorage.setItem('u2demo.tab', 'funcs'));
   await openApp(page, APP.package, 'u2DemoApp');
-  await page.waitForSelector(`${LIST} .grok-actions-browser-table span`, {timeout: 30000});
+  await page.waitForSelector(ROWS, {timeout: 30000});
 }
 
 async function checkBoot(page) {
@@ -54,24 +57,30 @@ async function checkBoot(page) {
   await page.waitForFunction((u2) =>
     [...document.querySelectorAll(`${u2} .u2-input-root input`)].some((i) => i.value === '4'),
   U2_COL, {timeout: 8000});
-  const shape = await page.evaluate(({list, detail, dart, u2}) => {
+  const shape = await page.evaluate(({list, rows, search, browser, detail, dart, u2}) => {
     const el = document.querySelector(list);
+    // the status line reads 'N of M' — M is the registry size the virtualized list is over
+    const status = document.querySelector(`${browser} [data-u2="fb-status"]`)?.textContent ?? '';
     return {
-      rows: document.querySelectorAll(`${list} .grok-actions-browser-table span`).length,
-      search: document.querySelector(`${list} input`) !== null,
+      total: Number(status.split(' of ')[1] ?? 0),
+      domRows: document.querySelectorAll(rows).length,
+      search: document.querySelector(search) !== null,
       listBounded: el.clientHeight > 200 && el.clientHeight <= window.innerHeight,
       listNarrow: el.getBoundingClientRect().width <= 260,
       text: document.querySelector(detail)?.innerText ?? '',
       dartInputs: document.querySelectorAll(`${dart} .ui-input-root`).length,
       u2Inputs: document.querySelectorAll(`${u2} .u2-input-root`).length,
     };
-  }, {list: LIST, detail: DETAIL, dart: DART_COL, u2: U2_COL});
+  }, {list: LIST, rows: ROWS, search: SEARCH, browser: BROWSER, detail: DETAIL,
+    dart: DART_COL, u2: U2_COL});
   await shot(page, 'funcs-pane-1-boot');
   ok('funcs-pane/1a/boot-preselects-the-showcase-with-both-form-columns-and-the-computed-default',
-    shape.rows > 100 && shape.search && shape.listBounded && shape.listNarrow &&
+    shape.total > 100 && shape.domRows > 0 && shape.domRows < 60 && shape.search &&
+    shape.listBounded && shape.listNarrow &&
     shape.text.includes('fceShowcase') && shape.dartInputs >= 10 && shape.u2Inputs >= 10,
-    `rows=${shape.rows} search=${shape.search} bounded=${shape.listBounded} ` +
-    `narrow=${shape.listNarrow} dart=${shape.dartInputs} u2=${shape.u2Inputs}`);
+    `total=${shape.total} domRows=${shape.domRows} search=${shape.search} ` +
+    `bounded=${shape.listBounded} narrow=${shape.listNarrow} ` +
+    `dart=${shape.dartInputs} u2=${shape.u2Inputs}`);
 }
 
 async function checkSync(page) {
@@ -88,13 +97,13 @@ async function checkSync(page) {
 }
 
 async function checkSearchAndSelect(page) {
-  await page.locator(`${LIST} input`).first().fill('rand bet');
+  await page.locator(SEARCH).fill('rand bet');
   await page.waitForFunction((sel) => {
-    const names = [...document.querySelectorAll(`${sel} .grok-actions-browser-table span`)]
+    const names = [...document.querySelectorAll(`${sel} .u2-fb-label`)]
       .filter((s) => s.offsetParent != null);
     return names.some((s) => s.textContent.trim() === 'Rand Between') &&
       !names.some((s) => s.textContent.trim() === 'Abs');
-  }, LIST, {timeout: 8000});
+  }, ROWS, {timeout: 8000});
   const names = await visibleNames(page);
   const clicked = await clickRow(page, 'Rand Between');
   await waitDetail(page, 'core:RandBetween(int a, int b): int');
@@ -131,10 +140,10 @@ async function checkRun(page) {
 }
 
 async function checkRebindAndTableParams(page) {
-  await page.locator(`${LIST} input`).first().fill('join tables');
+  await page.locator(SEARCH).fill('join tables');
   await page.waitForFunction((sel) =>
-    [...document.querySelectorAll(`${sel} .grok-actions-browser-table span`)]
-      .some((s) => s.offsetParent != null && s.textContent.trim() === 'Join Tables'), LIST, {timeout: 8000});
+    [...document.querySelectorAll(`${sel} .u2-fb-label`)]
+      .some((s) => s.offsetParent != null && s.textContent.trim() === 'Join Tables'), ROWS, {timeout: 8000});
   await clickRow(page, 'Join Tables');
   await waitDetail(page, 'core:JoinTables');
   await waitColumns(page);

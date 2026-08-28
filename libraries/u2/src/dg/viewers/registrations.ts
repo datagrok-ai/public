@@ -4,8 +4,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
-import {computed} from '../../core/signals.js';
+import {computed, Signal} from '../../core/signals.js';
 import {Component} from '../../core/component.js';
+import type {LiveOption} from '../../core/input-base.js';
 import {Dialog} from '../../components/containers/dialog.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {Registry, registry as globalRegistry} from '../../spec/registry.js';
@@ -14,6 +15,7 @@ import {registerAll} from '../../spec/registrations.js';
 import {specWarn} from '../../spec/spec.js';
 import type {SpecNode} from '../../spec/spec.js';
 import {columnInput} from '../inputs/pickers.js';
+import {functionsBrowser} from '../entities/functions-browser.js';
 import {viewerControl} from './viewer-control.js';
 
 const api = globalThis as {grok_Property_Get_PropertySubType?: (dart: unknown) => string | null};
@@ -218,8 +220,66 @@ export function registerPlatformViewers(reg: Registry = globalRegistry): void {
   }
 }
 
-/** The platform registry: every core tag plus every viewer tag. */
+const FB_TAG = 'u2-functions-browser';
+
+function lit<T>(x: unknown): T | undefined {
+  return x instanceof Signal ? (x as Signal<T>).peek() : x as T | undefined;
+}
+
+/** The function registry browser (see the core `FunctionsBrowser`). Platform-side, like the
+ * viewer tags — it needs `DG.Func.find`, so it stays out of the platform-free manifest. The
+ * declarative subset only; the function-typed options stay a code-level escape hatch. */
+function functionsBrowserMeta(): ComponentMeta {
+  return {
+    tag: FB_TAG,
+    label: 'Functions browser',
+    category: 'Data',
+    description: 'Searchable, tag/role-filterable virtualized list of every registered function.',
+    usage: 'The function registry browser: plain terms filter by name, `#tag` / `@role` terms ' +
+      'check the filter panes and vice versa. Bind `search` two-way to drive it from outside; ' +
+      '`change` fires on selection (which also becomes the shell\'s current object), `activate` ' +
+      'on double-click or Enter.',
+    create: (props) => functionsBrowser({
+      search: lit<string>(props.search),
+      tags: lit<string[]>(props.tags),
+      visibleTags: lit<string[]>(props.visibleTags),
+      ignoreTags: lit<string[]>(props.ignoreTags),
+      ignorePackages: lit<string[]>(props.ignorePackages),
+      scalarOnly: lit<boolean>(props.scalarOnly),
+      showSearch: props.showSearch as LiveOption<boolean> | undefined,
+      showTags: props.showTags as LiveOption<boolean> | undefined,
+      showSignature: props.showSignature as LiveOption<boolean> | undefined,
+      showRunButton: props.showRunButton as LiveOption<boolean> | undefined,
+    }),
+    props: [
+      {name: 'search', type: 'string', bindable: true, twoWay: true,
+        description: 'The query: plain terms, `#tag` and `@role`.'},
+      {name: 'showSearch', type: 'bool', bindable: true, description: 'Shows the search bar.'},
+      {name: 'showTags', type: 'bool', bindable: true,
+        description: 'Shows the roles/tags filter panes.'},
+      {name: 'showSignature', type: 'bool', bindable: true,
+        description: 'Shows the `(inputs) : outType` signature on every row.'},
+      {name: 'showRunButton', type: 'bool', bindable: true,
+        description: 'Shows the per-row play icon.'},
+      {name: 'tags', type: 'string_list', description: 'Pre-checked tags.'},
+      {name: 'visibleTags', type: 'string_list',
+        description: 'Restricts the tags pane to these tags.'},
+      {name: 'ignoreTags', type: 'string_list',
+        description: 'Tags left out of the tags pane; res, converters, internal by default.'},
+      {name: 'ignorePackages', type: 'string_list',
+        description: 'Packages whose functions are left out.'},
+      {name: 'scalarOnly', type: 'bool',
+        description: 'Only functions with one scalar (or dynamic) output.'},
+    ],
+    events: ['change', 'activate'],
+    example: {tag: FB_TAG, name: 'fb', props: {showSignature: false}},
+  };
+}
+
+/** The platform registry: every core tag plus every viewer tag plus the platform-side controls. */
 export function registerPlatformComponents(reg: Registry = globalRegistry): void {
   registerAll(reg);
   registerPlatformViewers(reg);
+  if (reg.get(FB_TAG) === undefined)
+    reg.register(functionsBrowserMeta());
 }
