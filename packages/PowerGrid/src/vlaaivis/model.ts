@@ -48,7 +48,7 @@ export class VlaaiVisModel {
   }
 
   get unassigned(): string[] {
-    const assigned = new Set(this.sectors.flatMap((s) => s.subsectors.map((p) => p.name)));
+    const assigned = new Set(this.assignedNames);
     return this.settings.columnNames.filter((name) => !assigned.has(name));
   }
 
@@ -75,14 +75,16 @@ export class VlaaiVisModel {
 
   /// Moves a column into a sector, or out of every sector when `target` is null.
   assign(name: string, target: Sector | null): void {
-    const found = this.locate(name);
-    if ((found?.sector ?? null) === target)
-      return;
-    const property = found?.property ?? this.createProperty(name);
-    if (found)
-      found.sector.subsectors = found.sector.subsectors.filter((p) => p !== property);
-    if (target)
-      target.subsectors.push(property);
+    if (this.move(name, target))
+      this.changed(VlaaiVisChange.Structure, []);
+  }
+
+  syncColumns(): void {
+    const names = new Set(this.settings.columnNames);
+    const dropped = this.assignedNames.filter((name) => !names.has(name));
+    for (const name of dropped)
+      this.move(name, null);
+    this.writeColumnTags(dropped);
     this.changed(VlaaiVisChange.Structure, []);
   }
 
@@ -103,6 +105,22 @@ export class VlaaiVisModel {
       return;
     found.sector.subsectors[found.sector.subsectors.indexOf(found.property)] = {...prop, name};
     this.changed(VlaaiVisChange.Structure, []);
+  }
+
+  private get assignedNames(): string[] {
+    return this.sectors.flatMap((s) => s.subsectors.map((p) => p.name));
+  }
+
+  private move(name: string, target: Sector | null): boolean {
+    const found = this.locate(name);
+    if ((found?.sector ?? null) === target)
+      return false;
+    const property = found?.property ?? this.createProperty(name);
+    if (found)
+      found.sector.subsectors = found.sector.subsectors.filter((p) => p !== property);
+    if (target)
+      target.subsectors.push(property);
+    return true;
   }
 
   private newSector(name: string): Sector {

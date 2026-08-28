@@ -323,8 +323,15 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       elementsDiv.appendChild(editor.root);
     };
 
+    const baseInputs = createBaseInputs(gc, settings);
+    const [columnsInput] = baseInputs;
+    columnsInput.onChanged.subscribe(() => {
+      if (editor)
+        editor.refresh();
+    });
+
     const inputs = ui.inputs([
-      ...createBaseInputs(gc, settings),
+      ...baseInputs,
       ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (value) => {
           settings.style = value;

@@ -40,6 +40,10 @@ export class VlaaiVisEditor {
     this.render();
   }
 
+  refresh(): void {
+    this.model.syncColumns();
+  }
+
   detach(): void {
     this.disposeRows();
     for (const sub of this.subs)
