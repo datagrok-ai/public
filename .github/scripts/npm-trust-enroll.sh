@@ -21,9 +21,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 DRY_RUN=''
 ONLY=''
+REFRESH=''
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN='--dry-run' ;;
+    --refresh) REFRESH=1 ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) ONLY="$arg" ;;
   esac
@@ -35,7 +37,36 @@ if [ "$npm_major_minor" -lt 11015 ]; then
   exit 1
 fi
 
-enrolled=0 skipped=0 failed=0
+enrolled=0 cached=0 skipped=0 failed=0
+
+# Every npm trust call needs a fresh OTP, and the "skip 2FA" grace period is only
+# five minutes — not enough for the whole fleet. Remember what is already trusted
+# so a re-run resumes instead of re-verifying, and write after each change so an
+# aborted run keeps its progress. Shared with the PowerShell script.
+CACHE_FILE="$HOME/.datagrok-npm-trust.json"
+declare -A CACHE
+if [ -f "$CACHE_FILE" ] && [ -z "$REFRESH" ]; then
+  while IFS="$(printf '\t')" read -r k v; do
+    [ -n "$k" ] && CACHE["$k"]="$v"
+  done < <(jq -r --arg r "$REPO" '(.[$r] // {}) | to_entries[] | [.key, .value] | @tsv' "$CACHE_FILE" 2>/dev/null)
+fi
+
+save_cache() {
+  local tmp prev
+  tmp="$(mktemp)"
+  prev="$CACHE_FILE"
+  [ -f "$prev" ] || prev='/dev/null'
+  # jq reads the previous file directly: process substitution with a fallback
+  # fails with EPERM under git-bash on Windows. /dev/null slurps to an empty
+  # array, so the // {} below still gives a fresh object on first write.
+  for k in "${!CACHE[@]}"; do printf '%s\t%s\n' "$k" "${CACHE[$k]}"; done \
+    | jq -R -s --arg r "$REPO" --slurpfile prev "$prev" '
+        (($prev[0] // {})) as $p
+        | $p + { ($r): (
+            split("\n") | map(select(length > 0) | split("\t") | {key: .[0], value: .[1]}) | from_entries
+          ) }
+      ' > "$tmp" 2>/dev/null && mv "$tmp" "$CACHE_FILE" || rm -f "$tmp"
+}
 
 enroll() {
   local dir="$1" workflow="$2"
@@ -53,6 +84,12 @@ enroll() {
 
   if [ "$(jq -r '.private // false' "$dir/package.json")" = 'true' ]; then
     echo "SKIP  $name — private"; skipped=$((skipped + 1)); return 0
+  fi
+
+  # Cheapest check first — a cache hit costs no network and no OTP at all.
+  if [ "${CACHE[$name]:-}" = "$workflow" ]; then
+    echo "CACHED $name — already trusted ($workflow)"
+    cached=$((cached + 1)); return 0
   fi
 
   local escaped code
@@ -75,6 +112,7 @@ enroll() {
       if [ "$ex_file" = "$workflow" ] && [ "$ex_repo" = "$REPO" ]; then
         echo "SKIP  $name — already trusted ($ex_repo/$ex_file)"
         skipped=$((skipped + 1))
+        CACHE["$name"]="$workflow"; save_cache
       else
         echo "FAIL  $name — trusted via $ex_repo/$ex_file, expected $REPO/$workflow; fix with: npm trust revoke $name --id $ex_id" >&2
         failed=$((failed + 1))
@@ -104,6 +142,7 @@ enroll() {
   if [ "$rc" -eq 0 ]; then
     echo "TRUST $name -> $workflow"
     enrolled=$((enrolled + 1))
+    [ -n "$DRY_RUN" ] || { CACHE["$name"]="$workflow"; save_cache; }
   elif [ "$err_code" = 'EOTP' ]; then
     echo >&2
     echo "npm requires two-factor approval before it will accept trust changes." >&2
@@ -117,6 +156,7 @@ enroll() {
     exit 3
   elif [ "$err_code" = 'E409' ] || { [ -n "$err_text" ] && grep -qiE 'already|exists|conflict' <<<"$err_text"; }; then
     echo "SKIP  $name — already has a trusted publisher"; skipped=$((skipped + 1))
+    CACHE["$name"]="$workflow"; save_cache
   else
     echo "FAIL  $name — ${err_code:-exit $rc}: ${err_text:-see npm output above}" >&2
     failed=$((failed + 1))
@@ -141,9 +181,10 @@ for d in "$ROOT"/misc/*/; do enroll "$d" 'misc.yaml'; done
 for d in "$ROOT"/packages/*/; do enroll "$d" 'packages.yaml'; done
 
 echo
-echo "enrolled=$enrolled skipped=$skipped failed=$failed"
+echo "enrolled=$enrolled cached=$cached skipped=$skipped failed=$failed"
+[ "${#CACHE[@]}" -eq 0 ] || echo "${#CACHE[@]} trusted package(s) remembered in $CACHE_FILE (--refresh to re-verify)."
 
-if [ -n "$ONLY" ] && [ $((enrolled + skipped + failed)) -eq 0 ]; then
+if [ -n "$ONLY" ] && [ $((enrolled + cached + skipped + failed)) -eq 0 ]; then
   echo "No package matched '$ONLY'." >&2
   exit 2
 fi

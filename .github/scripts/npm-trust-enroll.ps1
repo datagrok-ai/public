@@ -26,7 +26,8 @@ See .github/NPM_TRUSTED_PUBLISHING.md.
 [CmdletBinding()]
 param(
     [switch] $DryRun,
-    [string] $Only
+    [string] $Only,
+    [switch] $Refresh
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,6 +46,38 @@ if ($npmVersion -lt [version] '11.15.0') {
 $script:Enrolled = 0
 $script:Skipped = 0
 $script:Failed = 0
+$script:Cached = 0
+
+# Every npm trust call needs a fresh OTP, and the "skip 2FA" grace period is only
+# five minutes - not enough for the whole fleet. Remember what is already trusted
+# so a re-run resumes instead of re-verifying, and write after each change so an
+# aborted run keeps its progress. Shared with the bash script.
+$CacheFile = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.datagrok-npm-trust.json'
+$script:Cache = @{}
+if ((Test-Path $CacheFile) -and -not $Refresh) {
+    try {
+        $loaded = Get-Content -Raw $CacheFile | ConvertFrom-Json
+        if ($loaded.$Repo) {
+            foreach ($p in $loaded.$Repo.PSObject.Properties) { $script:Cache[$p.Name] = $p.Value }
+        }
+    }
+    catch { Write-Host "Ignoring unreadable cache $CacheFile" -ForegroundColor DarkGray }
+}
+
+function Save-Cache {
+    $byRepo = @{}
+    if (Test-Path $CacheFile) {
+        try {
+            $existing = Get-Content -Raw $CacheFile | ConvertFrom-Json
+            foreach ($r in $existing.PSObject.Properties) {
+                if ($r.Name -ne $Repo) { $byRepo[$r.Name] = $r.Value }
+            }
+        }
+        catch { }
+    }
+    $byRepo[$Repo] = $script:Cache
+    $byRepo | ConvertTo-Json -Depth 5 | Set-Content -Path $CacheFile -Encoding utf8
+}
 
 function Test-OnRegistry {
     param([string] $Name)
@@ -57,6 +90,21 @@ function Test-OnRegistry {
     catch {
         return $false
     }
+}
+
+function Get-ExistingTrust {
+    param([string] $Name)
+    # PowerShell 5.1 wraps a redirected native command's stderr as a
+    # NativeCommandError, which 'Stop' turns terminating the moment npm prints a
+    # notice. Drop to 'Continue' so 2>$null can quietly swallow the probe's noise.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $raw = (& npm trust list $Name --json 2>$null) -join "`n"
+    $ok = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = $prevEap
+    if (-not $ok -or -not $raw) { return $null }
+    try { return $raw.Trim([char]0xFEFF, ' ', "`r", "`n", "`t") | ConvertFrom-Json }
+    catch { return $null }
 }
 
 function Invoke-Enroll {
@@ -84,50 +132,33 @@ function Invoke-Enroll {
         return
     }
 
+    # Cheapest check first - a cache hit costs no network and no OTP at all.
+    if ($script:Cache[$name] -eq $Workflow) {
+        Write-Output "CACHED $name - already trusted ($Workflow)"
+        $script:Cached++
+        return
+    }
+
     if (-not (Test-OnRegistry $name)) {
         Write-Output "SKIP  $name - not on the registry yet (publish its first version by hand, then re-run)"
         $script:Skipped++
         return
     }
 
-    # Ask before writing: the registry allows only one publisher per package and
-    # answers a repeat create with 409. Checking also catches a config pointing at
-    # the wrong workflow, which would silently break publishing.
-    # PowerShell 5.1 wraps a redirected native command's stderr as a
-    # NativeCommandError, which 'Stop' turns terminating the moment npm prints a
-    # notice. Drop to 'Continue' so 2>$null can quietly swallow the probe's noise.
-    $prevEap = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    $listRaw = (& npm trust list $name --json 2>$null) -join "`n"
-    $listExit = $LASTEXITCODE
-    $ErrorActionPreference = $prevEap
-
-    if ($listExit -eq 0 -and $listRaw) {
-        $existing = $null
-        try { $existing = $listRaw.Trim([char]0xFEFF, ' ', "`r", "`n", "`t") | ConvertFrom-Json } catch { }
-        if ($existing -and $existing.id) {
-            if ($existing.file -eq $Workflow -and $existing.repository -eq $Repo) {
-                Write-Output "SKIP  $name - already trusted ($($existing.repository)/$($existing.file))"
-                $script:Skipped++
-            }
-            else {
-                Write-Output ("FAIL  $name - trusted via {0}/{1}, expected {2}/{3}; fix with: npm trust revoke $name --id {4}" -f `
-                    $existing.repository, $existing.file, $Repo, $Workflow, $existing.id)
-                $script:Failed++
-            }
-            return
-        }
-    }
-
     $trustArgs = @('trust', 'github', $name, '--repo', $Repo, '--file', $Workflow,
                    '--allow-publish', '--yes', '--json')
     if ($DryRun) { $trustArgs += '--dry-run' }
 
-    # stderr is deliberately NOT redirected: npm prints the OTP approval URL there
-    # and waits, so swallowing it would look like a silent hang. Only stdout (the
-    # --json payload) is captured.
-    $output = (& npm @trustArgs) -join "`n"
+    # Everything needed (error code, summary, approval URL) is on stdout in the
+    # --json payload, so park stderr in a file rather than letting a wall of
+    # expected 409 noise bury the results. It is replayed only on a real failure.
+    # 'Continue' keeps the redirect from becoming a terminating NativeCommandError.
+    $errFile = Join-Path ([IO.Path]::GetTempPath()) "npm-trust-$PID.err"
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $output = (& npm @trustArgs 2>$errFile) -join "`n"
     $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
 
     $errCode = $null
     $errText = $null
@@ -156,6 +187,10 @@ function Invoke-Enroll {
     if ($exitCode -eq 0) {
         Write-Output "TRUST $name -> $Workflow"
         $script:Enrolled++
+        if (-not $DryRun) {
+            $script:Cache[$name] = $Workflow
+            Save-Cache
+        }
     }
     elseif ($errCode -eq 'EOTP') {
         Write-Host ''
@@ -170,14 +205,27 @@ function Invoke-Enroll {
         exit 3
     }
     elseif ($errCode -eq 'E409' -or ($errText -and $errText -match '(?i)already|exists|conflict')) {
-        Write-Output "SKIP  $name - already has a trusted publisher"
-        $script:Skipped++
+        # Already trusted, but 409 does not say via which workflow - and a config
+        # pointing at the wrong one silently breaks publishing. Confirm, then cache.
+        $existing = Get-ExistingTrust $name
+        if ($existing -and ($existing.file -ne $Workflow -or $existing.repository -ne $Repo)) {
+            Write-Output ("FAIL  $name - trusted via {0}/{1}, expected {2}/{3}; fix with: npm trust revoke $name --id {4}" -f `
+                $existing.repository, $existing.file, $Repo, $Workflow, $existing.id)
+            $script:Failed++
+        }
+        else {
+            Write-Output "SKIP  $name - already has a trusted publisher ($Workflow)"
+            $script:Skipped++
+            $script:Cache[$name] = $Workflow
+            Save-Cache
+        }
     }
     else {
         $reason = if ($errCode) { $errCode } else { "exit $exitCode" }
-        $detail = if ($errText) { $errText } else { 'see npm output above' }
+        $detail = if ($errText) { $errText } else { 'unexpected npm failure' }
         Write-Output "FAIL  $name - ${reason}: $detail"
         $script:Failed++
+        if (Test-Path $errFile) { Get-Content $errFile | ForEach-Object { Write-Host "      $_" -ForegroundColor DarkGray } }
         # A failure before anything has succeeded is systemic (auth, network,
         # permissions) - bail rather than replay it across all 85 packages.
         if ($script:Enrolled -eq 0) {
@@ -200,11 +248,14 @@ foreach ($d in Get-ChildItem -Directory (Join-Path $Root 'misc')) { Invoke-Enrol
 foreach ($d in Get-ChildItem -Directory (Join-Path $Root 'packages')) { Invoke-Enroll $d.FullName 'packages.yaml' }
 
 Write-Output ''
-Write-Output "enrolled=$script:Enrolled skipped=$script:Skipped failed=$script:Failed"
+Write-Output "enrolled=$script:Enrolled cached=$script:Cached skipped=$script:Skipped failed=$script:Failed"
+if ($script:Cache.Count -gt 0) {
+    Write-Host "$($script:Cache.Count) trusted package(s) remembered in $CacheFile (-Refresh to re-verify)." -ForegroundColor DarkGray
+}
 
 # PowerShell binds an unrecognised '--flag' as a positional value for -Only, which
 # would otherwise match nothing and exit 0 as if there were no work to do.
-if ($Only -and ($script:Enrolled + $script:Skipped + $script:Failed) -eq 0) {
+if ($Only -and ($script:Enrolled + $script:Cached + $script:Skipped + $script:Failed) -eq 0) {
     Write-Host "No package matched -Only '$Only'." -ForegroundColor Red
     if ($Only.StartsWith('-')) {
         Write-Host "That looks like a flag. This is PowerShell: use -DryRun, not --dry-run." -ForegroundColor Red
