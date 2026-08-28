@@ -90,9 +90,27 @@ function Invoke-Enroll {
         return
     }
 
-    # One call per package: npm trust is OTP-gated, and the "skip 2FA" window is
-    # only 5 minutes. Registering an already-registered package is a plain error,
-    # so classify the failure rather than paying for a separate `npm trust list`.
+    # Ask before writing: the registry allows only one publisher per package and
+    # answers a repeat create with 409. Checking also catches a config pointing at
+    # the wrong workflow, which would silently break publishing.
+    $listRaw = (& npm trust list $name --json 2>$null) -join "`n"
+    if ($LASTEXITCODE -eq 0 -and $listRaw) {
+        $existing = $null
+        try { $existing = $listRaw.Trim([char]0xFEFF, ' ', "`r", "`n", "`t") | ConvertFrom-Json } catch { }
+        if ($existing -and $existing.id) {
+            if ($existing.file -eq $Workflow -and $existing.repository -eq $Repo) {
+                Write-Output "SKIP  $name - already trusted ($($existing.repository)/$($existing.file))"
+                $script:Skipped++
+            }
+            else {
+                Write-Output ("FAIL  $name - trusted via {0}/{1}, expected {2}/{3}; fix with: npm trust revoke $name --id {4}" -f `
+                    $existing.repository, $existing.file, $Repo, $Workflow, $existing.id)
+                $script:Failed++
+            }
+            return
+        }
+    }
+
     $trustArgs = @('trust', 'github', $name, '--repo', $Repo, '--file', $Workflow,
                    '--allow-publish', '--yes', '--json')
     if ($DryRun) { $trustArgs += '--dry-run' }
@@ -117,12 +135,14 @@ function Invoke-Enroll {
             }
         }
         catch { }
-        # npm masks the UUID in its human-readable output but not in --json, so
-        # recover the approval URL even when the payload will not parse.
+        # The create path emits two concatenated JSON objects, which will never
+        # parse as one, and npm masks the approval UUID in its human-readable
+        # output but not in --json. Recover both by pattern instead.
         if (-not $authUrl -and $output -match 'https://www\.npmjs\.com/auth/cli/[0-9a-fA-F-]{36}') {
             $authUrl = $Matches[0]
         }
-        if (-not $errCode -and $output -match '"code"\s*:\s*"([A-Z]+)"') { $errCode = $Matches[1] }
+        if (-not $errCode -and $output -match '"code"\s*:\s*"([A-Z][A-Z0-9_]*)"') { $errCode = $Matches[1] }
+        if (-not $errText -and $output -match '"summary"\s*:\s*"((?:[^"\\]|\\.)*)"') { $errText = $Matches[1] }
     }
 
     if ($exitCode -eq 0) {
@@ -141,7 +161,7 @@ function Invoke-Enroll {
         Write-Host 'The URL is single-use and expires in a few minutes.' -ForegroundColor DarkGray
         exit 3
     }
-    elseif ($errText -and $errText -match '(?i)already|exists|conflict') {
+    elseif ($errCode -eq 'E409' -or ($errText -and $errText -match '(?i)already|exists|conflict')) {
         Write-Output "SKIP  $name - already has a trusted publisher"
         $script:Skipped++
     }
