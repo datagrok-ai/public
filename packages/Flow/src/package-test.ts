@@ -22,6 +22,8 @@ import './tests/summary-tests';
 import './tests/files-tree-tests';
 import './tests/execution-preview-tests';
 import './tests/inline-preview-tests';
+import './tests/render-molecule-tests';
+import './tests/start-template-tests';
 import './tests/viewer-tests';
 import './tests/column-picker-tests';
 import './tests/connect-interaction-tests';

@@ -34,6 +34,10 @@ export interface FuncFlowAnnotation {
   size: {w: number; h: number};
   text: string;
   color: string;
+  /** Title font size in px; absent in older saves = the default (13). */
+  fontSize?: number;
+  /** Pinned = not movable/resizable (body drag pans the canvas). Absent = false. */
+  pinned?: boolean;
 }
 
 export interface FuncFlowGroup {
@@ -80,4 +84,6 @@ export interface FlowSettings {
   scriptName: string;
   scriptDescription: string;
   tags: string[];
+  /** Ribbon autorun toggle — saved with the flow so it reopens live. */
+  autorun?: boolean;
 }

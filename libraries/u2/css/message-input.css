@@ -1,0 +1,132 @@
+/* Compose box skin. Tokens only — css/tokens.css must be loaded alongside. */
+.u2-msg {
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-msg:focus-within {
+  border-color: var(--dg-accent-secondary);
+}
+
+.u2-msg-editor {
+  min-height: calc(2 * var(--dg-line-height) * var(--dg-font-size));
+  padding: var(--dg-space-m);
+  overflow-y: auto;
+  line-height: var(--dg-line-height);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  outline: none;
+}
+
+.u2-msg-editor:empty::before,
+.u2-msg-editor-empty::before {
+  content: attr(data-placeholder);
+  color: var(--dg-text-color-light);
+  pointer-events: none;
+}
+
+.u2-msg-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--dg-space-s);
+  color: var(--dg-selection-text);
+  white-space: nowrap;
+  background: var(--dg-bg-secondary);
+  border-radius: var(--dg-radius);
+  user-select: none;
+}
+
+.u2-msg-query {
+  color: var(--dg-accent-secondary);
+}
+
+.u2-msg-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-s);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-msg-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+}
+
+.u2-msg-send:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* the suggestion popup, in this control's own prefix (see core/suggestion-list.ts) */
+.u2-msg-popup {
+  box-sizing: border-box;
+  /* the anchor is the caret span, which is as wide as what was typed — without a floor the popup
+     shrink-wraps and jitters on every keystroke */
+  min-width: 240px;
+  overflow-y: auto;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-msg-option {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  cursor: pointer;
+}
+
+.u2-msg-option:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-msg-option-active {
+  background: var(--dg-selection-bg);
+}
+
+.u2-msg-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-msg-loading,
+.u2-msg-empty,
+.u2-msg-error,
+.u2-msg-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-msg-retry {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-msg-retry:hover {
+  background: var(--dg-hover);
+}

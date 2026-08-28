@@ -1,7 +1,7 @@
 /* Getter-backed doubles of the platform entities u2 reads — the one place the headless suite fakes
    a `DG.Property`, a `DG.Func`, a `DG.FileInfo`, a `DG.DataFrame` or an entity row. On the real
    entity every field is a PROTOTYPE getter over the `dart` handle, so a spread or `Object.keys` of
-   one yields nothing but `dart` — the property plain-object fakes lacked, which is how two P4
+   one yields nothing but `dart` — the property plain-object fakes lacked, which is how two
    defects survived 600 tests. Every double keeps its whole state on `dart` and answers it through
    getters; a test that needs to poke the state behind the handle goes through `dart` too. (The
    real `DG.DataFrame` also keeps `columns, rows, filter, temp, tags` as own fields, data-frame.ts:48-53;
@@ -74,7 +74,7 @@ export class Func extends Entity {
       Object.entries(query.meta ?? {}).every(([key, value]) => f.options?.[key] === value));
   }
 
-  prepare(params) { return {call: async () => ({outputs: await this.dart.run(params)})}; }
+  prepare(params) { return new FuncCall(this, params); }
 }
 getters(Func, 'package', 'description', 'inputs', 'outputs', 'options');
 
@@ -113,6 +113,159 @@ getters(Property, 'name', 'propertyType', 'semType', 'description', 'caption', '
   'nullable', 'defaultValue', 'category', 'userEditable', 'min', 'max', 'step', 'inputType', 'editor',
   'format', 'units', 'showSlider', 'showPlusMinus');
 fields(Property, 'get', 'set');
+
+/** A function's declared parameter (ddt FuncParam): its `options` is the LIVE map the platform
+ * answers for a tag-less FuncParam — a write through it reads back. */
+export class FuncParam extends Property {
+  constructor(name, propertyType, options = {}) {
+    super(name, propertyType, options);
+    this.dart.options ??= {};
+  }
+
+  get options() { return this.dart.options; }
+
+  get editor() { return this.dart.options['editor'] ?? null; }
+
+  get isOptional() { return this.dart.isOptional === true; }
+
+  /** The `info ?? field` union DG.Property answers (`grok_api.dart:900`) — annotation `columns`
+   * or `type` keys. The parent-table link is NOT a wrapper getter: tests set
+   * `dart.parentTableParamName` directly and u2 reads it through `grok_Property_Get`. */
+  get columnTypeFilter() {
+    return this.dart.options['columns'] ?? this.dart.options['type'] ?? null;
+  }
+}
+
+export class FuncCallParam {
+  constructor(property, call) {
+    this.dart = {property, call, value: undefined, onChanged: new Stream()};
+  }
+
+  get name() { return this.dart.property.name; }
+
+  get property() { return this.dart.property; }
+
+  /** Optional-default substitution, as func_call_param.dart:78-88. */
+  get value() {
+    const v = this.dart.value;
+    return v == null && this.dart.property.isOptional ? this.dart.property.defaultValue ?? null : v;
+  }
+
+  get onChanged() { return this.dart.onChanged; }
+}
+
+/** What `Func.prepare` answers: params over the declared inputs (a plain-record input is adopted
+ * into a FuncParam), `setParamValue` the one write path, `call()` the back-compat run — it still
+ * resolves to an object whose `.outputs` are the run result. */
+export class FuncCall {
+  constructor(func, params = {}) {
+    this.dart = {func, outputs: null, params: (func?.inputs ?? []).map((p) =>
+      new FuncCallParam(p instanceof Property ? p : new FuncParam(p.name, p.propertyType ?? p.type, p), this))};
+    for (const [k, v] of Object.entries(params))
+      this.setParamValue(k, v);
+  }
+
+  get func() { return this.dart.func; }
+
+  get inputParams() {
+    const params = this.dart.params;
+    const map = Object.fromEntries(params.map((p) => [p.name, p]));
+    map.values = () => params.slice();
+    return map;
+  }
+
+  get inputs() { return Object.fromEntries(this.dart.params.map((p) => [p.name, p.value])); }
+
+  /** Same-value suppression at the source (func_call_param.dart:194) — EXCEPT a List value: the
+   * real setter always fires for List/ColFilterCall values, a same-reference write included. */
+  setParamValue(name, value) {
+    const p = this.dart.params.find((x) => x.name === name);
+    if (p.dart.value === value && !Array.isArray(value))
+      return;
+    p.dart.value = value;
+    p.dart.onChanged.fire(p);
+  }
+
+  /** The `options['choices']` command, answered in the propagate shape: an array becomes
+   * stringified items with identity `values` (the interop stringification, P-W2-1b) and no
+   * lookup; a provider answering `{values, lookup}` passes through. */
+  async evalParamChoices(name) {
+    const p = this._findParam(name);
+    const {result, dependsOn} =
+      await this._evalCommand(p.property.options?.['choices'], name, () => p.value);
+    if (Array.isArray(result)) {
+      const items = result.map(String);
+      return {items, values: Object.fromEntries(items.map((k) => [k, k])), lookup: null, dependsOn};
+    }
+    return {items: Object.keys(result.values), values: result.values,
+      lookup: result.lookup ?? null, dependsOn};
+  }
+
+  /** The `options['suggestions']` command over the TYPED text — the fixed contract: a single
+   * provider input binds `text`, never the stored param value. An array answer carries no
+   * tooltips; an `{items, tooltips}` answer passes through. */
+  async evalParamSuggestions(name, text) {
+    const p = this._findParam(name);
+    const {result} = await this._evalCommand(p.property.options?.['suggestions'], name, () => text);
+    return Array.isArray(result) ? {items: result.map(String), tooltips: {}} :
+      {items: result.items.map(String), tooltips: result.tooltips ?? {}};
+  }
+
+  /** The `options['default']` command; sibling params never reach it in practice (P-W2-5). */
+  async evalParamDefault(name) {
+    const p = this._findParam(name);
+    return (await this._evalCommand(p.property.options?.['default'], name, () => p.value)).result;
+  }
+
+  /** Resolves an options command — `Name` or `Name(args)`, the parenthesized args accepted and
+   * ignored — against {@link Func.registry}: provider inputs bind to same-named host params (a
+   * single provider input matching none binds `fallback` — the param's own value, or the typed
+   * text for suggestions); `dependsOn` is the FOREIGN host params bound, never the param itself;
+   * an unknown func name rejects. Delivery is never synchronous: two microtasks by default,
+   * `dart.evalDelayMs` milliseconds when a test sets the knob. */
+  async _evalCommand(command, paramName, fallback) {
+    const delay = this.dart.evalDelayMs;
+    if (delay != null)
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    else {
+      await Promise.resolve();
+      await Promise.resolve();
+    }
+    const name = String(command ?? '').trim().replace(/\(.*\)$/s, '').trim();
+    const func = Func.find({name})[0];
+    if (func === undefined)
+      throw new Error(`Function not found: ${command}`);
+    const inputs = {};
+    const dependsOn = [];
+    let bound = 0;
+    for (const input of func.inputs) {
+      const host = this.dart.params.find((p) => p.name === input.name);
+      if (host === undefined)
+        continue;
+      inputs[input.name] = host.value;
+      bound++;
+      if (input.name !== paramName)
+        dependsOn.push(input.name);
+    }
+    if (bound === 0 && func.inputs.length === 1)
+      inputs[func.inputs[0].name] = fallback();
+    return {result: await func.dart.run(inputs), dependsOn};
+  }
+
+  _findParam(name) {
+    const p = this.dart.params.find((x) => x.name === name);
+    if (p === undefined)
+      throw new Error(`Parameter not found: ${name}`);
+    return p;
+  }
+
+  get outputs() { return this.dart.outputs; }
+
+  async call() {
+    this.dart.outputs = await this.dart.func.dart.run(this.inputs);
+    return this;
+  }
+}
 
 /** A file in a share carries the connection it lives on; one built out of local bytes does not. */
 export class FileInfo extends Entity {
@@ -171,6 +324,15 @@ export class Column {
   }
 
   get isNumerical() { return NUMERICAL.has(this.dart.type); }
+
+  // string and bool are the categorical types (ddt string_column.dart / bool_column.dart)
+  get isCategorical() { return this.dart.type === 'string' || this.dart.type === 'bool'; }
+
+  /** Distinct values off the frame rows — read only under a maxCategories cap. */
+  get categories() {
+    const frame = this.dart.frame;
+    return frame == null ? [] : [...new Set(frame.dart.rows.map((r) => r[this.dart.name]))];
+  }
 }
 getters(Column, 'type', 'semType');
 
@@ -261,11 +423,18 @@ for (const event of EVENTS)
   Object.defineProperty(DataFrame.prototype, event, {get() { return this.dart.events[event]; }});
 
 /** The shell: the current object — which the platform rebuilds the property panel for on EVERY
- * assignment, so `dart.writes` is what a test counts — the balloons, and the open tables. */
+ * assignment, so `dart.writes` is what a test counts — the balloons, and the open tables. The
+ * tables are FRAMES on the handle (`dart.tables`); `tableNames` derives from them, and its
+ * setter keeps platform-stub's `resetShell` name-list reset clearing the same backing store. */
 export class Shell {
   constructor() {
-    this.dart = {o: null, writes: [], tableNames: [], tableAdded: new Stream(),
+    const dart = {o: null, writes: [], tables: [], t: null, tableAdded: new Stream(),
       tableRemoved: new Stream(), windows: {showContextPanel: false}};
+    Object.defineProperty(dart, 'tableNames', {
+      get: () => dart.tables.map((table) => table.name),
+      set: (names) => dart.tables = dart.tables.filter((table) => names.includes(table.name)),
+    });
+    this.dart = dart;
   }
 
   get o() { return this.dart.o; }
@@ -279,23 +448,30 @@ export class Shell {
   warning() {}
   error() {}
 
+  tableByName(name) { return this.dart.tables.find((table) => table.name === name) ?? null; }
+
   /** The platform never opens two tables under one name; the second becomes `demog (2)`. */
   addTable(table) {
     let unique = table.name;
     for (let n = 2; this.dart.tableNames.includes(unique); n++)
       unique = `${table.name} (${n})`;
     table.name = unique;
-    this.dart.tableNames = [...this.dart.tableNames, unique];
+    this.dart.tables = [...this.dart.tables, table];
     this.dart.tableAdded.fire();
     return table;
   }
 
-  closeTable(name) {
-    this.dart.tableNames = this.dart.tableNames.filter((n) => n !== name);
+  /** Takes the frame or its name; the current table never answers a closed frame. */
+  closeTable(x) {
+    const name = typeof x === 'string' ? x : x?.name;
+    this.dart.tables = this.dart.tables.filter((table) => table.name !== name);
+    if (this.dart.t !== null && this.dart.t.name === name)
+      this.dart.t = null;
     this.dart.tableRemoved.fire();
   }
 }
-getters(Shell, 'windows', 'tableNames');
+getters(Shell, 'windows', 'tableNames', 'tables');
+fields(Shell, 't');
 
 /** What the kill-walk globals of tests/dg-stub.mjs work over: the elements killed, the cleanups
  * registered and not yet run, and the widgets the platform knows of — every viewer built, every
@@ -309,7 +485,7 @@ export const platform = {
   },
 };
 
-/** An event a descriptor declares: `name` is the id `onEvent()` takes, `eventName` a label (P4). */
+/** An event a descriptor declares: `name` is the id `onEvent()` takes, `eventName` a label. */
 export class EventType {
   constructor(dart) { this.dart = dart; }
 }
@@ -345,7 +521,7 @@ export class ObjectPropertyBag {
 
   hasProperty(name) { return this.getProperties().some((p) => p.name === name); }
 
-  /** Over `source`, never the look — so on a viewer these throw (P6), as the platform's do. */
+  /** Over `source`, never the look — so on a viewer these throw, as the platform's do. */
   get(name) { return this.getProperty(name).get(this.source); }
   set(name, value) { this.getProperty(name).set(this.source, value); }
 
@@ -505,13 +681,13 @@ getters(View, 'root', 'ribbonPanels');
 fields(View, 'name', 'toolbox', 'statusBarPanels');
 
 /** A look's owner — the viewer whose `onPropertyValueChanged` a property write fires — and the
- * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError (P6). */
+ * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError. */
 const LOOKS = new WeakMap();
 
 /** What the platform knows about a viewer type without instantiating it (viewer.ts:32). The
  * registry is the test's to fill, as `Func.registry` is. A descriptor property's `get`/`set`,
  * unless given, are defined over the LOOK; a write fires the owning viewer's
- * `onPropertyValueChanged` with the property — for a same value too (P7). */
+ * `onPropertyValueChanged` with the property — for a same value too. */
 export class WidgetDescriptor {
   static registry = [];
 
@@ -647,7 +823,7 @@ export class Viewer extends Widget {
 
   getFunctions() { return []; }
 
-  /** Declared keys go through their property, one event each (P7); `type` and unknown keys are ignored. */
+  /** Declared keys go through their property, one event each; `type` and unknown keys are ignored. */
   setOptions(map) {
     for (const [name, value] of Object.entries(map))
       if (name !== 'type' && this.props.hasProperty(name))
@@ -666,10 +842,10 @@ export class Viewer extends Widget {
   get onPropertyValueChanged() { return this.onEvent('d4-property-value-changed'); }
   get onDataFrameChanged() { return this.onEvent('d4-data-frame-changed'); }
 
-  /** The Dart detach — the kill-walk's; JS `detach()` never reaches it (P9). */
+  /** The Dart detach — the kill-walk's; JS `detach()` never reaches it. */
   get onDetached() { return this.dart.detached; }
 
-  /** Getter-only, as the platform's (P8): `viewer.meta = x` throws. */
+  /** Getter-only, as the platform's: `viewer.meta = x` throws. */
   get meta() { return this.dart.meta ??= new ViewerMetaHelper(this); }
 
   liveSubscriptions() {

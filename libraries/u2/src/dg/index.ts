@@ -101,3 +101,11 @@ export {viewers, viewerSettings} from './viewers/viewers.js';
 export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, VIEWER_USAGE}
   from './viewers/registrations.js';
 export {VIEWER_SAMPLES, platformSamples} from './viewers/samples.js';
+export {funcForm, FuncCallForm} from './funcs/func-form.js';
+export type {FuncFormOptions, FuncCallLike, FuncCallParamLike} from './funcs/func-form.js';
+export {TableInput} from './inputs/pickers.js';
+export type {InputAction, TableInputOptions} from './inputs/pickers.js';
+export {ColumnInput} from './inputs/column-combo.js';
+export type {ColumnInputOptions2} from './inputs/column-combo.js';
+export {messageInput, userMentionProvider, USER_TOKEN} from './inputs/message-input.js';
+export type {MessageInputOptions, MentionProvider} from '../components/inputs/message-input.js';

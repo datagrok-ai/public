@@ -183,7 +183,8 @@
     "settings": {
       "scriptName": "Workflow Demo",
       "scriptDescription": "Demo of workflow with multiple outputs",
-      "tags": []
+      "tags": [],
+      "autorun": true
     }
   }
 }

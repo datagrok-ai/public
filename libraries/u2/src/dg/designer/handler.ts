@@ -13,7 +13,7 @@ import type {SpecNode} from '../../spec/spec.js';
 import {SpecNodeRef, SpecNodesRef} from './node-ref.js';
 import {propEditors} from './prop-editors.js';
 import type {PanelEditors} from './prop-editors.js';
-import {TABLE_HINT, eventsOf, missingTable, propsFor} from './prop-model.js';
+import {TABLE_HINT, eventsOf, missingTable, propsFor, sharedAppearance} from './prop-model.js';
 import type {PropSection} from './prop-model.js';
 import {sourceStatus} from './source-status.js';
 
@@ -81,7 +81,7 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
     const events = eventsOf(x);
     let edited: PanelEditors | undefined;
     if (editor === undefined)
-      sections.push(...SpecNodeHandler._tables(propsFor(x), events, {...x.node.bind}));
+      sections.push(...SpecNodeHandler._tables(propsFor(x), events, {...x.node.bind}, sharedAppearance(x)));
     else {
       edited = Scope.runWith(scope!, () => propEditors(x, editor, events, scope!));
       sections.push(...edited.sections);
@@ -176,13 +176,19 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
   /** The read-only panel, built from the same model — which is what finally gives a plain HTML node
    * (and a node that failed to build) properties to show. */
   private static _tables(model: PropSection[], events: Record<string, string>,
-    bind: Record<string, string>): HTMLElement[] {
+    bind: Record<string, string>, shared: Set<string>): HTMLElement[] {
     const sections: HTMLElement[] = [];
     for (const section of model) {
       const values: Record<string, unknown> = {};
-      for (const prop of section.props)
-        values[prop.name] = text(section.values[prop.name]);
-      sections.push(h3(section.title), tableFromMap(values));
+      for (const prop of section.props) {
+        const value = section.values[prop.name];
+        // an unassigned shared appearance prop is platform styling — not a row of the read-only view
+        if (shared.has(prop.name) && (value === undefined || value === ''))
+          continue;
+        values[prop.name] = text(value);
+      }
+      if (Object.keys(values).length > 0)
+        sections.push(h3(section.title), tableFromMap(values));
     }
     if (Object.keys(events).length > 0)
       sections.push(h3('Events'), tableFromMap(events));

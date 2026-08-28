@@ -16,6 +16,7 @@ import {
 import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
@@ -27,7 +28,7 @@ import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSock
 import {InputValueControl} from './nodes/input-value-control';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
-import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES} from './annotation';
 import {
   FlowGroup, GroupDoc, GROUP_TITLE_H, GROUP_PAD, GROUP_DOT_TOP, GROUP_DOT_STEP,
 } from './node-group';
@@ -68,6 +69,9 @@ export interface FlowEditorCallbacks {
   getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
   /** Live viewer/widget root captured for a node — the in-node preview mounts it. */
   getInlinePreviewContent?: (nodeId: string) => HTMLElement | null;
+  /** True while a run in progress still has this node ahead of it — the empty
+   *  preview shows a loader; a kept (stale) preview gets a recalculating overlay. */
+  isInlinePreviewPending?: (nodeId: string) => boolean;
   /** Fired after the in-node preview is toggled, BEFORE the node re-renders —
    *  the host re-stamps live-root ownership and refreshes the bottom panel.
    *  Cosmetic, like collapse — never a params change. */
@@ -296,6 +300,7 @@ export class FlowEditor {
     getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
     syncInlinePreview: (nodeId, host) => this.syncInlinePreview(nodeId, host),
     releaseInlinePreview: (nodeId) => this.releaseInlinePreview(nodeId),
+    isInlinePreviewPending: (nodeId) => this.callbacks.isInlinePreviewPending?.(nodeId) ?? false,
   };
 
   /** Reject incompatible connections at pick time, before they enter the data layer. */
@@ -1613,6 +1618,31 @@ export class FlowEditor {
     return Array.from(this.annotations.values());
   }
 
+  /** Both setters fire onGraphChanged — a recolored/resized note is an unsaved change. */
+  setAnnotationColor(id: string, bg: string): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.color === bg) return;
+    ann.color = bg;
+    ann.applyColor();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  setAnnotationFontSize(id: string, size: number): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.fontSize === size) return;
+    ann.fontSize = size;
+    ann.applyFont();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  setAnnotationPinned(id: string, pinned: boolean): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.pinned === pinned) return;
+    ann.pinned = pinned;
+    ann.applyPinned();
+    this.callbacks.onGraphChanged?.();
+  }
+
   /** Everything an annotation drag carries. Computed at drag START — a stateless
    *  capture, so nothing has to be remembered or can go stale. */
   private annotationCargo(ann: FlowAnnotation): {
@@ -1654,7 +1684,7 @@ export class FlowEditor {
     }
     const annotations: Array<{ann: FlowAnnotation; start: {x: number; y: number}}> = [];
     for (const other of this.annotations.values()) {
-      if (other === ann) continue;
+      if (other === ann || other.pinned) continue;
       if (other.pos.x >= x1 && other.pos.y >= y1 &&
           other.pos.x + other.size.w <= x2 && other.pos.y + other.size.h <= y2)
         annotations.push({ann: other, start: {...other.pos}});
@@ -1679,14 +1709,21 @@ export class FlowEditor {
       ev.preventDefault();
       ev.stopPropagation();
       const menu = DG.Menu.popup();
+      // radioGroup, not bare check: one-of-many choices render as radio marks.
       const colorMenu = menu.group('Color');
       for (const c of ANNOTATION_COLORS) {
-        colorMenu.item(c.name, () => {
-          ann.color = c.bg;
-          ann.applyColor();
-        });
+        colorMenu.item(c.name, () => this.setAnnotationColor(ann.id, c.bg), null,
+          {check: c.bg === ann.color, radioGroup: 'ff-annotation-color'});
       }
-      colorMenu.endGroup()
+      colorMenu.endGroup();
+      const sizeMenu = menu.group('Title size');
+      for (const s of ANNOTATION_TITLE_SIZES) {
+        sizeMenu.item(s.name, () => this.setAnnotationFontSize(ann.id, s.size), null,
+          {check: s.size === ann.fontSize, radioGroup: 'ff-annotation-title-size'});
+      }
+      sizeMenu.endGroup()
+        .separator()
+        .item('Pinned', () => this.setAnnotationPinned(ann.id, !ann.pinned), null, {check: ann.pinned})
         .separator()
         .item('Delete', () => this.removeAnnotation(ann.id))
         .show({causedBy: ev});
@@ -1702,6 +1739,9 @@ export class FlowEditor {
     el.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
       this.setActiveAnnotation(ann.id);
+      // Pinned: no move — and no stopPropagation, so the drag pans the canvas
+      // (the whole point: navigating a zoomed-in view full of annotations).
+      if (ann.pinned) return;
       const target = ev.target as HTMLElement | null;
       if (target && (target === title || title.contains(target))) return;
       if (target === handle) return;
@@ -1749,7 +1789,7 @@ export class FlowEditor {
     });
 
     handle.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0) return;
+      if (ev.button !== 0 || ann.pinned) return;
       ev.preventDefault();
       ev.stopPropagation();
       const startSize = {...ann.size};
@@ -2615,6 +2655,9 @@ export class FlowEditor {
       .item('Duplicate', () => {
         // Right-clicking a node in a multi-selection duplicates the whole selection.
         void this.duplicateNodes(inSelection && sel.length > 1 ? sel : [node.id]);
+      })
+      .item('Copy', () => {
+        this.copyNodes(inSelection && sel.length > 1 ? sel : [node.id]);
       });
     if (supportsInlinePreview(node)) {
       menu.item(node.properties[INLINE_PREVIEW_PROP] === true ?
@@ -3052,13 +3095,17 @@ export class FlowEditor {
     return this.materializeClip(this.snapshotNodes(ids), 30);
   }
 
-  /** Returns how many nodes were copied (0 = nothing selected, clipboard untouched). */
-  copySelection(): number {
-    const clip = this.snapshotNodes(this.getSelectedNodeIds());
+  /** Returns how many nodes were copied (0 = nothing to copy, clipboard untouched). */
+  copyNodes(ids: string[]): number {
+    const clip = this.snapshotNodes(ids);
     if (clip.nodes.length === 0) return 0;
     this.clipboard = clip;
     this.pasteCount = 0;
     return clip.nodes.length;
+  }
+
+  copySelection(): number {
+    return this.copyNodes(this.getSelectedNodeIds());
   }
 
   async pasteClipboard(): Promise<FlowNode[]> {
@@ -3305,6 +3352,13 @@ export class FlowEditor {
       content.style.height = '100%';
       entry.portal.insertBefore(content, entry.portal.firstChild);
       entry.content = content;
+    }
+    // A kept (stale) preview whose node a run has not reached yet gets a
+    // recalculating overlay instead of silently showing outdated content.
+    const pending = this.callbacks.isInlinePreviewPending?.(nodeId) ?? false;
+    if (pending !== (entry.portal.dataset.pending === 'true')) {
+      entry.portal.dataset.pending = pending ? 'true' : 'false';
+      ui.setUpdateIndicator(entry.portal, pending, 'Recalculating...');
     }
     this.schedulePreviewPortalSync();
   }

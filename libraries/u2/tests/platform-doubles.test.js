@@ -9,8 +9,8 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import './dom-shim.js';
 import {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  Grid, JsViewer, Package, Property, PropertyGrid, Script, Shell, TableQuery, UnreadableFileInfo, User, Viewer,
-  ViewerMetaHelper, Widget, WidgetDescriptor, platform} from './platform-doubles.mjs';
+  FuncCall, FuncCallParam, FuncParam, Grid, JsViewer, Package, Property, PropertyGrid, Script, Shell, TableQuery,
+  UnreadableFileInfo, User, Viewer, ViewerMetaHelper, Widget, WidgetDescriptor, platform} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 const DG = await import('datagrok-api/dg');
@@ -40,7 +40,9 @@ const doubles = () => {
   const frame = demog();
   const [descriptor] = descriptors();
   const grid = new Grid({type: 'Grid', descriptor, dataFrame: frame});
+  const call = new Func('fce', {inputs: [new FuncParam('stage', 'string')]}).prepare({stage: 'a'});
   return [
+    new FuncParam('stage', 'string', {options: {editor: 'none'}}), call, call.inputParams.values()[0],
     new Property('days', 'int', {description: 'How many'}),
     new Property('size', 'num', {min: 1, max: 50, step: 0.5, inputType: 'Float', editor: 'slider', format: '0.0',
       units: 'px', showSlider: true, showPlusMinus: false}),
@@ -91,7 +93,10 @@ test('a function answers its declaration, its kind and the call it prepares', as
     inputs, options: {role: 'file-handler'}, run: async (params) => ({ok: params.smiles})});
   assert.deepEqual([f.name, f.friendlyName, f.description, f.package, f.inputs, f.outputs, f.options],
     ['save', 'Save it', 'Saves', chem, inputs, [], {role: 'file-handler'}]);
-  assert.deepEqual(await f.prepare({smiles: 'CCO'}).call(), {outputs: {ok: 'CCO'}});
+  const prepared = f.prepare({smiles: 'CCO'});
+  assert.ok(prepared instanceof FuncCall);
+  assert.equal(await prepared.call(), prepared, 'call() resolves to an object whose .outputs are the run result');
+  assert.deepEqual(prepared.outputs, {ok: 'CCO'});
   assert.equal(new Func('orders', {namespace: 'admin'}).nqName, 'admin:orders');
   assert.equal(new Func('orders').nqName, 'orders');
 
@@ -106,6 +111,48 @@ test('a function answers its declaration, its kind and the call it prepares', as
   assert.deepEqual(Func.find({name: 'save', package: 'Chem'}), [f]);
   assert.equal(Func.find({meta: {role: 'file-handler'}}).length, 2);
   Func.registry = [];
+});
+
+test('a func param keeps a live options map; a call param substitutes the optional default', () => {
+  const stage = new FuncParam('stage', 'string', {choices: ['a', 'b']});
+  assert.deepEqual([stage.name, stage.propertyType, stage.choices, stage.editor, stage.isOptional],
+    ['stage', 'string', ['a', 'b'], null, false]);
+  stage.options['editor'] = 'none';
+  stage.options.suggestions = 'X';
+  assert.equal(stage.editor, 'none');
+  assert.deepEqual(stage.dart.options, {editor: 'none', suggestions: 'X'}, 'the map is live, as the platform\'s (P1)');
+
+  const count = new FuncParam('count', 'int', {isOptional: true, defaultValue: 3});
+  const call = new Func('fce', {inputs: [stage, count]}).prepare({});
+  const [stageParam, countParam] = call.dart.params;
+  assert.ok(stageParam instanceof FuncCallParam);
+  assert.deepEqual([stageParam.name, stageParam.property, stageParam.value], ['stage', stage, undefined]);
+  assert.equal(countParam.value, 3, 'an optional unset param answers its default (func_call_param.dart:78-88)');
+  assert.equal(countParam.dart.value, undefined, 'without the default ever being written');
+  call.setParamValue('count', 5);
+  assert.equal(countParam.value, 5);
+});
+
+test('a call answers its params as a map with values(), and suppresses same-value writes at the source', async () => {
+  const func = new Func('fce', {inputs: [new FuncParam('fruit', 'string'), {name: 'n', type: 'int'}],
+    run: async (params) => ({echo: params.fruit})});
+  const call = func.prepare({fruit: 'apple'});
+  assert.equal(call.func, func);
+  assert.ok(call.dart.params[1].property instanceof FuncParam, 'a plain-record input is adopted into a FuncParam');
+  assert.deepEqual(call.inputParams.values().map((p) => p.name), ['fruit', 'n']);
+  assert.equal(call.inputParams['fruit'], call.dart.params[0]);
+  assert.deepEqual(call.inputs, {fruit: 'apple', n: undefined});
+
+  const seen = [];
+  call.inputParams['fruit'].onChanged.subscribe((p) => seen.push(p.value));
+  call.setParamValue('fruit', 'apple');
+  call.setParamValue('fruit', 'banana');
+  call.setParamValue('fruit', 'banana');
+  assert.deepEqual(seen, ['banana'], 'a same-value write never fires (P3), the payload is the param');
+
+  assert.equal(call.outputs, null);
+  await call.call();
+  assert.deepEqual(call.outputs, {echo: 'banana'}, 'run receives the current inputs record');
 });
 
 test('a file reads its names off the path, and its share off the connection', () => {

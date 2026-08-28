@@ -2,6 +2,17 @@
 
 ## v.next
 
+* GROK-20753: Added `DG.StringUtils.levenshteinDistance(a, b)` / `jaroWinklerDistance(a, b)` — normalized string distances in [0, 1] (moved from `@datagrok-libraries/u2`)
+* GROK-20753: Added `ui.pickTableFromFiles()` / `ui.pickTableFromQuery()` — open the platform's table-picker dialogs ('Select a file' over the file shares tree / 'Select a database query'); resolve with the picked `DataFrame`, or `null` when the dialog is closed without a pick.
+* GROK-20753: Fixed `ColumnGrid` column callbacks receiving unwrapped Dart columns — the `create`/`popup`/`columnSelector` filters, `isColGrayedOut`, `isChecked` and the `filter` setter now receive a wrapped `DG.Column` (like `Menu.singleColumnSelector` already did).
+
+* GROK-20753: Added `DG.U2.Control.forElement(el)` — resolves a DOM element to the nearest u2 control owning it (every `Control` registers its root); the DOM → component door for inspectors, automation and tooling.
+* GROK-20753: `DG.U2.Component.getProperties()` gained the accessor tier — a meta-declared prop backed by an accessor with a setter is now writable through the generated property (the setter carries the live behavior); signal-backed props write as before, plain data fields stay read-only.
+
+* GROK-20753: Added `FuncCall.evalParamChoices(name)` / `evalParamSuggestions(name, text)` / `evalParamDefault(name)` — evaluate a parameter's `choices` / `suggestions` / computed `default` sources Dart-side (suggestions receive the typed text; `evalParamChoices` also returns `dependsOn` and, for `propagateChoice: all`, a `lookup` map).
+* GROK-20753: `grok.functions.scriptSync(s, variables?)` — an optional variables map evaluates the expression over a fresh context built from the map (omitted keeps the shell-context behavior).
+* GROK-20753: Documented `Property.options` as the tags ∪ FuncParam-options union `InputBase.getOption` reads (tags win); treat as readonly — writes stick only for FuncParam-backed properties without tags.
+
 * GROK-20753: Introduced `DG.IPropertyMeta` — the pure property-metadata vocabulary (name, type, propertyType, inputType, min/max/step, choices, editor, category, format, friendlyName, …); `DG.IProperty` now extends it, adding the accessors (`get`/`set`) and behavior options, and both live in `entities/property-meta.ts` as the one canonical shape (`DG.U2` re-exports them; the u2 core's `PropertyLike` is gone).
 * GROK-20753: `Property.js(name, type, options)` and `Widget.addProperty(..., options)` now honor `options.get`/`options.set`: they become the property's real accessors instead of the default `x[name]`/field closures (and are no longer pushed into the Dart property mixin as plain values). `addProperty`'s change notification (`onPropertyChanged`) still fires around a custom setter, and a `{get}`-only options keeps the default `fieldName` write.
 * GROK-20753: u2core protocol cleanup: `WidgetLike` is deleted — its contract is `DG.U2.Component`'s own surface, which `DG.Widget` answers by inheritance; `BindPropLike`/`BindSourceLike` are renamed to `BindProp`/`BindSource`; `ComponentMetaLike` is renamed to `ComponentMetaBase` (u2's spec-layer `ComponentMeta` extends it).

@@ -11,6 +11,7 @@ import {parseFlowBody, FLOW_LANGUAGE} from './serialization/flow-script-format';
 import {readUploadedFileBytes, parseFileToDataFrame, syncFlowFilePermissions} from './utils/uploaded-files';
 import * as aiTools from './ai-tools';
 import * as dataOps from './ops/data-ops';
+import {renderMoleculeWidget} from './utils/render-molecule';
 
 export const _package = new DG.Package();
 
@@ -294,6 +295,19 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'setCurrentRow',
+    description: 'Sets the current row of the table',
+    meta: {includeInFlow: 'true'},
+  })
+  static setCurrentRow(
+    @grok.decorators.param({options: {nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {nullable: false, description: '0 Based index', type: 'int', initialValue: '0'}}) index: number,
+  ): DG.DataFrame {
+    table.currentRowIdx = index;
+    return table;
+  }
+
+  @grok.decorators.func({
     name: 'filterRandomRows',
     description: 'A reproducible random sample of rows, as a new table',
     meta: {includeInFlow: 'true'},
@@ -387,6 +401,18 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'Value', description: 'Name of the column holding the values'}}) valueColumnName: string,
   ): Promise<DG.DataFrame> {
     return dataOps.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
+  }
+
+  @grok.decorators.func({
+    name: 'renderMolecule',
+    description: 'Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size',
+    outputs: [{name: 'result', type: 'widget'}],
+    meta: {includeInFlow: 'true', autorun: 'true'},
+  })
+  static renderMolecule(
+    @grok.decorators.param({options: {nullable: false, semType: 'Molecule', description: 'Molecule (SMILES or Molfile)'}}) molecule: string,
+  ): Promise<DG.Widget> {
+    return renderMoleculeWidget(molecule);
   }
 
   @grok.decorators.fileViewer({fileViewer: 'flow'})

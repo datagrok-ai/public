@@ -237,6 +237,23 @@ category('Flow: bundled flow scripts', () => {
       'the committed .flow header must match this order — regenerate the file if this changes');
   }, {timeout: 30000});
 
+  test('Interactive Viewers: canonical header — sketcher input, no outputs', async () => {
+    let gen: {header: string; outputs: string[]};
+    try {
+      gen = await canonicalFlow('Interactive Viewers.flow');
+    } catch {
+      expect(true, true, 'files/ not available on this stand — skipped');
+      return;
+    }
+    expect(gen.header.includes('//name: Interactive Viewers'), true);
+    expect(gen.header.includes(`//language: ${FLOW_LANGUAGE}`), true);
+    expect(gen.header.includes('//tags: funcflow, flow'), true);
+    expect(gen.header.includes(
+      '//input: string molecule = "CC(Oc1c2C(OCCSSCCCc2c(Cl)c(Cl)c1)=O)=O" {semType: Molecule}'), true,
+    `the sketcher input line must match the committed header; got:\n${gen.header}`);
+    expect(gen.outputs.length, 0, 'no output nodes, no //output lines');
+  }, {timeout: 30000});
+
   test('Sequence demo: canonical header with the single result output', async () => {
     let gen: {header: string; outputs: string[]};
     try {

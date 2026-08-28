@@ -12,6 +12,7 @@ import {BoolInput} from '../components/inputs/bool-input.js';
 import {NumberInput} from '../components/inputs/number-input.js';
 import {ChoiceInput, MultiChoiceInput} from '../components/inputs/choice-input.js';
 import {SliderInput} from '../components/inputs/slider-input.js';
+import {RangeSlider} from '../components/inputs/range-slider.js';
 import {RadioInput} from '../components/inputs/radio-input.js';
 import {ColorInput} from '../components/inputs/color-input.js';
 import {ListInput} from '../components/inputs/list-input.js';
@@ -24,6 +25,8 @@ import {IconInput} from '../components/inputs/icon-input.js';
 import {Form} from '../components/forms/form.js';
 import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
+import {Card} from '../components/containers/card.js';
+import {StatCard} from '../components/display/stat-card.js';
 import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
 import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
 import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
@@ -46,6 +49,7 @@ function inputOptions<T>(props: Props): InputOptions<T> {
     inline: props.inline as boolean | undefined,
     postfix: props.postfix as string | undefined,
     tooltipText: props.tooltipText as string | undefined,
+    enabled: props.enabled as boolean | undefined,
     value: bound ? undefined : value as T,
     bind: bound ? value as Signal<T> : undefined,
   };
@@ -70,6 +74,7 @@ function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
     {name: 'inline', type: 'bool', description: 'Compact one-row variant without a label.'},
     {name: 'postfix', type: 'string', description: 'Units or a short suffix shown after the editor.'},
     {name: 'tooltipText', type: 'string'},
+    {name: 'enabled', type: 'bool', description: 'false grays the input out and blocks edits.'},
     ...extra,
   ];
 }
@@ -101,6 +106,19 @@ function splitter(props: Props, children: Child[]): Splitter {
     direction: props.direction === 'vertical' ? 'vertical' : 'horizontal',
     sizes: props.sizes as number[] | undefined,
     minSize: props.minSize as number | undefined,
+  });
+}
+
+function card(props: Props, children: Child[]): Card {
+  return new Card({
+    title: props.title as string | undefined,
+    subtitle: props.subtitle as string | undefined,
+    icon: props.icon as string | undefined,
+    media: props.media as string | undefined,
+    clickable: props.clickable as boolean | undefined,
+    selectable: props.selectable as boolean | undefined,
+    selected: props.selected as boolean | Signal<boolean> | undefined,
+    children: children.map(element),
   });
 }
 
@@ -323,6 +341,8 @@ const METAS: ComponentMeta[] = [
         tabs.addTab({id: `tab-${i}`, label: childTitle(nodes[i], `Tab ${i + 1}`), icon: childIcon(nodes[i]),
           content: element(children[i])});
       }
+      if (typeof props.activeTab === 'string')
+        tabs.activeTab.value = props.activeTab;
       return tabs;
     },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
@@ -331,6 +351,8 @@ const METAS: ComponentMeta[] = [
         description: '"horizontal" (default) or "vertical" — a header column on the left.'},
       {name: 'variant', type: 'string', choices: ['platform', 'document'],
         description: '"platform" (default) is the ui.tabControl look; "document" the IDE document-tab skin.'},
+      {name: 'activeTab', type: 'string', bindable: true, twoWay: true,
+        description: 'Id of the selected tab (spec children get tab-0, tab-1, …).'},
     ],
     childProps: [
       {name: 'title', type: 'string', description: 'Tab label; numbered when absent.'},
@@ -451,6 +473,37 @@ const METAS: ComponentMeta[] = [
     example: {tag: 'u2-slider-input', props: {label: 'Opacity', value: 50, min: 0, max: 100}},
   },
   {
+    tag: 'u2-range-slider',
+    category: 'Inputs',
+    create: (props) => new RangeSlider({
+      min: props.min as number | undefined,
+      max: props.max as number | undefined,
+      step: props.step as number | undefined,
+      minRange: props.minRange as number | undefined,
+      vertical: props.vertical as boolean | undefined,
+      lo: props.lo as number | Signal<number> | undefined,
+      hi: props.hi as number | Signal<number> | undefined,
+    }),
+    description: 'Two-handle range selector: drag a handle to move one end, the band between ' +
+      'them to move the whole window.',
+    usage: 'For picking an interval within known bounds — filters, zoom windows, thresholds ' +
+      'with a low and a high end. A single number belongs in `u2-slider-input`.',
+    props: [
+      {name: 'lo', type: 'double', bindable: true, twoWay: true,
+        description: 'Lower end of the selected range.'},
+      {name: 'hi', type: 'double', bindable: true, twoWay: true,
+        description: 'Upper end of the selected range.'},
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: 'Snap increment for dragging; continuous when absent.'},
+      {name: 'minRange', type: 'double', description: 'Smallest allowed hi − lo; 0 by default.'},
+      {name: 'vertical', type: 'bool', description: 'Bottom-to-top track.'},
+    ],
+    defaults: {min: 0, max: 100, lo: 20, hi: 60},
+    events: ['input', 'change'],
+    example: {tag: 'u2-range-slider', props: {min: 0, max: 100, lo: 20, hi: 60}},
+  },
+  {
     tag: 'u2-radio-input',
     category: 'Inputs',
     create: (props) => new RadioInput({
@@ -558,6 +611,54 @@ const METAS: ComponentMeta[] = [
     props: inputProps('string', {name: 'alt', type: 'string', description: 'Alternative text.'}),
     events: ['change'],
     example: {tag: 'u2-image-input', props: {label: 'Logo', value: 'https://datagrok.ai/img/logo.svg'}},
+  },
+  {
+    tag: 'u2-card',
+    category: 'Containers',
+    create: (props) => card(props, []),
+    createWithChildren: (props, children) => card(props, children),
+    description: 'Surface with optional header (title, subtitle, icon, actions), media image, body and footer.',
+    usage: 'For dashboard tiles and item previews; a card grid is a collection of these. ' +
+      'A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.',
+    props: [
+      {name: 'title', type: 'string'},
+      {name: 'subtitle', type: 'string'},
+      {name: 'icon', type: 'string', inputType: 'Icon'},
+      {name: 'media', type: 'string', description: 'Image URL shown above the body.'},
+      {name: 'clickable', type: 'bool', description: 'The whole card acts as a button.'},
+      {name: 'selectable', type: 'bool', description: 'Click toggles the selection ring.'},
+      {name: 'selected', type: 'bool', bindable: true, twoWay: true},
+    ],
+    acceptsChildren: true,
+    events: ['click'],
+    defaults: {title: 'Card'},
+    example: {tag: 'u2-card', props: {title: 'Aspirin', subtitle: 'NSAID'},
+      children: [{tag: 'p', props: {text: 'Acetylsalicylic acid, 180.16 g/mol.'}}]},
+  },
+  {
+    tag: 'u2-stat-card',
+    category: 'Display',
+    create: (props) => new StatCard({
+      label: (props.label as string) ?? '',
+      value: props.value as string | Signal<string | number | undefined> | undefined,
+      delta: props.delta as number | Signal<number | undefined> | undefined,
+      deltaInverted: props.deltaInverted as boolean | undefined,
+      icon: props.icon as string | undefined,
+    }),
+    description: 'KPI card: large formatted value, label, optional up/down delta and icon.',
+    usage: 'For dashboard metrics. Bind `value` to a source output for live numbers; ' +
+      'loading states come from the source, not from this card.',
+    props: [
+      {name: 'label', type: 'string'},
+      {name: 'value', type: 'string', bindable: true,
+        description: 'Literal values are strings ("1.2M"); a bound signal may hold a number, formatted by the card.'},
+      {name: 'delta', type: 'double', bindable: true,
+        description: 'Fractional change; 0.12 renders "+12%" in the success color.'},
+      {name: 'deltaInverted', type: 'bool', description: 'Negative is good (error rates).'},
+      {name: 'icon', type: 'string', inputType: 'Icon'},
+    ],
+    defaults: {label: 'Metric', value: '0'},
+    example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
   },
   {
     tag: 'u2-state',

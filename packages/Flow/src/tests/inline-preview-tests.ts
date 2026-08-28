@@ -50,6 +50,7 @@ function makeWiredEditor(opts: {onScreen?: boolean} = {}): TestEditor & {ctrl: E
   const box: {ctrl?: ExecutionController} = {};
   const flow = new FlowEditor(container, {
     getInlinePreviewContent: (nodeId) => box.ctrl?.inlinePreviewRoot(nodeId) ?? null,
+    isInlinePreviewPending: (nodeId) => box.ctrl?.inlinePreviewPending(nodeId) ?? false,
     onInlinePreviewToggled: (nodeId) => box.ctrl?.syncInlinePreviewOwnership(nodeId),
   });
   const ctrl = new ExecutionController(flow);
@@ -627,6 +628,124 @@ category('Flow: inline preview', () => {
     }
   }, {timeout: 60000});
 
+  test('the autorun mode saves with the flow and reopens live', async () => {
+    const doc = (autorun?: boolean): any => ({
+      version: '2.0', name: 't', description: '', author: '', created: '', modified: '',
+      nodes: [], connections: [],
+      metadata: {settings: {scriptName: 't', scriptDescription: '', tags: ['flow'],
+        ...(autorun === undefined ? {} : {autorun})}},
+    });
+
+    const e = makeEditor();
+    try {
+      const out = serializeFlow(e.flow, {scriptName: 'T', scriptDescription: '', tags: [], autorun: true});
+      expect(out.metadata.settings.autorun, true, 'the setting serializes into metadata.settings');
+    } finally {
+      destroyEditor(e);
+    }
+
+    const view = new FuncFlowView();
+    try {
+      await until(() => (view as any).flow != null, 10000);
+      const scheduler = (): {enabled: boolean} => (view as any).autorunScheduler as {enabled: boolean};
+      expect(scheduler().enabled, false, 'autorun starts off');
+
+      await view.loadFromDoc(doc(true));
+      expect(scheduler().enabled, true, 'a flow saved with autorun on reopens live');
+      const icon = (view as any).autorunIcon as HTMLElement | null;
+      expect(icon?.classList.contains('ff-autorun-on') ?? false, true, 'the bolt reads on');
+
+      await view.loadFromDoc(doc());
+      expect(scheduler().enabled, false, 'a flow saved without it reopens off');
+      expect(icon?.classList.contains('ff-autorun-on') ?? true, false, 'the bolt reads off');
+
+      // The ribbon toggle writes the setting so the next save carries it.
+      (view as any).toggleAutorun();
+      expect(((view as any).flowSettings as {autorun?: boolean}).autorun, true,
+        'toggling on records the setting');
+      (view as any).toggleAutorun();
+      expect(((view as any).flowSettings as {autorun?: boolean}).autorun === undefined, true,
+        'toggling off removes it (tidy saves)');
+    } finally {
+      ((view as any).flow)?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('controller: inlinePreviewPending tracks the run reaching the node', async () => {
+    const e = makeEditor();
+    try {
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.inlinePreviewPending('n'), false, 'no run → not pending');
+      ctrl.state.startRun('r1');
+      expect(ctrl.inlinePreviewPending('n'), true, 'running and not reached → pending');
+      ctrl.state.setNodeStatus('n', NodeExecStatus.running);
+      expect(ctrl.inlinePreviewPending('n'), true, 'the node itself running → still pending');
+      ctrl.state.setNodeStatus('n', NodeExecStatus.completed);
+      expect(ctrl.inlinePreviewPending('n'), false, 'completed → not pending');
+      ctrl.state.setNodeStatus('m', NodeExecStatus.errored);
+      expect(ctrl.inlinePreviewPending('m'), false, 'errored → not pending');
+      (ctrl as any).runNodeIds = new Set(['n']);
+      expect(ctrl.inlinePreviewPending('other'), false, 'outside the run set → not pending');
+      ctrl.state.endRun();
+      expect(ctrl.inlinePreviewPending('n'), false, 'run over → not pending');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('while a run is under way, an empty preview shows a loader, a kept one an overlay', async () => {
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    let content: HTMLElement | null = null;
+    let pending = false;
+    const flow = new FlowEditor(container, {
+      getInlinePreviewContent: () => content,
+      isInlinePreviewPending: () => pending,
+    });
+    try {
+      const viewer = createNode('Viewers/Scatter Plot')!;
+      await flow.addNodeAt(viewer, 0, 0);
+      await flow.setInlinePreview(viewer.id, true);
+
+      const host = (): HTMLElement | null => previewEl(container, viewer.id);
+      const ph = (): HTMLElement | null =>
+        host()?.querySelector('[data-testid="ff-node-preview-placeholder"]') ?? null;
+      expect(await until(() => host()?.dataset.empty === 'true'), true, 'starts with the resting hint');
+      expect(ph()!.textContent!.includes('Run the flow'), true, 'the hint has its text');
+
+      // A run starts and the captured value is cleared — loader, not blank.
+      pending = true;
+      await flow.updateNode(viewer.id);
+      expect(await until(() => host()?.dataset.empty === 'loading'), true, 'pending → loading state');
+      expect(ph()!.dataset.loading, 'true', 'the placeholder switches to the loader');
+      expect(ph()!.childElementCount > 0, true, 'a loader element is mounted');
+      expect((ph()!.textContent ?? '').includes('Run the flow'), false, 'no resting text');
+
+      // The node completed — content replaces the loader.
+      content = ui.divText('live-content');
+      pending = false;
+      await flow.updateNode(viewer.id);
+      expect(await until(() => portalEl(container, viewer.id)?.contains(content!) === true), true,
+        'content mounts when the run reaches the node');
+
+      // Next run keeps the stale content and overlays "Recalculating...".
+      pending = true;
+      await flow.updateNode(viewer.id);
+      expect(await until(() =>
+        !!portalEl(container, viewer.id)?.querySelector('.d4-update-shadow')), true,
+      'a kept preview gets the recalculating overlay');
+      pending = false;
+      await flow.updateNode(viewer.id);
+      expect(await until(() =>
+        portalEl(container, viewer.id)?.querySelector('.d4-update-shadow') == null), true,
+      'the overlay clears when the run reaches the node');
+    } finally {
+      flow.destroy();
+      container.remove();
+    }
+  });
+
   test('right-click inside the preview reaches the viewer, not the node menu', async () => {
     const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
     document.body.appendChild(container);
@@ -718,16 +837,20 @@ category('Flow: inline preview', () => {
         for (const el of found) knownPopups.add(el);
         return found.length > 0 ? found : Array.from(knownPopups).filter(isShown);
       };
-      const assertNear = (popup: HTMLElement, label: string): void => {
+      const assertNear = async (popup: HTMLElement, label: string): Promise<void> => {
         const p = popup.getBoundingClientRect();
         const v = root()!.getBoundingClientRect();
         const near = p.left > v.left - 200 && p.left < v.right + 200 &&
           p.top > v.top - 200 && p.top < v.bottom + 200;
         expect(near, true, `${label}: the popup [${Math.round(p.left)},${Math.round(p.top)}] opens near ` +
           `the viewer [${Math.round(v.left)},${Math.round(v.top)},${Math.round(v.width)}x${Math.round(v.height)}]`);
-        const center = document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2);
-        expect(!!center && (popup === center || popup.contains(center)), true,
-          `${label}: the popup is actually visible (nothing covers it)`);
+        // Visibility can lag a frame (menus animate/close over it) — poll it.
+        const visible = await until(() => {
+          const r = popup.getBoundingClientRect();
+          const center = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return !!center && (popup === center || popup.contains(center));
+        }, 3000);
+        expect(visible, true, `${label}: the popup is actually visible (nothing covers it)`);
       };
 
       // A click can TOGGLE a popup Escape failed to dismiss — retry once.
@@ -739,7 +862,7 @@ category('Flow: inline preview', () => {
       // Zoom 1: the popup used to land ~200px off (transformed containing block).
       let popups = await openSelectorPopup();
       expect(popups.length > 0, true, 'clicking the axis selector opens its popup');
-      assertNear(popups[0], 'k=1');
+      await assertNear(popups[0], 'k=1');
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
       await new Promise((r) => setTimeout(r, 300));
 
@@ -748,7 +871,7 @@ category('Flow: inline preview', () => {
       await until(() => portalAligned(view.root, viewer.id), 3000);
       popups = await openSelectorPopup();
       expect(popups.length > 0, true, 'the selector still opens its popup at zoom 1.5');
-      assertNear(popups[0], 'k=1.5');
+      await assertNear(popups[0], 'k=1.5');
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
       await new Promise((r) => setTimeout(r, 300));
       flow.setZoom(1);

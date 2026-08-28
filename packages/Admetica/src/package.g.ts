@@ -38,9 +38,10 @@ export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, abso
 
 //name: AdmeticaEditor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function admeticaEditor(call: DG.FuncCall) : void {
-  PackageFunctions.admeticaEditor(call);
+export function admeticaEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.admeticaEditor(call);
 }
 
 //name: AdmeticaMenu
@@ -51,6 +52,7 @@ export function admeticaEditor(call: DG.FuncCall) : void {
 //input: list<string> models { description: Properties to compute. }
 //input: bool addPiechart { description: Add a pie-chart column. }
 //input: bool addForm { description: Add a form viewer. }
+//friendlyName: Admetica
 //top-menu: Chem | Admetica | Calculate...
 //editor: Admetica:AdmeticaEditor
 export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean) : Promise<void> {

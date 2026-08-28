@@ -24,7 +24,8 @@ async function closeViewer(page: any, vt: string) {
   await page.evaluate((t: string) => {
     (window as any).grok.shell.tv.viewers.find((q: any) => q.type === t)?.close();
   }, vt);
-  await page.waitForTimeout(500);
+  await page.waitForFunction((t: string) =>
+    !(window as any).grok.shell.tv.viewers.find((q: any) => q.type === t), vt, {timeout: 8000});
 }
 
 test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page}) => {
@@ -44,9 +45,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
         {xColumnName: 'Chemical Space X', yColumnName: 'Chemical Space Y',
          colorColumnName: 'Primary Series Name', markersColumnName: 'Competition assay Date', markersMap: 'year'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 575, 832);
-    await page.waitForTimeout(1500);
     await page.evaluate(() => {
       const w = window as any;
       w.__moves = [];
@@ -66,7 +66,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       }, {width: w});
       await page.waitForTimeout(200);
     }
-    await page.waitForTimeout(800);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const moves = await page.evaluate(() => {
       const w = window as any; w.__sub?.unsubscribe(); return w.__moves;
     });
@@ -82,9 +82,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       (window as any).grok.shell.tv.addViewer('Bar chart',
         {splitColumnName: 'Stereo Category', stackColumnName: 'Scaffold Names'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Bar chart');
     await v.resizeViewer(page, 'Bar chart', 600, 700);
-    await page.waitForTimeout(1500);
     await page.evaluate(() => {
       const w = window as any;
       w.__moves = [];
@@ -104,7 +103,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       }, {width: w});
       await page.waitForTimeout(200);
     }
-    await page.waitForTimeout(800);
+    await v.waitForLegendIdle(page, 'Bar chart');
     const moves = await page.evaluate(() => {
       const w = window as any; w.__sub?.unsubscribe(); return w.__moves;
     });
@@ -119,7 +118,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Scaffold Names'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const read = () => page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
@@ -137,7 +136,6 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     });
     for (const w of [606, 640]) {
       await v.resizeViewer(page, 'Scatter plot', w, 735);
-      await page.waitForTimeout(1500);
       const s = await read();
       if (s.state !== 'docked/top') continue;
       expect(s.visible, `at ${w}px only ${s.visible}/${s.items} items visible: ${JSON.stringify(s)}`)
@@ -154,9 +152,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
          colorColumnName: 'Stereo Category', markersColumnName: 'Competition assay Date', markersMap: 'year',
          legendPosition: 'RightBottom'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 800, 700);
-    await page.waitForTimeout(1500);
     const h = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
@@ -180,9 +177,13 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'R2', legendPosition: 'Top'});
     });
-    await page.waitForTimeout(4000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 900, 700);
-    await page.waitForTimeout(2500);
+    // molecule items render through an async custom renderer — wait for a real row height
+    await page.waitForFunction(() => {
+      const item = document.querySelector('[name="legend"] [name="legend-item"]');
+      return item != null && item.getBoundingClientRect().height > 40;
+    }, {timeout: 15000}).catch(() => null);
     const m = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
@@ -209,7 +210,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Stereo Category'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 900, 600);
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'LeftBottom'}, wait: 1500}]);
     await page.evaluate(async () => {
@@ -219,8 +220,9 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       await new Promise((r) => setTimeout(r, 300));
       (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
-      await new Promise((r) => setTimeout(r, 1200));
     });
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block', {timeout: 8000});
     const icon = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
@@ -241,7 +243,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
           s.textContent = s.textContent.replace(/\.d4-tooltip\s*{[^}]*}/g, '');
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Primary Series Name'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 700, 500);
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightBottom'}, wait: 1200}]);
     await page.evaluate(() => {
@@ -249,7 +251,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement).click();
     });
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block', {timeout: 8000});
     const mini = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       const r = el.getBoundingClientRect();
@@ -257,7 +260,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     });
     await page.mouse.move(mini.x - 40, mini.y - 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
     const t = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Scatter plot');
@@ -274,7 +278,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     expect(t!.overlapFrac, 'the tooltip legend must open outside the viewer when there is room')
       .toBeLessThanOrEqual(0.05);
     await page.mouse.move(200, 900);
-    await page.waitForTimeout(600);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') == null, {timeout: 5000}).catch(() => null);
     await closeViewer(page, 'Scatter plot');
   });
 
@@ -283,9 +288,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       (window as any).grok.shell.tv.addViewer('Scatter plot',
         {colorColumnName: 'Primary Scaffold Name', markersColumnName: 'Series'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 1000, 620);
-    await page.waitForTimeout(1500);
     const r = await page.evaluate(async () => {
       const root = document.querySelector('[name="legend"]') as HTMLElement;
       const splitter = root.querySelector('[name="legend-inner-splitter"]') as HTMLElement;
@@ -318,7 +322,6 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
 
     // shrink the viewer: the fixed main share re-clamps and the extra list scrolls
     await v.resizeViewer(page, 'Scatter plot', 1000, 380);
-    await page.waitForTimeout(1200);
     const s = await page.evaluate(() => {
       const root = document.querySelector('[name="legend"]') as HTMLElement;
       const list = root.querySelector('[name="legend-section-extra"] .d4-legend-list') as HTMLElement;
@@ -344,7 +347,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Series'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 760, 600);
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightTop'}, wait: 1500}]);
     await page.evaluate(async () => {
@@ -354,8 +357,9 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       await new Promise((r) => setTimeout(r, 300));
       (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
-      await new Promise((r) => setTimeout(r, 1200));
     });
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block', {timeout: 8000});
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'Auto'}, wait: 1500}]);
 
     const mini = await page.evaluate(() => {
@@ -365,9 +369,10 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     });
     await page.mouse.move(mini.x - 40, mini.y + 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
     await page.mouse.click(mini.x, mini.y);
-    await page.waitForTimeout(2000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
 
     // hover data points (row tooltips fire), then force a repaint
     const c = await page.evaluate(() => {
@@ -386,7 +391,7 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       await new Promise((r) => setTimeout(r, 800));
       x.props.showRegressionLine = false;
     });
-    await page.waitForTimeout(1500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
 
     const s = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
@@ -414,9 +419,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       (window as any).grok.shell.tv.addViewer('Bar chart',
         {splitColumnName: 'Stereo Category', stackColumnName: 'Series'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Bar chart');
     await v.resizeViewer(page, 'Bar chart', 620, 760);
-    await page.waitForTimeout(1500);
     const read = () => page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Bar chart');
@@ -426,7 +430,6 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     });
     const first = await read();
     await v.resizeViewer(page, 'Bar chart', 622, 760);
-    await page.waitForTimeout(1500);
     const settled = await read();
     expect(first.state).toBe(settled.state);
     // the first anchor must already be the settled one — a stale-geometry anchor put the
@@ -443,8 +446,9 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       await new Promise((r) => setTimeout(r, 300));
       (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
-      await new Promise((r) => setTimeout(r, 1200));
     });
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block', {timeout: 8000});
     const icon = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       return {bottom: parseFloat(el.style.bottom || '0'), right: parseFloat(el.style.right || '0')};
@@ -460,9 +464,8 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Primary Series Name'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     await v.resizeViewer(page, 'Pie chart', 620, 760);
-    await page.waitForTimeout(1500);
     await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Pie chart');
@@ -470,8 +473,9 @@ test('Legend sizing, chrome and marker-placement stability (SPGI)', async ({page
       root?.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
       await new Promise((r) => setTimeout(r, 300));
       (x.root.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement)?.click();
-      await new Promise((r) => setTimeout(r, 1200));
     });
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block', {timeout: 8000});
     const icon = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Pie chart');

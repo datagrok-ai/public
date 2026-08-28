@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {getCurrentUserGroup} from './spotlight/group-favorites';
 
 const window = grok.shell.windows;
 
@@ -90,8 +91,8 @@ function setButtonsToggleState() {
 }
 
 export async function windowsManagerPanel() {
-  const userGroup = await grok.dapi.groups.find(grok.shell.user.group.id);
-  const isDeveloper = userGroup.memberships.some((g) => g.id === DG.Group.defaultGroupsIds.Developers);
+  const userGroup = await getCurrentUserGroup();
+  const isDeveloper = userGroup?.memberships.some((g) => g.id === DG.Group.defaultGroupsIds.Developers) ?? false;
 
   const toggles: HTMLElement[] = [
     ui.tooltip.bind(aiToggle, () => ui.div(['AI ', ui.span(['Ctrl+I'], {style: {color: 'var(--grey-4)'}})]), 'top'),

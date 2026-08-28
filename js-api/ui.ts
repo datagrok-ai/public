@@ -544,6 +544,19 @@ export function tableFromMap(map: { [key: string]: any }, showCopyValue: boolean
   return api.grok_UI_TableFromMap(map, showCopyValue);
 }
 
+/** Opens the platform's 'Select a file' dialog over the file shares tree.
+ * Resolves with the first dataframe of the picked file, or null when the dialog
+ * is closed without a pick. */
+export async function pickTableFromFiles(): Promise<DataFrame | null> {
+  return toJs(await api.grok_UI_PickTableFromFiles()) ?? null;
+}
+
+/** Opens the platform's 'Select a database query' dialog; running a query that
+ * produces a dataframe resolves with it, closing without one resolves with null. */
+export async function pickTableFromQuery(): Promise<DataFrame | null> {
+  return toJs(await api.grok_UI_PickTableFromQuery()) ?? null;
+}
+
 /** Creates an editable html table for the specified items (rows) and properties (columns). */
 export function tableFromProperties(items: any[], properties: Property[]) {
   return table(items,

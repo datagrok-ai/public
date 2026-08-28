@@ -5,12 +5,14 @@ import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import {div, h3, span} from '../../core/elements.js';
 import {Accordion} from '../../components/containers/accordion.js';
+import type {AccordionPane} from '../../components/containers/accordion.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {PropertyGrid} from '../../components/forms/property-grid.js';
 import type {PropDescriptor} from '../../components/forms/property-grid.js';
 import type {NamedProperty} from '../../core/widget-like.js';
 import {propertyForm} from '../forms/object-form.js';
 import type {FieldOverride, ObjectForm} from '../forms/object-form.js';
+import {APPEARANCE_CATEGORY} from '../../spec/appearance.js';
 import type {SpecEditor, SpecPatch} from '../../spec/editor.js';
 import type {SpecNodeRef} from './node-ref.js';
 import {refreshPanel} from './handler.js';
@@ -19,7 +21,7 @@ import type {LookGrid} from './look-grid.js';
 import {bindPicker, bindPickerButton} from './bind-picker.js';
 import {eventEntry, eventPick, funcPicker, paramProps} from './func-picker.js';
 import {bindRowsOf, bindsOf, commitOnChange, eventsOf, missingTable, paramBinds, paramValuesOf,
-  paramsOf, propertyTier, propsFor, shownCommand, stringProps, unboundOf} from './prop-model.js';
+  paramsOf, propertyTier, propsFor, sharedAppearance, shownCommand, stringProps, unboundOf} from './prop-model.js';
 
 /** {@link PropertyGrid.same}'s comparison — element-wise where both values are lists, identity
  * otherwise — for values the document may carry as arrays. */
@@ -61,6 +63,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
   // the wiring sections fold: one row per bindable prop is a lot of panel for a node that binds
   // nothing, and it is what pushed the events off the bottom of the platform's pane
   let folds: Accordion | undefined;
+  let badge: (() => void) | undefined;
   const channelOf = (props: NamedProperty[], values: Record<string, unknown>,
     read: () => Record<string, unknown>, patch: FormChannel['patch'],
     overrides?: Record<string, FieldOverride>): FormChannel => {
@@ -74,10 +77,10 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     channels.push(channel);
     return channel;
   };
-  const place = (title: string, content: HTMLElement, expanded?: boolean): void => {
+  const place = (title: string, content: HTMLElement, expanded?: boolean): AccordionPane | undefined => {
     if (expanded === undefined) {
       sections.push(h3(title), content);
-      return;
+      return undefined;
     }
     if (folds === undefined) {
       folds = new Accordion();
@@ -85,7 +88,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     }
     // eagerly, never through the lazy builder: the fields refresh in place on every patch, so
     // they must exist whether or not the pane was ever opened
-    folds.addPane(title, content, expanded);
+    return folds.addPane(title, content, expanded);
   };
   const add = (title: string, props: NamedProperty[], values: Record<string, unknown>,
     read: () => Record<string, unknown>, patch: FormChannel['patch'],
@@ -121,15 +124,40 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     else
       sections.push(h3('Properties (live)'), span(RUN_HINT, 'u2-designer-hint'), look.root);
   } else {
+    // shared-prop identity, not the section title: a component-own prop that declares the shared
+    // category keeps ordinary ''-writing semantics
+    const shared = sharedAppearance(x);
     for (const section of propsFor(x)) {
-      add(section.title, section.props, section.values, section.read, (name, value) => {
+      const patch: FormChannel['patch'] = (name, value) => {
         const current = node.props?.[name];
+        // clearing a shared appearance field DELETES the prop (Ruling 8): absent means platform styling
+        if (shared.has(name) && (value === '' || value === null))
+          return current === undefined ? null : {op: 'set-prop', node, name, value: undefined};
         // a component that reports '' for a prop the spec never carried would write that noise
         // into the document the moment the empty field is touched
         if (PropertyGrid.same(LISTY, current, value) || (value === '' && current === undefined))
           return null;
         return {op: 'set-prop', node, name, value};
-      });
+      };
+      if (section.title !== APPEARANCE_CATEGORY) {
+        add(section.title, section.props, section.values, section.read, patch);
+        continue;
+      }
+      // the shared group folds, collapsed until something is assigned — or a component-own prop
+      // joined the section by declaring its category; the badge counts the assigned shared values
+      const count = (): number =>
+        section.props.filter((p) => shared.has(p.name) && node.props?.[p.name] !== undefined).length;
+      const hasOwn = section.props.some((p) => !shared.has(p.name));
+      const channel = channelOf(section.props, section.values, section.read, patch);
+      const pane = place(section.title, channel.form.root, count() > 0 || hasOwn);
+      if (pane !== undefined) {
+        const label = pane.root.querySelector('.u2-accordion-title') as HTMLElement;
+        badge = () => {
+          const n = count();
+          label.textContent = n > 0 ? `${APPEARANCE_CATEGORY} (${n})` : APPEARANCE_CATEGORY;
+        };
+        badge();
+      }
     }
   }
 
@@ -159,9 +187,15 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
 
   // Bindings and events are guarded fields: a partial value ('c', 'cm', …) is a refusal, so
   // they commit on blur/Enter — per keystroke, the guard would fire on every prefix typed
+  const appearanceProp = (name: string): boolean =>
+    x.meta()?.props.find((p) => p.name === name)?.category === APPEARANCE_CATEGORY;
+  // what "Add binding…" offers: everything unbound on a tier node, the appearance group — whose
+  // unbound props get no rows of their own — on a plain one
+  const addable = (): string[] => tier ? unboundOf(x) : unboundOf(x).filter(appearanceProp);
   const bindings = (): FormChannel => {
     const bind = bindRowsOf(x);
     const rows = Object.keys(bind);
+    const offered = addable();
     // the rows are the section's for its lifetime: a cleared one stays, empty, until the next render
     const read = (): Record<string, unknown> => {
       const all = bindsOf(x);
@@ -183,13 +217,14 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
           bindPicker(x.instance, (path) => commit(editor, channel, name, path))));
       }
     }
-    if (!tier && rows.length === 0)
+    if (!tier && rows.length === 0 && offered.length === 0)
       channel.form.addElement(span('Bind a parameter with the … beside it', 'u2-designer-hint'));
-    // a property-tier node lists what it binds, not its forty bindable props: the next one is
-    // picked here, and the row it lands on becomes the binding's — the section is drawn again
-    if (tier) {
+    // a property-tier node lists what it binds, not its forty bindable props — as a plain node
+    // lists no unbound appearance rows: the next one is picked here, and the row it lands on
+    // becomes the binding's — the section is drawn again
+    if (tier || offered.length > 0) {
       const pick = new ChoiceInput({label: 'Add binding…', nullable: true,
-        items: unboundOf(x).map((name) => ({value: name, label: words(name)})),
+        items: offered.map((name) => ({value: name, label: words(name)})),
         tooltipText: 'The property to bind; … picks what it follows'});
       pick.root.setAttribute('data-u2-prop', ADD_BINDING);
       channel.form.add(pick);
@@ -220,7 +255,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     host.replaceChildren(bound.form.root);
   };
   // a source's params bind there too, so its section is up before the first one is picked
-  if (Object.keys(bindRowsOf(x)).length > 0 || tier || params !== null) {
+  if (Object.keys(bindRowsOf(x)).length > 0 || tier || params !== null || addable().length > 0) {
     refresh();
     // open where there is wiring to see — or where the one missing binding is what broke the node —
     // folded where every row is an empty invitation
@@ -265,6 +300,8 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
       Object.assign(channel.values, channel.read());
       channel.form.refresh();
     }
+    // the count badge follows set/clear from any surface; the fold itself is never forced
+    badge?.();
   });
   return {sections, refresh: () => {
     refresh();

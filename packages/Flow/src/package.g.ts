@@ -203,6 +203,15 @@ export function selectRows(table: DG.DataFrame, condition: string, clearSelectio
   return PackageFunctions.selectRows(table, condition, clearSelection);
 }
 
+//description: Sets the current row of the table
+//input: dataframe table { nullable: false }
+//input: int index = 0 { nullable: false; description: 0 Based index; type: int }
+//output: dataframe result
+//meta.includeInFlow: true
+export function setCurrentRow(table: DG.DataFrame, index: number) : any {
+  return PackageFunctions.setCurrentRow(table, index);
+}
+
 //description: A reproducible random sample of rows, as a new table
 //input: dataframe table { nullable: false }
 //input: int count { nullable: false; min: 1; description: How many rows to keep }
@@ -276,6 +285,15 @@ export function aggregate(table: DG.DataFrame, groupByColumns: DG.Column[], aggr
 //meta.includeInFlow: true
 export function unpivot(table: DG.DataFrame, copyColumns: DG.Column[], mergeColumns: DG.Column[], categoryColumnName: string, valueColumnName: string) : any {
   return PackageFunctions.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
+}
+
+//description: Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size
+//input: string molecule { nullable: false; semType: Molecule; description: Molecule (SMILES or Molfile) }
+//output: widget result
+//meta.includeInFlow: true
+//meta.autorun: true
+export function renderMolecule(molecule: string) : any {
+  return PackageFunctions.renderMolecule(molecule);
 }
 
 //input: file file 

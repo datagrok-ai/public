@@ -28,8 +28,16 @@
   font-size: var(--dg-font-size-small);
 }
 
+.u2demo-status > span:first-child {
+  white-space: nowrap;
+}
+
 .u2demo-hint {
   color: var(--dg-text-color-light);
+}
+
+.u2demo-error {
+  color: var(--dg-error);
 }
 
 .u2demo-dim {
@@ -186,6 +194,25 @@
   min-width: 0;
 }
 
+/* FuncCall convergence: the main and gate grids stack, so the name column is fixed rather than
+   min-content — otherwise their editor columns land at different x */
+.u2demo-ab-func {
+  grid-template-columns: 90px repeat(2, minmax(320px, 460px));
+}
+
+/* the standalone funcForm section: the native form layout at its natural single-column width */
+.u2demo-standalone {
+  max-width: 480px;
+}
+
+/* FuncCall convergence: the full-width category row both forms group their params under */
+.u2demo-ab-cat {
+  grid-column: 1 / -1;
+  font-weight: var(--dg-font-weight-medium);
+  color: var(--dg-text-color-light);
+  padding-top: var(--dg-space-m);
+}
+
 .u2demo-code {
   font-family: var(--dg-font-family-mono);
   font-size: var(--dg-font-size-small);
@@ -200,4 +227,49 @@
 .u2demo-toggles .u2-input-label {
   min-width: 0;
   margin-right: var(--dg-space-s);
+}
+
+/* Forms pane: the platform function browser on the left drives a side-by-side old-vs-new form
+   pair on the right. The tab panel is auto-height (every other page scrolls the tabs-content as
+   a whole); this pane fills the viewport instead, so its columns can scroll independently */
+.u2-tabs-panel:has(.u2demo-funcs) {
+  height: 100%;
+}
+
+.u2demo-funcs {
+  height: 100%;
+}
+
+.u2demo-funcs-split {
+  flex: 1;
+  min-height: 0;
+  gap: var(--dg-space-xl);
+  align-items: stretch;
+}
+
+.u2demo-funcs-list {
+  flex: none;
+  width: 230px;
+  overflow: auto;
+  border-right: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-funcs-detail {
+  flex: 1;
+  min-width: 0;
+  max-width: 1080px;
+  overflow: auto;
+  gap: var(--dg-space-m);
+}
+
+/* the old-vs-new A/B: two equal columns over one shared call (u2-div-h centers by default) */
+.u2demo-funcs-ab {
+  gap: var(--dg-space-xxl);
+  align-items: stretch;
+}
+
+.u2demo-funcs-ab > * {
+  flex: 1 1 0;
+  min-width: 0;
+  gap: var(--dg-space-s);
 }

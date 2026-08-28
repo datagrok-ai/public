@@ -206,6 +206,7 @@ export class ExecutionController {
         let el = this.graphicsPreviewEls.get(s);
         if (!el) {
           el = graphicsElement(s.value as string);
+          el && (el.style.removeProperty('min-height'));
           this.graphicsPreviewEls.set(s, el);
         }
         return el;
@@ -225,6 +226,16 @@ export class ExecutionController {
         return s.value.root as HTMLElement;
     }
     return null;
+  }
+
+  /** True while a run in progress still has this node ahead of it (part of the
+   *  run set, neither completed nor errored yet) — drives the in-node preview's
+   *  loader so an upstream computation never reads as a blank box. */
+  inlinePreviewPending(nodeId: string): boolean {
+    if (!this.state.isRunning) return false;
+    if (this.runNodeIds && !this.runNodeIds.has(nodeId)) return false;
+    const s = this.state.getNodeState(nodeId)?.status;
+    return s !== NodeExecStatus.completed && s !== NodeExecStatus.errored;
   }
 
   /** Stamp/clear the hosted marker on the node's live root. A stamped root makes

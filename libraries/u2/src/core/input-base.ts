@@ -12,6 +12,8 @@ export interface InputOptions<T> {
   /** Compact editor-only variant: no label, one inline-control-height row. */
   inline?: boolean;
   nullable?: boolean;
+  /** `false` grays the input out and blocks edits; live through the {@link Input.enabled} accessor. */
+  enabled?: boolean;
   /** Units or any short suffix shown after the editor (Dart `InputBase.addPostfix`). */
   postfix?: string;
   onChanged?: (value: T) => void;
@@ -48,6 +50,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _editor: HTMLElement;
   private readonly _inputBox: HTMLElement;
   private readonly _optionsRail: HTMLElement;
+  private _labelEl: HTMLElement | undefined;
   private _enabled = true;
 
   constructor(options: O, defaultValue: T) {
@@ -62,8 +65,10 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       this.root.classList.add('u2-input-inline');
     if (options.tooltipText)
       this.root.title = options.tooltipText;
-    if (!options.inline && options.label !== undefined)
-      this.root.append(label(options.label, 'u2-input-label'));
+    if (!options.inline && options.label !== undefined) {
+      this._labelEl = label(options.label, 'u2-input-label');
+      this.root.append(this._labelEl);
+    }
 
     this._inputBox = div([], 'u2-input-box');
     this._optionsRail = div([], 'u2-input-options');
@@ -74,6 +79,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     if (options.postfix)
       this.addOptions(span(options.postfix, 'u2-input-postfix'));
     this.root.append(this._inputBox, this._error);
+    if (options.enabled === false)
+      this.enabled = false;
 
     this.effect(() => this._validate(this.value.value));
     this.effect(() => this._showValidity(this._validity.value));
@@ -112,6 +119,27 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     return this.options.nullable ?? true;
   }
 
+  get label(): string {
+    return this._labelEl?.textContent ?? this.options.label ?? '';
+  }
+
+  set label(x: string) {
+    if (this._labelEl)
+      this._labelEl.textContent = x;
+    else if (!this.options.inline) {
+      this._labelEl = label(x, 'u2-input-label');
+      this.root.prepend(this._labelEl);
+    }
+  }
+
+  get tooltipText(): string {
+    return this.root.title;
+  }
+
+  set tooltipText(x: string) {
+    this.root.title = x;
+  }
+
   get enabled(): boolean {
     return this._enabled;
   }
@@ -126,6 +154,12 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
 
   addValidator(v: Validator<T>): void {
     this._validators.push(v);
+    this._validate(this.value.peek());
+  }
+
+  /** Re-runs the validators against the current value — for a validator whose verdict depends
+   * on state beyond the value itself, after that state moved under an unchanged value. */
+  revalidate(): void {
     this._validate(this.value.peek());
   }
 

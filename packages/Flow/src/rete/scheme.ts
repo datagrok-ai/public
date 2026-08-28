@@ -24,6 +24,9 @@ export interface FlowEditorBridge {
   syncInlinePreview(nodeId: string, host: HTMLElement): void;
   /** Tear the node's preview portal down (toggle-off, collapse, unmount). */
   releaseInlinePreview(nodeId: string): void;
+  /** True while a run in progress still has this node ahead of it — the empty
+   *  preview shows a loader instead of the "run the flow" placeholder. */
+  isInlinePreviewPending(nodeId: string): boolean;
 }
 
 /** Base class for every canvas node — `ClassicPreset.Node` plus FuncFlow metadata. */

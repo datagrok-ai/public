@@ -12,6 +12,9 @@ function itemLabel(item: ChoiceItem): string {
 
 export interface ChoiceInputOptions extends InputOptions<string | null> {
   items: ChoiceItem[];
+  /** Shown as a disabled placeholder option while the item list is empty, so a picker over a
+   * live collection reads as empty rather than broken. */
+  emptyText?: string;
 }
 
 /** Single choice over a styled native `<select>`, as `ui.input.choice` does — the platform look
@@ -24,6 +27,14 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   constructor(options: ChoiceInputOptions) {
     super(options, null);
     this.root.dataset.u2 = 'choice-input';
+  }
+
+  get items(): ChoiceItem[] {
+    return this._items;
+  }
+
+  set items(x: ChoiceItem[]) {
+    this.setItems(x);
   }
 
   /** Replaces the item list, keeping the current value if it is still one of the items. Dropping
@@ -63,6 +74,13 @@ export class ChoiceInput extends Input<string | null, ChoiceInputOptions> {
   private _fill(): void {
     const select = this._select;
     select.textContent = '';
+    if (this._items.length === 0 && this.options.emptyText !== undefined) {
+      const placeholder = new Option(this.options.emptyText, '');
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      select.append(placeholder);
+      return;
+    }
     if (this.nullable)
       select.append(new Option('', ''));
     for (const item of this._items)
@@ -81,10 +99,19 @@ export interface MultiChoiceInputOptions extends InputOptions<string[]> {
 export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
   private _list!: HTMLElement;
   private _boxes!: HTMLInputElement[];
+  private _items!: ChoiceItem[];
 
   constructor(options: MultiChoiceInputOptions) {
     super(options, []);
     this.root.dataset.u2 = 'multi-choice-input';
+  }
+
+  get items(): ChoiceItem[] {
+    return this._items;
+  }
+
+  set items(x: ChoiceItem[]) {
+    this.setItems(x);
   }
 
   /** Replaces the item list, keeping the items that are still there checked
@@ -120,6 +147,7 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
   }
 
   private _fill(items: ChoiceItem[]): void {
+    this._items = items;
     const selected = new Set(this.value.peek());
     this._list.textContent = '';
     this._boxes = [];

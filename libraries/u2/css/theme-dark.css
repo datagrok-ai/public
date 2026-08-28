@@ -48,6 +48,7 @@
   --dg-failure: #F07C72;
 
   --dg-backdrop: rgba(0, 0, 0, 0.45);
+  --dg-tour-dim: rgba(0, 0, 0, 0.72);
   --dg-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.50);
   --dg-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.40);
   --dg-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.60), 0 2px 6px rgba(0, 0, 0, 0.40);

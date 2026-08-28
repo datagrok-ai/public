@@ -2,6 +2,11 @@
 
 ## v.next
 
+* GROK-20753: Added misc/utils/string-distances.js — `DG.StringUtils.levenshteinDistance`/`jaroWinklerDistance`
+* GROK-20753: Added ui/dialogs/pick-table.js — `ui.pickTableFromFiles`/`ui.pickTableFromQuery` with the null-on-cancel contract
+* Functions: Added functions/script-sync-variables.js — `scriptSync` with a variables map evaluated over a fresh context
+* Functions: Added functions/eval-param-choices.js — `evalParamChoices`/`evalParamDefault` over a client-registered choices provider
+* Functions: Added functions/property-options.js — `Property.options` as the tags-and-options union with FuncParam write-through
 * ProgressIndicator: Added functions/progress-log-updated.js — `onLogUpdated` during a debug-mode call, where each event is a plain `{level, message, flag, params, time}` object
 * Fixed statistics/pearson-correlation.js reading `c1` twice, so it correlated a column with itself and always returned 1
 * Fixed functions/caching-results.js referencing an undefined `result` (and dropped an unused `counts`)
