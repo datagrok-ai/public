@@ -172,60 +172,70 @@ export async function pickColumnViaSelector(
   const scope = opts.scopeSelector ?? null;
   const strategy = opts.popupWaitStrategy ?? 'sleep';
 
-  await page.evaluate(({name, sc}) => {
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    const root: Document | Element = sc
-      ? (document.querySelector(sc) as Element | null) ?? document
-      : document;
-    const sel = root.querySelector(`[name="${name}"]`);
-    if (!sel) return;
-    const colLabel = sel.querySelector('.d4-column-selector-column');
-    (colLabel || sel).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
-  }, {name: selectorName, sc: scope});
-  if (strategy === 'sleep') {
-    await page.waitForTimeout(500);
-  } else if (strategy === 'backdrop') {
-    await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
-      null, {timeout: 3000}).catch(() => {});
-  } else { 
-    await Promise.race([
-      page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
-        null, {timeout: 3000}).catch(() => {}),
-      page.waitForTimeout(500),
-    ]);
+  const reopen = async () => {
+    await page.evaluate(({name, sc}) => {
+      document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      const root: Document | Element = sc
+        ? (document.querySelector(sc) as Element | null) ?? document
+        : document;
+      const sel = root.querySelector(`[name="${name}"]`);
+      if (!sel) return;
+      const colLabel = sel.querySelector('.d4-column-selector-column');
+      (colLabel || sel).dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
+    }, {name: selectorName, sc: scope});
+    if (strategy === 'sleep') {
+      await page.waitForTimeout(500);
+    } else if (strategy === 'backdrop') {
+      await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+        null, {timeout: 3000}).catch(() => {});
+    } else {
+      await Promise.race([
+        page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+          null, {timeout: 3000}).catch(() => {}),
+        page.waitForTimeout(500),
+      ]);
+    }
+    await pollValue(
+      () => page.evaluate(({name, sc}) => {
+        const root: Document | Element = sc ? (document.querySelector(sc) as Element | null) ?? document : document;
+        const sel = root.querySelector(`[name="${name}"]`) as HTMLElement | null;
+        if (!sel) return false;
+        if (document.activeElement !== sel) sel.focus();
+        return document.activeElement === sel;
+      }, {name: selectorName, sc: scope}),
+      (focused) => focused === true, 1000, 50);
+  };
+
+  await reopen();
+
+  const typeAndCommit = async () => {
+    await page.keyboard.press(opts.columnName[0].toLowerCase());
+    await page.waitForTimeout(100);
+    if (opts.columnName.length > 1)
+      await page.keyboard.type(opts.columnName.slice(1).toLowerCase());
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+  };
+  const committed = () => opts.viewerType && opts.propName
+    ? page.evaluate(({vt, prop, col}) => {
+      const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
+      return !!view && (view.props as any)[prop] === col;
+    }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName})
+    : Promise.resolve(true);
+
+  // The canvas can reclaim focus between the focus check above and the first key, which drops
+  // the leading character and leaves the column unchanged. Reopen and retype on a miss.
+  await typeAndCommit();
+  for (var retry = 0; retry < 2 && !(await committed()); retry++) {
+    await page.keyboard.press('Escape').catch(() => {});
+    await reopen();
+    await typeAndCommit();
   }
-
-  // The combobox itself receives the keystrokes — it is focusable (tabIndex 0) and builds its
-  // search box from the first one, while the popup it opens is a canvas grid with nothing to
-  // type into. The mousedown moves focus there a beat later than it opens the popup, and a key
-  // sent in that window goes to the viewer canvas and is lost: the list never filters, Enter
-  // commits nothing, and the column silently stays as it was (~1 run in 4). Wait for the
-  // selector we clicked — by name, in this viewer, never the first one in the document — to
-  // actually hold focus.
-  await pollValue(
-    () => page.evaluate(({name, sc}) => {
-      const root: Document | Element = sc ? (document.querySelector(sc) as Element | null) ?? document : document;
-      const sel = root.querySelector(`[name="${name}"]`) as HTMLElement | null;
-      if (!sel) return false;
-      if (document.activeElement !== sel) sel.focus();
-      return document.activeElement === sel;
-    }, {name: selectorName, sc: scope}),
-    (focused) => focused === true, 1000, 50);
-
-  await page.keyboard.press(opts.columnName[0].toLowerCase());
-  await page.waitForTimeout(100);
-  if (opts.columnName.length > 1)
-    await page.keyboard.type(opts.columnName.slice(1).toLowerCase());
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
 
   let usedFallback = false;
   if (opts.viewerType && opts.propName) {
-    const applied = await page.evaluate(({vt, prop, col}) => {
-      const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
-      return !!view && (view.props as any)[prop] === col;
-    }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName});
+    const applied = await committed();
     if (!applied && opts.allowFallback === true) {
       await page.evaluate(({vt, prop, col}) => {
         const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
@@ -338,32 +348,53 @@ export async function pickColumnViaSelectorTrusted(
 
   const comboItems = () => page.evaluate(() => document.querySelectorAll('.d4-combo-popup li').length);
   const text = opts.columnName.toLowerCase();
-  await page.keyboard.press(text[0]);
-  await pollValue(comboItems, (n) => n > 0, 150, 50);
-  if (text.length > 1) await page.keyboard.type(text.slice(1));
-  await pollValue(comboItems, (n) => n > 0, 200, 50);
-  if (process.env.PICK_DEBUG) {
-    const st = await page.evaluate(() => {
-      const el = document.activeElement as HTMLInputElement | null;
-      return {
-        inputValue: el && el.tagName === 'INPUT' ? el.value : null,
-        activeEl: (document.activeElement?.tagName ?? '') + '.' + (document.activeElement?.className ?? ''),
-        comboLis: document.querySelectorAll('.d4-combo-popup li').length,
-        anyLis: document.querySelectorAll('.d4-column-selector-backdrop li').length,
-        backdropHtml: (document.querySelector('.d4-column-selector-backdrop') as HTMLElement | null)
-          ?.innerHTML?.slice(0, 220) ?? null,
-      };
-    });
-    console.log('[pick] before Enter ' + JSON.stringify(st));
-  }
-  await page.keyboard.press('Enter');
+
+  // The combobox builds its search box from the first keystroke, and the viewer canvas can
+  // reclaim focus in the gap between any focus check and the key itself — a CDP round-trip
+  // no pre-check closes. When it does, the leading character is lost ("weight" arrives as
+  // "eight"), nothing matches, and Enter commits the previous column. So drive it, read the
+  // property back, and reopen on a miss instead of racing.
+  const typeAndCommit = async () => {
+    await page.keyboard.press(text[0]);
+    await pollValue(comboItems, (n) => n > 0, 150, 50);
+    if (text.length > 1) await page.keyboard.type(text.slice(1));
+    await pollValue(comboItems, (n) => n > 0, 200, 50);
+    if (process.env.PICK_DEBUG) {
+      const st = await page.evaluate(() => {
+        const el = document.activeElement as HTMLInputElement | null;
+        return {
+          inputValue: el && el.tagName === 'INPUT' ? el.value : null,
+          activeEl: (document.activeElement?.tagName ?? '') + '.' + (document.activeElement?.className ?? ''),
+          comboLis: document.querySelectorAll('.d4-combo-popup li').length,
+        };
+      });
+      console.log('[pick] before Enter ' + JSON.stringify(st));
+    }
+    await page.keyboard.press('Enter');
+  };
 
   const readApplied = () => page.evaluate(({vt, prop}: {vt: string; prop: string}) => {
     const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
     return view ? ((view.props as any)[prop] ?? null) : null;
   }, {vt: viewerType, prop: propName});
-  const applied = await pollValue(readApplied, (a) => a === opts.columnName,
-    opts.commitSettleMs ?? 900, 50);
+
+  let applied: any = null;
+  for (var pick = 0; pick < 3; pick++) {
+    if (pick > 0) {
+      await page.keyboard.press('Escape').catch(() => {});
+      await pollValue(
+        () => page.evaluate(() => !document.querySelector('.d4-column-selector-backdrop')),
+        (closed) => closed === true, 500, 50);
+      await page.mouse.move(canvas.x, canvas.y);
+      await page.mouse.click(point.x, point.y);
+      await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+        null, {timeout: 3000}).catch(() => {});
+    }
+    await typeAndCommit();
+    applied = await pollValue(readApplied, (a) => a === opts.columnName,
+      opts.commitSettleMs ?? 900, 50);
+    if (applied === opts.columnName) break;
+  }
   if (applied !== opts.columnName) {
     // "expected WEIGHT, got AGE" on its own says nothing about which half broke: the
     // popup not filtering, the wrong viewer being driven, or the commit not landing.
