@@ -31,7 +31,8 @@ export class HitDesignInfoView
   constructor(app: K) {
     super(app);
     this.name = 'Hit Design';
-    this.aiDescription = hitInfoAiDescription(app.appName);
+    // TODO: Remove before api release
+    (this as any).aiDescription = hitInfoAiDescription(app.appName);
     this._appHeader = this.getAppHeader();
     this.root.appendChild(ui.div([this._appHeader], {style: {marginLeft: '10px'}}));
     this.root.appendChild(this._contentRoot);

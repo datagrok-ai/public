@@ -534,7 +534,8 @@ function campaignAiDescription(appName: AppName, kind: 'design' | 'pick'): strin
  * view) reports the info vocabulary. */
 export function attachHitInfoAi(multiView: DG.MultiView, app: HitAppBase<AnyTemplate>): void {
   appByView.set(multiView, app);
-  multiView.aiDescription = hitInfoAiDescription(app.appName);
+  // TODO: Remove before api release
+  (multiView as any).aiDescription = hitInfoAiDescription(app.appName);
   multiView.getFunctions = () => hitInfoViewFunctions();
 }
 
@@ -542,6 +543,7 @@ export function attachHitInfoAi(multiView: DG.MultiView, app: HitAppBase<AnyTemp
  * reported (the standard table functions stay reachable through the search/call bridge). */
 export function attachHitCampaignAi(view: DG.TableView, app: HitAppBase<AnyTemplate>, kind: 'design' | 'pick'): void {
   appByView.set(view, app);
-  view.aiDescription = campaignAiDescription(app.appName, kind);
+  // TODO: Remove before api release
+  (view as any).aiDescription = campaignAiDescription(app.appName, kind);
   view.getFunctions = () => kind === 'design' ? designCampaignFunctions() : campaignSharedFunctions();
 }

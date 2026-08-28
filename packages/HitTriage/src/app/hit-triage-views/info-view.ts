@@ -32,7 +32,8 @@ export class InfoView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   constructor(app: HitTriageApp) {
     super(app);
     this.name = 'Hit Triage';
-    this.aiDescription = hitInfoAiDescription(app.appName);
+    // TODO: Remove before api release
+    (this as any).aiDescription = hitInfoAiDescription(app.appName);
     this._appHeader = this.getAppHeader();
     this.root.appendChild(ui.div([this._appHeader], {style: {marginLeft: '10px'}}));
     this.root.appendChild(this._contentRoot);
