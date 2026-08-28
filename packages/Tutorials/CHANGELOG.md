@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fixed the package build failing on `TS2416` — the u2 `Component` base introduced `run(fn)`, which every widget now inherits, so `Tutorial`'s own `run()` no longer matched; it is now `start()`
 * GROK-20602: BREAKING regen — `grok api` codegen v2 for the Northwind demo schema: datetime fields are dayjs, typed expand/transaction surface, lazy db.ts clients
 * Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API
 
