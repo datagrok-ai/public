@@ -19,7 +19,7 @@ export class TutorialRunner {
     $('#tutorial-child-node').html('');
     $('#tutorial-child-node').append(t.root);
     t.clearRoot();
-    await t.run();
+    await t.start();
   }
 
   async getCompleted(tutorials: Tutorial[]) {
