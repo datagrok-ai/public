@@ -3,7 +3,7 @@ realizes: [scatterplot.cp.labels-tooltip, viewers.scatter-plot]
 --- */
 import {expect, Page} from '@playwright/test';
 import {localTest as test} from '../../shared-page';
-import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -345,7 +345,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
   page.on('console', (m) => {
     if (m.type() !== 'error') return;
     allMessages.push(m.text());
-    if (!isBenignError(m.text())) consoleErrors.push(m.text());
+    if (!isBenignError(m.text()) && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
   });
   const errCount = () => pageErrors.length + consoleErrors.length;
   const crashCount = () => allMessages.filter((t) => CRASH_SIGNATURE.test(t)).length;

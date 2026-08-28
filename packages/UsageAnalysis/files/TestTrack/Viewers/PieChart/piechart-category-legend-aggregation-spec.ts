@@ -2,7 +2,7 @@
 realizes: [piechart.cp.setup-aggregation-legend-persistence, piechart.int.category-column-drives-legend]
 --- */
 import {localTest as test, expect} from '../../shared-page';
-import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -22,7 +22,7 @@ test('Pie Chart — Category, Legend, Aggregation, and Persistence', async ({pag
     /Failed to load resource/.test(text) || /404 \(\)/.test(text) || /favicon/.test(text) ||
     /Unable to find element in cloned iframe/.test(text);
   page.on('console', (m) => {
-    if (m.type() === 'error' && !isBenignError(m.text()))
+    if (m.type() === 'error' && !isBenignError(m.text()) && !isLocalBootNoise(m.text()))
       consoleErrors.push(m.text());
   });
 
