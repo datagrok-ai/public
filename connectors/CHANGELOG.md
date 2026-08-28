@@ -2,6 +2,7 @@
 
 # 2.8.5 (unreleased)
 
+* Fixed: Cassandra `FLOAT` and `TINYINT` columns failed with `CodecNotFoundException` — the typed fast reads ask the driver to widen to `Double`/`Integer`, which it refuses, so the provider now reads those through `getObject` and the converter chain
 * Streaming: typed JDBC fast reads (`getInt`/`getDouble`/`getString`/... instead of `getObject` + conversion for the common column types, `ResultSetManager.readFast`)
 * Streaming: `int8AsInt32` query option - bigint columns travel as `int` while every value fits int32; the downcast is opt-in, sticky once a value overflows and survives chunk boundaries (`detach` carries the flag)
 * Streaming: next fetch size is derived from the previous chunk's serialized bytes/row instead of the in-memory estimate; the measurement is snapshotted when the fetch is scheduled (chunk k feeds fetch k+2 single-task, k+3 pipelined); `MAX_FETCH_SIZE` raised to 500000 rows

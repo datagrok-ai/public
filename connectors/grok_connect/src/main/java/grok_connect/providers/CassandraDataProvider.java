@@ -18,6 +18,7 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.CassandraBigIntColumnManager;
+import grok_connect.managers.float_column.CassandraFloatColumnManager;
 import grok_connect.managers.integer_column.CassandraIntColumnManager;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
@@ -257,6 +258,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BIG_INT, new CassandraBigIntColumnManager());
         defaultManagersMap.put(Types.INT, new CassandraIntColumnManager());
+        defaultManagersMap.put(Types.FLOAT, new CassandraFloatColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }
