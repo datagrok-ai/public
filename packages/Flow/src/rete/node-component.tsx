@@ -308,14 +308,24 @@ function InlineNodePreview(props: {node: FlowNode}): React.JSX.Element {
     if (has) {
       host.querySelector(':scope > .ff-node-preview-placeholder')?.remove();
       host.dataset.empty = 'false';
-    } else if (host.dataset.empty !== 'true') {
-      host.innerHTML = '';
-      const ph = document.createElement('div');
-      ph.className = 'ff-node-preview-placeholder';
-      ph.dataset.testid = tid('node-preview-placeholder');
-      ph.textContent = 'Run the flow to see the preview';
-      host.appendChild(ph);
-      host.dataset.empty = 'true';
+    } else {
+      // A run on its way to this node shows a loader, not the resting hint —
+      // a fresh full run clears the captured value before recomputing it.
+      const pending = node.editorBridge?.isInlinePreviewPending(node.id) ?? false;
+      const want = pending ? 'loading' : 'true';
+      if (host.dataset.empty !== want) {
+        host.innerHTML = '';
+        const ph = document.createElement('div');
+        ph.className = 'ff-node-preview-placeholder';
+        ph.dataset.testid = tid('node-preview-placeholder');
+        if (pending) {
+          ph.dataset.loading = 'true';
+          ph.appendChild(ui.loader());
+        } else
+          ph.textContent = 'Run the flow to see the preview';
+        host.appendChild(ph);
+        host.dataset.empty = want;
+      }
     }
     node.editorBridge?.syncInlinePreview(node.id, host);
   });

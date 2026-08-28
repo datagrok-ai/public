@@ -12,7 +12,7 @@ export interface SuggestionListOptions<T> {
   /** Class-name and element-id prefix of the owning control: `u2-typeahead`, `u2-tags`. */
   prefix: string;
   /** The box the popup hangs under; it also carries `aria-controls`/`aria-activedescendant`. */
-  anchor: HTMLInputElement;
+  anchor: HTMLElement;
   scope: Scope;
   /** What is on offer right now — the owner filters it (`TagsInput` drops what is picked). */
   items: ReadonlySignal<T[]>;

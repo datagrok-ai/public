@@ -12,8 +12,8 @@ import {Input} from '../src/core/input-base.js';
 import {DataFrame} from './platform-doubles.mjs';
 
 register('./platform-stub.mjs', import.meta.url);
-const {columnsInput, columnsMapInput, aggregatedColumnsInput, aggregationsFor, defaultAggregation} =
-  await import('../src/dg/inputs/columns.js');
+const {ColumnsInput, columnsInput, columnsMapInput, aggregatedColumnsInput, aggregationsFor,
+  defaultAggregation} = await import('../src/dg/inputs/columns.js');
 
 function columns(name, body) {
   test(name, async () => {
@@ -268,6 +268,28 @@ columns('columnsInput: a dropped column leaves the value; changeTable resets it'
   assert.equal(summary(input), '(2) All');
   input.dispose();
   assert.equal(other.liveSubscriptions(), 0);
+});
+
+columns('columnsInput: a null table reads inert — aria-disabled, tooltip, closed popup — and flips with changeTable', () => {
+  const input = new ColumnsInput({label: 'Columns', table: null});
+  document.body.append(input.root);
+  const ctl = control(input);
+  assert.equal(ctl.getAttribute('aria-disabled'), 'true');
+  assert.equal(input.box.getAttribute('title'), 'Select a table first');
+  fire(ctl, 'click');
+  assert.equal(popup(), null, 'the popup stays closed');
+
+  input.changeTable(DEMO());
+  assert.equal(ctl.getAttribute('aria-disabled'), 'false');
+  assert.equal(input.box.hasAttribute('title'), false);
+  fire(ctl, 'click');
+  assert.ok(popup(), 'a table brings the popup back');
+
+  input.changeTable(null);
+  assert.equal(popup(), null, 'changeTable closes it');
+  assert.equal(ctl.getAttribute('aria-disabled'), 'true', 'and the affordance flips back');
+  assert.equal(input.box.getAttribute('title'), 'Select a table first');
+  input.dispose();
 });
 
 columns('columnsInput: a renamed column is remapped, and as a system write', () => {

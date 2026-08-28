@@ -8,6 +8,7 @@
 * Admetica: Demo no longer persists the last sketched molecule
 * GROK-17468: Admetica: Fixed crashes when switching/relaunching the app faster than predictions complete
 * GROK-20509: Chem: Admetica: Summary section returns 'error creating pie chart'
+* Admetica: Migrate the Calculate dialog to DG.FuncCallEditor
 
 ## 1.3.1 (2025-09-17)
 

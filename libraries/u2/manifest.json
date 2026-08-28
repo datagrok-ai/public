@@ -1,6 +1,127 @@
 {
   "schema": "dg-ui/1",
   "recipes": "docs/recipes/",
+  "appearance": [
+    {
+      "name": "color",
+      "type": "string",
+      "inputType": "Color",
+      "description": "Text color; inherits down the subtree.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "backgroundColor",
+      "type": "string",
+      "inputType": "Color",
+      "description": "Background color.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "font",
+      "type": "string",
+      "inputType": "Font",
+      "description": "CSS font shorthand (\"bold 14px Roboto\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "opacity",
+      "type": "double",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "description": "0 transparent to 1 opaque.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "cursor",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "default",
+        "pointer",
+        "not-allowed",
+        "wait",
+        "help",
+        "text",
+        "move",
+        "grab"
+      ],
+      "description": "Mouse cursor over the node.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "textAlign",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "left",
+        "center",
+        "right"
+      ],
+      "description": "Horizontal text alignment.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "padding",
+      "type": "string",
+      "description": "CSS padding (\"8px 12px\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "margin",
+      "type": "string",
+      "description": "CSS margin.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "border",
+      "type": "string",
+      "description": "CSS border (\"1px solid var(--dg-border)\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "borderRadius",
+      "type": "string",
+      "description": "Corner radius (\"4px\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "description": "CSS width (\"200px\", \"50%\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "description": "CSS height.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "pointerEvents",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "auto",
+        "none"
+      ],
+      "description": "\"none\" makes the node click-through.",
+      "category": "Appearance",
+      "bindable": true
+    }
+  ],
   "components": [
     {
       "tag": "u2-text-input",
@@ -36,6 +157,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
@@ -104,6 +230,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "placeholder",
           "type": "string"
         },
@@ -160,6 +291,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "switch",
           "type": "bool",
           "description": "Compact toggle instead of a checkbox."
@@ -210,6 +346,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "mode",
@@ -298,6 +439,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "items",
           "type": "string_list",
           "bindable": true
@@ -364,6 +510,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "items",
@@ -666,6 +817,13 @@
             "document"
           ],
           "description": "\"platform\" (default) is the ui.tabControl look; \"document\" the IDE document-tab skin."
+        },
+        {
+          "name": "activeTab",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Id of the selected tab (spec children get tab-0, tab-1, …)."
         }
       ],
       "childProps": [
@@ -915,6 +1073,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "min",
           "type": "double"
         },
@@ -939,6 +1102,70 @@
           "value": 50,
           "min": 0,
           "max": 100
+        }
+      }
+    },
+    {
+      "tag": "u2-range-slider",
+      "category": "Inputs",
+      "description": "Two-handle range selector: drag a handle to move one end, the band between them to move the whole window.",
+      "usage": "For picking an interval within known bounds — filters, zoom windows, thresholds with a low and a high end. A single number belongs in `u2-slider-input`.",
+      "props": [
+        {
+          "name": "lo",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Lower end of the selected range."
+        },
+        {
+          "name": "hi",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Upper end of the selected range."
+        },
+        {
+          "name": "min",
+          "type": "double"
+        },
+        {
+          "name": "max",
+          "type": "double"
+        },
+        {
+          "name": "step",
+          "type": "double",
+          "description": "Snap increment for dragging; continuous when absent."
+        },
+        {
+          "name": "minRange",
+          "type": "double",
+          "description": "Smallest allowed hi − lo; 0 by default."
+        },
+        {
+          "name": "vertical",
+          "type": "bool",
+          "description": "Bottom-to-top track."
+        }
+      ],
+      "defaults": {
+        "min": 0,
+        "max": 100,
+        "lo": 20,
+        "hi": 60
+      },
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-range-slider",
+        "props": {
+          "min": 0,
+          "max": 100,
+          "lo": 20,
+          "hi": 60
         }
       }
     },
@@ -976,6 +1203,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "items",
@@ -1049,6 +1281,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "swatchOnly",
           "type": "bool",
           "description": "Swatch alone, no hex field."
@@ -1100,6 +1337,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         }
       ],
       "events": [
@@ -1147,6 +1389,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
@@ -1201,6 +1448,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         }
       ],
       "events": [
@@ -1253,6 +1505,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "placeholder",
           "type": "string"
         }
@@ -1303,6 +1560,11 @@
         {
           "name": "tooltipText",
           "type": "string"
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
         },
         {
           "name": "families",
@@ -1361,6 +1623,11 @@
           "type": "string"
         },
         {
+          "name": "enabled",
+          "type": "bool",
+          "description": "false grays the input out and blocks edits."
+        },
+        {
           "name": "alt",
           "type": "string",
           "description": "Alternative text."
@@ -1374,6 +1641,117 @@
         "props": {
           "label": "Logo",
           "value": "https://datagrok.ai/img/logo.svg"
+        }
+      }
+    },
+    {
+      "tag": "u2-card",
+      "category": "Containers",
+      "description": "Surface with optional header (title, subtitle, icon, actions), media image, body and footer.",
+      "usage": "For dashboard tiles and item previews; a card grid is a collection of these. A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "subtitle",
+          "type": "string"
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon"
+        },
+        {
+          "name": "media",
+          "type": "string",
+          "description": "Image URL shown above the body."
+        },
+        {
+          "name": "clickable",
+          "type": "bool",
+          "description": "The whole card acts as a button."
+        },
+        {
+          "name": "selectable",
+          "type": "bool",
+          "description": "Click toggles the selection ring."
+        },
+        {
+          "name": "selected",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        }
+      ],
+      "acceptsChildren": true,
+      "events": [
+        "click"
+      ],
+      "defaults": {
+        "title": "Card"
+      },
+      "example": {
+        "tag": "u2-card",
+        "props": {
+          "title": "Aspirin",
+          "subtitle": "NSAID"
+        },
+        "children": [
+          {
+            "tag": "p",
+            "props": {
+              "text": "Acetylsalicylic acid, 180.16 g/mol."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-stat-card",
+      "category": "Display",
+      "description": "KPI card: large formatted value, label, optional up/down delta and icon.",
+      "usage": "For dashboard metrics. Bind `value` to a source output for live numbers; loading states come from the source, not from this card.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "description": "Literal values are strings (\"1.2M\"); a bound signal may hold a number, formatted by the card."
+        },
+        {
+          "name": "delta",
+          "type": "double",
+          "bindable": true,
+          "description": "Fractional change; 0.12 renders \"+12%\" in the success color."
+        },
+        {
+          "name": "deltaInverted",
+          "type": "bool",
+          "description": "Negative is good (error rates)."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon"
+        }
+      ],
+      "defaults": {
+        "label": "Metric",
+        "value": "0"
+      },
+      "example": {
+        "tag": "u2-stat-card",
+        "props": {
+          "label": "Revenue",
+          "value": "1.2M",
+          "delta": 0.12,
+          "icon": "chart-line"
         }
       }
     },

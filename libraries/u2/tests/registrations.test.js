@@ -412,7 +412,8 @@ spec('manifest: the child hooks stay out of it, the metadata they need stays in'
   assert.deepEqual(metas.get('u2-tabs').childProps.map((p) => p.name), ['title', 'icon']);
   assert.deepEqual(metas.get('u2-accordion').childProps.map((p) => p.name), ['title', 'icon']);
   const tabProps = Object.fromEntries(metas.get('u2-tabs').props.map((p) => [p.name, p.choices]));
-  assert.deepEqual(tabProps, {orientation: ['horizontal', 'vertical'], variant: ['platform', 'document']});
+  assert.deepEqual(tabProps, {orientation: ['horizontal', 'vertical'], variant: ['platform', 'document'],
+    activeTab: undefined});
   assert.deepEqual(metas.get('u2-tabs').defaults, {orientation: 'horizontal', variant: 'platform'});
   assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object']);
 });

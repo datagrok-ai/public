@@ -5,6 +5,7 @@ import {Component} from '../../core/component.js';
 import type {IProperty} from '../../core/property-like.js';
 import type {NamedProperty} from '../../core/widget-like.js';
 import type {FieldOverride} from '../forms/object-form.js';
+import {APPEARANCE_CATEGORY, APPEARANCE_PROPS} from '../../spec/appearance.js';
 import {htmlProps, isHtmlTag} from '../../spec/spec.js';
 import type {SpecEventEntry, SpecNode} from '../../spec/spec.js';
 import {backends} from '../../sources/backends.js';
@@ -13,7 +14,7 @@ import type {SpecNodeRef} from './node-ref.js';
 /** Heading for the properties a component declares without a category of their own. */
 const UNGROUPED = 'Properties';
 /** The categories the platform's own panel keeps at the bottom, in this order; the rest first-seen. */
-const LAST = ['Misc', 'Description', 'Events'];
+const LAST = [APPEARANCE_CATEGORY, 'Misc', 'Description', 'Events'];
 /** The types with an editor of their own — and the ones the document carries from a look-grid
  * edit; anything else (`object`) renders as read-only JSON. */
 export const EDITABLE: ReadonlySet<string> = new Set(['string', 'int', 'double', 'bool', 'string_list']);
@@ -77,6 +78,14 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
 }
 
 const rank = (title: string): number => LAST.indexOf(title) + 1;
+
+/** The shared appearance-group names this node answers — by identity, so a component-own prop
+ * that declares the category or collides by name stays out. */
+export function sharedAppearance(x: SpecNodeRef): Set<string> {
+  const meta = x.meta();
+  return new Set(APPEARANCE_PROPS.filter((p) => meta === undefined || meta.props.includes(p))
+    .map((p) => p.name));
+}
 
 /** A node whose props are the built object's own (a platform viewer's look): the writable panel
  * shows them in the platform's property grid, the read-only one reads them through the tier. */
@@ -159,14 +168,15 @@ export function paramBinds(node: SpecNode, prop: string): Record<string, string>
   return binds;
 }
 
-/** Every prop the component declares bindable, bound or not, plus anything the node binds beyond
- * them — a dotted sub-bind key, or a prop of a tag the registry no longer knows. An empty row is
- * where a binding is added, by hand or through the picker. */
+/** Every prop the component declares bindable — except the unbound appearance group, which would
+ * bury the section under thirteen empty rows — plus anything the node binds beyond them: a dotted
+ * sub-bind key, or a prop of a tag the registry no longer knows. An empty row is where a binding
+ * is added, by hand or through the picker. */
 export function bindsOf(x: SpecNodeRef): Record<string, string> {
   const bind = x.node.bind ?? {};
   const binds: Record<string, string> = {};
   for (const prop of x.instance.registry.get(x.node.tag)?.props ?? []) {
-    if (prop.bindable)
+    if (prop.bindable && !APPEARANCE_PROPS.includes(prop))
       binds[prop.name] = bind[prop.name] ?? '';
   }
   for (const name of Object.keys(bind))
@@ -186,9 +196,11 @@ export function bindRowsOf(x: SpecNodeRef): Record<string, string> {
   return bound;
 }
 
-/** What "Add binding…" offers on a property-tier node: the bindable props not bound yet. */
+/** What "Add binding…" offers: the bindable props not bound yet — a property-tier node's look
+ * props, a plain node's appearance group. */
 export function unboundOf(x: SpecNodeRef): string[] {
-  return Object.keys(bindsOf(x)).filter((name) => x.node.bind?.[name] === undefined);
+  return (x.instance.registry.get(x.node.tag)?.props ?? [])
+    .filter((p) => p.bindable && x.node.bind?.[p.name] === undefined).map((p) => p.name);
 }
 
 /** Every event the component declares, wired or not, plus anything the node wires beyond them. */

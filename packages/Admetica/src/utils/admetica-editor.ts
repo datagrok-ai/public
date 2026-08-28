@@ -90,6 +90,7 @@ export class AdmeticaBaseEditor {
     const treeControl = this.createTreeControl(this.updatedProperties!);
     paramsForm.appendChild(treeControl);
     this.tree.currentItem = this.currentItem ?? this.tree.items.find((item) => item instanceof DG.TreeViewNode)!;
+    paramsForm.dispatchEvent(new Event('change'));
     return paramsForm;
   }
 
@@ -351,7 +352,7 @@ export class AdmeticaBaseEditor {
   }
 
   onTableInputChanged(): void {
-    this.colInput = ui.input.column('Molecule', {
+    this.colInput = ui.input.column('Molecules', {
       table: this.tableInput.value!,
       value: this.tableInput.value!.columns.bySemType(DG.SEMTYPE.MOLECULE)!,
       filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,

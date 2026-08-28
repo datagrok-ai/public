@@ -199,8 +199,8 @@ designer('the context panel is the node: identity, properties by category, event
   assert.equal(caption.classList.contains('u2-designer-caption'), true, 'the panel heads itself');
   assert.equal(caption.textContent, 'nameInput (u2-fake-input)');
   const sections = [...panel.querySelectorAll('h3')].map((h) => h.textContent);
-  assert.deepEqual(sections, ['Node', 'Appearance', 'Properties', 'Events'],
-    'no bindings section on a node that binds nothing');
+  assert.deepEqual(sections, ['Node', 'Properties', 'Appearance', 'Events'],
+    'no bindings section on a node that binds nothing; Appearance ranks after first-seen');
 
   const text = panel.textContent;
   assert.match(text, /u2-fake-input/);

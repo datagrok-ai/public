@@ -64,6 +64,6 @@ export class SliderInput extends Input<number | null, SliderInputOptions> {
     if (value === null)
       return '';
     const format = this.options.format;
-    return format ? format(value) : String(value);
+    return format ? format(value) : String(Math.round(value * 100) / 100);
   }
 }

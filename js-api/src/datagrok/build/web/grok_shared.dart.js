@@ -65476,7 +65476,7 @@
         return this.append$4$columnsToAppend$inPlace$notify($receiver, t2, null, true, true);
       },
       appendMerge$1: function(t2) {
-        var oldRowCount, t1, t3, t4, t5, srcCol, t6, t7, dstCol, column;
+        var oldRowCount, t1, t3, srcCol, t4, t5, dstCol, common, column;
         oldRowCount = this._rowCount;
         t1 = this._rows;
         if (t1 == null) {
@@ -65484,36 +65484,32 @@
           this._rows = t1;
         }
         t1.insertAt$3$count$notify(oldRowCount, t2.get$rowCount(), false);
-        for (t1 = J.get$iterator$ax(J.get$list$x(J.get$columns$x(t2))), t3 = [N.Column], t4 = P.String, t4 = [t4, t4], t5 = this.get$_onTagsChangedImpl(); t1.moveNext$0() === true;) {
+        for (t1 = J.get$iterator$ax(J.get$list$x(J.get$columns$x(t2))), t3 = [N.Column]; t1.moveNext$0() === true;) {
           srcCol = t1.get$current();
-          t6 = this._columns;
-          if (t6 == null) {
-            t6 = new N.ColumnList(null, H.setRuntimeTypeInfo([], t3), N.caseInsensitiveMap(null), null, null);
-            t6.df = this;
-            this._columns = t6;
+          t4 = this._columns;
+          if (t4 == null) {
+            t4 = new N.ColumnList(null, H.setRuntimeTypeInfo([], t3), N.caseInsensitiveMap(null), null, null);
+            t4.df = this;
+            this._columns = t4;
           }
-          t7 = J.getInterceptor$x(srcCol);
-          dstCol = J.$index$asx(t6.get$named(), t7.get$name(srcCol));
-          if (J.$eq$(J.get$type$x(dstCol), t7.get$type(srcCol)) !== true) {
-            t6 = this.ObservableTagMixin__tags;
-            if (t6 == null) {
-              t6 = new N.ObservableMap(P.LinkedHashMap__makeEmpty(), new N.closure418(), t4);
-              t6.changed = t5;
-              this.ObservableTagMixin__tags = t6;
+          t5 = J.getInterceptor$x(srcCol);
+          dstCol = J.$index$asx(t4.get$named(), t5.get$name(srcCol));
+          t4 = J.getInterceptor$x(dstCol);
+          if (J.$eq$(t4.get$type(dstCol), t5.get$type(srcCol)) !== true) {
+            common = N.DataFrame__commonColumnType(t4.get$type(dstCol), t5.get$type(srcCol));
+            if (J.$eq$(t4.get$type(dstCol), common) !== true) {
+              column = dstCol.convertTo$1(common);
+              t4 = this._columns;
+              if (t4 == null) {
+                t4 = new N.ColumnList(null, H.setRuntimeTypeInfo([], t3), N.caseInsensitiveMap(null), null, null);
+                t4.df = this;
+                this._columns = t4;
+              }
+              J.replace$2$x(t4, dstCol, column);
+              dstCol = column;
             }
-            t6 = J.$eq$(t6.delegate.$index(0, "ALLOW_COL_TYPE_CHANGE"), "true") === true;
-          } else
-            t6 = false;
-          if (t6) {
-            column = dstCol.convertTo$1(t7.get$type(srcCol));
-            t6 = this._columns;
-            if (t6 == null) {
-              t6 = new N.ColumnList(null, H.setRuntimeTypeInfo([], t3), N.caseInsensitiveMap(null), null, null);
-              t6.df = this;
-              this._columns = t6;
-            }
-            J.replace$2$x(t6, dstCol, column);
-            dstCol = column;
+            if (J.$eq$(t5.get$type(srcCol), common) !== true)
+              srcCol = srcCol.convertTo$1(common);
           }
           if (dstCol instanceof N.StringColumn)
             dstCol.merge$2(srcCol, oldRowCount);
@@ -65721,6 +65717,18 @@
           t2.report$0();
           t2.get$columns(t2).addMany$2$uniquifyNames(J.map$1$ax(t1.get$keys(values), new N.closure1467(values)), true);
           return t2;
+        },
+        DataFrame__commonColumnType: function(a, b) {
+          var t1 = J.getInterceptor(a);
+          if (t1.$eq(a, b) === true)
+            return a;
+          if (!(t1.$eq(a, "int") === true && J.$eq$(b, "bigint") === true))
+            t1 = t1.$eq(a, "bigint") === true && J.$eq$(b, "int") === true;
+          else
+            t1 = true;
+          if (t1)
+            return "bigint";
+          return "string";
         },
         DataFrame_appendInPlace: function(t1, t2, columnsToAppend, notify) {
           var t3, t4, t5, col, t6, t7, oldRowCount, srcCol, dstCol;
@@ -101510,7 +101518,13 @@
     initJsApi_closure537: {
       "^": "Closure:5;",
       call$1: [function(p) {
-        return p instanceof N.FuncParam ? p.options : P.LinkedHashMap__makeEmpty();
+        var options, t1;
+        options = p instanceof N.FuncParam ? p.options : P.LinkedHashMap__makeEmpty();
+        if (p.get$tags() == null || J.get$isEmpty$asx(p.get$tags()) === true)
+          return options;
+        t1 = P.LinkedHashMap_LinkedHashMap$from(options, null, null);
+        t1.addAll$1(0, p.get$tags());
+        return t1;
       }, null, null, 2, 0, null, 2, "call"]
     },
     initJsApi_closure538: {
@@ -166168,8 +166182,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "54024ff6f3859af219db5c7c807bcdc89a5d85c2");
-        t2.set$date(t1, "2026-08-25T22:48:12.857Z");
+        t2.set$commit(t1, "88a4cf0580c183e69893227f7168c11beef88e3f");
+        t2.set$date(t1, "2026-08-27T22:48:58.683Z");
         t2.set$version(t1, "1.27.9");
         return t1;
       }, null, null, 0, 0, null, "call"]

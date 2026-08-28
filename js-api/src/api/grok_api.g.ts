@@ -33,7 +33,7 @@ export interface IDartApi {
   grok_Set_CurrentPreview(view: any): any;
   grok_TableNames(): any;
   grok_TableByName(s: any): any;
-  grok_ScriptSync(script: String): any;
+  grok_ScriptSync(script: String, variables?: any): any;
   grok_Get_PresentationMode(): any;
   grok_Set_PresentationMode(v: Bool): any;
   grok_Set_SimpleMode(s: Bool): any;
@@ -818,6 +818,9 @@ export interface IDartApi {
   grok_FuncCall_Get_Param_Value(call: any, name: String): any;
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
   grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
+  grok_FuncCall_EvalParamChoices(call: any, name: String): Promise<any>;
+  grok_FuncCall_EvalParamSuggestions(call: any, name: String, text: String): Promise<any>;
+  grok_FuncCall_EvalParamDefault(call: any, name: String): Promise<any>;
   grok_Meta_Register(jsMeta: any): any;
   grok_Meta_List(): any;
   grok_Meta_ForEntity(entity: any): any;
@@ -914,6 +917,8 @@ export interface IDartApi {
   grok_UI_ToggleButtonGroup(buttons: any, toggleFirst: Bool): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
+  grok_UI_PickTableFromFiles(): Promise<any>;
+  grok_UI_PickTableFromQuery(): Promise<any>;
   grok_UI_List(items: any, maxRows: Num): any;
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;

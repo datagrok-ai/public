@@ -1,9 +1,21 @@
 /** Annotation carry: dragging an annotation moves the nodes, contained annotations,
- *  and waypoints inside it; the cargo is captured at drag start. */
+ *  and waypoints inside it; the cargo is captured at drag start. Plus styling:
+ *  the color palette and the serialized title font size. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import * as ui from 'datagrok-api/ui';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
+import {FlowEditor} from '../rete/flow-editor';
+import {ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES, ANN_DEFAULT_FONT_SIZE} from '../rete/annotation';
+import {serializeFlow, deserializeFlow} from '../serialization/flow-serializer';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
+
+const SETTINGS = {scriptName: 'AnnStyle', scriptDescription: '', tags: []};
+
+function hexToRgb(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
 
 /** The drag handler only reads client deltas, so absolute coords are arbitrary. */
 function drag(el: HTMLElement, dx: number, dy: number): void {
@@ -129,6 +141,172 @@ category('Flow: annotations', () => {
       expect(await until(() => e.flow.getNodes().length === 0), true, 'the selected node went');
       expect(e.flow.getAnnotations().length, 1, 'the annotation stayed — selection wins');
     } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('the color palette is broad, unique, and border-matched', async () => {
+    expect(ANNOTATION_COLORS.length >= 12, true, `only ${ANNOTATION_COLORS.length} colors`);
+    expect(new Set(ANNOTATION_COLORS.map((c) => c.bg.toLowerCase())).size, ANNOTATION_COLORS.length,
+      'backgrounds are unique');
+    expect(new Set(ANNOTATION_COLORS.map((c) => c.name)).size, ANNOTATION_COLORS.length, 'names are unique');
+    for (const c of ANNOTATION_COLORS) {
+      expect(/^#[0-9A-Fa-f]{6}$/.test(c.bg) && /^#[0-9A-Fa-f]{6}$/.test(c.border), true,
+        `${c.name} has hex bg+border`);
+    }
+    const e = makeEditor();
+    try {
+      // A post-expansion color must resolve its own border, not the blue fallback.
+      const orange = ANNOTATION_COLORS.find((c) => c.name === 'Orange')!;
+      const ann = e.flow.addAnnotation({color: orange.bg});
+      expect(ann.element.style.background, hexToRgb(orange.bg), 'background applied');
+      expect(ann.element.style.borderColor, hexToRgb(orange.border), 'matching border resolved');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('title font size: default, custom, malformed fallback, tidy toDoc', async () => {
+    const e = makeEditor();
+    try {
+      const plain = e.flow.addAnnotation({});
+      expect(plain.fontSize, ANN_DEFAULT_FONT_SIZE, 'default size');
+      expect(plain.titleEl.style.fontSize, `${ANN_DEFAULT_FONT_SIZE}px`, 'default applied to the title');
+      expect('fontSize' in plain.toDoc(), false, 'default size stays out of the doc');
+
+      const big = e.flow.addAnnotation({fontSize: 20});
+      expect(big.titleEl.style.fontSize, '20px', 'custom size applied');
+      expect(big.toDoc().fontSize, 20, 'custom size serialized');
+
+      const bad = e.flow.addAnnotation({fontSize: Number.NaN});
+      expect(bad.fontSize, ANN_DEFAULT_FONT_SIZE, 'malformed size falls back');
+
+      expect(ANNOTATION_TITLE_SIZES.some((s) => s.size === ANN_DEFAULT_FONT_SIZE), true,
+        'the menu offers the default size');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('color and title size round-trip through the .flow doc', async () => {
+    const e = makeEditor();
+    const e2 = makeEditor();
+    try {
+      const green = ANNOTATION_COLORS.find((c) => c.name === 'Green')!;
+      e.flow.addAnnotation({text: 'styled', color: green.bg, fontSize: 26});
+      e.flow.addAnnotation({text: 'plain'});
+      const doc = serializeFlow(e.flow, SETTINGS);
+      const styled = doc.annotations!.find((a) => a.text === 'styled')!;
+      expect(styled.fontSize, 26, 'doc carries the size');
+      expect(styled.color, green.bg, 'doc carries the color');
+      expect('fontSize' in doc.annotations!.find((a) => a.text === 'plain')!, false,
+        'the untouched annotation saves without the key');
+
+      await deserializeFlow(doc, e2.flow);
+      const loaded = e2.flow.getAnnotations().find((a) => a.text === 'styled')!;
+      expect(loaded.fontSize, 26, 'size survives the load');
+      expect(loaded.titleEl.style.fontSize, '26px', 'and is applied');
+      expect(loaded.element.style.borderColor, hexToRgb(green.border), 'color border survives too');
+    } finally {
+      destroyEditor(e2);
+      destroyEditor(e);
+    }
+  });
+
+  test('the editor setters apply the style and mark the graph changed', async () => {
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    let changes = 0;
+    const flow = new FlowEditor(container, {onGraphChanged: () => changes++});
+    try {
+      const ann = flow.addAnnotation({});
+      const red = ANNOTATION_COLORS.find((c) => c.name === 'Red')!;
+      const base = changes;
+      flow.setAnnotationColor(ann.id, red.bg);
+      expect(ann.element.style.background, hexToRgb(red.bg), 'recolored');
+      expect(changes, base + 1, 'recolor is an unsaved change');
+      flow.setAnnotationColor(ann.id, red.bg);
+      expect(changes, base + 1, 'same color again is not');
+
+      flow.setAnnotationFontSize(ann.id, 20);
+      expect(ann.titleEl.style.fontSize, '20px', 'resized');
+      expect(changes, base + 2, 'resize is an unsaved change');
+      flow.setAnnotationFontSize(ann.id, 20);
+      expect(changes, base + 2, 'same size again is not');
+
+      flow.setAnnotationPinned(ann.id, true);
+      expect(ann.element.dataset.pinned, 'true', 'pin applied');
+      expect(changes, base + 3, 'pinning is an unsaved change');
+      flow.setAnnotationPinned(ann.id, true);
+      expect(changes, base + 3, 'same pin state again is not');
+    } finally {
+      try {
+        flow.destroy();
+      } finally {
+        container.remove();
+      }
+    }
+  });
+
+  test('a pinned annotation stays put — direct drags and carriers alike', async () => {
+    const e = makeEditor();
+    try {
+      const pinned = e.flow.addAnnotation({pos: {x: 40, y: 40}, size: {w: 100, h: 80}, pinned: true});
+      expect(pinned.element.dataset.pinned, 'true', 'the element carries the pinned mark');
+
+      drag(pinned.element, 60, 30);
+      expect(pinned.pos.x, 40, 'a direct drag does not move it');
+
+      drag(pinned.resizeHandle, 50, 50);
+      expect(pinned.size.w, 100, 'the resize handle is inert too');
+
+      const outer = e.flow.addAnnotation({pos: {x: 0, y: 0}, size: {w: 400, h: 300}});
+      const carried = e.flow.addAnnotation({pos: {x: 200, y: 40}, size: {w: 100, h: 80}});
+      drag(outer.element, 25, 15);
+      expect(carried.pos.x, 225, 'an unpinned contained annotation travels');
+      expect(pinned.pos.x, 40, 'the pinned one is left behind by a carrier');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('pinned round-trips through the .flow doc and toDoc omits false', async () => {
+    const e = makeEditor();
+    const e2 = makeEditor();
+    try {
+      e.flow.addAnnotation({text: 'locked', pinned: true});
+      e.flow.addAnnotation({text: 'free'});
+      const doc = serializeFlow(e.flow, SETTINGS);
+      expect(doc.annotations!.find((a) => a.text === 'locked')!.pinned, true, 'pinned serialized');
+      expect('pinned' in doc.annotations!.find((a) => a.text === 'free')!, false,
+        'an unpinned annotation saves without the key');
+
+      await deserializeFlow(doc, e2.flow);
+      const loaded = e2.flow.getAnnotations().find((a) => a.text === 'locked')!;
+      expect(loaded.pinned, true, 'pinned survives the load');
+      expect(loaded.element.dataset.pinned, 'true', 'and is applied');
+      drag(loaded.element, 60, 0);
+      expect(loaded.pos.x, 0, 'still immovable after the load');
+    } finally {
+      destroyEditor(e2);
+      destroyEditor(e);
+    }
+  });
+
+  test('right-click offers Color and Title size groups', async () => {
+    const e = makeEditor();
+    try {
+      const ann = e.flow.addAnnotation({pos: {x: 10, y: 10}, size: {w: 200, h: 120}});
+      ann.element.dispatchEvent(new MouseEvent('contextmenu',
+        {bubbles: true, cancelable: true, clientX: 20, clientY: 20}));
+      const labels = (): string[] => Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+        .map((el) => el.textContent?.trim() ?? '');
+      expect(await until(() => labels().includes('Color') && labels().includes('Title size') &&
+        labels().includes('Pinned') && labels().includes('Delete')), true,
+      `menu items missing; saw: ${labels().join(', ')}`);
+    } finally {
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
       destroyEditor(e);
     }
   });

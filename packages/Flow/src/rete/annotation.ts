@@ -3,6 +3,7 @@
 
 const ANN_DEFAULT_COLOR = '#BBDEFB';
 const ANN_DEFAULT_BORDER = '#1976D2';
+export const ANN_DEFAULT_FONT_SIZE = 13;
 
 export interface AnnotationDoc {
   id: string;
@@ -10,14 +11,36 @@ export interface AnnotationDoc {
   size: {w: number; h: number};
   text: string;
   color: string;
+  /** Title font size in px; absent = the default (13). */
+  fontSize?: number;
+  /** A pinned annotation cannot be moved or resized — dragging its body pans
+   *  the canvas instead. Absent = false. */
+  pinned?: boolean;
 }
 
+/** Material 100-level backgrounds paired with their 700-level borders. */
 export const ANNOTATION_COLORS: Array<{name: string; bg: string; border: string}> = [
-  {name: 'Blue',   bg: '#BBDEFB', border: '#1976D2'},
+  {name: 'Blue', bg: '#BBDEFB', border: '#1976D2'},
+  {name: 'Indigo', bg: '#C5CAE9', border: '#303F9F'},
+  {name: 'Cyan', bg: '#B2EBF2', border: '#0097A7'},
+  {name: 'Teal', bg: '#B2DFDB', border: '#00796B'},
+  {name: 'Green', bg: '#C8E6C9', border: '#388E3C'},
+  {name: 'Lime', bg: '#F0F4C3', border: '#9E9D24'},
   {name: 'Yellow', bg: '#FFF59D', border: '#F9A825'},
-  {name: 'Green',  bg: '#C8E6C9', border: '#388E3C'},
-  {name: 'Pink',   bg: '#F8BBD0', border: '#C2185B'},
-  {name: 'Gray',   bg: '#ECEFF1', border: '#607D8B'},
+  {name: 'Orange', bg: '#FFE0B2', border: '#EF6C00'},
+  {name: 'Red', bg: '#FFCDD2', border: '#D32F2F'},
+  {name: 'Pink', bg: '#F8BBD0', border: '#C2185B'},
+  {name: 'Purple', bg: '#E1BEE7', border: '#7B1FA2'},
+  {name: 'Brown', bg: '#D7CCC8', border: '#5D4037'},
+  {name: 'Gray', bg: '#ECEFF1', border: '#607D8B'},
+];
+
+export const ANNOTATION_TITLE_SIZES: Array<{name: string; size: number}> = [
+  {name: 'Small', size: 11},
+  {name: 'Normal', size: ANN_DEFAULT_FONT_SIZE},
+  {name: 'Medium', size: 16},
+  {name: 'Large', size: 20},
+  {name: 'Huge', size: 26},
 ];
 
 function borderForBackground(bg: string): string {
@@ -31,6 +54,8 @@ export class FlowAnnotation {
   size: {w: number; h: number};
   text: string;
   color: string;
+  fontSize: number;
+  pinned: boolean;
   /** Outer wrapper element — added to `area.content.holder` by the editor. */
   readonly element: HTMLElement;
   readonly titleEl: HTMLElement;
@@ -42,6 +67,9 @@ export class FlowAnnotation {
     this.size = opts.size ?? {w: 240, h: 140};
     this.text = opts.text ?? 'Annotation';
     this.color = opts.color ?? ANN_DEFAULT_COLOR;
+    const fs = Number(opts.fontSize);
+    this.fontSize = Number.isFinite(fs) && fs > 0 ? fs : ANN_DEFAULT_FONT_SIZE;
+    this.pinned = opts.pinned === true;
 
     this.element = document.createElement('div');
     this.element.className = 'ff-annotation';
@@ -68,6 +96,8 @@ export class FlowAnnotation {
     this.applyPos();
     this.applySize();
     this.applyColor();
+    this.applyFont();
+    this.applyPinned();
   }
   applyPos(): void {
     this.element.style.left = `${this.pos.x}px`;
@@ -81,6 +111,12 @@ export class FlowAnnotation {
     this.element.style.background = this.color;
     this.element.style.borderColor = borderForBackground(this.color);
   }
+  applyFont(): void {
+    this.titleEl.style.fontSize = `${this.fontSize}px`;
+  }
+  applyPinned(): void {
+    this.element.dataset.pinned = String(this.pinned);
+  }
 
   toDoc(): AnnotationDoc {
     return {
@@ -89,6 +125,9 @@ export class FlowAnnotation {
       size: {...this.size},
       text: this.text,
       color: this.color,
+      // Non-defaults omitted so untouched saves stay tidy (same pattern as autorun).
+      ...(this.fontSize !== ANN_DEFAULT_FONT_SIZE ? {fontSize: this.fontSize} : {}),
+      ...(this.pinned ? {pinned: true} : {}),
     };
   }
 }

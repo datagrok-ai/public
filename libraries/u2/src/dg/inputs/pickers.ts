@@ -5,10 +5,13 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {Control} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
+import type {ChoiceInputOptions} from '../../components/inputs/choice-input.js';
 import {TypeAhead} from '../../components/inputs/typeahead.js';
 import {iconButton} from '../../components/actions/buttons.js';
 import {columnRenderer} from '../entities/column-renderer.js';
+import {ColumnInput} from './column-combo.js';
 
 export interface ColumnInputOptions {
   filter?: (column: DG.Column) => boolean;
@@ -16,6 +19,10 @@ export interface ColumnInputOptions {
    * instead of the native select — Dart's ColumnComboBox affordances (`column_input.dart:13-17`).
    * Off by default, so the plain choice input stays what `columnInput` returns. */
   rich?: boolean;
+  /** The platform-parity variant: the {@link ColumnInput} combo whose dropdown is the
+   * ColumnsGrid (the Dart `ColumnComboBox` popup) where the platform is present, and the
+   * u2-native searchable list otherwise. */
+  grid?: boolean;
   placeholder?: string;
 }
 
@@ -32,11 +39,15 @@ export function onColumnRenamed(table: DG.DataFrame,
 /** Picks a column of `table` by name; the item list follows `table.onColumnsChanged` until the
  * input is disposed. A dropped column clears the value, a renamed one carries it over. */
 export function columnInput(label: string, table: DG.DataFrame,
+  options: ColumnInputOptions & {grid: true}): ColumnInput;
+export function columnInput(label: string, table: DG.DataFrame,
   options: ColumnInputOptions & {rich: true}): ColumnPicker;
 export function columnInput(label: string, table: DG.DataFrame,
   options?: ColumnInputOptions): ChoiceInput;
 export function columnInput(label: string, table: DG.DataFrame,
-  options: ColumnInputOptions = {}): ChoiceInput | ColumnPicker {
+  options: ColumnInputOptions = {}): ChoiceInput | ColumnPicker | ColumnInput {
+  if (options.grid)
+    return new ColumnInput({label, table, filter: options.filter, placeholder: options.placeholder});
   if (options.rich)
     return new ColumnPicker({label, table, filter: options.filter, placeholder: options.placeholder});
   const items = () => columnNames(table, options.filter);
@@ -57,18 +68,135 @@ export function columnInput(label: string, table: DG.DataFrame,
   return input;
 }
 
+/** One icon on a {@link TableInput}'s options rail — the platform table input's action set
+ * (`table_input.dart:37-58` + the `AppEvents.onInputCreated` augmentations,
+ * `inputs.dart:88-112`), per-instance manageable through {@link TableInput.actions}. */
+export interface InputAction {
+  /** 'open-file' | 'add-from-files' | 'query-db' | custom. */
+  id: string;
+  /** Font Awesome name from the platform sheet ('folder-open', 'folder-tree', 'database'). */
+  icon: string;
+  tooltip: string;
+  run: (input: TableInput) => void | Promise<void>;
+}
+
+const pickerApi = globalThis as {
+  grok_UI_PickTableFromFiles?: () => Promise<DG.DataFrame | null>,
+  grok_UI_PickTableFromQuery?: () => Promise<DG.DataFrame | null>,
+};
+
+export interface TableInputOptions extends Omit<ChoiceInputOptions, 'items'> {
+  /** Replaces the default action list wholesale; compose with the current one through the
+   * {@link TableInput.actions} setter instead. */
+  actions?: InputAction[];
+}
+
 /** Picks an open table by name; the item list follows `onTableAdded`/`onTableRemoved` until the
  * input is disposed. A closed table clears the value. The options rail carries the platform
- * input's import action (`table_input.dart:37-58`): the file it opens joins the workspace and
- * becomes the value. */
-export function tableInput(label: string): ChoiceInput {
-  const input = new ChoiceInput({label, items: grok.shell.tableNames});
-  followOpenTables(input, (names) => input.setItems(names));
-  importAction(input, (name) => {
-    input.setItems(grok.shell.tableNames);
-    input.value.value = name;
-  });
-  return input;
+ * input's action icons: 'Open file' always; 'Add file from Files' and 'Query database' where
+ * the platform dialogs answer (feature-detected once, at default construction — headless hosts
+ * render the open-file icon alone). A picked frame joins the workspace and becomes the value as
+ * a user edit (divergence #16: the Dart icons feed the input's private item list only). */
+export class TableInput extends ChoiceInput {
+  private _actions: InputAction[];
+  private _actionsScope: Scope | undefined;
+
+  constructor(options: TableInputOptions) {
+    const {actions, ...rest} = options;
+    super({...rest, items: grok.shell.tableNames,
+      emptyText: 'No open tables — open or import one'});
+    followOpenTables(this, (names) => this.setItems(names));
+    this._actions = actions ?? TableInput._defaults();
+    this._renderActions();
+    this.own(() => this._actionsScope?.dispose());
+  }
+
+  /** The current action list (a copy — add/remove/replace is read-modify-write through the
+   * setter, which re-renders the rail). */
+  get actions(): InputAction[] {
+    return [...this._actions];
+  }
+
+  set actions(list: InputAction[]) {
+    this._actions = [...list];
+    this._renderActions();
+  }
+
+  // a per-render scope: each re-set would otherwise pile its Tooltip cleanups on the input's scope
+  private _renderActions(): void {
+    this._actionsScope?.dispose();
+    const scope = new Scope();
+    this._actionsScope = scope;
+    const rail = optionsRail(this);
+    rail.textContent = '';
+    for (const action of this._actions) {
+      rail.append(Scope.runWith(scope, () =>
+        iconButton(action.icon, () => {
+          const run = action.run(this);
+          if (run instanceof Promise)
+            run.catch((e) => grok.shell.error(String(e)));
+        }, {tooltip: action.tooltip})));
+    }
+  }
+
+  private static _defaults(): InputAction[] {
+    const actions = [TableInput._openFileAction()];
+    const files = pickerApi.grok_UI_PickTableFromFiles;
+    if (typeof files === 'function')
+      actions.push(TableInput._pickAction('add-from-files', 'folder-tree', 'Add file from Files', files));
+    const query = pickerApi.grok_UI_PickTableFromQuery;
+    if (typeof query === 'function')
+      actions.push(TableInput._pickAction('query-db', 'database', 'Query database', query));
+    return actions;
+  }
+
+  /** The platform input's `folder-open` icon (`table_input.dart:37-58`) as an action: a
+   * transient hidden file picker, the table into the workspace, its name as a user edit. */
+  private static _openFileAction(): InputAction {
+    return {id: 'open-file', icon: 'folder-open', tooltip: 'Open file',
+      run: async (input) => {
+        const name = await TableInput._pickLocalFile(input);
+        if (name !== null && !input.scope.isDisposed) {
+          input.setItems(grok.shell.tableNames);
+          input.value.value = name;
+        }
+      }};
+  }
+
+  private static _pickAction(id: string, icon: string, tooltip: string,
+    pick: () => Promise<DG.DataFrame | null>): InputAction {
+    return {id, icon, tooltip, run: async (input) => {
+      const df = await pick();
+      if (df == null || input.scope.isDisposed)
+        return;
+      grok.shell.addTable(df);
+      input.setItems(grok.shell.tableNames);
+      input.value.value = df.name;
+    }};
+  }
+
+  /** Settles with the opened table's name, or null when nothing usable was picked. The picker
+   * with no selection settles only where the browser reports the dialog's `cancel`. */
+  private static _pickLocalFile(input: TableInput): Promise<string | null> {
+    return new Promise((resolve) => {
+      const picker = document.createElement('input');
+      picker.type = 'file';
+      picker.hidden = true;
+      const done = (file?: File) => {
+        picker.remove();
+        resolve(file === undefined ? null : openTable(file));
+      };
+      picker.addEventListener('change', () => done(picker.files?.[0] ?? undefined));
+      picker.addEventListener('cancel', () => done());
+      input.box.append(picker);
+      picker.click();
+    });
+  }
+}
+
+export function tableInput(label: string,
+  options: Omit<InputOptions<string | null>, 'label'> & {actions?: InputAction[]} = {}): TableInput {
+  return new TableInput({...options, label});
 }
 
 /** Picks any number of open tables — a checkbox per table, the value is their names (Dart's

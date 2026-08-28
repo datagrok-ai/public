@@ -105,7 +105,8 @@ widget('the registry stamps the metadata of the tag it built', () => {
   const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-gauge', name: 'g'}}, undefined, reg);
   const built = instance.node('g');
   assert.equal(built.componentMeta, meta);
-  assert.deepEqual(built.getProperties().map((p) => p.name), ['value', 'caption']);
+  assert.deepEqual(built.getProperties().filter((p) => p.category !== 'Appearance').map((p) => p.name),
+    ['value', 'caption']);
   instance.dispose();
 });
 
@@ -122,8 +123,12 @@ widget('properties of a spec-rendered input read its live state, options include
   assert.equal(props.get('placeholder').get(null), 'type here');
   assert.equal(props.get('search').get(null), true);
   assert.equal(props.get('value').get(null), 'aspirin');
-  assert.equal(props.get('label').set, undefined, 'an options-backed prop renders read-only');
+  assert.equal(props.get('inline').set, undefined, 'a construction-only option renders read-only');
+  assert.notEqual(props.get('label').set, undefined, 'an accessor-backed prop is writable');
 
+  props.get('label').set(null, 'Filter');
+  assert.equal(input.root.querySelector('.u2-input-label').textContent, 'Filter',
+    'the accessor write reaches the live element');
   props.get('value').set(null, 'ibuprofen');
   assert.equal(input.value.peek(), 'ibuprofen', 'a signal-backed prop still writes through');
   instance.dispose();

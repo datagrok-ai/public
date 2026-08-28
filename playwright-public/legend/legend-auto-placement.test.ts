@@ -46,25 +46,22 @@ test('Pie corner, trellis default, bar chart placement (SPGI)', async ({page}) =
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Stereo Category'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     await v.resizeViewer(page, 'Pie chart', 900, 600);
-    await page.waitForTimeout(1500);
     const s = await legendState(page, 'Pie chart');
     expect(s.mode, 'pie legend stuck docked').toBe('corner');
     await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Pie chart')?.close();
     });
-    await page.waitForTimeout(500);
   });
 
   await softStep('A freshly added trellis has its legend without any property change', async () => {
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Trellis plot');
     });
-    await page.waitForTimeout(4000);
+    await v.waitForLegendIdle(page, 'Trellis plot');
     await v.resizeViewer(page, 'Trellis plot', 1000, 700);
-    await page.waitForTimeout(2000);
     const s = await legendState(page, 'Trellis plot');
     expect(s.noLegend, 'trellis legend absent on default add').toBeFalsy();
     expect(s.mode).toBe('docked');
@@ -73,7 +70,6 @@ test('Pie corner, trellis default, bar chart placement (SPGI)', async ({page}) =
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Trellis plot')?.close();
     });
-    await page.waitForTimeout(500);
   });
 
   await softStep('Bar chart auto placement avoids the full-width top bar', async () => {
@@ -81,9 +77,8 @@ test('Pie corner, trellis default, bar chart placement (SPGI)', async ({page}) =
       (window as any).grok.shell.tv.addViewer('Bar chart', {
         splitColumnName: 'Stereo Category', stackColumnName: 'Primary Series Name'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Bar chart');
     await v.resizeViewer(page, 'Bar chart', 950, 700);
-    await page.waitForTimeout(1500);
     const s = await legendState(page, 'Bar chart');
     expect(s.mode).toBe('corner');
     // with this data the top bar spans the full width, so the right-top corner is occupied;
@@ -110,9 +105,8 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
       yColumnNames: ['CAST Idea ID'],
       splitColumnNames: ['Primary Series Name', 'Scaffold Names', 'Series', 'Stereo Category']});
   });
-  await page.waitForTimeout(2000);
+  await v.waitForLegendIdle(page, 'Line chart');
   await v.resizeViewer(page, 'Line chart', 1100, 500);
-  await page.waitForTimeout(800);
   await v.setViewerProps(page, 'Line chart', [{set: {legendPosition: 'RightTop'}, wait: 1500}]);
   await v.waitForLegendIdle(page, 'Line chart');
 
@@ -122,7 +116,9 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
       legend.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false}));
       (document.querySelector('[name="icon-hide-corner-legend"]') as HTMLElement).click();
     });
-    await page.waitForTimeout(1200);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     const icon = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Line chart');
@@ -146,7 +142,6 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
     // the dock row's height is pinned by the grid above it, so shrink the width instead —
     // one dimension under minChartBox is enough for the small-icon state
     await v.resizeViewer(page, 'Line chart', 240, 400);
-    await page.waitForTimeout(1500);
     const icon = await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       const x = tv.viewers.find((q: any) => q.type === 'Line chart');
@@ -164,7 +159,6 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Line chart')?.close();
     });
-    await page.waitForTimeout(500);
   });
 
   await softStep('Hovering a tooltip legend item highlights its rows', async () => {
@@ -175,7 +169,7 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
       (window as any).grok.shell.tv.addViewer('Scatter plot', {
         colorColumnName: 'Primary Series Name'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await v.resizeViewer(page, 'Scatter plot', 700, 500);
     await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'RightTop'}, wait: 1200}]);
     await v.waitForLegendIdle(page, 'Scatter plot');
@@ -187,7 +181,9 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
       w.__hoverGroupEvents = 0;
       w.grok.shell.tv.dataFrame.onMouseOverRowGroupChanged.subscribe(() => w.__hoverGroupEvents++);
     });
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      (document.querySelector('[name="mini-legend-icon"]') as HTMLElement)?.style.display === 'block',
+      {timeout: 8000});
     const mini = await page.evaluate(() => {
       const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
       const r = el.getBoundingClientRect();
@@ -195,7 +191,8 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
     });
     await page.mouse.move(mini.x - 40, mini.y + 40);
     await page.mouse.move(mini.x, mini.y, {steps: 5});
-    await page.waitForTimeout(1500);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') != null, {timeout: 8000}).catch(() => null);
     const item = await page.evaluate(() => {
       const legend = document.querySelector('[name="legend"]') as HTMLElement;
       if (!legend.closest('.d4-tooltip')) return null;
@@ -205,11 +202,13 @@ test('Mini icon clickability and sizes, tooltip hover highlight', async ({page})
     });
     expect(item, 'tooltip legend did not appear').not.toBeNull();
     await page.mouse.move(item!.x, item!.y, {steps: 4});
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => (window as any).__hoverGroupEvents > 0,
+      {timeout: 8000}).catch(() => null);
     const events = await page.evaluate(() => (window as any).__hoverGroupEvents);
     expect(events, 'hovering a tooltip legend item set no mouse-over group').toBeGreaterThan(0);
     await page.mouse.move(200, 900);
-    await page.waitForTimeout(600);
+    await page.waitForFunction(() =>
+      document.querySelector('.d4-tooltip [name="legend"]') == null, {timeout: 8000}).catch(() => null);
   });
 
   expect(errors, `page errors: ${errors.join(' | ')}`).toHaveLength(0);

@@ -31,6 +31,10 @@ interface IPropertyAnnotation {
  */
 export class Property implements IProperty {
   public readonly dart: any;
+
+  /** The union of the property's tags and its FuncParam options (tags win) — exactly what
+   * `InputBase.getOption` reads. Treat as readonly: writes stick only for FuncParam-backed
+   * properties without tags (those get the live options map). */
   public options: any;
 
   constructor(dart: any) {

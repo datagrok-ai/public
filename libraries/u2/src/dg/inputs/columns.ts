@@ -12,6 +12,7 @@ import {VirtualList} from '../../components/collections/list.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {columnInput, onColumnRenamed} from './pickers.js';
+import {platformColumnGrid} from './column-combo.js';
 import {columnRenderer} from '../entities/column-renderer.js';
 
 const ROW_HEIGHT = 24;
@@ -58,7 +59,7 @@ export function defaultAggregation(column: DG.Column): string {
 }
 
 export interface ColumnsInputOptions extends InputOptions<string[]> {
-  table: DG.DataFrame;
+  table: DG.DataFrame | null;
   filter?: (column: DG.Column) => boolean;
 }
 
@@ -70,7 +71,7 @@ export interface ColumnsInputOptions extends InputOptions<string[]> {
  * click or Esc cancels, OK commits, and clicking the control again closes it. A column dropped
  * from the table leaves the value with it. */
 export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
-  private _table!: DG.DataFrame;
+  private _table!: DG.DataFrame | null;
   private _filter: ((column: DG.Column) => boolean) | undefined;
   private _control!: HTMLElement;
   private _summary!: HTMLElement;
@@ -82,24 +83,26 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     this.root.dataset.u2 = 'columns-input';
   }
 
-  get table(): DG.DataFrame {
+  get table(): DG.DataFrame | null {
     return this._table;
   }
 
   /** Swaps the source table, and the filter with it (omit it to select from every column): the
    * selection goes with the old table, as Dart's `changeTable` does
-   * (`columns_input.dart:118-129`). */
-  changeTable(table: DG.DataFrame, filter?: (column: DG.Column) => boolean): void {
+   * (`columns_input.dart:118-129`). A null table is the Dart empty state — no columns to offer,
+   * no subscriptions. */
+  changeTable(table: DG.DataFrame | null, filter?: (column: DG.Column) => boolean): void {
     this._closePopup();
     this._table = table;
     this._filter = filter;
+    this._reflectTable();
     this._follow();
     this.value.value = [];
     this._renderSummary(this.value.peek());
   }
 
   protected createEditor(): HTMLElement {
-    this._table = this.options.table;
+    this._table = this.options.table ?? null;
     this._filter = this.options.filter;
     const editor = document.createElement('div');
     this._control = editor;
@@ -110,6 +113,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     editor.setAttribute('aria-expanded', 'false');
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
+    this._reflectTable();
     this._listen(editor, 'click', () => this._togglePopup());
     this._listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     this.effect(() => this._renderSummary(this.value.value));
@@ -122,7 +126,20 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     return editor;
   }
 
+  /** The no-table state reads visibly inert — the popup will not open until a table is picked.
+   * The tooltip rides the box: the validity channel owns the editor's own `title`. */
+  private _reflectTable(): void {
+    const off = this._table === null;
+    this._control.setAttribute('aria-disabled', String(off));
+    if (off)
+      this.box.title = 'Select a table first';
+    else
+      this.box.removeAttribute('title');
+  }
+
   private _names(): string[] {
+    if (this._table === null)
+      return [];
     const columns = this._table.columns;
     return this._filter ? columns.toList().filter(this._filter).map((c) => c.name) : columns.names();
   }
@@ -136,6 +153,10 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   private _follow(): void {
     if (this._unfollow)
       this._unfollow();
+    if (this._table === null) {
+      this._unfollow = undefined;
+      return;
+    }
     const subs = [this._table.onColumnsChanged.subscribe(() => this._prune()),
       onColumnRenamed(this._table, (oldName, newName) => this._rename(oldName, newName))];
     this._unfollow = () => {
@@ -172,7 +193,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
   }
 
   private _togglePopup(): void {
-    if (!this.enabled) // the editor is a div, so the base's disabled sweep never reaches it
+    if (!this.enabled || this._table === null) // the editor is a div, so the base's disabled sweep never reaches it
       return;
     if (this._popupScope)
       this._closePopup();
@@ -184,128 +205,186 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     const scope = new Scope();
     this._popupScope = scope;
     Scope.runWith(scope, () => {
-      const picked = new Set(this.value.peek());
-      const order = this._ordered();
-      const renderer = columnRenderer(this._table);
-      const search = new TextInput({placeholder: 'Search…', search: true, inline: true});
-      const filtered = (query: string): string[] => {
-        const q = query.trim().toLowerCase();
-        return q ? order.filter((name) => name.toLowerCase().includes(q)) : order;
-      };
-      const list = new VirtualList<string>({
-        itemHeight: ROW_HEIGHT,
-        render: (name, _index, row) => {
-          row.classList.toggle('u2-columns-picked', picked.has(name));
-          const box = document.createElement('input');
-          box.type = 'checkbox';
-          box.className = 'u2-input-checkbox';
-          box.checked = picked.has(name);
-          box.tabIndex = -1;
-          // named for a screen reader here rather than through a wrapping <label>, whose native
-          // activation would toggle the row a second time on top of the list's own click handler
-          box.setAttribute('aria-label', name);
-          return divH([box, renderer.listItem(name)], 'u2-columns-option');
-        },
-      });
-      list.root.classList.add('u2-columns-list');
-      const count = span('', 'u2-columns-count');
-      const refresh = (query = search.value.peek()) => {
-        list.setItems(filtered(query));
-        count.textContent = `${picked.size} selected`;
-      };
-      const toggle = (index: number) => {
-        const name = filtered(search.value.peek())[index];
-        if (name === undefined)
-          return;
-        if (!picked.delete(name))
-          picked.add(name);
-        refresh();
-      };
-      // All and None act on what the search left visible, so they read as 'all of these'
-      const setAll = (on: boolean) => {
-        for (const name of filtered(search.value.peek())) {
-          if (on)
-            picked.add(name);
-          else
-            picked.delete(name);
-        }
-        refresh();
-      };
-      const ok = () => {
-        this._commit(order.filter((name) => picked.has(name)));
+      const platform = platformColumnGrid('columnSelector');
+      if (platform !== null)
+        this._openPlatform(scope, platform);
+      else
+        this._openNative(scope);
+    });
+    this._control.setAttribute('aria-expanded', 'true');
+  }
+
+  /** The platform surface with the same dialog semantics: the REAL Dart ColumnsGrid in checkbox
+   * mode (`ColumnGrid.columnSelector` — its own All/None links and checked count ride in), the u2
+   * OK/CANCEL row under it. The checks buffer in the grid until OK commits them through
+   * {@link _commit}; Cancel, Esc and an outside click write nothing. Seeding goes through
+   * `setSelectedColumns` — the constructor's `isChecked` is accepted but unused
+   * (`column_grid.dart:420-425`). */
+  private _openPlatform(scope: Scope,
+    platform: {[k: string]: (table: unknown, options: unknown) => any}): void {
+    const cg = platform.columnSelector(this._table, {filter: this._filter});
+    cg.setSelectedColumns(this.value.peek());
+    cg.showSearch = true;
+    const ok = () => {
+      const picked = new Set<string>(cg.getCheckedColumnNames());
+      this._commit(this._ordered().filter((name) => picked.has(name)));
+      this._closePopup();
+    };
+    const host = divV([cg.root,
+      divH([button('OK', ok, {primary: true}), button('CANCEL', () => this._closePopup())],
+        'u2-columns-buttons')], 'u2-columns-popup');
+    const search = cg.root.querySelector('input') as HTMLInputElement | null;
+    // capture: the Dart search box swallows a bubble-phase Esc even when empty (text_input.dart:148)
+    const onKeyCapture = (e: Event) => {
+      const key = (e as KeyboardEvent).key;
+      if (key === 'Escape') {
+        e.stopPropagation();
         this._closePopup();
-      };
-      const move = (delta: number) => {
-        const rows = filtered(search.value.peek()).length;
-        if (rows === 0)
-          return;
-        const next = Math.min(Math.max(list.selectedIndex.peek() + delta, 0), rows - 1);
-        list.selectedIndex.value = next;
-        list.scrollToIndex(next);
-      };
-      const onClick = (e: Event) => {
-        const row = (e.target as HTMLElement).closest('.u2-list-row') as HTMLElement | null;
-        if (row)
-          toggle(Number(row.dataset.index));
-      };
-      // Space, not Enter: Enter is OK, and the list already owns the arrows
-      const onKeyDown = (e: Event) => {
-        if ((e as KeyboardEvent).key !== ' ')
-          return;
+        this._control.focus();
+      }
+      else if (key === 'Enter' && e.target === search) {
+        e.preventDefault();
+        e.stopPropagation();
+        ok();
+      }
+    };
+    const onDismiss = () => this._closePopup();
+    host.addEventListener('keydown', onKeyCapture, true);
+    host.addEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
+    scope.own(() => {
+      host.removeEventListener('keydown', onKeyCapture, true);
+      host.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
+      cg.close();
+    });
+    Overlay.show(this._control, host, scope);
+    cg.grid.autoSize(600, 300);
+    const width = this._control.getBoundingClientRect().width;
+    if (cg.grid.root.getBoundingClientRect().width < width)
+      cg.grid.root.style.width = `${width}px`;
+    search?.focus();
+  }
+
+  private _openNative(scope: Scope): void {
+    const picked = new Set(this.value.peek());
+    const order = this._ordered();
+    const renderer = columnRenderer(this._table!);
+    const search = new TextInput({placeholder: 'Search…', search: true, inline: true});
+    const filtered = (query: string): string[] => {
+      const q = query.trim().toLowerCase();
+      return q ? order.filter((name) => name.toLowerCase().includes(q)) : order;
+    };
+    const list = new VirtualList<string>({
+      itemHeight: ROW_HEIGHT,
+      render: (name, _index, row) => {
+        row.classList.toggle('u2-columns-picked', picked.has(name));
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.className = 'u2-input-checkbox';
+        box.checked = picked.has(name);
+        box.tabIndex = -1;
+        // named for a screen reader here rather than through a wrapping <label>, whose native
+        // activation would toggle the row a second time on top of the list's own click handler
+        box.setAttribute('aria-label', name);
+        return divH([box, renderer.listItem(name)], 'u2-columns-option');
+      },
+    });
+    list.root.classList.add('u2-columns-list');
+    const count = span('', 'u2-columns-count');
+    const refresh = (query = search.value.peek()) => {
+      list.setItems(filtered(query));
+      count.textContent = `${picked.size} selected`;
+    };
+    const toggle = (index: number) => {
+      const name = filtered(search.value.peek())[index];
+      if (name === undefined)
+        return;
+      if (!picked.delete(name))
+        picked.add(name);
+      refresh();
+    };
+    // All and None act on what the search left visible, so they read as 'all of these'
+    const setAll = (on: boolean) => {
+      for (const name of filtered(search.value.peek())) {
+        if (on)
+          picked.add(name);
+        else
+          picked.delete(name);
+      }
+      refresh();
+    };
+    const ok = () => {
+      this._commit(order.filter((name) => picked.has(name)));
+      this._closePopup();
+    };
+    const move = (delta: number) => {
+      const rows = filtered(search.value.peek()).length;
+      if (rows === 0)
+        return;
+      const next = Math.min(Math.max(list.selectedIndex.peek() + delta, 0), rows - 1);
+      list.selectedIndex.value = next;
+      list.scrollToIndex(next);
+    };
+    const onClick = (e: Event) => {
+      const row = (e.target as HTMLElement).closest('.u2-list-row') as HTMLElement | null;
+      if (row)
+        toggle(Number(row.dataset.index));
+    };
+    // Space, not Enter: Enter is OK, and the list already owns the arrows
+    const onKeyDown = (e: Event) => {
+      if ((e as KeyboardEvent).key !== ' ')
+        return;
+      e.preventDefault();
+      toggle(list.selectedIndex.peek());
+    };
+    list.root.addEventListener('click', onClick);
+    list.root.addEventListener('keydown', onKeyDown);
+    scope.own(() => {
+      list.root.removeEventListener('click', onClick);
+      list.root.removeEventListener('keydown', onKeyDown);
+    });
+    scope.effect(() => refresh(search.value.value));
+
+    const popup = divV([search,
+      divH([link('All', () => setAll(true)), link('None', () => setAll(false)), count],
+        'u2-columns-actions'),
+      list,
+      divH([button('OK', ok, {primary: true}), button('CANCEL', () => this._closePopup())],
+        'u2-columns-buttons')], 'u2-columns-popup');
+    // the list keeps its own keys while it has the focus; the popup covers the rest, so Enter,
+    // arrows and Space work from the search box too, where the focus opens
+    const onPopupKeyDown = (e: Event) => {
+      const key = (e as KeyboardEvent).key;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'BUTTON' || target.tagName === 'A') // these answer for themselves
+        return;
+      if (key === 'Enter') {
+        e.preventDefault();
+        ok();
+        return;
+      }
+      if (list.root.contains(target))
+        return;
+      if (key === 'ArrowDown' || key === 'ArrowUp') {
+        e.preventDefault();
+        move(key === 'ArrowDown' ? 1 : -1);
+        return;
+      }
+      if (key === ' ' && list.selectedIndex.peek() >= 0) {
         e.preventDefault();
         toggle(list.selectedIndex.peek());
-      };
-      list.root.addEventListener('click', onClick);
-      list.root.addEventListener('keydown', onKeyDown);
-      scope.own(() => {
-        list.root.removeEventListener('click', onClick);
-        list.root.removeEventListener('keydown', onKeyDown);
-      });
-      scope.effect(() => refresh(search.value.value));
-
-      const popup = divV([search,
-        divH([link('All', () => setAll(true)), link('None', () => setAll(false)), count],
-          'u2-columns-actions'),
-        list,
-        divH([button('OK', ok, {primary: true}), button('CANCEL', () => this._closePopup())],
-          'u2-columns-buttons')], 'u2-columns-popup');
-      // the list keeps its own keys while it has the focus; the popup covers the rest, so Enter,
-      // arrows and Space work from the search box too, where the focus opens
-      const onPopupKeyDown = (e: Event) => {
-        const key = (e as KeyboardEvent).key;
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'BUTTON' || target.tagName === 'A') // these answer for themselves
-          return;
-        if (key === 'Enter') {
-          e.preventDefault();
-          ok();
-          return;
-        }
-        if (list.root.contains(target))
-          return;
-        if (key === 'ArrowDown' || key === 'ArrowUp') {
-          e.preventDefault();
-          move(key === 'ArrowDown' ? 1 : -1);
-          return;
-        }
-        if (key === ' ' && list.selectedIndex.peek() >= 0) {
-          e.preventDefault();
-          toggle(list.selectedIndex.peek());
-        }
-      };
-      // outside mousedown, Esc and anchor removal all reach the popup as one close event, and all
-      // three mean cancel — the value is only ever written by OK (`dialog.dart:486-494`)
-      const onDismiss = () => this._closePopup();
-      popup.addEventListener('keydown', onPopupKeyDown);
-      popup.addEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
-      scope.own(() => {
-        popup.removeEventListener('keydown', onPopupKeyDown);
-        popup.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
-      });
-      Overlay.show(this._control, popup, scope);
-      this._control.setAttribute('aria-expanded', 'true');
-      search.root.querySelector<HTMLElement>('input')?.focus();
+      }
+    };
+    // outside mousedown, Esc and anchor removal all reach the popup as one close event, and all
+    // three mean cancel — the value is only ever written by OK (`dialog.dart:486-494`)
+    const onDismiss = () => this._closePopup();
+    popup.addEventListener('keydown', onPopupKeyDown);
+    popup.addEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
+    scope.own(() => {
+      popup.removeEventListener('keydown', onPopupKeyDown);
+      popup.removeEventListener(OVERLAY_CLOSE_EVENT, onDismiss);
     });
+    Overlay.show(this._control, popup, scope);
+    search.root.querySelector<HTMLElement>('input')?.focus();
   }
 
   /** Selected columns first, in the order they were picked, then the rest in table order — what

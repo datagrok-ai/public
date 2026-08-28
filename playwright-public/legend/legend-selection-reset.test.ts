@@ -31,7 +31,8 @@ test('Legend selection resets when the source changes, survives when it does not
     const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
     grok.shell.addTableView(df);
   });
-  await page.waitForTimeout(2500);
+  await page.waitForFunction(() =>
+    (window as any).grok?.shell?.tv?.dataFrame?.rowCount > 0, null, {timeout: 30000});
 
   const countPixels = (viewerName: string) => page.evaluate((vn) => {
     const root = document.querySelector(`[name="viewer-${vn.replace(/ /g, '-')}"]`) as HTMLElement;
@@ -53,7 +54,7 @@ test('Legend selection resets when the source changes, survives when it does not
         .map((i) => (i.textContent || '').trim())};
   });
 
-  const clickItem = async (needle: string) => {
+  const clickItem = async (viewerType: string, needle: string) => {
     const pos = await page.evaluate((n) => {
       const root = document.querySelector('[name="legend"]') as HTMLElement;
       const items = Array.from(root.querySelectorAll('[name="legend-item"]')) as HTMLElement[];
@@ -64,7 +65,7 @@ test('Legend selection resets when the source changes, survives when it does not
     }, needle);
     expect(pos, `legend item ${needle} not found`).not.toBeNull();
     await page.mouse.click(pos!.x, pos!.y);
-    await page.waitForTimeout(1500);
+    await v.waitForLegendIdle(page, viewerType);
   };
 
   await softStep('Pie chart: switching the category column drops the selection', async () => {
@@ -74,22 +75,21 @@ test('Legend selection resets when the source changes, survives when it does not
       await new Promise((r) => setTimeout(r, 1200));
       tv.viewers.find((x: any) => x.type === 'Pie chart').setOptions({categoryColumnName: 'DIS_POP'});
     });
-    await page.waitForTimeout(2500);
-    await clickItem('Indigestion');
+    await v.waitForLegendIdle(page, 'Pie chart');
+    await clickItem('Pie chart', 'Indigestion');
     expect((await legendState()).selected.join()).toContain('Indigestion');
 
     await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((x: any) => x.type === 'Pie chart').setOptions({categoryColumnName: 'RACE'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Pie chart');
     const after = await legendState();
     expect(after.labels.join()).toContain('Black');
     expect(after.selected, 'a positional ghost selection survived the column switch').toEqual([]);
     await page.evaluate(() => {
       (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Pie chart').close();
     });
-    await page.waitForTimeout(1000);
   });
 
   await softStep('Line chart: selection survives a row filter, resets on a split switch', async () => {
@@ -100,18 +100,17 @@ test('Legend selection resets when the source changes, survives when it does not
       tv.viewers.find((x: any) => x.type === 'Line chart')
         .setOptions({yColumnNames: ['AGE'], splitColumnNames: ['RACE']});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Line chart');
     await v.resizeViewer(page, 'Line chart', 900, 500);
-    await page.waitForTimeout(1500);
-    await clickItem('Black');
+    await clickItem('Line chart', 'Black');
     expect((await legendState()).selected.join()).toContain('Black');
 
     // same source, different row mask: the selection must survive this rebuild
     await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       tv.dataFrame.rows.filter((r: any) => r.idx < 3000);
-      await new Promise((res) => setTimeout(res, 2000));
     });
+    await v.waitForLegendIdle(page, 'Line chart');
     expect((await legendState()).selected.join(),
       'a row-filter rebuild must keep the selection').toContain('Black');
 
@@ -119,14 +118,13 @@ test('Legend selection resets when the source changes, survives when it does not
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((x: any) => x.type === 'Line chart').setOptions({splitColumnNames: ['SEX']});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Line chart');
     const after = await legendState();
     expect(after.labels.join()).toContain('M');
     expect(after.selected, 'a positional ghost selection survived the split switch').toEqual([]);
     await page.evaluate(() => {
       (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Line chart').close();
     });
-    await page.waitForTimeout(1000);
   });
 
   await softStep('Scatter plot: the DATA unfilters on a color column switch, not just the classes', async () => {
@@ -137,9 +135,9 @@ test('Legend selection resets when the source changes, survives when it does not
       tv.viewers.find((x: any) => x.type === 'Scatter plot')
         .setOptions({xColumnName: 'AGE', yColumnName: 'HEIGHT', colorColumnName: 'DIS_POP'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const full = await countPixels('Scatter plot');
-    await clickItem('Indigestion');
+    await clickItem('Scatter plot', 'Indigestion');
     const filtered = await countPixels('Scatter plot');
     expect(filtered, 'the legend click must filter the drawn points').toBeLessThan(full * 0.7);
 
@@ -147,7 +145,7 @@ test('Legend selection resets when the source changes, survives when it does not
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((x: any) => x.type === 'Scatter plot').setOptions({colorColumnName: 'RACE'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     const after = await countPixels('Scatter plot');
     expect((await legendState()).selected).toEqual([]);
     // same marker shapes, new palette: a correct repaint is within a few percent of the
@@ -157,7 +155,6 @@ test('Legend selection resets when the source changes, survives when it does not
     await page.evaluate(() => {
       (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot').close();
     });
-    await page.waitForTimeout(1000);
   });
 
   await softStep('Box plot: marker-color switch resets the selection and its filter', async () => {
@@ -170,14 +167,13 @@ test('Legend selection resets when the source changes, survives when it does not
       await new Promise((r) => setTimeout(r, 1500));
       bp.setOptions({markerColorColumnName: 'DIS_POP'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Box plot');
     await v.resizeViewer(page, 'Box plot', 700, 450);
-    await page.waitForTimeout(1500);
     for (let i = 0; i < 10 && (await legendState()).labels.length === 0; i++)
       await page.waitForTimeout(1000);
 
     const full = await countPixels('Box plot');
-    await clickItem('Indigestion');
+    await clickItem('Box plot', 'Indigestion');
     expect((await legendState()).selected.join()).toContain('Indigestion');
     const filtered = await countPixels('Box plot');
     expect(filtered, 'the legend click must filter the drawn points').toBeLessThan(full);
@@ -186,7 +182,7 @@ test('Legend selection resets when the source changes, survives when it does not
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((x: any) => x.type === 'Box plot').setOptions({markerColorColumnName: 'SEX'});
     });
-    await page.waitForTimeout(3000);
+    await v.waitForLegendIdle(page, 'Box plot');
     const after = await legendState();
     expect(after.labels.join()).toContain('M');
     expect(after.selected, 'a positional ghost selection survived the color switch').toEqual([]);
