@@ -3,7 +3,7 @@
    `DateTimeInput` are thin subclasses that differ only in `withTime`, so the field, the popup,
    the grid and the keyboard model are never forked. */
 import {signal, Signal, ReadonlySignal} from '../../core/signals.js';
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, labelText} from '../../core/input-base.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
 import {button} from '../../core/elements.js';
 import {iconButton} from '../actions/buttons.js';
@@ -108,7 +108,7 @@ abstract class DateField extends Input<Date | null, DateInputOptions> {
     input.type = 'text';
     input.autocomplete = 'off';
     input.placeholder = this._pattern;
-    input.setAttribute('aria-label', this.options.label ?? this._pattern);
+    input.setAttribute('aria-label', labelText(this.options.label) ?? this._pattern);
 
     let echo = false;
     this.effect(() => {

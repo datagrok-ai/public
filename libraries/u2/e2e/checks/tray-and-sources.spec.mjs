@@ -4,7 +4,7 @@
    guided ways onto the tray (workspace picker, source wizard, function picker on an event), and
    the source's own feedback (unrun columns, Refresh reporting, out-of-range rows). */
 import {ok, shot} from '../local.mjs';
-import {balloons, bindField, bindThroughPicker, chipMenu, chipNames, clearBalloons, dialogCancel, dialogOK,
+import {balloons, bindThroughPicker, chipMenu, chipNames, clearBalloons, dialogCancel, dialogOK,
   drag, dropControl, dumpViaDialog, ensureDemog, ensureRecorder, expandTree, fieldValue, focusTree, labels,
   newForm, nodeCount, openSection, openSpec, paletteItem, panel, pickFunc, pickLeaf, pickerLabels, pickerRow,
   pickerWalk, selectChip, selectRow, setField, setPanelField, specErrors, statusText, toMode, trayMenu,
@@ -240,12 +240,7 @@ async function checkSourceWizard(page) {
     source?.bind?.['params.days'] === '$.daysInput.value' && !('designData' in (source?.props ?? {})),
     `${JSON.stringify(source)} picked=${param.found}`);
 
-  await selectRow(page, 'countField');
-  await openSection(page, 'Bindings');
-  const path = bindField(page, 'value');
-  await path.fill('$.funcSource1.rowCount');
-  await path.press('Enter');
-  await page.waitForTimeout(400);
+  const count = await bindThroughPicker(page, 'countField', 'rowCount', 'funcSource1');
   await toMode(page, 'Run');
   await page.waitForTimeout(1000);
   const wide = await fieldValue(page, 'countField');
@@ -254,7 +249,7 @@ async function checkSourceWizard(page) {
   const narrow = await fieldValue(page, 'countField');
   await shot(page, 'tray-and-sources-4-rerun');
   ok('tray-and-sources/4d/editing-the-bound-input-re-runs-the-source', wide === '4' && narrow === '2',
-    `30 days="${wide}" 5 days="${narrow}"`);
+    `30 days="${wide}" 5 days="${narrow}" picked=${count.found}`);
 
   await toMode(page, 'Design');
   await selectRow(page, 'fireButton');

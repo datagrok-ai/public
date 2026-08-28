@@ -3,8 +3,9 @@
    hand-typed path still gets; then both pickers under a query — the match revealed, the expansion
    kept, the empty states, the function row's layout. */
 import {ok, shot} from '../local.mjs';
-import {balloons, bindField, clearBalloons, dialogCancel, dumpViaDialog, ensureDemog, expandTree, focusTree,
-  openSection, openSpec, panel, pickerLabels, pickerRow, selectRow, specErrors, waitStatus} from '../lib.mjs';
+import {balloons, bindField, bindThroughPicker, clearBalloons, dialogCancel, dumpViaDialog, ensureDemog,
+  expandTree, focusTree, openSection, openSpec, panel, pickerLabels, pickerRow, selectRow, specErrors,
+  waitStatus} from '../lib.mjs';
 
 const PICK_SPEC = JSON.stringify({
   $schema: 'dg-ui/1',
@@ -25,8 +26,8 @@ const boundPath = (dump, name) => JSON.parse(dump).root.children[0].bind?.[name]
 async function checkBindPicker(page) {
   await selectRow(page, 'pickInput');
   const shown = await panel(page);
-  ok('pickers/1a/bindings-lists-every-bindable-prop-unbound-included', shown.Bindings?.value === '',
-    JSON.stringify(shown.Bindings ?? null));
+  ok('pickers/1a/bindings-lists-bound-rows-only-plus-add-binding', shown.Bindings?.value === undefined &&
+    'add-binding' in (shown.Bindings ?? {}), JSON.stringify(shown.Bindings ?? null));
 
   await openSection(page, 'Bindings');
   await page.locator('[data-u2-bind-pick="value"]').first().click();
@@ -58,8 +59,7 @@ async function checkBindPicker(page) {
     undone.slice(0, 200));
 
   await clearBalloons(page);
-  await selectRow(page, 'pickInput');
-  await openSection(page, 'Bindings');
+  await bindThroughPicker(page, 'pickInput', 'value', 'draft');
   const field = bindField(page, 'value');
   await field.fill('$.pickInput');
   await field.press('Enter');
@@ -68,7 +68,7 @@ async function checkBindPicker(page) {
   await shot(page, 'pickers-1-cycle-refused');
   ok('pickers/1e/a-self-referential-path-is-refused-with-the-loop',
     refused.includes('pickInput → pickInput') && await field.inputValue() === '$.pickInput' &&
-    boundPath(await dumpViaDialog(page), 'value') === undefined, `balloon="${refused}"`);
+    boundPath(await dumpViaDialog(page), 'value') === '$.draft.value', `balloon="${refused}"`);
   await clearBalloons(page);
 }
 
@@ -161,7 +161,7 @@ async function checkPickerSearch(page) {
 }
 
 export const checks = [
-  {id: 'pickers/1 binding picker: every bindable prop, the tree walk, undo, the cycle refusal', run: checkBindPicker},
+  {id: 'pickers/1 binding picker: the Add-binding row, the tree walk, undo, the cycle refusal', run: checkBindPicker},
   {id: 'pickers/2 picker search: the match revealed, the expansion kept, the empty states, the row layout',
     run: checkPickerSearch},
 ];

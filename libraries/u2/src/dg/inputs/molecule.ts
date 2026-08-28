@@ -3,7 +3,7 @@
    input bridge and its depiction through drawMolecule, and contains no chemistry itself. */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {Input} from '../../core/input-base.js';
+import {Input, labelText} from '../../core/input-base.js';
 import {ObjectRenderer} from '../../core/object-renderer.js';
 import {fromDartInput} from './from-dart-input.js';
 import {Editors} from '../forms/editors.js';
@@ -42,5 +42,5 @@ export function moleculeRenderer(options: MoleculeRendererOptions = {}): ObjectR
 
 Editors.register({
   match: (prop) => prop.semType === 'Molecule',
-  create: (prop, options) => moleculeInput(options.label ?? prop.name!, {name: options.name}),
+  create: (prop, options) => moleculeInput(labelText(options.label) ?? prop.name!, {name: options.name}),
 });

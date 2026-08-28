@@ -9,6 +9,7 @@ import {TextInput} from '../../components/inputs/text-input.js';
 import {iconButton} from '../../components/actions/buttons.js';
 import {div, divV, span} from '../../core/elements.js';
 import type {Input} from '../../core/input-base.js';
+import {parsePath} from '../../spec/path.js';
 import type {SpecInstance} from '../../spec/spec.js';
 import {bindTree, named} from './bind-model.js';
 import type {BindTreeNode} from './bind-model.js';
@@ -84,12 +85,21 @@ export function bindRows(nodes: BindTreeNode[], query: string, prefix = '', dept
   return {rows, expand};
 }
 
+/** Who the picker is binding: the property, for the dialog's title, and the path it follows
+ * today, whose row a re-pick arrives with revealed and selected. */
+export interface BindPickerOptions {
+  prop?: string;
+  current?: string;
+}
+
 /** Opens the picker over everything `instance` can bind to. `onPick` gets the assembled path when
- * OK closes it on a leaf; on a group — a step that is nothing on its own — OK warns and the dialog
- * stays open, because a close that committed nothing read as a pick that silently failed. The
- * dialog is adopted by the ambient scope, so the panel that opened it takes it down with it. */
-export function bindPicker(instance: SpecInstance, onPick: (path: string) => void): Dialog {
-  const dialog = new Dialog('Bind to');
+ * OK closes it on a leaf — answering `false` (a refused commit, balloon already up) keeps the
+ * dialog open for a correction; on a group — a step that is nothing on its own — OK warns and the
+ * dialog stays open, because a close that committed nothing read as a pick that silently failed.
+ * The dialog is adopted by the ambient scope, so the panel that opened it takes it down with it. */
+export function bindPicker(instance: SpecInstance, onPick: (path: string) => boolean | void,
+  options: BindPickerOptions = {}): Dialog {
+  const dialog = new Dialog(options.prop === undefined ? 'Bind to' : `${options.prop} — bind to`);
   dialog.root.classList.add('u2-bind-picker');
   const groups = bindGroups(instance, bindTree(instance));
   const search = dialog.run(() =>
@@ -125,6 +135,8 @@ export function bindPicker(instance: SpecInstance, onPick: (path: string) => voi
   dialog.add(divV([search.root, tree.root, empty,
     span(`${PICK_A_VALUE}. App data comes from the app that opened the designer.`, 'u2-bind-picker-hint')],
   'u2-bind-picker-body'));
+  if (options.current !== undefined)
+    void tree.expandPath(idsOf(groups, options.current));
   dialog.onCancel(() => dialog.dispose());
   dialog.onOK(() => {
     const picked = tree.selectedNode.peek()?.data;
@@ -132,10 +144,34 @@ export function bindPicker(instance: SpecInstance, onPick: (path: string) => voi
       grok.shell.warning(PICK_A_VALUE);
       return false;
     }
-    onPick(picked.path);
+    if (onPick(picked.path) === false)
+      return false;
     dialog.dispose();
   });
   return dialog.show({modal: true, width: 460});
+}
+
+/** The tree ids from a group heading down to `path`'s row — what a re-pick reveals. A step the
+ * tree does not know (a source that has not run) ends the chain there, revealed as far as it goes.
+ * The id scheme (`group/label/label…`) is assembled both here and in {@link bindRows} — keep the
+ * two in sync. */
+function idsOf(groups: BindGroup[], path: string): string[] {
+  const segments = parsePath(path);
+  if (segments === null)
+    return [];
+  const group = groups.find((g) => g.nodes.some((root) => root.name === segments[0]));
+  if (group === undefined)
+    return [];
+  let node = group.nodes.find((root) => root.name === segments[0])!;
+  const ids = [group.title, `${group.title}/${node.label}`];
+  for (const segment of segments.slice(1)) {
+    const next = node.children?.().find((child) => child.prop?.name === segment);
+    if (next === undefined)
+      break;
+    ids.push(`${ids[ids.length - 1]}/${next.label}`);
+    node = next;
+  }
+  return ids;
 }
 
 /** The `…` affordance beside a path field, on the input's options rail. `Input.addOptions` is

@@ -198,7 +198,7 @@ spec('editor round-trip: set + clear leaves the document byte-identical, undo an
   instance.dispose();
 });
 
-spec('canApply: a choice outside the list and a bind on an HTML node are refused', () => {
+spec('canApply: a choice outside the list is refused, an appearance bind on an HTML node is not', () => {
   const reg = registry();
   const instance = renderSpec({
     $schema: 'dg-ui/1',
@@ -209,7 +209,9 @@ spec('canApply: a choice outside the list and a bind on an HTML node are refused
   assert.match(editor.canApply({op: 'set-prop', node: input, name: 'cursor', value: 'nope'}),
     /must be one of/);
   assert.equal(editor.canApply({op: 'set-bind', node: instance.spec.root, name: 'color', path: '$.x'}),
-    'prop "color" is not bindable');
+    null, 'HTML nodes take appearance binds (UB-4)');
+  assert.match(editor.canApply({op: 'set-bind', node: instance.spec.root, name: 'ghost', path: '$.x'}),
+    /has no prop "ghost"/);
   instance.dispose();
 });
 
@@ -255,5 +257,5 @@ spec('html node: appearance props style the element with no warning, opacity as 
   const appearance = props.filter((p) => p.category === APPEARANCE_CATEGORY);
   assert.equal(appearance.length, 13);
   for (const p of appearance)
-    assert.equal(p.bindable, undefined, `${p.name} must not advertise bindable on an HTML node`);
+    assert.equal(p.bindable, true, `${p.name} is live-bindable on an HTML node (UB-4)`);
 });

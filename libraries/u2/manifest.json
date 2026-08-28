@@ -1,6 +1,7 @@
 {
   "schema": "dg-ui/1",
   "recipes": "docs/recipes/",
+  "binding": "Every declared prop accepts a \"bind\" entry. bindable: true marks live in-place consumption (twoWay marks write-back); a bind on any other declared prop re-renders the node when the bound source changes. A bind on an undeclared prop is an error.",
   "appearance": [
     {
       "name": "color",
@@ -131,7 +132,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -152,20 +154,24 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "search",
@@ -202,7 +208,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -223,20 +230,24 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "autoGrow",
@@ -263,7 +274,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -284,15 +296,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -320,7 +335,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -341,15 +357,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -411,7 +430,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -432,15 +452,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -484,7 +507,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -505,15 +529,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -1045,7 +1072,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1066,15 +1094,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -1177,7 +1208,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1198,15 +1230,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -1253,7 +1288,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1274,15 +1310,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -1310,7 +1349,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1332,15 +1372,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         }
       ],
@@ -1363,7 +1406,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1384,20 +1428,24 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         }
       ],
       "events": [
@@ -1422,7 +1470,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1443,15 +1492,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         }
       ],
@@ -1477,7 +1529,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1498,20 +1551,24 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
           "name": "placeholder",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         }
       ],
       "events": [
@@ -1534,7 +1591,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1555,15 +1613,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {
@@ -1595,7 +1656,8 @@
       "props": [
         {
           "name": "label",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "name",
@@ -1616,15 +1678,18 @@
         {
           "name": "postfix",
           "type": "string",
+          "bindable": true,
           "description": "Units or a short suffix shown after the editor."
         },
         {
           "name": "tooltipText",
-          "type": "string"
+          "type": "string",
+          "bindable": true
         },
         {
           "name": "enabled",
           "type": "bool",
+          "bindable": true,
           "description": "false grays the input out and blocks edits."
         },
         {

@@ -1,9 +1,9 @@
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
 import {QNum} from '../../core/qnum.js';
 
 export interface QNumInputOptions extends InputOptions<number | null> {
-  placeholder?: string;
+  placeholder?: LiveOption<string>;
   /** Display format for the numeric part; the qualifier glyph is prepended to whatever it returns. */
   format?: (value: number) => string;
 }
@@ -22,6 +22,7 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
   constructor(options: QNumInputOptions = {}) {
     super(options, null);
     this.root.dataset.u2 = 'qnum-input';
+    this.liveOption('placeholder', options.placeholder, (x) => this._input.placeholder = x);
   }
 
   protected createEditor(): HTMLElement {
@@ -30,7 +31,6 @@ export class QNumInput extends Input<number | null, QNumInputOptions> {
     this._input = input;
     input.type = 'text';
     input.autocomplete = 'off';
-    input.placeholder = this.options.placeholder ?? '';
 
     let echo = false;
     this.effect(() => {

@@ -168,7 +168,7 @@ spec('renderSpec: broken nodes become placeholders, siblings still render', () =
       {tag: 'u2-missing', props: {label: 'Nope'}},
       {tag: 'blink', props: {text: 'retro'}},
       {tag: 'u2-fake-input', props: {label: 42}},
-      {tag: 'u2-fake-input', props: {label: 'Bound'}, bind: {label: '$.name'}},
+      {tag: 'u2-fake-input', props: {label: 'Bound'}, bind: {ghost: '$.name'}},
       {tag: 'u2-fake-input', props: {label: 'Fine', bogus: 'kept'}},
     ]},
   }, new SpecContext(), reg);
@@ -178,7 +178,7 @@ spec('renderSpec: broken nodes become placeholders, siblings still render', () =
   assert.match(errors[0], /^u2-missing: /);
   assert.match(errors[1], /^blink: /);
   assert.match(errors[2], /prop "label" expects string/);
-  assert.match(errors[3], /not bindable/);
+  assert.match(errors[3], /has no prop "ghost" to bind/);
   assert.equal(editors(instance).length, 1, 'the healthy sibling rendered');
   assert.equal(seen[seen.length - 1].bogus, 'kept', 'unknown props are warned about, not dropped');
   instance.dispose();

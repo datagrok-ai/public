@@ -351,17 +351,22 @@ edit('a refused edit warns with the full reason and keeps the typed text for cor
     assert.equal(warnings.length, 1);
   });
 
-edit('a bound prop and a structured value render read-only', ({panel}) => {
+edit('a bound prop renders the binding chip; a structured value renders read-only', ({panel}) => {
   const bound = panel('boundInput');
-  const value = field(bound, 'Properties', 'value');
-  assert.equal(value.disabled, true, 'the binding field is where a bound prop is edited');
-  assert.equal(value.value, 'Ethanol', 'still showing the live bound value');
+  const row = section(bound, 'Properties').querySelector('[data-u2-prop="value"]');
+  const chip = row.querySelector('.u2-bind-chip');
+  assert.notEqual(chip, null, 'the chip replaces the editor (UB-7b)');
+  assert.equal(chip.querySelector('.u2-bind-chip-path').textContent, '$.reagent');
+  assert.notEqual(chip.querySelector('.u2-bind-chip-two-way'), null, 'value is twoWay — ⇄ shows');
+  assert.notEqual(row.querySelector('[data-u2-unbind="value"]'), null, 'the × carries its handle');
   assert.equal(field(bound, 'Appearance', 'label').disabled, false);
 
   const named = panel('nameInput');
   const sizes = field(named, 'Properties', 'sizes');
   assert.equal(sizes.disabled, true);
   assert.equal(sizes.value, '[1,2]', 'a structured value shows as the JSON the spec carries');
+  assert.equal(section(named, 'Properties').querySelector('[data-u2-prop="value"] .u2-bind-chip'),
+    null, 'an unbound row keeps its editor');
 });
 
 edit('a choice prop edits through a choice list, a string_list through the list editor',
@@ -391,7 +396,8 @@ edit('without an editor the panel is read-only — and an HTML node still shows 
 
     const writable = panel('block');
     assert.deepEqual(sections(writable), ['Node', 'Properties'], 'the shared group folds instead');
-    assert.deepEqual(panes(writable), [['Appearance', 'false']]);
+    assert.deepEqual(panes(writable), [['Appearance', 'false'], ['Bindings', 'false']],
+      'an HTML node is bindable now (UB-4), so it gets the folded Bindings section too');
     assert.equal(section(writable, 'Properties').querySelectorAll('input').length, 2,
       'the same model, with editors');
     type(writable, 'Properties', 'text', 'Edited');
@@ -487,24 +493,28 @@ edit('a per-child prop is the parent\'s to render: editing a pane title rebuilds
     assert.equal(instance.root.querySelector('.fake-tab-label').textContent, 'Renamed');
   });
 
-/* WO-15 — the Bindings section as the place a binding is ADDED, not only corrected: one row per
-   bindable prop, and the picker beside the path field for whoever does not want to write the
-   grammar by hand. */
+/* WO-15, reshaped by UB-7c — the Bindings section is the tier presentation for every node: bound
+   rows only (free-text, the power path for re-pointing), plus one "Add binding…" row over every
+   unbound declared prop; creating a NEW binding is picker-only. */
 
-edit('the Bindings section lists every bindable prop, bound or not — an empty row commits nothing',
-  ({node, panel, patches}) => {
+edit('the Bindings section lists bound rows only — everything unbound is one "Add binding…" away',
+  ({panel, patches}) => {
     const shown = panel('nameInput');
     assert.deepEqual([...section(shown, 'Bindings').querySelectorAll('[data-u2-prop]')]
       .map((el) => el.dataset.u2Prop),
-    ['value', 'add-binding'], 'the tag\'s bindable prop unbound — the appearance group waits behind Add binding…');
-    assert.equal(field(shown, 'Bindings', 'value').value, '');
+    ['add-binding'], 'nothing bound, no empty rows (UB-7c)');
+    const select = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
+    const offered = [...select.querySelectorAll('option')].map((o) => o.value).filter((v) => v !== '');
+    assert.ok(offered.includes('value') && offered.includes('hint') && offered.includes('padding'),
+      `every unbound declared prop, the appearance group included: ${offered}`);
 
-    commit(shown, 'Bindings', 'value', '');
-    assert.deepEqual(patches, [], 'an untouched empty row is not an edit');
-    assert.equal(node('nameInput').bind, undefined);
-
-    assert.equal(field(panel('boundInput'), 'Bindings', 'value').value, '$.reagent',
-      'and a bound row shows the path the document carries');
+    const bound = panel('boundInput');
+    assert.deepEqual([...section(bound, 'Bindings').querySelectorAll('[data-u2-prop]')]
+      .map((el) => el.dataset.u2Prop), ['value', 'add-binding']);
+    assert.equal(field(bound, 'Bindings', 'value').value, '$.reagent',
+      'a bound row shows the path the document carries');
+    commit(bound, 'Bindings', 'value', '$.reagent');
+    assert.deepEqual(patches, [], 'recommitting the unchanged path is not an edit');
   });
 
 edit('the picker commits the path it assembles, through the funnel a typed path takes',
@@ -552,6 +562,8 @@ edit('a param bind is a dotted set-bind, and the row it lands on becomes the bin
   async ({instance, node, panel, patches}) => {
     backends.funcRunner = RUNNER;
     const shown = panel('orders');
+    assert.equal(shown.querySelector('[data-u2-bind-pick="params"]'), null,
+      'the subBindable head row carries no whole-prop picker — its dotted rows do (M2)');
     fire(shown.querySelector('[data-u2-bind-pick="params.city"]'), 'click');
     const dialog = picker();
     assert.notEqual(dialog, null, 'every param row carries the picker');
@@ -564,9 +576,11 @@ edit('a param bind is a dotted set-bind, and the row it lands on becomes the bin
       [['set-bind', 'params.city', '$.reagent']]);
     assert.equal(node('orders').bind['params.city'], '$.reagent');
     assert.equal(field(shown, 'Bindings', 'params.city').value, '$.reagent',
-      'the Bindings section shows the row at once, in place — the platform renders a shell.o write one gesture behind');
-    assert.equal(shell.o?.node, node('orders'), 'the panel is asked for again: its shape changed');
-    assert.equal(shell.dart.writes.length - writes, 1, 'one shell.o write per pick');
+      'the Bindings section shows the row at once, in place — the panel redraws itself');
+    assert.equal(section(shown, 'Bindings').querySelector('[data-u2-prop="params.city"] .u2-input-label')
+      .textContent, 'Params › city', 'a dotted key humanizes its head, the parameter stays visible (P5)');
+    assert.equal(shell.dart.writes.length - writes, 0,
+      'no shell.o write — a same-identity re-issue is a platform no-op');
 
     const after = panel('orders');
     const city = field(after, 'Parameters', 'city');
@@ -611,9 +625,18 @@ edit('a cycle picked in the tree is refused: the loop is named and nothing reach
 
     assert.deepEqual(patches, [], 'a self-reference never becomes a patch');
     assert.equal(node('nameInput').bind, undefined);
-    assert.equal(field(shown, 'Bindings', 'value').value, '', 'and the row is still empty');
+    assert.equal(section(shown, 'Bindings').querySelector('[data-u2-prop="value"]'), null,
+      'and no bound row appeared');
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /would create a cycle: nameInput → nameInput/);
+    assert.notEqual(document.querySelector('.u2-bind-picker'), null,
+      'the refused pick keeps the dialog open for a correction (P3)');
+
+    fire(pickerRow(dialog, 'reagent'), 'click');
+    okButton(dialog).click();
+    await flush();
+    assert.deepEqual(patches.map((p) => [p.op, p.name, p.path]), [['set-bind', 'value', '$.reagent']]);
+    assert.equal(document.querySelector('.u2-bind-picker'), null, 'and the corrected pick closes it');
   });
 
 /* P4 acceptance — the panel was taller than the platform's pane, which scrolls with no scrollbar
@@ -624,8 +647,8 @@ edit('Bindings folds until something is bound; Events, the section it was hiding
     assert.deepEqual(panes(unbound),
       [['Appearance', 'true'], ['Bindings', 'false'], ['Events', 'true']],
       'Appearance opens: the meta declares its own prop into the shared section');
-    assert.notEqual(field(unbound, 'Bindings', 'value'), null,
-      'folded, never unbuilt — the fields refresh in place on every patch, opened or not');
+    assert.notEqual(section(unbound, 'Bindings').querySelector('[data-u2-prop="add-binding"]'), null,
+      'folded, never unbuilt — the section exists whether or not it was ever opened');
     assert.deepEqual(panes(panel('boundInput')),
       [['Appearance', 'true'], ['Bindings', 'true'], ['Events', 'true']],
       'wiring that exists is shown');
@@ -778,13 +801,13 @@ tier('a property-tier node binds through one "Add binding…" row: the bound pro
     assert.deepEqual(patches.map((p) => [p.op, p.name, p.path]), [['set-bind', 'xColumnName', '$.reagent']]);
     assert.equal(plot.bind.xColumnName, '$.reagent');
     assert.deepEqual(rows(shown), ['table', 'xColumnName', 'add-binding'],
-      'the row is there at once, in place — the platform renders a shell.o write one gesture behind');
+      'the row is there at once, in place — the panel redraws itself');
     assert.equal(field(shown, 'Bindings', 'xColumnName').value, '$.reagent');
     const next = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
     assert.equal([...next.querySelectorAll('option')].some((o) => o.value === 'xColumnName'), false,
       'and "Add binding…" no longer offers what is bound');
-    assert.equal(shell.o?.node, plot, 'the panel is asked for again: it has a row more');
-    assert.equal(shell.dart.writes.length - writes, 1, 'one shell.o write per pick');
+    assert.equal(shell.dart.writes.length - writes, 0,
+      'no shell.o write — a same-identity re-issue is a platform no-op');
 
     const after = panel('plot');
     assert.deepEqual(rows(after), ['table', 'xColumnName', 'add-binding']);
@@ -891,7 +914,11 @@ test('a broken viewer without its frame: the Error row says what to bind, Bindin
         'no frame field; Misc and Description last, the rest first-seen');
       assert.deepEqual(panes(shown), [['Bindings', 'true']], 'open on the binding that is missing');
       assert.deepEqual([...section(shown, 'Bindings').querySelectorAll('[data-u2-prop]')].map((el) => el.dataset.u2Prop),
-        ['table', 'xColumnName', 'yColumnName', 'title'], 'a node that did not build is no tier: every bindable row');
+        ['add-binding'], 'the unified presentation (UB-7c): nothing bound, one row that adds');
+      const select = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
+      const offered = [...select.querySelectorAll('option')].map((o) => o.value).filter((v) => v !== '');
+      assert.deepEqual(offered, ['table', 'xColumnName', 'yColumnName', 'title'],
+        'the frame is one pick away, with every other declared prop');
     } finally {
       disposePanel();
       instance.dispose();

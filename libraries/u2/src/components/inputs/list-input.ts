@@ -1,4 +1,4 @@
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {button} from '../../core/elements.js';
 import {icon} from '../display/icon.js';
 
@@ -6,7 +6,7 @@ import {icon} from '../display/icon.js';
 const SPLIT = /,(?=(?:[^"]*"[^"]*")*(?![^"]*"))/;
 
 export interface ListInputOptions extends InputOptions<string[]> {
-  placeholder?: string;
+  placeholder?: LiveOption<string>;
 }
 
 /** Comma-separated list editor, the port of Dart's `ListInput`: the same quote-aware split, and
@@ -23,6 +23,10 @@ export class ListInput extends Input<string[], ListInputOptions> {
   constructor(options: ListInputOptions = {}) {
     super(options, []);
     this.root.dataset.u2 = 'list-input';
+    this.liveOption('placeholder', options.placeholder ?? 'Comma-separated values', (x) => {
+      this._field.placeholder = x;
+      this._area.placeholder = x;
+    });
   }
 
   /** `a,"b,c",d` → `['a', 'b,c', 'd']`; blank text is the empty list. */
@@ -56,18 +60,15 @@ export class ListInput extends Input<string[], ListInputOptions> {
 
   protected createEditor(): HTMLElement {
     this._expanded = false;
-    const placeholder = this.options.placeholder ?? 'Comma-separated values';
     const field = document.createElement('input');
     this._field = field;
     field.type = 'text';
     field.autocomplete = 'off';
     field.className = 'u2-list-text';
-    field.placeholder = placeholder;
 
     const area = document.createElement('textarea');
     this._area = area;
     area.className = 'u2-list-text u2-list-area';
-    area.placeholder = placeholder;
     area.hidden = true;
 
     let echo = false;

@@ -72,6 +72,8 @@ spec('manifest: survives JSON and describes every component', () => {
   const restored = JSON.parse(JSON.stringify(manifest));
   assert.deepEqual(restored, manifest);
   assert.equal(restored.schema, 'dg-ui/1');
+  assert.match(restored.binding, /bindable: true marks live/,
+    'the binding rule is stated once at the top level (UB-9)');
   for (const meta of restored.components) {
     assert.equal('create' in meta, false, `${meta.tag} leaks its factory into the manifest`);
     assert.equal(typeof meta.description === 'string' && meta.description.length > 0, true,

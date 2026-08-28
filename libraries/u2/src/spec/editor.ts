@@ -134,8 +134,8 @@ export class SpecEditor {
           const found = this._prop(patch.node, patch.name);
           if (!found)
             return `${patch.node.tag} has no prop "${patch.name}"`;
-          if (!found.prop.bindable)
-            return `prop "${patch.name}" is not bindable`;
+          if (found.prop.subBindable && !found.prop.bindable)
+            return `prop "${patch.name}" takes sub-binds only`;
         }
         if (!patch.path.startsWith('$.'))
           return `a bind path must start with "$." — got "${patch.path}"`;

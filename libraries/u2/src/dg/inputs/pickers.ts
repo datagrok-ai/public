@@ -3,7 +3,7 @@
    inputs plain `ChoiceInput`s that serialize, bind and validate like any other. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
@@ -194,7 +194,7 @@ export class TableInput extends ChoiceInput {
   }
 }
 
-export function tableInput(label: string,
+export function tableInput(label: LiveOption<string>,
   options: Omit<InputOptions<string | null>, 'label'> & {actions?: InputAction[]} = {}): TableInput {
   return new TableInput({...options, label});
 }

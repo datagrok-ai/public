@@ -6,7 +6,7 @@ import {Control} from '../core/component.js';
 import {button, divH, divV, panel} from '../core/elements.js';
 import {buttonWithIcon} from '../components/actions/buttons.js';
 import {icon, IconVariant} from '../components/display/icon.js';
-import {Input, InputOptions} from '../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../core/input-base.js';
 import {TextInput, TextArea} from '../components/inputs/text-input.js';
 import {BoolInput} from '../components/inputs/bool-input.js';
 import {NumberInput} from '../components/inputs/number-input.js';
@@ -33,6 +33,7 @@ import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
 import {StateSource} from '../sources/state.js';
 import {registerDataSources} from '../sources/registrations.js';
 import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry} from './registry.js';
+import {childProp} from './spec.js';
 import type {SpecNode} from './spec.js';
 
 type Props = Record<string, unknown>;
@@ -44,12 +45,12 @@ function inputOptions<T>(props: Props): InputOptions<T> {
   const value = props.value;
   const bound = value instanceof Signal;
   return {
-    label: props.label as string | undefined,
+    label: props.label as LiveOption<string> | undefined,
     name: props.name as string | undefined,
     inline: props.inline as boolean | undefined,
-    postfix: props.postfix as string | undefined,
-    tooltipText: props.tooltipText as string | undefined,
-    enabled: props.enabled as boolean | undefined,
+    postfix: props.postfix as LiveOption<string> | undefined,
+    tooltipText: props.tooltipText as LiveOption<string> | undefined,
+    enabled: props.enabled as LiveOption<boolean> | undefined,
     value: bound ? undefined : value as T,
     bind: bound ? value as Signal<T> : undefined,
   };
@@ -67,14 +68,17 @@ function itemList(items: unknown): string[] {
 }
 
 function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
+  // chrome is live-bindable one-way (UB-10); `name` and `inline` are structural and stay re-render
   return [
-    {name: 'label', type: 'string'},
+    {name: 'label', type: 'string', bindable: true},
     {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
     {name: 'value', type: value, bindable: true, twoWay: true},
     {name: 'inline', type: 'bool', description: 'Compact one-row variant without a label.'},
-    {name: 'postfix', type: 'string', description: 'Units or a short suffix shown after the editor.'},
-    {name: 'tooltipText', type: 'string'},
-    {name: 'enabled', type: 'bool', description: 'false grays the input out and blocks edits.'},
+    {name: 'postfix', type: 'string', bindable: true,
+      description: 'Units or a short suffix shown after the editor.'},
+    {name: 'tooltipText', type: 'string', bindable: true},
+    {name: 'enabled', type: 'bool', bindable: true,
+      description: 'false grays the input out and blocks edits.'},
     ...extra,
   ];
 }
@@ -85,12 +89,12 @@ function element(child: Child): HTMLElement {
 
 /** The title a container reads off its child's spec node — the one prop a parent owns. */
 function childTitle(node: SpecNode | undefined, fallback: string): string {
-  const title = node?.props?.title;
+  const title = childProp(node, 'title');
   return typeof title === 'string' ? title : fallback;
 }
 
 function childIcon(node: SpecNode | undefined): string | undefined {
-  const icon = node?.props?.icon;
+  const icon = childProp(node, 'icon');
   return typeof icon === 'string' && icon !== '' ? icon : undefined;
 }
 
@@ -146,7 +150,7 @@ const METAS: ComponentMeta[] = [
     category: 'Inputs',
     create: (props) => new TextInput({
       ...inputOptions<string>(props),
-      placeholder: props.placeholder as string | undefined,
+      placeholder: props.placeholder as LiveOption<string> | undefined,
       search: props.search as boolean | undefined,
       password: props.password as boolean | undefined,
       autoResize: props.autoResize as boolean | undefined,
@@ -155,7 +159,7 @@ const METAS: ComponentMeta[] = [
     usage: 'With `search: true` this is the filter box; in a platform view the main filter belongs ' +
       'in the view ribbon (`appView({ribbon})`), not inside the content area.',
     props: inputProps('string',
-      {name: 'placeholder', type: 'string'},
+      {name: 'placeholder', type: 'string', bindable: true},
       {name: 'search', type: 'bool', description: 'Magnifier affordance plus a clear button.'},
       {name: 'password', type: 'bool', description: 'Masked field with an eye toggle.'},
       {name: 'autoResize', type: 'bool', description: 'Width follows the text between 100 and 300px.'}),
@@ -167,12 +171,12 @@ const METAS: ComponentMeta[] = [
     category: 'Inputs',
     create: (props) => new TextArea({
       ...inputOptions<string>(props),
-      placeholder: props.placeholder as string | undefined,
+      placeholder: props.placeholder as LiveOption<string> | undefined,
       autoGrow: props.autoGrow as boolean | undefined,
     }),
     description: 'Multi-line text editor.',
     props: inputProps('string',
-      {name: 'placeholder', type: 'string'},
+      {name: 'placeholder', type: 'string', bindable: true},
       {name: 'autoGrow', type: 'bool', description: 'Grows with the text instead of scrolling.'}),
     events: ['input', 'change'],
     example: {tag: 'u2-text-area', props: {label: 'Description', placeholder: 'Up to 40 characters'}},
@@ -344,6 +348,17 @@ const METAS: ComponentMeta[] = [
       if (typeof props.activeTab === 'string')
         tabs.activeTab.value = props.activeTab;
       return tabs;
+    },
+    // a re-render (a bound pane title following its source) keeps the user's tab; an explicit
+    // activeTab — literal or bound — stays the document's to decide
+    carry: (node, prev, next) => {
+      if (node.props?.activeTab !== undefined || node.bind?.activeTab !== undefined ||
+          !(prev instanceof TabStrip) || !(next instanceof TabStrip))
+        return;
+      const active = prev.activeTab.peek();
+      const index = active !== null && active.startsWith('tab-') ? Number(active.slice(4)) : NaN;
+      if (index < (node.children?.length ?? 0))
+        next.activeTab.value = active;
     },
     description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
     props: [
@@ -550,10 +565,10 @@ const METAS: ComponentMeta[] = [
     category: 'Inputs',
     create: (props) => new ListInput({
       ...inputOptions<string[]>(props),
-      placeholder: props.placeholder as string | undefined,
+      placeholder: props.placeholder as LiveOption<string> | undefined,
     }),
     description: 'Comma-separated list; items carrying a comma are quoted. Expands to a textarea.',
-    props: inputProps('string_list', {name: 'placeholder', type: 'string'}),
+    props: inputProps('string_list', {name: 'placeholder', type: 'string', bindable: true}),
     events: ['input', 'change'],
     example: {tag: 'u2-list-input', props: {label: 'Synonyms', value: ['ASA', '2-acetoxybenzoic acid']}},
   },
@@ -572,13 +587,13 @@ const METAS: ComponentMeta[] = [
     category: 'Inputs',
     create: (props) => new QNumInput({
       ...inputOptions<number | null>(props),
-      placeholder: props.placeholder as string | undefined,
+      placeholder: props.placeholder as LiveOption<string> | undefined,
     }),
     description: 'Qualified number editor — "<5.2", "10", ">1e3". The value is the packed double ' +
       'the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.',
     usage: 'For measurements reported against a detection limit. A plain number belongs in ' +
       '`u2-number-input` — this editor spends two bits of precision on the qualifier.',
-    props: inputProps('double', {name: 'placeholder', type: 'string'}),
+    props: inputProps('double', {name: 'placeholder', type: 'string', bindable: true}),
     events: ['input', 'change'],
     example: {tag: 'u2-qnum-input', props: {label: 'IC50', value: QNum.less(5.2)}},
   },

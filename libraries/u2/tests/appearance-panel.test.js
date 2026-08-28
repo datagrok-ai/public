@@ -263,24 +263,25 @@ edit('the read-only panel hides unassigned shared appearance props and empty sec
     assert.ok(rows(styled, 'Properties').includes('label'), 'the ordinary sections keep every row');
   });
 
-edit('bindsOf hides the unbound appearance rows; a bound one shows and its field goes read-only',
+edit('bindsOf is the document\'s raw truth; a bound appearance row renders the chip',
   ({ref, panel}) => {
-    assert.deepEqual(Object.keys(bindsOf(ref('plain'))), ['value']);
-    const bound = bindsOf(ref('boundColor'));
-    assert.deepEqual(Object.keys(bound), ['value', 'color']);
-    assert.equal(bound.color, '$.c');
+    assert.deepEqual(bindsOf(ref('plain')), {}, 'nothing bound, nothing listed (R10)');
+    assert.deepEqual(bindsOf(ref('boundColor')), {color: '$.c'});
 
     const shown = panel('boundColor');
+    assert.deepEqual(appearancePane(shown), {title: 'Appearance (1)', expanded: 'true'},
+      'the badge counts a bound appearance prop, and the fold opens over it (P2)');
     assert.deepEqual([...section(shown, 'Bindings').querySelectorAll('[data-u2-prop]')]
-      .map((el) => el.dataset.u2Prop), ['value', 'color', 'add-binding']);
+      .map((el) => el.dataset.u2Prop), ['color', 'add-binding'],
+    'bound rows only, plus the one row that adds (UB-7c)');
     assert.equal(field(shown, 'Bindings', 'color').value, '$.c');
-    assert.equal(field(shown, 'Appearance', 'color').disabled, true,
-      'the Bindings row is where a bound prop is edited');
+    assert.notEqual(section(shown, 'Appearance').querySelector('[data-u2-prop="color"] .u2-bind-chip'),
+      null, 'the chip replaces the bound row\'s editor (UB-7b)');
 
     const select = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
     const offered = [...select.querySelectorAll('option')].map((o) => o.value).filter((v) => v !== '');
-    assert.ok(offered.includes('padding') && !offered.includes('value') && !offered.includes('color'),
-      `appearance props only, minus the bound one: ${offered}`);
+    assert.ok(offered.includes('padding') && offered.includes('value') && !offered.includes('color'),
+      `every unbound declared prop, minus the bound one: ${offered}`);
   });
 
 edit('an "Add binding…" pick on a plain node creates the appearance bind through the picker',
@@ -301,5 +302,6 @@ edit('an "Add binding…" pick on a plain node creates the appearance bind throu
     assert.equal(node('plain').bind.color, '$.c');
     const after = panel('plain');
     assert.equal(field(after, 'Bindings', 'color').value, '$.c');
-    assert.equal(field(after, 'Appearance', 'color').disabled, true);
+    assert.notEqual(section(after, 'Appearance').querySelector('[data-u2-prop="color"] .u2-bind-chip'),
+      null, 'the bound row renders the chip');
   });

@@ -8,6 +8,11 @@ import type {SpecNode} from './spec.js';
 /** Envelope version of the JSON spec: `{"$schema": "dg-ui/1", "root": {…}}`. */
 export const SPEC_SCHEMA = 'dg-ui/1';
 
+/** The binding rule, stated once at the manifest's top level (UB-9) — no per-prop repetition. */
+const BINDING_RULE = 'Every declared prop accepts a "bind" entry. bindable: true marks live ' +
+  'in-place consumption (twoWay marks write-back); a bind on any other declared prop re-renders ' +
+  'the node when the bound source changes. A bind on an undeclared prop is an error.';
+
 /** A component prop, described the way the platform describes every property — so the property
  * grid, validation and the manifest all read one shape. `type` carries a platform TYPE string
  * ('string', 'int', 'double', 'bool', 'string_list', 'object'); `object` takes any
@@ -81,6 +86,9 @@ export interface ComponentMeta extends ComponentMetaBase {
   /** Hands each rendered child to the component's own add-method (`Form.add`) instead of appending
    * it to the root; implies children are accepted. */
   adopt?: (parent: Control, child: Control | HTMLElement, index: number) => void;
+  /** Moves view state a re-render would lose (a tab strip's active tab) from the outgoing instance
+   * to the fresh one; a closure, so {@link Registry.manifest} strips it. */
+  carry?: (node: SpecNode, prev: Component | HTMLElement, next: Component | HTMLElement) => void;
   description: string;
   /** A sentence of judgment for the manifest reader (an LLM or a reviewer): when to reach for
    * this component, and when something else serves better. Reference facts stay in
@@ -163,14 +171,15 @@ export class Registry {
   /** Everything a spec author, an LLM or a generated wrapper needs — the metadata minus its hooks. */
   manifest(): object {
     const components: Omit<ComponentMeta,
-      'create' | 'createWithChildren' | 'createComponent' | 'adopt' | 'designerActions' | 'icon'>[] = [];
+      'create' | 'createWithChildren' | 'createComponent' | 'adopt' | 'carry' | 'designerActions' | 'icon'>[] = [];
     for (const meta of this._metas.values()) {
       const {create: _create, createWithChildren: _createWithChildren, createComponent: _createComponent,
-        adopt: _adopt, designerActions: _designerActions, icon: _icon, ...rest} = meta;
+        adopt: _adopt, carry: _carry, designerActions: _designerActions, icon: _icon, ...rest} = meta;
       rest.props = rest.props.filter((p) => !APPEARANCE_PROPS.includes(p));
       components.push(rest);
     }
-    return {schema: SPEC_SCHEMA, recipes: 'docs/recipes/', appearance: APPEARANCE_PROPS, components};
+    return {schema: SPEC_SCHEMA, recipes: 'docs/recipes/', binding: BINDING_RULE,
+      appearance: APPEARANCE_PROPS, components};
   }
 
   private static _stamp<T extends Component>(component: T, meta: ComponentMeta,

@@ -448,3 +448,37 @@
   flex-wrap: wrap;
   gap: var(--dg-space-xs);
 }
+
+/* The binding chip (UB-7b): a bound property row renders this in place of its editor */
+.u2-bind-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  max-width: 100%;
+  padding: 0 var(--dg-space-xs);
+  font-size: var(--dg-font-size-small);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  background: var(--dg-bg-secondary);
+  cursor: pointer;
+}
+
+.u2-bind-chip:hover {
+  background: var(--dg-hover);
+}
+
+.u2-bind-chip-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--dg-font-family-mono);
+  color: var(--dg-accent);
+}
+
+.u2-bind-chip-two-way {
+  color: var(--dg-text-color-light);
+}
+
+.u2-bind-chip-clear {
+  margin-left: auto;
+}

@@ -1,10 +1,20 @@
 import {signal, Signal, ReadonlySignal} from './signals.js';
+import {bindTypeOf} from './widget-like.js';
+import type {BindProp, BindSource} from './widget-like.js';
 import {Control} from './component.js';
 import {div, label, span} from './elements.js';
 
+/** An input chrome option: a literal applied once, or a signal followed live (UB-10). */
+export type LiveOption<T> = T | ReadonlySignal<T>;
+
+/** The literal a chrome option carries — undefined where it is a signal or absent. */
+export function labelText(x?: LiveOption<string>): string | undefined {
+  return typeof x === 'string' ? x : undefined;
+}
+
 export interface InputOptions<T> {
-  label?: string;
-  /** Stable key for forms and serialization; falls back to {@link label}. */
+  label?: LiveOption<string>;
+  /** Stable key for forms and serialization; falls back to {@link label} where it is a string. */
   name?: string;
   value?: T;
   /** Two-way external binding; without it the input owns its signal. */
@@ -13,11 +23,11 @@ export interface InputOptions<T> {
   inline?: boolean;
   nullable?: boolean;
   /** `false` grays the input out and blocks edits; live through the {@link Input.enabled} accessor. */
-  enabled?: boolean;
+  enabled?: LiveOption<boolean>;
   /** Units or any short suffix shown after the editor (Dart `InputBase.addPostfix`). */
-  postfix?: string;
+  postfix?: LiveOption<string>;
   onChanged?: (value: T) => void;
-  tooltipText?: string;
+  tooltipText?: LiveOption<string>;
   /** When an edit reaches {@link Input.value}: on every keystroke (`input`, the default) or on the
    * commit — blur or Enter — as Dart's `fireChanged` does (`change`). Only the free-text editors
    * have a gap between the two; every other editor commits as it edits. Worth asking for where a
@@ -51,6 +61,8 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   private readonly _inputBox: HTMLElement;
   private readonly _optionsRail: HTMLElement;
   private _labelEl: HTMLElement | undefined;
+  private _postfixEl: HTMLElement | undefined;
+  private _liveBinds: Map<string, Signal<unknown>> | undefined;
   private _enabled = true;
 
   constructor(options: O, defaultValue: T) {
@@ -58,17 +70,11 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this.options = options;
     this.value = options.bind ?? signal(options.value ?? defaultValue);
     this.validity = this._validity;
-    this.name = options.name ?? options.label;
+    this.name = options.name ?? labelText(options.label);
 
     this.root.classList.add('u2-input-root');
     if (options.inline)
       this.root.classList.add('u2-input-inline');
-    if (options.tooltipText)
-      this.root.title = options.tooltipText;
-    if (!options.inline && options.label !== undefined) {
-      this._labelEl = label(options.label, 'u2-input-label');
-      this.root.append(this._labelEl);
-    }
 
     this._inputBox = div([], 'u2-input-box');
     this._optionsRail = div([], 'u2-input-options');
@@ -76,11 +82,24 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
     this._editor.classList.add('u2-input-editor');
     // prepended: a subclass that filled the rail from createEditor already attached it
     this._inputBox.prepend(this._editor);
-    if (options.postfix)
-      this.addOptions(span(options.postfix, 'u2-input-postfix'));
     this.root.append(this._inputBox, this._error);
-    if (options.enabled === false)
-      this.enabled = false;
+    this.liveOption('label', options.label, (x) => this.label = x);
+    this.liveOption('tooltipText', options.tooltipText, (x) => this.tooltipText = x);
+    this.liveOption('postfix', options.postfix, (x) => {
+      if (!this._postfixEl) {
+        if (!x)
+          return; // an empty postfix never materializes the span or its rail
+        this.addOptions(this._postfixEl = span('', 'u2-input-postfix'));
+      }
+      this._postfixEl.textContent = x;
+    });
+    // `enabled: true` runs no sweep — internals a subclass disabled in createEditor must survive
+    this.liveOption('enabled', options.enabled, (x) => {
+      if (x === false)
+        this.enabled = false;
+      else if (!this._enabled)
+        this.enabled = true;
+    });
 
     this.effect(() => this._validate(this.value.value));
     this.effect(() => this._showValidity(this._validity.value));
@@ -120,7 +139,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   }
 
   get label(): string {
-    return this._labelEl?.textContent ?? this.options.label ?? '';
+    return this._labelEl?.textContent ?? labelText(this.options.label) ?? '';
   }
 
   set label(x: string) {
@@ -167,6 +186,38 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
    * and what a host that wants the control without the label should mount. */
   get box(): HTMLElement {
     return this._inputBox;
+  }
+
+  /** Applies a chrome option now and — when it arrived as a signal — on every change. One-way,
+   * owned by the input's scope; the signal answers {@link bindStep} so a deferred link wires it.
+   * A literal installs NO effect: the plain setter stays the sole owner afterwards. */
+  protected liveOption<T2>(name: string, value: LiveOption<T2> | undefined,
+    apply: (x: T2) => void): void {
+    if (value === undefined)
+      return;
+    if (!(value instanceof Signal)) {
+      apply(value as T2);
+      return;
+    }
+    (this._liveBinds ??= new Map()).set(name, value as unknown as Signal<unknown>);
+    this.effect(() => {
+      const x = (value as ReadonlySignal<T2>).value;
+      if (x !== undefined)
+        apply(x); // a forward-ref proxy starts undefined; skip until linked
+    });
+  }
+
+  bindStep(name: string): Signal<unknown> | BindSource | null {
+    return this._liveBinds?.get(name) ?? super.bindStep(name);
+  }
+
+  bindProps(): BindProp[] {
+    const props = super.bindProps();
+    for (const [name, sig] of this._liveBinds ?? []) {
+      if (!props.some((p) => p.name === name))
+        props.push({name, type: bindTypeOf(sig.peek()), writable: false}); // one-way (UB-10)
+    }
+    return props;
   }
 
   protected abstract createEditor(): HTMLElement;

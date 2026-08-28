@@ -8,10 +8,10 @@
    edits never reach the dump (R-c); `props.filters` rebuilds the panes (VP-31); the fluent factories
    answer the cached wrapper (VP-32); a view close kills every viewer the spec built. */
 import {artifact, ok, openApp, shot} from '../local.mjs';
-import {APP, balloons, bindField, bindThroughPicker, clearBalloons, dropControl, dumpViaDialog, expandTree,
-  fieldValue, focusTree, gridCellCenter, lookField, lookRow, openSection, openSpec, panelField, reopenApp,
-  row, selectRow, setField, specErrors, spyRuns, statusText, surfaceNode, toMode, viewerAt, waitCaption,
-  waitStatus} from '../lib.mjs';
+import {APP, balloons, bindThroughPicker, clearBalloons, dropControl, dumpViaDialog, expandTree,
+  fieldValue, focusTree, gridCellCenter, lookField, lookRow, openSection, openSpec, panelField, pickLeaf,
+  reopenApp, row, selectRow, setField, specErrors, spyRuns, statusText, surfaceNode, toMode, viewerAt,
+  waitCaption, waitStatus} from '../lib.mjs';
 
 /** `VIEWER_SAMPLES[0]` (src/dg/viewers/samples.ts), verbatim. */
 const SAMPLE = JSON.stringify({
@@ -318,11 +318,8 @@ async function checkBoundLookProp(page) {
   await dropControl(page, 'u2-choice-input', 'choice', 'detailForm');
   await waitStatus(page, 'choiceInput1');
   await selectRow(page, 'choiceInput1');
-  await openSection(page, 'Bindings');
-  const items = bindField(page, 'items');
-  await items.fill('$.orders.columns');
-  await items.press('Enter');
-  await page.waitForTimeout(400);
+  await page.locator('.u2-designer-properties [data-u2-bind-pick="items"]').first().click();
+  const items = await pickLeaf(page, 'columns', 'orders');
   const walked = await bindThroughPicker(page, 'choiceInput1', 'xColumnName', 'plot');
   const bound = findNode((await dump(page)).root, 'choiceInput1')?.bind?.value;
   await shot(page, 'viewers-1-picker');
@@ -339,7 +336,7 @@ async function checkBoundLookProp(page) {
     walked.labels.includes('plot (u2-viewer-scatter-plot)') && walked.labels.some((l) => l.startsWith('table')) &&
     walked.found === 'xColumnName : string ⇄' && bound === '$.plot.xColumnName' &&
     plot?.type === 'Scatter plot' && plot.props?.xColumnName === 'total' && await specErrors(page) === 0,
-    `picked=${walked.found} bind=${bound} plot=${JSON.stringify(plot)} ` +
+    `picked=${walked.found} items=${items.found} bind=${bound} plot=${JSON.stringify(plot)} ` +
     `picker=${JSON.stringify(walked.labels.slice(0, 14))}`);
 }
 

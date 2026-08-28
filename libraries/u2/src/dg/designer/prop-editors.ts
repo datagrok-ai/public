@@ -19,8 +19,9 @@ import {refreshPanel} from './handler.js';
 import {lookGrid} from './look-grid.js';
 import type {LookGrid} from './look-grid.js';
 import {bindPicker, bindPickerButton} from './bind-picker.js';
+import {BindChip} from './bind-chip.js';
 import {eventEntry, eventPick, funcPicker, paramProps} from './func-picker.js';
-import {bindRowsOf, bindsOf, commitOnChange, eventsOf, missingTable, paramBinds, paramValuesOf,
+import {bindsOf, commitOnChange, eventsOf, missingTable, paramBinds, paramValuesOf,
   paramsOf, propertyTier, propsFor, sharedAppearance, shownCommand, stringProps, unboundOf} from './prop-model.js';
 
 /** {@link PropertyGrid.same}'s comparison — element-wise where both values are lists, identity
@@ -90,13 +91,6 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     // they must exist whether or not the pane was ever opened
     return folds.addPane(title, content, expanded);
   };
-  const add = (title: string, props: NamedProperty[], values: Record<string, unknown>,
-    read: () => Record<string, unknown>, patch: FormChannel['patch'],
-    overrides?: Record<string, FieldOverride>, expanded?: boolean): FormChannel => {
-    const channel = channelOf(props, values, read, patch, overrides);
-    place(title, channel.form.root, expanded);
-    return channel;
-  };
 
   // a property-tier node's look is edited in the platform's own grid (VP-21): one grid commit is
   // one undo entry, its members pre-checked so a refused one is dropped alone, with a warning;
@@ -123,33 +117,67 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
       sections.push(h3('Properties'), look.root);
     else
       sections.push(h3('Properties (live)'), span(RUN_HINT, 'u2-designer-hint'), look.root);
-  } else {
-    // shared-prop identity, not the section title: a component-own prop that declares the shared
-    // category keeps ordinary ''-writing semantics
-    const shared = sharedAppearance(x);
-    for (const section of propsFor(x)) {
-      const patch: FormChannel['patch'] = (name, value) => {
-        const current = node.props?.[name];
-        // clearing a shared appearance field DELETES the prop (Ruling 8): absent means platform styling
-        if (shared.has(name) && (value === '' || value === null))
-          return current === undefined ? null : {op: 'set-prop', node, name, value: undefined};
-        // a component that reports '' for a prop the spec never carried would write that noise
-        // into the document the moment the empty field is touched
-        if (PropertyGrid.same(LISTY, current, value) || (value === '' && current === undefined))
-          return null;
-        return {op: 'set-prop', node, name, value};
-      };
+  }
+
+  // every property row is visually bindable (UB-7a): the picker button rides the rail, and a
+  // bound row renders the chip in place of its editor (UB-7b). Bind/unbind flips a row between
+  // chip and editor, and the platform ignores a same-identity `shell.o` write — so the rows are
+  // rebuilt here, in place, under their own scope, whenever a set-bind lands on the node
+  const pickFor = (name: string, label = name) => () => Scope.runWith(owner, () => bindPicker(x.instance,
+    (path) => reissue(editor, {op: 'set-bind', node, name, path}, x),
+    {prop: label, current: node.bind?.[name]}));
+  const chipsFor = (props: NamedProperty[]): Record<string, FieldOverride> | undefined => {
+    let overrides: Record<string, FieldOverride> | undefined;
+    for (const prop of props) {
+      const name = prop.name;
+      const path = node.bind?.[name];
+      if (path === undefined)
+        continue;
+      const chip = new BindChip({path, label: prop.caption ?? prop.friendlyName ?? name,
+        twoWay: (prop as {twoWay?: boolean}).twoWay === true,
+        onPick: pickFor(name),
+        onClear: () => reissue(editor, {op: 'set-bind', node, name, path: undefined}, x)});
+      chip.clearButton.dataset.u2Unbind = name;
+      (overrides ??= {})[name] = {input: chip};
+    }
+    return overrides;
+  };
+  const rowButtons = (channel: FormChannel, props: NamedProperty[]): void => {
+    for (const prop of props) {
+      // a subBindable head binds through its dotted parameter rows only — a button here would
+      // dead-end at the canApply refusal
+      const meta = prop as {subBindable?: boolean, bindable?: boolean};
+      if (meta.subBindable === true && meta.bindable !== true)
+        continue;
+      const input = channel.form.input(prop.name);
+      if (input !== undefined)
+        bindPickerButton(input, prop.name, pickFor(prop.name));
+    }
+  };
+  // shared-prop identity, not the section title: a component-own prop that declares the shared
+  // category keeps ordinary ''-writing semantics
+  const shared = sharedAppearance(x);
+  let rowScope: Scope | undefined;
+  let rowChannels: FormChannel[] = [];
+  panel.own(() => rowScope?.dispose());
+  // the h3/pane placement happens once — the titles are stable across rebuilds (propsFor groups
+  // by category + Parent tag); every rebuild swaps the form inside its stable host
+  const hosts = new Map<string, HTMLElement>();
+  if (!tier) {
+    for (const section of propsFor(x, true)) {
+      const h = div([], 'u2-designer-rows');
+      hosts.set(section.title, h);
       if (section.title !== APPEARANCE_CATEGORY) {
-        add(section.title, section.props, section.values, section.read, patch);
+        place(section.title, h);
         continue;
       }
       // the shared group folds, collapsed until something is assigned — or a component-own prop
       // joined the section by declaring its category; the badge counts the assigned shared values
-      const count = (): number =>
-        section.props.filter((p) => shared.has(p.name) && node.props?.[p.name] !== undefined).length;
-      const hasOwn = section.props.some((p) => !shared.has(p.name));
-      const channel = channelOf(section.props, section.values, section.read, patch);
-      const pane = place(section.title, channel.form.root, count() > 0 || hasOwn);
+      const props = section.props;
+      const count = (): number => props.filter((p) => shared.has(p.name) &&
+        (node.props?.[p.name] !== undefined || node.bind?.[p.name] !== undefined)).length;
+      const hasOwn = props.some((p) => !shared.has(p.name));
+      const pane = place(section.title, h, count() > 0 || hasOwn);
       if (pane !== undefined) {
         const label = pane.root.querySelector('.u2-accordion-title') as HTMLElement;
         badge = () => {
@@ -160,42 +188,74 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
       }
     }
   }
-
-  // what the function this source names is called with: one typed editor per declared param, and
-  // the same picker the props use for the ones that follow a value instead
-  const params = paramsOf(x);
-  if (params !== null) {
-    const values = paramValuesOf(node, params.prop);
-    const channel = add('Parameters',
-      paramProps(params.inputs, values, paramBinds(node, params.prop)), values,
-      () => paramValuesOf(node, params.prop), (name, value) => {
-        const current = paramValuesOf(node, params.prop);
-        if (PropertyGrid.same(LISTY, current[name], value) ||
-          (value === '' && current[name] === undefined))
-          return null;
-        return {op: 'set-prop', node, name: params.prop, value: {...current, [name]: value}};
-      });
-    for (const prop of params.inputs) {
-      const input = channel.form.input(prop.name);
-      if (input === undefined)
-        continue;
-      const key = `${params.prop}.${prop.name}`;
-      bindPickerButton(input, key, () => Scope.runWith(owner, () => bindPicker(x.instance,
-        (path) => reissue(editor, {op: 'set-bind', node, name: key, path}, x))));
-    }
-  }
+  let paramsHost: HTMLElement | undefined;
+  if (paramsOf(x) !== null)
+    place('Parameters', paramsHost = div([], 'u2-designer-rows'));
+  const buildRows = (): void => {
+    for (const channel of rowChannels)
+      channels.splice(channels.indexOf(channel), 1);
+    rowChannels = [];
+    rowScope?.dispose();
+    rowScope = new Scope();
+    Scope.runWith(rowScope, () => {
+      if (!tier) {
+        for (const section of propsFor(x, true)) {
+          const patch: FormChannel['patch'] = (name, value) => {
+            // a bound prop is the context's to change: a stale row never writes a literal over it
+            if (node.bind?.[name] !== undefined)
+              return null;
+            const current = node.props?.[name];
+            // clearing a shared appearance field DELETES the prop (Ruling 8): absent means platform styling
+            if (shared.has(name) && (value === '' || value === null))
+              return current === undefined ? null : {op: 'set-prop', node, name, value: undefined};
+            // a component that reports '' for a prop the spec never carried would write that noise
+            // into the document the moment the empty field is touched
+            if (PropertyGrid.same(LISTY, current, value) || (value === '' && current === undefined))
+              return null;
+            return {op: 'set-prop', node, name, value};
+          };
+          const channel = channelOf(section.props, section.values, section.read, patch,
+            chipsFor(section.props));
+          rowChannels.push(channel);
+          rowButtons(channel, section.props);
+          hosts.get(section.title)!.replaceChildren(channel.form.root);
+        }
+      }
+      // what the function this source names is called with: one typed editor per declared param,
+      // and the same picker the props use for the ones that follow a value instead
+      const params = paramsOf(x);
+      if (params !== null) {
+        const values = paramValuesOf(node, params.prop);
+        const channel = channelOf(
+          paramProps(params.inputs, values, paramBinds(node, params.prop)), values,
+          () => paramValuesOf(node, params.prop), (name, value) => {
+            const current = paramValuesOf(node, params.prop);
+            if (PropertyGrid.same(LISTY, current[name], value) ||
+              (value === '' && current[name] === undefined))
+              return null;
+            return {op: 'set-prop', node, name: params.prop, value: {...current, [name]: value}};
+          });
+        rowChannels.push(channel);
+        for (const prop of params.inputs) {
+          const input = channel.form.input(prop.name);
+          const key = `${params.prop}.${prop.name}`;
+          if (input !== undefined)
+            bindPickerButton(input, key, pickFor(key, prop.name));
+        }
+        paramsHost?.replaceChildren(channel.form.root);
+      }
+    });
+  };
+  buildRows();
 
   // Bindings and events are guarded fields: a partial value ('c', 'cm', …) is a refusal, so
-  // they commit on blur/Enter — per keystroke, the guard would fire on every prefix typed
-  const appearanceProp = (name: string): boolean =>
-    x.meta()?.props.find((p) => p.name === name)?.category === APPEARANCE_CATEGORY;
-  // what "Add binding…" offers: everything unbound on a tier node, the appearance group — whose
-  // unbound props get no rows of their own — on a plain one
-  const addable = (): string[] => tier ? unboundOf(x) : unboundOf(x).filter(appearanceProp);
+  // they commit on blur/Enter — per keystroke, the guard would fire on every prefix typed.
+  // One presentation for every node (UB-7c): bound rows only — free-text, the power path for
+  // re-pointing — plus one "Add binding…" over every unbound declared prop
   const bindings = (): FormChannel => {
-    const bind = bindRowsOf(x);
+    const bind = bindsOf(x);
     const rows = Object.keys(bind);
-    const offered = addable();
+    const offered = unboundOf(x);
     // the rows are the section's for its lifetime: a cleared one stays, empty, until the next render
     const read = (): Record<string, unknown> => {
       const all = bindsOf(x);
@@ -204,24 +264,30 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
         shown[name] = all[name] ?? '';
       return shown;
     };
-    const channel = channelOf(stringProps(bind, 'Bound context path'), bind, read, (name, value) => {
-      const path = value as string;
-      return path === (node.bind?.[name] ?? '') ? null :
-        {op: 'set-bind', node, name, path: path === '' ? undefined : path};
-    }, commitOnChange(bind));
+    // the same humanized labels the "Add binding…" list speaks; a dotted sub-bind key keeps its
+    // parameter name visible past the head. The prop key stays the row's identity untouched
+    const caption = (name: string): string => {
+      const dot = name.indexOf('.');
+      return dot < 0 ? words(name) : `${words(name.slice(0, dot))} › ${name.slice(dot + 1)}`;
+    };
+    const channel = channelOf(
+      stringProps(bind, 'Bound context path').map((p) => ({...p, caption: caption(p.name)})),
+      bind, read, (name, value) => {
+        const path = value as string;
+        return path === (node.bind?.[name] ?? '') ? null :
+          {op: 'set-bind', node, name, path: path === '' ? undefined : path};
+      }, commitOnChange(bind));
     // the path field is the power path; the picker beside it is the one that needs no grammar
     for (const name of rows) {
       const input = channel.form.input(name);
       if (input !== undefined) {
         bindPickerButton(input, name, () => Scope.runWith(owner, () =>
-          bindPicker(x.instance, (path) => commit(editor, channel, name, path))));
+          bindPicker(x.instance, (path) => commit(editor, channel, name, path),
+            {prop: name, current: node.bind?.[name]})));
       }
     }
-    if (!tier && rows.length === 0 && offered.length === 0)
-      channel.form.addElement(span('Bind a parameter with the … beside it', 'u2-designer-hint'));
-    // a property-tier node lists what it binds, not its forty bindable props — as a plain node
-    // lists no unbound appearance rows: the next one is picked here, and the row it lands on
-    // becomes the binding's — the section is drawn again
+    // the next binding is picked here, and the row it lands on becomes the binding's — the
+    // section is drawn again
     if (tier || offered.length > 0) {
       const pick = new ChoiceInput({label: 'Add binding…', nullable: true,
         items: offered.map((name) => ({value: name, label: words(name)})),
@@ -234,8 +300,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
           grok.shell.warning('Add binding: pick the property first');
           return;
         }
-        Scope.runWith(owner, () => bindPicker(x.instance,
-          (path) => reissue(editor, {op: 'set-bind', node, name, path}, x)));
+        pickFor(name)();
       });
     }
     return channel;
@@ -255,15 +320,16 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     host.replaceChildren(bound.form.root);
   };
   // a source's params bind there too, so its section is up before the first one is picked
-  if (Object.keys(bindRowsOf(x)).length > 0 || tier || params !== null || addable().length > 0) {
+  const hasBinds = Object.keys(bindsOf(x)).length > 0;
+  if (hasBinds || tier || paramsOf(x) !== null || unboundOf(x).length > 0) {
     refresh();
     // open where there is wiring to see — or where the one missing binding is what broke the node —
     // folded where every row is an empty invitation
-    place('Bindings', host, Object.keys(node.bind ?? {}).length > 0 || missingTable(x));
+    place('Bindings', host, hasBinds || missingTable(x));
   }
 
   if (Object.keys(events).length > 0) {
-    const channel = add('Events',
+    const channel = channelOf(
       stringProps(events,
         'The function this event calls — pick one with the … button, or type cmd: plus its name'),
       events,
@@ -271,8 +337,9 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
         const command = value as string;
         return command === shownCommand(node.on?.[name]) ? null :
           {op: 'set-event', node, event: name, command: command === '' ? undefined : command};
-      // always open: this is the section the folded one above was hiding
-      }, commitOnChange(events), true);
+      }, commitOnChange(events));
+    // always open: this is the section the folded one above was hiding
+    place('Events', channel.form.root, true);
     // the field names a command of any tier by hand; the picker beside it names a platform
     // function and what to call it with
     for (const name of Object.keys(events)) {
@@ -296,6 +363,10 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     look?.refresh();
     if (!applied || applied.structural || !applied.patches.some((p) => p.node === x.node))
       return;
+    // a bind or unbind flips rows between chip and editor: rebuild them — never mid-typing, since
+    // typing commits set-prop/set-event, which refresh in place below (D-4)
+    if (applied.patches.some((p) => p.node === x.node && p.op === 'set-bind'))
+      buildRows();
     for (const channel of channels) {
       Object.assign(channel.values, channel.read());
       channel.form.refresh();
@@ -304,28 +375,26 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     badge?.();
   });
   return {sections, refresh: () => {
+    buildRows();
     refresh();
     look?.refresh();
   }};
 }
 
-function commit(editor: SpecEditor, channel: FormChannel, name: string, value: unknown): void {
+/** False on a refusal — what keeps the picker that produced the value open for a correction. */
+function commit(editor: SpecEditor, channel: FormChannel, name: string, value: unknown): boolean {
   const patch = channel.patch(name, value);
-  if (patch !== null)
-    apply(editor, patch);
+  return patch === null || apply(editor, patch);
 }
 
-/** A patch the row it lands on becomes the binding's to show: the panel is drawn again in place —
- * the platform renders a `shell.o` write one gesture behind, so the write alone left the new row
- * unseen — and then asked for again, unless the selection already did that (a bind that flipped
- * the node between broken and built): one `shell.o` write per gesture. */
-function reissue(editor: SpecEditor, patch: SpecPatch, x: SpecNodeRef): void {
-  const shown = grok.shell.o;
+/** A patch that changes which rows are chips: the document changes, then the panel redraws itself
+ * in place (`refreshPanel` → the row rebuild and the Bindings section). The platform ignores a
+ * same-identity `shell.o` write, so the panel never relies on one. False on a refusal. */
+function reissue(editor: SpecEditor, patch: SpecPatch, x: SpecNodeRef): boolean {
   if (!apply(editor, patch))
-    return;
+    return false;
   refreshPanel(x);
-  if (grok.shell.o === shown)
-    grok.shell.o = x;
+  return true;
 }
 
 /** The one funnel every panel edit takes, whichever field or picker produced it. */

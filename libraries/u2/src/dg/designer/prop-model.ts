@@ -39,8 +39,9 @@ export interface PropSection {
 /** The panel property model of a node (D-9): what the component declares — grouped by category —
  * or what a plain HTML tag honors, plus the props its parent reads off it — a pane title — under
  * the parent's own section. Values come from the live component where one built, from the node
- * itself otherwise. */
-export function propsFor(ref: SpecNodeRef): PropSection[] {
+ * itself otherwise; `bindPaths` makes a bound prop read as its bind path instead — what the
+ * writable panel's chip shows and refreshes to, never the read-only tables' truth. */
+export function propsFor(ref: SpecNodeRef, bindPaths = false): PropSection[] {
   const node = ref.node;
   const meta = ref.meta();
   const declared = meta ? meta.props : isHtmlTag(node.tag) ? htmlProps(node.tag) : [];
@@ -67,6 +68,11 @@ export function propsFor(ref: SpecNodeRef): PropSection[] {
       const values: Record<string, unknown> = {};
       for (const prop of props) {
         const name = prop.name;
+        const bound = bindPaths ? node.bind?.[name] : undefined;
+        if (bound !== undefined) {
+          values[name] = bound;
+          continue;
+        }
         const value = live[name] ?? node.props?.[name];
         values[name] = EDITABLE.has(typeOf(prop)) ? value : json(value);
       }
@@ -168,39 +174,26 @@ export function paramBinds(node: SpecNode, prop: string): Record<string, string>
   return binds;
 }
 
-/** Every prop the component declares bindable — except the unbound appearance group, which would
- * bury the section under thirteen empty rows — plus anything the node binds beyond them: a dotted
- * sub-bind key, or a prop of a tag the registry no longer knows. An empty row is where a binding
- * is added, by hand or through the picker. */
+/** The document's bindings, raw (UB-7c): bound entries only — dotted sub-bind keys and props of a
+ * tag the registry no longer knows included. Everything unbound is one "Add binding…" away. */
 export function bindsOf(x: SpecNodeRef): Record<string, string> {
-  const bind = x.node.bind ?? {};
-  const binds: Record<string, string> = {};
-  for (const prop of x.instance.registry.get(x.node.tag)?.props ?? []) {
-    if (prop.bindable && !APPEARANCE_PROPS.includes(prop))
-      binds[prop.name] = bind[prop.name] ?? '';
-  }
-  for (const name of Object.keys(bind))
-    binds[name] = bind[name];
-  return binds;
+  return {...x.node.bind};
 }
 
-/** The Bindings rows a panel shows: every bindable prop on a u2 control; on a property-tier node —
- * a viewer with forty look props — only what is bound, the rest one "Add binding…" row away. */
-export function bindRowsOf(x: SpecNodeRef): Record<string, string> {
-  const all = bindsOf(x);
-  if (!propertyTier(x))
-    return all;
-  const bound: Record<string, string> = {};
-  for (const name of Object.keys(x.node.bind ?? {}))
-    bound[name] = all[name];
-  return bound;
-}
-
-/** What "Add binding…" offers: the bindable props not bound yet — a property-tier node's look
- * props, a plain node's appearance group. */
+/** What "Add binding…" offers: every declared-but-unbound prop — the component's own, a plain
+ * HTML tag's, and what the parent declares for its children — deduped, minus what is bound.
+ * A `subBindable` prop is bound through its dotted sub-bind rows, never as a whole. */
 export function unboundOf(x: SpecNodeRef): string[] {
-  return (x.instance.registry.get(x.node.tag)?.props ?? [])
-    .filter((p) => p.bindable && x.node.bind?.[p.name] === undefined).map((p) => p.name);
+  const declared = x.instance.registry.get(x.node.tag)?.props ??
+    (isHtmlTag(x.node.tag) ? htmlProps(x.node.tag) : []);
+  const parent = x.parent();
+  const fromParent = parent ? x.instance.registry.get(parent.tag)?.childProps ?? [] : [];
+  const names: string[] = [];
+  for (const p of [...declared, ...fromParent]) {
+    if (p.subBindable !== true && x.node.bind?.[p.name] === undefined && !names.includes(p.name))
+      names.push(p.name);
+  }
+  return names;
 }
 
 /** Every event the component declares, wired or not, plus anything the node wires beyond them. */

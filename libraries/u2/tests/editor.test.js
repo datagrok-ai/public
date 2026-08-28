@@ -325,8 +325,10 @@ edit('canApply: the refusal matrix — structure, names, prop types, bind and ev
   assert.match(editor.canApply({op: 'set-prop', node: input, name: 'nope', value: 'x'}),
     /has no prop "nope"/);
   assert.equal(editor.canApply({op: 'set-prop', node: input, name: 'label', value: undefined}), null);
-  assert.match(editor.canApply({op: 'set-bind', node: input, name: 'label', path: '$.x'}),
-    /not bindable/);
+  assert.equal(editor.canApply({op: 'set-bind', node: input, name: 'label', path: '$.x'}), null,
+    'a declared non-bindable prop takes a re-render bind');
+  assert.match(editor.canApply({op: 'set-bind', node: input, name: 'ghost', path: '$.x'}),
+    /has no prop "ghost"/);
   assert.match(editor.canApply({op: 'set-bind', node: input, name: 'value', path: 'x'}),
     /must start with "\$\."/);
   const eventRefusal = editor.canApply({op: 'set-event', node: input, event: 'input', command: 'alert(1)'});
@@ -889,6 +891,8 @@ edit('canApply(set-bind): the path must parse, and a dotted key needs a subBinda
 
   assert.equal(editor.canApply({op: 'set-bind', node: orders, name: 'params.days',
     path: '$.daysInput'}), null, 'a dotted key on a subBindable prop');
+  assert.match(editor.canApply({op: 'set-bind', node: orders, name: 'params', path: '$.daysInput'}),
+    /prop "params" takes sub-binds only/, 'the whole prop is never bound — its sub-binds are');
   assert.match(editor.canApply({op: 'set-bind', node: orders, name: 'func.x', path: '$.daysInput'}),
     /prop "func" does not take sub-binds/);
   assert.match(editor.canApply({op: 'set-bind', node: orders, name: 'nope.x', path: '$.daysInput'}),

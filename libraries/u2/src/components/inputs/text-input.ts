@@ -1,4 +1,4 @@
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {icon} from '../display/icon.js';
 
@@ -6,7 +6,7 @@ export interface TextInputOptions extends InputOptions<string> {
   /** Magnifier affordance plus a clear button, revealed on hover as the platform's is
    * (`text_input.dart:131-141` wires it through `htmlMouseOverVisibility`). */
   search?: boolean;
-  placeholder?: string;
+  placeholder?: LiveOption<string>;
   /** Masked field with an eye toggle. The platform's `PASSWORD_PLACEHOLDER` focus/blur dance
    * (`text_input.dart:54-73`) is a credentials convention and stays out of the core input. */
   password?: boolean;
@@ -22,10 +22,12 @@ export interface TextInputOptions extends InputOptions<string> {
  * where there is nothing to clear. */
 export class TextInput extends Input<string, TextInputOptions> {
   private _input!: HTMLInputElement;
+  private _remeasure?: () => void;
 
   constructor(options: TextInputOptions = {}) {
     super(options, '');
     this.root.dataset.u2 = 'text-input';
+    this.liveOption('placeholder', options.placeholder, (x) => this.placeholder = x);
   }
 
   get placeholder(): string {
@@ -34,6 +36,7 @@ export class TextInput extends Input<string, TextInputOptions> {
 
   set placeholder(x: string) {
     this._input.placeholder = x;
+    this._remeasure?.();
   }
 
   protected createEditor(): HTMLElement {
@@ -41,7 +44,6 @@ export class TextInput extends Input<string, TextInputOptions> {
     this._input = input;
     input.type = this.options.password ? 'password' : 'text';
     input.autocomplete = 'off';
-    input.placeholder = this.options.placeholder ?? '';
     bindValue(this.scope, input, this.value, this.options.commitOn);
     if (this.options.autoResize)
       this._autoResize();
@@ -91,24 +93,29 @@ export class TextInput extends Input<string, TextInputOptions> {
   }
 
   /** Off-screen span measuring the text the field carries — the platform's own trick
-   * (`text_input.dart:218-239`); an empty field is measured by its placeholder. */
+   * (`text_input.dart:218-239`); an empty field is measured by its placeholder, so the
+   * placeholder setter re-measures too (it lands after `createEditor`, and may follow a signal). */
   private _autoResize(): void {
     const measure = document.createElement('span');
     measure.className = 'u2-input-measure';
     measure.setAttribute('aria-hidden', 'true');
     this.root.append(measure);
-    this.effect(() => {
-      const text = this.value.value;
+    this._remeasure = () => {
+      const text = this.value.peek();
       measure.textContent = text === '' ? this._input.placeholder : text;
       const min = this.options.minWidth ?? 100;
       const max = this.options.maxWidth ?? 300;
       this._input.style.width = `${Math.min(Math.max(measure.offsetWidth + 10, min), max)}px`;
+    };
+    this.effect(() => {
+      void this.value.value;
+      this._remeasure!();
     });
   }
 }
 
 export interface TextAreaOptions extends InputOptions<string> {
-  placeholder?: string;
+  placeholder?: LiveOption<string>;
   autoGrow?: boolean;
 }
 
@@ -118,6 +125,7 @@ export class TextArea extends Input<string, TextAreaOptions> {
   constructor(options: TextAreaOptions = {}) {
     super(options, '');
     this.root.dataset.u2 = 'text-area';
+    this.liveOption('placeholder', options.placeholder, (x) => this.placeholder = x);
   }
 
   get placeholder(): string {
@@ -131,7 +139,6 @@ export class TextArea extends Input<string, TextAreaOptions> {
   protected createEditor(): HTMLElement {
     const area = document.createElement('textarea');
     this._area = area;
-    area.placeholder = this.options.placeholder ?? '';
     bindValue(this.scope, area, this.value, this.options.commitOn);
     if (this.options.autoGrow)
       this.effect(() => this._grow(this.value.value));

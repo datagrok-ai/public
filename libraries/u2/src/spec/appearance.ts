@@ -2,6 +2,7 @@
    answers, injected at registration and applied once after create. Absent means platform styling —
    there are no defaults, and nothing is ever serialized for an unassigned prop. */
 import {Signal} from '../core/signals.js';
+import type {Scope} from '../core/scope.js';
 import {Control} from '../core/component.js';
 import type {SpecPropMeta} from './registry.js';
 
@@ -49,9 +50,11 @@ export function appearanceFor(props: SpecPropMeta[]): SpecPropMeta[] {
 }
 
 /** Writes each applicable prop present in `props` onto the target's root style: a literal once, a
- * bound signal through an effect on the control's own scope — it dies with the node. */
+ * bound signal through an effect on the control's own scope — it dies with the node. For a plain
+ * element a bound signal needs `scope` (the node's mount scope); without one it is skipped, as the
+ * registry's element path always was. */
 export function applyAppearance(target: Control | HTMLElement, props: Record<string, unknown>,
-  applicable: SpecPropMeta[]): void {
+  applicable: SpecPropMeta[], scope?: Scope): void {
   const control = Control.is(target) ? target : undefined;
   const style = (control?.root ?? target as HTMLElement).style;
   for (const prop of applicable) {
@@ -60,8 +63,11 @@ export function applyAppearance(target: Control | HTMLElement, props: Record<str
     if (value === undefined)
       continue;
     if (value instanceof Signal) {
-      if (control === undefined)
+      if (control === undefined) {
+        if (scope !== undefined)
+          scope.effect(() => write((target as HTMLElement).style, name, (value as Signal<unknown>).value));
         continue;
+      }
       /* The bound signal becomes a same-named member so `bindStep(name)` answers it: a deferred
          bind's `link` finds the proxy there and wires the source through it, and `bindProps()`
          advertises exactly the bound appearance props. The `in` guard never clobbers an existing
