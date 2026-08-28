@@ -73,6 +73,7 @@ grok s users save --json user.json                   # create / update from JSON
 grok s groups add-members Chemists alice bob         # membership (idempotent)
 grok s shares add "Me:MyConn" Chemists --access Edit # sharing
 grok s functions run 'Chem:smilesToMw("CCO")'        # call a function
+grok s packages install Chem Bio                     # install latest plugins from the registry
 grok s raw GET /api/users/current                    # any endpoint
 ```
 

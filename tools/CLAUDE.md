@@ -251,6 +251,16 @@ grok s connections test --json conn.json                      # test a connectio
 grok s functions run 'Chem:smilesToMw("ccc")'
 grok s functions run 'Pkg:fn({a:5,b:22})'
 
+# Manage packages (server pulls released versions from the package repository / npm)
+grok s packages install Chem Bio PowerGrid     # install latest of each
+grok s packages install Chem --version 1.14.0  # pin a version
+grok s packages outdated                       # installed vs registry-latest
+grok s packages update --all                   # upgrade everything outdated
+grok s packages versions Chem                  # published versions + current/latest flags
+grok s packages set-version Chem 1.13.0        # activate a specific version
+grok s packages uninstall Chem                 # repo entry stays installable
+grok s packages share Chem Chemists --access View
+
 # Browse file storage
 grok s files list "System:AppData" -r          # list files recursively
 grok s files list "System:AppData/MyPlugin"
