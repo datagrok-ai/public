@@ -56,10 +56,11 @@ export class CloudLogsApp extends DG.ViewBase {
     });
     this.groupInput = ui.input.choice<string | null>('Group', {items: [], nullable: true});
     this.prefixInput = ui.input.string('Prefix', {
-      value: 'cw/',
-      tooltipText: 'Key prefix in the archive bucket. cw/ holds the CloudWatch deliveries ' +
-        '(cloudwatch/ once the CloudFormation template is applied), alb/ and vpc-flow/ the ' +
-        'rest. Narrow by date: cw/2026/08/26/',
+      value: '',
+      tooltipText: 'Key prefix, relative to the archive root. Empty lists everything the ' +
+        'instance can reach — on a managed instance the root is already scoped to it, so a ' +
+        'leading cw/ would look under that scope again and find nothing. Narrow by class or ' +
+        'date: app/, pods/, app/2026/08/28/',
     });
     this.rangeInput = ui.input.choice<string | null>('Time', {
       items: Object.keys(RANGES), value: 'Last hour', nullable: false,
@@ -182,9 +183,9 @@ export class CloudLogsApp extends DG.ViewBase {
 
   /** The archive is two-step: list keys, then decode the one you pick. */
   private async showArchiveObjects(): Promise<void> {
+    // Empty means "use the instance role", the same contract the CloudWatch calls
+    // above already rely on — a managed instance has no archive connection to pick.
     const connection = this.connectionId();
-    if (!connection)
-      throw new Error('Choose the connection that points at the archive bucket');
     const objects = await grok.dapi.log.getArchiveObjects(connection, {
       prefix: this.prefixInput.value,
       limit: this.limitInput.value ?? CloudLogsApp.DEFAULT_LIMIT,
