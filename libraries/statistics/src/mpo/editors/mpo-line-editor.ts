@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import type Konva from 'konva';
 import {DesirabilityLine, DesirabilityMode, NumericalDesirability, toScale, fromScale, domainMinX, domainMaxX,
-  materializeLine, refreshDesirabilityLine, defaultAnchor, defaultSigma, DEFAULT_K, MpoScale} from '../mpo';
+  materializeLine, refreshDesirabilityLine, defaultAnchor, defaultSigma, DEFAULT_K, MpoScale,
+  flatLine} from '../mpo';
 import {Subject} from 'rxjs';
 
 let _konva: typeof Konva | undefined;
@@ -133,12 +134,8 @@ export class MpoDesirabilityLineEditor {
   }
 
   private ensureDefaultLine(): void {
-    if (this._prop.line.length > 0)
-      return;
-
-    const min = this._prop.min ?? 0;
-    const max = this._prop.max ?? 1;
-    this._prop.line = [[min, 0.5], [max, 0.5]];
+    if (this._prop.line.length === 0)
+      this._prop.line = flatLine(this._prop.min ?? 0, this._prop.max ?? 1);
   }
 
   private updateDragScales(): void {

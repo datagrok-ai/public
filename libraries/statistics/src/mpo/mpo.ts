@@ -10,17 +10,28 @@ import {
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
 export * from './mpo-types';
 
-/// Desirability of a single value against a piecewise-linear line; 0 outside the line's range.
-/// `mapColumnDesirability` inlines this for the column-at-a-time hot path — this stays for
-/// callers scoring one value, such as the PowerGrid pie-chart sparkline.
-export function desirabilityScore(x: number, desirabilityLine: DesirabilityLine): number {
-  if (desirabilityLine.length === 0 || x < desirabilityLine[0][0] || x > desirabilityLine[desirabilityLine.length - 1][0])
+/// Scores one value the way `mapColumnDesirability` scores a whole column: log domain, and inversion
+/// applied only to a value the curve covers, so out-of-range stays 0 rather than flipping to 1.
+export function desirabilityScore(d: NumericalDesirability, x: number): number {
+  const last = d.line.length - 1;
+  const log = d.scale === MpoScale.Log;
+  if (last < 0 || (log && x <= 0))
     return 0;
-  for (let i = 0; i < desirabilityLine.length - 1; i++) {
-    const [x1, y1] = desirabilityLine[i];
-    const [x2, y2] = desirabilityLine[i + 1];
-    if (x >= x1 && x <= x2)
-      return x1 === x2 ? y1 : y1 + (y2 - y1) / (x2 - x1) * (x - x1);
+
+  const floorX = log ? domainMinX(d) : 0;
+  const at = (i: number): number => log ? Math.log10(Math.max(floorX, d.line[i][0])) : d.line[i][0];
+  const v = log ? Math.log10(x) : x;
+  if (v < at(0) || v > at(last))
+    return 0;
+
+  for (let i = 0; i < last; i++) {
+    const x1 = at(i);
+    const x2 = at(i + 1);
+    if (v >= x1 && v <= x2) {
+      const y1 = d.line[i][1];
+      const y = x1 === x2 ? y1 : y1 + (d.line[i + 1][1] - y1) * (v - x1) / (x2 - x1);
+      return d.inverted ? 1 - y : y;
+    }
   }
   return 0;
 }
@@ -116,8 +127,22 @@ export function refreshDesirabilityLine(d: NumericalDesirability): void {
   d.line = materializeLine(d);
 }
 
+export function applyDesirabilityPatch(prop: PropertyDesirability, patch: Partial<PropertyDesirability>): void {
+  Object.assign(prop, patch);
+  if (!isNumerical(prop))
+    return;
+  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch)
+    prop.freeformLine = prop.line;
+  refreshDesirabilityLine(prop);
+}
+
+export function flatLine(min: number, max: number): DesirabilityLine {
+  return [[min, 0.5], [max, 0.5]];
+}
+
 export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
-  return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max, line: []};
+  return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max,
+    line: flatLine(min, max)};
 }
 
 export function rangeNumericalToColumn(prop: NumericalDesirability, col: DG.Column): void {
