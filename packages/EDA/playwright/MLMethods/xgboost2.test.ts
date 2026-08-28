@@ -24,7 +24,10 @@ test.describe.serial('EDA / MLMethods / XGBoost (regression)', () => {
     await openTrainModelView(page);
     await setPredictColumn(page, 'price');
 
-    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'price', { numericOnly: true });
+    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'price', {
+      numericOnly: true,
+      extraParams: { iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0 },
+    });
     expect(trained.ok, trained.error ?? 'xgboost training returned null').toBe(true);
   });
 });
