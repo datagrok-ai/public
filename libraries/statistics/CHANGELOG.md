@@ -1,5 +1,9 @@
 # statistics changelog
 
+## 1.12.12 (2026-08-28)
+
+* MPO: Extracted `createMpoRow` for hosts to build property rows from; `desirabilityScore` now takes the property, not a bare line.
+
 ## 1.12.11 (2026-08-28)
 
 * MPO: Rearranged the profile editor internals — the operations behind its controls and the desirability curve math are shared API now
