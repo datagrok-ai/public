@@ -11,6 +11,7 @@ import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILES_NAME, MPO_PROFI
 import {MpoProfileCreateView} from './mpo-create-profile';
 import {MpoProfileManager} from './mpo-profile-manager';
 import {MpoProfileHandler} from './mpo-profile-handler';
+import {attachMpoProfilesAi} from '../ai-tools/mpo';
 
 export class MpoProfilesView {
   name = MPO_PROFILES_NAME;
@@ -27,6 +28,7 @@ export class MpoProfilesView {
     grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = true;
     updateMpoPath(this.view, MpoPathMode.List);
+    attachMpoProfilesAi(this);
   }
 
   async render(): Promise<void> {
@@ -99,9 +101,7 @@ export class MpoProfilesView {
   }
 
   private buildProfileLink(profile: MpoProfileInfo): HTMLElement {
-    const link = ui.link(profile.name, () => {
-      this.previewedFileName = profile.fileName;
-    });
+    const link = ui.link(profile.name, () => this.preview(profile));
     link.addEventListener('dblclick', () => MpoProfileHandler.edit(profile));
     return ui.bind(profile, link);
   }
@@ -135,13 +135,22 @@ export class MpoProfilesView {
     return span;
   }
 
-  private openCreateProfile(): void {
+  preview(profile: MpoProfileInfo): void {
+    this.previewedFileName = profile.fileName;
+    grok.shell.windows.showContextPanel = true;
+    grok.shell.o = profile;
+  }
+
+  openCreateProfile(name?: string): MpoProfileCreateView {
     // Clear stale context panel (e.g. a profile selected via ui.bind in the list)
     // until a dataset is loaded and MpoContextPanel takes over.
     grok.shell.o = null;
     const view = new MpoProfileCreateView();
+    if (name)
+      view.setProfileName(name);
     grok.shell.v = grok.shell.addPreview(view.tableView!);
     view.setupBreadcrumbs();
+    return view;
   }
 
   private listenForChanges(): void {

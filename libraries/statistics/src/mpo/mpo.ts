@@ -61,6 +61,61 @@ export function convertScaleParams(d: NumericalDesirability, toLog: boolean): vo
     d.k = toLog ? d.k * perDecade(d.x0) : d.k / perDecade(d.x0);
 }
 
+export function setDesirabilityScale(d: NumericalDesirability, log: boolean): void {
+  d.min ??= domainMinX(d);
+  d.max ??= domainMaxX(d);
+  convertScaleParams(d, log);
+  d.scale = log ? MpoScale.Log : MpoScale.Linear;
+}
+
+export function defaultAnchor(d: NumericalDesirability): number {
+  const log = d.scale === MpoScale.Log;
+  return fromScale((toScale(domainMinX(d), log) + toScale(domainMaxX(d), log)) / 2, log);
+}
+
+export function defaultSigma(d: NumericalDesirability): number {
+  const log = d.scale === MpoScale.Log;
+  return Math.max(0.01, (toScale(domainMaxX(d), log) - toScale(domainMinX(d), log)) / 6);
+}
+
+export const DEFAULT_K = 10;
+
+export function materializeLine(d: NumericalDesirability): DesirabilityLine {
+  if (d.mode !== DesirabilityMode.Gaussian && d.mode !== DesirabilityMode.Sigmoid)
+    return d.line;
+
+  const log = d.scale === MpoScale.Log;
+  const minX = domainMinX(d);
+  const tMin = toScale(minX, log);
+  const tMax = toScale(domainMaxX(d), log);
+  const gaussian = d.mode === DesirabilityMode.Gaussian;
+  const center = gaussian ? d.mean ?? defaultAnchor(d) : d.x0 ?? defaultAnchor(d);
+  const anchor = toScale(log ? Math.max(minX, center) : center, log);
+  const sigma = d.sigma ?? defaultSigma(d);
+  const k = d.k ?? DEFAULT_K;
+  const n = 60;
+  const line: DesirabilityLine = [];
+
+  for (let i = 0; i <= n; ++i) {
+    const u = tMin + (tMax - tMin) * (i / n);
+    const z = (u - anchor) / sigma;
+    const y = gaussian ? Math.exp(-0.5 * z * z) : 1 / (1 + Math.exp(-k * (u - anchor)));
+    line.push([fromScale(u, log), y]);
+  }
+
+  return line;
+}
+
+export function refreshDesirabilityLine(d: NumericalDesirability): void {
+  if (d.mode === DesirabilityMode.Freeform) {
+    if (d.freeformLine)
+      d.line = d.freeformLine;
+    return;
+  }
+  d.freeformLine ??= [...d.line];
+  d.line = materializeLine(d);
+}
+
 export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
   return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max, line: []};
 }

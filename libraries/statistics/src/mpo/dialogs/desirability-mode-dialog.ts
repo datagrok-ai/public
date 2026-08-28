@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {
   PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode, MpoScale,
-  convertScaleParams, createDefaultCategorical, createDefaultNumerical, isNumerical,
+  setDesirabilityScale, createDefaultCategorical, createDefaultNumerical, isNumerical,
 } from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 import {MpoCategoricalEditor} from '../editors/mpo-categorical-editor';
@@ -230,16 +230,9 @@ export class DesirabilityModeDialog {
         toolbar.push(curveToggle('log₁₀', prop.scale === MpoScale.Log,
           'Log₁₀ axis — for values spanning orders of magnitude',
           (on) => {
-            // Freeze min/max first so a line-derived domain isn't re-derived from the log-floored resampled line
-            // on the way back (a negative min never returns otherwise).
-            const patch: Partial<NumericalDesirability> = {};
-            patch.min = prop.min ??= previewEditor.getMinX();
-            patch.max = prop.max ??= previewEditor.getMaxX();
-            convertScaleParams(prop, on);
-            prop.scale = on ? MpoScale.Log : MpoScale.Linear;
-            patch.scale = prop.scale;
-            patch.sigma = prop.sigma;
-            patch.k = prop.k;
+            setDesirabilityScale(prop, on);
+            const patch: Partial<NumericalDesirability> =
+              {min: prop.min, max: prop.max, scale: prop.scale, sigma: prop.sigma, k: prop.k};
             updateScaleLabels();
             this.onUpdate(patch);
             previewEditor.redrawAll(false);
