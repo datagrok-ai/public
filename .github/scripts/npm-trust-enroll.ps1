@@ -93,8 +93,16 @@ function Invoke-Enroll {
     # Ask before writing: the registry allows only one publisher per package and
     # answers a repeat create with 409. Checking also catches a config pointing at
     # the wrong workflow, which would silently break publishing.
+    # PowerShell 5.1 wraps a redirected native command's stderr as a
+    # NativeCommandError, which 'Stop' turns terminating the moment npm prints a
+    # notice. Drop to 'Continue' so 2>$null can quietly swallow the probe's noise.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     $listRaw = (& npm trust list $name --json 2>$null) -join "`n"
-    if ($LASTEXITCODE -eq 0 -and $listRaw) {
+    $listExit = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+
+    if ($listExit -eq 0 -and $listRaw) {
         $existing = $null
         try { $existing = $listRaw.Trim([char]0xFEFF, ' ', "`r", "`n", "`t") | ConvertFrom-Json } catch { }
         if ($existing -and $existing.id) {
