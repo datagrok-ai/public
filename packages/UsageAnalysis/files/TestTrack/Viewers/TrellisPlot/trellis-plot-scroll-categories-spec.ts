@@ -1,8 +1,9 @@
 /* ---
 realizes: [trellisplot.cp.scroll-categories, trellisplot.int.pack-categories-vs-viewport-scroll]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -90,9 +91,12 @@ test('Trellis plot: category viewport paging (+/- icons and pack-categories coup
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
-  page.on('console', (m) => { if (m.type() === 'error' && !isBenignError(m.text())) consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isBenignError(m.text()) && !isLocalBootNoise(m.text()))
+      consoleErrors.push(m.text());
+  });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await page.waitForTimeout(5000); 
 
   await page.evaluate(async (path) => {
@@ -100,7 +104,7 @@ test('Trellis plot: category viewport paging (+/- icons and pack-categories coup
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
     try { grok.shell.windows.simpleMode = true; } catch {}
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
+    const df = await (window as any).__readCsv(path);
     grok.shell.addTableView(df);
     await new Promise((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });

@@ -1,8 +1,8 @@
 /* ---
 realizes: [pcplot.cp.transformation-and-filter-integrity]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 import {knownOpenBug} from '../../helpers/known-open-bug';
 
@@ -19,14 +19,14 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error')
+    if (m.type() === 'error' && !isLocalBootNoise(m.text()))
       consoleErrors.push(m.text());
   });
 
   const isBugRelevantError = (s: string): boolean =>
     /transform|aggregat|GroupAggregation|FormatException|pc[_-]?plot|PcPlot|is not valid JSON/i.test(s);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 

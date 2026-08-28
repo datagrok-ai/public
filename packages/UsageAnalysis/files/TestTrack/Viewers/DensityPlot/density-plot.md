@@ -1,6 +1,7 @@
 ---
 feature: densityplot
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 priority: p2
 realizes_atlas: []

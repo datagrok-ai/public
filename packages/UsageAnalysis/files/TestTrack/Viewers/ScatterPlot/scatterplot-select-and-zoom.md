@@ -6,6 +6,7 @@ realizes:
   - viewers.scatter-plot
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 realized_as:
   - scatterplot-select-and-zoom-spec.ts

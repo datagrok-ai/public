@@ -1,8 +1,9 @@
 /* ---
 realizes: [scatterplot.cp.labels-tooltip, viewers.scatter-plot]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -349,7 +350,7 @@ test('Scatter Plot — Marker Labels and Tooltip', async ({page}: {page: Page}) 
   const errCount = () => pageErrors.length + consoleErrors.length;
   const crashCount = () => allMessages.filter((t) => CRASH_SIGNATURE.test(t)).length;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
   await v.waitForViewerRendered(page, 'Scatter plot', 500);

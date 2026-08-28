@@ -1,12 +1,14 @@
 ---
 feature: barchart
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p2
 realizes_atlas: []
 realizes: [viewers.bar-chart]
 realized_as:
   - bar-chart-spec.ts
+  - bar-chart-server-spec.ts
 related_bugs: []
 expected_results:
   - anchor: "Color coding"

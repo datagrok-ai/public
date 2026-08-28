@@ -1,8 +1,8 @@
 /* ---
 realizes: [pcplot.cp.reorder-and-select, pcplot.int.area-select-cross-viewer, pcplot.int.current-row-sync]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -18,11 +18,11 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error')
+    if (m.type() === 'error' && !isLocalBootNoise(m.text()))
       consoleErrors.push(m.text());
   });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 

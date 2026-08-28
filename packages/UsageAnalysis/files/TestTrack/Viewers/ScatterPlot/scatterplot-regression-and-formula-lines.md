@@ -7,6 +7,7 @@ realizes:
   - viewers.scatter-plot
 priority: p2
 target_layer: playwright
+boot_lane: server
 realized_as:
   - scatterplot-regression-and-formula-lines-spec.ts
 coverage_type: regression

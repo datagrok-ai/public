@@ -1,8 +1,9 @@
 /* ---
 realizes: [trellisplot.cp.click-to-filter, trellisplot.int.click-cell-filter-select-events, trellisplot.int.onclick-filter-panel-collab]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -129,16 +130,19 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error' && !isBenignError(m.text())) consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isBenignError(m.text()) && !isLocalBootNoise(m.text()))
+      consoleErrors.push(m.text());
+  });
 
-  await loginToDatagrok(page); 
+  await openDatagrok(page); 
 
   await page.evaluate(async (path) => {
     document.body.classList.add('selenium');
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
     try { grok.shell.windows.simpleMode = true; } catch {}
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
+    const df = await (window as any).__readCsv(path);
     grok.shell.addTableView(df);
     await new Promise((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });

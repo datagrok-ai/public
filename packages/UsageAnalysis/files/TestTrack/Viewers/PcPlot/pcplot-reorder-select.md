@@ -8,6 +8,7 @@ realizes_atlas:
   - pcplot.int.current-row-sync
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 realized_as:
   - pcplot-reorder-select-spec.ts

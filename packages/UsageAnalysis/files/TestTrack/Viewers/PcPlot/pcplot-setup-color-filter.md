@@ -9,9 +9,11 @@ realizes:
   - viewers.pc-plot
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 realized_as:
   - pcplot-setup-color-filter-spec.ts
+  - pcplot-setup-color-filter-server-spec.ts
 related_bugs:
   - id: GROK-18000
     status: fixed

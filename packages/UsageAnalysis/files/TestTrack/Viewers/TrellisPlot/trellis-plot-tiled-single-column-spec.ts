@@ -1,8 +1,9 @@
 /* ---
 realizes: [trellisplot.cp.tiled-single-column, trellisplot.int.tiled-single-column-layout]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -87,7 +88,7 @@ test('Trellis plot: tiled single-column geometry and auto-layout control-panel c
   test.setTimeout(600_000);
   page.setDefaultTimeout(120_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await page.waitForTimeout(5000); 
 
   await page.evaluate(async (path) => {
@@ -95,7 +96,7 @@ test('Trellis plot: tiled single-column geometry and auto-layout control-panel c
     try { grok.shell.settings.showFiltersIconsConstantly = true; } catch {}
     try { grok.shell.windows.simpleMode = true; } catch {}
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
+    const df = await (window as any).__readCsv(path);
     grok.shell.addTableView(df);
     await new Promise((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });

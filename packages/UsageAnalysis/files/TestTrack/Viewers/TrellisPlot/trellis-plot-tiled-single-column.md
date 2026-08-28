@@ -7,6 +7,7 @@ realizes:
   - viewers.trellis-plot
 priority: p2
 target_layer: playwright
+boot_lane: local
 coverage_type: edge
 related_bugs: []
 realized_as:

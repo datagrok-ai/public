@@ -7,6 +7,7 @@ realizes:
   - viewers.bar-chart
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: edge
 related_bugs: []
 expected_results:

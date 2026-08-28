@@ -6,6 +6,7 @@ realizes:
   - viewers.bar-chart
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 related_bugs:
   - id: GROK-17532
@@ -16,6 +17,7 @@ related_bugs:
     status: fixed
 realized_as:
   - barchart-setup-interact-spec.ts
+  - barchart-setup-interact-server-spec.ts
 expected_results:
   - anchor: "Scenario 1 Step 1"
     expectation: >-

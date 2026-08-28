@@ -7,6 +7,7 @@ realizes:
   - viewers.trellis-plot
 priority: p2
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 realized_as:
   - trellis-plot-scroll-categories-spec.ts

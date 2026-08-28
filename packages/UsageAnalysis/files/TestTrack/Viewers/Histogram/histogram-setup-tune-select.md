@@ -6,6 +6,7 @@ realizes:
   - viewers.histogram
 priority: p0
 target_layer: playwright
+boot_lane: local
 coverage_type: smoke
 related_bugs:
   - id: GROK-19759

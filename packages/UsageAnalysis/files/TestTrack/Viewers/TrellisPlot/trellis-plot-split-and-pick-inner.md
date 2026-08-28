@@ -8,6 +8,7 @@ realizes:
   - viewers.trellis-plot
 priority: p0
 target_layer: playwright
+boot_lane: server
 coverage_type: smoke
 related_bugs:
   - id: github-964

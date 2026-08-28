@@ -6,6 +6,7 @@ realizes:
   - viewers.scatter-plot
 priority: p0
 target_layer: playwright
+boot_lane: server
 coverage_type: smoke
 related_bugs:
   - id: GROK-17227

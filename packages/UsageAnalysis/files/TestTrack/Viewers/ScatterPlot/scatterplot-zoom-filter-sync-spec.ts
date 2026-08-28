@@ -1,8 +1,9 @@
 /* ---
 realizes: [scatterplot.cp.zoom-filter-sync, viewers.scatter-plot]
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -286,11 +287,11 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
   page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error' && !isBenignError(m.text())) consoleErrors.push(m.text());
+    if (m.type() === 'error' && !isBenignError(m.text()) && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
   });
   const errCount = () => pageErrors.length + consoleErrors.length;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: demogPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
   await waitPlotCanvas(page);
@@ -538,7 +539,7 @@ test('Scatter Plot — Zoom and Filter Synchronization', async ({page}: {page: P
   await softStep('Large jitter with a logarithmic axis does not filter rows', async () => {
     const errBefore = errCount();
     await page.evaluate(async (path: string) => {
-      const df = await grok.dapi.files.readCsv(path);
+      const df = await (window as any).__readCsv(path);
       grok.shell.addTableView(df);
       await new Promise((resolve) => {
         const s = df.onSemanticTypeDetected.subscribe(() => { s.unsubscribe(); resolve(null); });

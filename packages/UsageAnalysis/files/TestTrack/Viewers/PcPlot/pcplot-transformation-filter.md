@@ -6,6 +6,7 @@ realizes:
   - viewers.pc-plot
 priority: p1
 target_layer: playwright
+boot_lane: local
 coverage_type: regression
 realized_as:
   - pcplot-transformation-filter-spec.ts

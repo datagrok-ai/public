@@ -1,8 +1,9 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -45,12 +46,12 @@ test('Density plot tests', async ({page}: {page: Page}) => {
   page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
   const consoleErrors: string[] = [];
   page.on('console', (m) => {
-    if (m.type() === 'error' && !isBenignError(m.text()))
+    if (m.type() === 'error' && !isBenignError(m.text()) && !isLocalBootNoise(m.text()))
       consoleErrors.push(m.text());
   });
   const errCount = () => pageErrors.length + consoleErrors.length;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
@@ -216,7 +217,7 @@ test('Density plot tests', async ({page}: {page: Page}) => {
     expect(filterCleared).toBe('');
 
     await page.evaluate(async (path: string) => {
-      const df2 = await grok.dapi.files.readCsv(path);
+      const df2 = await (window as any).__readCsv(path);
       df2.name = 'spgi-100';
       grok.shell.addTableView(df2);
       await new Promise((resolve) => {

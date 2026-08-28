@@ -1,8 +1,8 @@
 /* ---
 realizes: [histogram.cp.setup-tune-select]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -14,14 +14,16 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
   test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isLocalBootNoise(m.text())) pageErrors.push(m.text());
+  });
 
   await softStep('S1: set value AGE + enable Show Values', async () => {
     const result = await v.setViewerProps(page, 'Histogram', [

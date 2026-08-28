@@ -11,6 +11,7 @@ realizes_atlas:
 realizes: [viewers.trellis-plot, entities.viewer.action.use-in-trellis, curves.viewer.multi-curve]
 priority: p0
 target_layer: playwright
+boot_lane: server
 coverage_type: smoke
 precondition_guards: []
 realized_as:

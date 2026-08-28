@@ -6,9 +6,11 @@ realizes:
   - viewers.density-plot
 priority: p0
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 realized_as:
   - densityplot-setup-binning-color-spec.ts
+  - densityplot-setup-binning-color-server-spec.ts
 related_bugs:
   - id: GROK-16612
     status: fixed

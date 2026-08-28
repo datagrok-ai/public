@@ -2,8 +2,8 @@
 realizes: [barchart.cp.stack-relative-negatives]
 --- */
 
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -21,9 +21,11 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
+  });
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 4000});
   await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');

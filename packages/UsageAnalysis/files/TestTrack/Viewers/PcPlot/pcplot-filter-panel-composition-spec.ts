@@ -1,8 +1,8 @@
 /* ---
 realizes: [pcplot.cp.panel-chart-filter-composition]
 --- */
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -14,7 +14,7 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 test('PC Plot — Filter Panel + In-Chart Filter AND-Composition and Reset Scoping', async ({page}) => {
   test.setTimeout(300_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 

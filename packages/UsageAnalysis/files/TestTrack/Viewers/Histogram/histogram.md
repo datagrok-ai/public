@@ -1,12 +1,14 @@
 ---
 feature: histogram
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p2
 realizes_atlas: []
 realizes: [viewers.histogram, viewers.filters.categorical]
 realized_as:
   - histogram-spec.ts
+  - histogram-server-spec.ts
 related_bugs: []
 expected_results:
   - anchor: "Spline mode"

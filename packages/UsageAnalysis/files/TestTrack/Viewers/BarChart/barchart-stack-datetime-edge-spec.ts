@@ -2,8 +2,8 @@
 realizes: [barchart.int.stack-needs-additive-aggr, barchart.int.datetime-split-enables-map]
 --- */
 
-import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {localTest as test, expect} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep, isLocalBootNoise} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 declare const grok: any;
@@ -18,10 +18,12 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isLocalBootNoise(m.text())) consoleErrors.push(m.text());
+  });
   const errCount = () => pageErrors.length + consoleErrors.length;
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
 
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
@@ -142,14 +144,17 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
   await softStep('Scenario 2 Step 13: the in-chart Category selector reflects the STARTED split column', async () => {
     const errBefore = errCount();
 
-    const sel = await page.evaluate(() => {
+    // The in-chart Category selector's rendered label is a downstream DOM signal distinct
+    // from the splitColumnName the prior step set: it fails if the selector does not repaint
+    // to the new split column, and it must no longer show the stale RACE it displayed at Step 9.
+    const sel = await v.pollValue(() => page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const texts = Array.from(bc.root.querySelectorAll('.d4-column-selector-column'))
         .map((e) => (e.textContent || '').trim());
-      return {texts, splitCol: bc.props.splitColumnName};
-    });
-    expect(sel.splitCol).toBe('STARTED');
-    expect(sel.texts.some((t) => t.includes('STARTED'))).toBe(true);
+      return texts;
+    }), (texts) => texts.some((t) => t.includes('STARTED')), 2000, 100);
+    expect(sel.some((t) => t.includes('STARTED'))).toBe(true);
+    expect(sel.some((t) => t.includes('RACE'))).toBe(false);
     expect(errCount()).toBe(errBefore);
   });
 

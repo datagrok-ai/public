@@ -1,8 +1,9 @@
 /* ---
 realizes: []
 --- */
-import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {expect, Page} from '@playwright/test';
+import {localTest as test} from '../../shared-page';
+import {openDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
@@ -31,7 +32,7 @@ async function plotCentre(page: Page): Promise<{x: number; y: number; box: any}>
 test('3D scatter plot', async ({page}) => {
   test.setTimeout(600_000);
 
-  await loginToDatagrok(page);
+  await openDatagrok(page);
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
   await softStep('Add 3D scatter plot from the Viewers toolbox', async () => {
