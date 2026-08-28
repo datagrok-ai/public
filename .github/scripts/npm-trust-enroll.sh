@@ -63,9 +63,26 @@ enroll() {
     skipped=$((skipped + 1)); return 0
   fi
 
-  # One call per package: npm trust is OTP-gated, and the "skip 2FA" window is
-  # only 5 minutes. Registering an already-registered package is a plain error,
-  # so classify the failure rather than paying for a separate `npm trust list`.
+  # Ask before writing: the registry allows only one publisher per package and
+  # answers a repeat create with 409. Checking also catches a config pointing at
+  # the wrong workflow, which would silently break publishing.
+  local existing ex_id ex_file ex_repo
+  if existing="$(npm trust list "$name" --json 2>/dev/null)"; then
+    ex_id="$(jq -r '.id // empty' 2>/dev/null <<<"$existing")"
+    if [ -n "$ex_id" ]; then
+      ex_file="$(jq -r '.file // empty' <<<"$existing")"
+      ex_repo="$(jq -r '.repository // empty' <<<"$existing")"
+      if [ "$ex_file" = "$workflow" ] && [ "$ex_repo" = "$REPO" ]; then
+        echo "SKIP  $name — already trusted ($ex_repo/$ex_file)"
+        skipped=$((skipped + 1))
+      else
+        echo "FAIL  $name — trusted via $ex_repo/$ex_file, expected $REPO/$workflow; fix with: npm trust revoke $name --id $ex_id" >&2
+        failed=$((failed + 1))
+      fi
+      return 0
+    fi
+  fi
+
   local out rc err_code err_text
   # shellcheck disable=SC2086
   # stderr is deliberately not redirected: npm prints the OTP approval URL there
@@ -79,7 +96,10 @@ enroll() {
   # npm masks the UUID in its human-readable output but not in --json, so
   # recover the approval URL even when the payload will not parse.
   [ -n "$auth_url" ] || auth_url="$(grep -oE 'https://www\.npmjs\.com/auth/cli/[0-9a-fA-F-]{36}' <<<"$out" | head -1)"
-  [ -n "$err_code" ] || err_code="$(sed -n 's/.*"code"[[:space:]]*:[[:space:]]*"\([A-Z]*\)".*/\1/p' <<<"$out" | head -1)"
+  # The create path emits two concatenated JSON objects, which jq will not parse
+  # as one, so fall back to matching the fields directly.
+  [ -n "$err_code" ] || err_code="$(sed -n 's/.*"code"[[:space:]]*:[[:space:]]*"\([A-Z][A-Z0-9_]*\)".*/\1/p' <<<"$out" | head -1)"
+  [ -n "$err_text" ] || err_text="$(sed -n 's/.*"summary"[[:space:]]*:[[:space:]]*"\(.*\)".*/\1/p' <<<"$out" | head -1)"
 
   if [ "$rc" -eq 0 ]; then
     echo "TRUST $name -> $workflow"
@@ -95,7 +115,7 @@ enroll() {
     echo "(npm hides this UUID in its own error output; it is read from --json.)" >&2
     echo "The URL is single-use and expires in a few minutes." >&2
     exit 3
-  elif [ -n "$err_text" ] && grep -qiE 'already|exists|conflict' <<<"$err_text"; then
+  elif [ "$err_code" = 'E409' ] || { [ -n "$err_text" ] && grep -qiE 'already|exists|conflict' <<<"$err_text"; }; then
     echo "SKIP  $name — already has a trusted publisher"; skipped=$((skipped + 1))
   else
     echo "FAIL  $name — ${err_code:-exit $rc}: ${err_text:-see npm output above}" >&2
