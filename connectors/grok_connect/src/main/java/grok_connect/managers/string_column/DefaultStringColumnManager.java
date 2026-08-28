@@ -14,6 +14,7 @@ import oracle.sql.CLOB;
 import oracle.sql.NCLOB;
 import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
+import org.postgresql.util.PGInterval;
 import org.w3c.dom.Document;
 import serialization.Column;
 import serialization.StringColumn;
@@ -52,6 +53,7 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
         converterMap.put(DefaultTupleValue.class, gettableByIndexConverter);
         converterMap.put(DefaultUdtValue.class, gettableByIndexConverter);
         converterMap.put(Document.class, new DocumentTypeConverter());
+        converterMap.put(PGInterval.class, new PgIntervalTypeConverter());
     }
 
     @Override
