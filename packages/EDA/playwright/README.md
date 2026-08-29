@@ -126,23 +126,30 @@ on timeout) plus a single trailing `expect`, keeping the error count at `0`.
 
 ## Last results
 
-13 passed — **~47 s locally (dev), ~1.5 min on CI** (`ui_tests`). Per-test (CI build #56):
+**16 passed, 0 failed, 0 skipped** — Test-Package-Playwright-TEMP build #7 (`PACKAGES=EDA`,
+4 workers). Per-test, from `public/packages/EDA/result/test-report-playwright.csv`:
 
 | # | Scenario | Result | Time |
 |---|----------|--------|------|
-| 1 | ANOVA on demog.csv (Box plot + Analysis + F-test tabs)                          | PASS | 2.6s |
-| 2 | Linear Regression on cars.csv predicting price                                  | PASS | 2.7s |
-| 3 | PLS Regression on cars.csv with 3 components predicting price                   | PASS | 2.6s |
-| 4 | Softmax on iris.csv predicting Species (numeric features only)                  | PASS | 2.6s |
-| 5 | XGBoost classification on iris.csv predicting Species                           | PASS | 2.7s |
-| 6 | XGBoost regression on cars.csv predicting price                                 | PASS | 2.6s |
-| 7 | MVA on cars.csv (Grid + 3 Scatter + 2 Bar)                                      | PASS | 3.9s |
-| 8 | Pareto cars-with-missing — empty + string columns excluded from Min/Max         | PASS | 2.7s |
-| 9 | Pareto cars.csv — auto-select `model` as Label                                  | PASS | 2.6s |
-| 10 | Pareto demog.csv — auto-select `USUBJID` as Label                              | PASS | 3.0s |
-| 11 | Pareto cars.csv — Description/Objectives/Axes/Labels/Legend categories present | PASS | 2.7s |
-| 12 | PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale | PASS | 5.7s |
-| 13 | PLS dialog opens on cars.csv with all expected inputs and accepts Components=3  | PASS | 2.8s |
+| 1 | ANOVA on demog.csv produces a Box plot viewer carrying the analysis conclusion | PASS | 4.4s |
+| 2 | Control comparisons on demog.csv produces a Box plot and the results table | PASS | 4.4s |
+| 3 | GROK-20795: computes on every row, ignoring the active filter | PASS | 6.3s |
+| 4 | Train Linear Regression on cars.csv predicting price | PASS | 4.2s |
+| 5 | Train PLS Regression on cars.csv with 3 components predicting price | PASS | 4.1s |
+| 6 | Train Softmax on iris.csv predicting Species | PASS | 3.3s |
+| 7 | Train XGBoost classification on iris.csv predicting Species | PASS | 3.4s |
+| 8 | Train XGBoost regression on cars.csv predicting price | PASS | 3.4s |
+| 9 | MVA on cars.csv produces Grid + 3 Scatter plots + 2 Bar charts | PASS | 5.1s |
+| 10 | Pareto cars-with-missing — empty + string columns excluded from Min/Max | PASS | 3.5s |
+| 11 | Pareto cars.csv — auto-select `model` as Label | PASS | 3.1s |
+| 12 | Pareto demog.csv — auto-select `USUBJID` as Label | PASS | 4.0s |
+| 13 | Pareto cars.csv — Description/Objectives/Axes/Labels/Legend categories present | PASS | 2.9s |
+| 14 | PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale | PASS | 7.9s |
+| 15 | PLS dialog opens on cars.csv with all expected inputs and accepts Components=3 | PASS | 3.9s |
+| 16 | Sharing & Permissions — Model (two-user grant/revoke round-trip) | PASS | 83.2s |
+
+The sharing spec is the slow one by design: it re-authenticates as a second user and polls
+permission round-trips.
 
 ## UI vs API split per scenario
 
