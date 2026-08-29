@@ -13,9 +13,12 @@ Jenkins **Test-Playwright** CI (the `ui_tests` stack) — no skips, no `test.fai
 ## Files
 
 ```
-public/playwright-public/EDA/
+public/packages/EDA/playwright/
+├── playwright.config.ts             # Consumer config over @datagrok-libraries/test base-config
 ├── helpers.ts                       # Shared helpers (menu, dialog, picker, viewer probes)
-├── anova.test.ts                    # ML > Analyze > ANOVA on demog.csv
+├── anova.test.ts                    # ML > Analyze > Group Comparison > ANOVA on demog.csv
+├── control-comparisons.test.ts      # Control Comparisons dialog + GROK-20795 characterisation
+├── share-model-permissions.test.ts  # Model sharing / permissions round-trip, two-user
 ├── multivariate-analysis.test.ts    # ML > Analyze > Multivariate Analysis on cars.csv
 ├── pca.test.ts                      # ML > Analyze > PCA on cars.csv (+ Center/Scale)
 ├── pls.test.ts                      # ML > Analyze > PLS on cars.csv (UI smoke — see limitation)
@@ -54,21 +57,23 @@ reintroduce per-test `page.goto()`.
 
 ## Running
 
-These tests live in the standalone `public/playwright-public` Playwright project and share
-its `playwright.config.ts`, `e2e/global-setup.ts` auth, and CSV reporting with the other
-suites there (connections, queries, scripts, …).
+These tests are **package-owned**: `package.json` declares `"playwrightTests": "playwright"`,
+and the local `playwright.config.ts` extends the shared `baseConfig` from
+`@datagrok-libraries/test/src/playwright/base-config` (auth via its `global-setup`, CSV
+reporting). They moved here from `public/playwright-public/EDA/` — do not resurrect that copy.
 
 ### Via the grok runner (canonical)
 
 ```powershell
-cd C:\DataGrok\NewBitbucket\reddata\public\playwright-public
+cd C:\DataGrok\NewBitbucket\reddata\public\packages\EDA
 npm install                          # first time
 npx playwright install chromium      # first time
-grok test --skip-puppeteer --host dev --category EDA              # all EDA tests
-grok test --skip-puppeteer --host dev --category EDA --test PCA   # filter by title (regex)
+grok test --skip-puppeteer --host dev             # the package's Playwright suite
+grok test --skip-puppeteer --host dev --test PCA  # filter by title (regex)
 ```
 
-`--category EDA` scopes the run to this subfolder; `--test` becomes Playwright's `--grep`
+Run it from the **package** directory, not from `playwright/` - the runner reads
+`playwrightTests` out of `package.json`. `--test` becomes Playwright's `--grep`
 (test-title regex). The runner resolves the host from `~/.grok/config.yaml`, exchanges the
 dev key for a token, and exports `DATAGROK_URL` + `DATAGROK_AUTH_TOKEN` to Playwright.
 
@@ -78,33 +83,37 @@ dev key for a token, and exports `DATAGROK_URL` + `DATAGROK_AUTH_TOKEN` to Playw
 ### Directly via Playwright (fast local loop)
 
 ```powershell
-cd C:\DataGrok\NewBitbucket\reddata\public\playwright-public
+cd C:\DataGrok\NewBitbucket\reddata\public\packages\EDA
 $env:DATAGROK_URL = "https://dev.datagrok.ai"
 $env:DATAGROK_AUTH_TOKEN = (Invoke-RestMethod -Method Post `
   "https://dev.datagrok.ai/api/users/login/dev/<devKey>").token
-npx playwright test EDA --reporter=list                  # all EDA tests
-npx playwright test EDA/anova.test.ts --reporter=list    # single file
-npx playwright test EDA --grep "PCA" --reporter=list     # filter by title
-npx playwright test EDA/pls.test.ts --headed             # visible browser (debug)
+npx playwright test --config playwright/playwright.config.ts --reporter=list
+npx playwright test --config playwright/playwright.config.ts --grep "PCA" --reporter=list
+npx playwright test --config playwright/playwright.config.ts --grep "PLS" --headed
 ```
+
+`share-model-permissions.test.ts` needs a second user: set `DATAGROK_AUTH_TOKEN_2` or
+`DATAGROK_DEV_KEY_2` (the CI runner provisions `test2` itself), otherwise it fails at
+`getSecondUserLogin()`.
 
 `e2e/global-setup.ts` turns `DATAGROK_URL` + `DATAGROK_AUTH_TOKEN` into browser storage
 state at `e2e/.auth.json` (gitignored). Delete that file to force a fresh login.
 
 ### On CI
 
-The Jenkins **Test-Playwright** job runs the whole `public/playwright-public` suite on a
-fresh `ui_tests` stack. To exercise the EDA suite there:
+Use the **Test-Package-Playwright-TEMP** job (`infra/jenkins/test-package-playwright.groovy`)
+with `PACKAGES=EDA`. It builds and publishes the package, then runs its Puppeteer pass and this
+Playwright suite together.
 
-* `PREREQ_PACKAGES` must include `EDA` — the ML menu (ANOVA/PCA/PLS/MVA/Train Model/Pareto)
-  is provided by the `@datagrok/eda` package and won't exist on the stack otherwise.
-* `TEST_GREP=EDA /` selects exactly these tests. The runner's grep is case-insensitive, so
-  a bare `EDA` also matches unrelated titles (e.g. `…TestUpdateData…`); the `/` keeps it to
-  the `EDA / *` describes.
+**Not** the `Test-Playwright` job: that one `cd`s into `PLAYWRIGHT_DIR` and expects a standalone
+project with its own `package.json` there. Pointing it at `public/packages/EDA/playwright` dies
+with `Cannot find module './package.json'`, `grok test` prints its usage and exits 255, and zero
+tests are collected while the build still reports UNSTABLE.
 
 A pipeline `SUCCESS` alone does **not** prove the tests ran — a `global-setup` failure
 collects 0 tests yet still reports "passed". Read the real result from the build artifact
-`public/playwright-public/result/playwright-public.jest` (`Running N tests`, `N passed`).
+`public/packages/EDA/result/EDA.jest` (`Running N tests`, `N passed`) and the per-test
+`public/packages/EDA/result/test-report-playwright.csv` (`success` / `skipped` columns).
 
 ### Reports
 
@@ -161,7 +170,7 @@ allows it; the table below lists where each scenario falls back to the API and w
 The scenario literally says "select all available columns" for Using. After `All` is
 clicked, `price` is in both Predict and Using, the validator silently disables RUN with
 only a red border on Predict — no tooltip, no banner. See
-[pls-run.md](../../packages/UsageAnalysis/files/TestTrack/EDA/pls-run.md).
+[pls-run.md](../../UsageAnalysis/files/TestTrack/EDA/pls-run.md).
 
 The test cannot work around the bug from the UI either:
 
@@ -189,7 +198,7 @@ string `Species`, was passed as features).
 The fix lives in `trainEdaModelViaApi`: with `numericOnly: true` it feeds only the numeric
 feature columns (and now excludes the predict column from them), while still passing
 `Species` as the predict column. `softmax.test.ts` therefore runs as a normal passing test.
-See [softmax-run.md](../../packages/UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax-run.md).
+See [softmax-run.md](../../UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax-run.md).
 
 ### 3. Train Model view: canvas-based Features picker, missing Model Engine dropdown, no Train button
 
@@ -219,7 +228,7 @@ scenario.
 
 ### 5. `cars-with-missing.csv` is not deployed on dev under `System:DemoFiles/`
 
-See [pareto-front-viewer-run.md](../../packages/UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer-run.md).
+See [pareto-front-viewer-run.md](../../UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer-run.md).
 The Pareto test synthesises an equivalent dataset in memory: open `cars.csv`, null every
 cell of the `turbo` column, rename to `cars-with-missing`.
 
