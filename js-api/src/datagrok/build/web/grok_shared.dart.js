@@ -74493,7 +74493,7 @@
       set$func: function(func) {
         var t1, p;
         this._func = func;
-        if (func == null)
+        if (func == null || func.get$params() == null)
           return;
         if (J.any$1$ax(this.params, new N.FuncCall_func_closure()) === true)
           J.clear$0$ax(this.params);
@@ -75290,6 +75290,8 @@
       fromMap$2$ignoreNulls: function(propMap, ignoreNulls) {
         var t1, t2, paramValues;
         this.super$PropMixin$fromMap(propMap, false);
+        if (this.params == null)
+          this.params = [];
         t1 = J.getInterceptor$asx(propMap);
         if (!!J.getInterceptor(t1.$index(propMap, "func")).$isMap && J.$eq$(J.$index$asx(t1.$index(propMap, "func"), "#type"), "Func") === true && J.$eq$(J.$index$asx(t1.$index(propMap, "func"), "source"), "function") === true)
           this.set$func(N.Func_Func$fromJson(t1.$index(propMap, "func"), null, null));
@@ -75298,7 +75300,12 @@
         if (t1.$index(propMap, "progress") != null)
           this.setProgressFromMap$1(t1.$index(propMap, "progress"));
         paramValues = t1.$index(propMap, "parameterValues");
-        if (this._func != null)
+        if (paramValues != null) {
+          t1 = this._func;
+          t1 = (t1 == null ? t1 : t1.get$params()) != null;
+        } else
+          t1 = false;
+        if (t1)
           this.setParamsFromMap$1(paramValues);
         this.clearCache$0();
       },
@@ -148211,21 +148218,18 @@
       }, "call$1", "get$contains", 2, 0, 55, 0],
       add$4$link$report$uniqueName: function(_, entity, link, report, uniqueName) {
         var t1, t2, relation;
-        t1 = J.getInterceptor(entity);
-        if (!!t1.$isPackageEntityMixin || !!t1.$isGrokPackageRepository || !!t1.$isGrokPackage || !!t1.$isUserReport || !!t1.$isUserReportsRule || !!t1.$isFileInfo || !!t1.$isDomainSchema || !!t1.$isDomainTable || !!t1.$isDomainSavedFilter)
-          if (!!t1.$isTagsMixin) {
-            t2 = entity.get$tags();
-            t2 = J.$eq$(t2 == null ? t2 : J.contains$1$asx(t2, ".db.entity"), true) !== true;
-          } else
-            t2 = true;
+        t1 = link === true;
+        if (t1)
+          t2 = O.Project_canContain(entity) || entity instanceof N.FuncCall;
         else
-          t2 = false;
+          t2 = O.Project_canContain(entity);
         if (!t2 && this.isEntity !== true)
-          throw H.wrapException("Can't add entity " + H.S(entity.get$nqName()) + " to the project, id: " + H.S(t1.get$id(entity)));
+          throw H.wrapException("Can't add entity " + H.S(entity.get$nqName()) + " to the project, id: " + H.S(J.get$id$x(entity)));
         if (this.contains$1(0, entity) !== true) {
-          t2 = entity.get$friendlyName();
-          if (t2 != null) {
+          t1 = !(t1 && entity instanceof N.FuncCall) && entity.get$friendlyName() != null;
+          if (t1) {
             entity.set$friendlyName(N.getUniqueName(entity.get$friendlyName(), J.where$1$ax(J.map$1$ax(J.where$1$ax(this.relations, new O.Project_add_closure(entity)), new O.Project_add_closure0()), new O.Project_add_closure1()), true, null, 2, null));
+            t1 = J.getInterceptor(entity);
             if (!!t1.$isTableInfo && entity.dataFrame != null) {
               t2 = entity.get$dataFrame();
               if (entity.get$_friendlyName() == null)
@@ -148316,6 +148320,18 @@
           t2._friendlyName = friendlyName;
           t2.PackageEntityMixin_id = id;
           return t2;
+        },
+        Project_canContain: function(x) {
+          var t1 = J.getInterceptor(x);
+          if (!!t1.$isPackageEntityMixin || !!t1.$isGrokPackageRepository || !!t1.$isGrokPackage || !!t1.$isUserReport || !!t1.$isUserReportsRule || !!t1.$isFileInfo || !!t1.$isDomainSchema || !!t1.$isDomainTable || !!t1.$isDomainSavedFilter)
+            if (!!t1.$isTagsMixin) {
+              t1 = x.get$tags();
+              t1 = J.$eq$(t1 == null ? t1 : J.contains$1$asx(t1, ".db.entity"), true) !== true;
+            } else
+              t1 = true;
+          else
+            t1 = false;
+          return t1;
         }
       }
     },
@@ -166447,8 +166463,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "65a9ebeee22cb980a4f2bac75c3a22c363d92b2d");
-        t2.set$date(t1, "2026-08-28T22:48:03.614Z");
+        t2.set$commit(t1, "60760bd5b5c9a84088d20694295ca4f926dfbfa2");
+        t2.set$date(t1, "2026-08-29T22:48:46.139Z");
         t2.set$version(t1, "1.27.9");
         return t1;
       }, null, null, 0, 0, null, "call"]
