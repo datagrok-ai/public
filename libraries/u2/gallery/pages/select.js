@@ -14,6 +14,7 @@ function injectOnce(id, href) {
 injectOnce('u2-elements-css', '../../css/elements.css');
 injectOnce('u2-inputs-css', '../../css/inputs.css');
 injectOnce('u2-choice-css', '../../css/choice.css');
+injectOnce('u2-icons-css', '../../css/icons.css');
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -96,6 +97,20 @@ export async function render(main) {
       readout('solvents', computed(() => solvents.value.length ? solvents.value.join(', ') : '(none)')),
       el('p', 'u2-gallery-status', 'Checkboxes are natively focusable: Tab through the list, Space toggles. ' +
         'The value is a new array in item order on every change, never a mutated one.'),
+    ];
+  });
+
+  const tissues = signal(['Liver', 'Kidney']);
+  section('Summary checkbox', () => {
+    const multi = new MultiChoiceInput({label: 'Tissues',
+      items: ['Liver', 'Kidney', 'Heart', 'Lung', 'Brain'],
+      bind: tissues, showSummaryCheckbox: true});
+    return [
+      multi,
+      readout('tissues', computed(() => tissues.value.length ? tissues.value.join(', ') : '(none)')),
+      el('p', 'u2-gallery-status', 'The tri-state summary reads "N of M"; its checkbox selects ' +
+        'all or none, and clicking the text or the chevron collapses the list. The summary ' +
+        'checkbox sits pixel-flush over the item checkboxes.'),
     ];
   });
 

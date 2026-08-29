@@ -188,6 +188,115 @@ async function checkPostfixAndCaption(page) {
     `name cell="${row.name}" dart cell="${row.dart.slice(0, 80)}" u2 cell="${row.u2.slice(0, 80)}"`);
 }
 
+/** Marks the probe targets once: an in-document u2 form section holding a text-ish input (the
+ * "u2 form, unmodified" copy keeps its whole DOM — the A/B bench re-parents its inputs), plus
+ * the form around it for the auto-layout probe. Idempotent. */
+const markProbes = (page) => page.evaluate((sel) => {
+  if (document.querySelector('[data-e2e="section-probe"]'))
+    return true;
+  // a text or number row: fill('4') is valid for both and survives the blur a header click causes
+  const editor = (s) => s.querySelector('.u2-section-body .u2-input-root[data-u2="text-input"] input') ??
+    s.querySelector('.u2-section-body .u2-input-root[data-u2="number-input"] input');
+  const section = [...document.querySelectorAll(`${sel} .u2-form .u2-section`)]
+    .find((s) => !s.querySelector('.u2-section-header')?.hidden && editor(s) !== null);
+  if (!section)
+    return false;
+  section.dataset.e2e = 'section-probe';
+  editor(section).dataset.e2e = 'section-probe-input';
+  section.closest('.u2-form').dataset.e2e = 'auto-probe-form';
+  return true;
+}, PAGE);
+
+const probeState = (page) => page.evaluate(() => {
+  const section = document.querySelector('[data-e2e="section-probe"]');
+  const input = document.querySelector('[data-e2e="section-probe-input"]');
+  return {
+    collapsed: section?.querySelector('.u2-section-body')?.style.display === 'none',
+    aria: section?.querySelector('.u2-section-header')?.getAttribute('aria-expanded') ?? null,
+    rootHidden: input?.closest('.u2-input-root')?.hidden ?? null,
+    value: input?.value ?? null,
+  };
+});
+
+async function checkSectionCollapse(page) {
+  const marked = await markProbes(page);
+  ok('func-form/8a/an-in-document-u2-form-renders-its-categories-as-sections',
+    marked === true, 'no .u2-section with an editable input found in the page\'s u2 forms');
+  if (marked !== true)
+    return;
+  await page.locator('[data-e2e="section-probe-input"]').fill('4');
+  const header = page.locator('[data-e2e="section-probe"] .u2-section-header');
+  await header.click();
+  await page.waitForFunction(() =>
+    document.querySelector('[data-e2e="section-probe"] .u2-section-body')?.style.display === 'none',
+  {}, {timeout: 8000});
+  const folded = await probeState(page);
+  await shot(page, 'func-form-8-collapsed');
+  ok('func-form/8b/a-header-click-folds-the-body-without-touching-field-visibility',
+    folded.collapsed && folded.aria === 'false' && folded.rootHidden === false,
+    JSON.stringify(folded));
+
+  await header.click();
+  await page.waitForFunction(() =>
+    document.querySelector('[data-e2e="section-probe"] .u2-section-body')?.style.display !== 'none',
+  {}, {timeout: 8000});
+  const restored = await probeState(page);
+  ok('func-form/8c/a-second-click-restores-the-body-and-the-edited-value-survived',
+    !restored.collapsed && restored.aria === 'true' && restored.value === '4',
+    JSON.stringify(restored));
+}
+
+async function checkAutoLayout(page) {
+  const marked = await markProbes(page);
+  if (marked !== true) {
+    ok('func-form/9a/auto-layout-probe-form-found', false, 'no probe form marked');
+    return;
+  }
+  const state = () => page.evaluate(() => {
+    const form = document.querySelector('[data-e2e="auto-probe-form"]');
+    return {tall: form?.classList.contains('u2-form-tall') ?? null,
+      wide: form?.classList.contains('u2-form-wide') ?? null};
+  });
+  const rest = await state();
+  try {
+    await page.evaluate(() =>
+      document.querySelector('[data-e2e="auto-probe-form"]').style.width = '200px');
+    await page.waitForFunction(() => document.querySelector('[data-e2e="auto-probe-form"]')
+      ?.classList.contains('u2-form-tall'), {}, {timeout: 8000});
+    // the class alone is blind to the F2 failure mode (caption-only rows, 0px editors): assert
+    // the probe editor really renders, on its own line below the caption
+    const geo = await page.evaluate(() => {
+      const input = document.querySelector('[data-e2e="section-probe-input"]');
+      const root = input?.closest('.u2-input-root');
+      const label = root?.querySelector('.u2-input-label')?.getBoundingClientRect();
+      const box = input?.closest('.u2-input-box')?.getBoundingClientRect();
+      return {editorWidth: input?.getBoundingClientRect().width ?? 0,
+        labelTop: label?.top ?? -1, boxTop: box?.top ?? -2};
+    });
+    const narrow = await state();
+    await shot(page, 'func-form-9-tall');
+    ok('func-form/9a/auto-rests-WIDE-and-narrowing-flips-tall-with-the-editor-below-the-caption',
+      rest.tall === false && rest.wide === true && narrow.wide === false &&
+      geo.editorWidth > 0 && geo.boxTop > geo.labelTop,
+      `rest=${JSON.stringify(rest)} narrow=${JSON.stringify(narrow)} geometry ${JSON.stringify(geo)}`);
+
+    // an explicit roomy width, so the flip-back never depends on the page column's own width
+    await page.evaluate(() =>
+      document.querySelector('[data-e2e="auto-probe-form"]').style.width = '600px');
+    await page.waitForFunction(() => document.querySelector('[data-e2e="auto-probe-form"]')
+      ?.classList.contains('u2-form-wide'), {}, {timeout: 8000});
+    const roomy = await state();
+    ok('func-form/9b/widening-returns-to-wide', roomy.tall === false && roomy.wide === true,
+      JSON.stringify(roomy));
+  } finally {
+    await page.evaluate(() => {
+      const form = document.querySelector('[data-e2e="auto-probe-form"]');
+      if (form)
+        form.style.width = '';
+    });
+  }
+}
+
 export const checks = [
   {id: 'func-form/1 boot: the FuncCall-convergence tab, 11 fields a side, rest state', run: checkBoot},
   {id: 'func-form/2 u2 → Dart: one edit, one counter tick, stable a macrotask later', run: checkU2ToDart},
@@ -196,4 +305,6 @@ export const checks = [
   {id: 'func-form/5 validate, not clamp: out-of-range flags both sides and clears', run: checkValidateNotClamp},
   {id: 'func-form/6 isValid gate: batchId filled and cleared from the u2 side', run: checkIsValidGate},
   {id: 'func-form/7 postfix and caption on the doseLevel row', run: checkPostfixAndCaption},
+  {id: 'func-form/8 section collapse: header click folds the body, value survives', run: checkSectionCollapse},
+  {id: 'func-form/9 auto layout: a narrowed host flips tall, widening flips back', run: checkAutoLayout},
 ];

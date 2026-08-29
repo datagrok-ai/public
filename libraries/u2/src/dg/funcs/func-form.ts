@@ -16,9 +16,10 @@ import {Scope} from '../../core/scope.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input} from '../../core/input-base.js';
 import type {InputOptions} from '../../core/input-base.js';
-import {div} from '../../core/elements.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import {Form} from '../../components/forms/form.js';
+import type {FormLayout} from '../../components/forms/form.js';
+import {Section} from '../../components/containers/section.js';
 import {ChoiceInput, MultiChoiceInput} from '../../components/inputs/choice-input.js';
 import {SuggestInput} from '../../components/inputs/suggest-input.js';
 import {ObjectForm, inputForProperty, kindOf} from '../forms/object-form.js';
@@ -51,6 +52,9 @@ export interface FuncFormOptions {
   /** `false` hides the table-field roots (the `getEditor(condensed, showTableSelectors)`
    * contract, functions.ts:412); auto-fill and dependent wiring still run (fpe:73). */
   showTableSelectors?: boolean;
+  layout?: FormLayout;
+  /** The DG.InputForm-contract flag; in the platform condensed IS the tall view, so it maps to
+   * `layout: 'tall'` where {@link layout} is not given. */
   condensed?: boolean;
   /** Fires on every non-echo input change — user or programmatic input write — after the
    * FuncCall has been updated. Mirrors DG.InputForm.onInputChanged. */
@@ -197,7 +201,7 @@ export class FuncCallForm extends Form {
   private readonly _genSig = signal(0);
 
   constructor(call: FuncCallLike, options: FuncFormOptions = {}) {
-    super({condensed: options.condensed});
+    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
     this._formOptions = options;
     this._call = call;
     this.root.dataset.u2 = 'func-form';
@@ -385,38 +389,42 @@ export class FuncCallForm extends Form {
       }
     }
     const consumed = new Set<(typeof categories)[number]>();
-    // the FIRST not-yet-consumed matching category renders — a name listed twice renders once,
-    // where Dart duplicates the bound inputs (divergence #22b)
-    const render = (name: string, level: number, el: HTMLElement | undefined) => {
-      const category = categories.find((c) => c.name === name && !consumed.has(c));
+    // each header is a Section whose header carries the u2-form-category classes, so the
+    // auto-hide machinery and the category skin stay exactly where they were; a header owning
+    // no fields (a group heading, a duplicate) renders plain — a chevron over nothing lies
+    const section = (name: string, collapsible: boolean, levelClass?: string): Section => {
+      const s = this.run(() => new Section({title: name, collapsible}));
+      s.header.classList.add('u2-form-category');
+      if (levelClass !== undefined)
+        s.header.classList.add(levelClass);
+      this.addElement(s.root);
+      return s;
+    };
+    const render = (name: string, level: number, s: Section | undefined,
+      category: (typeof categories)[number] | undefined) => {
       const before = this._fields.length;
       if (category !== undefined) {
         consumed.add(category);
         for (const {param, route, parent} of category.entries)
-          this._addField(param, route, parent);
+          this._addField(param, route, parent, s?.body);
       }
-      this._plan.push({name, level, el, fields: this._fields.slice(before)});
+      this._plan.push({name, level, el: s?.header, fields: this._fields.slice(before)});
     };
     for (const item of plan ?? []) {
-      let el: HTMLElement | undefined;
-      if (item.isHeader || headers) {
-        el = div([item.name], 'u2-form-category');
-        el.classList.add('u2-form-category-l' + Math.min(item.level, 3));
-        this.addElement(el);
-      }
-      render(item.name, item.level, el);
+      // the FIRST not-yet-consumed matching category renders — a name listed twice renders
+      // once, where Dart duplicates the bound inputs (divergence #22b)
+      const category = categories.find((c) => c.name === item.name && !consumed.has(c));
+      const s = item.isHeader || headers ?
+        section(item.name, category !== undefined, 'u2-form-category-l' + Math.min(item.level, 3)) :
+        undefined;
+      render(item.name, item.level, s, category);
     }
     // every category the plan did not consume — the default `Misc` included — appends in
     // first-appearance order, where Dart silently never renders it (defect #12, divergence #18)
     for (const category of categories) {
       if (consumed.has(category))
         continue;
-      let el: HTMLElement | undefined;
-      if (headers) {
-        el = div([category.name], 'u2-form-category');
-        this.addElement(el);
-      }
-      render(category.name, 1, el);
+      render(category.name, 1, headers ? section(category.name, true) : undefined, category);
     }
     this._updateHeaders();
     // a consumer hiding a field root directly (`input.root.hidden = true`) bypasses
@@ -485,7 +493,7 @@ export class FuncCallForm extends Form {
   }
 
   private _addField(param: FuncCallParamLike, routed: FuncField['route'],
-    parent?: FuncCallParamLike): void {
+    parent?: FuncCallParamLike, host?: HTMLElement): void {
     const prop = param.property;
     const {input: custom, ...rest} = this._formOptions.overrides?.[param.name] ?? {};
     const options: InputOptions<any> = {
@@ -507,7 +515,7 @@ export class FuncCallForm extends Form {
       kind = 'choice';
     }
     else if (route === 'multiChoices') {
-      input = this.run(() => new MultiChoiceInput({...options, items: []}));
+      input = this.run(() => new MultiChoiceInput({...options, items: [], showSummaryCheckbox: true}));
       kind = 'list';
     }
     else if (route === 'suggestions') {
@@ -581,7 +589,7 @@ export class FuncCallForm extends Form {
         input.addValidator(() => field.active.peek() ? field.namedVerdict ?? null : null);
       }
     }
-    this.add(input);
+    this.add(input, host);
     // input-base owns the verdict text; its element's tooltip is ours — the full text of a
     // clamped message, or the underlying failure behind a shortened `Couldn't validate`
     const errorEl = Array.prototype.find.call(input.root.children, (c: Element) =>

@@ -64,8 +64,45 @@ div.u2-input-editor.u2-multi-choice {
   cursor: pointer;
 }
 
-.u2-multi-choice-item > .u2-input-checkbox {
+/* one shared rule keeps the summary checkbox pixel-flush over the item checkbox column */
+.u2-multi-choice-item > .u2-input-checkbox,
+.u2-multi-choice-summary > .u2-input-checkbox {
   margin: 0 var(--dg-space-m) 0 var(--dg-space-s);
+}
+
+.u2-multi-choice-summary {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  white-space: nowrap;
+}
+
+.u2-multi-choice-summary:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-multi-choice-summary-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-multi-choice-summary-toggle:focus-visible {
+  outline: var(--dg-focus-ring);
+}
+
+.u2-multi-choice-chevron {
+  display: flex;
+  align-items: center;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  transition: transform 100ms ease;
+}
+
+.u2-multi-choice-summary-toggle[aria-expanded='false'] .u2-multi-choice-chevron {
+  transform: rotate(-90deg);
 }
 
 .u2-multi-choice-item:hover {

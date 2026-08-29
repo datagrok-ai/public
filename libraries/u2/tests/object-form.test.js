@@ -239,7 +239,7 @@ form('an override replaces the input, other keys merge into the generated one', 
       count: {label: 'How many', inline: true},
     },
   }));
-  assert.equal(f.root.classList.contains('u2-form-condensed'), true);
+  assert.equal(f.root.classList.contains('u2-form-tall'), true, 'condensed maps to the tall layout');
   assert.equal(inputOf(f, 'Structure'), custom, 'the caller-supplied input is laid out as is');
   assert.equal(custom.value.value, 'Aspirin', 'and seeded from the property');
   assert.equal(custom.root.parentNode, f.root.querySelector('.u2-form-rows'));

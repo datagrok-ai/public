@@ -1,4 +1,6 @@
+import {signal, Signal} from '../../core/signals.js';
 import {Input, InputOptions} from '../../core/input-base.js';
+import {iconOf} from '../display/icon.js';
 
 export type ChoiceItem = string | {value: string, label: string};
 
@@ -93,13 +95,36 @@ export interface MultiChoiceInputOptions extends InputOptions<string[]> {
   /** Stands in for the checkbox list while there is nothing to check, so a picker over a live
    * collection reads as empty rather than broken. 'No items' by default. */
   emptyText?: string;
+  /** Summary row atop the list: a tri-state checkbox plus "<N> of <M>". Clicking the checkbox
+   * selects all / none; clicking the text (or its chevron) collapses/expands the list. */
+  showSummaryCheckbox?: boolean;
 }
+
+let summaryCount = 0;
 
 /** Compact checkbox list; the value holds the checked items in item order. */
 export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
-  private _list!: HTMLElement;
+  // built by createEditor(), which the base constructor calls before subclass initializers
+  // would run — none of these may carry an inline initializer (see multi-select.ts)
+  private _itemsHost!: HTMLElement;
   private _boxes!: HTMLInputElement[];
   private _items!: ChoiceItem[];
+  private _summaryBox: HTMLInputElement | undefined;
+  private _summaryText: HTMLElement | undefined;
+  private _summaryToggle: HTMLElement | undefined;
+  private _expanded: Signal<boolean> | undefined;
+
+  get enabled(): boolean {
+    return super.enabled;
+  }
+
+  // the base sweep disables the native controls; the collapse toggle is a span and must give up
+  // its tab stop and gestures itself
+  set enabled(x: boolean) {
+    super.enabled = x;
+    if (this._summaryToggle !== undefined)
+      this._summaryToggle.tabIndex = x ? 0 : -1;
+  }
 
   constructor(options: MultiChoiceInputOptions) {
     super(options, []);
@@ -112,6 +137,11 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
 
   set items(x: ChoiceItem[]) {
     this.setItems(x);
+  }
+
+  /** Collapse state of the item list; present only with {@link MultiChoiceInputOptions.showSummaryCheckbox}. */
+  get expanded(): Signal<boolean> | undefined {
+    return this._expanded;
   }
 
   /** Replaces the item list, keeping the items that are still there checked
@@ -129,11 +159,20 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
 
   protected createEditor(): HTMLElement {
     const list = document.createElement('div');
-    this._list = list;
     list.className = 'u2-multi-choice';
     list.setAttribute('role', 'group');
+    this._itemsHost = list;
+    if (this.options.showSummaryCheckbox)
+      this._buildSummary(list);
     this._fill(this.options.items);
-    const onChange = () => {
+    const onChange = (e: Event) => {
+      if (this._summaryBox && e.target === this._summaryBox) {
+        if (this._items.length === 0)
+          this._updateSummary();
+        else
+          this.value.value = this._summaryBox.checked ? this._items.map(itemValue) : [];
+        return;
+      }
       this.value.value = this._boxes.filter((b) => b.checked).map((b) => b.value);
     };
     list.addEventListener('change', onChange);
@@ -142,20 +181,87 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
       const selected = new Set(this.value.value);
       for (const box of this._boxes)
         box.checked = selected.has(box.value);
+      this._updateSummary();
     });
     return list;
+  }
+
+  private _buildSummary(list: HTMLElement): void {
+    const row = document.createElement('div');
+    row.className = 'u2-multi-choice-summary';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.className = 'u2-input-checkbox';
+    this._summaryBox = box;
+    const text = document.createElement('span');
+    text.className = 'u2-multi-choice-summary-text';
+    text.id = `u2-multi-choice-summary-${++summaryCount}`;
+    box.setAttribute('aria-labelledby', text.id);
+    this._summaryText = text;
+    const chevron = document.createElement('span');
+    chevron.className = 'u2-multi-choice-chevron';
+    chevron.append(iconOf('chevron-down'));
+    const toggle = document.createElement('span');
+    toggle.className = 'u2-multi-choice-summary-toggle';
+    toggle.tabIndex = 0;
+    toggle.setAttribute('role', 'button');
+    // its own name — the content-derived "N of M" would collide with the checkbox's label
+    toggle.setAttribute('aria-label', 'Collapse list');
+    toggle.append(text, chevron);
+    row.append(box, toggle);
+    const items = document.createElement('div');
+    items.className = 'u2-multi-choice-items';
+    list.append(row, items);
+    this._itemsHost = items;
+    this._summaryToggle = toggle;
+    const expanded = signal(true);
+    this._expanded = expanded;
+    const flip = () => {
+      if (this.enabled)
+        expanded.value = !expanded.peek();
+    };
+    const onKeyDown = (e: Event) => {
+      const key = (e as KeyboardEvent).key;
+      if (key === 'Enter' || key === ' ') {
+        e.preventDefault();
+        flip();
+      }
+    };
+    toggle.addEventListener('click', flip);
+    toggle.addEventListener('keydown', onKeyDown);
+    this.own(() => {
+      toggle.removeEventListener('click', flip);
+      toggle.removeEventListener('keydown', onKeyDown);
+    });
+    this.effect(() => {
+      const on = expanded.value;
+      toggle.setAttribute('aria-expanded', String(on));
+      items.style.display = on ? '' : 'none';
+    });
+  }
+
+  private _updateSummary(): void {
+    const box = this._summaryBox;
+    if (!box)
+      return;
+    const total = this._items.length;
+    const checked = this._boxes.filter((b) => b.checked).length;
+    box.checked = checked === total && total > 0;
+    box.indeterminate = checked > 0 && checked < total;
+    this._summaryText!.textContent = `${checked} of ${total}`;
   }
 
   private _fill(items: ChoiceItem[]): void {
     this._items = items;
     const selected = new Set(this.value.peek());
-    this._list.textContent = '';
+    this._itemsHost.textContent = '';
     this._boxes = [];
     if (items.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'u2-multi-choice-empty';
       empty.textContent = this.options.emptyText ?? 'No items';
-      this._list.append(empty);
+      this._itemsHost.append(empty);
+      this._updateSummary();
       return;
     }
     for (const item of items) {
@@ -169,9 +275,10 @@ export class MultiChoiceInput extends Input<string[], MultiChoiceInputOptions> {
       const text = document.createElement('span');
       text.textContent = itemLabel(item);
       row.append(box, text);
-      this._list.append(row);
+      this._itemsHost.append(row);
       this._boxes.push(box);
     }
+    this._updateSummary();
     this.refreshEnabled();
   }
 }

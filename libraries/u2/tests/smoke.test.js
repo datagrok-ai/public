@@ -527,7 +527,11 @@ smoke('NumberInput: parses, steps, and validates instead of clamping typed text'
   assert.equal(editor.value, '-5');
   assert.equal(count.validity.value, 'Value must be at least 0');
   fire(count.root.querySelector('.u2-number-spin'), 'click');
-  assert.equal(count.value.value, 0, 'stepping clamps back into range');
+  assert.equal(count.value.value, -3, 'stepping walks toward range instead of clamping');
+  assert.equal(count.validity.value, 'Value must be at least 0');
+  fire(count.root.querySelector('.u2-number-spin'), 'click');
+  fire(count.root.querySelector('.u2-number-spin'), 'click');
+  assert.equal(count.value.value, 1, 'and the validity clears once inside');
   assert.equal(count.validity.value, null);
   count.dispose();
 });

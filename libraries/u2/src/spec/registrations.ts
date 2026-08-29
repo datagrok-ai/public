@@ -3,7 +3,7 @@
    toolbar, async view). */
 import {Signal} from '../core/signals.js';
 import {Control} from '../core/component.js';
-import {button, divH, divV, panel} from '../core/elements.js';
+import {button, divH, divV, panel, type Text} from '../core/elements.js';
 import {buttonWithIcon} from '../components/actions/buttons.js';
 import {icon, IconVariant} from '../components/display/icon.js';
 import {Input, InputOptions, LiveOption} from '../core/input-base.js';
@@ -23,6 +23,8 @@ import {FontInput} from '../components/inputs/font-input.js';
 import {ImageInput} from '../components/inputs/image-input.js';
 import {IconInput} from '../components/inputs/icon-input.js';
 import {Form} from '../components/forms/form.js';
+import type {FormLayout} from '../components/forms/form.js';
+import {Section} from '../components/containers/section.js';
 import {Splitter} from '../components/containers/splitter.js';
 import {Accordion} from '../components/containers/accordion.js';
 import {Card} from '../components/containers/card.js';
@@ -124,6 +126,15 @@ function card(props: Props, children: Child[]): Card {
     selected: props.selected as boolean | Signal<boolean> | undefined,
     children: children.map(element),
   });
+}
+
+function section(props: Props, children: Child[]): Section {
+  const s = new Section({
+    title: (props.title as Text | undefined) ?? '',
+    expanded: props.expanded as boolean | Signal<boolean> | undefined,
+    collapsible: props.collapsible as boolean | undefined,
+  });
+  return s.add(...children.map(element));
 }
 
 function container(tag: string, create: () => HTMLElement, description: string): ComponentMeta {
@@ -249,13 +260,16 @@ const METAS: ComponentMeta[] = [
         ...inputOptions<string[]>(props),
         items: itemList(props.items),
         emptyText: props.emptyText as string | undefined,
+        showSummaryCheckbox: props.showSummaryCheckbox as boolean | undefined,
       });
       boundItems(input, props.items);
       return input;
     },
     description: 'Checkbox list; the value holds the checked items in item order.',
     props: inputProps('string_list', {name: 'items', type: 'string_list', bindable: true},
-      {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'}),
+      {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'},
+      {name: 'showSummaryCheckbox', type: 'bool',
+        description: 'Tri-state "<N> of <M>" summary row that toggles all/none; the list collapses on click.'}),
     defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
     events: ['change'],
     example: {tag: 'u2-multi-choice-input', props: {label: 'Tags', items: ['acid', 'base'], value: ['acid']}},
@@ -336,6 +350,28 @@ const METAS: ComponentMeta[] = [
     ]},
   },
   {
+    tag: 'u2-section',
+    category: 'Containers',
+    create: (props) => section(props, []),
+    createWithChildren: (props, children) => section(props, children),
+    description: 'One collapsible titled section: a form-category-styled header whose hover ' +
+      'chevron sits left of the caption; clicking the header folds the body.',
+    usage: 'For grouping form fields or page content under a heading. Inputs inside a ' +
+      'u2-section child of a u2-form are adopted by the section, not the form — they do not ' +
+      'join the form\'s label column. A managed pane set belongs in u2-accordion.',
+    props: [
+      {name: 'title', type: 'string', bindable: true},
+      {name: 'expanded', type: 'bool', bindable: true, twoWay: true},
+      {name: 'collapsible', type: 'bool',
+        description: 'false renders a plain heading and body — no chevron, no click.'},
+    ],
+    acceptsChildren: true,
+    defaults: {title: 'Section'},
+    example: {tag: 'u2-section', props: {title: 'Study'}, children: [
+      {tag: 'u2-choice-input', props: {label: 'Country', items: ['USA', 'France']}},
+    ]},
+  },
+  {
     tag: 'u2-tabs',
     category: 'Containers',
     create: (props) => new TabStrip(tabStrip(props)),
@@ -389,8 +425,8 @@ const METAS: ComponentMeta[] = [
     tag: 'u2-form',
     category: 'Containers',
     create: (props) => new Form({
-      condensed: props.condensed as boolean | undefined,
-      wide: props.wide as boolean | undefined,
+      layout: props.layout as FormLayout | undefined,
+      captionAlign: props.captionAlign as LiveOption<'right' | 'left'> | undefined,
     }),
     adopt: (parent, child) => {
       const form = parent as Form;
@@ -404,10 +440,16 @@ const METAS: ComponentMeta[] = [
     usage: 'Labels share a left column and values stay left-aligned — never center form content. ' +
       'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.',
     props: [
-      {name: 'condensed', type: 'bool', description: 'Tighter rows.'},
-      {name: 'wide', type: 'bool', description: 'Two columns.'},
+      {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'],
+        description: '"auto" (default) picks wide or tall by fit — editors fill the row while ' +
+          'the label column plus the minimum editor width fit, captions move above when they ' +
+          'do not; "normal" never switches; "wide" stretches editors across the row; "tall" ' +
+          'puts captions above their editors.'},
+      {name: 'captionAlign', type: 'string', choices: ['right', 'left'], bindable: true,
+        description: 'Caption alignment in caption-left layouts; right is the platform default.'},
     ],
     acceptsChildren: true,
+    defaults: {layout: 'auto'},
     example: {tag: 'u2-form', children: [
       {tag: 'u2-text-input', props: {label: 'Name'}},
       {tag: 'u2-number-input', props: {label: 'Amount', value: 1}},

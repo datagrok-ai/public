@@ -12,6 +12,7 @@ import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {signal, Signal} from '../../core/signals.js';
 import {ObjectForm, propertyForm} from './object-form.js';
+import type {FormLayout} from '../../components/forms/form.js';
 
 /** The types the editor offers, and the ones the convergence matrix covers (plan.md §"full input
  * matrix"). */
@@ -70,6 +71,7 @@ export interface PropertyEditorOptions {
   /** The WHOLE record on every edit — the caller rebuilds whatever hangs off the property
    * (`DG.Property.fromOptions`) rather than patching it. */
   onChanged?: (options: IProperty) => void;
+  layout?: FormLayout;
   condensed?: boolean;
   /** Extra validation per field name, for the rules only the caller knows — a name already taken by
    * another property, say. Re-applied every time the fields are rebuilt, so a re-target keeps it. */
@@ -86,6 +88,7 @@ export class PropertyEditor extends Control {
 
   private readonly _typed = document.createElement('div');
   private readonly _onChanged: ((options: IProperty) => void) | undefined;
+  private readonly _layout: FormLayout | undefined;
   private readonly _condensed: boolean | undefined;
   private readonly _validators: Record<string, (value: any) => string | null>;
   private _record: IProperty = {};
@@ -96,6 +99,7 @@ export class PropertyEditor extends Control {
   constructor(target: IProperty, options: PropertyEditorOptions = {}) {
     super();
     this._onChanged = options.onChanged;
+    this._layout = options.layout;
     this._condensed = options.condensed;
     this._validators = options.validators ?? {};
     this._record = {...target};
@@ -156,7 +160,7 @@ export class PropertyEditor extends Control {
     // the name is what the caller keys the property by, and renaming is not something a reader can
     // do halfway: reported per keystroke, 'dose' → 'name' renames through 'n', 'na' and 'nam' too
     const form = propertyForm(fields.map((field) => PropertyEditor._propertyFor(field)), this._record,
-      {condensed: this._condensed, onChanged: (name) => this._edited(name),
+      {layout: this._layout, condensed: this._condensed, onChanged: (name) => this._edited(name),
         overrides: {name: {commitOn: 'change'}}});
     for (const field of fields) {
       const validator = this._validators[field.name];

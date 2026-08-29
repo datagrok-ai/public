@@ -750,6 +750,24 @@ rules('the plan renders headers in order with level classes; unlisted categories
   f.dispose();
 });
 
+rules('only field-owning categories collapse — a fieldless group header renders plain', () => {
+  const f = mount(funcForm(grouped()));
+  const power = headerOf(f, 'Power');
+  assert.equal(power.getAttribute('role'), null, 'a group heading takes no clicks');
+  assert.equal(power.querySelector('.u2-section-chevron'), null, 'and shows no chevron');
+  const engine = headerOf(f, 'Engine');
+  assert.equal(engine.getAttribute('role'), 'button');
+  assert.notEqual(engine.querySelector('.u2-section-chevron'), null);
+  f.dispose();
+
+  const dup = mount(funcForm(callWith({categoryGroups: '{"Power": ["Engine", "Engine"]}'},
+    fp('cylinders', 'int', {category: 'Engine'}))));
+  const engines = headerEls(dup).filter((h) => h.textContent === 'Engine');
+  assert.equal(engines[0].getAttribute('role'), 'button', 'the field-owning first render collapses');
+  assert.equal(engines[1].getAttribute('role'), null, 'the fieldless duplicate is a plain heading');
+  dup.dispose();
+});
+
 rules('a header item whose name matches a category renders that category\'s fields (fpe:849)', () => {
   const f = mount(funcForm(callWith({categoryGroups: '{"Engine": ["Sub"]}'},
     fp('cylinders', 'int', {category: 'Engine'}),

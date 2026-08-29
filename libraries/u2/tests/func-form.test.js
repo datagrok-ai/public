@@ -198,6 +198,71 @@ form('category headers render only when >1 category or the single one is not Mis
   grouped.dispose();
 });
 
+form('every category renders as a collapsible Section whose header carries the category classes', () => {
+  const call = callOf(fp('a', 'string'), fp('b', 'int', {category: 'Advanced'}));
+  const f = mount(funcForm(call));
+  const sections = [...f.root.querySelectorAll('.u2-section')];
+  assert.equal(sections.length, 2);
+  assert.deepEqual(headers(f), ['Misc', 'Advanced']);
+  assert.equal(sections[1].querySelector('.u2-section-header').classList.contains('u2-form-category'),
+    true, 'the section header IS the category header');
+  assert.equal(f.getInput('a').root.parentNode, sections[0].querySelector('.u2-section-body'));
+  assert.equal(f.getInput('b').root.parentNode, sections[1].querySelector('.u2-section-body'));
+
+  const flat = mount(funcForm(callOf(fp('a', 'string'), fp('b', 'int'))));
+  assert.equal(flat.root.querySelector('.u2-section'), null, 'a headerless form builds no sections');
+  assert.equal(flat.getInput('a').root.parentNode, flat.root.querySelector('.u2-form-rows'));
+  flat.dispose();
+  f.dispose();
+});
+
+form('a header click collapses only the section body — field visibility and values untouched', async () => {
+  const call = callOf(fp('a', 'string'), fp('b', 'int', {category: 'Advanced'}));
+  const f = mount(funcForm(call));
+  f.getInput('b').value.value = 7;
+  await flush();
+  const header = [...f.root.querySelectorAll('.u2-section-header')]
+    .find((h) => h.textContent === 'Advanced');
+  const body = header.parentNode.querySelector('.u2-section-body');
+
+  fire(header, 'click');
+  assert.equal(body.style.display, 'none');
+  assert.equal(f.getInput('b').root.hidden, false, 'collapse never writes root.hidden — _applyVisible owns it');
+  assert.equal(header.hidden, false, 'collapse and auto-hide are independent axes');
+
+  fire(header, 'click');
+  assert.notEqual(body.style.display, 'none');
+  assert.equal(f.getInput('b').value.value, 7, 'the edited value survives the fold');
+  assert.equal(call.inputs.b, 7);
+  f.dispose();
+});
+
+form('auto-hide still hides the section header when every field of the category hides', () => {
+  const call = callOf(fp('a', 'string'), fp('b', 'int', {category: 'Advanced'}));
+  const f = mount(funcForm(call));
+  const header = [...f.root.querySelectorAll('.u2-section-header')]
+    .find((h) => h.textContent === 'Advanced');
+  f.getInput('b').root.hidden = true;
+  f._updateHeaders();
+  assert.equal(header.hidden, true, 'the plan el is the section header');
+  f.getInput('b').root.hidden = false;
+  f._updateHeaders();
+  assert.equal(header.hidden, false);
+  f.dispose();
+});
+
+form('condensed maps to the tall layout; an explicit layout wins', () => {
+  const tall = mount(funcForm(callOf(fp('a', 'string')), {condensed: true}));
+  assert.equal(tall.root.classList.contains('u2-form-tall'), true);
+  assert.equal(tall.root.classList.contains('u2-form-condensed'), false);
+  tall.dispose();
+
+  const wide = mount(funcForm(callOf(fp('a', 'string')), {condensed: true, layout: 'wide'}));
+  assert.equal(wide.root.classList.contains('u2-form-wide'), true);
+  assert.equal(wide.root.classList.contains('u2-form-tall'), false);
+  wide.dispose();
+});
+
 form('a nullable choice gets the empty option; a non-nullable one does not, and requires a value', () => {
   const call = callOf(
     fp('stage', 'string', {choices: ['a', 'b'], nullable: true}),
@@ -721,6 +786,28 @@ w2('a multi-choice prune writes the filtered list into the call', async () => {
   await sleep(250);
   assert.deepEqual(sets.filter(([n]) => n === 'tags'), [['tags', ['a']]],
     'one write despite the List always-fire — the refresh compares equal');
+  f.dispose();
+});
+
+w2('the summary toggle-all is an ordinary user write — the whole item list reaches the call', async () => {
+  provider('lists', [], async () => ['FR', 'DE', 'US']);
+  const call = callOf(fp('regions', 'list', {options: {choices: 'lists()'}}));
+  const {f, changes} = wired(call);
+  await f.settled;
+  const summary = f.getInput('regions').root
+    .querySelector('.u2-multi-choice-summary .u2-input-checkbox');
+  assert.notEqual(summary, null, 'the multiChoices route renders the summary row');
+
+  summary.checked = true;
+  fire(summary, 'change');
+  await flush();
+  assert.deepEqual(call.inputs.regions, ['FR', 'DE', 'US'], 'select-all landed in the call');
+  assert.deepEqual(changes.at(-1), ['regions', ['FR', 'DE', 'US']]);
+
+  summary.checked = false;
+  fire(summary, 'change');
+  await flush();
+  assert.deepEqual(call.inputs.regions, [], 'select-none too');
   f.dispose();
 });
 

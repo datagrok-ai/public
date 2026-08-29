@@ -552,6 +552,11 @@
           "name": "emptyText",
           "type": "string",
           "description": "Stands in for an empty list; 'No items' by default."
+        },
+        {
+          "name": "showSummaryCheckbox",
+          "type": "bool",
+          "description": "Tri-state \"<N> of <M>\" summary row that toggles all/none; the list collapses on click."
         }
       ],
       "defaults": {
@@ -823,6 +828,52 @@
       }
     },
     {
+      "tag": "u2-section",
+      "category": "Containers",
+      "description": "One collapsible titled section: a form-category-styled header whose hover chevron sits left of the caption; clicking the header folds the body.",
+      "usage": "For grouping form fields or page content under a heading. Inputs inside a u2-section child of a u2-form are adopted by the section, not the form — they do not join the form's label column. A managed pane set belongs in u2-accordion.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "expanded",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "collapsible",
+          "type": "bool",
+          "description": "false renders a plain heading and body — no chevron, no click."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaults": {
+        "title": "Section"
+      },
+      "example": {
+        "tag": "u2-section",
+        "props": {
+          "title": "Study"
+        },
+        "children": [
+          {
+            "tag": "u2-choice-input",
+            "props": {
+              "label": "Country",
+              "items": [
+                "USA",
+                "France"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "tag": "u2-tabs",
       "category": "Containers",
       "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
@@ -921,17 +972,31 @@
       "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.",
       "props": [
         {
-          "name": "condensed",
-          "type": "bool",
-          "description": "Tighter rows."
+          "name": "layout",
+          "type": "string",
+          "choices": [
+            "auto",
+            "normal",
+            "wide",
+            "tall"
+          ],
+          "description": "\"auto\" (default) picks wide or tall by fit — editors fill the row while the label column plus the minimum editor width fit, captions move above when they do not; \"normal\" never switches; \"wide\" stretches editors across the row; \"tall\" puts captions above their editors."
         },
         {
-          "name": "wide",
-          "type": "bool",
-          "description": "Two columns."
+          "name": "captionAlign",
+          "type": "string",
+          "choices": [
+            "right",
+            "left"
+          ],
+          "bindable": true,
+          "description": "Caption alignment in caption-left layouts; right is the platform default."
         }
       ],
       "acceptsChildren": true,
+      "defaults": {
+        "layout": "auto"
+      },
       "example": {
         "tag": "u2-form",
         "children": [

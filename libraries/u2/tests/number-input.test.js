@@ -1,6 +1,7 @@
 /* NumberInput parity with the platform's `NumberInput<T>` (core d4 number_input.dart /
    float_input.dart): min/max validate instead of clamping typed text, the slider materializes only
-   within real bounds, the clicker steps inside them, and floats pick their own precision. */
+   within real bounds, the clicker clamps only from an in-range value, and floats pick their own
+   precision. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -64,11 +65,27 @@ smoke('out-of-range text stays on screen, reaches the value, and only marks the 
   input.dispose();
 });
 
-smoke('the stepper is bounded: it walks back into range and clears the validity', () => {
-  const input = mount(new NumberInput({mode: 'int', min: 0, max: 10, step: 2, spinner: true}));
-  type(input, '99');
+smoke('the stepper steps an out-of-range value instead of clamping it to a bound', () => {
+  const input = mount(new NumberInput({mode: 'int', min: 0, max: 10, clicker: true}));
+  type(input, '55');
   assert.equal(input.validity.value, 'Value must be at most 10');
-  fire(input.root.querySelector('.u2-number-spin'), 'click');
+  const [minus, plus] = clickers(input);
+  fire(minus, 'click');
+  assert.equal(input.value.value, 54, 'steps from the typed value, no clamp to max');
+  assert.equal(editor(input).value, '54');
+  assert.equal(input.validity.value, 'Value must be at most 10', 'still invalid at 54');
+  fire(plus, 'click');
+  fire(plus, 'click');
+  assert.equal(input.value.value, 56, 'and + walks up unguarded too');
+  assert.equal(input.validity.value, 'Value must be at most 10');
+  input.dispose();
+});
+
+smoke('the stepper walks an out-of-range value back into range and the validity clears', () => {
+  const input = mount(new NumberInput({mode: 'int', min: 0, max: 10, step: 2, spinner: true}));
+  type(input, '12');
+  assert.equal(input.validity.value, 'Value must be at most 10');
+  fire(input.root.querySelectorAll('.u2-number-spin')[1], 'click');
   assert.equal(input.value.value, 10);
   assert.equal(editor(input).value, '10');
   assert.equal(input.validity.value, null);

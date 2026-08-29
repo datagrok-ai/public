@@ -83,6 +83,9 @@
 
   /* control metrics — current platform values */
   --dg-control-height: 28px;
+  /* the auto form-layout threshold: the smallest editor width a caption-left row must fit
+     (js-api ui.ts:1407 seed) */
+  --dg-form-min-editor-width: 150px;
   --dg-button-height: 24px;
   --dg-inline-control-height: 22px;
   --dg-border-width: 1px;

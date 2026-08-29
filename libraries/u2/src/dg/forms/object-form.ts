@@ -7,6 +7,7 @@ import type {IProperty} from '../../core/property-like.js';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {text} from '../../core/text.js';
 import {Form} from '../../components/forms/form.js';
+import type {FormLayout} from '../../components/forms/form.js';
 import {TextInput} from '../../components/inputs/text-input.js';
 import {NumberInput, NumberInputOptions} from '../../components/inputs/number-input.js';
 import {BigIntInput} from '../../components/inputs/bigint-input.js';
@@ -44,6 +45,9 @@ export interface ObjectFormOptions {
   /** `auto` asks the platform for the editor of every real `DG.Property` (molecule, column, date,
    * color…), generating one only where it has none; `generated` (the default) never asks. */
   editors?: 'auto' | 'generated';
+  layout?: FormLayout;
+  /** The DG.InputForm-contract flag; in the platform condensed IS the tall view, so it maps to
+   * `layout: 'tall'` where {@link layout} is not given. */
   condensed?: boolean;
   onChanged?: (name: string, value: unknown) => void;
 }
@@ -296,7 +300,7 @@ export class ObjectForm extends Form {
   private _refreshing = false;
 
   constructor(props: IProperty[], target: object, options: ObjectFormOptions = {}) {
-    super({condensed: options.condensed});
+    super({layout: options.layout ?? (options.condensed ? 'tall' : undefined)});
     this.target = target;
     this._onChanged = options.onChanged;
     this._auto = options.editors === 'auto';

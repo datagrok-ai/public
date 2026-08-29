@@ -28,10 +28,12 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  *
  * Out-of-range text behaves as the platform's `NumberInput` does (`number_input.dart:40-61`): the
  * typed number reaches the value signal and the min/max validators flag it, nothing is clamped
- * behind the user's back. Only the bounded controls — slider and stepper — stay inside the range,
- * and both work off the value signal, never off the displayed text a `format` may have rewritten
- * into something the parser rejects. On an empty field the stepper does nothing, as the platform's
- * clicker does (`number_input.dart:66-68` steps `null` to `null`).
+ * behind the user's back. The slider stays inside the range; the stepper clamps only when stepping
+ * from an in-range value — from an out-of-range one it steps by `step` unguarded, so the value
+ * walks toward the range instead of jumping to a bound. Both work off the value signal, never off
+ * the displayed text a `format` may have rewritten into something the parser rejects. On an empty
+ * field the stepper does nothing, as the platform's clicker does (`number_input.dart:66-68` steps
+ * `null` to `null`).
  *
  * The chrome is the platform's, ported as it stands (`number_input.dart:65-92`, `d4.css:75-134`):
  * at rest a bare field, and hovering anywhere on the input reveals the − + pair on the options
@@ -43,8 +45,9 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  *   z-index: 2`), so in a form it sits over the next row;
  * - at rest nothing hints that a slider or a clicker exists — they are `visibility: hidden` until
  *   the pointer enters the input (`d4.css:130-134`);
- * - the platform's clicker steps past min/max (`number_input.dart:66-68` adds `step` unguarded);
- *   u2 clamps it, which is the one divergence kept from wave 1. */
+ * - the platform's clicker steps past min/max everywhere (`number_input.dart:66-68` adds `step`
+ *   unguarded); u2 clamps only the step from an in-range value, the one divergence kept from
+ *   wave 1. */
 export class NumberInput extends Input<number | null, NumberInputOptions> {
   private _input!: HTMLInputElement;
   // assigned in createEditor, which the base constructor runs before field initializers
@@ -195,7 +198,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     if (current === null)
       return;
     const next = current + multiplier * (this.options.step ?? 1);
-    this._set(this._clamp(this._int ? Math.round(next) : Number(next.toPrecision(12))));
+    const rounded = this._int ? Math.round(next) : Number(next.toPrecision(12));
+    this._set(this._outOfRange(current) === null ? this._clamp(rounded) : rounded);
   }
 
   private _commit(): void {

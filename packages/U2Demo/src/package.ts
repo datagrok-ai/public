@@ -38,6 +38,7 @@ import '@datagrok-libraries/u2/css/menu-bar.css';
 import '@datagrok-libraries/u2/css/dialog.css';
 import '@datagrok-libraries/u2/css/tooltip.css';
 import '@datagrok-libraries/u2/css/form.css';
+import '@datagrok-libraries/u2/css/section.css';
 import '@datagrok-libraries/u2/css/property-grid.css';
 import '@datagrok-libraries/u2/css/async.css';
 import '@datagrok-libraries/u2/css/typeahead.css';

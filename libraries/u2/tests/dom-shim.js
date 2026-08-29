@@ -225,12 +225,30 @@ class MutationObserver {
 }
 
 class ResizeObserver {
-  observe() {}
+  constructor(callback) {
+    this.callback = callback;
+    this.targets = [];
+    this.disconnected = false;
+    ResizeObserver.instances.push(this);
+  }
 
-  unobserve() {}
+  observe(target) {
+    if (!this.targets.includes(target))
+      this.targets.push(target);
+  }
 
-  disconnect() {}
+  unobserve(target) {
+    const i = this.targets.indexOf(target);
+    if (i >= 0)
+      this.targets.splice(i, 1);
+  }
+
+  disconnect() {
+    this.disconnected = true;
+    this.targets.length = 0;
+  }
 }
+ResizeObserver.instances = [];
 
 class ShadowRoot {}
 
@@ -811,7 +829,9 @@ function cancelAnimationFrame(id) {
 
 function getComputedStyle(el) {
   const computed = Object.assign({}, DEFAULT_STYLE, el.style);
-  computed.getPropertyValue = (name) => computed[camel(name)] ?? '';
+  // custom properties are stored (and looked up) under their raw -- name, never camelized
+  computed.getPropertyValue = (name) =>
+    computed[name.startsWith('--') ? name : camel(name)] ?? '';
   return computed;
 }
 

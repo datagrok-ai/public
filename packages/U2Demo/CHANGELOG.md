@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Fixed the Forms A/B bench clipping at narrow widths — the two form columns now stack; imported the new u2 section skin
 * GROK-20753: Replaced the Dart DG.FunctionsWidget in the funcs pane with the native u2 FunctionsBrowser (selection drives the shared-call forms through the `selected` signal; names-only surface as before, filter panes behind the filter icon)
 * GROK-20753: Added the Expressions & validation section to the FuncCall convergence tab — an A/B over the client-registered `fceW4Vehicle` (visible:/enabled: expressions, a regex and an expression validator:, a named validators: func, func-level categoryGroups), a contained `slow` row over its own call showing the Dart form-build crash on an async validator (divergence #21), a whole-form pair demonstrating u2's category header auto-hide (#19) and the unlisted-category append (#18), a `missingRequired`-gated Run button (#20), and divergence notes #18–#22; `buildAb` renders a placeholder Dart cell for u2-only rows
 * GROK-20753: The Funcs/Forms-tab Run gate and the bench gate now consume the form's own `missingRequired` + `invalidFields` (both visibility-aware — a hidden unparseable field no longer blocks Run invisibly) instead of local required/empty copies; `fceShowcase` gains a `visible: active == true` pair on `started`

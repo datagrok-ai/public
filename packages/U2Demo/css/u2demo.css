@@ -267,14 +267,17 @@
   gap: var(--dg-space-m);
 }
 
-/* the old-vs-new A/B: two equal columns over one shared call (u2-div-h centers by default) */
+/* the old-vs-new A/B: two equal columns over one shared call (u2-div-h centers by default);
+   in a narrow host they stack instead of shrinking into a sliver under the context panel —
+   which also gives the u2 form's auto-tall room to show itself */
 .u2demo-funcs-ab {
   gap: var(--dg-space-xxl);
   align-items: stretch;
+  flex-wrap: wrap;
 }
 
 .u2demo-funcs-ab > * {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 320px;
+  min-width: 280px;
   gap: var(--dg-space-s);
 }

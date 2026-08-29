@@ -222,20 +222,18 @@ async function checkRunGateOnHide(page) {
     `reblocked=${JSON.stringify(reblocked)}`);
 }
 
-// still ICE from /8: every Engine-section input root of the whole-form pair
+// still ICE from /8: every Engine-section input root of the whole-form pair — each category is
+// now a u2-section whose header carries the category class and whose body holds the roots
 const setEngineHidden = (page, hidden) => page.evaluate(({sel, hidden}) => {
-  const rows = document.querySelector(`${sel} [data-u2="func-form"] .u2-form-rows`);
-  const kids = [...(rows?.children ?? [])];
-  const start = kids.findIndex((k) => k.classList.contains('u2-form-category') &&
-    k.textContent === 'Engine');
-  if (start < 0)
+  const section = [...document.querySelectorAll(`${sel} [data-u2="func-form"] .u2-section`)]
+    .find((s) => s.querySelector('.u2-section-header')?.textContent === 'Engine');
+  if (!section)
     return 0;
   let n = 0;
-  for (let i = start + 1; i < kids.length && !kids[i].classList.contains('u2-form-category'); i++)
-    if (kids[i].classList.contains('u2-input-root')) {
-      kids[i].hidden = hidden;
-      n++;
-    }
+  for (const root of section.querySelectorAll('.u2-section-body > .u2-input-root')) {
+    root.hidden = hidden;
+    n++;
+  }
   return n;
 }, {sel: WHOLE, hidden});
 
