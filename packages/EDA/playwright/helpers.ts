@@ -328,6 +328,14 @@ export async function setPredictColumn(page: Page, columnName: string): Promise<
  * `shell.tv`, which points to the currently-focused view — and that becomes the
  * `PredictiveModel` view once Train Model is opened, dropping the dataset reference).
  */
+/**
+ * Hyperparameter defaults the Train dialog supplies for XGBoost, mirroring the
+ * `initialValue`s on `trainXGBooster` in `src/package.ts`. `grok.functions.call` does not
+ * apply those, and `XGBooster.fit` validates every one of them (GROK-20366), so a direct
+ * call has to pass them.
+ */
+export const XGBOOST_DEFAULTS = {iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0};
+
 export async function trainEdaModelViaApi(
   page: Page,
   funcName: string,
