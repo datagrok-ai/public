@@ -55,7 +55,7 @@ function funcItem(f: DG.Func): FuncItem {
 /** The handler is resolved per function — `find({})` mixes Func, Script and DataQuery, so one
  * cached handler would stamp the first row's icon on every row. Handler output is foreign plugin
  * DOM: a throwing handler degrades to no icon; the base handler's caption text is not an icon. */
-function funcIcon(f: DG.Func): HTMLElement | null {
+export function funcIcon(f: DG.Func): HTMLElement | null {
   try {
     const handler = DG.ObjectHandler.forEntity(f);
     const icon = handler ? handler.renderIcon(f) : null;

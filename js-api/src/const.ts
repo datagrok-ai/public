@@ -255,6 +255,8 @@ export const SEMTYPE = {
   IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
   EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
   Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
+
+  FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
 }
 
 export const UNITS = {

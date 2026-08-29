@@ -69,6 +69,8 @@ function matrix(): DG.IProperty[] {
     {name: 'font', type: DG.TYPE.STRING, friendlyName: 'Font', inputType: 'Font'},
     {name: 'image', type: DG.TYPE.STRING, friendlyName: 'Image', inputType: 'Image'},
     {name: 'smiles', type: DG.TYPE.STRING, friendlyName: 'Structure', semType: 'Molecule'},
+    {name: 'scorer', type: DG.TYPE.STRING, friendlyName: 'Scorer', semType: 'FunctionName',
+      description: 'Namespace-qualified function name; both sides open the FunctionsBrowser popup'},
     {name: 'replicates', type: DG.TYPE.INT, friendlyName: 'Replicates', min: 1, max: 10},
     {name: 'cycles', type: DG.TYPE.INT, friendlyName: 'Cycles', min: 0, max: 50, showSlider: true},
     {name: 'dose', type: DG.TYPE.FLOAT, friendlyName: 'Dose', units: 'mg', min: 0, max: 1000,
@@ -104,6 +106,7 @@ function seed(): Record<string, any> {
       '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="40">' +
       '<rect width="64" height="40" rx="4" fill="#40a8e0"/></svg>'),
     smiles: 'CC(=O)OC1=CC=CC=C1C(=O)O',
+    scorer: 'Sin',
     replicates: 3,
     cycles: 12,
     dose: 250,

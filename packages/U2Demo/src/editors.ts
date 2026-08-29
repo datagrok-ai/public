@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {dartInputFor, inputForProperty, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
+import {dartInputFor, inputForProperty, IProperty, FunctionInput}
+  from '@datagrok-libraries/u2/src/dg/index.js';
 
 /** Property types a u2 editor can take over. The platform matches a `valueEditor` by
  * `options.propertyType`, and for these five that string is also the `DG.TYPE` the bridge has to
@@ -51,6 +52,24 @@ export function registerU2ValueEditors(types: string[]): void {
   }
 }
 
+let semTypeEditorsRegistered = false;
+
+/** SemType-scoped editors register unconditionally: unlike the per-type editors above, they only
+ * take over properties that carry the matching semType, which nothing else can edit anyway. */
+export function registerSemTypeEditors(): void {
+  if (semTypeEditorsRegistered)
+    return;
+  semTypeEditorsRegistered = true;
+  grok.functions.register({
+    signature: 'object u2FunctionNameValueEditor()',
+    tags: 'valueEditor',
+    // the literal, not DG.SEMTYPE.FUNCTION_NAME — the installed api typings predate the constant
+    options: {propertyType: DG.TYPE.STRING, semType: 'FunctionName'},
+    run: () => dartInputFor(() => new FunctionInput({}), {dataType: DG.TYPE.STRING}),
+  });
+}
+
 export function registerEnabledEditors(): void {
   registerU2ValueEditors(enabledEditorTypes());
+  registerSemTypeEditors();
 }

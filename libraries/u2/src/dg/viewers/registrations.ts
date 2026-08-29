@@ -16,6 +16,7 @@ import {specWarn} from '../../spec/spec.js';
 import type {SpecNode} from '../../spec/spec.js';
 import {columnInput} from '../inputs/pickers.js';
 import {functionsBrowser} from '../entities/functions-browser.js';
+import {FunctionInput} from '../inputs/function-input.js';
 import {viewerControl} from './viewer-control.js';
 
 const api = globalThis as {grok_Property_Get_PropertySubType?: (dart: unknown) => string | null};
@@ -276,10 +277,55 @@ function functionsBrowserMeta(): ComponentMeta {
   };
 }
 
+const FI_TAG = 'u2-function-input';
+
+/** The FunctionName picker (see `FunctionInput`). Platform-side like the browser it opens —
+ * it needs `DG.Func.find`. The declarative subset only; `filter` stays a code-level option. */
+function functionInputMeta(): ComponentMeta {
+  return {
+    tag: FI_TAG,
+    label: 'Function input',
+    category: 'Inputs',
+    description: 'Namespace-qualified function name, picked from the FunctionsBrowser in a popup.',
+    usage: 'The value is the nqName string (`Chem:SmilesToMw`) — the `FunctionName` semantic ' +
+      'type. A row click, Enter or double-click in the popup commits and closes.',
+    create: (props) => {
+      const value = props.value;
+      const bound = value instanceof Signal;
+      return new FunctionInput({
+        label: props.label as LiveOption<string> | undefined,
+        name: lit<string>(props.name),
+        nullable: lit<boolean>(props.nullable),
+        placeholder: lit<string>(props.placeholder),
+        scalarOnly: lit<boolean>(props.scalarOnly),
+        ignorePackages: lit<string[]>(props.ignorePackages),
+        value: bound ? undefined : value as string | undefined,
+        bind: bound ? value as Signal<string> : undefined,
+      });
+    },
+    props: [
+      {name: 'label', type: 'string', bindable: true},
+      {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
+      {name: 'value', type: 'string', bindable: true, twoWay: true,
+        description: 'The namespace-qualified function name.'},
+      {name: 'nullable', type: 'bool', description: 'Backspace/Delete clears the value.'},
+      {name: 'placeholder', type: 'string', description: 'Shown while nothing is picked.'},
+      {name: 'scalarOnly', type: 'bool',
+        description: 'Only functions with one scalar (or dynamic) output.'},
+      {name: 'ignorePackages', type: 'string_list',
+        description: 'Packages whose functions are left out of the popup.'},
+    ],
+    events: ['input', 'change'],
+    example: {tag: FI_TAG, props: {label: 'Function', value: 'Chem:SmilesToMw'}},
+  };
+}
+
 /** The platform registry: every core tag plus every viewer tag plus the platform-side controls. */
 export function registerPlatformComponents(reg: Registry = globalRegistry): void {
   registerAll(reg);
   registerPlatformViewers(reg);
   if (reg.get(FB_TAG) === undefined)
     reg.register(functionsBrowserMeta());
+  if (reg.get(FI_TAG) === undefined)
+    reg.register(functionInputMeta());
 }

@@ -24,6 +24,8 @@ export {Editors} from './forms/editors.js';
 export type {EditorRule} from './forms/editors.js';
 export {moleculeInput, moleculeRenderer} from './inputs/molecule.js';
 export type {MoleculeRendererOptions} from './inputs/molecule.js';
+export {functionInput, FunctionInput} from './inputs/function-input.js';
+export type {FunctionInputOptions} from './inputs/function-input.js';
 export {metaInput} from './inputs/meta-input.js';
 export type {MetaInputOptions} from './inputs/meta-input.js';
 export {fileInput, FileInput} from './inputs/file-input.js';

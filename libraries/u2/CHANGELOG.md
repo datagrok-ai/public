@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20753: Added `FunctionInput` (`u2-function-input`) — a one-row picker over a namespace-qualified function name (the new `FunctionName` semantic type) that opens the FunctionsBrowser in an anchored popup; a row click, Enter or double-click commits; registered in the `Editors` registry for `semType: 'FunctionName'` properties
 * GROK-20753: Added `Section` (`u2-section`) — a collapsible titled section with a hover chevron left of the caption; `FuncCallForm` renders every parameter category as one
 * GROK-20753: Form gained `layout: 'auto' | 'normal' | 'wide' | 'tall'` (replacing the `condensed`/`wide` booleans; dg-layer `condensed: true` maps to `'tall'`) — auto picks wide or tall by fit (`--dg-form-min-editor-width` threshold, 10px hysteresis, ResizeObserver-driven; dialog-hosted and nested forms stay plain caption-left) — plus live-bindable `captionAlign` and platform-parity styling (13px bold headers, grey right-aligned captions, 8px pitch)
 * GROK-20753: MultiChoiceInput gained `showSummaryCheckbox` — a tri-state "N of M" summary row flush with the item checkboxes that toggles all/none and collapses the list; func-form multi-choice params render it
