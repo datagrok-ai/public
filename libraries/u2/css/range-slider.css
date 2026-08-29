@@ -1,8 +1,11 @@
 /* Range slider skin — DOM track/band/handles, both orientations. Tokens only; css/tokens.css
    must be loaded alongside. */
+/* the floor keeps the track longer than its two handles: under it the band vanishes and the
+   slider reads as two overlapping circles */
 .u2-range-slider {
   position: relative;
   width: 100%;
+  min-width: 60px;
   height: 16px;
   touch-action: none;
   cursor: pointer;

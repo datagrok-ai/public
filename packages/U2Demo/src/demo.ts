@@ -1,585 +1,152 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {
-  signal, computed, Signal, ReadonlySignal, Control, Scope,
-  divV, divH, panel, span, h3, button, bigButton, link,
-  TextInput, TextArea, BoolInput, NumberInput, ChoiceInput, MultiChoiceInput, IconInput,
-  Combobox, TypeAhead, AsyncView, VirtualList, VirtualTree, TreeNode,
-  TabStrip, Splitter, Accordion, Breadcrumbs, Toolbar,
-  Menu, Dialog, Tooltip, Form, PropertyGrid,
-} from '@datagrok-libraries/u2';
-import * as DG from 'datagrok-api/dg';
-import {asDartInput, tableInput, columnInput, leakReport, propertyForm, IProperty,
-  userInput, entityInput, chip, EntityChip, entityCard, handlerRenderer,
-  moleculeInput, moleculeRenderer, fileInput, filesInput, rsaInput, tablesInput,
-  columnsInput, columnsMapInput, aggregatedColumnsInput}
-  from '@datagrok-libraries/u2/src/dg/index.js';
-import {convergencePage} from './convergence';
-import {funcConvergencePage} from './func-convergence';
-import {funcsPage} from './funcs';
+import {signal, computed, untracked, Control, Scope, Splitter, VirtualTree, divV} from '@datagrok-libraries/u2';
+import type {Signal, ReadonlySignal} from '@datagrok-libraries/u2';
+import {controlAt} from '@datagrok-libraries/u2/src/dg/index.js';
+import {DEMO_TREE, DemoContext, DemoLeaf, leafById, pageShown} from './nav';
 
 const LAST_TAB = 'u2demo.tab';
 
-const CITIES = [
-  'Amsterdam', 'Athens', 'Barcelona', 'Berlin', 'Boston', 'Brussels', 'Budapest', 'Chicago',
-  'Copenhagen', 'Dublin', 'Geneva', 'Helsinki', 'Kyiv', 'Lisbon', 'London', 'Madrid', 'Milan',
-  'Munich', 'New York', 'Oslo', 'Paris', 'Prague', 'Rome', 'Seattle', 'Stockholm', 'Tokyo',
-  'Toronto', 'Vienna', 'Warsaw', 'Zurich',
-];
-
-function readout(name: string, source: string | ReadonlySignal<unknown>): HTMLElement {
-  return divH([span(`${name} = `), span(source)], 'u2demo-status');
+export interface DemoOptions {
+  /** The leaf to open on; falls back to `localStorage['u2demo.tab']`, then the first leaf. */
+  initial?: string;
 }
 
-function inputsPage(): HTMLElement {
-  const query = signal('');
-  const notify = signal(true);
-
-  const name = new TextInput({label: 'Name', value: 'Aspirin', tooltipText: 'Compound name'});
-  const search = new TextInput({label: 'Search', search: true, bind: query, placeholder: 'Filter compounds…'});
-  const notes = new TextArea({label: 'Notes', placeholder: 'Grows as you type…', autoGrow: true});
-  const enabled = new BoolInput({label: 'Enabled', value: true});
-  const notifications = new BoolInput({label: 'Notifications', switch: true, bind: notify});
-  const dose = new NumberInput({label: 'Dose, mg', mode: 'float', min: 0, max: 1000, step: 0.5, value: 250});
-  const replicates = new NumberInput({label: 'Replicates', mode: 'int', min: 1, max: 10, value: 3});
-  const stage = new ChoiceInput({label: 'Stage', items: ['Discovery', 'Preclinical', 'Phase I', 'Phase II'],
-    value: 'Discovery'});
-  const targets = new MultiChoiceInput({label: 'Targets', items: ['GPCR', 'Kinase', 'Ion channel', 'Protease'],
-    value: ['Kinase']});
-
-  const glyph = new IconInput({label: 'Icon', value: 'flask'});
-  const code = new TextInput({label: 'Code', placeholder: 'required, up to 10 characters'});
-  code.addValidator((v) => v.trim().length > 0 ? null : 'Value is required');
-  code.addValidator((v) => v.length > 10 ? 'At most 10 characters' : null);
-
-  return divV([
-    span('Every input is a signal owner: bind to it, or pass your own signal through the bind option.',
-      'u2demo-hint'),
-    name, search, notes, enabled, notifications, dose, replicates, stage, targets, glyph, code,
-    readout('search', computed(() => query.value || '(empty)')),
-    readout('notifications', computed(() => String(notify.value))),
-    readout('dose * replicates', computed(() =>
-      String((dose.value.value ?? 0) * (replicates.value.value ?? 0)))),
-    readout('code validity', computed(() => code.validity.value ?? 'valid')),
-    readout('icon', glyph.value),
-  ], 'u2demo-page');
+export interface DemoShell {
+  readonly current: ReadonlySignal<DemoLeaf>;
+  readonly inspect: Signal<boolean>;
+  navigate(id: string): void;
+  rebuild(): void;
 }
 
-function asyncPage(): HTMLElement {
-  const local = new Combobox({items: CITIES, placeholder: 'Pick a city…'});
-
-  const fetchCities = async (q: string, abort: AbortSignal): Promise<string[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    if (abort.aborted)
-      return [];
-    return CITIES.filter((c) => c.toLowerCase().includes(q.toLowerCase()));
-  };
-
-  const remote = new Combobox({items: fetchCities, placeholder: 'Type to search (simulated 400 ms latency)…'});
-
-  const view = AsyncView.owned(fetchCities,
-    (items) => divV(items.map((c) => span(c)), 'u2demo-card'),
-    {empty: 'No cities match', skeleton: true});
-  view.refresh();
-  const filter = new TextInput({inline: true, search: true, placeholder: 'Filter the async view…',
-    onChanged: (v) => view.refresh(v)});
-
-  return divV([
-    span('One async contract — debounce, cancellation, loading/empty/error — shared by every async control.',
-      'u2demo-hint'),
-    h3('Combobox, local items'), local,
-    h3('Combobox, async items'), remote,
-    readout('local', local.value), readout('remote', remote.value),
-    h3('AsyncView'), filter, view,
-  ], 'u2demo-page');
+export interface DemoParts {
+  content: Control;
+  shell: DemoShell;
+  status: ReadonlySignal<string>;
 }
 
-function listsPage(): HTMLElement {
-  const list = new VirtualList<number>({
-    keyOf: (i) => String(i),
-    render: (item, index, row) => {
-      row.title = `row ${index}`;
-      return span(`item ${item} ${'▪'.repeat(1 + item % 7)}`);
-    },
-  });
-  list.setItems(Array.from({length: 100000}, (_, i) => i));
-  list.root.classList.add('u2demo-list');
-
-  const projects: TreeNode<string>[] = [{
-    id: 'demo', label: 'Demo project', children: [
-      {id: 'demo/tables', label: 'Tables', children: [
-        {id: 'demo/tables/demog', label: 'demog'},
-        {id: 'demo/tables/cars', label: 'cars'},
-      ]},
-      {id: 'demo/queries', label: 'Queries', children: [
-        {id: 'demo/queries/orders', label: 'orders by country'},
-      ]},
-    ],
-  }, {
-    id: 'remote', label: 'Server (lazy)', children: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      return Array.from({length: 5}, (_, i) => ({id: `remote/${i}`, label: `dataset-${i}.csv`}));
-    },
-  }];
-  const tree = new VirtualTree<string>();
-  tree.setRoots(projects);
-  tree.root.classList.add('u2demo-list');
-
-  return divV([
-    span('Both containers render only the visible rows — the list below holds 100,000 items.', 'u2demo-hint'),
-    h3('VirtualList'), list,
-    readout('selectedIndex', computed(() => String(list.selectedIndex.value))),
-    h3('VirtualTree'), tree,
-    divH([
-      button('Reveal demog', () => void tree.expandPath(['demo', 'demo/tables', 'demo/tables/demog'])),
-      span('— expands ancestors (awaiting lazy loads), then selects and reveals.'),
-    ], 'u2demo-row'),
-    readout('selectedNode', computed(() => tree.selectedNode.value?.label ?? '(none)')),
-  ], 'u2demo-page');
-}
-
-function layoutPage(): HTMLElement {
-  const left = panel([h3('Navigator'), span('30% wide; drag the sash, or focus it and use arrow keys.')]);
-  const right = panel([h3('Content'), span('Sizes live in a signal — watch them change:')]);
-  const split = new Splitter([left, right], {direction: 'horizontal', sizes: [30, 70]});
-  split.root.classList.add('u2demo-split');
-  right.append(readout('sizes', computed(() =>
-    split.sizes.value.map((s) => s.toFixed(1)).join(' / '))));
-
-  const acc = new Accordion();
-  acc.addPane('General', divV([span('Eagerly built pane.')]), true);
-  acc.addPane('Advanced', () => divV([span(`Lazily built on first expand at ${new Date().toLocaleTimeString()}.`)]));
-
-  const path = signal(['Home', 'Projects', 'Demo', 'Tables', 'demog']);
-  const crumbs = new Breadcrumbs({
-    items: path.value,
-    onClick: (index) => {
-      path.value = path.value.slice(0, index + 1);
-      crumbs.setItems(path.value);
-    },
-  });
-
-  return divV([
-    h3('Splitter'), split,
-    h3('Accordion'), acc,
-    h3('Breadcrumbs'), crumbs,
-    span('Click a segment to truncate the path.', 'u2demo-hint'),
-    readout('path', computed(() => crumbs.items.value.join(' > '))),
-  ], 'u2demo-page');
-}
-
-function popupsPage(status: Signal<string>): HTMLElement {
-  const scope = Scope.ambient!;
-  const log = (action: string) => status.value = action;
-
-  const menuButton = button('Open menu', () => Menu.popup()
-    .item('Add to favorites', () => log('Added to favorites'), {shortcut: 'Ctrl+D'})
-    .item('Rename', () => log('Renamed'))
-    .separator()
-    .group('Sort by')
-    .item('Name', () => log('Sorted by name'))
-    .item('Size', () => log('Sorted by size'))
-    .endGroup()
-    .item('Delete', () => log('Deleted'), {enabled: false})
-    .show({anchor: menuButton}));
-
-  const zone = panel([span('Right-click anywhere in this panel for a context menu.')]);
-  zone.classList.add('u2demo-card');
-  const context = new Menu()
-    .item('Copy', () => log('Copied'))
-    .item('Paste', () => log('Pasted'))
-    .separator()
-    .item('Select all', () => log('Selected all'));
-  context.bindContext(zone, scope);
-
-  const hoverMe = span('Hover me for a tooltip.', 'u2demo-card');
-  Tooltip.bind(hoverMe, () => `One shared tooltip element, evaluated at show time: ${new Date().toLocaleTimeString()}`,
-    scope);
-
-  const dlgName = new TextInput({label: 'Name', value: 'u2'});
-  dlgName.addValidator((v) => v.trim() ? null : 'Required');
-  const dlgForm = new Form().add(dlgName);
-  const dialog = Dialog.create('u2 dialog')
-    .add(span('Modal, draggable by the title bar, Esc cancels, Enter accepts.'))
-    .add(dlgForm)
-    .onOK(() => log(`Dialog OK, name = ${dlgName.value.value}`))
-    .onCancel(() => log('Dialog cancelled'));
-
-  return divV([
-    divH([menuButton, button('Open dialog', () => dialog.show({modal: true}))], 'u2demo-row'),
-    zone, hoverMe,
-    readout('last action', computed(() => status.value)),
-  ], 'u2demo-page');
-}
-
-function formPage(): HTMLElement {
-  const first = new TextInput({label: 'First name', name: 'first', value: 'Ada'});
-  first.addValidator((v) => v.trim() ? null : 'Required');
-  const last = new TextInput({label: 'Last name', name: 'last'});
-  last.addValidator((v) => v.trim() ? null : 'Required');
-  const age = new NumberInput({label: 'Age', name: 'age', mode: 'int', min: 0, max: 120, value: 36});
-  const role = new ChoiceInput({label: 'Role', name: 'role', items: ['Viewer', 'Editor', 'Admin'], value: 'Editor'});
-  const subscribed = new BoolInput({label: 'Subscribe', name: 'subscribed', switch: true, value: true});
-
-  const form = new Form();
-  form.addAll([first, last, age, role, subscribed]);
-  form.addButtons((row) => {
-    row.append(bigButton('Submit', () => {
-      if (form.validate())
-        grok.shell.info(JSON.stringify(form.getValues()));
-    }));
-    row.append(button('Reset', () => form.setValues({first: 'Ada', last: '', age: 36, role: 'Editor',
-      subscribed: true})));
-  });
-
-  const pg = new PropertyGrid();
-  pg.setProperties([
-    {name: 'title', type: 'string', description: 'Viewer title'},
-    {name: 'opacity', type: 'double', min: 0, max: 1},
-    {name: 'width', type: 'int', min: 100, max: 2000, category: 'Layout'},
-    {name: 'height', type: 'int', min: 100, max: 2000, category: 'Layout'},
-    {name: 'showLegend', type: 'bool', category: 'Legend'},
-    {name: 'position', type: 'choice', choices: ['left', 'right', 'top', 'bottom'], category: 'Legend'},
-  ], {title: 'Scatter plot', opacity: 0.8, width: 600, height: 400, showLegend: true, position: 'right'});
-
-  return divV([
-    h3('Form'),
-    span('Aligned label column, aggregated validity, Enter submits.', 'u2demo-hint'),
-    form,
-    readout('form validity', computed(() => form.validity.value ?? 'valid')),
-    h3('PropertyGrid'),
-    span('The value record is replaced on every edit — bind to it directly.', 'u2demo-hint'),
-    pg,
-    readout('last change', computed(() => {
-      const c = pg.onChanged.value;
-      return c ? `${c.name} → ${String(c.value)}` : '(none)';
-    })),
-    readout('values', computed(() => JSON.stringify(pg.values.value))),
-  ], 'u2demo-page');
-}
-
-function platformPage(): HTMLElement {
-  const demog = grok.data.demo.demog(100);
-  const table = tableInput('Open table');
-  const column = columnInput('Demog column', demog);
-
-  const bridged = new TextInput({label: 'Compound', value: 'Aspirin'});
-  bridged.addValidator((v) => v.trim() ? null : 'Required');
-  const dart = asDartInput(bridged);
-
-  const leaks = signal('(press the button)');
-
-  return divV([
-    span('The u2 core lives in datagrok-api (DG.U2): every DG.Widget is a u2 Control, ' +
-      'asDartInput() makes any u2 input a DG.InputBase.', 'u2demo-hint'),
-    h3('Pickers'),
-    table, column,
-    readout('table', table.value), readout('column', column.value),
-    divH([
-      button('Add demog to workspace', () => grok.shell.addTableView(demog)),
-      span('— then reopen this tab to see the pickers follow.'),
-    ], 'u2demo-row'),
-    h3('DartInput bridge'),
-    divH([
-      button('Open a DG.Dialog with a u2 input', () => ui.dialog('u2 input, platform dialog')
-        .add(dart)
-        .onOK(() => grok.shell.info(`Compound: ${bridged.value.value}`))
-        .show()),
-    ], 'u2demo-row'),
-    readout('bridged value', bridged.value),
-    h3('Leak detector'),
-    divH([
-      button('leakReport()', () => leaks.value = JSON.stringify(leakReport())),
-      span(leaks),
-    ], 'u2demo-row'),
-    span('Close this view and call it again from another U2 Demo instance: both numbers return to baseline.',
-      'u2demo-hint'),
-  ], 'u2demo-page');
-}
-
-function dgInputsPage(): HTMLElement {
-  const demog = grok.data.demo.demog(100);
-
-  const file = fileInput('File');
-  const files = filesInput('Files');
-  const key = rsaInput('Private key');
-
-  const column = columnInput('Column', demog, {rich: true});
-  const tables = tablesInput('Tables');
-  const columns = columnsInput('Columns', demog);
-  const mapping = columnsMapInput('Mapping', ['x', 'y'], demog);
-  const aggregations = aggregatedColumnsInput('Aggregations', demog);
-
-  return divV([
-    span('Inputs that need the platform: file shares through dapi, live tables and columns ' +
-      'through platform events. In local mode dapi answers every existence check with nothing, ' +
-      'so a typed path settles on "does not exist" — the state the machine is supposed to reach.',
-    'u2demo-hint'),
-    divH([
-      button('Add demog to workspace', () => grok.shell.addTableView(demog)),
-      span('— then the tables picker follows.'),
-    ], 'u2demo-row'),
-    h3('Files'),
-    file, readout('file', computed(() => file.value.value?.name ?? '(none)')),
-    files, readout('files', computed(() =>
-      files.value.value.map((f) => f.name).join(', ') || '(none)')),
-    key, readout('key', computed(() => {
-      const v = key.value.value;
-      return v ? `${v.length} characters` : '(none)';
-    })),
-    h3('Tables and columns'),
-    column, readout('column', computed(() => column.value.value ?? '(none)')),
-    tables, readout('tables', computed(() => tables.value.value.join(', ') || '(none)')),
-    columns, readout('columns', computed(() => columns.value.value.join(', ') || '(none)')),
-    mapping, readout('mapping', computed(() => JSON.stringify(mapping.value.value))),
-    aggregations, readout('aggregations', computed(() => JSON.stringify(aggregations.value.value))),
-  ], 'u2demo-page');
-}
-
-function objectFormPage(): HTMLElement {
-  const group = DG.Group.create(`u2demo-${Math.random().toString(36).slice(2, 8)}`);
-  const props: IProperty[] = [
-    {name: 'friendlyName', caption: 'Name', type: 'string', nullable: false,
-      get: (g) => (g as DG.Group).friendlyName, set: (g, v) => (g as DG.Group).friendlyName = v as string},
-    {name: 'personal', caption: 'Personal', type: 'bool',
-      get: (g) => (g as DG.Group).personal, set: (g, v) => (g as DG.Group).personal = v as boolean},
-    {name: 'hidden', caption: 'Hidden', type: 'bool',
-      get: (g) => (g as DG.Group).hidden, set: (g, v) => (g as DG.Group).hidden = v as boolean},
-  ];
-  const form = propertyForm(props, group);
-  const result = signal('(not saved)');
-  form.addButtons((row) => {
-    row.append(
-      bigButton('SAVE', async () => {
-        if (!form.validate()) {
-          result.value = 'Fix validation first';
-          return;
-        }
-        result.value = 'Saving…';
-        try {
-          const saved = await grok.dapi.groups.save(group);
-          result.value = `Saved: ${saved.friendlyName} (${saved.id})`;
-        } catch (e) {
-          result.value = `Save failed: ${e instanceof Error ? e.message : e}`;
-        }
-      }),
-      button('Delete', async () => {
-        try {
-          await grok.dapi.groups.delete(group);
-          result.value = 'Deleted';
-        } catch (e) {
-          result.value = `Delete failed: ${e instanceof Error ? e.message : e}`;
-        }
-      }));
-  });
-  return divV([
-    span('propertyForm(): everything below is generated from IProperty metadata over a real DG.Group — ' +
-      'editors chosen by type, required from nullable: false, edits write through to the entity, ' +
-      'SAVE persists it via grok.dapi.groups.', 'u2demo-hint'),
-    span('SAVE and Delete need a server: in local mode dapi has nobody to talk to, so both fail — ' +
-      'the reason lands in the result line below. Open the app on a stand to persist for real.',
-    'u2demo-hint'),
-    form.root,
-    readout('result', result),
-  ], 'u2demo-page');
-}
-
-function entitiesPage(): HTMLElement {
-  const scope = Scope.ambient!;
-  const user = userInput('Search users…');
-  const group = entityInput('Search groups…', () => grok.dapi.groups,
-    {filter: (q) => q ? `friendlyName like "${q}"` : undefined});
-
-  const picked = divH([], 'u2demo-row');
-  const chips: EntityChip[] = [];
-  scope.effect(() => {
-    const items = [user.selected.value, group.selected.value].filter((x) => x != null);
-    for (const c of chips)
-      c.dispose();
-    chips.length = 0;
-    picked.textContent = '';
-    for (const x of items) {
-      const c = chip(x);
-      chips.push(c);
-      picked.append(c.root);
-    }
-  });
-
-  return divV([
-    span('Entity pickers: TypeAhead + dapiSource(() => grok.dapi.*) + the object\'s own ObjectHandler ' +
-      'rendering. The picked value is the entity itself; chips render handler markup, show the handler ' +
-      'tooltip, and click makes the object current (see the context panel).', 'u2demo-hint'),
-    h3('User picker (curated rows)'), user,
-    h3('Group picker (generic handlerRenderer)'), group,
-    h3('Picked, as chips'), picked,
-    h3('Current user'), divH([chip(grok.shell.user).root], 'u2demo-row'),
-    readout('user', computed(() => user.selected.value?.friendlyName ?? '(none)')),
-    readout('group', computed(() => group.selected.value?.friendlyName ?? '(none)')),
-  ], 'u2demo-page');
-}
-
-function spacesPage(): HTMLElement {
-  const scope = Scope.ambient!;
-  // the spaces endpoint does not honor smart filters (probed 2026-08-14); a deployment has a
-  // handful of spaces, so fetch once and match client-side
-  const space = new TypeAhead<DG.Project>({
-    source: async (q) => (await grok.dapi.spaces.list({pageSize: 100}))
-      .filter((s) => s.friendlyName.toLowerCase().includes(q.toLowerCase())),
-    renderer: handlerRenderer<DG.Project>(),
-    placeholder: 'Choose a space…',
-  });
-  const project = entityInput<DG.Project>('Choose a project or dashboard…', () => grok.dapi.projects,
-    {filter: (q) => q ? `friendlyName like "${q}"` : undefined});
-
-  const picked = signal<DG.Project | null>(null);
-  scope.effect(() => { const s = space.selected.value; if (s) picked.value = s; });
-  scope.effect(() => { const p = project.selected.value; if (p) picked.value = p; });
-
-  const preview = divV([], 'u2demo-row');
-  let shown: Scope | undefined;
-  scope.own(() => shown?.dispose());
-  scope.effect(() => {
-    const x = picked.value;
-    shown?.dispose();
-    shown = new Scope();
-    preview.replaceChildren(Scope.runWith(shown, () => x ?
-      divV([
-        entityCard(x).root,
-        divH([chip(x).root, button('Open', () => void x.open())], 'u2demo-row'),
-      ], 'u2demo-row') :
-      span('Pick a space or a project to preview it.', 'u2demo-hint')));
-  });
-
-  return divV([
-    span('Both pickers are entityInput over grok.dapi (spaces ARE projects server-side, so one ' +
-      'ObjectHandler serves both). The preview is the handler\'s own renderCard — the platform\'s ' +
-      'gallery card, framed by u2 — and clicking it or the chip makes the entity current.', 'u2demo-hint'),
-    h3('Space'), space,
-    h3('Project / dashboard'), project,
-    h3('Preview'), preview,
-  ], 'u2demo-page');
-}
-
-const DRUGS = [
-  {name: 'Aspirin', smiles: 'CC(=O)OC1=CC=CC=C1C(=O)O'},
-  {name: 'Caffeine', smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'},
-  {name: 'Ibuprofen', smiles: 'CC(C)CC1=CC=C(C=C1)C(C)C(=O)O'},
-  {name: 'Paracetamol', smiles: 'CC(=O)NC1=CC=C(C=C1)O'},
-  {name: 'Naproxen', smiles: 'CC(C1=CC2=CC=C(C=C2C=C1)OC)C(=O)O'},
-];
-
-function moleculesPage(): HTMLElement {
-  // everything here goes through Chem: the sketcher input, the semType editor and drawMolecule.
-  // Without the package `grok.chem.drawMolecule` still returns a host and then fails to resolve
-  // its asset — five console errors on app open in local mode, one per depiction
-  if (DG.Func.find({package: 'Chem', name: 'drawMolecule'}).length === 0) {
-    return divV([span('This tab needs the Chem package: the sketcher input, the semType-driven ' +
-      'editor and the structure depictions are all bridged to it. Open the app on a stand that ' +
-      'has Chem published.', 'u2demo-hint')], 'u2demo-page');
-  }
-  const structure = moleculeInput('Structure');
-  structure.value.value = DRUGS[0].smiles;
-
-  const compound = {name: 'Aspirin', smiles: DRUGS[0].smiles, mw: 180.16};
-  const props: IProperty[] = [
-    {name: 'name', caption: 'Name', type: 'string', nullable: false,
-      get: (o) => (o as typeof compound).name, set: (o, v) => (o as typeof compound).name = v as string},
-    {name: 'smiles', caption: 'Structure', type: 'string', semType: 'Molecule',
-      get: (o) => (o as typeof compound).smiles, set: (o, v) => (o as typeof compound).smiles = v as string},
-    {name: 'mw', caption: 'MW, Da', type: 'float', min: 0,
-      get: (o) => (o as typeof compound).mw, set: (o, v) => (o as typeof compound).mw = v as number},
-  ];
-  const edits = signal(0);
-  const form = propertyForm(props, compound, {onChanged: () => edits.value++});
-
-  const mols = moleculeRenderer({width: 110, height: 70});
-  const chips = divH(DRUGS.map((d) =>
-    chip(d.smiles, {renderer: mols, currentOnClick: false}).root), 'u2demo-row');
-
-  const rowMol = moleculeRenderer({width: 90, height: 55});
-  const picker = new TypeAhead<{name: string, smiles: string}>({
-    source: DRUGS,
-    renderer: {
-      caption: (d) => d.name,
-      listItem: (d) => divH([rowMol.listItem!(d.smiles), span(d.name)], 'u2demo-mol-row'),
-    },
-    placeholder: 'Find a compound…',
-  });
-
-  return divV([
-    span('Everything below is bridged, not ported: the sketcher input comes through ' +
-      'fromDartInput(ui.input.molecule), the form picks it by semType through the u2 editor ' +
-      'registry, and depictions render through Chem\'s drawMolecule — u2 contains no chemistry.',
-    'u2demo-hint'),
-    h3('moleculeInput — the platform sketcher as a u2 Input<string>'),
-    structure,
-    readout('smiles', computed(() => structure.value.value || '(empty)')),
-    h3('propertyForm — the Structure field is picked by semType: Molecule'),
-    form.root,
-    readout('compound', computed(() => {
-      edits.value;
-      return JSON.stringify(compound);
-    })),
-    h3('Structure chips — moleculeRenderer, hover for a larger depiction'),
-    chips,
-    h3('TypeAhead with structure rows'),
-    picker,
-    readout('picked', computed(() => picker.selected.value?.name ?? '(none)')),
-  ], 'u2demo-page');
-}
-
-export function buildDemo(): Control {
-  return Control.build(() => {
-    const status = signal('Ready');
-    const compact = signal(false);
-
-    const bar = new Toolbar({ariaLabel: 'U2 demo toolbar'});
-    bar.addButton('Run', () => status.value = 'Run clicked', {tooltip: 'Pretend to run'});
-    bar.addButton('Save', () => status.value = 'Saved', {tooltip: 'Pretend to save'});
-    bar.addSeparator();
-    bar.addToggle('Compact', compact, {tooltip: 'Toolbar toggles bind to a signal'});
-    bar.addMenu('Help', (m) => m
-      .item('About u2', () => status.value = 'u2: next-gen Datagrok UI library')
-      .item('Gallery', () => window.open('https://github.com/datagrok-ai/public/tree/master/libraries/u2')));
-
-    // lazy: a page builds on first visit — the convergence bench's deliberately broken
-    // seed default otherwise balloons at app open on every tab. A runtime tab switch has
-    // no ambient scope, so factories run under the root scope captured here (same owner
-    // eager construction had)
+export function buildDemo(options?: DemoOptions): DemoParts {
+  let shell!: DemoShell;
+  let status!: ReadonlySignal<string>;
+  const content = Control.build(() => {
     const root = Scope.ambient!;
-    const lazy = (build: () => HTMLElement) => () => Scope.runWith(root, build);
-    const pages = [
-      {id: 'inputs', label: 'Inputs', content: lazy(() => inputsPage())},
-      {id: 'async', label: 'Combobox & async', content: lazy(() => asyncPage())},
-      {id: 'lists', label: 'Lists & trees', content: lazy(() => listsPage())},
-      {id: 'layout', label: 'Layout', content: lazy(() => layoutPage())},
-      {id: 'popups', label: 'Popups', content: lazy(() => popupsPage(status))},
-      {id: 'form', label: 'Form & properties', content: lazy(() => formPage())},
-      {id: 'objectform', label: 'Object form', content: lazy(() => objectFormPage())},
-      {id: 'entities', label: 'Entities', content: lazy(() => entitiesPage())},
-      {id: 'spaces', label: 'Spaces & dashboards', content: lazy(() => spacesPage())},
-      {id: 'molecules', label: 'Molecules', content: lazy(() => moleculesPage())},
-      {id: 'dg', label: 'Platform bridge', content: lazy(() => platformPage())},
-      {id: 'dginputs', label: 'Files & columns', content: lazy(() => dgInputsPage())},
-      {id: 'convergence', label: 'Input convergence', content: lazy(() => convergencePage())},
-      {id: 'func-convergence', label: 'FuncCall convergence', content: lazy(() => funcConvergencePage())},
-      {id: 'funcs', label: 'Forms', content: lazy(() => funcsPage())},
-    ];
-    const tabs = new TabStrip({tabs: pages});
-    tabs.root.classList.add('u2demo-tabs');
-    // the value-editor toggles only take effect on a reload; without this the reader comes back to
-    // the first tab and has to find their way to the convergence page again
-    const last = localStorage.getItem(LAST_TAB);
-    if (pages.some((p) => p.id === last))
-      tabs.activeTab.value = last;
-    Scope.ambient!.effect(() => localStorage.setItem(LAST_TAB, tabs.activeTab.value ?? ''));
+    const last = signal('');
+    // `navigate` is declared below and only ever called from a click, long after this runs
+    const ctx: DemoContext = {status: last, navigate: (id) => navigate(id)};
+    const inspect = signal(true);
 
-    const statusBar = divH([
-      span('Status: '), span(status),
-      span(computed(() => compact.value ? ' · compact' : ''), 'u2demo-dim'),
-      link('u2 sources', 'https://github.com/datagrok-ai/public/tree/master/libraries/u2'),
-    ], 'u2demo-statusbar');
+    const initial = leafById(options?.initial ?? '') ??
+      leafById(localStorage.getItem(LAST_TAB) ?? '') ??
+      DEMO_TREE[0].children[0];
+    const current = signal(initial);
 
-    return divV([bar, tabs, statusBar], 'u2demo-root');
+    const host = document.createElement('div');
+    host.className = 'u2demo-content';
+
+    let pageScope: Scope | undefined;
+    root.own(() => pageScope?.dispose());
+
+    const show = (leaf: DemoLeaf, force = false): void => {
+      if (!force && current.peek() === leaf)
+        return;
+      pageScope?.dispose();
+      pageScope = new Scope();
+      last.value = '';
+      host.replaceChildren(Scope.runWith(pageScope, () => leaf.build(ctx)));
+      current.value = leaf;
+      localStorage.setItem(LAST_TAB, leaf.id);
+      pageShown(leaf);
+    };
+
+    const tree = new VirtualTree<DemoLeaf>();
+    tree.root.classList.add('u2demo-nav');
+    tree.setRoots(DEMO_TREE.map((g) => ({id: g.id, label: g.label,
+      children: g.children.map((leaf) =>
+        ({id: leaf.id, label: leaf.label, tooltip: leaf.description, data: leaf}))})));
+    tree.expanded.value = new Set(DEMO_TREE.map((g) => g.id));
+
+    root.effect(() => {
+      const node = tree.selectedNode.value;
+      if (node?.data)
+        untracked(() => show(node.data!));
+    });
+
+    const navigate = (id: string): void => {
+      const leaf = leafById(id);
+      if (leaf)
+        void tree.expandPath([leaf.group.id, leaf.id]);
+    };
+
+    // CAPTURE phase, writing WITHOUT freezing: `grok.shell.o` mutes the channel for a second and
+    // drops muted writes, so a freezing write here would swallow the later bubble-phase write a
+    // chip (entities/spaces pages) or the convergence '…' button makes for its own object.
+    let panelOpened = false;
+    host.addEventListener('click', (e) => {
+      if (!inspect.peek())
+        return;
+      // bounded to the page: an unbounded walk resolves whitespace to the shell's own splitter.
+      // A click that lands on a heading, a hint or a plain button hits no u2 control — leave the
+      // panel showing whatever it holds rather than wiping it with an empty state
+      const control = controlAt(e.target as Element, host);
+      if (!control)
+        return;
+      if (!panelOpened) {
+        grok.shell.windows.showContextPanel = true;
+        panelOpened = true;                      // open once per view, then respect the user
+      }
+      grok.shell.setCurrentObject(control, false, false);
+    }, true);
+
+    // paging is how you read a long sub-demo, not how you leave it: the tree's own list handler
+    // moves the selection a page at a time, which navigates. Arrows and Home/End still walk the
+    // tree — only Page Up/Down are taken over, and they scroll the page you are reading.
+    tree.root.addEventListener('keydown', (e) => {
+      const key = (e as KeyboardEvent).key;
+      if (key !== 'PageUp' && key !== 'PageDown')
+        return;
+      e.stopPropagation();
+      e.preventDefault();
+      host.scrollBy({top: (key === 'PageDown' ? 1 : -1) * Math.max(1, host.clientHeight - 40)});
+    }, true);
+
+    // a group row toggles its branch and leaves the selection alone: taking it would move the
+    // highlight off the leaf the content still shows, so the tree would lie about where you are
+    tree.root.addEventListener('click', (e) => {
+      const node = tree.nodeForRow(e.target);
+      if (!node || node.data)
+        return;
+      e.stopPropagation();
+      const expanded = new Set(tree.expanded.peek());
+      if (!expanded.delete(node.id))
+        expanded.add(node.id);
+      tree.expanded.value = expanded;
+    }, true);
+
+    // the two context-panel behaviours share one panel: turning Inspect off hands it back to the
+    // source of the sub-demo that is open, so the toggle round-trips
+    root.effect(() => {
+      if (!inspect.value)
+        untracked(() => pageShown(current.peek()));
+    });
+
+    // `show` clears the status tail; a page with no visible state gives no other sign it was rebuilt
+    const rebuild = (): void => {
+      show(current.peek(), true);
+      last.value = 'rebuilt';
+    };
+    shell = {current, inspect, navigate, rebuild};
+    status = computed(() => {
+      const leaf = current.value;
+      const tail = last.value;
+      return `${leaf.group.label} / ${leaf.label}${tail ? ` · ${tail}` : ''}`;
+    });
+
+    show(initial, true);
+    navigate(initial.id);
+
+    const split = new Splitter([tree.root, host],
+      {direction: 'horizontal', sizes: [22, 78], minSize: 140});
+    split.root.classList.add('u2demo-shell');
+    return divV([split], 'u2demo-root');
   });
+  return {content, shell, status};
 }

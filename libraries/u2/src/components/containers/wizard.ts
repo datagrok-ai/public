@@ -174,10 +174,13 @@ export class Wizard extends Control {
     for (let i = 0; i < this._steps.length; i++) {
       const step = this._steps[i];
       const on = i === index;
-      const done = !on && this._visited.has(step.options.id);
+      const visited = !on && this._visited.has(step.options.id);
+      // a step the user went BACK past stays reachable, but it is ahead of them: only the steps
+      // behind the current one read as completed
+      const done = visited && i < index;
       step.marker.classList.toggle('u2-wizard-step-current', on);
       step.marker.classList.toggle('u2-wizard-step-done', done);
-      step.marker.setAttribute('aria-disabled', String(!on && !done));
+      step.marker.setAttribute('aria-disabled', String(!on && !visited));
       step.marker.tabIndex = on ? 0 : -1;
       step.circle.textContent = done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';

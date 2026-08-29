@@ -7,15 +7,6 @@ import {signal, computed, Scope, div, divV, divH, span, h3, link, iconButton, Bo
 import {propertyForm, propertyEditor} from '@datagrok-libraries/u2/src/dg/index.js';
 import {EDITOR_TYPES, enabledEditorTypes, registeredEditorTypes, setEditorTypes} from './editors';
 
-const RUN = 'Local mode: `grok-core local stage U2Demo`, `grok-core local watch U2Demo`, ' +
-  'open http://localhost:63343/login.html?mode=local. Dev stand: `npm run debug-u2demo`, ' +
-  'then http://localhost:8082.';
-
-const LOCAL = 'Two things local mode cannot do, both pre-existing and neither ours: the app card ' +
-  'in Browse shows a red `error` chip (the platform asks the server for publication details that ' +
-  'local mode has none of), and a reload cannot deep-link back — reopen `Apps / Dev / U2 Demo` ' +
-  'and this tab comes back on its own.';
-
 const HOVER = 'Number rows keep the platform\'s hover chrome, ported as it is: the slider and the ' +
   '− + clicker are invisible at rest and appear the moment the pointer enters the input. Each ' +
   'side reveals its OWN chrome and nothing else, so hover the two `Dose` cells one after the ' +
@@ -52,6 +43,46 @@ const TAGS_NOTE = 'One row of the matrix is missing on purpose: `list` + inputTy
   '`input_base.dart:211-239`). u2 renders the row fine; the A/B would compare against a dead ' +
   'cell, so the row waits for a platform fix.';
 
+const ROUTE_NOTE = 'Attachments, Output folder and Private key show route divergence, not ' +
+  'parity: the platform builds its FilesInput, folder-mode FileInput and RsaInput ' +
+  '(`Private key` rides `editor: rsa` — the `Pem` inputType is another dead factory), while ' +
+  'u2\'s `propertyForm` has no route to its own FilesInput and RsaInput (they take arguments a ' +
+  'property record does not carry, and live on the `Files` sub-demo) and falls back to its ' +
+  'generic list and text editors. The platform side holds `FileInfo` objects the text fallbacks ' +
+  'render but cannot round-trip.';
+
+const PICKERS_NOTE = 'The picker rows above are the property-driven A/B: the platform builds ' +
+  'TableInput, ColumnInput, ColumnsInput and TablesMultiChoiceInput from the records — the ' +
+  'column pickers hold no table until one is bound, and their validators say so — while u2\'s ' +
+  '`propertyForm` has no dataframe route yet and answers with its generic editors: a disabled ' +
+  'text box for `dataframe` and `column`, a plain list editor for `Columns`. The real u2 ' +
+  'pickers take a live frame as an argument and live on the `Dataframes` sub-demo.';
+
+/** Rows the platform cannot build. `InputBase.forInputType` has no factory for these types, and
+ * its fallback — a JS input registered as a `role: valueEditor` func named after the type —
+ * finds nothing and throws before an editor exists (`input_base.dart:646`,
+ * `input_base_js_proxy.dart:27`). One live row would kill the whole grid, so each waits here as
+ * a note naming what either side would offer. */
+const DEAD: Record<string, string> = {
+  readme: 'Readme (`Markdown`) cannot be built by the platform: no `Markdown` factory, no ' +
+    'registered JS input. The js-api\'s Quill-backed `MarkdownInput` (`ui.input.markdown`) is ' +
+    'not reachable from a property; u2 has no markdown editor yet and would fall back to a ' +
+    'plain text box.',
+  script: 'Script (`Code`) — the same gap: `ui.input.code` builds the js-api `CodeInput` ' +
+    'directly, but nothing routes a property to it on either side.',
+  owner: 'Owner (`User`) — the platform has no Dart user picker, and `ui.input.user` routes ' +
+    'into the same dead lookup. u2\'s `userInput` (a TypeAhead over `grok.dapi.users`, on the ' +
+    '`Entities` sub-demo) is the editor a `valueEditor` bridge would reach.',
+  reviewers: 'Reviewers (`UserGroups`) — as `Owner` above, with `grok.dapi.groups` behind the ' +
+    'u2 group picker.',
+  param: 'Param (`Dynamic`) — the platform\'s `DynamicInput` shows a value instead of editing ' +
+    'it, and is reachable only from a semType renderer or a FuncCall output ' +
+    '(`input_base.dart:668-686`), never from `inputType`. The u2 port is on the ' +
+    '`Signals & validation` sub-demo.',
+  mapping: 'Mapping (`ColumnsMap`) has an `InputType` constant and no factory behind it; u2\'s ' +
+    '`columnsMapInput` takes a live frame as an argument and lives on the `Dataframes` sub-demo.',
+};
+
 /** The convergence matrix (plan.md §"Convergence page — the full input matrix"), in the order the
  * table numbers its rows: every row is one property-options record, rendered by the platform on
  * the left and by u2 on the right. */
@@ -65,6 +96,9 @@ function matrix(): DG.IProperty[] {
       choices: ['Oral', 'Intravenous', 'Topical']},
     {name: 'notes', type: DG.TYPE.STRING, friendlyName: 'Notes', editor: 'textarea'},
     {name: 'apiKey', type: DG.TYPE.STRING, friendlyName: 'API key', editor: 'password'},
+    {name: 'query', type: DG.TYPE.STRING, friendlyName: 'Query', inputType: 'Search'},
+    {name: 'readme', type: DG.TYPE.STRING, friendlyName: 'Readme', inputType: 'Markdown'},
+    {name: 'script', type: DG.TYPE.STRING, friendlyName: 'Script', inputType: 'Code'},
     {name: 'color', type: DG.TYPE.STRING, friendlyName: 'Color', inputType: 'Color'},
     {name: 'font', type: DG.TYPE.STRING, friendlyName: 'Font', inputType: 'Font'},
     {name: 'image', type: DG.TYPE.STRING, friendlyName: 'Image', inputType: 'Image'},
@@ -87,6 +121,18 @@ function matrix(): DG.IProperty[] {
     {name: 'aliases', type: DG.TYPE.LIST, friendlyName: 'Aliases'},
     {name: 'attributes', type: DG.TYPE.MAP, friendlyName: 'Attributes'},
     {name: 'protocol', type: DG.TYPE.FILE, friendlyName: 'Protocol'},
+    {name: 'attachments', type: DG.TYPE.LIST, friendlyName: 'Attachments', inputType: 'Files'},
+    {name: 'outputDir', type: DG.TYPE.STRING, friendlyName: 'Output folder', inputType: 'Folder'},
+    {name: 'privateKey', type: DG.TYPE.STRING, friendlyName: 'Private key', editor: 'rsa',
+      format: '.pem'},
+    {name: 'owner', type: DG.TYPE.STRING, friendlyName: 'Owner', inputType: 'User'},
+    {name: 'reviewers', type: DG.TYPE.STRING, friendlyName: 'Reviewers', inputType: 'UserGroups'},
+    {name: 'param', type: DG.TYPE.STRING, friendlyName: 'Param', inputType: 'Dynamic'},
+    {name: 'table', type: DG.TYPE.DATA_FRAME, friendlyName: 'Table', nullable: true},
+    {name: 'keyColumn', type: DG.TYPE.COLUMN, friendlyName: 'Key column'},
+    {name: 'features', type: DG.TYPE.LIST, friendlyName: 'Features', inputType: 'Columns'},
+    {name: 'mapping', type: DG.TYPE.LIST, friendlyName: 'Mapping', inputType: 'ColumnsMap'},
+    {name: 'tables', type: DG.TYPE.DATA_FRAME_LIST, friendlyName: 'Tables'},
   ];
 }
 
@@ -100,6 +146,7 @@ function seed(): Record<string, any> {
     route: 'Oral',
     notes: 'Dissolved in saline, stored at 4 °C.',
     apiKey: 'sk-demo-0001',
+    query: 'aspirin',
     color: '#40a8e0',
     font: 'normal normal 12px "Roboto"',
     image: 'data:image/svg+xml;utf8,' + encodeURIComponent(
@@ -123,6 +170,15 @@ function seed(): Record<string, any> {
     aliases: ['ASA', 'acetylsalicylic acid'],
     attributes: {vendor: 'Sigma', lot: 'A-1234'},
     protocol: null,
+    // the pickers and the key start empty on purpose: nothing to pick until a table is open
+    // (the ribbon's `Demo tools` menu adds one) or a real file is chosen — ROUTE_NOTE/PICKERS_NOTE
+    attachments: [],
+    outputDir: null,
+    privateKey: null,
+    table: null,
+    keyColumn: null,
+    features: [],
+    tables: null,
   };
 }
 
@@ -300,7 +356,7 @@ export function convergencePage(): HTMLElement {
     });
   }
 
-  /** What actually scrolls around the grid — the tab strip's content box, not the page div. */
+  /** What actually scrolls around the grid — the content host, not the page div. */
   function scroller(): HTMLElement | null {
     for (let el = grid.parentElement; el != null; el = el.parentElement)
       if (el.scrollHeight > el.clientHeight + 1)
@@ -318,7 +374,8 @@ export function convergencePage(): HTMLElement {
     grid.append(span(''), h3('Dart — ui.input.forProperty'), h3('u2 — propertyForm'));
 
     Scope.runWith(generation, () => {
-      const shown = Object.values(records).filter((r) => hasChem || r.semType !== 'Molecule');
+      const shown = Object.values(records).filter((r) =>
+        (hasChem || r.semType !== 'Molecule') && DEAD[r.name!] == null);
       const props = shown.map((r) => DG.Property.fromOptions(r));
       const dart = props.map((p) => ui.input.forProperty(p, target));
       const form = propertyForm(props, target, {
@@ -353,6 +410,10 @@ export function convergencePage(): HTMLElement {
           continue;
         }
         const name = record.name!;
+        if (DEAD[name] != null) {
+          grid.append(note(DEAD[name], name));
+          continue;
+        }
         // the panel is closed by default in local mode, and shell.o alone would not open it
         const cells = [iconButton('ellipsis-h', () => {
           grok.shell.windows.showContextPanel = true;
@@ -368,6 +429,10 @@ export function convergencePage(): HTMLElement {
         // where the missing `list` + `Tags` row would sit, right after the other list rows
         if (name === 'aliases')
           grid.append(note(TAGS_NOTE));
+        if (name === 'privateKey')
+          grid.append(note(ROUTE_NOTE));
+        if (name === 'tables')
+          grid.append(note(PICKERS_NOTE));
         i++;
       }
       markCurrent();
@@ -398,11 +463,10 @@ export function convergencePage(): HTMLElement {
   }));
 
   const page = divV([
-    prose('One property set, one target object, two generators: the platform\'s ' +
-      '`InputBase.forProperty` on the left, u2\'s `propertyForm` on the right — every input type ' +
-      'the platform routes to, one per row. Editing either side writes the same object and the ' +
-      'other side follows. The pickers that need an open table — columns, columns map, ' +
-      'aggregations, tables — are the same convergence work and live on the `Files & columns` tab.'),
+    prose('Every input type, the platform\'s editor beside u2\'s: one property set and one target ' +
+      'object, built on the left by `InputBase.forProperty` and on the right by u2\'s ' +
+      '`propertyForm`. Editing either side writes the same object and the other side follows; a ' +
+      'note stands in for each row the platform cannot build.'),
     prose(HOVER),
     prose(EDITOR),
     prose('Invalid states diverge deliberately: the platform reddens the caption and the ' +
@@ -414,8 +478,6 @@ export function convergencePage(): HTMLElement {
       'qualified numbers: `IC50` reads `<5.20` on the platform, which pads to its default ' +
       'precision, and `<5.2` in u2, which prints the value as it stands.'),
     prose(NARROW),
-    prose(RUN),
-    prose(LOCAL),
     grid,
     divH([span('sync = '), span(computed(() =>
       `u2 → Dart ${toDart.value} · Dart → u2 ${toU2.value}`))], 'u2demo-status'),
@@ -433,9 +495,12 @@ export function convergencePage(): HTMLElement {
   return page;
 }
 
-/** A full-width row in the A/B grid carrying a degradation note for the row above it. */
-function note(text: string): HTMLElement {
+/** A full-width row in the A/B grid carrying a degradation note, under the row it describes or in
+ * place of one the platform cannot build; `row` stamps that slot with the missing row's name. */
+function note(text: string, row?: string): HTMLElement {
   const el = prose(text);
   el.classList.add('u2demo-ab-note');
+  if (row != null)
+    el.dataset.row = row;
   return el;
 }

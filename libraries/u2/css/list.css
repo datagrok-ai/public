@@ -12,7 +12,10 @@
   outline: none;
 }
 
-.u2-list:focus {
+/* Keyboard focus only, and on the row rather than the scroller: a mouse click used to ring the
+   whole list, which on a full-height nav pane traces the entire pane. The ring goes where the
+   keyboard is — the selected row, which is what `aria-activedescendant` points at. */
+.u2-list:focus-visible .u2-list-row-selected {
   outline: var(--dg-focus-ring);
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }

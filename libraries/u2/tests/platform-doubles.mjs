@@ -742,7 +742,7 @@ export class View {
   setRibbonPanels(panels) { this.dart.ribbonPanels = panels; }
 }
 getters(View, 'root', 'ribbonPanels');
-fields(View, 'name', 'toolbox', 'statusBarPanels');
+fields(View, 'name', 'path', 'toolbox', 'statusBarPanels');
 
 /** A look's owner — the viewer whose `onPropertyValueChanged` a property write fires — and the
  * proof a receiver IS a look: any other receiver is the platform's NoSuchMethodError. */

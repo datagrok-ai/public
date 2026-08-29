@@ -15,7 +15,8 @@ const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncC
   'generated from one client-registered function decorated after registration. Editing either ' +
   'side writes the same FuncCall and the other side follows; the `inputs` line below is what the ' +
   'call itself holds. Each cross-edit bumps exactly one sync counter by exactly one — an echo ' +
-  'never counts, so any extra increment is ping-pong.';
+  'never counts, so any extra increment is ping-pong. The one red balloon at open is part of the ' +
+  'demo: the `seed` parameter further down carries a deliberately broken default (`nosuchvar + 1`).';
 
 const DEFAULTS = 'Literal numeric defaults ride the js-api `defaultValue` setter into the ' +
   'property but never into the call: both func forms read defaults only from ' +
@@ -94,8 +95,9 @@ const DEFAULT_OK = '`options[\'default\'] = \'2 + 2\'` is a GrokScript command e
   'Defaults run once per bind and never re-run on dependency edits: a default command cannot ' +
   'reference sibling params.';
 
-const DEFAULT_BROKEN = '`seed`\'s default command names a variable that does not exist: the ' +
-  'platform balloons `Unable to calculate default value` at open and moves on; u2 keeps the ' +
+const DEFAULT_BROKEN = '`seed`\'s default is deliberately `nosuchvar + 1` — a command naming a ' +
+  'variable that does not exist. The red `Variable "nosuchvar" not found` balloon this page ' +
+  'raises at open IS that, on purpose: the platform balloons and moves on, while u2 keeps the ' +
   'failure on the field — the message inline, with a Retry that re-runs just that one eval.';
 
 const LIST_DYN = 'The same provider through a multi-choice on both sides. Under ' +
@@ -346,7 +348,6 @@ export function ensureFuncs(): void {
   model.options['propagateChoice'] = 'all';
   dyn.get('site')!.options['suggestions'] = 'fceW2Suggest';
   dyn.get('cohort')!.options['default'] = '2 + 2';
-  dyn.get('seed')!.options['default'] = 'nosuchvar + 1';
   dyn.get('regions')!.options['choices'] = 'fceW2Countries()';
   for (const p of dynFunc.inputs)
     p.nullable = true;
@@ -465,6 +466,9 @@ export function funcConvergencePage(): HTMLElement {
   ensureTable('fceW3Alt', 'weight,label\n70,x\n80,y');
   const call = demoFunc!.prepare();
   const gateCall = gateFunc!.prepare();
+  // the deliberate broken default belongs to the page that demonstrates it, not to the shared
+  // registration: Function forms reads the same registry and must not balloon for it
+  dynFunc!.inputs.find((p) => p.name === 'seed')!.options['default'] = 'nosuchvar + 1';
   // country preset so the dependent city source has something to ask with at open
   const dynCall = dynFunc!.prepare({country: 'FR'});
   const w3Call = w3Func!.prepare();

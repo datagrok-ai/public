@@ -10,6 +10,8 @@ import type {Action} from '../actions/actions.js';
 export interface TreeNode<T = unknown> {
   id: string;
   label: string;
+  /** The row's `title`; the label itself when omitted, so a truncated row always says its name. */
+  tooltip?: string;
   data?: T;
   children?: TreeNode<T>[] | (() => Promise<TreeNode<T>[]>);
 }
@@ -212,6 +214,7 @@ export class VirtualTree<T = unknown> extends Control {
       rowEl.setAttribute('aria-expanded', String(open));
     const twistie = branch ? 'u2-tree-twistie' : 'u2-tree-twistie u2-tree-twistie-hidden';
     el.append(VirtualTree._span(twistie, open ? '▾' : '▸'), VirtualTree._span('u2-tree-label', row.node.label));
+    el.title = row.node.tooltip ?? row.node.label;
     return el;
   }
 

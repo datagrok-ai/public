@@ -2,6 +2,23 @@
 
 ## v.next
 
+* GROK-20753: Added the Overview front door under a new Start area — what u2 is, what each area covers and three "start here" pointers; it is the default leaf when nothing is remembered and the URL carries no path (a remembered leaf and an explicit deep link still win)
+* GROK-20753: Moved the value editors out of Display into Inputs — Range slider (`RangeSlider`) and Multi-select (`MultiSelect`, `ButtonGroup`) are their own leaves, where a newcomer looks for them; Display keeps Cards, Feedback, Tables, Sections & wizard and Message input
+* GROK-20753: Fixed the Wizard demo stealing the MultiSelect demo — the wizard step builds a control of its own, so BACK no longer leaves a bare heading behind
+* GROK-20753: Page Up/Down in the nav tree now scrolls the sub-demo being read instead of navigating to another one; arrows, Home and End still walk the tree
+* GROK-20753: The demo shell degrades below ~720 px — the nav becomes a fixed rail rather than a sliver, folds away entirely under ~460 px, and the demo column keeps a readable floor
+* GROK-20753: An Inspect-mode click that lands on no u2 control is now a no-op — it leaves the context panel showing what it held, instead of replacing the source view with an empty state
+* GROK-20753: All inputs leads with what the page shows instead of build commands and maintainer caveats
+* GROK-20753: Added the Display area — Cards (`Card`, `StatCard`), Feedback (`ProgressBar`, notification balloons, the opt-in guided `Tour`), Tables (`BasicTable`, `VirtualGrid`), Sections & wizard (`Section`, `Wizard`) and Message input (`MessageInput`) — the u2 display controls the demo showed nowhere; the tour and the mention popup are torn down with the page that raised them, as are the balloons
+* GROK-20753: The control inspector now resolves only controls inside the current sub-demo (a click on anything that is not one leaves the panel alone, instead of falling through to the app's own splitter), and turning Inspect off hands the context panel back to the sub-demo's source
+* GROK-20753: Every nav tree row carries its leaf description as a tooltip
+* GROK-20753: Replaced the main TabStrip with a 2-level nav tree (7 areas, 26 sub-demos) — pages build lazily under a per-page scope disposed on navigation, and the last-visited leaf is remembered
+* GROK-20753: Renamed Input convergence to All inputs under the Inputs area and split Form & properties into Form + Property grid, Files and columns into Files + Dataframes (all table/column pickers moved there), and Lists & trees into Lists + Trees
+* GROK-20753: Removed the in-view Run/Save/Compact/Help toolbar; the view ribbon carries the demo commands instead — source, inspect toggle, rebuild icon buttons and a Demo tools drop-down (add demog/molecules tables, close the demo tables, leak report); the File/View/Help menu bar left the ribbon for the Popups sub-demo, where a panel-local menu bar belongs
+* GROK-20753: Moved the status line into the shell's own status bar (`appView({status})`) — it shows the current group/leaf plus the last demo action
+* GROK-20753: Added the control inspector — clicking a u2 control inside the demo shows its live properties in the context panel (`registerControlInspector`), toggled from the ribbon
+* GROK-20753: Added the source panel — navigating to a sub-demo shows the source of the build that is running in the context panel (bundled by webpack through `?raw`, sliced to the page factory), under the leaf's description and a link to the same file on GitHub master
+* GROK-20753: Added URL routing and the Browse sub-tree — `u2DemoApp` takes a `meta.url` path (`/apps/U2demo/U2Demo/<group>/<leaf>` round-trips both ways), and `u2DemoTreeBrowser` mirrors the nav tree under Apps ▸ Dev ▸ U2 Demo with leaf clicks reusing the open view
 * GROK-20753: Registered the `u2FunctionNameValueEditor` value editor (semType `FunctionName`) so unmodified Dart forms resolve the u2 FunctionInput, and added the Scorer row to the input-convergence matrix
 * GROK-20753: Fixed the Forms A/B bench clipping at narrow widths — the two form columns now stack; imported the new u2 section skin
 * GROK-20753: Replaced the Dart DG.FunctionsWidget in the funcs pane with the native u2 FunctionsBrowser (selection drives the shared-call forms through the `selected` signal; names-only surface as before, filter panes behind the filter icon)

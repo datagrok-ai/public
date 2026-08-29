@@ -7,6 +7,17 @@ import {openApp} from './local.mjs';
 /** What U2Demo's `u2DesignerApp` opens on (packages/U2Demo/src/designer.ts). */
 export const APP = {package: 'U2demo', func: 'u2DesignerApp'};
 
+/** Opens the U2 Demo app on one sub-demo: the leaf id goes through the `u2demo.tab` memory the
+ * app boots from (packages/U2Demo/src/demo.ts). */
+export async function openDemoPage(page, leafId) {
+  await page.evaluate((id) => localStorage.setItem('u2demo.tab', id), leafId);
+  await openApp(page, APP.package, 'u2DemoApp');
+  await page.waitForSelector('.u2demo-nav .u2-tree-row', {timeout: 30000});
+}
+
+/** The current view's URL path — what `appView({path})` wrote. */
+export const demoPath = (page) => page.evaluate(() => grok.shell.v.path);
+
 const ROW = '.u2-designer-toolbox .u2-tree-row';
 export const CAPTION = '.u2-designer-caption';
 /** The status bar panel carries no class of its own — it is the leaf div reporting the node count. */

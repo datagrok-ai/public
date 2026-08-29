@@ -1,11 +1,73 @@
+/* the shell reads its OWN width, not the window's: the context panel takes as much room away
+   from the demo as a narrow screen does */
 .u2demo-root {
   height: 100%;
   gap: 0;
+  container-type: inline-size;
+  container-name: u2demo;
 }
 
-.u2demo-tabs {
+/* Below this a 22/78 split leaves the demo a sliver — text breaks mid-word, the range slider
+   collapses onto its own handles. The nav stops shrinking with the host and becomes a fixed rail
+   instead, so every pixel the fold frees goes to the demo; the sash goes with it, since there is
+   nothing left to trade. */
+@container u2demo (max-width: 720px) {
+  .u2demo-shell > .u2-splitter-panel:first-child {
+    min-width: 148px;
+    max-width: 148px;
+  }
+
+  .u2demo-shell > .u2-splitter-panel:nth-child(2) {
+    min-width: calc(100% - 148px);
+  }
+
+  .u2demo-shell > .u2-sash {
+    display: none;
+  }
+}
+
+/* Narrower than the rail plus a readable column: the nav folds away deliberately rather than
+   thinning to nothing. Every sub-demo is still one Browse click or one URL away. */
+@container u2demo (max-width: 460px) {
+  .u2demo-shell > .u2-splitter-panel:first-child {
+    display: none;
+  }
+
+  .u2demo-shell > .u2-splitter-panel:nth-child(2) {
+    min-width: 100%;
+  }
+}
+
+.u2demo-shell {
   flex: 1;
   min-height: 0;
+}
+
+/* the nav tree is the splitter's left panel: splitter panels are not flex containers, so the
+   tree sizes itself off an explicit height (css/splitter.css) */
+.u2demo-nav {
+  height: 100%;
+}
+
+.u2demo-nav > .u2-list {
+  border: none;
+  border-right: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* the content host replaces .u2-tabs-content: same scroller, same padding */
+.u2demo-content {
+  height: 100%;
+  overflow: auto;
+  padding: var(--dg-space-m);
+  background: var(--dg-bg);
+}
+
+/* the ribbon's Inspect toggle: the shared pressed skin is a grey a shade off hover, so an armed
+   toggle reads as a hovered button — the accent wash is what a platform ribbon toggle wears */
+.u2-btn.u2demo-inspect.u2-icon-btn-pressed {
+  color: var(--dg-accent);
+  background: var(--dg-selection-bg);
+  border-color: var(--dg-accent);
 }
 
 .u2demo-page {
@@ -13,6 +75,15 @@
   gap: var(--dg-space-m);
   overflow: auto;
   max-width: 640px;
+  /* the floor a paragraph needs to stay readable; under it the host scrolls, words do not break */
+  min-width: 280px;
+}
+
+/* the Overview's area column: one common width so the leaf lists line up */
+.u2demo-overview-area {
+  flex: none;
+  width: 90px;
+  font-weight: var(--dg-font-weight-medium);
 }
 
 .u2demo-row {
@@ -48,6 +119,18 @@
   border: var(--dg-border-width) solid var(--dg-border);
   border-radius: var(--dg-radius);
   padding: var(--dg-space-m);
+}
+
+/* the Display group's card rows: cards size themselves off their content, so the row gives them a
+   readable common width and wraps instead of squeezing */
+.u2demo-cards {
+  gap: var(--dg-space-l);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.u2demo-cards > .u2-card {
+  width: 220px;
 }
 
 .u2demo-list {
@@ -107,14 +190,6 @@
   height: 100%;
   overflow: auto;
   padding: var(--dg-space-l);
-}
-
-.u2demo-statusbar {
-  align-items: center;
-  gap: var(--dg-space-m);
-  padding: var(--dg-space-s) var(--dg-space-m);
-  border-top: var(--dg-border-width) solid var(--dg-border);
-  color: var(--dg-text-color-light);
 }
 
 .u2demo-mol-row {
@@ -229,11 +304,10 @@
   margin-right: var(--dg-space-s);
 }
 
-/* Forms pane: the platform function browser on the left drives a side-by-side old-vs-new form
-   pair on the right. The tab panel is auto-height (every other page scrolls the tabs-content as
-   a whole); this pane fills the viewport instead, so its columns can scroll independently */
-.u2-tabs-panel:has(.u2demo-funcs) {
-  height: 100%;
+/* the Function forms pane fills the host and scrolls its own columns (was
+   .u2-tabs-panel:has(.u2demo-funcs)) */
+.u2demo-content:has(.u2demo-funcs) {
+  overflow: hidden;
 }
 
 .u2demo-funcs {

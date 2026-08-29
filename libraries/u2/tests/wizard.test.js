@@ -64,6 +64,10 @@ wizard('navigates forward and back, keeping panel state', () => {
   w.back();
   assert.equal(w.currentStep.value, 'two');
   assert.equal(panels[1].textContent, 'Two: gated', 'panels are hidden, never rebuilt');
+  assert.equal(markers(w)[2].classList.contains('u2-wizard-step-done'), false,
+    'a visited step ahead of the current one is not marked completed');
+  assert.equal(markers(w)[2].textContent.startsWith('3'), true, 'it shows its number again');
+  assert.equal(markers(w)[2].getAttribute('aria-disabled'), 'false', 'and stays reachable');
   w.dispose();
 });
 

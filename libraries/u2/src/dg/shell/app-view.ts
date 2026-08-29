@@ -19,6 +19,11 @@ export interface AppViewOptions {
   /** → the shell's per-view status bar. A signal renders as a live text panel; elements and
    * components are placed as given. */
   status?: ReadonlySignal<string> | ChromeItem | ChromeItem[];
+  /** The view's URL path, written verbatim to `view.path`. For an app, include the app root
+   * (`/apps/<Package>/<App>`): the platform prefixes nothing for a JS app. A signal is mirrored
+   * on every change, so in-app navigation round-trips to the address bar (the shell replaces
+   * rather than pushes, so it costs no history entries). */
+  path?: string | ReadonlySignal<string>;
 }
 
 export function appView(options: AppViewOptions): DG.ViewBase {
@@ -58,6 +63,14 @@ export function appView(options: AppViewOptions): DG.ViewBase {
   } else if (status != null) {
     const items = (Array.isArray(status) ? status : [status]) as ChromeItem[];
     view.statusBarPanels = items.map(panel);
+  }
+  const path = options.path;
+  if (typeof path === 'string')
+    (view as DG.View).path = path;
+  else if (path != null) {
+    content.own(rawEffect(() => {
+      (view as DG.View).path = path.value;
+    }));
   }
   return view;
 }

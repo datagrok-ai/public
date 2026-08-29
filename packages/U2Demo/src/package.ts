@@ -11,6 +11,7 @@ import '@datagrok-libraries/u2/css/elements.css';
 import '@datagrok-libraries/u2/css/inputs.css';
 import '@datagrok-libraries/u2/css/number.css';
 import '@datagrok-libraries/u2/css/slider.css';
+import '@datagrok-libraries/u2/css/range-slider.css';
 import '@datagrok-libraries/u2/css/radio.css';
 import '@datagrok-libraries/u2/css/color.css';
 import '@datagrok-libraries/u2/css/date.css';
@@ -24,6 +25,7 @@ import '@datagrok-libraries/u2/css/functions-browser.css';
 import '@datagrok-libraries/u2/css/grid.css';
 import '@datagrok-libraries/u2/css/icon-input.css';
 import '@datagrok-libraries/u2/css/function-input.css';
+import '@datagrok-libraries/u2/css/message-input.css';
 import '@datagrok-libraries/u2/css/file.css';
 import '@datagrok-libraries/u2/css/progress.css';
 import '@datagrok-libraries/u2/css/spec.css';
@@ -38,8 +40,11 @@ import '@datagrok-libraries/u2/css/menu.css';
 import '@datagrok-libraries/u2/css/menu-bar.css';
 import '@datagrok-libraries/u2/css/dialog.css';
 import '@datagrok-libraries/u2/css/tooltip.css';
+import '@datagrok-libraries/u2/css/notify.css';
+import '@datagrok-libraries/u2/css/tour.css';
 import '@datagrok-libraries/u2/css/form.css';
 import '@datagrok-libraries/u2/css/section.css';
+import '@datagrok-libraries/u2/css/card.css';
 import '@datagrok-libraries/u2/css/property-grid.css';
 import '@datagrok-libraries/u2/css/async.css';
 import '@datagrok-libraries/u2/css/typeahead.css';
@@ -52,10 +57,14 @@ import '@datagrok-libraries/u2/css/designer.css';
 import '@datagrok-libraries/u2/css/viewers.css';
 import '../css/u2demo.css';
 
-import {MenuBar, signal} from '@datagrok-libraries/u2';
-import {appView, designerView, registerPlatformComponents, registerSpecNodeHandler}
-  from '@datagrok-libraries/u2/src/dg/index.js';
-import {buildDemo} from './demo';
+import {computed} from '@datagrok-libraries/u2';
+import {appView, designerView, disposePanel, registerControlInspector, registerPlatformComponents,
+  registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {DemoShell, buildDemo} from './demo';
+import {DemoLeaf, leafForPath, pathOf} from './nav';
+import {buildBrowseTree} from './browse';
+import {demoRibbon} from './ribbon';
+import {registerDemoSourceHandler} from './source-panel';
 import {buildReportsBrowser} from './reports-browser';
 import {registerEnabledEditors} from './editors';
 import {registerPropRowHandler} from './convergence';
@@ -64,34 +73,65 @@ import {DESIGNER_SPEC, appendRunLog, designerContext} from './designer';
 export * from './package.g';
 // not a package function: what the e2e leak check reads after closing every view
 export {leakReport, viewers} from '@datagrok-libraries/u2/src/dg/index.js';
+export {sliceSymbol} from './source-panel';
 
 export const _package = new DG.Package();
+
+// JS apps own the whole path (the platform prefixes nothing); fragile: if U2Demo ever drops to a
+// single app function, Func.url returns '' and the route collapses to '/apps/U2demo'
+const APP_PATH = '/apps/U2demo/U2Demo';
+
+let demoView: DG.ViewBase | null = null;
+let demoShell: DemoShell | null = null;
+
+// compared on `.dart`: the JS wrapper appView() built is not the object shell.views hands back
+// for the same Dart view, so object identity never matches
+grok.events.onViewRemoved.subscribe((v) => {
+  if (demoView != null && v.dart === demoView.dart) {
+    demoView = null;
+    demoShell = null;
+  }
+});
+
+function openDemo(leaf: DemoLeaf): void {
+  // grok.shell.views is an Iterable, not an array (shell.ts:328)
+  if (demoView != null && [...grok.shell.views].some((v) => v.dart === demoView!.dart)) {
+    grok.shell.v = demoView;
+    demoShell!.navigate(leaf.id);
+    return;
+  }
+  grok.shell.addView(u2DemoApp(pathOf(leaf)));
+}
 
 //name: U2 Demo
 //tags: app
 //meta.browsePath: Dev
+//input: string path { meta.url: true; optional: true }
 //output: view result
-export function u2DemoApp(): DG.ViewBase {
+export function u2DemoApp(path?: string): DG.ViewBase {
   registerEnabledEditors();
   registerPropRowHandler();
-  const autoRefresh = signal(false);
-  const bar = new MenuBar()
-    .menu('File', (m) => m
-      .item('New session', () => grok.shell.info('New session'), {shortcut: 'Ctrl+N'})
-      .item('Save layout', () => grok.shell.info('Layout saved'))
-      .separator()
-      .group('Export')
-      .item('As JSON', () => grok.shell.info('Exported as JSON'))
-      .item('As CSV', () => grok.shell.info('Exported as CSV'))
-      .endGroup())
-    .menu('View', (m) => m
-      .item('Auto-refresh', () => autoRefresh.value = !autoRefresh.value,
-        {check: autoRefresh.value})
-      .item('Reset panels', () => grok.shell.info('Panels reset')))
-    .menu('Help', (m) => m
-      .item('About u2', () => grok.shell.info('u2: next-gen Datagrok UI library'))
-      .item('Sources', () => window.open('https://github.com/datagrok-ai/public/tree/master/libraries/u2')));
-  return appView({name: 'U2 Demo', content: buildDemo(), ribbon: [[bar]]});
+  registerControlInspector();
+  registerDemoSourceHandler();
+  const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
+  // the inspector's panel outlives this view otherwise, holding the control it last rendered
+  content.own(disposePanel);
+  const view = appView({
+    name: 'U2 Demo', content, status,
+    ribbon: [content.run(() => demoRibbon(shell))],
+    path: computed(() => APP_PATH + pathOf(shell.current.value)),
+  });
+  demoView = view;
+  demoShell = shell;
+  return view;
+}
+
+//name: u2DemoTreeBrowser
+//input: dynamic treeNode
+//meta.role: appTreeBrowser
+//meta.app: U2 Demo
+export function u2DemoTreeBrowser(treeNode: DG.TreeViewGroup): void {
+  buildBrowseTree(treeNode, openDemo);
 }
 
 //name: Reports Browser

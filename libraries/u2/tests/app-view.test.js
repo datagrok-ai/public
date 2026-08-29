@@ -56,6 +56,25 @@ viewed('chrome components are disposed with the content; plain elements pass as 
   assert.equal(toolbox.scope.isDisposed, true);
 });
 
+viewed('a string path is written to the view verbatim', () => {
+  const content = new Control();
+  const view = appView({name: 'App', content, path: '/apps/Pkg/App/home'});
+  assert.equal(view.path, '/apps/Pkg/App/home');
+  content.dispose();
+});
+
+viewed('a signal path is mirrored on change; the mirror dies with the content', () => {
+  const path = signal('/apps/Pkg/App/a');
+  const content = new Control();
+  const view = appView({name: 'App', content, path});
+  assert.equal(view.path, '/apps/Pkg/App/a');
+  path.value = '/apps/Pkg/App/b';
+  assert.equal(view.path, '/apps/Pkg/App/b');
+  content.dispose();
+  path.value = '/apps/Pkg/App/c';
+  assert.equal(view.path, '/apps/Pkg/App/b', 'the effect died with the content');
+});
+
 viewed('a status signal renders as a live text panel whose effect dies with the content', () => {
   const status = signal('loading');
   const content = new Control();

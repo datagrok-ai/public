@@ -20,7 +20,11 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
+      // `?raw` inlines a source file as text so the demo can show the source of the build that is
+      // running (src/source-panel.ts); everything else compiles as usual
+      {resourceQuery: /raw/, type: 'asset/source'},
+      {test: /\.tsx?$/, resourceQuery: {not: [/raw/]}, loader: 'ts-loader',
+        options: {allowTsInNodeModules: true}},
       {test: /\.css$/i, use: ['style-loader', 'css-loader']},
     ],
   },

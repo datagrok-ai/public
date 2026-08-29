@@ -113,3 +113,5 @@ export {ColumnInput} from './inputs/column-combo.js';
 export type {ColumnInputOptions2} from './inputs/column-combo.js';
 export {messageInput, userMentionProvider, USER_TOKEN} from './inputs/message-input.js';
 export type {MessageInputOptions, MentionProvider} from '../components/inputs/message-input.js';
+export {registerControlInspector, controlProperties, controlPropDescriptors, disposePanel,
+  controlAt, noControl} from './shell/control-inspector.js';
