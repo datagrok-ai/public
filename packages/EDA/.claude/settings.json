@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/vmaka/Datagrok/diff-grok/src/solver-tools/**)"
+    ]
+  }
+}
