@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datagrok.ai/schemas/self-healing-locators/healing-event-v1.json",
+  "title": "HealingEvent",
+  "description": "One audit-log entry. See docs/04-runtime-flow.md § 5.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "eventId",
+    "timestamp",
+    "testRef",
+    "anchorName",
+    "originalSelector",
+    "tierUsed",
+    "score",
+    "band",
+    "matched_features",
+    "absent_features",
+    "demotions_applied",
+    "ambiguity_check",
+    "flagForReview",
+    "queuedOffline"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1" },
+    "eventId": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "testRef": {
+      "type": "object",
+      "required": ["file", "test"],
+      "properties": {
+        "file": { "type": "string" },
+        "suite": { "type": "string" },
+        "test": { "type": "string" }
+      }
+    },
+    "anchorName": { "type": "string" },
+    "originalSelector": { "type": "string" },
+    "resolvedSelector": {
+      "type": ["string", "null"],
+      "description": "The selector that actually worked, if any. Null on failure."
+    },
+    "tierUsed": {
+      "enum": ["primary", "tier1", "tier2", "tier3", "tier4", "failed"]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "band": {
+      "enum": ["HIGH", "MID", "LOW", "FAIL"]
+    },
+    "matched_features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "weight", "match"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "weight": { "type": "number" },
+          "match": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "absent_features": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "demotions_applied": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "ambiguity",
+          "semantic_mismatch",
+          "action_mismatch",
+          "dg_widget_mismatch",
+          "platform_version_skew"
+        ]
+      }
+    },
+    "ambiguity_check": {
+      "enum": ["passed", "failed"]
+    },
+    "flagForReview": { "type": "boolean" },
+    "queuedOffline": { "type": "boolean" },
+    "error": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Present only on failure."
+    },
+    "runMetadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datagrok.ai/schemas/self-healing-locators/tool-response-v1.json",
+  "title": "ProposeLocatorsResponse",
+  "description": "Schema enforced on Claude's tool_use response. See docs/05-offline-flow.md § 7.",
+  "type": "object",
+  "required": ["candidates", "unable_to_match"],
+  "additionalProperties": false,
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["selector", "selector_type", "matched_attributes", "rationale"],
+        "additionalProperties": false,
+        "properties": {
+          "selector": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "selector_type": {
+            "enum": ["css", "xpath", "role", "testid", "text"]
+          },
+          "matched_attributes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "testId",
+                "domId",
+                "ariaLabel",
+                "ariaRole",
+                "name",
+                "dgWidgetType",
+                "dgViewerType",
+                "tagName",
+                "stableClasses",
+                "parentChain",
+                "visibleText",
+                "placeholder",
+                "title",
+                "boundingBox",
+                "visualHash"
+              ]
+            },
+            "minItems": 1,
+            "description": "Subset of fingerprint feature names that this selector relies on. Vocabulary is fixed."
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "risk_notes": {
+            "type": "string",
+            "maxLength": 400
+          }
+        }
+      }
+    },
+    "unable_to_match": { "type": "boolean" },
+    "unable_reason": {
+      "enum": [
+        "no_semantic_match_in_dom",
+        "ambiguous_candidates",
+        "page_state_mismatch",
+        "insufficient_context",
+        "other"
+      ]
+    },
+    "unable_reason_detail": {
+      "type": "string",
+      "maxLength": 400
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "unable_to_match": { "const": true } } },
+      "then": {
+        "required": ["unable_reason"],
+        "properties": {
+          "candidates": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "unable_to_match": { "const": false } } },
+      "then": {
+        "properties": {
+          "candidates": { "minItems": 1 }
+        }
+      }
+    }
+  ]
+}
