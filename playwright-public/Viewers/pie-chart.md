@@ -68,7 +68,14 @@ All scenarios should start with the following sequence of events:
 2. Set Legend Position to Left Top — legend moves to top-left
 3. Set Legend Position to Right Bottom — legend moves to bottom-right
 4. Set Legend Visibility to Never — legend disappears
-5. Set Legend Visibility to Auto — legend shown based on available space
+5. Set Legend Visibility to Auto — legend shown based on available space; it stays hidden while every segment already carries its own label
+
+## Donut mode
+
+1. Set Mode to Donut — the pie becomes a ring with the category column name in the hole
+2. Set Center Label to "Race" — the text in the hole changes
+3. Toggle Show Center Label off — the hole is empty; toggle it back on
+4. Set Mode to Pie — the full pie is back
 
 ## Category map (dates)
 

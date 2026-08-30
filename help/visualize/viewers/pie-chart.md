@@ -11,7 +11,9 @@ keywords:
 
 A pie chart shows numerical proportions across categories. Like a bar chart, it
 compares categorical values, but emphasizes the relative size of each category
-(a slice of the pie) compared to the whole dataset.
+(a slice of the pie) compared to the whole dataset. Switch **Mode** to `Donut`
+(**Style** settings) to draw the chart as a ring; **Center Label** puts text in the
+hole (the category column name by default).
 
 :::note developers 
 
@@ -80,6 +82,10 @@ Controls:
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **Style** | | |
+| Mode | string | Pie or donut |
+| Show Center Label | boolean | Show text in the donut hole |
+| Center Label | string | Text in the donut hole; the category column name if empty |
+| Center Label Font | string | Font of the text in the donut hole |
 | Label Position | string |  |
 | Auto Layout | boolean |  |
 | Controls Font | string | Viewer controls elements font. |

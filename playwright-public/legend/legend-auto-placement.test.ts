@@ -4,7 +4,8 @@ sub_features_covered: [legend.corner.pie, legend.corner.bar-chart, legend.trelli
 --- */
 // Automatic legend placement per viewer type, plus the mini icon and the tooltip legend.
 // Pins: the pie chart's auto legend takes a free corner (marking its bounding box instead
-// of the circle used to cover the very spot its offsets aim for); the bar chart's never
+// of the circle used to cover the very spot its offsets aim for) and hides once every
+// segment carries its own label (GROK-20793); the bar chart's never
 // lands on the bars (the candidate rect must be built in viewer coordinates, not chart-box
 // ones); a freshly added trellis shows its legend without any property change (its
 // requestLegendFrame must schedule a real render); the mini icon stays clickable above the
@@ -44,12 +45,17 @@ test('Pie corner, trellis default, bar chart placement (SPGI)', async ({page}) =
 
   await softStep('Pie chart auto placement takes a free corner beside the pie', async () => {
     await page.evaluate(() => {
-      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Stereo Category'});
+      // labels off: a pie whose every segment is labeled hides its Auto legend (GROK-20793)
+      (window as any).grok.shell.tv.addViewer('Pie chart', {categoryColumnName: 'Stereo Category', showLabel: false});
     });
     await v.waitForLegendIdle(page, 'Pie chart');
     await v.resizeViewer(page, 'Pie chart', 900, 600);
     const s = await legendState(page, 'Pie chart');
     expect(s.mode, 'pie legend stuck docked').toBe('corner');
+    await v.setViewerProps(page, 'Pie chart', [{set: {showLabel: true}, wait: 1500}]);
+    const labeled = await legendState(page, 'Pie chart');
+    expect(labeled.noLegend || labeled.mode === 'hidden',
+      `Auto legend must hide once every segment is labeled, got ${labeled.mode}`).toBe(true);
     await page.evaluate(() => {
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Pie chart')?.close();

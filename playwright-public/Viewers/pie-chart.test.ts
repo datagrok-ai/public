@@ -147,6 +147,36 @@ test('Pie chart tests', async ({page}) => {
     expect(result).toEqual(['Always', 'LeftTop', 'RightBottom', 'Never', 'Auto']);
   });
 
+  // #### Donut mode
+  await softStep('Donut mode', async () => {
+    const result = await page.evaluate(async () => {
+      const pie = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pie chart') as any;
+      const canvas = pie.root.querySelector('canvas[name="canvas"]') as HTMLCanvasElement;
+      const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+      const r: any[] = [];
+
+      const asPie = canvas.toDataURL();
+      pie.props.mode = 'Donut';
+      await sleep(500);
+      r.push(pie.props.mode, canvas.toDataURL() !== asPie);
+
+      pie.props.centerLabel = 'Race';
+      await sleep(300);
+      const withCenterLabel = canvas.toDataURL();
+      pie.props.showCenterLabel = false;
+      await sleep(300);
+      r.push(pie.props.showCenterLabel, canvas.toDataURL() !== withCenterLabel);
+
+      pie.props.showCenterLabel = true;
+      pie.props.centerLabel = '';
+      pie.props.mode = 'Pie';
+      await sleep(300);
+      r.push(pie.props.mode);
+      return r;
+    });
+    expect(result, 'mode round-trip, donut repaints, center label toggles').toEqual(['Donut', true, false, true, 'Pie']);
+  });
+
   // #### Category map (dates)
   await softStep('Category map (dates)', async () => {
     const result = await page.evaluate(async () => {
