@@ -27,7 +27,9 @@ test.describe.serial('EDA / MLMethods / XGBoost (classification)', () => {
     await openTrainModelView(page);
     await setPredictColumn(page, 'Species');
 
-    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'Species');
+    const trained = await trainEdaModelViaApi(page, 'eda:trainXGBooster', 'Species', {
+      extraParams: { iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0 },
+    });
     expect(trained.ok, trained.error ?? 'xgboost training returned null').toBe(true);
   });
 });
