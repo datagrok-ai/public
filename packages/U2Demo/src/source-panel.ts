@@ -11,6 +11,7 @@ import {SRC_ROOT, setPageShownHook} from './nav';
 import convergenceSource from './convergence?raw';
 import funcConvergenceSource from './func-convergence?raw';
 import funcsSource from './funcs?raw';
+import funcHistorySource from './func-history?raw';
 import collectionsSource from './pages/collections?raw';
 import containersSource from './pages/containers?raw';
 import displaySource from './pages/display?raw';
@@ -28,6 +29,7 @@ const SOURCES: Record<string, string> = {
   [`${SRC_ROOT}/convergence.ts`]: convergenceSource,
   [`${SRC_ROOT}/func-convergence.ts`]: funcConvergenceSource,
   [`${SRC_ROOT}/funcs.ts`]: funcsSource,
+  [`${SRC_ROOT}/func-history.ts`]: funcHistorySource,
   [`${SRC_ROOT}/pages/collections.ts`]: collectionsSource,
   [`${SRC_ROOT}/pages/containers.ts`]: containersSource,
   [`${SRC_ROOT}/pages/display.ts`]: displaySource,

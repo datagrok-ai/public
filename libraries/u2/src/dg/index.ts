@@ -20,12 +20,16 @@ export {handlerRenderer, HandlerRenderer, chip, EntityChip, entityCard, EntityCa
 export type {ChipOptions, EntityInputOptions} from './entities/entity.js';
 export {functionsBrowser} from './entities/functions-browser.js';
 export type {DgFunctionsBrowserOptions} from './entities/functions-browser.js';
+export {funcCallHistoryBrowser, FuncCallHistoryBrowser} from './entities/func-call-history-browser.js';
+export type {FuncCallHistoryBrowserOptions} from './entities/func-call-history-browser.js';
 export {Editors} from './forms/editors.js';
 export type {EditorRule} from './forms/editors.js';
 export {moleculeInput, moleculeRenderer} from './inputs/molecule.js';
 export type {MoleculeRendererOptions} from './inputs/molecule.js';
 export {functionInput, FunctionInput} from './inputs/function-input.js';
 export type {FunctionInputOptions} from './inputs/function-input.js';
+export {funcCallInput, FuncCallInput} from './inputs/func-call-input.js';
+export type {FuncCallInputOptions} from './inputs/func-call-input.js';
 export {metaInput} from './inputs/meta-input.js';
 export type {MetaInputOptions} from './inputs/meta-input.js';
 export {fileInput, FileInput} from './inputs/file-input.js';
@@ -107,6 +111,7 @@ export {registerPlatformViewers, registerPlatformComponents, kebab, toSpecProp, 
 export {VIEWER_SAMPLES, platformSamples} from './viewers/samples.js';
 export {funcForm, FuncCallForm} from './funcs/func-form.js';
 export type {FuncFormOptions, FuncCallLike, FuncCallParamLike} from './funcs/func-form.js';
+export {applyHistory, applyHistoryById, materializeInputs} from './funcs/func-history.js';
 export {TableInput} from './inputs/pickers.js';
 export type {InputAction, TableInputOptions} from './inputs/pickers.js';
 export {ColumnInput} from './inputs/column-combo.js';

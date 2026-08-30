@@ -17,6 +17,12 @@ import type {SpecNode} from '../../spec/spec.js';
 import {columnInput} from '../inputs/pickers.js';
 import {functionsBrowser} from '../entities/functions-browser.js';
 import {FunctionInput} from '../inputs/function-input.js';
+import {FuncCallInput} from '../inputs/func-call-input.js';
+import {funcCallHistoryBrowser} from '../entities/func-call-history-browser.js';
+import {FuncCallForm} from '../funcs/func-form.js';
+import type {FuncCallLike} from '../funcs/func-form.js';
+import {applyHistoryById} from '../funcs/func-history.js';
+import {rawEffect} from '../../core/signals.js';
 import {viewerControl} from './viewer-control.js';
 
 const api = globalThis as {grok_Property_Get_PropertySubType?: (dart: unknown) => string | null};
@@ -320,6 +326,129 @@ function functionInputMeta(): ComponentMeta {
   };
 }
 
+const FCH_TAG = 'u2-func-call-history-browser';
+
+/** One function's saved runs (see `FuncCallHistoryBrowser`). Platform-side — it pages off
+ * `grok.dapi.functions.calls` and renders rows through the FuncCall handler. */
+function funcCallHistoryMeta(): ComponentMeta {
+  return {
+    tag: FCH_TAG,
+    label: 'Function call history',
+    category: 'Data',
+    description: 'Saved runs (FuncCalls) of a function, newest first, paged from the server.',
+    usage: 'Bind `functionName` (live) to a FunctionsBrowser\'s `selected` step so the picked ' +
+      'function drives the history; the control\'s own `selected` bind step answers the picked ' +
+      'call\'s id. `change` fires on selection (which also becomes the shell\'s current object), ' +
+      '`activate` on double-click or Enter.',
+    create: (props) => funcCallHistoryBrowser({
+      functionName: props.functionName as LiveOption<string> | undefined,
+      pageSize: lit<number>(props.pageSize),
+      itemHeight: lit<number>(props.itemHeight),
+      setCurrentObject: lit<boolean>(props.setCurrentObject),
+    }),
+    props: [
+      {name: 'functionName', type: 'string', bindable: true,
+        description: 'Name of the function whose runs are listed.'},
+      {name: 'pageSize', type: 'int', description: 'Server page size; 20 by default.'},
+      {name: 'itemHeight', type: 'int'},
+      {name: 'setCurrentObject', type: 'bool',
+        description: 'Selection makes the call the shell\'s current object; default true.'},
+    ],
+    events: ['change', 'activate'],
+    example: {tag: FCH_TAG, name: 'fch', props: {functionName: 'Sin'}},
+  };
+}
+
+const FCI_TAG = 'u2-func-call-input';
+
+/** The saved-run picker (see `FuncCallInput`). Platform-side like the browser it opens. */
+function funcCallInputMeta(): ComponentMeta {
+  return {
+    tag: FCI_TAG,
+    label: 'Function call input',
+    category: 'Inputs',
+    description: 'A saved run of a function, picked from its history in a popup.',
+    usage: 'The value is the FuncCall id. Bind `functionName` to a FunctionsBrowser\'s ' +
+      '`selected` step to scope the popup. A row click, Enter or double-click commits and closes.',
+    create: (props) => {
+      const value = props.value;
+      const bound = value instanceof Signal;
+      return new FuncCallInput({
+        label: props.label as LiveOption<string> | undefined,
+        name: lit<string>(props.name),
+        nullable: lit<boolean>(props.nullable),
+        placeholder: lit<string>(props.placeholder),
+        functionName: props.functionName as LiveOption<string> | undefined,
+        value: bound ? undefined : value as string | undefined,
+        bind: bound ? value as Signal<string> : undefined,
+      });
+    },
+    props: [
+      {name: 'label', type: 'string', bindable: true},
+      {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
+      {name: 'value', type: 'string', bindable: true, twoWay: true,
+        description: 'The saved run\'s id.'},
+      {name: 'functionName', type: 'string', bindable: true,
+        description: 'The function whose runs the popup lists.'},
+      {name: 'nullable', type: 'bool', description: 'Backspace/Delete clears the value.'},
+      {name: 'placeholder', type: 'string', description: 'Shown while nothing is picked.'},
+    ],
+    events: ['input', 'change'],
+    example: {tag: FCI_TAG, props: {label: 'Baseline run', functionName: 'Sin'}},
+  };
+}
+
+const FF_TAG = 'u2-func-form';
+
+/** The func-call editor (see `FuncCallForm`) as a designer-placeable node: `functionName`
+ * prepares a fresh call of the resolved function, `callId` copies a saved run's input values
+ * into the current call. */
+function funcFormMeta(): ComponentMeta {
+  return {
+    tag: FF_TAG,
+    label: 'Function form',
+    category: 'Data',
+    description: 'An input form generated from a function\'s parameters, edited through a FuncCall.',
+    usage: 'A bound `functionName` re-renders the node with a fresh prepared call — a different ' +
+      'function is a different form; bind `callId` to a history browser\'s `selected` step to ' +
+      'copy that run\'s input values into the form.',
+    create: (props) => {
+      // re-render tier on purpose: `set source` rebinds existing fields, never builds new ones,
+      // so a different function needs a rebuilt form — which the re-render bind delivers
+      const name = lit<string>(props.functionName);
+      const func = name ? DG.Func.find({}).find((f) => f.nqName === name || f.name === name) : undefined;
+      const emptyCall: FuncCallLike = {inputParams: {values: () => []}, setParamValue: () => {}};
+      const form = new FuncCallForm(func ? func.prepare() as unknown as FuncCallLike : emptyCall, {
+        showHistory: props.showHistory as LiveOption<boolean> | undefined,
+        showRun: props.showRun as LiveOption<boolean> | undefined,
+        condensed: lit<boolean>(props.condensed),
+      });
+      const cid = props.callId;
+      if (cid instanceof Signal) {
+        form.scope.own(rawEffect(() => {
+          const id = (cid as Signal<string | null | undefined>).value;
+          if (id) // null clears nothing — a browser reset on reselect must not wipe the form
+            void applyHistoryById(form, id);
+        }));
+      }
+      return form;
+    },
+    props: [
+      {name: 'functionName', type: 'string',
+        description: 'Name of the function; the form edits a freshly prepared call of it. ' +
+          'A bound change re-renders the node.'},
+      {name: 'callId', type: 'string', bindable: true,
+        description: 'A saved run\'s id; its input values are copied into the current call.'},
+      {name: 'showHistory', type: 'bool', bindable: true, description: 'Shows the history icon.'},
+      {name: 'showRun', type: 'bool', bindable: true,
+        description: 'Shows the Run button; a run is executed and saved into the server history.'},
+      {name: 'condensed', type: 'bool'},
+    ],
+    events: [],
+    example: {tag: FF_TAG, name: 'ff', props: {functionName: 'Sin', showHistory: true}},
+  };
+}
+
 /** The platform registry: every core tag plus every viewer tag plus the platform-side controls. */
 export function registerPlatformComponents(reg: Registry = globalRegistry): void {
   registerAll(reg);
@@ -328,4 +457,10 @@ export function registerPlatformComponents(reg: Registry = globalRegistry): void
     reg.register(functionsBrowserMeta());
   if (reg.get(FI_TAG) === undefined)
     reg.register(functionInputMeta());
+  if (reg.get(FCH_TAG) === undefined)
+    reg.register(funcCallHistoryMeta());
+  if (reg.get(FCI_TAG) === undefined)
+    reg.register(funcCallInputMeta());
+  if (reg.get(FF_TAG) === undefined)
+    reg.register(funcFormMeta());
 }

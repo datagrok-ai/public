@@ -13,9 +13,14 @@
    categoryGroups plan with header auto-hide, and `missingRequired` as the Run-gate member. */
 import {batch, computed, signal, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
+import {button} from '../../core/elements.js';
+import * as grok from 'datagrok-api/grok';
+import {iconButton} from '../../components/actions/buttons.js';
+import {FuncCallHistoryBrowser} from '../entities/func-call-history-browser.js';
+import {applyHistory} from './func-history.js';
 import type {IProperty} from '../../core/property-like.js';
 import {Input} from '../../core/input-base.js';
-import type {InputOptions} from '../../core/input-base.js';
+import type {InputOptions, LiveOption} from '../../core/input-base.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import {Form} from '../../components/forms/form.js';
 import type {FormLayout} from '../../components/forms/form.js';
@@ -62,6 +67,15 @@ export interface FuncFormOptions {
   /** Per-param editor overrides / options, keyed by param name (same shape as ObjectForm). */
   overrides?: Record<string, FieldOverride>;
   editors?: 'auto' | 'generated';
+  /** Shows the history icon (buttons row): pick a saved run of this call's func in a popup and
+   * copy its input values into the current call. Live. */
+  showHistory?: LiveOption<boolean>;
+  /** Shows a primary Run button (buttons row): executes the current call and saves it on the
+   * server (`grok.dapi.functions.calls`), so it shows up in the run history. Disabled while
+   * required fields are missing or invalid. Live. */
+  showRun?: LiveOption<boolean>;
+  /** After a successful run and save. */
+  onRun?: (call: FuncCallLike) => void;
 }
 
 /** The structural slice funcForm reads off a func-call parameter — DG.FuncCallParam and the
@@ -81,7 +95,9 @@ export interface FuncCallLike {
   inputParams: {values(): Iterable<FuncCallParamLike>};
   setParamValue(name: string, value: any): void;
   /** The categoryGroups door — `func.options['categoryGroups']` is a JSON string (fpe:840-845). */
-  func?: {options?: Record<string, any>};
+  func?: {options?: Record<string, any>, nqName?: string};
+  /** Executes the call (DG.FuncCall.call) — what the Run button awaits when present. */
+  call?(): Promise<any>;
   evalParamChoices?(name: string): Promise<ChoicesResult>;
   evalParamSuggestions?(name: string, text: string): Promise<{items: string[],
     tooltips: Record<string, string>}>;
@@ -197,6 +213,9 @@ export class FuncCallForm extends Form {
   private _plan: {name: string, level: number, el?: HTMLElement, fields: FuncField[]}[] = [];
   private _namedStarts: Promise<void>[] = [];
   private readonly _warnings = new WarnOnce();
+  private _historyPopup: Scope | undefined;
+  private _historyIcon: HTMLElement | undefined;
+  private readonly _running = signal(false);
   /** Bumped on `source` rebinds — orphan flips are not signals (FP-W4-7). */
   private readonly _genSig = signal(0);
 
@@ -234,6 +253,73 @@ export class FuncCallForm extends Form {
     this._armRules();
     this.own(() => this._rules?.dispose());
     this._arm();
+    if (options.showHistory !== undefined)
+      this._buildHistoryIcon(options.showHistory);
+    if (options.showRun !== undefined)
+      this._buildRunButton(options.showRun);
+  }
+
+  private _buildRunButton(show: LiveOption<boolean>): void {
+    const run = this.run(() => button('Run', () => void this._runAndSave(), {primary: true}));
+    run.dataset.u2 = 'ff-run';
+    this.addButtons((row) => row.append(run));
+    if (show instanceof Signal)
+      this.effect(() => run.hidden = (show as ReadonlySignal<boolean>).value === false);
+    else
+      run.hidden = show === false;
+    this.effect(() => {
+      const missing = this.missingRequired.value;
+      const invalid = this.invalidFields.value;
+      run.disabled = missing.length > 0 || invalid.length > 0 || this._running.value;
+      run.title = missing.length > 0 ? `Missing: ${missing.join(', ')}` :
+        invalid.length > 0 ? `Invalid: ${invalid.join(', ')}` : '';
+    });
+  }
+
+  /** Run, then persist through the established API — the server assigns the run number, and the
+   * saved call shows up in the history browsers and the /func/<Name>/runs/<N> routes. */
+  private async _runAndSave(): Promise<void> {
+    if (this._running.peek())
+      return;
+    this._running.value = true;
+    try {
+      if (this._call.call)
+        await this._call.call();
+      await grok.dapi.functions.calls.allPackageVersions().save(this._call as unknown as DG.FuncCall);
+      this._formOptions.onRun?.(this._call);
+    }
+    catch (e: any) {
+      grok.shell.error(String(e?.message ?? e));
+    }
+    finally {
+      this._running.value = false;
+    }
+  }
+
+  private _buildHistoryIcon(show: LiveOption<boolean>): void {
+    const icon = this._historyIcon = this.run(() => iconButton('history',
+      () => this._toggleHistory(), {tooltip: 'Apply a previous run'}));
+    icon.dataset.u2 = 'ff-history-icon';
+    this.addButtons((row) => row.prepend(icon));
+    if (show instanceof Signal)
+      this.effect(() => icon.hidden = (show as ReadonlySignal<boolean>).value === false);
+    else
+      icon.hidden = show === false;
+    this.own(() => this._closeHistory());
+  }
+
+  private _toggleHistory(): void {
+    if (this._historyPopup)
+      return this._closeHistory();
+    const name = this._call.func?.nqName ?? ''; // read at open time — source may have been rebound
+    const scope = this._historyPopup = FuncCallHistoryBrowser.popup(this._historyIcon!,
+      'u2-func-form-history-popup', {functionName: name},
+      (call) => void applyHistory(this, call));
+    scope.own(() => this._historyPopup = undefined);
+  }
+
+  private _closeHistory(): void {
+    this._historyPopup?.dispose();
   }
 
   /** Resolves when the initial async population of the CURRENT source has landed (each dynamic

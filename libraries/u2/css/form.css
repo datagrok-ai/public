@@ -230,3 +230,30 @@
   font-weight: var(--dg-font-weight-regular);
   color: var(--dg-text-color-light);
 }
+
+/* the history icon leads the buttons row, kept left of the right-aligned action buttons */
+.u2-form-buttons > [data-u2='ff-history-icon'] {
+  margin-right: auto;
+}
+
+.u2-form-buttons > [data-u2='ff-history-icon'][hidden] {
+  display: none;
+}
+
+/* the saved-runs popup the history icon opens (hosts a FuncCallHistoryBrowser) */
+.u2-func-form-history-popup {
+  display: flex;
+  box-sizing: border-box;
+  width: 420px;
+  height: 320px;
+  padding: var(--dg-space-s);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  background: var(--dg-bg);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-func-form-history-popup .u2-fch {
+  flex: 1;
+  min-width: 0;
+}

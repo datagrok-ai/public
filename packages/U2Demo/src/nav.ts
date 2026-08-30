@@ -4,6 +4,7 @@ import type {Signal} from '@datagrok-libraries/u2';
 import {convergencePage} from './convergence';
 import {funcConvergencePage} from './func-convergence';
 import {funcsPage} from './funcs';
+import {funcHistoryPage} from './func-history';
 import {basicInputsPage, rangeSliderPage, multiSelectPage, asyncPage} from './pages/inputs';
 import {containersPage, popupsPage} from './pages/containers';
 import {listsPage, treesPage} from './pages/collections';
@@ -147,6 +148,10 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'FuncCall editors: DG.InputForm.forFuncCall and u2 funcForm, side by side',
       build: () => funcConvergencePage(),
       source: {file: `${SRC_ROOT}/func-convergence.ts`, symbol: 'funcConvergencePage'}},
+    {id: 'func-history', label: 'Run history',
+      description: 'FunctionInput over a funcForm with the standard Run button and history icon — runs save to the server and come back from the popup',
+      build: () => funcHistoryPage(),
+      source: {file: `${SRC_ROOT}/func-history.ts`, symbol: 'funcHistoryPage'}},
   ]),
   group('platform', 'Platform', [
     {id: 'dataframes', label: 'Dataframes',

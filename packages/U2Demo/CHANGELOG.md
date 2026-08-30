@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20753: Added the Run history sub-demo — a `FunctionInput` over a `funcForm` with the standard `showRun` (Run executes the call and saves it into the server history) and `showHistory` (the popup lists saved runs via FuncCallMeta; a click copies that run's values back into the form) properties
+
 * GROK-20753: Added the Overview front door under a new Start area — what u2 is, what each area covers and three "start here" pointers; it is the default leaf when nothing is remembered and the URL carries no path (a remembered leaf and an explicit deep link still win)
 * GROK-20753: Moved the value editors out of Display into Inputs — Range slider (`RangeSlider`) and Multi-select (`MultiSelect`, `ButtonGroup`) are their own leaves, where a newcomer looks for them; Display keeps Cards, Feedback, Tables, Sections & wizard and Message input
 * GROK-20753: Fixed the Wizard demo stealing the MultiSelect demo — the wizard step builds a control of its own, so BACK no longer leaves a bare heading behind

@@ -341,6 +341,15 @@
   gap: var(--dg-space-m);
 }
 
+.u2demo-func-history {
+  max-width: 640px;
+  gap: var(--dg-space-l);
+}
+
+.u2demo-func-history-form {
+  gap: var(--dg-space-m);
+}
+
 /* the old-vs-new A/B: two equal columns over one shared call (u2-div-h centers by default);
    in a narrow host they stack instead of shrinking into a sliver under the context panel —
    which also gives the u2 form's auto-tall room to show itself */

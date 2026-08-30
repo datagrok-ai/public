@@ -41,7 +41,7 @@ export class StringUtils {
 
 export const TYPE = {
   STRING: 'string', INT: 'int', FLOAT: 'double', NUM: 'num', BOOL: 'bool', DATE_TIME: 'datetime',
-  BIG_INT: 'bigint', QNUM: 'qnum', OBJECT: 'object', FILE: 'file',
+  BIG_INT: 'bigint', QNUM: 'qnum', OBJECT: 'object', FILE: 'file', DATA_FRAME: 'dataframe',
 };
 
 /** What the column renderer the dg pickers share reads at import (column-renderer.ts:13). */

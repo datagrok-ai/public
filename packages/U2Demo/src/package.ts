@@ -25,6 +25,8 @@ import '@datagrok-libraries/u2/css/functions-browser.css';
 import '@datagrok-libraries/u2/css/grid.css';
 import '@datagrok-libraries/u2/css/icon-input.css';
 import '@datagrok-libraries/u2/css/function-input.css';
+import '@datagrok-libraries/u2/css/func-call-history-browser.css';
+import '@datagrok-libraries/u2/css/func-call-input.css';
 import '@datagrok-libraries/u2/css/message-input.css';
 import '@datagrok-libraries/u2/css/file.css';
 import '@datagrok-libraries/u2/css/progress.css';

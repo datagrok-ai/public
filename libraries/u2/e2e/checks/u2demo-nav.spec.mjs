@@ -1,8 +1,9 @@
 /* The U2Demo nav shell (packages/U2Demo/src/demo.ts + nav.ts): the left VirtualTree over the
    2-level registry, per-page scope disposal on navigation, the shell status bar text and the
-   demo ribbon commands. The headline count is 7 groups / 26 leaves — the ask-A table, the Display
-   group the UX audit's M8 asked for, the Start group holding the Overview front door, and the two
-   value editors (Range slider, Multi-select) the acceptance pass moved out of Display. */
+   demo ribbon commands. The headline count is 7 groups / 27 leaves — the ask-A table, the Display
+   group the UX audit's M8 asked for, the Start group holding the Overview front door, the two
+   value editors (Range slider, Multi-select) the acceptance pass moved out of Display, and the
+   Run history leaf (FuncCallHistoryBrowser). */
 import {consoleErrors, ok, pageErrors, shot} from '../local.mjs';
 import {openDemoPage} from '../lib.mjs';
 
@@ -18,7 +19,7 @@ const LABELS = [
   'Containers', 'Layout', 'Popups',
   'Collections', 'Lists', 'Trees',
   'Display', 'Cards', 'Feedback', 'Tables', 'Sections & wizard', 'Message input',
-  'Forms', 'Form', 'Property grid', 'Object form', 'Functions', 'FuncCalls',
+  'Forms', 'Form', 'Property grid', 'Object form', 'Functions', 'FuncCalls', 'Run history',
   'Platform', 'Dataframes', 'Files', 'Entities', 'Spaces', 'Molecules', 'Bridge',
 ];
 
@@ -69,7 +70,7 @@ async function checkTree(page) {
   }, NAV);
   const wide = counts.labels.filter((_, i) => counts.widths[i] + TWISTIE > PANE);
   await shot(page, 'u2demo-nav-1-tree');
-  ok('u2demo-nav/1a the tree shows the 7 expanded groups and their 26 leaves',
+  ok('u2demo-nav/1a the tree shows the 7 expanded groups and their 27 leaves',
     counts.groups === 7 && counts.claimed === LABELS.length && counts.total === LABELS.length,
     `groups=${counts.groups} rows=${counts.total} claimed=${counts.claimed} ` +
     `first=${JSON.stringify(counts.labels.slice(0, 6))}`);

@@ -189,10 +189,21 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   const reg = new Registry();
   registerPlatformComponents(reg);
   const core = reg.metas().filter((m) => !m.tag.startsWith('u2-viewer-'));
-  assert.equal(core.length, 37);
-  assert.equal(reg.metas().length, 42);
+  assert.equal(core.length, 40);
+  assert.equal(reg.metas().length, 45);
   registerPlatformComponents(reg);
-  assert.equal(reg.metas().length, 42);
+  assert.equal(reg.metas().length, 45);
+
+  const fch = reg.get('u2-func-call-history-browser');
+  assert.equal(fch.props.find((p) => p.name === 'functionName').bindable, true);
+  const fci = reg.get('u2-func-call-input');
+  assert.equal(fci.props.find((p) => p.name === 'value').twoWay, true);
+  assert.equal(fci.props.find((p) => p.name === 'functionName').bindable, true);
+  const ff = reg.get('u2-func-form');
+  assert.notEqual(ff.props.find((p) => p.name === 'functionName').bindable, true, 're-render tier');
+  assert.equal(ff.props.find((p) => p.name === 'callId').bindable, true);
+  assert.equal(ff.props.find((p) => p.name === 'showHistory').bindable, true);
+  assert.equal(ff.props.find((p) => p.name === 'showRun').bindable, true);
 
   registerAll();
   assert.ok(globalRegistry.metas().every((m) => !m.tag.startsWith('u2-viewer-')), 'the manifest stays platform-free');
