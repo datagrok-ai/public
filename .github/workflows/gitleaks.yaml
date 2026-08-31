@@ -1,9 +1,16 @@
 name: "Secret scan (gitleaks)"
 
 # Server-side secret scanning — the backstop for the gitleaks pre-commit hook,
-# which developers can bypass. Scans the commits in each push / pull request
-# against the ruleset + allowlist in .gitleaks.toml. Defense-in-depth with
-# GitHub's native push protection (enable it in repo Settings → Code security).
+# which developers can bypass. Scans the working TREE (`gitleaks dir`, not
+# history) with the ruleset + allowlist in .gitleaks.toml, so it never trips
+# over secrets already scrubbed from HEAD; anything still on disk is baselined
+# in .gitleaksignore. Defense-in-depth with GitHub's native push protection
+# (enable it in repo Settings → Code security).
+#
+# Runs the gitleaks CLI image directly rather than gitleaks/gitleaks-action:
+# the action requires a paid GITLEAKS_LICENSE for org-owned repos (public or
+# not) and fails closed without one. The CLI is free. Same image and version
+# pin as the reddata Secret-Scan job (infra/jenkins/secret-scan.groovy).
 
 on:
   push:
@@ -24,11 +31,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+
+      # Scanned as `dir .` from the mount root, not `dir /scan`: gitleaks derives
+      # fingerprints from the path it is given, so a relative scan keeps them
+      # repo-relative. That makes .gitleaksignore entries match here and under a
+      # plain local `gitleaks dir .`, instead of being pinned to the mount point.
+      # gitleaks auto-loads .gitleaks.toml and .gitleaksignore from the scan root.
       - name: Scan for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # gitleaks auto-loads .gitleaks.toml from the repo root.
-          # datagrok-ai/public is a public repo, so no GITLEAKS_LICENSE is needed.
+        run: |
+          docker run --rm -w /scan -v "${GITHUB_WORKSPACE}:/scan:ro" -v "${RUNNER_TEMP}:/out" \
+            ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            dir . --redact --no-banner \
+            --report-format sarif --report-path /out/gitleaks-report.sarif --exit-code 1
+
+      - name: Archive report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: ${{ runner.temp }}/gitleaks-report.sarif
+          if-no-files-found: ignore
