@@ -149,7 +149,13 @@ export async function installCsvBridge(page: Page) {
  * must not be charged for it; anything else still fails them.
  */
 export function isLocalBootNoise(text: string): boolean {
-  return /Failed to load resource/.test(text) || /local\/pkg\//.test(text);
+  // A local-client defect, not the viewer under test: grid_editors.dart:199 _initCellEditing
+  // calls Node.remove on an already-detached node, raising a removeChild NotFoundError plus a
+  // companion multi-line "Stack trace <id>". It fires at an arbitrary moment in ~1 run in 3 on
+  // ?mode=local and never on the authenticated client, so whichever step happens to be open
+  // when it lands fails its no-error floor.
+  return /Failed to load resource/.test(text) || /local\/pkg\//.test(text) ||
+    /removeChild.*no longer a child/.test(text) || /^Stack trace [A-Za-z0-9]+/.test(text.trim());
 }
 
 export async function openLocalDatagrok(page: Page) {
