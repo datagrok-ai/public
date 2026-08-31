@@ -886,6 +886,68 @@ export async function waitForPropertyValue(
     {timeout: timeoutMs, intervals: [100, 200, 300, 500]}).toBe(expected);
 }
 
+/**
+ * Hashes the pixels of individual trellis CELL canvases, addressed by their index in the
+ * `.d4-trellis-plot-cell` list. Returns one hash per requested index, `null` when that cell has
+ * no canvas — the null is load-bearing: a caller diffs two frames and a vanished canvas must not
+ * satisfy an inequality with no repaint, so both endpoints are null-guarded at the call site.
+ *
+ * This is NOT snapshotCanvasColors/diffCanvasColors: those key on the WHOLE viewer's single
+ * canvas by viewer type, and the trellis assertions here need cell A vs cell B in DIFFERENT
+ * columns of one viewer — a per-cell address the viewer-type helpers cannot express. The inline
+ * copy of this loop appeared at eleven sites in one section, each re-deriving the FNV walk and
+ * the try/catch; consolidating it here keeps the null contract and the hash identical everywhere.
+ *
+ * `rootIndex` selects among multiple trellis viewers on the view (Pick Up / Apply has two).
+ * Failure modes: none thrown — an absent viewer or cell yields nulls, which the caller asserts on.
+ * Cleanup: N/A (read-only).
+ */
+export async function trellisCellHashes(
+  page: Page, indices: number[], opts: {rootIndex?: number} = {},
+): Promise<(number | null)[]> {
+  return page.evaluate(({idxs, rootIdx}) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx] as HTMLElement | undefined;
+    const hash = (i: number) => {
+      const cv = root?.querySelectorAll('.d4-trellis-plot-cell')[i]?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!cv) return null;
+      try {
+        const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+        let h = 0;
+        for (let k = 0; k < img.length; k += 4)
+          h = (h * 31 + ((img[k] << 16) | (img[k + 1] << 8) | img[k + 2])) % 2147483647;
+        return h;
+      } catch { return null; }
+    };
+    return idxs.map(hash);
+  }, {idxs: indices, rootIdx: opts.rootIndex ?? 0});
+}
+
+/**
+ * Hashes EVERY cell canvas of one trellis viewer (by root index), in cell order. The leak check
+ * in Pick Up / Apply compares whole-viewer frames rather than two nominated cells, so it needs
+ * the full vector; same null-per-cell contract as trellisCellHashes.
+ */
+export async function trellisAllCellHashes(
+  page: Page, opts: {rootIndex?: number} = {},
+): Promise<(number | null)[]> {
+  return page.evaluate((rootIdx) => {
+    const root = document.querySelectorAll('[name="viewer-Trellis-plot"]')[rootIdx] as HTMLElement | undefined;
+    const hs: (number | null)[] = [];
+    for (const cell of Array.from(root?.querySelectorAll('.d4-trellis-plot-cell') ?? [])) {
+      const cv = cell.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!cv) { hs.push(null); continue; }
+      try {
+        const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+        let h = 0;
+        for (let i = 0; i < img.length; i += 4)
+          h = (h * 31 + ((img[i] << 16) | (img[i + 1] << 8) | img[i + 2])) % 2147483647;
+        hs.push(h);
+      } catch { hs.push(null); }
+    }
+    return hs;
+  }, opts.rootIndex ?? 0);
+}
+
 export interface ChangeColorOptions {
 
   viewerType: string;
