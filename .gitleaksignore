@@ -26,6 +26,11 @@
 # the script changed to read it from the environment.
 packages/RevvitySignalsLink/scripts/revvity_etl.py:generic-api-key:14
 
+# --- OAuth client ID (public by design) ---
+# Client IDs are sent in the authorization URL and are not secrets - the same
+# reasoning that puts connectors/oauth.dart in the .gitleaks.toml allowlist.
+packages/Grokky/dockerfiles/claude-runtime/src/broker/broker.ts:generic-api-key:11
+
 # --- Algolia search-only key ---
 docusaurus/docusaurus-debug.config.js:generic-api-key:196
 docusaurus/docusaurus-wiki-debug.config.js:generic-api-key:184
