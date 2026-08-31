@@ -311,7 +311,10 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       editor?.detach();
       editor = null;
       ui.empty(elementsDiv);
-      if (style !== PieChartStyle.Vlaaivis) {
+      const isVlaaivis = style === PieChartStyle.Vlaaivis;
+      for (const input of scalingInputs)
+        input.visible = !isVlaaivis;
+      if (!isVlaaivis) {
         if (settings.sectors)
           stashedSectors = settings.sectors;
         delete settings.sectors;
@@ -325,8 +328,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       gc.grid.invalidate();
     };
 
-    const baseInputs = createBaseInputs(gc, settings);
-    const [columnsInput] = baseInputs;
+    const [columnsInput, ...scalingInputs] = createBaseInputs(gc, settings);
     columnsInput.onChanged.subscribe(() => {
       if (editor)
         editor.refresh();
@@ -334,13 +336,14 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     const style = settings.style ?? PieChartStyle.Radius;
     const inputs = ui.inputs([
-      ...baseInputs,
       ui.input.choice('Style', {value: style, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (value) => {
           settings.style = value;
           showEditor(value);
         }
       }),
+      columnsInput,
+      ...scalingInputs,
     ]);
     if (style === PieChartStyle.Vlaaivis)
       showEditor(style);

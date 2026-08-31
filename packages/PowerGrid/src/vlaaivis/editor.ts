@@ -36,8 +36,12 @@ export class VlaaiVisEditor {
   constructor(settings: PieChartSettings, gc: DG.GridColumn) {
     this.gc = gc;
     this.model = new VlaaiVisModel(settings, gc.grid.dataFrame);
+    if (this.model.sectors.length === 0)
+      this.model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
     this.boundsInputs = this.buildBoundsInputs();
-    this.root.append(this.body);
+    this.root.append(
+      ui.divH([ui.iconFA('info-circle'), ui.divText(LABELS.TIP)], 'power-grid-vlaaivis-tip'),
+      this.body);
     this.subs.push(this.model.onChanged.subscribe((change) => this.onModelChanged(change)));
     this.render();
   }
@@ -80,11 +84,6 @@ export class VlaaiVisEditor {
     this.panes.clear();
     ui.empty(this.body);
 
-    if (this.model.sectors.length === 0) {
-      this.body.append(this.buildEmptyState());
-      return;
-    }
-
     const accordion = ui.accordion();
     for (const sector of this.model.sectors)
       this.addDropPane(accordion, sector, () => ui.divV(sector.subsectors.map((p) => this.buildRow(p.name))));
@@ -92,7 +91,7 @@ export class VlaaiVisEditor {
     const unassigned = this.model.unassigned;
     this.addDropPane(accordion, null, () => unassigned.length > 0 ?
       ui.divV(unassigned.map((name) => this.makeDraggable(ui.divText(name), name))) :
-      ui.divText(LABELS.DROP_HINT, 'power-grid-vlaaivis-hint'));
+      ui.divText(LABELS.NO_UNASSIGNED, 'power-grid-vlaaivis-empty'));
 
     this.body.append(accordion.root,
       ui.divH([ui.icons.add(() => this.addSector(), TOOLTIPS.NEW_SECTOR)], 'power-grid-vlaaivis-add'));
@@ -107,19 +106,6 @@ export class VlaaiVisEditor {
     for (const row of this.rows)
       row.sub.unsubscribe();
     this.rows = [];
-  }
-
-  private buildEmptyState(): HTMLElement {
-    return ui.divV([
-      ui.iconFA('chart-pie'),
-      ui.h3('No sectors yet'),
-      ui.p('A sector is a colored group of columns. The length of each wedge is that column\'s desirability ' +
-        'score, and the sector\'s share of the circle is the sum of its weights.'),
-      ui.divH([
-        ui.bigButton(LABELS.AUTO_GROUP, () => this.autoGroup(), TOOLTIPS.AUTO_GROUP),
-        ui.button('New sector', () => this.addSector()),
-      ], 'power-grid-vlaaivis-actions'),
-    ], 'statistics-mpo-empty-state');
   }
 
   private addDropPane(accordion: DG.Accordion, sector: Sector | null, content: () => HTMLElement): void {
@@ -207,10 +193,6 @@ export class VlaaiVisEditor {
       },
       dropSuggestion: sector ? `Add to ${sector.name}` : 'Remove from sector',
     });
-  }
-
-  private autoGroup(): void {
-    this.model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
   }
 
   private addSector(): void {

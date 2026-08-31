@@ -6,17 +6,17 @@ export const DEFAULTS = {
   WEIGHT: 1,
   LOWER_BOUND: 0.8,
   UPPER_BOUND: 0.9,
-  /// Auto-grouping takes this many columns; the rest stay unassigned for the user to place.
+  /// Columns put into their own sector when the editor opens on an unconfigured chart.
   AUTO_GROUP_COLUMNS: 3,
   PLOT_HEIGHT: 64,
 };
 
 export const LABELS = {
   UNASSIGNED: 'Unassigned columns',
-  DROP_HINT: 'Drag a property here to take it out of its sector',
+  TIP: 'Drag a column name onto a sector to move it. Unassigned columns aren\'t drawn.',
+  NO_UNASSIGNED: 'Every column is in a sector. Drag one here to leave it out.',
   LOWER_BOUND: 'Target min',
   UPPER_BOUND: 'Target max',
-  AUTO_GROUP: 'Auto-group',
 };
 
 export const TOOLTIPS = {
@@ -25,7 +25,6 @@ export const TOOLTIPS = {
   LOWER_BOUND: 'Inner edge of the shaded ring drawn behind the wedges.',
   UPPER_BOUND: 'Outer edge of the shaded ring. Wedges reaching past it are meeting the target.',
   NEW_SECTOR: 'New sector',
-  AUTO_GROUP: `Puts each of the first ${DEFAULTS.AUTO_GROUP_COLUMNS} columns into its own sector`,
   UNASSIGNED: 'Columns not in any sector aren\'t drawn. Drag one into a sector to include it.',
   DRAG: 'Drag into a sector to move it',
   COLOR: 'Sector color',
