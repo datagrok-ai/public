@@ -43,6 +43,7 @@ interface PwTestResult {
 }
 
 interface PwTest {
+  status?: 'expected' | 'unexpected' | 'flaky' | 'skipped';
   results?: PwTestResult[];
 }
 
@@ -101,8 +102,12 @@ function flattenSuites(
           if (!result)
             continue;
           const status = result.status;
-          const skipped = status === 'skipped';
-          const success = status === 'passed';
+          const skipped = t.status === 'skipped' || status === 'skipped';
+          // `t.status` is Playwright's verdict on the test; `result.status` is only what the last
+          // attempt did. The two differ for a test the spec declared as expected to fail
+          // (`test.fail()`), which Playwright counts as a pass — reading the attempt reported
+          // every one of those as a CI failure.
+          const success = !skipped && (t.status ? t.status !== 'unexpected' : status === 'passed');
           var errMsg = '';
           if (!success && !skipped && result.errors && result.errors.length > 0)
             errMsg = result.errors.map((e) => e.message || e.stack || '').filter((s) => s.length > 0).join('\n');
@@ -124,7 +129,7 @@ function flattenSuites(
             owner: owner,
             package: pkgName,
             widgetsDifference: '',
-            flaking: false,
+            flaking: t.status === 'flaky',
           });
         }
       }

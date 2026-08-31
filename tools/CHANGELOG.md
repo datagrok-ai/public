@@ -1,5 +1,26 @@
 # Datagrok-tools changelog
 
+## 6.5.8 (2026-08-31)
+
+* `grok test` — fixed the Playwright CSV counting known-failing tests as CI failures.
+
+  Playwright lets a spec declare "this test is expected to fail" (`test.fail()`) — the normal way to
+  track an open product bug without leaving the suite red. Playwright runs such a test, sees it fail
+  as declared, and counts it as a pass; if the product gets fixed the test stops failing, no longer
+  matches the declaration, and Playwright turns it red on its own.
+
+  That means a test has two different statuses: what happened on one attempt (`passed`/`failed`/…)
+  and Playwright's verdict on the test (`expected`/`unexpected`/`flaky`/`skipped`). We were reading
+  the attempt, so every `test.fail()` test — whose attempt is of course `failed` — was written into
+  the CSV as a failure. Build-Deploy #1297 reported Bio as 4 failures where Playwright reported 1,
+  which is why that suite has been permanently UNSTABLE, and why using `test.fail()` at all made a
+  suite look broken.
+
+  The CSV now takes the verdict. Checked against all 12 package suites in that build: each matches
+  Playwright's own summary exactly, and Bio is the only one that changes, being the only suite using
+  the feature. A test that failed and then passed on retry still counts as passing, but is now marked
+  `flaking` instead of being reported as clean.
+
 ## 6.5.7 (2026-08-28)
 
 * GROK-20789: `grok s packages` — full package lifecycle from the CLI: `install <name>... [--version <v>]` (server pulls released versions from the configured package repository / npm, `latest` by default), `uninstall`, `update <name>... | --all` (preserves `latest` auto-update tracking; pins pinned packages to the concrete registry-latest), `outdated`, `versions`, `set-version`, and `share`. Multi-package install/update runs sequentially with a per-package status table; a nonexistent package or version is a per-package `error` and exit code 1. Also fixed the generic `packages delete`, which was hitting a nonexistent `/public/v1` endpoint.
