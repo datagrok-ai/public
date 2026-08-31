@@ -62,7 +62,7 @@ block; no TS wiring is needed unless TS code calls it directly. Group convention
 |---|---|
 | `cartridge.sql` | RDKit-cartridge queries: `patternSimilaritySearch`, `patternSimilaritySearchWithThreshold` (uses `--meta.batchMode: true` to set `rdkit.tanimoto_threshold` before the SELECT), `patternSubstructureSearch`, plus the simple `ChemblNumberOfStructures`, `ChemblMolregNoBySmiles`, `StructuresByOrganism`. |
 | `converters.sql` | All ID-conversion queries (ChEMBL ↔ SMILES ↔ InChI ↔ InChIKey ↔ molregno ↔ name). Two are registered as type converters via `--meta.role: converter` + `--meta.inputRegexp`. |
-| `queries.sql` | Ad-hoc browse/search queries shown to end users via the friendly-name menu (`Browse | …`, `Search | …`, `Misc | …`). Includes the `MolregnoInfo` / `ChemblInfo` info-panel widgets (registered by `--tags: panel, widget`). |
+| `queries.sql` | Ad-hoc browse/search queries shown to end users via the friendly-name menu (`Browse \| …`, `Search \| …`, `Misc \| …`). Includes the `MolregnoInfo` / `ChemblInfo` info-panel widgets (registered by `--tags: panel, widget`). |
 | `browser.sql` | Internal `_cb…`-prefixed queries that back the ChEMBL browser UI. |
 | `suggestions.sql` | Autocomplete sources — referenced from other queries as `{suggestions: Chembl:organisms}`, `{choices: Query("…")}`, etc. |
 | `cartridge.sql` extras | — |
