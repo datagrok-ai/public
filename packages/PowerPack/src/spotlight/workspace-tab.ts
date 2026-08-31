@@ -96,6 +96,8 @@ export class WorkspaceTab {
   private activeSpaceSub?: rxjs.Subscription;
   /** Project currently opened in preview mode for the bottom preview — closed when we move on / open it. */
   private previewedProject?: DG.Project;
+  /** In-flight project preview — a project can only be closed once its preview has finished opening it. */
+  private previewOpening?: Promise<void>;
 
   constructor(spotlight: SpotlightWidget) {
     this.spotlight = spotlight;
@@ -256,6 +258,17 @@ export class WorkspaceTab {
     return ui.divV([header, rows], 'pp-workspace-section');
   }
 
+  /** Makes a row select on click and open on double-click. Our dblclick listener has to be registered
+   * before `ui.bind`, which installs the platform's default double-click action on the same element. */
+  private bindRow(entity: DG.Entity, row: HTMLElement): void {
+    row.addEventListener('click', () => this.selectEntity(entity, row));
+    row.addEventListener('dblclick', (e) => {
+      e.stopImmediatePropagation();
+      this.open(entity);
+    });
+    ui.bind(entity, row, {contextMenu: true});
+  }
+
   private renderItemRow(entity: DG.Entity, group?: DG.Group): HTMLElement {
     const icon = entityIcon(entity);
     icon.classList.add('pp-workspace-item-icon');
@@ -263,10 +276,7 @@ export class WorkspaceTab {
     const row = ui.divH([icon, label], 'pp-workspace-item');
     row.dataset.entityId = entity.id;
     ui.tooltip.bind(row, entity.friendlyName);
-    ui.bind(entity, row, {contextMenu: true});
-
-    row.addEventListener('click', () => this.selectEntity(entity, row));
-    row.addEventListener('dblclick', () => this.open(entity));
+    this.bindRow(entity, row);
 
     if (group) {
       const removeBtn = ui.icons.close(async () => {
@@ -299,10 +309,7 @@ export class WorkspaceTab {
       const label = ui.div([entity.friendlyName], 'pp-workspace-item-label');
       const row = ui.divH([icon, label], 'pp-workspace-item pp-workspace-item-recent');
       row.dataset.entityId = entity.id;
-
-      row.addEventListener('click', () => this.selectEntity(entity, row));
-      row.addEventListener('dblclick', () => this.open(entity));
-      ui.bind(entity, row, {contextMenu: true});
+      this.bindRow(entity, row);
 
       const time = times[i];
       if (time) {
@@ -331,6 +338,7 @@ export class WorkspaceTab {
     this.selectedEntity = undefined;
     this.activeFuncCall = undefined;
     this.activePreviewToken = undefined;
+    this.previewOpening = undefined;
     this.statusEl = undefined;
     this.detachSpaceView();
     this.closePreviewedProject();
@@ -370,7 +378,8 @@ export class WorkspaceTab {
   }
 
   /** Opens an entity, first dropping any preview-opened project so a project opens fresh with all its views. */
-  private open(entity: DG.Entity): void {
+  private async open(entity: DG.Entity): Promise<void> {
+    await this.previewOpening;
     this.closePreviewedProject();
     openEntity(entity);
   }
@@ -401,6 +410,7 @@ export class WorkspaceTab {
     this.editorPane.innerHTML = '';
     this.statusEl = undefined;
     this.activePreviewToken = undefined;
+    this.previewOpening = undefined;
     this.detachSpaceView();
     this.closePreviewedProject();
     clearWorkspacePreview();
@@ -487,7 +497,7 @@ export class WorkspaceTab {
   private renderProjectEditor(project: DG.Project): void {
     if (project.description)
       this.editorPane.appendChild(ui.divText(project.description, 'pp-workspace-app-description'));
-    this.renderProjectPreview(project);
+    this.previewOpening = this.renderProjectPreview(project);
   }
 
   private async renderProjectPreview(project: DG.Project): Promise<void> {
@@ -513,7 +523,7 @@ export class WorkspaceTab {
       const opened = found ?? project;
       this.previewedProject = opened;
 
-      const onOpen = (): void => this.open(opened);
+      const onOpen = (): void => { this.open(opened); };
       const root = widget?.root;
       if (root instanceof HTMLElement)
         showWorkspacePreview(ui.div([root], 'pp-workspace-preview-project'), project.friendlyName, onOpen);

@@ -1,0 +1,38 @@
+/* Entity chip skin. Tokens only — css/tokens.css must be loaded alongside. */
+.u2-chip {
+  display: inline-flex;
+  gap: var(--dg-space-xs);
+  align-items: center;
+  max-width: 100%;
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-s);
+  overflow: hidden;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  cursor: pointer;
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-chip:hover {
+  background: var(--dg-hover);
+}
+
+/* the card CONTENT is the platform handler's own markup with its own styling; the host only
+   frames it */
+.u2-entity-card {
+  display: inline-block;
+  cursor: pointer;
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  overflow: hidden;
+}
+
+.u2-entity-card:hover {
+  border-color: var(--dg-accent);
+}

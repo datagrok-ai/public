@@ -4,7 +4,7 @@ import type * as uiType from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {DartWidget, Menu, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
+import {DartWidget, Menu, TabControl, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
 import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func, DataQuery} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options} from '../utils';
@@ -176,16 +176,28 @@ export class ViewBase extends Widget {
   get path(): string { return api.grok_View_Get_Path(this.dart); }
   set path(s: string) { api.grok_View_Set_Path(this.dart, s); }
 
-  /** Functions applicable to this view. Override in subclasses to return the view's
-   * registered package functions — each typically takes the generic `view` argument
-   * and reaches this instance through `view.jsView`. The Dart JsViewHost forwards its
-   * own `getFunctions()` here, so callers holding `grok.shell.v` see these functions. */
-  getFunctions(): Func[] { return []; }
+  /** Whether the view is pinned. Pinned views are not closed when a new view is opened. */
+  get isPinned(): boolean { return api.grok_View_Get_IsPinned(this.dart); }
+  set isPinned(value: boolean) { api.grok_View_Set_IsPinned(this.dart, value); }
 
-  /** Handles URL path. Override in subclasses. */
+  /** Pins the view. Pinned views are not closed when a new view is opened. */
+  pin(): void { this.isPinned = true; }
+
+  /** Handles URL path. Override in subclasses.
+   *
+   * [_urlPath] is the path WITHOUT the query string (see {@link acceptsPath});
+   * the router has already updated the address bar, so read the parameters from
+   * `window.location.search`.
+   *
+   * A handler may route elsewhere — set `grok.shell.v` to another view and the
+   * router leaves it alone (it only falls back to this view when the handler
+   * changed nothing). */
   handlePath(_urlPath: string): void { }
 
   /** Checks if URL path is acceptable. Override in subclasses.
+   *
+   * [_urlPath] is the path WITHOUT the query string: a view claims a URL by its
+   * path, and decides what the parameters mean in {@link handlePath}.
    * @returns {boolean} "true" if path is acceptable, "false" otherwise. */
   acceptsPath(_urlPath: string): boolean { return false; }
 
@@ -316,12 +328,6 @@ export class View extends ViewBase {
   get helpUrl(): string | null { return api.grok_View_Get_HelpUrl(this.dart); }
   set helpUrl(url: string | null) { api.grok_View_Set_HelpUrl(this.dart, url); }
 
-  /** Whether the view is pinned. Pinned views are not closed when a new view is opened. */
-  get isPinned(): boolean { return api.grok_View_Get_IsPinned(this.dart); }
-  set isPinned(value: boolean) { api.grok_View_Set_IsPinned(this.dart, value); }
-
-  /** Pins the view. Pinned views are not closed when a new view is opened. */
-  pin(): void { this.isPinned = true; }
 
   /**
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
@@ -709,6 +715,10 @@ export class ScriptView extends View {
   public set code(s: string) {
     api.grok_ScriptView_Set_Code(this.dart, s);
   }
+
+  public get tabs(): TabControl {
+    return new TabControl(api.grok_ScriptView_Get_TabControl(this.dart));
+  }
 }
 
 export class DataQueryView extends View {
@@ -718,6 +728,10 @@ export class DataQueryView extends View {
 
   static create(query: DataQuery): DataQueryView {
     return new DataQueryView(api.grok_DataQueryView(query.dart));
+  }
+
+  public get tabs(): TabControl {
+    return new TabControl(api.grok_DataQueryView_Get_TabControl(this.dart));
   }
 }
 

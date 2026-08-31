@@ -12,7 +12,6 @@ public class SQLArrayTypeConverter implements Converter<String> {
 
     @Override
     public String convert(Object value) {
-        LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         Array sqlArray = ((Array) value);
         try {
             Object[] array = (Object[]) sqlArray.getArray();

@@ -5,8 +5,11 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {queries} from '../package-api';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
-import {fetchReleaseTests, computeTestAlerts, stressRegression, defaultNextVersion, ReleaseContext, STALE_DAYS} from './data';
+import {fetchReleaseTests, computeTestAlerts, fetchReleaseBenchmarks, computeBenchmarkAlerts, stressRegression,
+  defaultNextVersion, ReleaseContext, STALE_DAYS, BENCH_SLOW_PCT} from './data';
 import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
+import {combineLatest} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
 const BAND_CLASS: Record<Band, string> = {
@@ -24,7 +27,9 @@ export class ReleaseOverviewView extends UaView {
   constructor(private ctx: ReleaseContext, uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Overview';
-    this.ctx.env.subscribe(() => { if (this.initialized) this.refresh(); });
+    // Switching instance re-points the branch too, so debounce the pair into one re-fetch.
+    combineLatest([this.ctx.env, this.ctx.branch]).pipe(debounceTime(0))
+      .subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 
@@ -42,6 +47,7 @@ export class ReleaseOverviewView extends UaView {
       this.makeCard('Tests', 'pass rate', 'Tests'),
       this.makeCard('Failing', 'unmuted', 'Tests'),
       this.makeCard('Unstable', 'flaky tests', 'Tests'),
+      this.makeCard('Benchmarks', 'slower than baseline', 'Benchmarks'),
       this.makeCard('Stress', 'latest build', 'Stress'),
       this.makeCard('Vulnerabilities', 'critical + high', 'Vulnerabilities'),
       this.makeCard('Tickets', 'unresolved', 'Tickets'),
@@ -75,8 +81,9 @@ export class ReleaseOverviewView extends UaView {
     this.bannerHost.append(ui.loader());
     const alerts: AlertNode[] = [];
 
-    const [testsR, stressR, vexR, ticketsR] = await Promise.allSettled([
-      fetchReleaseTests(this.ctx.env.value, 5),
+    const [testsR, benchR, stressR, vexR, ticketsR] = await Promise.allSettled([
+      fetchReleaseTests(this.ctx.env.value, 5, this.ctx.branch.value),
+      fetchReleaseBenchmarks(this.ctx.env.value, 5, this.ctx.branch.value),
       queries.stressTestsSummary(20),
       fetchVexIndex(),
       fetchReleaseTickets(defaultNextVersion()),
@@ -99,6 +106,22 @@ export class ReleaseOverviewView extends UaView {
         alerts.push({label: `${a.stale} tests not run for ${STALE_DAYS}+ days`, band: 'orange', tab: 'Tests', groups: a.staleByPkg});
     } else {
       this.setCard('Tests', 'n/a', 'info');
+    }
+
+    // Benchmarks. A slower benchmark is not release-blocking on its own (orange, not red), but a
+    // benchmark that outright FAILED blew its own threshold inside the suite — that is a red.
+    if (benchR.status === 'fulfilled' && benchR.value) {
+      const b = computeBenchmarkAlerts(benchR.value);
+      this.setCard('Benchmarks', b.slower === 0 ? 'OK' : `${b.slower}`,
+        b.failed > 0 ? 'red' : b.slower === 0 ? 'green' : 'orange',
+        b.slower === 0 ? `${b.total} within ${benchR.value.slowPct}%` : `worst +${b.worstPct}% of ${b.total}`);
+      if (b.slower > 0)
+        alerts.push({label: `${b.slower} benchmarks slower than expected (>${benchR.value.slowPct}% over baseline)`,
+          band: 'orange', tab: 'Benchmarks', groups: b.slowerByPkg});
+      if (b.failed > 0)
+        alerts.push({label: `${b.failed} benchmarks failed`, band: 'red', tab: 'Benchmarks', groups: b.failingByPkg});
+    } else {
+      this.setCard('Benchmarks', 'n/a', 'info', `no runs within ${BENCH_SLOW_PCT}% baseline yet`);
     }
 
     if (stressR.status === 'fulfilled') {

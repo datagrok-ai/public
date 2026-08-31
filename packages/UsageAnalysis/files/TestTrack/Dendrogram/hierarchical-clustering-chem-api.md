@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p1
 realizes_atlas: [dendrogram.cp.hier-clustering-chem-dialog-end-to-end]
-realizes: [chem.analyze.hierarchical-clustering, dendrogram]
+realizes: [chem.menu.analyze.hierarchical-clustering]
 pyramid_layer: integration
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-chem-api.md

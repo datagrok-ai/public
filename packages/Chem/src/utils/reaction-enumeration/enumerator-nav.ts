@@ -1,14 +1,13 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {CHANGED_DOT_STYLE, Mode} from './enumerator-app';
+import {CHANGED_DOT_STYLE, Mode} from './shared';
 
 export type ChipEl = {root: HTMLElement; textEl: HTMLElement; dot: HTMLElement};
 type StratCard = {root: HTMLElement; icon: HTMLElement};
 
-// Plain-data snapshot of everything the ribbon chips + accordion-pane subtitles need to show —
-// computed by EnumeratorConfigForm (which owns EnumeratorConfig) and handed in wholesale, so this
-// class never needs to read EnumeratorConfig itself.
+/** Everything the ribbon chips and pane subtitles show, computed by EnumeratorConfigForm and
+ * handed in wholesale so this class never reads EnumeratorConfig itself. */
 export interface RibbonChipState {
   reactionsText: string; reactionsOverride: boolean; reactionsSubtitle: string;
   bbsText: string; bbsOverride: boolean; bbsSubtitle: string;
@@ -35,25 +34,19 @@ export interface EnumeratorNavDeps {
   maxRoutesInput: DG.InputBase<number | null>;
   depthFirstInput: DG.InputBase<boolean>;
   configInfoIcon: HTMLElement;
-  // Getters, not snapshots — combinationLimitFields/productFilterFields are rebuilt wholesale on
-  // every YAML load (see EnumeratorConfigForm.syncConfigToQuickInputs), so the lazy form builder
-  // below must re-read them at build/invalidate time, not capture the array that existed at
-  // construction.
+  // Getters, not snapshots: both field groups are rebuilt wholesale on every YAML load, so the
+  // lazy form builder must re-read them rather than capture the arrays present at construction.
   getCombinationLimitInputs: () => DG.InputBase<unknown>[];
   getProductFilterInputs: () => DG.InputBase<unknown>[];
   setAndFire: <T>(input: DG.InputBase<T>, v: T) => void;
-  // Orchestrator-level nav mediator — see EnumeratorConfigFormDeps for the same TDZ-safety note;
-  // referenced (not called) by nav buttons at construction time, only invoked later on click.
   openAccPaneAndSyncTab: (pane: DG.AccordionPane) => void;
   getPreviewRecapCard: () => HTMLElement;
   getPreviewEnumerateBtnWrap: () => HTMLElement;
 }
 
-/** Owns the strategy picker cards and the left-nav accordion (5 panes forming one navigational
- * ring), plus the ribbon chip DOM and accordion-pane subtitles — bundled together because both are
- * just two surfaces for the same "which section is active / what does it currently hold" state,
- * kept in sync by one applyRibbonState() call. Pure layout: never reads EnumeratorConfig itself,
- * only the already-built inputs and plain values EnumeratorConfigForm computes and hands in. */
+/** Strategy picker cards, the left-nav accordion (5 panes forming one navigational ring), and the
+ * ribbon chips — two surfaces for the same "which section is active / what does it hold" state,
+ * kept in sync by one applyRibbonState() call. Pure layout: it reads no config of its own. */
 export class EnumeratorNav {
   readonly accReactionsPane: DG.AccordionPane;
   readonly accBbsPane: DG.AccordionPane;
@@ -84,9 +77,8 @@ export class EnumeratorNav {
   private readonly subCombine: HTMLElement;
 
   constructor(private readonly deps: EnumeratorNavDeps) {
-    // Strategy cards replace the depth-first checkbox: depth/breadth drive the hidden `depthFirstInput`
-    // (existing sync/validation keeps working). Depth/breadth are disabled (reagentsModeNote shown
-    // instead) whenever a reagents file is loaded, since reagents mode makes strategy irrelevant.
+    // Cards replace the depth-first checkbox and drive the (hidden) depthFirstInput. Both are
+    // disabled while a reagents file is loaded, since reagents mode makes the strategy irrelevant.
     const buildStratCard = (icon: string, title: string, desc: string): StratCard => {
       const ic = ui.iconFA(icon);
       ic.style.marginTop = '2px';
@@ -101,7 +93,6 @@ export class EnumeratorNav {
       'Grow each product with original blocks — linear chains.');
     this.stratBreadthCard = buildStratCard('sitemap', 'Breadth-first',
       'Combine any earlier products — convergent routes.');
-    // Reagents mode is auto-derived (set via a file in Extras), never manually selectable here.
     this.reagentsModeNote = ui.divH([ui.iconFA('info-circle'),
       ui.span([' Reagents mode active — set via a reagents file in Extras.'])],
     {style: {fontSize: '11px', color: 'var(--grey-6)', gap: '6px', alignItems: 'center',
@@ -122,8 +113,8 @@ export class EnumeratorNav {
     const accordion = ui.accordion();
     accordion.root.classList.add('chem-enum-accordion');
 
-    // Target pane resolved lazily via a thunk: Reactions pane is added expanded, so its factory runs
-    // synchronously inside addPane, before later panes exist — capturing directly would hit the TDZ.
+    // Target pane resolved via a thunk: the Reactions pane is added expanded, so its factory runs
+    // inside addPane before the later panes exist.
     const mkNavBtn = (kind: 'next' | 'back', getTarget: () => DG.AccordionPane, label: string): HTMLElement => {
       const btn = ui.button(`${kind === 'next' ? 'Next' : 'Back'}: ${label}`,
         () => this.deps.openAccPaneAndSyncTab(getTarget()));
@@ -134,12 +125,11 @@ export class EnumeratorNav {
       mkNavBtn('next', getTarget, label);
     const mkBackBtn = (getTarget: () => DG.AccordionPane, label: string): HTMLElement =>
       mkNavBtn('back', getTarget, label);
-    // Back (if any) on the left, Next/action (if any) on the right — one consistent row per pane.
     const navRow = (back: HTMLElement | null, next: HTMLElement | null): HTMLElement =>
       ui.divH([back ?? ui.div([]), next ?? ui.div([])], {classes: 'chem-enum-nav-row'});
 
-    // allowDragOut (5th arg) defaults to true; panes shouldn't be draggable out of this panel.
-    // One shared form so all four fields' labels align (two forms would size independently).
+    // Last addPane arg is allowDragOut, which defaults to true. One shared form per pane so the
+    // field labels align (separate forms size independently).
     this.accReactionsPane = accordion.addPane('Reactions', () =>
       ui.divV([ui.form([this.deps.templatesInput, this.deps.smartsColInput, this.deps.blockingColInput, this.deps.rxnNameColInput]),
         navRow(mkBackBtn(() => this.accCombinePane, 'How to combine'), mkNextBtn(() => this.accBbsPane, 'Building blocks'))]),
@@ -160,16 +150,14 @@ export class EnumeratorNav {
       ui.tooltip.bind(dot, tooltip);
       return dot;
     };
-    // Attaches a changed-dot to a pane's own header, spaced off the label text.
     const attachChangedDot = (pane: DG.AccordionPane, tooltip: string): HTMLElement => {
       const dot = mkChangedDot(tooltip);
       dot.style.marginLeft = '6px';
       pane.root.querySelector('.d4-accordion-pane-header')?.appendChild(dot);
       return dot;
     };
-    // Builds ui.form() lazily, only once the pane's content factory first runs — building it while
-    // still detached would measure it at 0 width and get it marked .ui-form-condensed regardless of
-    // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs.
+    // Built lazily on first pane expand: a form built while detached measures 0 width and gets
+    // marked .ui-form-condensed. invalidate() rebuilds it after a YAML load swaps in fresh inputs.
     const lazyFilterForm = (getInputs: () => DG.InputBase<unknown>[]):
     {getRoot: () => HTMLElement; invalidate: () => void} => {
       let root: HTMLElement | null = null;
@@ -184,29 +172,17 @@ export class EnumeratorNav {
         },
       };
     };
-    // Shared label-column width across all three "How to combine" forms so their columns align.
-    // Set via a CSS custom property (not inline style) — the platform's own async label
-    // auto-sizing would otherwise overwrite a plain inline style after mount.
-    const CHEM_ENUM_LABEL_WIDTH = 220;
-    // Editors need pinning too, not just labels: the platform widens an editor from its normal ~150px
-    // to ~176px on whichever of the three forms it currently considers .ui-form-condensed, so without
-    // this the Product filters column can end up visibly wider than Combination limits' even with
-    // labels aligned. 150px matches the platform's own un-condensed default.
-    const sharedEditorWidth = 150;
-    // Fixed floor for the whole form's width, comfortably above what the platform's own
-    // .ui-form-condensed decision (js-api ui.ts's getInputsMinWidths) would compute for the widest
-    // input here (a string input like "Only these atoms allowed", whose own minimum is ~200px) plus
-    // the label column above — reserving this much up front means these forms never cross that
-    // threshold and never condense, regardless of where the left/right splitter sits when a section
-    // is first expanded.
-    const CHEM_ENUM_FORM_MIN_WIDTH = 480;
-    // Combination limits/Product filters are panes of limitsAccordion, one accordion level below this
-    // one — the platform's own .d4-accordion (6px padding) + .d4-accordion-pane-content (20px margin)
-    // indent that extra level, so without a matching offset here the rounds/components form's label
-    // column starts 26px to the left of the otherwise-identical 220px column below it.
+    // "How to combine" holds three separate forms, which size their label/editor columns
+    // independently. These pin all three to one shared column so they line up, and keep the forms
+    // wide enough that the platform never marks them .ui-form-condensed. Applied as CSS custom
+    // properties, since the platform's async label auto-sizing overwrites plain inline styles.
+    const CHEM_ENUM_LABEL_WIDTH = 140;
+    const CHEM_ENUM_EDITOR_WIDTH = 150;
+    const CHEM_ENUM_FORM_MIN_WIDTH = 280;
+    // The limits sub-accordion sits one level deeper, which the platform indents by 6px padding +
+    // 20px margin; match it so the rounds form's label column lines up with the ones below it.
     const CHEM_ENUM_NESTED_ACCORDION_INDENT = 26;
-    // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
-    // the outer wizard-navigation accordion).
+    // Independently collapsible, unlike the outer navigation accordion.
     const limitsAccordion = ui.accordion();
     this.combinationLimitsForm = lazyFilterForm(() => this.deps.getCombinationLimitInputs());
     this.productFilterForm = lazyFilterForm(() => this.deps.getProductFilterInputs());
@@ -230,10 +206,9 @@ export class EnumeratorNav {
     ], {style: {gap: '8px'}}), false, null, false);
     this.accCombinePane.root.classList.add('chem-enum-combine-pane');
     this.accCombinePane.root.style.setProperty('--chem-enum-label-width', `${CHEM_ENUM_LABEL_WIDTH}px`);
-    this.accCombinePane.root.style.setProperty('--chem-enum-editor-width', `${sharedEditorWidth}px`);
+    this.accCombinePane.root.style.setProperty('--chem-enum-editor-width', `${CHEM_ENUM_EDITOR_WIDTH}px`);
     this.accCombinePane.root.style.setProperty('--chem-enum-form-min-width', `${CHEM_ENUM_FORM_MIN_WIDTH}px`);
-    // Left panel for Preview — content built once previewPanel exists; this factory itself only runs
-    // lazily when the user actually opens the pane, well after previewPanel/runControls are constructed.
+    // This factory only runs when the user opens the pane, well after previewPanel/runControls exist.
     this.accPreviewPane = accordion.addPane('Preview', () => ui.divV([
       ui.divText('Samples a small subset of products.',
         {style: {fontSize: '12px', color: 'var(--grey-6)'}}),
@@ -243,8 +218,7 @@ export class EnumeratorNav {
     ], {style: {gap: '10px'}}), false, null, false);
     this.accPanes = [this.accReactionsPane, this.accBbsPane, this.accExtrasPane, this.accCombinePane, this.accPreviewPane];
 
-    // Navigation is chip/button-driven; native click-to-collapse on the header would just empty the
-    // panel, so it's disabled at the source.
+    // Navigation is chip/button-driven; native click-to-collapse would just empty the panel.
     for (const p of this.accPanes) {
       const header = p.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
       if (header) {
@@ -253,7 +227,7 @@ export class EnumeratorNav {
       }
     }
 
-    // Subtitle spans injected into each pane's native header — updated by applyRibbonState().
+    // Subtitle spans injected into each pane header, updated by applyRibbonState().
     const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
       const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
       const sub = document.createElement('span');
@@ -266,21 +240,13 @@ export class EnumeratorNav {
     this.subExtras = injectPaneSub(this.accExtrasPane);
     this.subCombine = injectPaneSub(this.accCombinePane);
 
-    // Must fit CHEM_ENUM_FORM_MIN_WIDTH (the "How to combine" forms' own min-width, set above) plus
-    // the padding/accordion chrome between this pane and those forms — otherwise this pane's content
-    // overflows it on every load, not just at a narrow splitter, since the forms now refuse to shrink
-    // below their own minimum. The +80 buffer covers this pane's own padding-right plus the nested
-    // accordion/pane padding.
+    // The forms above refuse to shrink below CHEM_ENUM_FORM_MIN_WIDTH, so this pane must fit that
+    // plus the accordion chrome around them, or its content overflows on every load.
     this.leftPane = ui.divV([accordion.root],
       {style: {minWidth: `${CHEM_ENUM_FORM_MIN_WIDTH + 80}px`, overflowY: 'auto', overflowX: 'hidden',
         paddingRight: '8px'}});
 
-    // === Config-summary ribbon chips (shown above the right-pane tabs) ===
-    // Each chip's dot flags "customized": Reactions/Building blocks/Reagents show it when any round
-    // has a custom subset (passed in via applyRibbonState's override flags — DataPanel-owned, not
-    // known here); Strategy shows it when Combination limits or Product filters differ from platform
-    // defaults. Text lives in a child span so refreshing it doesn't wipe the dot out (chip.textContent
-    // replaces all children).
+    // Text lives in a child span so refreshing it doesn't wipe out the dot.
     const cfgChipEl = (tooltip: string): ChipEl => {
       const dot = mkChangedDot(tooltip);
       const textEl = ui.span([], {style: {overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: '0'}});

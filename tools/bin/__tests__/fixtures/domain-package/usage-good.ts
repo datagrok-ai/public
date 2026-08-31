@@ -1,0 +1,44 @@
+// Positive tsc fixture: well-typed usage of the generated domain clients must compile.
+import * as grok from 'datagrok-api/grok';
+import type {Dayjs} from 'dayjs';
+import {testdbDb, SampleRow, SampleInsert, SampleColumn, TestdbTransactionOp} from './src/generated/db';
+
+export async function good(): Promise<void> {
+  const ins: SampleInsert = {name: 'a', count: 3, tags: ['x'], score: 0.5, idempotencyKey: 'k',
+    status: 'new', measured_on: '2026-01-01T00:00:00Z'};
+  await testdbDb.samples.insert(ins);
+  const rows = await testdbDb.samples.query({filter: 'count > 1', columns: ['name', 'count']});
+  const count: number | undefined = rows[0].count;
+  const measured: Dayjs | undefined = rows[0].measured_on;
+  const created: Dayjs = rows[0].created_on;
+  const col: SampleColumn = 'measured_on';
+  void count; void col; void measured; void created;
+  // expand keys are compile-checked per table
+  await testdbDb.samples.query({expand: ['details:sample_event']});
+  await testdbDb.sampleEvents.query({expand: ['sample_id']});
+  await testdbDb.sampleEvents.insert({sample_id: rows[0].id, kind: 'created'});
+  // typed transaction ops pair values with their table; $refs ride as strings
+  const ops: TestdbTransactionOp[] = [
+    {op: 'insert', table: 'sample', ref: 's', values: {name: 'tx', score: 1}},
+    {op: 'insert', table: 'sample_event', values: {sample_id: '$s', kind: 'created'}},
+    {op: 'delete', table: 'sample', id: '$s'},
+  ];
+  await testdbDb.transaction(ops);
+  // mapped-tuple form: per-op result types, no positional casts
+  const [ins1, upd] = await testdbDb.transaction([
+    {op: 'insert', table: 'sample', ref: 't', values: {name: 'tx2', score: 2}},
+    {op: 'update', table: 'sample', id: '$t', values: {count: 1}},
+  ]);
+  const createdFlag: boolean = ins1.created;
+  const newVersion: number = upd.version;
+  void createdFlag; void newVersion;
+  // the fluent builder rides the generated generics: columns, choices, expand keys
+  const built = await testdbDb.samples.query()
+    .where('status', '=', 'new').orderBy('created_on', true).select('name', 'status').top(3);
+  const builtName: string = built[0].name;
+  void builtName;
+  await testdbDb.samples.query().expand('details:sample_event').first();
+  // single-generic (row-only) clients stay permissive on insert — backward compat
+  await grok.dapi.domains.table<SampleRow>('testdb.sample').insert({name: 'z', idempotencyKey: 'k'});
+  await grok.dapi.domains.table('testdb.sample').insert({});
+}

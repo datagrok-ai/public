@@ -145,8 +145,11 @@ export async function openTreeItem(
   await expandTreeGroup(page, parent);
   const { treeItemByName } = await import('./selectors');
   const item = treeItemByName(page, itemName);
-  await item.waitFor({ state: 'visible', timeout: 10_000 });
+  // An item below the fold is attached but not visible, and scrolling is what makes it
+  // visible — waiting for visible before scrolling can never succeed.
+  await item.waitFor({ state: 'attached', timeout: 10_000 });
   await item.scrollIntoViewIfNeeded();
+  await item.waitFor({ state: 'visible', timeout: 10_000 });
   if (options?.dblclick) await item.dblclick();
   else await item.click();
   await page.waitForTimeout(1000);

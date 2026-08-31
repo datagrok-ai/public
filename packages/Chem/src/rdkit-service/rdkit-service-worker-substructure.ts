@@ -397,6 +397,46 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
+  /** Returns SMILES with stereochemistry removed for {@link molecules}.
+   * Malformed molecules result in an empty string. */
+  async flattenMolecules(molecules: string[]): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
+      return [];
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules.length; ++i) {
+      //every N molecules check for termination flag
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item)
+        continue;
+      let addedToCache = false;
+      let rdMol = this._molsCache?.get(item);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      }
+      if (rdMol) {
+        try {
+          results[i] = rdMol.get_smiles(JSON.stringify({doIsomericSmiles: false}));
+          addedToCache = this.addToCache(rdMol);
+        } catch {
+          // nothing to do, result is already an empty string
+        } finally {
+          if (!addedToCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
+  }
+
   /** Returns InChI identifiers for {@link molecules}, or InChI keys when {@link keys} is set.
    * Malformed molecules result in an empty string. */
   async getInchis(molecules: string[], keys = false): Promise<string[]> {

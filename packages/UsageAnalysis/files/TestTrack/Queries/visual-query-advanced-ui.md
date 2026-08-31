@@ -3,7 +3,7 @@ feature: queries
 target_layer: playwright
 coverage_type: edge
 priority: p2
-realizes: []
+realizes: [views.queries, sharing.share-dialog, file.menu.save.tables-as-project]
 realized_as: []
 related_bugs: []
 ---

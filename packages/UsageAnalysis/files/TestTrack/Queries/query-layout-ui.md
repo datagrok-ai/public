@@ -3,7 +3,7 @@ feature: queries
 target_layer: playwright
 coverage_type: edge
 priority: p2
-realizes: []
+realizes: [views.queries, views.projects, view.menu.toolbox]
 realized_as: []
 related_bugs: []
 ---

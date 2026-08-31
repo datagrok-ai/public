@@ -9,6 +9,10 @@ export * from './src/interfaces/d4';
 export * from './src/const';
 export * from './src/events';
 export * from './src/dapi';
+export * from './src/domains';
+export * from './src/domains-ui';
+export * from './src/ui/domains/domains-editor';
+export * from './src/ui/domains/domains-grid';
 export * from './src/dataframe';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';
@@ -41,6 +45,8 @@ export * from './src/utils';
 export * from './src/proxies';
 export * from './src/utils_convert';
 export * from './src/ui/tree-view';
+
+export * as U2 from './src/u2core/index.js';
 
 import * as grok from './grok';
 import * as ui from './ui';

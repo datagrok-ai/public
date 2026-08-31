@@ -59,6 +59,10 @@ export namespace queries {
 }
 
 export namespace funcs {
+  export async function initHT(): Promise<void> {
+    return await grok.functions.call('HitTriage:InitHT', {});
+  }
+
   export async function hitTriageAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('HitTriage:HitTriageAppTreeBrowser', { treeNode });
   }

@@ -32,8 +32,9 @@ plugin's TS/CSS — must work there. Verify before reporting UI work as done.
   `mask-image` needs `-webkit-mask-image`. CSS variables (`var(--…)`) and `calc()` are fine (Chrome 49+).
 - **JS runtime APIs missing in Chrome 50** — avoid them, or rely on `src/polyfills.ts` (imported first
   from `package.ts` / `package-test.ts`). Already polyfilled: `crypto.randomUUID`,
-  `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`,
-  `Array.prototype.flatMap`, `Element.prototype.append`/`prepend`/`replaceWith`. If you need another
+  `Object.values`/`entries`/`fromEntries`, `String.prototype.trimStart`/`trimEnd`/`matchAll`,
+  `Array.prototype.flatMap`, `Promise.prototype.finally`,
+  `Element.prototype.append`/`prepend`/`replaceWith`, `Node.isConnected`. If you need another
   missing API, add it to `polyfills.ts` rather than to call sites.
 - **Clipboard**: use `copyToClipboard()` from `src/utils.ts` — never `navigator.clipboard.writeText`
   directly (undefined in Chrome 50 and in insecure contexts).
@@ -61,6 +62,7 @@ src/
 │       └── query-matching.ts    # LLM-based matching of natural-language to DB queries
 ├── claude/                 # Browser-facing Claude runtime integration
 │   ├── runtime-client.ts   # WebSocket client to claude-runtime container
+│   ├── queue-task.ts      # Queued-task admission: aiChatTurnTask holds the celery slot; the turn streams over the WS
 │   └── exec-blocks.ts      # Executes datagrok-exec / datagrok-entities fenced blocks
 ├── db/                     # Database tooling
 │   ├── sql-tools.ts        # SQLGenerationContext — tool-call-based SQL generation
@@ -145,8 +147,13 @@ users, groups, roles, projects, connections, queries, dockers, packages, files, 
 `refreshItems` from the base class, plus per-view extras.
 
 Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
-always briefed with their title) expose `getDialogInfo` / `setInput` / `clickButton` plus the
-legacy per-button funcs, **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
+always briefed with their title) expose `getDialogInfo` (incl. the dialog body text) / `setInput` /
+`clickButton` plus the legacy per-button funcs, and complex dialogs add their own functions via
+`Modal.aiFunctions` — the **Save Project dialog** ships `getProjectSaveInfo` / `setProjectName` /
+`setProjectDescription` / `setSaveMode` / `setPresentationMode` with its entity-list child widget
+(`ProjectEntityMoveWidget`) exposing `listEntities` / `setEntityAction` / `setDataSync`, and the
+**Share dialog** ships `getShareInfo` / `addShareGrantee` / `setShareAccess` / `setShareMessage`
+(the `datagrok-projects` skill drives both), **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
 `expandPane`, **column selectors** (`ColumnComboBox`) `setColumn`, **range sliders** `getRange` /
 `setRange`, **viewer legends** `listCategories` / `selectCategory`, **property grids** (`PropGrid`)
 `getProperties` / `setProperty`, **per-column filters** (`GridFilterBase`) `resetFilter`,
@@ -266,12 +273,15 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 ## Subscription authorization (UI)
 
-On a Claude **subscription** (mounted `~/.claude/.credentials.json`, not an API key) the token
+On a Claude **subscription** (OAuth token in `.credentials.json`, not an API key) the token
 expires periodically. The panel renews it inline via a browser-relayed `claude auth login`: the user
 opens the OAuth page, pastes the returned code, and clicks **Submit**; on success the strip turns
-green and the message can be re-sent. Handlers `handleAuthStart` / `handleAuthCode` in
-[`server.ts`](dockerfiles/claude-runtime/src/server.ts) drive the CLI; UI in
+green and the message can be re-sent. `handleAuthStart` / `handleAuthCode` in
+[`server.ts`](dockerfiles/claude-runtime/src/server.ts) relay this to the **broker** (which runs the
+login as its own uid and owns `/home/broker/.claude/.credentials.json`, 0600 — unreadable by the
+agent uid); the broker injects the Bearer token at egress and refreshes it on 401. UI in
 [`src/ai/ui.ts`](src/ai/ui.ts); `auth_*` messages in [CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md).
+See the credential-broker design in [`docs/`](docs/) for the full isolation model.
 
 | Session expired | Code pasted | Session renewed |
 |---|---|---|

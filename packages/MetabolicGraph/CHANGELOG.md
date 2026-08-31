@@ -1,5 +1,9 @@
 # `MetabolicGraph` changelog
 
+## v.next
+
+* AI: Exposed view functions on the Metabolic Graph view (state/model/entity introspection, reaction bounds, FBA, flux sampling, time-course, map navigation and highlighting, analysis save/load) so the AI assistant can read and drive it.
+
 ## 1.1.0 (2025-10-20)
 
 * New E. coli core metabolism map and model added.

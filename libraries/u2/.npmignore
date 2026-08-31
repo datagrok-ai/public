@@ -1,0 +1,8 @@
+src/**/*.ts
+!src/**/*.d.ts
+
+node_modules/
+gallery/
+tests/
+.idea/
+*.code-workspace

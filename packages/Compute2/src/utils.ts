@@ -367,3 +367,22 @@ export function canUseResults(
   }
   return true;
 }
+
+// View pinning changed in js-api 1.27.5 (grok_View_Pin was replaced by the grok_View_Set_IsPinned
+// handler), so probe which interop function the running platform actually provides.
+export function pinView(view?: DG.ViewBase): void {
+  if (!view)
+    return;
+  const api = window as any;
+  const dart = DG.toDart(view);
+  const isPinned = typeof api.grok_View_Get_IsPinned === 'function' ?
+    api.grok_View_Get_IsPinned(dart) : !!(view as any).isPinned;
+  if (isPinned)
+    return;
+  if (typeof api.grok_View_Set_IsPinned === 'function')
+    api.grok_View_Set_IsPinned(dart, true);
+  else if (typeof api.grok_View_Pin === 'function')
+    api.grok_View_Pin(dart);
+  else if (typeof (view as any).pin === 'function')
+    (view as any).pin();
+}

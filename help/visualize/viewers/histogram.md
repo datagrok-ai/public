@@ -56,26 +56,35 @@ Distribution lines help visualize and compare the distribution patterns across d
 | **Data** | | |
 | Show Filtered Out Rows | boolean | Whether the filtered out rows should be shown with the semi-transparent color See also *Filtered Out Color* |
 | Filtering Enabled | boolean | Allows to filter table using the range slider on the bottom. |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
-| **Value** | | |
+| **X Axis** | | |
 | Value Column Name | string | A numerical column used to calculate the distribution of values. |
 | Show X Axis | boolean |  |
 | Allow Column Selection | boolean |  |
 | Show Bin Selector | boolean | Show bin selector in the left top panel when the mouse is over the histogram |
 | Show Values | boolean | Show bin values on top of the bars |
 | Bins | number | Number of bins on the histogram |
+| X Axis Type | string | Spreads the bins evenly on the logarithmic scale. |
 | Value Min | number |  |
 | Value Max | number |  |
+| **Y Axis** | | |
+| Show Y Axis | boolean |  |
+| Y Axis Type | string | Scale of the vertical (bin count) axis. On the logarithmic scale, bins with 0 and 1 rows are drawn at the baseline. |
+| Y Min | number | Lower bound of the vertical axis. Empty means zero. Set *Y Min* and *Y Max* to put different histograms on the same scale. |
+| Y Max | number | Upper bound of the vertical axis. Empty means the biggest bin count. Bins that do not fit are clipped. |
+| Show Clipped Bin Indicators | boolean | When enabled, shows wavy breaks and arrows on the bins that are clipped by the vertical axis range. |
+| **Color** | | |
+| Color Column Name | string | Numerical column to be used for color-coding. The values in the bin get aggregated using the *Color Aggr Type* property. |
+| Color Aggr Type | string |  |
+| Invert Color Scheme | boolean |  |
+| Linear Color Scheme | list |  |
 | **Category** | | |
 | Split Column Name | string | A categorical column to split data on (each bar represents a category) |
 | Normalize Values | boolean | Whether the values should be normalized when multiple histograms are shown. If true, you are comparing distributions; if false, you are comparing absolute values. Requires *Split Column Name* to be set. |
 | Split Stack | boolean | If true, split are shown as stacked bins |
 | Spline Tension | number | Spline tension in case multiple histograms are shown. Requires *Split Column Name* to be set. |
 | Show Markers | boolean | Whether markers should be drown when multiple histograms are shown. Requires *Split Column Name* to be set. |
-| **Misc** | | |
-| Show Y Axis | boolean |  |
-| Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
 | **General** | | |
 | Zoom To Range | boolean | Whether the horizontal axis should be zoomed to the range of the visible bins. |
 | Normalize To Filter | boolean | Whether the values should be normalized to the filter or globally. |
@@ -95,24 +104,19 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Margin Bottom | number |  |
 | Filter Margin Top | number |  |
 | Filter Margin Bottom | number |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **Color** | | |
-| Color Column Name | string | Numerical column to be used for color-coding. The values in the bin get aggregated using the *Color Aggr Type* property. |
-| Color Aggr Type | string |  |
-| Invert Color Scheme | boolean |  |
-| Linear Color Scheme | list |  |
 | **Selection** | | |
 | Show Current Row | boolean | Indicates current row as a dot on the horizontal axis |
 | Show Mouse Over Row | boolean | Indicates current row as a dot on the horizontal axis |
 | Show Mouse Over Row Group | boolean | Show the distribution of the values that the mouse is currently over in another viewer. |
+| **Misc** | | |
+| Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
 | **Style** | | |
 | Auto Layout | boolean | style |
 | X Axis Height | number |  |
@@ -128,13 +132,16 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

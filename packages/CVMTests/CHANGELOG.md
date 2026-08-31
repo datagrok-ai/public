@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20642: Tests: `Docker`'s `Proxy WebSocket` now waits for the container to answer before opening the socket — `run(id, true)` returns when the platform marks it started, which is earlier than the app inside binding its port, so the proxy failed with `Connection refused, errno = 111` on a loaded stand
+* GROK-20642: Tests: Gave the per-language `Escaping` test a 180s budget (it makes one server round-trip per string against the 30s default) and raised the first test of each language category to 300s, since it pays the kernel cold start while the rest of the suite loads the same stand
+* Tests: Fixed the container-start flakes — `Docker`'s `before()` no longer awaits a start over the framework's fixed 100s budget (which failed the whole category), and `Proxy WebSocket`, `Get response: On demand` and the first Celery call in each worker category now get budgets that cover a cold start instead of reporting EXECUTION TIMEOUT on one still in progress
 * Tests: `Docker` no longer asks the server to stop a container in the `error` state — `DockerRouter.stop` answers 400 there, which failed the category's `before()` and took all four tests with it; the following `run` clears the error anyway. Stop/start failures now report the container name and status instead of the opaque response body (previously logged as just `null`).
 * Tests: annotated API-only tests (scripts, celery, docker, files) with `node: true` — `grok test` now runs them headless in Node; the WebSocket proxy, project/table-view, client-cache, and Parquet-dataframe tests stay in the browser
 * GROK-20452: Added `queue/container.json` (`on_demand: true`, mirrors the python celery config) — the auto-generated node-worker container now lazy-starts on first call, which the `Cold start` benchmark relies on (it stops the container and expects the platform to revive it)

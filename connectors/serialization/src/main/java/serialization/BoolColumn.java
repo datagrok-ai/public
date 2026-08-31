@@ -41,9 +41,25 @@ public class BoolColumn extends AbstractColumn<Boolean> {
     }
 
     @Override
+    public void decode(BufferAccessor buf) {
+        int id = buf.readInt32();
+        if (id != 1)
+            throw new RuntimeException("decoding " + name + ": bool encoder " + id + " not found");
+        length = (int) buf.readInt64();
+        if (buf.readInt8() == ColumnEncoderArchiveType.ARCHIVE_TYPE_ZLIB)
+            data = ByteData.toUint32List(Zlib.inflate(buf.readUint8List()));
+        else
+            data = buf.readUint32List();
+    }
+
+    @Override
     public void add(Boolean value) {
+        add(value != null && value);
+    }
+
+    public void add(boolean value) {
         ensureSpace(1);
-        if ((value != null) && value)
+        if (value)
             data[length / 0x20] |= 1 << ((length % 0x20) & 0x1F);
         length++;
     }

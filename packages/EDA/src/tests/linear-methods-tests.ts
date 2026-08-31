@@ -5,9 +5,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectFloat, test} from '@datagrok-libraries/test/src/test';
 import {computePCA} from '../eda-tools';
-import {getPlsAnalysis} from '../pls/pls-tools';
+import {getPlsAnalysis, hotellingT2Limit, hotellingEllipseParams} from '../pls/pls-tools';
 import {PlsModel} from '../pls/pls-ml';
 import {getLinearRegressionParams, getPredictionByLinearRegression} from '../regression';
 import {regressionDataset, madNorm, madError} from './utils';
@@ -158,3 +158,38 @@ category('Linear regression', () => {
     );
   }, {timeout: TIMEOUT});
 }); // Linear regression
+
+category('Hotelling ellipse', () => {
+  // T2 = (p(n-1)/(n-p))·F^{-1}(conf; p, n-p), p = 2. For n = 10 (df1 = 2, df2 = 8):
+  // F_{0.95}(2,8) = 4.4590, F_{0.99}(2,8) = 8.6491 (standard F tables).
+  test('T-squared limit matches F-table values', async () => {
+    expectFloat(hotellingT2Limit(0.95, 10), 2.25 * 4.4590, 1e-2);
+    expectFloat(hotellingT2Limit(0.99, 10), 2.25 * 8.6491, 1e-2);
+    // larger confidence -> larger limit
+    expect(hotellingT2Limit(0.99, 10) > hotellingT2Limit(0.95, 10), true);
+  });
+
+  test('Ellipse params: center, semi-axes, ratio', async () => {
+    // x = 1..10 (mean 5.5, sample var 82.5/9); y = 2·x (mean 11, var 4·varX)
+    const x = new Float64Array(10);
+    const y = new Float64Array(10);
+    for (let i = 0; i < 10; ++i) {
+      x[i] = i + 1;
+      y[i] = 2 * (i + 1);
+    }
+    const xCol = DG.Column.fromFloat64Array('x', x);
+    const yCol = DG.Column.fromFloat64Array('y', y);
+    const varX = 82.5 / 9;
+
+    for (const conf of [0.95, 0.99]) {
+      const {cx, cy, a, b} = hotellingEllipseParams(xCol, yCol, conf);
+      const t2 = hotellingT2Limit(conf, 10);
+      expectFloat(cx, 5.5, 1e-9);
+      expectFloat(cy, 11, 1e-9);
+      expectFloat(a, Math.sqrt(t2 * varX), 1e-9);
+      expectFloat(b, Math.sqrt(t2 * 4 * varX), 1e-9);
+      // var(y) = 4·var(x) -> b = 2·a
+      expectFloat(b / a, 2, 1e-9);
+    }
+  });
+}); // Hotelling ellipse

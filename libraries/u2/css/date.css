@@ -1,0 +1,177 @@
+/* Date and date-time skin — underline field with a calendar toggle, plus a popup consistent with
+   css/multi-select.css. Tokens only; css/tokens.css, css/inputs.css, css/elements.css,
+   css/buttons.css and css/icons.css must be loaded alongside. */
+.u2-input-editor.u2-date {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 140px;
+  max-width: 140px;
+  min-width: 0;
+  padding: 0;
+}
+
+/* :not() keeps the invalid underline from inputs.css winning regardless of sheet order */
+.u2-input-editor.u2-date:not(.u2-invalid) {
+  border-bottom: var(--dg-input-border);
+}
+
+.u2-input-editor.u2-date:not(.u2-invalid):focus-within,
+.u2-input-editor.u2-date:not(.u2-invalid).u2-date-open {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-date > input {
+  flex: 1;
+  min-width: 110px;
+  height: 100%;
+  padding: 0 var(--dg-space-s);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.u2-date > input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+/* the rail carries the calendar icon and, as in the platform, no underline of its own
+   (ui.css:239-242); the selector matches the rail rule in css/inputs.css so it wins whatever the
+   sheet order */
+.u2-input-root[data-u2='date-input'] .u2-input-box > .u2-input-editor + .u2-input-options,
+.u2-input-root[data-u2='datetime-input'] .u2-input-box > .u2-input-editor + .u2-input-options {
+  align-self: flex-start;
+  border-bottom: none;
+}
+
+.u2-date-popup {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--dg-space-s);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  outline: none;
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-date-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  padding-bottom: var(--dg-space-s);
+}
+
+.u2-date-title {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2-date-header .u2-btn:not(.u2-icon-btn) {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+}
+
+.u2-date-weekdays,
+.u2-date-week {
+  display: flex;
+}
+
+.u2-date-weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-inline-control-height);
+  height: var(--dg-inline-control-height);
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+}
+
+.u2-date-day {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dg-inline-control-height);
+  height: var(--dg-inline-control-height);
+  border: var(--dg-border-width) solid transparent;
+  border-radius: var(--dg-radius);
+  outline: none;
+  cursor: pointer;
+}
+
+.u2-date-day:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-date-day:focus-visible {
+  border-color: var(--dg-focus);
+}
+
+.u2-date-adjacent {
+  color: var(--dg-text-color-disabled);
+}
+
+.u2-date-today {
+  border-color: var(--dg-accent);
+}
+
+.u2-date-selected {
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2-date-day-disabled,
+.u2-date-day-disabled:hover {
+  color: var(--dg-text-color-disabled);
+  background: none;
+  cursor: default;
+}
+
+.u2-date-time {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  margin-top: var(--dg-space-s);
+  padding-top: var(--dg-space-s);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-date-time-label {
+  flex: 1;
+  color: var(--dg-text-color-light);
+}
+
+.u2-date-time-sep {
+  color: var(--dg-text-color-light);
+}
+
+.u2-date-time-seg {
+  box-sizing: border-box;
+  width: 26px;
+  height: var(--dg-inline-control-height);
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: center;
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: none;
+  border-bottom: var(--dg-input-border);
+  border-radius: 0;
+  outline: none;
+}
+
+.u2-date-time-seg:focus {
+  border-bottom: var(--dg-input-border-focus);
+}

@@ -1,9 +1,5 @@
-/** FlowEditor — owns the NodeEditor + AreaPlugin + ConnectionPlugin pipeline.
- *
- * Replaces LiteGraph's `CanvasController` and `GraphManager`. The host view
- * supplies a container; we build the editor inside it and expose just enough
- * surface for the rest of the package (compiler, view, property panel) to
- * operate on a Rete editor without knowing what's underneath. */
+/** FlowEditor — owns the NodeEditor + AreaPlugin + ConnectionPlugin pipeline; the
+ *  only surface the rest of the package uses to operate on the Rete editor. */
 
 import {NodeEditor} from 'rete';
 import {AreaExtensions, AreaPlugin} from 'rete-area-plugin';
@@ -14,23 +10,25 @@ import {
 } from 'rete-connection-plugin';
 import {Presets as ReactPresets, ReactArea2D, ReactPlugin} from 'rete-react-plugin';
 import {
-  HistoryActions, HistoryExtensions, HistoryPlugin,
+  HistoryActions, HistoryPlugin,
   Presets as HistoryPresets,
 } from 'rete-history-plugin';
 import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {
   FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
-  EXEC_IN_KEY, EXEC_OUT_KEY,
+  EXEC_IN_KEY, EXEC_OUT_KEY, hiddenSocketRow, supportsInlinePreview, INLINE_PREVIEW_PROP,
+  INLINE_HOSTED_DATA_KEY, inlinePreviewSize,
 } from './scheme';
 import {TypedSocket} from './sockets';
 import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {InputValueControl} from './nodes/input-value-control';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
-import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS, ANNOTATION_TITLE_SIZES} from './annotation';
 import {
   FlowGroup, GroupDoc, GROUP_TITLE_H, GROUP_PAD, GROUP_DOT_TOP, GROUP_DOT_STEP,
 } from './node-group';
@@ -38,11 +36,8 @@ import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 // Type-only — the value side of node-factory stays a dynamic import (lazy).
 import type {CompatibleNodeType, SocketSuggestion} from './node-factory';
 
-/** A classified graph edit — tells listeners *what* changed, so run results
- *  can be invalidated precisely (only downstream of the change) instead of
- *  wholesale. Cosmetic changes (node moves, annotations, titles) do not emit
- *  one. `params-changed` is reported by the property panel via
- *  {@link FlowEditor.notifyNodeParamsChanged}. */
+/** A classified graph edit — lets run results be invalidated only downstream of the
+ *  change. Cosmetic changes (node moves, annotations, titles) do not emit one. */
 export type GraphEdit =
   | {kind: 'node-added'; nodeId: string}
   | {kind: 'node-removed'; nodeId: string}
@@ -54,48 +49,38 @@ export type GraphEdit =
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
-  /** Host-state check behind the re-pick dedupe: clicking a node that is
-   *  already selected re-fires `onNodeSelected` unless this returns true —
-   *  i.e. the host's panels (context panel as the shell's current object, the
-   *  output preview) still reflect this node. Selection alone is a bad proxy:
-   *  switching tabs replaces the current object and an autorun can produce a
-   *  preview the panel never showed, both while the node stays selected.
-   *  Omitted → same-pick never re-fires (headless/test editors). */
+  /** Host veto for the same-pick dedupe: true when the host's panels still reflect
+   *  this node (selection alone is a bad proxy). Omitted → same-pick never re-fires. */
   isNodeContextCurrent?: (node: FlowNode) => boolean;
-  /** Fired after selection changes that never go through `nodepicked` — the
-   *  marquee (whose release is swallowed before it can bubble, see
-   *  `installRectSelect`), Ctrl+A / Ctrl+Shift+A, the pointerup modifier
-   *  semantics (toggle-off / remove / collapse), and programmatic
-   *  select/unselect. Hosts that track "what is selected now" (the suggestion
-   *  pane) listen here; per-node callbacks above stay click-driven. */
+  /** Fired after selection changes that never go through `nodepicked` — marquee,
+   *  Ctrl+A / Ctrl+Shift+A, modifier releases, programmatic select/unselect. */
   onSelectionChanged?: () => void;
   onGraphChanged?: () => void;
-  /** Fired with the classified edit for every change that can affect run
-   *  results — drives precise invalidation and autorun. Fires alongside (not
-   *  instead of) `onGraphChanged`, which remains the coarse "refresh UI" hook
-   *  and also covers cosmetic changes (annotations). */
+  /** Fired with the classified edit for every result-affecting change; fires
+   *  alongside the coarse `onGraphChanged` "refresh UI" hook. */
   onGraphEdited?: (edit: GraphEdit) => void;
-  /** Run the slice up to this node and preview its output ("inspect anywhere").
-   *  Wired from the node's right-click menu in addition to the output-port menu. */
+  /** Run the slice up to this node and preview its output. */
   onPreviewNode?: (nodeId: string) => void;
-  /** Re-run just this node using values captured from a prior run (no upstream
-   *  re-run). Offered in the node menu only when `canRerunNode` returns true. */
+  /** Re-run just this node from values captured in a prior run. */
   onRerunNode?: (nodeId: string) => void;
-  /** Whether the "Rerun this node only" menu item should be shown for a node. */
   canRerunNode?: (nodeId: string) => boolean;
-  /** The toolbox suggestion engine's picks for the node an output drag started
-   *  from (same ranking the Suggestions pane shows). The drag-out menu leads
-   *  with them — reason inline — and applies their prefills on selection. */
+  /** Suggestion-engine picks for the node an output drag started from — the
+   *  drag-out menu leads with them and applies their prefills on selection. */
   getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
+  /** Live viewer/widget root captured for a node — the in-node preview mounts it. */
+  getInlinePreviewContent?: (nodeId: string) => HTMLElement | null;
+  /** True while a run in progress still has this node ahead of it — the empty
+   *  preview shows a loader; a kept (stale) preview gets a recalculating overlay. */
+  isInlinePreviewPending?: (nodeId: string) => boolean;
+  /** Fired after the in-node preview is toggled, BEFORE the node re-renders —
+   *  the host re-stamps live-root ownership and refreshes the bottom panel.
+   *  Cosmetic, like collapse — never a params change. */
+  onInlinePreviewToggled?: (nodeId: string, enabled: boolean) => void;
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
 
-/** A copyable snapshot of a node set: the node payloads plus every connection
- *  whose BOTH endpoints are inside the set (data, pass-through, and order edges
- *  alike). Positions are the originals — materializing applies an offset.
- *  Deep-copied at snapshot time, so later edits to the originals never leak
- *  into a paste. */
+/** Deep-copied snapshot of a node set plus every connection internal to it. */
 interface GraphClip {
   nodes: Array<{
     id: string; typeName: string; label: string; description: string;
@@ -105,10 +90,7 @@ interface GraphClip {
   connections: Array<{source: string; sourceOutput: string; target: string; targetInput: string}>;
 }
 
-/** An output node's strip rank: the drag-assigned `outputOrder` property, or
- *  end-of-list for nodes that were never reordered (stable sort keeps their
- *  insertion order). Shared with the script emitter so the `//output:` lines
- *  follow the strip. */
+/** An output node's strip rank: `outputOrder`, or end-of-list when never reordered. */
 export function outputOrderRank(node: {properties: Record<string, any>}): number {
   const r = Number(node.properties['outputOrder']);
   return Number.isFinite(r) ? r : Number.MAX_SAFE_INTEGER;
@@ -121,37 +103,22 @@ export class FlowEditor {
   readonly render: ReactPlugin<FlowScheme, ReactArea2D<FlowScheme>>;
   readonly history = new HistoryPlugin<FlowScheme, HistoryActions<FlowScheme>>();
   readonly container: HTMLElement;
-  /** Absolutely-positioned wrapper filling the host: a flex row of
-   *  [canvasEl | Outputs strip]. */
+  /** Absolutely-positioned wrapper filling the host: [canvasEl | Outputs strip]. */
   private readonly canvasWrap!: HTMLElement;
   /** Inner element the AreaPlugin mounts on — the actual canvas viewport. */
   readonly canvasEl!: HTMLElement;
 
   private selector = AreaExtensions.selector();
-  /** Tracks which node is under the cursor at the moment of pointerdown.
-   *  Read by `accumulating.active()` to decide whether to *preserve* an
-   *  existing multi-selection when one of the already-selected nodes is
-   *  clicked — required for KNIME/Figma-style group-drag. */
+  /** Node under the cursor at pointerdown — lets `accumulating` preserve an
+   *  existing multi-selection when an already-selected node is grabbed. */
   private lastPointerDownNodeId: string | null = null;
-  /** Mouse/pointer button last pressed (0 = primary, 2 = secondary).
-   *  Several plugins (notably rete-connection-plugin) don't filter by button;
-   *  right-clicking an output socket would otherwise start a fake connection
-   *  drag that ends with `created:false`, accidentally triggering the
-   *  suggestion menu. Handlers that should be left-click-only consult this. */
+  /** Rete plugins don't filter by button — left-click-only handlers consult this. */
   private lastPointerButton = 0;
-  /** The node most recently reported to the host as selected (`nodepicked` /
-   *  chip click) — i.e. what the context panel currently shows. Re-picking it
-   *  while it's still selected is a no-op and must not re-fire the host
-   *  callbacks (panel/suggestion rebuilds on every click or grab). */
+  /** Node last reported to the host as selected; re-picking it while still
+   *  selected must not re-fire the host callbacks. */
   private lastPickedId: string | null = null;
-  /** Snapshot of the last pointerdown (modifiers, position, whether the node
-   *  under the cursor was already selected), taken by
-   *  `installPointerDownTracker` in the capture phase — before rete's
-   *  `nodepicked` fires. Node clicks follow the platform's `selectRows`
-   *  modifier convention (d4 `viewer_utils.dart`): plain click selects
-   *  exclusively, Shift adds, Ctrl toggles, Ctrl+Shift removes. Rete's
-   *  `nodepicked` can only ever ADD, so `accumulating` admits any modifier
-   *  and the removal half runs on a clean release in the pointerup tracker. */
+  /** Pointerdown snapshot taken in the capture phase, before rete's add-only
+   *  `nodepicked` fires; the removal half runs in the pointerup tracker. */
   private lastPointerDownWasSelected = false;
   private lastPointerDownModifier = false;
   private lastPointerDownPos = {x: 0, y: 0};
@@ -164,10 +131,7 @@ export class FlowEditor {
       return node?.selected === true;
     },
   };
-  /** Returned by `AreaExtensions.selectableNodes` — gives us programmatic
-   *  select/unselect on top of the click-to-select that the extension wires
-   *  up automatically. Used by `selectNode` (e.g. for auto-select on
-   *  run-complete) and the rectangle-select tool. */
+  /** From `AreaExtensions.selectableNodes` — programmatic select/unselect. */
   private selectableApi!: {
     select: (nodeId: string, accumulate: boolean) => Promise<void>;
     unselect: (nodeId: string) => Promise<void>;
@@ -179,97 +143,73 @@ export class FlowEditor {
   private suggestPointerMove: ((e: PointerEvent) => void) | null = null;
   private suggestPointerUp: ((e: PointerEvent) => void) | null = null;
   /** True while this editor owns window-level keyboard shortcuts — set on every
-   *  pointerdown by whether it landed inside this editor's container. Starts
-   *  true so a lone editor answers keys before the first click. */
+   *  pointerdown; starts true so a lone editor answers keys before the first click. */
   private ownsKeyboard = true;
-  /** Per-connection status (for execution coloring). */
   private connectionStatuses = new Map<string, ConnectionStatus>();
 
-  /** Workflow annotations — colored frames behind the graph (KNIME pattern).
-   *  Owned by the editor (not by Rete), persisted alongside the graph. */
+  /** Colored frames behind the graph; editor-owned, not Rete citizens. */
   private annotations = new Map<string, FlowAnnotation>();
 
-  /** Node groups — collapsible frames around member node sets (see
-   *  `node-group.ts`). Editor-level like annotations: the graph stays flat. */
+  /** Collapsible frames; editor-level like annotations — the graph stays flat. */
   private groups = new Map<string, FlowGroup>();
-  /** Wire-endpoint subscriptions for sockets on groupable (non-output) nodes,
-   *  keyed by node id — while a node hides inside a minimized group, the
-   *  editor pushes card-edge anchors through these instead of DOM positions
-   *  (same pattern as `chipSocketSubs`). */
+  /** While a node hides inside a minimized group, card-edge anchors are pushed
+   *  through these instead of DOM positions (same pattern as `chipSocketSubs`). */
   private groupSocketSubs = new Map<string, Set<{
     side: 'input' | 'output'; key: string; cb: (pos: {x: number; y: number}) => void;
   }>>();
-  /** Group ids with a frame refit already scheduled for the next frame. */
   private groupRefitScheduled = new Set<string>();
 
-  /** Snap-to-grid step in canvas units; alignment guides override grid when within threshold. */
   private readonly gridSize = 20;
-  /** Distance (canvas units) within which a node edge/center snaps to another node's edge/center. */
+  /** Canvas units within which a node edge/center snaps to another node's. */
   private readonly alignThreshold = 6;
   private guideOverlay: HTMLElement | null = null;
   private vGuide: HTMLElement | null = null;
   private hGuide: HTMLElement | null = null;
 
-  /** Bottom-right overview minimap (screen-space overlay; not part of the
-   *  transformed canvas). `null` until `installMinimap`. */
+  /** Bottom-right overview minimap — screen-space overlay; `null` until `installMinimap`. */
   private minimapEl: HTMLElement | null = null;
   private minimapSvg: SVGSVGElement | null = null;
   private minimapRedrawScheduled = false;
-  /** Minimap inner drawing area in px (SVG viewport). */
   private readonly minimapW = 200;
   private readonly minimapH = 130;
 
-  /** The Outputs strip — a thin column OUTSIDE the canvas viewport that hosts
-   *  every output node as a screen-space chip (our own DOM, not a rete node
-   *  view — the canvas view is hidden). The nodes stay real graph citizens
-   *  (data model, serialization, compiler untouched); only their visual form
-   *  is the chip. `null` until `installOutputStrip`. */
+  /** The Outputs strip — a column OUTSIDE the canvas viewport hosting each output
+   *  node as a screen-space chip; the nodes stay real graph citizens, only their
+   *  visual form is the chip. `null` until `installOutputStrip`. */
   private outputStripEl: HTMLElement | null = null;
-  /** Container inside the strip holding the chips. */
   private stripChipsEl: HTMLElement | null = null;
   private stripResizeObserver: ResizeObserver | null = null;
   private stripSyncScheduled = false;
-  /** Whether the pending strip sync must rebuild the chip DOM (graph or
-   *  selection changed) or only refresh wire endpoints (pan/zoom). */
+  /** Whether the pending strip sync must rebuild the chip DOM or only refresh
+   *  wire endpoints (pan/zoom). */
   private stripRenderPending = false;
-  /** Wire-endpoint subscriptions for sockets on output nodes, keyed by node id
-   *  (see the chip-aware socketPositionWatcher in the constructor). */
   private chipSocketSubs = new Map<string, Set<(pos: {x: number; y: number}) => void>>();
-  /** One-shot: a chip reorder-drag just ended — the browser still dispatches
-   *  `click` on release, which must not re-select the dragged chip's node. */
+  /** One-shot: a chip reorder-drag just ended — the browser's release `click`
+   *  must not re-select the dragged chip's node. */
   private suppressChipClick = false;
 
-  /** The annotation the user last clicked — the Delete-key target, mirroring
-   *  node selection (annotations are not rete citizens, so the selectable
-   *  extension can't track them). Cleared by clicks anywhere else. */
+  /** Delete-key target — annotations aren't rete citizens, so the selectable
+   *  extension can't track them. Cleared by clicks anywhere else. */
   private activeAnnotationId: string | null = null;
 
-  /** Raised around keyboard nudges: the drag snap applies to any *picked*
-   *  node, and a clicked node stays picked — so a grid-aligned node had every
-   *  10px arrow step rounded straight back ("stuck"). A nudge is an exact,
-   *  intentional step; it must never snap. */
+  /** Raised around keyboard nudges — an exact, intentional step must never be
+   *  re-rounded by the drag snap (a clicked node stays picked). */
   private suppressSnap = false;
 
-  /** Suggestion-menu drag state. Set on `connectionpick` for an output
-   *  socket; cleared on `connectiondrop`. If the drop didn't create a
-   *  connection AND wasn't on a target socket, the suggestion popup opens. */
+  /** Output-drag state; a drop that created nothing and hit no socket opens the
+   *  suggestion popup. */
   private dragOutSource: {nodeId: string; outputKey: string; dgType: string} | null = null;
 
-  /** Input-side drag state (dragging out of an input socket, or the tail of an
-   *  existing connection). Drives the reverse drop-on-node shortcut — dropping
-   *  on a node body connects from that node's compatible output (a real output
-   *  wins over a passthrough) — and, on empty canvas, the reverse suggestion
-   *  menu ("what produces this?"). */
+  /** Input-side drag state — drives the reverse drop-on-node shortcut and, on
+   *  empty canvas, the reverse suggestion menu. */
   private dragInSource: {nodeId: string; inputKey: string; dgType: string} | null = null;
 
   constructor(container: HTMLElement, callbacks: FlowEditorCallbacks = {}) {
     this.callbacks = callbacks;
     this.container = container;
-    // The editor splits into [canvas | Outputs strip]: the area plugin mounts
-    // on an inner element, so the strip column is OUTSIDE the canvas viewport —
-    // pan, zoom-to-fit, and drops can never put graph content behind it. The
-    // pair lives in an absolutely-positioned wrapper (not host-level flex): the
-    // host keeps its own normal-flow children (the view's start panel).
+    // The strip column is OUTSIDE the canvas viewport — pan, zoom-to-fit, and
+    // drops can never put graph content behind it. The wrapper is absolutely
+    // positioned so the host keeps its own normal-flow children.
     this.canvasWrap = document.createElement('div');
     this.canvasWrap.className = 'ff-canvas-wrap';
     container.appendChild(this.canvasWrap);
@@ -280,17 +220,10 @@ export class FlowEditor {
     this.area = new AreaPlugin<FlowScheme>(this.canvasEl);
     this.render = new ReactPlugin<FlowScheme, ReactArea2D<FlowScheme>>({createRoot});
 
-    // Output nodes have NO canvas view — their visible form is a screen-space
-    // chip inside the Outputs strip. A wire into one must still end somewhere,
-    // so the DOM-measuring watcher is wrapped: sockets on output nodes resolve
-    // analytically to the canvas' right edge at the chip's row (the wire runs
-    // to the edge and visually plugs into the adjacent strip chip), refreshed
-    // on pan/zoom/reorder via `notifyChipSockets`.
+    // Output nodes have NO canvas view — the DOM-measuring watcher is wrapped so
+    // their sockets resolve analytically to the canvas' right edge at the chip's row.
     const domWatcher = getDOMSocketPosition({
-      // No arrow markers anymore — direction comes from the dash-flow CSS
-      // animation. The line just needs to land on the dot edge, so a small
-      // symmetric offset that puts both endpoints just inside the socket dot
-      // (radius 4.5 px) keeps everything visually attached.
+      // Small symmetric offset lands both endpoints just inside the socket dot.
       offset: (pos, _id, side) => ({
         x: pos.x + (side === 'output' ? 2 : -2),
         y: pos.y,
@@ -302,8 +235,8 @@ export class FlowEditor {
         onChange: (pos: {x: number; y: number}) => void): (() => void) => {
         if (this.editor.getNode(nodeId)?.dgNodeType === 'output')
           return this.listenChipSocket(nodeId, onChange);
-        // Group-aware: while the node hides inside a minimized group, the
-        // wire endpoint is the group card's edge, not the (display:none) DOM.
+        // While a node hides inside a minimized group, the wire endpoint is the
+        // group card's edge, not the (display:none) DOM.
         return this.listenGroupableSocket(nodeId, side, key, onChange, domWatcher as unknown as {
           listen(n: string, s: string, k: string, cb: (p: {x: number; y: number}) => void): () => void;
         });
@@ -316,8 +249,6 @@ export class FlowEditor {
         node: () => FlowNodeComponent as never,
         socket: () => FlowSocketComponent as never,
         connection: () => FlowConnectionComponent as never,
-        // Input-node value editors mount a real DG input; anything else (the
-        // ConstString text control) keeps the preset's default component.
         control: (data) => (data.payload instanceof InputValueControl ?
           DgControlComponent : ReactPresets.classic.Control) as never,
       },
@@ -326,8 +257,8 @@ export class FlowEditor {
     this.installTypeValidation();
 
     this.editor.use(this.area);
-    // Casts: Rete's `Scope.use` does a structural variance check that gets
-    // pessimistic with our narrowed schemes. Runtime contracts are exact.
+    // Casts: Rete's `Scope.use` variance check gets pessimistic with our
+    // narrowed schemes; runtime contracts are exact.
     this.area.use(this.connection as never);
     this.area.use(this.render as never);
 
@@ -339,10 +270,9 @@ export class FlowEditor {
       scaling: () => ({min: 0.2, max: 2.5}),
     });
 
-    // Undo/redo: history-plugin tracks add/remove/drag of nodes & connections.
     this.history.addPreset(HistoryPresets.classic.setup());
     this.area.use(this.history as never);
-    HistoryExtensions.keyboard(this.history); // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
+    DG.UndoService.ownScope(this.container);
 
     this.installPointerDownTracker();
     this.wireEvents();
@@ -358,22 +288,22 @@ export class FlowEditor {
     this.installOutputStrip();
   }
 
-  /** Narrow callback surface for the React node components, stamped onto every
-   *  node this editor owns (`FlowNode.editorBridge` — see the `nodecreate` pipe
-   *  in `wireEvents`). Resolving it from the node instead of a page-level
-   *  global keeps each component bound to its own editor: several editors
-   *  coexist on a page (file previews, the creation-script dialog, detached
-   *  compile editors), and a global bridge that any construction rebinds and
-   *  any `destroy()` deletes broke collapse toggling and collapsed-socket
-   *  rendering in whichever editor didn't own it last. */
+  /** Callback surface for the React node components, stamped onto every node this
+   *  editor owns. Several editors coexist on a page — resolve the bridge from the
+   *  node, never a page-level global. */
   private readonly bridge: FlowEditorBridge = {
     toggleCollapsed: (id) => void this.toggleCollapsed(id),
     isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
     notifyParamsChanged: (nodeId) => this.notifyNodeParamsChanged(nodeId),
+    showShownInputsMenu: (nodeId, event) => this.showShownInputsMenu(nodeId, event),
+    toggleInlinePreview: (nodeId) => void this.toggleInlinePreview(nodeId),
+    getInlinePreviewContent: (nodeId) => this.callbacks.getInlinePreviewContent?.(nodeId) ?? null,
+    syncInlinePreview: (nodeId, host) => this.syncInlinePreview(nodeId, host),
+    releaseInlinePreview: (nodeId) => this.releaseInlinePreview(nodeId),
+    isInlinePreviewPending: (nodeId) => this.callbacks.isInlinePreviewPending?.(nodeId) ?? false,
   };
 
-  /** Configure ClassicFlow to reject incompatible socket connections at pick
-   *  time, before any connection ever enters the editor's data layer. */
+  /** Reject incompatible connections at pick time, before they enter the data layer. */
   private installTypeValidation(): void {
     this.connection.addPreset(() =>
       new ClassicFlow<FlowScheme, never[]>({
@@ -393,10 +323,8 @@ export class FlowEditor {
     );
   }
 
-  /** When a connection lands on a ValueOutput node and the source slot has a
-   *  meaningful type, copy that type into the output node's `outputType`. */
+  /** Copy a meaningful source slot type into a ValueOutput's `outputType` on connect. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
-    // Execution-ordering edges carry no data type — never derive an output type from one.
     if (isExecKey(String(connection.targetInput)) || isExecKey(String(connection.sourceOutput))) return;
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
     // Match by registered type, not label — titles are user-editable.
@@ -413,16 +341,18 @@ export class FlowEditor {
     }
   }
 
-  /** Collapsed nodes render socket DOM only for *connected* sockets (see
-   *  node-component.tsx). A connection created or removed while an endpoint is
-   *  collapsed changes which sockets must exist, so re-render those nodes.
-   *  Without this, a connection added to an already-collapsed node (creation-
-   *  script import, .flow load) has no socket element to attach to and stays
-   *  invisible until the node is expanded and collapsed again. */
+  /** Collapsed nodes and hidden rows render socket DOM only for *connected*
+   *  sockets — re-render endpoints so a new wire has an element to attach to. */
   private refreshCollapsedEndpoints(conn: FlowScheme['Connection']): void {
-    for (const id of [conn.source, conn.target]) {
+    const ends: Array<['output' | 'input', string, string]> = [
+      ['output', conn.source, String(conn.sourceOutput)],
+      ['input', conn.target, String(conn.targetInput)],
+    ];
+    for (const [side, id, key] of ends) {
       const node = this.editor.getNode(id);
-      if (node?.collapsed) void this.area.update('node', id);
+      if (!node) continue;
+      if (node.collapsed || hiddenSocketRow(node, side, key, () => false))
+        void this.area.update('node', id);
     }
   }
 
@@ -441,19 +371,17 @@ export class FlowEditor {
 
   private wireEvents(): void {
     this.editor.addPipe((context) => {
-      // Stamp the owning editor's bridge BEFORE the node ever renders, so the
-      // React node component always talks back to this editor (not a global).
+      // Stamp the owning editor's bridge before the node first renders.
       if (context.type === 'nodecreate')
         context.data.editorBridge = this.bridge;
-      // Stamp `_color` on every new connection BEFORE the area-plugin emits
-      // 'render', so the React Connection component picks up the right color
-      // on its very first render.
+      // Stamp `_color` before the area emits 'render' so the first paint is right.
       if (context.type === 'connectioncreate')
         this.decorateConnection(context.data);
       if (context.type === 'noderemoved') {
         this.chipSocketSubs.delete(context.data.id);
         this.groupSocketSubs.delete(context.data.id);
         this.handleGroupMemberRemoved(context.data.id);
+        this.releaseInlinePreview(context.data.id);
       }
       if (context.type === 'connectioncreated')
         this.maybeAutoTypeValueOutput(context.data);
@@ -467,9 +395,7 @@ export class FlowEditor {
           if (g) this.refreshGroupCard(g);
         }
       }
-      // No output node without a connection, ever: strip rows are auto-created
-      // when a value is published, so losing the last wire (deleted directly,
-      // or via the source node's removal) auto-removes the row too.
+      // No output node without a connection, ever — losing the last wire removes the row.
       if (context.type === 'connectionremoved')
         this.scheduleOrphanOutputCheck(context.data.source, context.data.target);
       if (
@@ -487,16 +413,12 @@ export class FlowEditor {
 
     this.area.addPipe((context) => {
       if (context.type === 'nodepicked') {
+        // Picking raises the node's view — portal order and clips must follow.
+        this.schedulePreviewPortalSync();
         const node = this.editor.getNode(context.data.id);
         if (node) {
-          // Re-picking the node that is ALREADY the current object (click it
-          // again, grab it to drag) changes nothing — don't make the host
-          // rebuild its panels. `lastPointerDownWasSelected` is the state
-          // snapshot from BEFORE rete's add-only pick, so a click that
-          // re-selects after a deselect-all still fires. The host's
-          // `isNodeContextCurrent` can veto the dedupe: staying selected does
-          // not mean the context panel / preview still show this node (tab
-          // switches and autoruns change both without touching the selection).
+          // Re-picking the current node must not make the host rebuild its
+          // panels; `isNodeContextCurrent` lets the host veto the dedupe.
           const samePick = node.id === this.lastPickedId && this.lastPointerDownWasSelected &&
             (this.callbacks.isNodeContextCurrent?.(node) ?? true);
           if (this.lastPickedId && this.lastPickedId !== node.id) {
@@ -505,15 +427,12 @@ export class FlowEditor {
           }
           this.lastPickedId = node.id;
           if (!samePick) this.callbacks.onNodeSelected?.(node);
-          this.refreshChipSelection(); // chip selected-state may have changed
+          this.refreshChipSelection();
         }
       }
-      // Intercept the during-drag translate intent: snap position and show guides.
-      // Mutating `data.position` in-place propagates to the actual translate.
-      // Only snap the *picked* node — when several nodes are selected and one
-      // is dragged, the selectable extension translates the rest by the same
-      // delta to preserve relative offsets. Snapping each follower would
-      // recompute their positions independently and break the group geometry.
+      // Mutating `data.position` in-place propagates to the translate. Only snap
+      // the *picked* node — followers translate by the same delta, and snapping
+      // each independently would break the group geometry.
       if (context.type === 'nodetranslate') {
         const data = context.data as {id: string; position: {x: number; y: number}};
         if (!this.suppressSnap && this.selector.isPicked({id: data.id, label: 'node'})) {
@@ -526,32 +445,30 @@ export class FlowEditor {
       if (context.type === 'nodetranslated') {
         const node = this.editor.getNode(context.data.id);
         if (node) node.pos = {...context.data.position};
-        // An expanded group's frame hugs its members — refit when one moves.
         const g = this.groupOf(context.data.id);
         if (g && !g.minimized) this.scheduleGroupRefit(g);
         this.scheduleMinimapRedraw();
+        // A dragged node's preview portal must ride along.
+        this.schedulePreviewPortalSync();
       }
       if (context.type === 'nodedragged') this.hideGuides();
-      // Keep the CSS dot-grid background aligned to the area transform — the
-      // grid is screen-space, the canvas content lives in a transformed
-      // space, so we rescale and shift the bg whenever pan/zoom changes.
+      // The dot-grid background is screen-space — rescale/shift it on pan/zoom.
       if (context.type === 'translated' || context.type === 'zoomed' ||
           context.type === 'render') {
         this.updateGridTransform();
         this.scheduleMinimapRedraw();
-        this.scheduleStripSync(false); // wire endpoints track the transform
+        this.scheduleStripSync(false);
       }
-      // Tag each rendered connection wrapper with its id + status for the
-      // CSS-driven execution-state animations (`[data-status="active"]` etc).
+      // Screen-space preview portals track their nodes' containers.
+      if (context.type === 'translated' || context.type === 'zoomed' || context.type === 'render')
+        this.schedulePreviewPortalSync();
+      // Tag rendered connection wrappers with id + status for the CSS animations.
       if (context.type === 'rendered' && (context.data as {type?: string}).type === 'connection')
         this.tagConnectionElement(context.data as {element: HTMLElement; payload: FlowConnection});
       return context;
     });
   }
 
-  /** Map a rete editor event to the classified {@link GraphEdit} handed to
-   *  `onGraphEdited`. Only called for the five event types listed in
-   *  `wireEvents` — anything else would be a programming error. */
   private classifyEdit(context:
     | {type: 'nodecreated' | 'noderemoved'; data: {id: string}}
     | {type: 'connectioncreated' | 'connectionremoved'; data: {source: string; target: string}}
@@ -568,21 +485,15 @@ export class FlowEditor {
     }
   }
 
-  /** Report that a node's parameters (its `inputValues` / `properties`) were
-   *  edited — the property panel calls this so run results downstream of the
-   *  node can be invalidated. Cosmetic edits (title, description) must NOT be
-   *  reported. */
+  /** Report a node's params were edited. Cosmetic edits (title, description)
+   *  must NOT be reported. */
   notifyNodeParamsChanged(nodeId: string): void {
     this.callbacks.onGraphEdited?.({kind: 'params-changed', nodeId});
-    // Keep the on-node value editor in step with edits made elsewhere (the
-    // context panel). Programmatic — the control's sync never re-reports.
+    // Keep the on-node editor in step with panel edits; sync never re-reports.
     const ctl = this.getNodeById(nodeId)?.controls['value'];
     if (ctl instanceof InputValueControl) ctl.sync();
   }
 
-  /** Update the canvas dot-grid background to track the AreaPlugin transform.
-   *  Without this, panning would drift the dots out of alignment with snapped
-   *  nodes. Called from translate/zoom events in the area pipe. */
   private updateGridTransform(): void {
     const t = this.area.area.transform;
     const size = 20 * t.k;
@@ -590,10 +501,6 @@ export class FlowEditor {
     this.container.style.backgroundPosition = `${t.x}px ${t.y}px`;
   }
 
-  // ---------- snap + alignment guides ----------
-
-  /** Build a screen-space overlay layer for the alignment guides. The two
-   *  `<div>` rules act as 1px dashed crosshair lines that we move on demand. */
   private installGuideOverlay(): void {
     if (this.container.style.position === '') this.container.style.position = 'relative';
     const overlay = document.createElement('div');
@@ -622,9 +529,7 @@ export class FlowEditor {
     return {w: r.width / k, h: r.height / k};
   }
 
-  /** Given the dragged node's id and its proposed position, decide where it
-   *  should actually land. Alignment with another node's edge/center wins
-   *  over the grid; otherwise the position snaps to the grid. */
+  /** Alignment with another node's edge/center wins over the grid snap. */
   private computeSnap(
     draggedId: string, pos: {x: number; y: number},
   ): {x: number; y: number; guideX: number | null; guideY: number | null} {
@@ -636,9 +541,7 @@ export class FlowEditor {
     let bestY: {delta: number; guide: number} | null = null;
 
     for (const other of this.editor.getNodes()) {
-      // Strip-pinned rows sit at viewport-dependent positions — never a
-      // meaningful alignment target for canvas nodes. Neither are nodes
-      // hidden inside a minimized group.
+      // Output rows and hidden group members are never alignment targets.
       if (other.id === draggedId || other.dgNodeType === 'output' ||
           this.minimizedGroupOf(other.id)) continue;
       const sz = this.measureNode(other.id);
@@ -680,12 +583,6 @@ export class FlowEditor {
     if (this.hGuide) this.hGuide.style.display = 'none';
   }
 
-  // ---------- minimap ----------
-
-  /** Build the bottom-right overview minimap: an SVG that draws every node as a
-   *  small rect plus the current viewport rectangle. Click/drag inside it pans
-   *  the canvas; the header button minimizes it to a title bar. Lives directly
-   *  in `this.container` (screen-space), so it doesn't pan/zoom with the graph. */
   private installMinimap(): void {
     const el = document.createElement('div');
     el.className = 'ff-minimap';
@@ -717,15 +614,12 @@ export class FlowEditor {
 
     el.appendChild(header);
     el.appendChild(body);
-    // Inside the canvas viewport (not the host) — the host's right column is
-    // the Outputs strip, which the minimap must not cover.
+    // In the canvas viewport, not the host — must not cover the Outputs strip.
     this.canvasEl.appendChild(el);
     this.minimapEl = el;
     this.minimapSvg = svg;
 
-    // Clicking anywhere on the header minimizes/restores. stopPropagation so it
-    // never pans the canvas. (The chevron is just a visual affordance — the
-    // click bubbles to the header handler.)
+    // stopPropagation so header clicks never pan the canvas.
     header.addEventListener('pointerdown', (e) => e.stopPropagation());
     header.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -736,9 +630,7 @@ export class FlowEditor {
     this.scheduleMinimapRedraw();
   }
 
-  /** Click/drag in the minimap body → pan so the clicked graph point centers in
-   *  the viewport. We map minimap px → canvas coords using the same fit the
-   *  draw step computed (stored on the svg via data-* for reuse). */
+  /** Click/drag in the minimap body pans so the clicked graph point centers. */
   private installMinimapNavigation(body: HTMLElement): void {
     const panToEvent = (e: PointerEvent): void => {
       const svg = this.minimapSvg;
@@ -748,10 +640,8 @@ export class FlowEditor {
       const rect = svg.getBoundingClientRect();
       const mmx = e.clientX - rect.left;
       const mmy = e.clientY - rect.top;
-      // minimap px → canvas coords — the exact inverse of the draw transform
-      // (`x_mm = cx * scale + offsetX`). `offsetX/offsetY` already fold in
-      // `-min * scale`; adding `min` again shifted every pan target down/right
-      // by the graph origin — the further from (0,0), the worse the miss.
+      // Exact inverse of the draw transform: offsetX/offsetY already fold in
+      // -min*scale — do NOT add min again.
       const cx = (mmx - fit.offsetX) / fit.scale;
       const cy = (mmy - fit.offsetY) / fit.scale;
       const cont = this.container.getBoundingClientRect();
@@ -780,8 +670,7 @@ export class FlowEditor {
     });
   }
 
-  /** Collapse the minimap to its header bar, or restore it. Public so hosts can
-   *  set the initial state (e.g. collapsed inside a preview dialog). */
+  /** Public so hosts can set the initial state (e.g. collapsed in a dialog). */
   setMinimapCollapsed(collapsed: boolean): void {
     const el = this.minimapEl;
     if (!el) return;
@@ -811,18 +700,13 @@ export class FlowEditor {
     };
   }
 
-  /** Coalesce minimap redraws to one per frame — the area pipe fires many
-   *  translate/render events during a single drag. */
-  /** Re-evaluate the overview after a graph edit (visibility + redraw). */
   refreshMinimap(): void {
     this.scheduleMinimapRedraw();
   }
 
   private scheduleMinimapRedraw(): void {
     if (!this.minimapEl) return;
-    // Nothing to overview on an empty canvas — hide the panel entirely (it
-    // reappears the moment the first node lands). Done before the collapsed/
-    // scheduled early-returns so an empty canvas hides regardless of either.
+    // Hide on an empty canvas — before the collapsed/scheduled early-returns.
     this.minimapEl.style.display = this.editor.getNodes().length === 0 ? 'none' : '';
     if (this.minimapRedrawScheduled) return;
     if (this.minimapEl.dataset.collapsed === 'true') return;
@@ -845,13 +729,10 @@ export class FlowEditor {
       return;
     }
 
-    // Graph bounds in canvas coords.
     let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
     const boxes: Array<{x: number; y: number; w: number; h: number; color: string}> = [];
     for (const node of nodes) {
-      // Strip-pinned rows track the viewport, not the graph — including them
-      // would smear the overview bounds on every pan. Members hidden inside a
-      // minimized group are drawn as their group's card below.
+      // Strip rows track the viewport; hidden members draw as their group's card.
       if (node.dgNodeType === 'output' || this.minimizedGroupOf(node.id)) continue;
       const sz = this.measureNode(node.id);
       const color = (node as unknown as {color?: string}).color ?? '#90a4ae';
@@ -901,7 +782,6 @@ export class FlowEditor {
       svg.appendChild(r);
     }
 
-    // Viewport rectangle (canvas coords visible through the container).
     const t = this.area.area.transform;
     const cont = this.container.getBoundingClientRect();
     const vx = -t.x / t.k; const vy = -t.y / t.k;
@@ -915,12 +795,8 @@ export class FlowEditor {
     svg.appendChild(vp);
   }
 
-  // ---------- output strip ----------
-
-  /** Chip layout constants (screen px — chips are plain DOM inside the strip
-   *  column, so zoom never touches them; keep in sync with the
-   *  `.ff-output-strip-chips` / `.ff-output-row` CSS). `GAP`/`H` also drive
-   *  the analytic wire-endpoint math in {@link chipSocketPos}. */
+  /** Screen px — keep in sync with the `.ff-output-strip-chips` / `.ff-output-row`
+   *  CSS; also drive the analytic wire-endpoint math in {@link chipSocketPos}. */
   private static readonly STRIP_CHIP_GAP = 6;
   private static readonly STRIP_CHIP_H = 24;
 
@@ -928,18 +804,10 @@ export class FlowEditor {
   private static readonly ARROW_DELTAS: Record<string, [number, number]> = {
     ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
   };
-  /** One arrow press nudges a node by a grid-ish step… */
   private static readonly NODE_NUDGE_STEP = 10;
-  /** …and Ctrl+arrow pans the canvas by a screen-visible amount. */
+  /** Screen px. */
   private static readonly CANVAS_PAN_STEP = 60;
 
-  /** Build the strip column: a thin flex sibling to the RIGHT of the canvas
-   *  viewport — graph content can never pan or fit behind it. Hosts the chips
-   *  (one per output node) above a vertical "Outputs" label. Chip interaction
-   *  is delegated here: click selects the node (property panel, Delete key),
-   *  right-click opens the node context menu; drops are hit-tested by rect in
-   *  `handleOutputDrop` (chips carry `.ff-node`, so the drop-on-node branch
-   *  binds a chip's free input first). */
   private installOutputStrip(): void {
     const strip = document.createElement('div');
     strip.className = 'ff-output-strip';
@@ -965,10 +833,8 @@ export class FlowEditor {
       const chip = (ev.target as HTMLElement | null)?.closest('[data-node-id]') as HTMLElement | null;
       const id = chip?.dataset.nodeId;
       if (!id) return;
-      // Re-clicking the chip that is already the sole-selected current object
-      // changes nothing — don't re-fire the host callbacks (panel rebuilds).
-      // Same host veto as `nodepicked`: a stale context panel / preview means
-      // the re-click must go through.
+      // Re-clicking the sole-selected current chip changes nothing — same host
+      // veto as `nodepicked`.
       const accumulate = ev.ctrlKey || ev.metaKey;
       const node = this.editor.getNode(id);
       if (node && (node as unknown as {selected?: boolean}).selected === true &&
@@ -995,11 +861,8 @@ export class FlowEditor {
     this.scheduleStripSync(true);
   }
 
-  /** Coalesce strip work to one pass per event-loop tick (a pan emits many
-   *  transform events per pointermove). `render: true` also rebuilds the chip
-   *  DOM (graph / selection / params changed); `false` only refreshes the wire
-   *  endpoints (pan/zoom/resize). Microtask — not rAF — so endpoints update
-   *  within the same frame and wires never visibly lag. */
+  /** Coalesced per tick. Microtask — not rAF — so wire endpoints update within
+   *  the same frame and never visibly lag a pan. */
   private scheduleStripSync(render: boolean): void {
     if (render) this.stripRenderPending = true;
     if (!this.outputStripEl || this.stripSyncScheduled) return;
@@ -1025,10 +888,7 @@ export class FlowEditor {
     this.notifyChipSockets();
   }
 
-  /** All output nodes in strip order: the user's drag-assigned rank first,
-   *  insertion order for anything unranked (sort is stable). Public — the view
-   *  derives the output-tab order from it, and it IS the flow's output order
-   *  (the emitted `//output:` lines follow it too). */
+  /** Output nodes in strip order — the flow's single source of output order. */
   getOutputNodes(): FlowNode[] {
     return this.editor.getNodes().filter((n) => n.dgNodeType === 'output')
       .sort((a, b) => outputOrderRank(a) - outputOrderRank(b));
@@ -1038,21 +898,15 @@ export class FlowEditor {
     return this.getOutputNodes();
   }
 
-  /** Drag a chip up or down to reorder the flow's outputs. Reorder ONLY — the
-   *  chip never leaves the strip, and a sub-threshold press stays a click.
-   *  The committed order is written to every output node's `outputOrder`
-   *  property, so it serializes with the flow and drives everything derived
-   *  from it: chip stacking, wire endpoints, tab order, `//output:` lines. */
+  /** Drag a chip vertically to reorder outputs; a sub-threshold press stays a click. */
   private beginChipReorder(ev: PointerEvent): void {
     if (ev.button !== 0) return;
     const chips = this.stripChipsEl;
     const chip = (ev.target as HTMLElement | null)?.closest('.ff-output-row') as HTMLElement | null;
     if (!chips || !chip?.dataset.nodeId || chips.children.length < 2) return;
     const startY = ev.clientY;
-    /** Where the pointer grabbed the chip, so it rides under the finger. */
     const grabOffset = ev.clientY - chip.getBoundingClientRect().top;
-    /** The chip's untransformed slot top — the anchor the pointer-follow
-     *  transform is relative to; re-measured after every re-insertion. */
+    /** Untransformed slot top — re-measured after every re-insertion. */
     let staticTop = 0;
     let dragging = false;
     const onMove = (e: PointerEvent): void => {
@@ -1063,9 +917,7 @@ export class FlowEditor {
         document.body.style.cursor = 'grabbing';
         staticTop = chip.getBoundingClientRect().top;
       }
-      // Live re-insertion: the chip slots in before the first chip whose
-      // middle the pointer is above. DOM-only while the drag lasts — the
-      // model (and the wires, which follow model order) commit on release.
+      // Live re-insertion, DOM-only while the drag lasts; the model commits on release.
       const next = (Array.from(chips.children) as HTMLElement[])
         .filter((c) => c !== chip)
         .find((c) => {
@@ -1077,8 +929,7 @@ export class FlowEditor {
         chip.style.transform = ''; // measure the new slot untransformed
         staticTop = chip.getBoundingClientRect().top;
       }
-      // Between slot changes the chip visibly follows the pointer — without
-      // this the drag reads as "nothing is happening" until a chip jumps.
+      // Between slot changes the chip visibly follows the pointer.
       chip.style.transform = `translateY(${e.clientY - grabOffset - staticTop}px)`;
     };
     const onUp = (): void => {
@@ -1089,22 +940,18 @@ export class FlowEditor {
       chip.classList.remove('ff-output-row-dragging');
       chip.style.transform = '';
       document.body.style.cursor = '';
-      // The browser dispatches the release's `click` synchronously after
-      // pointerup — self-clear right after, so a release outside the strip
-      // (no click at all) can't leave the flag armed for the next real click.
+      // The release's `click` dispatches synchronously after pointerup — self-clear
+      // so a release outside the strip can't leave the flag armed.
       this.suppressChipClick = true;
       setTimeout(() => this.suppressChipClick = false, 0);
       this.commitChipOrder();
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp, {once: true});
-    // A cancelled pointer (touch/pen interruption, window blur) must also
-    // release the drag, or the move handler and the grab cursor stay armed.
     window.addEventListener('pointercancel', onUp, {once: true});
   }
 
-  /** Persist the strip's current DOM order as each output node's rank, then
-   *  resync everything that renders in that order. No-op when nothing moved. */
+  /** Persist the strip's DOM order as each output node's rank. */
   private commitChipOrder(): void {
     const chips = this.stripChipsEl;
     if (!chips) return;
@@ -1117,15 +964,13 @@ export class FlowEditor {
       }
     });
     if (!changed) return;
-    this.scheduleStripSync(true); // wire endpoints follow the model order
-    this.callbacks.onGraphChanged?.(); // dirty tracking + output-tab resync
+    this.scheduleStripSync(true);
+    this.callbacks.onGraphChanged?.();
   }
 
-  /** Update every chip's `data-selected` IN PLACE. Deliberately not a rebuild:
-   *  selection changes fire mid-click-gesture (pointerup), and replacing the
-   *  pressed chip element there would keep the browser from dispatching its
-   *  `click` — the very event that selects the node. Deferred a microtask so
-   *  the (async) selectable-extension calls have landed on `node.selected`. */
+  /** In-place attribute update, never a rebuild — replacing the pressed chip
+   *  mid-gesture would swallow its `click`. Deferred a microtask so the async
+   *  selection calls have landed. */
   private refreshChipSelection(): void {
     queueMicrotask(() => {
       const chips = this.stripChipsEl;
@@ -1137,11 +982,8 @@ export class FlowEditor {
     });
   }
 
-  /** One chip: [socket dot | type letter], fixed 40×24, screen-space. Carries
-   *  the same identity attributes as a canvas node card (`.ff-node`,
-   *  `data-node-id`, `data-node-type-name`, `data-selected`, the
-   *  `socket-input` test-id), so guides, connect hints, the drop-on-node
-   *  branch, and the tests address chips exactly like nodes. */
+  /** One chip carries the same identity attributes as a canvas node card, so
+   *  hints, drops, and tests address chips exactly like nodes. */
   private buildChip(node: FlowNode): HTMLElement {
     const inputKeys = Object.keys(node.inputs).filter((k) => !isExecKey(k));
     const boundKey = inputKeys.find((k) => this.isSocketConnected(node.id, 'input', k));
@@ -1197,12 +1039,8 @@ export class FlowEditor {
     return el;
   }
 
-  /** Canvas-coord wire endpoint for any socket on an output node: the canvas'
-   *  right edge, at the vertical center of that node's chip. Chips are
-   *  vertically centered as a group (flex `justify-content: center`), so chip
-   *  i's center sits at the strip's middle, offset by its index's distance
-   *  from the group middle. The wire runs to the edge and visually plugs into
-   *  the adjacent strip chip. */
+  /** Wire endpoint for an output-node socket: the canvas' right edge at the
+   *  chip's row (chips are vertically centered as a group). */
   private chipSocketPos(nodeId: string): {x: number; y: number} {
     const rows = this.outputNodes();
     const i = Math.max(0, rows.findIndex((n) => n.id === nodeId));
@@ -1212,9 +1050,6 @@ export class FlowEditor {
     return {x: (this.canvasEl.clientWidth - t.x) / t.k, y: (yPx - t.y) / t.k};
   }
 
-  /** `socketPositionWatcher.listen` for sockets on output nodes (see the
-   *  constructor): emit the analytic chip endpoint now and on every
-   *  {@link notifyChipSockets}. */
   private listenChipSocket(nodeId: string, onChange: (pos: {x: number; y: number}) => void): () => void {
     let subs = this.chipSocketSubs.get(nodeId);
     if (!subs) {
@@ -1226,8 +1061,6 @@ export class FlowEditor {
     return () => void this.chipSocketSubs.get(nodeId)?.delete(onChange);
   }
 
-  /** Push fresh endpoints to every subscribed wire — called from the strip
-   *  sync (transform changes, chip reorders, canvas resize). */
   private notifyChipSockets(): void {
     for (const [nodeId, subs] of this.chipSocketSubs) {
       if (subs.size === 0) continue;
@@ -1236,8 +1069,6 @@ export class FlowEditor {
     }
   }
 
-  /** Whether a client-space point lies inside the strip column. Used by the
-   *  drop handler. */
   private stripContains(clientX: number, clientY: number): boolean {
     const strip = this.outputStripEl;
     if (!strip) return false;
@@ -1245,11 +1076,8 @@ export class FlowEditor {
     return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
   }
 
-  /** An output-socket drag dropped on the strip: publish that value as a flow
-   *  output. Creates the matching output node (Table Output for a dataframe,
-   *  Value Output otherwise — its declared type auto-set by
-   *  `maybeAutoTypeValueOutput` on connect), names it after the source slot,
-   *  and wires it up; the `nodecreated` strip sync renders the chip. */
+  /** Publish a dragged output as a flow output: create the matching output node,
+   *  name it after the source slot, and wire it up. */
   private async bindOutputToStrip(src: {nodeId: string; outputKey: string; dgType: string}): Promise<void> {
     const {createNode} = await import('./node-factory');
     const isTable = src.dgType === 'dataframe';
@@ -1260,8 +1088,6 @@ export class FlowEditor {
     await this.addConnectionByKeys(src.nodeId, src.outputKey, node.id, isTable ? 'table' : 'value');
   }
 
-  /** A script-identifier param name derived from the source slot key (`__pt`
-   *  suffix stripped), made unique among the existing output nodes' names. */
   private uniqueOutputParamName(outputKey: string): string {
     let base = outputKey.replace(/__pt$/, '').replace(/[^a-zA-Z0-9_]/g, '');
     if (!/^[a-zA-Z_]/.test(base)) base = 'result';
@@ -1273,17 +1099,13 @@ export class FlowEditor {
       if (!taken.has(`${base}${i}`)) return `${base}${i}`;
   }
 
-  /** Node ids awaiting the no-orphan-output check, and whether a connection
-   *  drag is in flight. Picking an existing wire's endpoint REMOVES the
-   *  connection before the re-route drop re-adds it — checking mid-gesture
-   *  would kill the output node under the user's cursor, so pending checks
-   *  flush when the gesture ends (or a tick after a non-gesture removal). */
+  /** Orphan-output checks are held while a connection drag is in flight — a
+   *  re-route removes the wire before re-adding it, and an eager check would
+   *  kill the output node under the user's cursor. */
   private pendingOrphanOutputIds = new Set<string>();
   private connectionDragActive = false;
 
-  /** Queue both endpoints of a removed connection: any that is an output node
-   *  left with no connections at flush time gets removed — output rows exist
-   *  only as publish targets, so a connection-less one is meaningless. */
+  /** Queue both endpoints; a connection-less output node is removed at flush time. */
   private scheduleOrphanOutputCheck(...nodeIds: string[]): void {
     for (const id of nodeIds) this.pendingOrphanOutputIds.add(id);
     setTimeout(() => this.flushOrphanOutputCheck(), 0);
@@ -1301,28 +1123,16 @@ export class FlowEditor {
     }
   }
 
-  // ---------- drag-output-to-empty suggestion menu ----------
-
-  /** Hook into the connection plugin's own `connectionpick` / `connectiondrop`
-   *  signals — these fire reliably regardless of how the plugin captures
-   *  pointer events. (Earlier we tried watching raw DOM pointerup, but the
-   *  connection plugin captures the gesture first and the bubbling never
-   *  reached our handler.) `connectiondrop` carries `created: boolean` so
-   *  we know exactly when a real connection didn't happen. */
+  /** Hook the connection plugin's `connectionpick`/`connectiondrop` signals —
+   *  raw DOM pointerup never reaches us (the plugin captures the gesture first). */
   private installSuggestionMenu(): void {
     let lastPointer = {x: 0, y: 0};
     const trackPointer = (e: PointerEvent): void => {
       lastPointer = {x: e.clientX, y: e.clientY};
     };
-    // Always track — cheap, and lets us fall back without the listener
-    // dance per-pick.
     this.suggestPointerMove = trackPointer;
     window.addEventListener('pointermove', this.suggestPointerMove, true);
-    // Safety net: a pick that ends without a `connectiondrop` (e.g. Esc) still
-    // releases the pointer — clear the compatibility hints then, and release
-    // the orphan-output hold (the deferred flush runs after the plugin's own
-    // drop processing in this same dispatch, so a re-added wire lands first).
-    // Idempotent.
+    // Safety net for picks that end without a `connectiondrop` (Esc). Idempotent.
     this.suggestPointerUp = (): void => {
       this.endConnectHints();
       if (this.connectionDragActive) {
@@ -1335,10 +1145,8 @@ export class FlowEditor {
     this.connection.addPipe((context) => {
       const c = context as {type: string; data: any};
       if (c.type === 'connectionpick') {
-        // Right-click also fires connectionpick (the plugin doesn't filter
-        // by button). Without this guard, a right-click on an output socket
-        // would arm the suggestion menu, then drop with no connection,
-        // opening it accidentally.
+        // Right-click also fires connectionpick — unguarded it would arm and
+        // then accidentally open the suggestion menu.
         if (this.lastPointerButton !== 0) {
           this.dragOutSource = null;
           this.dragInSource = null;
@@ -1348,8 +1156,6 @@ export class FlowEditor {
         // A pick can be a re-route of an existing wire (removed on pick,
         // re-added on drop) — hold the orphan-output check until the drop.
         this.connectionDragActive = true;
-        // Dim the canvas and light up only the sockets/nodes this pick can
-        // legally connect to (compatible type, opposite side).
         this.beginConnectHints(sock.nodeId, sock.key, sock.side);
         const node = this.editor.getNode(sock.nodeId);
         if (sock.side === 'output') {
@@ -1358,9 +1164,7 @@ export class FlowEditor {
           if (node && slot)
             this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
         } else {
-          // Input-side pick (a fresh drag out of an input, or the tail of an
-          // existing connection) — arms the reverse drop-on-node shortcut
-          // (exec-in included: its body drop connects the node's exec-out).
+          // Input-side pick arms the reverse drop-on-node shortcut.
           this.dragOutSource = null;
           const slot = node?.inputs[sock.key] as {socket: TypedSocket} | undefined;
           this.dragInSource = (node && slot) ?
@@ -1369,8 +1173,7 @@ export class FlowEditor {
       }
       if (c.type === 'connectiondrop') {
         this.endConnectHints();
-        // Gesture over — if the re-route dropped nowhere, the output it fed
-        // is now orphaned and goes; a tick's grace lets the re-add land first.
+        // Gesture over — flush the orphan check; a tick's grace lets a re-add land first.
         this.connectionDragActive = false;
         setTimeout(() => this.flushOrphanOutputCheck(), 0);
         const data = c.data as {created: boolean; socket: {nodeId: string} | null};
@@ -1379,14 +1182,11 @@ export class FlowEditor {
         this.dragOutSource = null;
         this.dragInSource = null;
         if (!srcOut && !srcIn) return context;
-        // A real connection happened, or the user dropped on a socket the
-        // plugin handled (accepted, or rejected on type mismatch) — either way
-        // they aimed at a specific socket, so don't second-guess them.
+        // They aimed at a specific socket (accepted or type-rejected) — don't
+        // second-guess them.
         if (data.created || data.socket) return context;
-        // Dropped without hitting a socket: if it landed on a node body,
-        // connect to its one obvious counterpart slot (no need to hit the tiny
-        // pin). Empty-canvas drops open the suggestion menu for the matching
-        // direction — consumers for an output drag, producers for an input drag.
+        // Missed every socket: node body → connect the obvious slot; empty
+        // canvas → suggestion menu for the matching direction.
         if (srcOut) void this.handleOutputDrop(srcOut, lastPointer.x, lastPointer.y);
         else if (srcIn) void this.handleInputDrop(srcIn, lastPointer.x, lastPointer.y);
       }
@@ -1394,18 +1194,14 @@ export class FlowEditor {
     });
   }
 
-  /** The rendered DOM element for a node (or null if not painted). */
   private nodeEl(nodeId: string): HTMLElement | null {
     return this.container.querySelector(`.ff-node[data-node-id="${CSS.escape(nodeId)}"]`);
   }
 
-  /** Drop of an output-drag that missed every socket: connect to a node's sole
-   *  compatible free input if it landed on one, else open the suggestion menu. */
   private async handleOutputDrop(
     src: {nodeId: string; outputKey: string; dgType: string}, x: number, y: number,
   ): Promise<void> {
-    // `elementsFromPoint` (not `elementFromPoint`) so a transient overlay on top
-    // of the node doesn't hide it.
+    // elementsFromPoint so a transient overlay doesn't hide the node.
     const stack = document.elementsFromPoint(x, y) as HTMLElement[];
     let nodeEl: HTMLElement | null = null;
     for (const el of stack) {
@@ -1414,23 +1210,18 @@ export class FlowEditor {
     }
     const targetNodeId = nodeEl?.dataset.nodeId;
     if (targetNodeId && targetNodeId !== src.nodeId) {
-      // An order drag connects straight to the target's exec-in — every node
-      // has one and it accepts many predecessors, so a body drop is
-      // unambiguous (no aiming at the small square); duplicates are skipped.
+      // An order drag connects straight to the target's exec-in (always present,
+      // accepts many predecessors); duplicates are skipped.
       const key = isExecKey(src.outputKey) ?
         (this.hasConnection(src.nodeId, src.outputKey, targetNodeId, EXEC_IN_KEY) ? null : EXEC_IN_KEY) :
         this.soleCompatibleInput(src.nodeId, src.outputKey, targetNodeId);
-      // Dropped on a node: connect to its one obvious input, or do nothing when
-      // it has zero / several candidates (don't guess, don't pop the menu).
+      // Zero or several candidates → don't guess, don't pop the menu.
       if (key) await this.addConnectionByKeys(src.nodeId, src.outputKey, targetNodeId, key);
       return;
     }
-    // No suggestion menu for order drags — nothing "produces" or "consumes"
-    // an order signal; an empty-canvas drop is simply a no-op.
+    // No suggestion menu for order drags — an empty-canvas drop is a no-op.
     if (isExecKey(src.outputKey)) return;
-    // Dropped on the Outputs strip backdrop (between rows): publish the value
-    // as a new flow output. Drops ON an existing row were handled by the
-    // node-body branch above (they bind that row's free input).
+    // Strip backdrop drop publishes the value; drops ON a row were handled above.
     if (this.stripContains(x, y)) {
       await this.bindOutputToStrip(src);
       return;
@@ -1438,16 +1229,11 @@ export class FlowEditor {
     await this.openSuggestionMenu(x, y, src);
   }
 
-  /** Whether this exact connection already exists. */
   private hasConnection(source: string, sourceOutput: string, target: string, targetInput: string): boolean {
     return this.editor.getConnections().some((c) => c.source === source &&
       String(c.sourceOutput) === sourceOutput && c.target === target && String(c.targetInput) === targetInput);
   }
 
-  /** Drop of an input-drag that missed every socket: if it landed on another
-   *  node's body, connect from that node's one obvious output (a real output
-   *  wins over a passthrough — see `soleCompatibleOutput`; ambiguity aborts).
-   *  On empty canvas: open the reverse suggestion menu ("what produces this?"). */
   private async handleInputDrop(
     src: {nodeId: string; inputKey: string; dgType: string}, x: number, y: number,
   ): Promise<void> {
@@ -1462,8 +1248,7 @@ export class FlowEditor {
     }
     const sourceNodeId = nodeEl?.dataset.nodeId;
     if (sourceNodeId && sourceNodeId !== src.nodeId) {
-      // Order drag out of an exec-in: the dropped-on node becomes the
-      // predecessor via its exec-out (mirror of the output-drop shortcut).
+      // Order drag out of an exec-in: the dropped-on node becomes the predecessor.
       const key = isExecKey(src.inputKey) ?
         (this.hasConnection(sourceNodeId, EXEC_OUT_KEY, src.nodeId, src.inputKey) ? null : EXEC_OUT_KEY) :
         this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
@@ -1473,10 +1258,8 @@ export class FlowEditor {
     if (!sourceNodeId && !isExecKey(src.inputKey)) await this.openReverseSuggestionMenu(x, y, src);
   }
 
-  /** The reverse suggestion menu: an input drag dropped on empty canvas offers
-   *  every node type with a compatible output — or pass-through — (real
-   *  producers first), creates the chosen one at the drop point, and wires its
-   *  first compatible output (real over pass-through) into the dragged input. */
+  /** Input drag on empty canvas: offer node types producing this type, create
+   *  the pick at the drop point, and wire it into the dragged input. */
   private async openReverseSuggestionMenu(
     clientX: number, clientY: number,
     target: {nodeId: string; inputKey: string; dgType: string},
@@ -1498,8 +1281,7 @@ export class FlowEditor {
     const {x, y} = this.screenToCanvas(clientX, clientY);
     await this.addNodeAt(node, x, y);
 
-    // Auto-connect: the new node's first compatible output drives the dragged
-    // input — a real output wins over a pass-through.
+    // Auto-connect — a real output wins over a pass-through.
     const targetSocket = (this.editor.getNode(target.nodeId)?.inputs[target.inputKey] as
       {socket: TypedSocket} | undefined)?.socket;
     if (!targetSocket) return;
@@ -1519,13 +1301,9 @@ export class FlowEditor {
     if (outKey) await this.addConnectionByKeys(node.id, outKey, target.nodeId, target.inputKey);
   }
 
-  /** The output on `sourceNodeId` that can drive the dragged input: the sole
-   *  compatible **real** output wins; only when no real output is compatible
-   *  does the sole compatible **pass-through** qualify. Zero or several
-   *  candidates in the winning group → null (don't guess — aim at a pin).
-   *  Execution-order ports are ignored. Already-wired outputs stay eligible
-   *  (an output legitimately feeds many consumers). Drives the reverse
-   *  drop-on-node shortcut (drop an input drag anywhere on a producer node). */
+  /** The one output on `sourceNodeId` that can drive the dragged input — a sole
+   *  compatible real output wins over a sole pass-through; ambiguity → null.
+   *  Already-wired outputs stay eligible (an output feeds many consumers). */
   soleCompatibleOutput(dragNodeId: string, dragInputKey: string, sourceNodeId: string): string | null {
     const inSocket = (this.editor.getNode(dragNodeId)?.inputs[dragInputKey] as
       {socket: TypedSocket} | undefined)?.socket;
@@ -1544,10 +1322,7 @@ export class FlowEditor {
     return null;
   }
 
-  /** The single input on `targetNodeId` that the source output can drive AND is
-   *  not already wired — or null if there are zero or several such inputs.
-   *  Execution-order ports are ignored (they're aimed at deliberately). Drives
-   *  the drop-on-node shortcut (drop anywhere on a node with one obvious input). */
+  /** The single compatible, unwired input on the target — null when zero or several. */
   soleCompatibleInput(srcNodeId: string, srcOutputKey: string, targetNodeId: string): string | null {
     const srcSocket = (this.editor.getNode(srcNodeId)?.outputs[srcOutputKey] as
       {socket: TypedSocket} | undefined)?.socket;
@@ -1563,11 +1338,8 @@ export class FlowEditor {
     return candidates.length === 1 ? candidates[0] : null;
   }
 
-  /** Dim the canvas and highlight only the opposite-side sockets (and their
-   *  nodes) that a pick from `srcKey` could legally connect to. Cleared by
-   *  `endConnectHints` on drop / pointer release. Symmetric: an output pick
-   *  lights compatible inputs, an input pick (existing-connection tail) lights
-   *  compatible outputs. */
+  /** Dim the canvas and highlight the sockets a pick from `srcKey` can legally
+   *  connect to. */
   private beginConnectHints(srcNodeId: string, srcKey: string, srcSide: 'input' | 'output'): void {
     this.endConnectHints();
     const srcNode = this.editor.getNode(srcNodeId);
@@ -1576,9 +1348,7 @@ export class FlowEditor {
     const srcSocket = srcSlot?.socket;
     if (!srcSocket) return;
     this.container.classList.add('ff-connecting');
-    // An order-port drag keeps every node's (normally hover-only) exec squares
-    // visible for the whole gesture — the drag has visible targets and the
-    // source square can't vanish mid-drag.
+    // Keep the normally hover-only exec squares visible for the whole order drag.
     if (isExecKey(srcKey))
       this.container.classList.add('ff-connecting-order');
     // A data-output drag can always land on the Outputs strip — light it up.
@@ -1587,9 +1357,7 @@ export class FlowEditor {
     this.nodeEl(srcNodeId)?.classList.add('ff-node-source');
     const targetSide: 'input' | 'output' = srcSide === 'output' ? 'input' : 'output';
     if (isExecKey(srcKey)) {
-      // An order drag: every other node is a legal run-order neighbor — light
-      // its opposite exec square (the wrapper carries the same compat class the
-      // data-socket rows use, so the green glow rule applies as-is).
+      // Any node is a legal run-order neighbor — light its opposite exec square.
       const targetTid = targetSide === 'input' ? tid('exec-in') : tid('exec-out');
       for (const node of this.editor.getNodes()) {
         if (node.id === srcNodeId) continue;
@@ -1635,9 +1403,6 @@ export class FlowEditor {
     source: {nodeId: string; outputKey: string; dgType: string},
   ): Promise<void> {
     const {findNodeTypesAcceptingInput, prioritizeCandidates, createNode} = await import('./node-factory');
-    // Canvas context for the ranking heuristics: the science the drag came
-    // from (source node's package), what's already on the canvas (packages →
-    // domain fallback), and which functions the user already reached for.
     const nodes = this.editor.getNodes();
     let candidates = findNodeTypesAcceptingInput(source.dgType, {
       sourcePackageName: this.editor.getNode(source.nodeId)?.dgPackageName,
@@ -1646,10 +1411,8 @@ export class FlowEditor {
     });
     if (candidates.length === 0) return;
 
-    // The toolbox suggestion engine's picks for this node lead the list — the
-    // menu and the Suggestions pane must agree on "what's next". Time-boxed so
-    // a slow context read (semtype detection on a big capture) never holds the
-    // popup back; a miss just shows the heuristic order.
+    // Engine picks lead the list (the menu and the Suggestions pane must agree);
+    // time-boxed so a slow context read never holds the popup back.
     const prefills = new Map<string, Record<string, unknown>>();
     if (this.callbacks.getSocketSuggestions) {
       try {
@@ -1672,8 +1435,6 @@ export class FlowEditor {
     const {x, y} = this.screenToCanvas(clientX, clientY);
     await this.addNodeAt(node, x, y);
 
-    // Auto-connect: pick the first input on the new node whose socket the
-    // dragged source can drive.
     const sourceSocket = (this.editor.getNode(source.nodeId)?.outputs[source.outputKey] as
       {socket: TypedSocket} | undefined)?.socket;
     if (!sourceSocket) return;
@@ -1685,8 +1446,7 @@ export class FlowEditor {
     if (connectedKey)
       await this.addConnectionByKeys(source.nodeId, source.outputKey, node.id, connectedKey);
 
-    // An engine pick carries its prefill (the column it matched on, …) — same
-    // application as the pane's `applySuggestion`, reported like a panel edit.
+    // An engine pick carries its prefill, reported like a panel edit.
     const prefill = prefills.get(choice);
     if (prefill && Object.keys(prefill).length > 0) {
       for (const [k, v] of Object.entries(prefill)) node.inputValues[k] = v;
@@ -1695,16 +1455,11 @@ export class FlowEditor {
     }
   }
 
-  // ---------- hover docs ----------
-
   private hoverDocsEl: HTMLElement | null = null;
   private hoverDocsTimer: number | null = null;
   private hoverDocsNodeId: string | null = null;
 
-  /** KNIME-style hover popup: a card next to the node with description,
-   *  type, and (for func nodes) the input/output list. Shows after a short
-   *  delay so flicking through the canvas doesn't spam. Stays open while
-   *  the cursor is on the popup itself. */
+  /** Hover card next to the node, shown after a delay; stays open while hovered. */
   private installHoverDocs(): void {
     const popup = document.createElement('div');
     popup.className = 'ff-hover-docs';
@@ -1721,8 +1476,7 @@ export class FlowEditor {
     });
     popup.addEventListener('mouseleave', () => this.hideHoverDocs());
 
-    // Hover trigger is the status circle in the title bar — narrow target so
-    // the docs don't pop up every time the cursor passes over a node.
+    // Narrow trigger (the status circle) so docs don't pop on every node pass.
     this.container.addEventListener('mouseover', (ev) => {
       const target = ev.target as HTMLElement | null;
       if (!target?.classList?.contains('ff-node-status')) return;
@@ -1737,7 +1491,6 @@ export class FlowEditor {
       const fromEl = ev.target as HTMLElement | null;
       if (!fromEl?.classList?.contains('ff-node-status')) return;
       const toEl = ev.relatedTarget as HTMLElement | null;
-      // Cursor moved onto the popup → keep it open.
       if (toEl && popup.contains(toEl)) return;
       this.hideHoverDocs();
     });
@@ -1784,7 +1537,6 @@ export class FlowEditor {
       this.appendHoverParamSection(popup, 'Outputs', fn.outputs);
     }
 
-    // Position next to the node — right side preferred, left if no room.
     popup.style.display = 'block';
     const nodeRect = nodeEl.getBoundingClientRect();
     const popupRect = popup.getBoundingClientRect();
@@ -1830,21 +1582,13 @@ export class FlowEditor {
     if (this.hoverDocsEl) this.hoverDocsEl.style.display = 'none';
   }
 
-  // ---------- workflow annotations ----------
-
-  /** Create a new annotation, mount its element in the transformed canvas
-   *  layer (so it pans/zooms with the graph), and wire interactions. */
   addAnnotation(opts: Partial<AnnotationDoc> = {}): FlowAnnotation {
     const ann = new FlowAnnotation(opts);
     this.annotations.set(ann.id, ann);
     const content = this.area.area.content;
     content.add(ann.element);
-    // Send to back: insert at the start of the holder's children list. With
-    // `simpleNodesOrder` driving picked nodes to the end, this guarantees
-    // every node and every existing connection paints on top of new
-    // annotations (later DOM children paint over earlier ones in absolute-
-    // positioned siblings, and z-index alone wasn't enough across stacking
-    // contexts established by transforms).
+    // Insert at the start of the holder's children so nodes and wires paint on
+    // top — z-index alone fails across transform-established stacking contexts.
     const firstChild = content.holder.firstChild;
     if (firstChild && firstChild !== ann.element)
       void content.reorder(ann.element, firstChild);
@@ -1862,8 +1606,6 @@ export class FlowEditor {
     this.callbacks.onGraphChanged?.();
   }
 
-  /** Mark an annotation as the Delete-key target (or clear with `null`),
-   *  mirroring the highlight node selection gets. */
   private setActiveAnnotation(id: string | null): void {
     if (this.activeAnnotationId === id) return;
     if (this.activeAnnotationId)
@@ -1876,12 +1618,33 @@ export class FlowEditor {
     return Array.from(this.annotations.values());
   }
 
-  /** Everything an annotation drag carries along: nodes whose CENTER sits
-   *  inside the annotation rect (strip-pinned output rows excluded), smaller
-   *  annotations fully inside it, and the waypoints of connections linking two
-   *  carried nodes (so routed wires travel with their endpoints). Computed at
-   *  drag START — a stateless "capture": a node dragged out of the frame simply
-   *  isn't inside at the next grab, so nothing has to be remembered or saved. */
+  /** Both setters fire onGraphChanged — a recolored/resized note is an unsaved change. */
+  setAnnotationColor(id: string, bg: string): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.color === bg) return;
+    ann.color = bg;
+    ann.applyColor();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  setAnnotationFontSize(id: string, size: number): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.fontSize === size) return;
+    ann.fontSize = size;
+    ann.applyFont();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  setAnnotationPinned(id: string, pinned: boolean): void {
+    const ann = this.annotations.get(id);
+    if (!ann || ann.pinned === pinned) return;
+    ann.pinned = pinned;
+    ann.applyPinned();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  /** Everything an annotation drag carries. Computed at drag START — a stateless
+   *  capture, so nothing has to be remembered or can go stale. */
   private annotationCargo(ann: FlowAnnotation): {
     nodes: Array<{id: string; start: {x: number; y: number}}>;
     annotations: Array<{ann: FlowAnnotation; start: {x: number; y: number}}>;
@@ -1894,8 +1657,7 @@ export class FlowEditor {
     const nodes: Array<{id: string; start: {x: number; y: number}}> = [];
     const carried = new Set<string>();
     for (const node of this.editor.getNodes()) {
-      // Members of a minimized group travel with their CARD (below), never
-      // individually — moving them without the card would tear the group.
+      // Members of a minimized group travel with their card, never individually.
       if (node.dgNodeType === 'output' || this.minimizedGroupOf(node.id)) continue;
       const sz = this.measureNode(node.id);
       const cx = node.pos.x + sz.w / 2, cy = node.pos.y + sz.h / 2;
@@ -1904,7 +1666,6 @@ export class FlowEditor {
         carried.add(node.id);
       }
     }
-    // Minimized group cards, carried card + hidden members together.
     const groups: Array<{g: FlowGroup; start: {x: number; y: number}}> = [];
     for (const g of this.groups.values()) {
       if (!g.minimized) continue;
@@ -1923,7 +1684,7 @@ export class FlowEditor {
     }
     const annotations: Array<{ann: FlowAnnotation; start: {x: number; y: number}}> = [];
     for (const other of this.annotations.values()) {
-      if (other === ann) continue;
+      if (other === ann || other.pinned) continue;
       if (other.pos.x >= x1 && other.pos.y >= y1 &&
           other.pos.x + other.size.w <= x2 && other.pos.y + other.size.h <= y2)
         annotations.push({ann: other, start: {...other.pos}});
@@ -1938,43 +1699,49 @@ export class FlowEditor {
     return {nodes, annotations, groups, waypoints, connIds};
   }
 
-  /** Drag-to-move on the body, drag-to-resize on the corner handle, custom
-   *  contextmenu (Color · Delete), inline contenteditable for the title.
-   *  Pointer deltas are divided by zoom so visible movement matches cursor. */
+  /** Pointer deltas are divided by zoom so visible movement matches the cursor. */
   private installAnnotationInteractions(ann: FlowAnnotation): void {
     const el = ann.element;
     const handle = ann.resizeHandle;
     const title = ann.titleEl;
 
-    // ---- contextmenu: color palette + delete ----
     el.addEventListener('contextmenu', (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       const menu = DG.Menu.popup();
+      // radioGroup, not bare check: one-of-many choices render as radio marks.
       const colorMenu = menu.group('Color');
       for (const c of ANNOTATION_COLORS) {
-        colorMenu.item(c.name, () => {
-          ann.color = c.bg;
-          ann.applyColor();
-        });
+        colorMenu.item(c.name, () => this.setAnnotationColor(ann.id, c.bg), null,
+          {check: c.bg === ann.color, radioGroup: 'ff-annotation-color'});
       }
-      colorMenu.endGroup()
+      colorMenu.endGroup();
+      const sizeMenu = menu.group('Title size');
+      for (const s of ANNOTATION_TITLE_SIZES) {
+        sizeMenu.item(s.name, () => this.setAnnotationFontSize(ann.id, s.size), null,
+          {check: s.size === ann.fontSize, radioGroup: 'ff-annotation-title-size'});
+      }
+      sizeMenu.endGroup()
+        .separator()
+        .item('Pinned', () => this.setAnnotationPinned(ann.id, !ann.pinned), null, {check: ann.pinned})
         .separator()
         .item('Delete', () => this.removeAnnotation(ann.id))
         .show({causedBy: ev});
     });
 
-    // ---- title editing: stopPropagation so AreaPlugin doesn't pan ----
+    // stopPropagation so AreaPlugin doesn't pan.
     title.addEventListener('pointerdown', (ev) => {
       ev.stopPropagation();
       this.setActiveAnnotation(ann.id);
     });
 
-    // ---- drag-to-move (body, not title, not handle) ----
+    // Drag-to-move (body, not title, not handle).
     el.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
-      // Any grab makes this THE annotation the Delete key acts on.
       this.setActiveAnnotation(ann.id);
+      // Pinned: no move — and no stopPropagation, so the drag pans the canvas
+      // (the whole point: navigating a zoomed-in view full of annotations).
+      if (ann.pinned) return;
       const target = ev.target as HTMLElement | null;
       if (target && (target === title || title.contains(target))) return;
       if (target === handle) return;
@@ -1982,7 +1749,6 @@ export class FlowEditor {
       ev.stopPropagation();
       const startPos = {...ann.pos};
       const startClient = {x: ev.clientX, y: ev.clientY};
-      // The frame carries its contents: whatever is inside NOW moves with it.
       const cargo = this.annotationCargo(ann);
       // Synthetic pointers (tests) aren't active — capture is best-effort.
       try {el.setPointerCapture(ev.pointerId);} catch { /* no active pointer */ }
@@ -1993,8 +1759,7 @@ export class FlowEditor {
         ann.pos.x = startPos.x + dx;
         ann.pos.y = startPos.y + dy;
         ann.applyPos();
-        // Carried nodes are never "picked", so the snap interception in the
-        // nodetranslate pipe skips them — group geometry stays intact.
+        // Carried nodes are never "picked", so the snap interception skips them.
         for (const n of cargo.nodes)
           void this.area.translate(n.id, {x: n.start.x + dx, y: n.start.y + dy});
         for (const a of cargo.annotations) {
@@ -2023,16 +1788,14 @@ export class FlowEditor {
       el.addEventListener('pointercancel', onUp);
     });
 
-    // ---- drag-to-resize (bottom-right handle) ----
     handle.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0) return;
+      if (ev.button !== 0 || ann.pinned) return;
       ev.preventDefault();
       ev.stopPropagation();
       const startSize = {...ann.size};
       const startClient = {x: ev.clientX, y: ev.clientY};
       try {handle.setPointerCapture(ev.pointerId);} catch { /* no active pointer */ }
-      // Tiny floor only so the resize handle stays grabbable; the user
-      // explicitly wanted no real lower bound.
+      // Tiny floor only so the handle stays grabbable — deliberately no real lower bound.
       const minSize = 8;
       const onMove = (e: PointerEvent): void => {
         const k = this.area.area.transform.k || 1;
@@ -2051,35 +1814,35 @@ export class FlowEditor {
     });
   }
 
-  // ---------- node groups ----------
-
-  /** Create a group around the given nodes. Output nodes (strip-pinned) and
-   *  nodes already in a group are filtered out; an empty remainder aborts.
-   *  `opts` carries deserialized state (title, minimized, card pos). */
+  /** Output nodes and already-grouped nodes are filtered out; an empty remainder
+   *  aborts. `opts` carries deserialized state. */
   createGroup(memberIds: string[], opts: Partial<GroupDoc> = {}): FlowGroup | null {
     const ids = memberIds.filter((id) => {
       const n = this.editor.getNode(id);
       return !!n && n.dgNodeType !== 'output' && !this.groupOf(id);
     });
     if (ids.length === 0) return null;
+    // A fresh group names itself after its first member ("Open File +2").
+    if (!opts.title && ids.length > 0) {
+      const first = String(this.editor.getNode(ids[0])?.label ?? '').split(':')[0].trim();
+      if (first) opts = {...opts, title: ids.length > 1 ? `${first} +${ids.length - 1}` : first};
+    }
     const g = new FlowGroup({...opts, memberIds: ids});
     this.groups.set(g.id, g);
     const content = this.area.area.content;
     content.add(g.element);
-    // Behind the nodes and wires, like annotations (see addAnnotation).
+    // Behind the nodes and wires, like annotations.
     const firstChild = content.holder.firstChild;
     if (firstChild && firstChild !== g.element)
       void content.reorder(g.element, firstChild);
     this.installGroupInteractions(g);
     if (g.minimized) {
-      // Load path: the card lands at its saved pos with members hidden.
       this.setGroupHidden(g, true);
       g.applyMode();
       this.refreshGroupCard(g);
     } else {
       this.fitGroupFrame(g);
-      // Member sizes settle when React mounts the views — refit shortly after
-      // (fresh .flow loads create groups before the first paint).
+      // Member sizes settle when React mounts the views — refit shortly after.
       this.scheduleGroupRefit(g);
       setTimeout(() => {
         if (this.groups.has(g.id) && !g.minimized) this.fitGroupFrame(g);
@@ -2090,7 +1853,6 @@ export class FlowEditor {
     return g;
   }
 
-  /** Group the current multi-selection (Ctrl+G / node context menu). */
   async createGroupFromSelection(): Promise<FlowGroup | null> {
     const ids = this.getSelectedNodeIds().filter((id) =>
       this.editor.getNode(id)?.dgNodeType !== 'output' && !this.groupOf(id));
@@ -2100,7 +1862,7 @@ export class FlowEditor {
     return g;
   }
 
-  /** Dissolve a group — members stay on the canvas exactly where they are. */
+  /** Dissolve a group — members stay where they are. */
   ungroup(id: string): void {
     const g = this.groups.get(id);
     if (!g) return;
@@ -2115,7 +1877,6 @@ export class FlowEditor {
     this.callbacks.onGraphChanged?.();
   }
 
-  /** Delete the group AND every member node (clearly-labeled menu item). */
   async deleteGroupWithNodes(id: string): Promise<void> {
     const g = this.groups.get(id);
     if (!g) return;
@@ -2144,8 +1905,7 @@ export class FlowEditor {
     return g?.minimized ? g : undefined;
   }
 
-  /** Pull one node out of its group (node context menu). The node stays put;
-   *  a group left empty dissolves. */
+  /** The node stays put; a group left empty dissolves. */
   removeFromGroup(nodeId: string): void {
     const g = this.groupOf(nodeId);
     if (!g) return;
@@ -2170,8 +1930,8 @@ export class FlowEditor {
     else await this.minimizeGroup(id);
   }
 
-  /** Collapse the frame into a card at the frame's top-left: members and
-   *  internal wires hide, boundary wires re-anchor to the card's edge dots. */
+  /** Collapse the frame into a card: members and internal wires hide, boundary
+   *  wires re-anchor to the card's edge dots. */
   async minimizeGroup(id: string): Promise<void> {
     const g = this.groups.get(id);
     if (!g || g.minimized) return;
@@ -2189,8 +1949,7 @@ export class FlowEditor {
     this.callbacks.onGraphChanged?.();
   }
 
-  /** Expand the card back into the frame. Members reappear where they are —
-   *  card drags translated them live, so contents track the card's travels. */
+  /** Members reappear where they are — card drags translated them live. */
   async maximizeGroup(id: string): Promise<void> {
     const g = this.groups.get(id);
     if (!g || !g.minimized) return;
@@ -2198,21 +1957,18 @@ export class FlowEditor {
     this.setGroupHidden(g, false);
     g.applyMode();
     this.fitGroupFrame(g);
-    // Re-render members so the DOM socket watcher re-measures and re-emits
-    // endpoints — releases the card anchors the boundary wires were glued to.
+    // Re-render members so the DOM watcher re-measures and releases the card anchors.
     for (const mid of g.memberIds) void this.area.update('node', mid);
     this.scheduleMinimapRedraw();
     this.callbacks.onGraphChanged?.();
   }
 
-  /** Hide/show one node's canvas view (the wrapper element persists across
-   *  React re-renders, so the class survives status updates). */
+  /** The wrapper element persists across React re-renders, so the class survives. */
   private setNodeHidden(nodeId: string, hidden: boolean): void {
     const views = (this.area as unknown as {nodeViews: Map<string, {element: HTMLElement}>}).nodeViews;
     views?.get(nodeId)?.element.classList.toggle('ff-group-hidden', hidden);
   }
 
-  /** The rendered wrapper element of a connection. */
   private connectionViewEl(connId: string): HTMLElement | null {
     const views = (this.area as unknown as {
       connectionViews?: Map<string, {element: HTMLElement}>;
@@ -2221,7 +1977,6 @@ export class FlowEditor {
       this.container.querySelector(`[data-connection-id="${CSS.escape(connId)}"]`);
   }
 
-  /** Hide/show a group's member views and fully-internal connections. */
   private setGroupHidden(g: FlowGroup, hidden: boolean): void {
     for (const id of g.memberIds) this.setNodeHidden(id, hidden);
     for (const c of this.editor.getConnections()) {
@@ -2230,8 +1985,8 @@ export class FlowEditor {
     }
   }
 
-  /** Distinct member sockets with at least one connection crossing the group
-   *  boundary, in stable connection order — each gets a dot row on the card. */
+  /** Distinct member sockets with a boundary-crossing connection — each gets a
+   *  dot row on the card. */
   private groupBoundarySockets(g: FlowGroup, side: 'input' | 'output'): Array<{nodeId: string; key: string}> {
     const result: Array<{nodeId: string; key: string}> = [];
     const seen = new Set<string>();
@@ -2248,9 +2003,7 @@ export class FlowEditor {
     return result;
   }
 
-  /** Canvas-coord wire anchor for a hidden member's socket: the matching dot
-   *  on the minimized card's edge (inputs left, outputs right, stacked by the
-   *  boundary row order — same math as `FlowGroup.renderDots`). */
+  /** Wire anchor on the minimized card's edge — same math as `FlowGroup.renderDots`. */
   private groupSocketAnchor(
     g: FlowGroup, nodeId: string, side: 'input' | 'output', key: string,
   ): {x: number; y: number} {
@@ -2263,10 +2016,8 @@ export class FlowEditor {
     };
   }
 
-  /** `socketPositionWatcher.listen` for canvas nodes (see the constructor):
-   *  forwards DOM-measured positions while the node is visible, and swallows
-   *  them in favor of card-edge anchors while it hides in a minimized group
-   *  (a display:none view measures at 0,0). */
+  /** Forwards DOM-measured positions while the node is visible; swallows them in
+   *  favor of card-edge anchors while hidden (a display:none view measures at 0,0). */
   private listenGroupableSocket(
     nodeId: string, side: 'input' | 'output', key: string,
     onChange: (pos: {x: number; y: number}) => void,
@@ -2290,8 +2041,6 @@ export class FlowEditor {
     };
   }
 
-  /** Push fresh card-edge anchors to every subscribed wire endpoint of a
-   *  minimized group's members (card drags, dot-row changes). */
   private notifyGroupSockets(g: FlowGroup): void {
     if (!g.minimized) return;
     for (const id of g.memberIds) {
@@ -2301,8 +2050,6 @@ export class FlowEditor {
     }
   }
 
-  /** Re-sync a minimized card: boundary dots, wire anchors, internal-wire
-   *  hiding (idempotent), aggregate status. */
   private refreshGroupCard(g: FlowGroup): void {
     if (!g.minimized) return;
     g.renderDots(
@@ -2314,7 +2061,6 @@ export class FlowEditor {
     this.refreshGroupStatus(g);
   }
 
-  /** Aggregate member run status → the card's title-bar dot. */
   private refreshGroupStatus(g: FlowGroup): void {
     const statuses = Array.from(g.memberIds)
       .map((id) => (this.editor.getNode(id) as {dgStatus?: string} | undefined)?.dgStatus ?? 'idle');
@@ -2326,9 +2072,7 @@ export class FlowEditor {
     g.setStatus(status);
   }
 
-  /** Size the expanded frame to the member bounding box (+ title bar and
-   *  padding), keeping `g.pos` at the frame's top-left so minimizing collapses
-   *  the group in place. */
+  /** Keeps `g.pos` at the frame's top-left so minimizing collapses in place. */
   private fitGroupFrame(g: FlowGroup): void {
     if (g.minimized) return;
     let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
@@ -2350,8 +2094,6 @@ export class FlowEditor {
     g.applyFrame();
   }
 
-  /** Coalesce frame refits to one per animation frame (member drags emit many
-   *  translates per pointermove). */
   private scheduleGroupRefit(g: FlowGroup): void {
     if (this.groupRefitScheduled.has(g.id)) return;
     this.groupRefitScheduled.add(g.id);
@@ -2361,7 +2103,6 @@ export class FlowEditor {
     });
   }
 
-  /** A member node was removed from the editor — shrink (or dissolve) its group. */
   private handleGroupMemberRemoved(nodeId: string): void {
     const g = this.groupOf(nodeId);
     if (!g) return;
@@ -2374,8 +2115,7 @@ export class FlowEditor {
     else this.scheduleGroupRefit(g);
   }
 
-  /** Re-arrange just a group's members with the layered layout, anchored at
-   *  the current bounding box's top-left (the rest of the canvas stays put). */
+  /** Re-layout just the members, anchored at the current bbox top-left. */
   async tidyGroup(id: string): Promise<void> {
     const g = this.groups.get(id);
     if (!g || g.minimized) return;
@@ -2399,10 +2139,6 @@ export class FlowEditor {
     this.fitGroupFrame(g);
   }
 
-  /** Drag (frame or card) carries the members; caret toggles minimized;
-   *  double-click on the card maximizes; contextmenu offers group actions.
-   *  Title/description are inline-editable (pointerdown stops propagation so
-   *  the drag never starts on them). */
   private installGroupInteractions(g: FlowGroup): void {
     const el = g.element;
 
@@ -2413,8 +2149,8 @@ export class FlowEditor {
       this.showGroupContextMenu(ev, g);
     });
 
-    // While a title/description edit is in progress, keep pointer gestures out
-    // of the drag/pan machinery; otherwise the title bar is the drag handle.
+    // While a title/description edit is in progress, keep gestures out of the
+    // drag/pan machinery; otherwise the title bar is the drag handle.
     for (const editable of [g.titleEl, g.descEl])
       editable.addEventListener('pointerdown', (ev) => {
         if (editable.isContentEditable) ev.stopPropagation();
@@ -2436,9 +2172,8 @@ export class FlowEditor {
       void this.toggleGroupMinimized(g.id);
     });
 
-    // Double-press on the card maximizes. Detected on pointerdown ourselves:
-    // the drag handler preventDefaults pointerdown, which suppresses the
-    // browser's compatibility `dblclick` for that pointer.
+    // Double-press detected ourselves: the drag handler preventDefaults
+    // pointerdown, which suppresses the browser's compatibility `dblclick`.
     let lastDown = {t: 0, x: 0, y: 0};
 
     el.addEventListener('pointerdown', (ev) => {
@@ -2452,8 +2187,7 @@ export class FlowEditor {
         Math.abs(ev.clientX - lastDown.x) < 5 && Math.abs(ev.clientY - lastDown.y) < 5;
       lastDown = {t: now, x: ev.clientX, y: ev.clientY};
       if (isDouble) {
-        // Double-press on the title renames, on the description edits it,
-        // anywhere else on a minimized card maximizes.
+        // Title renames, description edits, elsewhere on a minimized card maximizes.
         if (target && (target === g.titleEl || g.titleEl.contains(target))) {
           g.startTitleEdit();
           return;
@@ -2473,7 +2207,6 @@ export class FlowEditor {
         .map((id) => this.editor.getNode(id))
         .filter((n): n is FlowNode => !!n)
         .map((n) => ({id: n.id, start: {...n.pos}}));
-      // Waypoints of internal connections travel too.
       const waypoints: Array<{wp: {x: number; y: number}; start: {x: number; y: number}}> = [];
       const connIds: string[] = [];
       for (const c of this.editor.getConnections() as FlowConnection[]) {
@@ -2490,8 +2223,8 @@ export class FlowEditor {
           g.pos = {x: startPos.x + dx, y: startPos.y + dy};
           g.applyCardPos();
         }
-        // Members follow (hidden ones too — contents must track the card).
-        // The expanded frame follows via the nodetranslated → refit path.
+        // Hidden members too — contents must track the card; the expanded frame
+        // follows via the nodetranslated → refit path.
         for (const m of members)
           void this.area.translate(m.id, {x: m.start.x + dx, y: m.start.y + dy});
         for (const w of waypoints) {
@@ -2525,15 +2258,8 @@ export class FlowEditor {
       .show({causedBy: event});
   }
 
-  // ---------- connection waypoints ----------
-
-  /** Right-click → "Add waypoint here" inserts a routing point on the
-   *  connection. The React component chains classicConnectionPath segments
-   *  through `start → waypoints → end`. */
   addWaypoint(conn: FlowConnection, at: {x: number; y: number}): void {
     if (!conn.waypoints) conn.waypoints = [];
-    // Insert in the position closest to where the user clicked: pick the
-    // segment whose midpoint is nearest, and insert after that endpoint.
     const insertIndex = this.bestWaypointInsertIndex(conn, at);
     conn.waypoints.splice(insertIndex, 0, {x: at.x, y: at.y});
     void this.area.update('connection', conn.id);
@@ -2547,18 +2273,14 @@ export class FlowEditor {
     void this.area.update('connection', conn.id);
   }
 
-  /** Pick the segment whose endpoints sandwich the click best. Walk the
-   *  start→…→end polyline, and for each segment compute distance from the
-   *  click to the segment midpoint; insert the new waypoint after the
-   *  start of the closest segment. Keeps the path geometry monotonic. */
+  /** Insert after the start of the segment whose midpoint is nearest the click. */
   private bestWaypointInsertIndex(conn: FlowConnection, at: {x: number; y: number}): number {
     const waypoints = conn.waypoints ?? [];
     if (waypoints.length === 0) return 0;
     const sourceNode = this.editor.getNode(conn.source);
     const targetNode = this.editor.getNode(conn.target);
     if (!sourceNode || !targetNode) return waypoints.length;
-    // We don't have exact socket positions here, so approximate with node
-    // centers — good enough for picking which segment to split.
+    // No exact socket positions here — node centers are good enough.
     const sSize = this.measureNode(sourceNode.id);
     const tSize = this.measureNode(targetNode.id);
     const start = {x: sourceNode.pos.x + sSize.w, y: sourceNode.pos.y + sSize.h / 2};
@@ -2572,11 +2294,10 @@ export class FlowEditor {
       const d = (mx - at.x) ** 2 + (my - at.y) ** 2;
       if (d < bestDist) {bestDist = d; bestIdx = i;}
     }
-    return bestIdx; // insert at this index (between point i and point i+1)
+    return bestIdx;
   }
 
-  /** Wire pointerdown/contextmenu on every rendered waypoint circle. We use
-   *  delegation on the canvas container since the React component re-creates
+  /** Delegated on the container — the React component re-creates the waypoint
    *  circles whenever waypoints change. */
   private installWaypointInteractions(): void {
     this.container.addEventListener('pointerdown', (ev) => {
@@ -2620,14 +2341,8 @@ export class FlowEditor {
     }, true);
   }
 
-  // ---------- shift+drag rectangle multi-select ----------
-
-  /** Shift+drag on empty canvas → draw a marquee over the nodes. Mirrors the
-   *  platform's area select (d4 `areaSelector` + `selectRows`): Shift+drag
-   *  ADDS every node whose bounding box intersects the rectangle to the
-   *  selection, Ctrl+Shift+drag REMOVES them (Ctrl read at mouse-up). The
-   *  existing selection is never replaced — a plain empty-canvas click still
-   *  clears it. */
+  /** Shift+drag marquee ADDS intersecting nodes, Ctrl at mouse-up REMOVES them;
+   *  the existing selection is never replaced. */
   private installRectSelect(): void {
     let startClient: {x: number; y: number} | null = null;
     let rectEl: HTMLElement | null = null;
@@ -2645,10 +2360,8 @@ export class FlowEditor {
 
     const onMove = (e: PointerEvent): void => updateRect(e.clientX, e.clientY);
     const onUp = (e: PointerEvent): void => {
-      // The AreaPlugin keeps an always-on window pointerup listener and treats
-      // a release with few prior moves as an empty-canvas click → unselectAll.
-      // This release ends OUR marquee (its pointerdown never reached the
-      // area) — don't let it clear what the marquee just selected.
+      // The AreaPlugin's window pointerup would treat this release as an
+      // empty-canvas click and unselect what the marquee just selected.
       e.stopImmediatePropagation();
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('pointerup', onUp, true);
@@ -2659,8 +2372,7 @@ export class FlowEditor {
       void this.completeRectSelect(sc, {x: e.clientX, y: e.clientY}, e.ctrlKey || e.metaKey);
     };
 
-    // Capture phase so we beat the AreaPlugin's pan handler — the user's
-    // Shift+drag must produce a rectangle, not a canvas pan.
+    // Capture phase to beat the AreaPlugin's pan handler.
     this.container.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
       if (!ev.shiftKey) return;
@@ -2680,9 +2392,6 @@ export class FlowEditor {
     }, true);
   }
 
-  /** Hit-test every node's canvas-space bounding box against the marquee
-   *  (also in canvas space). Adds the hits to the selection, or removes them
-   *  when `remove` (Ctrl held at mouse-up). */
   private async completeRectSelect(
     startClient: {x: number; y: number},
     endClient: {x: number; y: number},
@@ -2711,14 +2420,12 @@ export class FlowEditor {
     }
   }
 
-  /** Build a transient floating popup with a search input and a scrollable
-   *  list of candidates. Resolves with the chosen typeName (or null on
-   *  dismiss / Escape / click-outside). Keyboard nav: Up/Down/Enter. */
+  /** Floating search popup; resolves with the chosen typeName or null on dismiss. */
   private async promptSuggestion(
     clientX: number, clientY: number,
     candidates: CompatibleNodeType[],
   ): Promise<string | null> {
-    // Already loaded — both callers just imported it, so this resolves instantly.
+    // Already loaded by both callers — resolves instantly.
     const {candidateMatchesQuery} = await import('./node-factory');
     return new Promise((resolve) => {
       let resolved = false;
@@ -2759,10 +2466,16 @@ export class FlowEditor {
           row.className = 'ff-suggest-item' + (i === activeIdx ? ' ff-suggest-item-active' : '');
           const label = document.createElement('span');
           label.className = 'ff-suggest-item-label';
-          label.textContent = c.label;
+          // The baked "  (Category)" suffix renders as its own muted span.
+          const catMatch = /^(.*?)\s{2}\((.+)\)$/.exec(c.label);
+          label.textContent = catMatch ? catMatch[1] : c.label;
           row.appendChild(label);
-          // An engine-recommended item carries its reason inline, same voice
-          // as the toolbox Suggestions pane ("Molecule column \"smiles\"").
+          if (catMatch && !c.reason) {
+            const cat = document.createElement('span');
+            cat.className = 'ff-suggest-item-category';
+            cat.textContent = catMatch[2];
+            row.appendChild(cat);
+          }
           if (c.reason) {
             row.classList.add('ff-suggest-item-suggested');
             const reason = document.createElement('span');
@@ -2789,8 +2502,7 @@ export class FlowEditor {
       };
 
       search.addEventListener('input', () => {
-        // Same fields the toolbox search covers (names, description, tags,
-        // package) — "remove column" must find Delete Columns here too.
+        // Same fields the toolbox search covers.
         const q = search.value;
         filtered = candidates.filter((c) => candidateMatchesQuery(c, q));
         activeIdx = 0;
@@ -2821,7 +2533,6 @@ export class FlowEditor {
       };
 
       document.body.appendChild(popup);
-      // Clamp to viewport.
       const r = popup.getBoundingClientRect();
       const vw = window.innerWidth, vh = window.innerHeight;
       if (r.right > vw) popup.style.left = `${Math.max(8, vw - r.width - 8)}px`;
@@ -2835,9 +2546,6 @@ export class FlowEditor {
     });
   }
 
-  // ---------- connection styling ----------
-
-  /** Look up the type color for a connection's source slot. */
   private connectionColor(conn: FlowConnection): string {
     const sourceNode = this.editor.getNode(conn.source);
     const sourceSlot = sourceNode?.outputs[String(conn.sourceOutput)] as
@@ -2845,47 +2553,36 @@ export class FlowEditor {
     return sourceSlot ? getSlotColor(sourceSlot.socket.dgType) : '#8892a0';
   }
 
-  /** Stamp `_color` and a stable element id on a freshly-created connection
-   *  so the React `<FlowConnectionComponent>` can paint it the right color
-   *  without us touching the DOM. We also tag the connection wrapper element
-   *  with `data-connection-id` so status-driven CSS in `funcflow.css` works. */
+  /** Stamp `_color` so the React component paints the right color on first render. */
   private decorateConnection(conn: FlowConnection): void {
     (conn as FlowConnection & {_color?: string})._color = this.connectionColor(conn);
-    // Tag the wrapper element after AreaPlugin mounts it. The 'rendered' signal
-    // we listen to in wireEvents handles connection status; we only need to
-    // stamp data-connection-id once when the area emits the render.
   }
 
   /** Stamp the wrapper with data attributes used by status-driven CSS. */
   private tagConnectionElement(data: {element: HTMLElement; payload: FlowConnection}): void {
     data.element.dataset.connectionId = data.payload.id;
     data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
-    // Execution-ordering edges render dashed/gray (CSS keys off data-order).
     data.element.dataset.order = isExecKey(String(data.payload.sourceOutput)) ? 'true' : 'false';
-    // A connection internal to a minimized group that mounts late (load path,
-    // wires created while collapsed) must come up hidden.
+    // A late-mounting wire internal to a minimized group must come up hidden.
     const g = this.minimizedGroupOf(data.payload.source);
     if (g && g.memberIds.has(data.payload.target))
       data.element.classList.add('ff-group-hidden');
   }
 
-  /** Set the status of a connection (drives the data-flow animation). */
   setConnectionStatus(connectionId: string, status: ConnectionStatus): void {
     this.connectionStatuses.set(connectionId, status);
     const el = this.container.querySelector<HTMLElement>(`[data-connection-id="${connectionId}"]`);
     if (el) el.dataset.status = status;
   }
 
-  /** Reset all connections to the idle styling (used between runs). */
   resetConnectionStatuses(): void {
     for (const id of this.connectionStatuses.keys())
       this.setConnectionStatus(id, 'idle');
     this.connectionStatuses.clear();
   }
 
-  /** Show (or clear, when `text` is null) a small data-count label at a
-   *  connection's midpoint — the row/value count flowing through it after a run.
-   *  Stuffed into the payload as `_count` and re-rendered, mirroring `_color`. */
+  /** Set (or clear with null) the data-count label at a connection's midpoint —
+   *  stuffed into the payload as `_count`, mirroring `_color`. */
   setConnectionLabel(connectionId: string, text: string | null): void {
     const conn = this.editor.getConnections().find((c) => c.id === connectionId) as
       (FlowConnection & {_count?: string}) | undefined;
@@ -2894,7 +2591,6 @@ export class FlowEditor {
     void this.area.update('connection', connectionId);
   }
 
-  /** Drop every wire's count label (between/after runs, or on edit). */
   clearConnectionLabels(): void {
     for (const c of this.editor.getConnections() as Array<FlowConnection & {_count?: string}>) {
       if (c._count !== undefined) {
@@ -2904,32 +2600,34 @@ export class FlowEditor {
     }
   }
 
-  // ---------- context menu + delete key ----------
-
-  /** Right-click on a node or connection opens a `DG.Menu` popup with the
-   *  appropriate actions. The platform menu handles positioning, dismissal,
-   *  styling, and z-index for us. */
   private installContextMenu(): void {
     this.area.addPipe((context) => {
       if (context.type !== 'contextmenu') return context;
-      // The DOM event bubbles from connection-wrapper → container, and the
-      // area-plugin's emit-on-bubble fires on EACH listener — so a single
-      // right-click on a connection produces two `contextmenu` signals: one
-      // with `context: connection`, then one with `context: 'root'`. Without
-      // this guard, the second (root) menu would clobber the first.
+      // One right-click on a connection produces TWO contextmenu signals
+      // (connection, then root) — the guard keeps root from clobbering the first.
       const data = context.data as {
         event: MouseEvent & {_ffHandled?: boolean};
         context: 'root' | FlowNode | FlowConnection;
       };
+      // A right-click on mounted preview content belongs to the VIEWER's own
+      // context menu — no node menu, no preventDefault (the viewer handles it).
+      // The empty (placeholder) box still gets the node menu.
+      const target = data.event.target as Element | null;
+      const previewHost = target?.closest?.('.ff-node-inline-preview') as HTMLElement | null;
+      if ((previewHost && previewHost.dataset.empty === 'false') ||
+          target?.closest?.('.ff-node-preview-portal')) {
+        data.event._ffHandled = true;
+        return context;
+      }
       data.event.preventDefault();
       if (data.context === 'root') {
-        if (data.event._ffHandled) return context; // already shown specific menu
+        if (data.event._ffHandled) return context;
         data.event._ffHandled = true;
         this.showRootContextMenu(data.event);
         return context;
       }
       data.event._ffHandled = true;
-      // FlowNode has `inputs` (a Record of Inputs); FlowConnection has `source`/`target` ids.
+      // FlowNode has `inputs`; FlowConnection has `source`/`target` ids.
       if ((data.context as FlowNode).inputs !== undefined)
         this.showNodeContextMenu(data.event, data.context as FlowNode);
       else
@@ -2955,18 +2653,25 @@ export class FlowEditor {
     menu
       .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
       .item('Duplicate', () => {
-        // Right-clicking a node that is part of a multi-selection duplicates
-        // the whole selection (with its internal connections).
+        // Right-clicking a node in a multi-selection duplicates the whole selection.
         void this.duplicateNodes(inSelection && sel.length > 1 ? sel : [node.id]);
+      })
+      .item('Copy', () => {
+        this.copyNodes(inSelection && sel.length > 1 ? sel : [node.id]);
       });
-    // Grouping: a multi-selection of ungrouped canvas nodes can become a
-    // group; a grouped node offers the way out.
+    if (supportsInlinePreview(node)) {
+      menu.item(node.properties[INLINE_PREVIEW_PROP] === true ?
+        'Hide preview on node' : 'Show preview on node',
+      () => void this.toggleInlinePreview(node.id));
+    }
     const groupable = inSelection && sel.length > 1 && sel.filter((id) =>
       this.editor.getNode(id)?.dgNodeType !== 'output' && !this.groupOf(id)).length > 1;
     if (groupable)
       menu.item('Group selected', () => void this.createGroupFromSelection());
     if (this.groupOf(node.id))
       menu.item('Remove from group', () => this.removeFromGroup(node.id));
+    if (this.toggleableInputs(node).length > 0)
+      this.addShownInputsItems(menu.group('Shown inputs'), node).endGroup();
     menu
       .separator()
       .item('Delete', () => void this.removeNode(node.id))
@@ -2982,30 +2687,36 @@ export class FlowEditor {
       .show({causedBy: event});
   }
 
-  /** Right-click on empty canvas (or canvas background between nodes). */
   private showRootContextMenu(event: MouseEvent): void {
     const canvasPt = this.screenToCanvas(event.clientX, event.clientY);
     DG.Menu.popup()
-      .item('Add annotation here', () => void this.addAnnotation({
-        pos: {x: canvasPt.x - 120, y: canvasPt.y - 70},
-      }))
+      .item('Add annotation here', () => {
+        const ann = this.addAnnotation({pos: {x: canvasPt.x - 120, y: canvasPt.y - 70}});
+        // Ready to type: focus with the placeholder selected.
+        setTimeout(() => {
+          ann.titleEl.focus();
+          const sel = window.getSelection();
+          if (sel) {
+            const range = document.createRange();
+            range.selectNodeContents(ann.titleEl);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }, 0);
+      })
+      .item('Paste', () => void this.pasteClipboard())
+      .item('Tidy up layout', () => void this.autoLayout())
       .show({causedBy: event});
   }
 
-  /** Capture-phase listeners implementing the selectRows click semantics.
-   *  pointerdown snapshots the node under the cursor, its selection state,
-   *  and the modifiers — `accumulating.active()` is called synchronously
-   *  inside the selectable extension's `nodepicked` handler, so the snapshot
-   *  must exist before that fires. pointerup applies the removals (Ctrl
-   *  toggle-off, Ctrl+Shift remove, plain-click collapse) that rete's
-   *  add-only `nodepicked` can't express. */
+  /** Capture-phase selectRows semantics: pointerdown snapshots state before
+   *  rete's `nodepicked` fires; pointerup applies the removals the add-only
+   *  `nodepicked` can't express. */
   private installPointerDownTracker(): void {
     this.pointerDownTracker = (ev: PointerEvent): void => {
       this.lastPointerButton = ev.button;
       const target = ev.target as HTMLElement | null;
-      // Keyboard ownership: several live editors can share the page (the main
-      // view behind a creation-script dialog hosting its own). Only the editor
-      // the user last pressed inside answers the window-level shortcuts.
+      // Only the editor the user last pressed inside answers window-level shortcuts.
       this.ownsKeyboard = target instanceof Node && this.container.contains(target);
       const nodeEl = target?.closest('.ff-node') as HTMLElement | null;
       const id = nodeEl?.dataset.nodeId ?? null;
@@ -3017,17 +2728,11 @@ export class FlowEditor {
     };
     window.addEventListener('pointerdown', this.pointerDownTracker, true);
 
-    // The removal half of the selectRows semantics. Rete's `nodepicked` only
-    // ever ADDS, so Ctrl-toggle-off, Ctrl+Shift-remove, and the collapse of a
-    // multi-selection on a plain click all run here, on a clean release (a
-    // click, not a drag — a drag of a selected node must keep the group).
+    // The removal half: Ctrl toggle-off, Ctrl+Shift remove, plain-click collapse
+    // — on a clean release only (<4px; a drag of a selected node keeps the group).
     this.pointerUpTracker = (ev: PointerEvent): void => {
-      // Any release can end in a selection change (incl. the area extension's
-      // own empty-canvas unselect-all, which bypasses our callbacks) — refresh
-      // the chips' selected state after the handlers have run. In-place
-      // attribute update, NEVER a chip rebuild: replacing the pressed element
-      // mid-gesture would keep the browser from ever dispatching its `click`,
-      // killing chip selection.
+      // Any release can end in a selection change — refresh the chips after the
+      // handlers have run (in-place, never a rebuild).
       if (ev.target instanceof Node && this.container.contains(ev.target)) this.refreshChipSelection();
       const id = this.lastPointerDownNodeId;
       if (ev.button !== 0 || id == null) return;
@@ -3037,31 +2742,22 @@ export class FlowEditor {
       if (!node) return;
       const ctrl = ev.ctrlKey || ev.metaKey;
       if (ctrl && (ev.shiftKey || this.lastPointerDownWasSelected)) {
-        // Ctrl+Shift+click removes; Ctrl+click on a selected node toggles it off.
         void this.selectableApi.unselect(id);
         this.callbacks.onNodeDeselected?.(node);
         this.callbacks.onSelectionChanged?.();
       }
       else if (!ctrl && !ev.shiftKey && this.lastPointerDownWasSelected &&
                this.getSelectedNodeIds().length > 1) {
-        void this.selectableApi.select(id, false); // plain click → exclusive
+        void this.selectableApi.select(id, false);
         this.callbacks.onSelectionChanged?.();
       }
     };
     window.addEventListener('pointerup', this.pointerUpTracker, true);
 
-    // Block right- or middle-click pointer events on sockets and node bodies
-    // from reaching the rete plugins — neither filters by button:
-    // - the connection plugin's socket pointerdown starts a fake
-    //   pseudoconnection drag that follows the cursor until pointerup;
-    // - the node view ignores non-left pointerdowns, so the event bubbles to
-    //   the area, whose selectable extension counts pointerdown→pointerup with
-    //   <4 moves as an empty-canvas click and unselects ALL — clearing the very
-    //   multi-selection the context menu's "Duplicate" is about to act on. The
-    //   area's pointerup listener sits on `window`, so BOTH halves of the
-    //   gesture must be swallowed here (capture phase, before the bubble path).
-    // Pan, rect-select, and the `contextmenu` DOM event (a separate event — the
-    // node menu still opens) are unaffected.
+    // Swallow both halves of non-left gestures on nodes/sockets in the capture
+    // phase: neither rete plugin filters by button — the connection plugin starts
+    // a fake drag, and the area's selectable extension counts the pair as an
+    // empty-canvas click and unselects all. `contextmenu` still opens the menu.
     const guardNonPrimary = (ev: PointerEvent): void => {
       if (ev.button === 0) return;
       const target = ev.target as HTMLElement | null;
@@ -3072,8 +2768,7 @@ export class FlowEditor {
     this.container.addEventListener('pointerdown', guardNonPrimary, true);
     this.container.addEventListener('pointerup', guardNonPrimary, true);
 
-    // A press anywhere outside an annotation disarms the Delete-key target —
-    // clicking a node or empty canvas must not keep an old annotation armed.
+    // A press outside an annotation disarms the Delete-key target.
     this.container.addEventListener('pointerdown', (ev) => {
       if (!(ev.target as HTMLElement | null)?.closest('.ff-annotation'))
         this.setActiveAnnotation(null);
@@ -3082,13 +2777,10 @@ export class FlowEditor {
 
   private installKeyboardShortcuts(): void {
     this.keydownHandler = (e: KeyboardEvent) => {
-      // Ignore key events while typing in form controls.
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName ?? '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
           target?.isContentEditable) return;
-      // Not mounted, or another live editor owns the keyboard (the user last
-      // pressed inside it) — window shortcuts are not ours to handle.
       if (!this.container.isConnected || !this.ownsKeyboard) return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -3097,16 +2789,12 @@ export class FlowEditor {
           e.preventDefault();
           void this.removeNodes(selectedIds);
         }
-        // No nodes selected but an annotation was clicked — delete it, the
-        // same gesture nodes get. (Typing in its title never lands here: the
-        // contenteditable guard above already returned.)
         else if (this.activeAnnotationId) {
           e.preventDefault();
           this.removeAnnotation(this.activeAnnotationId);
         }
       }
 
-      // Arrow keys: nudge the selection; with Ctrl/Cmd, pan the canvas.
       const arrow = FlowEditor.ARROW_DELTAS[e.key];
       if (arrow) {
         if (e.ctrlKey || e.metaKey) {
@@ -3120,7 +2808,7 @@ export class FlowEditor {
           const ids = this.getSelectedNodeIds();
           if (ids.length > 0) {
             e.preventDefault();
-            this.suppressSnap = true; // a nudge is an exact step — never snapped
+            this.suppressSnap = true;
             const moves: Promise<unknown>[] = [];
             for (const id of ids) {
               const node = this.editor.getNode(id);
@@ -3134,23 +2822,19 @@ export class FlowEditor {
         }
       }
 
-      // Platform selection keys (scatterplot navigation.dart): Ctrl+A selects
-      // every node, Ctrl+Shift+A deselects all.
       if ((e.key === 'a' || e.key === 'A') && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (e.shiftKey)
           void this.unselectAllNodes();
         else
-          // Members hidden inside minimized groups are invisible — selecting
-          // them would arm Delete/copy on nodes the user can't see.
+          // Hidden members are invisible — selecting them would arm Delete on
+          // nodes the user can't see.
           for (const n of this.editor.getNodes())
             if (!this.minimizedGroupOf(n.id)) void this.selectableApi.select(n.id, true);
         this.callbacks.onSelectionChanged?.();
         this.refreshChipSelection();
       }
 
-      // Ctrl+G groups the selection; Ctrl+Shift+G ungroups every group any
-      // selected node belongs to.
       if ((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (e.shiftKey) {
@@ -3170,8 +2854,7 @@ export class FlowEditor {
         this.setActiveAnnotation(null);
       }
 
-      // Copy / paste nodes. A live text selection means the user is copying
-      // text — leave the event to the browser.
+      // A live text selection means the user is copying text — leave it to the browser.
       if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
           !document.getSelection()?.toString())
         this.copySelection();
@@ -3179,6 +2862,14 @@ export class FlowEditor {
       if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey) && !e.shiftKey && this.clipboard) {
         e.preventDefault();
         void this.pasteClipboard();
+      }
+
+      // Not HistoryExtensions.keyboard — it installs a never-removed document
+      // listener and routes Ctrl+Shift+Z to undo.
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z' || e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        const redo = e.key === 'y' || e.key === 'Y' || e.shiftKey;
+        void (redo ? this.history.redo() : this.history.undo());
       }
     };
     window.addEventListener('keydown', this.keydownHandler);
@@ -3188,8 +2879,6 @@ export class FlowEditor {
     return this.editor.getNodes().filter((n) => (n as {selected?: boolean}).selected === true).map((n) => n.id);
   }
 
-  /** Double-click on empty canvas → zoom to fit all nodes. Clicks that hit a
-   *  node, socket, control, or context menu are ignored. */
   private installDoubleClickToFit(): void {
     this.container.addEventListener('dblclick', (e) => {
       const target = e.target as HTMLElement | null;
@@ -3202,24 +2891,16 @@ export class FlowEditor {
     });
   }
 
-  // ---------- undo / redo ----------
-
   async undo(): Promise<void> {await this.history.undo();}
   async redo(): Promise<void> {await this.history.redo();}
 
-  // ---------- node operations ----------
-
-  /** Programmatic selection — fires the same callback chain a click would.
-   *  `accumulate=true` keeps existing selection (additive), false clears
-   *  first. Used by auto-select-on-run-complete and the rectangle tool. */
+  /** Programmatic selection — fires the same callback chain a click would. */
   async selectNode(nodeId: string, accumulate = false): Promise<void> {
     const node = this.editor.getNode(nodeId);
     if (!node) return;
     await this.selectableApi.select(nodeId, accumulate);
-    // Deliberately NOT deduped: programmatic selection (run-complete
-    // auto-select) must re-fire even for an already-selected node — the host
-    // re-shows the panel with fresh execution state. Pointer paths dedupe
-    // at their source (nodepicked, the chip click handler).
+    // Deliberately NOT deduped — programmatic selection must re-fire even for an
+    // already-selected node; pointer paths dedupe at their source.
     this.lastPickedId = nodeId;
     this.callbacks.onNodeSelected?.(node);
     this.callbacks.onSelectionChanged?.();
@@ -3232,7 +2913,6 @@ export class FlowEditor {
     this.refreshChipSelection();
   }
 
-  /** Toggle a node's collapsed flag and re-render. */
   async toggleCollapsed(nodeId: string): Promise<void> {
     const node = this.editor.getNode(nodeId);
     if (!node) return;
@@ -3240,7 +2920,64 @@ export class FlowEditor {
     await this.area.update('node', nodeId);
   }
 
-  /** Remove a node and any connections touching it. */
+  async toggleInlinePreview(nodeId: string): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    await this.setInlinePreview(nodeId, node.properties[INLINE_PREVIEW_PROP] !== true);
+  }
+
+  /** Show/hide the in-node viewer/widget preview. The choice lives in
+   *  `node.properties`, so it serializes with the flow. Cosmetic like collapse —
+   *  no params-changed invalidation. */
+  async setInlinePreview(nodeId: string, on: boolean): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node || !supportsInlinePreview(node)) return;
+    if ((node.properties[INLINE_PREVIEW_PROP] === true) === on) return;
+    if (on) node.properties[INLINE_PREVIEW_PROP] = true;
+    else delete node.properties[INLINE_PREVIEW_PROP]; // default is off — keep saves tidy
+    // The host re-stamps live-root ownership BEFORE the re-render mounts/unmounts it.
+    this.callbacks.onInlinePreviewToggled?.(nodeId, on);
+    await this.area.update('node', nodeId);
+  }
+
+  /** Inputs the "Shown inputs" checkboxes can toggle — no exec ports, no
+   *  force-hidden keys. */
+  private toggleableInputs(node: FlowNode): string[] {
+    return Object.keys(node.inputs).filter((k) => !isExecKey(k) && !node.hiddenInputs.has(k));
+  }
+
+  /** Shared between the context-menu "Shown inputs" group and the ⋯ indicator popup. */
+  private addShownInputsItems(menu: DG.Menu, node: FlowNode): DG.Menu {
+    return menu.items(this.toggleableInputs(node),
+      (k) => void this.setInputShown(node.id, k, !node.inputSlotShown(k)), {
+        toString: (k) => String((node.inputs[k] as {label?: string} | undefined)?.label ?? k),
+        isChecked: (k) => node.inputSlotShown(k) || this.isSocketConnected(node.id, 'input', k),
+        isValid: (k) => this.isSocketConnected(node.id, 'input', k) ? 'Connected inputs are always shown' : null,
+      });
+  }
+
+  showShownInputsMenu(nodeId: string, event: MouseEvent): void {
+    const node = this.editor.getNode(nodeId);
+    if (!node || this.toggleableInputs(node).length === 0) return;
+    this.addShownInputsItems(DG.Menu.popup(), node).show({causedBy: event});
+  }
+
+  /** Stores only deviations from the type default so saves stay tidy. */
+  async setInputShown(nodeId: string, key: string, shown: boolean): Promise<void> {
+    const node = this.editor.getNode(nodeId);
+    if (!node) return;
+    const overrides = {...(node.properties['shownSlots'] as Record<string, boolean> | undefined)};
+    if (shown === node.inputSlotShownByDefault(key))
+      delete overrides[key];
+    else
+      overrides[key] = shown;
+    if (Object.keys(overrides).length === 0)
+      delete node.properties['shownSlots'];
+    else
+      node.properties['shownSlots'] = overrides;
+    await this.area.update('node', nodeId);
+  }
+
   async removeNode(nodeId: string): Promise<void> {
     const conns = this.editor.getConnections().filter(
       (c) => c.source === nodeId || c.target === nodeId,
@@ -3249,10 +2986,8 @@ export class FlowEditor {
     await this.editor.removeNode(nodeId);
   }
 
-  /** Batch-remove multiple nodes and their connections. Safer than calling
-   *  `removeNode` in a loop without awaiting — when two selected nodes share
-   *  a connection, the second call would otherwise try to remove an already-
-   *  gone connection. We dedupe connections first, then remove sequentially. */
+  /** Dedupes shared connections first — a naive `removeNode` loop would try to
+   *  remove an already-gone connection. */
   async removeNodes(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
     const idSet = new Set(ids);
@@ -3272,11 +3007,8 @@ export class FlowEditor {
     }
   }
 
-  // ---------- duplicate / copy / paste ----------
-
   private clipboard: GraphClip | null = null;
-  /** How many times the current clipboard was pasted — each paste fans out
-   *  further so repeated Ctrl+V doesn't stack copies on the same spot. */
+  /** Each paste fans out further so repeats don't stack on the same spot. */
   private pasteCount = 0;
 
   private snapshotNodes(ids: string[]): GraphClip {
@@ -3297,9 +3029,8 @@ export class FlowEditor {
     return {nodes, connections};
   }
 
-  /** Output paramNames and SetVar variableNames share one namespace (the
-   *  validator flags duplicates as errors) — a copy must land with a unique
-   *  name instead of instantly invalidating the graph. */
+  /** Output paramNames and SetVar variableNames share one namespace — a copy
+   *  must land with a unique name. */
   private dedupeVariableName(fresh: FlowNode): void {
     const taken = new Set<string>();
     for (const n of this.editor.getNodes()) {
@@ -3324,11 +3055,9 @@ export class FlowEditor {
       fresh.inputValues.variableName = bump(varName);
   }
 
-  /** Instantiate a clip's nodes (offset from their recorded positions) and the
-   *  connections among them; the copies become the new selection so they can
-   *  be dragged as a group right away. */
+  /** Instantiate a clip's nodes at an offset; the copies become the selection. */
   private async materializeClip(clip: GraphClip, offset: number): Promise<FlowNode[]> {
-    // Lazy require to avoid a circular import.
+    // Lazy import to avoid a circular import.
     const {createNode} = await import('./node-factory');
     const idMap = new Map<string, FlowNode>();
     for (const snap of clip.nodes) {
@@ -3362,47 +3091,41 @@ export class FlowEditor {
     return created;
   }
 
-  /** Duplicate the given nodes next to the originals. Connections whose both
-   *  endpoints are duplicated are duplicated too, and the copies become the
-   *  selection (so they're immediately movable as a group). */
   async duplicateNodes(ids: string[]): Promise<FlowNode[]> {
     return this.materializeClip(this.snapshotNodes(ids), 30);
   }
 
-  /** Snapshot the selected nodes into the editor clipboard (Ctrl+C). Returns
-   *  how many nodes were copied (0 = nothing selected, clipboard untouched). */
-  copySelection(): number {
-    const clip = this.snapshotNodes(this.getSelectedNodeIds());
+  /** Returns how many nodes were copied (0 = nothing to copy, clipboard untouched). */
+  copyNodes(ids: string[]): number {
+    const clip = this.snapshotNodes(ids);
     if (clip.nodes.length === 0) return 0;
     this.clipboard = clip;
     this.pasteCount = 0;
     return clip.nodes.length;
   }
 
-  /** Materialize the clipboard (Ctrl+V). Each repeated paste offsets further. */
+  copySelection(): number {
+    return this.copyNodes(this.getSelectedNodeIds());
+  }
+
   async pasteClipboard(): Promise<FlowNode[]> {
     if (!this.clipboard) return [];
     this.pasteCount++;
     return this.materializeClip(this.clipboard, 30 * this.pasteCount);
   }
 
-  // ---------- public API consumed by the rest of the package ----------
-
   async addNodeAtCenter(node: FlowNode): Promise<FlowNode> {
     await this.editor.addNode(node);
     const spot = this.findFreeSpot(this.viewportCenter(), node.id);
     node.pos = spot;
     await this.area.translate(node.id, spot);
-    // Pan only when the chosen spot isn't already in view — chasing every new
-    // node re-centers the viewport and walks the EARLIER nodes off-screen
-    // (by the third added node the first one sat behind the toolbox).
+    // Pan only when the spot isn't already in view — chasing every new node
+    // walks the earlier nodes off-screen.
     if (!this.isSpotVisible(spot))
       await this.panToNode(node.id);
     return node;
   }
 
-  /** Whether a node placed at `spot` (canvas coords, assumed ~220×140) would
-   *  be fully inside the current viewport. */
   private isSpotVisible(spot: {x: number; y: number}, w = 220, h = 140): boolean {
     const t = this.area.area.transform;
     const rect = this.area.container.getBoundingClientRect();
@@ -3413,10 +3136,8 @@ export class FlowEditor {
     return x1 >= 0 && y1 >= 0 && x2 <= rect.width && y2 <= rect.height;
   }
 
-  /** A position at/near `start` where a node of roughly `w`×`h` overlaps no
-   *  existing canvas node — a freshly added node must never bury the previous
-   *  one (that hides the very sockets the user is about to wire). Prefers
-   *  moving right (data flows left→right), then down, ring by ring. */
+  /** A spot where the node overlaps nothing — prefers right (data flows
+   *  left→right), then down, ring by ring. */
   private findFreeSpot(
     start: {x: number; y: number}, skipId: string, w = 220, h = 140,
   ): {x: number; y: number} {
@@ -3454,9 +3175,7 @@ export class FlowEditor {
     return node;
   }
 
-  /** Pan the canvas so the given node sits at the viewport center. Zoom is
-   *  preserved — this is purely a translate. Wait one rAF so the node is
-   *  rendered and measurable before we read its size. */
+  /** Pure translate (zoom preserved); waits one rAF so the node is measurable. */
   async panToNode(id: string): Promise<void> {
     const node = this.editor.getNode(id);
     if (!node) return;
@@ -3526,16 +3245,12 @@ export class FlowEditor {
 
   async updateNode(nodeId: string): Promise<void> {
     await this.area.update('node', nodeId);
-    // An output node's visible form is its strip chip — re-render it too
-    // (param renames, declared-type changes, run status).
+    // An output node's visible form is its strip chip — re-render it too.
     if (this.editor.getNode(nodeId)?.dgNodeType === 'output') this.scheduleStripSync(true);
-    // Run-status changes arrive here (ExecutionVisualizer) — keep the node's
-    // group card dot in sync.
+    // Run-status changes arrive here — keep the group card's status dot in sync.
     const g = this.groupOf(nodeId);
     if (g) this.refreshGroupStatus(g);
   }
-
-  // ---------- viewport ----------
 
   private viewportCenter(): {x: number; y: number} {
     const t = this.area.area.transform;
@@ -3546,9 +3261,7 @@ export class FlowEditor {
     };
   }
 
-  /** Convert a (clientX, clientY) point — e.g. from a pointer event — into
-   *  canvas-space coords matching `node.pos`. Used by drop handlers and the
-   *  drag-out suggestion menu. */
+  /** Client coords → canvas-space coords matching `node.pos`. */
   screenToCanvas(clientX: number, clientY: number): {x: number; y: number} {
     const r = this.container.getBoundingClientRect();
     const t = this.area.area.transform;
@@ -3560,19 +3273,223 @@ export class FlowEditor {
 
   zoomIn(): void {void this.area.area.zoom(this.area.area.transform.k * 1.2);}
   zoomOut(): void {void this.area.area.zoom(this.area.area.transform.k * 0.8);}
+  getZoom(): number {return this.area.area.transform.k;}
+  setZoom(k: number): void {void this.area.area.zoom(k);}
+
+  // ===== In-node preview portals ==========================================
+  // DG viewer popups (axis/color selectors, menus) are `position: fixed`, and a
+  // transformed ancestor becomes their containing block — inside the zoom/pan
+  // canvas subtree a popup lands far from the viewer (even at zoom 1, from the
+  // pan translate). There is no CSS opt-out, so interactive preview content
+  // must render OUTSIDE the transformed subtree: a screen-space portal per
+  // node, tracking its in-card container (same idea as the Outputs-strip
+  // chips). The content mounts ONCE and never moves or resizes on hover — from
+  // the user's perspective the preview simply IS part of the card. Two
+  // mechanisms make the layer z-interleave with overlapping cards instead of
+  // painting above everything (the early version's artifact):
+  //   1. portals are kept in their nodes' paint order (rete raises a picked
+  //      node's view; `syncPreviewPortals` re-appends portals to match), and
+  //   2. where a card ABOVE a portal's node overlaps it, the portal is cut out
+  //      with a `clip-path: path(evenodd, ...)` hole — the hole reveals the
+  //      covering card painted beneath the layer AND is click-through, so both
+  //      looks and hit-testing interleave correctly.
+
+  private previewLayer: HTMLElement | null = null;
+  private readonly previewPortals = new Map<string,
+    {host: HTMLElement; portal: HTMLElement; content: HTMLElement | null; ro: ResizeObserver}>();
+  private previewSyncRaf: number | null = null;
+  private previewLayerRo: ResizeObserver | null = null;
+
+  private ensurePreviewLayer(): HTMLElement {
+    if (this.previewLayer) return this.previewLayer;
+    const layer = document.createElement('div');
+    layer.className = 'ff-preview-layer';
+    // In the canvas viewport (like the minimap): clips at the canvas edge and
+    // never covers the Outputs strip.
+    this.canvasEl.appendChild(layer);
+    this.previewLayer = layer;
+    this.previewLayerRo = new ResizeObserver(() => this.schedulePreviewPortalSync());
+    this.previewLayerRo.observe(this.canvasEl);
+    return layer;
+  }
+
+  /** Bind/refresh a node's preview portal; no captured content → no portal
+   *  (the in-card container shows its placeholder). */
+  syncInlinePreview(nodeId: string, host: HTMLElement): void {
+    const content = this.callbacks.getInlinePreviewContent?.(nodeId) ?? null;
+    let entry = this.previewPortals.get(nodeId) ?? null;
+    if (!content) {
+      if (entry) this.releaseInlinePreview(nodeId);
+      return;
+    }
+    if (!entry) {
+      const portal = document.createElement('div');
+      portal.className = 'ff-node-preview-portal';
+      setTid(portal, 'node-preview-portal');
+      portal.dataset.nodeId = nodeId;
+      // The portal sits inside the area container — swallow the gestures the
+      // canvas would otherwise claim (pan on drag, zoom on wheel, node menus).
+      for (const t of ['pointerdown', 'contextmenu', 'wheel', 'dblclick'])
+        portal.addEventListener(t, (ev) => ev.stopPropagation());
+      portal.appendChild(this.buildPreviewGrip(nodeId));
+      this.ensurePreviewLayer().appendChild(portal);
+      const ro = new ResizeObserver(() => this.schedulePreviewPortalSync());
+      ro.observe(host);
+      entry = {host, portal, content: null, ro};
+      this.previewPortals.set(nodeId, entry);
+    } else if (entry.host !== host) {
+      entry.ro.disconnect();
+      entry.ro.observe(host);
+      entry.host = host;
+    }
+    if (entry.content !== content) {
+      if (entry.content) {
+        delete entry.content.dataset[INLINE_HOSTED_DATA_KEY];
+        entry.content.remove();
+      }
+      content.dataset[INLINE_HOSTED_DATA_KEY] = 'true';
+      content.style.width = '100%';
+      content.style.height = '100%';
+      entry.portal.insertBefore(content, entry.portal.firstChild);
+      entry.content = content;
+    }
+    // A kept (stale) preview whose node a run has not reached yet gets a
+    // recalculating overlay instead of silently showing outdated content.
+    const pending = this.callbacks.isInlinePreviewPending?.(nodeId) ?? false;
+    if (pending !== (entry.portal.dataset.pending === 'true')) {
+      entry.portal.dataset.pending = pending ? 'true' : 'false';
+      ui.setUpdateIndicator(entry.portal, pending, 'Recalculating...');
+    }
+    this.schedulePreviewPortalSync();
+  }
+
+  /** Remove a node's portal and hand its live root back to the bottom panel. */
+  releaseInlinePreview(nodeId: string): void {
+    const entry = this.previewPortals.get(nodeId);
+    if (!entry) return;
+    if (entry.content) delete entry.content.dataset[INLINE_HOSTED_DATA_KEY];
+    entry.ro.disconnect();
+    entry.portal.remove();
+    this.previewPortals.delete(nodeId);
+  }
+
+  /** Custom resize grip — the native CSS handle would sit under the portal.
+   *  Writes the host's layout size (screen deltas ÷ zoom); the node component's
+   *  ResizeObserver persists it into the properties. */
+  private buildPreviewGrip(nodeId: string): HTMLElement {
+    const grip = document.createElement('div');
+    grip.className = 'ff-node-preview-grip';
+    setTid(grip, 'node-preview-grip');
+    grip.title = 'Resize the preview';
+    grip.addEventListener('pointerdown', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const entry = this.previewPortals.get(nodeId);
+      const node = this.editor.getNode(nodeId);
+      if (!entry || !node) return;
+      const start = {x: ev.clientX, y: ev.clientY, ...inlinePreviewSize(node)};
+      const k = this.area.area.transform.k || 1;
+      const onMove = (mv: PointerEvent): void => {
+        const w = Math.min(900, Math.max(180, Math.round(start.width + (mv.clientX - start.x) / k)));
+        const h = Math.min(900, Math.max(120, Math.round(start.height + (mv.clientY - start.y) / k)));
+        entry.host.style.width = `${w}px`;
+        entry.host.style.height = `${h}px`;
+        this.schedulePreviewPortalSync();
+      };
+      const onUp = (): void => {
+        window.removeEventListener('pointermove', onMove, true);
+        window.removeEventListener('pointerup', onUp, true);
+      };
+      window.addEventListener('pointermove', onMove, true);
+      window.addEventListener('pointerup', onUp, true);
+    });
+    return grip;
+  }
+
+  private schedulePreviewPortalSync(): void {
+    if (this.previewSyncRaf != null || this.previewPortals.size === 0) return;
+    this.previewSyncRaf = requestAnimationFrame(() => {
+      this.previewSyncRaf = null;
+      this.syncPreviewPortals();
+    });
+  }
+
+  /** The card element of a node view wrapper, or null for non-node holder
+   *  children (wires, annotations). The card sits under a React mount div
+   *  inside the wrapper, and each wrapper holds at most one card — search
+   *  descendants. */
+  private static wrapperCard(el: Element): HTMLElement | null {
+    const card = el.querySelector('.ff-node') as HTMLElement | null;
+    return card && card.dataset.nodeType !== 'output' ? card : null;
+  }
+
+  private syncPreviewPortals(): void {
+    const canvasRect = this.canvasEl.getBoundingClientRect();
+    // Node-view wrappers in paint order — the basis for portal order and clips.
+    const viewOf = (nodeId: string): HTMLElement | null =>
+      (this.area.nodeViews.get(nodeId)?.element as HTMLElement | undefined) ?? null;
+    let lastPortal: HTMLElement | null = null;
+    // Iterate portals in their nodes' paint order so re-appends are stable.
+    const ordered = Array.from(this.previewPortals.entries()).sort(([a], [b]) => {
+      const va = viewOf(a);
+      const vb = viewOf(b);
+      if (!va || !vb) return 0;
+      // eslint-disable-next-line no-bitwise
+      return (va.compareDocumentPosition(vb) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+    });
+    for (const [nodeId, entry] of ordered) {
+      const r = entry.host.getBoundingClientRect();
+      // A hidden host (minimized group, display:none ancestors) measures 0.
+      const visible = entry.host.isConnected && r.width > 4 && r.height > 4;
+      entry.portal.style.display = visible ? '' : 'none';
+      // Keep layer DOM order aligned with node paint order.
+      if (lastPortal ? entry.portal.previousElementSibling !== lastPortal :
+        entry.portal.previousElementSibling != null)
+        this.previewLayer?.insertBefore(entry.portal, lastPortal?.nextElementSibling ?? this.previewLayer.firstChild);
+      lastPortal = entry.portal;
+      if (!visible) continue;
+      entry.portal.style.left = `${r.left - canvasRect.left}px`;
+      entry.portal.style.top = `${r.top - canvasRect.top}px`;
+      entry.portal.style.width = `${r.width}px`;
+      entry.portal.style.height = `${r.height}px`;
+      this.applyPortalClip(nodeId, entry.portal, r);
+    }
+  }
+
+  /** Cut the portal where a card painted ABOVE its node overlaps it: the hole
+   *  reveals the covering card (beneath the layer) and passes clicks to it. */
+  private applyPortalClip(nodeId: string, portal: HTMLElement, portalRect: DOMRect): void {
+    const view = (this.area.nodeViews.get(nodeId)?.element as HTMLElement | undefined) ?? null;
+    if (!view) {
+      portal.style.clipPath = '';
+      return;
+    }
+    const holes: string[] = [];
+    for (let sib = view.nextElementSibling; sib; sib = sib.nextElementSibling) {
+      const card = FlowEditor.wrapperCard(sib);
+      if (!card) continue;
+      const c = card.getBoundingClientRect();
+      const x1 = Math.max(0, c.left - portalRect.left);
+      const y1 = Math.max(0, c.top - portalRect.top);
+      const x2 = Math.min(portalRect.width, c.right - portalRect.left);
+      const y2 = Math.min(portalRect.height, c.bottom - portalRect.top);
+      if (x2 - x1 > 1 && y2 - y1 > 1)
+        holes.push(`M${x1} ${y1}H${x2}V${y2}H${x1}Z`);
+    }
+    portal.style.clipPath = holes.length === 0 ? '' :
+      `path(evenodd, "M0 0H${portalRect.width}V${portalRect.height}H0Z${holes.join('')}")`;
+  }
 
   async zoomToFit(): Promise<void> {
-    // Fit the graph proper — strip-pinned output rows follow the viewport, so
-    // including them would chase a moving target (and they're always visible
-    // anyway). Fall back to everything when only output rows exist.
+    // Strip-pinned output rows follow the viewport — fit the graph proper.
     const nodes = this.editor.getNodes();
     const inner = nodes.filter((n) => n.dgNodeType !== 'output');
     if (!Array.from(this.groups.values()).some((g) => g.minimized)) {
       await AreaExtensions.zoomAt(this.area, inner.length > 0 ? inner : nodes, {scale: 0.9});
       return;
     }
-    // Manual fit: zoomAt measures node views, and hidden members measure at
-    // (0,0) — compute the bounds from visible nodes + minimized cards instead.
+    // zoomAt measures node views, and hidden members measure at (0,0) — compute
+    // the bounds from visible nodes + minimized cards instead.
     let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
     const grow = (x: number, y: number, w: number, h: number): void => {
       minX = Math.min(minX, x); minY = Math.min(minY, y);
@@ -3596,27 +3513,19 @@ export class FlowEditor {
       rect.width / 2 - (minX + gw / 2) * k, rect.height / 2 - (minY + gh / 2) * k);
   }
 
-  /** Re-arrange the whole graph with the layered/banded layout used by the
-   *  creation-script importer (`rete/graph-layout.ts`): layers from the
-   *  connection structure (every edge points right), one band per disjoint
-   *  path, producer paths above the paths that consume them. Repositions every
-   *  node and zooms to fit. */
+  /** Re-arrange the whole graph with the shared layered layout and zoom to fit. */
   async autoLayout(): Promise<void> {
-    // A whole-canvas re-layout repositions every node — expand minimized
-    // groups first so their (hidden) members don't land under a stale card.
+    // Expand minimized groups first so hidden members don't land under a stale card.
     for (const g of this.groups.values())
       if (g.minimized) await this.maximizeGroup(g.id);
-    // Output rows are strip-pinned — lay out the graph proper without them
-    // (their translates would be canceled by the pin guard anyway).
+    // Output rows are strip-pinned — lay out the graph proper without them.
     const nodes = this.editor.getNodes().filter((n) => n.dgNodeType !== 'output');
     if (nodes.length === 0) return;
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const edges: LayoutEdge[] = [];
     for (const c of this.editor.getConnections()) {
-      // Order edges ARE included. computeLayers runs fresh here (unlike the
-      // importer's stale incremental layer map), so an order edge is just
-      // another forward dependency — it places the "after" node further right,
-      // letting explicit run-order shape the layout left-to-right.
+      // Order edges ARE included — computeLayers runs fresh here, so an order
+      // edge is just another forward dependency.
       const source = byId.get(c.source);
       const target = byId.get(c.target);
       if (source && target) edges.push({source, target});
@@ -3625,8 +3534,6 @@ export class FlowEditor {
     for (const node of nodes) await this.area.translate(node.id, {x: node.pos.x, y: node.pos.y});
     await this.zoomToFit();
   }
-
-  // ---------- lifecycle ----------
 
   async clear(): Promise<void> {
     this.connectionStatuses.clear();
@@ -3647,6 +3554,13 @@ export class FlowEditor {
       window.removeEventListener('pointermove', this.suggestPointerMove, true);
     if (this.suggestPointerUp)
       window.removeEventListener('pointerup', this.suggestPointerUp, true);
+    if (this.previewSyncRaf != null) {
+      cancelAnimationFrame(this.previewSyncRaf);
+      this.previewSyncRaf = null;
+    }
+    for (const id of Array.from(this.previewPortals.keys())) this.releaseInlinePreview(id);
+    this.previewLayerRo?.disconnect();
+    this.previewLayerRo = null;
     if (this.hoverDocsTimer != null) {
       clearTimeout(this.hoverDocsTimer);
       this.hoverDocsTimer = null;
@@ -3654,7 +3568,7 @@ export class FlowEditor {
     if (this.hoverDocsEl) this.hoverDocsEl.remove();
     this.hoverDocsEl = null;
     if (this.minimapEl) this.minimapEl.remove();
-    // Null these so a still-pending rAF redraw after teardown is a no-op.
+    // Null so a still-pending rAF redraw after teardown is a no-op.
     this.minimapEl = null;
     this.minimapSvg = null;
     this.stripResizeObserver?.disconnect();

@@ -1,25 +1,12 @@
-/** Toolbox Suggestions pane — the bottom 25% of the function browser.
- *
- *  Renders the ranked next steps from the suggestion engine
- *  ([suggestion-engine.ts](../suggest/suggestion-engine.ts)) and refreshes,
- *  debounced, whenever the host reports a context change (selection, graph
- *  edit, run completion, a preview-cell click). The header caret minimizes it
- *  to a slim strip; the choice persists in localStorage.
- *
- *  Items behave like toolbox nodes: DOUBLE-click hands the suggestion back to
- *  the host (`onAccept` — creates the node, prefills its inputs, wires the
- *  suggested connections), and they are HTML5-draggable onto the canvas — the
- *  full suggestion travels as JSON under {@link FF_SUGGEST_MIME} so a drop
- *  still gets the wiring and prefill, just at the drop point. */
+/** Toolbox Suggestions pane — renders ranked next steps from the suggestion engine; items are
+ *  double-clickable and HTML5-draggable onto the canvas like toolbox rows. */
 
 import * as ui from 'datagrok-api/ui';
 
 import {Suggestion} from '../suggest/suggestion-engine';
 import {setTid} from '../utils/test-ids';
 
-/** DataTransfer type for dragging a suggestion onto the canvas. The payload is
- *  the whole `Suggestion` as JSON (a plain-data object) — unlike the browser's
- *  `FF_DRAG_MIME`, which carries only a typeName. */
+/** DataTransfer type carrying the whole `Suggestion` as JSON (unlike `FF_DRAG_MIME`, which carries only a typeName). */
 export const FF_SUGGEST_MIME = 'application/x-funcflow-suggestion';
 
 const LS_KEY = 'funcflow-suggestions-collapsed';
@@ -33,10 +20,8 @@ export class SuggestionPane {
   private collapsed = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private refreshSeq = 0;
-  /** JSON of the last rendered set — identical recomputes (a click that didn't
-   *  change the context) skip the DOM rebuild entirely. */
+  /** JSON of the last rendered set — identical recomputes skip the DOM rebuild. */
   private lastRenderedSig = '';
-  /** Last rendered set — exposed for tests. */
   suggestions: Suggestion[] = [];
 
   constructor(
@@ -51,7 +36,6 @@ export class SuggestionPane {
     this.caretEl.addEventListener('click', () => this.setCollapsed(!this.collapsed));
     ui.tooltip.bind(this.caretEl, () => this.collapsed ? 'Expand suggestions' : 'Minimize suggestions');
 
-    // The bulb marks the strip as "the assistant", not another catalog section.
     const bulb = ui.iconFA('lightbulb');
     bulb.classList.add('ff-suggest-pane-bulb');
     const title = ui.div([], 'ff-suggest-pane-title');
@@ -84,7 +68,6 @@ export class SuggestionPane {
     this.caretEl.textContent = this.collapsed ? '▸' : '▾';
   }
 
-  /** Debounced recompute + render. Safe to call from any context signal. */
   refresh(): void {
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
@@ -93,10 +76,7 @@ export class SuggestionPane {
     }, REFRESH_DEBOUNCE_MS);
   }
 
-  /** Immediate recompute (tests / expand). Stale async results are dropped;
-   *  a result identical to what's already rendered skips the DOM rebuild
-   *  (suggestions are plain JSON data — the same signature means the same
-   *  items, wiring and prefills included). */
+  /** Immediate recompute; stale async results are dropped and an identical result skips the DOM rebuild. */
   async refreshNow(): Promise<void> {
     if (this.collapsed) return;
     const seq = ++this.refreshSeq;
@@ -115,8 +95,6 @@ export class SuggestionPane {
   private render(): void {
     this.listEl.innerHTML = '';
     this.countEl.textContent = this.suggestions.length ? String(this.suggestions.length) : '';
-    // With nothing to suggest the pane hugs its hint text instead of holding
-    // a tall empty strip (see .ff-suggest-pane[data-empty] in funcflow.css).
     this.root.dataset.empty = String(this.suggestions.length === 0);
     if (this.suggestions.length === 0) {
       const empty = ui.div([], 'ff-suggest-pane-empty');
@@ -125,8 +103,6 @@ export class SuggestionPane {
       return;
     }
     for (const s of this.suggestions) {
-      // One thin line per suggestion: action first, inline muted reason after
-      // (the "— " lead-in comes from CSS) — more fit in the 25% strip.
       const label = ui.span([], 'ff-suggest-pane-item-label');
       label.textContent = s.label;
       const reason = ui.span([], 'ff-suggest-pane-item-reason');

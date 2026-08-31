@@ -9,11 +9,7 @@ category('AI: Viewers: JsViewer', () => {
   let counter = 0;
   const uniqueName = () => `Ai-Test-JsViewer-${counter++}`;
 
-  // DG.JsViewer is browser-only; fall back to a dummy base so the bundle evaluates
-  // under the Node test runtime (this category itself never runs there).
-  const JsViewerBase: typeof DG.JsViewer = (DG as any).JsViewer ?? (class {} as any);
-
-  class TestJsViewer extends JsViewerBase {
+  class TestJsViewer extends DG.JsViewer {
     frameAttachedCount = 0;
     tableAttachedCount = 0;
     sourceRowsChangedCount = 0;

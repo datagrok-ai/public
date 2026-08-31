@@ -54,13 +54,19 @@ Year - Month' and 'Year - Quarter':
 | **Data** | | |
 | Row Source | string | Determines the rows shown on the scatter plot. |
 | On Click | string | Determines what happens when you click on a bar. |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
-| **Value** | | |
+| **X Axis** | | |
+| Split Column Name | string | A categorical column to split data on (each bar represents a category) |
+| Split Map | string | Time unit map function for *Split* (applicable to dates only). |
+| Show Category Values | boolean |  |
+| Show Values Instead Of Categories | boolean |  |
+| Show Category Selector | boolean |  |
+| **Y Axis** | | |
 | Value Column Name | string | Value column. See *Value Aggr Type* for aggregation options. |
 | Value Aggr Type | string | Value aggregation. |
 | Relative Values | boolean | When true, each outermost bar is of the same width. This mode is useful for comparing relative value frequency when the *Stack* column is specified. |
-| Include Nulls | boolean | Indicates whether the no data bar should appear when the *Split* value is not present. |
+| Include Nulls | boolean | Indicates whether the "no data" bar should appear when the *Split* value is not present. |
 | Bar Sort Type | string | Whether to sort bars *by category* or *by value*. See also *Bar Sort Order* |
 | Bar Sort Order | string | Whether the bars should be sorted in ascending or descending order. See also *Bar Sort Type*. |
 | Axis Type | string |  |
@@ -87,30 +93,22 @@ Year - Month' and 'Year - Quarter':
 | Outer Margin Bottom | number |  |
 | Show Empty Bars | boolean | Indicates whether categories with no matching rows should appear as zero-height bars. |
 | Show Labels | string |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **Category** | | |
-| Split Column Name | string | A categorical column to split data on (each bar represents a category) |
-| Split Map | string | Time unit map function for *Split* (applicable to dates only). |
-| Show Category Values | boolean |  |
-| Show Values Instead Of Categories | boolean |  |
-| Show Category Selector | boolean |  |
-| **Stack** | | |
-| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *Value Aggr Type* is additive. |
-| Stack Map | string | Time unit map function for *Stack* (applicable to dates only). |
-| Show Stack Selector | boolean |  |
 | **Color** | | |
 | Color Column Name | string | Numerical column to be used for color-coding. The values in the bin get aggregated using the *Color Aggr Type* property. |
 | Color Aggr Type | string | Color aggregation type. |
 | Invert Color Scheme | boolean |  |
 | Linear Color Scheme | list |  |
+| **Stack** | | |
+| Stack Column Name | string | A categorical column to further split data on. Each category would become a part of the bar resulting from *Split*. Shows stacked bars only when *Value Aggr Type* is additive. |
+| Stack Map | string | Time unit map function for *Stack* (applicable to dates only). |
+| Show Stack Selector | boolean |  |
 | **Selection** | | |
 | Show Selected Rows | boolean | Whether the selected rows are indicated. Only works for cumulative aggregations such as count. |
 | **Style** | | |
@@ -131,13 +129,16 @@ Year - Month' and 'Year - Quarter':
 | Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

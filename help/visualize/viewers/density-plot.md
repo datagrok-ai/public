@@ -43,45 +43,46 @@ General:
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **Style** | | |
-| Auto Layout | boolean |  |
-| Axis Font | string |  |
-| Show Color Scale | boolean |  |
-| Invert Color Scheme | boolean |  |
-| Color Transform Type | string |  |
-| Linear Color Scheme | list |  |
-| Controls Font | string | Viewer controls elements font. |
-| Annotation Font | string |  |
-| Formula Font | string |  |
-| **X** | | |
+| **X Axis** | | |
 | Show X Axis | boolean |  |
 | X Axis Type | string |  |
 | Invert X Axis | boolean |  |
 | Show X Selector | boolean |  |
 | X Min | number |  |
 | X Max | number |  |
-| **Y** | | |
+| **Y Axis** | | |
 | Show Y Axis | boolean |  |
 | Y Axis Type | string |  |
 | Invert Y Axis | boolean |  |
 | Show Y Selector | boolean |  |
 | Y Min | number |  |
 | Y Max | number |  |
+| **Color** | | |
+| Show Color Scale | boolean |  |
+| Invert Color Scheme | boolean |  |
+| Color Transform Type | string |  |
+| Linear Color Scheme | list |  |
+| **Style** | | |
+| Auto Layout | boolean |  |
+| Axis Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Misc** | | |
 | Bins | number |  |
 | **Data** | | |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

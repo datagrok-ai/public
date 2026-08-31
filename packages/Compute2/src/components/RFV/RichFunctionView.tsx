@@ -29,7 +29,8 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, getViewers} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper} from '../../utils';
+import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
 
 
 interface ScalarsState {
@@ -161,13 +162,17 @@ const tabToProperties = (fc: DG.FuncCall) => {
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
-    const dfViewers = Utils.getPropViewers(dfProp).config;
+    let dfViewers = Utils.getPropViewers(dfProp).config;
+    // Outputs without a viewer annotation (e.g. queries) get a plain grid by default
+    const isDefaultGrid = dfViewers.length === 0 && isOutput;
+    if (isDefaultGrid)
+      dfViewers = [{type: DG.VIEWER.GRID}];
     if (dfViewers.length === 0) return;
     if (hideEmpty && isOutput && isEmptyDataFrame(fc.outputs[dfProp.name])) return;
 
     dfViewers.forEach((dfViewer) => {
       const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
-      const dfNameWithViewer = `${dfBlockTitle} / ${dfViewer['type']}`;
+      const dfNameWithViewer = isDefaultGrid ? `${dfBlockTitle}` : `${dfBlockTitle} / ${dfViewer['type']}`;
 
       const tabLabel = dfProp.category === 'Misc' ?
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
@@ -264,6 +269,12 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    // adds a "Publish to program" icon (emits `publishRun`); hosts gate it on the
+    // ArtifactAlignment package + the enableArtifactPublishing setting
+    showPublish: {
+      type: Boolean,
+      default: false,
+    },
     showRunButton: {
       type: Boolean,
       default: true,
@@ -282,6 +293,10 @@ export const RichFunctionView = Vue.defineComponent({
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
     },
+    // standalone hosts that support URL inputs pass a handler; adds a "Copy link with inputs" export
+    urlExportHandler: {
+      type: Function as Vue.PropType<() => void>,
+    },
     view: {
       type: DG.View,
       required: true,
@@ -290,6 +305,7 @@ export const RichFunctionView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
+    'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
@@ -364,6 +380,10 @@ export const RichFunctionView = Vue.defineComponent({
       callMeta,
       currentCall,
     );
+
+    // Mounted viewer per tab label; entries of closed tabs go stale (no undefined emit on
+    // unmount) but are never read — collectDfExportEntries iterates visibleTabLabels only
+    const liveViewers = new Map<string, DG.Viewer>();
 
     const hiddenByMeta = Vue.computed(() => {
       const hidden = new Set<string>();
@@ -504,8 +524,41 @@ export const RichFunctionView = Vue.defineComponent({
         activeExports.push({name, handler});
       }
       activeExports.push(...customExports.value.filter(x => x.function && x.name).map(x => ({...x, handler: () => reportHandler(x.function)})));
+      if (canSaveProject())
+        activeExports.push({name: 'Save as project...', handler: () => saveCallToProject(currentCall.value, collectDfExportEntries())});
+      if (props.urlExportHandler)
+        activeExports.push({name: 'Copy link with inputs', handler: () => props.urlExportHandler!()});
       return activeExports;
     });
+
+    // The Excel report (or a sole export) also gets a direct ribbon icon next to the menu
+    const directExport = Vue.computed(() => {
+      const list = exports.value;
+      return list.find((e) => e.name === 'Default Excel') ?? (list.length === 1 ? list[0] : null);
+    });
+
+    // One entry per visible dataframe param, viewer configs merged across its tabs
+    const collectDfExportEntries = (): DfExportEntry[] => {
+      const map = tabToPropertiesMap.value;
+      const entries = new Map<string, DfExportEntry>();
+      for (const label of visibleTabLabels.value) {
+        const isInput = map.inputs.has(label);
+        const content = (isInput ? map.inputs : map.outputs).get(label);
+        if (!content || content.type !== 'dataframe' || !content.df.value)
+          continue;
+        const key = `${isInput ? 'in' : 'out'}:${content.name}`;
+        let entry = entries.get(key);
+        if (!entry) {
+          entry = {name: content.name, isInput, df: content.df.value, viewers: []};
+          entries.set(key, entry);
+        }
+        const {type, ...annotated} = content.config;
+        const live = liveViewers.get(label);
+        const options = live ? {...annotated, ...live.getOptions().look} : annotated;
+        entry.viewers.push({type: (type as string) ?? DG.VIEWER.GRID, options});
+      }
+      return [...entries.values()];
+    };
 
     // When keepExportsVisible is set the export icons stay put regardless of isOutputOutdated
     // (no ribbon rebuild/flicker); guard the click so a stale/in-flight run surfaces a shell
@@ -570,10 +623,7 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const pinView = () => {
-      if (props.view && !props.view.isPinned)
-        props.view.pin();
-    };
+    const pinView = () => pinViewHelper(props.view);
 
     const runSA = async () => {
       pinView();
@@ -611,7 +661,7 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value?.length > 1 &&
+      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
         <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
             exports.value.map(({ name, handler }) =>
@@ -653,9 +703,9 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { exportsVisible.value && !uiBlocked.value && exports.value?.length === 1 && <IconFA
+          { exportsVisible.value && !uiBlocked.value && directExport.value && <IconFA
             name='arrow-to-bottom'
-            onClick={() => guardedExport(exports.value[0].handler)}
+            onClick={() => guardedExport(directExport.value!.handler)}
             tooltip='Generate report for the current step'
           /> }
           { isFittingEnabled.value && !uiBlocked.value && <IconImage
@@ -676,6 +726,11 @@ export const RichFunctionView = Vue.defineComponent({
             name={props.stepHistory ? 'cloud-upload-alt' : 'save'}
             tooltip='Save run to history'
             onClick={() => emit('saveToHistory', currentCall.value)}
+          /> }
+          { props.showPublish && !uiBlocked.value && <IconFA
+            name='share-alt'
+            tooltip='Publish to program'
+            onClick={() => emit('publishRun', currentCall.value)}
           /> }
           { (props.historyEnabled || props.stepHistory) && <IconFA
             name='history'
@@ -794,6 +849,8 @@ export const RichFunctionView = Vue.defineComponent({
                         dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => {
+                          if (v) liveViewers.set(tabLabel, v);
+                          else liveViewers.delete(tabLabel);
                           setViewerRef(v, tabContent.name, options['type'] as string);
                           applyDefaultGridFloatFormat(v, options['type'] as string);
                         }}

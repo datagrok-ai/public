@@ -1,10 +1,4 @@
-/** Widget/Viewer outputs: a node whose output is a DG.Widget or DG.Viewer keeps
- *  the live object (captured by reference during the in-tab run) and renders its
- *  `.root` in the bottom output panel; the context-panel meta shows
- *  "widget"/"viewer" instead of "[object Object]". Also covers the panel's
- *  in-view splitter behavior: hidden → expanded on first renderable output,
- *  minimize is remembered (content updates never pop it back up), `clear()`
- *  hides but keeps the preference, disabled panels (embedded hosts) never show.
+/** Widget/viewer output previews and the bottom output panel's state machine.
  *  Pure DOM — no live backend needed. */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -39,15 +33,12 @@ function widgetState(type: 'widget' | 'viewer'): {state: NodeExecState; root: HT
 
 category('Flow: execution preview', () => {
   test('edge count labels read "rows × cols" for tables; __pt entries stay out of panels', async () => {
-    // A table with both dims → "N × K"; dims-only summaries (pass-throughs)
-    // count too; columns keep the bare count; nothing countable → null.
     expect(connectionCountLabel({type: 'dataframe', rows: 1204, cols: 8}), '1,204 × 8');
     expect(connectionCountLabel({type: 'dataframe', rows: 5} as ValueSummary), '5 rows', 'no cols → rows fallback');
     expect(connectionCountLabel({type: 'column', length: 42} as ValueSummary), '42');
     expect(connectionCountLabel(null), null);
     expect(connectionCountLabel({type: 'primitive', value: 3} as ValueSummary), null);
 
-    // Panel listings skip the `__pt` bookkeeping entries (and tolerate null).
     const state: NodeExecState = {
       status: NodeExecStatus.completed,
       outputs: {
@@ -92,7 +83,6 @@ category('Flow: execution preview', () => {
     expect(hasRenderablePreview(state), true, 'a column with a captured DataFrame is renderable');
     const preview = buildPreview('result', state.outputs!.result);
     expect(!!preview, true, 'preview built');
-    // Grid mode → the fallback text-sample <table> must NOT be used.
     expect(preview!.querySelector('table'), null, 'renders a grid, not the text sample table');
     expect(preview!.childElementCount > 0, true, 'grid root mounted');
   });
@@ -125,7 +115,6 @@ category('Flow: execution preview', () => {
     const panel = new OutputPreviewPanel();
     expect(panel.panelState, 'hidden', 'starts hidden');
 
-    // No renderable values → stays hidden.
     panel.showForNode({id: 'n0', label: 'empty'}, {status: NodeExecStatus.completed, outputs: {}});
     expect(panel.panelState, 'hidden', 'a value-less node never opens the panel');
 
@@ -168,8 +157,6 @@ category('Flow: execution preview', () => {
     caret.click();
     expect(states.join(','), 'expanded,minimized,expanded', 'every transition is reported (divider sync)');
 
-    // Only the caret toggles — the rest of the header sits right under the
-    // splitter divider, and a near-miss resize click must not collapse the panel.
     const header = panel.root.querySelector('[data-testid="ff-output-panel-header"]') as HTMLElement;
     header.dispatchEvent(new MouseEvent('click', {bubbles: false}));
     expect(panel.panelState, 'expanded', 'clicking the header body does not toggle');
@@ -186,9 +173,7 @@ category('Flow: execution preview', () => {
   });
 
   test('re-clicking the same node with the same state does not rebuild the preview', async () => {
-    // Every rebuild re-mounts the grids and makes the panel jump — same node +
-    // same captured state (state objects are replaced, never mutated, so
-    // reference identity IS value identity) must keep the existing DOM.
+    // state objects are replaced, never mutated — reference identity IS value identity
     const panel = new OutputPreviewPanel();
     const state = renderableState();
     const contentEl = (): Element | null =>
@@ -198,16 +183,13 @@ category('Flow: execution preview', () => {
     const first = contentEl();
     expect(!!first, true, 'preview rendered');
 
-    // Same node, same state object → untouched DOM.
     panel.showForNode({id: 'n1', label: 'a'}, state);
     expect(contentEl() === first, true, 'same node + same state → no rebuild');
 
-    // A fresh state object (e.g. after a re-run) → rebuilt.
     panel.showForNode({id: 'n1', label: 'a'}, renderableState());
     const rebuilt = contentEl();
     expect(!!rebuilt && rebuilt !== first, true, 'a new captured state rebuilds the preview');
 
-    // A different node → rebuilt as well.
     panel.showForNode({id: 'n2', label: 'b'}, state);
     expect(contentEl() !== rebuilt, true, 'another node rebuilds the preview');
   });
@@ -230,8 +212,6 @@ category('Flow: execution preview', () => {
     expect(label(), 'a', 'other nodes cannot replace a pinned preview');
     expect(panel.currentNodeId, 'n1', 'still showing the pinned node');
 
-    // Fresh state for the pinned node itself still re-renders (the controller
-    // re-shows it on node-complete — the "watch the chart while editing" case).
     panel.showForNode({id: 'n1', label: 'a2'}, renderableState());
     expect(label(), 'a2', 'the pinned node itself updates in place');
 
@@ -242,9 +222,6 @@ category('Flow: execution preview', () => {
   });
 
   test('unpinning via the icon reports onUnpinned; programmatic unpin stays silent', async () => {
-    // The controller listens to onUnpinned to re-show the currently selected
-    // node — re-clicking an already-selected node fires no selection event, so
-    // without this "unpin to see what I clicked while pinned" showed stale content.
     const panel = new OutputPreviewPanel();
     let fires = 0;
     panel.onUnpinned = (): void => {fires++;};
@@ -259,9 +236,6 @@ category('Flow: execution preview', () => {
   });
 
   test('markUpdating overlays a spinner on the kept content; the next render releases it', async () => {
-    // The pinned-preview recompute path: instead of hiding + re-docking (which
-    // reads as jumping), the stale content stays with a "Recalculating…"
-    // indicator until the fresh render lands.
     const panel = new OutputPreviewPanel();
     const content = panel.root.querySelector('[data-testid="ff-output-panel-content"]') as HTMLElement;
     const shadow = (): Element | null => content.querySelector('.d4-update-shadow');
@@ -334,28 +308,22 @@ category('Flow: execution preview', () => {
   }, {timeout: 30000});
 
   test('opening the output preview minimizes the overview minimap', async () => {
-    // Regression: the minimap and the bottom output panel crowd the same corner,
-    // so the minimap auto-minimizes to its header the first time the preview
-    // opens. This wiring was dropped in the dock → splitter rework.
     const view = new FuncFlowView();
     const host = ui.div([view.root], {style: {
       width: '900px', height: '600px', position: 'absolute', left: '-10000px',
     }});
     document.body.appendChild(host);
     try {
-      // Wait for the deferred editor build to mount the minimap.
       await until(() => view.root.querySelector('.ff-minimap') != null);
       const mm = view.root.querySelector('.ff-minimap') as HTMLElement;
       expect(!!mm, true, 'minimap mounted');
       expect(mm.dataset.collapsed, 'false', 'minimap starts expanded');
       expect(view.outputPreview.panelState, 'hidden', 'preview starts hidden');
 
-      // Opening the preview (hidden → expanded) minimizes the minimap.
       view.outputPreview.showForNode({id: 'n1', label: 'a'}, renderableState());
       expect(view.outputPreview.panelState, 'expanded', 'preview opened');
       expect(mm.dataset.collapsed, 'true', 'minimap minimized when the preview opened');
 
-      // One-shot: manually reopening the minimap while the preview stays open sticks.
       view.setMinimapCollapsed(false);
       view.outputPreview.showForNode({id: 'n2', label: 'b'}, renderableState());
       expect(mm.dataset.collapsed, 'false', 'no re-collapse while the preview was already open');
@@ -366,11 +334,8 @@ category('Flow: execution preview', () => {
   }, {timeout: 30000});
 
   test('the canvas container clips — no scrollbars around the transformed canvas', async () => {
-    // Regression: as a `div.ui-div` directly inside the splitter's `.ui-box`
-    // pane, the canvas matched the core rule `div.ui-box > div.ui-div
-    // { overflow: auto !important }`, which overrode the package's
-    // `overflow: hidden` and grew giant scrollbars around the Rete canvas
-    // (node views live at large canvas coordinates).
+    // core's `div.ui-box > div.ui-div {overflow: auto !important}` would override
+    // the package's `overflow: hidden` if the canvas ever matches that selector
     const view = new FuncFlowView();
     const host = ui.div([view.root], {style: {
       width: '900px', height: '600px', position: 'absolute', left: '-10000px',
@@ -416,9 +381,6 @@ category('Flow: execution preview', () => {
   });
 
   test('an in-place column output previews the whole table (scrolled), not a lone column', async () => {
-    // The output column belongs to the node's single input table (Add New Column
-    // idiom): the summary carries the full table + the column to scroll to, so
-    // the column is shown in the context of its table.
     const table = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('name', ['a', 'b']),
       DG.Column.fromFloat32Array('extra', new Float32Array([1, 2])),
@@ -430,7 +392,6 @@ category('Flow: execution preview', () => {
     } as const;
     const preview = buildPreview('result', summary);
     expect(!!preview, true, 'preview built');
-    // Grid mode → the fallback text-sample <table> must NOT appear.
     expect(preview!.querySelector('table'), null, 'renders a grid, not a text sample');
     expect(preview!.childElementCount > 0, true, 'grid mounted');
     expect(!!wsBtn(preview), true, 'the in-place table preview is addable to the workspace');
@@ -453,7 +414,6 @@ category('Flow: execution preview', () => {
     const df = (name: string): DG.DataFrame =>
       DG.DataFrame.fromColumns([DG.Column.fromStrings(name, ['a', 'b'])]);
 
-    // One output → the block is mounted directly (no splitter).
     const one = buildValuePreviews({
       status: NodeExecStatus.completed,
       outputs: {result: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')}},
@@ -461,7 +421,6 @@ category('Flow: execution preview', () => {
     expect(one.querySelectorAll('.funcflow-preview-block').length, 1, 'one preview block');
     expect(one.querySelector('.ui-split-h'), null, 'a lone output is not wrapped in a splitter');
 
-    // Two renderable outputs (e.g. a multi-output func) → side-by-side splitH.
     const two = buildValuePreviews({
       status: NodeExecStatus.completed,
       outputs: {

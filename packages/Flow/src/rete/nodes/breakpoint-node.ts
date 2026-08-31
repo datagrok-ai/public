@@ -1,8 +1,5 @@
-/** Breakpoint node — pauses script execution in debug mode.
- *
- * Pure pass-through (dynamic in → dynamic out). The compiler treats it
- * specially: in debug mode, the emitted code fires `breakpoint-hit` and
- * awaits a `continue` event. In normal run mode, the node is skipped. */
+/** Breakpoint node — pure pass-through; in debug mode the emitted code fires `breakpoint-hit`
+ *  and awaits a continue event, in normal runs it's skipped. */
 
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';

@@ -1,0 +1,123 @@
+/* Badge skin — pills, count bubbles, status dots and removable tags. Tokens only; css/tokens.css
+   must be loaded alongside. */
+.u2-badge {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  height: 16px;
+  padding: 0 var(--dg-space-s);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-xs);
+  font-weight: var(--dg-font-weight-medium);
+  line-height: 1;
+  color: var(--dg-grey-6);
+  white-space: nowrap;
+  background: var(--dg-grey-1);
+  border-radius: var(--dg-radius);
+}
+
+.u2-badge-accent {
+  color: var(--dg-white);
+  background: var(--dg-blue-1);
+}
+
+.u2-badge-success {
+  color: var(--dg-green-3);
+  background: var(--dg-green-1);
+}
+
+.u2-badge-warning {
+  color: var(--dg-orange-3);
+  background: var(--dg-orange-1);
+}
+
+.u2-badge-error {
+  color: var(--dg-red-4);
+  background: var(--dg-red-1);
+}
+
+.u2-count-badge {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--dg-space-s);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-xs);
+  font-weight: var(--dg-font-weight-medium);
+  line-height: 1;
+  color: var(--dg-white);
+  background: var(--dg-accent);
+  border-radius: 8px;
+}
+
+.u2-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--dg-grey-4);
+  border-radius: 50%;
+}
+
+.u2-dot-accent {
+  background: var(--dg-blue-1);
+}
+
+.u2-dot-success {
+  background: var(--dg-green-2);
+}
+
+.u2-dot-warning {
+  background: var(--dg-orange-2);
+}
+
+.u2-dot-error {
+  background: var(--dg-red-3);
+}
+
+.u2-tag {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-s);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color);
+  white-space: nowrap;
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-tag-remove {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  font: inherit;
+  font-size: var(--dg-font-size-xs);
+  line-height: 1;
+  color: var(--dg-text-color-light);
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-tag-remove:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover);
+}
+
+.u2-tag-remove:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}

@@ -488,6 +488,14 @@ export class RdKitService {
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
+  /** Returns SMILES with stereochemistry removed for the provided molecules.
+   * Malformed molecules result in an empty string. */
+  async flattenMolecules(molecules: string[]): Promise<string[]> {
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].flattenMolecules(segment),
+    (data: string[][]) => ([] as string[]).concat(...data)));
+  }
+
   /** Returns InChI identifiers for the provided molecules. Malformed molecules result in an empty string. */
   async getInchis(molecules: string[]): Promise<string[]> {
     return this._getInchis(molecules, false);

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectLook, look, until, withAttachedViewer} from '../helpers';
+import {demog, expectLook, legendPresent, look, until, withAttachedViewer} from '../helpers';
 
 // BoxPlot auto legend is suppressed when the single category column equals markerColorColumnName.
 // BoxPlot auto-syncs markerColorColumnName to the category column; tests flip allowColorSynchronization
@@ -10,7 +10,6 @@ category('AI: Viewers: BoxPlot legend visibility', () => {
   // 'Always' would force the legend on and contradict the hidden-legend assertions below.
   const opts = {valueColumnName: 'age', category1ColumnName: 'race',
     markerColorColumnName: 'race', legendVisibility: 'Auto'};
-  const legendPresent = (v: DG.Viewer): boolean => v.root.querySelector('.d4-legend') != null;
 
   test('legend hidden when single category equals markerColor column', async () => {
     await withAttachedViewer<DG.BoxPlot>(demog(), DG.VIEWER.BOX_PLOT, opts, async (v) => {

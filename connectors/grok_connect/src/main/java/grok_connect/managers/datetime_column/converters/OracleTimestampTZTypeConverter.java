@@ -3,8 +3,6 @@ package grok_connect.managers.datetime_column.converters;
 import grok_connect.managers.Converter;
 import oracle.sql.TIMESTAMPTZ;
 import oracle.sql.ZONEIDMAP;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -12,14 +10,13 @@ import java.time.ZoneOffset;
 import java.util.Date;
 
 public class OracleTimestampTZTypeConverter implements Converter<Date> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OracleTimestampTZTypeConverter.class);
     private static final byte REGION_ID_BIT = (byte) 0b1000_0000;
 
     @Override
     public Date convert(Object value) {
-        LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
-        return Date.from(offsetDateTime.toInstant());
+        // Timestamp keeps the sub-ms fraction (Date.from would truncate to ms)
+        return java.sql.Timestamp.from(offsetDateTime.toInstant());
     }
 
     private OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {

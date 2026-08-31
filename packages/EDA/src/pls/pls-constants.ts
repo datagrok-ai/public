@@ -35,6 +35,7 @@ export enum TITLE {
   MODEL = 'Observed vs. Predicted',
   FEATURE = 'Feature',
   REGR_COEFS = 'Regression Coefficients',
+  VIP = 'Variable Importance',
   XLOADING = 'x.loading.p',
   LOADINGS = 'Loadings',
   XSCORE = 'x.score.t',
@@ -69,6 +70,7 @@ export enum LINK {
   LOADINGS = '/help/explore/multivariate-analysis#loadings',
   EXPL_VARS = '/help/explore/multivariate-analysis#explained-variance',
   SCORES = '/help/explore/multivariate-analysis#scores',
+  VIPS = '/help/explore/multivariate-analysis#variable-importance',
 }
 
 /** Components consts */
@@ -93,11 +95,21 @@ export enum WASM_OUTPUT_IDX {
   U_SCORES = 3,
   X_LOADINGS = 4,
   Y_LOADINGS = 5,
+  VIP = 6,
 }
+
+/** Tag of the source table that stores the fitted PLS model */
+export const MVA_MODEL_TAG = 'mvaModel';
+
+/** Function that adds the analysis results: called via FuncCall, so that the table
+ * creation script replays it when a data-synced project is opened */
+export const MVA_TRANSFORM_FUNC = 'multivariateAnalysisTransform';
+
+/** Function that restores the viewer state when a project or layout is opened */
+export const MVA_INIT_FUNC = 'mvaModelInitFunction';
 
 export const INT = 'Int';
 export const TIMEOUT = 6;
-export const RADIUS = [0.49, 0.79, 0.99];
 export const LINE_WIDTH = 1;
 export const X_COORD = 200;
 export const Y_COORD = 200;
@@ -110,27 +122,34 @@ export const NUMS_AFTER_COMMA = 3;
 /** Curves colors */
 export enum COLOR {
   AXIS = '#838383',
-  CIRCLE = '#0000FF',
   INVALID = '#EB6767',
   VALID_TEXT = '#4d5261',
   VALID_LINE = '#dbdcdf',
 };
 
+/** Hotelling's T-squared confidence ellipses drawn on the PLS scores plot */
+export const ELLIPSES: {conf: number, color: string}[] = [
+  {conf: 0.95, color: '#FF8C00'},
+  {conf: 0.99, color: '#0000FF'},
+];
+
 /** Intro markdown for demo app */
 export const DEMO_INTRO_MD = `# Data
-Cars have many correlated features, which makes pattern extraction difficult.
+30 cars described by 15 predictors that correlate with each other: size, weight, engine, mileage.
+Multiple regression breaks down on data like this.
 
 # Model
-Predict a car's price from its other features.
+Predict a car's price from its other characteristics.
 
 # Approach
-[**Partial Least Squares (PLS)**](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
-regression projects features onto latent factors that best explain the response.
+[**Partial least squares (PLS)**](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+regression builds a linear model on **latent factors**: combinations of the predictors that
+maximize covariance with the response variable.
 
 # Essence
-PLS finds latent factors that simultaneously:
-* capture maximum variance in the features
-* maximize correlation with the response`;
+Maximizing covariance balances two goals:
+* summarize the variation of the predictors
+* correlate with the response`;
 
 /** Description of demo results: wizard components */
 export const DEMO_RESULTS = [
@@ -140,19 +159,24 @@ export const DEMO_RESULTS = [
   },
   {
     caption: TITLE.SCORES,
-    text: 'The latent factor values for each sample reflect the similarities and dissimilarities among observations.',
+    text: 'Every car placed by its first two latent factors. Nearby cars are similar; clusters, trends, ' +
+      'and outliers show up as patterns. ' +
+      'The orange 95% and blue 99% Hotelling’s T² ellipses mark the confidence limits — ' +
+      'cars outside them are outliers.',
   },
   {
     caption: TITLE.LOADINGS,
-    text: 'The impact of each feature on the latent factors: higher loading means stronger influence.',
+    text: 'How strongly the two latent factors describe each feature: the ones far from the origin are described ' +
+      'well, and the ones grouped together correlate with each other.',
   },
   {
-    caption: TITLE.REGR_COEFS,
-    text: 'Parameters of the obtained model: features make different contribution to the prediction.',
+    caption: TITLE.VIP,
+    text: 'Feature ranking by overall contribution: bars above 1 mark the predictors that matter most.',
   },
   {
     caption: TITLE.EXPL_VAR,
-    text: 'How well the latent components fit source data: closer to one means better fit.',
+    text: 'The share of variance the latent factors explain, added up over the components: closer to one means ' +
+      'a better fit.',
   },
 ];
 

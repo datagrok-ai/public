@@ -284,6 +284,7 @@ ability to persist snapshots of input and output parameters allows us to do any 
 * See historical data (both inputs and outputs)
 * Correlate historical results against changes in data accessors and computations
 * Analyze longitudinal changes of the model output
+* [Compare historical runs](run-comparison.md) side by side
 
 ## Metadata
 

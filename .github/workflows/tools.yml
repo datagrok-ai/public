@@ -66,6 +66,9 @@ jobs:
     needs: [ check, common-check ]
     runs-on: ubuntu-22.04
     if: needs.common-check.outputs.continue == 'true'
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,12 +88,21 @@ jobs:
       - run: npm version
       - run: npm install
         working-directory: ./tools
+      # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
+      # toolchain only for the publish step so the build keeps its pinned Node.
+      - name: Setup Node for trusted publishing
+        uses: actions/setup-node@v4
+        if: needs.check.outputs.changed_version == 'true'
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm for trusted publishing
+        if: needs.check.outputs.changed_version == 'true'
+        run: npm install -g npm@latest
       - run: npm publish
         id: publish
         working-directory: ./tools
         if: needs.check.outputs.changed_version == 'true'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Get actors slack
         id: actor

@@ -19,7 +19,8 @@ type HitDesignCampaignAccordeon = {
     cancelPromise: Promise<void>
 }
 
-export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, peptiHit = false): HitDesignCampaignAccordeon {
+/** The initial one-row dataframe a new Hit Design / PeptiHit campaign starts from. */
+export function createNewHitDesignDataFrame(template: HitDesignTemplate, peptiHit = false): DG.DataFrame {
   const df = DG.DataFrame.create(1);
   if (peptiHit) {
     const pepCol = df.columns.addNew(PeptiHitHelmColName, DG.TYPE.STRING);
@@ -39,6 +40,11 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
     tileCategoryCol.set(0, template.stages[0]);
   }
   df.columns.addNew(ViDColName, DG.TYPE.STRING);
+  return df;
+}
+
+export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, peptiHit = false): HitDesignCampaignAccordeon {
+  const df = createNewHitDesignDataFrame(template, peptiHit);
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form

@@ -1,0 +1,70 @@
+/* Menu skin (see src/components/menu.ts). Tokens only — css/tokens.css must be loaded alongside. */
+.u2-menu {
+  box-sizing: border-box;
+  min-width: 140px;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-1);
+  outline: none;
+}
+
+.u2-menu-item {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: var(--dg-space-m);
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-menu-item-active,
+.u2-menu-item-open {
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
+}
+
+.u2-menu-item[aria-disabled='true'],
+.u2-menu-item[aria-disabled='true'] .u2-menu-shortcut {
+  color: var(--dg-text-color-disabled);
+  cursor: default;
+}
+
+.u2-menu-item[aria-disabled='true'].u2-menu-item-active {
+  background: none;
+}
+
+.u2-menu-icon {
+  font-size: var(--dg-font-size-small);
+  text-align: center;
+}
+
+.u2-menu-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-menu-shortcut {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  text-align: right;
+}
+
+.u2-menu-arrow {
+  font-size: var(--dg-font-size-small);
+  text-align: right;
+}
+
+.u2-menu-separator {
+  height: var(--dg-border-width);
+  margin: var(--dg-space-xs) 0;
+  background: var(--dg-border);
+}

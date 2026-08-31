@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
@@ -37,6 +38,17 @@ function colAsStrings(df: DG.DataFrame, name: string): string[] {
 
 // (parseMultiStepReaction is imported from the renderer above so the test can't drift out of
 // sync with the implementation.)
+
+// Output rows hold canonical SMILES, so any input list compared against them must be canonicalized
+// the same way.
+function canonicalizer(rdkit: any): (s: string) => string {
+  return (s: string): string => {
+    const m = rdkit.get_mol(s);
+    try {return (m && m.is_valid()) ? m.get_smiles() : s;} finally {
+      try {m?.delete();} catch {/* ignore */}
+    }
+  };
+}
 
 // Per-step (per-round) override tests assert equivalence: narrowing a round via perRoundOverrides
 // must yield exactly the same OUTPUT ROWS as running globally with that narrowed list — not just
@@ -1079,4 +1091,129 @@ category('Reaction Enumeration', () => {
       `Expected a "no effect in breadth-first mode" warning. Warnings: ${warnings.join(' | ')}`);
   }, {timeout: 300000});
 
+  // Every per-round test above pins round 1, where the override is the only thing feeding the
+  // reactant pool. Round 2 is the case the feature exists for and the one with a real interaction:
+  // its pool is `activeBBs ∪ prevRoundProducts`, so an override there must narrow the BB half
+  // without touching round 1's output or the products round 1 handed forward.
+  test('per-round: a round-2 BB override narrows round 2 only, leaving round 1 untouched', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, peptideTemplate} = await loadAaSplit(rdkit, 8);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 2;
+    config.enumeration.depth_first = true;
+    config.max_num_combinations_per_template = 100000;
+
+    const canon = canonicalizer(rdkit);
+    const half = bbs.slice(0, 4);
+    expect(half.length < bbs.length, true, 'Expected at least one excluded BB to test against');
+    const canonHalf = new Set(half.map(canon));
+
+    const common = {rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: []};
+    const base = await enumerate(common);
+    const withOverride = await enumerate({...common, perRoundOverrides: [{}, {buildingBlocks: half}]});
+
+    const byRound = (rows: OutputRow[], r: number): OutputRow[] => rows.filter((row) => row.round === r);
+    expectSameRows(byRound(base.rows, 1), byRound(withOverride.rows, 1),
+      'round 1 must be identical — the override applies to round 2 only');
+
+    const round2 = byRound(withOverride.rows, 2);
+    expect(round2.length > 0, true, 'Expected round-2 products; the override case is untested otherwise');
+    expect(round2.length <= byRound(base.rows, 2).length, true,
+      'A round-2 BB override must not produce MORE round-2 rows than the unrestricted run');
+
+    // Depth-first round 2 combines exactly one round-1 product with BBs, so every other reactant in
+    // the final step has to come from the override subset.
+    const round1Products = new Set(byRound(base.rows, 1).map((row) => row.product));
+    for (const row of round2) {
+      const steps = parseMultiStepReaction(row.route).flat();
+      const last = steps[steps.length - 1];
+      const reactants = last.slice(0, last.indexOf('>>')).split('.').filter((s) => s.length > 0);
+      for (const r of reactants) {
+        expect(canonHalf.has(r) || round1Products.has(r), true,
+          `Round-2 step "${last}" used "${r}", which is neither a round-1 product nor in the ` +
+          `round-2 building-block override`);
+      }
+    }
+  }, {timeout: 300000});
+
+  test('per-round: a round-1 reagent subset ≡ running globally with only those reagents', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, peptideTemplate} = await loadAaSplit(rdkit, 5);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    const half = reagents.slice(0, Math.max(2, Math.floor(reagents.length / 2)));
+    expect(half.length < reagents.length, true, 'Expected at least one excluded reagent to test against');
+
+    const common = {rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: []};
+    const viaOverride = await enumerate({...common, reagents, perRoundOverrides: [{reagents: half}]});
+    const viaGlobal = await enumerate({...common, reagents: half});
+    const full = await enumerate({...common, reagents});
+
+    expect(viaOverride.rows.length > 0, true, 'Expected products from the narrowed reagent round');
+    expectSameRows(viaOverride.rows, viaGlobal.rows, 'reagent subset');
+    expect(full.rows.length >= viaOverride.rows.length, true,
+      `The full reagent pool should yield ≥ products than a subset ` +
+      `(${full.rows.length} vs ${viaOverride.rows.length})`);
+  }, {timeout: 300000});
+
+  test('per-round: a reagent override outside reagents mode emits a "no effect" warning', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, reagents, peptideTemplate} = await loadAaSplit(rdkit, 5);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    // No `reagents` field, so reagents mode never engages and the override can't be read.
+    const {warnings} = await enumerate({
+      rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: [],
+      perRoundOverrides: [{reagents: reagents.slice(0, 2)}],
+    });
+    expect(warnings.some((w) => w.includes('reagent override has no effect outside reagents mode')), true,
+      `Expected a "no effect outside reagents mode" warning. Warnings: ${warnings.join(' | ')}`);
+  }, {timeout: 300000});
+
+  // Template rows routinely share one reaction SMARTS across different blocking-group variants, so
+  // matching an override on SMARTS text alone would silently pick the wrong row.
+  test('per-round: a template override tells apart two rows sharing one SMARTS', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, peptideTemplate} = await loadAaSplit(rdkit, 12); // includes cysteine, the only S-containing BB
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+    config.max_num_combinations_per_template = 100000;
+
+    const plain: TemplateInput = {...peptideTemplate, blockingSmartsList: []};
+    const blocked: TemplateInput = {...peptideTemplate, blockingSmartsList: ['[#16]']};
+    const common = {rdkit, config, buildingBlocks: bbs, exclusionSmarts: []};
+
+    const plainOnly = await enumerate({...common, templates: [plain]});
+    const blockedOnly = await enumerate({...common, templates: [blocked]});
+    expect(blockedOnly.rows.length > 0, true, 'Expected products from the blocked variant');
+    expect(blockedOnly.rows.length < plainOnly.rows.length, true,
+      `The blocking group must actually exclude something, or the two variants are ` +
+      `indistinguishable and this test proves nothing (${blockedOnly.rows.length} vs ${plainOnly.rows.length})`);
+
+    // Both rows are present globally; the override names only the blocked one.
+    const viaOverride = await enumerate({
+      ...common, templates: [plain, blocked], perRoundOverrides: [{templates: [blocked]}],
+    });
+    expectSameRows(viaOverride.rows, blockedOnly.rows, 'blocking-group variant selected by the override');
+  }, {timeout: 300000});
+
+  test('per-round: a template override matching no global template falls back and warns', async () => {
+    const rdkit = getRdKitModule();
+    const {bbs, peptideTemplate} = await loadAaSplit(rdkit, 5);
+    const config = reagentsModeBaseConfig();
+    config.enumeration.num_rounds = 1;
+
+    const unknown: TemplateInput = {
+      smarts: '[C:1][OH:2]>>[C:1][O:2]C', blockingSmartsList: [], reactionName: 'Not in the global set',
+    };
+    const common = {rdkit, config, templates: [peptideTemplate], buildingBlocks: bbs, exclusionSmarts: []};
+    const viaOverride = await enumerate({...common, perRoundOverrides: [{templates: [unknown]}]});
+    const base = await enumerate(common);
+
+    expectSameRows(viaOverride.rows, base.rows, 'non-matching template override falls back to the global set');
+    expect(viaOverride.warnings.some((w) => w.includes('matches none of the global reaction templates')), true,
+      `Expected a fallback warning. Warnings: ${viaOverride.warnings.join(' | ')}`);
+  }, {timeout: 300000});
 });

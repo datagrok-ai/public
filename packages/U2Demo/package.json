@@ -1,0 +1,55 @@
+{
+  "name": "@datagrok/u2demo",
+  "friendlyName": "U2 Demo",
+  "version": "0.0.1",
+  "description": "Demo of @datagrok-libraries/u2: signal-based inputs, popups, virtual lists, forms, and the platform bridge",
+  "author": {
+    "name": "Lena Bankurova",
+    "email": "lbankurova@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/test": "^1.1.0",
+    "@datagrok-libraries/u2": "^0.0.1",
+    "@datagrok-libraries/utils": "^4.7.8",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^5.1.5",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "debug-u2demo": "webpack && grok publish",
+    "release-u2demo": "webpack && grok publish --release",
+    "build-u2demo": "webpack",
+    "watch": "webpack --watch",
+    "build": "grok api && grok check --soft && webpack",
+    "test": "grok test",
+    "debug-u2demo-dev": "webpack && grok publish dev",
+    "release-u2demo-dev": "webpack && grok publish dev --release",
+    "debug-u2demo-public": "webpack && grok publish public",
+    "release-u2demo-public": "webpack && grok publish public --release",
+    "debug-u2demo-dev8082": "webpack && grok publish dev8082",
+    "release-u2demo-dev8082": "webpack && grok publish dev8082 --release",
+    "debug-u2demo-localhost": "webpack && grok publish localhost",
+    "release-u2demo-localhost": "webpack && grok publish localhost --release",
+    "build-all": "npm --prefix ./../../libraries/u2 run build && npm run build"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/U2Demo"
+  }
+}

@@ -1,5 +1,9 @@
 # ml changelog
 
+## v.next
+
+* Activity cliffs: Fixed the build for consumers on TypeScript 5.x — the MCL worker's Float32Arrays did not unify with `Matrix` coming from utils' emitted `.d.ts`, which is what kept the Bio package from compiling
+
 ## 6.10.14 (2026-06-23)
 
 DistanceMatrixService: added `calcMedoids` — for each cluster, ranks members by mean distance to the rest (rank 1 = medoid) and returns their mean distances, using a dedicated worker pool that reduces distances to row sums on the fly, without materializing the distance matrix

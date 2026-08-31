@@ -30,7 +30,9 @@ grok_connect.cmd         # Windows
 ### Running
 
 ```bash
-# Start REST server (port 1234, 4GB heap)
+# Start REST server (port 1234, 4GB heap). Keep the jar FIRST on the classpath: with lib/* first,
+# an SLF4J 1.x bundled in a driver jar shadows the shaded 2.x and GrokConnect.<clinit> crashes
+# (grok_connect.cmd / .sh and the Dockerfile all put the jar first).
 java -Xmx4g -classpath "grok_connect/target/grok_connect.jar:grok_connect/lib/*" grok_connect.GrokConnect
 
 # Shell mode (CLI for testing queries)
@@ -39,13 +41,29 @@ java -classpath "grok_connect/target/grok_connect.jar:grok_connect/lib/*" grok_c
 
 ### Testing
 
-Use `/test-connectors` to run tests.
+Use `/test-connectors` to run tests. Targeted suites that need no Docker:
+
+- `mvn -pl serialization test` — d42 writer/reader, including the Java → Dart goldens
+  (`D42JavaFixtureWriterTest`, compare mode: `src/test/resources/d42-java/*.d42` +
+  `.expected.json` must match byte-for-byte; `-Dd42.regenerate=true` rewrites them after an
+  intentional writer change — then run the Dart side,
+  `cd core/shared/ddt && pub run test test/serialization/java_d42_fixture_test.dart`) and the
+  Dart → Java goldens (`D42DartFixtureTest`).
+- `mvn -pl grok_connect test -Dtest='SessionHandler*,GzipFrameTest,FastReadTest,QueryManagerTest'` —
+  `SessionHandlerGzipChunkTest` drives the real `SessionHandler` state machine against a
+  file-backed SQLite database (its driver ships with grok_connect; `SQLiteDataProvider` is put
+  into `ProviderManager` and the static pool is set by reflection) with a mocked Jetty `Session`
+  capturing announcements and frames. Reuse that pattern for any handler-level test that must run
+  without a database container.
 
 ### Docker
 
 ```bash
-# Build image
+# Build the main image (all providers on lean/patched drivers)
 docker build -t grok_connect .
+
+# Build the extended image (CVE-quarantined drivers: Neptune, Impala)
+docker build --build-arg FLAVOR=extended --build-arg GROK_CONNECT_PROVIDERS="Neptune,Impala" -t grok_connect_extended .
 
 # Run container
 docker run -p 1234:1234 grok_connect
@@ -91,11 +109,13 @@ connectors/
 │   ├── lib/                             # Pre-built JDBC drivers
 │   └── pom.xml
 │
-├── serialization/      # Binary data serialization module
+├── serialization/      # Binary (d42) DataFrame serialization module: read + write
 │   ├── src/main/java/serialization/
-│   │   ├── DataFrame.java               # Columnar data container
-│   │   ├── Column.java                  # Typed column with data
+│   │   ├── DataFrame.java               # Columnar container; toByteArray() writes, fromByteArray() reads
+│   │   ├── Column.java                  # Typed column: encode() writes, decode() reads
+│   │   ├── BufferAccessor.java          # d42 primitives — write* and read* halves
 │   │   ├── Types.java                   # Type constants
+│   │   ├── codecs/                      # BitIntList/IntRle/IntSequencePattern read+write; FloatFcp/FloatRle/StringSquash decode-only
 │   │   └── BigIntColumn.java, etc.      # Type-specific columns
 │   └── pom.xml
 │
@@ -162,6 +182,14 @@ ColumnManager (interface)
 
 **Fallback strategy:** If a type converter throws, the column manager silently downgrades
 to `StringColumn`, preserving values at the cost of type information.
+
+**Fast reads:** `ColumnManager.canReadFast(meta)` / `readFast(rs, i, column, meta)` let a manager
+read a cell with the typed JDBC getter (`getInt`, `getDouble` + narrow / `getFloat`, `getBoolean`,
+`getString` + `wasNull`) straight into the column's primitive `add` overload, skipping `getObject`
+and the converter chain. `DefaultResultSetManager.init` resolves it once per column; the default
+and the datetime / bigint / complex managers return `false`. The row loop in
+`JdbcDataProvider.getResultSetSubDf` checks cancellation once per row. A converter failure turns
+the column into a `StringColumn` and switches its fast path off.
 
 **Provider-specific overrides:**
 - `OracleBigIntColumnManager` — handles Oracle `NUMBER` types
@@ -262,6 +290,70 @@ HTTP Request → Spark Route → Handler → Provider → JDBC → ResultSet
 HTTP Response ← Binary Serialization ← DataFrame ← Column Managers
 ```
 
+### Streaming pipeline (`/query_socket`, `SessionHandler`)
+
+`QUERY` → `QueryManager` → chunk 1 is read and serialized on the WebSocket thread and, with the
+pipeline on (`PIPELINE`, see Runtime flags), `fetch(2)` = `getSubDF(2, bytesPerRow)` is submitted
+to the pool right away (`GrokConnect.submitPoolTask` via `async`, MDC context propagated). Two
+stages then run while chunk k is in flight: on `DATAFRAME PART SIZE RECEIVED` for chunk k the WS
+thread chains `serialize(k+1)` onto the pending fetch (`fetchFuture.thenCompose`) and, unless that
+fetch came back empty, `fetch(k+2)` after it, then sends chunk k's bytes; `serialize` =
+`DataFrame.toBlob().toByteArray()` → `reportSerialized` → optional gzip → `Frame{bytes, gzipped,
+rowCount}`. On `PART OK` the WS thread joins the serialize future and announces
+`DATAFRAME PART SIZE: <n> [gzip=true]`; a non-`PART OK` reply re-announces the same frame once
+(`QueryChunkNotSent` after that) and schedules nothing. `fetch(k+2)` is chained only by the next
+SIZE RECEIVED, which bounds live data to two DataFrames and two Frames. With the pipeline off, one
+pool task per chunk does fetch + serialize (the previous sequencing; the bytes are identical).
+
+- Fetch sizing: the WS thread snapshots `QueryManager.getWireBytesPerRow()` (serialized bytes/row
+  of the last chunk `serialize` reported) when it schedules a fetch and passes it as
+  `getSubDF(n, wireBytesPerRow)`, which sizes the chunk after n from it (`memoryInBytes()/rowCount`
+  only while it is 0) — so the size does not depend on which serialize happened to finish first.
+- Separate data per stage: `getSubDF` for every chunk after the first calls
+  `ResultSetManager.detach(nextColSize)` before reading — `DefaultResultSetManager` replaces each
+  column with a fresh instance of the same class (`Column.getColumnForType`, class asserted;
+  `BigIntColumn` is rebuilt as `bigint` and carries `setDowncastAllowed` + its sticky flag), so
+  `serialize(k+1)` encodes columns the running `fetch(k+2)` never touches.
+- Cancellation: `cancelTasks()` (from `onClose` and from the error cleanup) marks the query
+  cancelled in `QueryMonitor` so the row loop throws `QueryCancelledByUser`, waits up to 5 s
+  (`CANCEL_JOIN_TIMEOUT_MS`) for the running fetch, then `cancel(true)`s both futures; only after
+  that does `QueryManager.close` close the result set and connection under them (`cancel(true)`
+  alone never interrupts a running pool task).
+- With `debugQuery`, `serialize` logs `COLUMN SIZES [...]` (`MISC` marker, per column
+  `{name, type, enc, bytes, gz}`) right after the `DATAFRAME TO BYTEARRAY CONVERSION` END marker;
+  the `columnTimings` option adds `ms` per column (re-encode of that column alone).
+
+Datlas-side contract: `core/docs/DB_QUERY_FLOW.md` Steps 6-7. `SessionHandlerGzipChunkTest` (see
+Testing) runs every chunk scenario with the pipeline off and on and asserts identical announce
+tokens and bytes; `cancelledFetchPropagatesThroughThePipeline` and
+`closeMidStreamCancelsBothStagesAndReleasesTheConnection` (a `GatedProvider` whose column reads
+park on a latch) cover the cancel path: `onClose` waits for the parked row, the fetch ends in
+`QueryCancelledByUser`, and the connection is closed.
+
+Options Datlas puts into the `QUERY` JSON (`QueryManager`; all absent on old Datlas builds and
+on the non-streaming `/query` path):
+
+| Option                 | Effect                                                                                                                                                                                    |
+|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `int8AsInt32`          | `BigIntColumn` reports and encodes as `int` while every value fits int32; sticky, lossless upgrade to `bigint` on the first overflow, plus the `ALLOW_COL_TYPE_CHANGE` tag on every chunk |
+| `compressChunks`       | gzip each chunk inside the pool task and announce `gzip=true`; chunk 1 only when `initConnectFetchSize` is given and is not the number 100 (mirrors Datlas)                               |
+| `gzipLevel`            | level for that gzip (default 1, clamped 1-9)                                                                                                                                              |
+| `connectFetchSize`     | rows per chunk after the first, or a `"N MB"` byte target                                                                                                                                 |
+| `initConnectFetchSize` | rows of chunk 1 (default 100)                                                                                                                                                             |
+| `columnTimings`        | with `debugQuery`, adds a per-column `ms` (re-encode of that column alone) to the `COLUMN SIZES` debug log line                                                                           |
+
+### Runtime flags (JVM system properties)
+
+| Property                                | Default | Effect when `false`                                                                                                              |
+|-----------------------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------|
+| `grok.connect.advancedEncoders`         | `true`  | `IntColumn` writes `int:raw` (id 1) only — also string category indices, the bigint int mode and, in effect, datetime components |
+| `grok.connect.dateTimeComponentEncoder` | `true`  | `DateTimeColumn` writes `dateTime:microseconds` (id 3) only                                                                      |
+| `grok.connect.pipelineFetch`            | `true`  | one pool task per chunk does fetch + serialize instead of the two-stage pipeline (same bytes on the wire)                        |
+
+The encoder flags exist to roll a stand back to the pre-optimization wire bytes without a rebuild;
+no reader needs them (every id was already decoded everywhere, `core/docs/D42_BINARY_FORMAT.md`).
+`pipelineFetch` changes only task scheduling, never the bytes.
+
 ## Directory Structure
 
 ```
@@ -308,71 +400,70 @@ grok_connect/src/main/java/grok_connect/
 
 ## Key Technologies
 
-| Category | Technology      | Version |
-|----------|-----------------|---------|
-| Language | Java            | 8       |
-| Language | Kotlin          | 1.6.21  |
-| Build    | Maven           | 3+      |
-| REST     | Spark Java      | 2.9.4   |
-| HTTP     | Jetty           | 9.4.x   |
-| JSON     | Gson            | 2.11.0  |
-| Testing  | JUnit 5         | 5.9.2   |
-| Testing  | TestContainers  | 1.17.6  |
-| Logging  | SLF4J + Logback | 1.2.13  |
-| AWS      | AWS SDK         | 2.20.52 |
+| Category | Technology      | Version         |
+|----------|-----------------|-----------------|
+| Language | Java            | 8               |
+| Language | Kotlin          | 1.6.21          |
+| Build    | Maven           | 3+              |
+| REST     | Spark Java      | 2.9.4           |
+| HTTP     | Jetty           | 9.4.x           |
+| JSON     | Gson            | 2.11.0          |
+| Testing  | JUnit 5         | 5.9.2           |
+| Testing  | TestContainers  | 1.17.6          |
+| Logging  | SLF4J + Logback | 2.0.17 / 1.3.16 |
+| AWS      | AWS SDK         | 2.52.0 (bom)    |
 
 ## Adding a New Database Provider
 
 1. **Create provider class** in `providers/`:
 
-```java
-public class MyDbDataProvider extends JdbcDataProvider {
-    public DataSource descriptor = new DataSource(
-        "MyDB",                          // Display name
-        "jdbc:mydb://{server}:{port}/{db}", // Connection template
-        MyDbDataProvider.class
-    );
-
-    public MyDbDataProvider() {
-        descriptor.type = "MyDB";
-        descriptor.defaultSchema = "public";
-
-        // Define connection parameters
-        descriptor.connectionProperties = Arrays.asList(
-            new Property("server", Property.STRING_TYPE),
-            new Property("port", Property.INT_TYPE, "3306"),
-            new Property("db", Property.STRING_TYPE)
+    ```java
+    public class MyDbDataProvider extends JdbcDataProvider {
+        public DataSource descriptor = new DataSource(
+            "MyDB",                          // Display name
+            "jdbc:mydb://{server}:{port}/{db}", // Connection template
+            MyDbDataProvider.class
         );
+
+        public MyDbDataProvider() {
+            descriptor.type = "MyDB";
+            descriptor.defaultSchema = "public";
+
+            // Define connection parameters
+            descriptor.connectionProperties = Arrays.asList(
+                new Property("server", Property.STRING_TYPE),
+                new Property("port", Property.INT_TYPE, "3306"),
+                new Property("db", Property.STRING_TYPE)
+            );
+        }
+
+        @Override
+        public String getConnectionString(DataConnection conn) {
+            return "jdbc:mydb://" + conn.getServer() + ":" + conn.getPort() + "/" + conn.getDb();
+        }
+
+        // Override methods as needed for provider-specific behavior
     }
+    ```
 
-    @Override
-    public String getConnectionString(DataConnection conn) {
-        return "jdbc:mydb://" + conn.getServer() + ":" + conn.getPort() + "/" + conn.getDb();
-    }
+2. **Add JDBC driver** to `lib/` directory (or as a Maven dependency)
 
-    // Override methods as needed for provider-specific behavior
-}
-```
-
-2. **Add JDBC driver** to `lib/` directory
-
-3. **Register provider** in `ProviderManager.java`:
-
-```java
-register(new MyDbDataProvider());
-```
+3. **Register provider** in `ProviderManager.java` — add its fully-qualified class name to the
+   `PROVIDER_CLASSES` array. Registration is reflective: the provider is advertised on `/conn`
+   only when its driver class is present and it passes the `providers.conf` allowlist baked
+   into the image at build time (from the `GROK_CONNECT_PROVIDERS` build arg).
 
 4. **Add tests** in `src/test/java/`:
 
-```java
-public class MyDbDataProviderTest extends DataProviderTest {
-    @Container
-    public static GenericContainer<?> myDb = new GenericContainer<>("mydb:latest")
-        .withExposedPorts(3306);
+    ```java
+    public class MyDbDataProviderTest extends DataProviderTest {
+        @Container
+        public static GenericContainer<?> myDb = new GenericContainer<>("mydb:latest")
+            .withExposedPorts(3306);
 
-    // Test methods
-}
-```
+        // Test methods
+    }
+    ```
 
 5. **Update CHANGELOG.md**
 
@@ -425,13 +516,17 @@ Set `queryCall.options['debugFunc'] = true` to enable:
 
 ### Key Log Markers
 
-| Marker                              | What it measures                 |
-|-------------------------------------|----------------------------------|
-| `CONNECTION_RECEIVE`                | Time to obtain JDBC connection   |
-| `DATAFRAME_TO_BYTEARRAY_CONVERSION` | Serialization time per chunk     |
-| `CHECKSUM_SEND`                     | Time to send size announcement   |
-| `SOCKET_BINARY_DATA_EXCHANGE`       | Time to send binary data         |
-| `DRY_RUN`                           | Dry run timing (debug mode only) |
+| `EventType` marker                             | Log name                                    | What it measures                                                                                                           |
+|------------------------------------------------|---------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `CONNECTION_RECEIVE`                           | `CONNECTION RECEIVE`                        | Time to obtain JDBC connection                                                                                             |
+| `RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL`    | `RESULT SET PROCESSING WITH DATAFRAME FILL` | Row loop per chunk (driver fetch + column fill), with the df number                                                        |
+| `DATAFRAME_TO_BYTEARRAY_CONVERSION`            | `DATAFRAME TO BYTEARRAY CONVERSION`         | Serialization time per chunk                                                                                               |
+| `MISC` `COLUMN SIZES [...]`                    | `MISC`                                      | Per-column `{name, type, enc, bytes, gz}` of the serialized chunk (debug only; the `gz` re-compression is debug-only cost) |
+| `COMPRESSION`                                  | `GZIP COMPRESSION`                          | Gzip per chunk when `compressChunks` is on; END message carries `<raw> -> <gz> bytes`                                      |
+| `CHECKSUM_SEND`                                | `CHECKSUM SEND`                             | Time to send size announcement (`Data size:` is the gzipped length when gzipped)                                           |
+| `SOCKET_BINARY_DATA_EXCHANGE`                  | `SOCKET BINARY DATA EXCHANGE`               | Time to send binary data                                                                                                   |
+| `RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL` | `DRY RUN`                                   | Row loop of a dry run (`getObject` per cell, no fill)                                                                      |
+| `DRY_RUN`                                      | `DRY RUN TOTAL DURATION`                    | Both dry runs (debug mode only)                                                                                            |
 
 ### Fetch Size Tuning
 
@@ -442,7 +537,9 @@ Override via query options:
 Example: `queryCall.options['connectFetchSize'] = '5 MB'` targets 5 MB chunks.
 
 Default adaptive behavior: initial 100 rows, then auto-calculated per chunk targeting
-10 MB (`MAX_CHUNK_SIZE_BYTES`), capped at 100,000 rows (`MAX_FETCH_SIZE`).
+10 MB (`MAX_CHUNK_SIZE_BYTES`) from the serialized bytes/row of the previous chunk
+(`lastWireBytesPerRow`; the in-memory estimate is used only before any chunk was serialized),
+capped at 500,000 rows (`MAX_FETCH_SIZE`).
 
 ## Runtime Configuration
 
@@ -455,7 +552,19 @@ Default settings (can be overridden):
 
 ## Notes
 
-- Java 8 is required (some JDBC drivers don't support newer versions)
+- Source/target level is Java 8 (`pom.xml`; some JDBC drivers don't support newer versions) and
+  the Docker image runs on `datagrok/openjdk:8`. The shade config drops `META-INF/versions/**`,
+  so it must also drop every service entry that points at a multi-release class — dnsjava's
+  `META-INF/services/java.net.spi.InetAddressResolverProvider` is excluded for that reason
+  (`grok_connect/pom.xml`); with it present, JDK 18+ fails every `InetAddress` lookup
+  (`ServiceConfigurationError`) and every JDBC connect times out (~30 s, pool `total=0`).
+- Two image flavors from one codebase: `datagrok/grok_connect` (main) and `datagrok/grok_connect_extended`
+  (opt-in; ships only the CVE-quarantined drivers — Amazon Neptune 3.0.3, Cloudera Impala). The `FLAVOR`
+  build arg prunes `lib/`, and the `GROK_CONNECT_PROVIDERS` build arg (comma-separated `descriptor.type`
+  values, empty = all) is baked into the image as `providers.conf` next to the jar — the allowlist is
+  fixed at build time and cannot be changed with a runtime env var. ProviderManager also probes each
+  provider's driver class and skips providers whose driver jar is absent, so `/conn` never advertises
+  a provider that cannot connect.
 - JDBC drivers in `lib/` are not managed by Maven (pre-built)
 - Kotlin is used only for SAP HANA provider and utilities
 - TestContainers tests require Docker to be running

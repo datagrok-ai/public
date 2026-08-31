@@ -163,6 +163,19 @@ dockerfiles/
     requirements.in      # Python dependencies (if applicable)
 ```
 
+Instead of a `Dockerfile`, `container.json` may name an already-published `image` — the platform
+then runs that image rather than building one:
+
+```jsonc
+{"image": "datagrok/jkg_r:#{PACKAGE_VERSION}", "cpu": 2, "memory": 8192, "on_demand": true}
+{"image": "datagrok/jkg_r"}   // same thing — an untagged image gets the package version
+```
+
+Prefer either of those over naming a mutable tag. Nothing re-resolves a tag once the image has
+been pulled, so a stand keeps running whatever `:bleeding-edge` meant the day it first started
+the container — sandbox served scripts for days from an image whose digest no longer matched the
+tag. An explicit tag or `@sha256:` digest is honoured as written.
+
 Access from TypeScript via `grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/endpoint', opts)`.
 See **Chem**, **Docking**, **Boltz1**, **Reinvent4** for examples.
 
@@ -293,6 +306,30 @@ npm run link-all       # Links specific dependencies listed in package.json
 ```
 
 Always link all dependencies in a single command. When linking to local js-api, also link all libraries to local js-api.
+
+## Publishing to npm
+
+**A package reaches npm by committing its version bump to `master` — never by running
+`npm publish` by hand.** `.github/workflows/packages.yaml` runs on every push to `master` that
+touches `packages/**` and publishes with the org's `NPM_TOKEN`; a local publish would push a
+build nobody reviewed, from a token nobody rotates.
+
+CI publishes a package when all four hold ([packages.yaml](../.github/workflows/packages.yaml)):
+
+| condition | meaning |
+|---|---|
+| `package.json` version ≠ npm's latest | the bump *is* the release trigger |
+| major version > 0 | `0.x` never publishes |
+| every `@datagrok/*` dependency already on npm | publish dependencies first |
+| ref is `refs/heads/master` | branches and PRs build and check only |
+
+So: bump the version, merge to `master`, and watch the run. `grok publish <host>` is a different
+thing entirely — it deploys to a Datagrok server, and without `--release` it deploys a *debug*
+build owned by you rather than the stand's current package.
+
+If the package ships `dockerfiles/*/container.json` naming an `image`, remember the tag follows
+the version (see above), so the images for the new version must exist in the registry *before*
+the bump lands on master.
 
 ## Naming Conventions
 

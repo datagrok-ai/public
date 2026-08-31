@@ -1,0 +1,259 @@
+/* Form layout — vertical stack, label column aligned through --u2-form-label-width (set by
+   src/components/forms/form.ts), as in the current platform (ui.css .ui-form / .ui-form-wide /
+   .ui-form-condensed — the latter is u2's tall layout). Tokens only; css/tokens.css and
+   css/inputs.css must be loaded alongside. */
+.u2-form {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-width: 700px;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+/* the 8px row pitch comes from the rows' own 4px paddings, as the platform's (ui.css:580-582) */
+.u2-form-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.u2-form .u2-input-label,
+.u2-form .ui-input-label {
+  min-width: var(--u2-form-label-width, 100px);
+}
+
+/* platform caption skin: grey, right-aligned in the label column (ui.css:1068-1075) —
+   bridged platform inputs (.ui-input-label) share it */
+.u2-form .u2-input-label,
+.u2-form .ui-input-label {
+  color: var(--dg-text-color-light);
+  text-align: right;
+}
+
+.u2-form-captions-left .u2-input-label,
+.u2-form-captions-left .ui-input-label {
+  text-align: left;
+}
+
+/* a non-input row (Form.addElement) carries the pitch the input roots get from their padding */
+.u2-form-rows > :not(.u2-input-root):not(.u2-section) {
+  padding: var(--dg-space-s) 0;
+}
+
+.u2-form input.u2-input-editor,
+.u2-form textarea.u2-input-editor,
+.u2-form .u2-input-editor.u2-input-search {
+  flex: 1;
+  min-width: 0;
+}
+
+/* the growing editors sit inside the options box, so the box is the flex child that has to grow */
+.u2-form .u2-input-box:has(> input.u2-input-editor),
+.u2-form .u2-input-box:has(> textarea.u2-input-editor),
+.u2-form .u2-input-box:has(> .u2-input-editor.u2-input-search) {
+  flex: 1;
+  min-width: 0;
+}
+
+/* the category heading FuncCallForm groups params under — the platform's h2: 13px bold in the
+   body color (datagrok.css:71-75), darker than the grey captions below it */
+.u2-form-category {
+  margin-top: var(--dg-space-m);
+  font-size: var(--dg-font-size);
+  font-weight: var(--dg-font-weight-bold);
+  color: var(--dg-text-color);
+}
+
+.u2-form-rows > .u2-section:first-child .u2-form-category {
+  margin-top: 0;
+}
+
+/* wide — the platform's ui-form-wide (ui.css:635-688): captions stay left, editors fill the row */
+.u2-form-wide {
+  max-width: none;
+}
+
+.u2-form-wide .u2-input-box {
+  flex: 1;
+  min-width: 0;
+}
+
+.u2-form-wide .u2-input-editor {
+  flex: 1;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+/* growth exceptions, as the platform's (ui.css:1100-1104) */
+.u2-form-wide .u2-input-root[data-u2='bool-input'] .u2-input-editor,
+.u2-form-wide .u2-input-root[data-u2='radio-input'] .u2-input-editor,
+.u2-form-wide .u2-input-root[data-u2='multi-choice-input'] .u2-input-editor {
+  flex-grow: 0;
+  width: auto;
+}
+
+/* the bigint/qnum 150px cap (inputs.css:61-66) outranks the stretch rules — matched and lifted */
+.u2-form-wide .u2-input-root[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
+.u2-form-wide .u2-input-root[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor,
+.u2-form-tall .u2-input-root[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
+.u2-form-tall .u2-input-root[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor {
+  max-width: none;
+}
+
+/* tall — the platform's ui-form-condensed "tall view" (ui.css:1081-1246): the caption becomes its
+   own small grey line above a full-width editor */
+.u2-form-tall .u2-input-root {
+  flex-wrap: wrap;
+  padding-top: var(--dg-space-m);
+}
+
+.u2-form-tall .u2-input-label {
+  flex-basis: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  text-align: left;
+}
+
+/* the box takes flex-basis 100% so the label(100%)+box line OVERFLOWS and flex-wrap breaks it —
+   with basis 0 (a bare flex: 1) the pair sums to 100%, nothing wraps, and the box renders 0px
+   wide beside the full-row label. The .u2-form class doubles the specificity past the
+   :has(> input…) box rules above (0,3,1), which also carry basis-0 flex: 1. */
+.u2-form.u2-form-tall .u2-input-root .u2-input-box {
+  flex: 1 1 100%;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+.u2-form-tall .u2-input-editor {
+  flex: 1;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+
+/* the platform exception: bool stays caption-left inline (ui.css:797-801, 1089-1121) */
+.u2-form-tall .u2-input-root[data-u2='bool-input'] {
+  flex-wrap: nowrap;
+}
+
+.u2-form-tall .u2-input-root[data-u2='bool-input'] > .u2-input-label {
+  flex-basis: auto;
+  font-size: var(--dg-font-size);
+  margin-right: var(--dg-space-m);
+}
+
+.u2-form.u2-form-tall .u2-input-root[data-u2='bool-input'] .u2-input-box,
+.u2-form.u2-form-tall .u2-input-root[data-u2='bool-input'] .u2-input-editor {
+  flex: none;
+  width: auto;
+}
+
+.u2-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--dg-space-m);
+  margin-top: var(--dg-space-l);
+}
+
+/* the async state riding a func-form field's input box: a spinner while its choices source or
+   computed default evaluates, the message and Retry after a failure (the spinner itself is
+   css/async.css's .u2-loader-spinner) */
+.u2-param-source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-param-source[hidden] {
+  display: none;
+}
+
+/* _applyEnabled keeps Retry live on a disabled field — undo the disabled root's children-wide
+   pointer-events: none for the state chrome */
+.u2-input-disabled .u2-param-source {
+  pointer-events: auto;
+}
+
+.u2-param-source-error {
+  color: var(--dg-error);
+  max-width: 260px;
+}
+
+/* a transient note — a table switch cleared the column picks; the next interaction with the
+   field dismisses it */
+.u2-param-source-notice {
+  color: var(--dg-text-color-light);
+  max-width: 260px;
+}
+
+/* the message wraps up to three lines so a long failure never blows up the row; the full text is its title */
+.u2-param-source-error .u2-param-source-message,
+.u2-param-source-notice .u2-param-source-message {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* the guess mark on an auto-filled table or auto-picked column field, gone once the user edits */
+.u2-param-auto {
+  align-self: center;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  user-select: none;
+}
+
+/* the categoryGroups heading levels mirror the platform's hN scale (fpe:840-860 renders plain
+   headings; datagrok.css:57-81): l1 = h1 (heading-1 size, bold dark — token-sourced, the u2
+   heading scale's 16px over the platform's 15px), l2 = h2, which IS the base 13px bold dark
+   category style above, l3 = h3-like small light sub-head. The doubled class outranks
+   .u2-section-header's bold, which ties bare level classes on specificity and would win by
+   stylesheet load order. */
+.u2-form-category.u2-form-category-l1 {
+  font-size: var(--dg-font-size-h1);
+}
+
+.u2-form-category.u2-form-category-l3 {
+  margin-left: var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-regular);
+  color: var(--dg-text-color-light);
+}
+
+/* the history icon leads the buttons row, kept left of the right-aligned action buttons */
+.u2-form-buttons > [data-u2='ff-history-icon'] {
+  margin-right: auto;
+}
+
+.u2-form-buttons > [data-u2='ff-history-icon'][hidden] {
+  display: none;
+}
+
+/* the saved-runs popup the history icon opens (hosts a FuncCallHistoryBrowser) */
+.u2-func-form-history-popup {
+  display: flex;
+  box-sizing: border-box;
+  width: 420px;
+  height: 320px;
+  padding: var(--dg-space-s);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  background: var(--dg-bg);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-func-form-history-popup .u2-fch {
+  flex: 1;
+  min-width: 0;
+}

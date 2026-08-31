@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [chem.cp.scaffold-tree-add-filter]
-realizes: [chem.analyze.scaffold-tree, chem.scaffold-tree]
+realizes: [chem.menu.analyze.scaffold-tree, chem.viewer.scaffold-tree, chem.filter.scaffold-tree-filter]
 realized_as:
   - scaffold-tree-functions-spec.ts
 produced_from: migrated

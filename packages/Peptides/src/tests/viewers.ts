@@ -197,6 +197,14 @@ category('Viewers: Logo Summary Table', () => {
     }, 0, 0);
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
+
+  test('Property change after close', async () => {
+    lstViewer.close();
+    await delay(100);
+    expect(lstViewer.dataFrame == null, true, 'Expected the closed viewer to have no dataFrame');
+    lstViewer.getProperty(LST_PROPERTIES.COLUMNS)!.set(lstViewer, [TEST_COLUMN_NAMES.ACTIVITY]);
+    lstViewer.render();
+  });
 }, {clear: false});
 
 category('Viewers: Peptide Generation', () => {

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p1
 realizes_atlas: [open-app-edit-run, model-hub-run]
-realizes: [diffstudio, diffstudio.ball-flight, diffstudio.pk-pd, diffstudio.bioreactor, diffstudio.acid-production, diffstudio.pollution]
+realizes: [diffstudio.app.diff-studio, compute2.app.model-hub, scripting.js]
 realized_as:
   - scripting.test.ts
 related_bugs: []

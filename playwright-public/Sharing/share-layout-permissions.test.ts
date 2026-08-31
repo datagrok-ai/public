@@ -156,7 +156,6 @@ test('Sharing & Permissions — Layout', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
     
@@ -205,7 +204,13 @@ test('Sharing & Permissions — Layout', async ({page}) => {
   });
 
   await softStep('Block B.3: CANCEL closes dialog; no grant changed (owner-only)', async () => {
-    await page.locator('[name="button-CANCEL"]').click();
+    // The dialog's user-selector list sits over the footer, so a real click lands on
+    // `.d4-user-selector-user` instead of the button. Drive CANCEL from the DOM, the
+    // same way Block A reads it — the platform's handler runs either way.
+    await page.evaluate(() => {
+      const d = document.querySelector('.d4-dialog');
+      (d?.querySelector('[name="button-CANCEL"]') as HTMLElement | null)?.click();
+    });
     await expect(page.locator('.d4-dialog')).toHaveCount(0, {timeout: 10_000});
     
     

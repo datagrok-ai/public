@@ -346,7 +346,7 @@ export namespace funcs {
   }
 
   /**
-  Calculates molecular descriptors for the molecules column
+  Calculates molecular descriptors for the molecules column using RDKit
   */
   export async function descriptorsDocker(table: DG.DataFrame , molecules: DG.Column , selected: any ): Promise<void> {
     return await grok.functions.call('Chem:DescriptorsDocker', { table, molecules, selected });
@@ -661,6 +661,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:ConvertNotation', { data, molecules, targetNotation, overwrite, join, kekulize });
   }
 
+  /**
+  Removes stereochemistry from molecules and adds a column with flat SMILES.
+  */
+  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join });
+  }
+
   export async function convertMolNotationAction(col: DG.Column ): Promise<void> {
     return await grok.functions.call('Chem:ConvertMolNotationAction', { col });
   }
@@ -798,7 +805,7 @@ export namespace funcs {
   }
 
   /**
-  Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+  Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
   */
   export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean ): Promise<void> {
     return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });

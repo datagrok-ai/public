@@ -88,6 +88,19 @@ an app-like shareable link:
 To copy such a link for the parameters you currently see, click the **copy** icon next to
 the **Run** button.
 
+### Stored runs
+
+Every saved run of a function gets a sequential number (shown as `#N` in the function's
+run history). A run can be reopened by URL:
+
+```
+/func/Admin.SalesReport/runs/1
+```
+
+The link opens the run's stored inputs and outputs without re-executing the function.
+Query parameters are ignored when the run is found. If the run number doesn't exist, the
+parameter form opens instead, prefilled with any parameters the URL provided.
+
 Notes:
 
 * All required parameters must be in the URL. Otherwise the parameter form opens with the
@@ -156,6 +169,15 @@ those values are forwarded to the corresponding function inputs:
 
 ```
 /p/user.dashboard?region=France&year=2025
+```
+
+List parameters can be bound element-wise: a mapping key like `filters[0]` (offered
+with the default alias `filters_0`) replaces just that element of the recorded call's
+list, leaving the rest untouched — see
+[Domains: URL parameters](../../govern/catalog/domains.md#url-parameters):
+
+```
+/p/user.dashboard?filters_0=freight%20%3E%20100
 ```
 
 ## See also

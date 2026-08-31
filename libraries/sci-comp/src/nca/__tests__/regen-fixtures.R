@@ -48,7 +48,12 @@ interval_template <- function(extra = character(0)) {
   cols <- c(
     "cmax", "tmax", "auclast", "aucinf.obs", "aucpext.obs",
     "half.life", "cl.obs", "vz.obs", "lambda.z",
-    "aumclast", "aumcinf.obs", "mrt.obs", "tlag"
+    "aumclast", "aumcinf.obs", "mrt.obs", "tlag",
+    # Terminal-phase span ratio — PKNCA's own `span.ratio`, the rule-18 oracle
+    # for LambdaZResult.spanRatio. Requested here rather than derived from
+    # lambda.z.time.first/last + half.life so the fixture carries the value
+    # PKNCA itself reports, not our arithmetic on its inputs.
+    "span.ratio"
   )
   cols <- c(cols, extra)
   iv <- data.frame(start = 0, end = Inf)
@@ -128,7 +133,10 @@ collect_new <- function(df, subjects, route) {
       (aumcinf - aumclast) / aumcinf * 100
     out[[as.character(s)]] <- list(
       aumclast = aumclast, aumcinf_obs = aumcinf, mrt = mrt,
-      vss = vss, tlag = tlag, pct_aumcextrap = pct_aumc
+      vss = vss, tlag = tlag, pct_aumcextrap = pct_aumc,
+      # Merged into `provenance` (not `parameters`) — it is a fit diagnostic,
+      # sitting with the other lambda_z_* fields. See merge-fixtures.mjs.
+      span_ratio = getp(df, s, "span.ratio")
     )
   }
   out
@@ -231,6 +239,11 @@ inf_fixture <- list(
       aumclast = g("aumclast"), aumcinf_obs = g("aumcinf.obs"),
       mrt = g("mrt.iv.obs"), vss = g("vss.iv.obs"), tlag = NA_real_,
       pct_aumcextrap = (g("aumcinf.obs") - g("aumclast")) / g("aumcinf.obs") * 100
+    ),
+    provenance = list(
+      lambda_z_time_first = g("lambda.z.time.first"),
+      lambda_z_time_last = g("lambda.z.time.last"),
+      span_ratio = g("span.ratio")
     )
   ))
 )

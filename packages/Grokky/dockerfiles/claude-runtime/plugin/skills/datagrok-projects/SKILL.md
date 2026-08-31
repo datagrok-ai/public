@@ -1,86 +1,98 @@
 ---
 name: datagrok-projects
-description: Save, create, attach to, or share a Datagrok project. Each step has a trigger phrase; run only the triggered step, then stop.
+description: Save, publish, create, attach to, or share a Datagrok project, including turning data sync on. The save and share flows drive the platform dialogs through their AI functions.
 ---
 
 # datagrok-projects
 
-Run only the triggered step. Never chain ahead or infer the next step.
+## Save / publish — drive the platform's Save dialog
 
-## Routing
+The Save Project dialog is the platform's save/publish entry and the only reliable way to get
+per-table data sync, creation-script dependency linking, and the correct upload order. Do not
+hand-write project/table saves with `grok.dapi` — open the dialog and drive it through its
+functions.
 
-| Trigger                                                | Run             |
-|--------------------------------------------------------|-----------------|
-| "save the/my project / save my work" (no "new")        | Step 1          |
-| explicit "create / make / new project"                 | Step 2          |
-| "attach the (current) table / view"                    | Step 3          |
-| "share the project / with <group>"                     | Step 4          |
-| Step 1 returned `onServer: false`                      | Step 2 + Step 3 |
+1. **Open the dialog** (`datagrok_exec`) — do NOT await the dialog promise (it resolves only when
+   the dialog closes):
 
-"Save" never means create — a new project on a "save" request is a clone; the original stays unsaved.
+   ```js
+   const project = grok.shell.project;
+   DG.Project.showSaveDialog({
+     tables: [t], views: [view],                              // add more pairs for multi-table saves
+     project: project.isOnServer ? project : undefined,       // re-publish into the SAME project
+     name: project.isOnServer ? undefined : '<name the user gave>',
+   });
+   return {dialogOpened: true};
+   ```
 
-Allowed chains only: Step 1 → Step 2 + Step 3 on `onServer: false`; Step 2 → Step 3 when the
-same message says "with the current table/view/dataframe". Otherwise stop after the step.
+2. **Find it**: `list_view_widgets` — the dialog is an extra root ref `dlg0` ("Save project");
+   note also the child ref of its entity-list widget (type `ProjectEntityMoveWidget`).
 
-## Step 1 — Save (update the open project)
+3. **Read its state**: `get_view_function_result(name: 'getProjectSaveInfo', widget: 'dlg0')` —
+   name (with validity), description, presentation mode, and every entity to be saved, with
+   `dataSync` / `dataSyncPossible` per table.
 
-`datagrok_exec`:
+4. **Adjust only what the user asked for**, via `call_view_function`:
+   - on `dlg0`: `setProjectName`, `setProjectDescription`, `setPresentationMode`, `setSaveMode`
+     (when the dialog offers it)
+   - on the entity-list widget ref: `listEntities`, `setDataSync(table, enabled)`,
+     `setEntityAction(name, action)`
 
-```js
-// Save the LIVE workspace project — a fresh DG.Project.create() would be a clone
-// (public repo: UsageAnalysis TestTrack/Charts/radar-save-reopen-bug-spec.ts)
-const project = grok.shell.project;
-if (!project.isOnServer)
-  return {onServer: false};
-// Persistence sequence per Bio/src/tests/projects-tests.ts saveAndOpenProject()
-const tableInfo = t.getTableInfo();
-const viewInfo = view.getInfo();
-await grok.dapi.tables.uploadDataFrame(t);
-await grok.dapi.tables.save(tableInfo);
-await grok.dapi.views.save(viewInfo);
-await grok.dapi.projects.save(project);
-return {projectId: project.id, name: project.friendlyName, updated: true};
-```
+   Every function returns `{success: false, error: ...}` with the reason when something can't be
+   done (e.g. data sync without a creation script) — report that reason; never work around it
+   with raw tag/meta writes.
 
-- The entities keep their server ids → each save updates the same project (UI SAVE button behavior).
-- Never `DG.Project.create()` or a project `create` here; no `addChild` — the entities already belong to the project.
+5. **Confirm**: `call_view_function(name: 'clickButton', parameters: {name: 'OK'}, widget: 'dlg0')`
+   — applies the save and closes the dialog. If the user wanted to review first, stop before this
+   step and say the dialog is ready.
 
-Result:
-- `updated: true` → show the project with `datagrok_show_entities`, confirm saved. Stop.
-- `onServer: false` → workspace is the local scratchpad; nothing to update. Ask for a project
-  name if the user gave none, then run Step 2 (create) + Step 3 (attach).
+6. **Verify server-side** (`datagrok_verify`) — the upload is asynchronous, so if the first
+   re-read misses, confirm the dialog has closed and retry once:
 
-## Step 2 — Create
+   ```js
+   const p = await grok.dapi.projects.filter('friendlyName = "<name>"').first();
+   return p != null;
+   ```
 
-`datagrok_projects(op:"create", args:{name})` once → keep returned id as `projectId`.
-Stop (unless chaining per Routing).
+   When data sync was requested, also verify the table:
+   `(await grok.dapi.tables.find('<tableInfoId>')).tags['.data-sync'] === 'sync'`.
 
-## Step 3 — Attach current table + view
+## Data sync — the one precondition
 
-Requires `projectId`. `datagrok_exec` (substitute `projectId`):
+A synced table re-runs its **creation script** when the project opens. The platform records that
+script only when the query/script runs through its own pipeline — `grok.functions.call` /
+`grok.data.query` run as processed calls and record nothing. So for "query the database and save
+it with data sync":
 
-```js
-const project = await grok.dapi.projects.find('<projectId>');
-const tableInfo = t.getTableInfo();
-await grok.dapi.tables.uploadDataFrame(t);
-await grok.dapi.tables.save(tableInfo);
-const viewInfo = view.getInfo();
-await grok.dapi.views.save(viewInfo);
-project.addChild(tableInfo);
-project.addChild(viewInfo);
-await grok.dapi.projects.save(project);
-return {projectId: project.id, ok: true};
-```
+1. Make sure the query is **saved on the server**: create it with
+   `connection.query('<name>', '<sql>')`, `q = await grok.dapi.queries.save(q)`, then re-read by
+   **id** (`grok.dapi.queries.find(q.id)`) — never by name, duplicates shadow name lookups.
+2. Run the server copy so the result opens in the workspace **with** a creation script:
 
-## Step 4 — Share
+   ```js
+   const call = q.prepare({});
+   await call.call(false, undefined, {processed: false});
+   ```
 
-`datagrok_projects(op:"share", args:{projectId, groups, access})` — `access` `"View"`|`"Edit"`,
-default `"View"`. No group named → ask.
+3. Open the Save dialog (above) and `setDataSync(table, true)`. If it answers
+   "no creation script", step 2 didn't happen — fix that instead of forcing tags.
+
+## Create / attach / share
+
+- **Create** an empty project: `datagrok_projects(op: "create", args: {name})` once.
+- **Attach** the current table/view to a project: use the Save dialog flow above.
+- **Share**: `datagrok_projects(op: "share", args: {projectId, groups, access})` —
+  `access` `"View"`|`"Edit"`, default `"View"`; ask when no group is named.
+  When the platform's **Share dialog** is open instead (a `dlg<N>` ref), drive it the same way:
+  `getShareInfo`, `addShareGrantee(name)`, `setShareAccess(access)`, `setShareMessage(message)`,
+  then `clickButton OK`.
 
 ## Don't
 
-- Run a project `create` on "save" while a server project is open — update in place (Step 1).
-- `view.saveLayout()` / `grok.dapi.layouts.save()` — reopens as bare grid.
-- Create or share in `datagrok_exec` — use the `datagrok_projects` MCP tool.
-- Pre-announce later steps; call `create` twice.
-- On MCP tool error: surface verbatim, stop. No `datagrok_exec` fallback.
+- Hand-write saves with `grok.dapi.tables.save` / `uploadDataFrame` / `projects.save` — the
+  dialog handles upload order, table meta, and sync dependencies; manual writes corrupt them.
+- Set `.data-sync` / `.script` tags directly — use `setDataSync` and let it refuse when the
+  precondition fails.
+- Re-run a save after a timeout — re-read state first (`getProjectSaveInfo`, or check the dialog
+  closed); a second dialog or a duplicate project is worse than a late answer.
+- Promise data sync before `setDataSync` (or `dataSyncPossible`) confirms it.

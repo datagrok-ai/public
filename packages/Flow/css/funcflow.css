@@ -1,5 +1,4 @@
 /* FuncFlow styles — Spotfire-inspired visual design */
-/* @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap'); */
 
 .funcflow-root {
   font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
@@ -36,7 +35,6 @@
   box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.15);
 }
 
-/* Clear-search (✕) affordance, overlaid at the right edge of the search box. */
 .funcflow-search-wrap {
   position: relative;
 }
@@ -63,9 +61,6 @@
   background: var(--grey-1, #eee);
 }
 
-/* Catalog zone header: "FUNCTIONS" micro-label + the compact group-by
-   text-button (group-by scopes only the accordion below, so it lives on that
-   zone rather than next to the global search). */
 .funcflow-catalog-header {
   flex: 0 0 32px;
   display: flex;
@@ -73,8 +68,7 @@
   justify-content: space-between;
   padding: 6px 8px 2px 12px;
   background: #fff;
-  /* Soft recess under the grey collections tray. Inset (not a drop shadow on
-     the tray) so the scrolling zones can never clip it. */
+  /* inset, not a drop shadow on the tray — the scrolling zones would clip a drop shadow */
   box-shadow: inset 0 3px 4px -2px rgba(31, 45, 61, 0.12);
 }
 
@@ -103,26 +97,15 @@
 }
 
 .funcflow-tree-container {
-  /* flex-basis 0 (not auto): the catalog takes the LEFTOVER space instead of
-     competing with its huge content size — a tall accordion must never
-     squeeze the collections tab below its own content (up to its cap). */
+  /* flex-basis 0, not auto — a tall accordion must never squeeze the collections tab */
   flex: 1 1 0;
   overflow-y: auto;
   padding: 0 4px;
-  /* The catalog is the workhorse — a stuffed collections tab or a full
-     suggestions strip can never crush it below this floor. */
   min-height: 40%;
 }
 
 /* ---------- Suggestions pane (bottom of the toolbox) ---------- */
-/* Expanded: a fixed 25% of the browser height under the function tree.
-   Deliberately reads as a DIFFERENT surface than the catalog above it — an
-   accent top edge + a blue-tinted background — so a first-time user notices
-   the assistant strip without it shouting. Collapsed: just the header strip. */
 .ff-suggest-pane {
-  /* Content-driven height capped at a quarter of the toolbox; under layout
-     pressure it may shrink (the list scrolls internally). The tint + header
-     carry the zone identity — the boundary is a quiet hairline. */
   flex: 0 1 auto;
   max-height: 25%;
   display: flex;
@@ -137,9 +120,6 @@
   flex: 0 0 auto;
 }
 
-/* Suggestions are canvas context, not search results — while the user is
-   searching the strip collapses to a dimmed header, both freeing the space
-   for results and making clear it isn't part of them. */
 .funcflow-browser[data-searching="true"] .ff-suggest-pane {
   opacity: 0.45;
   flex: 0 0 auto;
@@ -164,7 +144,6 @@
   user-select: none;
 }
 
-/* A dimmed --orange-2 bulb — a warm "idea" glyph against the blue header. */
 .ff-suggest-pane-bulb {
   color: var(--orange-2, #ffa24a);
   opacity: 0.8;
@@ -199,8 +178,6 @@
   padding: 4px 0 2px;
 }
 
-/* One suggestion = one thin line: the action leads, its reason trails inline
-   in a muted tone (both ellipsize). Twice as many fit vs. the old 2-row card. */
 .ff-suggest-pane-item {
   display: flex;
   align-items: baseline;
@@ -229,8 +206,7 @@
 }
 
 .ff-suggest-pane-item-reason {
-  /* core css forces flex-shrink: 0 on spans in ui-div flex rows — without the
-     override the reason hard-clips at the panel edge instead of ellipsizing */
+  /* core css forces flex-shrink: 0 on spans — without the override the reason hard-clips instead of ellipsizing */
   flex: 1 1 auto !important;
   min-width: 0;
   font-size: 10.5px;
@@ -275,8 +251,6 @@
   white-space: nowrap;
 }
 
-/* Trailing ★ on every catalog row: invisible until the row is hovered (or the
-   node is already starred). Gold when active — the platform favorites color. */
 .funcflow-item-star {
   flex: 0 0 auto;
   font-size: 11px;
@@ -301,10 +275,6 @@
 }
 
 /* ---------- Top tabs (Files / Spaces / Queries / Workflows / Favorites) ---------- */
-/* The collections strip above the search box: a platform tab control whose
-   pane content scrolls internally. Height is content-driven (a 2-row Files
-   tree doesn't reserve a third of the panel) but capped at 32%, after which
-   the pane content scrolls. */
 .funcflow-top-tabs {
   flex: 0 1 auto;
   min-height: 90px;
@@ -312,13 +282,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* The collections zone sits on a grey "tray" — the white FUNCTIONS catalog
-     below reads as a different surface (especially on the Queries tab, whose
-     per-connection rows otherwise mimic the category rows). */
   background: var(--grey-1, #f7f8fa);
   border-bottom: 1px solid rgba(31, 45, 61, 0.10);
-  /* Size container so the strip can compact itself when the toolbox is
-     narrow (small screens / browser zoom) — see the @container rule below. */
+  /* size container for the @container compaction rules below */
   container-type: inline-size;
 }
 
@@ -333,8 +299,7 @@
   }
 }
 
-/* While search chips are visible the strip needs compaction earlier (zoomed-in
-   screens, narrow docks) — five icons + count chips must fit without clipping. */
+/* While search chips are visible, compact earlier (zoomed / narrow docks). */
 @container (max-width: 330px) {
   .funcflow-browser[data-searching="true"] .d4-tab-header {
     padding: 4px 2px;
@@ -347,28 +312,20 @@
   }
 }
 
-/* The platform tab host defaults to a fixed 400×300 footprint — inside the
-   ~250px-wide toolbox that clips content on the right and reserves dead
-   vertical space, so neutralize it and let the content drive the size. */
+/* Neutralize the platform tab host's fixed 400×300 default footprint. */
 .funcflow-top-tabs>.d4-tab-host {
   width: 100% !important;
   min-width: 0 !important;
   height: auto !important;
   min-height: 0 !important;
-  /* platform forces flex-shrink: 0 on tab hosts — without shrink the host
-     keeps its full content height inside the clamped strip and the pane can
-     never scroll (the strip just clips it) */
+  /* platform forces flex-shrink: 0 on tab hosts — without shrink the pane can never scroll */
   flex: 0 1 auto !important;
   display: flex;
   flex-direction: column;
-  /* Clicking a tab must never scroll the host sideways (that clips the pane
-     content) — the compact headers below make all four tabs fit instead. */
+  /* tab clicks must never scroll the host sideways — that clips the pane content */
   overflow: hidden;
 }
 
-/* Icon-only headers (the Browse tree's glyphs; tooltips carry the names) —
-   five tabs share the strip evenly, so they always fit the ~250px toolbox
-   without a horizontal scroll. */
 .funcflow-top-tabs .d4-tab-header-stripe {
   flex: 0 0 auto;
   display: flex;
@@ -386,11 +343,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Inactive tabs read as options, not five active tabs: grey until selected. */
   color: var(--grey-5, #666);
 }
 
-/* The label wraps the icon; the badge after it never clips. */
 .funcflow-top-tabs .d4-tab-header .funcflow-tab-label {
   flex: 0 1 auto;
   min-width: 0;
@@ -401,42 +356,33 @@
 
 .funcflow-top-tabs .funcflow-tab-icon {
   font-size: 14px;
-  /* Follows the header state colors (grey → hover dark → selected blue). */
   color: inherit;
 }
 
-/* The platform tab control's built-in scroll chevrons — five evenly-shared
-   icon tabs never overflow, so the affordance is noise (and it stretched to
-   a sixth "tab" under the flex: 1 header rule). */
+/* Hide the tab control's built-in scroll chevrons — five evenly-shared tabs never overflow. */
 .funcflow-top-tabs .d4-tab-header[name="HighlightBack"],
 .funcflow-top-tabs .d4-tab-header[name="HighlightForward"] {
   display: none;
 }
 
-/* Align the tab cells with the search box above them — without the inset the
-   first/last tab's active underline juts past the input's edge and reads
-   off-grid (three left edges within 12px). */
+/* Align the tab cells with the search box above them. */
 .funcflow-top-tabs .d4-tab-header-stripe {
   padding: 0 8px;
 }
 
 /* ---------- Spaces tab (SpacePicker in content mode) ---------- */
 
-/* Entity/file rows sit in the chevron gutter so rows at the same depth share
-   a left edge — the platform's default 20px item indent made a space's
-   content read as children of a COLLAPSED sibling subspace. */
+/* Drop the platform's 20px item indent so rows at the same depth share a left edge. */
 .funcflow-tab-content .funcflow-space-picker-tree .d4-tree-view-item {
   margin-left: 0;
   padding-left: 4px;
 }
 
-/* The toolbox (a d4-toolbar surface) compresses nested tree levels to 6px —
-   too shallow to carry space hierarchy. Give subspace levels a readable step. */
+/* The d4-toolbar surface compresses nested tree indent to 6px — give subspaces a readable step. */
 .funcflow-tab-content .funcflow-space-picker-tree .d4-tree-view-group-host .d4-tree-view-group-host {
   margin-left: 14px;
 }
 
-/* The space glyph on space rows — muted like the section icons. */
 .funcflow-space-icon {
   font-size: 11px;
   color: var(--grey-4, #7d8b99);
@@ -452,8 +398,6 @@
   box-shadow: inset 0 -2px 0 var(--blue-1, #2083d5);
 }
 
-/* Search-time match-count badge on a tab header (shown only when > 0);
-   a 0-match tab dims instead of carrying a "0" badge. */
 .funcflow-tab-badge {
   font-size: 11px;
   line-height: 14px;
@@ -486,24 +430,17 @@
   overflow-x: hidden;
 }
 
-/* The tab pane is the ONE scroll container — the files tree must not nest its
-   own scrollbar inside it (d4-tree-view-root defaults to overflow auto, which
-   showed a second scrollbar once the inline max-height cap was dropped). */
+/* The tab pane is the one scroll container — d4-tree-view-root defaults to its own overflow:auto scrollbar. */
 .funcflow-tab-content .d4-tree-view-root {
   overflow: visible !important;
   max-height: none !important;
 }
 
-/* Sticky folder rows carry a background so they cover content while stuck —
-   core hardcodes white, which paints a patchwork on the grey tray. Match the
-   tray instead. */
+/* Core hardcodes white on sticky folder rows — match the grey tray instead. */
 .funcflow-tab-content .d4-tree-view-root.d4-tree-view-sticky .d4-tree-view-group-host>.d4-tree-view-group>.d4-tree-view-node:not(.d4-tree-view-node-selected):not(:hover) {
   background-color: var(--grey-1, #f7f8fa);
 }
 
-/* The Queries tab reuses .funcflow-subsections, whose own light background and
-   shadow were designed for nesting inside the old white accordion — on the
-   grey tray they read as a stray white slab. Flat on the tray instead. */
 .funcflow-tab-content .funcflow-subsections {
   background: transparent;
   border-radius: 0;
@@ -518,10 +455,6 @@
   background: transparent;
 }
 
-/* Short hint above the Files tree pointing at local-file upload — the one
-   sentence a novice needs, so it must stay legible (grey-5, not the palest).
-   A flex row: the hint text shares its line with the Upload chip, so the
-   button adds no vertical space; the text wraps first when squeezed. */
 .funcflow-tab-hint {
   display: flex;
   align-items: center;
@@ -538,8 +471,6 @@
   min-width: 0;
 }
 
-/* Open-local-file button: icon-only, the platform's folder-open vocabulary
-   (same glyph the ribbon's "Open local file" uses). */
 .funcflow-upload-btn {
   flex: 0 0 auto;
   display: inline-flex;
@@ -565,8 +496,6 @@
   line-height: 1.5;
 }
 
-/* Muted section-header glyph — fixed 16px box so labels align vertically.
-   Grey always: colored icons would compete with the blue selection accent. */
 .funcflow-section-icon {
   font-size: 12px;
   width: 16px;
@@ -576,16 +505,10 @@
   flex: 0 0 auto;
 }
 
-/* Per-connection query rows: one size down from the category headers —
-   together with the tray + database glyph they read as a different kind of
-   list, not more categories. */
 .funcflow-subsections .d4-accordion-pane-header {
   font-size: 12px;
 }
 
-/* The nested per-connection accordion under "Queries" (a platform
-   DG.Accordion inside the pane content) — indent it one level so the
-   hierarchy reads as a level below the top sections. */
 .funcflow-subsections {
   padding: 4px 0 6px 8px;
   background: #fcfcfc;
@@ -609,10 +532,7 @@
   width: calc(100% - 15px) !important;
 }
 
-/* Center panel — Rete area mounts inside this container.
-   Dot grid is a CSS radial-gradient repeating tile; FlowEditor updates
-   background-size and background-position from the AreaPlugin transform so
-   the dots track pan/zoom and a snapped node sits exactly on a dot. */
+/* Center panel — FlowEditor updates background-size/position inline so the dot grid tracks pan/zoom. */
 .funcflow-canvas-container {
   flex: 1;
   position: relative;
@@ -623,9 +543,7 @@
   background-position: 0 0;
 }
 
-/* Alignment guides shown while a node is being dragged.
-   Painted on a screen-space overlay layer above the transformed area
-   contents but below sockets/connections that need pointer events. */
+/* Alignment guides shown while a node is dragged — a screen-space overlay. */
 .ff-guide-overlay {
   position: absolute;
   inset: 0;
@@ -651,10 +569,7 @@
   display: none;
 }
 
-/* Shift+drag rectangle multi-select marquee. Sits inside the same overlay
-   layer as the alignment guides; pointer-events:none lets clicks fall
-   through to the canvas. */
-/* Same look as the platform areaSelector: black 1px stroke, lightBlue fill at 50%. */
+/* Shift+drag multi-select marquee — platform areaSelector look. */
 .ff-rect-select {
   position: absolute;
   pointer-events: none;
@@ -729,8 +644,7 @@
   stroke-width: 1.2;
 }
 
-/* Drag-output suggestion popup. Positioned absolute at the pointer release
-   point in viewport coordinates and clamped to fit by the JS that builds it. */
+/* Drag-output suggestion popup — positioned and clamped by the JS that builds it. */
 .ff-suggest-popup {
   position: fixed;
   z-index: 10000;
@@ -781,7 +695,6 @@
   background: #b8bec7;
   border-radius: 5px;
   border: 2px solid #f1f3f6;
-  /* inset effect */
 }
 
 .ff-suggest-list::-webkit-scrollbar-thumb:hover {
@@ -805,10 +718,7 @@
   text-overflow: ellipsis;
 }
 
-/* Engine-recommended rows trail their reason inline, in the exact voice of the
-   toolbox Suggestions pane ("— Molecule column "smiles"") — the two surfaces
-   must read as one assistant. Same flex override as the pane: core css forces
-   flex-shrink: 0 on spans in flex rows, which would hard-clip the reason. */
+/* core css forces flex-shrink: 0 on spans in flex rows — without the override the reason hard-clips */
 .ff-suggest-item-reason {
   flex: 1 1 auto !important;
   min-width: 0;
@@ -823,6 +733,13 @@
   content: '— ';
 }
 
+.ff-suggest-item-category {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--grey-4, #888);
+}
+
 .ff-suggest-item-builtin {
   font-weight: 500;
 }
@@ -831,8 +748,7 @@
   background: #e3f2fd;
 }
 
-/* Hover docs popup — KNIME-style node info card on hover. Lives at
-   document.body so it can overflow the canvas freely; positioned by JS. */
+/* Hover docs popup — lives at document.body, positioned by JS. */
 .ff-hover-docs {
   position: fixed;
   z-index: 10001;
@@ -907,9 +823,7 @@
   font-family: 'Roboto Mono', monospace;
 }
 
-/* Workflow annotations — colored frames behind the graph (KNIME-style).
-   Sit in the same transformed canvas layer as nodes/connections; z-index:0
-   keeps them under nodes (which the order extension drives up). */
+/* Workflow annotations — frames in the transformed canvas layer; z-index 0 keeps them under nodes. */
 .ff-annotation {
   position: absolute;
   background: #FFF59D;
@@ -948,6 +862,15 @@
   border-bottom-right-radius: 6px;
 }
 
+/* Pinned: not movable/resizable — body drags pan the canvas instead. */
+.ff-annotation[data-pinned="true"] {
+  cursor: default;
+}
+
+.ff-annotation[data-pinned="true"] .ff-annotation-resize {
+  display: none;
+}
+
 /* ---------- node groups (collapsible frames, see rete/node-group.ts) ---------- */
 
 /* Expanded: a background frame hugging the member bbox, under the nodes. */
@@ -976,7 +899,6 @@
   background: rgba(96, 125, 139, 0.12);
 }
 
-/* Caret mirrors .ff-node-caret so groups read like nodes. */
 .ff-group-caret {
   flex: 0 0 auto;
   cursor: pointer;
@@ -1023,8 +945,7 @@
   color: #b0bec5;
 }
 
-/* Aggregate run-status dot — same visual language as .ff-node-status
-   (always-visible white circle when idle, per-status fills + marks). */
+/* Aggregate run-status dot — same visual language as .ff-node-status. */
 .ff-group-status {
   flex: 0 0 auto;
   width: 10px;
@@ -1082,8 +1003,7 @@
   opacity: 0.65;
 }
 
-/* Minimized: a collapsed-node-like card standing in for the members. Sits
-   above annotations/frames (z 1) — it acts as a node, not a background. */
+/* Minimized: a collapsed-node-like card; z 1 — acts as a node, not a background. */
 .ff-group[data-minimized="true"] {
   z-index: 1;
   min-width: 170px;
@@ -1100,9 +1020,7 @@
   background: rgba(96, 125, 139, 0.18);
 }
 
-/* Boundary-wire dots on the card edges. Geometry (top offsets, 9px dot) is
-   driven from node-group.ts (GROUP_DOT_TOP / GROUP_DOT_STEP) — inline styles
-   set `top`; only the horizontal placement lives here. */
+/* Boundary-wire dots — vertical geometry set inline from node-group.ts (GROUP_DOT_TOP / GROUP_DOT_STEP). */
 .ff-group-dots {
   display: none;
 }
@@ -1129,13 +1047,10 @@
   right: -4.5px;
 }
 
-/* Hidden members / internal wires of a minimized group. */
 .ff-group-hidden {
   display: none !important;
 }
 
-/* Per-port "View Output" floating popover — anchored next to the port. */
-/* Gear overlay on a viewer preview — top-right corner, no vertical footprint. */
 .ff-viewer-edit-gear {
   position: absolute;
   top: 4px;
@@ -1158,9 +1073,7 @@
   background: #fff;
 }
 
-/* "Add to workspace" overlay on a preview block — same corner treatment as the
-   gear (top-right, no vertical footprint). `right` is set inline so it can sit
-   to the gear's left on viewer previews. */
+/* "Add to workspace" overlay — `right` is set inline so it can sit to the gear's left. */
 .ff-preview-workspace-btn {
   position: absolute;
   top: 4px;
@@ -1234,7 +1147,6 @@
   box-sizing: border-box;
 }
 
-/* Accordion pane content padding */
 .funcflow-accordion-content {
   padding: 6px 4px;
   box-sizing: border-box;
@@ -1278,10 +1190,6 @@
   font-size: 11px;
 }
 
-/* Native Datagrok inputs embedded in the context panel (every editor row —
-   built via ui.input.forProperty / ui.input.string / ui.input.*): fill the
-   pane width and tighten the default spacing so they sit flush with the
-   surrounding rows. */
 .funcflow-accordion-content .ui-input-root,
 .funcflow-panel-header .ui-input-root {
   width: 100%;
@@ -1290,14 +1198,17 @@
   padding: 0;
 }
 
-/* Rows are standalone DG inputs (not one ui.form), so give the panel a shared
-   label column and one editor edge — otherwise every editor starts wherever
-   its label happens to end and the pane reads ragged. The compact table
-   chooser inside a column row opts out (its label is hidden). */
+/* An empty Description is otherwise a nearly invisible sliver. */
+.funcflow-panel-header textarea {
+  border-bottom: 1px solid var(--grey-2, #e0e0e0);
+  min-height: 2.4em;
+}
+
+/* Rows are standalone DG inputs, not one ui.form — provide the shared label column here. */
 .funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select)>label.ui-input-label {
-  flex: 0 0 90px;
-  width: 90px;
-  min-width: 90px;
+  flex: 0 0 110px;
+  width: 110px;
+  min-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1320,10 +1231,7 @@
   padding: 3px 0;
 }
 
-/* Trailing controls appended inside a column input via addOptions: the per-row
-   table chooser (a caption-less DG choice input, multi-table funcs) and the
-   column-picker icon. The chooser must stay compact and NOT stretch to the
-   pane width like regular rows. */
+/* The addOptions table chooser must stay compact, not stretch to the pane width. */
 .funcflow-col-table-select.ui-input-root {
   width: 65px !important;
   min-width: 55px !important;
@@ -1345,8 +1253,7 @@
   color: var(--blue-2, #0a6ed1);
 }
 
-/* "Open editor" button in the Input Parameters pane header — opens the
-   function's own dialog */
+/* "Open editor" button in the Input Parameters pane header */
 .funcflow-func-editor-btn {
   cursor: pointer;
   margin-left: 8px;
@@ -1469,8 +1376,7 @@
   line-height: 1.4;
 }
 
-/* Header block in property panel: Title, chips, and Description share one
-   padded container so their editors line up exactly. */
+/* Header block: Title, chips, and Description share one padded container. */
 .funcflow-panel-header {
   padding: 6px 8px 4px;
   border-bottom: 1px solid var(--grey-2, #e0e0e0);
@@ -1481,52 +1387,51 @@
   padding: 0;
 }
 
-/* Compact metadata chips (full name, package, roles, tags) — replace the old
-   label+value rows of the Function pane. */
+/* The header's one-line metadata row — never wraps, overflow ellipsizes. */
 .funcflow-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
   padding: 4px 0 2px;
+  overflow: hidden;
+}
+
+.funcflow-chip-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 10px;
+  background: var(--grey-2, #e0e0e0);
 }
 
 .funcflow-chip {
+  flex: 0 1 auto;
   font-size: 10px;
   color: var(--grey-5, #666);
-  background: var(--grey-1, #f2f2f5);
-  border: 1px solid var(--grey-2, #e0e0e0);
-  border-radius: 10px;
-  padding: 1px 8px;
-  max-width: 100%;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .funcflow-chip-muted {
-  background: transparent;
-  border-style: dashed;
   color: var(--grey-4, #888);
 }
 
-.funcflow-type-badge {
-  display: inline-block;
-  font-size: 10px;
-  color: #888;
-  background: #f0f0f0;
-  padding: 1px 6px;
-  border-radius: 3px;
-  margin-top: 2px;
+.funcflow-chip-kind {
+  color: var(--grey-5, #666);
+  font-weight: 500;
+  text-transform: none;
 }
 
 /* ===== Rete v2 vanilla renderer styles ===== */
 
-/* Each FlowNode is a positioned <div> sized by its content.
-   AreaPlugin's NodeView places it absolutely; we own visuals only. */
+/* AreaPlugin's NodeView positions each node absolutely; we own visuals only. */
 .ff-node {
   position: relative;
   display: inline-block;
   min-width: 160px;
+  /* without the cap, inline-block stretches to the nowrap title's intrinsic width */
+  max-width: 280px;
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.10);
@@ -1547,10 +1452,7 @@
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15), 0 4px 14px rgba(0, 0, 0, 0.13);
 }
 
-/* Node-type colored stripes (overridden inline by role color when present).
-   Pastels of the Standard categorical-palette hues (DG.Color.categoricalPalette:
-   green #2ca02c, red #d62728, gray #7f7f7f, light gray #c7c7c7) — keep in sync
-   with pastelize() in src/types/type-map.ts (60% white mix). */
+/* Node-type stripes — pre-computed pastels; keep in sync with pastelize() in src/types/type-map.ts. */
 .ff-node-input .ff-node-title {
   background: #abd9ab;
 }
@@ -1673,8 +1575,6 @@
   text-overflow: ellipsis;
 }
 
-/* Collapse/expand affordance — the only control that folds the node, so the
-   status dot can stay purely informational. */
 .ff-node-caret {
   flex: 0 0 auto;
   cursor: pointer;
@@ -1693,46 +1593,159 @@
   background: rgba(0, 0, 0, 0.08);
 }
 
-/* Plain-language run status line under the title (e.g. "Done · 1,204 × 8"). */
-.ff-node-statusline {
+/* ===== In-node viewer/widget preview ===== */
+
+/* The 300px default preview must not be clipped by the card's 280px cap. */
+.ff-node[data-inline-preview="true"] {
+  max-width: none;
+}
+
+.ff-node-preview-toggle {
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: #455a64;
+  padding: 2px 3px;
+  margin: -2px 0;
+  border-radius: 4px;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.ff-node-preview-toggle:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.ff-node-preview-toggle[data-on="true"] {
+  color: #1976d2;
+  opacity: 1;
+}
+
+/* User-resizable via the native corner handle; the size persists per node. */
+.ff-node-inline-preview {
+  position: relative;
+  margin: 6px 8px 8px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  resize: both;
+  min-width: 180px;
+  min-height: 120px;
+  max-width: 900px;
+  max-height: 900px;
+  cursor: default;
+}
+
+/* Screen-space portal layer: preview content must sit OUTSIDE the transformed
+   canvas subtree — DG viewer popups are position:fixed and a transformed
+   ancestor becomes their containing block. Above nodes, below the minimap. */
+.ff-preview-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.ff-node-preview-portal {
+  position: absolute;
+  box-sizing: border-box; /* the 1px border must not outgrow the tracked box */
+  pointer-events: auto;
+  background: #ffffff;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Replaces the native CSS resize handle the portal would cover. */
+.ff-node-preview-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  z-index: 2;
+  background: linear-gradient(135deg, transparent 55%, var(--grey-3, #b8bac0) 55%);
+  border-bottom-right-radius: 4px;
+  opacity: 0.7;
+}
+
+.ff-node-preview-grip:hover {
+  opacity: 1;
+}
+
+.ff-node-inline-preview[data-empty="true"],
+.ff-node-inline-preview[data-empty="loading"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ff-node-preview-placeholder {
+  color: var(--grey-4, #9497a0);
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+  user-select: none;
+}
+
+/* Bottom-panel stand-in for an output whose live root the node preview hosts. */
+.ff-preview-inline-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-4, #9497a0);
+  font-size: 12px;
+  text-align: center;
+  padding: 16px;
+}
+
+/* Info line — fixed 1-line height so run-state changes never resize the card; kind via data-kind. */
+.ff-node-infoline {
   padding: 2px 10px 3px 10px;
   font-size: 10.5px;
   font-weight: 500;
   line-height: 1.3;
+  height: 14px;
   color: #607d8b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  border-bottom: 1px solid #f3f5f7;
 }
 
-.ff-node-statusline[data-status="running"] {
+.ff-node-infoline[data-kind="hint"] {
+  font-weight: 600;
+  color: #c77700;
+}
+
+.ff-node-infoline[data-kind="description"] {
+  font-style: italic;
+  color: #555;
+}
+
+.ff-node-infoline[data-kind="summary"] {
+  color: #8a98a5;
+}
+
+.ff-node-infoline[data-kind="status"][data-status="running"] {
   color: #1976d2;
 }
 
-.ff-node-statusline[data-status="completed"] {
+.ff-node-infoline[data-kind="status"][data-status="completed"] {
   color: #2e7d32;
 }
 
-.ff-node-statusline[data-status="errored"] {
+.ff-node-infoline[data-kind="status"][data-status="errored"] {
   color: #c62828;
 }
 
-.ff-node-statusline[data-status="stale"] {
+.ff-node-infoline[data-kind="status"][data-status="stale"] {
   color: #9e9e9e;
-}
-
-/* Pre-run "Needs input" hint (amber) + matching status dot, so an incomplete
-   node reads as "needs attention" before you ever hit Run. */
-.ff-node-hint {
-  padding: 2px 10px 3px 10px;
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #c77700;
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .ff-node[data-attention="true"] .ff-node-status {
@@ -1744,8 +1757,7 @@
   background: #fffdf5;
 }
 
-/* Row/value count painted at a wire's midpoint after a run. White halo
-   (paint-order: stroke) keeps it legible over any connection color. */
+/* Count at a wire's midpoint — the white halo (paint-order: stroke) keeps it legible. */
 .ff-edge-count {
   font-size: 10px;
   font-weight: 600;
@@ -1755,37 +1767,6 @@
   paint-order: stroke;
   pointer-events: none;
   user-select: none;
-}
-
-/* KNIME-style annotation under the title — italic, muted, wraps on long text. */
-.ff-node-description {
-  padding: 4px 10px 6px 10px;
-  font-size: 11px;
-  font-style: italic;
-  color: #555;
-  line-height: 1.3;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border-bottom: 1px solid #f0f0f0;
-  text-overflow: ellipsis;
-  max-width: 200px;
-  max-height: 30px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-/* Auto-generated plain-language caption (U12) — lighter than a user-written
-   description so it reads as "the system's guess", not your annotation. */
-.ff-node-summary {
-  padding: 3px 10px 5px 10px;
-  font-size: 10.5px;
-  color: #8a98a5;
-  line-height: 1.3;
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #f3f5f7;
 }
 
 .ff-node-body {
@@ -1815,8 +1796,7 @@
   color: #455a64;
 }
 
-/* Push the socket dot 2px outward by shifting the whole row. The label
-   shifts with it but is fully inside the node, so it still looks aligned. */
+/* Shift the whole row 2px so the socket dot sits outward of the node edge. */
 .ff-socket-row-input {
   padding-right: 8px;
   margin-left: 2px;
@@ -1828,9 +1808,22 @@
   justify-content: flex-end;
 }
 
-/* Socket chip: a Column Manager-style single type letter (colored by type via
-   the --socket-color var set inline by FlowSocketComponent) on a white chip
-   with a matching ring. Order/exec squares override this below. */
+/* ⋯ hidden-inputs indicator — same 2px shift as .ff-socket-row-input. */
+.ff-node-more-inputs {
+  margin-left: 2px;
+  padding: 0 8px 0 2px;
+  font-size: 11px;
+  line-height: 10px;
+  color: var(--grey-4);
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.ff-node-more-inputs:hover {
+  color: var(--blue-1);
+}
+
+/* Socket chip — --socket-color is set inline by FlowSocketComponent. */
 .ff-socket {
   flex: 0 0 auto;
   width: 14px;
@@ -1855,26 +1848,21 @@
   transform: scale(1.25);
 }
 
-/* ---- Connect mode: while dragging from a pin, dim the canvas and light up
-   only the sockets/nodes a compatible connection can land on. ---- */
+/* ---- Connect mode: dim the canvas, light up compatible targets ---- */
 .ff-connecting .ff-node {
   opacity: 0.32;
   transition: opacity 0.12s, box-shadow 0.12s;
 }
 
-/* The drag origin stays fully visible. */
 .ff-connecting .ff-node.ff-node-source {
   opacity: 1;
 }
 
-/* A node with at least one compatible target socket: full opacity + green ring. */
 .ff-connecting .ff-node.ff-node-compat {
   opacity: 1;
   box-shadow: 0 0 0 2px #2e9e44, 0 4px 16px rgba(46, 158, 68, 0.35);
 }
 
-/* The compatible socket dots themselves — green fill + glow so the eye lands
-   on exactly where the connection can go. */
 .ff-connecting .ff-socket-compat .ff-socket {
   background: #2e9e44 !important;
   color: #ffffff !important;
@@ -1883,8 +1871,7 @@
   opacity: 1;
 }
 
-/* Pass-through: dashed ring in the type color (the React `<FlowSocketComponent>`
-   sets `--socket-color` inline). White fill so it reads as "not filled in". */
+/* Pass-through: dashed ring; --socket-color set inline by FlowSocketComponent. */
 .ff-socket-row-passthrough .ff-socket {
   background: #ffffff !important;
   border-color: var(--socket-color, #b0bec5);
@@ -1911,10 +1898,7 @@
   padding: 4px 10px 6px;
 }
 
-/* Inline value editor on input-node bodies: a real DG input, full width,
-   label hidden (the node title already names the input — showing it would
-   duplicate the output socket's "Value" row), compact so nodes stay small.
-   Empty host (blob — no inline value) renders nothing. */
+/* Inline value editor on input-node bodies — a real DG input, label hidden. */
 .ff-node-value-input {
   width: 100%;
 }
@@ -1944,9 +1928,6 @@
   font-size: 12px;
 }
 
-/* The secondary option icons (open-file folder, add-query, …) are dialog-grade
-   chrome — on a small canvas node they read as icon soup and invite mis-clicks
-   while dragging. Reveal them on node hover / while editing. */
 .ff-node-value-input .ui-input-options {
   visibility: hidden;
 }
@@ -1956,9 +1937,7 @@
   visibility: visible;
 }
 
-/* Missing/unresolvable value: the same amber as the bolt's blocked badge, so
-   "autorun is waiting" and "type it here" read as one cue. Applies in the
-   context panel too (the editor builder is shared). */
+/* Same amber as the bolt's blocked badge — the two cues must read as one. */
 .ff-value-missing input,
 .ff-value-missing select,
 .ff-value-missing textarea {
@@ -1970,10 +1949,7 @@
   z-index: -1;
 }
 
-/* Idle connections have a subtle, slow dash march that indicates direction
-   (output → input). The same animation runs faster and more prominently
-   during execution states. The path stroke color comes from inline `style`
-   in the React component (per-connection source-slot color). */
+/* Stroke color comes from inline style — per-connection source-slot color. */
 .ff-connection-path {
   fill: none;
   stroke-width: 2.5;
@@ -2017,9 +1993,7 @@
 
 /* ---------- execution-ordering (exec) ports + order edges ---------- */
 
-/* Exec ports sit at the node's top corners (KNIME flow-variable style): a small
-   gray square instead of a round data dot. The row itself has no height — the
-   ports are absolutely positioned so they straddle the top edge. */
+/* Exec ports straddle the node's top edge; the row itself has no height. */
 .ff-node-exec-row {
   position: absolute;
   top: 0;
@@ -2028,9 +2002,7 @@
   height: 0;
   pointer-events: none;
   z-index: 2;
-  /* Hidden until wired / node hover / an order drag — opacity (never
-     display:none) so socket geometry stays valid and existing order edges
-     keep their endpoints. */
+  /* hidden via opacity, never display:none — existing order edges must keep their endpoints */
   opacity: 0;
   transition: opacity 0.12s ease;
 }
@@ -2044,14 +2016,9 @@
 .ff-exec-port {
   position: absolute;
   top: -5px;
-  /* No pointer events while invisible — a click near the title corners must
-     not silently start an order drag. Hovering the node reveals the squares
-     and re-enables them. */
+  /* no pointer events while invisible — a click near the title corners must not start an order drag */
   pointer-events: none;
-  /* Flex (like .ff-socket-row) so the rete socket <span> — which the connection
-     plugin registers and hit-tests via elementsFromPoint — blockifies into a
-     real box. An inline span here collapses to 0 height, so the plugin never
-     picks the socket and the click falls through to the node drag. */
+  /* flex so the connection plugin's elementsFromPoint hit-tests a real box — an inline span collapses to 0 height */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2085,8 +2052,7 @@
   transform: scale(1.25);
 }
 
-/* Order edges: static gray dotted line, no data-flow march — reads clearly as
-   "control, not data". Placed after the status overrides so it wins on ties. */
+/* Order edges — placed after the status overrides so this wins on ties. */
 .ff-connection[data-order="true"] .ff-connection-path,
 .ff-connection[data-order="true"][data-status] .ff-connection-path {
   stroke: #9e9e9e !important;
@@ -2096,8 +2062,7 @@
   opacity: 0.85;
 }
 
-/* Single keyframe used by all the dash-march states above. Negative offset
-   makes the dashes flow from start (output) toward end (input). */
+/* Negative offset makes the dashes flow output → input. */
 @keyframes ff-flow-march {
   from {
     stroke-dashoffset: 0;
@@ -2108,12 +2073,13 @@
   }
 }
 
-/* Collapsed nodes — title bar only. Connection endpoints are absolutely
-   positioned at the title bar's vertical center on each side. We only render
-   sockets that have at least one connection — disconnected ones can't be used
-   without expanding the node anyway, so showing them is just clutter. */
+/* Collapsed nodes — title bar only; only connected sockets render. */
 .ff-node-collapsed {
   min-width: 140px;
+}
+
+.ff-node-collapsed[data-status="errored"] {
+  border-left: 3px solid #e53935;
 }
 
 .ff-node-collapsed .ff-node-title {
@@ -2168,8 +2134,7 @@
     radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.92) 55%, #f4f6fb 100%);
 }
 
-/* Animated "flowing edges" backdrop — type-colored connections with marching
-   dashes, echoing the canvas's own data-flow links. Purely decorative. */
+/* Animated "flowing edges" backdrop — purely decorative. */
 .funcflow-start-bg {
   position: absolute;
   inset: 0;
@@ -2351,7 +2316,6 @@
 }
 
 /* ---------- Guide system (tutorials + how-to) ---------- */
-/* Non-invasive floating help button, bottom-left of the canvas. */
 .ff-help-fab {
   position: absolute;
   left: 14px;
@@ -2446,8 +2410,6 @@
   color: #90a4ae;
 }
 
-/* Highlight on the step's target: a translucent orange tint + a solid outline.
-   Works on toolbar icons, browser items, canvas nodes, and context-panel rows. */
 .ff-guide-target {
   background-color: rgba(255, 162, 74, 0.35) !important;
   outline: 2px solid rgb(255, 162, 74) !important;
@@ -2455,15 +2417,12 @@
   border-radius: 4px;
 }
 
-/* Large containers (a toolbox pane, the canvas): outline only — the orange
-   fill would wash over every row inside. The runner adds this class when the
-   target is big. */
+/* Big targets: outline only — the fill would wash over every row inside. */
 .ff-guide-target-large {
   background-color: transparent !important;
 }
 
-/* A pulsing dot the runner pins to the target's top-left corner (body-level, so
-   the canvas can't clip it). The expanding ring is the actual pulse. */
+/* Pulsing dot pinned by the runner — body-level so the canvas can't clip it. */
 .ff-guide-blob {
   position: fixed;
   z-index: 5001;
@@ -2577,13 +2536,7 @@
   overflow: hidden;
 }
 
-/* The canvas must clip the transformed Rete content. As a direct `.ui-box`
-   child (the splitter pane), core css forces `overflow: auto !important` on
-   every child: `ui-div`-classed ones via `div.ui-box > div.ui-div` (0,2,2),
-   everything else via a giant `div.ui-box:not(…) > *:not(.ui-div):not(…)`
-   rule whose :not() chain gives it enormous specificity. The canvas therefore
-   keeps `ui-div` (the beatable branch) and this (0,3,2) rule out-ranks it —
-   with both `!important`, specificity decides, independent of load order. */
+/* Core forces overflow:auto !important on splitter-pane children; this (0,3,2) rule out-ranks the beatable ui-div branch. */
 div.ui-box>div.ui-div.funcflow-canvas-container {
   overflow: hidden !important;
 }
@@ -2619,14 +2572,14 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   min-width: 0;
 }
 
-/* Pin: freezes the preview on the shown node. Filled + blue when pinned
- * (font-weight 600 renders the FA glyph solid — same trick as the autorun
- * bolt). */
+/* Pin — font-weight 600 renders the FA glyph solid when pinned. */
 .ff-output-panel-pin {
   flex: 0 0 auto;
   cursor: pointer;
   color: var(--grey-4, #9aa5b1);
   padding: 4px;
+  transform: rotate(45deg);
+  transition: transform 0.12s, color 0.12s;
 }
 
 .ff-output-panel-pin:hover {
@@ -2636,6 +2589,9 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 .ff-output-panel-pin[data-pinned="true"] {
   color: var(--blue-1, #2083d5);
   font-weight: 600;
+  transform: none;
+  background: var(--grey-1, #f2f2f5);
+  border-radius: 4px;
 }
 
 .ff-output-panel-caret {
@@ -2658,8 +2614,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   flex: 1 1 0;
   min-height: 0;
   overflow: auto;
-  /* Anchor for the absolute .d4-update-shadow overlay (ui.setUpdateIndicator)
-   * shown over kept stale content while a pinned node recomputes. */
+  /* anchor for the absolute .d4-update-shadow overlay (ui.setUpdateIndicator) */
   position: relative;
 }
 
@@ -2671,10 +2626,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   height: 100%;
 }
 
-/* Save button greyed AND non-clickable when there's nothing to save (empty
-   canvas / no changes since last save). `pointer-events: none` blocks mouse
-   clicks; hover passes through to the `.ff-save-btn-wrap` wrapper, which owns
-   the "why" tooltip (a disabled button fires no hover events itself). */
+/* pointer-events: none passes hover to .ff-save-btn-wrap, which owns the "why" tooltip. */
 .ff-ribbon-btn-disabled {
   background-color: var(--steel-2) !important;
   color: var(--steel-3) !important;
@@ -2688,12 +2640,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 
 /* ---------- autorun ribbon toggle ---------- */
 
-/* The bolt reads as "live" only when clearly distinct from the other ribbon
-   icons: the OFF state is slightly faded (and keeps the default font-weight —
-   a thin outline glyph); the ON state is colored AND font-weight 600, which
-   renders the Font Awesome bolt as its filled variant. */
+/* ON: font-weight 600 renders the FA bolt filled; OFF keeps the thin outline glyph. */
 .ff-autorun-toggle {
-  /* opacity: 0.8; */
   padding-right: 1px;
   /* Anchor for the blocked badge. */
   position: relative;
@@ -2709,9 +2657,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   border-radius: 25%;
 }
 
-/* Autorun is on but waiting (an input node without a value, validation
-   errors): the bolt's pad turns amber and a corner dot appears — same amber
-   as a stale output-view tab — and the dynamic tooltip lists the blockers. */
+/* Blocked: amber pad + corner dot — same amber as a stale output-view tab. */
 .ff-autorun-toggle.ff-autorun-blocked::after {
   content: '';
   position: absolute;
@@ -2738,14 +2684,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   max-width: 320px;
 }
 
-/* ---------- Outputs strip ----------
-   The FlowEditor splits into [canvas | strip] inside an absolute wrapper
-   (`.ff-canvas-wrap`, so the host's own normal-flow children — the view's
-   start panel — keep their flow): `.ff-canvas` is the area viewport,
-   `.ff-output-strip` a thin column OUTSIDE it, so graph content can never pan
-   or fit behind it. The output nodes render as screen-space chips INSIDE the
-   strip (plain DOM built by FlowEditor — zoom never touches them); their wires
-   end analytically at the canvas' right edge, level with the chip. */
+/* ---------- Outputs strip — screen-space chips outside the canvas viewport ---------- */
 .ff-canvas-wrap {
   position: absolute;
   inset: 0;
@@ -2770,10 +2709,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   overflow: hidden;
 }
 
-/* Chip stack — vertically centered as a group (its center of mass sits at
-   the strip middle; each added chip re-balances the rest). Geometry mirrors
-   STRIP_CHIP_H / GAP in flow-editor.ts — the analytic wire-endpoint math
-   depends on it. */
+/* Geometry mirrors STRIP_CHIP_H / GAP in flow-editor.ts — the wire-endpoint math depends on it. */
 .ff-output-strip-chips {
   position: absolute;
   inset: 0;
@@ -2798,7 +2734,6 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   pointer-events: none;
 }
 
-/* Lit while a data-output drag is in progress — "you can drop this here". */
 .ff-output-strip.ff-strip-droptarget {
   background: #c8e6c9;
   border-left-color: #66bb6a;
@@ -2808,8 +2743,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   color: #2e7d32;
 }
 
-/* Screen-space output chip: [socket dot | type letter]. Fixed 40x24 — the
-   wire-endpoint math in flow-editor.ts relies on the exact height. */
+/* Output chip, fixed 40x24 — the wire-endpoint math in flow-editor.ts relies on the exact height. */
 .ff-output-row {
   display: flex;
   align-items: center;
@@ -2852,8 +2786,6 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   align-items: center;
 }
 
-/* Inside a chip the socket is a plain dot — the chip's letter carries the
-   type; the dot only marks where the wire plugs in. */
 .ff-output-chip-socket {
   width: 10px;
   height: 10px;
@@ -2880,8 +2812,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   overflow: hidden;
 }
 
-/* A tab's pane: hosts the empty state or the TableView root. Display-toggled,
-   never unmounted. */
+/* A tab's pane — display-toggled, never unmounted. */
 .ff-output-view-pane {
   flex: 1 1 0;
   min-height: 0;
@@ -2910,8 +2841,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   margin-bottom: 8px;
 }
 
-/* Tab strip in the status bar; tabs shrink with ellipsized labels when
-   crowded (no scrolling). */
+/* Tab strip in the status bar. */
 .ff-view-tabs {
   display: flex;
   align-items: stretch;
@@ -2990,8 +2920,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   background: #ffb300;
 }
 
-/* Save dialog — dashboard section. The min-height keeps the dialog from
-   jumping as the section swaps between its not-run / running / outputs states. */
+/* Save dialog — dashboard section; min-height keeps the dialog from jumping between states. */
 .ff-save-dash {
   margin-top: 10px;
   padding-top: 8px;
@@ -3020,8 +2949,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   color: #b26a00;
 }
 
-/* The platform loader positions its dots absolutely and collapses to zero
-   width — without a reserved box it renders on top of the text next to it. */
+/* The platform loader collapses to zero width — reserve a box or it overlaps the adjacent text. */
 .ff-save-dash-running > .grok-loader {
   flex: 0 0 36px;
   width: 36px;
@@ -3030,15 +2958,13 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   margin: 0;
 }
 
-/* The dashboard section's inputs align to the dialog form's label column. */
 .ff-save-dash .ui-input-root > label.ui-input-label:not(:empty) {
   min-width: 140px;
   text-align: right;
   flex-shrink: 0;
 }
 
-/* Save dialog — duplicate-name advisory. The line is reserved so the text
-   appearing after the debounce never shifts the form below it. */
+/* Duplicate-name advisory — the line is reserved so the debounced text never shifts the form. */
 .funcflow-save-name-warning {
   color: #b26a00;
   min-height: 18px;
@@ -3072,8 +2998,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   padding: 4px 8px;
 }
 
-/* MPO column-mapping editor (Chem:mpoScoreByProfile) — one column choice per
-   profile property, stacked inside the parameter row. */
+/* MPO column-mapping editor (Chem:mpoScoreByProfile) */
 .ff-mpo-mapping {
   display: flex;
   flex-direction: column;
@@ -3081,9 +3006,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   width: 100%;
 }
 
-/* No profile / no table: the editor shows a notice INSTEAD of a row of empty
-   combos, so an unfillable form is never on screen. Amber, matching the
-   "MISSING - required" rows in the Connections pane. */
+/* No profile / no table: a notice instead of a row of empty combos. */
 .ff-mpo-mapping-blocked {
   display: flex;
   flex-direction: row;
@@ -3107,25 +3030,19 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   white-space: normal;
 }
 
-/* ---------- Expression editor (Filter/Delete/Extract/Select Rows, Expression
-   To Column) ----------
-   Two states: `data-mode="plain"` is the ordinary string input shown until a
-   table is available; `data-mode="formula"` hosts PowerPack's formula editor
-   widget, which brings its own CodeMirror styling. */
+/* ---------- Expression editor: data-mode="plain" (string input) / "formula" (PowerPack widget) ---------- */
 .ff-expression-editor {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-/* Formula mode puts the label in the panel's own 90px label column so the row
-   lines up with the plain-input fallback and with Name / Type beneath it. */
+/* Formula mode: label in the panel's 90px label column so rows line up. */
 .ff-expression-editor[data-mode="formula"] .ff-expression-editor-label {
   flex: 0 0 90px;
   width: 90px;
   min-width: 90px;
-  /* 8px is the gap a DG input leaves between its label column and its editor —
-     without it this field sits 8px left of every input under it. */
+  /* 8px matches the gap a DG input leaves after its label column */
   margin: 3px 8px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3145,9 +3062,6 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   font-weight: 500;
 }
 
-/* Says what is missing (no table connected / not computed yet) — informational,
-   not an error, so it stays grey rather than borrowing the amber the
-   "MISSING - required" rows use. */
 .ff-expression-editor-hint {
   color: var(--text-color-light, #666);
   font-size: 11px;
@@ -3161,15 +3075,12 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   margin-top: 2px;
 }
 
-/* The hosted widget caps itself at 400px for the context panel it was written
-   for; the Flow panel is narrower, so let it use whatever width it gets. */
+/* The hosted widget caps itself at 400px — override for the narrower Flow panel. */
 .ff-expression-editor[data-mode="formula"] .ui-div {
   max-width: 100% !important;
 }
 
-/* The widget was built for a full context-panel pane and reserves a lot of
-   vertical space; a condition is usually one line, so cap it and let it scroll.
-   Growing to ~6 lines is enough for the long ones. */
+/* The widget reserves a full pane's height — cap it and let it scroll. */
 .ff-expression-editor[data-mode="formula"] .cm-editor {
   max-height: 110px;
 }
@@ -3178,8 +3089,6 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   overflow-y: auto;
 }
 
-/* "Edit in dialog" is a secondary affordance - keep it on the same visual
-   weight as the panel's other inline links rather than a full-width button row. */
 .ff-expression-editor[data-mode="formula"] button {
   font-size: 11px;
   padding: 2px 6px;
@@ -3204,8 +3113,6 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   gap: 2px;
 }
 
-/* One row is [aggregation][column][remove]; the two combos share the width and
-   the remove icon keeps its intrinsic size. */
 .ff-aggregation-row {
   display: flex;
   flex-direction: row;
@@ -3238,8 +3145,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   margin-top: 4px;
 }
 
-/* No table: same contract as the MPO mapper - a notice instead of a form that
-   cannot be filled, with whatever is already stored kept readable. */
+/* No table: a notice instead of an unfillable form; stored value kept readable. */
 .ff-aggregation-editor-blocked {
   display: flex;
   flex-direction: column;
@@ -3267,11 +3173,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   min-height: unset;
 }
 
-/* The formula does not evaluate to what the parameter needs (a condition that
-   is not true/false, a missing column). The widget prints the reason under the
-   editor; this outlines the field it belongs to, since the panel scrolls and
-   the two can end up apart. The inline border the widget sets on its own
-   wrapper is what has to be overridden, hence the specificity. */
+/* Invalid formula — the widget sets an inline border on its own wrapper, hence the specificity. */
 .ff-expression-editor[data-invalid] .add-new-column-widget-cm-div {
   border: solid 1px var(--red-3) !important;
 }
@@ -3283,15 +3185,13 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   min-height: 75px !important;
 }
 
-/* An output chip mid reorder-drag: lifted above its neighbours. */
 .ff-output-row-dragging {
   opacity: 0.85;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
   cursor: grabbing;
 }
 
-/* The annotation the Delete key acts on (last clicked) — the same blue ring
-   selected nodes get. */
+/* The annotation the Delete key acts on (last clicked). */
 .ff-annotation-active {
   outline: 2px solid var(--blue-1, #1976d2);
   outline-offset: 1px;

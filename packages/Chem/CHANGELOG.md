@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
+* Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
+
+## 1.17.14 (2026-08-13)
+
+* Reaction Enumerator: Added package settings (category "Enumeration") letting admins set per-group default file paths for reaction templates, building blocks and reagents; missing files show a warning balloon and fall back to the bundled ones
+* Substructure filter: Added a 'Filter as you draw' checkbox to the sketcher dialog — when unchecked, filtering is deferred until OK is clicked instead of running on every sketch edit
 * Added `Filter by Substructure`, `Similarity To` and `Diverse Subset` — table-aware twins of `searchSubstructure`, `getSimilarities` and `getDiversities`, which take a bare column. They declare `(table, column {semType: Molecule}, …)` and return rows or a column added to the table, so a caller has something to carry on with instead of a detached frame or a boxed BitSet
 * Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
 * Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
@@ -15,7 +22,6 @@
 * Fixed display names that were declared via `//friendlyName:`, which the metadata parser ignores: Remove Water and Salts, Run Reaction, Two-Component Reaction
 * Remove Water and Salts: Its `molecules` parameter never carried `semType: Molecule` — the decorator options were nested one level too shallow, so it accepted any string column
 * Marked genuinely-required parameters non-nullable across the reaction, clustering, scaffold and R-group functions (Two Component Reaction's second table/column, Cluster MCS's cluster column, FindMCS, FindRGroupsWithCore, Murcko, Butina, Curate)
-
 * Docker (chem/chemprop): Cleared reported CVEs — pinned Flask/Werkzeug/gunicorn to fixed releases, upgraded pip/setuptools/wheel (build + runtime tooling), pinned urllib3/idna in chemprop, and added `apt upgrade` to patch base-image OS packages
 * Docker (chem/chemprop): Raised security floors (VEX) — torch/torchvision/torchaudio to 2.6.0+cu118 via PyPI wheels (CVE-2025-32434) and removed padelpy's bundled PaDEL-Descriptor jars (log4j 1.2.15, guava 17.0)
 * Moved the Chem Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
@@ -23,6 +29,7 @@
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
 * GROK-20505: Chem: Some descriptors return string values instead of numeric
 * InChI / InChI Keys: Moved the conversion to the parallel RDKit service (web workers) instead of the single-threaded module — `To InchI`, `To InchI Keys`, `getInchis` and `getInchiKeys` are now async
+* GROK-20486: Fixed a crash in _demoMMPA when the viewer didn't load in time
 
 ## 1.17.13 (2026-06-08)
 

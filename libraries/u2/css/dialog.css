@@ -1,0 +1,91 @@
+/* Dialog skin (see src/components/dialog.ts). Tokens only — css/tokens.css must be loaded
+   alongside. Metrics codify the platform dialog (d4.css .d4-dialog / -header / -contents). */
+.u2-dialog {
+  box-sizing: border-box;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border-subtle);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-3);
+  outline: none;
+}
+
+.u2-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--dg-backdrop);
+}
+
+.u2-dialog-title {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--dg-space-m);
+  height: var(--dg-button-height);
+  padding: 0 var(--dg-space-s) 0 var(--dg-space-l);
+  font-weight: var(--dg-font-weight-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: move;
+  user-select: none;
+}
+
+.u2-dialog-title:hover {
+  background: var(--dg-steel-1);
+}
+
+.u2-dialog-title-text {
+  margin-right: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u2-dialog-close {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--dg-inline-control-height);
+  height: var(--dg-inline-control-height);
+  padding: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  background: transparent;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-dialog-close:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover);
+}
+
+.u2-dialog-content {
+  flex: 1 1 auto;
+  max-height: 80vh;
+  padding: var(--dg-space-l);
+  overflow: auto;
+}
+
+.u2-dialog-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: var(--dg-space-m);
+  padding: 0 var(--dg-space-l) var(--dg-space-l);
+}
+
+.u2-dialog-buttons:empty {
+  display: none;
+}

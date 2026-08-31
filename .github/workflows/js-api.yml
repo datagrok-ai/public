@@ -188,6 +188,9 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [ version, common-check ]
     if: needs.common-check.outputs.continue == 'true'
+    permissions:
+      contents: write
+      id-token: write
     env:
       HOST: GitHubAction
     steps:
@@ -218,6 +221,17 @@ jobs:
         working-directory: ./js-api
       - run: npm run build-ts
         working-directory: ./js-api
+      # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
+      # toolchain only for the publish step so the build keeps its pinned Node.
+      - name: Setup Node for trusted publishing
+        uses: actions/setup-node@v4
+        if: needs.version.outputs.changed_version == 'true'
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm for trusted publishing
+        if: needs.version.outputs.changed_version == 'true'
+        run: npm install -g npm@latest
       - name: npm publish
         id: publish
         run: |
@@ -232,9 +246,12 @@ jobs:
           npm publish ${tag}
           echo "tag=${tag}" >> $GITHUB_OUTPUT
         working-directory: ./js-api
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: needs.version.outputs.changed_version == 'true'
+      - name: Restore Node for the compatibility tool
+        uses: actions/setup-node@v4
+        if: needs.version.outputs.changed_version == 'true'
+        with:
+          node-version: '18.x'
 
       - name: Get actors slack
         id: actor

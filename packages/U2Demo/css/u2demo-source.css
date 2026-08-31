@@ -1,0 +1,40 @@
+.u2demo-source {
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-s);
+  min-width: 0;
+}
+
+/* the repo path has no break opportunity a browser will take: without this the header's
+   min-content width is the panel's floor, and the panel takes that width off the demo */
+.u2demo-source-header {
+  gap: var(--dg-space-xs);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.u2demo-source-caption {
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2demo-source-about {
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-source-note {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2demo-source-missing {
+  color: var(--dg-error);
+}
+
+/* wraps rather than scrolling: the panel is narrow and the pre is thousands of pixels tall, so a
+   horizontal scrollbar would sit far below the fold */
+.u2demo-source-text {
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}

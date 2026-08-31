@@ -1,7 +1,7 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
 import * as path from 'path';
-import {NodeDapi, BatchRequest, BatchOperation} from '../utils/node-dapi';
+import {NodeDapi, BatchRequest, BatchOperation, PackageOpResult} from '../utils/node-dapi';
 import {createClient} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, OutputFormat} from '../utils/server-output';
 
@@ -36,12 +36,15 @@ export async function server(argv: any): Promise<boolean> {
   const dapi = new NodeDapi(client);
 
   try {
-    if (entity === 'batch') return handleBatch(dapi, argv, verb, rest, output);
-    if (entity === 'raw') return handleRaw(dapi, verb, rest, output);
-    if (entity === 'describe') return handleDescribe(dapi, verb ?? rest[0], output);
-    if (entity === 'healthcheck') return handleHealthcheck(dapi, argv, output);
-    if (entity === 'functions' && verb === 'run') return handleFuncRun(dapi, rest, argv, output);
-    if (entity === 'functions' && verb === 'list') return handleFunctionsList(dapi, argv, limit, offset, filter, output);
+    // await each handler so a rejection lands in the catch below instead of
+    // escaping to grok.js as an unhandled rejection (stack trace + exit 255)
+    if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
+    if (entity === 'raw') return await handleRaw(dapi, verb, rest, output);
+    if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
+    if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
+    if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
+    if (entity === 'functions' && verb === 'run') return await handleFuncRun(dapi, rest, argv, output);
+    if (entity === 'functions' && verb === 'list') return await handleFunctionsList(dapi, argv, limit, offset, filter, output);
     if (entity === 'files' && verb === 'list') {
       const path = rest[0] ?? '';
       const result = await dapi.files.list(path, recursive);
@@ -58,21 +61,28 @@ export async function server(argv: any): Promise<boolean> {
       if (output !== 'quiet') console.log(`Deleted ${rest[0]}`);
       return true;
     }
-    if (entity === 'files' && verb === 'put') return handleFilesPut(dapi, rest, output);
-    if (entity === 'shares' && verb === 'add') return handleSharesAdd(dapi, rest, argv, output);
-    if (entity === 'shares' && verb === 'list') return handleSharesList(dapi, rest, output);
-    if (entity === 'users' && verb === 'save') return handleUserSave(dapi, argv, output);
-    if (entity === 'groups' && verb === 'save') return handleGroupSave(dapi, argv, output);
-    if (entity === 'connections' && verb === 'save') return handleConnSave(dapi, argv, output);
-    if (entity === 'connections' && verb === 'test') return handleConnTest(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'add-members') return handleGroupAddMembers(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'remove-members') return handleGroupRemoveMembers(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'list-members') return handleGroupListMembers(dapi, rest, argv, output);
-    if (entity === 'groups' && verb === 'list-memberships') return handleGroupListMemberships(dapi, rest, argv, output);
-    if (entity === 'users' && verb === 'block') return handleUserBlock(dapi, rest, output);
-    if (entity === 'users' && verb === 'unblock') return handleUserUnblock(dapi, rest, output);
-    if (entity === 'tables' && verb === 'download') return handleTablesDownload(dapi, rest, argv, output);
-    if (entity === 'tables' && verb === 'upload') return handleTablesUpload(dapi, rest, output);
+    if (entity === 'files' && verb === 'put') return await handleFilesPut(dapi, rest, output);
+    if (entity === 'shares' && verb === 'add') return await handleSharesAdd(dapi, rest, argv, output);
+    if (entity === 'shares' && verb === 'list') return await handleSharesList(dapi, rest, output);
+    if (entity === 'users' && verb === 'save') return await handleUserSave(dapi, argv, output);
+    if (entity === 'groups' && verb === 'save') return await handleGroupSave(dapi, argv, output);
+    if (entity === 'connections' && verb === 'save') return await handleConnSave(dapi, argv, output);
+    if (entity === 'connections' && verb === 'test') return await handleConnTest(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'add-members') return await handleGroupAddMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'remove-members') return await handleGroupRemoveMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'list-members') return await handleGroupListMembers(dapi, rest, argv, output);
+    if (entity === 'groups' && verb === 'list-memberships') return await handleGroupListMemberships(dapi, rest, argv, output);
+    if (entity === 'users' && verb === 'block') return await handleUserBlock(dapi, rest, output);
+    if (entity === 'users' && verb === 'unblock') return await handleUserUnblock(dapi, rest, output);
+    if (entity === 'tables' && verb === 'download') return await handleTablesDownload(dapi, rest, argv, output);
+    if (entity === 'tables' && verb === 'upload') return await handleTablesUpload(dapi, rest, output);
+    if (entity === 'packages' && verb === 'install') return await handlePackagesInstall(dapi, rest, argv, output);
+    if (entity === 'packages' && verb === 'uninstall') return await handlePackagesUninstall(dapi, rest, output);
+    if (entity === 'packages' && verb === 'share') return await handlePackagesShare(dapi, rest, argv, output);
+    if (entity === 'packages' && verb === 'versions') return await handlePackagesVersions(dapi, rest, output);
+    if (entity === 'packages' && verb === 'set-version') return await handlePackagesSetVersion(dapi, rest, output);
+    if (entity === 'packages' && verb === 'outdated') return await handlePackagesOutdated(dapi, output);
+    if (entity === 'packages' && verb === 'update') return await handlePackagesUpdate(dapi, rest, argv, output);
 
     const source = (dapi as any)[entity];
     if (!source || !ENTITIES.includes(entity)) {
@@ -107,7 +117,8 @@ export async function server(argv: any): Promise<boolean> {
       return true;
     }
 
-    printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}`));
+    const extraVerbs = entity === 'packages' ? ', install, uninstall, update, outdated, versions, set-version, share' : '';
+    printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}${extraVerbs}`));
     return false;
   } catch (err: any) {
     printError(err);
@@ -168,6 +179,190 @@ async function handleTablesDownload(dapi: NodeDapi, rest: string[], argv: any, o
   }
   else
     process.stdout.write(csv);
+  return true;
+}
+
+async function installPackages(dapi: NodeDapi, targets: {name: string; version: string}[], output: OutputFormat): Promise<PackageOpResult[]> {
+  const results: PackageOpResult[] = [];
+  for (const t of targets) {
+    let name = t.name;
+    try {
+      const pkg = await dapi.packages.resolve(t.name);
+      if (pkg) name = pkg.name;
+      if (output === 'table') console.log(`Installing ${name} (${t.version})...`);
+      const id = await dapi.packages.install(name, t.version);
+      // the server returns the published id for any existing explicit version
+      // (even an already-current one), so null means the version doesn't exist
+      if (!id && t.version !== 'latest')
+        results.push({package: name, version: t.version, status: 'error', error: `Version '${t.version}' not found`});
+      else
+        results.push({package: name, version: t.version, status: id ? 'installed' : 'noop', id: id ?? undefined});
+    }
+    catch (err: any) {
+      results.push({package: name, version: t.version, status: 'error', error: (err?.message ?? String(err)).replace(/\s*\n\s*/g, '; ')});
+    }
+  }
+  return results;
+}
+
+function printPackageOps(results: PackageOpResult[], output: OutputFormat): void {
+  if (output === 'quiet') {
+    for (const r of results)
+      if (r.id) console.log(r.id);
+  }
+  else
+    printOutput(results, output);
+  if (results.some((r) => r.status === 'error')) process.exitCode = 1;
+}
+
+async function handlePackagesInstall(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  if (!rest.length) {
+    printError(new Error('Usage: grok s packages install <name> [<name> ...] [--version <v>]'));
+    return false;
+  }
+  if (argv.version !== undefined && rest.length > 1) {
+    printError(new Error('--version applies to a single package'));
+    return false;
+  }
+  const version = argv.version !== undefined ? String(argv.version) : 'latest';
+  const results = await installPackages(dapi, rest.map((r) => ({name: String(r), version})), output);
+  printPackageOps(results, output);
+  return true;
+}
+
+async function handlePackagesUninstall(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s packages uninstall <name-or-id>'));
+    return false;
+  }
+  const result = await dapi.packages.uninstall(rest[0]);
+  if (output === 'json' || output === 'csv') printOutput(result, output);
+  else if (output === 'quiet') console.log(result.id);
+  else
+    console.log(result.repoBacked
+      ? `Uninstalled ${result.name} (package entry kept — reinstall with 'grok s packages install ${result.name}')`
+      : `Deleted local package ${result.name}`);
+  return true;
+}
+
+async function handlePackagesShare(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const [name, ...groupArgs] = rest;
+  if (!name || !groupArgs.length) {
+    printError(new Error('Usage: grok s packages share <name-or-id> <group>[,<group>...] [--access View|Edit]'));
+    return false;
+  }
+  const groups = groupArgs.flatMap((g) => g.split(',')).map((g) => g.trim()).filter(Boolean).join(',');
+  const access = typeof argv.access === 'string' ? argv.access : 'View';
+  if (access !== 'View' && access !== 'Edit') {
+    printError(new Error(`Invalid --access '${access}'. Use 'View' or 'Edit'.`));
+    return false;
+  }
+  const pkg = await dapi.packages.resolve(name);
+  if (!pkg) {
+    printError(new Error(`Package '${name}' not found`));
+    return false;
+  }
+  const result = await dapi.shares.share(pkg.id, groups, access);
+  printOutput(result, output);
+  if (result?.status === 'failed') process.exitCode = 1;
+  return true;
+}
+
+async function handlePackagesVersions(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  if (!rest[0]) {
+    printError(new Error('Usage: grok s packages versions <name-or-id>'));
+    return false;
+  }
+  const versions = await dapi.packages.versions(rest[0]);
+  const flat = versions.map((v: any) => ({
+    version: v?.version ?? '',
+    current: v?.isCurrent ?? false,
+    latest: v?.isLatest ?? false,
+    local: v?.isLocal ?? false,
+    remote: v?.isRemote ?? false,
+    debug: v?.debug ?? false,
+    id: v?.id ?? '',
+  }));
+  printOutput(flat, output);
+  return true;
+}
+
+async function handlePackagesSetVersion(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
+  if (!rest[0] || rest[1] === undefined) {
+    printError(new Error('Usage: grok s packages set-version <name> <version>'));
+    return false;
+  }
+  const version = String(rest[1]);
+  const pkg = await dapi.packages.resolve(String(rest[0]));
+  const name = pkg?.name ?? String(rest[0]);
+  const id = await dapi.packages.install(name, version);
+  if (!id) {
+    printError(new Error(`Version '${version}' not found for package '${name}'`));
+    return false;
+  }
+  if (output === 'quiet') console.log(id);
+  else if (output === 'json' || output === 'csv') printOutput({package: name, version, id}, output);
+  else console.log(`${name} -> ${version} (published package ${id})`);
+  return true;
+}
+
+async function handlePackagesOutdated(dapi: NodeDapi, output: OutputFormat): Promise<boolean> {
+  const rows = await dapi.packages.outdated();
+  if (!rows.length && output === 'table') {
+    console.log('All packages up to date.');
+    return true;
+  }
+  printOutput(rows, output);
+  return true;
+}
+
+async function handlePackagesUpdate(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const all = argv.all === true;
+  if (!all && !rest.length) {
+    printError(new Error('Usage: grok s packages update <name> [<name> ...] | --all'));
+    return false;
+  }
+  const outdated = await dapi.packages.outdated();
+  const results: PackageOpResult[] = [];
+  // a package tracking 'latest' keeps that auto-update intent; a pinned one gets
+  // pinned to the concrete registry-latest version
+  const targetVersion = (o: {desiredVersion: string; latest: string}) => o.desiredVersion === 'latest' ? 'latest' : o.latest;
+  let targets: {name: string; version: string}[];
+  if (all) {
+    targets = outdated.map((o) => ({name: o.name, version: targetVersion(o)}));
+    if (!targets.length && output === 'table') {
+      console.log('All packages up to date.');
+      return true;
+    }
+  }
+  else {
+    targets = [];
+    for (const r of rest) {
+      const raw = String(r);
+      let pkg: any = null;
+      try {
+        pkg = await dapi.packages.resolve(raw);
+      }
+      catch (err: any) {
+        results.push({package: raw, version: '', status: 'error', error: (err?.message ?? String(err)).replace(/\s*\n\s*/g, '; ')});
+        continue;
+      }
+      if (!pkg) {
+        results.push({package: raw, version: '', status: 'error', error: 'Package not found'});
+        continue;
+      }
+      const o = outdated.find((x) => x.name === pkg.name);
+      if (o) {
+        targets.push({name: pkg.name, version: targetVersion(o)});
+        continue;
+      }
+      const versions: any[] = Array.isArray(pkg.publishedVersions) ? pkg.publishedVersions : [];
+      const installed = versions.some((v) => v?.isCurrent && !v?.debug);
+      results.push({package: pkg.name, version: '', status: 'noop', note: installed ? 'already up to date' : 'not installed'});
+    }
+  }
+  results.push(...await installPackages(dapi, targets, output));
+  printPackageOps(results, output);
   return true;
 }
 
@@ -246,6 +441,80 @@ async function handleRaw(dapi: NodeDapi, method: string | undefined, rest: strin
   const result = await dapi.raw(method, path);
   printOutput(result, output);
   return true;
+}
+
+async function handleSync(dapi: NodeDapi, subject: string | undefined, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  // `grok s sync` subcommands. Mirrors the API surface in
+  // core/server/datlas/lib/src/routers/sync.dart — pairs / setups /
+  // runs are read-only here; `run` triggers an actual push and prints
+  // the per-item summary. Full reference in
+  // core/docs/plans/instance-sync.md (Phase 7 / operational polish).
+  //
+  // `_callSync` does dual-path routing: tries `/api/sync/...` first
+  // (nginx-fronted deployments) and falls back to `/sync/...` (bare
+  // datlas on :8082). Same approach as the server-side handshake
+  // code so the CLI works against either layout.
+  const verb = rest[0];
+  const callSync = async (method: string, path: string, body?: any): Promise<any> => {
+    for (const prefix of ['/api', '']) {
+      const r: any = body !== undefined
+        ? await dapi.raw(method, `${prefix}${path}`, body)
+        : await dapi.raw(method, `${prefix}${path}`);
+      // raw() returns `null` for 404, but the server returns HTML for
+      // 404 too — treat anything that isn't a sync-shaped object/array
+      // as a miss and fall through to the alternate prefix.
+      if (r && (Array.isArray(r) || typeof r === 'object') && r['#type'] !== 'ApiError') return r;
+    }
+    return null;
+  };
+  if (subject === 'pairs' && verb === 'list') {
+    const status = argv.status ? `?status=${encodeURIComponent(argv.status)}` : '';
+    const pairs = await callSync('GET', `/sync/pairs${status}`);
+    printOutput(pairs, output);
+    return true;
+  }
+  if (subject === 'setups' && verb === 'list') {
+    const pairId = argv.pair ?? rest[1];
+    if (!pairId) { printError(new Error('Usage: grok s sync setups list --pair <pair-id>')); return false; }
+    const setups = await callSync('GET', `/sync/pairs/${encodeURIComponent(pairId)}/setups`);
+    printOutput(setups, output);
+    return true;
+  }
+  if (subject === 'setup' && verb === 'get') {
+    const id = rest[1];
+    if (!id) { printError(new Error('Usage: grok s sync setup get <setup-id>')); return false; }
+    const setup = await callSync('GET', `/sync/setups/${encodeURIComponent(id)}`);
+    printOutput(setup, output);
+    return true;
+  }
+  if (subject === 'run') {
+    // grok s sync run <setup-id>
+    const id = rest[1] ?? verb;
+    if (!id) { printError(new Error('Usage: grok s sync run <setup-id>')); return false; }
+    const result = await callSync('POST', `/sync/setups/${encodeURIComponent(id)}/run`, {});
+    if (output === 'json' || output === 'csv') { printOutput(result, output); return true; }
+    if (output === 'quiet') { console.log(result?.runId ?? ''); return true; }
+    if (!result) { printError(new Error(`Sync setup ${id} not found, or server has no /sync routes.`)); return false; }
+    console.log(`Run ${result?.runId} → ${result?.remoteUrl} (${result?.status})`);
+    if (result?.counts) {
+      const cs = Object.keys(result.counts).filter(k => (result.counts[k] ?? 0) > 0)
+        .map(k => `${result.counts[k]} ${k}`).join(', ');
+      if (cs) console.log(`  ${cs}`);
+    }
+    const items = Array.isArray(result?.items) ? result.items : [];
+    if (items.length) {
+      console.log('\nItems:');
+      printOutput(items, 'table');
+    }
+    return true;
+  }
+  printError(new Error(
+    'Usage:\n' +
+    '  grok s sync pairs list [--status active|pending|revoked]\n' +
+    '  grok s sync setups list --pair <pair-id>\n' +
+    '  grok s sync setup get <setup-id>\n' +
+    '  grok s sync run <setup-id>'));
+  return false;
 }
 
 async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat): Promise<boolean> {
@@ -621,9 +890,21 @@ Special commands:
   grok s users unblock <id-or-login>                  Unblock a previously blocked user
   grok s tables upload <name> <file.csv|file.d42>     Upload a CSV or d42 binary as a Datagrok table
   grok s tables download <name-or-id> [-O <file>]     Download a table as CSV (stdout by default)
+  grok s packages install <name>... [--version <v>]   Install latest (or pinned) versions from the registry
+  grok s packages uninstall <name>                    Uninstall a package (repository entry is kept)
+  grok s packages update <name>... | --all            Upgrade to the latest registry version
+  grok s packages outdated                            Show installed vs latest registry versions
+  grok s packages versions <name>                     List published versions (current/latest/debug flags)
+  grok s packages set-version <name> <version>        Activate a specific published version
+  grok s packages share <name> <group>[,...] [--access View|Edit]
+                                                      Share a package with one or more groups
   grok s batch <entity> <verb> arg1 [arg2 ...]        Batch operation (one round-trip)
   grok s batch <entity> <verb> --json params.json     Batch from JSON array
   grok s batch manifest.json                          Run a workflow manifest
+  grok s sync pairs list [--status <s>]               List cross-instance sync pairs (status: active|pending|revoked)
+  grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
+  grok s sync setup get <setup-id>                    Inspect a setup (selections, direction, last run)
+  grok s sync run <setup-id>                          Trigger a push run; prints per-item outcome
 
 Options:
   --host <alias|url>    Server alias from config or full URL
@@ -637,6 +918,8 @@ Options:
   --type <t>            Function discriminator: script | query | function | package
   --language <lang>     Script language: python, r, julia, nodejs, octave, grok
   --package <name>      Restrict to functions belonging to a package (by short name)
+  --version <v>         Package version for 'packages install' (default: latest)
+  --all                 For 'packages update': upgrade every outdated package
 
 Batch manifest options (in manifest.json):
   stopOnError           Stop on first failure (default: true)
@@ -663,6 +946,11 @@ Examples:
   grok s functions list --package PowerPack --type package --filter 'name contains "grid"'
   grok s files list "System:AppData" -r
   grok s files put ./smiles.csv "System:DemoFiles/smiles.csv"
+  grok s packages install Chem Bio PowerGrid
+  grok s packages install Chem --version 1.14.0
+  grok s packages update --all
+  grok s packages versions Chem
+  grok s packages share Chem Chemists --access View
   grok s raw GET /api/users/current
   grok s describe connections
   grok s users list --host dev

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.cp.activity-cliffs]
-realizes: [bio.analyze.activity-cliffs]
+realizes: [bio.menu.analyze.activity-cliffs]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/sequence-activity-cliffs.md
 migration_date: 2026-05-31

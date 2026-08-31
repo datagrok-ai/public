@@ -21,8 +21,8 @@ FuncCall runs / open tables
    → ComparisonEntryNodes       (plain-data description: scalars + tables)
    → ComparisonTarget[]         (matching: name-clustered candidates)
    → user picks a target        (selection: pickers, statuses, compatibility)
-   → chartDf                    (comparison-builders: long-format DataFrame)
-   → DG.Viewer                  (bar chart or line chart)
+   → chartDf                    (comparison-builders: long- or wide-format DataFrame)
+   → DG.Viewer                  (bar/line/scatter chart; radar or PC plot for multi-scalar)
 ```
 
 ## `entry-extraction.ts` — turning runs into entries
@@ -31,34 +31,44 @@ FuncCall runs / open tables
 
 `collectWorkflowSteps` is a typed walk built on RTD primitives: `buildTraverseD` (the same DFS traversal RTD's `StateTreeFactory` uses) over `PipelineSerializedState`, with `isFuncCallSerializedState` as the leaf guard — so the serialized format pinned by the LibTests persistence tests is enforced at compile time here. Each leaf gets a stable slash `path` from the `configId` chain (root included) and a ` · `-joined `friendlyPath` from friendly names (root name elided, since it's shared by every step). The walk is wrapped in a try/catch: a legacy or malformed serialized config degrades to an entry with no steps instead of breaking the dialog.
 
-**`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). It also reads two function-annotation options off DataFrame outputs — `{comparisonIndex: ...}` and `{comparisonSplit: ...}` — which become default picker values later.
+**`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). Display names come from the caption, which is free text — when one call's extracted IOs share a caption (e.g. an input and an output both captioned `Data`), the property name is appended (`Data (result)`), so targets, index rows, and candidates stay distinguishable downstream. It also reads the `{comparison: {...}}` function-annotation option off DataFrame outputs (index/split/mode/units) — these become default picker values later.
 
-**`entryFromDataFrame(df)`** wraps an open workspace table as a "raw" entry with one table and no scalars, so ad-hoc data can join the comparison.
-
-## `comparison-builders.ts` — turning entries into charts
-
-All builders produce a *long/concatenated* DataFrame — there is deliberately no row alignment or delta computation (dropped in commit `2b73683a`); the chart's split-by-Run does the visual comparison:
-
-- **`buildScalarComparison`** — one row per run: `Run | Path | <value>` columns. Run names are forced to string type so numeric-looking names don't break legends.
-- **`buildMultiColumnComparison(targets, entries)`** — the workhorse. Concatenates raw rows of every participating run into one frame: index column (typed float/datetime/string via `getIndexKind`), optional split column, a `Run` column, and one float value column per target (nulls where a target has no binding for that run). Duplicate display names get `(2)`, `(3)` suffixes. Returns `null` when fewer than two runs participate.
-- **`buildColumnComparison`** — the single-target special case, delegating to the multi version and stripping `valueColumnNames` (whose presence is the downstream marker for "multi-value result").
-
-`getIndexKind` decides how the index behaves: all-datetime → datetime index, any non-numeric → "key index" (string, drives a bar chart instead of a line chart).
+**`entryFromDataFrame(df)`** wraps an open workspace table as a "raw" entry with one table and no scalars, so ad-hoc data can join the comparison. Entry ids come from a `WeakMap` keyed by the table's Dart handle — the same table dedupes on re-add, while distinct tables sharing a name never collide.
 
 ## `matching.ts` — matching values across runs
 
 The central problem: different runs (possibly of different models) name the same quantity slightly differently. The solution is name clustering.
 
-- **`nameSimilarity`** — Sørensen–Dice bigram similarity on normalized names (lowercased, separators collapsed). **`nameMatchConfidence`** grades a pair as `exact` / `normalized` / `fuzzy` (≥ 0.7 similarity, `FUZZY_NAME_THRESHOLD`) / no match.
-- **`clusterByName`** — greedy clustering: each item joins the best existing cluster that (a) doesn't already contain an item from the same run (at most one binding per entry per cluster), (b) name-matches, and (c) has no hard units mismatch. A higher-confidence match beats an earlier lower-confidence one; ties are broken by similarity score, with the table name as a secondary tiebreaker for columns. A cluster's confidence is the *weakest* member match; a units `warn` (one side has units, the other doesn't) sets `unitsWarning`.
-- **`matchScalarTargets(entries)`** / **`matchColumnTargets(entries, indexColumns, splitColumns)`** — feed numeric scalars / numeric table columns into the clusterer and keep clusters covering ≥ 2 runs. These become `ComparisonTarget`s (`kind: 'scalar' | 'column'`) with `bindings` (per-run pointers to the actual value), `confidence`, `coverage/total`, `unitsWarning`. Crucially, **columns only participate if the user has picked an index column for their table**; the index and split columns themselves are excluded. `dedupeTargetKeys` suffixes colliding keys since distinct clusters can share a canonical name.
+Two design rules keep the model simple:
+
+1. **A target maps the same quantity across runs — at most one *active* item per comparison-set item (run or raw table); the active item is the run's charted series.** Column targets additionally *multimatch*: their candidate list may hold several compatible items from the same run, with the non-active ones listed as switchable candidates. Scalar targets are single-match by construction — greedy cluster members only, no candidate list. Matching is a cross-source mapping with a preview, nothing more.
+2. **Several series within one run are the split column's job**, the native pattern for model results — never several mapped columns of one run. (Suffix-style wide data, e.g. `temp_A`/`temp_B`, should be reshaped into a split column, not multi-mapped.)
+
+- **`nameSimilarity`** — Sørensen–Dice bigram similarity on normalized names (lowercased, separators collapsed). **`nameMatchConfidence`** grades a pair as `exact` / `normalized` / `fuzzy` (≥ 0.7 similarity, `FUZZY_NAME_THRESHOLD`) / no match. It also takes optional user-defined alias groups (**`buildAliasGroups`**: mapping pairs → `Map<normalizedName, groupId>`, transitively merged): two names in the same group match at `normalized` confidence. Aliases resolve by normalized name only — a name merely similar to a mapped term gains nothing. Both matchers accept the groups and apply them everywhere names are compared, index columns included.
+- **Table gate** — the only table-level condition for columns is a name-match of their index columns. Split columns don't gate matching at all: each binding carries its own `splitColumnName`, differently-named splits map onto one shared split column in the chart, and runs without a split pad it with empty strings (see the builder). Column-vs-column compatibility stays per-column (name + units) — there is deliberately no whole-column-set matching.
+- **`clusterByName`** — greedy clustering: each item joins the best existing cluster that (a) doesn't already contain an item from the same run (at most one binding per entry per cluster), (b) name-matches, (c) has no hard units mismatch, and (d) has a name-matching index column against the cluster seed when both carry one (scalars don't). A higher-confidence match beats an earlier lower-confidence one; ties are broken by similarity score, with the table name as a secondary tiebreaker for columns. A cluster's confidence is the *weakest* member match; a units `warn` (one side has units, the other doesn't) sets `unitsWarning`.
+- **`matchScalarTargets(entries)`** — feeds numeric scalars into the clusterer and keeps clusters covering ≥ 2 runs; a scalar target's `bindings` are exactly the greedy cluster members (no candidate model).
+- **`matchColumnTargets(entries, indexColumns, splitColumns, overrides)`** — the candidate model for columns, implementing rule 1 above. The greedy pass seeds clusters as before; every other item compatible with a cluster's seed (name + units + table gate) is listed as a `ColumnCandidate` (`auto` = greedy member; `confidence`/`unitsWarn` vs the seed; `enabled`). Enablement is radio-style — at most one enabled candidate per run; an explicit user pick beats a default one, ties resolve to the first in candidate order. Defaults: non-raw candidates are enabled iff `auto`; raw (standalone) candidates are enabled in every cluster they match non-fuzzily (exact/normalized name) — fuzzy matches stay listed but unchecked. Cluster survival requires ≥ 2 distinct runs among *default-enabled* candidates, so user toggles never remove a target and a raw attachment can resurrect a single-run cluster. `overrides` (targetKey → `candidateId` → enabled) apply after `dedupeTargetKeys`; the derived fields — `bindings`, `coverage`, `confidence`, `unitsWarning` — reflect the enabled subset only. `candidateId` (`entryId|tablePath|columnName`, index/split excluded) keeps toggles stable across picker changes. Crucially, **columns only participate if the user has picked an index column for their table**; the index and split columns themselves are excluded.
 
 ## `selection.ts` — pickers, statuses, and multi-value compatibility
 
-- **`computeIndexRows(...)`** — builds the rows of the "Index columns" picker UI. One row per table, or — with "Merge same functions" on — one row per group of tables that come from the same function (`nqName` + output name), so picking an index once applies to all runs of that model. Merged rows only offer columns present with the same type in *every* group member; stored selections that no longer match candidates are treated as unset rather than kept stale.
-- **`compatibleTargetsFor(anchor, targets, getColumnType)`** — for multi-value mode: returns column targets whose `bindingSignature` (sorted `entryId|tablePath|indexCol|splitCol` tuples; the column name is deliberately excluded) is identical to the anchor's, provided the index is line-chartable (numeric/datetime) in every binding. Only such targets can share one chart. Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV. The signature never revisits that; it only checks that two *targets* inherited the same reconciliation (same source set, table-for-table, index-for-index), which is what lets the multi builder read all value columns from the same physical rows within each source.
-- **`getEntryStatuses`** — per-run participation status for the selected target, so the UI can flag excluded runs with a reason (`'no similar data'` vs `'index not set'`).
+- **`computeIndexRows(...)`** — builds the rows of the "Index columns" picker UI. One row per table, or — with "Merge same functions" on — one row per group of tables that come from the same function (`nqName` + output name), so picking an index once applies to all runs of that model. Merged rows only offer columns present with the same type in *every* group member; stored selections that no longer match candidates are treated as unset rather than kept stale. Takes the raw `AxisModeSelection` and sets `IndexRow.axis` (`{mode, units?}`) when the current index is numeric/datetime — `units` for numeric only, prefilled from column metadata; merged rows agree on a non-default mode like `current` does (any disagreement displays as `series`).
+- **`multiValueOverlap(anchor, other)`** / **`compatibleTargetsFor(anchor, targets, getColumnType)`** — multi-value mode is split into a *suggestion* predicate and builder-enforced validity. Per anchor run, the other target's pick is `aligned` (same table — rows can be shared), `missing` (no pick), or `conflicting` (picked from another table); scalar bindings carry no table, so scalars are aligned or missing, never conflicting. `compatibleTargetsFor` never mixes kinds: for a scalar anchor every scalar target is compatible (all scalars are numeric by construction); for a column anchor it *suggests* column targets with no conflicts and ≥ 1 aligned run, provided the anchor's index is line-chartable (numeric/datetime) everywhere. It never decides validity of an already selected combination: the builder pads missing/conflicting runs with nulls, so editing picks can never eject a selected target. Index/split agreement is automatic for aligned picks — the pickers are per (run, table). Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV; the overlap check only asks whether two *targets* can read their columns from the same physical rows.
+- **`getEntryStatuses`** — per-run participation status for the selected target, so the UI can flag excluded runs with a reason (`'no similar data'`, `'index not set'`, or `'disabled'` — the run has candidates but the user toggled them all off). With an `AxisConfigMap` passed, matched runs on a *partially* configured target additionally get `warning: 'relative timeseries not set'` or `'independent points not set'` (amber chip — the run still charts, just as a plain series).
+- **Axis mode helpers** — `parseTimeUnit` (units-metadata prefill; bare `m` deliberately unrecognized), `resolveAxisModes` (stored picks → non-`series`-only `AxisConfigMap`, gated on a numeric/datetime index; units for `timeseries` on a numeric index only), `targetAxisMode` (require-all gate per mode: `full`/`partial`/`none` over a target's bindings), `resolveDisplayUnit` (first numeric `timeseries` binding's units, datetime-only → `'auto'`), `pickAutoUnit` (largest of days/h/min/s spanning ≥ 2 units, else ms).
+- **`isTargetEqualAcrossRuns(target, getColumnValues)`** — backs the "Hide equal values" toggle: a target with ≥ 2 bound runs is equal when all scalar values match, or when every run's value, index, and split column contents are element-wise the same (NaN-safe). Numbers compare via the PEP 485 `isclose` formula with `EQUALITY_REL_TOL = 1e-3` (0.1% relative, zero absolute tolerance — near-zero is never conflated with zero); datetime *index* columns compare exactly instead — they arrive as epoch ms, where 0.1% relative is weeks, so a day-shifted series would wrongly hide (value columns are never datetime by construction). Unfetchable column data counts as differing, so nothing is hidden on missing data.
 - Small helpers: `matchesFilter` (substring + fuzzy-token filter for the list search boxes), `isSplitCandidate` (string column ≠ index), `selectionToMap` (validated `Record` → `Map` conversion).
+
+## `comparison-builders.ts` — turning entries into charts
+
+All builders produce a *long/concatenated* DataFrame — there is deliberately no row alignment or delta computation (dropped in commit `2b73683a`); the chart's split-by-Run does the visual comparison:
+
+- **`buildScalarComparison`** — one row per run: `Run | Path | <value>` columns. Run names are forced to string type so numeric-looking names don't break legends. The value label is deduped against `Run`/`Path` (a scalar named `Run` must not shadow the run column) and returned as `valueColumnName` — the chart reads it from the result, never from `displayName`.
+- **`buildMultiScalarComparison(targets, entries)`** — the one *wide*-format exception: one row per run, `Run` plus one float column per selected scalar target (null where a run lacks that scalar), because radar and PC plot consume axes as columns. A run participates if it has a binding in at least one selected target; returns `null` when fewer than two runs participate. Shares the display-name dedupe (`(2)`, `(3)` suffixes) with the column builder.
+- **`buildMultiColumnComparison(targets, entries, axisModes?)`** — the workhorse. Consumes each target's *enabled* bindings (matching guarantees at most one per run). Concatenates raw rows of every participating run into one frame: index column (typed via `getIndexAxis`), optional split column, a `Run` column, and one float value column per target (nulls where a target has no binding for that run). Value labels are deduped with `(2)`, `(3)` suffixes — against each other *and* against the reserved `Run`/index/split names; the first label is also returned as `valueColumnName` for single-target charts. Returns `null` when fewer than two runs participate. In multi-value scatter mode the wide value columns are replaced by a *melted* pair — a `Data` column holding the (deduped) target name and a `Value` column with the number, rows repeated per target — because a scatterplot charts a single y column; the melted names are deduped against the index/split/`Run` columns and returned as `melted: {seriesColumnName, valueColumnName}`.
+- **`buildColumnComparison`** — the single-target special case, delegating to the multi version and stripping `valueColumnNames` (whose presence is the downstream marker for "multi-value result").
+
+`getIndexAxis` decides how the index behaves. By default (no `AxisConfigMap` passed, or the require-all gate fails) the axis follows the index column types: all-datetime → datetime index, any non-numeric → "key index" (string, drives a bar chart instead of a line chart), else float. With the `timeseries` mode configured on every participating table (and every index actually numeric/datetime), the axis is `elapsed`: each run's index converts to ms (datetime via epoch ms, numeric scaled by its declared units), always shifts by its own table's min non-null value (auto-alignment — first point is 0), and lands in one display unit as a 64-bit float column named `` `<index> (<unit>)` `` (`Column.fromFloat64Array` — `fromList(FLOAT)` can store 32-bit, which would quantize large values; label deduped against value columns). The result carries `timeSeriesUnit` on the elapsed path. The `points` mode does not touch the axis at all — the same require-all gate just sets `isScatter` on the result (a key index disables it), which flips the chart from a line to a scatterplot. The multi-value require-all gates are evaluated on `targets[0]`'s participating bindings — secondary targets' cross-table picks are padded rows and can't break the mode independently.
 
 ## `RunComparison.tsx` — Vue state and reactivity
 
@@ -70,9 +80,15 @@ The central problem: different runs (possibly of different models) name the same
 | `historySelection` | runs checked in the embedded `History` component |
 | `entries` (`shallowRef<ComparisonEntry[]>`) | **the comparison set** — the root of everything downstream |
 | `indexSelection`, `splitSelection` | `Record<entryId, Record<tablePath, columnName>>` — user's index/split picks |
-| `allowFloatIndex`, `allowDatetimeIndex`, `mergeSameFuncs` | toggles feeding the index pickers |
+| `axisModeSelection` | per-table `{mode, units}` row-semantics picks — `series` (default), `timeseries` (relative), or `points` (independent) — stale picks kept but ignored; `resolveAxisModes` derives the non-default-only `AxisConfigMap` consumed by builders and statuses |
+| `mergeSameFuncs` | merge toggle feeding the index pickers (numeric/datetime/string indexes are always offered — the old float/datetime gating toggles are gone) |
+| `hideEqual` | "Hide equal values" toggle (on by default): targets whose data is identical across all bound runs (`isTargetEqualAcrossRuns` in selection.ts — scalar values, or value/index/split column contents) are dropped from `filteredTargets`; multi-mode selections stay visible |
 | `selectedTargetKey` | which target is being charted |
-| `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys |
+| `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves |
+| `nameMappings` | user-defined name pairs treated as the same quantity; edited in a `ui.dialog` (exchange icon by the value filter), converted via `buildAliasGroups` and fed into both matchers |
+| `expandedTargetKeys` | which target rows have their candidate checklist expanded |
+| `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys; unchecking the last value exits the mode (consistent with the initial no-selection state) with that value as the single selection — otherwise the mode never auto-exits: keys are pruned only when their target vanishes structurally, and the chart pads conflicting/missing runs (`partial` chip on the row) |
+| `scalarChartType` | radar/PC-plot switch for multi-scalar charts; `radarAvailable` (Charts package deployed?) forces PC plot and hides the switch when radar can't render |
 | `indexFilter`, `targetFilter` | list search boxes |
 | `chartViewer` | last-created `DG.Viewer`, kept for the workspace-snapshot export |
 | `historyHeight`, `sidebarWidth`, `chartHeight` | resizable layout dims |
@@ -81,8 +97,8 @@ The central problem: different runs (possibly of different models) name the same
 
 Everything re-derives from `entries` + the selections:
 
-1. `indexColumnsMap` / `splitColumnsMap` — validated Map form of the selections (a pick becomes invisible if its type toggle is off, unless it's the annotated default).
-2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted by coverage. Changing an index selection immediately re-runs matching.
+1. `indexColumnsMap` / `splitColumnsMap` — validated Map form of the selections: an index pick counts only while its column exists in that table with an index-candidate type (or is the table's annotated default); a split pick additionally requires a valid split column against the current index.
+2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted scalars first, then columns, alphabetically by display name — stable, so toggling candidates never reorders the list; the row displays the live enabled `coverage`. Changing an index selection immediately re-runs matching.
 3. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets`.
 4. `comparison` — the final result object: calls the right builder based on `target.kind` and `multiMode`, wrapped in `markRaw` (DataFrames must not be made reactive).
 5. `indexRows` / `filteredIndexRows` — via `computeIndexRows` for the picker UI.
@@ -90,32 +106,26 @@ Everything re-derives from `entries` + the selections:
 
 ### Notable mechanics
 
-- **`addEntry`** dedupes by id and calls `applyAnnotatedDefaults`, which pre-fills index/split pickers from the `comparisonIndex`/`comparisonSplit` annotations — but only where the user hasn't already chosen.
+- **`addEntry`** dedupes by id and calls `applyAnnotatedDefaults`, which pre-fills the index/split pickers and the axis mode/units from the `comparison` annotation — but only where the user hasn't already chosen.
 - **`addSelectedRuns`** reloads each checked history run fully (`historyUtils.loadRun`) before extraction, guarded by `isAddingRuns`.
 - The **table input** (`ui.input.table`) resets its value in a `setTimeout` because doing it synchronously re-enters the Dart stream controller mid-dispatch (fix from `7ddbfc3b`).
-- **Shift+click** on a target row enters multi-value mode grid-style: if the clicked target is signature-compatible with the current selection, both are kept; otherwise the click re-anchors.
+- **Shift+click** on a target row enters multi-value mode grid-style: if the clicked target is suggestion-compatible with the current selection, both are kept; otherwise the click re-anchors.
 - **Chart choice** in `renderComparison`:
 
   | Situation | Chart |
   |---|---|
   | scalar target | bar chart, split by `Run` |
+  | multiple scalar targets | radar (default, Charts package `Radar` viewer — axes = targets, one polygon per run) or PC plot, via a small switch above the chart; PC plot is the silent fallback when Charts isn't deployed |
   | column target, key (string) index | bar chart, split by index, stacked by `Run` |
   | column target, numeric/datetime index | line chart: x = index, y = value column(s), split by `Run` (+ inner split column), `multiAxis: false` |
+  | column target, relative timeseries (all tables configured) | same line chart over the converted `<index> (<unit>)` elapsed axis — no dedicated chart branch |
+  | column target, independent points (all tables configured) | scatterplot: x = index pick, y = value, color = split ?? `Run` (runs move to marker shapes when split takes color); multi-value melts all values into one y column colored by target name, markers = `Run`, split unencoded |
+  | multi-value column selection, key index | no chart — a hint to pick a numeric/datetime index (multi-value suggestions are gated on a line-chartable index, but an index switched to a string column after selection would otherwise land the multi frame on a line chart) |
 
-  Multi-value mode scales the minimum chart height by the number of value columns (`250px` per value).
-- **`openInWorkspace`** snapshots: clones `chartDf` into a new table view and re-adds a viewer using `chartViewer.getOptions()`, so user tweaks to the chart carry over.
+  Single-value charts read their y column from the result's `valueColumnName` (the deduped label), not from `target.displayName`.
 
-### UI color coding
-
-| Element | Value | Color |
-|---|---|---|
-| Source badge | `workflow` | `#7b6fb3` (purple) |
-| Source badge | `function` | `#4a90d9` (blue) |
-| Source badge | `raw` | `#8a8a8a` (grey) |
-| Confidence chip | `exact` | `#3cb173` (green) |
-| Confidence chip | `normalized` | `#d9a544` (yellow) |
-| Confidence chip | `fuzzy` | `#d97b44` (orange) |
-| Exclusion chip | error | `#fbeaea` bg / `#a94442` text (red) |
+  Column multi-value mode scales the minimum chart height by the number of value columns (`250px` per value); multi-scalar uses a flat minimum (one chart, not stacked series).
+- **Export** (`exportComparison`): `snapshotData` clones `chartDf` and captures the chart with its current options (`chartViewer.getOptions()`), so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (`snapshotView` — adds a table view of the snapshot to the workspace) and SAVE & SHARE (`saveAndShare` — a serialized layout captured via `captureTableLayout` and handed with the table to the platform project-save dialog, which handles upload, layout linking, and sharing). The save-dialog plumbing (`canSaveProject`, `showProjectSaveDialog`, `captureTableLayout`) is shared with the RFV project export in `src/project-export.ts`; when the platform has no save-dialog API, the dialog degrades to OPEN IN WORKSPACE only.
 
 ## Entry points and tests
 

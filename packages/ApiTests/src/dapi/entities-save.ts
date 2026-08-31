@@ -11,6 +11,7 @@ category('Dapi: entities.save (polymorphic)', () => {
   test('Project: save via entities.save round-trips via projects.find', async () => {
     const project = DG.Project.create();
     project.name = `entities_save_project_${DG.Utils.randomString(6)}`;
+    project.description = 'saved from entities.save';
     const saved = await grok.dapi.entities.save(project) as _DG.Project;
     created.push(saved);
     expect(!!saved.id, true);
@@ -18,6 +19,7 @@ category('Dapi: entities.save (polymorphic)', () => {
     const reloaded = await grok.dapi.projects.find(saved.id);
     expect(reloaded.id, saved.id);
     expect(reloaded.name, project.name);
+    expect(reloaded.description, project.description);
   }, {owner: 'aparamonov@datagrok.ai'});
 
   test('DataConnection: save via entities.save round-trips via connections.find', async () => {
@@ -50,4 +52,4 @@ category('Dapi: entities.save (polymorphic)', () => {
     created.length = 0;
   });
 
-}, {owner: 'aparamonov@datagrok.ai', node: true});
+}, {owner: 'aparamonov@datagrok.ai'});

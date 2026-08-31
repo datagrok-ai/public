@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/sci-comp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "author": {
     "name": "Viktor Makarichev",
     "email": "vmakarichev@datagrok.ai"
@@ -8,7 +12,7 @@
     "access": "public"
   },
   "license": "MIT",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "friendlyName": "Scientific Computing",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

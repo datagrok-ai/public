@@ -733,5 +733,144 @@ export async function setViewerProps(
 export function finishSpec(prefix = 'Step failures'): void {
   if (stepErrors.length === 0) return;
   const summary = stepErrors.map((e: StepError) => `- ${e.step}: ${e.error}`).join('\n');
+  // drain: the array is worker-global, and a leftover failure would fail every later test
+  stepErrors.length = 0;
   throw new Error(`${prefix}:\n${summary}`);
+}
+
+// ---------------------------------------------------------------------------
+// 11. Legend lifecycle helpers — frame-bound legend observability.
+//
+//     These replace `waitForTimeout` in legend specs: the legend is rebuilt inside
+//     the viewer's render(), so `frame` stops advancing exactly when it is settled.
+// ---------------------------------------------------------------------------
+
+export interface LegendSectionState {
+  id: string;
+  items: number;
+  header: string | null;
+  selected: number[];
+}
+
+export interface LegendState {
+  /** 'hidden' | 'docked' | 'corner' | 'miniIcon' | 'tooltip'. */
+  mode: string;
+  /** '', 'left' | 'right' | 'top' | 'bottom' | 'leftTop' | 'rightTop' | ... */
+  slot: string;
+  visible: boolean;
+  box: {left: number; top: number; width: number; height: number} | null;
+  dockedInset: {left: number; top: number; width: number; height: number} | null;
+  /** Advances once per committed legend frame. */
+  frame: number;
+  /** Layout passes since attach. Equal to `frame` when there is no double layout. */
+  layoutPasses: number;
+  items: number;
+  filtering: boolean;
+  metricsCacheMisses: number;
+  sections: LegendSectionState[];
+}
+
+/** Reads the viewer's legend state via the `getLegendState` function on the Legend widget. */
+export async function getLegendState(page: Page, viewerType: string): Promise<LegendState | null> {
+  return await page.evaluate((vt) => {
+    const tv = (window as any).grok.shell.tv;
+    const v = tv?.viewers?.find((x: any) => x.type === vt);
+    const root = v?.root?.querySelector('[name="legend"]');
+    if (!root) return null;
+    const num = (a: string) => Number(root.getAttribute(a) ?? '0');
+    const sections = Array.from(root.querySelectorAll('[data-section]')) as HTMLElement[];
+    const r = root.getBoundingClientRect();
+    const vr = v.root.getBoundingClientRect();
+    return {
+      mode: root.getAttribute('data-legend-mode') ?? 'hidden',
+      slot: root.getAttribute('data-legend-slot') ?? '',
+      visible: root.getAttribute('data-legend-visible') === 'true',
+      box: {left: r.left - vr.left, top: r.top - vr.top, width: r.width, height: r.height},
+      dockedInset: null,
+      frame: num('data-legend-frame'),
+      layoutPasses: num('data-legend-frame'),
+      items: num('data-legend-items'),
+      filtering: root.getAttribute('data-legend-filtering') === 'true',
+      metricsCacheMisses: 0,
+      sections: sections.map((s) => ({
+        id: s.getAttribute('data-section') ?? '',
+        items: Number(s.getAttribute('data-section-items') ?? '0'),
+        header: s.getAttribute('data-section-header'),
+        selected: [],
+      })),
+    };
+  }, viewerType);
+}
+
+/** The `data-item-key` of every item in a section, in DOM order. */
+export async function getLegendItemKeys(page: Page, viewerType: string, sectionId = 'main'): Promise<string[]> {
+  return await page.evaluate(({vt, sid}) => {
+    const tv = (window as any).grok.shell.tv;
+    const v = tv?.viewers?.find((x: any) => x.type === vt);
+    const section = v?.root?.querySelector(`[data-section="${sid}"]`);
+    if (!section) return [];
+    return (Array.from(section.querySelectorAll('[data-item-key]')) as HTMLElement[])
+      .map((e) => e.getAttribute('data-item-key') ?? '');
+  }, {vt: viewerType, sid: sectionId});
+}
+
+export async function legendFrameCount(page: Page, viewerType: string): Promise<number> {
+  return (await getLegendState(page, viewerType))?.frame ?? -1;
+}
+
+/**
+ * Resolves once `frame` has been stable across two polls — the deterministic
+ * replacement for `waitForTimeout` when waiting on the legend.
+ */
+export async function waitForLegendIdle(page: Page, viewerType: string, timeoutMs = 10000): Promise<LegendState | null> {
+  const deadline = Date.now() + timeoutMs;
+  let previous = -1;
+  let stable = 0;
+  while (Date.now() < deadline) {
+    const state = await getLegendState(page, viewerType);
+    // A placement decided mid-resize is provisional: the viewer re-resolves it ~250ms after
+    // the size settles. Two equal frames 150ms apart used to return that transient value.
+    stable = state && state.frame === previous ? stable + 1 : 0;
+    if (stable >= 2 && state) return state;
+    previous = state?.frame ?? -1;
+    await page.waitForTimeout(200);
+  }
+  return await getLegendState(page, viewerType);
+}
+
+/** Resizes the viewer's dock node, then waits for the legend to settle. */
+export async function resizeViewer(page: Page, viewerType: string, w: number, h: number): Promise<void> {
+  await page.evaluate(({vt, width, height}) => {
+    const tv = (window as any).grok.shell.tv;
+    const v = tv?.viewers?.find((x: any) => x.type === vt);
+    if (!v) return;
+    const host = v.root.parentElement ?? v.root;
+    host.style.width = `${width}px`;
+    host.style.height = `${height}px`;
+    window.dispatchEvent(new Event('resize'));
+  }, {vt: viewerType, width: w, height: h});
+  await waitForLegendIdle(page, viewerType);
+}
+
+/** Drags the docked-legend splitter by (dx, dy). */
+export async function dragLegendSplitter(page: Page, viewerType: string, dx: number, dy: number): Promise<void> {
+  // Dispatched on the element rather than driven with page.mouse: a docked legend puts its
+  // splitter on the viewer's outer edge, where the context panel overlaps it, so an OS-level
+  // click lands on the panel. The drag handler under test is the same either way.
+  await page.evaluate(({vt, ddx, ddy}) => {
+    const tv = (window as any).grok.shell.tv;
+    const v = tv?.viewers?.find((x: any) => x.type === vt);
+    const sp = v?.root?.querySelector('[name="legend-splitter"]') as HTMLElement;
+    if (!sp) throw new Error(`No legend splitter in ${vt}`);
+    const r = sp.getBoundingClientRect();
+    const cx = r.x + r.width / 2;
+    const cy = r.y + r.height / 2;
+    const ev = (type: string, px: number, py: number) => new MouseEvent(type,
+      {bubbles: true, cancelable: true, view: window, clientX: px, clientY: py});
+    sp.dispatchEvent(ev('mousedown', cx, cy));
+    for (let i = 1; i <= 8; i++)
+      document.dispatchEvent(ev('mousemove', cx + ddx * i / 8, cy + ddy * i / 8));
+    document.dispatchEvent(ev('mouseup', cx + ddx, cy + ddy));
+  }, {vt: viewerType, ddx: dx, ddy: dy});
+  await waitForLegendIdle(page, viewerType);
 }

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: [upload-save-reopen-golden, share_with_recipient_open, rename_project]
-realizes: [views.projects]
+realizes: [views.projects, sharing.share-dialog]
 realized_as:
   - projects-ui-smoke-spec.ts
 pyramid_layer: ui-smoke

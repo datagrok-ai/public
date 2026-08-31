@@ -37,8 +37,8 @@ GROK_SRC="${GROK_SRC:=$current_dir/../../}"
 
 # Base project directory and executable
 GROK_CONNECT_DIR=grok_connect
-GROK_CONNECT=grok_connect-2.7.0.jar
 TARGET_DIR=${GROK_CONNECT_DIR}/target
+grok_connect_jar() { basename "$(ls ${TARGET_DIR}/grok_connect-*.jar | head -1)"; }
 
 set -e
 if [ "$1" == "shell" ]; then
@@ -50,7 +50,8 @@ if [ "$1" == "shell" ]; then
         mvn -Dmaven.test.skip=true package
     fi
 
-    java -Xmx4g -classpath ${GROK_CONNECT_DIR}/lib/*:${TARGET_DIR}/${GROK_CONNECT} grok_connect.GrokConnectShell "$@"
+    GROK_CONNECT=$(grok_connect_jar)
+    java -Xmx4g -classpath ${TARGET_DIR}/${GROK_CONNECT}:${GROK_CONNECT_DIR}/lib/* grok_connect.GrokConnectShell "$@"
 else
     # Remove target
     rm -rf ${TARGET_DIR}
@@ -77,6 +78,7 @@ else
 
     # Pack into zip
     cd $GROK_SRC/public/connectors || exit 1
+    GROK_CONNECT=$(grok_connect_jar)
     ZIP_TMP_DIR=${TARGET_DIR}/grok_connect
     mkdir ${ZIP_TMP_DIR}
     echo "java -Xmx4g -classpath ${GROK_CONNECT}:lib/* grok_connect.GrokConnect" > ${ZIP_TMP_DIR}/run_grok_connect.sh

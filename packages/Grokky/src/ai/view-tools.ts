@@ -161,12 +161,13 @@ function matchScore(query: string, ...haystacks: (string | null | undefined)[]):
 }
 
 /** Compact, LLM-friendly description of a function: name, description, and inputs
- * (the `view` input is injected automatically at call time, so it is not listed). */
+ * (the `view`/`widget` inputs are injected automatically at call time, so they are not listed). */
 function funcBrief(f: DG.Func): object {
   let inputs: object[] = [];
   try {
     inputs = f.inputs
-      .filter((p) => p.name !== 'view' && (p.propertyType as string) !== 'view')
+      .filter((p) => p.name !== 'view' && (p.propertyType as string) !== 'view' &&
+        p.name !== 'widget' && (p.propertyType as string) !== 'widget')
       .map((p) => ({
         name: p.name,
         type: p.propertyType,
@@ -220,9 +221,16 @@ async function invokeViewFunction(args: any): Promise<any> {
     };
   }
   const params: {[key: string]: any} = {...(args?.parameters ?? {})};
+  // the targeted widget (when a ref was passed) — injected into `widget`-typed inputs,
+  // the calling convention of shared widget-action vocabularies (see DomainGrid)
+  const targetWidget = args?.widget != null && args.widget !== '' ? resolveWidgetRef(view, args.widget) : null;
   for (const inp of f.inputs) {
-    if (!(inp.name in params) && (inp.name === 'view' || (inp.propertyType as string) === 'view'))
+    if (inp.name in params)
+      continue;
+    if (inp.name === 'view' || (inp.propertyType as string) === 'view')
       params[inp.name] = view;
+    else if (inp.name === 'widget' || (inp.propertyType as string) === 'widget')
+      params[inp.name] = targetWidget ?? view;
   }
   const result = await f.apply(params);
   return {success: true, ...(result != null ? {result: serializeResult(result)} : {})};
@@ -240,6 +248,18 @@ const invocationSchema = {
     ...widgetRefProperty,
   },
   required: ['name'],
+};
+
+const confirmSchema = {
+  type: 'object',
+  properties: {
+    action: {type: 'string', description: 'Short imperative label, at most three words, e.g. "Delete project" — the card title.'},
+    name: {type: 'string', description: 'Entity name shown to the user.'},
+    owner: {type: 'string', description: 'Owner login or display name.'},
+    created: {type: 'string', description: 'Creation date as YYYY-MM-DD.'},
+    details: {type: 'string', description: 'Any other user-facing facts, e.g. "3 tables; shared with Chemists". Never ids.'},
+  },
+  required: ['action', 'name'],
 };
 
 /** The meta-tools are static — same defs every turn (prompt-cache friendly);
@@ -282,6 +302,14 @@ const VIEW_TOOL_DEFS: ViewToolDef[] = [
     description: 'Invoke a state-changing function of the current view or one of its widgets ' +
       '(e.g. setQueryAndRun, addFlowNode). Function name and parameters come from list_view_functions.',
     inputSchema: invocationSchema,
+  },
+  {
+    name: 'datagrok_confirm',
+    description: 'Ask the user to approve a destructive action (delete, overwrite) after a dryRun ' +
+      'tool response, before repeating that call with its confirm token. The card presents the ' +
+      'facts — do NOT restate them in your message text. Returns {confirmed: boolean}; treat a ' +
+      'timeout or error as not confirmed.',
+    inputSchema: confirmSchema,
   },
 ];
 

@@ -9,7 +9,7 @@ import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName} from './eda-ui';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
-import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
+import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput, addMvaResults, initMvaModelViewer} from './pls/pls-tools';
 import {runOneWayAnova} from './anova/anova-ui';
 import {runTwoSampleTTest} from './ttest/ttest-ui';
 import {runControlComparisons} from './control-comparisons/control-comparisons-ui';
@@ -31,12 +31,16 @@ import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
 import {getLinearRegressionParams, getPredictionByLinearRegression,
   isLinearRegressionApplicable, isLinearRegressionInteractive,
+  packLinearRegressionModel, unpackLinearRegressionModel,
   TOLERANCE} from './regression';
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
+
+import {initSvm, KernelType} from '../wasm/svm';
+import {SVM} from './svm';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
@@ -59,6 +63,7 @@ export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async init(): Promise<void> {
     await initXgboost();
+    await initSvm();
   }
 
 
@@ -345,6 +350,49 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    'description': 'Add the PLS-based multivariate analysis results to the table.',
+    'meta': {'role': 'transform'},
+  })
+  static async multivariateAnalysisTransform(
+    table: DG.DataFrame,
+    // names, not a column list: the platform passes column_list values of a replayed creation script as strings
+    featureNames: string[],
+    @grok.decorators.param({'type': 'column', 'options': {'type': 'numerical'}}) predict: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'description': 'Number of latent factors the model extracts from the predictors.'}}) components: number,
+    @grok.decorators.param({'options': {'description': 'Include squared terms as additional predictors.'}}) isQuadratic: boolean,
+    @grok.decorators.param({'options': {'description': 'Add just the PLS components.'}}) componentsOnly: boolean,
+    xScoreNames: string[],
+    yScoreNames: string[],
+    predictionName: string,
+    analysisTableName: string,
+    explVarTableName: string): Promise<void> {
+    await addMvaResults({
+      table: table,
+      features: DG.DataFrame.fromColumns(featureNames.map((name) => table.col(name)!)).columns,
+      predict: predict,
+      components: components,
+      isQuadratic: isQuadratic,
+      names: undefined,
+    }, {
+      xScores: xScoreNames,
+      yScores: yScoreNames,
+      prediction: predictionName,
+      analysisTable: analysisTableName,
+      explVarTable: explVarTableName,
+    }, componentsOnly);
+  }
+
+
+  @grok.decorators.func({
+    'description': 'Restore the multivariate analysis model viewer.',
+  })
+  static mvaModelInitFunction(
+    @grok.decorators.param({'type': 'viewer'}) viewer: DG.Viewer): void {
+    initMvaModelViewer(viewer);
+  }
+
+
+  @grok.decorators.func({
     'meta': {
       'demoPath': 'Compute | Multivariate Analysis',
     },
@@ -424,7 +472,7 @@ export class PackageFunctions {
     const features = df.columns;
     const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, TOLERANCE);
 
-    return new Uint8Array(params.buffer);
+    return packLinearRegressionModel(params, features.names());
   }
 
 
@@ -440,8 +488,8 @@ export class PackageFunctions {
     df: DG.DataFrame,
     @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): DG.DataFrame {
     const features = df.columns;
-    const params = new Float32Array((model as Uint8Array).buffer);
-    return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
+    const {params, names} = unpackLinearRegressionModel(model as Uint8Array);
+    return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params, names)]);
   }
 
 
@@ -698,6 +746,80 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
     return XGBooster.isApplicable(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'train',
+    },
+    'name': 'trainSVM',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainSVM(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'choices': ['Linear', 'Polynomial', 'RBF', 'Sigmoid'], 'initialValue': 'RBF', 'description': 'Kernel function: linear, polynomial, RBF (radial basis function), or sigmoid.'}}) kernel: string,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Penalty', 'min': '0.001', 'max': '1000', 'initialValue': '1', 'description': 'Penalty for misclassifying training points. Higher values fit the training data more tightly and risk overfitting, lower values give a smoother, more general model.'}}) cost: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels. Leave 0 to use 1/number-of-features.'}}) gamma: number,
+    @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.'}}) degree: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Offset', 'min': '-100', 'max': '100', 'initialValue': '0', 'description': 'Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.'}}) coef0: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number): Promise<Uint8Array> {
+    const kernelType = ({
+      'Linear': KernelType.Linear,
+      'Polynomial': KernelType.Poly,
+      'RBF': KernelType.Rbf,
+      'Sigmoid': KernelType.Sigmoid,
+    } as Record<string, KernelType>)[kernel] ?? KernelType.Rbf;
+
+    const model = new SVM();
+    await model.fit(df.columns, predictColumn, {kernelType, C: cost, gamma, degree, coef0, epsilon});
+
+    return model.toBytes();
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply SVM',
+    'description': 'Predict the target for a table using a trained support vector machine (SVM) model.',
+  })
+  static applySVM(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): DG.DataFrame {
+    const unpackedModel = new SVM(model);
+    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableSVM',
+  })
+  static isApplicableSVM(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return SVM.isApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'SVM',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveSVM',
+  })
+  static isInteractiveSVM(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return SVM.isInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({

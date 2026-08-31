@@ -1,0 +1,119 @@
+/* Choice input skin — native select with the platform dropdown affordance (ui.css
+   select.ui-input-editor) plus the compact multi-choice list.
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+select.u2-input-editor {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* the platform's own choice metrics (ui.css:286-304): a fixed 200px box whose right 20px belong
+     to the dropdown affordance, and 4px of text inset only inside a form (ui.css:281-284) */
+  width: 200px;
+  min-width: 0;
+  padding: 0 20px 0 0;
+  border-bottom: var(--dg-input-border);
+  cursor: pointer;
+  /* Chevron drawn from two gradients rather than a data-URI icon: a mask would hide the
+     select's own text, pseudo-elements don't render on <select>, and an inline SVG can't be
+     tinted from a token. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dg-text-color-light) 50%),
+    linear-gradient(135deg, var(--dg-text-color-light) 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-position: right 9px center, right 4px center;
+  background-size: 5px 5px, 5px 5px;
+}
+
+.u2-form select.u2-input-editor {
+  padding-left: var(--dg-space-s);
+}
+
+select.u2-input-editor:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+select.u2-input-editor.u2-invalid,
+select.u2-input-editor.u2-invalid:focus {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+.u2-input-disabled select.u2-input-editor {
+  background-image: none;
+}
+
+/* multi choice */
+.u2-input-root[data-u2='multi-choice-input'] {
+  align-items: flex-start;
+}
+
+/* the platform's check list is a bare column — no frame, no rail underline — of 20px rows whose
+   boxes sit 4px in and 8px off their labels (`multi_choice_input.dart`, ui.css:903) */
+div.u2-input-editor.u2-multi-choice {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  padding: var(--dg-space-s) 0;
+  border: none;
+}
+
+.u2-multi-choice-item {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* one shared rule keeps the summary checkbox pixel-flush over the item checkbox column */
+.u2-multi-choice-item > .u2-input-checkbox,
+.u2-multi-choice-summary > .u2-input-checkbox {
+  margin: 0 var(--dg-space-m) 0 var(--dg-space-s);
+}
+
+.u2-multi-choice-summary {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  white-space: nowrap;
+}
+
+.u2-multi-choice-summary:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-multi-choice-summary-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-multi-choice-summary-toggle:focus-visible {
+  outline: var(--dg-focus-ring);
+}
+
+.u2-multi-choice-chevron {
+  display: flex;
+  align-items: center;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  transition: transform 100ms ease;
+}
+
+.u2-multi-choice-summary-toggle[aria-expanded='false'] .u2-multi-choice-chevron {
+  transform: rotate(-90deg);
+}
+
+.u2-multi-choice-item:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-multi-choice-empty {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  white-space: nowrap;
+}

@@ -1,9 +1,5 @@
-/** Datagrok selection semantics on the canvas (mirrors d4 `selectRows` /
- *  `areaSelector`): plain click selects exclusively, Shift+click adds,
- *  Ctrl+click toggles, Ctrl+Shift+click removes; Shift+drag draws a marquee
- *  that ADDS the covered nodes (Ctrl at mouse-up removes them instead);
- *  Ctrl+A / Ctrl+Shift+A select / deselect everything. Exercised through
- *  real PointerEvent / KeyboardEvent dispatch on the live editor DOM. */
+/** Datagrok selection semantics on the canvas (mirrors d4 `selectRows` / `areaSelector`),
+ *  exercised through real PointerEvent / KeyboardEvent dispatch on the live editor DOM. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import * as ui from 'datagrok-api/ui';
 
@@ -28,16 +24,12 @@ function pointer(target: EventTarget, type: string, init: PointerEventInit): voi
 
 const tick = (ms = 30): Promise<void> => new Promise((res) => setTimeout(res, ms));
 
-/** The rete area holder — where real empty-canvas pointerdowns land. Events
- *  dispatched on the container ITSELF would also fire the AreaPlugin's own
- *  same-element listeners (stopPropagation can't suppress those), starting a
- *  phantom pan whose click-release clears the selection. */
+/** Dispatch on the area holder, not the container — the container's own AreaPlugin listeners would start a phantom pan whose click-release clears the selection. */
 function canvasBg(e: TestEditor): HTMLElement {
   return e.container.firstElementChild as HTMLElement;
 }
 
-/** Click a node's title area with the given modifiers. The tick between down
- *  and up lets rete's async `nodepicked` add settle, as a real click would. */
+/** The tick between down and up lets rete's async `nodepicked` add settle, as a real click would. */
 async function clickNode(e: TestEditor, node: FlowNode, init: PointerEventInit = {}): Promise<void> {
   const el = nodeEl(e, node);
   const r = el.getBoundingClientRect();
@@ -48,10 +40,7 @@ async function clickNode(e: TestEditor, node: FlowNode, init: PointerEventInit =
   await tick();
 }
 
-/** Shift+drag a marquee between two client points on the empty canvas. All
- *  three events target the canvas background (not `window`): real events
- *  reach window listeners through the capture phase, so the editor's
- *  window-capture handlers must run before rete's window-bubble ones. */
+/** Events target the canvas background (not `window`) so the editor's window-capture handlers run before rete's window-bubble ones, as with real events. */
 async function dragMarquee(e: TestEditor, from: {x: number; y: number}, to: {x: number; y: number},
   upInit: PointerEventInit = {}): Promise<void> {
   pointer(canvasBg(e), 'pointerdown', {clientX: from.x, clientY: from.y, shiftKey: true});
@@ -62,7 +51,6 @@ async function dragMarquee(e: TestEditor, from: {x: number; y: number}, to: {x: 
   await tick();
 }
 
-/** Client-space rectangle that covers the given nodes with a margin. */
 function marqueeOver(e: TestEditor, nodes: FlowNode[]): {from: {x: number; y: number}; to: {x: number; y: number}} {
   const rects = nodes.map((n) => nodeEl(e, n).getBoundingClientRect());
   return {
@@ -98,13 +86,10 @@ category('Flow: selection', () => {
       expect(await until(() => isSelected(e, a)), true, 'first click selects');
       expect(fires, 1, 'first click fires once');
 
-      // Re-clicks and grabs of the current node change nothing — no re-fire,
-      // so the host never rebuilds its panels for a no-op.
       await clickNode(e, a);
       await clickNode(e, a);
       expect(fires, 1, 're-clicks do not re-fire');
 
-      // Deselect all, then click again → a real change fires again.
       await flow.unselectAllNodes();
       expect(await until(() => !isSelected(e, a)), true, 'deselected');
       await clickNode(e, a);
@@ -117,9 +102,6 @@ category('Flow: selection', () => {
   });
 
   test('isNodeContextCurrent veto: a stale host context re-fires on re-click', async () => {
-    // The dedupe must ask the host whether its panels still show the node:
-    // staying selected does not mean the context panel / preview do (tab
-    // switches and autoruns change both without touching the selection).
     const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
     document.body.appendChild(container);
     let fires = 0;
@@ -140,7 +122,7 @@ category('Flow: selection', () => {
       await clickNode(e, a);
       expect(fires, 1, 'context current → re-click stays deduped');
 
-      contextCurrent = false; // the host's panels no longer show the node
+      contextCurrent = false;
       await clickNode(e, a);
       expect(fires, 2, 'context stale → re-click re-fires');
 
@@ -157,7 +139,7 @@ category('Flow: selection', () => {
     const e = makeEditor();
     try {
       const [a, b, c] = await threeNodes(e);
-      await e.flow.selectNode(c.id); // pre-selected, outside the marquee
+      await e.flow.selectNode(c.id);
       const {from, to} = marqueeOver(e, [a, b]);
       await dragMarquee(e, from, to);
       expect(await until(() => isSelected(e, a) && isSelected(e, b)), true, 'a and b selected');
@@ -234,9 +216,7 @@ category('Flow: selection', () => {
   });
 
   test('marquee, Ctrl+A, and modifier clicks report onSelectionChanged', async () => {
-    // The marquee's release is swallowed (stopImmediatePropagation) before any
-    // container/window listener sees it — hosts that track the selection (the
-    // suggestion pane) rely on this callback instead.
+    // The marquee's release is swallowed by stopImmediatePropagation — hosts must rely on this callback.
     const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
     document.body.appendChild(container);
     let changes = 0;
@@ -283,7 +263,6 @@ category('Flow: selection', () => {
       const key = (k: string, ctrl = false): boolean => window.dispatchEvent(
         new KeyboardEvent('keydown', {key: k, ctrlKey: ctrl, bubbles: true, cancelable: true}));
 
-      // Nothing selected → arrows do nothing.
       const ax = a.pos.x;
       key('ArrowRight');
       await new Promise((r) => setTimeout(r, 50));
@@ -310,9 +289,6 @@ category('Flow: selection', () => {
   });
 
   test('a nudge is never snapped — a clicked (picked) off-grid node moves by exactly 10', async () => {
-    // Clicking a node makes it *picked*, and the drag snap applies to picked
-    // nodes — so an off-grid node's 10px nudge used to be re-rounded to the
-    // 20px grid (537 → 547 → snapped 540) or captured by an alignment guide.
     const e = makeEditor();
     try {
       const [a] = await threeNodes(e);

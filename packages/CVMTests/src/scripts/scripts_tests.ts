@@ -37,7 +37,9 @@ for (const lang of languages) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    }, {stressTest: serverSideLanguages.includes(lang), node: true, timeout: 120000 /* long timeout for first test, because of kernel start */});
+      // First test of the category, so it pays the kernel cold start. 120s covered that on an
+      // idle stand but not while the rest of the suite loads the same one.
+    }, {stressTest: serverSideLanguages.includes(lang), node: true, timeout: 300000});
 
     test('Long string', async () => {
       const str = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -147,7 +149,11 @@ for (const lang of languages) {
           {'string_input': escapingTestStrings[i]});
         expect(escapingTestStrings[i], result);
       }
-    });
+      // One server round-trip per string, fourteen of them one after another, against the 30s
+      // default. Python and R come in around 25-35s; Octave takes ~14s per call on a warm
+      // reused kernel and needs ~200s for the set, which is a real slowdown of its own rather
+      // than anything this test does — the budget is sized so it stops masquerading as a flake.
+    }, {timeout: 420000});
 
     if (lang !== 'Grok') {
       test('String list input', async () => {

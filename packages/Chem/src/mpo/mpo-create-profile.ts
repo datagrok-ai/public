@@ -6,10 +6,12 @@ import {Subscription} from 'rxjs';
 
 import {
   DesirabilityProfile,
+  getMpoScoreColumnName,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
 
+import {attachMpoProfileAi} from '../ai-tools/mpo';
 import {MpoContextPanel} from './mpo-context-panel';
 import {
   MpoMethod,
@@ -102,11 +104,12 @@ export class MpoProfileCreateView {
     );
 
     this.initControls(showMethod);
+    attachMpoProfileAi(this);
     this.attachLayout();
     this.listenForProfileChanges();
   }
 
-  private get activeView(): DG.View {
+  get activeView(): DG.View {
     return this.isEditMode ? this.view : this.tableView;
   }
 
@@ -118,7 +121,7 @@ export class MpoProfileCreateView {
     setupMpoBreadcrumbs(this.activeView, this.displayName);
   }
 
-  private get isManualMode(): boolean {
+  get isManualMode(): boolean {
     return !this.showMethod || this.methodInput?.value !== MpoMethod.DataDriven;
   }
 
@@ -158,7 +161,7 @@ export class MpoProfileCreateView {
     this.aggregationField = field(this.editor.aggregationInput);
     controls.push(this.aggregationField);
 
-    this.saveButton = ui.button('Save', () => this.saveProfile());
+    this.saveButton = ui.button('Save', () => this.save());
     this.resetButton = ui.button('Reset', () => this.resetProfile());
     this.setModified(false);
 
@@ -179,24 +182,7 @@ export class MpoProfileCreateView {
       return el;
     };
 
-    this.headerEl = editable(ui.h1(this.displayName), () => {
-      const oldName = this.profile.name;
-      const newName = this.textOf(this.headerEl);
-
-      if (!newName || oldName === newName) {
-        this.profile.name = newName;
-        return;
-      }
-
-      if (this.df) {
-        const oldCol = this.df.col(oldName);
-        const newColExists = this.df.col(newName);
-        if (oldCol && !newColExists)
-          oldCol.name = newName;
-      }
-
-      this.profile.name = newName;
-    }, true);
+    this.headerEl = editable(ui.h1(this.displayName), () => this.applyProfileName(this.textOf(this.headerEl)), true);
     this.headerEl.classList.add('chem-profile-header');
 
     this.descEl = editable(ui.h3(this.profile.description || ''), () => {
@@ -314,7 +300,7 @@ export class MpoProfileCreateView {
     }
   }
 
-  private async saveProfile(): Promise<void> {
+  async save(): Promise<boolean> {
     const result = await MpoProfileManager.saveProfile(this.profile, this.fileName);
     if (result.saved) {
       this.fileName = result.fileName;
@@ -323,6 +309,45 @@ export class MpoProfileCreateView {
       this.tableView.name = this.view.name = this.displayName;
       this.setupBreadcrumbs();
     }
+    return result.saved;
+  }
+
+  private applyProfileName(newName: string): void {
+    const oldName = this.profile.name;
+    if (newName && oldName !== newName && this.df) {
+      const oldCol = this.df.col(getMpoScoreColumnName(oldName));
+      if (oldCol && !this.df.col(getMpoScoreColumnName(newName)))
+        oldCol.name = getMpoScoreColumnName(newName);
+    }
+    this.profile.name = newName;
+  }
+
+  get isModified(): boolean {return this.profileModified;}
+
+  setDataset(df: DG.DataFrame | null): void {
+    this.datasetInput!.value = df;
+  }
+
+  async setMethod(method: MpoMethod): Promise<void> {
+    if (this.methodInput!.value === method)
+      return;
+    this.suppressInputHandlers = true;
+    this.methodInput!.value = method;
+    this.suppressInputHandlers = false;
+    await this.onMethodChanged();
+  }
+
+  setProfileName(name: string): void {
+    this.applyProfileName(name);
+    this.headerEl.innerText = this.displayName;
+    this.setModified(true);
+  }
+
+  setProfileDescription(text: string): void {
+    this.profile.description = text;
+    this.descEl.innerText = text;
+    this.updateDescPlaceholder();
+    this.setModified(true);
   }
 
   private textOf(el: HTMLElement): string {
@@ -339,7 +364,7 @@ export class MpoProfileCreateView {
     this.resetButton!.classList.toggle('d4-disabled', !modified);
   }
 
-  private async resetProfile(): Promise<void> {
+  async resetProfile(): Promise<void> {
     this.profile = structuredClone(this.originalProfile);
     this.setModified(false);
     this.updatingLayout = true;

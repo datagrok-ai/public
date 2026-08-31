@@ -8,15 +8,18 @@ test.describe.configure({ mode: 'serial' });
 test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async ({ page }) => {
   test.setTimeout(180_000);
 
+  // Prefix is this file's own — the stickymeta specs run in parallel and each sweeps its
+  // prefix clean (see apiDeleteAllTestSchemas).
+  const PREFIX = 'PW_SM1_';
   const suffix = H.uniqueSuffix();
-  const typeName = `PW_SM_Type_${suffix}`;
-  const schemaName = `PW_SM_Schema_${suffix}`;
+  const typeName = `${PREFIX}Type_${suffix}`;
+  const schemaName = `${PREFIX}Schema_${suffix}`;
   const typeCheckbox = `[name="prop-view-${typeName.toLowerCase()}"]`;
 
   try {
     await H.gotoHome(page);
     await H.setupEnv(page);
-    await H.apiDeleteAllTestSchemas(page); // defensive: clear leftover PW_SM_ schemas from crashed runs
+    await H.apiDeleteAllTestSchemas(page, PREFIX); // defensive: clear leftovers from crashed runs
 
     // ---- 1.1 Create an entity type (Name + Matching expression, both required) ----
     await H.gotoStickyMeta(page, 'Types');
@@ -35,7 +38,9 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
 
     await typeDialog.locator('[name="input-Matching-expression"]').click();
     await page.keyboard.press('Control+A');
-    await page.keyboard.type('semtype=molecule', { delay: 10 });
+    // Nothing here depends on what the expression matches, and a molecule matcher would put this
+    // schema into spec 02's Sticky meta dialog while both run — a run-unique source tag cannot.
+    await page.keyboard.type(`source=${PREFIX}${suffix}`, { delay: 10 });
     await expect(typeDialog.locator('[name="button-OK"]')).not.toHaveClass(/disabled/);
 
     await H.clickDialogButton(page, 'dialog-Create-a-new-entity-type', 'button-OK');

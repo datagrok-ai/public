@@ -13,10 +13,10 @@ import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
+import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
-import {_package} from '../package';
 
 interface ExecutionPlan {
   plan: string[];
@@ -166,8 +166,8 @@ export async function askWiki(question: string, sessionId?: string): Promise<DG.
 
 // sets up the ui button for the input
 export function setupSearchUI() {
-  if (!grok.ai.config.configured) {
-    console.warn('LLM API key is not set up. Search UI will not have AI assistance.');
+  if (!ClaudeRuntimeClient.getInstance().available) {
+    console.warn('Claude runtime container not found. Search UI will not have AI assistance.');
     return;
   }
 
@@ -211,13 +211,13 @@ export function setupSearchUI() {
     });
   }
 
-  const retries = 0;
+  let retries = 0;
   const intervalId = setInterval(() => {
     const searchInput = searchForSearchBox();
     if (searchInput) {
       clearInterval(intervalId);
       initInput(searchInput);
-    } else if (retries >= maxRetries) {
+    } else if (++retries >= maxRetries) {
       clearInterval(intervalId);
       console.warn('Search input box not found after maximum retries.');
     }
@@ -235,7 +235,7 @@ export async function aiCombinedSearch(prompt: string) {
 // setQueryAndRun + the meta.viewType-registered SQL schema functions) are reached
 // by the singleton panel through the view-function meta-tools.
 export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return false;
   initAIWindow();
   return true;
@@ -290,6 +290,24 @@ export async function runPromptWithLifecycle(
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
+function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
+  return ui.divV([
+    ui.divText(input.action ?? 'Confirm action', 'grokky-strip grokky-strip-danger'),
+    ui.divV([
+      ui.tableFromMap({
+        ...(input.name ? {Name: input.name} : {}),
+        ...(input.owner ? {Owner: input.owner} : {}),
+        ...(input.created ? {Created: input.created} : {}),
+        ...(input.details ? {Details: input.details} : {}),
+      }),
+      ui.divH([
+        ui.bigButton('OK', () => resolve(true)),
+        ui.button('CANCEL', () => resolve(false)),
+      ]),
+    ], 'grokky-auth-body'),
+  ], 'grokky-auth-widget');
+}
+
 function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
   const errorDiv = ui.divText('', 'grokky-auth-error');
 
@@ -323,12 +341,12 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
   const pendingStrip = ui.divV([
     ui.divText('Session expired'),
     ui.divText('Open the auth page and paste the code below'),
-  ], 'grokky-auth-strip-pending');
+  ], 'grokky-strip grokky-strip-pending');
 
   const successStrip = ui.divV([
     ui.divText('Session renewed'),
     ui.divText('Re-send your message to continue'),
-  ], 'grokky-auth-strip-success');
+  ], 'grokky-strip grokky-strip-success');
   successStrip.style.display = 'none';
 
   const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
@@ -397,8 +415,11 @@ async function streamOnce(
     let segmentStart = 0;
     let toolStatus = '';
     let nextBlockIndex = 0;
+    const execCodes: string[] = [];
+    let preRevisionExecCodes: string[] | null = null;
     const subs: {unsubscribe: () => void}[] = [];
     const cleanup = () => subs.forEach((s) => s.unsubscribe());
+    let resentAfterReset = false;
 
     const forSession = <T extends {sessionId: string}>(
       source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
@@ -418,12 +439,7 @@ async function streamOnce(
     try {
       const client = ClaudeRuntimeClient.getInstance();
       const nativeCtx = panel.flushNativeContext();
-      // A conversation restored from history exists only in the browser — the runtime session is
-      // fresh — so the first prompt after a load carries the transcript (one-shot; the SDK session
-      // remembers it from then on).
-      const restoredCtx = panel.flushRestoredContext();
-      const enrichedUserPrompt = (restoredCtx ? restoredCtx + '\n---\n\n' : '') +
-        (nativeCtx ? nativeCtx + userPrompt : userPrompt);
+      const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
       // Three static meta-tools let Claude search and invoke the current view's functions
@@ -466,6 +482,7 @@ async function streamOnce(
           toolStatus = '\n\n---\n*Revising…*';
           panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
         }, 1200);
+        preRevisionExecCodes = [...execCodes];
       });
 
 
@@ -483,16 +500,10 @@ async function streamOnce(
         } else if (evt.revision === 'kept')
           toolStatus = ''; // original answer stands; just drop the Revising status
         const fullContent = accumulated || evt.content;
-        if (/Failed to authenticate.*API Error: 401|authentication_error|\/login/i.test(fullContent)) {
-          panel.clearStreaming();
-          panel.appendStreamedElement(buildAuthRenewalWidget(client));
-          cleanup();
-          resolve();
-          return;
-        }
         const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-        await panel.finalizeStreaming(segmentContent, fullContent, view);
+        const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
+        await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
         if (evt.unverified) {
           const warn = 'Not verified — the assistant could not confirm this action took effect.';
           panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
@@ -503,14 +514,15 @@ async function streamOnce(
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
-        if (/401|authentication|credentials|\/login/i.test(evt.message)) {
-          panel.clearStreaming();
-          panel.appendStreamedElement(buildAuthRenewalWidget(client));
-          cleanup();
-          resolve();
-          return;
-        }
         endWithError(`Claude: ${evt.message}`);
+      });
+
+      forSession(client.onAuthRequired, () => {
+        panel.cancelInputRequest();
+        panel.clearStreaming();
+        panel.appendStreamedElement(buildAuthRenewalWidget(client));
+        cleanup();
+        resolve();
       });
 
       forSession(client.onAborted, async () => {
@@ -529,6 +541,8 @@ async function streamOnce(
           chatSession.session.addEngineMessage({role: 'assistant',
             content: [{type: 'text', text: `[executed datagrok_exec]\n${(evt.input.code ?? '').slice(0, 1500)}`}]});
           const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
+          if (evt.input.code && !error)
+            execCodes.push(evt.input.code);
           if (element) {
             panel.appendStreamedElement(element);
             segmentStart = accumulated.length;
@@ -554,6 +568,16 @@ async function streamOnce(
             ...(observed !== undefined ? {observed} : {}),
             ...(error ? {error} : {}),
           });
+          return;
+        }
+        // datagrok_confirm: render the approval card and hold the round-trip until a button is clicked.
+        if (evt.toolName === 'datagrok_confirm') {
+          const confirmed = await new Promise<boolean>((resolve) => {
+            panel.appendStreamedElement(buildConfirmCard(evt.input ?? {}, resolve));
+          });
+          segmentStart = accumulated.length;
+          toolStatus = '';
+          client.respondToInput(sessionId, evt.requestId, {confirmed});
           return;
         }
         // datagrok_show_entities: render entity cards immediately, no user interaction needed.
@@ -600,10 +624,27 @@ async function streamOnce(
       }));
 
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-      client.send(sessionId, prompt, {
-        ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
-        ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+      const sendPrompt = () => {
+        const transcript = resolvedMode === 'bash' || client.isResumable(sessionId) ? '' : panel.restoredTranscript();
+        const message = transcript ? transcript + '\n---\n\n' + prompt : prompt;
+        const options = {
+          ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
+          ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+        };
+        // Queued-task admission (queue-task.ts): the queued call only holds the turn's
+        // admission slot; the turn itself streams over this socket as usual.
+        sendChatTurn(client, sessionId, message, options)
+          .catch((e: any) => endWithError(`Claude: ${e?.message ?? e}`));
+      };
+
+      forSession(client.onSessionReset, () => {
+        if (resentAfterReset)
+          return endWithError('Claude: the session was lost and could not be restored');
+        resentAfterReset = true;
+        sendPrompt();
       });
+
+      sendPrompt();
     } catch (e: any) {
       panel.clearStreaming();
       grok.shell.error(`Claude runtime: ${e.message}`);
@@ -617,7 +658,7 @@ async function streamOnce(
 let _shellAIPanel: AIPanel | null = null;
 
 export function initAIWindow(): AIPanel | null {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return null;
   if (!_shellAIPanel) {
     _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
@@ -642,7 +683,7 @@ export function setupShellAIPanelUI(): void {
 const AI_ICON_SELECTOR = 'i[data-name="ai"]';
 
 export async function setupTableViewAIPanelUI() {
-  if (!grok.ai.config.configured)
+  if (!ClaudeRuntimeClient.getInstance().available)
     return;
   const handleView = (tableView: DG.TableView) => {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
@@ -674,8 +715,13 @@ export async function setupScriptsAIPanelUI() {
   };
 
   grok.events.onViewAdded.subscribe((view) => {
-    if (view.type === 'ScriptView')
-      setTimeout(() => handleView(view as DG.ScriptView), 500);
+    if (view.type === 'ScriptView') {
+      const scriptView = view as DG.ScriptView;
+      setTimeout(() => {
+        handleView(scriptView);
+        scriptView.subs.push(scriptView.tabs.onTabChanged.subscribe(() => handleView(scriptView)));
+      }, 500);
+    }
   });
 }
 
@@ -703,7 +749,8 @@ async function runAgentScript(name: string): Promise<void> {
       return;
     AIWindowManager.instance.showPanel(shell);
     shell.resetSession();
-    const workflow = await _package.files.readAsText(`scripts/${name}.md`);
+    const conn = await grok.dapi.connections.filter('name = "My files"').first();
+    const workflow = await grok.dapi.files.readAsText(`${conn.nqName}/agents/scripts/${name}.md`);
     const prompt =
       `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
       `---\n${workflow}\n---`;

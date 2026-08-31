@@ -11,7 +11,7 @@ import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
-import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
 import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -188,7 +188,8 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
-    const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
+    const app = Vue.createApp(RFVApp,
+      {funcCall: Vue.markRaw(call), view: Vue.markRaw(view), initialRunId: call.aux.initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
@@ -226,9 +227,9 @@ export class PackageFunctions {
     if (instanceConfig)
       instanceConfig = Vue.markRaw(instanceConfig);
 
-    const {resolve} = call.aux;
+    const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
+    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId, view: Vue.markRaw(view)});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
@@ -273,6 +274,19 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'OpenWorkflowRun',
+    description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
+  })
+  static async OpenWorkflowRun(
+    @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
+    const metaCall = await historyUtils.shallowLoadRun(id);
+    const call = metaCall.func.prepare({});
+    call.aux.initialRunId = id;
+    call.edit();
+  }
+
+
+  @grok.decorators.func({
     name: 'Run Optimizer',
     description: 'Run parameter optimization (fitting) for a model and return the resulting function calls.',
     outputs: [{type: 'object', name: 'result'}],
@@ -292,6 +306,12 @@ export class PackageFunctions {
   static async CompareRuns() {
     const view = new DG.ViewBase();
     view.name = 'Run Comparison';
+    view.helpUrl = '/help/compute/run-comparison.md';
+    view.setRibbonPanels([[
+      ui.iconFA('question',
+        () => window.open('https://datagrok.ai/help/compute/run-comparison', '_blank'),
+        'Open the Run Comparison documentation'),
+    ]]);
     view.root.classList.remove('ui-panel');
     const app = Vue.createApp(RunComparisonAppInstance, {roleOnlyFilter: modelCatalogOptions.roleOnlyFilter});
     setVueAppOptions(app);
@@ -772,6 +792,49 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
     return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
+  }
+
+  // Fixture for the URL-inputs parsing tests (see test/url-inputs.ts).
+  @grok.decorators.func()
+  static async TestUrlInputsFixture(
+    @grok.decorators.param({type: 'int'}) a: number,
+    b: number,
+    flag: boolean,
+    s: string,
+    @grok.decorators.param({type: 'datetime'}) when: dayjs.Dayjs,
+    df: DG.DataFrame,
+    @grok.decorators.param({options: {optional: true}}) opt: number,
+    @grok.decorators.param({type: 'int', options: {nullable: true}}) nul: number,
+  ): Promise<number> {
+    return a;
+  }
+
+  // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);
+  // the tests only prepare() these calls, the bodies never run.
+  @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})
+  static async TestProjectExportSingleOut(
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<DG.DataFrame> {
+    return DG.DataFrame.create(x);
+  }
+
+  @grok.decorators.func({outputs: [
+    {type: 'dataframe', name: 'res1'},
+    {type: 'dataframe', name: 'res2'},
+  ]})
+  static async TestProjectExportMultiOut(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<any> {
+    return {res1: df, res2: df};
+  }
+
+  @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})
+  static async TestProjectExportFileIn(
+    @grok.decorators.param({options: {optional: true, nullable: true}}) file: DG.FileInfo,
+    @grok.decorators.param({type: 'int'}) x: number,
+  ): Promise<DG.DataFrame> {
+    return DG.DataFrame.create(x);
   }
 
 }

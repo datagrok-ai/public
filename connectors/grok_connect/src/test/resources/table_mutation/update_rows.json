@@ -1,0 +1,20 @@
+{
+  "#type": "UpdateRows",
+  "name": "update orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "setColumns": ["status", "qty"],
+  "setValues": ["shipped", 5],
+  "setTypes": ["string", "int"],
+  "whereClauses": [
+    {
+      "field": "id",
+      "pattern": ">3",
+      "dataType": "int",
+      "matcher": {"expression": ">3", "op": ">", "values": ["3"]}
+    }
+  ],
+  "whereOp": "and"
+}

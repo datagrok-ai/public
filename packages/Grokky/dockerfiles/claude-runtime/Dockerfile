@@ -7,7 +7,7 @@ FROM node:22-slim
 # so the vulnerable 23.0.1/66.1.1 dist-info no longer ships (python3-venv still
 # seeds venvs from the *-whl packages).
 RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
-    git ca-certificates python3 python3-venv python3-pip make g++ && \
+    git ca-certificates python3 python3-venv python3-pip make g++ util-linux && \
     python3 -m pip install --no-cache-dir --break-system-packages --upgrade "pip>=26.1.2" "setuptools>=78.1.1" && \
     apt-get purge -y python3-pip python3-setuptools python3-wheel && \
     apt-get -y autoremove && \
@@ -20,6 +20,9 @@ ARG HOME_DIR=/home/grok
 # Java CVEs and there is no JRE in this image to use them.
 RUN groupadd -g 2001 grok && \
     useradd -m -d ${HOME_DIR} -g grok -u 1001 grok && \
+    groupadd -g 2002 broker && \
+    useradd -m -d /home/broker -g broker -u 1002 broker && \
+    chmod 0700 /home/broker && \
     git clone --depth 1 https://github.com/datagrok-ai/public.git /workspace && \
     find /workspace -name '*.jar' -delete && \
     mkdir -p /users && \
@@ -29,7 +32,7 @@ RUN groupadd -g 2001 grok && \
 # get CVE-flagged; npm 12+ ships a clean tree. npm is a runtime dependency here
 # (the agent shells out to it in the workspace), so it cannot be removed like elsewhere.
 RUN npm install -g npm@latest && \
-    npm install -g @anthropic-ai/claude-code && \
+    npm install -g @anthropic-ai/claude-code@2.1.231 && \
     node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" && \
     claude --version && \
     npm cache clean --force
@@ -39,22 +42,21 @@ COPY --chown=grok:grok src ./src
 RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --omit=dev
 
 COPY --chown=grok:grok plugin /app/plugin
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod 0755 /app/entrypoint.sh
 
-# Seed an empty subscription-credentials file so the path exists and the server's
-# existence check has a target. Real subscription creds are provided at runtime (a
-# read-only bind mount over this file, or the in-app `claude auth login` flow, which
-# rewrites it); the API-key / Bedrock / Foundry env path does not use this file.
-RUN mkdir -p /home/grok/.claude && \
-    printf '{}' > /home/grok/.claude/.credentials.json && \
-    chown -R grok:grok /home/grok/.claude
+RUN mkdir -p /home/broker/.claude && \
+    printf '{}' > /home/broker/.claude/.credentials.json && \
+    chown -R broker:broker /home/broker/.claude && \
+    chmod 0700 /home/broker/.claude && \
+    chmod 0600 /home/broker/.claude/.credentials.json && \
+    mkdir -p /home/grok/.claude && chown -R grok:grok /home/grok/.claude
 
 ENV CLAUDE_WORKSPACE=/workspace
-
-USER grok
 
 EXPOSE 5355
 
 HEALTHCHECK --interval=5s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:5355/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/server.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]

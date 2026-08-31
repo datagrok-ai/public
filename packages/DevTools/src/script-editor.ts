@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {applyCodeMirror} from "./utils/code-mirror-check";
+import {applyCodeMirror} from './utils/code-mirror-check';
 
 const SCRIPT_RIBBON_SELECTOR = 'i.fa-window-maximize[aria-label="Views"]';
 
@@ -333,7 +333,7 @@ function setScriptRibbon(v: DG.View, doc: any) {
     try {
       const add = (name: string, makeIcon: Function) => {
         elementsPopup.group('Special Icons').find(name)._check.append(makeIcon(() => { }, ''));
-      }
+      };
 
       add('Add', ui.icons.add);
       add('Close', ui.icons.close);
@@ -449,7 +449,6 @@ function setScriptRibbon(v: DG.View, doc: any) {
   const componentsBtn = ui.div([components], 'd4-combo-popup');
   componentsBtn.addEventListener('click', componentsMenu);
 
-  const panels = v.getRibbonPanels();
   const newPanels = [
     ui.tooltip.bind(viewBtn, 'Views'),
     ui.tooltip.bind(layoutsBtn, 'Layouts'),
@@ -457,10 +456,11 @@ function setScriptRibbon(v: DG.View, doc: any) {
     ui.tooltip.bind(componentsBtn, 'Components'),
   ];
 
-  if (JSON.stringify(newPanels) !== JSON.stringify(panels[panels.length - 2])) {
-    v.setRibbonPanels([
-      ...panels,
-      newPanels,
-    ]);
-  }
+  const addPanels = () => {
+    const panels = v.getRibbonPanels();
+    if (JSON.stringify(newPanels) !== JSON.stringify(panels[panels.length - 1]))
+      v.setRibbonPanels([...panels, newPanels]);
+  };
+  addPanels();
+  v.subs.push((v as DG.ScriptView).tabs.onTabChanged.subscribe(addPanels));
 }

@@ -1,6 +1,6 @@
 ---
 feature: charts
-realizes: [charts.sunburst, charts.tree]
+realizes: [charts.viewer.sunburst, charts.viewer.tree]
 target_layer: manual
 coverage_type: manual
 pyramid_layer: ui-only
@@ -168,9 +168,7 @@ exercise the actual canvas + Filter Panel UI coordination chain.
   deferral and not a coverage gap. There is no plan to automate
   them; this file is the authoritative catalog for human QA.
 
-## Dataset metadata
-
-```json
+---
 {
   "order": 35,
   "datasets": [
@@ -178,4 +176,3 @@ exercise the actual canvas + Filter Panel UI coordination chain.
     "System:DemoFiles/demog.csv"
   ]
 }
-```

@@ -14,6 +14,7 @@ import {listDbCatalogs, listDbSchemas, listDbTables, getDbTableDetails, listDbJo
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
 import {runBenchmark as runBenchmarkImpl, compareBenchmarks as compareBenchmarksImpl} from './ai/benchmark/benchmark';
+import {holdChatTurnTask} from './claude/queue-task';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
@@ -25,7 +26,11 @@ export const _package = new ChatGPTPackage();
 export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async init() {
+    // Headless Node celery worker: skip all browser UI wiring
+    if ((globalThis as any).process?.versions?.node)
+      return;
     await UsageLimiter.getInstance().init();
+    const aiAvailable = await ClaudeRuntimeClient.getInstance().discover();
     setupSearchUI();
     initAIWindow();
     setupTableViewAIPanelUI();
@@ -33,7 +38,8 @@ export class PackageFunctions {
     setupAgentScriptsUI();
     PackageFunctions.ensureAgentsFolder();
     // Warm the WebSocket to claude-runtime so the first user turn doesn't pay container-lookup + WS handshake cost.
-    ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
+    if (aiAvailable)
+      ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
     PackageFunctions.subscribeToSyncEvents();
   }
 
@@ -125,7 +131,7 @@ export class PackageFunctions {
     meta: {role: 'searchProvider'},
   })
   static combinedLLMSearchProvider(): DG.SearchProvider {
-    const isAiConfigured = grok.ai.config.configured;
+    const client = ClaudeRuntimeClient.getInstance();
     return {
       'home': {
         name: 'Ask AI Assistant',
@@ -134,10 +140,10 @@ export class PackageFunctions {
           return null;
         },
         getSuggestions: (_query: string) => [],
-        isApplicable: (query: string) => isAiConfigured ? query?.trim().length >= 2 : false,
+        isApplicable: (query: string) => client.available ? query?.trim().length >= 2 : false,
         description: 'Get answers form AI assistant',
         onValueEnter: async (query) => {
-          isAiConfigured && query?.trim().length >= 2 &&
+          client.available && query?.trim().length >= 2 &&
             await CombinedAISearchAssistant.instance.searchUI(query);
         }
       }
@@ -167,6 +173,12 @@ export class PackageFunctions {
       description: 'Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.'}}) only?: string,
   ): Promise<string> {
     return runBenchmarkImpl(label, reps ?? 3, model, only);
+  }
+
+  @grok.decorators.func({name: 'aiChatTurnTask', meta: {queue: 'true'},
+    description: 'Holds the admission slot for one AI chat turn streaming over the browser WebSocket - see queue-task.ts'})
+  static async aiChatTurnTask(sessionId: string, taskId: string): Promise<string> {
+    return holdChatTurnTask(sessionId, taskId);
   }
 
   @grok.decorators.func({name: 'compareBenchmarks',

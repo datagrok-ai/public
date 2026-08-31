@@ -407,7 +407,19 @@ export async function clickConnectionTest(page: Page, timeout = 60_000): Promise
 /** Click the OK button in the connection dialog and wait for the dialog to detach. */
 export async function clickConnectionOk(page: Page): Promise<void> {
   await page.locator('.d4-dialog [name="button-OK"]').click();
-  await page.locator('.d4-dialog').waitFor({ state: 'detached', timeout: 15_000 });
+  try {
+    // Saving a connection is a server round trip and 15s is not always enough on a loaded agent.
+    await page.locator('.d4-dialog').waitFor({ state: 'detached', timeout: 60_000 });
+  } catch (e) {
+    // A dialog that never closes is either a slow save or a rejected one; the balloon says which,
+    // and without it the failure is an anonymous locator timeout.
+    const why = await page.evaluate(() => ({
+      dialogs: Array.from(document.querySelectorAll('.d4-dialog')).map((d) => d.getAttribute('name')),
+      balloons: Array.from(document.querySelectorAll('.grok-balloon, .d4-balloon'))
+        .map((b) => (b.textContent || '').trim()).filter(Boolean),
+    })).catch(() => null);
+    throw new Error(`the connection dialog did not close after OK: ${JSON.stringify(why)}`);
+  }
 }
 
 /** Click the SAVE button inside the connection dialog (used by Edit... in some versions). */
@@ -496,6 +508,30 @@ export async function findConnectionByFriendlyName(
     const c = cs[0];
     return { id: c.id, name: c.name, friendlyName: c.friendlyName, dataSource: c.dataSource };
   }, friendlyName);
+}
+
+/**
+ * Provision a Postgres connection against the in-CI northwind demo if one with this
+ * friendly name is not there already. The numbered files in this folder read as a
+ * chain (01 creates, 03 renames, 05 deletes), and that chain only holds while every
+ * file runs in order in one worker. Playwright hands files to whichever worker is
+ * free, so a suite whose subject "must exist" is a suite that fails whenever it is
+ * scheduled early.
+ */
+export async function ensureConnection(page: Page, friendlyName: string): Promise<void> {
+  if (await findConnectionByFriendlyName(page, friendlyName)) return;
+  await page.evaluate(({ name, server, port, db, login, password }) => {
+    const g = (window as unknown as { grok: any }).grok;
+    const DG = (window as unknown as { DG: any }).DG;
+    return g.dapi.connections.save(DG.DataConnection.create(name, {
+      dataSource: 'Postgres',
+      server: `${server}:${port}`,
+      port: Number(port),
+      db, ssl: false, login, password,
+    }));
+  }, { name: friendlyName, server: PG_SERVER, port: PG_PORT, db: PG_DB, login: PG_LOGIN, password: PG_PASSWORD });
+  if (!await findConnectionByFriendlyName(page, friendlyName))
+    throw new Error(`could not provision connection "${friendlyName}"`);
 }
 
 /** Delete every connection with a given friendly name (safe cleanup before/after). */

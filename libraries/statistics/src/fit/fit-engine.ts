@@ -1,0 +1,1051 @@
+/* eslint-disable max-len */
+import * as DG from 'datagrok-api/dg';
+import {
+  FIT_FUNCTION_LINEAR,
+  linear,
+  IFitSeries,
+  IFitPoint,
+  FIT_FUNCTION_SIGMOID,
+  sigmoid,
+  FIT_FUNCTION_LOG_LINEAR,
+  logLinear,
+  FIT_FUNCTION_EXPONENTIAL,
+  exponential,
+  FIT_FUNCTION_4PL_REGRESSION,
+  fourPLRegression,
+  IFitFunctionDescription,
+  FitParamBounds,
+  FitErrorModelType, FitCurve, getAuc, getDetCoeff,
+  FIT_JS_FUNCTION,
+  FIT_FUNCTION_4PL_DOSE_RESPONSE,
+  fourPLDoseResponse,
+  DROPLINES,
+  FitErrorModel,
+  FitConfidenceIntervals,
+  getFittedCurve,
+  FitFunctionName,
+  LegacyFitStatisticName,
+  IFitSeriesOptions,
+  LogOptions,
+} from './fit-curve';
+import {getDataPoints, getMedianPoints, logIC50ParameterBounds} from './fit-points';
+//@ts-ignore: no types
+import * as jStat from 'jstat';
+import {Extremum, OptimizationResult} from './fitting-algorithm/optimizer-misc';
+import {performNelderMeadOptimization} from './fitting-algorithm/optimizer';
+import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
+
+
+/** Class for the fit functions */
+export abstract class FitFunction<T = Fit> {
+  private _statisticsProperties?: DG.Property[];
+  private _legacyProperties?: {[name: string]: DG.Property};
+
+  abstract get name(): string;
+  abstract get parameterNames(): string[];
+  /** Fit fields the parameters map onto, in parameter order. */
+  abstract get statisticFields(): string[];
+
+  /** Statistics derived from the parameters rather than mapped onto one. */
+  protected get derivedStatisticsProperties(): DG.Property[] {
+    return [];
+  }
+
+  /** Labels for the mapped fields, so a fit function can name them independently of its parameters. */
+  protected get statisticLabels(): string[] {
+    return this.parameterNames;
+  }
+
+  get statisticsProperties(): DG.Property[] {
+    this._statisticsProperties ??=
+      fitStatisticsProperties(this.statisticFields, this.statisticLabels, this.derivedStatisticsProperties);
+    return this._statisticsProperties;
+  }
+
+  /** Descriptor for a legacy name this fit function has no statistic of its own for. Memoised.
+   * @param {string} name - a legacy FitStatistics name.
+   * @return {DG.Property | undefined} the descriptor, or undefined when no parameter maps onto it. */
+  legacyStatisticProperty(name: string): DG.Property | undefined {
+    if (name === 'interceptY')
+      return interceptYStatisticsProperty;
+    const slot = LEGACY_POSITIONAL_SLOTS[name];
+    if (slot === undefined || slot >= this.parameterNames.length)
+      return undefined;
+    this._legacyProperties ??= {};
+    return this._legacyProperties[name] ??= statisticsProperty(name, this.parameterNames[slot]);
+  }
+  /** Whether the curve levels off at both ends, which is what makes an ICxx name meaningful. */
+  get hasAsymptotes(): boolean {
+    return false;
+  }
+
+  /** The x at which the curve has travelled `fraction` of the way from its low-x asymptote to its
+   * high-x one - what ICxx names. Undefined for functions that have no asymptotes.
+   * @param {Float32Array} _params - the fit parameters.
+   * @param {number} _fraction - the travelled fraction, between 0 and 1.
+   * @return {number | undefined} the x value, or undefined when the function has no asymptotes. */
+  inverse(_params: Float32Array, _fraction: number): number | undefined {
+    return undefined;
+  }
+  abstract fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T;
+  abstract y(params: Float32Array, x: number): number;
+  abstract getInitialParameters(x: number[], y: number[]): Float32Array;
+}
+
+export const FitFunctionTypes = {
+  SIGMOID: 'sigmoid',
+  LINEAR: 'linear',
+  LOG_LINEAR: 'log-linear',
+  EXPONENTIAL: 'exponential',
+  FOUR_PL_REGRESSION: '4pl-regression',
+  FOUR_PL_DOSE_RESPONSE: '4pl-dose-response',
+} as const;
+
+export type FitFunctionType = FitFunctionName;
+
+export interface IFit {
+  auc: number;
+  rSquared: number;
+}
+
+export interface ILinearFit extends IFit {
+  slope: number;
+  intercept: number;
+}
+
+export interface ILogLinearFit extends ILinearFit {}
+
+export interface ISigmoidFit extends IFit {
+  top: number;
+  slope: number;
+  ic50: number;
+  bottom: number;
+  interceptY: number; // the fitted curve value at ic50
+}
+
+export interface IExponentialFit extends IFit {
+  mantissa: number;
+  power: number;
+}
+
+export interface IFourPLRegressionFit extends IFit {
+  top: number;
+  bottom: number;
+  slope: number;
+  ec50: number;
+  interceptY: number; // the fitted curve value at ec50
+}
+
+export interface IFourPLDoseResponseFit extends IFourPLRegressionFit {
+  ic50: number; // same parameter as ec50, named after the dose-response parameterization
+}
+
+export abstract class Fit implements IFit {
+  auc: number;
+  rSquared: number;
+  series: IFitSeries;
+  parameters: Float32Array;
+
+  abstract get name(): string;
+
+  protected constructor(values: IFit, data: IFitSeries, parameters: Float32Array) {
+    this.auc = values.auc;
+    this.rSquared = values.rSquared;
+    this.series = data;
+    this.parameters = parameters;
+  }
+}
+
+// declared parameter names that would shadow a Fit field are not exposed as named parameters
+const RESERVED_FIT_FIELDS = ['auc', 'rSquared', 'series', 'parameters', 'name'];
+
+/** Fit result of a user-defined JS function. Parameters are exposed under their declared names. */
+export class JSFunctionFit extends Fit {
+  [key: string]: any;
+
+  constructor(values: IFit, data: IFitSeries, parameters: Float32Array, parameterNames: string[] = [],
+    fittedCurve?: (x: number) => number) {
+    super(values, data, parameters);
+    for (let i = 0; i < parameterNames.length; i++) {
+      if (!RESERVED_FIT_FIELDS.includes(parameterNames[i]))
+        this[parameterNames[i]] = parameters[i];
+    }
+    // a custom function has no named field for interceptY, so it stays derived from the curve
+    if (fittedCurve && parameters.length > 2 && this.interceptY === undefined)
+      this.interceptY = fittedCurve(parameters[2]);
+  }
+
+  get name(): string {
+    return FIT_JS_FUNCTION;
+  }
+}
+
+export class LinearFit extends Fit implements ILinearFit {
+  slope: number;
+  intercept: number;
+
+  get name(): string {
+    return FIT_FUNCTION_LINEAR;
+  }
+
+  constructor(values: ILinearFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
+    this.slope = values.slope;
+    this.intercept = values.intercept;
+  }
+}
+
+export class LogLinearFit extends LinearFit implements ILogLinearFit {
+  get name(): string {
+    return FIT_FUNCTION_LOG_LINEAR;
+  }
+}
+
+export class SigmoidFit extends Fit implements ISigmoidFit {
+  top: number;
+  slope: number;
+  ic50: number;
+  bottom: number;
+  interceptY: number;
+  maxY: number;
+  minY: number;
+  pIC50?: number; // derived by toDataSpace, where the concentration units are known
+
+  get name(): string {
+    return FIT_FUNCTION_SIGMOID;
+  }
+
+  constructor(values: ISigmoidFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
+    this.top = values.top;
+    this.slope = values.slope;
+    this.ic50 = values.ic50;
+    this.bottom = values.bottom;
+    this.interceptY = values.interceptY;
+    // top and bottom are the two asymptotes; which one is larger depends on the sign of the slope
+    this.maxY = Math.max(values.top, values.bottom);
+    this.minY = Math.min(values.top, values.bottom);
+  }
+}
+
+export class ExponentialFit extends Fit implements IExponentialFit {
+  mantissa: number;
+  power: number;
+
+  get name(): string {
+    return FIT_FUNCTION_EXPONENTIAL;
+  }
+
+  constructor(values: IExponentialFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
+    this.mantissa = values.mantissa;
+    this.power = values.power;
+  }
+}
+
+export class FourPLRegressionFit extends Fit implements IFourPLRegressionFit {
+  top: number;
+  bottom: number;
+  slope: number;
+  ec50: number;
+  interceptY: number;
+  maxY: number;
+  minY: number;
+
+  get name(): string {
+    return FIT_FUNCTION_4PL_REGRESSION;
+  }
+
+  constructor(values: IFourPLRegressionFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
+    this.top = values.top;
+    this.bottom = values.bottom;
+    this.slope = values.slope;
+    this.ec50 = values.ec50;
+    this.interceptY = values.interceptY;
+    // top and bottom are the two asymptotes; which one is larger depends on the sign of the slope
+    this.maxY = Math.max(values.top, values.bottom);
+    this.minY = Math.min(values.top, values.bottom);
+  }
+}
+
+export class FourPLDoseResponseFit extends FourPLRegressionFit implements IFourPLDoseResponseFit {
+  ic50: number;
+  pIC50?: number; // derived by toDataSpace, where the concentration units are known
+
+  override get name(): string {
+    return FIT_FUNCTION_4PL_DOSE_RESPONSE;
+  }
+
+  constructor(values: IFourPLRegressionFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
+    this.ic50 = values.ec50;
+  }
+}
+
+function statisticsProperty(name: string, friendlyName: string): DG.Property {
+  return DG.Property.js(name, DG.TYPE.FLOAT, {userEditable: false, friendlyName: friendlyName});
+}
+
+/** Goodness-of-fit statistics produced for every fit function. */
+export const commonStatisticsProperties: DG.Property[] = [
+  statisticsProperty('rSquared', 'R²'),
+  statisticsProperty('auc', 'AUC'),
+];
+
+// Labels come from parameterNames so they cannot drift from what the model calls its parameters.
+function fitStatisticsProperties(fieldNames: string[], parameterNames: string[],
+  derived: DG.Property[] = []): DG.Property[] {
+  return [...commonStatisticsProperties,
+    ...fieldNames.map((name, i) => statisticsProperty(name, parameterNames[i])),
+    ...derived];
+}
+
+// Derived from the two asymptotes, so they stay truthful whichever sign the slope takes.
+function asymptoteStatisticsProperties(inflectionName: string): DG.Property[] {
+  return [statisticsProperty('interceptY', `Y at ${inflectionName}`),
+    statisticsProperty('maxY', 'Max Y'), statisticsProperty('minY', 'Min Y')];
+}
+
+// -log10 of the IC50 in molar. Only meaningful for the IC50-parameterized functions.
+const pIC50StatisticsProperty = statisticsProperty('pIC50', 'pIC50');
+
+// Legacy FitStatistics names that map to a differently named field of a typed fit.
+const LEGACY_STATISTICS_ALIASES: {[fitFunctionName: string]: {[legacyName: string]: string}} = {
+  [FIT_FUNCTION_SIGMOID]: {interceptX: 'ic50'},
+  [FIT_FUNCTION_4PL_REGRESSION]: {interceptX: 'ec50'},
+  [FIT_FUNCTION_4PL_DOSE_RESPONSE]: {interceptX: 'ic50'},
+};
+
+// Slots the pre-typed getStatistics() read positionally, for every fit function alike.
+const LEGACY_POSITIONAL_SLOTS: {[legacyName: string]: number} = {top: 0, slope: 1, interceptX: 2, bottom: 3};
+
+// derived rather than mapped onto a parameter, so it needs a descriptor of its own
+const interceptYStatisticsProperty = statisticsProperty('interceptY', 'Intercept Y');
+
+/** Resolves a statistic name, legacy names included, to the descriptor of the fit function producing it.
+ * @param {FitFunction} fitFunc - fit function whose statistics are being described.
+ * @param {string} name - a statistic name, or a legacy FitStatistics name.
+ * @return {DG.Property | undefined} the descriptor, or undefined when it produces no such statistic. */
+export function getStatisticProperty(fitFunc: FitFunction<any>, name: string): DG.Property | undefined {
+  const field = LEGACY_STATISTICS_ALIASES[fitFunc.name]?.[name] ?? name;
+  // getStatistic falls back to the positional slot, so a descriptor has to exist for it too
+  return fitFunc.statisticsProperties.find((p) => p.name === field) ?? fitFunc.legacyStatisticProperty(name);
+}
+
+/** Names of the numeric statistics a fit produces, derived from the fit class. */
+export type FitStatisticName<T extends Fit> =
+  Extract<{[K in keyof T]-?: T[K] extends number ? K : never}[keyof T], string>;
+
+/** Maps a built-in fit function name to the fit type it produces. */
+export interface FitTypeMap {
+  'linear': LinearFit;
+  'log-linear': LogLinearFit;
+  'sigmoid': SigmoidFit;
+  'exponential': ExponentialFit;
+  '4pl-regression': FourPLRegressionFit;
+  '4pl-dose-response': FourPLDoseResponseFit;
+}
+
+/** Reads a statistic off a fit by name, resolving legacy FitStatistics names.
+ * @param {Fit} fit - typed fit result to read from.
+ * @param {string} name - a field of the fit, or a legacy FitStatistics name.
+ * @return {number | undefined} the value, or undefined when this fit function does not produce it. */
+export function getStatistic<T extends Fit>(fit: T,
+  name: FitStatisticName<T> | LegacyFitStatisticName | (string & {})): number | undefined {
+  const field = LEGACY_STATISTICS_ALIASES[fit.name]?.[name] ?? name;
+  const value = (fit as {[key: string]: any})[field];
+  if (typeof value === 'number')
+    return value;
+  // interceptX is an x coordinate, so its value depends on the space the fit ran in, and toDataSpace
+  // converts named fields rather than the raw parameters - reading it off a slot would report a
+  // logarithm. A fit function with no inflection field of its own does not have one to report.
+  if (name === 'interceptX')
+    return undefined;
+  // other legacy names this fit function lacks keep the pre-typed positional value, so old columns survive
+  const slot = LEGACY_POSITIONAL_SLOTS[name];
+  const parameter = slot === undefined ? undefined : fit.parameters?.[slot];
+  return typeof parameter === 'number' && !isNaN(parameter) ? parameter : undefined;
+}
+
+function resolveDataPoints(data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions):
+  {x: number[], y: number[]} {
+  return dataPoints ?? getDataPoints(data, logOptions, false);
+}
+
+function getAucAndRsquared(fitCurve: (x: number) => number, data: {x: number[], y: number[]}): IFit {
+  return {
+    auc: getAuc(fitCurve, data),
+    rSquared: getDetCoeff(fitCurve, data),
+  };
+}
+
+/** Class that implements the linear function */
+export class LinearFunction extends FitFunction<LinearFit> {
+  get name(): string {
+    return FIT_FUNCTION_LINEAR;
+  }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  get statisticFields(): string[] {
+    return ['slope', 'intercept'];
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): LinearFit {
+    return new LinearFit({
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      slope: fitCurve.parameters[0],
+      intercept: fitCurve.parameters[1],
+    }, data, fitCurve.parameters);
+  }
+
+  y(params: Float32Array, x: number): number {
+    return linear(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    let minIndex = 0;
+    let maxIndex = 0;
+    for (let i = 1; i < x.length; i++) {
+      if (x[i] < x[minIndex])
+        minIndex = i;
+      if (x[i] > x[maxIndex])
+        maxIndex = i;
+    }
+
+    const deltaX = x[maxIndex] - x[minIndex];
+    const deltaY = y[maxIndex] - y[minIndex];
+    const A = deltaY / deltaX;
+    const B = y[maxIndex] - A * x[maxIndex];
+    const params = new Float32Array(2);
+    params.set([A, B]);
+    return params;
+  }
+}
+
+/** Class that implements the sigmoid function */
+export class SigmoidFunction extends FitFunction<SigmoidFit> {
+  get name(): string {
+    return FIT_FUNCTION_SIGMOID;
+  }
+
+  override get hasAsymptotes(): boolean {
+    return true;
+  }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Slope', 'IC50', 'Bottom'];
+  }
+
+  get statisticFields(): string[] {
+    return ['top', 'slope', 'ic50', 'bottom'];
+  }
+
+  protected override get derivedStatisticsProperties(): DG.Property[] {
+    return [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty];
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): SigmoidFit {
+    return new SigmoidFit({
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      top: fitCurve.parameters[0],
+      slope: fitCurve.parameters[1],
+      ic50: fitCurve.parameters[2],
+      bottom: fitCurve.parameters[3],
+      interceptY: fitCurve.fittedCurve(fitCurve.parameters[2]),
+    }, data, fitCurve.parameters);
+  }
+
+  y(params: Float32Array, x: number): number {
+    return sigmoid(params, x);
+  }
+
+  /** @param {Float32Array} params - [top, slope, ic50, bottom].
+   * @param {number} fraction - the travelled fraction.
+   * @return {number} the x at that fraction. */
+  override inverse(params: Float32Array, fraction: number): number {
+    // the sign of the slope only swaps which asymptote is at which end, so the fraction runs along
+    // the curve either way
+    return params[2] + Math.log10(fraction / (1 - fraction)) / Math.abs(params[1]);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const dataBounds = DG.Rect.fromXYArrays(x, y);
+    const medY = (dataBounds.maxY - dataBounds.minY) / 2 + dataBounds.minY;
+    let maxYInterval = dataBounds.maxY - dataBounds.minY;
+    let nearestXIndex = 0;
+    for (let i = 0; i < x.length; i++) {
+      const currentInterval = Math.abs(y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const xAtMedY = x[nearestXIndex];
+    const slope = y[0] > y[y.length - 1] ? 1 : -1;
+
+    // params are: [max, tan, IC50, min]
+    const params = new Float32Array(4);
+    params.set([dataBounds.maxY, slope, xAtMedY, dataBounds.minY]);
+    return params;
+  }
+}
+
+/** Class that implements the linear logarithmic function */
+export class LogLinearFunction extends FitFunction<LogLinearFit> {
+  get name(): string {
+    return FIT_FUNCTION_LOG_LINEAR;
+  }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  get statisticFields(): string[] {
+    return ['slope', 'intercept'];
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): LogLinearFit {
+    return new LogLinearFit({
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      slope: fitCurve.parameters[0],
+      intercept: fitCurve.parameters[1],
+    }, data, fitCurve.parameters);
+  }
+
+  y(params: Float32Array, x: number): number {
+    return logLinear(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([-5, 100]);
+    return params;
+  }
+}
+
+/** Class that implements the exponential function */
+export class ExponentialFunction extends FitFunction<ExponentialFit> {
+  get name(): string {
+    return FIT_FUNCTION_EXPONENTIAL;
+  }
+
+  get parameterNames(): string[] {
+    return ['Mantissa', 'Power'];
+  }
+
+  get statisticFields(): string[] {
+    return ['mantissa', 'power'];
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): ExponentialFit {
+    return new ExponentialFit({
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      mantissa: fitCurve.parameters[0],
+      power: fitCurve.parameters[1],
+    }, data, fitCurve.parameters);
+  }
+
+  y(params: Float32Array, x: number): number {
+    return exponential(params, x);
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(2);
+    params.set([100, -2]);
+    return params;
+  }
+}
+
+/** Class that implements the Four Parameter Logistic Regression function */
+export class FourPLRegressionFunction extends FitFunction<FourPLRegressionFit> {
+  get name(): string {
+    return FIT_FUNCTION_4PL_REGRESSION;
+  }
+
+  override get hasAsymptotes(): boolean {
+    return true;
+  }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Slope', 'EC50', 'Bottom'];
+  }
+
+  get statisticFields(): string[] {
+    return ['top', 'slope', 'ec50', 'bottom'];
+  }
+
+  protected override get derivedStatisticsProperties(): DG.Property[] {
+    return asymptoteStatisticsProperties(this.parameterNames[2]);
+  }
+
+  // shared with the dose-response parameterization, which only differs in how the parameters are named
+  protected fitValues(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): IFourPLRegressionFit {
+    return {
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      top: fitCurve.parameters[0],
+      slope: fitCurve.parameters[1],
+      ec50: fitCurve.parameters[2],
+      bottom: fitCurve.parameters[3],
+      interceptY: fitCurve.fittedCurve(fitCurve.parameters[2]),
+    };
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): FourPLRegressionFit {
+    return new FourPLRegressionFit(this.fitValues(fitCurve, data, dataPoints, logOptions), data, fitCurve.parameters);
+  }
+
+  y(params: Float32Array, x: number): number {
+    return fourPLRegression(params, x);
+  }
+
+  /** @param {Float32Array} params - [top, slope, ec50, bottom].
+   * @param {number} fraction - the travelled fraction.
+   * @return {number} the x at that fraction. */
+  override inverse(params: Float32Array, fraction: number): number {
+    return params[2] * Math.pow(fraction / (1 - fraction), 1 / Math.abs(params[1]));
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = new Float32Array(4);
+    const bottom = Math.min(...y);
+    const top = Math.max(...y);
+    const medY = (top - bottom) / 2 + bottom;
+    let maxYInterval = top -bottom;
+    let nearestXIndex = 0;
+    for (let i = 0; i < x.length; i++) {
+      const currentInterval = Math.abs(y[i] - medY);
+      if (currentInterval < maxYInterval) {
+        maxYInterval = currentInterval;
+        nearestXIndex = i;
+      }
+    }
+    const ec50 = x[nearestXIndex];
+    const slope = y[0] > y[y.length - 1]? -10 : 10;
+    params.set([top, slope, ec50, bottom]);
+    return params;
+  }
+}
+
+export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
+  override get name(): string {
+    return FIT_FUNCTION_4PL_DOSE_RESPONSE;
+  }
+
+  override get parameterNames(): string[] {
+    return ['Max', 'Hill', 'IC50', 'Min'];
+  }
+
+  override get statisticFields(): string[] {
+    return ['top', 'slope', 'ic50', 'bottom'];
+  }
+
+  protected override get derivedStatisticsProperties(): DG.Property[] {
+    return [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty];
+  }
+
+  override fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): FourPLDoseResponseFit {
+    return new FourPLDoseResponseFit(this.fitValues(fitCurve, data, dataPoints, logOptions), data, fitCurve.parameters);
+  }
+
+  override y(params: Float32Array, x: number): number {
+    return fourPLDoseResponse(params, x);
+  }
+
+  /** @param {Float32Array} params - [max, hill, ic50, min].
+   * @param {number} fraction - the travelled fraction.
+   * @return {number} the x at that fraction. */
+  override inverse(params: Float32Array, fraction: number): number {
+    return params[2] + Math.log10(fraction / (1 - fraction)) / Math.abs(params[1]);
+  }
+}
+
+/** Class that implements user JS functions */
+export class JsFunction extends FitFunction<Fit> {
+  private _name: string;
+  private _parameterNames: string[];
+
+  constructor(name: string, yFunc: (params: Float32Array, x: number) => number,
+    getInitParamsFunc: (x: number[], y: number[]) => Float32Array, parameterNames: string[]) {
+    super();
+
+    this._name = name;
+    this._parameterNames = parameterNames;
+
+    this.y = yFunc;
+    this.getInitialParameters = getInitParamsFunc;
+  }
+
+  get statisticFields(): string[] {
+    return this._parameterNames.filter((name) => !RESERVED_FIT_FIELDS.includes(name));
+  }
+
+  protected override get statisticLabels(): string[] {
+    return this.statisticFields;
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): Fit {
+    return new JSFunctionFit(getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      data, fitCurve.parameters, this._parameterNames, fitCurve.fittedCurve);
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get parameterNames(): string[] {
+    return this._parameterNames;
+  }
+
+  y(params: Float32Array, x: number): number {
+    throw new Error('Not implemented');
+  }
+
+  getInitialParameters(x: number[], y: number[]): Float32Array {
+    throw new Error('Not implemented');
+  }
+}
+
+// Object with fit functions
+export const fitFunctions: {[key: string]: FitFunction<any>} = {
+  'linear': new LinearFunction(),
+  'sigmoid': new SigmoidFunction(),
+  'log-linear': new LogLinearFunction(),
+  'exponential': new ExponentialFunction(),
+  '4pl-regression': new FourPLRegressionFunction(),
+  '4pl-dose-response': new FourPLDoseResponseFunction(),
+};
+
+/** What a series is fitted with when it does not say - the value the option falls back to. */
+export const DEFAULT_FIT_FUNCTION = 'sigmoid';
+
+/** The notation a custom function was described with. Kept so that picking one by name for another
+ * curve can store the function itself: a name only resolves while something else carries it. */
+export const fitFunctionDescriptions: {[key: string]: IFitFunctionDescription} = {};
+
+// Declaration merging keeps the class from drifting off IFitSeriesOptions.
+export interface FitSeries extends IFitSeriesOptions {}
+
+export class FitSeries implements IFitSeries {
+  points: IFitPoint[];
+
+  constructor(points: IFitPoint[]) {
+    this.points = points;
+  }
+}
+
+
+/** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
+export const fitSeriesProperties: DG.Property[] = [
+  DG.Property.js('fitFunction', DG.TYPE.STRING,
+    {category: 'Fitting', choices: Object.keys(fitFunctions), defaultValue: DEFAULT_FIT_FUNCTION}),
+  DG.Property.js('pointColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('fitLineColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('outlierColor', DG.TYPE.STRING,
+    {category: 'Rendering', nullable: true, inputType: 'Color'}),
+  DG.Property.js('errorModel', DG.TYPE.STRING, {category: 'Fitting', defaultValue: 'constant',
+    choices: ['constant', 'proportional', 'combined'], nullable: false}),
+  DG.Property.js('connectDots', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: false}),
+  DG.Property.js('clickToToggle', DG.TYPE.BOOL, {category: 'Fitting', description:
+    'Click on a point to mark it as outlier and refit', nullable: true, defaultValue: false}),
+  DG.Property.js('showFitLine', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
+  DG.Property.js('showPoints', DG.TYPE.STRING, // rewrite description
+    {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
+      defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  DG.Property.js('showOutliers', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
+  DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
+      //@ts-ignore
+      friendlyName: 'Confidence Interval'}),
+  DG.Property.js('markerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'circle',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false,
+    //@ts-ignore
+    friendlyName: 'Marker'}),
+  DG.Property.js('outlierMarkerType', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'outlier',
+    choices: ['asterisk', 'circle', 'cross border', 'diamond', 'outlier', 'square', 'star',
+      'triangle bottom', 'triangle left', 'triangle right', 'triangle top'], nullable: false,
+    //@ts-ignore
+    friendlyName: 'Outlier Marker'}),
+  DG.Property.js('lineStyle', DG.TYPE.STRING, {category: 'Rendering', defaultValue: 'solid',
+    choices: ['solid', 'dotted', 'dashed', 'dashdotted'], nullable: false}),
+  DG.Property.js('droplines', DG.TYPE.STRING_LIST, {description: 'Whether specific droplines should be rendered',
+    choices: DROPLINES, inputType: 'MultiChoice'}),
+  DG.Property.js('columnName', DG.TYPE.STRING, {description: 'Column name where the series is stored', defaultValue: ''}),
+];
+
+
+/** Typed lookup of a built-in fit function, so the fit it produces is known at compile time.
+ * @param {string} name - built-in fit function name.
+ * @return {FitFunction} the fit function, typed by the fit it produces. */
+export function getFitFunction<K extends keyof FitTypeMap>(name: K): FitFunction<FitTypeMap[K]> {
+  return fitFunctions[name];
+}
+
+/** Narrows a runtime-dispatched fit to a concrete fit type.
+ * @param {Fit} fit - fit to test.
+ * @param {string} name - built-in fit function name to narrow to.
+ * @return {boolean} true when the fit was produced by that fit function. */
+export function isFit<K extends keyof FitTypeMap>(fit: Fit, name: K): fit is FitTypeMap[K] {
+  return fit.name === name;
+}
+
+export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction<Fit> {
+  // a series reaches here without one whenever the option was cleared, and the panel and the renderer
+  // both ask before anything fills the default in - naming none is naming the default
+  if (seriesFitFunc == null)
+    return fitFunctions[DEFAULT_FIT_FUNCTION];
+  if (typeof seriesFitFunc === 'string')
+    return fitFunctions[seriesFitFunc] ?? fitFunctions[DEFAULT_FIT_FUNCTION];
+  else if (!fitFunctions[seriesFitFunc.name]) {
+    const name = seriesFitFunc.name;
+    const paramNames = seriesFitFunc.parameterNames;
+    const fitFunctionParts = seriesFitFunc.function.split('=>').map((elem) => elem.trim());
+    const getInitParamsParts = seriesFitFunc.getInitialParameters.split('=>').map((elem) => elem.trim());
+    const fitFunction = new Function(fitFunctionParts[0].slice(1, fitFunctionParts[0].length - 1),
+      `${fitFunctionParts[1].includes(';') ? '' : 'return '}${fitFunctionParts[1]}`);
+    const getInitParamsFunc = new Function(getInitParamsParts[0].slice(1, getInitParamsParts[0].length - 1),
+      `return ${getInitParamsParts[1]}`);
+    const fitFunc = new JsFunction(name, (fitFunction as (params: Float32Array, x: number) => number),
+      (getInitParamsFunc as (x: number[], y: number[]) => Float32Array), paramNames);
+    fitFunctions[name] = fitFunc;
+  }
+  fitFunctionDescriptions[seriesFitFunc.name] ??= seriesFitFunc;
+
+  return fitFunctions[seriesFitFunc.name];
+}
+
+// Lives here rather than in fit-data so that fit-data can import this module without a cycle.
+export function fitSeries(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
+  logOptions?: LogOptions): FitCurve {
+  dataPoints ??= getDataPoints(series, logOptions, false);
+  if (series.parameterBounds && logOptions?.logX)
+    series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
+  return fitData(getMedianPoints(dataPoints), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
+    series.parameterBounds);
+}
+
+export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction<Fit>, errorModel?: FitErrorModelType,
+  parameterBounds?: FitParamBounds[]): FitCurve {
+  errorModel ??= FitErrorModel.CONSTANT as FitErrorModelType;
+  const curveFunction = fitFunction.y;
+  let paramValues = fitFunction.getInitialParameters(data.x, data.y);
+
+  const of = objectiveFactory(curveFunction, data, errorModel);
+  const bottomParamBounds = new Float32Array(fitFunction.parameterNames.length);
+  const topParamBounds = new Float32Array(fitFunction.parameterNames.length);
+  for (let i = 0; i < fitFunction.parameterNames.length; i++) {
+    bottomParamBounds[i] = paramValues[i] === 0 ? -1 : paramValues[i] - Math.abs(paramValues[i] * 0.5);
+    topParamBounds[i] = paramValues[i] === 0 ? 1 : paramValues[i] + Math.abs(paramValues[i] * 0.5);
+  }
+  const parameterBoundsBitset: DG.BitSet = DG.BitSet.create(fitFunction.parameterNames.length * 2);
+  if (parameterBounds && parameterBounds.length !== 0) {
+    for (let i = 0; i < parameterBounds.length; i++) {
+      if (parameterBounds[i].min !== undefined && parameterBounds[i].min !== null) {
+        bottomParamBounds[i] = parameterBounds[i].min!;
+        parameterBoundsBitset.set(i * 2, true);
+      }
+      if (parameterBounds[i].max !== undefined && parameterBounds[i].max !== null) {
+        topParamBounds[i] = parameterBounds[i].max!;
+        parameterBoundsBitset.set(i * 2 + 1, true);
+      }
+    }
+  }
+  const getConsistency = (extremum: Extremum) => {
+    const residuals = of(extremum.point).residuals;
+    let q1q4 = 0;
+    let q2q3 = 0;
+    // TODO: rewrite quartiles to a better condition
+    for (let i = 0; i < residuals.length; i++) {
+      if (residuals.length / 4 > i)
+        q1q4 += Math.pow(residuals[i], 2);
+      else if (3 * residuals.length / 4 > i)
+        q2q3 += Math.pow(residuals[i], 2);
+      else
+        q1q4 += Math.pow(residuals[i], 2);
+    }
+    return q1q4 / q2q3;
+  };
+
+  let iter = -1;
+  let continueOptimization = 0;
+  let statistics: number | null = null;
+  let optimization: OptimizationResult;
+  let minIdx = 0;
+  do {
+    optimization = performNelderMeadOptimization(of, bottomParamBounds, topParamBounds, {
+      tolerance: NELDER_MEAD_DEFAULTS.TOLERANCE,
+      maxIter: NELDER_MEAD_DEFAULTS.MAX_ITER,
+      nonZeroParam: NELDER_MEAD_DEFAULTS.NON_ZERO_PARAM,
+      initialScale: NELDER_MEAD_DEFAULTS.INITIAL_SCALE,
+      scaleReflection: NELDER_MEAD_DEFAULTS.SCALE_REFLECTION,
+      scaleExpansion: NELDER_MEAD_DEFAULTS.SCALE_EXPANSION,
+      scaleContraction: NELDER_MEAD_DEFAULTS.SCALE_CONTRACTION,
+    }, 10, paramValues);
+
+    minIdx = 0;
+    for (let i = 1; i < optimization.extremums.length; i++) {
+      if (optimization.extremums[i].cost < optimization.extremums[minIdx].cost)
+        minIdx = i;
+    }
+
+    const newStatistics = getConsistency(optimization.extremums[minIdx]);
+    if (statistics === null)
+      statistics = newStatistics;
+    else if (newStatistics < statistics) {
+      statistics = newStatistics;
+      continueOptimization = 0;
+    }
+    else
+      continueOptimization++;
+
+    paramValues = optimization.extremums[minIdx].point;
+
+    if (iter > 40 || continueOptimization === 3)
+      break;
+
+    for (let i = 0; i < fitFunction.parameterNames.length; i++) {
+      if (!parameterBoundsBitset.get(i * 2))
+        bottomParamBounds[i] = paramValues[i] - Math.abs(paramValues[i] * (continueOptimization + 0.5));
+      if (!parameterBoundsBitset.get(i * 2 + 1))
+        topParamBounds[i] = paramValues[i] + Math.abs(paramValues[i] * (continueOptimization + 0.5));
+    }
+
+    iter++;
+  } while (true);
+
+  const fittedCurve = getFittedCurve(curveFunction, paramValues);
+
+  return {
+    fittedCurve: fittedCurve,
+    parameters: paramValues,
+  };
+}
+
+
+function objectiveFactory(targetFunc: (params: Float32Array, x: number) => number,
+  data: {y: number[], x: number[]}, errorModel: FitErrorModelType):
+    (params: Float32Array) => {likelihood: number, residuals: number[]} {
+  return (params: Float32Array) => {
+    let likelihood = 0;
+    let sigmaA = 0;
+    let sigmaB = 0;
+
+    const obs = data.y;
+    const pred = data.x.map((x) => targetFunc(params, x));
+    const residuals = obs.map((obs, i) => obs - pred[i]);
+    const residuesSquares = residuals.map((res) => Math.pow(res, 2));
+
+    for (let i = 0; i < residuesSquares.length; i++) {
+      if ([FitErrorModel.CONSTANT, FitErrorModel.COMBINED].includes(errorModel))
+        sigmaA += residuesSquares[i];
+      else if (errorModel === FitErrorModel.PROPORTIONAL)
+        sigmaB += residuesSquares[i] / (pred[i] * pred[i]);
+    }
+    sigmaA = Math.sqrt(sigmaA / residuesSquares.length);
+    sigmaB = Math.sqrt(sigmaB / residuesSquares.length);
+
+    if (errorModel === FitErrorModel.COMBINED)
+      ({sigmaA, sigmaB} = getSigmasForCombinedErrorModel(sigmaA, sigmaB, residuesSquares, pred));
+
+    const sigmaSqI: number[] = [];
+    for (let i = 0; i < residuesSquares.length; i++) {
+      sigmaSqI[i] = Math.pow(sigmaA + sigmaB * pred[i], 2);
+      likelihood += residuesSquares[i] / sigmaSqI[i] + Math.log(2 * Math.PI * sigmaSqI[i]);
+    }
+
+    return {likelihood, residuals};
+  };
+}
+
+
+function getSigma(targetFunc: (params: Float32Array, x: number) => number,
+  data: {y: number[], x: number[]}, errorModel: FitErrorModelType, params: Float32Array): {sigmaA: number, sigmaB: number} {
+  let sigmaA = 0;
+  let sigmaB = 0;
+
+  const obs = data.y;
+  const pred = data.x.map((x) => targetFunc(params, x));
+  const residuals = obs.map((obs, i) => obs - pred[i]);
+  const residuesSquares = residuals.map((res) => Math.pow(res, 2));
+
+  for (let i = 0; i < residuesSquares.length; i++) {
+    if ([FitErrorModel.CONSTANT, FitErrorModel.COMBINED].includes(errorModel))
+      sigmaA += residuesSquares[i];
+    else if (errorModel === FitErrorModel.PROPORTIONAL)
+      sigmaB += Math.pow(residuals[i] / Math.abs(pred[i]), 2);
+  }
+  sigmaA = Math.sqrt(sigmaA / residuesSquares.length);
+  sigmaB = Math.sqrt(sigmaB / residuesSquares.length);
+
+  if (errorModel === FitErrorModel.COMBINED)
+    ({sigmaA, sigmaB} = getSigmasForCombinedErrorModel(sigmaA, sigmaB, residuesSquares, pred));
+
+  return {sigmaA, sigmaB};
+}
+
+function getSigmasForCombinedErrorModel(sigmaA: number, sigmaB: number, residuesSquares: number[], pred: number[]):
+  {sigmaA: number, sigmaB: number} {
+  let likelihoodCombined = Number.MAX_VALUE;
+  let finalProportion = 0;
+  for (let i = 0; i <= 10; i++) {
+    let likelihoodCombinedLocal = 0;
+    const proportion = i / 10;
+    const sigmaACombined = sigmaA * proportion;
+    const sigmaBCombined = sigmaA * (1 - proportion);
+    const sigmaSqICombined: number[] = [];
+    for (let j = 0; j < residuesSquares.length; j++) {
+      sigmaSqICombined[j] = Math.pow(sigmaACombined + sigmaBCombined * pred[j], 2);
+      likelihoodCombinedLocal += residuesSquares[j] / sigmaSqICombined[j] + Math.log(2 * Math.PI * sigmaSqICombined[j]);
+    }
+    if (likelihoodCombinedLocal < likelihoodCombined) {
+      likelihoodCombined = likelihoodCombinedLocal;
+      finalProportion = proportion;
+    }
+  }
+  sigmaB = sigmaA * (1 - finalProportion);
+  sigmaA = sigmaA * finalProportion;
+
+  return {sigmaA, sigmaB};
+}
+
+
+export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, paramValues: Float32Array,
+  curveFunction: (params: Float32Array, x: number) => number, confidenceLevel: number = 0.05, errorModel: FitErrorModelType):
+  FitConfidenceIntervals {
+  const error = getSigma(curveFunction, data, errorModel, paramValues);
+  const quantile = jStat.normal.inv(1 - confidenceLevel/2, 0, 1);
+
+  const top = (x: number) => {
+    const value = curveFunction(paramValues, x);
+    return value + quantile * (error.sigmaA + Math.abs(value) * error.sigmaB);
+  };
+
+  const bottom = (x: number) => {
+    const value = curveFunction(paramValues, x);
+    return value - quantile * (error.sigmaA + Math.abs(value) * error.sigmaB);
+  };
+
+  return {confidenceTop: top, confidenceBottom: bottom};
+}
+
+
+export interface FitCellOutlierToggleArgs {
+  gridCell: DG.GridCell;
+  series: IFitSeries;
+  seriesIdx: number;
+  pointIdx: number;
+};

@@ -53,12 +53,21 @@ export async function openPlatformView(page: Page, name: PlatformView): Promise<
 
 /** Parse the "shown / total" gallery counter into numbers, polling until it settles. */
 export async function readGalleryCount(page: Page): Promise<{ shown: number; total: number }> {
+  // The counter is parseable long before it is final — a gallery still loading reads "2 / 2" and
+  // only later "3 / 3" — so wait for the same text twice rather than taking the first match.
   const counter = page.locator(GALLERY_COUNTS).first();
   let m: RegExpMatchArray | null = null;
-  for (let i = 0; i < 20; i++) {
+  let last = '';
+  let repeats = 0;
+  for (let i = 0; i < 40; i++) {
     const text = (await counter.textContent().catch(() => ''))?.trim() ?? '';
-    m = text.match(/(\d+)\s*\/\s*(\d+)/);
-    if (m) break;
+    const parsed = text.match(/(\d+)\s*\/\s*(\d+)/);
+    if (parsed) {
+      m = parsed;
+      repeats = text === last ? repeats + 1 : 0;
+      if (repeats >= 2) break;
+    }
+    last = text;
     await page.waitForTimeout(250);
   }
   if (!m) return { shown: NaN, total: NaN };
@@ -95,18 +104,29 @@ export async function clearGallerySearch(page: Page, kind: 'users' | 'groups' | 
 export async function searchAndWaitCard(
   page: Page, kind: 'users' | 'groups' | 'roles', search: string, matchName: string = search,
 ): Promise<void> {
-  for (let i = 0; i < 8; i++) {
+  // A fixed attempt count spends about half a minute and then gives up; on a loaded CI agent the
+  // search index sometimes takes longer than that, which is the only way this has ever failed.
+  // Bound the wait by time instead, so a slow indexer costs patience rather than a red run.
+  const deadline = Date.now() + 120_000;
+  for (let i = 0; i === 0 || Date.now() < deadline; i++) {
     await searchGallery(page, kind, search);
     const card = galleryCardByName(page, matchName);
     if (await card.isVisible().catch(() => false)) {
       await page.waitForTimeout(800); // let the server search settle, then confirm it stayed
       if (await card.isVisible().catch(() => false)) return;
     }
-    // Not there (or flickered out) — clear, refresh the list, and retry.
+    // Not there (or flickered out) — clear, refresh the list, and retry. When the sync icon
+    // is absent every retry just re-filters the list the view loaded with, so an entity
+    // created after that load can never appear; reopen the view to make it re-read.
     await clearGallerySearch(page, kind);
     const refresh = page.locator('.d4-search-bar [name="icon-sync"]').first();
-    if (await refresh.isVisible().catch(() => false)) await refresh.click();
-    await page.waitForTimeout(1500);
+    if (await refresh.isVisible().catch(() => false)) {
+      await refresh.click();
+      await page.waitForTimeout(1500);
+    }
+    else {
+      await openPlatformView(page, (kind.charAt(0).toUpperCase() + kind.slice(1)) as PlatformView);
+    }
   }
   throw new Error(`Entity "${matchName}" not found in the ${kind} gallery after refresh retries`);
 }

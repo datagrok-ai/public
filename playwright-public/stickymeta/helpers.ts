@@ -74,18 +74,20 @@ export async function apiDeleteSchema(page: Page, name: string): Promise<void> {
 }
 
 /**
- * Delete every leftover `PW_SM_*` schema via the API (defensive pre-cleanup).
- * Guarantees the test's own schema is the only molecule-matching one, so the cell-edit dialog
- * and Sticky-meta pane show a single section.
+ * Delete leftover schemas under one spec's prefix via the API (defensive pre-cleanup).
+ *
+ * The prefix is per spec file (`PW_SM1_`, `PW_SM2_`, …) and each file must pass its own: these
+ * files run in parallel workers, so a sweep over the shared `PW_SM_` prefix deleted the schema a
+ * sibling spec was in the middle of using — 01 and 02 went red together in build #324.
  */
-export async function apiDeleteAllTestSchemas(page: Page): Promise<void> {
-  await page.evaluate(async () => {
+export async function apiDeleteAllTestSchemas(page: Page, prefix: string): Promise<void> {
+  await page.evaluate(async (p) => {
     const g = (window as any).grok;
-    for (const s of (await g.dapi.stickyMeta.getSchemas()).filter((x: any) => /^PW_SM_/.test(x.name))) {
+    for (const s of (await g.dapi.stickyMeta.getSchemas()).filter((x: any) => x.name.startsWith(p))) {
       const id = (window as any).grok_Entity_Get_Id(s.dart);
       await g.dapi.stickyMeta.deleteSchema(id);
     }
-  });
+  }, prefix);
 }
 
 /** Whether a schema with the given name currently exists (API read). */

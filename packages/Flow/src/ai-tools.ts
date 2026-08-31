@@ -12,9 +12,7 @@ import {inputBlockReason} from './utils/input-values';
 import type {Guide} from './guide/guide-model';
 import {TUTORIALS, QUESTIONS} from './guide/guide-content';
 
-/** Facade over FuncFlowView privates handed to the AI view functions (package.ts).
- *  The functions receive the generic current view and reach the FuncFlowView
- *  instance through `view.jsView.aiContext()`. */
+/** Facade over FuncFlowView internals handed to the registered AI view functions (package.ts). */
 export interface FlowAIContext {
   flow(): FlowEditor;
   execution(): ExecutionController | null;
@@ -27,7 +25,6 @@ export interface FlowAIContext {
 const RUN_TIMEOUT_MS = 100_000;
 const DEFAULT_FIND_LIMIT = 15;
 
-/** Resolves the FuncFlowView behind the generic view wrapper (grok.shell.v). */
 function flowCtx(view: any): FlowAIContext {
   const v = view?.jsView ?? view;
   const ctx: FlowAIContext | null = typeof v?.aiContext === 'function' ? v.aiContext() : null;
@@ -82,8 +79,6 @@ function matchesQuery(query: string, ...haystacks: (string | undefined)[]): bool
   return terms.every((t) => text.includes(t));
 }
 
-// --- implementations of the registered Flow view functions (see package.ts) ---
-
 export function listFlowNodes(view: any) {
   const ctx = flowCtx(view);
   const flow = ctx.flow();
@@ -109,8 +104,6 @@ export function getFlowNodeDetails(view: any, nodeId: string) {
     outputs: portMap((node as any).outputs), // keys ending in __pt are pass-throughs of the same-named input
     inputValues: node.inputValues ?? {},
     ...(node.dgNodeType === 'input' ? {
-      // The configured parameter value (set on the node / context panel);
-      // when unresolvable, `valueBlocks` says why runs would need a dialog.
       value: node.properties['defaultValue'] ?? '',
       ...(inputBlockReason(node) ? {valueBlocks: inputBlockReason(node)} : {}),
     } : {}),
@@ -208,8 +201,7 @@ export async function connectFlowNodes(view: any, sourceNodeId: string, sourceOu
 export async function setFlowNodeInputs(view: any, nodeId: string, values: object) {
   const ctx = flowCtx(view);
   const node = nodeRef(ctx, nodeId);
-  // On an input node, `value` means the configured parameter value (the same
-  // store the on-node editor writes) — with it set, runs need no dialog.
+  // On an input node, 'value' is the configured parameter value the on-node editor writes.
   const vals: Record<string, unknown> = {...(values ?? {})};
   if (node.dgNodeType === 'input' && 'value' in vals) {
     node.properties['defaultValue'] = vals['value'];

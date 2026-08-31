@@ -14,6 +14,7 @@ import {EventBus} from '../../model/event-bus';
 export class PatternLoadControlsManager {
   private subscriptions = new SubscriptionManager();
   private authorSelectedByUser = false;
+  private patternChoiceInput: StringInput;
 
   constructor(
     private eventBus: EventBus,
@@ -159,6 +160,8 @@ export class PatternLoadControlsManager {
       })
     );
 
+    this.patternChoiceInput = choiceInput;
+
     return choiceInput;
   }
 
@@ -176,11 +179,12 @@ export class PatternLoadControlsManager {
     const button = ui.button(
       ui.iconFA('trash-alt'),
       () => {
-        if (this.eventBus.getPatternName() === this.dataManager.getDefaultPatternName()) {
+        const patternName = this.patternChoiceInput.value!;
+        if (patternName === this.dataManager.getDefaultPatternName()) {
           grok.shell.warning('Cannot delete example pattern');
           return;
         }
-        this.showDeletePatternDialog();
+        this.showDeletePatternDialog(patternName);
       }
     );
 
@@ -195,9 +199,8 @@ export class PatternLoadControlsManager {
     return button;
   }
 
-  private showDeletePatternDialog(): void {
+  private showDeletePatternDialog(patternName: string): void {
     const dialog = ui.dialog('Delete pattern');
-    const patternName = this.eventBus.getPatternName();
     dialog.add(ui.divText(`Are you sure you want to delete pattern ${patternName}?`));
     dialog.onOK(() => this.eventBus.requestPatternDeletion(patternName));
     dialog.show();

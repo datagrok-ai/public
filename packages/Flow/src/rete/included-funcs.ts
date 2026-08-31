@@ -1,18 +1,5 @@
-/** The Flow toolbox is **allowlist-based**: a function appears as a pipeline
- *  node only when its `Func.nqName` (namespace-qualified, e.g. `Chem:foo`) is
- *  in this set, OR it declares **`meta.includeInFlow: true`** on itself, OR it
- *  is one of the always-included kinds — saved flows, **queries**
- *  (`DG.DataQuery`, except from dev/test packages), SetVar / GetVar — see
- *  `shouldIncludeFunc` in `node-factory.ts`. `meta.includeInFlow: false` still
- *  opts out even an allowlisted function.
- *
- *  This list was produced empirically on 2026-07-20 by dumping the catalog the
- *  previous filter pipeline (structural rules + role/tag rules + a curated
- *  denylist) produced on a live server — i.e. it IS that catalog, frozen as an
- *  explicit include list (minus queries, which are included by kind). Edit
- *  freely: add an nqName to surface a function, remove one to hide it. For a
- *  function you own, prefer declaring `meta.includeInFlow: true` in its own
- *  metadata instead of editing this. */
+/** The Flow toolbox allowlist by `Func.nqName` (see `shouldIncludeFunc` for the other inclusion routes).
+ *  For a function you own, prefer declaring `meta.includeInFlow: true` instead of editing this. */
 export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   // core
   'core:AddNewColumn',
@@ -97,19 +84,12 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'core:Year',
   // Admetica
   // 'Admetica:run_admetica',
-  // Source-only as of 2026-07-30: the deployed Admetica predates it, so the
-  // entry is inert until the package is republished.
   'Admetica:getAdmeProperties',
   // Bio
-  // The canonical, non-interactive numbering entry point. The engine function
-  // `immunumAntibodyNumbering` returns dialog plumbing (position maps,
-  // annotation JSON), not something a pipeline can carry.
   'Bio:applyAntibodyNumbering',
   'Bio:convertNotation',
   'Bio:extractRegion',
-  // NB not `SequenceGenerator` — the sibling sequence_generator.md registers
-  // under that name (a script with no `#name:` falls back to its filename), and
-  // the parameterless doc entity is what you would get.
+  // NB not `SequenceGenerator` — the parameterless sequence_generator.md doc entity registers under that name.
   'Bio:GenerateSequences',
   // 'Bio:getRegionTopMenu',        → Bio:extractRegion (returns the column)
   // 'Bio:immunumAntibodyNumbering' → Bio:applyAntibodyNumbering
@@ -124,8 +104,6 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Bio:tagAsMacromolecule',
   // 'Bio:toAtomicLevel'            → Bio:toAtomicLevelColumn
   'Bio:toAtomicLevelColumn',
-  // A clean scalar source — a sketched/typed sequence in, a molblock out. Its
-  // `seq2atomic` twin is the same function under a second name; one is enough.
   'Bio:toAtomicLevelSingleSeq',
   // Bionemo
   // 'Bionemo:DiffdockPython',
@@ -139,9 +117,6 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   // Chem
   'Chem:addChemPropertiesColumns',
   'Chem:addChemRisksColumns',
-  // Adds the InChI / InChI Key column to the table; the `getInchis` /
-  // `getInchiKeys` twins return a detached column instead, which is less useful
-  // on a canvas (nothing downstream can bind it back to its rows).
   'Chem:addInchisKeysTopMenu',
   'Chem:addInchisTopMenu',
   'Chem:applyReaction',
@@ -152,8 +127,6 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:CalculateLogS',
   'Chem:CalculatePI',
   'Chem:CalculatePKa',
-  // Parameterized metric/fingerprint, and it takes the table, so the query
-  // molecule gets a sketcher — unlike `findSimilar`, which hard-codes Morgan.
   'Chem:callChemSimilaritySearch',
   // 'Chem:ChemicalSpaceUsingTSNE',
   // 'Chem:ChemicalSpaceUsingUMAP',
@@ -166,18 +139,15 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:diverseSubset',
   'Chem:FilterByCatalogs',
   'Chem:filterBySubstructure',
+  'Chem:ChemistryGasteigerPartialCharges',
   // 'Chem:findSimilar',  → superseded by Chem:callChemSimilaritySearch
   'Chem:GenerateConformers',
-  // The three functions below take a bare `column`, which a canvas cannot bind
-  // to a table — replaced by their (table, column) twins:
   // 'Chem:getDiversities',      → Chem:diverseSubset
   // 'Chem:getSimilarities',     → Chem:similarityTo
   // 'Chem:searchSubstructure',  → Chem:filterBySubstructure
   // 'Chem:getInchiKeys',  → superseded by Chem:addInchisKeysTopMenu
   // 'Chem:getInchis',     → superseded by Chem:addInchisTopMenu
-  // 'Chem:getMorganFingerprints',  bit-string column nothing downstream reads
-  // The four file importers take file *content*, which nothing on a canvas can
-  // produce until `core:ReadFileBytes` exists (Phase 6).
+  // 'Chem:getMorganFingerprints',
   // 'Chem:importMol',
   // 'Chem:importMol2',
   // 'Chem:importSdf',
@@ -193,8 +163,6 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:similarityMatrixTopMenu',
   'Chem:similarityTo',
   'Chem:structuralAlertsTopMenu',
-  // Both need a synthon library uploaded first, and offer no readiness signal —
-  // the node shows an empty combo with no explanation.
   // 'Chem:SynthonSearch',
   // 'Chem:synthonSearchFunc',
   'Chem:toSdf',
@@ -210,9 +178,6 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chemspace:getChemspaceIds',
   'Chemspace:getChemspacePrices',
   // Curves
-  // The `addStatisticsColumn` / `addAggrStatisticsColumn` originals address the
-  // curve column by NAME (a free-text string, no picker and no `fit` filter);
-  // these twins take a real column slot and constrained choices.
   'Curves:addAggrCurveStatistic',
   'Curves:addCurveStatistic',
   'Curves:CalculateMSR',

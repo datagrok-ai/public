@@ -1,7 +1,5 @@
-/** Column picker on func-node column inputs: the property panel renders a
- *  picker icon next to each `column` / `column_list` input, and the request it
- *  fires resolves to the correct dataframe input (per-column for multi-table
- *  funcs like JoinTables: keys1→table1, keys2→table2). */
+/** Column picker on column inputs: the pick request resolves the correct
+ *  dataframe input per column. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNode} from '../rete/node-factory';
@@ -12,7 +10,6 @@ import {NodeExecStatus} from '../execution/execution-state';
 import {emitScript} from '../compiler/script-emitter';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
-/** Registered factory name for a function by name, or null if absent. */
 function funcTypeName(name: string): string | null {
   return getRegisteredFuncs().find((f) => f.func.name === name)?.nodeTypeName ?? null;
 }
@@ -63,12 +60,8 @@ category('Flow: column picker', () => {
     try {
       const ctrl = new ExecutionController(e.flow);
       const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('c', ['a', 'b'])]);
-      // A completed slice run leaves a captured clone — the picker reuses it
-      // (so a second pick against the same table doesn't re-run it).
       ctrl.state.setNodeStatus('n1', NodeExecStatus.completed, {outputs: {res: {type: 'dataframe', clone: df}}});
       expect(ctrl.cloneForNode('n1') === df, true, 'completed result is reused');
-      // A graph edit marks results stale → the picker must recompute, not reuse
-      // a possibly-outdated table.
       ctrl.state.setNodeStatus('n1', NodeExecStatus.stale, {});
       expect(ctrl.cloneForNode('n1'), null, 'stale result is not reused');
       expect(ctrl.cloneForNode('missing'), null, 'unknown node → null');
@@ -87,7 +80,7 @@ category('Flow: column picker', () => {
       panel.onPickColumns = (r) => reqs.push(r);
       panel.showNode(viewer);
 
-      // Query by the case-preserving data-param (the test-id slug is lowercased).
+      // query by the case-preserving data-param — the test-id slug is lowercased
       const btn = panel.root.querySelector('[data-param="X"] .funcflow-col-pick') as HTMLElement | null;
       expect(!!btn, true, 'the X column option has a picker');
       btn!.click();
@@ -134,10 +127,6 @@ category('Flow: column picker', () => {
   });
 
   test('a viewer wired to a passthrough table can resolve its columns', async () => {
-    // Repro: Table Input → AddNewColumn → (table → passthrough) → Scatter Plot.
-    // AddNewColumn's real output is a *column*, so the threaded (modified) table
-    // wasn't captured and the picker found nothing ("no table produced"). The
-    // instrumented run must now summarize it so cloneForNode can read it.
     const addCol = funcTypeName('AddNewColumn');
     if (!addCol) return;
     const e = makeEditor();
@@ -148,13 +137,10 @@ category('Flow: column picker', () => {
       await e.flow.addConnectionByKeys(src.id, 'table', anc.id, 'table');
       await e.flow.addConnectionByKeys(anc.id, 'table__pt', viewer.id, 'table');
 
-      // The picker resolves the viewer's table to AddNewColumn's passthrough.
       const ref = e.flow.getInputSource(viewer.id, 'table');
       expect(ref?.node.id, anc.id, 'table source is the AddNewColumn node');
       expect(ref?.outputKey, 'table__pt', 'via its passthrough output');
 
-      // The instrumented emit must capture the modified table even though the
-      // node's real output is a column — that's what cloneForNode reads.
       const inst = emitScript(e.flow, {name: 'T', description: '', tags: []},
         {instrumented: true, runId: 'r1'});
       expect(/'table \(modified\)': __ff_summarize\(/.test(inst), true,
@@ -165,8 +151,6 @@ category('Flow: column picker', () => {
   });
 
   test('the pick request carries the icon as its menu anchor', async () => {
-    // The column choice is now a DG.Menu popped next to the picker icon (no
-    // second dialog) — so the request must hand the picker that icon element.
     const e = makeEditor();
     const panel = new PropertyPanel(e.flow);
     document.body.appendChild(panel.root);
@@ -192,10 +176,8 @@ category('Flow: column picker', () => {
     const mol = DG.Column.fromStrings('m', ['CCO', 'c1ccccc1']);
     mol.semType = 'Molecule';
 
-    // No constraints → no filter (menu shows every column).
     expect(buildColumnMatchFilter(null, null) === undefined, true, 'neither attribute → undefined');
     expect(buildColumnMatchFilter('', undefined) === undefined, true, 'empty semType → undefined');
-    // Unrecognized columnTypeFilter is skipped, not applied.
     expect(buildColumnMatchFilter(null, 'bogus') === undefined, true, 'unknown columnTypeFilter → undefined');
 
     const numerical = buildColumnMatchFilter(null, 'numerical')!;
@@ -210,7 +192,6 @@ category('Flow: column picker', () => {
     expect(molecules(mol), true, 'semType admits a matching column');
     expect(molecules(str), false, 'semType rejects a non-matching column');
 
-    // Both attributes must hold together.
     const both = buildColumnMatchFilter('Molecule', 'string')!;
     expect(both(mol), true, 'Molecule string column passes both');
     expect(both(str), false, 'plain string column fails the semType half');

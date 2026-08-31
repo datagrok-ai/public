@@ -1,0 +1,83 @@
+/* u2 basic table (see src/components/table.ts). Compact platform density: one line per row,
+   hairline separators, muted header. */
+/* Content-sized like the platform's `d4-item-table`; stretch with `width: 100%` where a panel
+   wants it. */
+.u2-table {
+  border-collapse: collapse;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  outline: none;
+}
+
+.u2-table:focus {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+.u2-table th,
+.u2-table td {
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u2-table th {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  font-weight: var(--dg-font-weight-regular);
+}
+
+.u2-table .u2-table-align-right {
+  text-align: right;
+}
+
+.u2-table .u2-table-align-center {
+  text-align: center;
+}
+
+.u2-table .u2-table-align-left {
+  text-align: left;
+}
+
+.u2-table-interactive .u2-table-row {
+  cursor: pointer;
+}
+
+.u2-table-row:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-table-row-selected,
+.u2-table-row-selected:hover {
+  background: var(--dg-selection-bg);
+  color: var(--dg-selection-text);
+}
+
+/* key/value table (tableFromMap): no separators, muted keys; values wrap next to their keys
+   instead of blowing the column out (nowrap would push them mid-pane and force a horizontal
+   scroll — the "centered values" defect) */
+.u2-table-map td {
+  border-bottom: none;
+  vertical-align: top;
+}
+
+.u2-table-map td:not(.u2-table-key) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.u2-table-map .u2-table-row:hover {
+  background: none;
+}
+
+.u2-table-map .u2-table-key {
+  padding-right: var(--dg-space-l);
+  color: var(--dg-text-color-light);
+}

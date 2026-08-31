@@ -7,15 +7,16 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
-import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
+import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
+import {calculateSeriesFit, getChartDataAggrStats, curveStatisticAt, curveAggrStatisticAt} from './fit/fit-statistics';
+import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-chart-data';
 import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
 import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
 import {convertPzfxToJson} from './fit/converters/pzfx-converter';
 import {registerCurveConverter, initExternalConverters} from './fit/curve-converter';
-import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitStatistics, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 // import {PlateWidget} from './plate/plate-widget';
 
@@ -140,6 +141,38 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'curveStatistic',
+    description: 'Extract a fit statistic (e.g. IC50, AUC, R²) from a curve series into a calculated column.',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'column', options: {action: 'join(table)'}}],
+  })
+  static curveStatistic(table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'fit', nullable: false, description: 'Curve column to read'}}) curveColumn: DG.Column,
+    @grok.decorators.param({options: {nullable: false, description: 'Fit statistic to extract (e.g. ic50, auc, rSquared)'}}) propName: string,
+    @grok.decorators.param({type: 'int', options: {nullable: false, description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
+    // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
+    const result = DG.Column.float(`${curveColumn.name} ${seriesNumber + 1} ${propName}`, curveColumn.length);
+    result.init((i) => curveStatisticAt(curveColumn, i, propName, seriesNumber, table));
+    return result;
+  }
+
+  @grok.decorators.func({
+    name: 'curveAggrStatistic',
+    description: 'Aggregate a fit statistic across all series of a curve into a calculated column.',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'column', options: {action: 'join(table)'}}],
+  })
+  static curveAggrStatistic(table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'fit', nullable: false, description: 'Curve column to read'}}) curveColumn: DG.Column,
+    @grok.decorators.param({options: {nullable: false, description: 'Fit statistic to aggregate'}}) propName: string,
+    @grok.decorators.param({options: {choices: ['avg', 'med', 'min', 'max', 'q1', 'q2', 'q3'], initialValue: 'med', nullable: false, description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
+    // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
+    const result = DG.Column.float(`${curveColumn.name} ${aggrType} ${propName}`, curveColumn.length);
+    result.init((i) => curveAggrStatisticAt(curveColumn, i, propName, aggrType, table));
+    return result;
+  }
+
+  @grok.decorators.func({
     name: 'Add Curve Statistic Column',
     description: 'Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.',
     meta: {vectorFunc: 'true', role: 'transform'},
@@ -175,8 +208,9 @@ export class PackageFunctions {
           chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
           substituteZeroes(chartData);
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-        const fitResult = calculateSeriesStats(chartData.series![seriesNumber], seriesNumber, chartLogOptions, cell, true);
-        return fitResult[propName as keyof FitStatistics];
+        // resolve by name so both current statistic names and legacy ones from saved projects work
+        const fitResult = calculateSeriesFit(chartData.series![seriesNumber], seriesNumber, chartLogOptions, cell, true);
+        return getStatistic(fitResult, propName) ?? null;
       });
 
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
@@ -191,7 +225,7 @@ export class PackageFunctions {
   static addAggrStatisticsColumn(table: DG.DataFrame,
     @grok.decorators.param({options: {description: 'Name of the curve column to read'}}) colName: string,
     @grok.decorators.param({options: {choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y'}}) propName: string,
-    @grok.decorators.param({options: {choices: ['min', 'max', 'sum', 'avg', 'stdev', 'variance', 'skew', 'kurt', 'med', 'q1', 'q2', 'q3', 'count', 'nulls', 'unique', 'values'], initialValue: 'med', description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
+    @grok.decorators.param({options: {choices: ['min', 'max', 'avg', 'med', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const nName = `${colName} ${aggrType} ${propName}`;
@@ -249,7 +283,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'fit', caption: 'Curves', nullable: false, description: 'Column of fitted curves'}}) curvesCol: DG.Column,
     @grok.decorators.param({type: 'string', options: {caption: 'Statistic', nullable: false, choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'interceptX is IC50, top and bottom are max/min Y'}}) statistic: string = 'interceptX',
-    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, choices: ['med', 'avg', 'min', 'max', 'sum', 'stdev', 'variance', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Applied across the series of each curve'}}) aggregation: string = 'med'): DG.Column {
+    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, choices: ['med', 'avg', 'min', 'max', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Applied across the series of each curve'}}) aggregation: string = 'med'): DG.Column {
     return PackageFunctions.addAggrStatisticsColumn(table, curvesCol.name, statistic, aggregation);
   }
 

@@ -477,10 +477,26 @@
   margin-right: 6px;
 }
 
-.grokky-empty-state .grokky-scope-icon.grokky-scope-molecule { color: var(--blue-1); }
-.grokky-empty-state .grokky-scope-icon.grokky-scope-scatter  { color: var(--steel-3); }
-.grokky-empty-state .grokky-scope-icon.grokky-scope-view     { color: var(--green-2); }
-.grokky-empty-state .grokky-scope-icon.grokky-scope-anywhere { color: var(--grey-4); }
+.grokky-empty-state h2 {
+  margin-bottom: 14px;
+}
+
+.grokky-empty-state .d4-accordion-pane + .d4-accordion-pane {
+  margin-top: 4px;
+}
+
+.grokky-empty-state .grokky-suggestion-item {
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-color);
+}
+
+.grokky-empty-state .grokky-suggestion-item:hover {
+  background: var(--grey-1);
+}
 
 /* Inline choice block rendered by suggestion actions (e.g. demo-dataset picker). */
 .grokky-choice-block > * + * {
@@ -534,17 +550,27 @@
   margin-top: 8px;
 }
 
-.grokky-auth-strip-pending {
+.grokky-strip {
   padding: 8px 12px;
-  border-left: 3px solid #e6a817;
+  border-left: 3px solid;
   border-bottom: 1px solid var(--grey-2);
+}
+
+.grokky-strip-pending {
+  border-left-color: #e6a817;
   background: var(--grey-1);
 }
 
-.grokky-auth-strip-success {
-  padding: 8px 12px;
-  border-left: 3px solid var(--green-2);
+.grokky-strip-success {
+  border-left-color: var(--green-2);
+  border-bottom: none;
   background: var(--green-1);
+}
+
+.grokky-strip-danger {
+  border-left-color: var(--red-3);
+  background: var(--red-1);
+  color: var(--red-4);
 }
 
 .grokky-auth-error {
@@ -557,4 +583,29 @@
   border-left: 2px solid var(--red-3);
   padding: 3px 0 3px 12px;
   margin-top: 8px;
+}
+
+.grokky-exec-sep {
+  width: 1px;
+  height: 13px;
+  background: var(--steel-2);
+}
+
+.grokky-exec-icon.grokky-exec-ran { color: var(--green-2); }
+.grokky-exec-icon.grokky-exec-error { color: var(--red-3); }
+
+.grokky-exec-code {
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--steel-2);
+  border-radius: 6px;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.grokky-hidden {
+  display: none;
 }

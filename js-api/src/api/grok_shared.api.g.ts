@@ -27,6 +27,9 @@ export class ServerMessageTypes {
   /// Package installed.
   static PACKAGE_INSTALLED = 'package-installed';
 
+  /// A step of a long-running server operation. Payload: [ServerTaskProgress].
+  static TASK_PROGRESS = 'task-progress';
+
 }
 export class DataSourceType {
   static Access = 'Access';
@@ -75,6 +78,10 @@ export class DataSourceType {
 
   static Postgres = 'Postgres';
 
+  /// Virtual, credential-less source over an entity-mapped domain schema.
+  /// Executed in-process by DomainDataProvider; never reaches grok_connect.
+  static Domain = 'Domain';
+
   static Redshift = 'Redshift';
 
   static SQLite = 'SQLite';
@@ -121,7 +128,7 @@ export class DataSourceType {
 
   static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'Git', 'SharePoint', 'Amazon EFS'];
 
-  static systemDataSources = ['PostgresDart'];
+  static systemDataSources = ['PostgresDart', 'Domain'];
 
   static secureSources = ['AWS', 'GCP'];
 
@@ -178,6 +185,8 @@ export class Permission {
   static CREATE_DASHBOARD = 'CreateDashboard';
 
   static CREATE_SPACE = 'CreateSpace';
+
+  static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
 
   // ===== General =====
   static INVITE_USER = 'InviteUser';
@@ -237,6 +246,22 @@ export class Permission {
 
   static DATA_CONNECTION_LIST_FILES = 'DataConnection.ListFiles';
 
+  // Fine-grained structured-write privileges (UI group 'Write').
+  static DATA_CONNECTION_ADD_ROWS = 'DataConnection.AddRows';
+
+  static DATA_CONNECTION_CHANGE_VALUES = 'DataConnection.ChangeValues';
+
+  static DATA_CONNECTION_REMOVE_ROWS = 'DataConnection.RemoveRows';
+
+  static DATA_CONNECTION_TRUNCATE_TABLE = 'DataConnection.TruncateTable';
+
+  // Fine-grained schema-change privileges (UI group 'Ddl').
+  static DATA_CONNECTION_CREATE_TABLE = 'DataConnection.CreateTable';
+
+  static DATA_CONNECTION_ALTER_SCHEMA = 'DataConnection.AlterSchema';
+
+  static DATA_CONNECTION_DROP_TABLE = 'DataConnection.DropTable';
+
   // ===== Entity: DataQuery =====
   static DATA_QUERY_EXECUTE = 'DataQuery.Execute';
 
@@ -245,6 +270,9 @@ export class Permission {
 
   // ===== Entity: TableInfo =====
   static TABLE_READ_DATA = 'Table.ReadData';
+
+  // ===== Entity: DomainSchema =====
+  static EXTEND = 'Extend';
 
 }
 export class ScriptLanguage {
@@ -303,6 +331,9 @@ export class DockerImage extends Entity {
   set updatedBy(x: string) {api.grok_DockerImage_Set_updatedBy(this.dart, toDart(x)); }
   get logs(): string { return api.grok_DockerImage_Get_logs(this.dart); };
   set logs(x: string) {api.grok_DockerImage_Set_logs(this.dart, toDart(x)); }
+  /// Published image this entity points at, for packages that reference one instead of building it.
+  get imageRef(): string { return api.grok_DockerImage_Get_imageRef(this.dart); };
+  set imageRef(x: string) {api.grok_DockerImage_Set_imageRef(this.dart, toDart(x)); }
   get completed(): boolean { return api.grok_DockerImage_Get_completed(this.dart); };
 
   get iconStatus(): string { return api.grok_DockerImage_Get_iconStatus(this.dart); };

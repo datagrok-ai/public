@@ -10,16 +10,24 @@ import {__obs, EventData, EventType, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
-import {FormViewer, Grid, Point, Rect} from "./grid";
+// Must stay type-only: grid.ts has `FormViewer extends Viewer`, so a runtime import closes a
+// cycle and leaves Viewer in the TDZ whenever the bundler emits grid first. Use DG.* below.
+import type {FormViewer, Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
 import {ViewerEvent} from './api/d4.api.g';
+import {signal, dfBindings} from './u2core/index.js';
+import type {Signal, DataFrameLike, BindProp, BindSource, ObservableLike, PropertyChange} from './u2core/index.js';
 
 declare let DG: any;
 declare let ui: any;
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
+
+/** The walkable `table` step every viewer answers first: the DataFrame binding surface over
+ * the viewer's frame, repointing with it. */
+const TABLE_STEP: BindProp = Object.freeze({name: 'table', type: 'dataframe', walkable: true});
 
 
 /**
@@ -201,6 +209,48 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return api.grok_Viewer_Get_Properties(this.dart);
   }
 
+  /** A viewer's property lives on its look, which the `props` bag is over. Read per call:
+   * a viewer's look is settable. */
+  get propertyTarget(): unknown { return api.grok_Viewer_Get_Look(this.dart); }
+
+  protected propertyChanges(): ObservableLike<PropertyChange> {
+    return {
+      subscribe: (next: (x: PropertyChange) => void) => {
+        const subscription = this.onPropertyValueChanged.subscribe((e: unknown) =>
+          next((e as {args?: {property?: {name?: string}}})?.args?.property?.name ?? null));
+        return {unsubscribe: () => subscription.unsubscribe()};
+      },
+    };
+  }
+
+  protected _wireLifecycle(): void {
+    if (this instanceof JsViewer)
+      this._wireJsLifecycle();
+    else
+      this._wireDartLifecycle();
+  }
+
+  bindStep(name: string): Signal<unknown> | BindSource | null {
+    if (name !== 'table')
+      return super.bindStep(name);
+    const u2 = this._u2;
+    if (u2.table === undefined) {
+      const frame = signal(this._frameOf());
+      const subscription = this.onDataFrameChanged.subscribe(() => frame.value = this._frameOf());
+      this.scope.own(() => subscription.unsubscribe());
+      u2.table = dfBindings(frame, this.scope);
+    }
+    return u2.table as BindSource;
+  }
+
+  bindProps(): BindProp[] {
+    return [TABLE_STEP, ...super.bindProps()];
+  }
+
+  private _frameOf(): DataFrameLike | undefined {
+    return (this.dataFrame ?? undefined) as unknown as DataFrameLike | undefined;
+  }
+
   /** Closes and detaches the viewer. */
   close(): void {
     api.grok_Viewer_Close(this.dart);
@@ -303,7 +353,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   static form(t: DataFrame, options?: Partial<interfaces.IFormSettings>): FormViewer {
-    return new FormViewer(api.grok_Viewer_Form(t.dart, _toJson(options)));
+    return new DG.FormViewer(api.grok_Viewer_Form(t.dart, _toJson(options)));
   }
 
   static markup(t: DataFrame, options?: Partial<interfaces.IMarkupViewerSettings>): Viewer<interfaces.IMarkupViewerSettings> {
@@ -465,12 +515,22 @@ export class JsViewer extends Viewer {
   get root(): HTMLElement { return this._root; }
   set root(r: HTMLElement) { this._root = r; }
 
+  get propertyTarget(): unknown { return this; }
+
+  protected propertyChanges(): ObservableLike<PropertyChange> {
+    return this._ownPropertyChanges();
+  }
+
   /** Gets called when a table is attached to the viewer. */
   onTableAttached(): void { }
 
-  /** Gets called when this viewer is detached. */
+  /** Gets called when this viewer is detached. It deliberately never unregisters —
+   * the registration belongs to the Dart lifecycle. */
   detach(): void {
+    this._u2.detaching = true;
     this.subs.forEach((sub) => sub.unsubscribe());
+    this.isDetached = true;
+    this._u2.scope?.dispose();
   }
 
   /** Gets property by name (case-sensitive).
@@ -637,10 +697,10 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   }
 
   worldToScreen(x: number, y: number, chartIdx: number): Point {
-    return Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
+    return DG.Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
   }
 
-  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
+  screenToWorld(x: number, y: number): Point { return DG.Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
 
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
@@ -692,11 +752,11 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get yAxisSlider(): RangeSlider { return toJs(api.grok_ScatterPlotViewer_Get_YAxisSlider(this.dart)); }
 
   /** Convert coords */
-  worldToScreen(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
-  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
+  worldToScreen(x: number, y: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
+  screenToWorld(x: number, y: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
 
   /// 32-bit integer with X in the hi 16 bits, and Y in the lo 16 bits
-  pointToScreen(index: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
+  pointToScreen(index: number): Point { return DG.Point.fromXY(api.grok_ScatterPlotViewer_PointToScreen(this.dart, index)); }
 
   render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
   getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }

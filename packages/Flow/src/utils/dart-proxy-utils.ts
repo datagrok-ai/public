@@ -5,10 +5,9 @@ import {propertyNameToFriendly} from './naming';
 export function safeGet(obj: any, key: string): any {
   try {
     if (!obj) return undefined;
-    // Try direct key access first (works for MapProxy)
+    // Direct key access works for MapProxy.
     const val = obj[key];
     if (val !== undefined) return val;
-    // Fallback to iteration
     const entries = Object.entries(obj);
     for (const [k, v] of entries)
       if (k === key) return v;
@@ -58,11 +57,7 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
-/** Whether a function input parameter is optional. Reads, in order: the
- *  public `Property.isOptional` (backed by `FuncParam.isOptional` — what
- *  core's own call machinery consults, set for every declared-default param,
- *  e.g. OpenFile's `sheetName`); `nullable`; and the `options` map's
- *  `optional` flag (JS-declared `{optional: true}`). */
+/** Reads, in order: `Property.isOptional`, `nullable`, and the options map's `optional` flag. */
 export function isInputOptional(prop: DG.Property): boolean {
   try {
     if (prop.isOptional) return true;
@@ -77,9 +72,7 @@ export function isInputOptional(prop: DG.Property): boolean {
   }
 }
 
-/** The human description of a function parameter, read defensively from the
- *  Dart-proxy `options` map (`description` set via `@grok.decorators.param`),
- *  falling back to a `caption`. Empty string when none is declared. */
+/** Parameter description from the Dart-proxy options map, falling back to `caption`. */
 export function getParamDescription(prop: DG.Property): string {
   try {
     const opts = (prop as unknown as {options?: unknown}).options;
@@ -91,8 +84,7 @@ export function getParamDescription(prop: DG.Property): string {
   }
 }
 
-/** Strip one pair of wrapping quotes from a default that arrives
- *  double-encoded from the annotation (`"'something'"` / `'"something"'`). */
+/** Strip one pair of wrapping quotes from a default that arrives double-encoded from the annotation. */
 export function unquoteDefault(s: string): string {
   const t = s.trim();
   if (t.length >= 2 && ((t.startsWith('\'') && t.endsWith('\'')) || (t.startsWith('"') && t.endsWith('"'))))
@@ -100,9 +92,7 @@ export function unquoteDefault(s: string): string {
   return t;
 }
 
-/** A parameter's declared default — `defaultValue ?? initialValue` — read
- *  defensively from the Dart proxy. String values are unquoted (annotation
- *  defaults often arrive double-encoded). `undefined` when none is declared. */
+/** Declared default (`defaultValue ?? initialValue`), read defensively; strings unquoted. */
 export function getParamDefault(prop: DG.Property): unknown {
   let v: unknown;
   try {v = prop.defaultValue;} catch {/* proxy read failed */}
@@ -112,15 +102,8 @@ export function getParamDefault(prop: DG.Property): unknown {
   return typeof v === 'string' ? unquoteDefault(v) : v;
 }
 
-/** Display label for a function parameter: its `caption` when one is declared
- *  (via `{caption: ...}` / `@grok.decorators.param`), else the **humanized**
- *  property name (`propertyNameToFriendly`, mirroring what
- *  `ui.input.forProperty` shows — 'maxNumOfSomething' → 'Max Num Of
- *  Something'). Purely for UI — the internal identity (`prop.name`, used for
- *  slot keys, `inputValues`, connections, compilation) is unchanged. Reads the
- *  raw `options.caption` first, then `friendlyName` (the Dart caption getter)
- *  when it differs from the raw name — a friendlyName equal to the name is
- *  just the Dart fallback, which we humanize instead. */
+/** Display label: the declared caption, else a `friendlyName` differing from the raw name
+ *  (an equal value is just the Dart fallback), else the humanized name. Identity stays `prop.name`. */
 export function getParamDisplayName(prop: DG.Property): string {
   try {
     const cap = safeGet((prop as unknown as {options?: unknown}).options, 'caption');
@@ -131,18 +114,8 @@ export function getParamDisplayName(prop: DG.Property): string {
   return propertyNameToFriendly(prop.name);
 }
 
-/** Display name for a function node header: the declared `friendlyName`, split
- *  by `|` (top-menu paths carry the whole trail) with the last segment taken.
- *
- *  When the friendlyName is just the raw name it is **humanized**, exactly as
- *  {@link getParamDisplayName} does for parameters. Two reasons: the Dart
- *  getter is `friendlyName ?? name`, so an equal value means "nothing was
- *  declared"; and a `//friendlyName:` annotation does not reliably survive
- *  package publishing (verified on a live stand — Flow's own `readUploadedFile`
- *  registers as `readUploadedFile`), so a camelCase identifier is the common
- *  case rather than the exception. `Filter Rows` beats `filterRows` on a
- *  canvas, and core does the same for its own functions. Identity is
- *  untouched — `func.name` / `nqName` still key everything. */
+/** Node-header display name: the friendlyName's last `|` segment; humanized when it equals the
+ *  raw name — a `//friendlyName:` annotation does not reliably survive package publishing. */
 export function getFuncDisplayName(func: DG.Func): string {
   const raw = func.friendlyName || func.name || '';
   const parts = raw.split('|');

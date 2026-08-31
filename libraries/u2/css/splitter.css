@@ -1,0 +1,88 @@
+/* u2 splitter (see src/components/splitter.ts). Panels are flex items whose basis is a percentage
+   set by JS; sashes are absolutely positioned over the boundary, so their 4px hit area never takes
+   part in the layout and the percentages stay exact. The visible 1px line is the sash pseudo-element. */
+.u2-splitter {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.u2-splitter-horizontal {
+  flex-direction: row;
+}
+
+.u2-splitter-vertical {
+  flex-direction: column;
+}
+
+.u2-splitter-panel {
+  position: relative;
+  flex-grow: 0;
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.u2-sash {
+  position: absolute;
+  z-index: 1;
+  outline: none;
+  touch-action: none;
+}
+
+.u2-sash::before {
+  content: '';
+  position: absolute;
+  background: var(--dg-border);
+}
+
+.u2-splitter-horizontal > .u2-sash {
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+}
+
+.u2-splitter-horizontal > .u2-sash::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: var(--dg-border-width);
+  transform: translateX(-50%);
+}
+
+.u2-splitter-vertical > .u2-sash {
+  left: 0;
+  right: 0;
+  height: 4px;
+  cursor: row-resize;
+}
+
+.u2-splitter-vertical > .u2-sash::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--dg-border-width);
+  transform: translateY(-50%);
+}
+
+.u2-sash-hover::before,
+.u2-sash-active::before,
+.u2-sash:focus-visible::before {
+  background: var(--dg-accent);
+}
+
+.u2-splitter-dragging {
+  user-select: none;
+}
+
+.u2-splitter-horizontal.u2-splitter-dragging {
+  cursor: col-resize;
+}
+
+.u2-splitter-vertical.u2-splitter-dragging {
+  cursor: row-resize;
+}

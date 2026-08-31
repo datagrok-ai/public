@@ -3,12 +3,38 @@
 import * as DG from 'datagrok-api/dg';
 import {
   AggregationCode, AGG_CODE, CacheEntry, CategoricalDesirability, ColumnDesirability, CURRENT_MPO_VERSION,
-  DESIRABILITY_PROFILE_TYPE, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
+  DESIRABILITY_PROFILE_TYPE, DesirabilityLine, DesirabilityMode, DesirabilityProfile, HoistedColumn, MpoResult,
   MpoScale, NumericalDesirability, PropertyDesirability, RowState, WeightedAggregation,
 } from './mpo-types';
 
 // mpo-types is the types/constants barrel for this module; re-export it so consumers keep importing from './mpo'.
 export * from './mpo-types';
+
+/// Scores one value the way `mapColumnDesirability` scores a whole column: log domain, and inversion
+/// applied only to a value the curve covers, so out-of-range stays 0 rather than flipping to 1.
+export function desirabilityScore(d: NumericalDesirability, x: number): number {
+  const last = d.line.length - 1;
+  const log = d.scale === MpoScale.Log;
+  if (last < 0 || (log && x <= 0))
+    return 0;
+
+  const floorX = log ? domainMinX(d) : 0;
+  const at = (i: number): number => log ? Math.log10(Math.max(floorX, d.line[i][0])) : d.line[i][0];
+  const v = log ? Math.log10(x) : x;
+  if (v < at(0) || v > at(last))
+    return 0;
+
+  for (let i = 0; i < last; i++) {
+    const x1 = at(i);
+    const x2 = at(i + 1);
+    if (v >= x1 && v <= x2) {
+      const y1 = d.line[i][1];
+      const y = x1 === x2 ? y1 : y1 + (d.line[i + 1][1] - y1) * (v - x1) / (x2 - x1);
+      return d.inverted ? 1 - y : y;
+    }
+  }
+  return 0;
+}
 
 export function isNumerical(p: PropertyDesirability): p is NumericalDesirability {
   return p.functionType === 'numerical';
@@ -46,8 +72,83 @@ export function convertScaleParams(d: NumericalDesirability, toLog: boolean): vo
     d.k = toLog ? d.k * perDecade(d.x0) : d.k / perDecade(d.x0);
 }
 
+export function setDesirabilityScale(d: NumericalDesirability, log: boolean): void {
+  d.min ??= domainMinX(d);
+  d.max ??= domainMaxX(d);
+  convertScaleParams(d, log);
+  d.scale = log ? MpoScale.Log : MpoScale.Linear;
+}
+
+export function defaultAnchor(d: NumericalDesirability): number {
+  const log = d.scale === MpoScale.Log;
+  return fromScale((toScale(domainMinX(d), log) + toScale(domainMaxX(d), log)) / 2, log);
+}
+
+export function defaultSigma(d: NumericalDesirability): number {
+  const log = d.scale === MpoScale.Log;
+  return Math.max(0.01, (toScale(domainMaxX(d), log) - toScale(domainMinX(d), log)) / 6);
+}
+
+export const DEFAULT_K = 10;
+
+export function materializeLine(d: NumericalDesirability): DesirabilityLine {
+  if (d.mode !== DesirabilityMode.Gaussian && d.mode !== DesirabilityMode.Sigmoid)
+    return d.line;
+
+  const log = d.scale === MpoScale.Log;
+  const minX = domainMinX(d);
+  const tMin = toScale(minX, log);
+  const tMax = toScale(domainMaxX(d), log);
+  const gaussian = d.mode === DesirabilityMode.Gaussian;
+  const center = gaussian ? d.mean ?? defaultAnchor(d) : d.x0 ?? defaultAnchor(d);
+  const anchor = toScale(log ? Math.max(minX, center) : center, log);
+  const sigma = d.sigma ?? defaultSigma(d);
+  const k = d.k ?? DEFAULT_K;
+  const n = 60;
+  const line: DesirabilityLine = [];
+
+  for (let i = 0; i <= n; ++i) {
+    const u = tMin + (tMax - tMin) * (i / n);
+    const z = (u - anchor) / sigma;
+    const y = gaussian ? Math.exp(-0.5 * z * z) : 1 / (1 + Math.exp(-k * (u - anchor)));
+    line.push([fromScale(u, log), y]);
+  }
+
+  return line;
+}
+
+export function refreshDesirabilityLine(d: NumericalDesirability): void {
+  if (d.mode === DesirabilityMode.Freeform) {
+    if (d.freeformLine)
+      d.line = d.freeformLine;
+    return;
+  }
+  d.freeformLine ??= [...d.line];
+  d.line = materializeLine(d);
+}
+
+export function applyDesirabilityPatch(prop: PropertyDesirability, patch: Partial<PropertyDesirability>): void {
+  Object.assign(prop, patch);
+  if (!isNumerical(prop))
+    return;
+  if (prop.mode === DesirabilityMode.Freeform && 'line' in patch)
+    prop.freeformLine = prop.line;
+  refreshDesirabilityLine(prop);
+}
+
+export function flatLine(min: number, max: number): DesirabilityLine {
+  return [[min, 0.5], [max, 0.5]];
+}
+
 export function createDefaultNumerical(weight = 1, min = 0, max = 1): NumericalDesirability {
-  return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max, line: []};
+  return {functionType: 'numerical', weight, mode: DesirabilityMode.Freeform, min, max,
+    line: flatLine(min, max)};
+}
+
+export function rangeNumericalToColumn(prop: NumericalDesirability, col: DG.Column): void {
+  prop.min = col.min;
+  prop.max = col.max;
+  prop.line = [];
 }
 
 export const MPO_NUMERIC_TYPES = new Set<string>([DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
@@ -71,6 +172,14 @@ export function migrateDesirability(raw: any): PropertyDesirability {
   return {...raw, functionType: 'numerical'};
 }
 
+export function lockProfileRanges(profile: DesirabilityProfile): void {
+  for (const key in profile.properties) {
+    const prop = profile.properties[key];
+    if (isNumerical(prop))
+      prop.rangeUserSet = true;
+  }
+}
+
 export function isDesirabilityProfile(x: any): x is DesirabilityProfile {
   return x != null && typeof x === 'object' && x.type === DESIRABILITY_PROFILE_TYPE;
 }
@@ -84,9 +193,13 @@ export function migrateProfile(raw: DesirabilityProfile): DesirabilityProfile {
   if (version < 1) {
     for (const key in raw.properties)
       raw.properties[key] = migrateDesirability(raw.properties[key]);
-    raw.version = CURRENT_MPO_VERSION;
   }
 
+  // v1 → v2: lock ranges on all numerical properties
+  if (version < 2)
+    lockProfileRanges(raw);
+
+  raw.version = CURRENT_MPO_VERSION;
   return raw;
 }
 

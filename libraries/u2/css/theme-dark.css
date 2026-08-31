@@ -1,0 +1,56 @@
+/* DRAFT dark theme — PARKED (askalkin 2026-08-18): P7 architecture validation, not a v1
+   deliverable. Values are unreviewed placeholders in the VS Code register; revisit with the
+   flagship-five designer pass. Proves the token sheet is complete: if a component looks wrong
+   under [data-dg-theme='dark'], it is reading a raw value it should read through a token.
+   Ramps keep their meaning (N = subtlest → strongest), so component CSS referencing e.g.
+   --dg-steel-1 stays coherent. Reviewable via the gallery's theme toggle. */
+[data-dg-theme='dark'] {
+  --dg-steel-1: #2A323C;
+  --dg-steel-2: #333E4A;
+  --dg-steel-3: #46586B;
+  --dg-steel-4: #7E97AE;
+  --dg-steel-5: #A9C1D9;
+  --dg-grey-1: #26282C;
+  --dg-grey-2: #36393F;
+  --dg-grey-3: #4E525A;
+  --dg-grey-4: #8A8F99;
+  --dg-grey-5: #A9AEB8;
+  --dg-grey-6: #D6D9DE;
+  --dg-warm-grey-1: #2B2A28;
+  --dg-warm-grey-2: #3B3A37;
+  --dg-warm-grey-3: #8F8E8A;
+  --dg-warm-grey-4: #CFCEC9;
+  --dg-red-1: #4A2B2B;
+  --dg-red-3: #E06C6C;
+  --dg-red-4: #F0A0A0;
+  --dg-green-1: #22392E;
+  --dg-green-2: #4CC287;
+  --dg-green-3: #8FDDB6;
+  --dg-orange-1: #40331F;
+  --dg-orange-3: #F0BE7E;
+  --dg-beige-1: #2E2D22;
+  --dg-beige-2: #3D3C2E;
+  --dg-blue-1: #4DA6E8;
+  --dg-blue-2: #58B6D4;
+
+  --dg-bg: #1F2226;
+  --dg-bg-secondary: #26282C;
+  --dg-text-color: #D6D9DE;
+  --dg-text-color-light: #8A8F99;
+  --dg-text-color-disabled: #5A5F68;
+  --dg-hover: #333E4A;
+  --dg-hover-subtle: #2A2D33;
+  --dg-selection-bg: #274D6E;
+  --dg-selection-text: #7CC0F0;
+  --dg-border: #3A3E45;
+  --dg-border-subtle: #2E3237;
+  --dg-success: #4CC287;
+  --dg-failure: #F07C72;
+
+  --dg-backdrop: rgba(0, 0, 0, 0.45);
+  --dg-tour-dim: rgba(0, 0, 0, 0.72);
+  --dg-shadow-1: 0 2px 8px rgba(0, 0, 0, 0.50);
+  --dg-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.40);
+  --dg-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.60), 0 2px 6px rgba(0, 0, 0, 0.40);
+  --dg-overlay-border: var(--dg-border-width) solid var(--dg-border);
+}

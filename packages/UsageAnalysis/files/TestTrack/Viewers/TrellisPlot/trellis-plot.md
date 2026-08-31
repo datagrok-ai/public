@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.trellis-plot, entities.viewer.action.use-in-trellis, curves.viewer.multi-curve]
 realized_as:
   - trellis-plot-spec.ts
 related_bugs: []

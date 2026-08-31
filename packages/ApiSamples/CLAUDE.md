@@ -17,6 +17,7 @@ Keep them very short and clean.
 | Folder         | What belongs here                                                   |
 |----------------|---------------------------------------------------------------------|
 | `dapi/`        | Server API (users, projects, files, layouts, messaging)             |
+| `dapi/domains/`| Domain schemas: row CRUD, queries, the domain UI and app framework  |
 | `data-frame/`  | DataFrame construction, modification, filtering, aggregation, joins |
 | `data-access/` | Database and external API access                                    |
 | `ui/`          | UI components (buttons, inputs, dialogs, viewers, layouts)          |

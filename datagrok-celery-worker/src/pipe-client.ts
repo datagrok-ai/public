@@ -85,7 +85,8 @@ export class PipeClient {
           await new Promise((resolve) => setTimeout(resolve, retryMs));
       }
     }
-    throw new Error(`Failed to connect to grok_pipe at ${this.url} after ${attempts} retries: ${lastError?.message ?? lastError}`);
+    throw new Error(`Failed to connect to grok_pipe at ${this.url} after ${attempts} retries: ` +
+      `${lastError?.message ?? lastError}`);
   }
 
   private connectOnce(): Promise<void> {

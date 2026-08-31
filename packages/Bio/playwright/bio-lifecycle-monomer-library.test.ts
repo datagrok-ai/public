@@ -4,6 +4,7 @@ sub_features_covered: [bio.api.get-monomer-lib-helper, bio.lifecycle.init, bio.m
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {acquireMonomerLibLock, releaseMonomerLibLock} from './helpers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
@@ -11,18 +12,22 @@ import {
 } from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
 
+test.beforeEach(async () => { await acquireMonomerLibLock(); });
+test.afterEach(() => releaseMonomerLibLock());
 // Opens ribbon Bio | Manage | Monomer Libraries, waiting on each submenu instead of blind sleeps.
 async function openManageMonomerLibrariesRibbon(page: any): Promise<void> {
-  await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
-  await page.locator('[name="div-Bio---Manage"]').waitFor({state: 'visible', timeout: 15_000});
+  // The Bio top menu belongs to a table view, so a caller arriving from the manage view finds no
+  // ribbon at all.
   await page.evaluate(() => {
-    const manage = document.querySelector('[name="div-Bio---Manage"]')!;
-    manage.dispatchEvent(new MouseEvent('mouseenter', {bubbles: true}));
-    manage.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+    const tv = Array.from((grok.shell as any).tableViews)[0];
+    if (tv && grok.shell.v !== tv) grok.shell.v = tv;
   });
-  await page.locator('[name="div-Bio---Manage---Monomer-Libraries"]').waitFor({state: 'visible', timeout: 15_000});
-  await page.evaluate(() =>
-    (document.querySelector('[name="div-Bio---Manage---Monomer-Libraries"]') as HTMLElement).click());
+  // Real mouse only: a synthetic mouseenter/mouseover leaves the d4 submenu collapsed, so the leaf
+  // stays in the DOM but never becomes visible.
+  await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
+  await page.locator('[name="div-Bio"]').click();
+  await page.locator('[name="div-Bio---Manage"]').hover();
+  await page.locator('[name="div-Bio---Manage---Monomer-Libraries"]').click();
   await page.waitForFunction(() => (window as any).grok?.shell?.v?.name === 'Manage Monomer Libraries',
     null, {timeout: 30_000});
   await page.locator('.monomer-lib-controls-form .ui-input-bool').first().waitFor({timeout: 15_000});
@@ -46,6 +51,8 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
   const stamp = Date.now();
   const workingCopy = `bio-lifecycle-monomer-library-${stamp}.json`;
   const workingCopyPath = `System:AppData/Bio/monomer-libraries/${workingCopy}`;
+  const uploadedCopy = `bio-lifecycle-monomer-library-add-${stamp}.json`;
+  const uploadedCopyPath = `System:AppData/Bio/monomer-libraries/${uploadedCopy}`;
   const projectName = `bio-lifecycle-monomer-library-project-${stamp}`;
   const canonicalLibCandidates = [
     'System:AppData/Bio/monomer-libraries/HELMCoreLibrary.json',
@@ -55,6 +62,7 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
   const syntheticSymbol = `XYZ_TEST_${stamp}`;
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   let workingCopyWritten = false;
+  let uploadedCopyWritten = false;
   let preColors: {sig: string; count: number} | null = null;
   await loginToDatagrok(page);
   // Setup — open the HELM dataset so the renderer touches the library color-coding path.
@@ -168,17 +176,12 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
         };
       });
       expect((listing.viewName || '').toLowerCase()).toContain('monomer librar');
-      // KNOWN PRODUCT GAP (findings A7): the Manage Monomer Libraries *view* and the *dialog* share one
-      // singleton MonomerLibraryManagerWidget root, so whichever host renders last claims the
-      // `.monomer-lib-controls-form`, leaving the view listing empty. The dialog path (S1.4) still lists
-      // the libraries correctly. Assert the view opens; record the empty listing as a known gap. When the
-      // widget builds a fresh controls form per host, restore the hard asserts below.
       const canonicalStems = ['HELMCoreLibrary', 'polytool', 'sample-lib'];
       const hasCanonical = listing.labels.some((l: string) =>
         canonicalStems.some((stem) => l.toLowerCase().includes(stem.toLowerCase())));
-      if (!listing.formPresent || listing.rowCount < 1 || !hasCanonical)
-        console.warn(`KNOWN PRODUCT GAP (A7): Manage Monomer Libraries view listing empty ` +
-          `(formPresent=${listing.formPresent}, rows=${listing.rowCount}, labels=[${listing.labels.join(', ')}])`);
+      expect(listing.formPresent, 'view must render the monomer-lib controls form').toBe(true);
+      expect(listing.rowCount, `view listing empty; labels=[${listing.labels.join(', ')}]`).toBeGreaterThanOrEqual(1);
+      expect(hasCanonical, `no canonical library in view listing: [${listing.labels.join(', ')}]`).toBe(true);
     });
     await softStep('S1.4: alternate Bio:manageMonomerLibraries dispatch yields a dialog with the same catalogue', async () => {
       const result = await page.evaluate(async () => {
@@ -217,11 +220,6 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
             const span = r.querySelector('span');
             return span ? (span.textContent || '').trim() : '';
           }).filter((s: string) => s.length > 0);
-          dialog.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-          for (let i = 0; i < 40; i++) {
-            if (!document.querySelector('.d4-dialog .monomer-lib-controls-form')) break;
-            await new Promise((r) => setTimeout(r, 100));
-          }
         }
         return {
           dispatchErr: null,
@@ -239,11 +237,13 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.dialogOpened,
         `expected dialog with .monomer-lib-controls-form within 10s; view labels: [${result.viewLabels.join(', ')}]`).toBe(true);
       expect(result.dialogRowCount).toBeGreaterThanOrEqual(1);
-      // The dialog lists the libraries correctly; the view does not (findings A7 — shared singleton widget
-      // root). cataloguesAgree can only hold once the view is fixed; record disagreement as the known gap.
-      if (!result.cataloguesAgree)
-        console.warn(`KNOWN PRODUCT GAP (A7): view labels [${result.viewLabels.join(', ')}] ` +
-          `disagree with dialog labels [${result.dialogLabels.join(', ')}]`);
+      expect(result.cataloguesAgree,
+        `view labels [${result.viewLabels.join(', ')}] disagree with dialog labels ` +
+        `[${result.dialogLabels.join(', ')}]`).toBe(true);
+      // Real keypress: a synthetic Escape leaves the dialog open, and it then intercepts every
+      // pointer event the later ribbon steps need.
+      await page.keyboard.press('Escape');
+      await page.locator('[name="dialog-Manage-monomer-libraries"]').waitFor({state: 'detached', timeout: 15_000});
     });
     // Scenario 2 — Save edited library back to FileShare
     await softStep('S2.1: working copy lands under System:AppData/Bio/monomer-libraries via writeAsText', async () => {
@@ -372,35 +372,39 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       expect(result.inMemory,
         `expected synthetic monomer '${syntheticSymbol}' present in reloaded in-memory library cache (${result.monomerCount} monomers) — stale-singleton regression`).toBe(true);
     });
-    await softStep('S2.4: reopen Manage Monomer Libraries view — working copy appears in listing', async () => {
+    await softStep('S2.4: Add button uploads a library into the manager; listing updates and survives reopen', async () => {
       await page.evaluate(() => {
         const v = grok.shell.v;
         if (v && v.name === 'Manage Monomer Libraries' && typeof v.close === 'function') v.close();
       });
       await openManageMonomerLibrariesRibbon(page);
-      const result = await page.evaluate(({fileName, stem}) => {
-        const root: any = grok.shell.v?.root;
-        const form: any = root?.querySelector?.('.monomer-lib-controls-form');
-        const rows = form ? Array.from(form.querySelectorAll('.ui-input-bool')) : [];
-        const labels: string[] = rows.map((r: any) => {
-          const span = r.querySelector('span');
-          return span ? (span.textContent || '').trim() : '';
-        });
-        const hasWorkingCopy = labels.some((l: string) =>
-          l === fileName || l.includes(stem));
-        return {
-          formPresent: !!form,
-          rowCount: rows.length,
-          labels,
-          hasWorkingCopy,
-        };
-      }, {fileName: workingCopy, stem: workingCopy.replace(/\.json$/, '')});
-      expect(result.formPresent).toBe(true);
-      expect(result.rowCount).toBeGreaterThanOrEqual(1);
-      expect(result.hasWorkingCopy,
-        `expected working copy '${workingCopy}' (or stem) in manage-view labels; observed: [${result.labels.join(', ')}]`).toBe(true);
+      // Upload through the manager's own Add button — the entry point a user has. A file written
+      // straight to the FileShare bypasses the provider that feeds this listing, so it only shows
+      // up after a page reload.
+      const libJson = await page.evaluate(async (p) => await grok.dapi.files.readAsText(p), workingCopyPath);
+      const chooserPromise = page.waitForEvent('filechooser', {timeout: 30_000});
+      await page.locator('button:has-text("Add")').first().click();
+      await (await chooserPromise).setFiles({name: uploadedCopy, mimeType: 'application/json', buffer: Buffer.from(libJson)});
+      uploadedCopyWritten = true;
+      const listing = async (): Promise<string[]> => page.evaluate(() => {
+        const form: any = grok.shell.v?.root?.querySelector?.('.monomer-lib-controls-form');
+        return form ? Array.from(form.querySelectorAll('.ui-input-bool'))
+          .map((r: any) => (r.querySelector('span')?.textContent ?? '').trim()) : [];
+      });
+      await expect.poll(listing, {timeout: 60_000,
+        message: `uploaded library '${uploadedCopy}' never appeared in the manager listing`}).toContain(uploadedCopy);
+      const onServer = await page.evaluate(async (p) => {
+        try { return (await grok.dapi.files.readAsText(p)).length; } catch (e) { return -1; }
+      }, uploadedCopyPath);
+      expect(onServer, `uploaded library not stored at ${uploadedCopyPath}`).toBeGreaterThan(0);
+      await page.evaluate(() => {
+        const v = grok.shell.v;
+        if (v && v.name === 'Manage Monomer Libraries' && typeof v.close === 'function') v.close();
+      });
+      await openManageMonomerLibrariesRibbon(page);
+      expect(await listing(), 'uploaded library missing after the manager is closed and reopened')
+        .toContain(uploadedCopy);
     });
-    // Scenario 3 — Save project that references the library
     await softStep('S3.1: HELM dataset remains open; Macromolecule column renderer is dispatchable', async () => {
       const info = await page.evaluate(() => {
         const tvs: any[] = Array.from((grok.shell as any).tableViews || []);
@@ -518,6 +522,11 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       await page.evaluate(async (p) => {
         try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
       }, workingCopyPath).catch(() => {});
+    }
+    if (uploadedCopyWritten) {
+      await page.evaluate(async (p) => {
+        try { await grok.dapi.files.delete(p); } catch (_) { /* best effort */ }
+      }, uploadedCopyPath).catch(() => {});
     }
     if (saved) {
       await deleteProjectWithCleanup(page, {

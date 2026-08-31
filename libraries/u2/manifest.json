@@ -1,0 +1,2117 @@
+{
+  "schema": "dg-ui/1",
+  "recipes": "docs/recipes/",
+  "binding": "Every declared prop accepts a \"bind\" entry. bindable: true marks live in-place consumption (twoWay marks write-back); a bind on any other declared prop re-renders the node when the bound source changes. A bind on an undeclared prop is an error.",
+  "appearance": [
+    {
+      "name": "color",
+      "type": "string",
+      "inputType": "Color",
+      "description": "Text color; inherits down the subtree.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "backgroundColor",
+      "type": "string",
+      "inputType": "Color",
+      "description": "Background color.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "font",
+      "type": "string",
+      "inputType": "Font",
+      "description": "CSS font shorthand (\"bold 14px Roboto\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "opacity",
+      "type": "double",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "description": "0 transparent to 1 opaque.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "cursor",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "default",
+        "pointer",
+        "not-allowed",
+        "wait",
+        "help",
+        "text",
+        "move",
+        "grab"
+      ],
+      "description": "Mouse cursor over the node.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "textAlign",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "left",
+        "center",
+        "right"
+      ],
+      "description": "Horizontal text alignment.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "padding",
+      "type": "string",
+      "description": "CSS padding (\"8px 12px\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "margin",
+      "type": "string",
+      "description": "CSS margin.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "border",
+      "type": "string",
+      "description": "CSS border (\"1px solid var(--dg-border)\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "borderRadius",
+      "type": "string",
+      "description": "Corner radius (\"4px\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "description": "CSS width (\"200px\", \"50%\").",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "description": "CSS height.",
+      "category": "Appearance",
+      "bindable": true
+    },
+    {
+      "name": "pointerEvents",
+      "type": "string",
+      "nullable": true,
+      "choices": [
+        "auto",
+        "none"
+      ],
+      "description": "\"none\" makes the node click-through.",
+      "category": "Appearance",
+      "bindable": true
+    }
+  ],
+  "components": [
+    {
+      "tag": "u2-text-input",
+      "category": "Inputs",
+      "description": "Single-line text editor with validation.",
+      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "search",
+          "type": "bool",
+          "description": "Magnifier affordance plus a clear button."
+        },
+        {
+          "name": "password",
+          "type": "bool",
+          "description": "Masked field with an eye toggle."
+        },
+        {
+          "name": "autoResize",
+          "type": "bool",
+          "description": "Width follows the text between 100 and 300px."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-text-input",
+        "props": {
+          "label": "Name",
+          "value": "Aspirin"
+        }
+      }
+    },
+    {
+      "tag": "u2-text-area",
+      "category": "Inputs",
+      "description": "Multi-line text editor.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "autoGrow",
+          "type": "bool",
+          "description": "Grows with the text instead of scrolling."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-text-area",
+        "props": {
+          "label": "Description",
+          "placeholder": "Up to 40 characters"
+        }
+      }
+    },
+    {
+      "tag": "u2-bool-input",
+      "category": "Inputs",
+      "description": "Checkbox or switch.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "switch",
+          "type": "bool",
+          "description": "Compact toggle instead of a checkbox."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-bool-input",
+        "props": {
+          "label": "Active",
+          "value": true,
+          "switch": true
+        }
+      }
+    },
+    {
+      "tag": "u2-number-input",
+      "category": "Inputs",
+      "description": "Numeric editor; text that does not parse or falls outside min/max stays on screen and only marks the input invalid.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "mode",
+          "type": "string",
+          "choices": [
+            "int",
+            "float"
+          ],
+          "description": "\"int\" or \"float\" (default)."
+        },
+        {
+          "name": "min",
+          "type": "double"
+        },
+        {
+          "name": "max",
+          "type": "double"
+        },
+        {
+          "name": "step",
+          "type": "double",
+          "description": "Spinner, clicker and arrow-key increment; 1 by default."
+        },
+        {
+          "name": "slider",
+          "type": "bool",
+          "description": "Range control under the box, revealed on hover; needs both bounds."
+        },
+        {
+          "name": "clicker",
+          "type": "bool",
+          "description": "− / + buttons on the options rail, revealed on hover."
+        },
+        {
+          "name": "spinner",
+          "type": "bool",
+          "description": "Hover spinner inside the field."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-number-input",
+        "props": {
+          "label": "Amount",
+          "value": 10,
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "tag": "u2-choice-input",
+      "category": "Inputs",
+      "description": "Single choice over a native select.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "bindable": true
+        },
+        {
+          "name": "nullable",
+          "type": "bool",
+          "description": "Offers an empty option; true by default."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-choice-input",
+        "props": {
+          "label": "Series",
+          "items": [
+            "a",
+            "b",
+            "c"
+          ],
+          "value": "b"
+        }
+      }
+    },
+    {
+      "tag": "u2-multi-choice-input",
+      "category": "Inputs",
+      "description": "Checkbox list; the value holds the checked items in item order.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string_list",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "bindable": true
+        },
+        {
+          "name": "emptyText",
+          "type": "string",
+          "description": "Stands in for an empty list; 'No items' by default."
+        },
+        {
+          "name": "showSummaryCheckbox",
+          "type": "bool",
+          "description": "Tri-state \"<N> of <M>\" summary row that toggles all/none; the list collapses on click."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-multi-choice-input",
+        "props": {
+          "label": "Tags",
+          "items": [
+            "acid",
+            "base"
+          ],
+          "value": [
+            "acid"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "u2-button",
+      "category": "Actions",
+      "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command.",
+      "props": [
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "primary",
+          "type": "bool",
+          "description": "Accent styling for the main action."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon",
+          "description": "Font Awesome icon name shown before the text."
+        }
+      ],
+      "defaults": {
+        "text": "Button"
+      },
+      "events": [
+        "click"
+      ],
+      "example": {
+        "tag": "u2-button",
+        "props": {
+          "text": "Save",
+          "primary": true
+        },
+        "on": {
+          "click": "cmd:save"
+        }
+      }
+    },
+    {
+      "tag": "u2-panel",
+      "category": "Containers",
+      "description": "Padded vertical container.",
+      "props": [
+        {
+          "name": "cls",
+          "type": "string",
+          "description": "Extra layout class."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-panel",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-div-v",
+      "category": "Containers",
+      "description": "Vertical stack.",
+      "props": [
+        {
+          "name": "cls",
+          "type": "string",
+          "description": "Extra layout class."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-div-v",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-div-h",
+      "category": "Containers",
+      "description": "Horizontal row.",
+      "props": [
+        {
+          "name": "cls",
+          "type": "string",
+          "description": "Extra layout class."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-div-h",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-splitter",
+      "category": "Containers",
+      "description": "Resizable panels separated by draggable sashes; every spec child becomes a panel.",
+      "usage": "Master-detail layouts (list left, details right): see the entity-browser recipe. In a platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.",
+      "props": [
+        {
+          "name": "direction",
+          "type": "string",
+          "choices": [
+            "horizontal",
+            "vertical"
+          ],
+          "description": "\"horizontal\" (default) or \"vertical\"."
+        },
+        {
+          "name": "sizes",
+          "type": "object",
+          "description": "Fraction per panel, normalized; equal shares by default."
+        },
+        {
+          "name": "minSize",
+          "type": "double",
+          "description": "Smallest panel size in pixels; 60 by default."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaults": {
+        "direction": "horizontal"
+      },
+      "defaultChildren": [
+        {
+          "tag": "u2-panel"
+        },
+        {
+          "tag": "u2-panel"
+        }
+      ],
+      "example": {
+        "tag": "u2-splitter",
+        "props": {
+          "direction": "horizontal",
+          "sizes": [
+            0.3,
+            0.7
+          ]
+        },
+        "children": [
+          {
+            "tag": "u2-panel",
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "Name"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "children": [
+              {
+                "tag": "u2-text-area",
+                "props": {
+                  "label": "Notes"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-accordion",
+      "category": "Containers",
+      "description": "Independently expanding panes, one per spec child; the child node carries the pane title.",
+      "props": [],
+      "childProps": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Pane title; numbered when absent."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon",
+          "description": "Font Awesome icon name shown before the title."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaultChildren": [
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Pane 1"
+          }
+        }
+      ],
+      "example": {
+        "tag": "u2-accordion",
+        "children": [
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "General"
+            },
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "Name"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Advanced"
+            },
+            "children": [
+              {
+                "tag": "u2-bool-input",
+                "props": {
+                  "label": "Active"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-section",
+      "category": "Containers",
+      "description": "One collapsible titled section: a form-category-styled header whose hover chevron sits left of the caption; clicking the header folds the body.",
+      "usage": "For grouping form fields or page content under a heading. Inputs inside a u2-section child of a u2-form are adopted by the section, not the form — they do not join the form's label column. A managed pane set belongs in u2-accordion.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "expanded",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "collapsible",
+          "type": "bool",
+          "description": "false renders a plain heading and body — no chevron, no click."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaults": {
+        "title": "Section"
+      },
+      "example": {
+        "tag": "u2-section",
+        "props": {
+          "title": "Study"
+        },
+        "children": [
+          {
+            "tag": "u2-choice-input",
+            "props": {
+              "label": "Country",
+              "items": [
+                "USA",
+                "France"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-tabs",
+      "category": "Containers",
+      "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
+      "props": [
+        {
+          "name": "orientation",
+          "type": "string",
+          "choices": [
+            "horizontal",
+            "vertical"
+          ],
+          "description": "\"horizontal\" (default) or \"vertical\" — a header column on the left."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "choices": [
+            "platform",
+            "document"
+          ],
+          "description": "\"platform\" (default) is the ui.tabControl look; \"document\" the IDE document-tab skin."
+        },
+        {
+          "name": "activeTab",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Id of the selected tab (spec children get tab-0, tab-1, …)."
+        }
+      ],
+      "childProps": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Tab label; numbered when absent."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon",
+          "description": "Font Awesome icon name shown before the title."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaults": {
+        "orientation": "horizontal",
+        "variant": "platform"
+      },
+      "defaultChildren": [
+        {
+          "tag": "u2-panel",
+          "props": {
+            "title": "Tab 1"
+          }
+        }
+      ],
+      "example": {
+        "tag": "u2-tabs",
+        "children": [
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Data",
+              "icon": "table"
+            },
+            "children": [
+              {
+                "tag": "u2-text-input",
+                "props": {
+                  "label": "Table"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "u2-panel",
+            "props": {
+              "title": "Style"
+            },
+            "children": [
+              {
+                "tag": "u2-bool-input",
+                "props": {
+                  "label": "Legend"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-form",
+      "category": "Containers",
+      "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else renders as a plain row in place.",
+      "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.",
+      "props": [
+        {
+          "name": "layout",
+          "type": "string",
+          "choices": [
+            "auto",
+            "normal",
+            "wide",
+            "tall"
+          ],
+          "description": "\"auto\" (default) picks wide or tall by fit — editors fill the row while the label column plus the minimum editor width fit, captions move above when they do not; \"normal\" never switches; \"wide\" stretches editors across the row; \"tall\" puts captions above their editors."
+        },
+        {
+          "name": "captionAlign",
+          "type": "string",
+          "choices": [
+            "right",
+            "left"
+          ],
+          "bindable": true,
+          "description": "Caption alignment in caption-left layouts; right is the platform default."
+        }
+      ],
+      "acceptsChildren": true,
+      "defaults": {
+        "layout": "auto"
+      },
+      "example": {
+        "tag": "u2-form",
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          },
+          {
+            "tag": "u2-number-input",
+            "props": {
+              "label": "Amount",
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-property-grid",
+      "category": "Display",
+      "description": "Two-column property editor over a JSON descriptor list.",
+      "usage": "For editing a live object that carries Property metadata, prefer `propertyForm` — this grid is for descriptor-driven settings panels.",
+      "props": [
+        {
+          "name": "properties",
+          "type": "object",
+          "description": "Row descriptors: name, type (string/int/double/bool/choice/string_list), category, choices, min, max, description, readonly."
+        },
+        {
+          "name": "values",
+          "type": "object",
+          "description": "Initial value per property name."
+        }
+      ],
+      "example": {
+        "tag": "u2-property-grid",
+        "props": {
+          "properties": [
+            {
+              "name": "Title",
+              "type": "string"
+            },
+            {
+              "name": "Rows",
+              "type": "int",
+              "min": 0
+            }
+          ],
+          "values": {
+            "Title": "Demo",
+            "Rows": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "u2-icon",
+      "category": "Display",
+      "description": "A Font Awesome icon.",
+      "props": [
+        {
+          "name": "name",
+          "type": "string",
+          "inputType": "Icon",
+          "description": "Font Awesome icon name."
+        },
+        {
+          "name": "variant",
+          "type": "string",
+          "choices": [
+            "light",
+            "regular",
+            "solid",
+            "brands"
+          ],
+          "description": "Face; light by default, brands picked on its own for a brand name."
+        },
+        {
+          "name": "size",
+          "type": "string",
+          "choices": [
+            "small",
+            "medium",
+            "large"
+          ]
+        }
+      ],
+      "defaults": {
+        "name": "star"
+      },
+      "example": {
+        "tag": "u2-icon",
+        "props": {
+          "name": "flask",
+          "size": "large"
+        }
+      }
+    },
+    {
+      "tag": "u2-breadcrumbs",
+      "category": "Display",
+      "description": "Path bar that collapses its middle segments when it overflows.",
+      "usage": "For navigation within your own view. The shell already renders the view's own breadcrumb from its name/path — don't duplicate it.",
+      "props": [
+        {
+          "name": "items",
+          "type": "string_list"
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "click"
+      ],
+      "example": {
+        "tag": "u2-breadcrumbs",
+        "props": {
+          "items": [
+            "Home",
+            "Projects",
+            "Demo"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "u2-slider-input",
+      "category": "Inputs",
+      "description": "Bare range track; the value shows in a tooltip on hover and while dragging.",
+      "usage": "For a value that is only meaningful within known bounds. When the exact number matters too, use `u2-number-input` — it carries the slider as an option.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "min",
+          "type": "double"
+        },
+        {
+          "name": "max",
+          "type": "double"
+        },
+        {
+          "name": "step",
+          "type": "double",
+          "description": "(max - min) / 100 by default."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-slider-input",
+        "props": {
+          "label": "Opacity",
+          "value": 50,
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "tag": "u2-range-slider",
+      "category": "Inputs",
+      "description": "Two-handle range selector: drag a handle to move one end, the band between them to move the whole window.",
+      "usage": "For picking an interval within known bounds — filters, zoom windows, thresholds with a low and a high end. A single number belongs in `u2-slider-input`.",
+      "props": [
+        {
+          "name": "lo",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Lower end of the selected range."
+        },
+        {
+          "name": "hi",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true,
+          "description": "Upper end of the selected range."
+        },
+        {
+          "name": "min",
+          "type": "double"
+        },
+        {
+          "name": "max",
+          "type": "double"
+        },
+        {
+          "name": "step",
+          "type": "double",
+          "description": "Snap increment for dragging; continuous when absent."
+        },
+        {
+          "name": "minRange",
+          "type": "double",
+          "description": "Smallest allowed hi − lo; 0 by default."
+        },
+        {
+          "name": "vertical",
+          "type": "bool",
+          "description": "Bottom-to-top track."
+        }
+      ],
+      "defaults": {
+        "min": 0,
+        "max": 100,
+        "lo": 20,
+        "hi": 60
+      },
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-range-slider",
+        "props": {
+          "min": 0,
+          "max": 100,
+          "lo": 20,
+          "hi": 60
+        }
+      }
+    },
+    {
+      "tag": "u2-radio-input",
+      "category": "Inputs",
+      "description": "Radio group over native radios; one item at a time.",
+      "usage": "For three to five always-visible options. Above that use `u2-choice-input`.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "items",
+          "type": "string_list"
+        },
+        {
+          "name": "buttons",
+          "type": "bool",
+          "description": "Raised-button variant instead of radio dots."
+        },
+        {
+          "name": "itemTooltips",
+          "type": "object",
+          "description": "Hover text per item."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-radio-input",
+        "props": {
+          "label": "Stage",
+          "items": [
+            "Discovery",
+            "Preclinical"
+          ],
+          "value": "Discovery"
+        }
+      }
+    },
+    {
+      "tag": "u2-color-input",
+      "category": "Inputs",
+      "description": "Hex field plus a swatch that opens the browser color picker.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "swatchOnly",
+          "type": "bool",
+          "description": "Swatch alone, no hex field."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-color-input",
+        "props": {
+          "label": "Color",
+          "value": "#1f77b4"
+        }
+      }
+    },
+    {
+      "tag": "u2-icon-input",
+      "category": "Inputs",
+      "description": "Font Awesome icon name, picked from a searchable grid of every icon the platform ships.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true,
+          "inputType": "Icon"
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-icon-input",
+        "props": {
+          "label": "Icon",
+          "value": "star"
+        }
+      }
+    },
+    {
+      "tag": "u2-list-input",
+      "category": "Inputs",
+      "description": "Comma-separated list; items carrying a comma are quoted. Expands to a textarea.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string_list",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-list-input",
+        "props": {
+          "label": "Synonyms",
+          "value": [
+            "ASA",
+            "2-acetoxybenzoic acid"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "u2-map-input",
+      "category": "Inputs",
+      "description": "Key/value rows with per-row add and remove; duplicate keys are invalid, and a row with an empty key stays out of the value.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-map-input",
+        "props": {
+          "label": "Params",
+          "value": {
+            "solvent": "DMSO"
+          }
+        }
+      }
+    },
+    {
+      "tag": "u2-qnum-input",
+      "category": "Inputs",
+      "description": "Qualified number editor — \"<5.2\", \"10\", \">1e3\". The value is the packed double the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.",
+      "usage": "For measurements reported against a detection limit. A plain number belongs in `u2-number-input` — this editor spends two bits of precision on the qualifier.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "double",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        }
+      ],
+      "events": [
+        "input",
+        "change"
+      ],
+      "example": {
+        "tag": "u2-qnum-input",
+        "props": {
+          "label": "IC50",
+          "value": 5.2
+        }
+      }
+    },
+    {
+      "tag": "u2-font-input",
+      "category": "Inputs",
+      "description": "Font editor over the platform font string — size box with presets, bold and italic toggles, family select.",
+      "usage": "For the \"<weight> <style> <size>px <family>\" strings viewer looks carry; anything else that needs a font belongs in CSS.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "families",
+          "type": "string_list",
+          "description": "Families on offer; four defaults otherwise."
+        },
+        {
+          "name": "sizes",
+          "type": "object",
+          "description": "Sizes in the popup under the size box."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-font-input",
+        "props": {
+          "label": "Font",
+          "value": "bold normal 14px \"Roboto\""
+        }
+      }
+    },
+    {
+      "tag": "u2-image-input",
+      "category": "Inputs",
+      "description": "Image preview by URL or data URL; the REMOVE link appears on hover and clears it.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "enabled",
+          "type": "bool",
+          "bindable": true,
+          "description": "false grays the input out and blocks edits."
+        },
+        {
+          "name": "alt",
+          "type": "string",
+          "description": "Alternative text."
+        }
+      ],
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-image-input",
+        "props": {
+          "label": "Logo",
+          "value": "https://datagrok.ai/img/logo.svg"
+        }
+      }
+    },
+    {
+      "tag": "u2-card",
+      "category": "Containers",
+      "description": "Surface with optional header (title, subtitle, icon, actions), media image, body and footer.",
+      "usage": "For dashboard tiles and item previews; a card grid is a collection of these. A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "subtitle",
+          "type": "string"
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon"
+        },
+        {
+          "name": "media",
+          "type": "string",
+          "description": "Image URL shown above the body."
+        },
+        {
+          "name": "clickable",
+          "type": "bool",
+          "description": "The whole card acts as a button."
+        },
+        {
+          "name": "selectable",
+          "type": "bool",
+          "description": "Click toggles the selection ring."
+        },
+        {
+          "name": "selected",
+          "type": "bool",
+          "bindable": true,
+          "twoWay": true
+        }
+      ],
+      "acceptsChildren": true,
+      "events": [
+        "click"
+      ],
+      "defaults": {
+        "title": "Card"
+      },
+      "example": {
+        "tag": "u2-card",
+        "props": {
+          "title": "Aspirin",
+          "subtitle": "NSAID"
+        },
+        "children": [
+          {
+            "tag": "p",
+            "props": {
+              "text": "Acetylsalicylic acid, 180.16 g/mol."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "u2-stat-card",
+      "category": "Display",
+      "description": "KPI card: large formatted value, label, optional up/down delta and icon.",
+      "usage": "For dashboard metrics. Bind `value` to a source output for live numbers; loading states come from the source, not from this card.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "bindable": true,
+          "description": "Literal values are strings (\"1.2M\"); a bound signal may hold a number, formatted by the card."
+        },
+        {
+          "name": "delta",
+          "type": "double",
+          "bindable": true,
+          "description": "Fractional change; 0.12 renders \"+12%\" in the success color."
+        },
+        {
+          "name": "deltaInverted",
+          "type": "bool",
+          "description": "Negative is good (error rates)."
+        },
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon"
+        }
+      ],
+      "defaults": {
+        "label": "Metric",
+        "value": "0"
+      },
+      "example": {
+        "tag": "u2-stat-card",
+        "props": {
+          "label": "Revenue",
+          "value": "1.2M",
+          "delta": 0.12,
+          "icon": "chart-line"
+        }
+      }
+    },
+    {
+      "tag": "u2-state",
+      "category": "Data",
+      "visual": false,
+      "description": "A value the form owns: one writable signal several controls share.",
+      "usage": "For a draft, a flag or a selection that outlives no single control — anything two nodes must agree on. Data that comes from somewhere belongs in a source, not here.",
+      "props": [
+        {
+          "name": "type",
+          "type": "string",
+          "choices": [
+            "string",
+            "int",
+            "double",
+            "bool",
+            "string_list",
+            "object"
+          ],
+          "description": "What the value holds; `initial` is checked against it."
+        },
+        {
+          "name": "initial",
+          "type": "object",
+          "description": "The value it starts at, and what `clear` returns it to; the type's empty value otherwise."
+        }
+      ],
+      "defaults": {
+        "type": "string"
+      },
+      "example": {
+        "tag": "u2-state",
+        "name": "draft",
+        "props": {
+          "type": "string",
+          "initial": ""
+        }
+      }
+    },
+    {
+      "tag": "u2-func-source",
+      "category": "Data",
+      "visual": false,
+      "description": "A function, query or script run as data: its outputs are what the form binds to.",
+      "usage": "The default source for anything computed or queried. Bind a param to an input and the source re-runs as that input changes; bind a DataFrame output's `currentRow` to reach the fields of the current record.",
+      "props": [
+        {
+          "name": "func",
+          "type": "string",
+          "description": "The function name, `Package:Name` for a package function."
+        },
+        {
+          "name": "params",
+          "type": "object",
+          "subBindable": true,
+          "description": "What it is called with; a `params.<name>` bind makes that param reactive."
+        },
+        {
+          "name": "auto",
+          "type": "bool",
+          "description": "Run at construction and whenever a bound param changes (default true)."
+        },
+        {
+          "name": "debounce",
+          "type": "int",
+          "description": "Milliseconds a param change waits before the re-run (default 300)."
+        },
+        {
+          "name": "designData",
+          "type": "string",
+          "choices": [
+            "live",
+            "schema",
+            "sample"
+          ],
+          "description": "What the designer shows: real runs, the declared shape without running, or the stored `sample`."
+        },
+        {
+          "name": "sample",
+          "type": "object",
+          "description": "The preview the `sample` policy builds its outputs from; rows become a table."
+        }
+      ],
+      "designPreview": [
+        {
+          "name": "Sample row",
+          "value": 1
+        }
+      ],
+      "example": {
+        "tag": "u2-func-source",
+        "name": "orders",
+        "props": {
+          "func": "U2demo:demoOrders"
+        }
+      }
+    },
+    {
+      "tag": "u2-entity-source",
+      "category": "Data",
+      "visual": false,
+      "description": "A paged listing of a server collection: users, groups, projects and the rest.",
+      "usage": "For a picker over server entities, or a list of them. `names` feeds a choice input directly; `items` carries the entities themselves.",
+      "props": [
+        {
+          "name": "entity",
+          "type": "string",
+          "choices": [
+            "users",
+            "groups",
+            "projects",
+            "queries",
+            "connections",
+            "scripts",
+            "spaces"
+          ],
+          "description": "The `grok.dapi` collection to list."
+        },
+        {
+          "name": "filter",
+          "type": "string",
+          "bindable": true,
+          "description": "A smart-search filter; changing it reloads the collection from the first page."
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "The field to order by."
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "description": "How many entities one page loads (default 20)."
+        }
+      ],
+      "defaults": {
+        "entity": "users",
+        "pageSize": 20
+      },
+      "example": {
+        "tag": "u2-entity-source",
+        "name": "people",
+        "props": {
+          "entity": "users",
+          "pageSize": 20
+        }
+      }
+    },
+    {
+      "tag": "u2-table-source",
+      "category": "Data",
+      "visual": false,
+      "description": "An open workspace table, by name — the whole DataFrame binding surface.",
+      "usage": "For a form over a table the user already has open. It references the table BY NAME, so prefer a query or a project table for a form that must keep working tomorrow.",
+      "props": [
+        {
+          "name": "table",
+          "type": "string",
+          "description": "The name of the open table."
+        }
+      ],
+      "example": {
+        "tag": "u2-table-source",
+        "name": "demog",
+        "props": {
+          "table": "demog"
+        }
+      }
+    },
+    {
+      "tag": "u2-entity-ref",
+      "category": "Data",
+      "visual": false,
+      "description": "One server entity, looked up by id — the object a details form shows.",
+      "usage": "For a form about a single entity. Bind `id` to whatever selects it and every bound field follows; the entity's own properties are binding steps.",
+      "props": [
+        {
+          "name": "entityType",
+          "type": "string",
+          "choices": [
+            "users",
+            "groups",
+            "projects",
+            "queries",
+            "connections",
+            "scripts",
+            "spaces"
+          ],
+          "description": "Which collection the id belongs to."
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "bindable": true,
+          "description": "The entity id to look up."
+        },
+        {
+          "name": "designData",
+          "type": "string",
+          "choices": [
+            "live",
+            "schema",
+            "sample"
+          ],
+          "description": "What the designer shows: real runs, the declared shape without running, or the stored `sample`."
+        },
+        {
+          "name": "sample",
+          "type": "object",
+          "description": "The preview the `sample` policy builds its outputs from; rows become a table."
+        }
+      ],
+      "defaults": {
+        "entityType": "users",
+        "designData": "live"
+      },
+      "designPreview": {
+        "name": "Sample entity",
+        "friendlyName": "Sample entity"
+      },
+      "example": {
+        "tag": "u2-entity-ref",
+        "name": "author",
+        "props": {
+          "entityType": "users",
+          "id": "current"
+        }
+      }
+    }
+  ]
+}

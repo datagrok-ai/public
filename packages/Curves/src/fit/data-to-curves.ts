@@ -6,9 +6,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as api from '../package-api';
 import wu from 'wu';
-import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 const groupColumnName = 'Compound|Assay|Target';
+
+/** A group key read out loud: the parts that are actually there, spaced apart. */
+function groupLabel(groupKey: string): string {
+  return groupKey.split('||').filter((part) => part !== '' && part !== 'null' && part !== 'undefined').join(' | ');
+}
 
 function setColumnDefaultValue(table: DG.DataFrame, input: DG.InputBase<DG.Column | null>, check: (col: DG.Column) => boolean, values: string[]) {
   const col = table.columns.toList().filter((c) => check(c)).sort((a, b) => a.name.length - b.name.length).find((c) => values.some((v) => c.name.toLowerCase().includes(v)));
@@ -588,7 +593,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
     const color = getColor(colorKey);
     const fitFunctionName = parentObj?.[curveKey]?.fitFunction ? parentObj[curveKey].fitFunction : FIT_FUNCTION_4PL_DOSE_RESPONSE;
     const s: IFitSeries = {
-      fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
+      fitFunction: fitFunctionName as FitFunctionType, clickToToggle: true, droplines: ['IC50'], name: `${runID}`,
       points: x.map((xv, i) => ({x: xv, y: y[i], outlier: outliers[i], marker: markerType, size: 5})).sort((a, b) => a.x - b.x), parameters: params, fitLineColor: color, pointColor: DG.Color.toHtml(DG.Color.gray)
     };
     const fitData: Omit<FitChartData, 'seriesOptions'> = {
@@ -596,7 +601,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
         xAxisName: concentrationCol.name,
         yAxisName: readoutCol.name,
         logX: true,
-        title: `${curve.name ?? curveKey ?? ''}`,
+        title: groupLabel(`${curve.name ?? curveKey ?? ''}`),
       },
       series: [s],
     };
@@ -605,8 +610,8 @@ export async function convertDataToCurves(df: DG.DataFrame,
   tableColList.push(curvesCol);
   curvesCol.semType = 'fit';
   curvesCol.setTag('cell.renderer', 'fit');
-  // add group column
-  tableColList.push(DG.Column.fromStrings(groupColumnName, curvesObjsArray.map((c) => c[1].groupKey)));
+  // the key identifies a group; the column is what a person reads off a trellis header
+  tableColList.push(DG.Column.fromStrings(groupColumnName, curvesObjsArray.map((c) => groupLabel(c[1].groupKey))));
 
   const otherColumns = curvesObjsArray.reduce((acc, c) => { Object.keys(c[1].info).forEach((k) => acc.add(k)); return acc; }, new Set<string>());
 

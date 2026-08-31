@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {desirabilityScore, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {desirabilityScore, isNumerical, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {
   createBaseInputs,
@@ -14,7 +14,7 @@ import {
   SummarySettingsBase,
   NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
-import {VlaaiVisManager} from '../utils/vlaaivis-manager';
+import {VlaaiVisEditor} from '../vlaaivis/editor';
 
 let minRadius: number;
 
@@ -24,9 +24,11 @@ enum PieChartStyle {
   Vlaaivis = 'VlaaiVis'
 }
 
-export interface Subsector extends PropertyDesirability {
+// PropertyDesirability is a union (numerical | categorical), and an interface cannot extend
+// one — an intersection distributes over it and keeps every member's shape.
+export type Subsector = PropertyDesirability & {
   name: string;
-}
+};
 
 export interface Sector {
   name: string;
@@ -66,9 +68,14 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   return sum;
 }
 
-function normalizeValue(value: number, subsector: Subsector): number {
-  if (!subsector.line) return 0;
-  return desirabilityScore(value, subsector.line);
+function normalizeValue(subsector: Subsector, col: DG.Column, row: number): number | null {
+  if (col.isNone(row)) {
+    const missing = subsector.missingValues;
+    return missing?.strategy === 'default' ? missing.score : null;
+  }
+  if (!isNumerical(subsector))
+    return subsector.categories.find((c) => c.name === col.get(row))?.desirability ?? null;
+  return desirabilityScore(subsector, col.getNumber(row));
 }
 
 function renderSubsector(
@@ -79,16 +86,11 @@ function renderSubsector(
 ): number {
   const normalizedSubsectorWeight = subsector.weight / sectorWeight;
   const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
-  let r = Math.max(Math.min(box.width, box.height) / 2, minRadius);
-  const subsectorName = subsector.name;
-  const subsectorCol = cols.find((col) => col.name === subsectorName);
-  let value;
-  if (subsectorCol) {
-    value = subsectorCol.get(row);
-    const normalizedValue = value ? normalizeValue(value, subsector) : 1;
-    r = normalizedValue * (Math.min(box.width, box.height) / 2);
-    r = Math.max(r, minRadius);
-  }
+  const radiusFactor = Math.min(box.width, box.height) / 2;
+  const subsectorCol = cols.find((col) => col.name === subsector.name);
+  const score = subsectorCol ? normalizeValue(subsector, subsectorCol, row) : null;
+  const r = Math.max((score ?? 0) * radiusFactor, minRadius);
+
   g.beginPath();
   g.moveTo(box.midX, box.midY);
   g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
@@ -96,8 +98,10 @@ function renderSubsector(
   g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
   g.lineWidth = 0.6;
   g.stroke();
-  g.fillStyle = hexToRgbA(sectorColor, 0.6);
-  g.fill();
+  if (score !== null) {
+    g.fillStyle = hexToRgbA(sectorColor, 0.6);
+    g.fill();
+  }
   return currentAngle + subsectorAngle;
 }
 
@@ -249,8 +253,6 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       const {lowerBound, upperBound, sectors, values} = settings.sectors;
       cols = values ? Array.from(DG.DataFrame.fromCsv(values).columns) : cols;
       row = values ? 0 : row;
-      sectors.sort((a, b) => calculateSectorWeight(b) - calculateSectorWeight(a));
-
       let currentAngle = 0;
       const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
 
@@ -302,22 +304,42 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       gc.settings[SparklineType.PieChart] ??= getSettings(gc);
 
     const elementsDiv = ui.div([]);
+    let editor: VlaaiVisEditor | null = null;
+    let stashedSectors: PieChartSettings['sectors'];
+
+    const showEditor = (style: PieChartStyle) => {
+      editor?.detach();
+      editor = null;
+      ui.empty(elementsDiv);
+      if (style !== PieChartStyle.Vlaaivis) {
+        if (settings.sectors)
+          stashedSectors = settings.sectors;
+        delete settings.sectors;
+        gc.grid.invalidate();
+        return;
+      }
+      settings.sectors ??= stashedSectors;
+      editor = new VlaaiVisEditor(settings, gc);
+      elementsDiv.appendChild(editor.root);
+    };
+
+    const baseInputs = createBaseInputs(gc, settings);
+    const [columnsInput] = baseInputs;
+    columnsInput.onChanged.subscribe(() => {
+      if (editor)
+        editor.refresh();
+    });
+
     const inputs = ui.inputs([
-      ...createBaseInputs(gc, settings),
+      ...baseInputs,
       ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
         onValueChanged: (value) => {
           settings.style = value;
-          ui.empty(elementsDiv);
-          if (value === PieChartStyle.Vlaaivis) {
-            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-          } else {
-            delete settings.sectors;
-            gc.grid.invalidate();
-          }
+          showEditor(value);
         },
         onCreated: (input) => {
           if (input.value === PieChartStyle.Vlaaivis)
-            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
+            showEditor(PieChartStyle.Vlaaivis);
         }
       }),
     ]);

@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, lockProfileRanges,
+  migrateProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
@@ -136,6 +137,7 @@ class MpoProfileManagerImpl {
 
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {
     try {
+      lockProfileRanges(profile);
       await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(profile));
       await this.load();
       this.fireChanged();
@@ -149,40 +151,44 @@ class MpoProfileManagerImpl {
 
   upload(): void {
     DG.Utils.openFile({accept: '.json', open: async (file) => {
-      try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        if (!isDesirabilityProfile(parsed)) {
-          grok.shell.warning('Upload failed: not a valid MPO profile');
-          return;
-        }
-        if ((parsed.version ?? 0) > CURRENT_MPO_VERSION) {
-          grok.shell.warning('Upload failed: profile was created with a newer version of the application');
-          return;
-        }
-        migrateProfile(parsed);
-        if (!parsed.name)
-          parsed.name = file.name.replace(/\.json$/i, '');
-
-        if (this.existingNames.has(parsed.name)) {
-          const action = await this.promptUploadConflict(parsed.name);
-          if (action === MpoUploadConflictAction.Cancel)
-            return;
-
-          if (action === MpoUploadConflictAction.Replace) {
-            const existing = this.profiles.find((p) => p.name === parsed.name)!;
-            await this.save(parsed, existing.fileName);
-            return;
-          }
-
-          parsed.name = getNextAvailable(parsed.name, this.existingNames, (b, n) => n ? `${b} (${n})` : b);
-        }
-
-        await this.save(parsed, this.generateFileName(parsed.name));
-      } catch (e) {
-        grok.shell.warning('Upload failed: invalid JSON file');
-      }
+      await this.importProfile(await file.text(), file.name.replace(/\.json$/i, ''));
     }});
+  }
+
+  async importProfile(text: string, fallbackName: string): Promise<boolean> {
+    try {
+      const parsed = JSON.parse(text);
+      if (!isDesirabilityProfile(parsed)) {
+        grok.shell.warning('Upload failed: not a valid MPO profile');
+        return false;
+      }
+      if ((parsed.version ?? 0) > CURRENT_MPO_VERSION) {
+        grok.shell.warning('Upload failed: profile was created with a newer version of the application');
+        return false;
+      }
+      migrateProfile(parsed);
+      if (!parsed.name)
+        parsed.name = fallbackName;
+
+      await this.ensureLoaded();
+      if (this.existingNames.has(parsed.name)) {
+        const action = await this.promptUploadConflict(parsed.name);
+        if (action === MpoUploadConflictAction.Cancel)
+          return false;
+
+        if (action === MpoUploadConflictAction.Replace) {
+          const existing = this.profiles.find((p) => p.name === parsed.name)!;
+          return await this.save(parsed, existing.fileName);
+        }
+
+        parsed.name = getNextAvailable(parsed.name, this.existingNames, (b, n) => n ? `${b} (${n})` : b);
+      }
+
+      return await this.save(parsed, this.generateFileName(parsed.name));
+    } catch (e) {
+      grok.shell.warning('Upload failed: invalid JSON file');
+      return false;
+    }
   }
 
   download(profile: MpoProfileInfo): void {

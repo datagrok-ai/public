@@ -4,7 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import type Konva from 'konva';
-import {DesirabilityLine, DesirabilityMode, NumericalDesirability, toScale, fromScale, domainMinX, domainMaxX, MpoScale} from '../mpo';
+import {DesirabilityLine, DesirabilityMode, NumericalDesirability, toScale, fromScale, domainMinX, domainMaxX,
+  materializeLine, refreshDesirabilityLine, defaultAnchor, defaultSigma, DEFAULT_K, MpoScale,
+  flatLine} from '../mpo';
 import {Subject} from 'rxjs';
 
 let _konva: typeof Konva | undefined;
@@ -132,12 +134,8 @@ export class MpoDesirabilityLineEditor {
   }
 
   private ensureDefaultLine(): void {
-    if (this._prop.line.length > 0)
-      return;
-
-    const min = this._prop.min ?? 0;
-    const max = this._prop.max ?? 1;
-    this._prop.line = [[min, 0.5], [max, 0.5]];
+    if (this._prop.line.length === 0)
+      this._prop.line = flatLine(this._prop.min ?? 0, this._prop.max ?? 1);
   }
 
   private updateDragScales(): void {
@@ -197,14 +195,7 @@ export class MpoDesirabilityLineEditor {
       const minX = this.getMinX();
       const maxX = this.getMaxX();
 
-      if (this._prop.mode === DesirabilityMode.Freeform && this._prop.freeformLine)
-        this._prop.line = this._prop.freeformLine;
-
-      if (this._prop.mode !== DesirabilityMode.Freeform) {
-        if (!this._prop.freeformLine)
-          this._prop.freeformLine = [...this._prop.line];
-        this._prop.line = this.computeLine();
-      }
+      refreshDesirabilityLine(this._prop);
 
       this.pointsGroup!.destroyChildren();
       const konvaPoints: number[] = [];
@@ -407,38 +398,7 @@ export class MpoDesirabilityLineEditor {
   }
 
   private computeLine(): DesirabilityLine {
-    if (this._prop.mode === DesirabilityMode.Freeform)
-      return this._prop.line;
-
-    const log = this.isLog;
-    const tMin = toScale(this.getMinX(), log);
-    const tMax = toScale(this.getMaxX(), log);
-    const n = 60;
-    const line: DesirabilityLine = [];
-
-    for (let i = 0; i <= n; ++i) {
-      const u = tMin + (tMax - tMin) * (i / n);
-      let y = 0;
-
-      if (this._prop.mode === DesirabilityMode.Gaussian) {
-        const meanVal = this._prop.mean ?? this.getDefaultMean();
-        const sigma = this._prop.sigma ?? this.getDefaultSigma();
-        const mean = toScale(log ? Math.max(this.getMinX(), meanVal) : meanVal, log);
-        const z = (u - mean) / sigma;
-        y = Math.exp(-0.5 * z * z);
-      }
-
-      if (this._prop.mode === DesirabilityMode.Sigmoid) {
-        const x0Val = this._prop.x0 ?? this.getDefaultX0();
-        const k = this._prop.k ?? this.getDefaultK();
-        const x0 = toScale(log ? Math.max(this.getMinX(), x0Val) : x0Val, log);
-        y = 1 / (1 + Math.exp(-k * (u - x0)));
-      }
-
-      line.push([fromScale(u, log), y]);
-    }
-
-    return line;
+    return materializeLine(this._prop);
   }
 
   private drawAxes(minX: number, maxX: number, width: number, height: number) {
@@ -488,19 +448,19 @@ export class MpoDesirabilityLineEditor {
   }
 
   getDefaultMean(): number {
-    return fromScale((toScale(this.getMinX(), this.isLog) + toScale(this.getMaxX(), this.isLog)) / 2, this.isLog);
+    return defaultAnchor(this._prop);
   }
 
   getDefaultSigma(): number {
-    return Math.max(0.01, (toScale(this.getMaxX(), this.isLog) - toScale(this.getMinX(), this.isLog)) / 6);
+    return defaultSigma(this._prop);
   }
 
   getDefaultX0(): number {
-    return fromScale((toScale(this.getMinX(), this.isLog) + toScale(this.getMaxX(), this.isLog)) / 2, this.isLog);
+    return defaultAnchor(this._prop);
   }
 
   getDefaultK(): number {
-    return 10;
+    return DEFAULT_K;
   }
 
   redrawAll(notify: boolean = true): void {

@@ -142,7 +142,7 @@ public enum Provider {
                     .withPassword(properties.get("password").toString())
                     .withInitScript(properties.get("initScript").toString())
                     .withClasspathResourceMapping(properties.get("volumePath").toString(),
-                                "/etc/", BindMode.READ_ONLY);
+                                "/etc/file.txt", BindMode.READ_ONLY);
             container.start();
             return container;
         }
@@ -177,6 +177,8 @@ public enum Provider {
         if (this.container == null) {
             return newJdbcContainer();
         }
+        if (!container.isRunning())
+            container.start();
         return container;
     }
 

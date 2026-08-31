@@ -1,0 +1,74 @@
+/* Color input skin — a 100px hex field with the swatch on the options rail right of it, as the
+   platform lays it out (color_input.dart:6-9, ui.css:256-260).
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+input.u2-input-editor.u2-color-text {
+  width: 100px;
+  max-width: 100px;
+  min-width: 0;
+  padding: 0 var(--dg-space-s);
+  /* the swatch is pulled back over the field's right end, where the platform puts it
+     (ui.css:966-968) */
+  margin-right: -18px;
+  text-transform: lowercase;
+}
+
+.u2-color-text[hidden] {
+  display: none;
+}
+
+.u2-input-options > .u2-color-box {
+  margin-left: 0;
+}
+
+.u2-color-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* `d4-color-bar` metrics: a 12px square inside a transparent 1px frame the hover fills in
+   (d4.css:1111-1119) */
+.u2-color-swatch {
+  box-sizing: content-box;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  color: inherit;
+  border: var(--dg-border-width) solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.u2-color-swatch:hover {
+  border-color: var(--dg-grey-3);
+}
+
+.u2-color-swatch:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-xs);
+}
+
+/* the real picker sits under the swatch: clickable by script, invisible to the eye and to tabbing */
+.u2-color-picker {
+  position: absolute;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* swatch-only: no field, so no rail underline either (ui.css:898-901); the selector matches the
+   rail rule in css/inputs.css so it wins whatever the sheet order */
+.u2-color-box-only .u2-input-box > .u2-input-editor + .u2-input-options {
+  margin-left: var(--dg-space-s);
+  border-bottom: none;
+}
+
+.u2-color-box-only .u2-color-swatch {
+  width: 24px;
+  height: 18px;
+}

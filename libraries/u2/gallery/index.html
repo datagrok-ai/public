@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>u2 gallery</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{
+    "@floating-ui/dom":"../node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs",
+    "@floating-ui/core":"../node_modules/@floating-ui/core/dist/floating-ui.core.mjs",
+    "@floating-ui/utils":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs",
+    "@floating-ui/utils/dom":"../node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs",
+    "datagrok-api/u2core":"../node_modules/datagrok-api/src/u2core/index.js"}}</script>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/theme-dark.css">
+  <!-- the context panel's property grid; ids match the pages' injectOnce so nothing loads twice -->
+  <link rel="stylesheet" href="../css/elements.css" id="u2-elements-css">
+  <link rel="stylesheet" href="../css/inputs.css" id="u2-inputs-css">
+  <link rel="stylesheet" href="../css/choice.css" id="u2-choice-css">
+  <link rel="stylesheet" href="../css/number.css" id="u2-number-css">
+  <link rel="stylesheet" href="../css/property-grid.css" id="u2-property-grid-css">
+  <!-- the sidebar tree -->
+  <link rel="stylesheet" href="../css/list.css" id="u2-list-css">
+  <link rel="stylesheet" href="../css/tree.css" id="u2-tree-css">
+  <style>
+    body {
+      margin: 0;
+      font-family: var(--dg-font-family);
+      font-size: var(--dg-font-size);
+      line-height: var(--dg-line-height);
+      color: var(--dg-text-color);
+      background: var(--dg-bg);
+      display: flex;
+      height: 100vh;
+    }
+    h1 { font-size: var(--dg-font-size-h1); margin: 0 0 12px 0; }
+    h2 { font-size: var(--dg-font-size-h2); font-weight: var(--dg-font-weight-bold); margin: 24px 0 8px; }
+    input, button {
+      font: inherit;
+      color: var(--dg-text-color);
+    }
+    input {
+      border: none;
+      border-bottom: var(--dg-input-border);
+      outline: none;
+      background: var(--dg-bg);
+      height: var(--dg-control-height);
+      box-sizing: border-box;
+    }
+    input:focus { border-bottom: var(--dg-input-border-focus); }
+    button {
+      height: var(--dg-button-height);
+      border: var(--dg-border-width) solid var(--dg-border);
+      border-radius: var(--dg-radius);
+      background: var(--dg-bg-secondary);
+      padding: 0 var(--dg-space-l);
+      cursor: pointer;
+    }
+    button:hover { background: var(--dg-hover); }
+    .u2-gallery-nav {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: var(--dg-border-width) solid var(--dg-border);
+      background: var(--dg-bg-secondary);
+      padding: var(--dg-space-m) 0;
+      overflow: hidden;
+    }
+    .u2-gallery-nav .u2-gallery-title {
+      font-weight: var(--dg-font-weight-bold);
+      padding: var(--dg-space-s) var(--dg-space-l) var(--dg-space-m);
+    }
+    .u2-gallery-nav-tree {
+      flex: 1;
+      min-height: 0;
+      padding: 0 var(--dg-space-s);
+    }
+    .u2-gallery-nav-tree .u2-tree { height: 100%; }
+    .u2-gallery-nav-tree .u2-list {
+      border: none;
+      background: transparent;
+    }
+    .u2-gallery-main {
+      flex: 1;
+      padding: var(--dg-space-xl) var(--dg-space-xxl);
+      overflow-y: auto;
+    }
+    .u2-gallery-props {
+      width: 260px;
+      flex-shrink: 0;
+      border-left: var(--dg-border-width) solid var(--dg-border);
+      background: var(--dg-bg-secondary);
+      padding: var(--dg-space-m);
+      overflow-y: auto;
+    }
+    .u2-gallery-props-title {
+      font-weight: var(--dg-font-weight-bold);
+      font-family: var(--dg-font-family-mono);
+      font-size: var(--dg-font-size-small);
+      padding: var(--dg-space-s) var(--dg-space-s) var(--dg-space-m);
+    }
+    /* gap, not a trailing space in the label: HTML collapses that one away ('count =10') */
+    .u2-gallery-status { color: var(--dg-text-color-light); font-size: var(--dg-font-size-small);
+      gap: var(--dg-space-s); }
+    .u2-density-toggle { display: block; margin: 0 0 8px; }
+    .u2-token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: var(--dg-space-s);
+    }
+    .u2-token-swatch {
+      display: flex;
+      align-items: center;
+      gap: var(--dg-space-m);
+      padding: var(--dg-space-s);
+      border: var(--dg-border-width) solid var(--dg-border-subtle);
+      border-radius: var(--dg-radius);
+    }
+    .u2-token-swatch .chip {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: var(--dg-radius);
+      border: var(--dg-border-width) solid var(--dg-border);
+    }
+    .u2-token-swatch .name { font-family: var(--dg-font-family-mono); font-size: var(--dg-font-size-small); }
+    .u2-token-swatch .value { color: var(--dg-text-color-light); font-size: var(--dg-font-size-xs); }
+    .u2-token-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--dg-space-l);
+      padding: var(--dg-space-xs) 0;
+    }
+    .u2-token-row .name {
+      font-family: var(--dg-font-family-mono);
+      font-size: var(--dg-font-size-small);
+      width: 240px;
+      flex-shrink: 0;
+    }
+    .u2-token-bar { background: var(--dg-blue-2); height: 12px; }
+    .u2-metric-demo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: var(--dg-border-width) solid var(--dg-border);
+      border-radius: var(--dg-radius);
+      padding: 0 var(--dg-space-l);
+      color: var(--dg-text-color-light);
+      font-size: var(--dg-font-size-small);
+    }
+  </style>
+</head>
+<body>
+  <nav class="u2-gallery-nav">
+    <div class="u2-gallery-title">u2 gallery</div>
+    <div class="u2-gallery-nav-tree" id="nav-tree"></div>
+    <label style="display: flex; align-items: center; gap: 6px; padding: 8px 12px;">theme
+      <select id="theme">
+        <option value="">default</option>
+        <option value="dark">dark (parked draft)</option>
+      </select>
+    </label>
+    <div class="u2-gallery-status" id="status" style="padding: 8px 12px;">Loading…</div>
+  </nav>
+  <main class="u2-gallery-main" id="main"></main>
+  <aside class="u2-gallery-props">
+    <div class="u2-gallery-props-title" id="props-title">Click a control to inspect it</div>
+    <div id="props-host"></div>
+  </aside>
+  <script type="module">
+    // the gallery is a standalone host: enables the vendored-FA icon shim (css/icons.css)
+    document.documentElement.classList.add('u2-standalone');
+    const themeSelect = document.getElementById('theme');
+    const applyTheme = (t) => t ? document.documentElement.setAttribute('data-dg-theme', t)
+                                : document.documentElement.removeAttribute('data-dg-theme');
+    const storedTheme = localStorage.getItem('u2-gallery-theme');
+    themeSelect.value = storedTheme === 'dark' ? 'dark' : '';
+    applyTheme(themeSelect.value);
+    themeSelect.addEventListener('change', () => {
+      localStorage.setItem('u2-gallery-theme', themeSelect.value);
+      applyTheme(themeSelect.value);
+    });
+    const status = document.getElementById('status');
+    const main = document.getElementById('main');
+
+    let pageScope = null;
+    async function route() {
+      const page = location.hash.slice(1) || 'tokens';
+      syncNav(page);
+      if (pageScope) pageScope.dispose();
+      main.textContent = '';
+      try {
+        const {Scope} = await import('../src/index.js');
+        pageScope = new Scope();
+        const mod = await import(`./pages/${page}.js`);
+        // components built synchronously inside render() are adopted by the page scope
+        // and disposed on navigation; the page's own dispose demos stay idempotent
+        await Scope.runWith(pageScope, () => mod.render(main));
+        const first = [...main.querySelectorAll('[data-u2]')]
+          .find((el) => Control.forElement(el)?.root === el);
+        selectControl(first ? Control.forElement(first) : null);
+      }
+      catch (e) {
+        main.textContent = `Failed to render "${page}": ${e.message}`;
+      }
+    }
+
+    // context panel: every Control registers its root, so a click resolves to the component,
+    // whose registry meta makes getProperties() live — signal-backed props edit two-way
+    const {PropertyGrid, Control, Scope: U2Scope, registry, registerAll, VirtualTree} =
+      await import('../src/index.js');
+    registerAll();
+
+    // the sidebar is u2's own VirtualTree — the gallery chrome dogfoods the library
+    const NAV = [
+      ['Foundation', [['tokens', 'Design tokens'], ['signals', 'Signals & lifecycle'],
+        ['perf', 'Performance'], ['spec', 'Spec (dg-ui/1)']]],
+      ['Inputs', [['inputs', 'Inputs & primitives'], ['select', 'Choice inputs'],
+        ['number', 'Number input'], ['slider', 'Slider input'], ['range-slider', 'Range slider'],
+        ['radio', 'Radio input'], ['color', 'Color input'], ['date', 'Date & time'],
+        ['list-map', 'List & map inputs'], ['bignum', 'Big & qualified numbers'],
+        ['dynamic', 'Dynamic input'], ['font-image', 'Font & image inputs'],
+        ['tags', 'Tags input'], ['multiselect', 'Multi-select'], ['combobox', 'Combobox'],
+        ['typeahead', 'Type-ahead'], ['message-input', 'Message input']]],
+      ['Containers', [['splitter', 'Splitter'], ['tabs', 'Tabs'], ['accordion', 'Accordion'],
+        ['section', 'Section'], ['dialog', 'Dialog'], ['form', 'Form'], ['wizard', 'Wizard'],
+        ['card', 'Card & stat card']]],
+      ['Collections', [['list', 'Virtual list'], ['tree', 'Tree'], ['table', 'Table'],
+        ['functions-browser', 'Functions browser'], ['propgrid', 'Property grid']]],
+      ['Navigation & actions', [['menu', 'Menu'], ['toolbar', 'Toolbar'],
+        ['breadcrumbs', 'Breadcrumbs'], ['buttons', 'Buttons & groups'], ['icons', 'Icons']]],
+      ['Feedback & display', [['tooltip', 'Tooltip'], ['notify', 'Notifications'],
+        ['badges', 'Badges & progress'], ['async', 'Async states'], ['tour', 'Tour']]],
+      ['Data', [['entities', 'Object renderers'], ['pager', 'Async pager']]],
+    ];
+    const navTree = new VirtualTree({itemHeight: 24});
+    navTree.setRoots(NAV.map(([group, pages]) => ({id: `g:${group}`, label: group,
+      children: pages.map(([id, label]) => ({id, label}))})));
+    navTree.expanded.value = new Set(NAV.map(([group]) => `g:${group}`));
+    document.getElementById('nav-tree').append(navTree.root);
+    const groupOf = (page) => NAV.find(([, pages]) => pages.some(([id]) => id === page));
+    let navSyncing = false;
+    const syncNav = (page) => {
+      const group = groupOf(page);
+      if (!group)
+        return;
+      navSyncing = true;
+      navTree.expandPath([`g:${group[0]}`, page]).finally(() => navSyncing = false);
+    };
+    new U2Scope().effect(() => {
+      const node = navTree.selectedNode.value;
+      if (!navSyncing && node && groupOf(node.id) && location.hash.slice(1) !== node.id)
+        location.hash = node.id;
+    });
+    const propsGrid = new PropertyGrid();
+    const propsTitle = document.getElementById('props-title');
+    document.getElementById('props-host').append(propsGrid.root);
+    const EDITABLE = new Set(['string', 'int', 'double', 'bool', 'string_list']);
+    let selected = null;
+    const selectControl = (control) => {
+      selected = control;
+      if (!control) {
+        propsTitle.textContent = 'Click a control to inspect it';
+        propsGrid.setProperties([], {});
+        return;
+      }
+      control.componentMeta ??= registry.get(`u2-${control.root.dataset.u2 ?? ''}`);
+      const props = control.getProperties();
+      propsTitle.textContent = control.componentMeta?.tag ?? control.root.dataset.u2 ?? 'control';
+      propsGrid.setProperties(
+        props.filter((p) => EDITABLE.has(p.type) || p.choices)
+          .map((p) => ({name: p.name, type: p.choices ? 'choice' : p.type, choices: p.choices,
+            min: p.min, max: p.max, category: p.category, description: p.description,
+            readonly: p.set == null})),
+        Object.fromEntries(props.map((p) => [p.name, p.get?.(control.propertyTarget)])));
+    };
+    main.addEventListener('click', (e) => {
+      const control = Control.forElement(e.target);
+      if (control)
+        selectControl(control);
+    });
+    new U2Scope().effect(() => {
+      const change = propsGrid.onChanged.value;
+      if (change && selected)
+        selected.getProperties().find((p) => p.name === change.name)?.set?.(selected.propertyTarget, change.value);
+    });
+
+    window.addEventListener('hashchange', route);
+    try {
+      const u2 = await import('../src/index.js');
+      status.textContent = `u2 v${u2.VERSION}, platform-free`;
+    }
+    catch (e) {
+      status.textContent = `Library failed to load: ${e.message} — run "npm run build" and serve via "npm run gallery".`;
+    }
+    await route();
+  </script>
+</body>
+</html>

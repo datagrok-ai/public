@@ -14,317 +14,261 @@
 
 #include <iostream>
 #include <chrono>
+#include <algorithm>
 #include <emscripten.h>
 
-struct LinearPolytope {
-    // Inequalities: A x <= b
-    Eigen::MatrixXd A;      // (mi x n) or empty
-    Eigen::VectorXd b;      // (mi)
+// Tolerances matching cobra defaults (model.tolerance)
+const double FEASIBILITY_TOL = 1e-7;
+const double BOUNDS_TOL = 1e-7;
+const int MAX_TRIES = 100;
 
-    // Equalities: Aeq x = beq
-    Eigen::MatrixXd Aeq;    // (me x n) or empty
-    Eigen::VectorXd beq;    // (me)
+struct SamplerProblem {
+    // Equalities: Aeq x = beq (stoichiometric matrix in variable space)
+    Eigen::MatrixXd equalities;   // (m x 2n)
+    Eigen::VectorXd beq;          // (m)
 
-    // Bounds: lb <= x <= ub
-    Eigen::VectorXd lb;     // (n) (use -inf for no lower bound)
-    Eigen::VectorXd ub;     // (n) (use +inf for no upper bound)
+    // Variable bounds in variable space (all non-negative)
+    Eigen::VectorXd variable_lb;  // (2n)
+    Eigen::VectorXd variable_ub;  // (2n)
+    std::vector<bool> variable_fixed; // (2n)
 
-    // Optional feasible starting point
-    std::optional<Eigen::VectorXd> x0;
-
-    Eigen::MatrixXd InitOpt;
+    bool homogeneous;
 };
-
-struct OptGPOptions {
-    int thinning = 20;     // steps between effective moves per internal step
-    int nproj = 1000000;          // short chain length per returned sample
-    int warmupSteps = 5000; // steps used to estimate a center
-    unsigned int seed = 1234; // random seed based on time
-
-    // Feasible-point finder
-    double feasTol = 1e-7;
-    int feasMaxIter = 5000;
-    double feasIneqWeight = 1.0;
-    double feasStep = 0.95;  // initial step size
-};
-
 
 class OptGPSampler {
 public:
-    OptGPSampler(const LinearPolytope& model, const OptGPOptions& opt = {})
-        : A_(model.A), b_(model.b), Aeq_(model.Aeq), beq_(model.beq),
-        lb_(model.lb), ub_(model.ub), opt_(opt), rng_(opt.seed), norm01_(0.0, 1.0), InitOpt(model.InitOpt)
+    OptGPSampler(const SamplerProblem& prob, const Eigen::MatrixXd& warmup,
+                 int thinning, unsigned int seed)
+        : prob_(prob), thinning_(thinning), rng_(seed),
+          uni01_(0.0, 1.0), n_vars_(prob.variable_lb.size()),
+          retries_(0), n_samples_(0)
     {
-        const int n = inferN_(model);
-        n_ = n;
-        // Dimension checks
-        if (lb_.size() == 0) lb_ = Eigen::VectorXd::Constant(n_, -std::numeric_limits<double>::infinity());
-        if (ub_.size() == 0) ub_ = Eigen::VectorXd::Constant(n_, std::numeric_limits<double>::infinity());
-        if (A_.rows() > 0 && A_.cols() != n_) throw std::invalid_argument("A cols != n");
-        if (A_.rows() > 0 && b_.size() != A_.rows()) throw std::invalid_argument("b size != A rows");
-        if (Aeq_.rows() > 0 && Aeq_.cols() != n_) throw std::invalid_argument("Aeq cols != n");
-        if (Aeq_.rows() > 0 && beq_.size() != Aeq_.rows()) throw std::invalid_argument("beq size != Aeq rows");
+        // Compute nproj like Python: min(n_vars^3, 1e6)
+        long long nv3 = (long long)n_vars_ * n_vars_ * n_vars_;
+        nproj_ = (int)std::min(nv3, (long long)1000000);
 
-        //decomp = (Aeq_ * Aeq_.transpose()).ldlt();
+        // Remove redundant warmup points (matches Python hr_sampler._is_redundant)
+        warmup_ = removeRedundant(warmup);
+        n_warmup_ = warmup_.rows();
 
-        decomp = (Aeq_ * Aeq_.transpose()).fullPivLu();
+        if (n_warmup_ < 2)
+            throw std::runtime_error("Warmup has fewer than 2 non-redundant points");
 
+        // Precompute decomposition for reprojection
+        decomp_ = (prob_.equalities * prob_.equalities.transpose()).fullPivLu();
 
-        // Initialize x: use x0 if feasible, else find one
-        if (model.x0 && isFeasible(*model.x0)) {
-            x_ = *model.x0;
-        }
-        else {
-            x_ = InitOpt.transpose().rowwise().mean();
-        }
+        // Initialize center as mean of warmup (matches Python OptGPSampler.__init__)
+        center_ = warmup_.colwise().mean();
     }
 
-    void remove_redundent_from_initOpt(const Eigen::MatrixXd &M) {
-        // this will remove correlated points from initOpt
-        Eigen::MatrixXd corr = rowCorrelation(M);
-        std::vector<int> to_remove;
-        int n = corr.rows();
-        for (int i = 0; i < n; ++i) {
-            if (std::find(to_remove.begin(), to_remove.end(), i) != to_remove.end()) continue;
-            for (int j = i + 1; j < n; ++j) {
-                if (std::abs(corr(i, j)) > 0.9999) {
-                    //std::cout << "Correlation between point " << i << " and point " << j << " is " << corr(i, j) << ", removing point " << j << std::endl;
-                    to_remove.push_back(j);
-                }
-            }
-        }
-        std::sort(to_remove.begin(), to_remove.end());
-        to_remove.erase(std::unique(to_remove.begin(), to_remove.end()), to_remove.end());
-        Eigen::MatrixXd newM(n - to_remove.size(), M.cols());
-        int idx = 0;
-        for (int i = 0; i < n; ++i) {
-            if (std::find(to_remove.begin(), to_remove.end(), i) == to_remove.end()) {
-                newM.row(idx++) = M.row(i);
-            }
-        }
-        std::cout << "Removed " << to_remove.size() << " correlated points from InitOpt." << std::endl;
-        InitOpt = newM;
+    // Matches cobra/sampling/core.py step() exactly
+    Eigen::VectorXd step(const Eigen::VectorXd& x, const Eigen::VectorXd& delta,
+                         double fraction = -1.0, int tries = 0)
+    {
+        // Python: valid = (abs(delta) > feasibility_tol) & ~variable_fixed
+        // Python: valphas = ((1.0 - bounds_tol) * variable_bounds - x)[:, valid] / delta[valid]
+        //
+        // variable_bounds is (2, n_vars): row 0 = lower, row 1 = upper
+        // So alphas come from both lower and upper bound constraints per variable
+        std::vector<double> alphas;
 
-    }
-
-    Eigen::MatrixXd rowCorrelation(const Eigen::MatrixXd &M) {
-        int n = M.rows();
-        Eigen::MatrixXd corr(n, n);
-        corr.setZero();
-
-        for (int i = 0; i < n; ++i) {
-            Eigen::VectorXd xi = M.row(i).transpose();
-            double mean_i = xi.mean();
-            double std_i = std::sqrt((xi.array() - mean_i).square().sum());
-
-            for (int j = 0; j <= i; ++j) { // compute only lower-triangular
-                Eigen::VectorXd xj = M.row(j).transpose();
-                double mean_j = xj.mean();
-                double std_j = std::sqrt((xj.array() - mean_j).square().sum());
-
-                if (std_i == 0.0 || std_j == 0.0) {
-                    corr(i, j) = 0.0; // handle constant rows
-                } else {
-                    double dot = ((xi.array() - mean_i) * (xj.array() - mean_j)).sum();
-                    corr(i, j) = dot / (std_i * std_j);
-                }
-                corr(j, i) = corr(i, j); // symmetry
-            }
-        }
-        return corr;
-    }
-
-    Eigen::VectorXd step(Eigen::VectorXd x, Eigen::VectorXd delta) {
-        double maxAlpha = std::numeric_limits<double>::infinity();
-        double minAlpha = -std::numeric_limits<double>::infinity();
-        for (int i = 0; i < n_; ++i) {
-            double di = delta(i);
-            double ci = x(i);
-            double li = lb_(i);
-            double ui = ub_(i);
-            if (std::abs(di) < 1e-12) {
-                // direction component is zero, skip
+        for (int i = 0; i < n_vars_; i++) {
+            if (std::abs(delta(i)) <= FEASIBILITY_TOL || prob_.variable_fixed[i])
                 continue;
+
+            // Shrink bounds slightly inward: (1.0 - bounds_tol) * bounds
+            double shrunk_lb = (1.0 - BOUNDS_TOL) * prob_.variable_lb(i);
+            double shrunk_ub = (1.0 - BOUNDS_TOL) * prob_.variable_ub(i);
+
+            alphas.push_back((shrunk_lb - x(i)) / delta(i));
+            alphas.push_back((shrunk_ub - x(i)) / delta(i));
+        }
+
+        // No inequality constraints in metabolic models (prob.bounds.shape[0] == 0)
+
+        // Python: pos_alphas = alphas[alphas > 0.0]
+        //         neg_alphas = alphas[alphas <= 0.0]
+        //         alpha_range = [neg_alphas.max() if len(neg_alphas) > 0 else 0,
+        //                        pos_alphas.min() if len(pos_alphas) > 0 else 0]
+        double max_alpha = 0.0;
+        double min_alpha = 0.0;
+        bool has_pos = false, has_neg = false;
+
+        for (double a : alphas) {
+            if (a > 0.0) {
+                max_alpha = has_pos ? std::min(max_alpha, a) : a;
+                has_pos = true;
+            } else {
+                min_alpha = has_neg ? std::max(min_alpha, a) : a;
+                has_neg = true;
             }
-            double maxUpperBoundCoef = (ui - ci) / di; // here we know for sure that di != 0
-            double minLowerBoundCoef = (li - ci) / di;
-            if (maxUpperBoundCoef > 0)
-                maxAlpha = std::min(maxAlpha, maxUpperBoundCoef);
-            else
-                minAlpha = std::max(minAlpha, maxUpperBoundCoef); // although this is not possible since min <= max
-
-            if (minLowerBoundCoef > 0)// although this is not possible since min <= max
-                maxAlpha = std::min(maxAlpha, minLowerBoundCoef);
-            else
-                minAlpha = std::max(minAlpha, minLowerBoundCoef);
         }
-                // make sure min and max and not infinite or NaN
-        if (std::isinf(minAlpha) || std::isinf(maxAlpha) || std::isnan(minAlpha) || std::isnan(maxAlpha))
-            std::cout << "Warning: minAlpha or maxAlpha is inf or NaN! minAlpha: " << minAlpha << ", maxAlpha: " << maxAlpha << std::endl;
 
-        if (std::isinf(minAlpha)) minAlpha = 0;
-        if (std::isinf(maxAlpha)) maxAlpha = 0;
-        if (std::isnan(minAlpha)) minAlpha = 0;
-        if (std::isnan(maxAlpha)) maxAlpha = 0;
-        maxAlpha = std::max(0.0, maxAlpha);
-        minAlpha = std::min(0.0, minAlpha);
-        if (maxAlpha == 0 && minAlpha == 0) {
-            // direction is zero, jump to random point
-            // although again, this is not possible :D
-            std::cout << "Warning: direction is zero!" << std::endl;
-            maxAlpha = 1.0; 
+        if (!has_pos) max_alpha = 0.0;
+        if (!has_neg) min_alpha = 0.0;
+
+        // Python: if fraction: alpha = alpha_range[0] + fraction * (...)
+        //         else: alpha = np.random.uniform(alpha_range[0], alpha_range[1])
+        double alpha;
+        if (fraction >= 0.0)
+            alpha = min_alpha + fraction * (max_alpha - min_alpha);
+        else
+            alpha = min_alpha + uni01_(rng_) * (max_alpha - min_alpha);
+
+        Eigen::VectorXd p = x + alpha * delta;
+
+        // Check bounds violation (matches Python _bounds_dist)
+        double lb_dist = std::numeric_limits<double>::infinity();
+        double ub_dist = std::numeric_limits<double>::infinity();
+        for (int i = 0; i < n_vars_; i++) {
+            lb_dist = std::min(lb_dist, p(i) - prob_.variable_lb(i));
+            ub_dist = std::min(ub_dist, prob_.variable_ub(i) - p(i));
         }
-        
-        // now sample coef in [minAlpha, maxAlpha]
-        double rnd = uni01_(rng_);
-        double coef = minAlpha + (maxAlpha - minAlpha) * rnd;
-        //std::cout<<coef;
+        bool bounds_violated = (lb_dist < -BOUNDS_TOL) || (ub_dist < -BOUNDS_TOL);
 
-        auto res = x + delta * coef;
-        if (!isWithinBounds(res)) {
-            retries_ += 1;
-            std::cout << "Warning: step resulted in out-of-bounds point!" << std::endl;
-            // std::cout << "MinAlpha: " << minAlpha << ", MaxAlpha: " << maxAlpha << ", Coef: " << coef << std::endl;
-            if (retries_ > 100) {
-                std::cout << "Problem could not converge after 100 retries!" << std::endl;
-                throw std::runtime_error("Problem could not converge after 100 retries!");
+        // Stuck detection: abs(abs(alpha_range).max() * delta).max() < bounds_tol
+        double alpha_abs_max = std::max(std::abs(min_alpha), std::abs(max_alpha));
+        double max_step_contribution = 0.0;
+        for (int i = 0; i < n_vars_; i++)
+            max_step_contribution = std::max(max_step_contribution, std::abs(alpha_abs_max * delta(i)));
+        bool stuck = max_step_contribution < BOUNDS_TOL;
+
+        if (bounds_violated || stuck) {
+            if (tries > MAX_TRIES) {
+                throw std::runtime_error(
+                    "Cannot escape sampling region, model seems numerically unstable.");
             }
-            auto newDirection = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
-            return step(x, newDirection - x);
+            retries_++;
+            // Python: reset to CENTER, step toward random warmup point
+            // return step(sampler, sampler.center, newdir - sampler.center, None, tries + 1)
+            int pi = static_cast<int>(uni01_(rng_) * n_warmup_);
+            Eigen::VectorXd newdir = warmup_.row(pi).transpose();
+            return step(center_, newdir - center_, -1.0, tries + 1);
         }
 
-
-        return x + delta * coef;
-
+        return p;
     }
 
-    std::vector<Eigen::VectorXd> sampleCB(int N) {
+    // Matches cobra/sampling/optgp.py _sample_chain()
+    std::vector<Eigen::VectorXd> sample(int N) {
         if (N <= 0) return {};
 
-        //warmup_();
-
         std::vector<Eigen::VectorXd> out(N);
-        // remove redundant points from InitOpt
-        remove_redundent_from_initOpt(InitOpt);
 
-        Eigen::VectorXd center = InitOpt.transpose().rowwise().mean();
-        Eigen::VectorXd prev = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
-        // reseed random
-        rng_.seed(time(0));
-        prev = step(center, prev - center);
-        int n_samples = 1;
-        int retries = 0;
-        // create array of initopt size with integers set to 0...initopt.rows()-1
-        for (int s = 0; s < N; ++s) {
-            for (int k = 0; k < opt_.thinning; ++k) {
-                auto randomPoint = static_cast<int>(uni01_(rng_) * InitOpt.rows());
-                //std::cout << "Random point: " << randomPoint << std::endl;
-                Eigen::VectorXd targetPoint = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
-                auto delta = targetPoint - center;
+        // Python: pi = np.random.randint(sampler.n_warmup)
+        //         prev = sampler.warmup[pi, :]
+        //         prev = step(sampler, center, prev - center, 0.95)
+        int pi = static_cast<int>(uni01_(rng_) * n_warmup_);
+        Eigen::VectorXd prev = warmup_.row(pi).transpose();
+        prev = step(center_, prev - center_, 0.95);
+
+        // Python: n_samples = max(sampler.n_samples, 1)
+        n_samples_ = std::max(n_samples_, 1);
+
+        // Python: for i in range(1, sampler.thinning * n + 1):
+        for (int s = 0; s < N; s++) {
+            for (int k = 0; k < thinning_; k++) {
+                // Python: pi = np.random.randint(sampler.n_warmup)
+                //         delta = sampler.warmup[pi, :] - center
+                pi = static_cast<int>(uni01_(rng_) * n_warmup_);
+                Eigen::VectorXd delta = warmup_.row(pi).transpose() - center_;
+
+                // Python: prev = step(sampler, prev, delta)
                 prev = step(prev, delta);
-                if ((n_samples * opt_.thinning) % opt_.nproj == 0) {
-                    std::cout << "Updating center, sample: " << s << ", step: " << k << "  " << opt_.nproj <<  std::endl;
-                    // update center estimate
-                    prev = projectToNull_(prev);
-                    center = projectToNull_(center);
-                    // repeat the step to a new random point
-                    targetPoint = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
-                    auto newDelta = targetPoint - prev;
-                    prev = step(prev, newDelta);
+
+                // Reprojection: only when homogeneous (matches Python exactly)
+                // Python: if sampler.problem.homogeneous and
+                //             (n_samples * sampler.thinning % sampler.nproj == 0):
+                if (prob_.homogeneous && ((n_samples_ * thinning_) % nproj_ == 0)) {
+                    prev = reproject(prev);
+                    center_ = reproject(center_);
                 }
- 
-                center = (n_samples * center) / (n_samples + 1) + prev / (n_samples + 1);
-                n_samples += 1; 
+
+                // Python: center = (n_samples * center) / (n_samples + 1) + prev / (n_samples + 1)
+                center_ = (n_samples_ * center_) / (n_samples_ + 1) + prev / (n_samples_ + 1);
+                n_samples_++;
             }
+            // Python: if i % sampler.thinning == 0: samples[...] = prev
             out[s] = prev;
         }
 
         return out;
     }
 
-    int dim() const { return n_; }
-    const Eigen::VectorXd& state() const { return x_; }
-
 private:
-    // Problem data
-    Eigen::MatrixXd A_;
-    Eigen::VectorXd b_;
-    Eigen::MatrixXd Aeq_;
-    Eigen::VectorXd beq_;
-    Eigen::VectorXd lb_;
-    Eigen::VectorXd ub_;
-    int retries_ = 0;
+    SamplerProblem prob_;
+    Eigen::MatrixXd warmup_;
+    int n_warmup_;
+    int thinning_;
+    int nproj_;
+    int n_vars_;
+    int retries_;
+    int n_samples_;
+    Eigen::VectorXd center_;
+    Eigen::FullPivLU<Eigen::MatrixXd> decomp_;
 
-    Eigen::MatrixXd InitOpt;
-
-    //Eigen::LDLT<Eigen::MatrixXd> decomp;
-    Eigen::FullPivLU<Eigen::MatrixXd> decomp;
-
-    // Options and state
-    OptGPOptions opt_;
-    int n_ = 0;
-    Eigen::VectorXd x_;            // current point
-    std::optional<Eigen::VectorXd> center_; // estimated center
-
-    // RNG
     std::mt19937 rng_;
-    std::normal_distribution<double> norm01_;
-    std::uniform_real_distribution<double> uni01_{ 0.0,1.0 };
+    std::uniform_real_distribution<double> uni01_;
 
-
-private:
-    static int inferN_(const LinearPolytope& M) {
-        if (M.x0 && M.x0->size() > 0) return int(M.x0->size());
-        if (M.lb.size() > 0) return int(M.lb.size());
-        if (M.ub.size() > 0) return int(M.ub.size());
-        if (M.Aeq.cols() > 0) return int(M.Aeq.cols());
-        if (M.A.cols() > 0) return int(M.A.cols());
-        throw std::invalid_argument("Cannot infer variable dimension n");
+    // Matches Python hr_sampler._reproject()
+    Eigen::VectorXd reproject(const Eigen::VectorXd& v) const {
+        if (prob_.equalities.rows() == 0) return v;
+        Eigen::VectorXd residual = prob_.equalities * v - prob_.beq;
+        // Python: if np.allclose(equalities.dot(p), self.problem.b, ...): new = p
+        if (residual.cwiseAbs().maxCoeff() < FEASIBILITY_TOL)
+            return v;
+        // Python: new = nulls.dot(nulls.T.dot(p))
+        // Equivalent: v' = v - Aeq^T * (Aeq * Aeq^T)^-1 * (Aeq * v - b)
+        return v - prob_.equalities.transpose() * decomp_.solve(residual);
     }
 
-    bool isWithinBounds(const Eigen::VectorXd& x) const {
-        for (int i = 0; i < n_; ++i) {
-            if (x[i] < lb_[i] - 1e-2 || x[i] > ub_[i] + 1e-2) {
-                std::cout << "Variable " << i << " out of bounds: " << x[i] << " not in [" << lb_[i] << ", " << ub_[i] << "]" << std::endl;
-                return false;
+    // Matches Python hr_sampler._is_redundant() — removes correlated warmup rows
+    Eigen::MatrixXd removeRedundant(const Eigen::MatrixXd& warmup) const {
+        if (warmup.rows() <= 2) return warmup;
+
+        int n = warmup.rows();
+        int d = warmup.cols();
+
+        // Center rows for correlation
+        Eigen::MatrixXd centered(n, d);
+        Eigen::VectorXd norms(n);
+        for (int i = 0; i < n; i++) {
+            double mean = warmup.row(i).mean();
+            centered.row(i) = warmup.row(i).array() - mean;
+            norms(i) = centered.row(i).norm();
+        }
+
+        // Mark redundant rows (abs correlation > 0.9999)
+        std::vector<bool> keep(n, true);
+        for (int i = 0; i < n; i++) {
+            if (!keep[i]) continue;
+            if (norms(i) < 1e-12) { keep[i] = false; continue; }
+            for (int j = i + 1; j < n; j++) {
+                if (!keep[j]) continue;
+                if (norms(j) < 1e-12) { keep[j] = false; continue; }
+                double corr = centered.row(i).dot(centered.row(j)) / (norms(i) * norms(j));
+                if (std::abs(corr) > 0.9999)
+                    keep[j] = false;
             }
         }
-        return true;
-    }
 
-    bool isFeasible(const Eigen::VectorXd& x) const {
-        // bounds
-        for (int i = 0; i < n_; ++i) {
-            if (x[i] < lb_[i] - 1e-2 || x[i] > ub_[i] + 1e-2) return false;
-        }
-        // inequalities
-        if (A_.rows() > 0) {
-            Eigen::VectorXd Ax = A_ * x;
-            for (int i = 0; i < Ax.size(); ++i) if (Ax[i] - b_[i] > 1e-8) return false;
-        }
-        // equalities
-        if (Aeq_.rows() > 0) {
-            Eigen::VectorXd r = Aeq_ * x - beq_;
-            if (r.cwiseAbs().maxCoeff() > 1e-8) return false;
-        }
-        return true;
-    }
-    // Nullspace projection: v' = v - Aeq^T (Aeq Aeq^T)^{-1} (Aeq v)
-    Eigen::VectorXd projectToNull_(const Eigen::VectorXd& v) const {
-        if (Aeq_.rows() == 0) return v;
-        Eigen::VectorXd Av = Aeq_ * v;                      // m
-        // Solve (Aeq Aeq^T) y = Av; use robust solver
-        //Eigen::MatrixXd AAT = Aeq_ * Aeq_.transpose();
-        //Eigen::VectorXd y = AAT.ldlt().solve(Av);
-        return v - Aeq_.transpose() * decomp.solve(Av);
-    }
+        int kept = 0;
+        for (bool k : keep) if (k) kept++;
 
+        Eigen::MatrixXd result(kept, d);
+        int idx = 0;
+        for (int i = 0; i < n; i++) {
+            if (keep[i]) result.row(idx++) = warmup.row(i);
+        }
+
+        std::cout << "Warmup: removed " << (n - kept) << " redundant points, keeping " << kept << std::endl;
+        return result;
+    }
 };
 
 
-// ##### sampler caller function #####
-const double DEFAULT_UPPER_BOUND = 10;
-const double TOL = 1e-2;
+// ##### Entry point — same extern "C" interface, no TS changes needed #####
+const double VALIDATION_TOL = 1e-2;
 
 extern "C"{
     double sample(const int samplesCount, const int thinning, const int reactionsCount, const int metabolitesCount, float* lbs, float* ubs, float* sData, int initOptRows, float* initOptData,
@@ -334,93 +278,139 @@ extern "C"{
 EMSCRIPTEN_KEEPALIVE
 double sample(const int samplesCount, const int thinning, const int reactionsCount, const int metabolitesCount, float* lbs, float* ubs, float* sData, int initOptRows, float* initOptData,
 float* resultSamples) {
-    Eigen::VectorXd beq(metabolitesCount);
-	beq.setConstant(0.0);
-    Eigen::VectorXd lb(reactionsCount);
+    const int n_vars = 2 * reactionsCount;
 
-    double val = 0;
+    // === Transform from flux space (n) to variable space (2n) ===
+    // Layout: [forward_0..forward_{n-1}, reverse_0..reverse_{n-1}]
+    // flux_i = forward_i - reverse_i
 
-	for (int i = 0; i < reactionsCount; ++i) {		
-		lb(i) = lbs[i];
-	}
-
-	Eigen::VectorXd ub(reactionsCount);
-	for (int i = 0; i < reactionsCount; ++i) {		
-		ub(i) = ubs[i];
-	}
-	//ub.setConstant(2.0);
-    // S matrix or the stoichiometric matrix. each row represents a metabolite, each column a reaction
-	Eigen::MatrixXd S(metabolitesCount, reactionsCount);
-	
-	for (int i = 0; i < metabolitesCount; ++i) {
-		for (int j = 0; j < reactionsCount; ++j) {
-			S(i, j) = sData[i * reactionsCount + j];	
-        }	
+    // Variable bounds (all non-negative in variable space)
+    Eigen::VectorXd lb_var(n_vars), ub_var(n_vars);
+    for (int i = 0; i < reactionsCount; i++) {
+        double rxn_lb = lbs[i];
+        double rxn_ub = ubs[i];
+        // Forward variable: carries positive flux
+        lb_var(i) = std::max(0.0, rxn_lb);
+        ub_var(i) = std::max(0.0, rxn_ub);
+        // Reverse variable: carries negative flux
+        lb_var(reactionsCount + i) = std::max(0.0, -rxn_ub);
+        ub_var(reactionsCount + i) = std::max(0.0, -rxn_lb);
     }
 
-	Eigen::MatrixXd InitOpt(initOptRows, reactionsCount);
-	//lb(24) = 0.0; // lactate exchange reaction
-	for (int i = 0; i < initOptRows; ++i) {
-		for (int j = 0; j < reactionsCount; ++j) {
-			InitOpt(i, j) = initOptData[i * reactionsCount + j];	
-		}
-	}
+    // Stoichiometric matrix in variable space: [S, -S]
+    // S * flux = 0  =>  S * (fwd - rev) = 0  =>  [S, -S] * [fwd; rev] = 0
+    Eigen::MatrixXd S_var(metabolitesCount, n_vars);
+    for (int i = 0; i < metabolitesCount; i++) {
+        for (int j = 0; j < reactionsCount; j++) {
+            double val = sData[i * reactionsCount + j];
+            S_var(i, j) = val;                      // forward columns
+            S_var(i, reactionsCount + j) = -val;     // reverse columns
+        }
+    }
 
-    LinearPolytope P;
-	P.A = Eigen::MatrixXd();
-	P.b = Eigen::VectorXd();
-	P.Aeq = S; P.beq = beq;
-	P.lb = lb; P.ub = ub;
-	P.InitOpt = InitOpt;
+    // Identify fixed variables (lb == ub)
+    std::vector<bool> variable_fixed(n_vars, false);
+    for (int i = 0; i < n_vars; i++) {
+        if (std::abs(ub_var(i) - lb_var(i)) < FEASIBILITY_TOL)
+            variable_fixed[i] = true;
+    }
 
-	OptGPOptions opt;
-	//opt.seed = 1983;
-	opt.seed = 1234 * time(0) % std::numeric_limits<int>::max();
-	opt.thinning = thinning;
-	opt.nproj = 1000000;
-	// opt.warmupSteps = WARM_STEPS;
-	// opt.feasTol = FEAS_TOL;
-	// opt.feasMaxIter = FEAS_MAX_ITER;
-	// opt.spreadRatio = 0.5;
-    OptGPSampler sampler(P, opt);
+    // Add fixed non-zero variables as equality constraints
+    // (matches Python hr_sampler.__build_problem: fixed_non_zero handling)
+    std::vector<int> fixed_nonzero;
+    for (int i = 0; i < n_vars; i++) {
+        if (variable_fixed[i] && std::abs(ub_var(i)) > FEASIBILITY_TOL)
+            fixed_nonzero.push_back(i);
+    }
+
+    Eigen::MatrixXd equalities;
+    Eigen::VectorXd beq;
+    bool homogeneous;
+
+    if (fixed_nonzero.empty()) {
+        equalities = S_var;
+        beq = Eigen::VectorXd::Zero(metabolitesCount);
+        homogeneous = true;
+    } else {
+        int n_extra = fixed_nonzero.size();
+        equalities = Eigen::MatrixXd::Zero(metabolitesCount + n_extra, n_vars);
+        equalities.topRows(metabolitesCount) = S_var;
+        for (int k = 0; k < n_extra; k++)
+            equalities(metabolitesCount + k, fixed_nonzero[k]) = 1.0;
+
+        beq = Eigen::VectorXd::Zero(metabolitesCount + n_extra);
+        for (int k = 0; k < n_extra; k++)
+            beq(metabolitesCount + k) = ub_var(fixed_nonzero[k]);
+
+        homogeneous = false;
+    }
+
+    // Transform warmup (InitOpt) from flux space to variable space
+    Eigen::MatrixXd warmup(initOptRows, n_vars);
+    for (int i = 0; i < initOptRows; i++) {
+        for (int j = 0; j < reactionsCount; j++) {
+            double flux = initOptData[i * reactionsCount + j];
+            warmup(i, j) = std::max(0.0, flux);                   // forward
+            warmup(i, reactionsCount + j) = std::max(0.0, -flux);  // reverse
+        }
+    }
+
+    // Build sampler problem
+    SamplerProblem prob;
+    prob.equalities = equalities;
+    prob.beq = beq;
+    prob.variable_lb = lb_var;
+    prob.variable_ub = ub_var;
+    prob.variable_fixed = variable_fixed;
+    prob.homogeneous = homogeneous;
+
+    // Use fixed seed matching Python's OptGPSampler(model, thinning, seed=42)
+    // In Python _sample_chain: np.random.seed((sampler._seed + idx) % np.iinfo(np.int32).max)
+    // With idx=0 (single process), effective seed = 42
+    unsigned int seed = 42;
+
+    OptGPSampler sampler(prob, warmup, thinning, seed);
 
     auto start = std::chrono::high_resolution_clock::now();
+    auto samples = sampler.sample(samplesCount);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
 
-	auto samples = sampler.sampleCB(samplesCount);
+    // === Transform results back to flux space and validate ===
+    Eigen::MatrixXd S(metabolitesCount, reactionsCount);
+    for (int i = 0; i < metabolitesCount; i++) {
+        for (int j = 0; j < reactionsCount; j++)
+            S(i, j) = sData[i * reactionsCount + j];
+    }
 
-	auto end = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < samplesCount; i++) {
+        // Convert: flux_j = forward_j - reverse_j
+        Eigen::VectorXd flux(reactionsCount);
+        for (int j = 0; j < reactionsCount; j++)
+            flux(j) = samples[i](j) - samples[i](reactionsCount + j);
 
-
-    std::chrono::duration<double, std::milli> elapsed = end - start; // In milliseconds	
-
-	double mad = 0;
-
-	for (int i = 0; i < samplesCount; ++i) {
-		mad = (S * samples[i]).norm();
-		if (mad > TOL) {
+        // Validate S*flux ≈ 0
+        double mad = (S * flux).norm();
+        if (mad > VALIDATION_TOL) {
             std::cout << "Sample " << i << " has S*v norm: " << mad << "\n";
-			throw std::runtime_error("Invalid sample: " + std::to_string(i) + ", too big deviation: " + std::to_string(mad));
-		}
-
-		for (int k = 0; k < reactionsCount; ++k) {
-			if ((samples[i](k) - ub(k) > 1e-2) || (samples[i](k) - lb(k) < -1e-2)) {
-				std::cout << i << ", "<< samples[i](k) - ub(k) << ", " << samples[i](k) - lb(k) << "\n";
-				throw std::runtime_error("Invalid sample: value is out of range");
-			}
-		}
-        // store the sample
-        for (int k = 0; k < reactionsCount; ++k) {
-            resultSamples[i * reactionsCount + k] = samples[i](k);
+            throw std::runtime_error("Invalid sample: " + std::to_string(i) + ", too big deviation: " + std::to_string(mad));
         }
-	}
 
-	return elapsed.count();
+        // Validate flux within reaction bounds
+        for (int k = 0; k < reactionsCount; k++) {
+            if ((flux(k) - ubs[k] > VALIDATION_TOL) || (flux(k) - lbs[k] < -VALIDATION_TOL)) {
+                std::cout << i << ", " << flux(k) - ubs[k] << ", " << flux(k) - lbs[k] << "\n";
+                throw std::runtime_error("Invalid sample: value is out of range");
+            }
+        }
+
+        // Store flux result
+        for (int k = 0; k < reactionsCount; k++)
+            resultSamples[i * reactionsCount + k] = flux(k);
+    }
+
+    return elapsed.count();
 }
 
-
-// int main() {
-//     std::cout << samplerChompact(100000)/* samplerRandomTest(10, 20, 1) */ << " ms" << " --- " << "SUCCESS!\n";
-//     return 0;
-// }
 
 #endif // !SAMPLER_CPP

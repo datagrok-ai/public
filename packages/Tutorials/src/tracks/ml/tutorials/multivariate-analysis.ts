@@ -8,8 +8,8 @@ import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 export class MultivariateAnalysisTutorial extends Tutorial {
   get name() { return 'Multivariate Analysis'; }
   get description() {
-    return `Multivariate analysis reveals complex interactions and patterns within a dataset. It uses 
-    statistical techniques to explore the relationships among multiple variables.`;
+    return `Multivariate analysis models a response variable from many predictors at once, including predictors
+    that correlate with each other. Learn to run partial least squares (PLS) regression and interpret its results.`;
   }
   get steps() { return 7; }
 
@@ -26,9 +26,10 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     grok.shell.windows.context.visible = false;
     grok.shell.windows.help.visible = false;
 
-    this.describe(`Partial Least Squares Regression (PLS) models the relationship 
-    between independent variables (predictors) and dependent variables (responses). Use it 
-    when there are a large number of predictors, multicollinearity among them, and relatively few observations.`);
+    this.describe(`Partial least squares (PLS) regression models a response variable from many predictors at once.
+    It builds a linear model out of <b>latent factors</b> - combinations of the predictors that maximize the
+    covariance with the response. This is why PLS works where ordinary multiple regression breaks down: numerous
+    predictors, correlated predictors, or few observations.`);
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
@@ -70,38 +71,45 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     dlg.show();
 
     await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price',
-      'Specify column with the response variable.');
+      'The response variable - the column the model predicts.');
 
     await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Using"', 'Using',
       this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
-      `Set columns with predictors' values. Click "All" in the column selection dialog and uncheck "price".`);
+      `The predictors - the columns the model learns from. Click "All" in the column selection dialog, then uncheck "price".`);
 
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3',
-      'Define the number of the latent factors.');
+      'The number of latent factors. Too few underfit the data, too many fit the noise.');
 
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
-      'Select column with data samples names.');
+      'The column that labels the points on the plots. Here, each row is a car model.');
 
-    await this.action('Press "RUN" and wait for the analysis', dlg.onClose);
+    await this.action('Click "RUN" and wait for the analysis to complete', dlg.onClose);
 
     let viewerRoots: HTMLElement[];
 
     const viewerMd = [
-      '# Observed vs. Predicted\n\nCloser to the line means better price prediction.',
+      '# Observed vs. Predicted\n\n' +
+      'The actual price against the predicted one. The closer the points lie to the diagonal, ' +
+      'the better the prediction.',
       '# Scores\n\n' +
-      'Similarities & dissimilarities among samples:\n\n' +
-      "* volvo's are close to each other\n" +
-      '* porsche & mercedes are different',
+      'Similar cars sit close together, dissimilar ones far apart:\n\n' +
+      '* `Volvos` are close to each other\n' +
+      '* `Porsche` and `Mercedes` are far apart',
+      '* points beyond the orange 95% and blue 99% Hotelling\'s T² ellipses are outliers, like `Porsche` and `Jaguar`',
       '# Loadings\n\n' +
-      'The impact of each feature on the latent factors: higher loading means stronger influence.',
-      '# Regression Coefficients\n\n' +
-      'Parameters of the obtained linear model:\n\n' +
-      '* features make different contribution to the prediction\n' +
-      '* "diesel" effects the most',
+      'How strongly each latent factor describes each feature. Features sitting together carry the same information, ' +
+      'features on opposite sides are inversely related:\n\n' +
+      '* `width`, `length` and `curb.weight` form one group\n' +
+      '* `city.mpg` and `highway.mpg` are opposite to them - bigger cars burn more fuel',
+      '# Variable Importance\n\n' +
+      'How much each feature helps the model explain the price, measured on standardized data - so features in ' +
+      'different units are comparable:\n\n' +
+      '* above 1 means more than an average predictor: `eng.size` leads with 1.52\n' +
+      '* below 0.8 means weak: `peak.rpm` and `two.doors` are candidates for removal',
       '# Explained Variance\n\n' +
-      'How well the latent factors fit source data:\n\n' +
-      '* closer to one means better fit\n' +
-      '* 3 latent components explain 92% of the price variation',
+      'The share of the price variation the latent factors capture, added up over the components:\n\n' +
+      '* closer to one means a better fit\n' +
+      '* one component already covers 70%, three cover 92%',
     ];
 
     let idx = 0;
@@ -139,7 +147,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
         viewers[1].root, // Observed vs. Predicted scatterplot
         viewers[4].root, // Scores scatterplot
         viewers[3].root, // Loadings scatterplot
-        viewers[2].root, // Regression coeffs bar chart
+        viewers[6].root, // Variable importance bar chart
         viewers[5].root, // Explained variances bar chart
       ];
 
@@ -149,6 +157,6 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.action('Explore each viewer', new Observable((subscriber: any) => {
       //@ts-ignore
       $(doneBtn).one('click', () => subscriber.next(true));
-    }), undefined, 'Press "Next" to switch to the next viewer');
+    }), undefined, 'Click "Next" to switch to the next viewer');
   }
 }

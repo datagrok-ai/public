@@ -234,7 +234,7 @@ jobs:
             --times \
             --omit-dir-times \
             --group --owner \
-            --chown=grok:grok \
+            --chown=deploy:deploy \
             --perms --executability --acls --xattrs \
             --devices --specials \
             --checksum \

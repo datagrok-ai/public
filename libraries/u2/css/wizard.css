@@ -1,0 +1,118 @@
+/* Wizard skin (see src/components/wizard.ts). Tokens only — css/tokens.css and css/elements.css
+   must be loaded alongside. */
+.u2-wizard {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+.u2-wizard-steps {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--dg-space-l) var(--dg-space-l) 0;
+  list-style: none;
+}
+
+.u2-wizard-step {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  outline: none;
+  user-select: none;
+}
+
+.u2-wizard-step + .u2-wizard-step {
+  flex: 1;
+}
+
+.u2-wizard-step + .u2-wizard-step::before {
+  content: '';
+  flex: 1;
+  min-width: var(--dg-space-l);
+  height: var(--dg-border-width);
+  margin: 0 var(--dg-space-s);
+  background: var(--dg-border);
+}
+
+.u2-wizard-step:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-xs);
+}
+
+.u2-wizard-marker {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  font-size: var(--dg-font-size-xs);
+  color: var(--dg-text-color-light);
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: 50%;
+}
+
+.u2-wizard-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-wizard-step-done {
+  color: var(--dg-text-color);
+  cursor: pointer;
+}
+
+.u2-wizard-step-done .u2-wizard-marker {
+  color: var(--dg-white);
+  background: var(--dg-success);
+  border-color: var(--dg-success);
+}
+
+.u2-wizard-step-current {
+  color: var(--dg-text-color);
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2-wizard-step-current .u2-wizard-marker {
+  color: var(--dg-white);
+  background: var(--dg-accent);
+  border-color: var(--dg-accent);
+}
+
+.u2-wizard-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--dg-space-l);
+}
+
+.u2-wizard-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: var(--dg-space-m);
+  padding: 0 var(--dg-space-l) var(--dg-space-l);
+}
+
+.u2-wizard-reason {
+  margin-right: auto;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-wizard-reason:empty {
+  display: none;
+}

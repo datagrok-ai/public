@@ -77,6 +77,8 @@ Usage: grok add <entity> <name>
 Add an object template to your package:
 
 grok add app <name>
+grok add app [name] --domain <schema>[.<table>]
+grok add app [name] --domain <path to schema.json>
 grok add connection <name>
 grok add detector <semantic-type-name>
 grok add function [tag] <name>
@@ -87,6 +89,15 @@ grok add viewer <name>
 grok add tests
 
 Please note that entity names may only include letters and numbers
+
+--domain scaffolds a working browse/CRUD app over an entity-mapped domain table
+(\`grok.dapi.domains\`) from the \`@datagrok-libraries/domain-ui\` defaults. Give it
+one table (\`--domain grit.issue\`), a whole schema the package declares in
+\`databases/<schema>/schema.json\` (one app per table), or the path to a schema
+manifest to copy into the package. A fresh app package is two commands:
+
+grok create MyTracker
+cd MyTracker && grok add app --domain grit.issue
 
 Supported languages for scripts:
 javascript, julia, node, octave, python, r
@@ -114,12 +125,18 @@ Options:
 const HELP_API = `
 Usage: grok api
 
-Create wrapper functions for package scripts and queries
+Create wrapper functions for package scripts and queries.
+Packages with \`databases/<schema>/schema.json\` manifests also get typed domain
+clients in \`src/generated/db.ts\`.
 
 Options:
-[-v | --verbose]
+[-v | --verbose] [--ui]
 
 --verbose         Print detailed output
+--ui              Also generate \`src/generated/db-ui.ts\` — typed UI wrappers over
+                  \`@datagrok-libraries/domain-ui\` for every domain table. Once the
+                  file exists, plain \`grok api\` keeps it up to date; delete it to
+                  opt out again
 `;
 
 const HELP_CONFIG = `
@@ -420,6 +437,14 @@ Special commands:
   grok s connections test --json conn.json           Test connectivity of a connection defined in JSON
   grok s tables upload <name> <file.csv>             Upload a CSV as a Datagrok table
   grok s tables download <name-or-id> [-O <file>]    Download a table as CSV (stdout by default)
+  grok s packages install <name>... [--version <v>]  Install latest (or pinned) versions from the registry
+  grok s packages uninstall <name>                   Uninstall a package
+  grok s packages update <name>... | --all           Upgrade to the latest registry version
+  grok s packages outdated                           Show installed vs latest registry versions
+  grok s packages versions <name>                    List published versions
+  grok s packages set-version <name> <version>       Activate a specific published version
+  grok s packages share <name> <group> [--access View|Edit]
+                                                     Share a package with groups
   grok s raw <METHOD> <path>                         Hit any API endpoint
   grok s describe <entity-type>                      Show entity JSON schema
 
@@ -445,6 +470,8 @@ Examples:
   grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
   grok s shares list <entity-uuid>
   grok s functions run 'Chem:smilesToMw("ccc")'
+  grok s packages install Chem Bio PowerGrid
+  grok s packages update --all
   grok s files list "System:AppData" -r
   grok s raw GET /api/users/current
   grok s describe connections

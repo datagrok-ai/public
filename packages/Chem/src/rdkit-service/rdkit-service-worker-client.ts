@@ -39,6 +39,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   convertMolNotation = async (molecules: string[], targetNotation: string, kekulize = false) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation, kekulize]);
 
+  flattenMolecules = async (molecules: string[]): Promise<string[]> =>
+    this.call(WORKER_CALL.FLATTEN_MOLECULES, [molecules]);
+
   getInchis = async (molecules: string[], keys = false): Promise<string[]> =>
     this.call(WORKER_CALL.GET_INCHIS, [molecules, keys]);
 

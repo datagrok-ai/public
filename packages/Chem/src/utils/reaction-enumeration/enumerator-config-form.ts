@@ -3,7 +3,7 @@ import {Subscription} from 'rxjs';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package, PackageFunctions} from '../../package';
+import {PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
 import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
@@ -11,26 +11,10 @@ import {tryGetRxn} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
 import {ChipEl, EnumeratorNav} from './enumerator-nav';
 import {
-  combinationLimitsChanged, detectChemSemTypes, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
+  combinationLimitsChanged, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
   productFiltersChangedCount, roundsLabel,
-} from './enumerator-app';
-
-const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
-const BUNDLED_BBS = 'enumerations/bb.csv';
-const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
-
-async function loadBundledCsv(name: string): Promise<DG.DataFrame | null> {
-  try {
-    const text = await _package.files.readAsText(name);
-    const df = DG.DataFrame.fromCsv(text);
-    df.name = name.replace(/\.csv$/i, '');
-    await detectChemSemTypes(df);
-    return df;
-  } catch (e) {
-    console.warn(`Could not load bundled file ${name}: ${e}`);
-    return null;
-  }
-}
+} from './shared';
+import {loadEnumerationDefaults} from './default-files';
 
 function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
@@ -48,11 +32,9 @@ function pickFile(accept: string): Promise<File | null> {
       resolve(f);
     };
     input.onchange = () => cleanup(input.files?.[0] ?? null);
-    // 'cancel' fires reliably on an actual dismiss in every evergreen browser — authoritative, no
-    // timing guesswork needed.
     input.addEventListener('cancel', () => cleanup(null));
-    // Fallback for browsers without the 'cancel' event: the delay must outlast 'change' firing,
-    // since cleanup's `done` guard silently drops a change that arrives after the timeout resolves.
+    // Fallback where 'cancel' is unsupported. The delay must outlast 'change' firing, or the `done`
+    // guard drops a real selection that arrives after the timeout.
     const onFocus = (): void => {
       setTimeout(() => cleanup(input.files?.[0] ?? null), 1500);
     };
@@ -97,13 +79,10 @@ function bindColToTable(
   });
 }
 
-// A column being SELECTED doesn't mean it holds the right data — e.g. the user picks "Name" where
-// "SMILES" was auto-detected. DG.Detector.sampleCategories is the same sampler Chem's own detectors
-// use (detectSmiles/detectReactions in detectors.js) — reuse it instead of a bespoke row scanner.
-// validate() reruns on every tracked input's onChanged, including ones unrelated to file/column
-// choice (rounds, depth-first, ...); a WeakMap keyed on the Column object itself means an RDKit
-// re-parse only happens the first time a given column is checked, not on every unrelated keystroke,
-// and it never needs manual invalidation — picking a different column or file yields a new Column.
+// A selected column may still hold the wrong data (e.g. "Name" picked where "SMILES" was detected),
+// so sample it with the same sampler Chem's own detectors use. validate() reruns on every tracked
+// input's onChanged, so cache per Column object: picking a different column or file yields a new
+// Column, which makes the cache self-invalidating.
 const columnContentValidCache = new WeakMap<DG.Column, boolean>();
 function cachedSampleValid(col: DG.Column, isValid: (s: string) => boolean): boolean {
   let result = columnContentValidCache.get(col);
@@ -135,30 +114,19 @@ export interface RibbonOverrideFlags {
 export interface EnumeratorConfigFormDeps {
   view: DG.View;
   viewerHost: MountedViewerRegistry;
-  // Called after a full config reload (YAML load) and by every tracked input's onChanged — the
-  // orchestrator-level mediator that also refreshes chips/cards/validationDiv and the Run buttons.
   refreshValidation: () => void;
-  // Orchestrator-level nav mediator — expands `pane`, hides every other section's header, and syncs
-  // the right-side tab to match. Referenced (not called) by accordion nav buttons at construction
-  // time, only invoked later on click, well after the orchestrator has finished wiring everything
-  // this needs (tabs/strategyPane/previewPane and this form's own accPanes/chips).
   openAccPaneAndSyncTab: (pane: DG.AccordionPane) => void;
-  // Lazy — only invoked once the Preview accordion pane's factory actually runs (after PreviewPanel
-  // and RunControls exist; both are constructed after this form since they depend on its inputs).
+  // Lazy: PreviewPanel and RunControls are constructed after this form, since they need its inputs.
   getPreviewRecapCard: () => HTMLElement;
   getPreviewEnumerateBtnWrap: () => HTMLElement;
-  // Late-bound (see enumerator-app.ts's ctx pattern) — the real implementation needs the DataPanel
-  // instances, constructed after this form. Used only to decide whether Save YAML should warn that
-  // per-round subsets won't be included (they're tied to the currently loaded files, not the config).
+  // Late-bound — needs the DataPanel instances. Only decides whether Save YAML warns that per-round
+  // subsets aren't included.
   hasAnyPerRoundOverride: () => boolean;
 }
 
-/** Owns `config` itself, every data/quick-config input, YAML load/save, and validation. Composes
- * an `EnumeratorNav` (strategy cards, the left-nav accordion, ribbon chips) internally — the split
- * keeps this file to the config MODEL, leaving pure layout/DOM-measurement machinery in its own
- * file. Cross-module mediators (refreshCfgRibbon, switchTabForAccPane, openAccPaneAndSyncTab) stay
- * in the orchestrator, which reaches back in via the public fields/methods below (several of them
- * pass-throughs onto `nav`, so the orchestrator's own code didn't need to change for this split). */
+/** Owns `config`, every data/quick-config input, YAML load/save, and validation. Composes an
+ * `EnumeratorNav` for the layout side (strategy cards, left-nav accordion, ribbon chips) and
+ * re-exports its panes/chips, so the orchestrator sees one surface. */
 export class EnumeratorConfigForm {
   private config: EnumeratorConfig;
 
@@ -180,12 +148,8 @@ export class EnumeratorConfigForm {
 
   private combinationLimitFields: ReturnType<typeof buildCombinationLimitFields>;
   private productFilterFields: ReturnType<typeof buildProductFilterFields>;
-  // Tracks ONLY combinationLimitFields/productFilterFields' own subscriptions (rebuilt wholesale on
-  // every YAML load) — unsubscribed and cleared right before each rebuild, so the previous
-  // generation's inputs stop being pinned alive. Deliberately separate from view.subs (which the
-  // permanent inputs below use instead) — view.subs only drains once at view close, so routing
-  // these through it too would leave a growing pile of already-unsubscribed entries behind on
-  // every reload for the rest of the session.
+  // Kept out of view.subs: these two field groups are rebuilt on every YAML load, and view.subs
+  // only drains at view close, so routing them through it would pile up dead entries per reload.
   private limitFieldSubs: Subscription[] = [];
   private pushingConfigToInputs = false;
 
@@ -197,7 +161,7 @@ export class EnumeratorConfigForm {
 
   private readonly nav: EnumeratorNav;
 
-  // Pass-through fields onto `nav` — keeps the orchestrator's public surface unchanged by this split.
+  // Pass-throughs onto `nav`.
   readonly accReactionsPane: DG.AccordionPane;
   readonly accBbsPane: DG.AccordionPane;
   readonly accExtrasPane: DG.AccordionPane;
@@ -213,12 +177,13 @@ export class EnumeratorConfigForm {
 
   private constructor(
     private readonly deps: EnumeratorConfigFormDeps,
-    templatesDf: DG.DataFrame | null, bbsDf: DG.DataFrame | null, exclusionDf: DG.DataFrame | null,
+    templatesDf: DG.DataFrame | null, bbsDf: DG.DataFrame | null, reagentsDf: DG.DataFrame | null,
+    exclusionDf: DG.DataFrame | null,
   ) {
     this.config = cloneConfig(DEFAULT_CONFIG);
 
-    // Fields are built eagerly (syncQuickInputsToConfig needs .inputs before the accordion exists);
-    // their ui.form() wrapper is built lazily instead by lazyFilterForm in enumerator-nav.ts.
+    // Built eagerly (syncQuickInputsToConfig needs .inputs before the accordion exists); only their
+    // ui.form() wrapper is lazy — see lazyFilterForm in enumerator-nav.ts.
     this.combinationLimitFields = buildCombinationLimitFields(this.config);
     this.productFilterFields = buildProductFilterFields(this.config);
 
@@ -249,13 +214,13 @@ export class EnumeratorConfigForm {
       'Column in the building blocks file that contains SMILES.', false);
 
     this.reagentsInput = ui.input.table('Reagents file (optional)', {
-      value: undefined, nullable: true,
+      value: reagentsDf ?? undefined, nullable: true,
       tooltipText: 'Optional table of reagent SMILES. When set, switches to reagents mode: every ' +
         'round uses exactly one building block (or product of an earlier round) and fills every ' +
         'remaining slot with reagents from this file — produces derivatives of each BB across rounds.',
     });
     const REAGENTS_COL_TOOLTIP = 'Column in the reagents file that contains the reagent SMILES.';
-    this.reagentsColInput = makeColInput('Reagent SMILES column', null,
+    this.reagentsColInput = makeColInput('Reagent SMILES column', reagentsDf,
       this.config.enumeration.reagent_smiles_column, isStringCol, REAGENTS_COL_TOOLTIP, true);
     // The platform marks this invalid because it has no table to pick a column from yet, not because
     // it's empty (nullable is true) — disable it and say why, instead of fighting the invalid style.
@@ -288,9 +253,8 @@ export class EnumeratorConfigForm {
       this.reagentsInput.onChanged.subscribe(syncReagentsColEnabled),
     );
 
-    // ---- CONFIG inputs ----
-    // nullable: true — without it, clearing the box entirely makes .value NaN (not null), and NaN
-    // slips past every `?? fallback` downstream (NaN is neither null nor undefined) uncaught.
+    // nullable: true throughout — without it, clearing the box makes .value NaN rather than null,
+    // and NaN slips past every `?? fallback` downstream uncaught.
     this.numRoundsInput = ui.input.int('Number of rounds',
       {value: this.config.enumeration.num_rounds, nullable: true, min: 1, max: MAX_ROUNDS, showPlusMinus: true});
     this.numRoundsInput.setTooltip(
@@ -313,29 +277,23 @@ export class EnumeratorConfigForm {
       'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
       'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
 
-    // Promoted out of "Advanced limits & product filters" — used often enough to live at top level.
-    // nullable: true for the same reason as numRoundsInput above — a cleared box must read back as
-    // null, not NaN, or validate() below can't tell "cleared" from "still holding its old value".
     this.maxComponentsInput = ui.input.int('Max # components',
       {value: this.config.max_num_components, nullable: true, min: 1, showPlusMinus: true});
     this.maxComponentsInput.setTooltip('Max number of reactant components a template may have.');
     fixNullableIntStepper(this.maxComponentsInput, 1);
-    // -1 is the config's own "no cap" sentinel — showing it as a literal number reads as a developer
-    // detail, not a value a user would type. Blank means the same thing and is shown/read as such.
+    // -1 is the config's "no cap" sentinel; blank means the same thing and reads better.
     this.maxRoutesInput = ui.input.int('Max routes per compound', {
       value: this.config.max_num_routes_per_compound < 0 ? undefined : this.config.max_num_routes_per_compound,
       nullable: true, min: 1, showPlusMinus: true,
     });
     this.maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
-    // A cap of 0 means "record zero routes" — every product's route/template/reaction_name would
-    // come back blank with no error. Floor the stepper at 1; validate() below rejects a typed/loaded 0.
+    // A cap of 0 would blank every product's route/template/reaction_name with no error, so floor
+    // the stepper at 1; validate() rejects a typed or loaded 0.
     fixNullableIntStepper(this.maxRoutesInput, 1);
 
-    // ---- Info icons ----
-    // appInfoIcon: what this app is / how it works. configInfoIcon: full current config as a card.
-    // Both bind to live factories so hovering always reflects current state.
+    // Bound to live factories so hovering always reflects current state.
     const mkIcon = (): HTMLElement => {
-      const i = ui.iconFA('info-circle', () => {});
+      const i = ui.iconFA('info-circle');
       i.style.marginLeft = '8px';
       i.style.color = 'var(--blue-2)';
       i.style.cursor = 'help';
@@ -348,20 +306,16 @@ export class EnumeratorConfigForm {
 
     this.syncQuickInputsToConfig();
 
-    // Re-validate on every input change so the Run button stays accurate. These inputs live for
-    // the view's whole lifetime, so view.subs' own drain at view close is their only cleanup.
+    // Re-validate on every input change so the Run button stays accurate.
     [this.smartsColInput, this.blockingColInput, this.rxnNameColInput, this.bbColInput, this.reagentsColInput,
       this.exclusionInput, this.exclusionColInput, this.numRoundsInput, this.depthFirstInput,
       this.maxComponentsInput, this.maxRoutesInput,
     ].forEach((inp) => this.deps.view.subs.push(this.wireValidationOne(inp)));
     [...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs].forEach((inp) =>
       this.limitFieldSubs.push(this.wireValidationOne(inp)));
-    // Safety net for a view that closes without ever loading a YAML in between (limitFieldSubs'
-    // own comment above covers the more common per-reload unsubscribe).
+    // Covers a view that closes without any YAML load in between.
     this.deps.viewerHost.onClose(() => this.limitFieldSubs.forEach((s) => s.unsubscribe()));
 
-    // ---- Buttons ----
-    // Icon buttons in the ribbon: 'folder-open' for import, 'arrow-to-bottom' for export.
     this.loadYamlBtn = ui.iconFA('folder-open', async () => {
       const f = await pickFile('.yaml,.yml');
       if (!f) return;
@@ -381,18 +335,14 @@ export class EnumeratorConfigForm {
     this.saveYamlBtn = ui.iconFA('arrow-to-bottom', () => {
       this.syncQuickInputsToConfig();
       DG.Utils.download('enumerator-config.yaml', configToYaml(this.config), 'text/yaml');
-      // Neither the actual template/BB/reagent files nor any per-round subsets travel with the
-      // config — files are never auto-loaded from it (you always pick them yourself), and subsets
-      // are tied to specific rows of whichever files happen to be loaded, not to reusable settings.
       let msg = 'Saved settings only — the template/building-block/reagent files aren\'t included; ' +
         'select those again yourself when loading this config.';
-      if (this.deps.hasAnyPerRoundOverride()) {
+      if (this.deps.hasAnyPerRoundOverride())
         msg += ' Per-round subsets ("Subset by selection") aren\'t included either, for the same reason.';
-      }
+
       grok.shell.info(msg);
     }, 'Download the current config as a YAML file.');
 
-    // ---- Layout: strategy cards, left-nav accordion, ribbon chips (see EnumeratorNav) ----
     this.nav = new EnumeratorNav({
       view: this.deps.view,
       templatesInput: this.templatesInput, smartsColInput: this.smartsColInput,
@@ -425,11 +375,8 @@ export class EnumeratorConfigForm {
   }
 
   static async create(deps: EnumeratorConfigFormDeps): Promise<EnumeratorConfigForm> {
-    // The three bundled files are unrelated (no data dependency) — load them in parallel.
-    const [templatesDf, bbsDf, exclusionDf] = await Promise.all([
-      loadBundledCsv(BUNDLED_TEMPLATES), loadBundledCsv(BUNDLED_BBS), loadBundledCsv(BUNDLED_EXCLUSION),
-    ]);
-    return new EnumeratorConfigForm(deps, templatesDf, bbsDf, exclusionDf);
+    const t = await loadEnumerationDefaults();
+    return new EnumeratorConfigForm(deps, t.templates, t.bbs, t.reagents, t.exclusion);
   }
 
   getConfig = (): EnumeratorConfig => this.config;
@@ -438,24 +385,22 @@ export class EnumeratorConfigForm {
     return this.reagentsInput.value != null ? 'reagents' : (this.depthFirstInput.value ? 'depth' : 'breadth');
   };
 
-  // The raw round count as currently displayed/edited (not the defensively-clamped one DataPanel's
-  // roundCount() uses for building round tabs) — shared by the ribbon chip, the Strategy summary, and
-  // the Preview recap so they can't drift out of sync (e.g. one saying "2 rounds", another "1 rounds").
+  /** The raw round count as displayed, not DataPanel's clamped one — shared by the ribbon chip,
+   * Strategy summary and Preview recap so they can't drift apart. */
   currentRounds = (): number => {
     return this.numRoundsInput.value ?? this.config.enumeration.num_rounds;
   };
 
   syncQuickInputsToConfig = (): void => {
-    // No-op while syncConfigToQuickInputs() is pushing config -> inputs: each setAndFire() fires
-    // onChanged, which reaches here via refreshValidation()/validate() before every input has been
-    // updated — reading them now would write stale (not-yet-pushed) values back into config.
+    // No-op mid-push: each setAndFire() fires onChanged, which reaches here via validate() before
+    // every input has been updated, and would write not-yet-pushed values back into config.
     if (this.pushingConfigToInputs) return;
     const config = this.config;
     config.enumeration.num_rounds = this.numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!this.depthFirstInput.value;
     config.max_num_components = this.maxComponentsInput.value ?? config.max_num_components;
     config.max_num_routes_per_compound = this.maxRoutesInput.value ?? -1; // blank == no cap
-    // Column inputs hold a Column object; persist its name. Keep the previous value if unselected.
+    // Column inputs hold a Column; persist its name, keeping the previous value if unselected.
     config.enumeration.smarts_col = this.smartsColInput.value?.name ?? config.enumeration.smarts_col;
     config.enumeration.reactant_blocking_groups_per_template_column =
       this.blockingColInput.value?.name ?? config.enumeration.reactant_blocking_groups_per_template_column;
@@ -470,8 +415,8 @@ export class EnumeratorConfigForm {
     this.productFilterFields.syncToConfig(config);
   };
 
-  // `input.value = X` updates the model but the Dart widget doesn't always re-render the visible
-  // <input> text when set via API rather than typing — also push the value into the DOM element.
+  // The Dart widget doesn't always re-render its visible text when .value is set via the API
+  // rather than typed, so push the value into the DOM element too.
   private setAndFire<T>(input: DG.InputBase<T>, v: T): void {
     input.value = v;
     try {
@@ -518,8 +463,8 @@ export class EnumeratorConfigForm {
         const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
         if (c) this.setAndFire(this.exclusionColInput, c);
       }
-      // Neither field group has a "set value" hook — rebuild from the loaded config; the rebuilt
-      // inputs are brand new objects, so they need their own revalidation wiring too.
+      // Neither field group has a "set value" hook, so rebuild from the loaded config; the fresh
+      // inputs need their own revalidation wiring.
       this.limitFieldSubs.forEach((s) => s.unsubscribe());
       this.limitFieldSubs = [];
       this.combinationLimitFields = buildCombinationLimitFields(config);
@@ -538,9 +483,8 @@ export class EnumeratorConfigForm {
 
   validate = (): string | null => {
     this.syncQuickInputsToConfig();
-    // A table with no rows (e.g. an unparseable/empty upload that still produced a valid, if
-    // degenerate, DataFrame) is truthy and passes a plain null check — Enumerate stayed clickable
-    // and silently did nothing. Row-count checks close that gap.
+    // A degenerate but valid DataFrame (empty upload) is truthy, so the row-count checks matter:
+    // without them Enumerate stays clickable and silently does nothing.
     const tDf = this.templatesInput.value;
     if (!tDf) return 'Select a reaction templates file.';
     if (tDf.rowCount === 0) return 'Reaction templates file has no rows.';
@@ -571,18 +515,16 @@ export class EnumeratorConfigForm {
     if (rounds < 1) return 'Number of rounds must be at least 1.';
     if (rounds > MAX_ROUNDS) return `Number of rounds must be at most ${MAX_ROUNDS}.`;
 
-    // Reads the input directly, not this.config — syncQuickInputsToConfig() above falls back to the
-    // previous config value on a cleared (null) box, so the config field alone can never observe
-    // "the user just cleared this" once a valid value has been set once.
+    // Reads the input, not this.config: the sync above falls back to the previous config value on a
+    // cleared box, so config alone can never observe "the user just cleared this".
     if ((this.maxComponentsInput.value ?? 0) < 1) return 'Max # components must be at least 1.';
     if (this.config.max_num_routes_per_compound === 0)
       return 'Max routes per compound must be at least 1, or blank for no cap.';
     if (this.config.max_num_combinations_per_template === 0)
       return 'Max combinations per template must be at least 1, or blank for no cap.';
 
-    // The only min+max pair in products_specs — every other numeric filter there is max-only.
-    // Both active (neither is the -1 "no cap" sentinel) and inverted means every product fails
-    // both checks at once: 0 rows, with nothing indicating the two thresholds contradict.
+    // The only min+max pair in products_specs. Both active and inverted means every product fails
+    // both checks: 0 rows, with nothing indicating the two thresholds contradict.
     const ps = this.config.products_specs;
     if (ps.min_num_carbon_atoms >= 0 && ps.max_num_carbon_atoms >= 0 &&
       ps.min_num_carbon_atoms > ps.max_num_carbon_atoms)
@@ -682,10 +624,8 @@ export class EnumeratorConfigForm {
     return card;
   }
 
-  // Computes the ribbon-chip/subtitle state from this form's own inputs + config and hands it to
-  // `nav` as plain data — `nav` owns none of this itself (see EnumeratorNav). `overrides` carries the
-  // 3 booleans DataPanel instances own (hasAnyOverride() per component); the orchestrator computes
-  // those and passes them in, since ConfigForm has no visibility into DataPanel.
+  /** Computes the chip/subtitle state from this form's inputs and config and hands it to `nav` as
+   * plain data. `overrides` comes from the orchestrator, which owns the DataPanel instances. */
   refreshRibbonChips(overrides: RibbonOverrideFlags): void {
     const config = this.config;
     const tDf = this.templatesInput.value; const bDf = this.bbsInput.value; const rDf = this.reagentsInput.value;
@@ -705,9 +645,8 @@ export class EnumeratorConfigForm {
       extrasText: rDf ? `${rDf.rowCount} reagents` : 'Reagents (None)',
       extrasOverride: overrides.reagentsOverride,
       extrasSubtitle: rDf ? `${rDf.rowCount} reagents` : 'Optional',
-      // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
       combineChipText: `Strategy: ${MODE_ABBR[mode]} · ${roundsText}`,
-      combineSubtitle: `${MODE_LABEL[mode]} · ${roundsText}`,
+      combineSubtitle: `${MODE_LABEL[mode]} · ${roundsText}`, // pane header already says "How to combine"
       estimateText: n > 0 ? `≈ ${n.toLocaleString('en-US')} products` : '',
       limitsChanged: combChanged, filtersChanged: prodChangedCount > 0,
     });

@@ -77,6 +77,18 @@ export enum COLUMN_TYPE {
   OBJECT = 'object',
 }
 
+/** Column filters that are broader than a concrete column type.
+ * Note that datetime columns are numerical, so use NUMERICAL_NO_DATE_TIME to exclude them.
+ * @enum {COLUMN_TYPE_FILTER} */
+export enum COLUMN_TYPE_FILTER {
+  NUMERICAL = 'numerical',
+  NUMERICAL_NO_DATE_TIME = 'numerical_no_datetime',
+  CATEGORICAL = 'categorical',
+  CATEGORICAL_OR_DATETIME = 'categorical_or_datetime',
+  HAS_MISSING_VALUES = 'has missing values',
+  NO_MISSING_VALUES = 'no missing values',
+}
+
 
 /** @enum {TYPE} */
 export enum TYPE {
@@ -243,6 +255,8 @@ export const SEMTYPE = {
   IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
   EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
   Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
+
+  FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
 }
 
 export const UNITS = {
@@ -952,6 +966,7 @@ export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | string;
 export type SyncType = `${SYNC_TYPE}`;
 export type JoinType = `${JOIN_TYPE}`;
 export type ColumnType = `${COLUMN_TYPE}`;
+export type ColumnTypeFilter = ColumnType | `${COLUMN_TYPE_FILTER}`;
 export type ViewerType = `${VIEWER}` | string;
 export type ViewType = `${VIEW_TYPE}` | string;
 export type ObjectType = string;

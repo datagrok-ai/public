@@ -16,7 +16,9 @@ import './functions/math-functions';
 import './functions/stats-functions';
 import './functions/text-functions';
 import './functions/cache';
+import './functions/param-eval';
 import './shell/shell';
+import './shell/undo';
 import './shell/ml';
 import './shell/settings';
 import './dapi/files';
@@ -25,6 +27,21 @@ import './dapi/functions';
 import './dapi/fetch';
 import './dapi/groups';
 import './dapi/dapi';
+import './dapi/cloud-logs';
+import './dapi/domains';
+import './dapi/domains-batch';
+import './dapi/domain-errors';
+import './dapi/domain-filters';
+import './dapi/domain-relations';
+import './dapi/domain-lifecycle';
+import './dapi/domain-parity';
+import './dapi/domain-handlers';
+import './dapi/domain-frame-editor';
+import './dapi/domain-app-framework';
+import './dapi/domain-widgets';
+import './dapi/domain-visual-queries';
+import './dapi/connector-writes';
+import './dapi/connector-ddl';
 import './dapi/connection';
 import './dapi/entities';
 import './dapi/entities-save';
@@ -38,8 +55,10 @@ import './dapi/functions-annotations';
 import './dapi/vector-functions-and-scripts';
 import './widgets/files-widget';
 import './widgets/legend';
+import './widgets/pickers';
 import './widgets/tree-view';
 import './utils/color';
+import './utils/string-utils';
 import './db/db-browser-tests';
 // import './package/upload';
 import './packages/properties';
@@ -58,6 +77,7 @@ import './stats/stats';
 import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
+import './u2/u2';
 import './utils/progressIndicator';
 import './ai/ai-tests';
 
@@ -76,22 +96,12 @@ export { tests };
 //input: string skipToCategory {optional: true}
 //input: string skipToTest {optional: true}
 //input: bool returnOnFail {optional: true}
-//input: bool excludeNodeTests {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
-                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean,
-                           excludeNodeTests?: boolean): Promise<DG.DataFrame> {
-    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests);
-  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests });
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
+  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
   return DG.DataFrame.fromObjects(data)!;
-}
-
-/** Headless entry for the `grok test` Node pass — runs only tests marked {node: true}. */
-export async function testNode(pkg: DG.Package,
-    options: {category?: string, test?: string, stressTest?: boolean, verbose?: boolean}): Promise<any[]> {
-  setTestPackage(pkg);
-  return await runTests({category: options.category, test: options.test, stressTest: options.stressTest,
-    verbose: options.verbose, nodeOnly: true, nodeOptions: {package: pkg}});
 }
 
 //name: testPlatform

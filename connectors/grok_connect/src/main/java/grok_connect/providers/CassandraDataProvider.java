@@ -18,6 +18,7 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bigint_column.CassandraBigIntColumnManager;
+import grok_connect.managers.float_column.CassandraFloatColumnManager;
 import grok_connect.managers.integer_column.CassandraIntColumnManager;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
@@ -246,7 +247,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
+    public void setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) throws SQLException {
         Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
         LocalDateTime localDateTime = LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
         statement.setObject(parameterIndex, localDateTime.toLocalDate());
@@ -257,6 +258,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BIG_INT, new CassandraBigIntColumnManager());
         defaultManagersMap.put(Types.INT, new CassandraIntColumnManager());
+        defaultManagersMap.put(Types.FLOAT, new CassandraFloatColumnManager());
         return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

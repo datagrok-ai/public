@@ -22,7 +22,7 @@ category('Flow: node-factory', () => {
     const table = createNode('Inputs/Table Input');
     expect(table !== null, true);
     expect(table!.dgNodeType, 'input');
-    expect(table!.dgTypeName, 'Inputs/Table Input'); // stamped for serialization
+    expect(table!.dgTypeName, 'Inputs/Table Input');
     expect('table' in table!.outputs, true);
 
     const out = createNode('Outputs/Table Output');
@@ -38,22 +38,14 @@ category('Flow: node-factory', () => {
   });
 
   test('a leading (table, column) input pair is required even when annotated nullable', async () => {
-    // Mis-annotation is rampant: e.g. Chem:bitbirchClusteringTopMenu declares
-    // both `table` and `molecules` nullable, but the call is meaningless
-    // without them. A function whose first two inputs are a dataframe and a
-    // column operates on exactly that data — both are enforced.
     const func = DG.Func.find({package: 'Chem', name: 'bitbirchClusteringTopMenu'})[0];
     if (!func) return; // Chem not on this stand
     const typeName = ensureFuncNodeType(func);
     const node = createNode(typeName)!;
     expect(node.requiredInputs.includes('table'), true, 'nullable leading table is forced required');
     expect(node.requiredInputs.includes('molecules'), true, 'nullable leading column is forced required');
-    // The override is scoped to the leading pair — a declared-default param
-    // after it stays non-required.
     expect(node.requiredInputs.includes('threshold'), false, 'defaulted param stays optional');
 
-    // No leading (table, column) pair → nothing forced (OpenFile: string
-    // first, so its optional sheetName must stay optional).
     const open = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
     if (open) {
       const of = createNode(open.nodeTypeName)!;
@@ -70,9 +62,6 @@ category('Flow: node-factory', () => {
   });
 
   test('SetVar and GetVar are always registered — saved flows depend on them', async () => {
-    // Both fall to the primitive-only catalog exclusion, but every imported
-    // creation script terminates in SetVar nodes: a saved .flow with them
-    // must deserialize without a prior import having registered them.
     if (DG.Func.find({name: 'SetVar'}).length === 0) {
       expect(true, true); // no live backend — nothing to check
       return;
@@ -91,7 +80,7 @@ category('Flow: node-factory', () => {
     expect(func != null, true);
     const a = ensureFuncNodeType(func);
     const b = ensureFuncNodeType(func);
-    expect(a, b); // same qualified name → same node type, no duplicate registry entry
+    expect(a, b);
     const node = createNode(a);
     expect(node instanceof FuncNode, true);
     expect(node!.dgFunc?.name, func.name);
@@ -99,7 +88,7 @@ category('Flow: node-factory', () => {
 
   test('FuncNode builds a pass-through output per input', async () => {
     const func = DG.Func.find({name: 'AddNewColumn'})[0];
-    if (!func) return; // AddNewColumn should always exist, but guard anyway
+    if (!func) return;
     const node = new FuncNode(func);
     expect(node.passthroughCount, func.inputs.length);
     for (const inp of func.inputs)
@@ -115,9 +104,6 @@ category('Flow: node-factory', () => {
   });
 
   test('input slot label shows the caption, key stays the property name', async () => {
-    // Find a registered func whose input declares a caption distinct from its
-    // name (e.g. Aggregate/PCA/dbScan) — the slot label should be that caption
-    // while the slot key stays the property name.
     let found: {func: DG.Func; name: string; caption: string} | null = null;
     for (const info of getRegisteredFuncs()) {
       for (const p of info.func.inputs) {
@@ -133,8 +119,6 @@ category('Flow: node-factory', () => {
   });
 
   test('FuncNode captures param descriptions for socket/panel tooltips', async () => {
-    // Find any registered func whose inputs OR outputs declare a description
-    // (via @grok.decorators.param) — validates the Dart-proxy read end to end.
     let found: {func: DG.Func; param: string} | null = null;
     for (const info of getRegisteredFuncs()) {
       for (const p of [...info.func.inputs, ...info.func.outputs])
@@ -155,7 +139,6 @@ category('Flow: node-factory', () => {
     const node = new FuncNode(setVar);
     expect((node as unknown as {color?: string}).color, setVarRed, 'SetVar title is red');
 
-    // A function without an override falls back to role/default coloring.
     const other = DG.Func.find({name: 'AddNewColumn'})[0];
     if (other)
       expect((new FuncNode(other) as unknown as {color?: string}).color !== setVarRed, true);
@@ -201,18 +184,13 @@ category('Flow: node-factory', () => {
   });
 
   test('suggestion menu shows friendly names with "what it does" categories', async () => {
-    // Dragging a table output to empty canvas lists compatible nodes. DG funcs
-    // must read like the toolbox — friendly name + task category — not the raw
-    // `funcName (Uncategorized)` baked into the typeName.
     const candidates = findNodeTypesAcceptingInput('dataframe');
     expect(candidates.length > 0, true, 'a table output has compatible next steps');
 
-    // No DG function is labeled with the role-segment fallback.
     const uncategorized = candidates.filter((c) => c.label.includes('Uncategorized'));
     expect(uncategorized.length, 0,
       `"Uncategorized" leaked into labels: ${uncategorized.slice(0, 3).map((c) => c.label).join(' | ')}`);
 
-    // A known catalog func shows its registry display name and task category.
     const anc = getRegisteredFuncs().find((f) => f.func.name === 'AddNewColumn');
     if (anc) {
       const item = candidates.find((c) => c.typeName === anc.nodeTypeName);
@@ -221,7 +199,6 @@ category('Flow: node-factory', () => {
       expect(funcCategory(anc), 'Column Operations', 'AddNewColumn is a column operation');
     }
 
-    // Every DG-func candidate carries a known category in parentheses.
     const catRe = /\((.+)\)$/;
     for (const c of candidates.filter((x) => !x.isBuiltin).slice(0, 50)) {
       const m = catRe.exec(c.label);
@@ -229,11 +206,9 @@ category('Flow: node-factory', () => {
       expect((FUNC_CATEGORIES as readonly string[]).includes(m![1]), true, `known category in ${c.label}`);
     }
 
-    // Built-ins keep their plain label.
     const builtin = candidates.find((c) => c.typeName === 'Outputs/Table Output');
     if (builtin) expect(builtin.label, 'Table Output');
 
-    // A Chem operation lands under its domain, same as the toolbox.
     const chemOp = candidates.find((c) => {
       if (c.isBuiltin) return false;
       const info = getRegisteredFuncs().find((f) => f.nodeTypeName === c.typeName);
@@ -249,21 +224,15 @@ category('Flow: node-factory', () => {
     const byFunc = (name: string) => (c: {typeName: string}): boolean =>
       (c.typeName.split('/').pop() ?? '').split(':').pop() === name;
 
-    // Value Output is always first, context or not.
     const plain = findNodeTypesAcceptingInput('dataframe');
     expect(plain[0].typeName, 'Outputs/Value Output', 'Value Output leads');
 
-    // Exact type match beats a wildcard acceptor in the same tier: for a table
-    // drag, Table Output (dataframe input) precedes Log (dynamic input) even
-    // though "Log" sorts first alphabetically.
     const tableOut = idxOf(plain, (c) => c.typeName === 'Outputs/Table Output');
     const log = idxOf(plain, (c) => c.typeName === 'Utilities/Log');
     if (tableOut !== -1 && log !== -1)
       expect(tableOut < log, true, 'exact dataframe consumer before a dynamic catch-all');
 
     if (getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
-      // Dragging out of a Chem node → every Cheminformatics function precedes
-      // the common core funcs (and thus all other DG funcs).
       const fromChem = findNodeTypesAcceptingInput('dataframe', {sourcePackageName: 'Chem'});
       const lastChem = (fromChem as Array<{label: string}>).map(isChem).lastIndexOf(true);
       const ancFrom = idxOf(fromChem, byFunc('AddNewColumn'));
@@ -271,20 +240,15 @@ category('Flow: node-factory', () => {
       if (ancFrom !== -1)
         expect(lastChem < ancFrom, true, 'all chem funcs precede the common core funcs');
 
-      // A domain-less source (OpenFile, a utility) falls back to the science
-      // already on the canvas.
       const viaGraph = findNodeTypesAcceptingInput('dataframe', {graphPackageNames: ['Chem']});
       expect(isChem(viaGraph[1] as {label: string}), true, 'canvas domain boosts chem right after Value Output');
 
-      // No context → no domain boost: the common core funcs stay ahead of chem.
       const ancPlain = idxOf(plain, byFunc('AddNewColumn'));
       const firstChemPlain = idxOf(plain, isChem as (c: {typeName: string; label: string}) => boolean);
       if (ancPlain !== -1 && firstChemPlain !== -1)
         expect(ancPlain < firstChemPlain, true, 'without context, chem is not boosted');
     }
 
-    // A function already used on the canvas floats within its tier: Aggregate
-    // jumps ahead of Add New Column (which otherwise wins alphabetically).
     const ancIdx = idxOf(plain, byFunc('AddNewColumn'));
     const aggIdx = idxOf(plain, byFunc('Aggregate'));
     if (ancIdx !== -1 && aggIdx !== -1) {
@@ -296,7 +260,6 @@ category('Flow: node-factory', () => {
   });
 
   test('suggestion menu search covers descriptions, tags, and package like the toolbox', async () => {
-    // The matcher itself: full-haystack substring, whitespace-insensitive.
     const c: CompatibleNodeType = {
       typeName: 'DG Functions/Uncategorized/Flow:deleteColumns',
       label: 'Delete Columns  (Transform Tables)', isBuiltin: false,
@@ -311,8 +274,6 @@ category('Flow: node-factory', () => {
     expect(candidateMatchesQuery({typeName: 'Utilities/Log', label: 'Log', isBuiltin: true}, 'log'),
       true, 'haystack-less candidate falls back to label/typeName');
 
-    // The live catalog populates the haystack: built-ins carry their toolbox
-    // description, DG funcs their func description + tags.
     const candidates = findNodeTypesAcceptingInput('dataframe');
     const tableOut = candidates.find((x) => x.typeName === 'Outputs/Table Output');
     expect(!!tableOut?.searchText, true, 'built-in candidates carry a search haystack');
@@ -334,7 +295,6 @@ category('Flow: node-factory', () => {
         `func description searchable in the menu: "${fragment}" → ${item.label}`);
     }
 
-    // Reverse menu candidates carry the haystack too (shared popup, same search).
     const producers = findNodeTypesProducingOutput('dataframe');
     const tableIn = producers.find((x) => x.typeName === 'Inputs/Table Input');
     expect(candidateMatchesQuery(tableIn!, 'dataframe input parameter'), true,
@@ -365,25 +325,17 @@ category('Flow: node-factory', () => {
     const byFunc = (name: string) => (c: {typeName: string}): boolean =>
       (c.typeName.split('/').pop() ?? '').split(':').pop() === name;
 
-    // "What produces a table?" — the matching Input node leads (the universal
-    // "make this a script parameter" producer).
     const tables = findNodeTypesProducingOutput('dataframe');
     expect(tables.length > 0, true, 'table producers exist');
     expect(tables[0].typeName, 'Inputs/Table Input', 'the matching Input node leads');
 
-    // A Data Sources func (OpenFile — real dataframe output) is boosted.
     const openFile = idxOf(tables, byFunc('OpenFile'));
     if (openFile !== -1) {
-      // It precedes any passthrough-only threader (e.g. a func that merely
-      // threads a table through, like a column-outputting mutator).
       const threader = tables.findIndex((c) => c.realOutput === false);
       if (threader !== -1)
         expect(openFile < threader, true, 'a real producer precedes passthrough-only threaders');
     }
 
-    // Real-over-passthrough within a tier: Aggregate (real dataframe output)
-    // beats Add New Column (only its table passthrough matches a table drag) —
-    // both are COMMON funcs, and alphabetics would put ANC first.
     const agg = idxOf(tables, byFunc('Aggregate'));
     const anc = idxOf(tables, byFunc('AddNewColumn'));
     if (agg !== -1 && anc !== -1) {
@@ -392,12 +344,9 @@ category('Flow: node-factory', () => {
       expect(ancItem.realOutput, false, 'AddNewColumn matches via passthrough only');
     }
 
-    // A string drag leads with String Input; a passthrough-only threader for
-    // strings (any func with a string input) is offered too, ranked below.
     const strings = findNodeTypesProducingOutput('string');
     expect(strings[0].typeName, 'Inputs/String Input', 'String Input leads a string drag');
 
-    // The domain boost applies in the reverse direction too.
     if (getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
       const fromChem = findNodeTypesProducingOutput('dataframe', {sourcePackageName: 'Chem'});
       const isChem = (c: {label: string}): boolean => c.label.endsWith('(Cheminformatics)');

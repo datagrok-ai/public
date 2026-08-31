@@ -15,7 +15,7 @@ test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path dete
   stepErrors.length = 0;
   const stamp = Date.now();
   const projectName = `bio-lifecycle-fasta-file-${stamp}`;
-  const fastaTempPath = `System:AppData/UsageAnalysis/temp/lifecycle-fasta-${stamp}.fasta`;
+  const fastaTempPath = `System:AppData/Bio/temp/lifecycle-fasta-${stamp}.fasta`;
   const fastaSamplePath = 'System:AppData/Bio/samples/FASTA.fasta';
   let saved: {projectId: string; primaryTableInfoId: string; layoutId: string | null} | null = null;
   let preSaveRowCount = 0;

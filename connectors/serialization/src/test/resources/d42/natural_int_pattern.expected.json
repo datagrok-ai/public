@@ -1,0 +1,30 @@
+{
+  "frame": "natural_int_pattern",
+  "rowCount": 16,
+  "columns": [
+    {
+      "name": "p",
+      "dgType": "int",
+      "valueEncoding": "int",
+      "encoderId": 2,
+      "values": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21,
+        24,
+        27,
+        30,
+        33,
+        36,
+        39,
+        42,
+        45
+      ]
+    }
+  ]
+}

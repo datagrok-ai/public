@@ -1,7 +1,49 @@
 # Grok Connect changelog
 
-# 2.7.1
+# 2.8.5 (unreleased)
 
+* Fixed: Cassandra `FLOAT` and `TINYINT` columns failed with `CodecNotFoundException` — the typed fast reads ask the driver to widen to `Double`/`Integer`, which it refuses, so the provider now reads those through `getObject` and the converter chain
+* Streaming: typed JDBC fast reads (`getInt`/`getDouble`/`getString`/... instead of `getObject` + conversion for the common column types, `ResultSetManager.readFast`)
+* Streaming: `int8AsInt32` query option - bigint columns travel as `int` while every value fits int32; the downcast is opt-in, sticky once a value overflows and survives chunk boundaries (`detach` carries the flag)
+* Streaming: next fetch size is derived from the previous chunk's serialized bytes/row instead of the in-memory estimate; the measurement is snapshotted when the fetch is scheduled (chunk k feeds fetch k+2 single-task, k+3 pipelined); `MAX_FETCH_SIZE` raised to 500000 rows
+* Serialization: cost-based int and datetime encoder selection (RLE / sequence-pattern / bit-packed list, `dateTime:int`) with Dart-fixture goldens; no d42 VERSION bump
+* Streaming: chunks are gzipped in grok_connect when Datlas sends `compressChunks` (`gzipLevel`, default 1); announced as `DATAFRAME PART SIZE: <n> gzip=true` and passed through by Datlas
+* Streaming: two-stage pipeline - fetch(k+2) runs in parallel with serialize+gzip(k+1) while chunk k is sent; `-Dgrok.connect.pipelineFetch=false` restores the single-task path; closing mid-stream flags the query cancelled and waits (up to 5 s) for the in-flight fetch before releasing the connection
+* Debug: `COLUMN SIZES` line (per-column bytes/gz/encoder) after the serialize END marker; per-column encode `ms` only with the `columnTimings` query option
+* Fixed: Hive2 could not run a single query since 2.8.0 — reconstructing hive-jdbc 4.0.1's dropped runtime deps missed `hive-serde`, so the driver died on `NoClassDefFoundError: org/apache/hadoop/hive/serde2/thrift/Type`, and `hive-standalone-metastore-common` pulled the shaded `hadoop-client-api` (whose `Configuration` resolves `org.apache.hadoop.shaded.*` out of the absent `hadoop-client-runtime`) alongside the unshaded `hadoop-common`
+* Fixed: Postgres `interval` columns lost their zero-valued units (`1 years 5 mons 5 days` instead of `1 years 5 mons 5 days 0 hours 0 mins 0.0 secs`) after the 2.8.0 driver refresh — pgjdbc 42.7.13 rewrote `PGInterval.toString()`; the six-unit rendering is now pinned in `PgIntervalTypeConverter` instead of coming from the driver
+* Fixed: the shaded jar failed every hostname lookup on JDK >= 18 (dnsjava's `java.net.spi.InetAddressResolverProvider` service entry pointed at a multi-release class the shade drops); the entry is now excluded
+* Fixed: `grok_connect.cmd` / `grok_connect.sh` put `lib/*` before the jar on the classpath, letting a driver's bundled SLF4J shadow the shaded one
+* `initConnectFetchSize` with a non-numeric value (e.g. `"10 MB"`, which only `connectFetchSize` accepts) now fails with a clear message instead of a bare `NumberFormatException`
+
+# 2.8.4
+
+* GROK-20712: Fixed the main image registering zero providers — the newline `printf` writes into `providers.conf` for the default empty allowlist parsed as an empty set instead of "all providers", so every DB test failed with "Provider Postgres not found" since 2.8.3
+
+# 2.8.3
+
+* GROK-20712: Provider allowlist is now baked into the image at build time (`providers.conf` written by the Dockerfile `FLAVOR` layer from the `GROK_CONNECT_PROVIDERS` build arg) instead of being read from a runtime env variable, so the main/extended provider partition cannot be overridden at deploy time
+
+# 2.8.2
+
+* GrokConnect: ClickHouse: Fix "Execution failed" against ClickHouse >= 26
+
+# 2.8.1
+
+* GROK-18695: jackson 2.18.8 → 2.18.9 (pom bom + BigQuery companion lib jars; CVE-2026-59889, GHSA-mhm7-754m-9p8w)
+* GROK-18695: Removed the dead Hive1 (HiveServer1) dependency tree (`hive-jdbc:0.7.1-cdh3u6` pom-type + `cassandra-thrift`) — the provider has shipped without its driver class and is probe-de-advertised; drops commons-lang 2.5 and the 2011-era transitives from the shaded jar
+
+# 2.8.0
+
+* GROK-18695: Split into two images built from one codebase: `datagrok/grok_connect` (main — all providers on lean or patched drivers) and `datagrok/grok_connect_extended` (opt-in; quarantines the drivers with unfixable CVE surface: Amazon Neptune 3.0.3 and Cloudera Impala). Docker `FLAVOR` build arg prunes `lib/`; runtime provider set = `GROK_CONNECT_PROVIDERS` env allowlist (empty = all) intersected with a driver-presence probe, so a provider whose driver jar is absent is never advertised on `/conn`
+* ProviderManager: reflective, fault-tolerant provider registration (a broken/missing provider logs a warning instead of failing startup). HBase and Hive (HiveServer1) are no longer advertised — both have shipped without their driver classes (Phoenix query server / `org.apache.hadoop.hive.jdbc.HiveDriver`) and could never connect; Hive2 covers all modern Hive servers
+* GROK-18695: Driver refresh sweep (keep providers in main image on patched drivers): hive-jdbc + hive-standalone-metastore-common 4.0.0-alpha-2 → 4.0.1 (last Java-8 build; clears hive-service CVE-2024-23945) + explicit hive-service/hive-common/hive-shims-common/hive-service-rpc/libthrift runtime set (the 4.0.1 GA jar no longer declares its runtime deps), hadoop-common 3.4.3, zookeeper pin 3.9.5, postgresql 42.7.13, mysql-connector-j 9.7.0, mariadb 3.5.10, cassandra java-driver 4.17.0, mongodb-driver 3.12.14, sqlite-jdbc 3.53.2.1, Oracle ojdbc8/xdb/xmlparserv2 23.26.3.0.0, SAP ngdbc 2.29.7, terajdbc 20.00.00.58, jackcess 4.0.11, org.json 20260719, dnsjava 3.6.5, nimbus-jose-jwt 9.48, gson 2.14.0, BouncyCastle jdk15on 1.70 → jdk18on 1.85.x
+* GROK-18695: jetty 9.4.57 → 9.4.58.v20250814 (newest OSS 9.4; the remaining CVE-2026-2332 has no OSS fix on the Java-8 line and is covered by a reviewed VEX not_affected entry — grok_connect is cluster-internal with datlas as its only client, no HTTP intermediary to desynchronize)
+* GROK-18695: Widened the hive-jdbc jline exclusion to `org.jline:*` (drops jline-remote-telnet 3.22.0, GHSA HIGHs)
+* GROK-18695: Athena: migrated from the discontinued Simba 2.x driver (`AthenaJDBC42-2.0.35.1000.jar`, embedded jackson 2.14.0 / log4j 2.17.1) to the first-party AWS Athena JDBC v3 driver 3.8.0 (lean jar + AWS SDK v2 from Maven, so netty stays on the patched bom pin). Driver class `com.amazon.athena.jdbc.AthenaDriver`, URL `jdbc:athena://`; credentials now passed as `User`/`Password`/`SessionToken`; `S3OutputLocation`/`Schema`/`S3OutputEncOption` mapped to v3 `OutputLocation`/`Database`/`EncryptionOption`; legacy `SocketTimeout`/`UseResultsetStreaming` jdbc properties translated/dropped; CSE_KMS results fall back to the `GetQueryResults` fetcher
+* GROK-18695: Security — driver updates: databricks-jdbc 2.6.40 → 2.8.3 (embeds jackson 2.21.5, clears CVE-2026-54512/13 + log4j 2.20/netty-common 4.1.86 rows), redshift-jdbc42 2.1.0.28 → 2.2.8, mssql-jdbc 12.8.2 → 12.10.2.jre8 (clears CVE-2025-59250), logback 1.2.13 → 1.3.16, netty pins 4.1.135 → 4.1.137.Final (new 2026 netty advisories)
+* GROK-18695: Security — removed the unused CData DynamoDB driver jar (provider was already unregistered) and the direct `commons-lang:2.4` dependency (`NotImplementedException` → `UnsupportedOperationException`)
+* Fixed `grok_connect.sh` referencing a stale hardcoded jar version
 * GROK-18695: Security — added a `<dependencyManagement>` block forcing patched, Java-8-compatible versions of vulnerable transitive dependencies: netty-bom 4.1.135.Final (transitive `netty-codec-http2`/`resolver-dns`/`redis`/…), jackson-bom 2.18.8, protobuf-java 3.25.5, commons-compress 1.26.2, commons-io 2.16.1, commons-beanutils 1.11.0, json-smart 2.5.1, plexus-utils 3.6.1, hadoop-yarn-server-common 3.3.2.
 * GROK-18695: Security — second round: nimbus-jose-jwt 9.37.4 (CVE-2025-53864); new pins json-io 4.14.1 (CVE-2023-34610), xmlsec 2.3.4 (CVE-2023-44483), commons-lang3 3.18.0 (CVE-2025-48924), commons-configuration2 2.15.0 (CVE-2024-29131/29133, CVE-2026-45205); excluded `org.jline:jline` (GHSA-2r2c-cx56-8933, GHSA-47qp-hqvx-6r3f) and `hadoop-shaded-protobuf_3_7` (embeds protobuf-java 3.7.1, CVE-2024-7254) from hive-jdbc; BigQuery companion jackson jars in `lib/` bumped 2.14.3 → 2.18.8 (CVE-2026-54512/54513/54514).
 

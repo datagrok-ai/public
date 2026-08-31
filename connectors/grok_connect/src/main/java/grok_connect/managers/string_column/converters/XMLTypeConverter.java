@@ -12,7 +12,6 @@ public class XMLTypeConverter implements Converter<String> {
 
     @Override
     public String convert(Object value) {
-        LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         try {
             SQLXML sqlxml = (SQLXML)value;
             return sqlxml.getString();

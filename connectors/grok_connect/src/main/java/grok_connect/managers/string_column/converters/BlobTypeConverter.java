@@ -15,11 +15,8 @@ public class BlobTypeConverter implements Converter<String> {
 
     @Override
     public String convert(Object value) {
-        if (value == null) {
-            LOGGER.trace("value is null");
+        if (value == null)
             return "";
-        }
-        LOGGER.trace(DEFAULT_LOG_MESSAGE, value.getClass());
         try {
             InputStream reader = ((Blob) value).getBinaryStream();
             StringWriter writer = new StringWriter();

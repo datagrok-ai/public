@@ -19,37 +19,49 @@ export class FanoutPublisher {
   private readonly brokerUrl: string;
   private readonly connectFn: (url: string) => Promise<any>;
   private conn: any = null;
-  private channel: any = null;
+  private channelPromise: Promise<any> | null = null;
 
   constructor(brokerUrl: string, connectFn?: (url: string) => Promise<any>) {
     this.brokerUrl = brokerUrl;
     this.connectFn = connectFn ?? ((url: string) => amqplib.connect(url));
   }
 
-  private async ensureChannel(): Promise<any> {
-    if (this.channel != null)
-      return this.channel;
-    this.conn = await this.connectFn(this.brokerUrl);
-    this.conn.on?.('error', (e: Error) => {
+  private ensureChannel(): Promise<any> {
+    if (this.channelPromise == null) {
+      const promise = this.openChannel();
+      promise.catch(() => {
+        if (this.channelPromise === promise)
+          this.channelPromise = null;
+      });
+      this.channelPromise = promise;
+    }
+    return this.channelPromise;
+  }
+
+  private async openChannel(): Promise<any> {
+    const conn = await this.connectFn(this.brokerUrl);
+    this.conn = conn;
+    conn.on?.('error', (e: Error) => {
       logWarn(`Fanout publisher connection error: ${e.message}`);
-      this.reset();
+      this.reset(conn);
     });
-    this.conn.on?.('close', () => this.reset());
-    const channel = await this.conn.createChannel();
+    conn.on?.('close', () => this.reset(conn));
+    const channel = await conn.createChannel();
     channel.on?.('error', (e: Error) => logWarn(`Fanout publisher channel error: ${e.message}`));
     // datlas binds a private queue to this exchange with default (non-durable) settings
     await channel.assertExchange(CALLS_FANOUT, 'fanout', {durable: false});
-    this.channel = channel;
     return channel;
   }
 
-  private reset(): void {
-    this.channel = null;
-    const conn = this.conn;
+  private reset(conn?: any): void {
+    if (conn != null && conn !== this.conn)
+      return;
+    this.channelPromise = null;
+    const current = this.conn;
     this.conn = null;
-    if (conn != null) {
+    if (current != null) {
       try {
-        conn.close().catch(() => {});
+        current.close().catch(() => {});
       }
       catch (_) {}
     }
@@ -81,7 +93,7 @@ export class FanoutPublisher {
 
   async close(): Promise<void> {
     const conn = this.conn;
-    this.channel = null;
+    this.channelPromise = null;
     this.conn = null;
     if (conn != null) {
       try {

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [macromolecule_fasta_separator_column]
-realizes: []
+realizes: [bio.menu.polytool.convert, sequencetranslator.notation-provider, bio.menu.polytool.combine-sequences]
 realized_as:
   - st-lifecycle-macromolecule-fasta-separator-column-spec.ts
 related_bugs: []

@@ -48,7 +48,15 @@ test('file payloads get the larger cap and are never paged', () => {
 });
 
 test('errors come back as a readable result, not a throw', () => {
-  const out = JSON.parse(text(formatError('unknown op', {available: ['list', 'get']})));
+  const result = formatError('unknown op', {available: ['list', 'get']});
+  assert.equal(result.isError, true, 'errors must carry the MCP isError flag');
+  const out = JSON.parse(text(result));
   assert.equal(out.error, 'unknown op');
   assert.deepEqual(out.available, ['list', 'get']);
+});
+
+test('a huge error message is truncated but stays parseable JSON', () => {
+  const out = JSON.parse(text(formatError('boom\n' + 'at frame\n'.repeat(5_000))));
+  assert.ok(out.error.length < 2_100, 'must be capped');
+  assert.match(out.error, /truncated at 2000 chars/);
 });

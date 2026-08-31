@@ -1,8 +1,4 @@
-/** Duplicate / copy / paste: `duplicateNodes` copies a node set WITH the
- *  connections among it and makes the copies the selection; Ctrl+C snapshots
- *  the selection into the editor clipboard, Ctrl+V materializes it (repeat
- *  pastes fan out); Escape clears the selection. Output paramNames get a
- *  unique suffix on copy so the graph never lands in a duplicate-name error. */
+/** Duplicate / copy / paste: node sets copy with their internal connections. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
@@ -15,6 +11,32 @@ function key(init: KeyboardEventInit): void {
 category('Flow: clipboard', () => {
   before(async () => {
     registerBuiltinNodes();
+  });
+
+  test('the node context menu offers Copy; copyNodes feeds paste without a selection', async () => {
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, 'Inputs/String Input', 0, 0);
+      await until(() => !!e.container.querySelector(`.ff-node[data-node-id="${node.id}"]`));
+
+      const nodeEl = e.container.querySelector<HTMLElement>(`.ff-node[data-node-id="${node.id}"]`)!;
+      nodeEl.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 10, clientY: 10}));
+      const labels = (): string[] => Array.from(document.querySelectorAll<HTMLElement>('.d4-menu-item-label'))
+        .map((el) => el.textContent?.trim() ?? '');
+      expect(await until(() => labels().includes('Copy')), true, `no Copy item; saw: ${labels().join(', ')}`);
+      for (const el of Array.from(document.querySelectorAll('.d4-menu-popup, .d4-menu-dropdown')))
+        el.remove();
+
+      // What the menu item runs: copy THIS node (no selection needed), then paste.
+      expect(e.flow.copyNodes([node.id]), 1, 'one node copied');
+      const pasted = await e.flow.pasteClipboard();
+      expect(pasted.length, 1, 'paste materialized the copy');
+      expect(e.flow.getNodeCount(), 2);
+      expect(e.flow.copyNodes([]), 0, 'nothing to copy leaves the clipboard untouched');
+      expect((await e.flow.pasteClipboard()).length, 1, 'previous clipboard still pastes');
+    } finally {
+      destroyEditor(e);
+    }
   });
 
   test('duplicateNodes copies nodes + internal connections and selects the copies', async () => {
@@ -126,9 +148,6 @@ category('Flow: clipboard', () => {
   });
 
   test('right-click on a selected node keeps the multi-selection', async () => {
-    // A right-click bubbling past the node used to reach the area plugin's
-    // background-pointerdown path and unselect all — so the context menu's
-    // "Duplicate" only ever saw one node.
     const e = makeEditor();
     try {
       const a = await addNode(e.flow, 'Inputs/String Input', 0, 0);

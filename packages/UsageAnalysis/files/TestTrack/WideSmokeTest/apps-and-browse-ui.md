@@ -26,7 +26,8 @@
 
 ---
 {
-"order": 2
+"order": 2,
+"realizes": ["views.apps", "tutorials.app.tutorials", "views.projects", "sharing.share-dialog", "data.menu.join-tables", "data.menu.link-tables", "chem.import.sdf"]
 }
 
 

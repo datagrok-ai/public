@@ -98,6 +98,13 @@ export class DockContainer {
 }
 
 
+export interface IDockOptions {
+  /** Kill the element when its pane is closed via the ✕ button: runs cleanups registered
+   * with {@link Widget.registerCleanup} and detaches nested widgets. Off by default —
+   * panes that are closed and later reused must not opt in. */
+  killOnClose?: boolean;
+}
+
 /**
  * Window docking manager.
  *
@@ -141,13 +148,21 @@ export class DockManager {
   /**
    * Docks the element relative to the reference node.
    * @param {HTMLElement | Viewer} element - Element to dock
+   * @param options - `killOnClose`: kill the element when its pane is closed via the ✕
+   * button — runs cleanups registered with {@link Widget.registerCleanup} and detaches
+   * nested widgets. Off by default; panes that are closed and later reused must not opt in.
    * @param {DockType} dockType - Dock type (left | right | top | down | fill).
    * @param {DockNode|null} refNode - reference node
    * @param {number} ratio - Ratio of the area to take (relative to the reference node).
    * @param {string=} title - Name of the resulting column. Default value is agg(colName).
    * @returns {DockNode}
    * */
-  dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null, title?: string, ratio: number = 0.5): DockNode {
+  dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null,
+       title?: string, ratio: number = 0.5, options?: IDockOptions): DockNode {
+    if (options?.killOnClose) {
+      const el = element instanceof Viewer ? element.root : element;
+      el.setAttribute('data-kill-on-close', 'true');
+    }
     return new DockNode(api.grok_DockManager_Dock(this.dart, refNode === null ? null : refNode.dart, element, dockType, title ?? '', ratio));
   }
 
@@ -174,6 +189,14 @@ export class DockManager {
   }
 
   get onClosed(): rxjs.Observable<HTMLElement> { return api.grok_DockManager_OnElementClosed(this.dart); }
+
+  /** Fires when a panel becomes visible: its tab is selected, it is docked into a visible
+   * position, or it is floated into a dialog. Emits the panel's content element. */
+  get onPanelShown(): rxjs.Observable<HTMLElement> { return api.grok_DockManager_OnPanelShown(this.dart); }
+
+  /** Fires when a panel stops being visible: its tab is deselected, it is undocked without
+   * being re-docked, or it is closed. Emits the panel's content element. */
+  get onPanelHidden(): rxjs.Observable<HTMLElement> { return api.grok_DockManager_OnPanelHidden(this.dart); }
 
   // /**
   //  * Docks the element relative to the reference node.

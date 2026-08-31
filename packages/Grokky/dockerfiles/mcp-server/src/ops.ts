@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import * as api from './api-client.js';
 
 // Operation registry backing the domain tools. Previously each of these was its own MCP tool, so
@@ -20,6 +20,8 @@ export interface Op {
   params?: Record<string, Param>;
   /** File-ish payload: never array-paged, capped at a larger size than list results. */
   raw?: boolean;
+  /** Destructive op: returns the dry-run summary shown to the user before `run` is allowed. */
+  preview?: (a: Record<string, any>) => Promise<Record<string, unknown>>;
   run: (a: Record<string, any>) => Promise<unknown>;
 }
 
@@ -38,6 +40,17 @@ export const isReadonlyOp = (op: string): boolean => READONLY_RE.test(op);
 
 const str = (desc: string, required = false): Param => ({type: 'string', required, desc});
 const bool = (desc: string): Param => ({type: 'boolean', desc});
+
+const CONFIRM = str('Confirm token from the dry-run response. Omit on the first call.');
+
+const DRY_RUN_DESC = ' The first call is a dry run: it returns a summary plus a confirm token; ' +
+  'repeat the call with `confirm` after the user approves.';
+
+const CONFIRM_SALT = randomUUID();
+
+export const confirmTokenFor = (tool: string, op: string, args: Record<string, unknown>): string =>
+  createHash('sha256').update(`${CONFIRM_SALT}:${tool}.${op}:${JSON.stringify(args, Object.keys(args).sort())}`)
+    .digest('hex').slice(0, 8);
 
 const FILTER = str('Smart search filter, e.g. name="Chem"');
 const LIMIT = {type: 'number' as const, desc: 'Max items to return (default 50)'};
@@ -148,7 +161,16 @@ export const DOMAINS: Domain[] = [
         params: {name: str('Project name', true), description: str('Project description')},
         run: (a) => api.createProject(a.name, a.description),
       },
-      delete: {desc: 'Delete a project.', params: {id: str('Project ID', true)}, run: (a) => api.deleteProject(a.id)},
+      delete: {
+        desc: 'Delete a project.' + DRY_RUN_DESC,
+        params: {id: str('Project ID', true), confirm: CONFIRM},
+        preview: async (a) => {
+          const p: any = await api.getProject(a.id);
+          return {name: p.friendlyName ?? p.name, owner: p.author?.friendlyName ?? p.author?.login,
+            createdOn: p.createdOn};
+        },
+        run: (a) => api.deleteProject(a.id),
+      },
       attach_entity: {
         desc: 'Attach an existing SERVER-SIDE entity (table, layout, script, query, connection) to a ' +
           'project. Pass a real server id — not a client-side stub from t.getTableInfo().id.',
@@ -191,8 +213,19 @@ export const DOMAINS: Domain[] = [
         },
         run: (a) => api.listSpaceChildren(a.spaceId, a.types, a.includeLinked),
       },
-      create: {desc: 'Create a root space.', params: {name: str('Space name', true)}, run: (a) => api.createRootSpace(a.name)},
-      delete: {desc: 'Delete a space.', params: {id: str('Space ID', true)}, run: (a) => api.deleteSpace(a.id)},
+      create: {desc: 'Create a root space.', params: {name: str('Space name', true)},
+        run: (a) => api.createRootSpace(a.name)},
+      delete: {
+        desc: 'Delete a space.' + DRY_RUN_DESC,
+        params: {id: str('Space ID', true), confirm: CONFIRM},
+        preview: async (a) => {
+          const s: any = await api.getSpace(a.id);
+          const children = await api.listSpaceChildren(a.id);
+          return {name: s.friendlyName ?? s.name, owner: s.author?.friendlyName ?? s.author?.login,
+            children: children.length};
+        },
+        run: (a) => api.deleteSpace(a.id),
+      },
       create_subspace: {
         desc: 'Create a subspace inside a space.',
         params: {
@@ -229,8 +262,12 @@ export const DOMAINS: Domain[] = [
         run: (a) => api.writeSpaceFile(a.spaceId, a.path, a.content),
       },
       delete_file: {
-        desc: 'Delete a file from a space\'s storage.',
-        params: {spaceId: str('Space ID', true), path: str('File path within the space', true)},
+        desc: 'Delete a file from a space\'s storage.' + DRY_RUN_DESC,
+        params: {spaceId: str('Space ID', true), path: str('File path within the space', true), confirm: CONFIRM},
+        preview: async (a) => {
+          const s: any = await api.getSpace(a.spaceId);
+          return {space: s.friendlyName ?? s.name, path: a.path};
+        },
         run: (a) => api.deleteSpaceFile(a.spaceId, a.path),
       },
     },

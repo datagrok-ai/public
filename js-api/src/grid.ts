@@ -1422,7 +1422,8 @@ export class ColumnGrid extends Widget {
     gridOptions: { [key: string]: any };
     showMenuIcon: boolean;
   }): ColumnGrid {
-    return new ColumnGrid(api.grok_ColumnGrid_Create(options?.filter, options?.isColGrayedOut, options?.gridOptions, options?.showMenuIcon));
+    return new ColumnGrid(api.grok_ColumnGrid_Create(options?.filter ? (c: any) => options!.filter!(toJs(c)) : null,
+      options?.isColGrayedOut ? (c: any) => options!.isColGrayedOut!(toJs(c)) : null, options?.gridOptions, options?.showMenuIcon));
   }
 
   /** Creates a new column manager grid. */
@@ -1458,8 +1459,8 @@ export class ColumnGrid extends Widget {
     grayedOutColsMode?: boolean;
     serviceColsTagName?: string;
   }): ColumnGrid {
-    return new ColumnGrid(api.grok_ColumnGrid_Create_Popup(dfSource.dart, options?.filter, options?.addEmpty ?? false,
-      options?.widgetMode ?? false, options?.grayedOutColsMode ?? false, options?.serviceColsTagName ?? null));
+    return new ColumnGrid(api.grok_ColumnGrid_Create_Popup(dfSource.dart, options?.filter ? (c: any) => options!.filter!(toJs(c)) : null,
+      options?.addEmpty ?? false, options?.widgetMode ?? false, options?.grayedOutColsMode ?? false, options?.serviceColsTagName ?? null));
   }
 
   /** Creates a new column selector grid. */
@@ -1468,7 +1469,9 @@ export class ColumnGrid extends Widget {
     filter?: (c: Column) => boolean;
     isChecked?: (c: Column) => boolean;
   }): ColumnGrid {
-    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnSelector(dfSource.dart, options?.checkAll ?? false, options?.filter, options?.isChecked));
+    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnSelector(dfSource.dart, options?.checkAll ?? false,
+      options?.filter ? (c: any) => options!.filter!(toJs(c)) : null,
+      options?.isChecked ? (c: any) => options!.isChecked!(toJs(c)) : null));
   }
 
   get dfColumns(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfColumns(this.dart)); }
@@ -1478,7 +1481,7 @@ export class ColumnGrid extends Widget {
   get typeNameCol(): Column { return toJs(api.grok_ColumnGrid_Get_TypeNameCol(this.dart)); }
 
   get filter(): (c: Column) => boolean { return api.grok_ColumnGrid_Get_Filter(this.dart); }
-  set filter(f: (c: Column) => boolean) { api.grok_ColumnGrid_Set_Filter(this.dart, f); }
+  set filter(f: (c: Column) => boolean) { api.grok_ColumnGrid_Set_Filter(this.dart, f ? (c: any) => f(toJs(c)) : null); }
 
   addCheckedSelect(): void { api.grok_ColumnGrid_AddCheckedSelect(this.dart); }
   filterColumns(): void { api.grok_ColumnGrid_FilterColumns(this.dart); }

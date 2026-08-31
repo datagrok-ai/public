@@ -1,0 +1,761 @@
+/* Input skin — label column + underline editor, as in the current platform (ui.css
+   .ui-input-root / .ui-input-label / .ui-input-editor / .ui-input-switch).
+   Tokens only; css/tokens.css must be loaded alongside. */
+.u2-input-root {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+  padding: var(--dg-space-s) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+}
+
+.u2-input-label {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 100px;
+  height: var(--dg-control-height);
+  margin-right: var(--dg-space-m);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-input-editor {
+  box-sizing: border-box;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: none;
+  border-radius: 0;
+  outline: none;
+}
+
+input.u2-input-editor,
+textarea.u2-input-editor,
+.u2-input-editor.u2-input-search {
+  border-bottom: var(--dg-input-border);
+}
+
+/* the widths the platform pins: 100px for a text box (ui.css:262-265), 140px for the numeric
+   family (ui.css:244-254, which `IntInput` lends to its bigint and qnum siblings) */
+.u2-input-root[data-u2='text-input'] > .u2-input-box > input.u2-input-editor,
+.u2-input-root[data-u2='text-input'] > .u2-input-box > .u2-input-editor.u2-input-password,
+.u2-input-root[data-u2='suggest-input'] > .u2-input-box > input.u2-input-editor {
+  width: 100px;
+  min-width: 0;
+}
+
+.u2-input-root[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
+.u2-input-root[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor {
+  width: 140px;
+  max-width: 150px;
+  min-width: 0;
+}
+
+input.u2-input-editor:focus,
+textarea.u2-input-editor:focus,
+.u2-input-editor.u2-input-search:focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-input-editor::placeholder,
+.u2-input-search > input::placeholder {
+  color: var(--dg-text-color-light);
+}
+
+textarea.u2-input-editor {
+  height: auto;
+  min-height: calc(var(--dg-control-height) * 2);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  line-height: var(--dg-line-height);
+  resize: vertical;
+}
+
+.u2-input-editor.u2-invalid,
+.u2-input-editor.u2-invalid:focus,
+.u2-input-editor.u2-invalid:focus-within {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+/* a whole line of its own under the editor, whatever room is left beside it: the editors are as
+   wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
+   460px one would land off the pane on one row and under the field on the next. Long verdicts
+   clamp to three lines, the W2 async channel's pattern (css/form.css); the full text rides the
+   element's title */
+.u2-input-error {
+  flex: 1 0 100%;
+  min-width: 0;
+  max-width: 260px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-error);
+}
+
+.u2-input-error:empty {
+  display: none;
+}
+
+/* editor + options rail: one element, so the pair survives the platform bridge (the Dart proxy
+   appends it into a `ui-input-root` of its own) */
+.u2-input-box {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* the rail — Dart's `.ui-input-options` (ui.css:776-786, 888-895): 28px tall, blue, children 8px
+   apart, underline continuing the editor's */
+.u2-input-options {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  align-self: flex-end;
+  height: var(--dg-control-height);
+  /* what the platform's own rail computes to — `font-size: smaller` off the 13px root (ui.css:892).
+     Pinned rather than inherited: `smaller` is relative to whatever ancestor font the host sets, so
+     a bridged editor under the platform root and a standalone one resolved to different sizes */
+  font-size: calc(var(--dg-font-size) / 1.2);
+  color: var(--dg-accent);
+  cursor: pointer;
+}
+
+.u2-input-options > * {
+  margin-left: var(--dg-space-m);
+}
+
+/* the rail's icon box — the platform's is a bare `i.grok-icon`, 16px wide over the rail's full
+   height, blue, with the glyph at the rail's own font size (ui.css:776-786, 807-812) */
+.u2-input-options > .u2-btn.u2-icon-btn {
+  flex-shrink: 0;
+  width: 16px;
+  min-width: 16px;
+  height: var(--dg-control-height);
+  color: var(--dg-accent);
+  border-radius: 0;
+}
+
+/* and the glyph fills that box, as the platform's does (ui.css:807-812); the class chain outranks
+   the 12px icon box css/buttons.css gives every button glyph */
+.u2-input-options .u2-btn .u2-icon,
+.u2-input-eye > .u2-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  height: var(--dg-control-height);
+  margin: 0;
+  font-size: inherit;
+}
+
+.u2-input-box > .u2-input-editor + .u2-input-options {
+  border-bottom: var(--dg-input-border);
+}
+
+.u2-input-box:focus-within > .u2-input-editor + .u2-input-options {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-input-box > .u2-input-editor.u2-invalid + .u2-input-options {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+/* editors the platform leaves un-underlined carry no rail underline either (ui.css:903) */
+.u2-input-root[data-u2='bool-input'] .u2-input-options,
+.u2-input-root[data-u2='radio-input'] .u2-input-options,
+.u2-input-root[data-u2='multi-choice-input'] .u2-input-options,
+.u2-input-root[data-u2='slider-input'] .u2-input-options,
+.u2-input-root[data-u2='tags-input'] .u2-input-options,
+.u2-input-root[data-u2='multi-select'] .u2-input-options {
+  align-self: center;
+  border-bottom: none;
+}
+
+.u2-input-postfix {
+  overflow: hidden;
+  order: -1;
+  color: var(--dg-text-color-light);
+  line-height: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-input-inline {
+  padding: 0;
+}
+
+.u2-input-inline .u2-input-editor {
+  height: var(--dg-inline-control-height);
+}
+
+.u2-input-disabled,
+.u2-input-disabled .u2-input-editor {
+  color: var(--dg-text-color-disabled);
+}
+
+/* events die on the CHILDREN, never on the root: the root must stay hit-testable or its title
+   tooltip (`Enabled when: …`) can never show on hover */
+.u2-input-disabled > * {
+  pointer-events: none;
+}
+
+.u2-input-disabled .u2-input-switch {
+  filter: grayscale(1);
+}
+
+/* search variant */
+.u2-input-editor.u2-input-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  padding: 0 var(--dg-space-xs);
+}
+
+.u2-input-search::before {
+  content: '';
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  background-color: var(--dg-text-color-light);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6.8' cy='6.8' r='4.6'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E") no-repeat center / 12px;
+}
+
+.u2-input-search > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 18px 0 var(--dg-space-xs);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+/* right-edge icon, revealed on hover — the platform's `ui-input-icon-right` (ui.css:540-546)
+   under `htmlMouseOverVisibility` (text_input.dart:131-141) */
+.u2-input-clear {
+  position: absolute;
+  right: 2px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: var(--dg-font-size-xs);
+  line-height: 1;
+  color: var(--dg-text-color-light);
+  visibility: hidden;
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-input-root:not(.u2-input-disabled):hover .u2-input-clear,
+:not(.u2-input-disabled) > .u2-input-box:hover .u2-input-clear {
+  visibility: visible;
+}
+
+.u2-input-clear:hover {
+  color: var(--dg-text-color);
+  background: var(--dg-hover-subtle);
+}
+
+.u2-input-clear[hidden] {
+  display: none;
+}
+
+/* bool variants */
+.u2-input-editor.u2-input-bool {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--dg-space-s);
+}
+
+.u2-input-checkbox {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  border: none;
+  accent-color: var(--dg-accent);
+  cursor: pointer;
+}
+
+.u2-input-switch {
+  display: inline-flex;
+  align-items: center;
+  width: 22px;
+  height: 4px;
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: 9px;
+  outline: none;
+  cursor: pointer;
+}
+
+.u2-input-switch:hover {
+  border-color: var(--dg-grey-3);
+}
+
+.u2-input-switch:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-s);
+}
+
+.u2-input-switch-thumb {
+  position: relative;
+  left: -4px;
+  width: 12px;
+  height: 12px;
+  margin: 2px;
+  background: var(--dg-grey-2);
+  border: var(--dg-border-width) solid var(--dg-grey-2);
+  border-radius: 50%;
+  transition: left 0.2s;
+}
+
+.u2-input-switch:hover .u2-input-switch-thumb {
+  border-color: var(--dg-grey-3);
+}
+
+.u2-input-switch-on {
+  background: var(--dg-steel-2);
+  border-color: var(--dg-steel-2);
+}
+
+.u2-input-switch-on .u2-input-switch-thumb {
+  left: 8px;
+  background: var(--dg-accent);
+  border-color: var(--dg-accent);
+}
+
+/* list variant — one-line field or textarea, with the expand toggle on the shared rail, where the
+   platform puts it too (`list_input.dart:40-53`). `position`, `overflow` and `border` are reset
+   here because `u2-list` is also the virtualized list's class (css/list.css) and the two skins
+   would otherwise mix. */
+.u2-input-editor.u2-list {
+  position: static;
+  display: inline-flex;
+  align-items: flex-start;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+  border: none;
+  border-bottom: var(--dg-input-border);
+}
+
+.u2-input-editor.u2-list:focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-list-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.u2-list-text[hidden] {
+  display: none;
+}
+
+textarea.u2-list-area {
+  min-height: calc(var(--dg-control-height) * 3);
+  padding: var(--dg-space-xs);
+  line-height: var(--dg-line-height);
+  resize: vertical;
+}
+
+/* map variant — key/value rows with per-row add and remove, on the platform's table metrics: 28px
+   rows, cells 8px apart, the two buttons adjacent at the end (`map_input.dart:47-60`) */
+.u2-input-editor.u2-map {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  padding: 0;
+}
+
+.u2-map-row {
+  display: flex;
+  align-items: center;
+  height: var(--dg-control-height);
+  gap: var(--dg-space-m);
+}
+
+.u2-map-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.u2-map-key,
+.u2-map-value {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: var(--dg-input-border);
+  outline: none;
+}
+
+.u2-map-key:focus,
+.u2-map-value:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-map-key.u2-invalid {
+  border-bottom: var(--dg-border-width) solid var(--dg-error);
+}
+
+.u2-map-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-m);
+  font-size: var(--dg-font-size);
+  line-height: 1;
+  color: var(--dg-accent);
+  background: none;
+  border: none;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-map-btn > .u2-icon {
+  min-width: 16px;
+}
+
+.u2-map-btn:hover {
+  background: var(--dg-hover-subtle);
+}
+
+/* dynamic variant — the renderer owns what is inside, the editor only holds and sizes it */
+.u2-input-editor.u2-dynamic {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: var(--dg-control-height);
+  padding: 0 var(--dg-space-s);
+}
+
+.u2-input-null {
+  color: var(--dg-text-color-light);
+}
+
+/* password variant — masked field plus the eye toggle */
+.u2-input-editor.u2-input-password {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border-bottom: var(--dg-input-border);
+}
+
+.u2-input-editor.u2-input-password:focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-input-password > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--dg-space-s);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+/* the platform pins the reveal icon over the right edge of the field, 16px wide and the row's own
+   height (`text_input.dart:74-76`, ui.css:540-546) */
+.u2-input-eye {
+  position: absolute;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: var(--dg-control-height);
+  padding: 0;
+  color: var(--dg-text-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* autoResize measuring span — off screen, same metrics as the field it measures */
+.u2-input-measure {
+  position: absolute;
+  visibility: hidden;
+  font: inherit;
+  white-space: pre;
+}
+
+/* image variant — preview with a REMOVE link revealed on hover */
+.u2-input-editor.u2-image {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: auto;
+  padding: 0;
+}
+
+/* the platform gives every preview the same box whatever the source measures
+   (`d4/lib/src/viewers/viewers.css:69-72`) */
+.u2-image-preview {
+  width: 300px;
+  height: 200px;
+}
+
+.u2-image-preview[hidden] {
+  display: none;
+}
+
+/* a link over the top-right corner of the preview, as `d4-remove-link` is
+   (`d4/lib/src/viewers/viewers.css:75-78`) */
+.u2-image-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-accent);
+  visibility: hidden;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.u2-image:hover .u2-image-remove {
+  visibility: visible;
+}
+
+.u2-image-remove:hover {
+  text-decoration: underline;
+}
+
+.u2-image-remove[hidden] {
+  display: none;
+}
+
+/* column selectors (u2/dg): the column row shared by the pickers and the selection dialog */
+.u2-column-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-column-glyph {
+  flex-shrink: 0;
+  color: var(--dg-text-color-light);
+}
+
+.u2-column-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-column-semtype {
+  margin-left: auto;
+  padding-left: var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-input-editor.u2-columns {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  border-bottom: var(--dg-input-border);
+  cursor: pointer;
+}
+
+.u2-input-editor.u2-columns:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-columns-summary {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* the platform's `d4-column-selector-triangle` (`columns_input.dart:53`, placed by
+   `ui.css:344-349`) as a border triangle — the icomoon glyph it draws is a platform font */
+.u2-columns-chevron {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  margin-left: auto;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  border-top: 5px solid var(--dg-text-color-light);
+}
+
+/* a columns input with no table yet: visibly inert until one is picked (the popup stays closed) */
+.u2-input-editor.u2-columns[aria-disabled='true'] {
+  cursor: default;
+}
+
+.u2-columns[aria-disabled='true'] .u2-columns-summary {
+  color: var(--dg-text-color-disabled);
+}
+
+.u2-columns[aria-disabled='true'] .u2-columns-chevron {
+  border-top-color: var(--dg-text-color-disabled);
+}
+
+/* an invalid columns input reddens the summary and the triangle, not just the underline
+   (`ui.css:306-313`) */
+.u2-columns.u2-invalid .u2-columns-summary {
+  color: var(--dg-error);
+}
+
+.u2-columns.u2-invalid .u2-columns-chevron {
+  border-top-color: var(--dg-error);
+}
+
+/* Overlay.show writes min-width and max-height inline from the space around the control, so a
+   floor or a ceiling written here would never apply: both live on the list below instead. */
+.u2-columns-popup {
+  box-sizing: border-box;
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  overflow: hidden;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-columns-buttons {
+  justify-content: flex-end;
+  gap: var(--dg-space-s);
+  padding-top: var(--dg-space-xs);
+}
+
+.u2-columns-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-xs) 0;
+}
+
+.u2-columns-count {
+  margin-left: auto;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+/* Dart's 300px ceiling (`maxHeight: 300`, `columns_input.dart:75`) is built out of the list: 200px
+   of rows plus the search box, the actions and the buttons around them stay under it. The height is
+   also a floor to shrink from — where the overlay's own inline ceiling is lower, the list gives way
+   first and the buttons never leave the popup. */
+.u2-columns-list {
+  flex: 0 1 auto;
+  min-width: 240px;
+  min-height: 0;
+  /* a whole number of 24px rows, so the list never ends on a half-drawn one */
+  height: 192px;
+}
+
+.u2-columns-option {
+  padding: 0 var(--dg-space-s);
+}
+
+.u2-list-row.u2-columns-picked {
+  background: var(--dg-selection-bg);
+  color: var(--dg-selection-text);
+}
+
+/* the single-pick column combo: the platform grid only needs a framed host; the native popup
+   reuses the columns classes above, plus the nullable empty row */
+.u2-column-combo-host {
+  overflow: hidden;
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-column-combo-none {
+  flex: 1;
+  min-height: 100%;
+}
+
+.u2-input-editor.u2-columns-map,
+.u2-input-editor.u2-aggregations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+  height: auto;
+  padding: 0 var(--dg-space-s);
+}
+
+.u2-aggregations-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-aggregations-row > .u2-input-root {
+  flex: 1;
+  min-width: 0;
+}
+
+/* property editor (u2/dg): the identity form and the type-dependent one under it, a form row apart
+   — and a rule off the section, not off the div, so a type that asks for no extra fields does not
+   draw a divider under an empty one */
+.u2-property-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-s);
+}
+
+.u2-property-editor-typed:has(.u2-input-root) {
+  padding-top: var(--dg-space-s);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+/* author flex on the root defeats the UA [hidden] style — load-bearing for the func form's
+   visible: expressions and showTableSelectors */
+.u2-input-root[hidden] {
+  display: none;
+}

@@ -3,11 +3,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as jStat from 'jstat';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
-  RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
+  RESULT_NAMES, WASM_OUTPUT_IDX, ELLIPSES, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
   DEMO_INTRO_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
-  MAX_ROWS_IN_PREDICTION_TOOLTIP, DELAY} from './pls-constants';
+  MAX_ROWS_IN_PREDICTION_TOOLTIP, DELAY,
+  MVA_MODEL_TAG, MVA_TRANSFORM_FUNC, MVA_INIT_FUNC} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
 // PLS1 migrated to Rust + WASM (sci-comp-ml).
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/eda-api';
@@ -24,6 +26,7 @@ export type PlsOutput = {
   uScores: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
   xLoadings: DG.Column<DG.COLUMN_TYPE.FLOAT>[],
   yLoadings: DG.Column<DG.COLUMN_TYPE.FLOAT>,
+  vip: DG.Column<DG.COLUMN_TYPE.FLOAT>,
 };
 
 /** PLS analysis input */
@@ -34,6 +37,27 @@ export type PlsInput = {
   components: number,
   isQuadratic: boolean,
   names : DG.Column | undefined,
+};
+
+/** Multivariate analysis input: features are columns of the source table, so that
+ * the transform function call can be replayed against the restored table */
+export type MvaInput = Omit<PlsInput, 'features'> & {features: DG.Column[]};
+
+/** Names of the columns & tables that the multivariate analysis produces */
+export type MvaNames = {
+  xScores: string[],
+  yScores: string[],
+  prediction: string,
+  analysisTable: string,
+  explVarTable: string,
+};
+
+/** The fitted model: enough to restore the prediction tooltip once a project is reopened */
+type MvaModel = {
+  features: string[],
+  coefficients: number[],
+  bias: number,
+  prediction: string,
 };
 
 type TypedArray = Int32Array | Float32Array | Uint32Array | Float64Array;
@@ -56,47 +80,78 @@ function setStyle(valid: boolean, element: HTMLElement, tooltip: string, errorMs
   }
 };
 
-function getModelFormulaTerms(loadingsRegrCoefsTable: DG.DataFrame, bias: number): Map<string, number> {
-  const featureNames = loadingsRegrCoefsTable.col(TITLE.FEATURE)!.toList() as string[];
-  const regrCoefs = loadingsRegrCoefsTable.col(TITLE.REGR_COEFS)!.getRawData();
+function getModelFormulaTerms(model: MvaModel): Map<string, number> {
+  const terms = new Map([[TITLE.BIAS as string, model.bias]]);
 
-  const terms = new Map([[TITLE.BIAS as string, bias]]);
-
-  featureNames.forEach((name, idx) => {
-    terms.set(name, regrCoefs[idx]);
+  model.features.forEach((name, idx) => {
+    terms.set(name, model.coefficients[idx]);
   });
 
   return terms;
 }
 
-/** Return lines */
-export function getLines(names: string[]): DG.FormulaLine[] {
+/** Hotelling's T² limit for a 2D score plot at the given confidence (p = 2). */
+export function hotellingT2Limit(conf: number, n: number): number {
+  const p = 2;
+  return (p * (n - 1) / (n - p)) * jStat.centralF.inv(conf, p, n - p);
+}
+
+/** Axis-aligned Hotelling's T² ellipse for a score pair; DG variance is n-1, like R's var(). */
+export function hotellingEllipseParams(xCol: DG.Column, yCol: DG.Column, conf: number):
+  {cx: number, cy: number, a: number, b: number} {
+  const sx = xCol.stats;
+  const sy = yCol.stats;
+  const t2 = hotellingT2Limit(conf, xCol.length);
+  return {cx: sx.avg, cy: sy.avg, a: Math.sqrt(t2 * sx.variance), b: Math.sqrt(t2 * sy.variance)};
+}
+
+/** Decimal string for a formula-line expression — the parser rejects exponential notation. */
+function fmt(v: number): string {
+  return v.toLocaleString('en-US', {useGrouping: false, maximumFractionDigits: 20});
+}
+
+/** Scores-plot lines: an x=0 axis per component and the 95%/99% Hotelling's T² ellipses. */
+export function getLines(cols: DG.Column[]): DG.FormulaLine[] {
   const lines: DG.FormulaLine[] = [];
+  const n = cols.length > 0 ? cols[0].length : 0;
+  const stats = new Map(cols.map((c) => [c.name, c.stats]));
+  // T-squared is defined only for n - p > 0 (p = 2)
+  const limits = n > 2 ? ELLIPSES.map((e) => ({...e, t2: hotellingT2Limit(e.conf, n)})) : [];
 
-  const addLine = (formula: string, radius: number) => {
-    lines.push({
-      type: 'line',
-      formula: formula,
-      width: LINE_WIDTH,
-      visible: true,
-      title: ' ',
-      min: -radius,
-      max: radius,
-      color: COLOR.CIRCLE,
-    });
-  };
+  const ref = (name: string) => '${' + name + '}';
 
-  names.forEach((xName) => {
-    const x = '${' + xName + '}';
+  const addEllipseHalf = (formula: string, minX: number, maxX: number, color: string) =>
+    lines.push({type: 'line', formula, width: LINE_WIDTH, visible: true, title: ' ', min: minX, max: maxX, color});
+
+  cols.forEach((xCol) => {
+    const x = ref(xCol.name);
     lines.push({type: 'line', formula: `${x} = 0`, width: LINE_WIDTH, visible: true, title: ' ', color: COLOR.AXIS});
 
-    names.forEach((yName) => {
-      const y = '${' + yName + '}';
+    cols.forEach((yCol) => {
+      if (yCol.name === xCol.name)
+        return;
 
-      RADIUS.forEach((r) => {
-        addLine(y + ` = sqrt(${r*r} - ${x} * ${x})`, r);
-        addLine(y + ` = -sqrt(${r*r} - ${x} * ${x})`, r);
-      });
+      const y = ref(yCol.name);
+      const sx = stats.get(xCol.name)!;
+      const sy = stats.get(yCol.name)!;
+      if (sx.variance <= 0 || sy.variance <= 0)
+        return;
+
+      // both orderings emitted: the y=f(x) and x=f(y) arcs fill each other's gaps
+      for (const {t2, color} of limits) {
+        const a = Math.sqrt(t2 * sx.variance);
+        const b = Math.sqrt(t2 * sy.variance);
+        const cx = sx.avg;
+        const cy = sy.avg;
+        // (x - cx)²/a² + (y - cy)²/b² = 1  ->  y = cy ± b·sqrt(1 - (x - cx)²/a²)
+        const dx = `(${x} - ${fmt(cx)})`;
+
+        // we use 0.99 instead of 1 to avoid numerical issues
+        const inner = `sqrt(0.99 - ${dx} * ${dx} / ${fmt(a * a)})`;
+
+        addEllipseHalf(`${y} = ${fmt(cy)} + ${fmt(b)} * ${inner}`, cx - a, cx + a, color);
+        addEllipseHalf(`${y} = ${fmt(cy)} - ${fmt(b)} * ${inner}`, cx - a, cx + a, color);
+      }
     });
   });
 
@@ -125,6 +180,7 @@ export async function getPlsAnalysis(input: PlsInput): Promise<PlsOutput> {
     uScores: result[WASM_OUTPUT_IDX.U_SCORES],
     xLoadings: result[WASM_OUTPUT_IDX.X_LOADINGS],
     yLoadings: result[WASM_OUTPUT_IDX.Y_LOADINGS],
+    vip: result[WASM_OUTPUT_IDX.VIP],
   };
 }
 
@@ -195,124 +251,89 @@ function getQuadraticPlsInput(input: PlsInput): PlsInput {
   };
 }
 
-/** Perform multivariate analysis using the PLS regression */
-async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
+/** Return a table name that is not yet used in the workspace */
+function getUnusedTableName(base: string): string {
+  const names = grok.shell.tableNames;
+  let name = base;
+  let idx = 1;
+
+  while (names.includes(name))
+    name = `${base} (${++idx})`;
+
+  return name;
+}
+
+/** Names of the columns & tables that the multivariate analysis produces. They are reserved
+ * before the fit and passed to the transform function explicitly: replaying the table creation
+ * script must reproduce exactly the names that the saved layout refers to. */
+export function getMvaNames(input: MvaInput, componentsOnly: boolean): MvaNames {
+  const cols = input.table.columns;
+  const comps = [...Array(input.components).keys()];
+  const xScores = comps.map((idx) =>
+    cols.getUnusedName(`${componentsOnly ? RESULT_NAMES.PREFIX : TITLE.XSCORE}${idx + 1}`));
+
+  if (componentsOnly)
+    return {xScores: xScores, yScores: [], prediction: '', analysisTable: '', explVarTable: ''};
+
+  return {
+    xScores: xScores,
+    yScores: comps.map((idx) => cols.getUnusedName(`${TITLE.YSCORE}${idx + 1}`)),
+    prediction: cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`),
+    analysisTable: getUnusedTableName(`${input.table.name}(${TITLE.ANALYSIS})`),
+    explVarTable: getUnusedTableName(`${input.table.name}(${TITLE.EXPL_VAR})`),
+  };
+}
+
+/** Add the multivariate analysis results: PLS components, prediction & the analysis tables */
+export async function addMvaResults(input: PlsInput, names: MvaNames, componentsOnly: boolean): Promise<void> {
   const sourceTable = input.table;
-
-  if (input.isQuadratic)
-    input = getQuadraticPlsInput(input);
-
-  const result = await getPlsAnalysis(input);
-
-  const plsCols = result.tScores;
+  const plsInput = input.isQuadratic ? getQuadraticPlsInput(input) : input;
+  const result = await getPlsAnalysis(plsInput);
   const cols = sourceTable.columns;
-  const features = input.features;
-  const featuresNames = features.names();
-  const prefix = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) ? RESULT_NAMES.PREFIX : TITLE.XSCORE;
 
   // add PLS components to the table
-  plsCols.forEach((col, idx) => {
-    col.name = cols.getUnusedName(`${prefix}${idx + 1}`);
+  result.tScores.forEach((col, idx) => {
+    col.name = cols.getUnusedName(names.xScores[idx]);
     cols.add(col);
   });
 
-  if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
+  if (componentsOnly)
     return;
 
-  const view = grok.shell.tableView(sourceTable.name);
+  const features = plsInput.features;
+  const featuresNames = features.names();
 
-  // 0.1 Buffer table
+  // debias prediction (since PLS centers data)
+  const debiased = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
+  const pred = debiased.debiased;
+  pred.name = cols.getUnusedName(names.prediction);
+  cols.add(pred);
+
+  result.uScores.forEach((col, idx) => {
+    col.name = cols.getUnusedName(names.yScores[idx]);
+    cols.add(col);
+  });
+
+  // features analysis table: regression coefficients, X-loadings & VIP
+  result.regressionCoefficients.name = TITLE.REGR_COEFS;
   const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(TITLE.FEATURE, featuresNames),
     result.regressionCoefficients,
   ]);
 
-  loadingsRegrCoefsTable.name = `${sourceTable.name}(${TITLE.ANALYSIS})`;
+  loadingsRegrCoefsTable.name = names.analysisTable;
   grok.shell.addTable(loadingsRegrCoefsTable);
 
-  // 0.2. Add X-Loadings
   result.xLoadings.forEach((col, idx) => {
     col.name = loadingsRegrCoefsTable.columns.getUnusedName(`${TITLE.XLOADING}${idx + 1}`);
     loadingsRegrCoefsTable.columns.add(col);
   });
 
-  // 1. Predicted vs Reference scatter plot
-  // Debias prediction (since PLS center data)
-  const debiased = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
-  const pred = debiased.debiased;
-  pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
-  cols.add(pred);
-  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(sourceTable, {
-    title: TITLE.MODEL,
-    xColumnName: input.predict.name,
-    yColumnName: pred.name,
-    showRegressionLine: true,
-    markerType: DG.MARKER_TYPE.CIRCLE,
-    showLabels: 'Always',
-    help: LINK.MODEL,
-  }));
+  result.vip.name = loadingsRegrCoefsTable.columns.getUnusedName(TITLE.VIP);
+  loadingsRegrCoefsTable.columns.add(result.vip);
 
-  if ((input.names !== undefined) && (input.names !== null))
-    predictVsReferScatter.setOptions({labelColumnNames: [input.names?.name]});
-
-  // 2. Regression Coefficients Bar Chart
-  result.regressionCoefficients.name = TITLE.REGR_COEFS;
-  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(loadingsRegrCoefsTable, {
-    table: loadingsRegrCoefsTable.name,
-    title: TITLE.REGR_COEFS,
-    splitColumnName: TITLE.FEATURE,
-    valueColumnName: result.regressionCoefficients.name,
-    valueAggrType: DG.AGG.AVG,
-    help: LINK.COEFFS,
-    showValueSelector: false,
-    showStackSelector: false,
-    description: `bias = ${debiased.bias.toFixed(NUMS_AFTER_COMMA)}`,
-    descriptionVisibilityMode: 'Always',
-    descriptionPosition: 'Bottom',
-  }));
-
-  // 3. Loadings Scatter Plot
-  result.xLoadings.forEach((col, idx) => col.name = `${TITLE.XLOADING}${idx + 1}`);
-  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(loadingsRegrCoefsTable, {
-    table: loadingsRegrCoefsTable.name,
-    title: TITLE.LOADINGS,
-    xColumnName: `${TITLE.XLOADING}1`,
-    yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
-    markerType: DG.MARKER_TYPE.CIRCLE,
-    labelColumnNames: [TITLE.FEATURE],
-    help: LINK.LOADINGS,
-  }));
-
-  // 4. Scores Scatter Plot
-
-  // 4.1) data
-  const scoreNames = plsCols.map((col) => col.name);
-  result.uScores.forEach((col, idx) => {
-    col.name = cols.getUnusedName(`${TITLE.YSCORE}${idx + 1}`);
-    cols.add(col);
-    scoreNames.push(col.name);
-  });
-
-  // 4.2) create scatter
-  const scoresScatter = DG.Viewer.scatterPlot(sourceTable, {
-    title: TITLE.SCORES,
-    xColumnName: plsCols[0].name,
-    yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
-    markerType: DG.MARKER_TYPE.CIRCLE,
-    help: LINK.SCORES,
-    showViewerFormulaLines: true,
-    labelColumnNames: ((input.names !== undefined) && (input.names !== null)) ? [input.names?.name] : undefined,
-  });
-
-
-  // 4.3) create lines & circles
-  view.addViewer(scoresScatter);
-  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
-
-  // 5. Explained Variances
-
-  // 5.1) computation, source: the paper https://doi.org/10.1002/cem.2589
-  //      here, we use notations from this paper
+  // explained variances, source: the paper https://doi.org/10.1002/cem.2589
+  // here, we use notations from this paper
   const q = result.yLoadings.getRawData();
   const p = result.xLoadings.map((col) => col.getRawData());
   const n = sourceTable.rowCount;
@@ -334,18 +355,91 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     compNames.push(`${comp + 1} ${RESULT_NAMES.COMPS}`);
   }
 
-  // 5.2) create df
   const explVarsDF = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(TITLE.COMPONENTS, compNames),
     DG.Column.fromFloat32Array(input.predict.name, yExplVars),
   ]);
 
-  explVarsDF.name = `${sourceTable.name}(${TITLE.EXPL_VAR})`;
+  explVarsDF.name = names.explVarTable;
   grok.shell.addTable(explVarsDF);
 
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
 
-  // 5.3) bar chart
+  sourceTable.setTag(MVA_MODEL_TAG, JSON.stringify({
+    features: featuresNames,
+    coefficients: result.regressionCoefficients.toList(),
+    bias: debiased.bias,
+    prediction: pred.name,
+  } as MvaModel));
+} // addMvaResults
+
+/** Add the multivariate analysis viewers to the table view */
+function addMvaViewers(input: MvaInput, names: MvaNames, analysisType: PLS_ANALYSIS): void {
+  const sourceTable = input.table;
+  const view = grok.shell.tableView(sourceTable.name);
+  const loadingsRegrCoefsTable = grok.shell.tableByName(names.analysisTable);
+  const explVarsDF = grok.shell.tableByName(names.explVarTable);
+  const model: MvaModel = JSON.parse(sourceTable.getTag(MVA_MODEL_TAG)!);
+
+  // 1. Predicted vs Reference scatter plot
+  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(sourceTable, {
+    title: TITLE.MODEL,
+    xColumnName: input.predict.name,
+    yColumnName: model.prediction,
+    showRegressionLine: true,
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    showLabels: 'Always',
+    help: LINK.MODEL,
+    initializationFunction: MVA_INIT_FUNC,
+  }));
+
+  if ((input.names !== undefined) && (input.names !== null))
+    predictVsReferScatter.setOptions({labelColumnNames: [input.names?.name]});
+
+  // 2. Regression Coefficients Bar Chart
+  const regrCoeffsBar = view.addViewer(DG.Viewer.barChart(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
+    title: TITLE.REGR_COEFS,
+    splitColumnName: TITLE.FEATURE,
+    valueColumnName: TITLE.REGR_COEFS,
+    valueAggrType: DG.AGG.AVG,
+    help: LINK.COEFFS,
+    showValueSelector: false,
+    showStackSelector: false,
+    description: `${TITLE.BIAS} = ${model.bias.toFixed(NUMS_AFTER_COMMA)}`,
+    descriptionVisibilityMode: 'Always',
+    descriptionPosition: 'Bottom',
+  }));
+
+  // 3. Loadings Scatter Plot
+  const loadingsScatter = view.addViewer(DG.Viewer.scatterPlot(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
+    title: TITLE.LOADINGS,
+    xColumnName: `${TITLE.XLOADING}1`,
+    yColumnName: `${TITLE.XLOADING}${names.xScores.length > 1 ? '2' : '1'}`,
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    labelColumnNames: [TITLE.FEATURE],
+    help: LINK.LOADINGS,
+  }));
+
+  // 4. Scores Scatter Plot
+  const scoreNames = names.xScores.concat(names.yScores);
+  const scoresScatter = DG.Viewer.scatterPlot(sourceTable, {
+    title: TITLE.SCORES,
+    xColumnName: names.xScores[0],
+    yColumnName: (names.xScores.length > 1) ? names.xScores[1] : names.yScores[0],
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    help: LINK.SCORES,
+    showViewerFormulaLines: true,
+    labelColumnNames: ((input.names !== undefined) && (input.names !== null)) ? [input.names?.name] : undefined,
+  });
+
+  // create axes & Hotelling's T-squared confidence ellipses
+  view.addViewer(scoresScatter);
+  const scoreCols = scoreNames.map((name) => sourceTable.col(name)).filter((c): c is DG.Column => c !== null);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreCols));
+
+  // 5. Explained Variance Bar Chart
   const explVarsBar = view.addViewer(DG.Viewer.barChart(explVarsDF, {
     table: explVarsDF.name,
     title: TITLE.EXPL_VAR,
@@ -357,21 +451,87 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     showStackSelector: false,
   }));
 
+  // 6. Variable Importance Bar Chart
+  const vipViewer = DG.Viewer.barChart(loadingsRegrCoefsTable, {
+    table: loadingsRegrCoefsTable.name,
+    title: TITLE.VIP,
+    splitColumnName: TITLE.FEATURE,
+    valueColumnName: TITLE.VIP,
+    valueAggrType: DG.AGG.AVG,
+    help: LINK.VIPS,
+    showValueSelector: false,
+    showStackSelector: false,
+  });
+
+  const regrCoeffsNode = view.dockManager.findNode(regrCoeffsBar.root);
+
+  if (regrCoeffsNode !== null) {
+    view.dockManager.dock(
+      vipViewer,
+      DG.DOCK_TYPE.FILL,
+      regrCoeffsNode,
+    );
+  }
+
   // emphasize viewers in the demo case
   if (analysisType === PLS_ANALYSIS.DEMO) {
     setTimeout(() => {
       describeElements(
-        [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
+        [predictVsReferScatter, scoresScatter, loadingsScatter, vipViewer, explVarsBar].map((v) => v.root),
         DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
         ['left', 'left', 'right', 'right', 'left'],
         view.root,
       );
     }, DELAY);
   }
+} // addMvaViewers
 
-  // Add formula tooltip to the prediction column
-  const modelFormulaTerms = getModelFormulaTerms(loadingsRegrCoefsTable, debiased.bias);
-  setPredictionTooltip(view, pred, modelFormulaTerms);
+/** Show the model formula in the prediction column tooltip. Called by the platform each time
+ * the model viewer is created, including its restoration from a project or layout. */
+export function initMvaModelViewer(viewer: DG.Viewer): void {
+  const table = viewer.dataFrame;
+  const modelJson = table?.getTag(MVA_MODEL_TAG);
+
+  if (!modelJson)
+    return;
+
+  const model: MvaModel = JSON.parse(modelJson);
+  const view = grok.shell.tableView(table.name);
+  const pred = table.col(model.prediction);
+
+  if ((view === null) || (pred === null))
+    return;
+
+  setPredictionTooltip(view, pred, getModelFormulaTerms(model));
+}
+
+/** Add the analysis results by calling the transform function: the call goes to the table creation
+ * script, so a data-synced project restores the columns that the saved viewers refer to */
+export async function callMvaTransform(input: MvaInput, names: MvaNames, componentsOnly: boolean): Promise<void> {
+  await DG.Func.find({package: 'EDA', name: MVA_TRANSFORM_FUNC})[0].prepare({
+    table: input.table,
+    featureNames: input.features.map((col) => col.name),
+    predict: input.predict,
+    components: input.components,
+    isQuadratic: input.isQuadratic,
+    componentsOnly: componentsOnly,
+    xScoreNames: names.xScores,
+    yScoreNames: names.yScores,
+    predictionName: names.prediction,
+    analysisTableName: names.analysisTable,
+    explVarTableName: names.explVarTable,
+  }).call(undefined, undefined, {processed: false});
+}
+
+/** Perform multivariate analysis using the PLS regression */
+async function performMVA(input: MvaInput, analysisType: PLS_ANALYSIS): Promise<void> {
+  const componentsOnly = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);
+  const names = getMvaNames(input, componentsOnly);
+
+  await callMvaTransform(input, names, componentsOnly);
+
+  if (!componentsOnly)
+    addMvaViewers(input, names, analysisType);
 } // performMVA
 
 /** Run multivariate analysis (PLS) */
@@ -561,7 +721,7 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
       await performMVA({
         table: table,
-        features: DG.DataFrame.fromColumns(featuresInput.value).columns,
+        features: featuresInput.value,
         predict: predictInput.value!,
         components: componentsInput.value!,
         isQuadratic: isQuadraticInput.value,
@@ -591,7 +751,7 @@ export async function runDemoMVA(): Promise<void> {
 
   await performMVA({
     table: table,
-    features: DG.DataFrame.fromColumns(numCols.slice(0, -1)).columns,
+    features: numCols.slice(0, -1),
     predict: numCols[numCols.length - 1],
     components: min(numCols.length - 1, COMPONENTS.DEFAULT as number),
     isQuadratic: false,

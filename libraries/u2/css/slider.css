@@ -1,0 +1,29 @@
+/* Slider skin — a bare track on a 28px row, as the platform's `SliderInput` is (ui.css:562-567:
+   no border, 28px, max 300px). The value lives in the tooltip, not beside the track.
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+.u2-input-editor.u2-slider {
+  display: inline-flex;
+  align-items: center;
+  max-width: 300px;
+  padding: 0;
+  border: none;
+}
+
+.u2-slider-track {
+  flex: 1;
+  min-width: 0;
+  height: var(--dg-space-s);
+  margin: 0;
+  padding: 0;
+  accent-color: var(--dg-accent);
+  background: var(--dg-border);
+  border: none;
+  border-radius: var(--dg-radius);
+  outline: none;
+  cursor: pointer;
+}
+
+.u2-slider-track:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-s);
+}

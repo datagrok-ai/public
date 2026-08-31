@@ -1,7 +1,5 @@
-/** Node groups: create/ungroup, frame drag carries members, minimize hides
- *  members + internal wires and re-anchors boundary wires to the card's edge
- *  dots, maximize restores everything, membership survives serialization.
- *  Groups are editor-level (the graph stays flat) — see rete/node-group.ts. */
+/** Node groups: create/ungroup, drag carry, minimize/maximize, serialization.
+ *  Groups are editor-level — the graph stays flat. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes} from '../rete/node-factory';
@@ -14,7 +12,7 @@ function key(init: KeyboardEventInit): void {
   window.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, cancelable: true, ...init}));
 }
 
-/** Body drag on a group element (down → move → up); handler reads client deltas. */
+/** The drag handler only reads client deltas, so absolute coords are arbitrary. */
 function drag(el: HTMLElement, dx: number, dy: number): void {
   const at = (x: number, y: number): PointerEventInit =>
     ({bubbles: true, cancelable: true, button: 0, clientX: 400 + x, clientY: 400 + y});
@@ -23,13 +21,11 @@ function drag(el: HTMLElement, dx: number, dy: number): void {
   el.dispatchEvent(new PointerEvent('pointerup', at(dx, dy)));
 }
 
-/** Whether a node's canvas view is hidden inside a minimized group. */
 function isHidden(e: TestEditor, nodeId: string): boolean {
   const el = e.container.querySelector(`.ff-node[data-node-id="${nodeId}"]`);
   return !!el && el.closest('.ff-group-hidden') !== null;
 }
 
-/** Start/end coords of a rendered connection's path. */
 function pathEndpoints(e: TestEditor, connId: string): {start: {x: number; y: number}; end: {x: number; y: number}} | null {
   const wrap = e.container.querySelector(`[data-connection-id="${connId}"]`);
   const d = wrap?.querySelector('path')?.getAttribute('d') ?? '';
@@ -41,9 +37,8 @@ function pathEndpoints(e: TestEditor, connId: string): {start: {x: number; y: nu
   };
 }
 
-/** A(outside) → C(member); D(member) → B(member) internal; B → V(output row).
- *  So the group [D, B, C] has one boundary input (C.table) and one boundary
- *  output (B.column). */
+/** A(outside) → C(member); D(member) → B(member); B → V(strip output) — the group
+ *  [D, B, C] has one boundary input (C.table) and one boundary output (B.column). */
 async function fixture(e: TestEditor): Promise<{a: FlowNode; d: FlowNode; b: FlowNode; c: FlowNode; v: FlowNode}> {
   const a = await addNode(e.flow, 'Inputs/Table Input', 0, 200);
   const d = await addNode(e.flow, 'Inputs/Table Input', 300, 0);
@@ -118,7 +113,6 @@ category('Flow: groups', () => {
       expect(g.element.querySelectorAll('.ff-group-dots-in .ff-group-dot').length, 1, 'one input dot');
       expect(g.element.querySelectorAll('.ff-group-dots-out .ff-group-dot').length, 1, 'one output dot');
 
-      // The A → C wire's tail must land on the card's left-edge dot.
       expect(await until(() => {
         const ep = pathEndpoints(e, boundaryIn.id);
         return !!ep && Math.abs(ep.end.x - g.pos.x) < 6 &&

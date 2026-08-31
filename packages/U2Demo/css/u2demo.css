@@ -1,0 +1,366 @@
+/* the shell reads its OWN width, not the window's: the context panel takes as much room away
+   from the demo as a narrow screen does */
+.u2demo-root {
+  height: 100%;
+  gap: 0;
+  container-type: inline-size;
+  container-name: u2demo;
+}
+
+/* Below this a 22/78 split leaves the demo a sliver — text breaks mid-word, the range slider
+   collapses onto its own handles. The nav stops shrinking with the host and becomes a fixed rail
+   instead, so every pixel the fold frees goes to the demo; the sash goes with it, since there is
+   nothing left to trade. */
+@container u2demo (max-width: 720px) {
+  .u2demo-shell > .u2-splitter-panel:first-child {
+    min-width: 148px;
+    max-width: 148px;
+  }
+
+  .u2demo-shell > .u2-splitter-panel:nth-child(2) {
+    min-width: calc(100% - 148px);
+  }
+
+  .u2demo-shell > .u2-sash {
+    display: none;
+  }
+}
+
+/* Narrower than the rail plus a readable column: the nav folds away deliberately rather than
+   thinning to nothing. Every sub-demo is still one Browse click or one URL away. */
+@container u2demo (max-width: 460px) {
+  .u2demo-shell > .u2-splitter-panel:first-child {
+    display: none;
+  }
+
+  .u2demo-shell > .u2-splitter-panel:nth-child(2) {
+    min-width: 100%;
+  }
+}
+
+.u2demo-shell {
+  flex: 1;
+  min-height: 0;
+}
+
+/* the nav tree is the splitter's left panel: splitter panels are not flex containers, so the
+   tree sizes itself off an explicit height (css/splitter.css) */
+.u2demo-nav {
+  height: 100%;
+}
+
+.u2demo-nav > .u2-list {
+  border: none;
+  border-right: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* the content host replaces .u2-tabs-content: same scroller, same padding */
+.u2demo-content {
+  height: 100%;
+  overflow: auto;
+  padding: var(--dg-space-m);
+  background: var(--dg-bg);
+}
+
+/* the ribbon's Inspect toggle: the shared pressed skin is a grey a shade off hover, so an armed
+   toggle reads as a hovered button — the accent wash is what a platform ribbon toggle wears */
+.u2-btn.u2demo-inspect.u2-icon-btn-pressed {
+  color: var(--dg-accent);
+  background: var(--dg-selection-bg);
+  border-color: var(--dg-accent);
+}
+
+.u2demo-page {
+  padding: var(--dg-space-l);
+  gap: var(--dg-space-m);
+  overflow: auto;
+  max-width: 640px;
+  /* the floor a paragraph needs to stay readable; under it the host scrolls, words do not break */
+  min-width: 280px;
+}
+
+/* the Overview's area column: one common width so the leaf lists line up */
+.u2demo-overview-area {
+  flex: none;
+  width: 90px;
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2demo-row {
+  align-items: center;
+  gap: var(--dg-space-m);
+  flex-wrap: wrap;
+}
+
+.u2demo-status {
+  gap: var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2demo-status > span:first-child {
+  white-space: nowrap;
+}
+
+.u2demo-hint {
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-error {
+  color: var(--dg-error);
+}
+
+.u2demo-dim {
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-card {
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  padding: var(--dg-space-m);
+}
+
+/* the Display group's card rows: cards size themselves off their content, so the row gives them a
+   readable common width and wraps instead of squeezing */
+.u2demo-cards {
+  gap: var(--dg-space-l);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.u2demo-cards > .u2-card {
+  width: 220px;
+}
+
+.u2demo-list {
+  height: 220px;
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-split {
+  height: 180px;
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-report-split {
+  flex: 1;
+  min-height: 0;
+  border-top: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-report-list {
+  height: 100%;
+  gap: 0;
+}
+
+.u2demo-report-list .u2-list {
+  flex: 1;
+  min-height: 0;
+  border: none;
+}
+
+.u2demo-report {
+  flex: 1;
+  min-width: 0;
+  gap: 0;
+}
+
+.u2demo-report-line {
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--dg-space-m);
+  min-width: 0;
+}
+
+.u2demo-report-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.u2demo-report-status {
+  min-height: var(--dg-control-height);
+  justify-content: center;
+  padding: 0 var(--dg-space-m);
+  border-top: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-report-details {
+  height: 100%;
+  overflow: auto;
+  padding: var(--dg-space-l);
+}
+
+.u2demo-mol-row {
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2demo-wide {
+  max-width: none;
+}
+
+/* A/B grid: a row per property, so the Dart editor and its u2 counterpart share a baseline; the
+   leading narrow column holds the '…' that opens the property's metadata in the context panel */
+.u2demo-ab {
+  display: grid;
+  /* 320px is the floor a row needs to stay a row: the widest cell measures 312 (the file input),
+     and under ~310 the u2 side wraps its caption above the editor while the Dart side does not,
+     which is the end of a row-by-row A/B. Where the pane cannot hold two of them the GRID scrolls,
+     not the page — the prose, the notes and the status line stay where they were, and only the
+     matrix moves */
+  grid-template-columns: min-content repeat(2, minmax(320px, 460px));
+  align-items: center;
+  column-gap: var(--dg-space-xxl);
+  overflow-x: auto;
+}
+
+.u2demo-ab > * {
+  min-width: 0;
+  margin: 0;
+  padding: var(--dg-space-xs) 0;
+  border-bottom: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2demo-ab .u2-input-label,
+.u2demo-ab .ui-input-label {
+  min-width: 100px;
+}
+
+.u2demo-ab-note {
+  grid-column: 1 / -1;
+  color: var(--dg-text-color-light);
+}
+
+/* the row whose metadata the context panel is editing */
+.u2demo-ab-current {
+  background: var(--dg-selection-bg);
+}
+
+/* two editors are intrinsically wider than a cell — the 300x200 image preview and the map's
+   two-column table — so without this they bleed over the next column, push a page scrollbar, and
+   wrap their own label onto a line of its own. Each takes what the label leaves and fits into it. */
+.u2demo-ab [data-u2='image-input'] .u2-input-box,
+.u2demo-ab [data-u2='map-input'] .u2-input-box {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.u2demo-ab .u2-image-preview,
+.u2demo-ab .ui-input-image img {
+  max-width: 100%;
+  height: auto;
+}
+
+.u2demo-ab .u2-map {
+  width: 100%;
+  min-width: 0;
+}
+
+/* the platform's map is an auto-layout table, which never shrinks below its two 20-char editors */
+.u2demo-ab .ui-input-map table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.u2demo-ab .ui-input-map table input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* FuncCall convergence: the main and gate grids stack, so the name column is fixed rather than
+   min-content — otherwise their editor columns land at different x */
+.u2demo-ab-func {
+  grid-template-columns: 90px repeat(2, minmax(320px, 460px));
+}
+
+/* the standalone funcForm section: the native form layout at its natural single-column width */
+.u2demo-standalone {
+  max-width: 480px;
+}
+
+/* FuncCall convergence: the full-width category row both forms group their params under */
+.u2demo-ab-cat {
+  grid-column: 1 / -1;
+  font-weight: var(--dg-font-weight-medium);
+  color: var(--dg-text-color-light);
+  padding-top: var(--dg-space-m);
+}
+
+.u2demo-code {
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2demo-toggles {
+  align-items: center;
+  gap: var(--dg-space-xl);
+  flex-wrap: wrap;
+}
+
+.u2demo-toggles .u2-input-label {
+  min-width: 0;
+  margin-right: var(--dg-space-s);
+}
+
+/* the Function forms pane fills the host and scrolls its own columns (was
+   .u2-tabs-panel:has(.u2demo-funcs)) */
+.u2demo-content:has(.u2demo-funcs) {
+  overflow: hidden;
+}
+
+.u2demo-funcs {
+  height: 100%;
+}
+
+.u2demo-funcs-split {
+  flex: 1;
+  min-height: 0;
+  gap: var(--dg-space-xl);
+  align-items: stretch;
+}
+
+.u2demo-funcs-list {
+  flex: none;
+  width: 230px;
+  overflow: hidden;
+  border-right: var(--dg-border-width) solid var(--dg-border);
+}
+
+/* the browser fills the column; its own virtualized list is the scroller */
+.u2demo-funcs-list .u2-functions-browser {
+  height: 100%;
+}
+
+.u2demo-funcs-detail {
+  flex: 1;
+  min-width: 0;
+  max-width: 1080px;
+  overflow: auto;
+  gap: var(--dg-space-m);
+}
+
+.u2demo-func-history {
+  max-width: 640px;
+  gap: var(--dg-space-l);
+}
+
+.u2demo-func-history-form {
+  gap: var(--dg-space-m);
+}
+
+/* the old-vs-new A/B: two equal columns over one shared call (u2-div-h centers by default);
+   in a narrow host they stack instead of shrinking into a sliver under the context panel —
+   which also gives the u2 form's auto-tall room to show itself */
+.u2demo-funcs-ab {
+  gap: var(--dg-space-xxl);
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.u2demo-funcs-ab > * {
+  flex: 1 1 320px;
+  min-width: 280px;
+  gap: var(--dg-space-s);
+}

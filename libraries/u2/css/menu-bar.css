@@ -1,0 +1,53 @@
+/* Menu bar skin (see src/components/menu-bar.ts). Tokens only — css/tokens.css must be loaded
+   alongside. The bar paints no background of its own so it drops into a host ribbon unchanged. */
+.u2-menu-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: none;
+}
+
+.u2-menu-bar-item {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  align-items: center;
+  height: var(--dg-button-height);
+  padding: 0 var(--dg-space-m);
+  font: inherit;
+  color: inherit;
+  white-space: nowrap;
+  background: none;
+  border: var(--dg-border-width) solid transparent;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.u2-menu-bar-item:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-menu-bar-item-open {
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
+}
+
+.u2-menu-bar-item:focus-visible {
+  border-color: var(--dg-focus);
+}
+
+.u2-menu-bar-item[aria-disabled='true'] {
+  color: var(--dg-text-color-disabled);
+  cursor: default;
+}
+
+.u2-menu-bar-item[aria-disabled='true']:hover {
+  background: none;
+}

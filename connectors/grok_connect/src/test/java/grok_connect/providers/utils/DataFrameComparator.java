@@ -46,12 +46,37 @@ public class DataFrameComparator {
             return false;
         if (!column.getName().equals(column1.getName()))
             return false;
-        return arraysEqual(column.toArray(), column1.toArray());
+        Object values = column.toArray();
+        Object values1 = column1.toArray();
+        // BigIntColumn keeps longs until a non-integral value forces it onto decimal strings, so a
+        // column built from a String[] fixture and one filled from the driver hold the same values
+        // in differently typed arrays. Fall back to the logical values rather than the storage.
+        if (values.getClass() != values1.getClass())
+            return valuesEqual(column, column1);
+        return arraysEqual(values, values1);
+    }
+
+    private boolean valuesEqual(Column<?> column, Column<?> column1) {
+        if (column.getLength() != column1.getLength())
+            return false;
+        for (int i = 0; i < column.getLength(); i++) {
+            Object value = column.get(i);
+            Object value1 = column1.get(i);
+            if (value == null || value1 == null) {
+                if (value != value1)
+                    return false;
+            }
+            else if (!String.valueOf(value).equals(String.valueOf(value1)))
+                return false;
+        }
+        return true;
     }
 
     private boolean arraysEqual(Object a, Object b) {
         if (a instanceof int[] && b instanceof int[])
             return Arrays.equals((int[]) a, (int[]) b);
+        if (a instanceof long[] && b instanceof long[])
+            return Arrays.equals((long[]) a, (long[]) b);
         if (a instanceof float[] && b instanceof float[])
             return Arrays.equals((float[]) a, (float[]) b);
         if (a instanceof double[] && b instanceof double[])

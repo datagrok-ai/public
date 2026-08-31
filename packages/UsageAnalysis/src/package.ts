@@ -14,6 +14,7 @@ import {ReportingApp} from './reporting/reporting_app';
 import {TestAnalysisManager} from './test-analysis/test-analysis-manager';
 import {getDate} from './utils';
 import {ServiceLogsApp} from './service_logs/service_logs';
+import {CloudLogsApp} from './cloud-logs/cloud-logs';
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
@@ -396,6 +397,17 @@ export class PackageFunctions {
     });
     view.name = ServiceLogsApp.APP_NAME;
     return view;
+  }
+
+
+  @grok.decorators.app({
+    'url': '/cloud-logs',
+    'name': 'Cloud Logs',
+    'icon': 'images/icons/service-logs.svg',
+    'meta': {'role': 'adminApp'},
+  })
+  static cloudLogsApp(): DG.ViewBase {
+    return new CloudLogsApp(grok.functions.getCurrentCall());
   }
 
 

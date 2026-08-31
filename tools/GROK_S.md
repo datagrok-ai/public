@@ -29,6 +29,8 @@ browser or a logged-in session.
 | List / browse files in a file share                         | `grok s files list "System:AppData" -r`                |
 | Upload / download a table (CSV or d42)                      | `grok s tables upload <name> file.csv\|file.d42` / `tables download <name> -O out.csv` |
 | Check whether a package is deployed                         | `grok s packages list --filter "MyPlugin"`             |
+| Install / update / uninstall server plugins                 | `grok s packages install Chem Bio` / `packages update --all` / `packages uninstall Chem` |
+| See installed vs latest plugin versions                     | `grok s packages outdated` / `packages versions Chem`  |
 | Hit any undocumented endpoint                               | `grok s raw GET /api/users/current`                    |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
@@ -225,6 +227,56 @@ table|json|csv|quiet`), which still controls how the upload result is printed.
 
 Download is CSV-only — the server reads the stored d42 blob and converts. If you
 need the raw d42 bytes, hit `/tables/data/<id>` directly via `grok s raw`.
+
+## Packages
+
+Manage server plugins the same way the Package Manager UI does — the server pulls
+published packages from its configured package repository (npm). This is for
+installing **released** packages on a running server; publishing your own local
+package sources is still `grok publish`.
+
+```bash
+grok s packages install Chem Bio PowerGrid       # install latest of each, one line
+grok s packages install Chem --version 1.14.0    # pin a specific version (single package only)
+grok s packages outdated                         # installed vs registry-latest
+grok s packages update Chem Bio                  # upgrade named packages to latest
+grok s packages update --all                     # upgrade everything outdated
+grok s packages versions Chem                    # published versions w/ current/latest/debug flags
+grok s packages set-version Chem 1.13.0          # activate a specific version (pulls it if needed)
+grok s packages uninstall Chem                   # remove; repository entry stays installable
+grok s packages share Chem Chemists --access View
+```
+
+Semantics worth knowing:
+
+- **`install` without `--version` sets the package to `latest`**, which is an
+  auto-update intent: the server re-resolves it against the registry every ~15
+  minutes, so the package keeps itself current. A pinned `--version` (and `update`,
+  which pins the concrete latest version) stays put until you change it.
+- **Install is synchronous** — the call returns once the version is downloaded,
+  published, and made current. A heavy first-time install (e.g. Chem) can take
+  minutes; if the HTTP call times out, just re-run it — install is idempotent, and
+  a version that finished installing server-side is activated instantly on retry.
+- Multi-package `install`/`update` runs sequentially and prints a per-package
+  status table (`installed` / `noop` / `error`); a partial failure sets exit code 1.
+- **`update` preserves auto-update tracking**: a package whose desired version is
+  `latest` is updated by re-resolving `latest` (it keeps auto-updating); a pinned
+  package gets pinned to the concrete registry-latest version. Note that a
+  locally-published dev build counts as outdated once the registry moves past its
+  base version, so `update --all` will replace it with the registry release.
+- Status semantics: `noop` means "already at the requested latest"; installing an
+  explicit `--version` reports `installed` (with the published-version id) even
+  when that version was already current — the server re-activates it.
+- **`uninstall` of a repository-backed package keeps the package entry** (it shows
+  up as installable again); only locally-published packages are deleted outright.
+  It also clears the desired version, so the package drops out of `outdated` until
+  reinstalled. Neither path cleans up package credentials or package DB schemas.
+- `versions`, `outdated`, and name resolution read the repository catalog, so they
+  need a configured package repository — check with `grok s raw GET /api/packages/repos`.
+- `share` targets the package's project under the hood (same as sharing from the UI),
+  so the whole package — functions, queries, connections — is shared at once. For the
+  same reason `grok s shares list <package-uuid>` won't show the grant — it lives on
+  the package's project, not the package entity itself.
 
 ## Server health
 

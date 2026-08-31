@@ -6,7 +6,7 @@
     "tables": [
       {
         "path": "Tests.csv",
-        "creationScript": "Result = UsageAnalysis:TestsDashboard('dev',5,null,null,false,false,false)",
+        "creationScript": "Result = UsageAnalysis:TestsDashboard('dev','master',5,null,null,false,false,false)",
         "id": "6ab5be70-8560-11f0-91d7-a986b011368a"
       },
       {

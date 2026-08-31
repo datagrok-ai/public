@@ -1,71 +1,45 @@
-import * as fs from 'node:fs';
-import {spawn} from 'node:child_process';
-import type {ChildProcess} from 'node:child_process';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
 import {syncUserFiles} from './sync/orchestrator';
-import {ensureUserDir} from './user/user-dir';
+import {userDirs} from './user/user-dir';
 import {startWorkspaceSync} from './sync/workspace';
 import {buildHelpIndex} from './help-index';
-import {WORKSPACE} from './constants';
-import {rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+import {WORKSPACE, rewriteForDocker} from './constants';
+import {apiUrlFromMcpUrl} from './query-options';
+import {BROKER_BASE} from './broker/provider-env';
+import {getProviderInfo, authStart, authCode} from './broker/broker-client';
 import {emit, handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
+import {claimTask, releaseTask} from './tasks';
 import type {WsSender} from './session';
 
 const PORT = 5355;
 
-// ---------------------------------------------------------------------------
-// Subscription auth — relays the interactive `claude auth login` flow to the browser
-// ---------------------------------------------------------------------------
+let authOwner: WsSender | null = null;
 
-let authProc: ChildProcess | null = null;
-
-function handleAuthStart(ws: WsSender): void {
-  if (authProc) {
-    authProc.removeAllListeners('exit');
-    authProc.kill();
-    authProc = null;
-  }
-  authProc = spawn('claude', ['auth', 'login'], {
-    env: {...process.env, TERM: 'dumb', FORCE_COLOR: '0'},
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-
-  let urlSent = false;
-  const onData = (data: Buffer) => {
-    if (urlSent)
-      return;
-    const text = data.toString();
-    const m = text.match(/https:\/\/claude\.com\/cai\/oauth[^\s]+/);
-    if (m) {
-      urlSent = true;
-      emit(ws, {type: 'auth_url', url: m[0]});
-    }
-  };
-  authProc.stdout?.on('data', onData);
-  authProc.stderr?.on('data', onData);
-
-  authProc.on('exit', (code) => {
-    authProc = null;
-    if (code === 0)
-      emit(ws, {type: 'auth_done'});
+async function handleAuthStart(ws: WsSender): Promise<void> {
+  authOwner = ws;
+  try {
+    const r = await authStart();
+    if (r.url)
+      emit(ws, {type: 'auth_url', url: r.url});
     else
-      emit(ws, {type: 'auth_error', message: `claude auth login exited with code ${code}`});
-  });
-
-  authProc.on('error', (err: Error) => {
-    authProc = null;
-    emit(ws, {type: 'auth_error', message: err.message});
-  });
+      emit(ws, {type: 'auth_error', message: r.error ?? 'Authentication failed to start'});
+  } catch (e: any) {
+    emit(ws, {type: 'auth_error', message: e.message});
+  }
 }
 
-function handleAuthCode(ws: WsSender, code: string): void {
-  if (!authProc?.stdin) {
-    emit(ws, {type: 'auth_error', message: 'No authentication in progress'});
-    return;
+async function handleAuthCode(ws: WsSender, code: string): Promise<void> {
+  try {
+    const r = await authCode(code);
+    if (r.status === 'done')
+      emit(ws, {type: 'auth_done'});
+    else
+      emit(ws, {type: 'auth_error', message: r.message ?? 'Authentication failed'});
+  } catch (e: any) {
+    emit(ws, {type: 'auth_error', message: e.message});
   }
-  authProc.stdin.write(code + '\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -75,13 +49,41 @@ function handleAuthCode(ws: WsSender, code: string): void {
 const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 
-app.get('/health', (c) => c.json({status: 'ok'}));
+app.get('/health', async (c) => {
+  try {
+    if (!(await fetch(`${BROKER_BASE}/health`)).ok)
+      return c.json({status: 'degraded', broker: 'unhealthy'}, 503);
+  } catch {
+    return c.json({status: 'degraded', broker: 'unreachable'}, 503);
+  }
+  return c.json({status: 'ok'});
+});
+
+// Admission-task long-poll for the queued route (see tasks.ts). The celery worker
+// re-polls while the answer is {status: 'running'}; any other status ends its task.
+app.post('/task/claim', async (c) => {
+  const {taskId, sessionId} = await c.req.json();
+  if (!taskId || !sessionId)
+    return c.json({error: 'taskId and sessionId are required'}, 400);
+  return c.json(await claimTask(taskId, sessionId));
+});
+
+// Task revoked platform-side: free the slot and abort the turn it was admitting.
+app.post('/task/release', async (c) => {
+  const {taskId} = await c.req.json();
+  const sessionId = releaseTask(taskId ?? '');
+  if (sessionId)
+    handleDisconnect([sessionId]);
+  return c.json({status: 'released'});
+});
 
 app.get('/ws', upgradeWebSocket(() => {
   const sessionIds = new Set<string>();
+  let conn: WsSender | null = null;
   return {
     onMessage(evt: any, ws: any) {
       const sender = ws as unknown as WsSender;
+      conn = sender;
       let data: any;
       try {
         data = JSON.parse(String(evt.data));
@@ -89,8 +91,10 @@ app.get('/ws', upgradeWebSocket(() => {
         return emit(sender, {type: 'error', sessionId: '', message: 'Invalid JSON'});
       }
 
-      if (data.apiKey)
-        ensureUserDir(data.apiKey).catch((e: any) => console.warn('user-dir pre-hook:', e.message));
+      if (data.apiKey && (data.type === 'user_message' || data.type === 'sync_user_files')) {
+        userDirs.ensureDir(data.apiKey, apiUrlFromMcpUrl(rewriteForDocker(data.mcpServerUrl || ''))).catch((e: any) =>
+          console.warn(`user-dir pre-hook (${data.type}, session ${data.sessionId ?? '?'}):`, e.message));
+      }
 
       if (data.type === 'abort') {
         handleAbort(sender, data);
@@ -145,9 +149,13 @@ app.get('/ws', upgradeWebSocket(() => {
         emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}));
     },
     onClose() {
+      if (authOwner === conn)
+        authOwner = null;
       handleDisconnect(sessionIds);
     },
     onError() {
+      if (authOwner === conn)
+        authOwner = null;
       handleDisconnect(sessionIds);
     },
   };
@@ -156,86 +164,11 @@ app.get('/ws', upgradeWebSocket(() => {
 app.notFound((c) => c.json({error: 'Not found'}, 404));
 app.onError((err, c) => c.json({error: String(err)}, 500));
 
-// ---------------------------------------------------------------------------
-// Provider configuration — translates injected credentials into SDK env vars
-// ---------------------------------------------------------------------------
-
-// Provider config arrives as container env, forwarded from the Grokky package credentials.
-// Here we translate those into the env vars the Claude Agent SDK (which wraps Claude Code) reads
-// at spawn. Field-name -> SDK-env mappings below mirror Claude Code's documented provider setup:
-//   Bedrock  -> CLAUDE_CODE_USE_BEDROCK + AWS_REGION + (AWS_BEARER_TOKEN_BEDROCK | AWS_* IAM creds)
-//              https://code.claude.com/docs/en/amazon-bedrock
-//   Foundry  -> CLAUDE_CODE_USE_FOUNDRY + ANTHROPIC_FOUNDRY_RESOURCE + (ANTHROPIC_FOUNDRY_API_KEY | Entra ID)
-//              https://code.claude.com/docs/en/microsoft-foundry
-//   Anthropic-> ANTHROPIC_API_KEY
-// The model aliases buildOptions() passes (sonnet/opus/haiku) resolve per provider via
-// ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL — Bedrock needs inference-profile ids, Foundry deployment names.
-// Translate the injected credential fields into the SDK provider env, collecting any
-// missing-required-credential problems so they surface in the container logs at startup.
-function applyProviderConfig(): void {
-  const e = process.env;
-  const problems: string[] = [];
-
-  const provider = e['provider'] || 'Anthropic';
-  if (provider === 'Bedrock') {
-    e['CLAUDE_CODE_USE_BEDROCK'] = '1';
-    if (e['region'])
-      e['AWS_REGION'] = e['region'];
-    if (e['awsBearerToken'])
-      e['AWS_BEARER_TOKEN_BEDROCK'] = e['awsBearerToken'];
-    if (e['awsAccessKeyId'])
-      e['AWS_ACCESS_KEY_ID'] = e['awsAccessKeyId'];
-    if (e['awsSecretAccessKey'])
-      e['AWS_SECRET_ACCESS_KEY'] = e['awsSecretAccessKey'];
-    if (e['awsSessionToken'])
-      e['AWS_SESSION_TOKEN'] = e['awsSessionToken'];
-    if (!e['awsBearerToken'] && !(e['awsAccessKeyId'] && e['awsSecretAccessKey']))
-      problems.push('Bedrock selected but no credentials — set awsBearerToken, or awsAccessKeyId + awsSecretAccessKey');
-  }
-  else if (provider === 'Microsoft Foundry') {
-    e['CLAUDE_CODE_USE_FOUNDRY'] = '1';
-    if (e['foundryResource'])
-      e['ANTHROPIC_FOUNDRY_RESOURCE'] = e['foundryResource'];
-    if (e['foundryApiKey'])
-      e['ANTHROPIC_FOUNDRY_API_KEY'] = e['foundryApiKey'];
-    if (!e['foundryResource'])
-      problems.push('Microsoft Foundry selected but foundryResource is missing — required to reach the endpoint');
-    if (!e['foundryApiKey'])
-      problems.push('Microsoft Foundry selected without foundryApiKey — falls back to Entra ID, which is not configured in this container');
-  }
-  else {
-    if (e['apiKey'])
-      e['ANTHROPIC_API_KEY'] = e['apiKey'];
-  }
-
-  if (e['opusModel'])
-    e['ANTHROPIC_DEFAULT_OPUS_MODEL'] = e['opusModel'];
-  if (e['sonnetModel'])
-    e['ANTHROPIC_DEFAULT_SONNET_MODEL'] = e['sonnetModel'];
-  if (e['haikuModel'])
-    e['ANTHROPIC_DEFAULT_HAIKU_MODEL'] = e['haikuModel'];
-
-  for (var p of problems)
-    console.warn(`[provider-config] ${p}`);
-}
-
-applyProviderConfig();
-
-const usingBedrock = process.env['CLAUDE_CODE_USE_BEDROCK'] === '1';
-const usingFoundry = process.env['CLAUDE_CODE_USE_FOUNDRY'] === '1';
-const hasApiKey = !!process.env['ANTHROPIC_API_KEY'];
-// Subscription auth requires the host's ~/.claude/.credentials.json to be mounted into the container at this path.
-const hasSubscription = fs.existsSync('/home/grok/.claude/.credentials.json');
-if (usingBedrock)
-  console.log('Claude auth: using Amazon Bedrock');
-else if (usingFoundry)
-  console.log('Claude auth: using Microsoft Foundry');
-else if (hasApiKey)
-  console.log('Claude auth: using ANTHROPIC_API_KEY');
-else if (hasSubscription)
-  console.log('Claude auth: using subscription credentials at ~/.claude/.credentials.json');
-else
-  console.warn('Claude auth: no provider configured (no Bedrock/Foundry/ANTHROPIC_API_KEY and no ~/.claude/.credentials.json) — API calls will fail');
+getProviderInfo().then((info) => {
+  console.log(`Claude auth: broker mode = ${info.mode}`);
+  if (info.mode === 'none')
+    console.warn('Claude auth: broker reports no provider configured — API calls will fail');
+}).catch((e: any) => console.warn('Claude auth: could not reach broker /status:', e.message));
 
 // ---------------------------------------------------------------------------
 // Startup
@@ -252,6 +185,11 @@ try {
   buildHelpIndex(WORKSPACE);
 } catch (e: any) {
   console.warn('help-index: build failed:', e.message);
+}
+
+if (!process.env.DATAGROK_API_URL) {
+  console.warn('DATAGROK_API_URL is not set: ' +
+    'identity verification will trust the first client-supplied URL (dev only)');
 }
 
 console.log(`claude-runtime listening on :${PORT}`);

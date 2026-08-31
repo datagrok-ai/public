@@ -30,6 +30,8 @@ Install with `npm install -g datagrok-tools`, then configure a server.
 | List or browse files in a file share                       | `grok s files list "System:AppData" -r`                    |
 | Upload or download a table (CSV)                           | `grok s tables upload <name> file.csv`                     |
 | Check whether a package is deployed                        | `grok s packages list --filter "MyPlugin"`                 |
+| Install, update, or uninstall plugins                      | `grok s packages install Chem Bio` / `packages update --all` |
+| See installed vs latest plugin versions                    | `grok s packages outdated`                                 |
 | Hit any undocumented endpoint                              | `grok s raw GET /api/users/current`                        |
 | Check server and per-module health                         | `grok s healthcheck [--module <name>]`                     |
 | Bulk operations in one round-trip                          | `grok s batch <entity> <verb> --json items.json`           |
@@ -105,6 +107,29 @@ grok s tables download MyTable -O ./data.csv
 `files put` streams raw bytes — it handles GB-scale uploads. `tables upload`
 registers a proper Datagrok [table entity](../datagrok/concepts/objects.md)
 and returns its ID.
+
+### Manage packages
+
+Install, update, and remove server [plugins](../datagrok/plugins.md) the same way
+the Package Manager UI does — the server pulls released versions from its
+configured package repository (npm):
+
+```bash
+grok s packages install Chem Bio PowerGrid       # install the latest of each
+grok s packages install Chem --version 1.14.0    # pin a specific version
+grok s packages outdated                         # installed vs registry-latest
+grok s packages update --all                     # upgrade everything outdated
+grok s packages versions Chem                    # published versions and flags
+grok s packages set-version Chem 1.13.0          # activate a specific version
+grok s packages uninstall Chem                   # entry stays installable
+grok s packages share Chem Chemists --access View
+```
+
+`install` without `--version` sets the package to `latest`, an auto-update intent
+the server re-resolves against the registry every few minutes. A pinned version
+stays put until you change it. Install is synchronous and idempotent — if a heavy
+first-time install times out, re-run it. Publishing your own package sources is
+still [`grok publish`](how-to/packages/create-package.md).
 
 ### Server health
 

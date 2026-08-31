@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: [viewers.filters]
+realizes: [viewers.filters, viewers.filters.hierarchical, viewers.filters.categorical]
 realized_as:
   - hierarchical-filter-spec.ts
 related_bugs: []

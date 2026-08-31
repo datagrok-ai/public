@@ -53,8 +53,8 @@ and built to support interactive exploration of vast amounts of scientific data.
 | Copy cell value                        | Ctrl+C                          |
 | Paste into cell                        | Ctrl+V                          |
 | Add a row (requires `Allow Edit` set to `true`) | Enter or click the **plus** **(+)** icon in the bottom row |
-| Undo                                   | Ctrl+Z                          |
-| Redo                                   | Ctrl+Shift+Z                    |
+| [Undo](../../datagrok/navigation/undo.md)  | Ctrl+Z                      |
+| [Redo](../../datagrok/navigation/undo.md)  | Ctrl+Shift+Z, Ctrl+Y        |
 | Delete selected rows and/or columns    | Shift+Del                       |
 |<h4>**Resize and reorder**</h4>||
 | Reorder columns   | Drag the column header.<br/>Selected columns are repositioned simultaneously next to each other   |
@@ -712,7 +712,7 @@ or press Alt+C.
 | Show Add New Row Icon | boolean | When [allowEditable] is true, shows the last virtual row that the user can edit. This row gets appended to the underlying table as soon as any value is entered. The grid should also be in the editable mode |
 | Add New Row On Last Row Edit | boolean | Automatically adds a new row in the end of the dataframe when the last row is edited The grid should also be in the editable mode |
 | Show Remove Row Icon | boolean | When [allowEditable] is true, allows user to remove the mouse over row. The grid should also be in the editable mode |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
 | **Columns** | | |
 | Show Column Labels | boolean |  |
@@ -723,7 +723,7 @@ or press Alt+C.
 | Max Heatmap Columns | number |  |
 | **General** | | |
 | Show Friendly Name | boolean | When checked, friendly name gets shown underneath the column name. |
-| Top Level Default Menu | boolean | When set to false, default menu appears under the ''Grid'' submenu. |
+| Top Level Default Menu | boolean | When set to false, default menu appears under the 'Grid' submenu. |
 | Show Default Popup Menu | boolean | Whether items applicable to all viewers (such as Pickup Style) should be shown in a popup menu. Also requires *Show Context Menu*. |
 | Allow Block Selection | boolean | Mouse drag on the data cells selects both rows and columns |
 | Allow Col Selection | boolean | Shift+click on a header to select a column Shift+mouse drag on the headers to select multiple columns Ctrl+click to invert selection Ctrl+Shift+click to deselect |
@@ -734,7 +734,7 @@ or press Alt+C.
 | Show Column Groups | boolean |  |
 | Show Row Header | boolean |  |
 | Show Row Gridlines | boolean |  |
-| Allow Column Menu | boolean | Whether the hamburger menu should be shown for a column when the mouse is over its header |
+| Allow Column Menu | boolean | Whether the "hamburger" menu should be shown for a column when the mouse is over its header |
 | Auto Scroll Column Into View | boolean | Automatically scroll column into view when this column becomes current |
 | Auto Scroll Row Into View | boolean | Automatically scroll current row into view when it is set from outside (for instance, as a result of clicking on a point in a scatter plot) |
 | Auto Resize Column Widths | boolean | Automatically resize column widths when row height is resized |
@@ -746,7 +746,7 @@ or press Alt+C.
 | Draw Every Row | boolean | Indicates the way colors are sampled in the heatmap mode when there is not enough pixels on the screen for each row: True: each row is draws (but the result is blended and the resulting color might not represent any row) False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all) Applicable only to heatmap. |
 | Show Context Menu | boolean | Whether the context menu is shown |
 | Show Read Only Notifications | boolean | Whether to show notifications when the user tries to edit a read-only table |
-| Show Heatmap Scrollbars | boolean | Whether to show scrollbars in the heatmap mode Note that scrollbars will still be visible if they are not expanded |
+| Show Heatmap Scrollbars | boolean | Whether to show scrollbars in the heatmap mode Note that scrollbars will still be visible if they are not "expanded" |
 | Missing Value Color | number |  |
 | Selected Rows Color | number |  |
 | Selected Cols Color | number |  |
@@ -777,7 +777,7 @@ or press Alt+C.
 | Allow Dynamic Menus | boolean |  |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | Horz Align | string |  |
@@ -790,7 +790,7 @@ or press Alt+C.
 | Text Vertical | boolean |  |
 | Image Scale | number | Applies to image columns only |
 | Opacity | number | Applies to image columns only |
-| Element | element | For ''html'' cell types only |
+| Element | element | For 'html' cell types only |
 | Choices | list | When defined, the cell editor becomes a combo box with the specified values |
 | **Rows** | | |
 | Row Height | number | Applicable only to grid |
@@ -807,7 +807,7 @@ or press Alt+C.
 | Allow Col Header Resizing | boolean | Resizing column header by dragging the border between the header and the first row |
 | Allow Col Resizing | boolean | Resizing columns by dragging the border between column headers |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column's color coding is used. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls grid tooltip visibility |
 | Show Labels | visibilitymode |  |

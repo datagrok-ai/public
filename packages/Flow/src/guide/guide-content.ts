@@ -1,15 +1,5 @@
-/** The actual guides: 6 multi-step tutorials and a set of how-to answers.
- *
- *  Every step highlights a CONCRETE element — a specific browser item, canvas
- *  node, ribbon icon, or context-panel field (addressed by the `data-testid` /
- *  `data-*` / `data-param` attributes across the UI) — and waits for a real
- *  action before advancing. Where a value must be entered, the step copies it
- *  to the clipboard so the user can simply paste it (and the literal value is in
- *  the instruction text as a fallback).
- *
- *  The concrete targets here were verified empirically against a live server
- *  (OpenFile/AddNewColumn signatures, the `fullPath`/`name`/`expression` param
- *  rows, and that `System:DemoFiles/demog.csv` exists with an `AGE` column). */
+/** The guides: multi-step tutorials and how-to answers. Concrete targets are verified
+ *  empirically against a live server (e.g. System:DemoFiles/demog.csv exists with an AGE column). */
 
 import {
   Guide, GuideStep, GuideContext,
@@ -31,25 +21,17 @@ const NEW_COL_NAME = 'My New Column';
 const SEARCH_SEL = '[data-testid="ff-browser-search"]';
 const TABLE_OUTPUT_TYPE = 'Outputs/Table Output';
 
-// The KNIME-style Files browser: scientists bring data in by grabbing a file
-// from a connection, not by typing a path. We steer every "load data" step to
-// the Demo connection's demog.csv (top-level, below the folders → needs a scroll).
 const DEMO_CONN = 'Demo';
 const DEMOG_FILE = 'demog.csv';
 const DEMOG_FILE_SEL = '[data-testid="ff-files-file-demog-csv"]';
-// System:DemoFiles/demog.csv has 11 columns (USUBJID, AGE, SEX, RACE, DIS_POP,
-// HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY) and USUBJID is its key —
-// the join how-to gates on selecting USUBJID and on picking every column.
+// demog.csv has 11 columns and USUBJID is its key — the join how-to gates on both.
 const DEMOG_KEY = 'USUBJID';
 const DEMOG_COLUMN_COUNT = 11;
 
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** Frame the whole graph before a wiring step — with several nodes added one
- *  after another, the drag SOURCE (e.g. Open File) may have drifted off-screen.
- *  The small delay lets the previous step's own add-pan finish first — the
- *  step gate fires the moment the node exists, before its pan settles, and a
- *  late pan would override the fit. */
+/** Frame the whole graph before a wiring step; the delay lets the previous step's
+ *  add-pan finish — a late pan would override the fit. */
 const fitGraph = async (ctx: GuideContext): Promise<void> => {
   await delay(350);
   try {
@@ -57,38 +39,29 @@ const fitGraph = async (ctx: GuideContext): Promise<void> => {
   } catch {/* editor not ready */}
 };
 
-/** True while a node running `funcName` is selected (its settings are already
- *  open) — lets "click the node" steps skip silently instead of flashing. */
+/** Lets "click the node" steps skip silently when its settings are already open. */
 const funcNodeSelected = (funcName: string) => (): boolean => {
   const lc = funcName.toLowerCase();
   return (Array.from(document.querySelectorAll('.ff-node[data-selected="true"]')) as HTMLElement[])
     .some((n) => (n.dataset.func ?? '').toLowerCase().includes(lc));
 };
 
-/** Reveal the toolbox and make sure the Files tab is active (a previous
- *  session may have left another top tab selected). */
 const openFiles = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(80);
   ctx.host.showToolboxTab('Files');
 };
 
-/** True once demog.csv exists in the Files tree AND is scrolled into view. */
 const demogVisible = (ctx: GuideContext): boolean => {
   const fileEl = byFileTreeFile(DEMOG_FILE)(ctx);
   return !!fileEl && isScrolledIntoView(fileEl);
 };
 
-/** True once the Demo connection row is expanded (its files are listed). */
 const demoConnExpanded = (ctx: GuideContext): boolean =>
   !!byFileTreeConn(DEMO_CONN)(ctx)?.querySelector('.d4-tree-view-tri-expanded');
 
-/** The reusable "bring data in from the Files browser" sequence: open Files →
- *  expand the Demo connection → scroll to demog.csv → double-click / drag it.
- *  Ends with an OpenFile node already pointing at the file (no path typing).
- *  Pass `skipIf` to skip the whole sequence when data is already loaded.
- *  Steps whose action is already done (connection expanded, file in view) skip
- *  silently instead of flashing a card that instantly self-advances. */
+/** Reusable "bring demog.csv in via Files" sequence; `skipIf` skips the whole thing
+ *  when data is already loaded. */
 const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[] => {
   const steps: GuideStep[] = [
     {
@@ -112,9 +85,6 @@ const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[]
       text: `The files are listed below the folders. Scroll the Files list down until “${DEMOG_FILE}” ` +
         'comes into view.',
       skipIf: demogVisible,
-      // Highlight the whole Files pane while scrolling (the file itself is off-screen
-      // and would otherwise pulse over unrelated rows); switch to the file only once
-      // it's actually in view.
       target: (ctx) => demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx),
       highlights: (ctx) => [demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx)],
       until: untilScrolledIntoView(DEMOG_FILE_SEL),
@@ -127,37 +97,29 @@ const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[]
       until: untilFuncNodeWithInput('OpenFile', 'fullPath', 'demog'),
     },
   ];
-  // An outer skipIf ("data already loaded") composes with each step's own.
   return skipIf ?
     steps.map((s) => ({...s, skipIf: (ctx: GuideContext) => skipIf(ctx) || (s.skipIf?.(ctx) ?? false)})) :
     steps;
 };
 
-/** Reveal the function list with a cleared search box, so the user types the
- *  query themselves (the tour gates on what they type). */
+/** Cleared search box — the tour gates on what the user types. */
 const openSearch = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(40);
   prefillSearch('');
 };
 
-/** Reveal the list and pre-filter it to a function (used by quick how-to's). */
 const findInBrowser = (term: string) => async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(60);
   prefillSearch(term);
 };
 
-/** Copy a value so the next step can be "paste it (Ctrl+V)". */
 const putOnClipboard = (text: string) => async (): Promise<void> => {
   await copyToClipboard(text);
 };
 
-// ============================ TUTORIALS ============================
-
-/** Flagship, hands-on: open a real dataset and compute a new column — touches
- *  the browser, the canvas, connections, the context panel (two fields), the
- *  clipboard, Run, and inspect. This is what the Start-panel "tour" launches. */
+/** Flagship tutorial — what the Start-panel "tour" launches. */
 const loadDataAddColumn: Guide = {
   id: 'load-data-add-column',
   kind: 'tutorial',
@@ -185,10 +147,7 @@ const loadDataAddColumn: Guide = {
       until: untilFuncNode('AddNewColumn'),
     },
     {
-      // Nodes land in free space now, so this repair step almost always skips.
-      // The skipIf treats "node not there yet" as skipped too — otherwise the
-      // step-count estimate includes it at guide start and the visible total
-      // shrinks mid-run when it self-skips.
+      // "Node not there yet" counts as skipped too — otherwise the step-count estimate shrinks mid-run.
       title: 'Move it clear of Open File',
       text: 'Give it room: drag the “Add New Column” node by its title bar to the right of Open ' +
         'File, so there\'s space to wire them together.',
@@ -273,8 +232,7 @@ const loadDataAddColumn: Guide = {
       text: 'Look at the bottom status bar — your result got its own tab next to “Canvas” ' +
         '(highlighted). Its dot turns green when the result is ready. Click it to open the result ' +
         'as a full table view.',
-      // A prior step may have been skipped, leaving the tab empty forever — target
-      // and gate on any output tab so the guide never dead-ends (skip-tolerance).
+      // Skip-tolerant: gate on any output tab so the guide never dead-ends.
       target: (ctx) => bySel('.ff-view-tab[data-state="ready"]')(ctx) ?? bySel('.ff-view-tab[data-node-id]')(ctx),
       position: 'top',
       until: untilExists('.ff-view-tab[data-node-id][data-active="true"]'),
@@ -431,8 +389,7 @@ const reuseScript: Guide = {
         'Click Next.',
     },
     {
-      // An empty canvas has no script to show and Save stays disabled — make
-      // sure there's at least one node before pointing at those buttons.
+      // An empty canvas has no script and Save stays disabled.
       title: 'First, put something on the canvas',
       text: 'An empty flow has nothing to compile. Double-click “Table Input” (highlighted) to add ' +
         'a node — any node makes a script.',
@@ -472,9 +429,7 @@ const reuseScript: Guide = {
   ],
 };
 
-/** Ensure a sample node exists on the canvas so the canvas / context-panel parts
- *  of the interface tour have something concrete to point at. Added silently and
- *  programmatically (no detour to hunt for it in the toolbox). */
+/** A sample node so the canvas / context-panel tour steps have something to point at. */
 const ensureTourNode = async (ctx: GuideContext): Promise<void> => {
   const flow = ctx.host.getFlow();
   if (!flow) return;
@@ -483,10 +438,6 @@ const ensureTourNode = async (ctx: GuideContext): Promise<void> => {
   if (node) await flow.addNodeAtCenter(node);
 };
 
-/** A guided tour of the whole interface: every toolbox pane, every ribbon group,
- *  the canvas + a node's anatomy, the overview/status bar, and the context panel.
- *  Mostly "read & click Next" steps; a couple are interactive (selecting a node).
- *  A sample node is auto-added as a prerequisite for the canvas/panel sections. */
 const interfaceTour: Guide = {
   id: 'interface-tour',
   kind: 'tutorial',
@@ -499,8 +450,6 @@ const interfaceTour: Guide = {
         'the context panel — and what each control does. Click Next to begin.',
       setup: (ctx) => ctx.host.showFunctionBrowser(),
     },
-
-    // ---------------- Toolbox (left) ----------------
     {
       title: 'The toolbox',
       text: 'On the left is the toolbox — your palette of building blocks. Files, queries, built-in ' +
@@ -560,8 +509,6 @@ const interfaceTour: Guide = {
         'Utilities, and Debug.',
       target: byTid('browser-section', 'Inputs'),
     },
-
-    // ---------------- Ribbon (top) ----------------
     {
       title: 'Run',
       text: 'The ▶ Run button executes your flow with live visualization — each node lights up as it ' +
@@ -632,8 +579,6 @@ const interfaceTour: Guide = {
       target: byTid('ribbon', 'help'),
       position: 'bottom',
     },
-
-    // ---------------- Canvas + node anatomy (needs a node) ----------------
     {
       title: 'The canvas',
       text: 'The center is the canvas, where your flow lives. Drag empty space to pan, scroll to zoom, ' +
@@ -667,8 +612,7 @@ const interfaceTour: Guide = {
       title: 'Sockets',
       text: 'The colored dots are sockets — inputs on the left, outputs on the right. Drag between two ' +
         'compatible (same-colored) dots to connect nodes.',
-      // The first .ff-socket in DOM order is a hover-only order port hidden
-      // under the title bar — highlight a REAL data socket in a socket row.
+      // The first .ff-socket in DOM order is a hover-only order port hidden under the title bar.
       target: bySel('.ff-node .ff-socket-row .ff-socket'),
       position: 'bottom',
       avoid: (ctx) => [bySel('.ff-node')(ctx)],
@@ -702,8 +646,6 @@ const interfaceTour: Guide = {
       target: byTid('output-strip'),
       position: 'left',
     },
-
-    // ---------------- Context panel (right) ----------------
     {
       title: 'Open a node\'s settings',
       text: 'Click the sample node on the canvas (highlighted). Its settings open in the context panel ' +
@@ -741,16 +683,11 @@ const interfaceTour: Guide = {
   ],
 };
 
-// ============================ HOW-TO QUESTIONS ============================
-
 function q(id: string, title: string, steps: GuideStep | GuideStep[]): Guide {
   return {id, kind: 'question', title, summary: title, steps: Array.isArray(steps) ? steps : [steps]};
 }
 
-// ---- prerequisite step builders (skipped when already satisfied) ----
-
-/** Ensure a DG-function node exists (adds it via the browser if missing).
- *  Searches by the friendly name — that's what a user would type. */
+/** Searches by the friendly name — what a user would type. */
 const ensureFuncNode = (funcName: string, friendly: string, opts: {title?: string; text?: string} = {},
 ): GuideStep => ({
   title: opts.title ?? `First, add “${friendly}”`,
@@ -762,7 +699,6 @@ const ensureFuncNode = (funcName: string, friendly: string, opts: {title?: strin
   until: untilFuncNode(funcName),
 });
 
-/** Ensure a built-in node (e.g. Table Input/Output) exists. */
 const ensureBuiltin = (typeName: string, friendly: string, opts: {title?: string; text?: string} = {},
 ): GuideStep => ({
   title: opts.title ?? `First, add “${friendly}”`,
@@ -774,13 +710,11 @@ const ensureBuiltin = (typeName: string, friendly: string, opts: {title?: string
   until: untilNodeType(typeName),
 });
 
-/** True once some Open File node has a non-empty path set. */
 const openFileHasPath = (ctx: GuideContext): boolean =>
   (ctx.host.getFlow()?.getNodes() ?? []).some((n) =>
     (n.dgFuncName ?? '').toLowerCase().includes('openfile') &&
     !!String((n.inputValues ?? {})['fullPath'] ?? '').trim());
 
-/** True once some Add New Column node has a table wired into it. */
 const ancTableConnected = (ctx: GuideContext): boolean => {
   const flow = ctx.host.getFlow();
   if (!flow) return false;
@@ -788,7 +722,6 @@ const ancTableConnected = (ctx: GuideContext): boolean => {
     (n.dgFuncName ?? '').toLowerCase().includes('addnewcolumn') && flow.isInputConnected(n.id, 'table'));
 };
 
-/** True once some Table Output node has a table wired into it. */
 const tableOutputConnected = (ctx: GuideContext): boolean => {
   const flow = ctx.host.getFlow();
   if (!flow) return false;
@@ -796,10 +729,7 @@ const tableOutputConnected = (ctx: GuideContext): boolean => {
     n.dgTypeName === TABLE_OUTPUT_TYPE && flow.isInputConnected(n.id, 'table'));
 };
 
-/** Dashboard publishing end-to-end: run a flow, explore the result tab, then
- *  Save → Create dashboard → the platform's standard Save-project dialog.
- *  Defined here (not with the other tutorials) because it reuses the
- *  prerequisite builders above. */
+/** Defined here (not with the other tutorials) because it reuses the prerequisite builders above. */
 const publishDashboard: Guide = {
   id: 'publish-dashboard',
   kind: 'tutorial',
@@ -838,8 +768,7 @@ const publishDashboard: Guide = {
       text: 'In the bottom status bar, a tab named after your table gets a green dot when the run ' +
         'finishes. Click it (highlighted) to open the result as a full table view. (Empty dot? ' +
         'The output isn\'t wired in or the run didn\'t reach it — the tab tells you what to do.)',
-      // Skip-tolerant: highlight and gate on any output tab, so a skipped connect
-      // step upstream can't dead-end the guide here.
+      // Skip-tolerant: gate on any output tab so a skipped connect step can't dead-end the guide.
       target: (ctx) => bySel('.ff-view-tab[data-state="ready"]')(ctx) ?? bySel('.ff-view-tab[data-node-id]')(ctx),
       position: 'top',
       until: untilExists('.ff-view-tab[data-node-id][data-active="true"]'),
@@ -865,8 +794,7 @@ const publishDashboard: Guide = {
         'dialog offers a Run button right there. A name clash? Pick another name.)',
       target: preferDialog(bySel('.ff-save-dash')),
       position: 'left',
-      // Advance only when the Save dialog is actually done (saved or closed) —
-      // never narrate the NEXT dialog while this one is still on screen.
+      // Never narrate the NEXT dialog while this one is still on screen.
       until: (ctx) => poll(() => el('.ff-save-dash') == null, ctx.signal),
     },
     {
@@ -910,8 +838,6 @@ export const QUESTIONS: Guide[] = [
     },
   ]),
   q('how-add-column', 'How do I add a calculated column?', [
-    // The formula references a real column, so the answer builds on real data
-    // (all skipped when the flow already has it).
     ...loadDemogViaFiles(openFileHasPath),
     ensureFuncNode('AddNewColumn', 'Add New Column'),
     {
@@ -1058,8 +984,6 @@ export const QUESTIONS: Guide[] = [
     ...loadDemogViaFiles(openFileHasPath),
     ensureFuncNode('AddNewColumn', 'Add New Column'),
     {
-      // A freshly added node half-covers the previous one, hiding the very
-      // dots the next step highlights — get it clear first.
       title: 'Move it clear of Open File',
       text: 'The new node landed overlapping Open File. Drag the “Add New Column” node aside (by ' +
         'its title bar) until both nodes are fully visible.',
@@ -1120,7 +1044,6 @@ export const QUESTIONS: Guide[] = [
       target: byNodeFunc('OpenFile'),
       position: 'top',
       highlights: (ctx) => [socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx)],
-      // untilExists would be fooled by a permanently-mounted-but-hidden panel.
       until: untilVisible('[data-testid="ff-port-preview"], [data-testid="ff-output-panel"]'),
     },
   ]),
@@ -1369,8 +1292,6 @@ export const QUESTIONS: Guide[] = [
       text: `Scroll the Files list down until “${DEMOG_FILE}” comes into view again (it sits below the ` +
         'folders).',
       setup: openFiles,
-      // Highlight the whole Files pane while the file is off-screen, then snap to
-      // the file once it's visible (same pattern as the data-loading steps).
       target: (ctx) => demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx),
       highlights: (ctx) => [demogVisible(ctx) ? byFileTreeFile(DEMOG_FILE)(ctx) : byTid('browser-files')(ctx)],
       until: untilScrolledIntoView(DEMOG_FILE_SEL),
@@ -1448,8 +1369,7 @@ export const QUESTIONS: Guide[] = [
       text: `Next to keys1, click the list icon (highlighted). Flow loads the real columns from the ` +
         `first table (running the flow up to that point if needed). In the dialog, select the ` +
         `${DEMOG_KEY} column and click OK.`,
-      // While the dialog is open it sits behind the card — re-anchor the card to
-      // the dialog (and stop pulsing the now-hidden icon) so it's not obscured.
+      // While the dialog is open it sits behind the card — re-anchor the card to the dialog.
       target: preferDialog(byTid('prop-pick-columns', 'keys1')),
       highlights: (ctx) => openDialogEl() ? [] : [byTid('prop-pick-columns', 'keys1')(ctx)],
       position: 'left',
@@ -1520,8 +1440,7 @@ export const QUESTIONS: Guide[] = [
       'bar. Run the flow, then click the tab once its dot turns green — the result opens as a ' +
       'full Datagrok table view where you can add viewers, filter, and rearrange. An amber dot ' +
       'means the result is out of date — run again to refresh it.',
-    // Point at a real output tab when one exists; a highlighted "Canvas" tab
-    // would be a decoy on a flow with no outputs yet.
+    // A highlighted "Canvas" tab would be a decoy on a flow with no outputs yet.
     target: (ctx) => bySel('.ff-view-tab[data-node-id]')(ctx),
     position: 'top',
   }),

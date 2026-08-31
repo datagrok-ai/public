@@ -1,0 +1,460 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "artifacts",
+  "version": "1.2.0",
+  "tables": {
+    "program": {
+      "securityMode": "row",
+      "businessKey": [
+        "code"
+      ],
+      "friendlyName": "Programs",
+      "description": "Drug-program registry; rows are individually shared with program audiences",
+      "columns": {
+        "code": {
+          "type": "string",
+          "required": true,
+          "unique": true
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "isName": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "external_ref": {
+          "type": "string",
+          "description": "Link into the owning portfolio/DMS system"
+        },
+        "viewers_group": {
+          "type": "group",
+          "friendlyName": "Viewers"
+        },
+        "contributors_group": {
+          "type": "group",
+          "friendlyName": "Contributors"
+        },
+        "approvers_group": {
+          "type": "group",
+          "friendlyName": "Approvers"
+        },
+        "stage": {
+          "type": "string",
+          "description": "Foreign informational state, display-only"
+        },
+        "status": {
+          "type": "string",
+          "description": "Foreign informational state, display-only"
+        },
+        "indication": {
+          "type": "string",
+          "description": "Foreign informational state, display-only"
+        }
+      }
+    },
+    "compound": {
+      "businessKey": [
+        "registration_code"
+      ],
+      "friendlyName": "Compounds",
+      "columns": {
+        "registration_code": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "isName": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "structure": {
+          "type": "string",
+          "semType": "Molecule"
+        }
+      }
+    },
+    "program_compound": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": [
+        "program_id",
+        "compound_id"
+      ],
+      "audit": false,
+      "columns": {
+        "program_id": {
+          "type": "ref",
+          "ref": "program",
+          "onDelete": "cascade",
+          "required": true
+        },
+        "compound_id": {
+          "type": "ref",
+          "ref": "compound",
+          "onDelete": "cascade",
+          "required": true
+        },
+        "role": {
+          "type": "string",
+          "choices": [
+            "lead",
+            "backup",
+            "tool"
+          ]
+        }
+      }
+    },
+    "study": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": [
+        "protocol_code"
+      ],
+      "friendlyName": "Studies",
+      "columns": {
+        "program_id": {
+          "type": "ref",
+          "ref": "program",
+          "onDelete": "restrict",
+          "required": true
+        },
+        "protocol_code": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "isName": true
+        },
+        "phase": {
+          "type": "string",
+          "choices": [
+            "preclinical",
+            "ph1",
+            "ph2",
+            "ph3",
+            "submitted"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "choices": [
+            "planned",
+            "ongoing",
+            "completed",
+            "terminated"
+          ]
+        }
+      }
+    },
+    "tag": {
+      "businessKey": [
+        "name"
+      ],
+      "friendlyName": "Tags",
+      "columns": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "isName": true
+        }
+      }
+    },
+    "alignment": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": [
+        "publication_id",
+        "status"
+      ],
+      "friendlyName": "Publications",
+      "description": "Live version rows only: at most one approved + one in-review row per publication, enforced by the business key over live rows",
+      "columns": {
+        "publication_id": {
+          "type": "string",
+          "required": true,
+          "description": "Durable logical id of the publication; revisions share it"
+        },
+        "revision": {
+          "type": "int",
+          "required": true,
+          "min": 1
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "isName": true,
+          "description": "Display name; republish key = (program, study, name)"
+        },
+        "artifact_id": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "description": "Frozen copy: the published meta FuncCall id"
+        },
+        "source_artifact_id": {
+          "type": "string",
+          "description": "Unused; the server refuses column drops without a migration"
+        },
+        "program_id": {
+          "type": "ref",
+          "ref": "program",
+          "onDelete": "restrict",
+          "required": true
+        },
+        "study_id": {
+          "type": "ref",
+          "ref": "study",
+          "onDelete": "restrict",
+          "friendlyName": "Study"
+        },
+        "workstream": {
+          "type": "string",
+          "choices": [
+            "clinical",
+            "modeling",
+            "discovery",
+            "cmc",
+            "other"
+          ]
+        },
+        "artifact_type": {
+          "type": "string",
+          "choices": [
+            "workflow-run",
+            "function-run"
+          ],
+          "default": "workflow-run"
+        },
+        "artifact_author": {
+          "type": "user"
+        },
+        "artifact_created_on": {
+          "type": "datetime"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "choices": [
+            "pending",
+            "approved",
+            "rejected"
+          ],
+          "default": "pending",
+          "required": true
+        },
+        "approved_by": {
+          "type": "user"
+        },
+        "approved_on": {
+          "type": "datetime"
+        },
+        "reject_reason": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "description": "Folder-like curation grouping, e.g. PK/exposure"
+        }
+      },
+      "relations": {
+        "compounds": {
+          "via": "alignment_compound",
+          "target": "compound"
+        },
+        "tags": {
+          "via": "alignment_tag",
+          "target": "tag",
+          "allowCreate": true
+        }
+      },
+      "filters": [
+        {
+          "column": "status",
+          "label": "Status"
+        },
+        {
+          "column": "study_id.protocol_code",
+          "label": "Study"
+        },
+        {
+          "column": "workstream",
+          "label": "Workstream"
+        },
+        {
+          "column": "compounds.id",
+          "label": "Molecules"
+        },
+        {
+          "column": "tags.id",
+          "label": "Tags"
+        },
+        {
+          "column": "path",
+          "label": "Path"
+        },
+        {
+          "column": "artifact_type",
+          "label": "Type"
+        }
+      ]
+    },
+    "alignment_compound": {
+      "securityMode": "master",
+      "delegate": "alignment_id",
+      "businessKey": [
+        "alignment_id",
+        "compound_id"
+      ],
+      "audit": false,
+      "columns": {
+        "alignment_id": {
+          "type": "ref",
+          "ref": "alignment",
+          "onDelete": "cascade",
+          "required": true
+        },
+        "compound_id": {
+          "type": "ref",
+          "ref": "compound",
+          "onDelete": "cascade",
+          "required": true
+        }
+      }
+    },
+    "alignment_tag": {
+      "securityMode": "master",
+      "delegate": "alignment_id",
+      "businessKey": [
+        "alignment_id",
+        "tag_id"
+      ],
+      "audit": false,
+      "columns": {
+        "alignment_id": {
+          "type": "ref",
+          "ref": "alignment",
+          "onDelete": "cascade",
+          "required": true
+        },
+        "tag_id": {
+          "type": "ref",
+          "ref": "tag",
+          "onDelete": "cascade",
+          "required": true
+        }
+      }
+    },
+    "alignment_history": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": [
+        "publication_id",
+        "revision"
+      ],
+      "friendlyName": "Publication history",
+      "description": "Append-only archive of retired version rows; never discoverable, reachable from a publication's History pane only",
+      "columns": {
+        "publication_id": {
+          "type": "string",
+          "required": true
+        },
+        "revision": {
+          "type": "int",
+          "required": true,
+          "min": 1
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "isName": true
+        },
+        "artifact_id": {
+          "type": "string",
+          "required": true
+        },
+        "source_artifact_id": {
+          "type": "string",
+          "description": "Unused; the server refuses column drops without a migration"
+        },
+        "program_id": {
+          "type": "ref",
+          "ref": "program",
+          "onDelete": "restrict",
+          "required": true
+        },
+        "study_id": {
+          "type": "ref",
+          "ref": "study",
+          "onDelete": "restrict"
+        },
+        "workstream": {
+          "type": "string",
+          "choices": [
+            "clinical",
+            "modeling",
+            "discovery",
+            "cmc",
+            "other"
+          ]
+        },
+        "artifact_type": {
+          "type": "string",
+          "choices": [
+            "workflow-run",
+            "function-run"
+          ],
+          "default": "workflow-run"
+        },
+        "artifact_author": {
+          "type": "user"
+        },
+        "artifact_created_on": {
+          "type": "datetime"
+        },
+        "description": {
+          "type": "string"
+        },
+        "final_status": {
+          "type": "string",
+          "choices": [
+            "approved",
+            "rejected",
+            "pending"
+          ],
+          "required": true
+        },
+        "approved_by": {
+          "type": "user"
+        },
+        "approved_on": {
+          "type": "datetime"
+        },
+        "reject_reason": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "tags_snapshot": {
+          "type": "string",
+          "description": "Comma-joined tag names at retirement time"
+        },
+        "compounds_snapshot": {
+          "type": "string",
+          "description": "Comma-joined registration codes at retirement time"
+        },
+        "superseded_on": {
+          "type": "datetime"
+        },
+        "original_row_id": {
+          "type": "string",
+          "description": "The retired live row's id, for its audit trail"
+        }
+      }
+    }
+  }
+}

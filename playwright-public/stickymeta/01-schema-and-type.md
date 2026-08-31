@@ -11,8 +11,8 @@ Covers the admin configuration surface of Sticky Meta: defining a metadata **ent
 
 **Test data**
 
-- Entity type name: `PW_SM_Type_<suffix>`, matching expression `semtype=molecule`.
-- Schema name: `PW_SM_Schema_<suffix>`, associated with the entity type above, properties:
+- Entity type name: `PW_SM1_Type_<suffix>`, matching expression `source=PW_SM1_<suffix>` (run-unique, so this schema never joins spec 02's Sticky meta dialog).
+- Schema name: `PW_SM1_Schema_<suffix>`, associated with the entity type above, properties:
   `rating` (int), `notes` (string), `verified` (bool), `review_date` (datetime).
 
 > Navigation note: the Datagrok SPA ignores `goto()` between sibling Sticky-Meta routes
@@ -30,7 +30,7 @@ Covers the admin configuration surface of Sticky Meta: defining a metadata **ent
    **Name** and **Matching expression**.
 3. With both fields empty, observe the **OK** button.
 4. Type the name only, observe **OK**.
-5. Enter the matching expression `semtype=molecule`. Click **OK**.
+5. Enter the matching expression `source=PW_SM1_<suffix>`. Click **OK**.
 
 **Expected**
 

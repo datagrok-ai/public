@@ -97,7 +97,9 @@ export class WasmPca {
  * Stateful PLS1 wrapper. The EDA `_partialLeastSquareRegression…`
  * adapter assembles the `WASM_OUTPUT_IDX` array (prediction,
  * regr_coeffs, T, U, P, q) from these getters; `regression_coefficients`
- * are already in raw space when stats are set.
+ * are already in raw space when stats are set. `weights`, `vip`,
+ * `explained_variance` and `x_explained_variance` are additional
+ * projection diagnostics, outside that array.
  */
 export class WasmPls {
     free(): void;
@@ -140,6 +142,18 @@ export class WasmPls {
      * Y-scores `U`, flat `A × n_rows`.
      */
     uScores(): Float64Array;
+    /**
+     * Variable importance in projection, length `m`.
+     */
+    vip(): Float64Array;
+    /**
+     * Weights `W`, flat `A × m`.
+     */
+    weights(): Float64Array;
+    /**
+     * Cumulative explained variance of `X` per feature, flat `A × m`.
+     */
+    xExplainedVariance(): Float64Array;
     /**
      * X-loadings `P`, flat `A × m`.
      */
@@ -218,6 +232,9 @@ export interface InitOutput {
     readonly wasmpls_setFeatureStats: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number];
     readonly wasmpls_tScores: (a: number) => [number, number, number, number];
     readonly wasmpls_uScores: (a: number) => [number, number, number, number];
+    readonly wasmpls_vip: (a: number) => [number, number, number, number];
+    readonly wasmpls_weights: (a: number) => [number, number, number, number];
+    readonly wasmpls_xExplainedVariance: (a: number) => [number, number, number, number];
     readonly wasmpls_xLoadings: (a: number) => [number, number, number, number];
     readonly wasmpls_yLoadings: (a: number) => [number, number, number, number];
     readonly wasmsoftmax_fit: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];

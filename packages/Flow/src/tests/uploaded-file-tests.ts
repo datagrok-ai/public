@@ -1,7 +1,5 @@
-/** Local-file uploads: the pending-bytes registry (drop → node without a
- *  server round-trip), the `readUploadedFile` node function, persistence to
- *  the server's GUID-addressed file store on save, and the creation-script
- *  round-trip. The server tests need a live stand. */
+/** Local-file uploads: the pending-bytes registry, the `readUploadedFile` node function,
+ *  server persistence, and the creation-script round-trip. Server tests need a live stand. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
@@ -55,6 +53,32 @@ category('Flow: uploaded files', () => {
     expect(df.name, 'demo data', 'name derived from the file name');
   });
 
+  test('parseFileToDataFrame parses sdf through the registered file handler', async () => {
+    const bytes = await grok.dapi.files.readAsBytes('System:AppData/Chem/mol1K.sdf');
+    const df = await parseFileToDataFrame('mol1K.sdf', bytes);
+    expect(df.rowCount > 0, true, 'rows parsed from the sdf');
+    expect(df.columns.length > 0, true, 'columns parsed from the sdf');
+    expect(df.name, 'mol1K', 'name derived from the file name');
+  });
+
+  test('an uploaded sdf runs through the Uploaded File node function', async () => {
+    const bytes = await grok.dapi.files.readAsBytes('System:AppData/Chem/mol1K.sdf');
+    const id = addPendingFile('mol1K.sdf', bytes);
+    try {
+      const df = await readUploadedFile(id, 'mol1K.sdf');
+      expect(df.rowCount > 0, true, 'rows parsed from the pending sdf');
+    } finally {
+      removePendingFile(id);
+    }
+  });
+
+  test('OpenFile opens a server sdf by path (the Open File node contract)', async () => {
+    const df: DG.DataFrame = await grok.functions.call('OpenFile',
+      {fullPath: 'System:AppData/Chem/mol1K.sdf'});
+    expect(df != null, true, 'OpenFile returned a table');
+    expect(df.rowCount > 0, true, 'rows parsed from the sdf');
+  });
+
   test('readUploadedFile serves pending bytes with no server round-trip', async () => {
     const id = addPendingFile('pending.csv', csvBytes());
     try {
@@ -90,9 +114,7 @@ category('Flow: uploaded files', () => {
     try {
       expect(isPendingFileId(fi.id), false, 'persisted id is a real server id');
       expect(getPendingFile(id) == null, true, 'pending entry consumed');
-      // The author must see the entity they just created (files_service.dart
-      // adds connection-less files to the author's project) — permission sync
-      // depends on this.
+      // files_service.dart adds connection-less files to the author's project — permission sync depends on this.
       expect(entity != null, true, 'FileInfo entity visible to its author');
 
       const bytes = await grok.dapi.files.readAsBytes(fi.id);
@@ -111,7 +133,6 @@ category('Flow: uploaded files', () => {
     const fi = await persistPendingFile(pid);
     let script: DG.Script | null = null;
     try {
-      // A minimal flow whose only node reads the uploaded file.
       const e = makeEditor();
       let body: string;
       try {
@@ -127,8 +148,7 @@ category('Flow: uploaded files', () => {
       }
       expect(uploadedFileIdsFromFlowBody(body).join(','), fi.id, 'body parser finds the file id');
 
-      // Save the flow entity, share it with All users, run the sync the
-      // flowShareSync autostart performs on d4-entity-shared.
+      // Run the sync the flowShareSync autostart performs on d4-entity-shared.
       script = await grok.dapi.scripts.save(DG.Script.create(body));
       const allUsers = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
       await grok.dapi.permissions.grant(script, allUsers, false);

@@ -46,12 +46,12 @@ General:
 | **Data** | | |
 | Show Filtered Out Lines | boolean | Whether the filtered out values are shown. See also *Filtered Out Line Color* |
 | Transformation | string |  |
-| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
+| Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == 'Medium', `${RACE}`.endsWith('sian') |
 | Table | string |  |
-| **Value** | | |
+| **Y Axis** | | |
 | Column Names | list | Columns to use |
 | Log Columns Column Names | list | Columns where logarithmic axis is used. Should be a subset of *Column Names*. |
-| Normalize Each Column | boolean | Determines the way a value is mapped to the vertical scale. TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units FALSE: uses the same scale. This lets you compare values across columns if units are the same (for instance, use it for tracking change over time).'' |
+| Normalize Each Column | boolean | Determines the way a value is mapped to the vertical scale. TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units FALSE: uses the same scale. This lets you compare values across columns if units are the same (for instance, use it for tracking change over time).' |
 | **Color** | | |
 | Color Column Name | string |  |
 | Color Map | string | Categorical coloring time unit map function (applicable to dates only). |
@@ -60,6 +60,17 @@ General:
 | Invert Color Scheme | boolean |  |
 | Color Min | number |  |
 | Color Max | number |  |
+| **Box Plot** | | |
+| Density Style | string |  |
+| Show Interquartile Range | boolean |  |
+| Show Upper Dash | boolean |  |
+| Show Lower Dash | boolean |  |
+| Show Mean Cross | boolean |  |
+| Show Median | boolean |  |
+| Show Circles | boolean |  |
+| Whisker Line Width | number |  |
+| Interquartile Line Width | number |  |
+| Bins | number |  |
 | **Selection** | | |
 | Show Current Line | boolean |  |
 | Show Mouse Over Line | boolean |  |
@@ -79,14 +90,12 @@ General:
 | Show Min Max | boolean |  |
 | Show Labels | boolean |  |
 | Horz Margin | number |  |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
 | Title | string |  |
 | Description | string | Viewer description that gets shown at the *Descriptor Position*. Markup is supported. |
-| Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
+| Help | string | Help to be shown when user clicks on the '?' icon on top. Could either be in markdown, or a URL (starting with '/' or 'http'). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
 | **Style** | | |
@@ -99,20 +108,12 @@ General:
 | Min Max Orientation | textorientation |  |
 | Axis Font | string |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column's color coding is used. |
 | Whisker Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
-| **Box Plot** | | |
-| Density Style | string |  |
-| Show Interquartile Range | boolean |  |
-| Show Upper Dash | boolean |  |
-| Show Lower Dash | boolean |  |
-| Show Mean Cross | boolean |  |
-| Show Median | boolean |  |
-| Show Circles | boolean |  |
-| Whisker Line Width | number |  |
-| Interquartile Line Width | number |  |
-| Bins | number |  |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
 | **Description** | | |
 | Show Title | boolean |  |
 

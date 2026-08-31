@@ -106,6 +106,23 @@ export namespace funcs {
   }
 
   /**
+   * Add the PLS-based multivariate analysis results to the table.
+   * @param {number} components - Number of latent factors the model extracts from the predictors.
+   * @param {boolean} isQuadratic - Include squared terms as additional predictors.
+   * @param {boolean} componentsOnly - Add just the PLS components.
+   */
+  export async function multivariateAnalysisTransform(table: DG.DataFrame , featureNames: any , predict: DG.Column , components: number , isQuadratic: boolean , componentsOnly: boolean , xScoreNames: any , yScoreNames: any , predictionName: string , analysisTableName: string , explVarTableName: string ): Promise<void> {
+    return await grok.functions.call('EDA:MultivariateAnalysisTransform', { table, featureNames, predict, components, isQuadratic, componentsOnly, xScoreNames, yScoreNames, predictionName, analysisTableName, explVarTableName });
+  }
+
+  /**
+   * Restore the multivariate analysis model viewer.
+   */
+  export async function mvaModelInitFunction(viewer: any ): Promise<void> {
+    return await grok.functions.call('EDA:MvaModelInitFunction', { viewer });
+  }
+
+  /**
    * Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.
    */
   export async function demoMultivariateAnalysis(): Promise<void> {
@@ -251,6 +268,35 @@ export namespace funcs {
 
   export async function isApplicableXGBooster(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
     return await grok.functions.call('EDA:IsApplicableXGBooster', { df, predictColumn });
+  }
+
+  /**
+   * @param {string} kernel - Kernel function: linear, polynomial, RBF (radial basis function), or sigmoid.
+   *   choices: ["Linear","Polynomial","RBF","Sigmoid"]
+   * @param {number} cost - Penalty for misclassifying training points. Higher values fit the training data more tightly and risk overfitting, lower values give a smoother, more general model.
+   * @param {number} gamma - Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels. Leave 0 to use 1/number-of-features.
+   * @param {number} degree - Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.
+   * @param {number} coef0 - Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.
+   * @param {number} epsilon - Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.
+   */
+  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon });
+  }
+
+  /**
+   * Predict the target for a table using a trained support vector machine (SVM) model.
+   * @param {any} model - Trained SVM model to apply.
+   */
+  export async function applySVM(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplySVM', { df, model });
+  }
+
+  export async function isApplicableSVM(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableSVM', { df, predictColumn });
+  }
+
+  export async function isInteractiveSVM(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveSVM', { df, predictColumn });
   }
 
   /**

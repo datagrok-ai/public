@@ -31,6 +31,12 @@ const testsExclude = [
 // and utils/ stay browser-only (Dart client / DOM dependencies).
 const nodeTestDirs = ['dapi', 'dataframe', 'functions', 'bitset', 'valuematcher', 'property', 'stats', 'shell'];
 
+// Sibling packages whose tests join this suite, so the sweep covers more than
+// the platform API — DBTests contributes read-only Postgres queries through grok_connect.
+// Each package resolves its own copy of the test library, so their categories land in a
+// different registry object and have to be merged into the one this runner filters.
+const extraTestPackages = ['DBTests'];
+
 // 'functional': run every loaded test (UI-dependent ones self-skip via skipReason);
 // 'stress': only stressTest-marked tests — the concurrency-sweep baseline.
 // Defaults to 'stress': `grok stresstest` (the nightly Stress-Tests baseline) invokes
@@ -47,6 +53,12 @@ async function main(): Promise<void> {
     // named exports through cjs-module-lexer instead of failing at link time.
     const { startDatagrok } = await import('datagrok-api/datagrok');
     await startDatagrok({apiUrl, apiToken});
+    // Bind datagrok-api/{dg,grok,ui} to the runtime objects startDatagrok() just produced,
+    // so every test file shares one copy of the js-api classes. Must precede any test-file
+    // import. Same module instance the --import already loaded.
+    const loader = await import(pathToFileURL(
+        join(dirname(fileURLToPath(import.meta.url)), '..', 'node-test-loader', 'register.mjs')).href);
+    loader.bindRuntimeGlobals();
     _package = await grok.dapi.packages.filter('shortName = "ApiTests"').first();
     if (!_package)
         throw new Error('ApiTests package should be installed.');
@@ -221,6 +233,19 @@ async function loadTestFiles(): Promise<void> {
                     console.error(`❌ Failed to load ${dir}/${baseName} (its tests will not run): ${e?.message ?? e}`);
                 }
             }
+        }
+    }
+    const {tests} = await import('@datagrok-libraries/test/src/test');
+    for (const pkg of extraTestPackages) {
+        try {
+            const entry = pathToFileURL(join(srcDir, '..', '..', pkg, 'src', 'package-test.ts')).href;
+            const loaded: any = await import(entry);
+            const added = Object.keys(loaded.tests ?? {});
+            Object.assign(tests, loaded.tests);
+            console.log(`Loaded ${added.length} categories from ${pkg}: ${added.join(', ')}`);
+        } catch (e: any) {
+            loadFailures.push(pkg);
+            console.error(`❌ Failed to load ${pkg} (its tests will not run): ${e?.message ?? e}`);
         }
     }
 }

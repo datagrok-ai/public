@@ -377,6 +377,104 @@ function tryParseJson(s: string): any {
   try { return JSON.parse(s); } catch { return null; }
 }
 
+export type PackageOpStatus = 'installed' | 'noop' | 'error';
+
+export interface PackageOpResult {
+  package: string;
+  version: string;
+  status: PackageOpStatus;
+  id?: string;
+  note?: string;
+  error?: string;
+}
+
+export class NodePackagesDataSource extends NodeHttpDataSource {
+  constructor(client: NodeApiClient) { super(client, 'packages'); }
+
+  /** GET /packages (internal API) — includes publishedVersions and repository. */
+  async listFull(text?: string): Promise<any[]> {
+    return this.client.get(`/packages${buildQuery({text})}`);
+  }
+
+  /** Resolve by UUID, name, or friendlyName (case-insensitive). Returns null when
+      not found so callers can pass the raw string through and let the server's own
+      'Package not found' surface. */
+  async resolve(idOrName: string): Promise<any> {
+    const all: any[] = await this.listFull();
+    if (UUID_RE.test(idOrName))
+      return all.find((p) => p?.id === idOrName) ?? null;
+    const want = idOrName.toLowerCase();
+    const matches = all.filter((p) =>
+      (p?.name ?? '').toLowerCase() === want || (p?.friendlyName ?? '').toLowerCase() === want);
+    if (matches.length > 1) {
+      const list = matches.map((p) => `  ${p.id}  ${p.name}`).join('\n');
+      throw new Error(`Multiple packages match '${idOrName}':\n${list}\nUse the ID to disambiguate.`);
+    }
+    return matches[0] ?? null;
+  }
+
+  /** Install/activate via the DeployPackageVersion server func: pulls the version
+      from the package repository (npm) when needed, then makes it current.
+      'latest' marks the package for server-side auto-update. Synchronous — returns
+      the new published-package id, or null when nothing changed. */
+  async install(name: string, desiredVersion: string = 'latest'): Promise<string | null> {
+    const result = await new NodeFuncsDataSource(this.client, 'functions')
+      .run('DeployPackageVersion', {name, desiredVersion});
+    const value = (result && typeof result === 'object') ? (result.result ?? result.id ?? null) : result;
+    const text = typeof value === 'string' ? value.replace(/^"|"$/g, '') : '';
+    return text && text !== 'null' ? text : null;
+  }
+
+  async uninstall(idOrName: string): Promise<{id: string; name: string; repoBacked: boolean}> {
+    const pkg = await this.resolve(idOrName);
+    if (!pkg)
+      throw new Error(`Package '${idOrName}' not found`);
+    await this.client.del(`/packages/${encodeURIComponent(pkg.id)}`);
+    return {id: pkg.id, name: pkg.name, repoBacked: !!pkg.repository};
+  }
+
+  async versions(idOrName: string): Promise<any[]> {
+    const pkg = await this.resolve(idOrName);
+    if (!pkg)
+      throw new Error(`Package '${idOrName}' not found`);
+    return Array.isArray(pkg.publishedVersions) ? pkg.publishedVersions : [];
+  }
+
+  async outdated(): Promise<Array<{name: string; installed: string; latest: string; desiredVersion: string}>> {
+    const all: any[] = await this.listFull();
+    const rows: Array<{name: string; installed: string; latest: string; desiredVersion: string}> = [];
+    for (const p of all) {
+      const versions: any[] = Array.isArray(p?.publishedVersions) ? p.publishedVersions : [];
+      // isLocal is not reliably serialized, so 'installed' = has a current non-debug version
+      const current = versions.find((v) => v?.isCurrent && !v?.debug);
+      const latest = versions.find((v) => v?.isLatest);
+      // Numeric compare so locally published builds (1.2.3.X-suffix) don't count
+      // as outdated against an equal or older registry version.
+      if (current && latest && NodePackagesDataSource.compareVersions(latest.version, current.version) > 0)
+        rows.push({name: p.name, installed: current.version, latest: latest.version, desiredVersion: p.desiredVersion ?? ''});
+    }
+    return rows;
+  }
+
+  /** Compare the leading numeric dot-groups of two version strings (suffixes like
+      '.X-4e32bb91' are ignored): positive when a > b. */
+  static compareVersions(a: string, b: string): number {
+    const nums = (s: string) => (String(s).match(/^\d+(\.\d+)*/)?.[0] ?? '').split('.').map(Number);
+    const av = nums(a), bv = nums(b);
+    for (let i = 0; i < Math.max(av.length, bv.length); i++) {
+      const d = (av[i] ?? 0) - (bv[i] ?? 0);
+      if (d !== 0) return d;
+    }
+    return 0;
+  }
+
+  /** The public API has no DELETE for packages — route to the internal endpoint. */
+  async delete(idOrEntity: string | {id?: string}): Promise<void> {
+    const id = typeof idOrEntity === 'string' ? idOrEntity : (idOrEntity?.id ?? '');
+    await this.client.del(`/packages/${encodeURIComponent(id)}`);
+  }
+}
+
 export class NodeFilesDataSource {
   constructor(private client: NodeApiClient) {}
 
@@ -471,7 +569,7 @@ export class NodeDapi {
   get connections(): NodeConnectionsDataSource { return new NodeConnectionsDataSource(this.client); }
   get queries(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'queries'); }
   get scripts(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'scripts'); }
-  get packages(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'packages'); }
+  get packages(): NodePackagesDataSource { return new NodePackagesDataSource(this.client); }
   get reports(): NodeHttpDataSource { return new NodeHttpDataSource(this.client, 'reports'); }
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
   get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }

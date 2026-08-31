@@ -1,0 +1,750 @@
+/* Every component a dg-ui/1 spec can build, with the prop metadata that validates specs and feeds
+   manifest.json. Left out: components whose options are functions (list, tree, combobox, dialog,
+   toolbar, async view). */
+import {Signal} from '../core/signals.js';
+import {Control} from '../core/component.js';
+import {button, divH, divV, panel, type Text} from '../core/elements.js';
+import {buttonWithIcon} from '../components/actions/buttons.js';
+import {icon, IconVariant} from '../components/display/icon.js';
+import {Input, InputOptions, LiveOption} from '../core/input-base.js';
+import {TextInput, TextArea} from '../components/inputs/text-input.js';
+import {BoolInput} from '../components/inputs/bool-input.js';
+import {NumberInput} from '../components/inputs/number-input.js';
+import {ChoiceInput, MultiChoiceInput} from '../components/inputs/choice-input.js';
+import {SliderInput} from '../components/inputs/slider-input.js';
+import {RangeSlider} from '../components/inputs/range-slider.js';
+import {RadioInput} from '../components/inputs/radio-input.js';
+import {ColorInput} from '../components/inputs/color-input.js';
+import {ListInput} from '../components/inputs/list-input.js';
+import {MapInput} from '../components/inputs/map-input.js';
+import {QNum} from '../core/qnum.js';
+import {QNumInput} from '../components/inputs/qnum-input.js';
+import {FontInput} from '../components/inputs/font-input.js';
+import {ImageInput} from '../components/inputs/image-input.js';
+import {IconInput} from '../components/inputs/icon-input.js';
+import {Form} from '../components/forms/form.js';
+import type {FormLayout} from '../components/forms/form.js';
+import {Section} from '../components/containers/section.js';
+import {Splitter} from '../components/containers/splitter.js';
+import {Accordion} from '../components/containers/accordion.js';
+import {Card} from '../components/containers/card.js';
+import {StatCard} from '../components/display/stat-card.js';
+import {TabStrip, TabStripOptions} from '../components/containers/tabs.js';
+import {PropertyGrid, PropDescriptor} from '../components/forms/property-grid.js';
+import {Breadcrumbs} from '../components/navigation/breadcrumbs.js';
+import {StateSource} from '../sources/state.js';
+import {registerDataSources} from '../sources/registrations.js';
+import {ComponentMeta, SpecPropMeta, Registry, registry as globalRegistry} from './registry.js';
+import {childProp} from './spec.js';
+import type {SpecNode} from './spec.js';
+
+type Props = Record<string, unknown>;
+type Child = Control | HTMLElement;
+
+/** A bound `value` arrives as the context signal itself, so the input adopts it instead of copying:
+ * no bridge, no echo, and the spec's two-way contract holds through every edit. */
+function inputOptions<T>(props: Props): InputOptions<T> {
+  const value = props.value;
+  const bound = value instanceof Signal;
+  return {
+    label: props.label as LiveOption<string> | undefined,
+    name: props.name as string | undefined,
+    inline: props.inline as boolean | undefined,
+    postfix: props.postfix as LiveOption<string> | undefined,
+    tooltipText: props.tooltipText as LiveOption<string> | undefined,
+    enabled: props.enabled as LiveOption<boolean> | undefined,
+    value: bound ? undefined : value as T,
+    bind: bound ? value as Signal<T> : undefined,
+  };
+}
+
+/** A bound `items` list follows its signal instead of being copied once — how a data source feeds
+ * a picker (`bind: {"items": "$.people.names"}`). One-way: the list is data, not an edit. */
+function boundItems(input: Control & {setItems(items: string[]): void}, items: unknown): void {
+  if (items instanceof Signal)
+    input.effect(() => input.setItems(items.value as string[] ?? []));
+}
+
+function itemList(items: unknown): string[] {
+  return (items instanceof Signal ? items.peek() : items) as string[] ?? [];
+}
+
+function inputProps(value: string, ...extra: SpecPropMeta[]): SpecPropMeta[] {
+  // chrome is live-bindable one-way (UB-10); `name` and `inline` are structural and stay re-render
+  return [
+    {name: 'label', type: 'string', bindable: true},
+    {name: 'name', type: 'string', description: 'Stable key for forms and dumps; defaults to the label.'},
+    {name: 'value', type: value, bindable: true, twoWay: true},
+    {name: 'inline', type: 'bool', description: 'Compact one-row variant without a label.'},
+    {name: 'postfix', type: 'string', bindable: true,
+      description: 'Units or a short suffix shown after the editor.'},
+    {name: 'tooltipText', type: 'string', bindable: true},
+    {name: 'enabled', type: 'bool', bindable: true,
+      description: 'false grays the input out and blocks edits.'},
+    ...extra,
+  ];
+}
+
+function element(child: Child): HTMLElement {
+  return Control.is(child) ? child.root : child;
+}
+
+/** The title a container reads off its child's spec node — the one prop a parent owns. */
+function childTitle(node: SpecNode | undefined, fallback: string): string {
+  const title = childProp(node, 'title');
+  return typeof title === 'string' ? title : fallback;
+}
+
+function childIcon(node: SpecNode | undefined): string | undefined {
+  const icon = childProp(node, 'icon');
+  return typeof icon === 'string' && icon !== '' ? icon : undefined;
+}
+
+function tabStrip(props: Props): TabStripOptions {
+  return {
+    orientation: props.orientation === 'vertical' ? 'vertical' : 'horizontal',
+    variant: props.variant === 'document' ? 'document' : 'platform',
+  };
+}
+
+function splitter(props: Props, children: Child[]): Splitter {
+  return new Splitter(children.map(element), {
+    direction: props.direction === 'vertical' ? 'vertical' : 'horizontal',
+    sizes: props.sizes as number[] | undefined,
+    minSize: props.minSize as number | undefined,
+  });
+}
+
+function card(props: Props, children: Child[]): Card {
+  return new Card({
+    title: props.title as string | undefined,
+    subtitle: props.subtitle as string | undefined,
+    icon: props.icon as string | undefined,
+    media: props.media as string | undefined,
+    clickable: props.clickable as boolean | undefined,
+    selectable: props.selectable as boolean | undefined,
+    selected: props.selected as boolean | Signal<boolean> | undefined,
+    children: children.map(element),
+  });
+}
+
+function section(props: Props, children: Child[]): Section {
+  const s = new Section({
+    title: (props.title as Text | undefined) ?? '',
+    expanded: props.expanded as boolean | Signal<boolean> | undefined,
+    collapsible: props.collapsible as boolean | undefined,
+  });
+  return s.add(...children.map(element));
+}
+
+function container(tag: string, create: () => HTMLElement, description: string): ComponentMeta {
+  return {
+    tag,
+    category: 'Containers',
+    create: (props) => {
+      const el = create();
+      const cls = props.cls as string | undefined;
+      if (cls)
+        el.classList.add(...cls.split(' ').filter((c) => c));
+      return new Control(el);
+    },
+    description,
+    props: [{name: 'cls', type: 'string', description: 'Extra layout class.'}],
+    acceptsChildren: true,
+    example: {tag, children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
+  };
+}
+
+const METAS: ComponentMeta[] = [
+  {
+    tag: 'u2-text-input',
+    category: 'Inputs',
+    create: (props) => new TextInput({
+      ...inputOptions<string>(props),
+      placeholder: props.placeholder as LiveOption<string> | undefined,
+      search: props.search as boolean | undefined,
+      password: props.password as boolean | undefined,
+      autoResize: props.autoResize as boolean | undefined,
+    }),
+    description: 'Single-line text editor with validation.',
+    usage: 'With `search: true` this is the filter box; in a platform view the main filter belongs ' +
+      'in the view ribbon (`appView({ribbon})`), not inside the content area.',
+    props: inputProps('string',
+      {name: 'placeholder', type: 'string', bindable: true},
+      {name: 'search', type: 'bool', description: 'Magnifier affordance plus a clear button.'},
+      {name: 'password', type: 'bool', description: 'Masked field with an eye toggle.'},
+      {name: 'autoResize', type: 'bool', description: 'Width follows the text between 100 and 300px.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-text-input', props: {label: 'Name', value: 'Aspirin'}},
+  },
+  {
+    tag: 'u2-text-area',
+    category: 'Inputs',
+    create: (props) => new TextArea({
+      ...inputOptions<string>(props),
+      placeholder: props.placeholder as LiveOption<string> | undefined,
+      autoGrow: props.autoGrow as boolean | undefined,
+    }),
+    description: 'Multi-line text editor.',
+    props: inputProps('string',
+      {name: 'placeholder', type: 'string', bindable: true},
+      {name: 'autoGrow', type: 'bool', description: 'Grows with the text instead of scrolling.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-text-area', props: {label: 'Description', placeholder: 'Up to 40 characters'}},
+  },
+  {
+    tag: 'u2-bool-input',
+    category: 'Inputs',
+    create: (props) => new BoolInput({
+      ...inputOptions<boolean>(props),
+      switch: props.switch as boolean | undefined,
+    }),
+    description: 'Checkbox or switch.',
+    props: inputProps('bool', {name: 'switch', type: 'bool', description: 'Compact toggle instead of a checkbox.'}),
+    events: ['change'],
+    example: {tag: 'u2-bool-input', props: {label: 'Active', value: true, switch: true}},
+  },
+  {
+    tag: 'u2-number-input',
+    category: 'Inputs',
+    create: (props) => new NumberInput({
+      ...inputOptions<number | null>(props),
+      mode: props.mode as 'int' | 'float' | undefined,
+      min: props.min as number | undefined,
+      max: props.max as number | undefined,
+      step: props.step as number | undefined,
+      slider: props.slider as boolean | undefined,
+      clicker: props.clicker as boolean | undefined,
+      spinner: props.spinner as boolean | undefined,
+    }),
+    description: 'Numeric editor; text that does not parse or falls outside min/max stays on ' +
+      'screen and only marks the input invalid.',
+    props: inputProps('double',
+      {name: 'mode', type: 'string', choices: ['int', 'float'], description: '"int" or "float" (default).'},
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: 'Spinner, clicker and arrow-key increment; 1 by default.'},
+      {name: 'slider', type: 'bool',
+        description: 'Range control under the box, revealed on hover; needs both bounds.'},
+      {name: 'clicker', type: 'bool',
+        description: '− / + buttons on the options rail, revealed on hover.'},
+      {name: 'spinner', type: 'bool', description: 'Hover spinner inside the field.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-number-input', props: {label: 'Amount', value: 10, min: 0, max: 100}},
+  },
+  {
+    tag: 'u2-choice-input',
+    category: 'Inputs',
+    create: (props) => {
+      const input = new ChoiceInput({
+        ...inputOptions<string | null>(props),
+        items: itemList(props.items),
+        nullable: props.nullable as boolean | undefined,
+      });
+      boundItems(input, props.items);
+      return input;
+    },
+    description: 'Single choice over a native select.',
+    props: inputProps('string',
+      {name: 'items', type: 'string_list', bindable: true},
+      {name: 'nullable', type: 'bool', description: 'Offers an empty option; true by default.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    events: ['change'],
+    example: {tag: 'u2-choice-input', props: {label: 'Series', items: ['a', 'b', 'c'], value: 'b'}},
+  },
+  {
+    tag: 'u2-multi-choice-input',
+    category: 'Inputs',
+    create: (props) => {
+      const input = new MultiChoiceInput({
+        ...inputOptions<string[]>(props),
+        items: itemList(props.items),
+        emptyText: props.emptyText as string | undefined,
+        showSummaryCheckbox: props.showSummaryCheckbox as boolean | undefined,
+      });
+      boundItems(input, props.items);
+      return input;
+    },
+    description: 'Checkbox list; the value holds the checked items in item order.',
+    props: inputProps('string_list', {name: 'items', type: 'string_list', bindable: true},
+      {name: 'emptyText', type: 'string', description: 'Stands in for an empty list; \'No items\' by default.'},
+      {name: 'showSummaryCheckbox', type: 'bool',
+        description: 'Tri-state "<N> of <M>" summary row that toggles all/none; the list collapses on click.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    events: ['change'],
+    example: {tag: 'u2-multi-choice-input', props: {label: 'Tags', items: ['acid', 'base'], value: ['acid']}},
+  },
+  {
+    tag: 'u2-button',
+    category: 'Actions',
+    create: (props) => {
+      const text = (props.text as string | undefined) ?? '';
+      const primary = props.primary === true;
+      const name = props.icon;
+      return new Control(typeof name === 'string' && name !== '' ?
+        buttonWithIcon(text, name, () => {}, {primary}) : button(text, () => {}, {primary}));
+    },
+    description: 'Push button; `on: {"click": "cmd:<name>"}` runs a context command.',
+    props: [
+      {name: 'text', type: 'string'},
+      {name: 'primary', type: 'bool', description: 'Accent styling for the main action.'},
+      {name: 'icon', type: 'string', inputType: 'Icon',
+        description: 'Font Awesome icon name shown before the text.'},
+    ],
+    defaults: {text: 'Button'},
+    events: ['click'],
+    example: {tag: 'u2-button', props: {text: 'Save', primary: true}, on: {click: 'cmd:save'}},
+  },
+  container('u2-panel', panel, 'Padded vertical container.'),
+  container('u2-div-v', divV, 'Vertical stack.'),
+  container('u2-div-h', divH, 'Horizontal row.'),
+  {
+    tag: 'u2-splitter',
+    category: 'Containers',
+    create: (props) => splitter(props, []),
+    createWithChildren: (props, children) => splitter(props, children),
+    description: 'Resizable panels separated by draggable sashes; every spec child becomes a panel.',
+    usage: 'Master-detail layouts (list left, details right): see the entity-browser recipe. In a ' +
+      'platform view, consider handing details to the context panel (`grok.shell.o`) instead of a pane.',
+    props: [
+      {name: 'direction', type: 'string', choices: ['horizontal', 'vertical'],
+        description: '"horizontal" (default) or "vertical".'},
+      {name: 'sizes', type: 'object', description: 'Fraction per panel, normalized; equal shares by default.'},
+      {name: 'minSize', type: 'double', description: 'Smallest panel size in pixels; 60 by default.'},
+    ],
+    acceptsChildren: true,
+    defaults: {direction: 'horizontal'},
+    // two, not one: a single-panel splitter has no sash to drag and is a panel with extra steps
+    defaultChildren: [{tag: 'u2-panel'}, {tag: 'u2-panel'}],
+    designerActions: [{name: 'Add panel',
+      produce: () => ({op: 'add-child', node: {tag: 'u2-panel'}})}],
+    example: {tag: 'u2-splitter', props: {direction: 'horizontal', sizes: [0.3, 0.7]}, children: [
+      {tag: 'u2-panel', children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
+      {tag: 'u2-panel', children: [{tag: 'u2-text-area', props: {label: 'Notes'}}]},
+    ]},
+  },
+  {
+    tag: 'u2-accordion',
+    category: 'Containers',
+    create: () => new Accordion(),
+    createWithChildren: (_props, children, nodes) => {
+      const accordion = new Accordion();
+      for (let i = 0; i < children.length; i++)
+        accordion.addPane(childTitle(nodes[i], `Pane ${i + 1}`), element(children[i]), false, childIcon(nodes[i]));
+      return accordion;
+    },
+    description: 'Independently expanding panes, one per spec child; the child node carries the pane title.',
+    props: [],
+    childProps: [
+      {name: 'title', type: 'string', description: 'Pane title; numbered when absent.'},
+      {name: 'icon', type: 'string', inputType: 'Icon',
+        description: 'Font Awesome icon name shown before the title.'},
+    ],
+    acceptsChildren: true,
+    defaultChildren: [{tag: 'u2-panel', props: {title: 'Pane 1'}}],
+    designerActions: [{name: 'Add pane', produce: (node) => ({op: 'add-child',
+      node: {tag: 'u2-panel', props: {title: `Pane ${(node.children?.length ?? 0) + 1}`}}})}],
+    example: {tag: 'u2-accordion', children: [
+      {tag: 'u2-panel', props: {title: 'General'}, children: [{tag: 'u2-text-input', props: {label: 'Name'}}]},
+      {tag: 'u2-panel', props: {title: 'Advanced'}, children: [{tag: 'u2-bool-input', props: {label: 'Active'}}]},
+    ]},
+  },
+  {
+    tag: 'u2-section',
+    category: 'Containers',
+    create: (props) => section(props, []),
+    createWithChildren: (props, children) => section(props, children),
+    description: 'One collapsible titled section: a form-category-styled header whose hover ' +
+      'chevron sits left of the caption; clicking the header folds the body.',
+    usage: 'For grouping form fields or page content under a heading. Inputs inside a ' +
+      'u2-section child of a u2-form are adopted by the section, not the form — they do not ' +
+      'join the form\'s label column. A managed pane set belongs in u2-accordion.',
+    props: [
+      {name: 'title', type: 'string', bindable: true},
+      {name: 'expanded', type: 'bool', bindable: true, twoWay: true},
+      {name: 'collapsible', type: 'bool',
+        description: 'false renders a plain heading and body — no chevron, no click.'},
+    ],
+    acceptsChildren: true,
+    defaults: {title: 'Section'},
+    example: {tag: 'u2-section', props: {title: 'Study'}, children: [
+      {tag: 'u2-choice-input', props: {label: 'Country', items: ['USA', 'France']}},
+    ]},
+  },
+  {
+    tag: 'u2-tabs',
+    category: 'Containers',
+    create: (props) => new TabStrip(tabStrip(props)),
+    createWithChildren: (props, children, nodes) => {
+      const tabs = new TabStrip(tabStrip(props));
+      for (let i = 0; i < children.length; i++) {
+        tabs.addTab({id: `tab-${i}`, label: childTitle(nodes[i], `Tab ${i + 1}`), icon: childIcon(nodes[i]),
+          content: element(children[i])});
+      }
+      if (typeof props.activeTab === 'string')
+        tabs.activeTab.value = props.activeTab;
+      return tabs;
+    },
+    // a re-render (a bound pane title following its source) keeps the user's tab; an explicit
+    // activeTab — literal or bound — stays the document's to decide
+    carry: (node, prev, next) => {
+      if (node.props?.activeTab !== undefined || node.bind?.activeTab !== undefined ||
+          !(prev instanceof TabStrip) || !(next instanceof TabStrip))
+        return;
+      const active = prev.activeTab.peek();
+      const index = active !== null && active.startsWith('tab-') ? Number(active.slice(4)) : NaN;
+      if (index < (node.children?.length ?? 0))
+        next.activeTab.value = active;
+    },
+    description: 'Tab strip with one tab per spec child; the child node carries the tab label.',
+    props: [
+      {name: 'orientation', type: 'string', choices: ['horizontal', 'vertical'],
+        description: '"horizontal" (default) or "vertical" — a header column on the left.'},
+      {name: 'variant', type: 'string', choices: ['platform', 'document'],
+        description: '"platform" (default) is the ui.tabControl look; "document" the IDE document-tab skin.'},
+      {name: 'activeTab', type: 'string', bindable: true, twoWay: true,
+        description: 'Id of the selected tab (spec children get tab-0, tab-1, …).'},
+    ],
+    childProps: [
+      {name: 'title', type: 'string', description: 'Tab label; numbered when absent.'},
+      {name: 'icon', type: 'string', inputType: 'Icon',
+        description: 'Font Awesome icon name shown before the title.'},
+    ],
+    acceptsChildren: true,
+    defaults: {orientation: 'horizontal', variant: 'platform'},
+    defaultChildren: [{tag: 'u2-panel', props: {title: 'Tab 1'}}],
+    designerActions: [{name: 'Add tab', produce: (node) => ({op: 'add-child',
+      node: {tag: 'u2-panel', props: {title: `Tab ${(node.children?.length ?? 0) + 1}`}}})}],
+    example: {tag: 'u2-tabs', children: [
+      {tag: 'u2-panel', props: {title: 'Data', icon: 'table'},
+        children: [{tag: 'u2-text-input', props: {label: 'Table'}}]},
+      {tag: 'u2-panel', props: {title: 'Style'}, children: [{tag: 'u2-bool-input', props: {label: 'Legend'}}]},
+    ]},
+  },
+  {
+    tag: 'u2-form',
+    category: 'Containers',
+    create: (props) => new Form({
+      layout: props.layout as FormLayout | undefined,
+      captionAlign: props.captionAlign as LiveOption<'right' | 'left'> | undefined,
+    }),
+    adopt: (parent, child) => {
+      const form = parent as Form;
+      if (child instanceof Input)
+        form.add(child);
+      else
+        form.addElement(element(child));
+    },
+    description: 'Vertical input layout: spec children that are inputs join the form and share its ' +
+      'label column, validity and Enter navigation; anything else renders as a plain row in place.',
+    usage: 'Labels share a left column and values stay left-aligned — never center form content. ' +
+      'For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building.',
+    props: [
+      {name: 'layout', type: 'string', choices: ['auto', 'normal', 'wide', 'tall'],
+        description: '"auto" (default) picks wide or tall by fit — editors fill the row while ' +
+          'the label column plus the minimum editor width fit, captions move above when they ' +
+          'do not; "normal" never switches; "wide" stretches editors across the row; "tall" ' +
+          'puts captions above their editors.'},
+      {name: 'captionAlign', type: 'string', choices: ['right', 'left'], bindable: true,
+        description: 'Caption alignment in caption-left layouts; right is the platform default.'},
+    ],
+    acceptsChildren: true,
+    defaults: {layout: 'auto'},
+    example: {tag: 'u2-form', children: [
+      {tag: 'u2-text-input', props: {label: 'Name'}},
+      {tag: 'u2-number-input', props: {label: 'Amount', value: 1}},
+    ]},
+  },
+  {
+    tag: 'u2-property-grid',
+    category: 'Display',
+    create: (props) => {
+      const grid = new PropertyGrid();
+      grid.setProperties((props.properties as PropDescriptor[]) ?? [],
+        (props.values as Record<string, unknown>) ?? {});
+      return grid;
+    },
+    description: 'Two-column property editor over a JSON descriptor list.',
+    usage: 'For editing a live object that carries Property metadata, prefer `propertyForm` — this ' +
+      'grid is for descriptor-driven settings panels.',
+    props: [
+      {name: 'properties', type: 'object',
+        description: 'Row descriptors: name, type (string/int/double/bool/choice/string_list), ' +
+          'category, choices, min, max, description, readonly.'},
+      {name: 'values', type: 'object', description: 'Initial value per property name.'},
+    ],
+    example: {tag: 'u2-property-grid', props: {
+      properties: [{name: 'Title', type: 'string'}, {name: 'Rows', type: 'int', min: 0}],
+      values: {Title: 'Demo', Rows: 20},
+    }},
+  },
+  {
+    tag: 'u2-icon',
+    category: 'Display',
+    create: (props) => new Control(icon((props.name as string | undefined) ?? 'question',
+      {variant: props.variant as IconVariant | undefined,
+        size: props.size as 'small' | 'medium' | 'large' | undefined})),
+    description: 'A Font Awesome icon.',
+    props: [
+      {name: 'name', type: 'string', inputType: 'Icon', description: 'Font Awesome icon name.'},
+      {name: 'variant', type: 'string', choices: ['light', 'regular', 'solid', 'brands'],
+        description: 'Face; light by default, brands picked on its own for a brand name.'},
+      {name: 'size', type: 'string', choices: ['small', 'medium', 'large']},
+    ],
+    defaults: {name: 'star'},
+    example: {tag: 'u2-icon', props: {name: 'flask', size: 'large'}},
+  },
+  {
+    tag: 'u2-breadcrumbs',
+    category: 'Display',
+    create: (props) => new Breadcrumbs({items: (props.items as string[]) ?? []}),
+    description: 'Path bar that collapses its middle segments when it overflows.',
+    usage: 'For navigation within your own view. The shell already renders the view\'s own ' +
+      'breadcrumb from its name/path — don\'t duplicate it.',
+    props: [{name: 'items', type: 'string_list'}],
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    events: ['click'],
+    designerActions: [{name: 'Add item', produce: (node) => {
+      const items = (node.props?.items ?? []) as string[];
+      return {op: 'set-prop', name: 'items', value: [...items, `Item ${items.length + 1}`]};
+    }}],
+    example: {tag: 'u2-breadcrumbs', props: {items: ['Home', 'Projects', 'Demo']}},
+  },
+  {
+    tag: 'u2-slider-input',
+    category: 'Inputs',
+    create: (props) => new SliderInput({
+      ...inputOptions<number | null>(props),
+      min: props.min as number | undefined,
+      max: props.max as number | undefined,
+      step: props.step as number | undefined,
+    }),
+    description: 'Bare range track; the value shows in a tooltip on hover and while dragging.',
+    usage: 'For a value that is only meaningful within known bounds. When the exact number matters ' +
+      'too, use `u2-number-input` — it carries the slider as an option.',
+    props: inputProps('double',
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: '(max - min) / 100 by default.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-slider-input', props: {label: 'Opacity', value: 50, min: 0, max: 100}},
+  },
+  {
+    tag: 'u2-range-slider',
+    category: 'Inputs',
+    create: (props) => new RangeSlider({
+      min: props.min as number | undefined,
+      max: props.max as number | undefined,
+      step: props.step as number | undefined,
+      minRange: props.minRange as number | undefined,
+      vertical: props.vertical as boolean | undefined,
+      lo: props.lo as number | Signal<number> | undefined,
+      hi: props.hi as number | Signal<number> | undefined,
+    }),
+    description: 'Two-handle range selector: drag a handle to move one end, the band between ' +
+      'them to move the whole window.',
+    usage: 'For picking an interval within known bounds — filters, zoom windows, thresholds ' +
+      'with a low and a high end. A single number belongs in `u2-slider-input`.',
+    props: [
+      {name: 'lo', type: 'double', bindable: true, twoWay: true,
+        description: 'Lower end of the selected range.'},
+      {name: 'hi', type: 'double', bindable: true, twoWay: true,
+        description: 'Upper end of the selected range.'},
+      {name: 'min', type: 'double'},
+      {name: 'max', type: 'double'},
+      {name: 'step', type: 'double', description: 'Snap increment for dragging; continuous when absent.'},
+      {name: 'minRange', type: 'double', description: 'Smallest allowed hi − lo; 0 by default.'},
+      {name: 'vertical', type: 'bool', description: 'Bottom-to-top track.'},
+    ],
+    defaults: {min: 0, max: 100, lo: 20, hi: 60},
+    events: ['input', 'change'],
+    example: {tag: 'u2-range-slider', props: {min: 0, max: 100, lo: 20, hi: 60}},
+  },
+  {
+    tag: 'u2-radio-input',
+    category: 'Inputs',
+    create: (props) => new RadioInput({
+      ...inputOptions<string | null>(props),
+      items: (props.items as string[]) ?? [],
+      buttons: props.buttons as boolean | undefined,
+      itemTooltips: props.itemTooltips as Record<string, string> | undefined,
+    }),
+    description: 'Radio group over native radios; one item at a time.',
+    usage: 'For three to five always-visible options. Above that use `u2-choice-input`.',
+    props: inputProps('string',
+      {name: 'items', type: 'string_list'},
+      {name: 'buttons', type: 'bool', description: 'Raised-button variant instead of radio dots.'},
+      {name: 'itemTooltips', type: 'object', description: 'Hover text per item.'}),
+    defaults: {items: ['Item 1', 'Item 2', 'Item 3']},
+    events: ['change'],
+    example: {tag: 'u2-radio-input', props: {label: 'Stage', items: ['Discovery', 'Preclinical'],
+      value: 'Discovery'}},
+  },
+  {
+    tag: 'u2-color-input',
+    category: 'Inputs',
+    create: (props) => new ColorInput({
+      ...inputOptions<string>(props),
+      swatchOnly: props.swatchOnly as boolean | undefined,
+    }),
+    description: 'Hex field plus a swatch that opens the browser color picker.',
+    props: inputProps('string',
+      {name: 'swatchOnly', type: 'bool', description: 'Swatch alone, no hex field.'}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-color-input', props: {label: 'Color', value: '#1f77b4'}},
+  },
+  {
+    tag: 'u2-icon-input',
+    category: 'Inputs',
+    create: (props) => new IconInput(inputOptions<string>(props)),
+    description: 'Font Awesome icon name, picked from a searchable grid of every icon the platform ships.',
+    props: inputProps('string').map((p) => p.name === 'value' ? {...p, inputType: 'Icon'} : p),
+    events: ['input', 'change'],
+    example: {tag: 'u2-icon-input', props: {label: 'Icon', value: 'star'}},
+  },
+  {
+    tag: 'u2-list-input',
+    category: 'Inputs',
+    create: (props) => new ListInput({
+      ...inputOptions<string[]>(props),
+      placeholder: props.placeholder as LiveOption<string> | undefined,
+    }),
+    description: 'Comma-separated list; items carrying a comma are quoted. Expands to a textarea.',
+    props: inputProps('string_list', {name: 'placeholder', type: 'string', bindable: true}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-list-input', props: {label: 'Synonyms', value: ['ASA', '2-acetoxybenzoic acid']}},
+  },
+  {
+    tag: 'u2-map-input',
+    category: 'Inputs',
+    create: (props) => new MapInput(inputOptions<Record<string, string>>(props)),
+    description: 'Key/value rows with per-row add and remove; duplicate keys are invalid, and a ' +
+      'row with an empty key stays out of the value.',
+    props: inputProps('object'),
+    events: ['input', 'change'],
+    example: {tag: 'u2-map-input', props: {label: 'Params', value: {solvent: 'DMSO'}}},
+  },
+  {
+    tag: 'u2-qnum-input',
+    category: 'Inputs',
+    create: (props) => new QNumInput({
+      ...inputOptions<number | null>(props),
+      placeholder: props.placeholder as LiveOption<string> | undefined,
+    }),
+    description: 'Qualified number editor — "<5.2", "10", ">1e3". The value is the packed double ' +
+      'the platform stores for a qnum: the qualifier rides in the two lowest mantissa bits.',
+    usage: 'For measurements reported against a detection limit. A plain number belongs in ' +
+      '`u2-number-input` — this editor spends two bits of precision on the qualifier.',
+    props: inputProps('double', {name: 'placeholder', type: 'string', bindable: true}),
+    events: ['input', 'change'],
+    example: {tag: 'u2-qnum-input', props: {label: 'IC50', value: QNum.less(5.2)}},
+  },
+  {
+    tag: 'u2-font-input',
+    category: 'Inputs',
+    create: (props) => new FontInput({
+      ...inputOptions<string>(props),
+      families: props.families as string[] | undefined,
+      sizes: props.sizes as number[] | undefined,
+    }),
+    description: 'Font editor over the platform font string — size box with presets, bold and ' +
+      'italic toggles, family select.',
+    usage: 'For the "<weight> <style> <size>px <family>" strings viewer looks carry; anything ' +
+      'else that needs a font belongs in CSS.',
+    props: inputProps('string',
+      {name: 'families', type: 'string_list', description: 'Families on offer; four defaults otherwise.'},
+      {name: 'sizes', type: 'object', description: 'Sizes in the popup under the size box.'}),
+    events: ['change'],
+    example: {tag: 'u2-font-input', props: {label: 'Font', value: 'bold normal 14px "Roboto"'}},
+  },
+  {
+    tag: 'u2-image-input',
+    category: 'Inputs',
+    create: (props) => new ImageInput({
+      ...inputOptions<string>(props),
+      alt: props.alt as string | undefined,
+    }),
+    description: 'Image preview by URL or data URL; the REMOVE link appears on hover and clears it.',
+    props: inputProps('string', {name: 'alt', type: 'string', description: 'Alternative text.'}),
+    events: ['change'],
+    example: {tag: 'u2-image-input', props: {label: 'Logo', value: 'https://datagrok.ai/img/logo.svg'}},
+  },
+  {
+    tag: 'u2-card',
+    category: 'Containers',
+    create: (props) => card(props, []),
+    createWithChildren: (props, children) => card(props, children),
+    description: 'Surface with optional header (title, subtitle, icon, actions), media image, body and footer.',
+    usage: 'For dashboard tiles and item previews; a card grid is a collection of these. ' +
+      'A KPI number belongs in `u2-stat-card`; a plain padded area in a panel.',
+    props: [
+      {name: 'title', type: 'string'},
+      {name: 'subtitle', type: 'string'},
+      {name: 'icon', type: 'string', inputType: 'Icon'},
+      {name: 'media', type: 'string', description: 'Image URL shown above the body.'},
+      {name: 'clickable', type: 'bool', description: 'The whole card acts as a button.'},
+      {name: 'selectable', type: 'bool', description: 'Click toggles the selection ring.'},
+      {name: 'selected', type: 'bool', bindable: true, twoWay: true},
+    ],
+    acceptsChildren: true,
+    events: ['click'],
+    defaults: {title: 'Card'},
+    example: {tag: 'u2-card', props: {title: 'Aspirin', subtitle: 'NSAID'},
+      children: [{tag: 'p', props: {text: 'Acetylsalicylic acid, 180.16 g/mol.'}}]},
+  },
+  {
+    tag: 'u2-stat-card',
+    category: 'Display',
+    create: (props) => new StatCard({
+      label: (props.label as string) ?? '',
+      value: props.value as string | Signal<string | number | undefined> | undefined,
+      delta: props.delta as number | Signal<number | undefined> | undefined,
+      deltaInverted: props.deltaInverted as boolean | undefined,
+      icon: props.icon as string | undefined,
+    }),
+    description: 'KPI card: large formatted value, label, optional up/down delta and icon.',
+    usage: 'For dashboard metrics. Bind `value` to a source output for live numbers; ' +
+      'loading states come from the source, not from this card.',
+    props: [
+      {name: 'label', type: 'string'},
+      {name: 'value', type: 'string', bindable: true,
+        description: 'Literal values are strings ("1.2M"); a bound signal may hold a number, formatted by the card.'},
+      {name: 'delta', type: 'double', bindable: true,
+        description: 'Fractional change; 0.12 renders "+12%" in the success color.'},
+      {name: 'deltaInverted', type: 'bool', description: 'Negative is good (error rates).'},
+      {name: 'icon', type: 'string', inputType: 'Icon'},
+    ],
+    defaults: {label: 'Metric', value: '0'},
+    example: {tag: 'u2-stat-card', props: {label: 'Revenue', value: '1.2M', delta: 0.12, icon: 'chart-line'}},
+  },
+  {
+    tag: 'u2-state',
+    category: 'Data',
+    visual: false,
+    createComponent: (props) => new StateSource({type: props.type as string, initial: props.initial}),
+    description: 'A value the form owns: one writable signal several controls share.',
+    usage: 'For a draft, a flag or a selection that outlives no single control — anything two ' +
+      'nodes must agree on. Data that comes from somewhere belongs in a source, not here.',
+    props: [
+      {name: 'type', type: 'string',
+        choices: ['string', 'int', 'double', 'bool', 'string_list', 'object'],
+        description: 'What the value holds; `initial` is checked against it.'},
+      {name: 'initial', type: 'object', description: 'The value it starts at, and what `clear` ' +
+        'returns it to; the type\'s empty value otherwise.'},
+    ],
+    defaults: {type: 'string'},
+    example: {tag: 'u2-state', name: 'draft', props: {type: 'string', initial: ''}},
+  },
+];
+
+const registered = new WeakSet<Registry>();
+
+/** Idempotent per registry — the gallery, the manifest script and tests all call it freely. */
+export function registerAll(reg: Registry = globalRegistry): void {
+  if (registered.has(reg))
+    return;
+  registered.add(reg);
+  for (const meta of METAS)
+    reg.register(meta);
+  registerDataSources(reg);
+}

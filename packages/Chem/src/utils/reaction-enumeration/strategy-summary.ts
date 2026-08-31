@@ -5,7 +5,7 @@ import {PerRoundOverride} from './enumerate';
 import {
   CHANGED_DOT_STYLE, clampRounds, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode,
   MODE_LABEL, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
-} from './enumerator-app';
+} from './shared';
 
 export interface StrategySummaryDeps {
   getConfig: () => EnumeratorConfig;
@@ -19,10 +19,8 @@ export interface StrategySummaryDeps {
   overrideCountFor: (overrides: PerRoundOverride[] | undefined, mode: Mode, r: number, key: DataKey) => number | null;
 }
 
-/** Right-tab recap for the "How to combine" section: mode, round-by-round chain per component,
- * and the product-count estimate with its caveats. Gives Strategy its own relevant content instead
- * of leaving whatever data grid was last shown; refreshed from refreshCfgRibbon(), same trigger as
- * the ribbon chips and accordion subtitles. */
+/** Right-tab recap for the "How to combine" section: mode, round-by-round chain per component, and
+ * the product-count estimate with its caveats. */
 export class StrategySummary {
   readonly panel: HTMLElement;
   private readonly host: HTMLElement;
@@ -42,14 +40,11 @@ export class StrategySummary {
     const tDf = this.deps.templatesInput.value;
     const bDf = this.deps.bbsInput.value;
     const mode = this.deps.currentMode();
-    // Raw (not clamped) so the displayed number can't drift from what's literally typed — see
-    // currentRounds()'s own doc comment. displayRounds below is the clamped value that actually
-    // drives the per-round rows; see clampRounds() for why that clamp exists.
+    // Raw for display (so the number matches what's typed), clamped for the per-round row loop.
     const rounds = this.deps.currentRounds();
     const displayRounds = clampRounds(rounds);
     const n = estimateProductCount(tDf, bDf);
 
-    // Per-round subset overrides, computed once and shared by every per-component section below.
     const overrides = this.deps.buildPerRoundOverrides(config);
     const overrideCount = (r: number, key: DataKey): number | null =>
       this.deps.overrideCountFor(overrides, mode, r, key);
@@ -58,12 +53,12 @@ export class StrategySummary {
     card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`,
       {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '10px'}}));
     if (rounds > MAX_ROUNDS) {
-      card.appendChild(ui.divText(`Showing the first ${MAX_ROUNDS} rounds — Number of rounds is capped at ${MAX_ROUNDS}.`,
+      card.appendChild(ui.divText(
+        `Showing the first ${MAX_ROUNDS} rounds — Number of rounds is capped at ${MAX_ROUNDS}.`,
         {style: {fontSize: '11px', color: 'var(--grey-5)', marginBottom: '8px'}}));
     }
 
     if (tDf && bDf) {
-      // One section per component, each listing what every round uses.
       const componentSection = (
         title: string, total: number, key: DataKey,
       ): HTMLElement => {
@@ -87,7 +82,6 @@ export class StrategySummary {
       card.appendChild(componentSection('Reactions', tDf.rowCount, 'templates'));
       card.appendChild(componentSection('Building blocks', bDf.rowCount, 'buildingBlocks'));
 
-      // Reagents mode has a third data source just as central to the round math — show it too.
       const rDf = this.deps.reagentsInput.value;
       if (mode === 'reagents' && rDf)
         card.appendChild(componentSection('Reagents', rDf.rowCount, 'reagents'));
@@ -100,8 +94,7 @@ export class StrategySummary {
       card.appendChild(ui.divText(`≈ ${n.toLocaleString('en-US')} estimated products`,
         {style: {marginTop: '12px', fontWeight: 'bold', fontSize: '13px', color: 'var(--blue-2)'}}));
 
-      // The estimate above is a naive multiplication — flag when active filters/limits (vs.
-      // platform defaults) would actually shrink the real output.
+      // The estimate is a naive multiplication — flag anything that would shrink the real output.
       const changedFilters = (combChanged ? 1 : 0) + prodChangedCount;
       const xDf = this.deps.exclusionInput.value;
       const hasExclusion = !!xDf && xDf.rowCount > 0;
@@ -113,7 +106,7 @@ export class StrategySummary {
         const caveatEl = ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
           {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}});
         if (changedFilters > 0) {
-          // inline-block so the dot flows with the text instead of centering against the wrapped block.
+          // inline-block so the dot flows with the text instead of centering on the wrapped block.
           const dot = ui.span([], {style: {...CHANGED_DOT_STYLE, display: 'inline-block', marginRight: '6px'}});
           caveatEl.prepend(dot);
         }

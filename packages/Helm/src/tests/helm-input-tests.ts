@@ -70,16 +70,16 @@ category('HelmInput', () => {
     }
   });
 
-  test('default size is 250x250', async () => {
+  test('default size is 306x250', async () => {
     // `ui.input.helmAsync` with no `editorOptions` should render a compact
     // 250×250 box, NOT stretch to the form row or fall back to hwe's 400×100.
     const helmInput = await ui.input.helmAsync('Macromolecule');
-    helmInput.stringValue = 'PEPTIDE1{[meY].A.G.T}$$$$';
+    helmInput.stringValue = 'PEPTIDE1{[meY].A.G.T.T.T.T.T.T.T.T.T.T.T.T}$$$$';
     const dlg = ui.dialog('Helm Input Default Size').add(helmInput).show();
     try {
       await delay(500);
       const host = helmInput.getInput();
-      expect(Math.abs(host.clientWidth - 250) <= 4, true, `default width ~250 (was ${host.clientWidth})`);
+      expect(Math.abs(host.clientWidth - 306) <= 4, true, `default width ~306 (was ${host.clientWidth})`);
       expect(Math.abs(host.clientHeight - 250) <= 4, true, `default height ~250 (was ${host.clientHeight})`);
     } finally {
       dlg.close();

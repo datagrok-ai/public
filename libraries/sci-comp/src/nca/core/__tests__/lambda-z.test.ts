@@ -280,3 +280,58 @@ describe('numerical stability', () => {
     expect(r.rSquared).toBe(1); // exactly two points → perfect fit
   });
 });
+
+describe('spanRatio', () => {
+  it('reports the window length in half-lives (exact on a t½ = 1 profile)', () => {
+    // k = ln2 → t½ = 1 exactly, so spanRatio degenerates to (tEnd − tStart)
+    // and the expected value needs no floating-point derivation.
+    const {time, conc} = exponential(5, Math.LN2, 1);
+    const r = lambdaZManual(time, conc, Int32Array.of(0, 1, 2, 3, 4))!;
+    expect(r).not.toBeNull();
+    expect(Math.abs(r.lambdaZ - Math.LN2)).toBeLessThan(1e-12);
+    expect(r.tStart).toBe(0);
+    expect(r.tEnd).toBe(4);
+    expect(Math.abs(r.spanRatio - 4)).toBeLessThan(1e-12);
+  });
+
+  it('matches its definition (tEnd − tStart)/(LN2/λz) on a best-fit result', () => {
+    const {time, conc} = exponential(10, 0.25, 1);
+    const blqMask = new Uint8Array(10);
+    const r = lambdaZBestFit(time, conc, blqMask, 0, DEFAULT_STRATEGY)!;
+    expect(r).not.toBeNull();
+    const halfLife = Math.LN2 / r.lambdaZ;
+    expect(Math.abs(r.spanRatio - (r.tEnd - r.tStart) / halfLife)).toBeLessThan(1e-12);
+    expect(r.spanRatio).toBeGreaterThan(0);
+  });
+
+  it('is NaN for a non-decaying manual fit (no half-life for a window to span)', () => {
+    const time = new Float64Array([0, 1, 2, 3]);
+    const conc = new Float64Array([5, 5, 5, 5]);
+    const r = lambdaZManual(time, conc, Int32Array.of(0, 1, 2, 3))!;
+    expect(Math.abs(r.lambdaZ)).toBe(0);
+    expect(Number.isNaN(r.spanRatio)).toBe(true);
+  });
+
+  it('minSpanRatio does NOT change window selection — the Variant-A contract', () => {
+    // THIS ASSERTION IS THE CONTRACT. `minSpanRatio` is a diagnostic threshold
+    // only: it must never discard a candidate, never return null, never alter
+    // which window wins. `1e6` is the adversarial case — a threshold no real fit
+    // can clear, which a candidate-discarding implementation would use to reject
+    // everything and return null.
+    const {time, conc} = exponential(10, 0.25, 1);
+    const blqMask = new Uint8Array(10);
+    const off = lambdaZBestFit(time, conc, blqMask, 0, DEFAULT_STRATEGY)!;
+    expect(off).not.toBeNull();
+
+    for (const minSpanRatio of [2, 1e6]) {
+      const on = lambdaZBestFit(time, conc, blqMask, 0,
+        {...DEFAULT_STRATEGY, minSpanRatio});
+      expect(on).not.toBeNull();
+      expect(on!.lambdaZ).toBe(off.lambdaZ);
+      expect(on!.tStart).toBe(off.tStart);
+      expect(on!.tEnd).toBe(off.tEnd);
+      expect(on!.spanRatio).toBe(off.spanRatio);
+      expect(Array.from(on!.pointsUsed)).toEqual(Array.from(off.pointsUsed));
+    }
+  });
+});

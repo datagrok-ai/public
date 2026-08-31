@@ -4,50 +4,46 @@ import {z} from 'zod/v4';
 import type {ToolInputs, McpInputs, ToolName, McpName, ClientToolDef} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
+import {buildCliEnv, ProviderInfo} from './broker/provider-env';
 import type {Verifier} from './verify';
 import type {GroundingGate} from './grounding';
 import {buildSystemPrompt} from './prompts';
 
 // ---------------------------------------------------------------------------
-// Workspace access guard — PreToolUse hook blocking absolute /workspace paths
+// Filesystem access guard — PreToolUse hook blocking absolute /workspace paths
+// and everything under /users except the session user's own directory
 // ---------------------------------------------------------------------------
 
-const USER_WORKSPACE_PATTERN = /\/users\/[\w.-]+\/workspace/g;
-const WORKSPACE_ACCESS_PATTERN = /\/workspace(?:[/"'\s\\]|$)/;
+const USER_DIR_PATTERN = /\/users(?:\/[\w.-]+)?/g;
+const PARENT_DIR_PATTERN = /(?<![\w.])\.\.(?![\w.])/;
+const WORKSPACE_ACCESS_PATTERN = /\/workspace(?![\w.-])/;
 
-const blockWorkspaceAccess: HookCallback = async (input) => {
-  if (input.hook_event_name !== 'PreToolUse')
-    return {continue: true};
-  const inputStr = JSON.stringify(input.tool_input ?? '');
-  const stripped = inputStr.replace(USER_WORKSPACE_PATTERN, '');
-  if (WORKSPACE_ACCESS_PATTERN.test(stripped)) {
-    console.log(`PreToolUse: blocked /workspace reference in ${input.tool_name}`);
-    return {
-      decision: 'block',
-      reason: 'Direct access to /workspace is blocked. Use cwd-relative `workspace/...` paths (e.g. `workspace/packages/Chem/...`) instead.',
-    };
-  }
-  return {continue: true};
-};
+export function makeAccessGuard(userDir?: string): HookCallback {
+  return async (input) => {
+    if (input.hook_event_name !== 'PreToolUse')
+      return {continue: true};
+    const inputStr = JSON.stringify(input.tool_input ?? '');
+    const foreign = [...inputStr.matchAll(USER_DIR_PATTERN)].find((m) => m[0] !== userDir)?.[0];
+    // For a keyed session the only legitimate workspace is the user's own /users/<id>/workspace —
+    // with it removed, any remaining /workspace reference (the shared clone) is a violation.
+    const outsideOwn = userDir ? inputStr.split(userDir + '/workspace').join('') : '';
+    const reason = foreign ?
+      `Access to ${foreign} is blocked — you may only access your own directory${userDir ? ` (${userDir})` : ''}.` :
+      PARENT_DIR_PATTERN.test(inputStr) ?
+        'Parent-directory (`..`) path segments are blocked — use paths inside the current directory.' :
+        WORKSPACE_ACCESS_PATTERN.test(outsideOwn) ?
+          'Direct access to /workspace is blocked — use cwd-relative `workspace/...` paths instead.' :
+          null;
+    if (!reason)
+      return {continue: true};
+    console.log(`PreToolUse: blocked in ${input.tool_name}: ${reason}`);
+    return {decision: 'block', reason};
+  };
+}
 
 // ---------------------------------------------------------------------------
 // URL plumbing — container-to-host rewrites and MCP request headers
 // ---------------------------------------------------------------------------
-
-export function rewriteForDocker(url: string): string {
-  return url.replace('//localhost', '//host.docker.internal');
-}
-
-function buildMcpHeaders(apiKey?: string, apiUrl?: string): Record<string, string> {
-  const headers: Record<string, string> = {};
-  if (apiKey) {
-    headers['Authorization'] = apiKey;
-    headers['x-user-api-key'] = apiKey;
-  }
-  if (apiUrl)
-    headers['x-datagrok-api-url'] = apiUrl;
-  return headers;
-}
 
 export function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
   const idx = mcpUrl.indexOf('/docker/containers/proxy/');
@@ -161,7 +157,8 @@ export function createBrowserExecServer(awaitInput: AwaitInput) {
         'never list entities as plain text, markdown links, or a fenced block.',
         {entities: z.array(entityRefSchema).describe(
           'Array of entity refs. Each entry: ' +
-          'type (file|script|query|connection|project|space|group|user) or the raw #type string from the MCP result — the tool normalizes it; ' +
+          'type (file|script|query|connection|project|space|group|user) or the raw #type string ' +
+          'from the MCP result — the tool normalizes it; ' +
           'name (for users, use friendlyName); ' +
           'id (required for all types except file); ' +
           'connector + path (required for files; connector is the connection name, e.g. "System:DemoFiles"); ' +
@@ -195,10 +192,10 @@ function zodShapeFromJsonSchema(schema: any): Record<string, z.ZodType> {
   for (const [key, p] of Object.entries<any>(schema?.properties ?? {})) {
     let t: z.ZodType =
       p?.type === 'string' ? (Array.isArray(p.enum) && p.enum.length ? z.enum(p.enum) : z.string()) :
-      p?.type === 'number' || p?.type === 'integer' ? z.number() :
-      p?.type === 'boolean' ? z.boolean() :
-      p?.type === 'array' ? z.array(z.any()) :
-      z.any();
+        p?.type === 'number' || p?.type === 'integer' ? z.number() :
+          p?.type === 'boolean' ? z.boolean() :
+            p?.type === 'array' ? z.array(z.any()) :
+              z.any();
     if (p?.description)
       t = t.describe(p.description);
     if (!required.has(key))
@@ -236,7 +233,7 @@ export function createViewToolsServer(awaitInput: AwaitInput, tools: ClientToolD
 // ---------------------------------------------------------------------------
 
 function buildMcpServers(
-  browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string,
+  browserExecServer: ReturnType<typeof createBrowserExecServer>, datagrokMcpUrl?: string,
   viewToolsServer?: ReturnType<typeof createViewToolsServer>,
 ): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
@@ -245,22 +242,21 @@ function buildMcpServers(
   if (viewToolsServer)
     servers['datagrok-view'] = viewToolsServer;
 
-  const mcpUrl = mcpServerUrl || '';
-  if (mcpUrl) {
-    const apiUrl = apiUrlFromMcpUrl(mcpUrl);
-    servers['datagrok'] = {
-      type: 'http' as const,
-      url: mcpUrl,
-      headers: buildMcpHeaders(apiKey, apiUrl),
-    };
-  }
+  if (datagrokMcpUrl)
+    servers['datagrok'] = {type: 'http' as const, url: datagrokMcpUrl};
 
   return Object.keys(servers).length > 0 ? servers : undefined;
 }
 
+const TURN_LIMITS = {
+  full: {maxTurns: 100, maxBudgetUsd: 2.5},
+  bash: {maxTurns: 10, maxBudgetUsd: 0.25},
+};
+
 export function buildOptions(
   browserExecServer: ReturnType<typeof createBrowserExecServer>,
-  resume?: string, apiKey?: string, mcpServerUrl?: string,
+  providerInfo: ProviderInfo,
+  resume?: string, datagrokMcpUrl?: string,
   systemPromptMode?: string, userDir?: string,
   model?: ClaudeModel,
   forkSession?: boolean, resumeAt?: string,
@@ -269,7 +265,7 @@ export function buildOptions(
   viewToolsServer?: ReturnType<typeof createViewToolsServer>,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
-  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, viewToolsServer);
+  const mcpServers = buildMcpServers(browserExecServer, datagrokMcpUrl, viewToolsServer);
   // Bash and 'none' modes are minimal — no output-format skills, no reasoning. Full-prompt turns
   // get thinking + higher effort so the "ground answers in sources, don't answer from memory" rule
   // has a deliberation step to fire in (see DATAGROK_PROMPT) before the model commits an answer.
@@ -290,24 +286,27 @@ export function buildOptions(
     'AskUserQuestion', 'Skill'];
   return {
     systemPrompt,
+    env: buildCliEnv(providerInfo),
     tools: BUILTIN_TOOLS,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
     ...(fullMode ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
     strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
+    ...TURN_LIMITS[fullMode ? 'full' : 'bash'],
     model: model ?? ClaudeModel.Sonnet,
     effort: fullMode ? 'high' as const : 'low' as const,
     thinking: fullMode ? {type: 'enabled' as const, budgetTokens: 1500} : {type: 'disabled' as const},
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
-      PreToolUse: [{hooks: [blockWorkspaceAccess]}],
+      PreToolUse: [{hooks: [makeAccessGuard(userDir)]}],
       ...(postToolHooks.length ? {PostToolUse: [{hooks: postToolHooks}]} : {}),
       ...(stopHooks.length ? {Stop: [{hooks: stopHooks}]} : {}),
     },
     // Only the turn after an abort forks (off resumeAt); normal turns resume in place.
-    ...(resume ? {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
+    ...(resume ?
+      {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
   };
 }
 
@@ -344,7 +343,8 @@ const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
   datagrok_platform: domainSummary('platform'),
   datagrok_exec: (_i) => 'Execute in browser',
   datagrok_verify: (i) => `Verify: ${i.description ?? 'action outcome'}`,
-  datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
+  datagrok_show_entities: (i) =>
+    `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,
 };
 
 export function toolSummary(name: string, input: Record<string, unknown>): string {

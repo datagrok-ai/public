@@ -38,8 +38,11 @@ note at the top of this file — and is not present in this CI folder.
 
 ## Fixtures and naming
 
-- All test-created schemas and entity types use the prefix **`PW_SM_`** plus a unique suffix
-  (e.g. timestamp), so parallel runs and leftover state never collide.
+- All test-created schemas and entity types use a **per-file prefix** (`PW_SM1_` for
+  `01-schema-and-type`, `PW_SM2_` for `02-add-and-edit`, `PW_SM3_` for
+  `03-persistence-copy-delete`) plus a unique suffix, so parallel runs and leftover state never
+  collide. Each spec sweeps only its own prefix — the files run in different workers, and a
+  sweep over a shared prefix deletes the schema a sibling spec is using.
 - Scenarios that need a molecule-matching schema create their own (matching expression
   `semtype=molecule`) — they do **not** depend on a pre-seeded `TestSchema1`.
 - Datasets are opened from `System:DemoFiles/...` (e.g. `SPGI.csv`, which has a `Structure`

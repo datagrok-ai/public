@@ -15,7 +15,7 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import Sketcher = DG.chem.Sketcher;
-import {FuncCallParamsEditor, MessageFuncCallEditor} from './analysis/func-call-params-editor';
+import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
 import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
   from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
@@ -107,7 +107,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
-import {isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {getMpoScoreColumnName, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -630,9 +630,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Descriptors...',
+    'top-menu': 'Chem | Calculate | Descriptors (RDKit)...',
     'name': 'Chemical Descriptors',
-    'description': 'Calculates molecular descriptors for the molecules column',
+    'description': 'Calculates molecular descriptors for the molecules column using RDKit',
     'editor': 'Chem:DescriptorsEditor',
   })
   static async descriptorsDocker(
@@ -1897,6 +1897,32 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    'top-menu': 'Chem | Transform | Flatten Molecules...',
+    'name': 'Flatten Molecules',
+    'description': 'Removes stereochemistry from molecules and adds a column with flat SMILES.',
+    'meta': {'role': 'transform'},
+  })
+  static async flattenMolecules(
+    data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    const res = await (await chemCommonRdKit.getRdKitService()).flattenMolecules(molecules.toList());
+    if (overwrite) {
+      molecules.init((i) => res[i]);
+      molecules.meta.units = DG.UNITS.Molecule.SMILES;
+    } else {
+      const colName = data.columns.getUnusedName(`${molecules.name}_flat`);
+      const col = DG.Column.fromStrings(colName, res);
+      col.meta.units = DG.UNITS.Molecule.SMILES;
+      col.semType = DG.SEMTYPE.MOLECULE;
+      if (!join)
+        return col;
+      data.columns.add(col);
+    }
+  }
+
+  @grok.decorators.func({
     name: 'Convert Notation...',
     meta: {action: 'Convert Notation...'},
   })
@@ -2326,9 +2352,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Chemical Properties...',
-    'name': 'Chemical Properties',
-    'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
+    'name': 'Chemical Properties (OCL)',
+    'description': 'Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'role': 'hitTriageFunction,transform'},
   })
   static async addChemPropertiesColumns(
@@ -3035,7 +3060,7 @@ export class PackageFunctions {
   static mpoCalculate(
     df: DG.DataFrame,
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
-    @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column. The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
+    @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column, e.g. "MPO <profile name>". The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
     @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
   ): DG.DataFrame | null {
@@ -3198,9 +3223,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'Biochemical Properties',
+    'name': 'Chemical Properties',
     'description': 'Dynamically discovers and executes tagged biochemical calculators',
-    'top-menu': 'Chem | Calculate | Biochemical Properties',
+    'top-menu': 'Chem | Calculate | Chemical Properties...',
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
@@ -3452,7 +3477,7 @@ export class PackageFunctions {
       const scoreResult = mpo(
         dataFrame,
         columns,
-        selected.name,
+        getMpoScoreColumnName(selected.name),
         aggregationInput.value as WeightedAggregation,
       );
 
@@ -3468,7 +3493,7 @@ export class PackageFunctions {
           const result = mpo(
             dataFrame,
             columns,
-            selected.name,
+            getMpoScoreColumnName(selected.name),
             aggregationInput.value as WeightedAggregation,
           );
           if (!dataFrame.col(result.scoreColumn.name))

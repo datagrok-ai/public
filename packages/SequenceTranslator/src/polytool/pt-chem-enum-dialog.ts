@@ -36,6 +36,7 @@ import {
 import {_package} from '../package';
 import {getMarkushDefaults} from './pt-chem-enum-settings';
 import {defaultErrorHandler} from '../utils/err-info';
+import {attachMarkushDialogAi, attachMarkushViewAi} from './ai-functions';
 
 const DIALOG_TITLE = 'Markush Enumerator';
 
@@ -949,6 +950,8 @@ export async function polyToolEnumerateChemUI(cell?: DG.Cell): Promise<void> {
       })
       .onOK(async () => { await panel.execute(); });
     panel.bindActionButton(dialog.getButton('OK') as HTMLButtonElement);
+    attachMarkushDialogAi(dialog,
+      {state: panel.state, rdkit, refresh: () => panel.refresh(), execute: () => panel.execute()});
     dialog.show({resizable: true, width: 960});
     const historyButton = dialog.getButton('History') as HTMLButtonElement;
     if (historyButton) {
@@ -990,6 +993,8 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     const view = DG.View.create();
     view.name = DIALOG_TITLE;
     view.box = true;
+    attachMarkushViewAi(view,
+      {state: panel.state, rdkit, refresh: () => panel.refresh(), execute: () => panel.execute()});
     if (panel.ribbonGroups) {
       view.setRibbonPanels(panel.ribbonGroups);
       setTimeout(() => {

@@ -5,7 +5,7 @@ import {resolveHomeConnection, syncHomeFiles} from './home-files';
 import {syncPackages} from './packages';
 import {syncSharedConnections} from './shared-connections';
 import {getInstalledPackages} from '../user/installed-packages';
-import {ensureUserDir, getUserDir} from '../user/user-dir';
+import {userDirs} from '../user/user-dir';
 import {buildStagedWorkspace} from '../user/staged-workspace';
 
 // ── Shared types ───────────────────────────────────────────────────────
@@ -24,8 +24,8 @@ export interface ConnectionInfo {
 }
 
 export interface RemoteFileEntry {
-  path: string;       // relative path from the root dir, e.g. "subdir/file.md"
-  updatedOn: string;  // ISO timestamp from the server
+  path: string; // relative path from the root dir, e.g. "subdir/file.md"
+  updatedOn: string; // ISO timestamp from the server
 }
 
 // Response shape from the Datagrok connectors file-listing API (FileInfo in Dart).
@@ -52,7 +52,7 @@ export async function collectFiles(connId: string, dirPath: string): Promise<Rem
     console.warn(`user-files: failed to list ${dirPath}:`, e.message);
     return [];
   }
-  
+
   if (!Array.isArray(entries))
     return [];
 
@@ -65,9 +65,8 @@ export async function collectFiles(connId: string, dirPath: string): Promise<Rem
     if (!entry.isFile) {
       console.log(`user-files: descending into directory ${rel}`);
       files.push(...await collectFiles(connId, rel));
-    } else {
+    } else
       files.push({path: rel, updatedOn: entry.updatedOn ?? ''});
-    }
   }
   return files;
 }
@@ -103,7 +102,7 @@ export type SyncScope = 'all' | 'user-files' | 'packages' | 'shared';
 export async function syncUserFiles(
   apiUrl: string, apiKey: string, scope: SyncScope = 'all', packageName?: string,
 ): Promise<{dir: string; files: string[]}> {
-  const dir = getUserDir(apiKey);
+  const dir = userDirs.dirFromId(await userDirs.resolveUserId(apiKey, apiUrl));
 
   // scope 'all' = a Claude query is starting (chat, panel, or search — all route
   // through handleMessage). After the first full sync, serve disk immediately and
@@ -145,8 +144,7 @@ export async function syncUserFiles(
   syncInFlight.set(apiKey, promise);
   try {
     return await promise;
-  }
-  finally {
+  } finally {
     if (syncInFlight.get(apiKey) === promise)
       syncInFlight.delete(apiKey);
   }
@@ -155,11 +153,11 @@ export async function syncUserFiles(
 async function doSync(
   apiUrl: string, apiKey: string, scope: SyncScope, packageName?: string,
 ): Promise<{dir: string; files: string[]}> {
-  const dir = getUserDir(apiKey);
-  const userId = path.basename(dir);
+  const userId = await userDirs.resolveUserId(apiKey, apiUrl);
+  const dir = userDirs.dirFromId(userId);
   console.log(`user-files: starting sync for user ${userId} (scope=${scope})`);
 
-  await ensureUserDir(apiKey);
+  await userDirs.ensureDir(apiKey, apiUrl);
 
   let homeConnId: string | null = null;
   if (scope === 'all' || scope === 'user-files') {

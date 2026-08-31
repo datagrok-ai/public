@@ -1,10 +1,14 @@
 {
   "name": "@datagrok-libraries/statistics",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git"
+  },
   "publishConfig": {
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.12.9",
+  "version": "1.12.12",
   "description": "Statistics utilities",
   "author": {
     "name": "Dmytro Kovalyov",

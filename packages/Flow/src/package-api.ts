@@ -166,6 +166,13 @@ export namespace funcs {
   }
 
   /**
+  Sets the current row of the table
+  */
+  export async function setCurrentRow(table: DG.DataFrame , index: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:SetCurrentRow', { table, index });
+  }
+
+  /**
   A reproducible random sample of rows, as a new table
   */
   export async function filterRandomRows(table: DG.DataFrame , count: number , seed: number ): Promise<DG.DataFrame> {
@@ -212,6 +219,13 @@ export namespace funcs {
   */
   export async function unpivot(table: DG.DataFrame , copyColumns: string[] | null, mergeColumns: string[] , categoryColumnName: string , valueColumnName: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:Unpivot', { table, copyColumns, mergeColumns, categoryColumnName, valueColumnName });
+  }
+
+  /**
+  Renders a molecule as a widget. Drawn once on a large square canvas so the preview stays crisp at any size
+  */
+  export async function renderMolecule(molecule: string ): Promise<any> {
+    return await grok.functions.call('Flow:RenderMolecule', { molecule });
   }
 
   export async function viewFlowFile(file: DG.FileInfo ): Promise<DG.View> {

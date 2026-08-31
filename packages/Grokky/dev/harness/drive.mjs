@@ -53,6 +53,7 @@ export class RuntimeDriver {
    * Runs one turn and resolves with everything it observably did.
    * @param prompt        user message
    * @param opts.sessionId    reuse to continue a conversation (resume path)
+   * @param opts.taskId     id of the queued admission task (queue-task.ts)
    * @param opts.model        'haiku' | 'sonnet' | 'opus' — omit for the runtime default
    * @param opts.systemPromptMode  'bash' | 'none' — omit for the full Datagrok prompt
    * @param opts.stubs        per-tool overrides, merged over DEFAULT_STUBS
@@ -64,11 +65,14 @@ export class RuntimeDriver {
     const sessionId = opts.sessionId ?? `drive-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     const stubs = {...DEFAULT_STUBS, ...(opts.stubs ?? {})};
     const timeoutMs = opts.timeoutMs ?? 120_000;
+    // Bounds the wait for the turn to START (queue admission + session spawn); the
+    // patience timer proper only runs from the first sign of execution.
+    const queueTimeoutMs = opts.queueTimeoutMs ?? 900_000;
 
     const started = Date.now();
     const out = {
       sessionId, ok: false, content: '', structured: undefined,
-      ttftMs: null, totalMs: null,
+      ttftMs: null, totalMs: null, queueWaitMs: null, execMs: null,
       tools: [],          // bare tool names, in call order
       execCode: [],       // the JS each datagrok_exec asked the browser to run
       roundTrips: 0,      // browser input_request round-trips
@@ -84,13 +88,25 @@ export class RuntimeDriver {
         clearTimeout(timer);
         this.ws.off('message', onMessage);
         out.totalMs = Date.now() - started;
+        out.execMs = out.totalMs - (out.queueWaitMs ?? 0);
         resolve(Object.assign(out, patch));
       };
 
-      const timer = setTimeout(() => {
+      let timer = setTimeout(() => {
         this.ws.send(JSON.stringify({type: 'abort', sessionId}));
-        finish({error: `turn timed out after ${timeoutMs / 1000}s`});
-      }, timeoutMs);
+        finish({error: `never started within ${queueTimeoutMs / 1000}s (queue)`});
+      }, queueTimeoutMs);
+
+      // First sign of execution ends the queue-wait phase and arms the real patience timer.
+      const markStarted = () => {
+        if (out.queueWaitMs !== null) return;
+        out.queueWaitMs = Date.now() - started;
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          this.ws.send(JSON.stringify({type: 'abort', sessionId}));
+          finish({error: `turn timed out after ${timeoutMs / 1000}s (after start)`});
+        }, timeoutMs);
+      };
 
       const onMessage = (raw) => {
         let m;
@@ -104,19 +120,23 @@ export class RuntimeDriver {
 
         switch (m.type) {
         case 'chunk':
+          markStarted();
           if (out.ttftMs === null) out.ttftMs = Date.now() - started;
           out.content += m.content;
           break;
         case 'tool_activity':
+          markStarted();
           if (m.name) out.tools.push(m.name);
           break;
         case 'queued':
           out.queued = true;
           break;
         case 'revision_start':
+          markStarted();
           out.revision = 'started';
           break;
         case 'input_request': {
+          markStarted();
           out.roundTrips++;
           if (m.toolName === 'datagrok_exec') out.execCode.push(m.input?.code ?? '');
           const stub = stubs[m.toolName];
@@ -152,6 +172,7 @@ export class RuntimeDriver {
         type: 'user_message', sessionId, message: prompt,
         ...(this.apiKey ? {apiKey: this.apiKey} : {}),
         ...(this.mcpServerUrl ? {mcpServerUrl: this.mcpServerUrl} : {}),
+        ...(opts.taskId ? {taskId: opts.taskId} : {}),
         ...(opts.model ? {model: opts.model} : {}),
         ...(opts.systemPromptMode ? {systemPromptMode: opts.systemPromptMode} : {}),
         ...(opts.clientTools?.length ? {clientTools: opts.clientTools} : {}),

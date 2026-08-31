@@ -1,0 +1,108 @@
+/* Skin of the dg file inputs — fileInput, filesInput and rsaInput. Tokens only; css/tokens.css,
+   css/inputs.css, css/buttons.css and css/progress.css must be loaded alongside. */
+.u2-input-editor.u2-file {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  padding: 0;
+  border-bottom: var(--dg-input-border);
+}
+
+.u2-input-editor.u2-file:focus-within {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-file-path {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--dg-space-s);
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+/* the files editor grows down the page, so its rail rides the first row — and carries no underline,
+   since the editor it sits beside has none either (`ui.css:898-901`) */
+.u2-input-root[data-u2='files-input'] .u2-input-box > .u2-input-editor + .u2-input-options {
+  align-self: flex-start;
+  border-bottom: none;
+}
+
+.u2-rsa-upload > .u2-btn > .u2-icon {
+  color: var(--dg-accent);
+}
+
+.u2-file-dropping {
+  background: var(--dg-selection-bg);
+  outline: var(--dg-focus-ring);
+}
+
+.u2-input-editor.u2-files,
+.u2-input-editor.u2-rsa {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--dg-space-s);
+  height: auto;
+  min-height: var(--dg-control-height);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+}
+
+.u2-files-summary {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+  width: 100%;
+}
+
+.u2-files-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+}
+
+.u2-files-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-files-status {
+  flex-shrink: 0;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-files-failed .u2-files-name,
+.u2-files-failed .u2-files-status {
+  color: var(--dg-failure);
+}
+
+.u2-rsa-upload,
+.u2-rsa-masked {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  width: 100%;
+}
+
+.u2-rsa-hint {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-rsa-masked .u2-input-root {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}

@@ -1,5 +1,5 @@
 import {Plate, IPlateWellFilter} from '../../plate';
-import {FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitSeries} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 interface ISeriesData {
   x: number[];

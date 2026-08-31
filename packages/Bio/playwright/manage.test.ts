@@ -4,7 +4,10 @@ sub_features_covered: [bio.detector, bio.manage.libraries-view]
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {acquireMonomerLibLock, releaseMonomerLibLock} from './helpers';
 test.use(specTestOptions);
+test.beforeEach(async () => { await acquireMonomerLibLock(); });
+test.afterEach(() => releaseMonomerLibLock());
 test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
   test.setTimeout(120_000);
   stepErrors.length = 0;

@@ -9,13 +9,15 @@ test.describe.configure({ mode: 'serial' });
 test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ page }) => {
   test.setTimeout(300_000);
 
+  // Prefix is this file's own — see apiDeleteAllTestSchemas.
+  const PREFIX = 'PW_SM2_';
   const suffix = H.uniqueSuffix();
-  const schemaName = `PW_SM_Schema_${suffix}`;
+  const schemaName = `${PREFIX}Schema_${suffix}`;
 
   try {
     await H.gotoHome(page);
     await H.setupEnv(page);
-    await H.apiDeleteAllTestSchemas(page); // defensive: no leftover molecule schema from a crashed run
+    await H.apiDeleteAllTestSchemas(page, PREFIX); // defensive: no leftover schema from a crashed run
     await H.apiCreateSchema(page, schemaName, [
       { name: 'rating', type: 'int' },
       { name: 'notes', type: 'string' },
@@ -52,17 +54,31 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
         .find((l) => l.textContent?.trim() === 'Edit for current cell...');
       (edit?.closest('.d4-menu-item') as HTMLElement)?.click();
       await new Promise((r) => setTimeout(r, 1500));
+      // The dialog stacks a flat section per matching schema — header, property hosts, Save — with
+      // no per-schema container. Mark ours (it owns the only Rating host, asserted below) so the
+      // reads and clicks cannot drift into a neighbour's: dev carries a second molecule schema, and
+      // an unscoped query there clicks its Save, leaving everything typed here unsaved.
+      const kids = Array.from(document.querySelectorAll('.d4-dialog .d4-build-root.ui-form > *'));
+      for (let i = kids.findIndex((el) => el.getAttribute('name') === 'input-host-Rating'); i >= 0 && i < kids.length; i++) {
+        kids[i].setAttribute('data-pw-mine', '');
+        if (kids[i].querySelector('[name="button-Save"]')) break;
+      }
       return document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim();
     });
 
     expect(await openCellEditor()).toBe('Sticky meta');
 
+    // What the marking above anchors on: a second schema carrying a `rating` would take it over.
+    // Spec 01 used to, and that is what broke this test in builds #357 and #360.
+    expect(await page.evaluate(() =>
+      document.querySelectorAll('.d4-dialog [name="input-host-Rating"]').length)).toBe(1);
+
     const readCellDialog = () => page.evaluate(() => {
       const d = document.querySelector('.d4-dialog') as HTMLElement;
       return {
-        rating: (d.querySelector('[name="input-host-Rating"] input') as HTMLInputElement).value,
-        notes: (d.querySelector('[name="input-host-Notes"] input') as HTMLInputElement).value,
-        verified: (d.querySelector('[name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement).checked,
+        rating: (d.querySelector('[data-pw-mine][name="input-host-Rating"] input') as HTMLInputElement).value,
+        notes: (d.querySelector('[data-pw-mine][name="input-host-Notes"] input') as HTMLInputElement).value,
+        verified: (d.querySelector('[data-pw-mine][name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement).checked,
       };
     });
     const closeDialog = async () => {
@@ -72,24 +88,24 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     const expected = { rating: '5', notes: 'test note', verified: true };
 
     // Fill rating, notes, verified.
-    await page.locator('.d4-dialog [name="input-host-Rating"] input').click();
+    await page.locator('.d4-dialog [data-pw-mine][name="input-host-Rating"] input').click();
     await page.keyboard.press('Control+a');
     await page.keyboard.type('5');
     await page.keyboard.press('Tab');
-    await page.locator('.d4-dialog [name="input-host-Notes"]').first().locator('input').click();
+    await page.locator('.d4-dialog [data-pw-mine][name="input-host-Notes"] input').click();
     await page.keyboard.press('Control+a');
     await page.keyboard.type('test note');
     await page.keyboard.press('Tab');
     await page.evaluate(() => {
-      const cb = document.querySelector('.d4-dialog [name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement;
+      const cb = document.querySelector('.d4-dialog [data-pw-mine][name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement;
       if (!cb.checked) cb.click();
     });
     await page.waitForTimeout(400);
     // Confirm the dialog holds the values before saving (catches fill failures distinctly).
     expect(await readCellDialog()).toEqual(expected);
 
-    // Click the schema section's Save and give the server round-trip time to commit.
-    await page.evaluate(() => (document.querySelector('.d4-dialog [name="button-Save"]') as HTMLElement | null)?.click());
+    // Click our schema section's Save and give the server round-trip time to commit.
+    await page.evaluate(() => (document.querySelector('.d4-dialog [data-pw-mine] [name="button-Save"]') as HTMLElement | null)?.click());
     await page.waitForTimeout(2500);
     await closeDialog();
 
@@ -110,18 +126,24 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     await page.waitForTimeout(1500);
 
     // Click "add all properties as columns" inside our schema's section (scoped by header text).
-    await page.evaluate((schemaName) => {
+    // The pane fills in asynchronously after `shell.o` is set, and the optional chaining below
+    // used to swallow a miss — the click did nothing and the column poll timed out with nothing
+    // to point at. Retry until the section and its button are actually there.
+    await expect.poll(async () => page.evaluate((schemaName) => {
       const section = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'))
         .find((s) => s.querySelector('.d4-flex-row')?.textContent?.trim() === schemaName);
-      (section?.querySelector('[name$="-properties-as-columns"]') as HTMLElement | null)?.click();
-    }, schemaName);
+      const button = section?.querySelector('[name$="-properties-as-columns"]') as HTMLElement | null;
+      if (!button) return false;
+      button.click();
+      return true;
+    }, schemaName), { timeout: 30_000, intervals: [1000] }).toBe(true);
 
     // Schema matching is async — poll for the four sticky columns to appear.
     await expect.poll(async () =>
       page.evaluate(() => {
         const names = (window as any).grok.shell.t.columns.names();
         return ['rating', 'notes', 'verified', 'review_date'].every((n) => names.includes(n));
-      }), { timeout: 20_000, intervals: [500] }).toBe(true);
+      }), { timeout: 45_000, intervals: [500] }).toBe(true);
 
     // Sort ascending by the rating sticky column.
     // SCOPE NOTE: the grid is canvas-rendered with no stable DOM handle for the column header sort
@@ -140,14 +162,18 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     });
     expect(await page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating'))).toBe(false);
 
-    await page.evaluate((schemaName) => {
+    // Same silent-miss hazard as the add-all click above.
+    await expect.poll(async () => page.evaluate((schemaName) => {
       const section = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'))
         .find((s) => s.querySelector('.d4-flex-row')?.textContent?.trim() === schemaName);
-      (section?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null)?.click();
-    }, schemaName);
+      const button = section?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null;
+      if (!button) return false;
+      button.click();
+      return true;
+    }, schemaName), { timeout: 30_000, intervals: [1000] }).toBe(true);
     await expect.poll(async () =>
       page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating')),
-      { timeout: 20_000, intervals: [500] }).toBe(true);
+      { timeout: 45_000, intervals: [500] }).toBe(true);
 
     // The cell edited in 2.1 (row 0) still carries rating = 5 after remove + re-add.
     const ratingRow0 = await page.evaluate(() => (window as any).grok.shell.t.col('rating').get(0));

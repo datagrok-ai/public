@@ -1,12 +1,5 @@
-/** The `.flow` script-entity body format: a standard Datagrok annotation
- *  header (`//name:` / `//language: flow` / `//input:` …) followed by the
- *  lossless .flow document.
- *
- *  The header lets core parse the entity's name and params even when the Flow
- *  package is not installed; the JSON is the single source of truth for the
- *  graph. **Single-writer invariant**: only `flowScriptText` produces this
- *  text, always regenerating header and JSON together from the same graph, so
- *  they can never disagree. */
+/** The `.flow` script-entity body: a Datagrok annotation header + the flow JSON document.
+ *  Single-writer invariant: only `flowScriptText` produces this text, so header and JSON never disagree. */
 
 import {FlowEditor} from '../rete/flow-editor';
 import {emitHeaderLines} from '../compiler/script-emitter';
@@ -22,9 +15,7 @@ export interface ParsedFlowBody {
   doc: FuncFlowDocument;
 }
 
-/** Serialize the live graph into the `.flow` entity body. `extras` merges
- *  additional document fields (e.g. `outputViews` layouts) that live outside
- *  the graph itself. */
+/** `extras` merges document fields (e.g. `outputViews` layouts) that live outside the graph. */
 export function flowScriptText(flow: FlowEditor, settings: FlowSettings,
   extras?: Partial<FuncFlowDocument>): string {
   const tags = settings.tags.includes(FLOW_TAG) ? settings.tags : [...settings.tags, FLOW_TAG];
@@ -42,9 +33,6 @@ export function flowScriptText(flow: FlowEditor, settings: FlowSettings,
   return header.join('\n') + '\n' + JSON.stringify(doc, null, 2) + '\n';
 }
 
-/** Split a `.flow` entity body back into its header and flow JSON document.
- *  Tolerant of blank lines between the two; throws on a missing or
- *  wrong-version JSON payload. */
 export function parseFlowBody(text: string): ParsedFlowBody {
   const lines = text.split('\n');
   let i = 0;
@@ -60,7 +48,6 @@ export function parseFlowBody(text: string): ParsedFlowBody {
   return {header, doc};
 }
 
-/** Whether a script body looks like a `.flow` entity body (used by guards). */
 export function isFlowBody(text: string | null | undefined): boolean {
   if (!text) return false;
   try {

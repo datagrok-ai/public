@@ -1,25 +1,8 @@
-/** Layered, banded graph layout — extracted from the creation-script importer
- *  so the same arrangement can be applied to any live graph (the ribbon's
- *  "Clean Layout" action) as well as to freshly-imported scripts.
- *
- *  The algorithm:
- *   - **Layers** (columns): `layer(n) = 0` for sources, else `max(layer(pred))+1`
- *     (longest path). Every edge therefore points strictly rightward. Column x
- *     is global — shared per layer, width = widest node in that layer.
- *   - **Bands** (rows): one horizontal band per weakly connected component,
- *     stacked in **dependency order** (a path producing a table via `SetVar`
- *     sits above the path that reads it through a `Select Table` node — matched
- *     by normalized name), ties broken by node order. Because the execution
- *     topological sort ranks components by topmost `y`, this band order *is* the
- *     execution order.
- *   - Within a band/column, nodes order by predecessor barycenter and greedily
- *     stack so chains read as straight lanes, branches fan out, nothing overlaps.
- *
- *  Pure and DOM-free: it only reads node metadata and mutates `node.pos`. */
+/** Layered, banded graph layout shared by the creation-script importer and the ribbon's
+ *  "Clean Layout". Pure and DOM-free: reads node metadata, mutates `node.pos`. */
 
-import {FlowNode} from './scheme';
+import {FlowNode, isExecKey, hiddenSocketRow, inlinePreviewEnabled, inlinePreviewSize} from './scheme';
 
-/** A directed layout edge between two nodes (source → target). */
 export interface LayoutEdge {
   source: FlowNode;
   target: FlowNode;
@@ -27,8 +10,7 @@ export interface LayoutEdge {
 
 const SELECT_TABLE_TYPE = 'Utilities/Select Table';
 
-/** Longest-path layering over a DAG: `layer(n) = 0` for nodes with no incoming
- *  edge, else `max(layer(pred)) + 1`. Nodes left unlayered (cycles) fall to 0. */
+/** Longest-path layering over a DAG; nodes left unlayered (cycles) fall to 0. */
 export function computeLayers(nodes: FlowNode[], edges: LayoutEdge[]): Map<FlowNode, number> {
   const outgoing = new Map<FlowNode, FlowNode[]>();
   const indegree = new Map<FlowNode, number>();
@@ -65,9 +47,7 @@ export function computeLayers(nodes: FlowNode[], edges: LayoutEdge[]): Map<FlowN
   return layer;
 }
 
-/** Arrange `nodes` in place (mutating `node.pos`) using the layered/banded
- *  layout, given a precomputed `layer` per node (see `computeLayers`, or the
- *  importer's incremental layering). */
+/** Arranges nodes in place (mutating `node.pos`), given a precomputed layer per node. */
 export function layoutGraph(nodes: FlowNode[], edges: LayoutEdge[], layer: Map<FlowNode, number>): void {
   const marginX = 40;
   const marginY = 40;
@@ -75,7 +55,6 @@ export function layoutGraph(nodes: FlowNode[], edges: LayoutEdge[], layer: Map<F
   const rowGap = 24;
   const bandGap = 56;
 
-  // Global column x positions from the widest node per layer.
   const columnWidth = new Map<number, number>();
   for (const node of nodes) {
     const l = layer.get(node) ?? 0;
@@ -134,10 +113,8 @@ export function layoutGraph(nodes: FlowNode[], edges: LayoutEdge[], layer: Map<F
   }
 }
 
-/** Weakly connected components, each a node list in stable (input) order,
- *  ordered top-to-bottom for layout: a component that produces a table (a
- *  `SetVar` variable) precedes the component that reads it via a `Select Table`
- *  node; ties break by earliest node index. */
+/** Weakly connected components in layout order: a table-producing component precedes
+ *  the one that reads it via a Select Table node; ties break by earliest node index. */
 export function orderedComponents(nodes: FlowNode[], edges: LayoutEdge[]): FlowNode[][] {
   const indexOf = new Map<FlowNode, number>();
   nodes.forEach((n, i) => indexOf.set(n, i));
@@ -171,8 +148,7 @@ export function orderedComponents(nodes: FlowNode[], edges: LayoutEdge[]): FlowN
     components.push(members);
   }
 
-  // Producer → consumer edges between components, matched by normalized name
-  // (a Select Table's tableName ↔ a SetVar's variableName).
+  // Producer → consumer edges: a Select Table's tableName ↔ a SetVar's variableName, normalized.
   const norm = (s: unknown): string => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const producerOf = new Map<string, number>();
   components.forEach((members, id) => {
@@ -197,7 +173,6 @@ export function orderedComponents(nodes: FlowNode[], edges: LayoutEdge[]): FlowN
     }
   });
 
-  // Kahn over components; among ready ones, pick the earliest by node index.
   const earliest = components.map((m) => (m.length > 0 ? indexOf.get(m[0])! : 0));
   const ready: number[] = [];
   for (let id = 0; id < components.length; id++)
@@ -220,21 +195,29 @@ export function orderedComponents(nodes: FlowNode[], edges: LayoutEdge[]): FlowN
   return order.map((id) => components[id]);
 }
 
-/** Estimated rendered height in canvas units, used for stacking before the DOM
- *  exists. Collapsed nodes render as a bare title bar. Expanded: title ≈ 28px,
- *  description ≈ 22px, each socket row ≈ 20px, body padding 12px (see
- *  funcflow.css). Input and output columns sit side by side, so rows = max of
- *  the two. */
+/** Estimated rendered height in canvas units (pre-DOM); constants mirror funcflow.css. */
 export function estimateNodeHeight(node: FlowNode): number {
   if (node.collapsed) return 30;
-  const rows = Math.max(Object.keys(node.inputs).length, Object.keys(node.outputs).length, 1);
-  return 28 + (node.description ? 22 : 0) + 12 + rows * 20;
+  // Hidden rows take no space; import-time layout runs pre-bridge, so unwired.
+  const conn = (side: 'input' | 'output', key: string): boolean =>
+    node.editorBridge?.isSocketConnected(node.id, side, key) ?? false;
+  const visible = (side: 'input' | 'output', keys: string[]): number =>
+    keys.filter((k) => !isExecKey(k) && !hiddenSocketRow(node, side, k, conn)).length;
+  const rows = Math.max(visible('input', Object.keys(node.inputs)),
+    visible('output', Object.keys(node.outputs)), 1);
+  // title bar + the always-present one-line info row + body padding + rows.
+  const base = 28 + 19 + 12 + rows * 20;
+  // The in-node preview container adds its own height (plus its margins).
+  return inlinePreviewEnabled(node) ? base + inlinePreviewSize(node).height + 14 : base;
 }
 
-/** Estimated rendered width. Collapsed nodes are title-driven (CSS min-width
- *  160px, ≈6.5px/char at the 12px title font plus status dot and paddings);
- *  expanded nodes are dominated by their socket-label rows. */
+/** Estimated rendered width; constants mirror the funcflow.css min-widths and title font. */
 export function estimateNodeWidth(node: FlowNode): number {
   const labelWidth = 44 + String(node.label ?? '').length * 6.5;
-  return Math.max(node.collapsed ? 160 : 220, labelWidth);
+  // Must cap with the CSS max-width 280 or long-titled nodes get phantom column width.
+  const base = Math.min(280, Math.max(node.collapsed ? 160 : 220, labelWidth));
+  // A node with the in-node preview lifts the CSS cap — its width is the container's.
+  if (!node.collapsed && inlinePreviewEnabled(node))
+    return Math.max(base, inlinePreviewSize(node).width + 18);
+  return base;
 }

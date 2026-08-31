@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.scatter-plot, viewers.histogram, viewers.bar-chart, viewers.pie-chart, viewers.line-chart]
 realized_as:
   - legend-api-spec.ts
 pyramid_layer: integration

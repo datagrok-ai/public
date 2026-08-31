@@ -1,0 +1,484 @@
+/* Design-mode chrome over a rendered spec (see src/dg/designer/). The glass pane makes the canvas
+   inert so a click hit-tests a node instead of running the control under it; the adorners are drawn
+   above the pane and never take pointer events, so they stay out of the hit-test.
+   Requires css/tokens.css, css/tree.css and css/spec.css. */
+.u2-designer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+}
+
+/* the rendered root fills the surface in both modes, so a splitter (and the viewers in its
+   panels) gets a real height; a form only grows its outline — nothing inside it stretches */
+.u2-designer-surface {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: var(--dg-space-m);
+}
+
+.u2-designer-surface > .u2-spec {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.u2-designer-surface > .u2-spec > .u2-designer-root {
+  flex: 1 0 auto;
+}
+
+.u2-designer-pane {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: default;
+}
+
+.u2-designer-selected,
+.u2-designer-hover {
+  position: absolute;
+  display: none;
+  z-index: 3;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.u2-designer-selected {
+  outline: 2px solid var(--dg-accent);
+  outline-offset: 1px;
+}
+
+.u2-designer-hover {
+  outline: var(--dg-border-width) dashed var(--dg-accent-secondary);
+  outline-offset: 1px;
+}
+
+.u2-designer-drop-into,
+.u2-designer-drop-line {
+  position: absolute;
+  display: none;
+  z-index: 4;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.u2-designer-drop-into {
+  outline: 2px dashed var(--dg-accent);
+  outline-offset: -1px;
+  background: var(--dg-selection-bg);
+}
+
+.u2-designer-drop-line {
+  background: var(--dg-accent);
+}
+
+.u2-designer-drag-ghost {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  background: var(--dg-bg);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  box-shadow: var(--dg-shadow-1);
+}
+
+/* bounds (outline, never border — a border would shift layout and lie about run-mode geometry):
+   the whole form always in design view, every control while the ribbon toggle is on */
+.u2-designer:not(.u2-designer-running) .u2-designer-root {
+  outline: 1px solid var(--dg-border);
+  outline-offset: -1px;
+}
+
+.u2-designer.u2-designer-outlines:not(.u2-designer-running) .u2-designer-node:not(.u2-designer-root) {
+  outline: 1px dashed var(--dg-border);
+}
+
+/* an empty container has no size of its own — this is what makes it a visible drop target;
+   tall enough that "drop into the empty middle" lands on the container, not beside it */
+.u2-designer:not(.u2-designer-running) .u2-designer-empty {
+  min-height: 64px;
+  border: var(--dg-border-width) dashed var(--dg-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-designer:not(.u2-designer-running) .u2-designer-empty::after {
+  content: 'Drop here';
+  display: block;
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+/* the components tray: sticky in flow, so it holds the bottom edge of the scrollport without
+   taking the canvas out of the designer's own scroll box; above the glass pane, or its chips
+   would never see a click */
+.u2-designer-tray {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  border-top: var(--dg-border-width) solid var(--dg-border);
+  background: var(--dg-bg-secondary);
+}
+
+.u2-designer.u2-designer-running .u2-designer-tray {
+  display: none;
+}
+
+.u2-designer-tray-drop {
+  outline: 2px dashed var(--dg-accent);
+  outline-offset: -2px;
+  background: var(--dg-selection-bg);
+}
+
+.u2-designer-tray-hint {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-designer-tray-add {
+  flex: none;
+}
+
+.u2-designer-chip {
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  background: var(--dg-bg);
+  font-size: var(--dg-font-size-small);
+  cursor: pointer;
+  user-select: none;
+}
+
+.u2-designer-chip-selected {
+  border-color: var(--dg-accent);
+  background: var(--dg-selection-bg);
+  color: var(--dg-selection-text);
+}
+
+.u2-designer-chip-broken,
+.u2-designer-chip-error {
+  border-color: var(--dg-red-3);
+  background: var(--dg-red-1);
+  color: var(--dg-red-4);
+}
+
+.u2-designer-chip-loading {
+  border-style: dashed;
+  color: var(--dg-text-color-light);
+}
+
+.u2-designer-toolbox {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 200px;
+  padding: var(--dg-space-m);
+  gap: var(--dg-space-s);
+}
+
+.u2-designer-toolbox > .u2-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-designer-toolbox > .u2-palette {
+  flex: 0 0 auto;
+  max-height: 40%;
+}
+
+.u2-palette {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--dg-space-s);
+}
+
+.u2-palette-list {
+  overflow: auto;
+}
+
+/* the palette accordion inherits the compact header look the h3 groups used to carry */
+.u2-palette-list.u2-accordion {
+  background: none;
+}
+
+.u2-palette .u2-accordion-header {
+  height: auto;
+  padding: var(--dg-space-xs) var(--dg-space-s) var(--dg-space-xs) var(--dg-space-xxl);
+}
+
+.u2-palette .u2-accordion-chevron {
+  font-size: var(--dg-font-size-xs);
+}
+
+.u2-palette .u2-accordion-title {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-xs);
+  font-weight: var(--dg-font-weight-medium);
+  text-transform: uppercase;
+}
+
+.u2-palette .u2-accordion-content {
+  padding: 0 0 var(--dg-space-xs);
+}
+
+.u2-palette-item {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  padding: var(--dg-space-xs) var(--dg-space-s);
+  border-radius: var(--dg-radius);
+  cursor: grab;
+  user-select: none;
+}
+
+/* the platform's own viewer glyph, boxed like the function picker's row icon */
+.u2-palette-item-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.u2-palette-item-icon img,
+.u2-palette-item-icon svg,
+.u2-palette-item-icon i {
+  max-width: 16px;
+  max-height: 16px;
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-palette-item-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-palette-item:hover {
+  background: var(--dg-hover);
+}
+
+.u2-designer-properties {
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-m);
+}
+
+.u2-designer-caption {
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+/* what to do about the error above it */
+.u2-designer-hint {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+/* the panel's own header — the platform draws one only for entities it knows */
+.u2-designer-properties > .u2-designer-caption {
+  font-size: var(--dg-font-size-h2);
+  font-weight: var(--dg-font-weight-medium);
+  color: var(--dg-text-color);
+}
+
+.u2-designer-spec-editor textarea {
+  width: 520px;
+  height: 320px;
+  font-family: var(--dg-font-family-mono);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-bind-picker-body {
+  gap: var(--dg-space-s);
+  min-width: 380px;
+}
+
+/* a virtualized tree measures its own scroller: inside a dialog nothing else gives it a height */
+.u2-bind-picker .u2-tree {
+  height: 280px;
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-bind-picker-hint {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-func-picker-body {
+  gap: var(--dg-space-s);
+  min-width: 420px;
+}
+
+/* a virtualized list measures its own scroller: inside a dialog nothing else gives it a height */
+.u2-func-picker .u2-list {
+  height: 240px;
+  border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-func-picker-params {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.u2-func-picker-hint {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}
+
+/* one line per function, laid out rather than left to the platform's entity markup — which drew its
+   icon over the caption and let the descenders fall outside the row */
+.u2-func-row {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 0 var(--dg-space-xs);
+  overflow: hidden;
+  gap: var(--dg-space-s);
+  line-height: normal;
+}
+
+.u2-func-row-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.u2-func-row-icon img,
+.u2-func-row-icon svg,
+.u2-func-row-icon i {
+  max-width: 16px;
+  max-height: 16px;
+  font-size: var(--dg-font-size-small);
+}
+
+.u2-func-row-label {
+  flex: 0 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-func-row-name,
+.u2-func-row-desc {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  white-space: nowrap;
+}
+
+.u2-func-row-name {
+  flex: none;
+  font-family: var(--dg-font-family-mono);
+}
+
+.u2-func-row-desc {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* what a query with no hits shows instead of the empty scroller — a blank white box reads as a
+   dialog that has not finished loading */
+.u2-picker-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: var(--dg-space-m);
+  border: var(--dg-border-width) solid var(--dg-border);
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+  text-align: center;
+}
+
+.u2-bind-picker .u2-picker-empty {
+  height: 280px;
+}
+
+.u2-func-picker .u2-picker-empty {
+  height: 240px;
+}
+
+/* the viewer node's Properties section: the platform property grid (its own sheet is global) filling the pane */
+.u2-designer-look {
+  width: 100%;
+}
+
+.u2-designer-look .property-grid-category td {
+  font-size: var(--dg-font-size);
+  font-weight: var(--dg-font-weight-medium);
+}
+
+.u2-designer-look .property-grid td:first-child {
+  width: 55%;
+}
+
+/* the rows the document carries a value for, apart from the ones showing the viewer's default */
+.u2-designer-look-set td:first-child {
+  font-weight: var(--dg-font-weight-medium);
+}
+
+/* a string row keeps focus after its commit (the editor is gone): the name cell already marks it */
+.u2-designer-look tr[data-prop-name]:focus {
+  outline: none;
+}
+
+/* the tag's own designer verbs, under the Node table */
+.u2-designer-verbs {
+  flex-wrap: wrap;
+  gap: var(--dg-space-xs);
+}
+
+/* The binding chip (UB-7b): a bound property row renders this in place of its editor */
+.u2-bind-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  max-width: 100%;
+  padding: 0 var(--dg-space-xs);
+  font-size: var(--dg-font-size-small);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  background: var(--dg-bg-secondary);
+  cursor: pointer;
+}
+
+.u2-bind-chip:hover {
+  background: var(--dg-hover);
+}
+
+.u2-bind-chip-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--dg-font-family-mono);
+  color: var(--dg-accent);
+}
+
+.u2-bind-chip-two-way {
+  color: var(--dg-text-color-light);
+}
+
+.u2-bind-chip-clear {
+  margin-left: auto;
+}

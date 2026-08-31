@@ -33,7 +33,7 @@ export interface IDartApi {
   grok_Set_CurrentPreview(view: any): any;
   grok_TableNames(): any;
   grok_TableByName(s: any): any;
-  grok_ScriptSync(script: String): any;
+  grok_ScriptSync(script: String, variables?: any): any;
   grok_Get_PresentationMode(): any;
   grok_Set_PresentationMode(v: Bool): any;
   grok_Set_SimpleMode(s: Bool): any;
@@ -110,6 +110,7 @@ export interface IDartApi {
   grok_View_Set_IsPinned(v: any, value: Bool): any;
   grok_ScriptView_Set_Code(v: any, s: String): any;
   grok_ScriptView_Get_Code(v: any): any;
+  grok_ScriptView_Get_TabControl(v: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
   grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
@@ -163,6 +164,7 @@ export interface IDartApi {
   grok_ScriptsView(params: any): any;
   grok_ScriptView(script: any): any;
   grok_DataQueryView(q: any): any;
+  grok_DataQueryView_Get_TabControl(v: any): any;
   grok_TabControlBase_Get_Header(tc: any): any;
   grok_TabControlBase_Get_Panes(tc: any): any;
   grok_TabControlBase_Clear(tc: any): any;
@@ -319,6 +321,8 @@ export interface IDartApi {
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
   grok_DockManager_OnElementClosed(d: any): any;
+  grok_DockManager_OnPanelShown(d: any): any;
+  grok_DockManager_OnPanelHidden(d: any): any;
   grok_WidgetDescriptor_GetDescriptors(): any;
   grok_WidgetDescriptor_GetByName(name: String): any;
   grok_WidgetDescriptor_Get_Name(d: any): any;
@@ -455,6 +459,7 @@ export interface IDartApi {
   grok_Widget_Get_Temp(widget: any): any;
   grok_Widget_Wrap(jsWidget: any): any;
   grok_Widget_Kill(element: any): any;
+  grok_Widget_Unregister(widget: any): any;
   grok_Widget_FromRoot(element: any): any;
   grok_Widget_GetAll(): any;
   grok_Widget_Get_Parent(widget: any): any;
@@ -643,6 +648,8 @@ export interface IDartApi {
   grok_TagElement_Set_Tag(te: any, tag: any): any;
   grok_InputBase_Get_InputType(input: any): any;
   grok_InputBase_Get_DataType(input: any): any;
+  grok_InputBase_Get_ValidationMessages(input: any): any;
+  grok_InputBase_OnValidated(input: any): any;
   grok_InputBase_Get_Property(input: any): any;
   grok_InputBase_Set_Property(input: any, p: any): any;
   grok_InputBase_Get_Root(input: any): any;
@@ -736,7 +743,7 @@ export interface IDartApi {
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
   grok_FilesInput_Set_AcceptExtensions(input: any, x: any): any;
   grok_PropertyGrid(): any;
-  grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
+  grok_PropertyGrid_Update(propGrid: any, src: any, props: any, table?: any): any;
   grok_TreeViewNode_Tree(): any;
   grok_TreeViewNode_Root(node: any): any;
   grok_TreeViewNode_Get_Value(node: any): any;
@@ -811,6 +818,10 @@ export interface IDartApi {
   grok_FuncCall_Get_Param_Value(call: any, name: String): any;
   grok_FuncCall_Get_Output_Param_Value(call: any): any;
   grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
+  grok_FuncCall_EvalParamChoices(call: any, name: String): Promise<any>;
+  grok_FuncCall_EvalParamSuggestions(call: any, name: String, text: String): Promise<any>;
+  grok_FuncCall_EvalParamDefault(call: any, name: String): Promise<any>;
+  grok_FuncCall_EvalParamValidators(call: any, name: String): Promise<any>;
   grok_Meta_Register(jsMeta: any): any;
   grok_Meta_List(): any;
   grok_Meta_ForEntity(entity: any): any;
@@ -819,11 +830,44 @@ export interface IDartApi {
   grok_Meta_IsApplicable(meta: any, x: any): any;
   grok_Meta_Get_Name(meta: any, x: any): any;
   grok_Meta_RenderIcon(meta: any, x: any): any;
-  grok_Meta_RenderMarkup(meta: any, x: any): any;
-  grok_Meta_RenderTooltip(meta: any, x: any): any;
-  grok_Meta_RenderCard(meta: any, x: any): any;
+  grok_Meta_RenderMarkup(meta: any, x: any, context?: any): any;
+  grok_Meta_RenderTooltip(meta: any, x: any, context?: any): any;
+  grok_Meta_RenderCard(meta: any, x: any, context?: any): any;
   grok_Meta_RenderProperties(meta: any, x: any): any;
   grok_Meta_RenderView(meta: any, x: any): any;
+  grok_Meta_RenderGrid(meta: any, grid: any, items: any): any;
+  grok_Meta_RenderListItem(meta: any, x: any, context?: any): any;
+  grok_Meta_RenderInput(meta: any, x: any): any;
+  grok_Meta_GetById(meta: any, id: String): Promise<any>;
+  grok_Meta_DartForType(type: String): any;
+  grok_DomainRowMeta_RegisterPerTableMetas(): Promise<any>;
+  grok_DomainRegistry_RowProperties(type: String): Promise<any>;
+  grok_DomainRegistry_TableInfo(schemaName: String, tableName: String): Promise<any>;
+  grok_Domains_ResolveNames(schemaName: String, tableName: String, ids: any): Promise<any>;
+  grok_Domains_TableCapabilities(schemaName: String, tableName: String): Promise<any>;
+  grok_Domains_RowPermissions(row: any): Promise<any>;
+  grok_Domains_InvalidateUiCaches(): any;
+  grok_DomainMeta_ForType(type: String): any;
+  grok_DomainMeta_DeepLink(row: any): any;
+  grok_DomainMeta_ChildTablePath(schema: String, table: String, fkColumn: String, rowId: String): any;
+  grok_DomainRow_Create(schemaName: String, tableName: String, values: any): any;
+  grok_DomainMeta_Open(path: String): any;
+  grok_DomainMeta_CopyLink(row: any): any;
+  grok_DomainView_Create(options: any): any;
+  grok_DomainView_ShowFilters(v: any): any;
+  grok_DomainView_Get_Query(v: any): any;
+  grok_DomainRowEditor_OpenCreate(schemaName: String, tableName: String): Promise<any>;
+  grok_DomainRowEditor_OpenEdit(row: any): Promise<any>;
+  grok_DomainRowEditor_OpenClone(row: any): Promise<any>;
+  grok_DomainRowPicker_Pick(schemaName: String, tableName: String): Promise<any>;
+  grok_DomainRowPicker_PickPopup(schemaName: String, tableName: String, anchor: any): Promise<any>;
+  grok_DomainConflictDialog_Show(subject: String): Promise<any>;
+  grok_DomainMeta_ConfirmDelete(row: any): Promise<any>;
+  grok_DomainMeta_ShareRow(row: any): Promise<any>;
+  grok_DomainMeta_ShowHistory(row: any): any;
+  grok_Domains_AuditPane(row: any): any;
+  grok_Domains_GrantsPane(entityId: String, name: String, readOnly: Bool): any;
+  grok_Domains_GrantsDialog(entityId: String, name: String): Promise<any>;
   grok_Meta_RenderPreview(meta: any, x: any, params: any, path: String): any;
   grok_MarkupHandler_Register(regexp: String, description: String, renderFromMatches: any): any;
   grok_Route(url: String): any;
@@ -874,6 +918,8 @@ export interface IDartApi {
   grok_UI_ToggleButtonGroup(buttons: any, toggleFirst: Bool): any;
   grok_UI_ComboPopup(caption: any, items: any, handler: any, renderer: any): any;
   grok_UI_TableFromMap(x: any, showCopyValue: Bool): any;
+  grok_UI_PickTableFromFiles(): Promise<any>;
+  grok_UI_PickTableFromQuery(): Promise<any>;
   grok_UI_List(items: any, maxRows: Num): any;
   grok_UI_Bind(item: any, element: any, contextMenu: any): any;
   grok_UI_Wait(jsugetElement: any): any;
@@ -976,6 +1022,14 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
+  grok_Shell_Undo(): any;
+  grok_Shell_Redo(): any;
+  grok_Shell_Get_CanUndo(): any;
+  grok_Shell_Get_CanRedo(): any;
+  grok_UndoService_Get_UndoName(): any;
+  grok_UndoService_Get_RedoName(): any;
+  grok_UndoService_Clear(): any;
+  grok_UndoService_Push(name: String, undo: any, redo: any, context: any): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
   grok_Shell_OpenLocalFile(file: any): Promise<any>;
@@ -1109,6 +1163,10 @@ export interface IDartApi {
   grok_Dapi_Info_GetStorageStats(c: any): Promise<any>;
   grok_Dapi_Log(): any;
   grok_Dapi_Log_Where(logClient: any, entityId: String, start: any, end: any, favoritesOnly: Bool): any;
+  grok_Dapi_Log_CloudLogGroups(connection: String, prefix: String): Promise<any>;
+  grok_Dapi_Log_CloudLogEvents(connection: String, group: String, start: any, end: any, filter: String, limit: Num): Promise<any>;
+  grok_Dapi_Log_ArchiveObjects(connection: String, prefix: String, limit: Num): Promise<any>;
+  grok_Dapi_Log_ArchiveEvents(connection: String, key: String): Promise<any>;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
@@ -1190,6 +1248,66 @@ export interface IDartApi {
   grok_SpaceFilesClient_Copy(s: any, files: any, newPath: any): Promise<any>;
   grok_SpaceFilesClient_Move(s: any, files: any, destinationPath: String): Promise<any>;
   grok_SpaceFilesClient_Delete(s: any, file: any): Promise<any>;
+  grok_Dapi_Domains(): any;
+  grok_Dapi_Domains_Schemas(c: any): any;
+  grok_Dapi_Domains_Query(c: any, schema: String, table: String, spec: any): Promise<any>;
+  grok_Dapi_Domains_GetRow(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_Insert(c: any, schema: String, table: String, rows: any, errorOnDuplicate: Bool): Promise<any>;
+  grok_Dapi_Domains_Patch(c: any, schema: String, table: String, id: String, values: any, version: Num): Promise<any>;
+  grok_Dapi_Domains_Delete(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_DeleteWhere(c: any, schema: String, table: String, filter: any, limit: any): Promise<any>;
+  grok_Dapi_Domains_Promote(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_RowAudit(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_QueryDf(c: any, schema: String, table: String, spec: any): Promise<any>;
+  grok_Dapi_Domains_Aggregate(c: any, schema: String, table: String, spec: any): Promise<any>;
+  grok_Dapi_Domains_Transaction(c: any, schema: String, ops: any): Promise<any>;
+  grok_Dapi_Domains_Batch(c: any, schema: String, table: String, data: any, format: String, options: any): Promise<any>;
+  grok_Dapi_Domains_Count(c: any, schema: String, table: String, filter: any): Promise<any>;
+  grok_Dapi_Domains_GetByKey(c: any, schema: String, table: String, keyValues: any): Promise<any>;
+  grok_Dapi_Domains_FetchFields(c: any, schema: String, table: String, ids: any, fields: any): Promise<any>;
+  grok_Dapi_Domains_AggregateDf(c: any, schema: String, table: String, spec: any): Promise<any>;
+  grok_Dapi_Domains_Upsert(c: any, schema: String, table: String, row: any): Promise<any>;
+  grok_Dapi_Domains_TableAudit(c: any, schema: String, table: String, limit: any): Promise<any>;
+  grok_Dapi_Domains_Watch(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_Unwatch(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_IsWatching(c: any, schema: String, table: String, id: String): Promise<any>;
+  grok_Dapi_Domains_CreateSchema(c: any, name: String, friendlyName: String, description: String): Promise<any>;
+  grok_Dapi_Domains_GetManifest(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_ApplySchema(c: any, schema: String, body: any, dryRun: Bool): Promise<any>;
+  grok_Dapi_Domains_SchemaAudit(c: any, schema: String, limit: any): Promise<any>;
+  grok_Dapi_Domains_DeleteSchema(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_TableGrants(c: any, schema: String, table: String): Promise<any>;
+  grok_Dapi_Domains_TableGrant(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_TableRevoke(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_SchemaGrants(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_SchemaGrant(c: any, schema: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_SchemaRevoke(c: any, schema: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_ShareColumn(c: any, schema: String, table: String, column: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_RestrictColumn(c: any, schema: String, table: String, column: String): Promise<any>;
+  grok_Dapi_Domains_RestoreColumnVisibility(c: any, schema: String, table: String, column: String): Promise<any>;
+  grok_Dapi_Domains_Facets(c: any, schema: String, table: String, spec: any): Promise<any>;
+  grok_Dapi_Domains_ListFilters(c: any, schema: String, table: String): Promise<any>;
+  grok_Dapi_Domains_SaveFilter(c: any, schema: String, table: String, name: String, states: any, id: String): Promise<any>;
+  grok_Dapi_Domains_DeleteFilter(c: any, id: String): Promise<any>;
+  grok_DomainSchema_Get_PgSchema(s: any): any;
+  grok_DomainSchema_Get_ManagedBy(s: any): any;
+  grok_DomainSchema_Get_Version(s: any): any;
+  grok_DomainSchema_Get_Tables(s: any): any;
+  grok_DomainTable_Get_Schema(t: any): any;
+  grok_DomainTable_Get_SecurityMode(t: any): any;
+  grok_DomainTable_Get_BusinessKey(t: any): any;
+  grok_DomainTable_Get_Audit(t: any): any;
+  grok_DomainRow_Get_SchemaName(r: any): any;
+  grok_DomainRow_Get_TableName(r: any): any;
+  grok_DomainRow_Get_TypeName(r: any): any;
+  grok_DomainRow_Get_SemValue(r: any): any;
+  grok_DomainRow_Get_DisplayName(r: any): any;
+  grok_DomainRow_Get_Values(r: any): any;
+  grok_DomainRow_Get_Id(r: any): any;
+  grok_DomainRow_Get_Version(r: any): any;
+  grok_DomainRow_Get_CreatedOn(r: any): any;
+  grok_DomainRow_Get_UpdatedOn(r: any): any;
+  grok_DomainRow_Get_AuthorId(r: any): any;
   grok_GetType(x: any): any;
   grok_EventData_Get_CausedBy(e: any): any;
   grok_EventData_Get_Sender(e: any): any;
@@ -1343,7 +1461,7 @@ export interface IDartApi {
   grok_Column_Get_Version(c: any): any;
   grok_Column_GetRawDataDartium(c: any): any;
   grok_Column_GetRawData(c: any): any;
-  grok_Column_SetRawData(c: any, rawData: any, notify: any): any;
+  grok_Column_SetRawData(c: any, rawData: any, notify?: Bool): any;
   grok_Column_AsDoubleList(c: any): any;
   grok_Column_Scale(c: any, i: Num): any;
   grok_Column_GetValue(c: any, i: Num): any;
@@ -1412,11 +1530,11 @@ export interface IDartApi {
   grok_Stats_Corr(s: any, other: any): any;
   grok_Stats_SpearmanCorr(s: any, other: any): any;
   grok_Stats_HistogramsByCategories(valueColumn: any, catColumn: any): any;
-  grok_RowList_RemoveAt(rows: any, idx: Num, count: any, notify: Bool): any;
+  grok_RowList_RemoveAt(rows: any, idx: Num, count?: Num, notify?: Bool): any;
   grok_RowList_RemoveWhere(rows: any, check: any): any;
   grok_RowList_RemoveWhereIdx(rows: any, check: any): any;
-  grok_RowList_InsertAt(rows: any, idx: Num, count: any, notify: Bool): any;
-  grok_RowList_AddNew(rows: any, values: any, notify: Bool): any;
+  grok_RowList_InsertAt(rows: any, idx: Num, count?: Num, notify?: Bool): any;
+  grok_RowList_AddNew(rows: any, values?: any, notify?: Bool): any;
   grok_RowList_SelectWhere(rows: any, check: any): any;
   grok_RowList_SetValues(rows: any, idx: Num, values: any, notify: Bool): any;
   grok_RowList_RequestFilter(rows: any): any;
@@ -1619,6 +1737,7 @@ export interface IDartApi {
   grok_Project_AddRelation(p: any, e: any, link: Bool): any;
   grok_Project_RemoveRelation(p: any, e: any): any;
   grok_Project_Description(p: any): any;
+  grok_Project_Set_Description(p: any, x: String): any;
   grok_Project_IsDirty(p: any): any;
   grok_Project_IsEmpty(p: any): any;
   grok_Project_IsDashboard(p: any): any;
@@ -1684,6 +1803,12 @@ export interface IDartApi {
   grok_DbTableQueryBuilder_Limit(dtqb: any, n: Num): any;
   grok_DbTableQueryBuilder_Join(dtqb: any, rightTable: String, joinType: String, leftTableKeys: any, rightTableKeys: any, rightTableAlias: String, leftTable: String): any;
   grok_DbTableQueryBuilder_Build(dtqb: any): any;
+  grok_DbTable_Insert(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_DbTable_Upsert(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_DbTable_Update(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_DbTable_Delete(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_DbTable_UploadAs(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_Db_DdlExecute(p0: any, p1: any): Promise<any>;
   grok_Entity_Get_FriendlyName(p: any): any;
   grok_Entity_Set_FriendlyName(p: any, name: String): any;
   grok_Entity_Has_Tag(e: any, tag: String): any;
@@ -1824,6 +1949,8 @@ export interface IDartApi {
   grok_Dapi_Set_Root(root: String): any;
   grok_Dapi_Set_Token(token: String): any;
   grok_Dapi_Get_Token(): any;
+  grok_Dapi_Set_ImpersonationToken(token: String): any;
+  grok_Dapi_Get_ImpersonationToken(): any;
   grok_Dapi_WS_Root(): any;
   grok_Dapi_OpenAI_Proxy(): any;
   grok_Clear_LastError(): any;
@@ -1958,6 +2085,8 @@ export interface IDartApi {
   grok_DockerImage_Get_updatedBy(x: any): any;
   grok_DockerImage_Get_logs(x: any): any;
   grok_DockerImage_Set_logs(x: any, v: String): any;
+  grok_DockerImage_Get_imageRef(x: any): any;
+  grok_DockerImage_Set_imageRef(x: any, v: String): any;
   grok_DockerImage_Get_completed(x: any): any;
   grok_DockerImage_Get_iconStatus(x: any): any;
   grok_DockerImage_Get_dockerFullName(x: any): any;
@@ -1967,8 +2096,21 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
-  grok_UsageType_Create(): any;
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  grok_ViewerEvent_Create(): any;
+  grok_ViewerEvent_Get_viewer(x: any): any;
+  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
+  grok_ViewerEvent_Get_type(x: any): any;
+  grok_ViewerEvent_Set_type(x: any, v: String): any;
+  grok_ViewerEvent_Get_eventFlag(x: any): any;
+  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
+  grok_ViewerEvent_Get_filters(x: any): any;
+  grok_ViewerEvent_Set_filters(x: any, v: any): any;
+  grok_ViewerEvent_Get_row(x: any): any;
+  grok_ViewerEvent_Set_row(x: any, v: Num): any;
+  grok_ViewerEvent_Get_mouseEvent(x: any): any;
+  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
+  grok_ViewerEvent_Get_bitset(x: any): any;
 
   // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
@@ -2070,22 +2212,9 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
-  grok_ViewerEvent_Create(): any;
-  grok_ViewerEvent_Get_viewer(x: any): any;
-  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
-  grok_ViewerEvent_Get_type(x: any): any;
-  grok_ViewerEvent_Set_type(x: any, v: String): any;
-  grok_ViewerEvent_Get_eventFlag(x: any): any;
-  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
-  grok_ViewerEvent_Get_filters(x: any): any;
-  grok_ViewerEvent_Set_filters(x: any, v: any): any;
-  grok_ViewerEvent_Get_row(x: any): any;
-  grok_ViewerEvent_Set_row(x: any, v: Num): any;
-  grok_ViewerEvent_Get_mouseEvent(x: any): any;
-  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
-  grok_ViewerEvent_Get_bitset(x: any): any;
-
   // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
+
+  // Generated from ../d4/lib/src/common/common.api.g.dart
+  grok_UsageType_Create(): any;
 }

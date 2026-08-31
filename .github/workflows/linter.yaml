@@ -173,17 +173,46 @@ jobs:
         shell: bash
         env:
           SLACK_ID: ${{ secrets.SLACK_ID }}
+          # Read as variables rather than interpolated into the script text: a branch name or
+          # commit subject containing backticks or $(...) would otherwise be executed by bash.
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TREE_URL: ${{ github.server_url }}/${{ github.repository }}/tree
+          COMMIT_URL_BASE: ${{ github.server_url }}/${{ github.repository }}/commit
         run: |
-          channel_id=$(echo "$SLACK_ID" | jq -r .\"${{ github.actor }}\")
-          echo "::add-mask::$channel_id"
-          echo SLACK_CHANNEL=$channel_id >> $GITHUB_ENV
-          
-          header="GitHub <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}> found dangling help links in packages:"
-          echo SLACK_MESSAGE_HEADER=$header >> $GITHUB_ENV
-          context="*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo ${{ github.sha }} | cut -c1-8) $(git log --format=%B -n 1 ${{ github.sha }} | head -n1)>"
-          echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+          set -eu
 
-          echo -e "SLACK_MESSAGE_BODY=${SLACK_MESSAGE_BODY}" | sed -e '$ ! s/$/\\n/' -e 's/"/\\"/g' | tr -d '\n' >> $GITHUB_ENV
+          channel_id=$(jq -r --arg a "$ACTOR" '.[$a]' <<<"$SLACK_ID")
+          echo "::add-mask::$channel_id"
+          echo "SLACK_CHANNEL=$channel_id" >> "$GITHUB_ENV"
+
+          subject=$(git log --format=%s -n 1 "$COMMIT_SHA")
+          # The consumer pastes this into a JSON payload literal, so a bare backslash or quote
+          # would make it unparseable and fail the send. Backslashes first, or the escapes
+          # added for the quotes would themselves get escaped.
+          subject="${subject//\\/\\\\}"
+          subject="${subject//\"/\\\"}"
+
+          header="GitHub <${RUN_URL}|${WORKFLOW_NAME} ${RUN_NUMBER}> found dangling help links in packages:"
+          context="*Branch:* <${TREE_URL}/${REF_NAME}|${REF_NAME}>\n*Commit:* <${COMMIT_URL_BASE}/${COMMIT_SHA}|${COMMIT_SHA:0:8} ${subject}>"
+
+          # Delimiter form, because a newline in the value would otherwise let it declare
+          # further variables for every later step in the job.
+          {
+            echo "SLACK_MESSAGE_HEADER<<__GH_HEADER_EOF__"
+            printf '%s\n' "$header"
+            echo "__GH_HEADER_EOF__"
+            echo "SLACK_MESSAGE_CONTEXT<<__GH_CONTEXT_EOF__"
+            printf '%s\n' "$context"
+            echo "__GH_CONTEXT_EOF__"
+          } >> "$GITHUB_ENV"
+
+          body=$(printf '%s' "${SLACK_MESSAGE_BODY:-}" | sed -e 's/"/\\"/g' | sed -e '$ ! s/$/\\n/' | tr -d '\n')
+          echo "SLACK_MESSAGE_BODY=$body" >> "$GITHUB_ENV"
 
       - name: Send test report to Slack
         id: slack
